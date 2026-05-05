@@ -1,0 +1,250 @@
+Costruisci una SaaS web app completa chiamata "PreventivoAI".
+
+L’obiettivo è creare un sistema AI per generare preventivi professionali PDF per freelance, artigiani e piccole imprese italiane.
+
+STACK TECNICO:
+- Next.js (App Router)
+- TypeScript
+- Tailwind CSS
+- Supabase (auth + database)
+- Stripe (pagamenti subscription + one-shot)
+- OpenAI API (AI generazione preventivi)
+- Puppeteer (generazione PDF da HTML)
+
+---
+
+# 🎯 OBIETTIVO DEL PRODOTTO
+
+L’utente inserisce una descrizione in linguaggio naturale del lavoro da preventivare.
+L’AI trasforma il testo in un preventivo strutturato (righe, quantità, prezzi, IVA, totale) e genera un PDF professionale.
+
+Il download del PDF è bloccato da paywall.
+
+---
+
+# 🧭 UX FLOW COMPLETO (SCHERMATA PER SCHERMATA)
+
+## 1. LANDING PAGE (pubblica)
+- Hero section:
+  “Crea preventivi professionali in 30 secondi con AI”
+- CTA: “Prova gratis”
+- Sezione demo con esempio di preventivo
+- Sezione benefici:
+  - risparmio tempo
+  - preventivi professionali
+  - niente Excel
+
+---
+
+## 2. LOGIN / SIGNUP
+- Email + Google login (Supabase Auth)
+
+---
+
+## 3. DASHBOARD (utente loggato)
+- Pulsante: “Nuovo preventivo”
+- Lista preventivi creati
+- Stato: bozza / pagato / non pagato
+- Limite piano visibile (es. 3/20 utilizzati)
+
+---
+
+## 4. CREAZIONE PREVENTIVO (CORE UX)
+UI tipo chat AI:
+
+Step 1:
+- “Descrivi il lavoro da preventivare”
+
+Esempio input:
+“Imbiancatura appartamento 120mq Milano, 7€/mq + IVA 22%”
+
+Step 2:
+AI risponde:
+- struttura preventivo
+- items generati automaticamente
+- quantità e prezzi stimati
+- totale
+
+Step 3:
+Preview del preventivo in tempo reale (HTML stile documento professionale)
+
+---
+
+## 5. PREVIEW DOCUMENTO
+Mostrare:
+- logo azienda
+- dati cliente
+- tabella servizi
+- subtotale
+- IVA
+- totale
+- note legali
+
+IMPORTANTE:
+- watermark se utente non ha pagato
+- design molto professionale tipo studio commerciale
+
+---
+
+## 6. PAYWALL (BLOCCO DOWNLOAD)
+
+Quando l’utente clicca “Scarica PDF”:
+
+Mostrare pricing:
+
+- 19€/mese → 20 preventivi, watermark incluso
+- 59€/mese → preventivi illimitati, NO watermark, PDF premium
+- 29€ one-shot → 1 preventivo con watermark
+- 39€ one-shot → 1 preventivo senza watermark
+
+Stripe checkout integrato.
+
+Dopo pagamento:
+- sbloccare download PDF
+- rimuovere watermark se premium
+
+---
+
+## 7. DOWNLOAD PDF
+- generazione PDF tramite Puppeteer da HTML
+- layout pulito e professionale
+- ottimizzato per stampa
+- salva su Supabase storage
+
+---
+
+# 🤖 LOGICA AI (FONDAMENTALE)
+
+Usare OpenAI API per trasformare input testuale in JSON strutturato.
+
+### Prompt interno AI (IMPORTANTISSIMO):
+
+Sei un assistente esperto di contabilità e preventivi italiani.
+
+Ricevi una descrizione libera di un lavoro.
+
+Devi restituire SOLO JSON valido con:
+
+- cliente (se presente)
+- descrizione lavori
+- lista righe preventivo:
+  - descrizione
+  - quantità
+  - unità (mq, ore, pezzi)
+  - prezzo unitario
+  - totale riga
+- subtotal
+- IVA %
+- totale finale
+
+Regole:
+- usa prezzi realistici per mercato italiano
+- se manca info, fai assunzioni plausibili
+- non scrivere testo fuori dal JSON
+
+---
+
+# 📄 TEMPLATE PDF PROFESSIONALE
+
+Deve essere:
+- stile studio commerciale moderno
+- intestazione con logo azienda
+- dati azienda in alto sinistra
+- dati cliente in alto destra
+- tabella centrale:
+  | Descrizione | Q.tà | Prezzo | Totale |
+- sezione finale:
+  - subtotale
+  - IVA
+  - totale grande evidenziato
+
+Footer:
+- dati legali
+- watermark se non pagato
+
+Stile:
+- bianco pulito
+- font sans-serif moderno
+- molto leggibile
+- simile a Stripe invoices o QuickBooks
+
+---
+
+# 💳 SISTEMA BUSINESS
+
+Regole:
+- utenti free NON possono scaricare PDF
+- solo preview
+- download sempre bloccato da Stripe
+
+Quota:
+- piano mensile controlla numero preventivi
+- blocca creazione se superato limite
+
+---
+
+# 🗄 DATABASE SUPABASE
+
+users:
+- id
+- email
+- plan
+- created_at
+
+quotes:
+- id
+- user_id
+- client_data
+- json_data
+- total
+- status
+- pdf_url
+
+business_profile:
+- user_id
+- company_name
+- vat_number
+- address
+- logo_url
+
+---
+
+# 🚀 STRATEGIA SEO (DA IMPLEMENTARE NEL SITO)
+
+Creare pagine SEO automatiche:
+
+- /preventivo-imbianchino
+- /preventivo-elettricista
+- /preventivo-ristrutturazione
+- /preventivo-idraulico
+- /preventivo-edilizia
+
+Ogni pagina contiene:
+- intro SEO testuale
+- esempio preventivo generato
+- CTA verso tool AI
+
+Keyword target:
+- “preventivo online gratis”
+- “preventivo professionale PDF”
+- “come fare un preventivo”
+
+Obiettivo:
+- traffico organico Google
+- utenti senza ads
+
+---
+
+# 🎯 OBIETTIVO FINALE
+
+Costruire una SaaS funzionante dove:
+
+1. utente entra
+2. descrive lavoro
+3. AI genera preventivo
+4. preview PDF
+5. paywall Stripe
+6. download PDF sbloccato
+7. sistema SaaS completo e scalabile
+
+Il progetto deve essere un MVP funzionante end-to-end pronto per produzione.
