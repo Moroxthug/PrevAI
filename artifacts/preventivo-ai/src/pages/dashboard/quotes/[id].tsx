@@ -66,25 +66,27 @@ export default function QuoteDetail() {
     });
   };
 
+  const openPdfWindow = (htmlContent: string) => {
+    const printWindow = window.open("", "_blank");
+    if (printWindow) {
+      printWindow.document.write(htmlContent);
+      printWindow.document.close();
+      setTimeout(() => { printWindow.print(); }, 500);
+    }
+  };
+
   const handleDownload = () => {
     if (!id || !quote) return;
-    if (quote.status !== "unlocked") {
-      setIsPaywallOpen(true);
-      return;
-    }
     generatePdf.mutate({ id }, {
-      onSuccess: (result) => {
-        const printWindow = window.open("", "_blank");
-        if (printWindow) {
-          printWindow.document.write(result.htmlContent);
-          printWindow.document.close();
-          setTimeout(() => { printWindow.print(); }, 500);
-        }
-      },
+      onSuccess: (result) => { openPdfWindow(result.htmlContent); },
       onError: () => {
         toast({ title: "Errore", description: "Impossibile generare il PDF", variant: "destructive" });
       }
     });
+  };
+
+  const handleUnlock = () => {
+    setIsPaywallOpen(true);
   };
 
   const handleCheckout = (planType: string) => {
@@ -128,10 +130,18 @@ export default function QuoteDetail() {
             </span>
           </div>
         </div>
-        <Button onClick={handleDownload} disabled={generatePdf.isPending} className="gap-2">
-          {generatePdf.isPending ? <Skeleton className="h-4 w-4 rounded-full" /> : <Download className="h-4 w-4" />}
-          {isLocked ? "Sblocca & Scarica PDF" : "Scarica / Stampa PDF"}
-        </Button>
+        <div className="flex gap-2">
+          <Button onClick={handleDownload} variant="outline" disabled={generatePdf.isPending} className="gap-2">
+            {generatePdf.isPending ? <Skeleton className="h-4 w-4 rounded-full" /> : <Download className="h-4 w-4" />}
+            {isLocked ? "Anteprima Bozza" : "Scarica / Stampa PDF"}
+          </Button>
+          {isLocked && (
+            <Button onClick={handleUnlock} className="gap-2">
+              <Lock className="h-4 w-4" />
+              Sblocca PDF Pulito
+            </Button>
+          )}
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -365,9 +375,15 @@ export default function QuoteDetail() {
               <CardTitle className="text-lg">Azioni Rapide</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
-              <Button onClick={handleDownload} className="w-full justify-start gap-2" variant={isLocked ? "default" : "secondary"}>
-                {isLocked ? <Lock className="h-4 w-4" /> : <Download className="h-4 w-4" />}
-                {isLocked ? "Sblocca PDF" : "Scarica PDF"}
+              {isLocked && (
+                <Button onClick={handleUnlock} className="w-full justify-start gap-2">
+                  <Lock className="h-4 w-4" />
+                  Sblocca PDF Pulito
+                </Button>
+              )}
+              <Button onClick={handleDownload} disabled={generatePdf.isPending} className="w-full justify-start gap-2" variant="outline">
+                <Download className="h-4 w-4" />
+                {isLocked ? "Anteprima Bozza" : "Scarica PDF"}
               </Button>
               <Button variant="outline" className="w-full justify-start gap-2" onClick={() => setIsEditingClient(true)}>
                 <Edit2 className="h-4 w-4" />

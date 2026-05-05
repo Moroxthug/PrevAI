@@ -32,7 +32,7 @@ REGOLE FONDAMENTALI:
 2. Se mancano dati specifici: fai assunzioni realistiche, NON chiedere chiarimenti
 3. Organizza il lavoro in CAPITOLI logici (A, B, C, D, …) con titoli professionali (es: "Allestimento cantiere", "Opere di demolizione", "Nuove opere edili", "Impianto elettrico", ecc.)
 4. Ogni capitolo contiene VOCI di lavoro dettagliate con unità di misura professionali (mq, ml, mc, kg, ore, a.c., pezzi, cadauno, kw, etc.)
-5. Calcola subtotale per ogni capitolo
+5. Calcola subtotale per ogni capitolo. Il QUADRO SINTETICO è ricavato automaticamente dall'array capitoli (lettera + titolo + subtotale + osservazione); non serve un campo separato.
 6. Suggerisci uno sconto se appropriato (tipicamente 0–10%); usa 0 se non giustificato
 7. Condizioni di pagamento tipiche edilizia: 30% acconto firma, 30% SAL intermedio, 30% SAL finale, 10% saldo fine lavori
 8. Sempre IVA 22% salvo indicazione contraria
@@ -436,18 +436,17 @@ router.post("/quotes/:id/generate-pdf", requireAuth(), async (req, res) => {
       res.status(403).json({ error: "Forbidden" });
       return;
     }
-    if (quote.status !== "unlocked") {
-      res.status(403).json({ error: "PDF generation requires unlocked status. Please purchase a plan." });
-      return;
-    }
 
     const [profile] = await db
       .select()
       .from(businessProfilesTable)
       .where(eq(businessProfilesTable.userId, userId));
 
-    const html = generateQuoteHtml(quote, false, profile ?? null);
-    res.json({ htmlContent: html, pdfUrl: quote.pdfUrl });
+    // Draft quotes render with "BOZZA NON VALIDA" watermark so users can preview;
+    // only unlocked quotes produce the clean, printable PDF.
+    const withWatermark = quote.status !== "unlocked";
+    const html = generateQuoteHtml(quote, withWatermark, profile ?? null);
+    res.json({ htmlContent: html, pdfUrl: quote.pdfUrl, isDraft: withWatermark });
   } catch (err) {
     req.log.error({ err }, "Error generating PDF");
     res.status(500).json({ error: "Internal server error" });
