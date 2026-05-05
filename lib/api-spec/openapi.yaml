@@ -251,6 +251,58 @@ components:
         - prezzoUnitario
         - totale
 
+    QuoteChapterItem:
+      type: object
+      properties:
+        descrizione:
+          type: string
+        um:
+          type: string
+        quantita:
+          type: number
+        prezzoUnitario:
+          type: number
+        totale:
+          type: number
+      required:
+        - descrizione
+        - um
+        - quantita
+        - prezzoUnitario
+        - totale
+
+    QuoteChapter:
+      type: object
+      properties:
+        lettera:
+          type: string
+        titolo:
+          type: string
+        voci:
+          type: array
+          items:
+            $ref: "#/components/schemas/QuoteChapterItem"
+        subtotale:
+          type: number
+        osservazione:
+          type: string
+      required:
+        - lettera
+        - titolo
+        - voci
+        - subtotale
+
+    QuoteDiscount:
+      type: object
+      properties:
+        percentuale:
+          type: number
+        importoScontato:
+          type: number
+      required:
+        - percentuale
+        - importoScontato
+
     QuoteClientData:
       type: object
       properties:
@@ -277,6 +329,26 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/QuoteItem"
+        capitoli:
+          type: array
+          items:
+            $ref: "#/components/schemas/QuoteChapter"
+        sconto:
+          $ref: "#/components/schemas/QuoteDiscount"
+          nullable: true
+        condizioniPagamento:
+          type: array
+          items:
+            type: string
+        titoloPreventivoRiga1:
+          type: string
+          nullable: true
+        titoloPreventivoRiga2:
+          type: string
+          nullable: true
+        numeroPreventivoData:
+          type: string
+          nullable: true
         subtotale:
           type: number
         ivaPercentuale:
@@ -305,6 +377,8 @@ components:
         - clientData
         - descrizioneGenerale
         - items
+        - capitoli
+        - condizioniPagamento
         - subtotale
         - ivaPercentuale
         - ivaValore
@@ -358,6 +432,17 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/QuoteItem"
+        capitoli:
+          type: array
+          items:
+            $ref: "#/components/schemas/QuoteChapter"
+        sconto:
+          $ref: "#/components/schemas/QuoteDiscount"
+          nullable: true
+        condizioniPagamento:
+          type: array
+          items:
+            type: string
         subtotale:
           type: number
         ivaPercentuale:

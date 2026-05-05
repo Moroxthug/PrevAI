@@ -17,6 +17,27 @@ export interface QuoteItem {
   totale: number;
 }
 
+export interface QuoteChapterItem {
+  descrizione: string;
+  um: string;
+  quantita: number;
+  prezzoUnitario: number;
+  totale: number;
+}
+
+export interface QuoteChapter {
+  lettera: string;
+  titolo: string;
+  voci: QuoteChapterItem[];
+  subtotale: number;
+  osservazione?: string;
+}
+
+export interface QuoteDiscount {
+  percentuale: number;
+  importoScontato: number;
+}
+
 export interface QuoteClientData {
   nome: string;
   indirizzo: string;
@@ -36,6 +57,12 @@ export interface Quote {
   clientData: QuoteClientData;
   descrizioneGenerale: string;
   items: QuoteItem[];
+  capitoli: QuoteChapter[];
+  sconto?: QuoteDiscount | null;
+  condizioniPagamento: string[];
+  titoloPreventivoRiga1?: string | null;
+  titoloPreventivoRiga2?: string | null;
+  numeroPreventivoData?: string | null;
   subtotale: number;
   ivaPercentuale: number;
   ivaValore: number;
@@ -74,6 +101,9 @@ export interface UpdateQuoteBody {
   clientData?: QuoteClientData;
   descrizioneGenerale?: string;
   items?: QuoteItem[];
+  capitoli?: QuoteChapter[];
+  sconto?: QuoteDiscount | null;
+  condizioniPagamento?: string[];
   subtotale?: number;
   ivaPercentuale?: number;
   ivaValore?: number;

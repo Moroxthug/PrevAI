@@ -22,8 +22,32 @@ export const quoteClientDataSchema = z.object({
   indirizzo: z.string(),
 });
 
+export const quoteChapterItemSchema = z.object({
+  descrizione: z.string(),
+  um: z.string(),
+  quantita: z.number(),
+  prezzoUnitario: z.number(),
+  totale: z.number(),
+});
+
+export const quoteChapterSchema = z.object({
+  lettera: z.string(),
+  titolo: z.string(),
+  voci: z.array(quoteChapterItemSchema),
+  subtotale: z.number(),
+  osservazione: z.string().optional(),
+});
+
+export const quoteDiscountSchema = z.object({
+  percentuale: z.number(),
+  importoScontato: z.number(),
+});
+
 export type QuoteItem = z.infer<typeof quoteItemSchema>;
 export type QuoteClientData = z.infer<typeof quoteClientDataSchema>;
+export type QuoteChapterItem = z.infer<typeof quoteChapterItemSchema>;
+export type QuoteChapter = z.infer<typeof quoteChapterSchema>;
+export type QuoteDiscount = z.infer<typeof quoteDiscountSchema>;
 
 export const quotesTable = pgTable("quotes", {
   id: uuid("id").defaultRandom().primaryKey(),
@@ -31,6 +55,12 @@ export const quotesTable = pgTable("quotes", {
   clientData: jsonb("client_data").$type<QuoteClientData>().notNull().default({ nome: "", indirizzo: "" }),
   descrizioneGenerale: text("descrizione_generale").notNull().default(""),
   items: jsonb("items").$type<QuoteItem[]>().notNull().default([]),
+  capitoli: jsonb("capitoli").$type<QuoteChapter[]>().default([]),
+  sconto: jsonb("sconto").$type<QuoteDiscount | null>(),
+  condizioniPagamento: text("condizioni_pagamento").array().default([]),
+  titoloPreventivoRiga1: text("titolo_preventivo_riga1").default("Analisi Economica e Computo Metrico Prezzato"),
+  titoloPreventivoRiga2: text("titolo_preventivo_riga2").default(""),
+  numeroPreventivoData: text("numero_preventivo_data").default(""),
   subtotale: numeric("subtotale", { precision: 10, scale: 2 }).notNull().default("0"),
   ivaPercentuale: numeric("iva_percentuale", { precision: 5, scale: 2 }).notNull().default("22"),
   ivaValore: numeric("iva_valore", { precision: 10, scale: 2 }).notNull().default("0"),

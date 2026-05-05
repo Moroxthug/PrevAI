@@ -34,6 +34,33 @@ export const ListQuotesResponseItem = zod.object({
       totale: zod.number(),
     }),
   ),
+  capitoli: zod.array(
+    zod.object({
+      lettera: zod.string(),
+      titolo: zod.string(),
+      voci: zod.array(
+        zod.object({
+          descrizione: zod.string(),
+          um: zod.string(),
+          quantita: zod.number(),
+          prezzoUnitario: zod.number(),
+          totale: zod.number(),
+        }),
+      ),
+      subtotale: zod.number(),
+      osservazione: zod.string().optional(),
+    }),
+  ),
+  sconto: zod
+    .object({
+      percentuale: zod.number(),
+      importoScontato: zod.number(),
+    })
+    .nullish(),
+  condizioniPagamento: zod.array(zod.string()),
+  titoloPreventivoRiga1: zod.string().nullish(),
+  titoloPreventivoRiga2: zod.string().nullish(),
+  numeroPreventivoData: zod.string().nullish(),
   subtotale: zod.number(),
   ivaPercentuale: zod.number(),
   ivaValore: zod.number(),
@@ -81,6 +108,33 @@ export const GetQuoteStatsResponse = zod.object({
           totale: zod.number(),
         }),
       ),
+      capitoli: zod.array(
+        zod.object({
+          lettera: zod.string(),
+          titolo: zod.string(),
+          voci: zod.array(
+            zod.object({
+              descrizione: zod.string(),
+              um: zod.string(),
+              quantita: zod.number(),
+              prezzoUnitario: zod.number(),
+              totale: zod.number(),
+            }),
+          ),
+          subtotale: zod.number(),
+          osservazione: zod.string().optional(),
+        }),
+      ),
+      sconto: zod
+        .object({
+          percentuale: zod.number(),
+          importoScontato: zod.number(),
+        })
+        .nullish(),
+      condizioniPagamento: zod.array(zod.string()),
+      titoloPreventivoRiga1: zod.string().nullish(),
+      titoloPreventivoRiga2: zod.string().nullish(),
+      numeroPreventivoData: zod.string().nullish(),
       subtotale: zod.number(),
       ivaPercentuale: zod.number(),
       ivaValore: zod.number(),
@@ -119,6 +173,33 @@ export const GetQuoteResponse = zod.object({
       totale: zod.number(),
     }),
   ),
+  capitoli: zod.array(
+    zod.object({
+      lettera: zod.string(),
+      titolo: zod.string(),
+      voci: zod.array(
+        zod.object({
+          descrizione: zod.string(),
+          um: zod.string(),
+          quantita: zod.number(),
+          prezzoUnitario: zod.number(),
+          totale: zod.number(),
+        }),
+      ),
+      subtotale: zod.number(),
+      osservazione: zod.string().optional(),
+    }),
+  ),
+  sconto: zod
+    .object({
+      percentuale: zod.number(),
+      importoScontato: zod.number(),
+    })
+    .nullish(),
+  condizioniPagamento: zod.array(zod.string()),
+  titoloPreventivoRiga1: zod.string().nullish(),
+  titoloPreventivoRiga2: zod.string().nullish(),
+  numeroPreventivoData: zod.string().nullish(),
   subtotale: zod.number(),
   ivaPercentuale: zod.number(),
   ivaValore: zod.number(),
@@ -157,6 +238,32 @@ export const UpdateQuoteBody = zod.object({
       }),
     )
     .optional(),
+  capitoli: zod
+    .array(
+      zod.object({
+        lettera: zod.string(),
+        titolo: zod.string(),
+        voci: zod.array(
+          zod.object({
+            descrizione: zod.string(),
+            um: zod.string(),
+            quantita: zod.number(),
+            prezzoUnitario: zod.number(),
+            totale: zod.number(),
+          }),
+        ),
+        subtotale: zod.number(),
+        osservazione: zod.string().optional(),
+      }),
+    )
+    .optional(),
+  sconto: zod
+    .object({
+      percentuale: zod.number(),
+      importoScontato: zod.number(),
+    })
+    .nullish(),
+  condizioniPagamento: zod.array(zod.string()).optional(),
   subtotale: zod.number().optional(),
   ivaPercentuale: zod.number().optional(),
   ivaValore: zod.number().optional(),
@@ -182,6 +289,33 @@ export const UpdateQuoteResponse = zod.object({
       totale: zod.number(),
     }),
   ),
+  capitoli: zod.array(
+    zod.object({
+      lettera: zod.string(),
+      titolo: zod.string(),
+      voci: zod.array(
+        zod.object({
+          descrizione: zod.string(),
+          um: zod.string(),
+          quantita: zod.number(),
+          prezzoUnitario: zod.number(),
+          totale: zod.number(),
+        }),
+      ),
+      subtotale: zod.number(),
+      osservazione: zod.string().optional(),
+    }),
+  ),
+  sconto: zod
+    .object({
+      percentuale: zod.number(),
+      importoScontato: zod.number(),
+    })
+    .nullish(),
+  condizioniPagamento: zod.array(zod.string()),
+  titoloPreventivoRiga1: zod.string().nullish(),
+  titoloPreventivoRiga2: zod.string().nullish(),
+  numeroPreventivoData: zod.string().nullish(),
   subtotale: zod.number(),
   ivaPercentuale: zod.number(),
   ivaValore: zod.number(),
