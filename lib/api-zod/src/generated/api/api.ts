@@ -23,6 +23,11 @@ export const ListQuotesResponseItem = zod.object({
   clientData: zod.object({
     nome: zod.string(),
     indirizzo: zod.string(),
+    codiceFiscale: zod.string().optional(),
+    partitaIva: zod.string().optional(),
+    citta: zod.string().optional(),
+    cap: zod.string().optional(),
+    provincia: zod.string().optional(),
   }),
   descrizioneGenerale: zod.string(),
   items: zod.array(
@@ -61,6 +66,16 @@ export const ListQuotesResponseItem = zod.object({
   titoloPreventivoRiga1: zod.string().nullish(),
   titoloPreventivoRiga2: zod.string().nullish(),
   numeroPreventivoData: zod.string().nullish(),
+  companySnapshot: zod
+    .object({
+      companyName: zod.string(),
+      vatNumber: zod.string().optional(),
+      address: zod.string().optional(),
+      phone: zod.string().optional(),
+      email: zod.string().optional(),
+      logoUrl: zod.string().optional(),
+    })
+    .nullish(),
   subtotale: zod.number(),
   ivaPercentuale: zod.number(),
   ivaValore: zod.number(),
@@ -79,6 +94,27 @@ export const ListQuotesResponse = zod.array(ListQuotesResponseItem);
  */
 export const CreateQuoteBody = zod.object({
   rawInput: zod.string(),
+  clientData: zod
+    .object({
+      nome: zod.string(),
+      indirizzo: zod.string(),
+      codiceFiscale: zod.string().optional(),
+      partitaIva: zod.string().optional(),
+      citta: zod.string().optional(),
+      cap: zod.string().optional(),
+      provincia: zod.string().optional(),
+    })
+    .optional(),
+  companySnapshot: zod
+    .object({
+      companyName: zod.string(),
+      vatNumber: zod.string().optional(),
+      address: zod.string().optional(),
+      phone: zod.string().optional(),
+      email: zod.string().optional(),
+      logoUrl: zod.string().optional(),
+    })
+    .optional(),
 });
 
 /**
@@ -97,6 +133,11 @@ export const GetQuoteStatsResponse = zod.object({
       clientData: zod.object({
         nome: zod.string(),
         indirizzo: zod.string(),
+        codiceFiscale: zod.string().optional(),
+        partitaIva: zod.string().optional(),
+        citta: zod.string().optional(),
+        cap: zod.string().optional(),
+        provincia: zod.string().optional(),
       }),
       descrizioneGenerale: zod.string(),
       items: zod.array(
@@ -135,6 +176,16 @@ export const GetQuoteStatsResponse = zod.object({
       titoloPreventivoRiga1: zod.string().nullish(),
       titoloPreventivoRiga2: zod.string().nullish(),
       numeroPreventivoData: zod.string().nullish(),
+      companySnapshot: zod
+        .object({
+          companyName: zod.string(),
+          vatNumber: zod.string().optional(),
+          address: zod.string().optional(),
+          phone: zod.string().optional(),
+          email: zod.string().optional(),
+          logoUrl: zod.string().optional(),
+        })
+        .nullish(),
       subtotale: zod.number(),
       ivaPercentuale: zod.number(),
       ivaValore: zod.number(),
@@ -162,6 +213,11 @@ export const GetQuoteResponse = zod.object({
   clientData: zod.object({
     nome: zod.string(),
     indirizzo: zod.string(),
+    codiceFiscale: zod.string().optional(),
+    partitaIva: zod.string().optional(),
+    citta: zod.string().optional(),
+    cap: zod.string().optional(),
+    provincia: zod.string().optional(),
   }),
   descrizioneGenerale: zod.string(),
   items: zod.array(
@@ -200,6 +256,16 @@ export const GetQuoteResponse = zod.object({
   titoloPreventivoRiga1: zod.string().nullish(),
   titoloPreventivoRiga2: zod.string().nullish(),
   numeroPreventivoData: zod.string().nullish(),
+  companySnapshot: zod
+    .object({
+      companyName: zod.string(),
+      vatNumber: zod.string().optional(),
+      address: zod.string().optional(),
+      phone: zod.string().optional(),
+      email: zod.string().optional(),
+      logoUrl: zod.string().optional(),
+    })
+    .nullish(),
   subtotale: zod.number(),
   ivaPercentuale: zod.number(),
   ivaValore: zod.number(),
@@ -224,6 +290,11 @@ export const UpdateQuoteBody = zod.object({
     .object({
       nome: zod.string(),
       indirizzo: zod.string(),
+      codiceFiscale: zod.string().optional(),
+      partitaIva: zod.string().optional(),
+      citta: zod.string().optional(),
+      cap: zod.string().optional(),
+      provincia: zod.string().optional(),
     })
     .optional(),
   descrizioneGenerale: zod.string().optional(),
@@ -278,6 +349,11 @@ export const UpdateQuoteResponse = zod.object({
   clientData: zod.object({
     nome: zod.string(),
     indirizzo: zod.string(),
+    codiceFiscale: zod.string().optional(),
+    partitaIva: zod.string().optional(),
+    citta: zod.string().optional(),
+    cap: zod.string().optional(),
+    provincia: zod.string().optional(),
   }),
   descrizioneGenerale: zod.string(),
   items: zod.array(
@@ -316,6 +392,16 @@ export const UpdateQuoteResponse = zod.object({
   titoloPreventivoRiga1: zod.string().nullish(),
   titoloPreventivoRiga2: zod.string().nullish(),
   numeroPreventivoData: zod.string().nullish(),
+  companySnapshot: zod
+    .object({
+      companyName: zod.string(),
+      vatNumber: zod.string().optional(),
+      address: zod.string().optional(),
+      phone: zod.string().optional(),
+      email: zod.string().optional(),
+      logoUrl: zod.string().optional(),
+    })
+    .nullish(),
   subtotale: zod.number(),
   ivaPercentuale: zod.number(),
   ivaValore: zod.number(),
@@ -345,6 +431,7 @@ export const GenerateQuotePdfParams = zod.object({
 export const GenerateQuotePdfResponse = zod.object({
   pdfUrl: zod.string().optional(),
   htmlContent: zod.string(),
+  isDraft: zod.boolean().optional(),
 });
 
 /**
@@ -380,6 +467,37 @@ export const UpdateBusinessProfileResponse = zod.object({
   logoUrl: zod.string().nullish(),
   phone: zod.string().nullish(),
   email: zod.string().nullish(),
+});
+
+/**
+ * Returns a presigned GCS URL for direct upload. The client sends JSON
+metadata here, then uploads the file directly to the returned URL.
+
+ * @summary Request a presigned URL for file upload
+ */
+export const RequestUploadUrlBody = zod.object({
+  name: zod.string(),
+  size: zod.number(),
+  contentType: zod.string(),
+});
+
+export const RequestUploadUrlResponse = zod.object({
+  uploadURL: zod.string(),
+  objectPath: zod.string(),
+  metadata: zod
+    .object({
+      name: zod.string(),
+      size: zod.number(),
+      contentType: zod.string(),
+    })
+    .optional(),
+});
+
+/**
+ * @summary Serve an object entity from PRIVATE_OBJECT_DIR
+ */
+export const GetStorageObjectParams = zod.object({
+  objectPath: zod.coerce.string(),
 });
 
 /**

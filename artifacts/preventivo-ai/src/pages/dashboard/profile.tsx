@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Save } from "lucide-react";
+import { Loader2, Save, Upload, X, ImageIcon } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useQueryClient } from "@tanstack/react-query";
 import { getGetBusinessProfileQueryKey } from "@workspace/api-client-react";
@@ -23,11 +23,20 @@ const profileSchema = z.object({
 
 type ProfileFormValues = z.infer<typeof profileSchema>;
 
+const ALLOWED_TYPES = ["image/svg+xml", "image/png", "image/jpeg", "image/jpg"];
+const MAX_SIZE_MB = 2;
+
 export default function ProfileSettings() {
   const { data: profile, isLoading } = useGetBusinessProfile();
   const updateProfile = useUpdateBusinessProfile();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+
+  const [isUploadingLogo, setIsUploadingLogo] = useState(false);
+  const [logoPreview, setLogoPreview] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const currentLogoUrl = logoPreview ?? profile?.logoUrl ?? null;
 
   const form = useForm<ProfileFormValues>({
     resolver: zodResolver(profileSchema),
@@ -52,6 +61,65 @@ export default function ProfileSettings() {
     });
   };
 
+  const handleLogoFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!ALLOWED_TYPES.includes(file.type)) {
+      toast({ title: "Formato non supportato", description: "Usa SVG, PNG o JPG", variant: "destructive" });
+      return;
+    }
+    if (file.size > MAX_SIZE_MB * 1024 * 1024) {
+      toast({ title: "File troppo grande", description: `Massimo ${MAX_SIZE_MB} MB`, variant: "destructive" });
+      return;
+    }
+
+    setIsUploadingLogo(true);
+    try {
+      // Step 1: request presigned upload URL
+      const urlRes = await fetch("/api/storage/uploads/request-url", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: file.name, size: file.size, contentType: file.type }),
+      });
+      if (!urlRes.ok) throw new Error("Impossibile ottenere URL di upload");
+      const { uploadURL, objectPath } = await urlRes.json() as { uploadURL: string; objectPath: string };
+
+      // Step 2: upload directly to GCS
+      const uploadRes = await fetch(uploadURL, {
+        method: "PUT",
+        headers: { "Content-Type": file.type },
+        body: file,
+      });
+      if (!uploadRes.ok) throw new Error("Upload fallito");
+
+      // Step 3: serving URL = /api/storage + objectPath
+      const servingUrl = `/api/storage${objectPath}`;
+
+      // Step 4: save to business profile
+      await updateProfile.mutateAsync({ data: { logoUrl: servingUrl } });
+      queryClient.invalidateQueries({ queryKey: getGetBusinessProfileQueryKey() });
+      setLogoPreview(servingUrl);
+      toast({ title: "Logo caricato con successo" });
+    } catch (err) {
+      toast({ title: "Errore caricamento logo", description: err instanceof Error ? err.message : "Errore sconosciuto", variant: "destructive" });
+    } finally {
+      setIsUploadingLogo(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
+
+  const handleRemoveLogo = async () => {
+    try {
+      await updateProfile.mutateAsync({ data: { logoUrl: "" } });
+      queryClient.invalidateQueries({ queryKey: getGetBusinessProfileQueryKey() });
+      setLogoPreview(null);
+      toast({ title: "Logo rimosso" });
+    } catch {
+      toast({ title: "Errore rimozione logo", variant: "destructive" });
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="max-w-2xl mx-auto space-y-6">
@@ -62,7 +130,7 @@ export default function ProfileSettings() {
         <Card>
           <CardHeader><Skeleton className="h-6 w-32" /></CardHeader>
           <CardContent className="space-y-4">
-            <Skeleton className="h-10 w-full" />
+            <Skeleton className="h-20 w-full" />
             <Skeleton className="h-10 w-full" />
             <Skeleton className="h-10 w-full" />
           </CardContent>
@@ -77,6 +145,73 @@ export default function ProfileSettings() {
         <h1 className="text-3xl font-bold tracking-tight text-foreground">Profilo Aziendale</h1>
         <p className="text-muted-foreground mt-1">Queste informazioni appariranno nell'intestazione dei tuoi preventivi.</p>
       </div>
+
+      {/* Logo Upload Card */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Logo Aziendale</CardTitle>
+          <CardDescription>Carica il tuo logo (SVG, PNG o JPG, max 2 MB). Apparirà in cima ai PDF dei preventivi.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center gap-6">
+            {/* Logo preview */}
+            <div className="w-32 h-20 border-2 border-dashed border-muted-foreground/30 rounded-lg flex items-center justify-center bg-muted/20 overflow-hidden shrink-0">
+              {currentLogoUrl ? (
+                <img
+                  src={currentLogoUrl}
+                  alt="Logo aziendale"
+                  className="max-h-full max-w-full object-contain p-1"
+                />
+              ) : (
+                <div className="flex flex-col items-center gap-1 text-muted-foreground">
+                  <ImageIcon className="h-6 w-6" />
+                  <span className="text-xs">Nessun logo</span>
+                </div>
+              )}
+            </div>
+
+            {/* Upload controls */}
+            <div className="space-y-2">
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".svg,.png,.jpg,.jpeg"
+                className="hidden"
+                onChange={handleLogoFileChange}
+                disabled={isUploadingLogo}
+              />
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={isUploadingLogo}
+                className="gap-2"
+              >
+                {isUploadingLogo ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Upload className="h-4 w-4" />
+                )}
+                {isUploadingLogo ? "Caricamento..." : "Carica logo"}
+              </Button>
+              {currentLogoUrl && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleRemoveLogo}
+                  className="gap-2 text-destructive hover:text-destructive"
+                >
+                  <X className="h-4 w-4" />
+                  Rimuovi
+                </Button>
+              )}
+              <p className="text-xs text-muted-foreground">Formati: SVG, PNG, JPG • Max 2 MB</p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)}>

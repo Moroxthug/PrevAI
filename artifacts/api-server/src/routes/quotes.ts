@@ -12,7 +12,7 @@ import {
   GenerateQuotePdfParams,
 } from "@workspace/api-zod";
 import { openai } from "@workspace/integrations-openai-ai-server";
-import type { QuoteChapter, QuoteDiscount } from "@workspace/db";
+import type { QuoteChapter, QuoteDiscount, QuoteCompanySnapshot, QuoteClientData } from "@workspace/db";
 import { logger } from "../lib/logger.js";
 
 const router = Router();
@@ -106,6 +106,7 @@ function serializeQuote(q: QuoteRow) {
     titoloPreventivoRiga1: q.titoloPreventivoRiga1 ?? null,
     titoloPreventivoRiga2: q.titoloPreventivoRiga2 ?? null,
     numeroPreventivoData: q.numeroPreventivoData ?? null,
+    companySnapshot: (q.companySnapshot as QuoteCompanySnapshot | null) ?? null,
     subtotale: Number(q.subtotale),
     ivaPercentuale: Number(q.ivaPercentuale),
     ivaValore: Number(q.ivaValore),
@@ -191,14 +192,49 @@ router.post("/quotes", requireAuth(), async (req, res) => {
       return;
     }
 
-    const { rawInput } = parsed.data;
+    const { rawInput, clientData: clientDataInput, companySnapshot: companySnapshotInput } = parsed.data;
+
+    // Build user message: inject client data as context so AI doesn't invent it
+    let userMessage = rawInput;
+    if (clientDataInput?.nome) {
+      userMessage = `Dati committente (NON generare di nuovo, usa questi valori esatti):
+- Nome/Ragione Sociale: ${clientDataInput.nome}
+- Indirizzo: ${clientDataInput.indirizzo || ""}${clientDataInput.codiceFiscale ? `\n- Codice Fiscale: ${clientDataInput.codiceFiscale}` : ""}${clientDataInput.citta ? `\n- Comune: ${clientDataInput.citta}` : ""}${clientDataInput.cap ? ` CAP: ${clientDataInput.cap}` : ""}${clientDataInput.provincia ? ` (${clientDataInput.provincia})` : ""}
+
+Descrizione lavori: ${rawInput}`;
+    }
+
+    // Fetch business profile for companySnapshot if not provided
+    const [fetchedProfile] = companySnapshotInput
+      ? []
+      : await db.select().from(businessProfilesTable).where(eq(businessProfilesTable.userId, userId));
+
+    const resolvedSnapshot: QuoteCompanySnapshot | null = companySnapshotInput
+      ? {
+          companyName: companySnapshotInput.companyName,
+          vatNumber: companySnapshotInput.vatNumber ?? undefined,
+          address: companySnapshotInput.address ?? undefined,
+          phone: companySnapshotInput.phone ?? undefined,
+          email: companySnapshotInput.email ?? undefined,
+          logoUrl: companySnapshotInput.logoUrl ?? undefined,
+        }
+      : fetchedProfile
+        ? {
+            companyName: fetchedProfile.companyName,
+            vatNumber: fetchedProfile.vatNumber ?? undefined,
+            address: fetchedProfile.address ?? undefined,
+            phone: fetchedProfile.phone ?? undefined,
+            email: fetchedProfile.email ?? undefined,
+            logoUrl: fetchedProfile.logoUrl ?? undefined,
+          }
+        : null;
 
     const completion = await openai.chat.completions.create({
       model: "gpt-4o-mini",
       max_completion_tokens: 8192,
       messages: [
         { role: "system", content: AI_PROMPT },
-        { role: "user", content: rawInput },
+        { role: "user", content: userMessage },
       ],
     });
 
@@ -275,15 +311,29 @@ router.post("/quotes", requireAuth(), async (req, res) => {
     const ivaValore = Number(aiData.iva_valore ?? 0);
     const totale = Number(aiData.totale ?? 0);
 
+    // Prefer structured clientData from request, fall back to AI-generated
+    const resolvedClientData: QuoteClientData = clientDataInput?.nome
+      ? {
+          nome: clientDataInput.nome,
+          indirizzo: clientDataInput.indirizzo || aiData.cliente?.indirizzo || "",
+          codiceFiscale: clientDataInput.codiceFiscale,
+          partitaIva: clientDataInput.partitaIva,
+          citta: clientDataInput.citta,
+          cap: clientDataInput.cap,
+          provincia: clientDataInput.provincia,
+        }
+      : {
+          nome: aiData.cliente?.nome ?? "",
+          indirizzo: aiData.cliente?.indirizzo ?? "",
+        };
+
     const [quote] = await db
       .insert(quotesTable)
       .values({
         userId,
         rawInput,
-        clientData: {
-          nome: aiData.cliente?.nome ?? "",
-          indirizzo: aiData.cliente?.indirizzo ?? "",
-        },
+        clientData: resolvedClientData,
+        companySnapshot: resolvedSnapshot,
         descrizioneGenerale: aiData.descrizione_generale ?? "",
         items: [],
         capitoli,
@@ -467,7 +517,7 @@ function generateQuoteHtml(
   withWatermark: boolean,
   profile: ProfileRow
 ): string {
-  const clientData = quote.clientData ?? { nome: "", indirizzo: "" };
+  const clientData = (quote.clientData ?? { nome: "", indirizzo: "" }) as QuoteClientData;
   const capitoli: QuoteChapter[] = Array.isArray(quote.capitoli) && quote.capitoli.length > 0
     ? quote.capitoli as QuoteChapter[]
     : [];
@@ -486,18 +536,27 @@ function generateQuoteHtml(
   const ivaValore = Number(quote.ivaValore);
   const totale = Number(quote.totale);
 
-  const logoHtml = profile?.logoUrl
-    ? `<img src="${profile.logoUrl}" alt="Logo" style="max-height:60px;max-width:180px;object-fit:contain;" />`
+  // Use company snapshot saved at quote creation time, fall back to live profile
+  const snap = (quote.companySnapshot as QuoteCompanySnapshot | null) ?? null;
+  const companyName = snap?.companyName || profile?.companyName || "";
+  const companyVat = snap?.vatNumber || profile?.vatNumber || "";
+  const companyAddress = snap?.address || profile?.address || "";
+  const companyPhone = snap?.phone || profile?.phone || "";
+  const companyEmail = snap?.email || profile?.email || "";
+  const companyLogoUrl = snap?.logoUrl || profile?.logoUrl || "";
+
+  const logoHtml = companyLogoUrl
+    ? `<img src="${companyLogoUrl}" alt="Logo" style="max-height:60px;max-width:180px;object-fit:contain;" />`
     : "";
 
   const companyHtml = `
     <div class="company-block">
       ${logoHtml}
-      <div class="company-name">${profile?.companyName || ""}</div>
-      ${profile?.vatNumber ? `<div class="company-detail">P.IVA / C.F.: ${profile.vatNumber}</div>` : ""}
-      ${profile?.address ? `<div class="company-detail">${profile.address}</div>` : ""}
-      ${profile?.phone ? `<div class="company-detail">Tel: ${profile.phone}</div>` : ""}
-      ${profile?.email ? `<div class="company-detail">${profile.email}</div>` : ""}
+      <div class="company-name">${companyName}</div>
+      ${companyVat ? `<div class="company-detail">P.IVA / C.F.: ${companyVat}</div>` : ""}
+      ${companyAddress ? `<div class="company-detail">${companyAddress}</div>` : ""}
+      ${companyPhone ? `<div class="company-detail">Tel: ${companyPhone}</div>` : ""}
+      ${companyEmail ? `<div class="company-detail">${companyEmail}</div>` : ""}
     </div>`;
 
   const quadroSinteticoHtml = hasCapitoli
@@ -616,25 +675,28 @@ function generateQuoteHtml(
       </div>`
     : "";
 
+  const filledOrBlank = (val: string | undefined, cls: string) =>
+    val ? `<span class="prefilled">${val}</span>` : `<span class="${cls}"></span>`;
+
   const acceptanceHtml = `
     <div class="acceptance">
       <div class="acceptance-title">DICHIARAZIONE DI ACCETTAZIONE ${numeroData}</div>
       <div class="acceptance-subtitle">PERSONA FISICA/GIURIDICA</div>
       <table class="accept-table">
         <tr>
-          <td>Il sottoscritto <span class="blank-line"></span></td>
+          <td>Il sottoscritto ${filledOrBlank(clientData.nome, "blank-line")}</td>
         </tr>
         <tr>
-          <td>Nato a <span class="blank-line-short"></span> il <span class="blank-line-short"></span></td>
+          <td>Codice Fiscale ${filledOrBlank(clientData.codiceFiscale, "blank-line")}
+              &nbsp;&nbsp; P.IVA ${filledOrBlank(clientData.partitaIva, "blank-line-short")}</td>
         </tr>
         <tr>
-          <td>Codice Fiscale <span class="blank-line"></span></td>
+          <td>Residente in Via / P.za ${filledOrBlank(clientData.indirizzo, "blank-line")}</td>
         </tr>
         <tr>
-          <td>Residente in Via <span class="blank-line"></span> Comune <span class="blank-line"></span></td>
-        </tr>
-        <tr>
-          <td>CAP <span class="blank-line-xs"></span> Provincia <span class="blank-line-xs"></span></td>
+          <td>Comune ${filledOrBlank(clientData.citta, "blank-line-short")}
+              &nbsp; CAP ${filledOrBlank(clientData.cap, "blank-line-xs")}
+              &nbsp; Provincia ${filledOrBlank(clientData.provincia, "blank-line-xs")}</td>
         </tr>
       </table>
       <p class="dichiara">DICHIARA</p>
@@ -824,6 +886,11 @@ function generateQuoteHtml(
       border-bottom: 1px dotted #666;
       margin-left: 4px;
       vertical-align: bottom;
+    }
+    .prefilled {
+      font-weight: 600;
+      color: #1a1a2e;
+      margin-left: 4px;
     }
     .dichiara { font-size: 9pt; font-weight: 700; text-transform: uppercase; margin: 10px 0 4px; }
     .dichiara-text { font-size: 8.5pt; color: #333; margin-bottom: 6px; }

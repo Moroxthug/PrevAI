@@ -41,6 +41,20 @@ export interface QuoteDiscount {
 export interface QuoteClientData {
   nome: string;
   indirizzo: string;
+  codiceFiscale?: string;
+  partitaIva?: string;
+  citta?: string;
+  cap?: string;
+  provincia?: string;
+}
+
+export interface QuoteCompanySnapshot {
+  companyName: string;
+  vatNumber?: string;
+  address?: string;
+  phone?: string;
+  email?: string;
+  logoUrl?: string;
 }
 
 export type QuoteStatus = (typeof QuoteStatus)[keyof typeof QuoteStatus];
@@ -63,6 +77,7 @@ export interface Quote {
   titoloPreventivoRiga1?: string | null;
   titoloPreventivoRiga2?: string | null;
   numeroPreventivoData?: string | null;
+  companySnapshot?: QuoteCompanySnapshot | null;
   subtotale: number;
   ivaPercentuale: number;
   ivaValore: number;
@@ -86,6 +101,8 @@ export interface QuoteStats {
 
 export interface CreateQuoteBody {
   rawInput: string;
+  clientData?: QuoteClientData;
+  companySnapshot?: QuoteCompanySnapshot;
 }
 
 export type UpdateQuoteBodyStatus =
@@ -115,6 +132,7 @@ export interface UpdateQuoteBody {
 export interface PdfResult {
   pdfUrl?: string;
   htmlContent: string;
+  isDraft?: boolean;
 }
 
 export interface BusinessProfile {
@@ -165,4 +183,16 @@ export interface Plan {
   features: string[];
   hasWatermark: boolean;
   quotaPerMonth?: number | null;
+}
+
+export interface UploadUrlRequest {
+  name: string;
+  size: number;
+  contentType: string;
+}
+
+export interface UploadUrlResponse {
+  uploadURL: string;
+  objectPath: string;
+  metadata?: UploadUrlRequest;
 }

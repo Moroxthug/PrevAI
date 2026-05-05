@@ -15,6 +15,8 @@ tags:
     description: Business profile management
   - name: payments
     description: Stripe payment operations
+  - name: storage
+    description: Object storage upload and serving endpoints
 paths:
   /healthz:
     get:
@@ -178,6 +180,48 @@ paths:
               schema:
                 $ref: "#/components/schemas/BusinessProfile"
 
+  /storage/uploads/request-url:
+    post:
+      operationId: requestUploadUrl
+      tags: [storage]
+      summary: Request a presigned URL for file upload
+      description: |
+        Returns a presigned GCS URL for direct upload. The client sends JSON
+        metadata here, then uploads the file directly to the returned URL.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UploadUrlRequest"
+      responses:
+        "200":
+          description: Presigned upload URL generated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UploadUrlResponse"
+
+  /storage/objects/{objectPath}:
+    get:
+      operationId: getStorageObject
+      tags: [storage]
+      summary: Serve an object entity from PRIVATE_OBJECT_DIR
+      parameters:
+        - name: objectPath
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Object content
+          content:
+            "*/*":
+              schema:
+                type: string
+                format: binary
+
   /payments/checkout:
     post:
       operationId: createCheckoutSession
@@ -310,9 +354,37 @@ components:
           type: string
         indirizzo:
           type: string
+        codiceFiscale:
+          type: string
+        partitaIva:
+          type: string
+        citta:
+          type: string
+        cap:
+          type: string
+        provincia:
+          type: string
       required:
         - nome
         - indirizzo
+
+    QuoteCompanySnapshot:
+      type: object
+      properties:
+        companyName:
+          type: string
+        vatNumber:
+          type: string
+        address:
+          type: string
+        phone:
+          type: string
+        email:
+          type: string
+        logoUrl:
+          type: string
+      required:
+        - companyName
 
     Quote:
       type: object
@@ -348,6 +420,9 @@ components:
           nullable: true
         numeroPreventivoData:
           type: string
+          nullable: true
+        companySnapshot:
+          $ref: "#/components/schemas/QuoteCompanySnapshot"
           nullable: true
         subtotale:
           type: number
@@ -418,6 +493,10 @@ components:
       properties:
         rawInput:
           type: string
+        clientData:
+          $ref: "#/components/schemas/QuoteClientData"
+        companySnapshot:
+          $ref: "#/components/schemas/QuoteCompanySnapshot"
       required:
         - rawInput
 
@@ -464,6 +543,8 @@ components:
           type: string
         htmlContent:
           type: string
+        isDraft:
+          type: boolean
       required:
         - htmlContent
 
@@ -559,3 +640,30 @@ components:
         - currency
         - features
         - hasWatermark
+
+    UploadUrlRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        size:
+          type: integer
+        contentType:
+          type: string
+      required:
+        - name
+        - size
+        - contentType
+
+    UploadUrlResponse:
+      type: object
+      properties:
+        uploadURL:
+          type: string
+        objectPath:
+          type: string
+        metadata:
+          $ref: "#/components/schemas/UploadUrlRequest"
+      required:
+        - uploadURL
+        - objectPath

@@ -20,6 +20,11 @@ export const quoteItemSchema = z.object({
 export const quoteClientDataSchema = z.object({
   nome: z.string(),
   indirizzo: z.string(),
+  codiceFiscale: z.string().optional(),
+  partitaIva: z.string().optional(),
+  citta: z.string().optional(),
+  cap: z.string().optional(),
+  provincia: z.string().optional(),
 });
 
 export const quoteChapterItemSchema = z.object({
@@ -43,11 +48,21 @@ export const quoteDiscountSchema = z.object({
   importoScontato: z.number(),
 });
 
+export const quoteCompanySnapshotSchema = z.object({
+  companyName: z.string(),
+  vatNumber: z.string().optional(),
+  address: z.string().optional(),
+  phone: z.string().optional(),
+  email: z.string().optional(),
+  logoUrl: z.string().optional(),
+});
+
 export type QuoteItem = z.infer<typeof quoteItemSchema>;
 export type QuoteClientData = z.infer<typeof quoteClientDataSchema>;
 export type QuoteChapterItem = z.infer<typeof quoteChapterItemSchema>;
 export type QuoteChapter = z.infer<typeof quoteChapterSchema>;
 export type QuoteDiscount = z.infer<typeof quoteDiscountSchema>;
+export type QuoteCompanySnapshot = z.infer<typeof quoteCompanySnapshotSchema>;
 
 export const quotesTable = pgTable("quotes", {
   id: uuid("id").defaultRandom().primaryKey(),
@@ -61,6 +76,7 @@ export const quotesTable = pgTable("quotes", {
   titoloPreventivoRiga1: text("titolo_preventivo_riga1").default("Analisi Economica e Computo Metrico Prezzato"),
   titoloPreventivoRiga2: text("titolo_preventivo_riga2").default(""),
   numeroPreventivoData: text("numero_preventivo_data").default(""),
+  companySnapshot: jsonb("company_snapshot").$type<QuoteCompanySnapshot | null>(),
   subtotale: numeric("subtotale", { precision: 10, scale: 2 }).notNull().default("0"),
   ivaPercentuale: numeric("iva_percentuale", { precision: 5, scale: 2 }).notNull().default("22"),
   ivaValore: numeric("iva_valore", { precision: 10, scale: 2 }).notNull().default("0"),
