@@ -154,7 +154,7 @@ router.post("/quotes", requireAuth(), async (req, res) => {
     const { rawInput } = parsed.data;
 
     const completion = await openai.chat.completions.create({
-      model: "gpt-5-mini",
+      model: "gpt-4o-mini",
       max_completion_tokens: 4096,
       messages: [
         { role: "system", content: AI_PROMPT },
@@ -181,7 +181,9 @@ router.post("/quotes", requireAuth(), async (req, res) => {
     };
 
     try {
-      aiData = JSON.parse(content);
+      // Strip markdown code fences if present (e.g. ```json ... ```)
+      const cleaned = content.trim().replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "");
+      aiData = JSON.parse(cleaned);
     } catch {
       req.log.error({ content }, "Failed to parse AI JSON");
       res.status(500).json({ error: "AI returned invalid JSON" });

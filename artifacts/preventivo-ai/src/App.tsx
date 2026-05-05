@@ -33,7 +33,7 @@ function Router() {
       <Route path="/dashboard/quotes/:id" component={() => <DashboardLayout><QuoteDetail /></DashboardLayout>} />
       <Route path="/dashboard/profile" component={() => <DashboardLayout><ProfileSettings /></DashboardLayout>} />
       
-      <Route path="/seo/preventivo-:type" component={() => <PublicLayout><SeoLanding /></PublicLayout>} />
+      <Route path="/seo/:type" component={() => <PublicLayout><SeoLanding /></PublicLayout>} />
       
       <Route component={NotFound} />
     </Switch>

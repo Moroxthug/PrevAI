@@ -4,10 +4,9 @@ import { ArrowRight, CheckCircle2 } from "lucide-react";
 
 export default function SeoLanding() {
   const params = useParams();
-  const type = params.type || "professionista";
-  
+  const rawType = (params as { type?: string }).type || "professionista";
   // Capitalize first letter
-  const formattedType = type.charAt(0).toUpperCase() + type.slice(1);
+  const formattedType = rawType.charAt(0).toUpperCase() + rawType.slice(1);
   
   return (
     <div className="flex flex-col min-h-screen">

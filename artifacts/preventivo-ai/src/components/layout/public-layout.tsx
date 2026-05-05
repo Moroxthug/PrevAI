@@ -53,10 +53,10 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
             <div>
               <h4 className="font-semibold mb-4 text-sm uppercase tracking-wider text-foreground">Professioni</h4>
               <ul className="space-y-2 text-sm text-muted-foreground">
-                <li><Link href="/seo/preventivo-imbianchino" className="hover:text-primary transition-colors">Imbianchino</Link></li>
-                <li><Link href="/seo/preventivo-elettricista" className="hover:text-primary transition-colors">Elettricista</Link></li>
-                <li><Link href="/seo/preventivo-idraulico" className="hover:text-primary transition-colors">Idraulico</Link></li>
-                <li><Link href="/seo/preventivo-edilizia" className="hover:text-primary transition-colors">Edilizia</Link></li>
+                <li><Link href="/seo/imbianchino" className="hover:text-primary transition-colors">Imbianchino</Link></li>
+                <li><Link href="/seo/elettricista" className="hover:text-primary transition-colors">Elettricista</Link></li>
+                <li><Link href="/seo/idraulico" className="hover:text-primary transition-colors">Idraulico</Link></li>
+                <li><Link href="/seo/edilizia" className="hover:text-primary transition-colors">Edilizia</Link></li>
               </ul>
             </div>
             <div>
