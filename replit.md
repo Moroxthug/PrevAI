@@ -1,6 +1,6 @@
 # PreventivoAI
 
-A SaaS web app for Italian freelancers/craftsmen to describe a job in natural language, get an AI-generated professional quote (preventivo), preview it with watermark, and unlock PDF download via Stripe payment.
+A SaaS web app for Italian freelancers/craftsmen to describe a job in natural language, get an AI-generated professional quote (preventivo), preview it clean (no watermark), and unlock PDF download via Stripe payment.
 
 ## Run & Operate
 
@@ -36,11 +36,9 @@ A SaaS web app for Italian freelancers/craftsmen to describe a job in natural la
 - `lib/api-zod/src/generated/` — generated Zod schemas (do not edit)
 - `lib/db/src/schema/` — Drizzle DB schema (quotes, business-profiles)
 - `artifacts/api-server/src/routes/` — Express route handlers
-- `artifacts/api-server/src/lib/objectStorage.ts` — GCS presigned URL helper
-- `artifacts/api-server/src/lib/objectAcl.ts` — ACL / serving helper
-- `artifacts/api-server/src/routes/storage.ts` — `/api/storage` router
-- `artifacts/preventivo-ai/src/pages/` — React pages (home, dashboard/*, sign-in, sign-up, seo/*)
-- `artifacts/preventivo-ai/src/components/layout/` — PublicLayout, DashboardLayout
+- `artifacts/preventivo-ai/src/pages/` — React pages (home, dashboard/*, sign-in, sign-up, seo/*, onboarding)
+- `artifacts/preventivo-ai/src/components/layout/` — PublicLayout, DashboardLayout (collapsible sidebar)
+- `artifacts/preventivo-ai/src/pages/dashboard/settings.tsx` — unified Impostazioni page (Account + Piano tabs)
 
 ## Architecture decisions
 
@@ -50,26 +48,26 @@ A SaaS web app for Italian freelancers/craftsmen to describe a job in natural la
 - AI prompt returns structured JSON only; server parses it and maps to DB schema
 - PDF generation returns HTML string; browser opens it in a new window and triggers `window.print()`
 - Plans are defined statically in `payments.ts` (no DB table needed)
-- Logo upload uses a two-step presigned URL flow: client requests URL → PUTs file directly to GCS → saves serving URL `/api/storage/objects/...` in business_profiles
-- `companySnapshot` is captured at quote creation time (snapshot of profile at that moment), so PDF always reflects the correct company data even if the profile later changes
-- Subscription state stored in `business_profiles` (`subscriptionPlan`, `subscriptionStatus`, `stripeCustomerId`); set by webhook on `checkout.session.completed` (mode=subscription); cleared on `customer.subscription.deleted`
-- Quote auto-unlock: on quote detail load, if `subscriptionStatus === "active"`, frontend calls `POST /api/payments/unlock-quote` which unlocks without payment; saves `unlockedWithPlan` on the quote
-- PDF watermark is plan-aware: `monthly_starter` and `oneshot_watermark` keep watermark + PrevAI logo (inline SVG) even when unlocked; `monthly_pro` and `oneshot_clean` get user logo + no watermark
-- Quote editing locked after first PDF download (`pdfDownloadedAt` timestamp column); `POST /api/quotes/:id/regenerate` re-runs AI on an existing quote (blocked after download too)
-- Upgrade flow: `POST /api/payments/portal` creates a Stripe Customer Portal session for Starter→Pro upgrade; Stripe handles proration
-- Email notification: on subscription activation, webhook calls Resend API (`artifacts/api-server/src/lib/email.ts`) to send welcome+receipt HTML email from `no-reply@prevai.it`; silently skips if `RESEND_API_KEY` is unset
-- Logo upload hidden for Starter users (profile page shows upgrade CTA instead)
+- `companySnapshot` is captured at quote creation time; PDF always reflects data at creation time
+- Subscription state stored in `business_profiles`; set by webhook on `checkout.session.completed`
+- Quote auto-unlock: on quote detail load, if `subscriptionStatus === "active"`, frontend calls `POST /api/payments/unlock-quote`
+- PDF watermark is plan-aware (backend logic unchanged); frontend always shows clean preview — paywall only triggers on download
+- Quote editing locked after first PDF download (`pdfDownloadedAt`); regenerate also blocked after download
+- Onboarding guard (`OnboardingGuard` in App.tsx): if user has no `companyName` on first login, redirected to `/onboarding`
+- Sidebar collapsed state persisted in `localStorage` key `sidebar-collapsed`
 
 ## Product
 
 - Landing page with hero, benefits, demo quote preview, pricing plans
 - Auth via Clerk (sign-in/sign-up pages)
-- Dashboard: stats overview, recent quotes, create/list/view quotes
-- AI quote generation: 3-section form (company preview, client data, work description) → OpenAI generates structured JSON → saved as draft
-- Quote creation captures clientData (nome, indirizzo, CF, P.IVA, citta, CAP, provincia) and companySnapshot at time of creation
-- Quote detail: rendered invoice-style preview with watermark if locked, inline client editing
+- **Onboarding**: `/onboarding` — collects company name, logo, P.IVA, address, phone, email before first quote
+- **Collapsible sidebar**: Dashboard / Preventivi / Analytics / Impostazioni / Account Aziendale
+- Dashboard: stats overview, recent quotes
+- **New quote page**: ChatGPT-style large textarea, photo upload inline, example chips, collapsible client data panel
+- Quote detail: always-clean preview (no watermark, company logo), all sections editable (capitoli, client data, condizioni), paywall only on "Scarica PDF" click
 - Paywall modal: 4 pricing plans (2 monthly subscriptions, 2 one-shot), Stripe checkout
-- Business profile settings: company name, VAT, address, phone, email, logo upload (SVG/PNG/JPG via Object Storage)
+- **Unified settings page** `/dashboard/settings`: tabs "Account Aziendale" (profile + logo) and "Piano & Fatturazione" (billing)
+- Analytics placeholder at `/dashboard/analytics`
 - SEO landing pages for: imbianchino, elettricista, idraulico, ristrutturazione, edilizia
 
 ## User preferences
@@ -84,6 +82,7 @@ A SaaS web app for Italian freelancers/craftsmen to describe a job in natural la
 - Clerk proxy middleware (`clerkProxyMiddleware`) skips in development, only active in production
 - Do NOT run `pnpm dev` at workspace root — use workflow restart instead
 - Object Storage serving URL format: `/api/storage/objects/<uuid>` (objectPath from presigned URL response)
+- Legacy routes `/dashboard/profile` and `/dashboard/billing` still accessible but not in sidebar; use `/dashboard/settings` instead
 
 ## Pointers
 

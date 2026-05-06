@@ -114,6 +114,14 @@ export default function QuoteDetail() {
   const [editScontoPerc, setEditScontoPerc] = useState(0);
   const [editIvaPerc, setEditIvaPerc] = useState(22);
   const [editCapitoli, setEditCapitoli] = useState<EditCapitolo[]>([]);
+  const [editCondizioniPagamento, setEditCondizioniPagamento] = useState<string[]>([]);
+  const [editClientNome, setEditClientNome] = useState("");
+  const [editClientIndirizzo, setEditClientIndirizzo] = useState("");
+  const [editClientCitta, setEditClientCitta] = useState("");
+  const [editClientCap, setEditClientCap] = useState("");
+  const [editClientProvincia, setEditClientProvincia] = useState("");
+  const [editClientCF, setEditClientCF] = useState("");
+  const [editClientPIVA, setEditClientPIVA] = useState("");
 
   const initializedForId = useRef<string | null>(null);
 
@@ -228,6 +236,16 @@ export default function QuoteDetail() {
         })),
       }))
     );
+    setEditCondizioniPagamento(
+      Array.isArray(quote.condizioniPagamento) ? [...quote.condizioniPagamento] : []
+    );
+    setEditClientNome(quote.clientData?.nome || "");
+    setEditClientIndirizzo(quote.clientData?.indirizzo || "");
+    setEditClientCitta(quote.clientData?.citta || "");
+    setEditClientCap(quote.clientData?.cap || "");
+    setEditClientProvincia(quote.clientData?.provincia || "");
+    setEditClientCF(quote.clientData?.codiceFiscale || "");
+    setEditClientPIVA(quote.clientData?.partitaIva || "");
     setIsEditMode(true);
   };
 
@@ -255,6 +273,16 @@ export default function QuoteDetail() {
       ? { percentuale: editScontoPerc, importoScontato: imponibile }
       : null;
 
+    const updatedClientData = {
+      nome: editClientNome.trim() || (quote?.clientData?.nome ?? ""),
+      indirizzo: editClientIndirizzo.trim() || (quote?.clientData?.indirizzo ?? ""),
+      ...(editClientCitta.trim() && { citta: editClientCitta.trim() }),
+      ...(editClientCap.trim() && { cap: editClientCap.trim() }),
+      ...(editClientProvincia.trim() && { provincia: editClientProvincia.trim() }),
+      ...(editClientCF.trim() && { codiceFiscale: editClientCF.trim() }),
+      ...(editClientPIVA.trim() && { partitaIva: editClientPIVA.trim() }),
+    };
+
     updateQuote.mutate({
       id,
       data: {
@@ -267,6 +295,8 @@ export default function QuoteDetail() {
         ivaPercentuale: editIvaPerc,
         ivaValore,
         totale,
+        condizioniPagamento: editCondizioniPagamento,
+        clientData: updatedClientData,
       }
     }, {
       onSuccess: (updatedQuote) => {
@@ -350,9 +380,7 @@ export default function QuoteDetail() {
   const companyAddress = quote.companySnapshot?.address || profile?.address;
   const companyPhone = quote.companySnapshot?.phone || profile?.phone;
   const companyEmail = quote.companySnapshot?.email || profile?.email;
-  const companyLogoUrl = isLocked
-    ? "/prevai-logo.png"
-    : (quote.companySnapshot?.logoUrl || profile?.logoUrl || "");
+  const companyLogoUrl = quote.companySnapshot?.logoUrl || profile?.logoUrl || "";
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500 max-w-5xl mx-auto">
@@ -379,7 +407,7 @@ export default function QuoteDetail() {
               onClick={isEditMode ? () => setIsEditMode(false) : enterEditMode}
             >
               {isEditMode ? <X className="h-4 w-4" /> : <Pencil className="h-4 w-4" />}
-              {isEditMode ? "Chiudi Editor" : "Modifica Preventivo"}
+              {isEditMode ? "Chiudi Editor" : "Modifica"}
             </Button>
           )}
           {!isEditLocked && (
@@ -389,21 +417,20 @@ export default function QuoteDetail() {
               onClick={() => setIsRegenOpen(true)}
             >
               <Sparkles className="h-4 w-4" />
-              Rigenera con AI
+              Rigenera
             </Button>
           )}
-          {!isLocked && (
-            <Button onClick={handleDownload} variant="outline" disabled={generatePdf.isPending} className="gap-2">
-              {generatePdf.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
-              Scarica / Stampa PDF
-            </Button>
-          )}
-          {isLocked && (
-            <Button onClick={handleUnlock} className="gap-2">
-              <Lock className="h-4 w-4" />
-              Sblocca PDF Pulito
-            </Button>
-          )}
+          <Button
+            onClick={isLocked ? handleUnlock : handleDownload}
+            disabled={generatePdf.isPending}
+            className="gap-2"
+            variant={isLocked ? "default" : "outline"}
+          >
+            {generatePdf.isPending
+              ? <Loader2 className="h-4 w-4 animate-spin" />
+              : isLocked ? <Lock className="h-4 w-4" /> : <Download className="h-4 w-4" />}
+            Scarica PDF
+          </Button>
         </div>
       </div>
 
@@ -411,14 +438,7 @@ export default function QuoteDetail() {
         {/* Main preview card */}
         <div className="md:col-span-2 relative">
           <Card className="overflow-hidden bg-white text-black border shadow-lg relative">
-            {isLocked && (
-              <div className="absolute inset-0 pointer-events-none overflow-hidden z-10 flex items-center justify-center opacity-[0.03]">
-                <div className="text-[120px] font-black -rotate-45 whitespace-nowrap text-black select-none tracking-widest">
-                  BOZZA NON VALIDA
-                </div>
-              </div>
-            )}
-
+  
             {/* Edit mode top banner */}
             {isEditMode && !isEditLocked && (
               <div className="bg-violet-50 border-b-2 border-violet-200 px-5 py-3 flex items-center justify-between gap-4 sticky top-0 z-20">
@@ -445,8 +465,8 @@ export default function QuoteDetail() {
                   {companyLogoUrl && (
                     <img
                       src={companyLogoUrl}
-                      alt={isLocked ? "prevai" : "Logo"}
-                      className={isLocked ? "h-7 mb-2 object-contain" : "max-h-14 max-w-[160px] object-contain mb-2"}
+                      alt="Logo"
+                      className="max-h-14 max-w-[160px] object-contain mb-2"
                     />
                   )}
                   <h2 className="text-xl font-bold text-slate-800">{companyName}</h2>
@@ -494,7 +514,60 @@ export default function QuoteDetail() {
               {/* Client section */}
               <div className="mt-5 mb-6">
                 <div className="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Spett.le Committente</div>
-                {isEditingClient ? (
+                {isEditMode ? (
+                  <div className="space-y-2 bg-violet-50/60 border border-violet-200 rounded-lg p-3">
+                    <div className="grid grid-cols-2 gap-2">
+                      <input
+                        value={editClientNome}
+                        onChange={e => setEditClientNome(e.target.value)}
+                        placeholder="Nome / Ragione Sociale"
+                        className="col-span-2 text-sm text-slate-800 bg-white border border-violet-200 rounded px-2 py-1.5 focus:outline-none focus:border-violet-400"
+                      />
+                      <input
+                        value={editClientIndirizzo}
+                        onChange={e => setEditClientIndirizzo(e.target.value)}
+                        placeholder="Via / Piazza"
+                        className="col-span-2 text-xs text-slate-700 bg-white border border-violet-200 rounded px-2 py-1.5 focus:outline-none focus:border-violet-400"
+                      />
+                      <input
+                        value={editClientCitta}
+                        onChange={e => setEditClientCitta(e.target.value)}
+                        placeholder="Comune"
+                        className="text-xs text-slate-700 bg-white border border-violet-200 rounded px-2 py-1.5 focus:outline-none focus:border-violet-400"
+                      />
+                      <div className="flex gap-1">
+                        <input
+                          value={editClientCap}
+                          onChange={e => setEditClientCap(e.target.value)}
+                          placeholder="CAP"
+                          maxLength={5}
+                          className="w-20 text-xs text-slate-700 bg-white border border-violet-200 rounded px-2 py-1.5 focus:outline-none focus:border-violet-400"
+                        />
+                        <input
+                          value={editClientProvincia}
+                          onChange={e => setEditClientProvincia(e.target.value.toUpperCase())}
+                          placeholder="Prov"
+                          maxLength={2}
+                          className="w-14 text-xs text-slate-700 bg-white border border-violet-200 rounded px-2 py-1.5 focus:outline-none focus:border-violet-400"
+                        />
+                      </div>
+                      <input
+                        value={editClientCF}
+                        onChange={e => setEditClientCF(e.target.value.toUpperCase())}
+                        placeholder="Codice Fiscale"
+                        maxLength={16}
+                        className="text-xs text-slate-700 bg-white border border-violet-200 rounded px-2 py-1.5 focus:outline-none focus:border-violet-400"
+                      />
+                      <input
+                        value={editClientPIVA}
+                        onChange={e => setEditClientPIVA(e.target.value)}
+                        placeholder="Partita IVA"
+                        maxLength={13}
+                        className="text-xs text-slate-700 bg-white border border-violet-200 rounded px-2 py-1.5 focus:outline-none focus:border-violet-400"
+                      />
+                    </div>
+                  </div>
+                ) : isEditingClient ? (
                   <div className="space-y-2 bg-slate-50 p-4 rounded border border-slate-200">
                     <Input value={clientName} onChange={e => setClientName(e.target.value)} placeholder="Nome / Ragione Sociale" className="bg-white" />
                     <Input value={clientAddress} onChange={e => setClientAddress(e.target.value)} placeholder="Indirizzo" className="bg-white" />
@@ -508,6 +581,18 @@ export default function QuoteDetail() {
                     <div className="flex-1">
                       <div className="font-semibold text-slate-800">{quote.clientData?.nome || "——"}</div>
                       {quote.clientData?.indirizzo && <div className="text-slate-500 text-sm">{quote.clientData.indirizzo}</div>}
+                      {quote.clientData?.citta && (
+                        <div className="text-slate-400 text-xs mt-0.5">
+                          {[quote.clientData.citta, quote.clientData.cap, quote.clientData.provincia].filter(Boolean).join(" ")}
+                        </div>
+                      )}
+                      {(quote.clientData?.codiceFiscale || quote.clientData?.partitaIva) && (
+                        <div className="text-slate-400 text-xs">
+                          {quote.clientData.codiceFiscale && `C.F.: ${quote.clientData.codiceFiscale}`}
+                          {quote.clientData.codiceFiscale && quote.clientData.partitaIva && " · "}
+                          {quote.clientData.partitaIva && `P.IVA: ${quote.clientData.partitaIva}`}
+                        </div>
+                      )}
                     </div>
                     {!isEditLocked && (
                       <Button variant="ghost" size="icon" className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity shrink-0" onClick={() => setIsEditingClient(true)}>
@@ -835,7 +920,40 @@ export default function QuoteDetail() {
               </div>
 
               {/* Condizioni di pagamento */}
-              {condizioniPagamento.length > 0 && (
+              {isEditMode ? (
+                <div className="mb-6 border-2 border-violet-200 rounded-lg p-4 bg-violet-50/40">
+                  <div className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-3 flex items-center justify-between">
+                    <span>Condizioni di Pagamento</span>
+                    <button
+                      onClick={() => setEditCondizioniPagamento(prev => [...prev, ""])}
+                      className="text-xs text-violet-600 hover:text-violet-800 font-medium flex items-center gap-1 hover:bg-violet-100 rounded px-2 py-1 transition-colors"
+                    >
+                      <Plus className="h-3 w-3" /> Aggiungi
+                    </button>
+                  </div>
+                  <div className="space-y-2">
+                    {editCondizioniPagamento.map((cond, i) => (
+                      <div key={i} className="flex items-center gap-2">
+                        <input
+                          value={cond}
+                          onChange={e => setEditCondizioniPagamento(prev => prev.map((c, ci) => ci === i ? e.target.value : c))}
+                          placeholder="Es. 30% acconto alla firma del contratto"
+                          className="flex-1 text-xs text-slate-700 bg-white border border-violet-200 rounded px-2 py-1.5 focus:outline-none focus:border-violet-400"
+                        />
+                        <button
+                          onClick={() => setEditCondizioniPagamento(prev => prev.filter((_, ci) => ci !== i))}
+                          className="text-red-300 hover:text-red-500 hover:bg-red-50 rounded p-1 transition-colors"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </div>
+                    ))}
+                    {editCondizioniPagamento.length === 0 && (
+                      <p className="text-xs text-slate-400 italic">Nessuna condizione. Clicca Aggiungi per inserirne una.</p>
+                    )}
+                  </div>
+                </div>
+              ) : condizioniPagamento.length > 0 ? (
                 <div className="mb-6 border border-slate-200 rounded p-4">
                   <div className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-3">Condizioni di Pagamento</div>
                   <ul className="space-y-1.5">
@@ -847,7 +965,7 @@ export default function QuoteDetail() {
                     ))}
                   </ul>
                 </div>
-              )}
+              ) : null}
 
               {/* Notes */}
               {isEditMode ? (
@@ -873,98 +991,22 @@ export default function QuoteDetail() {
 
         {/* Sidebar */}
         <div className="space-y-4">
-          {/* Thumbnail for locked quotes */}
-          {isLocked && (
-            <Card className="overflow-hidden">
-              <CardHeader className="py-3 px-4">
-                <CardTitle className="text-sm font-medium flex items-center gap-2">
-                  <Lock className="h-3.5 w-3.5 text-muted-foreground" />
-                  Anteprima PDF
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="p-0">
-                <div className="relative overflow-hidden bg-slate-100" style={{ height: 170 }}>
-                  {/* Scaled-down document preview — non-interactive */}
-                  <div
-                    className="absolute top-0 left-0 bg-white origin-top-left"
-                    style={{
-                      transform: "scale(0.27)",
-                      width: 900,
-                      pointerEvents: "none",
-                      userSelect: "none",
-                    }}
-                  >
-                    <div className="p-8 text-black text-xs">
-                      <div className="flex justify-between border-b-2 border-slate-800 pb-4 mb-4">
-                        <div>
-                          {companyLogoUrl && (
-                            <img
-                              src={companyLogoUrl}
-                              alt={isLocked ? "prevai" : "Logo"}
-                              className={isLocked ? "h-4 mb-1 object-contain" : "max-h-8 max-w-[80px] object-contain mb-1"}
-                            />
-                          )}
-                          <div className="text-xl font-bold text-slate-800">{companyName}</div>
-                          {companyVat && <div className="text-slate-500 text-xs mt-1">P.IVA: {companyVat}</div>}
-                          {companyAddress && <div className="text-slate-500 text-xs">{companyAddress}</div>}
-                        </div>
-                        <div className="text-right">
-                          <div className="text-xs text-slate-400 uppercase tracking-wider">Preventivo</div>
-                          {quote.numeroPreventivoData && <div className="text-sm font-bold text-slate-700 mt-1">{quote.numeroPreventivoData}</div>}
-                        </div>
-                      </div>
-                      {quote.titoloPreventivoRiga1 && (
-                        <div className="text-center mb-4">
-                          <div className="text-sm font-bold uppercase tracking-wide text-slate-800">{quote.titoloPreventivoRiga1}</div>
-                          {quote.titoloPreventivoRiga2 && <div className="text-xs text-slate-500 italic mt-1">{quote.titoloPreventivoRiga2}</div>}
-                        </div>
-                      )}
-                      <div className="bg-slate-50 border border-slate-200 rounded px-4 py-3 mb-4">
-                        <div className="font-semibold text-slate-800">{quote.clientData?.nome}</div>
-                        <div className="text-slate-500 text-xs">{quote.clientData?.indirizzo}</div>
-                      </div>
-                      {capitoli.slice(0, 3).map((cap, i) => (
-                        <div key={cap.lettera} className={`flex justify-between px-3 py-2 text-xs ${i % 2 === 0 ? "bg-white" : "bg-slate-50"}`}>
-                          <span className="text-slate-700">{cap.lettera}. {cap.titolo}</span>
-                          <span className="font-medium text-slate-800 whitespace-nowrap">{formatCurrency(cap.subtotale)}</span>
-                        </div>
-                      ))}
-                      <div className="flex justify-between px-3 py-3 bg-slate-800 text-white font-bold mt-4 rounded">
-                        <span>TOTALE</span>
-                        <span>{formatCurrency(quote.totale)}</span>
-                      </div>
-                    </div>
-                  </div>
-                  {/* Blur overlay */}
-                  <div className="absolute inset-0 bg-gradient-to-b from-transparent via-background/20 to-background/70 pointer-events-none" />
-                  <div className="absolute bottom-0 inset-x-0 flex flex-col items-center justify-end p-3">
-                    <Button size="sm" className="w-full gap-1.5 text-xs" onClick={handleUnlock}>
-                      <Lock className="h-3 w-3" />
-                      Sblocca per il PDF pulito
-                    </Button>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
           <Card>
             <CardHeader className="pb-3">
-              <CardTitle className="text-lg">Azioni Rapide</CardTitle>
+              <CardTitle className="text-lg">Azioni</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-3">
-              {isLocked && (
-                <Button onClick={handleUnlock} className="w-full justify-start gap-2">
-                  <Lock className="h-4 w-4" />
-                  Sblocca PDF Pulito
-                </Button>
-              )}
-              {!isLocked && (
-                <Button onClick={handleDownload} disabled={generatePdf.isPending} className="w-full justify-start gap-2" variant="outline">
-                  {generatePdf.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
-                  Scarica PDF
-                </Button>
-              )}
+            <CardContent className="space-y-2">
+              <Button
+                onClick={isLocked ? handleUnlock : handleDownload}
+                disabled={generatePdf.isPending}
+                className="w-full justify-start gap-2"
+                variant={isLocked ? "default" : "outline"}
+              >
+                {generatePdf.isPending
+                  ? <Loader2 className="h-4 w-4 animate-spin" />
+                  : isLocked ? <Lock className="h-4 w-4" /> : <Download className="h-4 w-4" />}
+                Scarica PDF
+              </Button>
               {!isEditLocked && (
                 <>
                   <Button
@@ -973,11 +1015,7 @@ export default function QuoteDetail() {
                     onClick={isEditMode ? () => setIsEditMode(false) : enterEditMode}
                   >
                     <Pencil className="h-4 w-4" />
-                    {isEditMode ? "Chiudi Editor" : "Modifica Voci"}
-                  </Button>
-                  <Button variant="outline" className="w-full justify-start gap-2" onClick={() => setIsEditingClient(true)}>
-                    <Edit2 className="h-4 w-4" />
-                    Modifica Committente
+                    {isEditMode ? "Chiudi Editor" : "Modifica Preventivo"}
                   </Button>
                   <Button
                     variant="outline"
