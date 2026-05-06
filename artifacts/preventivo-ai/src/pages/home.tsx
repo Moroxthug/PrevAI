@@ -466,6 +466,90 @@ export default function Home() {
         </div>
       </ScrollSection>
 
+      {/* ── Alternativa Excel/Word ───────────────────────────── */}
+      <ScrollSection className="py-20 bg-gray-50/60">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="max-w-4xl mx-auto">
+            <div className="text-center mb-10">
+              <span className="inline-block bg-violet-100 text-violet-700 text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider mb-4">Niente più fogli di calcolo</span>
+              <h2 className="text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl mb-4">
+                Dimentica <span className="gradient-text">Excel e Word</span>
+              </h2>
+              <p className="text-lg text-gray-500 max-w-2xl mx-auto leading-relaxed">
+                I template Excel si rompono. I documenti Word non calcolano. Con prevai descrivi il lavoro a parole e in 30 secondi hai un documento professionale pronto da inviare.
+              </p>
+            </div>
+            <div className="grid sm:grid-cols-3 gap-4">
+              {[
+                { href: "/seo/modello-excel", label: "Alternativa al preventivo Excel", desc: "Niente formule. Niente errori. Solo risultati.", badge: "vs Excel" },
+                { href: "/seo/modello-word", label: "Alternativa al template Word", desc: "PDF professionale in un clic, senza formattazione manuale.", badge: "vs Word" },
+                { href: "/seo/come-fare-preventivo", label: "Come fare un preventivo", desc: "Guida pratica per artigiani e PMI italiane.", badge: "Guida" },
+              ].map(({ href, label, desc, badge }) => (
+                <Link
+                  key={href}
+                  href={href}
+                  className="bg-white rounded-2xl border border-gray-100 p-5 hover:border-violet-200 hover:shadow-md transition-all group card-soft"
+                >
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-violet-500 bg-violet-50 px-2 py-0.5 rounded-full">{badge}</span>
+                  <h3 className="font-semibold text-gray-900 mt-3 mb-1 text-sm leading-snug group-hover:text-violet-700 transition-colors">{label}</h3>
+                  <p className="text-xs text-gray-400 leading-relaxed">{desc}</p>
+                  <span className="inline-flex items-center gap-1 text-xs text-violet-500 font-semibold mt-3">Scopri di più <ArrowRight className="h-3 w-3" /></span>
+                </Link>
+              ))}
+            </div>
+          </div>
+        </div>
+      </ScrollSection>
+
+      {/* ── Per ogni settore ──────────────────────────────────── */}
+      <ScrollSection className="py-20 bg-white">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-10">
+            <h2 className="text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl mb-4">
+              Preventivi per{" "}
+              <span className="gradient-text">ogni settore</span>
+            </h2>
+            <p className="text-lg text-gray-500 max-w-xl mx-auto leading-relaxed">
+              Dall'imbianchino all'elettricista, dal giardiniere al serramentista: prevai conosce il tuo mestiere.
+            </p>
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 max-w-4xl mx-auto">
+            {[
+              { href: "/seo/imbianchino", label: "Imbianchini" },
+              { href: "/seo/elettricista", label: "Elettricisti" },
+              { href: "/seo/idraulico", label: "Idraulici" },
+              { href: "/seo/muratore", label: "Muratori" },
+              { href: "/seo/edilizia", label: "Imprese Edili" },
+              { href: "/seo/ristrutturazione", label: "Ristrutturazioni" },
+              { href: "/seo/pittore", label: "Pittori Edili" },
+              { href: "/seo/piastrellista", label: "Piastrellisti" },
+              { href: "/seo/pavimentista", label: "Pavimentisti" },
+              { href: "/seo/falegname", label: "Falegnami" },
+              { href: "/seo/carpentiere", label: "Carpentieri" },
+              { href: "/seo/serramentista", label: "Serramentisti" },
+              { href: "/seo/tetto", label: "Coperture e Tetti" },
+              { href: "/seo/condizionatori", label: "Climatizzatori" },
+              { href: "/seo/giardiniere", label: "Giardinieri" },
+              { href: "/seo/geometra", label: "Geometri" },
+            ].map(({ href, label }) => (
+              <Link
+                key={href}
+                href={href}
+                className="flex items-center gap-2 bg-gray-50 hover:bg-violet-50 border border-gray-100 hover:border-violet-200 rounded-xl px-4 py-3 text-sm font-medium text-gray-700 hover:text-violet-700 transition-colors group"
+              >
+                <ArrowRight className="h-3.5 w-3.5 text-violet-300 group-hover:text-violet-500 shrink-0" />
+                {label}
+              </Link>
+            ))}
+          </div>
+          <div className="text-center mt-6">
+            <Link href="/seo/preventivi-gratis" className="text-sm font-semibold text-violet-600 hover:text-violet-700 inline-flex items-center gap-1">
+              Preventivi online gratuiti <ArrowRight className="h-3.5 w-3.5" />
+            </Link>
+          </div>
+        </div>
+      </ScrollSection>
+
       {/* ── CTA ──────────────────────────────────────────────── */}
       <ScrollSection className="py-28 bg-white">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 text-center">
