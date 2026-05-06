@@ -42,12 +42,6 @@ export default function Home() {
         <div className="mesh-blob mesh-blob-3" />
 
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10 text-center">
-          {/* Badge pill */}
-          <div className="inline-flex items-center gap-2 rounded-full border border-violet-200 bg-violet-50 px-4 py-1.5 text-sm font-medium text-violet-700 mb-10">
-            <Sparkles className="h-4 w-4" />
-            L'Intelligenza Artificiale per gli Artigiani Italiani
-          </div>
-
           <h1 className="mx-auto max-w-4xl text-5xl font-extrabold tracking-tight text-gray-900 sm:text-6xl lg:text-7xl leading-[1.1]">
             Crea preventivi professionali in{" "}
             <span className="gradient-text">30 secondi</span> con l'AI
@@ -80,18 +74,18 @@ export default function Home() {
       {/* ── Features ─────────────────────────────────────────── */}
       <ScrollSection className="py-28 bg-gray-50/60">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-20">
+          <div className="text-center mb-24">
             <h2 className="text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">
               Perché scegliere{" "}
               <span className="gradient-text">prevai</span>?
             </h2>
-            <p className="mt-5 text-lg text-gray-500 max-w-xl mx-auto leading-relaxed">
+            <p className="mt-6 text-lg text-gray-500 max-w-lg mx-auto leading-relaxed">
               Progettato specificamente per le esigenze delle piccole imprese
               italiane.
             </p>
           </div>
 
-          <div className="grid md:grid-cols-3 gap-8">
+          <div className="grid md:grid-cols-3 gap-8 items-stretch">
             {[
               {
                 icon: <Zap className="h-6 w-6" />,
@@ -111,15 +105,16 @@ export default function Home() {
             ].map(({ icon, title, desc }) => (
               <div
                 key={title}
-                className="card-soft bg-white p-9 rounded-2xl flex flex-col"
+                className="card-soft bg-white p-10 rounded-2xl flex flex-col h-full"
               >
-                <div className="h-12 w-12 rounded-xl flex items-center justify-center mb-7 text-white"
+                <div
+                  className="h-12 w-12 rounded-xl flex items-center justify-center mb-8 text-white shrink-0"
                   style={{ background: "linear-gradient(135deg, #7C3AED, #06B6D4)" }}
                 >
                   {icon}
                 </div>
-                <h3 className="text-xl font-semibold mb-3 text-gray-900">{title}</h3>
-                <p className="text-gray-500 leading-relaxed">{desc}</p>
+                <h3 className="text-xl font-semibold mb-4 text-gray-900 leading-snug">{title}</h3>
+                <p className="text-gray-500 leading-relaxed flex-1">{desc}</p>
               </div>
             ))}
           </div>
@@ -148,68 +143,131 @@ export default function Home() {
               </p>
             </div>
 
+            {/* Real quote preview — mirrors actual app UI */}
             <div className="relative">
-              <div className="absolute -inset-4 rounded-2xl blur-2xl opacity-40"
+              <div
+                className="absolute -inset-4 rounded-2xl blur-2xl opacity-40"
                 style={{ background: "linear-gradient(135deg, rgba(124,58,237,0.15), rgba(6,182,212,0.15))" }}
               />
-              <div className="relative bg-white rounded-2xl border border-gray-100 shadow-xl overflow-hidden flex flex-col h-[500px]">
-                <div className="border-b bg-gray-50 px-4 py-3 flex items-center gap-2">
+              <div className="relative bg-white rounded-2xl border border-gray-100 shadow-xl overflow-hidden flex flex-col h-[560px]">
+                {/* Fake browser chrome */}
+                <div className="border-b bg-gray-50 px-4 py-3 flex items-center gap-2 shrink-0">
                   <div className="flex gap-1.5">
                     <div className="w-3 h-3 rounded-full bg-red-400" />
                     <div className="w-3 h-3 rounded-full bg-amber-400" />
                     <div className="w-3 h-3 rounded-full bg-green-400" />
                   </div>
-                  <div className="text-xs font-medium text-gray-400 ml-4">
-                    Preventivo_Mario_Rossi.pdf
-                  </div>
+                  <div className="text-xs font-medium text-gray-400 ml-4">Preventivo_Mario_Rossi.pdf</div>
                 </div>
-                <div className="p-8 flex-1 overflow-hidden bg-white text-black text-sm">
-                  <div className="flex justify-between mb-8 border-b pb-4">
+
+                {/* Quote body — matches real app structure */}
+                <div className="flex-1 overflow-hidden bg-white text-black text-[11px] p-6 select-none">
+                  {/* Company header */}
+                  <div className="flex justify-between items-start border-b-2 border-slate-800 pb-4 mb-4">
                     <div>
-                      <div className="font-bold text-xl text-blue-900">Tinteggiature Pro</div>
-                      <div className="text-gray-500 mt-1">P.IVA: IT123456789</div>
+                      <div className="text-base font-bold text-slate-800">Tinteggiature Pro s.r.l.</div>
+                      <div className="text-slate-500 text-[10px] mt-0.5">P.IVA: IT09876543210</div>
+                      <div className="text-slate-500 text-[10px]">Via Roma 12, 20100 Milano</div>
+                      <div className="text-slate-500 text-[10px]">Tel: +39 02 1234567</div>
                     </div>
                     <div className="text-right">
-                      <div className="font-bold text-gray-700">Preventivo #2024-042</div>
-                      <div className="text-gray-500">Data: Oggi</div>
+                      <div className="text-[9px] font-semibold text-slate-400 uppercase tracking-widest">Preventivo</div>
+                      <div className="text-xs font-bold text-slate-700 mt-1">N. 2024-042</div>
+                      <div className="text-[10px] text-slate-500 mt-0.5">Data: 06/05/2024</div>
                     </div>
                   </div>
-                  <table className="w-full text-left mb-8">
-                    <thead>
-                      <tr className="border-b border-gray-200">
-                        <th className="py-2">Descrizione</th>
-                        <th className="py-2 text-right">Q.tà</th>
-                        <th className="py-2 text-right">Prezzo</th>
-                        <th className="py-2 text-right">Totale</th>
-                      </tr>
-                    </thead>
-                    <tbody className="text-gray-700">
-                      <tr className="border-b border-gray-100">
-                        <td className="py-3">Tinteggiatura con pittura lavabile bianca (due mani)</td>
-                        <td className="py-3 text-right">80 mq</td>
-                        <td className="py-3 text-right">€ 15,00</td>
-                        <td className="py-3 text-right">€ 1.200,00</td>
-                      </tr>
-                      <tr className="border-b border-gray-100">
-                        <td className="py-3">Rasatura parete soggiorno rovinata</td>
-                        <td className="py-3 text-right">1 a corpo</td>
-                        <td className="py-3 text-right">€ 250,00</td>
-                        <td className="py-3 text-right">€ 250,00</td>
-                      </tr>
-                    </tbody>
-                  </table>
-                  <div className="flex justify-end border-t border-gray-800 pt-4">
-                    <div className="w-48 space-y-2">
-                      <div className="flex justify-between">
-                        <span>Imponibile:</span>
-                        <span>€ 1.450,00</span>
+
+                  {/* Document title */}
+                  <div className="text-center mb-3">
+                    <div className="text-[10px] font-bold uppercase tracking-wide text-slate-800">
+                      OFFERTA PER LAVORI DI TINTEGGIATURA
+                    </div>
+                    <div className="text-[9px] text-slate-500 italic mt-0.5">Appartamento via Verdi 8 — Milano</div>
+                  </div>
+
+                  {/* Client */}
+                  <div className="mb-3">
+                    <div className="text-[9px] font-semibold uppercase tracking-wider text-slate-400 mb-1">Spett.le Committente</div>
+                    <div className="bg-slate-50 border border-slate-200 rounded px-3 py-2">
+                      <div className="font-semibold text-slate-800">Mario Rossi</div>
+                      <div className="text-slate-500 text-[10px]">Via Verdi 8, 20121 Milano (MI)</div>
+                    </div>
+                  </div>
+
+                  {/* Quadro sintetico */}
+                  <div className="mb-3">
+                    <div className="text-[9px] font-bold uppercase tracking-wider text-slate-400 mb-1">1. Quadro Sintetico</div>
+                    <table className="w-full">
+                      <thead>
+                        <tr className="bg-slate-800 text-white">
+                          <th className="py-1.5 px-2 text-left text-[9px] font-semibold">Capitolo</th>
+                          <th className="py-1.5 px-2 text-right text-[9px] font-semibold">Importo netto</th>
+                          <th className="py-1.5 px-2 text-left text-[9px] font-semibold hidden sm:table-cell">Osservazione</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr className="bg-white">
+                          <td className="py-1.5 px-2 text-slate-700">A. Tinteggiatura pareti</td>
+                          <td className="py-1.5 px-2 text-right font-medium text-slate-800">€ 1.200,00</td>
+                          <td className="py-1.5 px-2 text-slate-400 italic hidden sm:table-cell">Voce ordinaria</td>
+                        </tr>
+                        <tr className="bg-slate-50">
+                          <td className="py-1.5 px-2 text-slate-700">B. Rasatura e preparazione</td>
+                          <td className="py-1.5 px-2 text-right font-medium text-slate-800">€ 250,00</td>
+                          <td className="py-1.5 px-2 text-slate-400 italic hidden sm:table-cell">Voce straordinaria</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+
+                  {/* Chapter A detail */}
+                  <div className="mb-3">
+                    <div className="text-[9px] font-bold uppercase tracking-wider text-slate-400 mb-1">2. Computo Metrico Dettagliato</div>
+                    <div className="border border-slate-200 rounded overflow-hidden">
+                      <div className="flex items-center justify-between px-3 py-2 bg-slate-100">
+                        <span className="font-bold text-slate-800 text-[10px]">A. Tinteggiatura pareti</span>
+                        <span className="text-[10px] font-semibold text-slate-700">€ 1.200,00</span>
                       </div>
-                      <div className="flex justify-between text-gray-500">
-                        <span>IVA 22%:</span>
-                        <span>€ 319,00</span>
+                      <table className="w-full">
+                        <thead>
+                          <tr className="bg-slate-700 text-white">
+                            <th className="py-1 px-2 text-left text-[9px]">Descrizione</th>
+                            <th className="py-1 px-1 text-center text-[9px] w-8">U.M.</th>
+                            <th className="py-1 px-1 text-center text-[9px] w-8">Q.tà</th>
+                            <th className="py-1 px-2 text-right text-[9px] w-16">P.u.</th>
+                            <th className="py-1 px-2 text-right text-[9px] w-16">Totale</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          <tr className="bg-white">
+                            <td className="py-1.5 px-2 text-slate-700">Pittura lavabile bianca (2 mani)</td>
+                            <td className="py-1.5 px-1 text-center text-slate-500">mq</td>
+                            <td className="py-1.5 px-1 text-center text-slate-500">80</td>
+                            <td className="py-1.5 px-2 text-right text-slate-600">€ 15,00</td>
+                            <td className="py-1.5 px-2 text-right font-medium text-slate-800">€ 1.200,00</td>
+                          </tr>
+                          <tr className="bg-slate-200">
+                            <td colSpan={4} className="py-1.5 px-2 font-bold text-slate-700 text-right text-[9px]">Subtotale cap. A</td>
+                            <td className="py-1.5 px-2 text-right font-bold text-slate-800">€ 1.200,00</td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+
+                  {/* Totals box */}
+                  <div className="flex justify-end">
+                    <div className="w-56 border border-slate-200 rounded overflow-hidden">
+                      <div className="flex justify-between px-3 py-1.5 text-slate-600 border-b border-slate-100">
+                        <span>Imponibile totale:</span>
+                        <span className="font-medium">€ 1.450,00</span>
                       </div>
-                      <div className="flex justify-between font-bold text-lg text-blue-900 pt-2 border-t">
-                        <span>Totale:</span>
+                      <div className="flex justify-between px-3 py-1.5 text-slate-600 border-b border-slate-100">
+                        <span>IVA (22%):</span>
+                        <span className="font-medium">€ 319,00</span>
+                      </div>
+                      <div className="flex justify-between px-3 py-2 bg-slate-800 text-white font-bold text-xs">
+                        <span>TOTALE</span>
                         <span>€ 1.769,00</span>
                       </div>
                     </div>

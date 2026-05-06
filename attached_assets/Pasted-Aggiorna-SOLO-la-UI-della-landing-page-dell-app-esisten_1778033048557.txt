@@ -1,0 +1,121 @@
+Aggiorna SOLO la UI della landing page dell’app esistente "Prevai".
+
+NON cambiare:
+- colori
+- font
+- bottoni
+- branding generale
+- contenuti non menzionati
+- stack tecnologico
+
+NON rifare il design. Devi solo applicare miglioramenti puntuali di layout e struttura.
+
+---
+
+# 🎯 1. FIX LOGO HEADER
+
+Attualmente il logo:
+- è troppo piccolo
+- è isolato a sinistra
+
+DEVI:
+
+- aumentare leggermente la dimensione del logo (senza cambiare immagine o stile)
+- allinearlo verticalmente con il navbar items
+- migliorare lo spacing tra logo e resto della navbar
+- mantenere layout attuale (NO redesign navbar)
+
+OBIETTIVO:
+logo più bilanciato visivamente e meno “vuoto” a sinistra
+
+---
+
+# 🧼 2. RIMOZIONE ELEMENTO HERO SECONDARIO
+
+Rimuovere completamente la pill/tag:
+
+" L'Intelligenza Artificiale per gli Artigiani Italiani "
+
+NON sostituirlo con altro.
+
+Deve essere semplicemente eliminato per ridurre clutter visivo nella hero section.
+
+---
+
+# 🧠 3. MIGLIORAMENTO SEZIONE "PERCHÉ SCEGLIERE PREVAI"
+
+Questa sezione deve essere migliorata SOLO a livello di:
+
+- spacing
+- gerarchia visiva
+- struttura delle card
+- leggibilità
+
+NON cambiare:
+- colori
+- testi
+- icone
+- contenuti
+- stile generale
+
+---
+
+# ✨ MIGLIORAMENTI RICHIESTI
+
+## Layout
+
+- rendere la sezione più ariosa (più spazio tra titolo e card)
+- migliorare allineamento verticale delle 3 card
+- assicurare stessa altezza visiva tra le card
+
+---
+
+## Card UI
+
+Per ogni card:
+
+- migliorare padding interno leggermente (più respiro)
+- aumentare coerenza tra titolo e descrizione
+- migliorare spaziatura tra icona e titolo
+- migliorare spaziatura tra titolo e testo
+
+---
+
+## GERARCHIA VISIVA
+
+- titolo sezione deve essere più dominante rispetto alle card
+- sottotitolo deve avere più separazione dal titolo
+- cards devono essere percepite come “feature block” non elementi separati
+
+---
+
+## MICRO UX IMPROVEMENTS (SENZA CAMBIARE STILE)
+
+- hover state più fluido sulle card (se già presente, solo smoothing)
+- transizioni più morbide su hover/focus
+- miglior contrasto spaziale tra card e background
+
+---
+
+# ⚠️ REGOLE IMPORTANTI
+
+- NON cambiare palette colori
+- NON cambiare font
+- NON cambiare contenuti testuali (eccetto rimozione tag indicato)
+- NON aggiungere nuove sezioni
+- NON modificare struttura generale della landing
+- NON introdurre nuove funzionalità
+- NON alterare branding o naming
+
+---
+
+# 🎯 OBIETTIVO FINALE
+
+La landing deve risultare:
+
+- più pulita visivamente
+- meno “affollata” nella hero
+- più bilanciata nel header
+- più professionale nella sezione "Perché scegliere Prevai"
+
+senza cambiare identità visiva o design system esistente.
