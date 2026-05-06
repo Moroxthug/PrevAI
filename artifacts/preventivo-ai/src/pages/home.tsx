@@ -64,13 +64,13 @@ export default function Home() {
           </p>
 
           <div className="mt-12 flex flex-col sm:flex-row justify-center gap-4">
-            <Link
-              href="/sign-up"
+            <button
+              onClick={() => navigate(isSignedIn ? "/dashboard/new" : "/sign-up")}
               className="btn-gradient inline-flex h-14 items-center justify-center px-8 text-lg font-semibold"
             >
               Inizia Gratuitamente
               <ArrowRight className="ml-2 h-5 w-5" />
-            </Link>
+            </button>
             <Link
               href="#demo"
               className="btn-gradient-outline inline-flex h-14 items-center justify-center px-8 text-lg font-semibold"

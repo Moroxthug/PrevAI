@@ -1,13 +1,14 @@
 import { useParams, useSearch } from "wouter";
-import { useGetQuote, useGetBusinessProfile, useGenerateQuotePdf, useGetPlans, useUpdateQuote, useCreateCheckoutSession, useVerifyPayment, useGetSubscription, useUnlockQuoteWithSubscription, useCreateCustomerPortalSession, useRegenerateQuote, getGetQuoteQueryKey, getVerifyPaymentQueryKey } from "@workspace/api-client-react";
+import { useGetQuote, useGetBusinessProfile, useGenerateQuotePdf, useGetPlans, useUpdateQuote, useCreateCheckoutSession, useVerifyPayment, useGetSubscription, useUnlockQuoteWithSubscription, useCreateCustomerPortalSession, useRegenerateQuote, useDuplicateQuote, getGetQuoteQueryKey, getVerifyPaymentQueryKey, getListQuotesQueryKey } from "@workspace/api-client-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
-import { Download, Lock, CheckCircle2, Edit2, Save, FileText, ChevronDown, ChevronRight, Plus, Trash2, X, Pencil, Sparkles, AlertTriangle, RefreshCw, Loader2 } from "lucide-react";
+import { Download, Lock, CheckCircle2, Edit2, Save, FileText, ChevronDown, ChevronRight, Plus, Trash2, X, Pencil, Sparkles, AlertTriangle, RefreshCw, Loader2, Copy } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
+import { useLocation } from "wouter";
 import { format } from "date-fns";
 import { it } from "date-fns/locale";
 import { Input } from "@/components/ui/input";
@@ -50,6 +51,8 @@ export default function QuoteDetail() {
   const unlockWithSub = useUnlockQuoteWithSubscription();
   const createPortal = useCreateCustomerPortalSession();
   const regenerateQuote = useRegenerateQuote();
+  const duplicateQuote = useDuplicateQuote();
+  const [, navigate] = useLocation();
 
   // Regen panel state
   const [isRegenOpen, setIsRegenOpen] = useState(false);
@@ -1027,6 +1030,25 @@ export default function QuoteDetail() {
                   </Button>
                 </>
               )}
+              <Button
+                variant="outline"
+                className="w-full justify-start gap-2"
+                disabled={duplicateQuote.isPending}
+                onClick={() => {
+                  if (!id) return;
+                  duplicateQuote.mutate({ id }, {
+                    onSuccess: (newQuote) => {
+                      queryClient.invalidateQueries({ queryKey: getListQuotesQueryKey() });
+                      toast({ title: "Preventivo duplicato", description: "Reindirizzamento al nuovo preventivo…" });
+                      navigate(`/dashboard/quotes/${newQuote.id}`);
+                    },
+                    onError: () => toast({ title: "Errore durante la duplicazione", variant: "destructive" }),
+                  });
+                }}
+              >
+                {duplicateQuote.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Copy className="h-4 w-4" />}
+                Duplica preventivo
+              </Button>
               {isEditLocked && (
                 <div className="flex items-start gap-2 text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg p-2.5">
                   <AlertTriangle className="h-3.5 w-3.5 mt-0.5 shrink-0" />

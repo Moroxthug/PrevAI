@@ -13,7 +13,7 @@ import {
   RegenerateQuoteBody,
 } from "@workspace/api-zod";
 import { openai } from "@workspace/integrations-openai-ai-server";
-import type { QuoteChapter, QuoteDiscount, QuoteCompanySnapshot, QuoteClientData } from "@workspace/db";
+import type { QuoteChapter, QuoteDiscount, QuoteCompanySnapshot, QuoteClientData, QuoteItem } from "@workspace/db";
 import { logger } from "../lib/logger.js";
 
 const ALLOWED_IMAGE_MIMES = ["image/jpeg", "image/png", "image/webp", "image/heic", "image/heif"];
@@ -659,6 +659,58 @@ router.post("/quotes/:id/generate-pdf", requireAuth(), async (req, res) => {
     res.json({ htmlContent: html, pdfUrl: quote.pdfUrl, isDraft: withWatermark });
   } catch (err) {
     req.log.error({ err }, "Error generating PDF");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// POST /api/quotes/:id/duplicate — clone a quote as a new draft
+router.post("/quotes/:id/duplicate", requireAuth(), async (req, res) => {
+  try {
+    const userId = getUserId(req);
+    const id = req.params.id as string;
+
+    const [original] = await db
+      .select()
+      .from(quotesTable)
+      .where(eq(quotesTable.id, id));
+
+    if (!original) {
+      res.status(404).json({ error: "Not found" });
+      return;
+    }
+    if (original.userId !== userId) {
+      res.status(403).json({ error: "Forbidden" });
+      return;
+    }
+
+    const [newQuote] = await db
+      .insert(quotesTable)
+      .values({
+        userId,
+        rawInput: original.rawInput,
+        descrizioneGenerale: original.descrizioneGenerale,
+        companySnapshot: (original.companySnapshot as QuoteCompanySnapshot | null) ?? null,
+        items: (Array.isArray(original.items) ? original.items : []) as QuoteItem[],
+        capitoli: (Array.isArray(original.capitoli) ? original.capitoli : []) as QuoteChapter[],
+        sconto: (original.sconto as QuoteDiscount | null) ?? null,
+        condizioniPagamento: Array.isArray(original.condizioniPagamento) ? original.condizioniPagamento : [],
+        titoloPreventivoRiga1: original.titoloPreventivoRiga1,
+        titoloPreventivoRiga2: original.titoloPreventivoRiga2,
+        numeroPreventivoData: null,
+        subtotale: original.subtotale,
+        ivaPercentuale: original.ivaPercentuale,
+        ivaValore: original.ivaValore,
+        totale: original.totale,
+        note: original.note,
+        status: "draft",
+        pdfUrl: null,
+        pdfDownloadedAt: null,
+      })
+      .returning();
+
+    res.status(201).json(serializeQuote(newQuote));
+  } catch (err) {
+    req.log.error({ err }, "Error duplicating quote");
     res.status(500).json({ error: "Internal server error" });
   }
 });

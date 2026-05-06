@@ -440,6 +440,13 @@ export const GenerateQuotePdfResponse = zod.object({
 });
 
 /**
+ * @summary Duplicate a quote as a new draft (clears client data and pdfDownloadedAt)
+ */
+export const DuplicateQuoteParams = zod.object({
+  id: zod.coerce.string(),
+});
+
+/**
  * @summary Regenerate a quote using AI (replaces AI content in-place)
  */
 export const RegenerateQuoteParams = zod.object({
