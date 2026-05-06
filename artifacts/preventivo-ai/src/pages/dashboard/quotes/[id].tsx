@@ -367,7 +367,9 @@ export default function QuoteDetail() {
 
   if (!quote) return <div>Preventivo non trovato</div>;
 
-  const isLocked = quote.status !== "unlocked";
+  const isPro = subscription?.isActive && subscription?.plan === "monthly_pro";
+  // Pro subscribers can always download — paywall only applies to Starter and one-shot
+  const isLocked = quote.status !== "unlocked" && !isPro;
   // Editing is permanently locked once the PDF has been downloaded
   const isEditLocked = !!quote.pdfDownloadedAt;
   const formatCurrency = (amount: number) =>
