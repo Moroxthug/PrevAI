@@ -419,6 +419,8 @@ router.put("/quotes/:id", requireAuth(), async (req, res) => {
     if (body.capitoli !== undefined) updates.capitoli = body.capitoli as QuoteChapter[];
     if (body.sconto !== undefined) updates.sconto = body.sconto as QuoteDiscount | null;
     if (body.condizioniPagamento !== undefined) updates.condizioniPagamento = body.condizioniPagamento;
+    if (body.titoloPreventivoRiga1 !== undefined) updates.titoloPreventivoRiga1 = body.titoloPreventivoRiga1 ?? null;
+    if (body.titoloPreventivoRiga2 !== undefined) updates.titoloPreventivoRiga2 = body.titoloPreventivoRiga2 ?? null;
     if (body.note !== undefined) updates.note = body.note;
     if (body.status !== undefined) updates.status = body.status;
     if (body.subtotale !== undefined) updates.subtotale = String(body.subtotale);

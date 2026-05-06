@@ -527,6 +527,12 @@ components:
           type: array
           items:
             type: string
+        titoloPreventivoRiga1:
+          type: string
+          nullable: true
+        titoloPreventivoRiga2:
+          type: string
+          nullable: true
         subtotale:
           type: number
         ivaPercentuale:

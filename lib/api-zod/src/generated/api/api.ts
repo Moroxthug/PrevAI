@@ -335,6 +335,8 @@ export const UpdateQuoteBody = zod.object({
     })
     .nullish(),
   condizioniPagamento: zod.array(zod.string()).optional(),
+  titoloPreventivoRiga1: zod.string().nullish(),
+  titoloPreventivoRiga2: zod.string().nullish(),
   subtotale: zod.number().optional(),
   ivaPercentuale: zod.number().optional(),
   ivaValore: zod.number().optional(),

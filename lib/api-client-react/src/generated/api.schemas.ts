@@ -121,6 +121,8 @@ export interface UpdateQuoteBody {
   capitoli?: QuoteChapter[];
   sconto?: QuoteDiscount | null;
   condizioniPagamento?: string[];
+  titoloPreventivoRiga1?: string | null;
+  titoloPreventivoRiga2?: string | null;
   subtotale?: number;
   ivaPercentuale?: number;
   ivaValore?: number;
