@@ -227,7 +227,10 @@ export default function QuoteDetail() {
 
   const addCapitolo = () => {
     const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-    const nextLetter = letters[editCapitoli.length] || String(editCapitoli.length + 1);
+    const usedLetters = new Set(editCapitoli.map(c => c.lettera));
+    const nextLetter =
+      [...letters].find(l => !usedLetters.has(l)) ??
+      String(editCapitoli.length + 1);
     setEditCapitoli(prev => [
       ...prev,
       { lettera: nextLetter, titolo: "Nuovo Capitolo", osservazione: "Voce ordinaria", voci: [] }
