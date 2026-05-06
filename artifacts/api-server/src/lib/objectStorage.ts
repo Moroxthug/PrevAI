@@ -207,6 +207,29 @@ export class ObjectStorageService {
     return `/objects/${subPath}`;
   }
 
+  /**
+   * Upload a buffer to the first PUBLIC_OBJECT_SEARCH_PATHS entry.
+   * Returns the relative path used for serving via /storage/public-objects/.
+   */
+  async uploadPublicObjectBuffer({
+    subPath,
+    buffer,
+    contentType,
+  }: {
+    subPath: string;
+    buffer: Buffer;
+    contentType: string;
+  }): Promise<string> {
+    const searchPaths = this.getPublicObjectSearchPaths();
+    const basePath = searchPaths[0];
+    const fullPath = `${basePath}/${subPath}`;
+    const { bucketName, objectName } = parseObjectPath(fullPath);
+    const bucket = objectStorageClient.bucket(bucketName);
+    const file = bucket.file(objectName);
+    await file.save(buffer, { contentType, resumable: false });
+    return subPath;
+  }
+
   async canAccessObjectEntity({
     userId,
     objectFile,

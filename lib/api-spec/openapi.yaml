@@ -180,6 +180,26 @@ paths:
               schema:
                 $ref: "#/components/schemas/BusinessProfile"
 
+  /business-profile/logo:
+    post:
+      operationId: uploadBusinessProfileLogo
+      tags: [business-profile]
+      summary: Upload or replace the company logo
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              additionalProperties: true
+      responses:
+        "200":
+          description: Logo uploaded and profile updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LogoUploadResult"
+
   /storage/uploads/request-url:
     post:
       operationId: requestUploadUrl
@@ -640,6 +660,14 @@ components:
         - currency
         - features
         - hasWatermark
+
+    LogoUploadResult:
+      type: object
+      properties:
+        logoUrl:
+          type: string
+      required:
+        - logoUrl
 
     UploadUrlRequest:
       type: object

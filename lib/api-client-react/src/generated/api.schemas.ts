@@ -185,6 +185,10 @@ export interface Plan {
   quotaPerMonth?: number | null;
 }
 
+export interface LogoUploadResult {
+  logoUrl: string;
+}
+
 export interface UploadUrlRequest {
   name: string;
   size: number;
@@ -196,3 +200,5 @@ export interface UploadUrlResponse {
   objectPath: string;
   metadata?: UploadUrlRequest;
 }
+
+export type UploadBusinessProfileLogoBody = { [key: string]: unknown };

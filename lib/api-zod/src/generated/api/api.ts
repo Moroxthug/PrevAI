@@ -470,6 +470,18 @@ export const UpdateBusinessProfileResponse = zod.object({
 });
 
 /**
+ * @summary Upload or replace the company logo
+ */
+export const UploadBusinessProfileLogoBody = zod.record(
+  zod.string(),
+  zod.unknown(),
+);
+
+export const UploadBusinessProfileLogoResponse = zod.object({
+  logoUrl: zod.string(),
+});
+
+/**
  * Returns a presigned GCS URL for direct upload. The client sends JSON
 metadata here, then uploads the file directly to the returned URL.
 

@@ -150,13 +150,15 @@ router.post(
       const safeExt = ["svg", "png", "jpg", "jpeg"].includes(ext) ? ext : "png";
       const subPath = `logos/${userId}/logo.${safeExt}`;
 
-      const objectPath = await objectStorageService.uploadObjectBuffer({
+      // Upload to the public-objects path so the logo is accessible in PDFs
+      // without requiring auth (PDFs open in a new tab via window.print()).
+      const publicSubPath = await objectStorageService.uploadPublicObjectBuffer({
         subPath,
         buffer,
         contentType: mimetype,
       });
 
-      const logoUrl = `/api/storage${objectPath}`;
+      const logoUrl = `/api/storage/public-objects/${publicSubPath}`;
 
       const [existing] = await db
         .select()

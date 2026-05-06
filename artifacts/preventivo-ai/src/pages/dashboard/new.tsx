@@ -279,15 +279,20 @@ export default function NewQuote() {
           </div>
         </CardContent>
         <CardFooter className="flex flex-col items-stretch gap-3 sm:flex-row sm:justify-between sm:items-center">
-          {!clientNome.trim() && (
+          {!clientNome.trim() ? (
+            <p className="text-xs text-amber-600 flex items-center gap-1 font-medium">
+              <Info className="h-3 w-3" />
+              Il nome del committente è obbligatorio
+            </p>
+          ) : !clientIndirizzo.trim() ? (
             <p className="text-xs text-muted-foreground flex items-center gap-1">
               <Info className="h-3 w-3" />
-              Aggiungi il nome del committente per un preventivo più preciso
+              Aggiungi l'indirizzo per un documento più completo
             </p>
-          )}
+          ) : null}
           <Button
             onClick={handleSubmit}
-            disabled={!input.trim() || isSubmitting}
+            disabled={!input.trim() || !clientNome.trim() || isSubmitting}
             className="gap-2 bg-primary text-primary-foreground px-8 sm:ml-auto"
             size="lg"
           >

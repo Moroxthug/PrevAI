@@ -22,12 +22,14 @@ import type {
   CreateCheckoutBody,
   CreateQuoteBody,
   HealthStatus,
+  LogoUploadResult,
   PdfResult,
   Plan,
   Quote,
   QuoteStats,
   UpdateBusinessProfileBody,
   UpdateQuoteBody,
+  UploadBusinessProfileLogoBody,
   UploadUrlRequest,
   UploadUrlResponse,
 } from "./api.schemas";
@@ -850,6 +852,94 @@ export const useUpdateBusinessProfile = <
   TContext
 > => {
   return useMutation(getUpdateBusinessProfileMutationOptions(options));
+};
+
+/**
+ * @summary Upload or replace the company logo
+ */
+export const getUploadBusinessProfileLogoUrl = () => {
+  return `/api/business-profile/logo`;
+};
+
+export const uploadBusinessProfileLogo = async (
+  uploadBusinessProfileLogoBody: UploadBusinessProfileLogoBody,
+  options?: RequestInit,
+): Promise<LogoUploadResult> => {
+  const formData = new FormData();
+
+  return customFetch<LogoUploadResult>(getUploadBusinessProfileLogoUrl(), {
+    ...options,
+    method: "POST",
+    body: formData,
+  });
+};
+
+export const getUploadBusinessProfileLogoMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof uploadBusinessProfileLogo>>,
+    TError,
+    { data: BodyType<UploadBusinessProfileLogoBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof uploadBusinessProfileLogo>>,
+  TError,
+  { data: BodyType<UploadBusinessProfileLogoBody> },
+  TContext
+> => {
+  const mutationKey = ["uploadBusinessProfileLogo"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof uploadBusinessProfileLogo>>,
+    { data: BodyType<UploadBusinessProfileLogoBody> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return uploadBusinessProfileLogo(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type UploadBusinessProfileLogoMutationResult = NonNullable<
+  Awaited<ReturnType<typeof uploadBusinessProfileLogo>>
+>;
+export type UploadBusinessProfileLogoMutationBody =
+  BodyType<UploadBusinessProfileLogoBody>;
+export type UploadBusinessProfileLogoMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Upload or replace the company logo
+ */
+export const useUploadBusinessProfileLogo = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof uploadBusinessProfileLogo>>,
+    TError,
+    { data: BodyType<UploadBusinessProfileLogoBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof uploadBusinessProfileLogo>>,
+  TError,
+  { data: BodyType<UploadBusinessProfileLogoBody> },
+  TContext
+> => {
+  return useMutation(getUploadBusinessProfileLogoMutationOptions(options));
 };
 
 /**
