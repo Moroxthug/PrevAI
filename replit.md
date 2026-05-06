@@ -74,6 +74,8 @@ A SaaS web app for Italian freelancers/craftsmen to describe a job in natural la
 
 - Admin email: `bchysfmel@gmail.com` — access `/admin` while logged in with this account
 - Stripe account: `acct_1TTwBIEKcNcM20o5` (bchysf@gmail.com) — env vars take priority over Replit integration connector
+- **Future feature (requested)**: Voice-to-text on the new quote page — mic button in textarea, Web Speech API for real-time transcription (free, `it-IT` locale), with optional OpenAI Whisper fallback for higher accuracy (~€0.006/min). Not yet implemented.
+- **Future feature (requested)**: Native Android + iOS app via Expo React Native — same API backend, Clerk OAuth, Stripe native SDK. Not yet implemented.
 
 ## Gotchas
 

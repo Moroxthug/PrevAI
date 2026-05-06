@@ -88,7 +88,14 @@ app.post(
             logger.info({ quoteId, planType }, "Quote unlocked via webhook");
           }
 
-          // If subscription mode, save subscription info to business profile + send email
+          const ALL_PLAN_INFO: Record<string, { name: string; price: number; interval: string | null }> = {
+            monthly_starter: { name: "Starter", price: 29, interval: "month" },
+            monthly_pro: { name: "Pro", price: 79, interval: "month" },
+            oneshot_watermark: { name: "Singolo con Watermark", price: 29, interval: null },
+            oneshot_clean: { name: "Singolo Pulito", price: 39, interval: null },
+          };
+
+          // If subscription mode, save subscription info to business profile
           if (userId && session.customer && session.mode === "subscription" && planType) {
             const customerId = session.customer as string;
             await db
@@ -108,18 +115,16 @@ app.post(
                 },
               });
             logger.info({ userId, planType }, "Subscription activated via webhook");
+          }
 
-            // Send welcome/receipt email
+          // Send receipt/welcome email for all completed purchases (subscription + one-shot)
+          if (userId && planType) {
             try {
               const clerkUser = await clerkClient.users.getUser(userId);
               const email = clerkUser.emailAddresses[0]?.emailAddress;
               const name = clerkUser.firstName || clerkUser.username || "Cliente";
               if (email) {
-                const planNames: Record<string, { name: string; price: number; interval: string }> = {
-                  monthly_starter: { name: "Starter", price: 29, interval: "month" },
-                  monthly_pro: { name: "Pro", price: 79, interval: "month" },
-                };
-                const planInfo = planNames[planType];
+                const planInfo = ALL_PLAN_INFO[planType];
                 if (planInfo) {
                   await sendSubscriptionEmail({
                     toEmail: email,
@@ -131,7 +136,7 @@ app.post(
                 }
               }
             } catch (emailErr) {
-              logger.error({ err: emailErr }, "Failed to send subscription email (non-fatal)");
+              logger.error({ err: emailErr }, "Failed to send purchase email (non-fatal)");
             }
           }
         }

@@ -16,21 +16,89 @@ const PREVAI_LOGO_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="120" hei
 
 const LOGO_DATA_URI = `data:image/svg+xml;base64,${Buffer.from(PREVAI_LOGO_SVG).toString("base64")}`;
 
+type PlanTier = "pro" | "starter" | "oneshot";
+
+function getPlanTier(planName: string): PlanTier {
+  const lower = planName.toLowerCase();
+  if (lower.includes("pro")) return "pro";
+  if (lower.includes("starter")) return "starter";
+  return "oneshot";
+}
+
+function getPlanFeatures(planName: string, tier: PlanTier): string {
+  if (tier === "pro") {
+    return `
+      <div class="feature"><span class="check">✓</span> Preventivi illimitati senza filigrana</div>
+      <div class="feature"><span class="check">✓</span> PDF professionali con il tuo logo aziendale</div>
+      <div class="feature"><span class="check">✓</span> Template premium ad alta qualità</div>
+      <div class="feature"><span class="check">✓</span> Branding completamente personalizzabile</div>
+      <div class="feature"><span class="check">✓</span> Generazione AI con foto cantiere</div>
+      <div class="feature"><span class="check">✓</span> Priorità nella generazione AI</div>
+    `;
+  }
+  if (tier === "starter") {
+    return `
+      <div class="feature"><span class="check">✓</span> Fino a 20 preventivi al mese</div>
+      <div class="feature"><span class="check">✓</span> Download PDF professionale</div>
+      <div class="feature"><span class="check">✓</span> Supporto email incluso</div>
+    `;
+  }
+  const isClean = planName.toLowerCase().includes("pulito") || planName.toLowerCase().includes("clean");
+  if (isClean) {
+    return `
+      <div class="feature"><span class="check">✓</span> 1 preventivo PDF senza filigrana</div>
+      <div class="feature"><span class="check">✓</span> Design professionale e pulito</div>
+      <div class="feature"><span class="check">✓</span> Download immediato</div>
+    `;
+  }
+  return `
+    <div class="feature"><span class="check">✓</span> 1 preventivo PDF</div>
+    <div class="feature"><span class="check">✓</span> Download immediato</div>
+  `;
+}
+
 function buildSubscriptionEmail(params: {
   userName: string;
   planName: string;
   planPrice: number;
-  planInterval: string;
+  planInterval: string | null;
 }) {
   const { userName, planName, planPrice, planInterval } = params;
+  const tier = getPlanTier(planName);
+  const isRecurring = !!planInterval;
   const date = new Date().toLocaleDateString("it-IT", { day: "2-digit", month: "long", year: "numeric" });
+  const intervalLabel = planInterval === "month" ? "mese" : planInterval === "year" ? "anno" : null;
+  const priceLabel = intervalLabel ? `€${planPrice}/${intervalLabel}` : `€${planPrice} (una tantum)`;
+  const renewalRow = isRecurring
+    ? `<div class="receipt-row">
+        <span class="receipt-label">Rinnovo</span>
+        <span>${planInterval === "month" ? "Mensile automatico" : "Annuale automatico"}</span>
+       </div>`
+    : `<div class="receipt-row">
+        <span class="receipt-label">Tipo</span>
+        <span>Acquisto singolo</span>
+       </div>`;
+
+  const headline = tier === "oneshot"
+    ? `🎉 Preventivo ${planName} sbloccato!`
+    : `🎉 Piano ${planName} attivato!`;
+
+  const subline = tier === "oneshot"
+    ? `Il tuo PDF è pronto. Accedi alla dashboard per scaricarlo.`
+    : `Il tuo abbonamento è attivo da oggi, ${date}`;
+
+  const bodyIntro = tier === "oneshot"
+    ? `Ciao ${userName},<br/><br/>il tuo acquisto <strong>Prevai ${planName}</strong> è andato a buon fine. Puoi accedere alla dashboard e scaricare il PDF del tuo preventivo.`
+    : `Ciao ${userName},<br/><br/>il tuo abbonamento <strong>Prevai ${planName}</strong> è stato attivato con successo. Puoi già iniziare a creare preventivi professionali${tier === "pro" ? " illimitati" : ""}.`;
+
+  const features = getPlanFeatures(planName, tier);
 
   return `<!DOCTYPE html>
 <html lang="it">
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Benvenuto su PrevAI – Piano ${planName} attivato</title>
+<title>${headline} – Prevai</title>
 <style>
   body { margin:0; padding:0; background:#f5f3ff; font-family:system-ui,-apple-system,sans-serif; }
   .wrapper { max-width:560px; margin:32px auto; background:#ffffff; border-radius:16px; overflow:hidden; box-shadow:0 4px 24px rgba(124,58,237,0.08); }
@@ -39,7 +107,7 @@ function buildSubscriptionEmail(params: {
   .header h1 { color:white; font-size:22px; font-weight:700; margin:16px 0 4px; }
   .header p { color:rgba(255,255,255,0.85); font-size:14px; margin:0; }
   .body { padding:32px 40px; }
-  .greeting { font-size:16px; color:#1a1a2e; margin-bottom:20px; }
+  .greeting { font-size:16px; color:#1a1a2e; margin-bottom:20px; line-height:1.6; }
   .receipt-box { background:#f5f3ff; border:1px solid #ede9fe; border-radius:12px; padding:20px 24px; margin:24px 0; }
   .receipt-row { display:flex; justify-content:space-between; align-items:center; padding:8px 0; border-bottom:1px solid #ede9fe; font-size:14px; }
   .receipt-row:last-child { border-bottom:none; font-weight:700; color:#7c3aed; font-size:16px; }
@@ -55,55 +123,43 @@ function buildSubscriptionEmail(params: {
 <body>
 <div class="wrapper">
   <div class="header">
-    <img src="${LOGO_DATA_URI}" alt="PrevAI" />
-    <h1>🎉 Piano ${planName} attivato!</h1>
-    <p>Il tuo abbonamento è attivo da oggi, ${date}</p>
+    <img src="${LOGO_DATA_URI}" alt="Prevai" />
+    <h1>${headline}</h1>
+    <p>${subline}</p>
   </div>
   <div class="body">
-    <p class="greeting">Ciao ${userName},<br/><br/>il tuo abbonamento <strong>PrevAI ${planName}</strong> è stato attivato con successo. Puoi già iniziare a creare preventivi professionali illimitati.</p>
-    
+    <p class="greeting">${bodyIntro}</p>
+
     <div class="receipt-box">
       <div class="receipt-row">
         <span class="receipt-label">Piano</span>
-        <span><strong>PrevAI ${planName}</strong></span>
+        <span><strong>Prevai ${planName}</strong></span>
       </div>
       <div class="receipt-row">
-        <span class="receipt-label">Data attivazione</span>
+        <span class="receipt-label">Data</span>
         <span>${date}</span>
       </div>
-      <div class="receipt-row">
-        <span class="receipt-label">Rinnovo</span>
-        <span>Mensile automatico</span>
-      </div>
+      ${renewalRow}
       <div class="receipt-row">
         <span class="receipt-label">Importo</span>
-        <span>€${planPrice}/${planInterval === "month" ? "mese" : "anno"}</span>
+        <span>${priceLabel}</span>
       </div>
     </div>
 
     <div class="features">
-      ${planName === "Pro" ? `
-      <div class="feature"><span class="check">✓</span> Preventivi illimitati senza filigrana</div>
-      <div class="feature"><span class="check">✓</span> PDF puliti con il tuo logo aziendale</div>
-      <div class="feature"><span class="check">✓</span> Template premium ad alta qualità</div>
-      <div class="feature"><span class="check">✓</span> Branding completamente personalizzabile</div>
-      ` : `
-      <div class="feature"><span class="check">✓</span> Fino a 20 preventivi al mese</div>
-      <div class="feature"><span class="check">✓</span> Download PDF professionale</div>
-      <div class="feature"><span class="check">✓</span> Supporto email incluso</div>
-      `}
+      ${features}
     </div>
 
     <div class="cta">
       <a href="https://prevai.it/dashboard" class="btn">Vai alla dashboard →</a>
     </div>
 
-    <p style="font-size:13px;color:#6b7280;text-align:center;">Hai domande? Rispondiamo su <a href="mailto:supporto@prevai.it" style="color:#7c3aed;">supporto@prevai.it</a></p>
+    <p style="font-size:13px;color:#6b7280;text-align:center;">Hai domande? Scrivici su <a href="mailto:supporto@prevai.it" style="color:#7c3aed;">supporto@prevai.it</a></p>
   </div>
   <div class="footer">
-    PrevAI · Preventivi professionali con l'AI<br/>
-    Hai ricevuto questa email perché hai sottoscritto un abbonamento su PrevAI.<br/>
-    Per disdire l'abbonamento accedi alla tua dashboard e vai su Gestisci Piano.
+    Prevai · Preventivi professionali con l'AI<br/>
+    Hai ricevuto questa email perché hai effettuato un acquisto su Prevai.<br/>
+    ${isRecurring ? "Per gestire o disdire l'abbonamento accedi alla dashboard → Impostazioni → Piano." : ""}
   </div>
 </div>
 </body>
@@ -115,7 +171,7 @@ export async function sendSubscriptionEmail(params: {
   toName: string;
   planName: string;
   planPrice: number;
-  planInterval: string;
+  planInterval: string | null;
 }): Promise<void> {
   const apiKey = process.env.RESEND_API_KEY;
   if (!apiKey) {
@@ -123,12 +179,17 @@ export async function sendSubscriptionEmail(params: {
     return;
   }
 
+  const tier = getPlanTier(params.planName);
+  const subject = tier === "oneshot"
+    ? `🎉 Preventivo ${params.planName} sbloccato – Prevai`
+    : `🎉 Piano ${params.planName} attivato – Benvenuto su Prevai!`;
+
   try {
     const resend = new Resend(apiKey);
     await resend.emails.send({
-      from: "PrevAI <no-reply@prevai.it>",
+      from: "Prevai <no-reply@prevai.it>",
       to: [params.toEmail],
-      subject: `🎉 Piano ${params.planName} attivato – Benvenuto su PrevAI!`,
+      subject,
       html: buildSubscriptionEmail({
         userName: params.toName,
         planName: params.planName,
