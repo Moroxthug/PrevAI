@@ -167,8 +167,8 @@ export type CreateCheckoutBodyPlanType =
   (typeof CreateCheckoutBodyPlanType)[keyof typeof CreateCheckoutBodyPlanType];
 
 export const CreateCheckoutBodyPlanType = {
-  monthly_basic: "monthly_basic",
-  monthly_premium: "monthly_premium",
+  monthly_starter: "monthly_starter",
+  monthly_pro: "monthly_pro",
   oneshot_watermark: "oneshot_watermark",
   oneshot_clean: "oneshot_clean",
 } as const;

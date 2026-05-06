@@ -943,45 +943,114 @@ export default function QuoteDetail() {
 
       {/* Paywall dialog */}
       <Dialog open={isPaywallOpen} onOpenChange={setIsPaywallOpen}>
-        <DialogContent className="sm:max-w-[800px]">
+        <DialogContent className="sm:max-w-[680px]">
           <DialogHeader>
             <DialogTitle className="text-2xl">Sblocca il Preventivo</DialogTitle>
             <DialogDescription>
-              Questo preventivo è in bozza. Scegli un piano per rimuovere il watermark, scaricare il PDF pulito e inviarlo al cliente.
+              Scegli un piano per rimuovere il watermark e scaricare il PDF pulito.
             </DialogDescription>
           </DialogHeader>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-6">
-            {plans?.map((plan) => (
-              <Card key={plan.id} className={`flex flex-col ${plan.id.includes("premium") || plan.id.includes("oneshot_clean") ? "border-primary ring-1 ring-primary" : ""}`}>
-                <CardHeader className="pb-4">
-                  <CardTitle className="text-base">{plan.name}</CardTitle>
-                  <div className="mt-2">
-                    <span className="text-2xl font-bold">€{plan.price}</span>
-                    {plan.interval && <span className="text-muted-foreground text-sm">/{plan.interval}</span>}
+
+          {/* Subscription plans */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
+            {plans?.filter(p => p.interval).map((plan, idx) => {
+              const isPro = plan.id === "monthly_pro";
+              return (
+                <Card
+                  key={plan.id}
+                  className={`flex flex-col plan-card-enter relative ${
+                    isPro
+                      ? "border-primary ring-1 ring-primary shadow-md"
+                      : ""
+                  }`}
+                  style={{ animationDelay: `${idx * 0.05}s` }}
+                >
+                  {isPro && (
+                    <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+                      <span className="bg-primary text-primary-foreground text-xs font-bold px-3 py-0.5 rounded-full uppercase tracking-widest">
+                        ⭐ Pro
+                      </span>
+                    </div>
+                  )}
+                  <CardHeader className="pb-3 pt-5">
+                    <div className="flex items-center justify-between">
+                      <CardTitle className="text-base">{plan.name}</CardTitle>
+                      {!isPro && (
+                        <span className="text-xs font-semibold bg-muted text-muted-foreground px-2 py-0.5 rounded-full uppercase tracking-widest">
+                          Starter
+                        </span>
+                      )}
+                    </div>
+                    <div className="mt-2">
+                      <span className="text-2xl font-bold">€{plan.price}</span>
+                      <span className="text-muted-foreground text-sm">/mese</span>
+                    </div>
+                    {isPro && (
+                      <div className="text-xs text-primary font-semibold mt-1">✓ Accesso completo sbloccato</div>
+                    )}
+                  </CardHeader>
+                  <CardContent className="flex-1 pb-3">
+                    <ul className="space-y-1.5 text-sm">
+                      {plan.features.map((feature, i) => (
+                        <li key={i} className="flex items-start gap-2 text-muted-foreground">
+                          <CheckCircle2 className={`h-4 w-4 shrink-0 mt-0.5 ${isPro ? "text-primary" : "text-muted-foreground/60"}`} />
+                          <span>{feature}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </CardContent>
+                  <div className="p-4 pt-0">
+                    <Button
+                      className="w-full"
+                      variant={isPro ? "default" : "outline"}
+                      onClick={() => handleCheckout(plan.id)}
+                      disabled={createCheckout.isPending}
+                    >
+                      {createCheckout.isPending ? "..." : isPro ? "Scegli Pro" : "Scegli Starter"}
+                    </Button>
                   </div>
-                </CardHeader>
-                <CardContent className="flex-1 pb-4">
-                  <ul className="space-y-2 text-sm">
-                    {plan.features.map((feature, i) => (
-                      <li key={i} className="flex items-start gap-2 text-muted-foreground">
-                        <CheckCircle2 className="h-4 w-4 text-primary shrink-0 mt-0.5" />
-                        <span>{feature}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </CardContent>
-                <div className="p-4 pt-0 mt-auto">
-                  <Button
-                    className="w-full"
-                    variant={plan.id.includes("premium") || plan.id.includes("oneshot_clean") ? "default" : "outline"}
-                    onClick={() => handleCheckout(plan.id)}
-                    disabled={createCheckout.isPending}
-                  >
-                    {createCheckout.isPending ? "..." : "Seleziona"}
-                  </Button>
+                </Card>
+              );
+            })}
+          </div>
+
+          {/* Divider */}
+          <div className="flex items-center gap-3 my-1">
+            <div className="flex-1 h-px bg-border" />
+            <span className="text-xs text-muted-foreground">oppure acquisto singolo</span>
+            <div className="flex-1 h-px bg-border" />
+          </div>
+
+          {/* One-shot plans */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {plans?.filter(p => !p.interval).map((plan, idx) => {
+              const isClean = plan.id === "oneshot_clean";
+              return (
+                <div
+                  key={plan.id}
+                  className={`plan-card-enter rounded-lg border p-4 flex items-center justify-between gap-4 hover:bg-muted/40 transition-colors ${
+                    isClean ? "border-primary/30" : ""
+                  }`}
+                  style={{ animationDelay: `${(idx + 2) * 0.05}s` }}
+                >
+                  <div>
+                    <div className="font-medium text-sm">{plan.name}</div>
+                    <div className="text-xs text-muted-foreground mt-0.5">{plan.features[0]}</div>
+                  </div>
+                  <div className="flex items-center gap-3 shrink-0">
+                    <span className="font-bold">€{plan.price}</span>
+                    <Button
+                      size="sm"
+                      variant={isClean ? "default" : "outline"}
+                      onClick={() => handleCheckout(plan.id)}
+                      disabled={createCheckout.isPending}
+                    >
+                      {createCheckout.isPending ? "..." : "Acquista"}
+                    </Button>
+                  </div>
                 </div>
-              </Card>
-            ))}
+              );
+            })}
           </div>
         </DialogContent>
       </Dialog>

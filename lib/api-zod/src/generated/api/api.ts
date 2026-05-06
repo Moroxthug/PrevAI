@@ -508,8 +508,8 @@ export const RequestUploadUrlResponse = zod.object({
 export const CreateCheckoutSessionBody = zod.object({
   quoteId: zod.string().optional(),
   planType: zod.enum([
-    "monthly_basic",
-    "monthly_premium",
+    "monthly_starter",
+    "monthly_pro",
     "oneshot_watermark",
     "oneshot_clean",
   ]),

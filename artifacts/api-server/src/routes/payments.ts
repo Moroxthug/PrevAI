@@ -14,24 +14,40 @@ const STRIPE_WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET ?? "";
 
 const PLANS = [
   {
-    id: "monthly_basic",
-    name: "Base Mensile",
-    price: 19,
+    id: "monthly_starter",
+    name: "Starter",
+    price: 29,
     currency: "eur",
     interval: "month",
-    features: ["20 preventivi/mese", "Watermark incluso", "PDF professionale", "Supporto email"],
+    features: [
+      "20 preventivi al mese",
+      "PDF professionale",
+      "Watermark incluso",
+      "Supporto email",
+    ],
     hasWatermark: true,
     quotaPerMonth: 20,
+    tier: "starter",
   },
   {
-    id: "monthly_premium",
-    name: "Premium Mensile",
-    price: 59,
+    id: "monthly_pro",
+    name: "Pro",
+    price: 79,
     currency: "eur",
     interval: "month",
-    features: ["Preventivi illimitati", "Nessun watermark", "PDF premium", "Priorità supporto", "Export multi-formato"],
+    features: [
+      "Preventivi illimitati",
+      "Nessun watermark",
+      "Template PDF premium",
+      "Branding completamente personalizzabile",
+      "Storico clienti completo",
+      "Export PDF ad alta qualità",
+      "Generazione AI con foto",
+      "Priorità generazione AI",
+    ],
     hasWatermark: false,
     quotaPerMonth: null,
+    tier: "pro",
   },
   {
     id: "oneshot_watermark",
@@ -42,6 +58,7 @@ const PLANS = [
     features: ["1 preventivo PDF", "Watermark incluso", "Download immediato"],
     hasWatermark: true,
     quotaPerMonth: 1,
+    tier: "oneshot",
   },
   {
     id: "oneshot_clean",
@@ -52,6 +69,7 @@ const PLANS = [
     features: ["1 preventivo PDF", "Nessun watermark", "Design professionale", "Download immediato"],
     hasWatermark: false,
     quotaPerMonth: 1,
+    tier: "oneshot",
   },
 ];
 
