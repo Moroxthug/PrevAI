@@ -1,12 +1,15 @@
+import { useState } from "react";
 import { Link } from "wouter";
 import { UserButton, useAuth } from "@clerk/react";
 import { Logo } from "@/components/logo";
 import { useScrolled } from "@/hooks/use-scrolled";
 import { cn } from "@/lib/utils";
+import { X, Send, CheckCircle2 } from "lucide-react";
 
 export function PublicLayout({ children }: { children: React.ReactNode }) {
   const { isSignedIn } = useAuth();
   const scrolled = useScrolled(20);
+  const [supportOpen, setSupportOpen] = useState(false);
 
   return (
     <div className="min-h-[100dvh] flex flex-col bg-background text-foreground">
@@ -82,12 +85,12 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
                 <li><Link href="/chi-siamo" className="hover:text-foreground transition-colors">Chi Siamo</Link></li>
                 <li><Link href="/contatti" className="hover:text-foreground transition-colors">Contatti</Link></li>
                 <li>
-                  <a
-                    href="mailto:supporto@prevai.it"
-                    className="hover:text-foreground transition-colors"
+                  <button
+                    onClick={() => setSupportOpen(true)}
+                    className="hover:text-foreground transition-colors text-left"
                   >
                     Supporto
-                  </a>
+                  </button>
                 </li>
                 <li><Link href="/privacy" className="hover:text-foreground transition-colors">Privacy Policy</Link></li>
                 <li><Link href="/termini" className="hover:text-foreground transition-colors">Termini di Servizio</Link></li>
@@ -106,7 +109,7 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
         target="_blank"
         rel="noopener noreferrer"
         aria-label="Chatta con noi su WhatsApp"
-        className="fixed bottom-6 right-6 z-50 flex items-center gap-2.5 rounded-full shadow-lg shadow-green-200/60 transition-all duration-200 hover:scale-105 active:scale-95 group"
+        className="fixed bottom-6 right-6 z-50 flex items-center gap-2.5 rounded-full shadow-lg shadow-green-200/60 transition-all duration-200 hover:scale-105 active:scale-95"
         style={{ background: "#25D366" }}
       >
         <span className="flex h-14 w-14 items-center justify-center rounded-full" style={{ background: "#25D366" }}>
@@ -116,6 +119,137 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
           Hai bisogno di aiuto?
         </span>
       </a>
+
+      {/* ── Support modal ────────────────────────────────────── */}
+      {supportOpen && (
+        <SupportModal onClose={() => setSupportOpen(false)} />
+      )}
+    </div>
+  );
+}
+
+function SupportModal({ onClose }: { onClose: () => void }) {
+  const [problema, setProblema] = useState("");
+  const [descrizione, setDescrizione] = useState("");
+  const [email, setEmail] = useState("");
+  const [sent, setSent] = useState(false);
+
+  function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    const subject = encodeURIComponent(`[Supporto prevai] ${problema}`);
+    const body = encodeURIComponent(
+      `Tipo di problema: ${problema}\n\nDescrizione:\n${descrizione}\n\nEmail del cliente: ${email}`
+    );
+    window.location.href = `mailto:supporto@prevai.it?subject=${subject}&body=${body}`;
+    setSent(true);
+  }
+
+  return (
+    <div
+      className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center"
+      onClick={onClose}
+    >
+      {/* Backdrop */}
+      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
+
+      {/* Panel */}
+      <div
+        className="relative w-full sm:max-w-md mx-4 bg-white rounded-2xl shadow-2xl overflow-hidden"
+        onClick={e => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between px-6 py-5 border-b">
+          <div>
+            <h2 className="text-lg font-semibold text-gray-900">Contatta il supporto</h2>
+            <p className="text-sm text-gray-500 mt-0.5">Ti risponderemo entro 24 ore</p>
+          </div>
+          <button
+            onClick={onClose}
+            className="h-8 w-8 rounded-full flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+
+        {sent ? (
+          <div className="px-6 py-12 text-center">
+            <div className="flex items-center justify-center mb-4">
+              <div className="h-14 w-14 rounded-full flex items-center justify-center"
+                style={{ background: "linear-gradient(135deg, rgba(124,58,237,0.12), rgba(6,182,212,0.12))" }}>
+                <CheckCircle2 className="h-7 w-7 text-violet-500" />
+              </div>
+            </div>
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">Richiesta inviata!</h3>
+            <p className="text-sm text-gray-500 mb-6">Il tuo client email si è aperto con il messaggio pre-compilato. Clicca su "Invia" per completare l'invio.</p>
+            <button
+              onClick={onClose}
+              className="btn-gradient inline-flex h-10 items-center justify-center px-6 text-sm font-semibold"
+            >
+              Chiudi
+            </button>
+          </div>
+        ) : (
+          <form onSubmit={handleSubmit} className="px-6 py-6 space-y-5">
+            {/* Tipo problema */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                Tipo di problema <span className="text-red-400">*</span>
+              </label>
+              <select
+                required
+                value={problema}
+                onChange={e => setProblema(e.target.value)}
+                className="w-full rounded-xl border border-gray-200 bg-gray-50 px-3.5 py-2.5 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-violet-400 focus:border-transparent transition-all"
+              >
+                <option value="">Seleziona un tipo…</option>
+                <option value="Problema tecnico">Problema tecnico</option>
+                <option value="Pagamento / Abbonamento">Pagamento / Abbonamento</option>
+                <option value="Generazione preventivo">Generazione preventivo</option>
+                <option value="Account e accesso">Account e accesso</option>
+                <option value="Altro">Altro</option>
+              </select>
+            </div>
+
+            {/* Descrizione */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                Descrizione <span className="text-red-400">*</span>
+              </label>
+              <textarea
+                required
+                rows={4}
+                value={descrizione}
+                onChange={e => setDescrizione(e.target.value)}
+                placeholder="Descrivi il problema nel dettaglio…"
+                className="w-full rounded-xl border border-gray-200 bg-gray-50 px-3.5 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-violet-400 focus:border-transparent transition-all resize-none"
+              />
+            </div>
+
+            {/* Email */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                La tua email <span className="text-red-400">*</span>
+              </label>
+              <input
+                type="email"
+                required
+                value={email}
+                onChange={e => setEmail(e.target.value)}
+                placeholder="mario@esempio.it"
+                className="w-full rounded-xl border border-gray-200 bg-gray-50 px-3.5 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-violet-400 focus:border-transparent transition-all"
+              />
+            </div>
+
+            <button
+              type="submit"
+              className="btn-gradient inline-flex h-11 w-full items-center justify-center gap-2 text-sm font-semibold mt-1"
+            >
+              <Send className="h-4 w-4" />
+              Invia richiesta
+            </button>
+          </form>
+        )}
+      </div>
     </div>
   );
 }
