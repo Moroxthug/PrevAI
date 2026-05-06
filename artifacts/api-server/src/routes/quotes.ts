@@ -315,7 +315,7 @@ Descrizione lavori: ${rawInput}`;
     const resolvedClientData: QuoteClientData = clientDataInput?.nome
       ? {
           nome: clientDataInput.nome,
-          indirizzo: clientDataInput.indirizzo || aiData.cliente?.indirizzo || "",
+          indirizzo: clientDataInput.indirizzo || "",
           codiceFiscale: clientDataInput.codiceFiscale,
           partitaIva: clientDataInput.partitaIva,
           citta: clientDataInput.citta,

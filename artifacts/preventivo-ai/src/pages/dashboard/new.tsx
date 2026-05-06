@@ -153,7 +153,9 @@ export default function NewQuote() {
               />
             </div>
             <div className="md:col-span-2 space-y-1.5">
-              <Label htmlFor="clientIndirizzo">Indirizzo (Via / Piazza)</Label>
+              <Label htmlFor="clientIndirizzo">
+                Indirizzo (Via / Piazza) <span className="text-destructive">*</span>
+              </Label>
               <Input
                 id="clientIndirizzo"
                 placeholder="Es. Via Garibaldi 10"
@@ -285,14 +287,14 @@ export default function NewQuote() {
               Il nome del committente è obbligatorio
             </p>
           ) : !clientIndirizzo.trim() ? (
-            <p className="text-xs text-muted-foreground flex items-center gap-1">
+            <p className="text-xs text-amber-600 flex items-center gap-1 font-medium">
               <Info className="h-3 w-3" />
-              Aggiungi l'indirizzo per un documento più completo
+              L'indirizzo del committente è obbligatorio
             </p>
           ) : null}
           <Button
             onClick={handleSubmit}
-            disabled={!input.trim() || !clientNome.trim() || isSubmitting}
+            disabled={!input.trim() || !clientNome.trim() || !clientIndirizzo.trim() || isSubmitting}
             className="gap-2 bg-primary text-primary-foreground px-8 sm:ml-auto"
             size="lg"
           >

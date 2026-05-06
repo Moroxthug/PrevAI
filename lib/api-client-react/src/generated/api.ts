@@ -866,6 +866,7 @@ export const uploadBusinessProfileLogo = async (
   options?: RequestInit,
 ): Promise<LogoUploadResult> => {
   const formData = new FormData();
+  formData.append(`logo`, uploadBusinessProfileLogoBody.logo);
 
   return customFetch<LogoUploadResult>(getUploadBusinessProfileLogoUrl(), {
     ...options,

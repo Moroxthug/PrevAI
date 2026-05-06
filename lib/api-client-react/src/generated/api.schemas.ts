@@ -201,4 +201,6 @@ export interface UploadUrlResponse {
   metadata?: UploadUrlRequest;
 }
 
-export type UploadBusinessProfileLogoBody = { [key: string]: unknown };
+export type UploadBusinessProfileLogoBody = {
+  logo: Blob;
+};

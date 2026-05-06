@@ -472,10 +472,9 @@ export const UpdateBusinessProfileResponse = zod.object({
 /**
  * @summary Upload or replace the company logo
  */
-export const UploadBusinessProfileLogoBody = zod.record(
-  zod.string(),
-  zod.unknown(),
-);
+export const UploadBusinessProfileLogoBody = zod.object({
+  logo: zod.instanceof(File),
+});
 
 export const UploadBusinessProfileLogoResponse = zod.object({
   logoUrl: zod.string(),
