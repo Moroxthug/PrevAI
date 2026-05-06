@@ -16,7 +16,7 @@ import {
   Download,
   Building2,
 } from "lucide-react";
-import { useUser } from "@clerk/react";
+import { useAuth } from "@/hooks/use-auth";
 
 function PlanBadge({ plan }: { plan: string | null | undefined }) {
   if (!plan) return null;
@@ -134,13 +134,13 @@ function OnboardingView() {
 export default function DashboardHome() {
   const { data: stats, isLoading: isLoadingStats } = useGetQuoteStats();
   const { data: subscription } = useGetSubscription();
-  const { user } = useUser();
+  const { user } = useAuth();
 
   const formatCurrency = (amount: number) =>
     new Intl.NumberFormat("it-IT", { style: "currency", currency: "EUR", maximumFractionDigits: 0 }).format(amount);
 
   const recentQuotes = stats?.recentQuotes || [];
-  const firstName = user?.firstName || user?.username || "";
+  const firstName = user?.name?.split(" ")?.[0] || "";
   const isNewUser = !isLoadingStats && (stats?.total ?? 0) === 0;
 
   if (isLoadingStats) {

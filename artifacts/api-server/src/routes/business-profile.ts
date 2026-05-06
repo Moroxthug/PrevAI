@@ -1,7 +1,6 @@
 import { Router } from "express";
-import { requireAuth, getAuth } from "@clerk/express";
+import { requireAuth, getUserId } from "../middlewares/authMiddleware";
 import multer from "multer";
-import type { Request } from "express";
 import { db, businessProfilesTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
 import { UpdateBusinessProfileBody } from "@workspace/api-zod";
@@ -15,7 +14,6 @@ const upload = multer({
   limits: { fileSize: 2 * 1024 * 1024 },
 });
 
-// Accept both "logo" (canonical) and "file" (legacy alias) field names
 const uploadLogo = upload.fields([
   { name: "logo", maxCount: 1 },
   { name: "file", maxCount: 1 },
@@ -23,16 +21,9 @@ const uploadLogo = upload.fields([
 
 const ALLOWED_LOGO_MIMES = ["image/svg+xml", "image/png", "image/jpeg"];
 
-function getUserId(req: Request): string {
-  const { userId } = getAuth(req);
-  if (!userId) throw new Error("Unauthorized");
-  return userId;
-}
-
-// GET /api/business-profile
-router.get("/business-profile", requireAuth(), async (req, res) => {
+router.get("/business-profile", requireAuth, async (req, res) => {
   try {
-    const userId = getUserId(req);
+    const userId = getUserId(res);
     const [profile] = await db
       .select()
       .from(businessProfilesTable)
@@ -66,10 +57,9 @@ router.get("/business-profile", requireAuth(), async (req, res) => {
   }
 });
 
-// PUT /api/business-profile
-router.put("/business-profile", requireAuth(), async (req, res) => {
+router.put("/business-profile", requireAuth, async (req, res) => {
   try {
-    const userId = getUserId(req);
+    const userId = getUserId(res);
     const parsed = UpdateBusinessProfileBody.safeParse(req.body);
     if (!parsed.success) {
       res.status(400).json({ error: "Invalid request", details: parsed.error });
@@ -121,17 +111,13 @@ router.put("/business-profile", requireAuth(), async (req, res) => {
   }
 });
 
-// POST /api/business-profile/logo
-// Accepts multipart/form-data with a single "file" field.
-// Validates MIME type (SVG, PNG, JPEG) and size (max 2 MB) server-side.
-// Uploads to logos/{userId}/{ext} and persists the serving URL on the profile.
 router.post(
   "/business-profile/logo",
-  requireAuth(),
+  requireAuth,
   uploadLogo,
   async (req, res) => {
     try {
-      const userId = getUserId(req);
+      const userId = getUserId(res);
 
       const files = req.files as Record<string, Express.Multer.File[]> | undefined;
       const uploadedFile = files?.["logo"]?.[0] ?? files?.["file"]?.[0];
@@ -144,9 +130,7 @@ router.post(
       const { mimetype, size, originalname, buffer } = uploadedFile;
 
       if (!ALLOWED_LOGO_MIMES.includes(mimetype)) {
-        res.status(400).json({
-          error: "Invalid file type. Allowed types: SVG, PNG, JPEG",
-        });
+        res.status(400).json({ error: "Invalid file type. Allowed types: SVG, PNG, JPEG" });
         return;
       }
 
@@ -159,8 +143,6 @@ router.post(
       const safeExt = ["svg", "png", "jpg", "jpeg"].includes(ext) ? ext : "png";
       const subPath = `logos/${userId}/logo.${safeExt}`;
 
-      // Upload to the public-objects path so the logo is accessible in PDFs
-      // without requiring auth (PDFs open in a new tab via window.print()).
       const publicSubPath = await objectStorageService.uploadPublicObjectBuffer({
         subPath,
         buffer,

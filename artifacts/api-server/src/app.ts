@@ -1,18 +1,12 @@
 import express, { type Express, type Request, type Response, type NextFunction } from "express";
 import cors from "cors";
 import pinoHttp from "pino-http";
-import { clerkMiddleware } from "@clerk/express";
-import { publishableKeyFromHost } from "@clerk/shared/keys";
+import { toNodeHandler } from "better-auth/node";
 import multer from "multer";
-import {
-  CLERK_PROXY_PATH,
-  clerkProxyMiddleware,
-  getClerkProxyHost,
-} from "./middlewares/clerkProxyMiddleware";
 import { WebhookHandlers } from "./webhookHandlers";
-import { db, quotesTable, businessProfilesTable } from "@workspace/db";
+import { db, quotesTable, businessProfilesTable, authUsersTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
-import { clerkClient } from "@clerk/express";
+import { auth } from "./lib/auth";
 import { sendSubscriptionEmail } from "./lib/email";
 import router from "./routes";
 import { logger } from "./lib/logger";
@@ -39,10 +33,17 @@ app.use(
   }),
 );
 
-app.use(CLERK_PROXY_PATH, clerkProxyMiddleware());
+// ── Better Auth handler — must be before express.json() ──────────────────────
+// Use raw middleware to avoid Express 5 wildcard syntax issues
+app.use((req, res, next): void => {
+  if (req.url?.startsWith("/api/auth/") || req.url === "/api/auth") {
+    void toNodeHandler(auth)(req, res);
+    return;
+  }
+  next();
+});
 
 // ── Stripe webhook MUST be registered before express.json() ──────────────────
-// express.raw() keeps the body as Buffer so Stripe can verify the signature.
 app.post(
   "/api/payments/webhook",
   express.raw({ type: "application/json" }),
@@ -54,10 +55,8 @@ app.post(
     }
     const sig = Array.isArray(signature) ? signature[0] : signature;
     try {
-      // 1. Let stripe-replit-sync validate signature + sync data to stripe.* tables
       await WebhookHandlers.processWebhook(req.body as Buffer, sig);
 
-      // 2. Run custom business logic — safe to parse JSON since signature was already verified above
       try {
         const event = JSON.parse((req.body as Buffer).toString("utf8")) as {
           type: string;
@@ -79,7 +78,6 @@ app.post(
           const userId = session.metadata?.userId;
           const planType = session.metadata?.planType;
 
-          // Unlock the specific quote with the plan info
           if (quoteId) {
             await db
               .update(quotesTable)
@@ -88,7 +86,6 @@ app.post(
             logger.info({ quoteId, planType }, "Quote unlocked via webhook");
           }
 
-          // If subscription mode, save subscription info to business profile + send welcome email
           if (userId && session.customer && session.mode === "subscription" && planType) {
             const customerId = session.customer as string;
             await db
@@ -109,11 +106,15 @@ app.post(
               });
             logger.info({ userId, planType }, "Subscription activated via webhook");
 
-            // Send welcome/receipt email
             try {
-              const clerkUser = await clerkClient.users.getUser(userId);
-              const email = clerkUser.emailAddresses[0]?.emailAddress;
-              const name = clerkUser.firstName || clerkUser.username || "Cliente";
+              const [authUser] = await db
+                .select({ email: authUsersTable.email, name: authUsersTable.name })
+                .from(authUsersTable)
+                .where(eq(authUsersTable.id, userId));
+
+              const email = authUser?.email;
+              const name = authUser?.name || "Cliente";
+
               if (email) {
                 const planInfo: Record<string, { name: string; price: number; interval: string | null }> = {
                   monthly_starter: { name: "Starter", price: 29, interval: "month" },
@@ -136,7 +137,6 @@ app.post(
           }
         }
 
-        // Handle subscription cancellation
         if (event.type === "customer.subscription.deleted") {
           const sub = event.data.object;
           if (sub.customer) {
@@ -165,18 +165,8 @@ app.use(cors({ credentials: true, origin: true }));
 app.use(express.json({ limit: "25mb" }));
 app.use(express.urlencoded({ extended: true }));
 
-app.use(
-  clerkMiddleware((req) => ({
-    publishableKey: publishableKeyFromHost(
-      getClerkProxyHost(req) ?? "",
-      process.env.CLERK_PUBLISHABLE_KEY,
-    ),
-  })),
-);
-
 app.use("/api", router);
 
-// Multer error handler — must be 4-arity to be recognized as an error middleware
 app.use((err: unknown, _req: Request, res: Response, _next: NextFunction) => {
   if (err instanceof multer.MulterError) {
     const messages: Record<string, string> = {

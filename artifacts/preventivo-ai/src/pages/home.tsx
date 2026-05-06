@@ -3,7 +3,7 @@ import { useEffect } from "react";
 import { ArrowRight, CheckCircle2, FileText, Zap, Lock, Star } from "lucide-react";
 import { useGetPlans } from "@workspace/api-client-react";
 import { useScrollFade } from "@/hooks/use-scroll-fade";
-import { useUser } from "@clerk/react";
+import { useAuth } from "@/hooks/use-auth";
 
 function ScrollSection({
   children,
@@ -28,7 +28,7 @@ function ScrollSection({
 
 export default function Home() {
   const { data: plans } = useGetPlans();
-  const { isSignedIn } = useUser();
+  const { isSignedIn } = useAuth();
   const [, navigate] = useLocation();
 
   useEffect(() => {

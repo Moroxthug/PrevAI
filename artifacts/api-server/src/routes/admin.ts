@@ -1,21 +1,19 @@
 import { Router, type Request, type Response, type NextFunction } from "express";
-import { getAuth } from "@clerk/express";
-import { clerkClient } from "@clerk/express";
-import { db, quotesTable, businessProfilesTable, settingsTable } from "@workspace/db";
-import { eq, sql, desc, count } from "drizzle-orm";
+import { fromNodeHeaders } from "better-auth/node";
+import { auth } from "../lib/auth";
+import { db, quotesTable, businessProfilesTable, settingsTable, authUsersTable } from "@workspace/db";
+import { eq, sql, desc, count, inArray } from "drizzle-orm";
 import { logger } from "../lib/logger";
 
 const router = Router();
 
 async function isAdmin(req: Request): Promise<boolean> {
-  const { userId } = getAuth(req);
-  if (!userId) return false;
   const adminEmail = process.env.ADMIN_EMAIL;
   if (!adminEmail) return false;
   try {
-    const user = await clerkClient.users.getUser(userId);
-    const email = user.emailAddresses[0]?.emailAddress ?? "";
-    return email.toLowerCase() === adminEmail.toLowerCase();
+    const session = await auth.api.getSession({ headers: fromNodeHeaders(req.headers) });
+    if (!session) return false;
+    return session.user.email.toLowerCase() === adminEmail.toLowerCase();
   } catch {
     return false;
   }
@@ -30,7 +28,6 @@ async function requireAdmin(req: Request, res: Response, next: NextFunction): Pr
   next();
 }
 
-// ── Public endpoint: check if registration is open ────────────────────────────
 router.get("/settings/registration", async (_req, res) => {
   try {
     const [row] = await db
@@ -44,10 +41,8 @@ router.get("/settings/registration", async (_req, res) => {
   }
 });
 
-// All routes below require admin ──────────────────────────────────────────────
 router.use("/admin", requireAdmin);
 
-// GET /api/admin/metrics
 router.get("/admin/metrics", async (_req, res) => {
   try {
     const now = new Date();
@@ -117,7 +112,6 @@ router.get("/admin/metrics", async (_req, res) => {
   }
 });
 
-// GET /api/admin/users
 router.get("/admin/users", async (_req, res) => {
   try {
     const profiles = await db
@@ -127,26 +121,26 @@ router.get("/admin/users", async (_req, res) => {
       .limit(200);
 
     const userIds = profiles.map(p => p.userId);
-    let clerkUsers: Record<string, { email: string; firstName: string | null }> = {};
+    let authUsers: Record<string, { email: string; name: string }> = {};
 
     if (userIds.length > 0) {
       try {
-        const { data: users } = await clerkClient.users.getUserList({ userId: userIds, limit: 200 });
+        const users = await db
+          .select({ id: authUsersTable.id, email: authUsersTable.email, name: authUsersTable.name })
+          .from(authUsersTable)
+          .where(inArray(authUsersTable.id, userIds));
         for (const u of users) {
-          clerkUsers[u.id] = {
-            email: u.emailAddresses[0]?.emailAddress ?? "",
-            firstName: u.firstName,
-          };
+          authUsers[u.id] = { email: u.email, name: u.name };
         }
-      } catch (clerkErr) {
-        logger.error({ err: clerkErr }, "Failed to fetch Clerk users (non-fatal)");
+      } catch (dbErr) {
+        logger.error({ err: dbErr }, "Failed to fetch auth users (non-fatal)");
       }
     }
 
     const rows = profiles.map(p => ({
       userId: p.userId,
-      email: clerkUsers[p.userId]?.email ?? "",
-      firstName: clerkUsers[p.userId]?.firstName ?? "",
+      email: authUsers[p.userId]?.email ?? "",
+      firstName: authUsers[p.userId]?.name ?? "",
       companyName: p.companyName,
       subscriptionPlan: p.subscriptionPlan ?? null,
       subscriptionStatus: p.subscriptionStatus ?? null,
@@ -161,7 +155,6 @@ router.get("/admin/users", async (_req, res) => {
   }
 });
 
-// GET /api/admin/settings
 router.get("/admin/settings", async (_req, res) => {
   try {
     const rows = await db.select().from(settingsTable);
@@ -174,7 +167,6 @@ router.get("/admin/settings", async (_req, res) => {
   }
 });
 
-// POST /api/admin/settings
 router.post("/admin/settings", async (req, res) => {
   try {
     const { key, value } = req.body as { key: string; value: string };
@@ -193,7 +185,6 @@ router.post("/admin/settings", async (req, res) => {
   }
 });
 
-// GET /api/admin/quote-stats
 router.get("/admin/quote-stats", async (_req, res) => {
   try {
     const last30 = new Date();

@@ -121,6 +121,21 @@ export class ObjectStorageService {
   }
 
   /**
+   * Download a private object by its normalized sub-path (e.g. "uploads/uuid").
+   * Reconstructs the full GCS path from PRIVATE_OBJECT_DIR.
+   */
+  async downloadPrivateObject(objectPath: string): Promise<Response> {
+    const privateObjectDir = this.getPrivateObjectDir();
+    const fullPath = `${privateObjectDir}/${objectPath}`;
+    const { bucketName, objectName } = parseObjectPath(fullPath);
+    const bucket = objectStorageClient.bucket(bucketName);
+    const file = bucket.file(objectName);
+    const [exists] = await file.exists();
+    if (!exists) throw new ObjectNotFoundError();
+    return this.downloadObject(file, { isPublic: false });
+  }
+
+  /**
    * Upload a buffer to the PRIVATE_OBJECT_DIR.
    * Returns the normalized /objects/{subPath} path.
    */

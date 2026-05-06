@@ -1,5 +1,4 @@
 import { Link, useLocation } from "wouter";
-import { useAuth, useUser, useClerk, RedirectToSignIn } from "@clerk/react";
 import { LayoutDashboard, FileText, Menu, BarChart3, Settings, ChevronLeft, ChevronRight, Plus, LogOut, User, CreditCard, Building2, ChevronDown, BookOpen } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger, SheetTitle } from "@/components/ui/sheet";
@@ -10,6 +9,8 @@ import { cn } from "@/lib/utils";
 import { Logo } from "@/components/logo";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useGetSubscription } from "@workspace/api-client-react";
+import { useAuth } from "@/hooks/use-auth";
+import { authClient } from "@/lib/auth-client";
 
 const BASE_NAV_ITEMS = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard, exact: true, proOnly: false },
@@ -25,13 +26,15 @@ function isActive(navHref: string, location: string, exact: boolean) {
 }
 
 function AccountMenu({ collapsed = false }: { collapsed?: boolean }) {
-  const { user } = useUser();
-  const { signOut } = useClerk();
-  const name = user?.firstName && user?.lastName
-    ? `${user.firstName} ${user.lastName}`
-    : user?.firstName || user?.username || user?.emailAddresses?.[0]?.emailAddress?.split("@")[0] || "Account";
-  const email = user?.emailAddresses?.[0]?.emailAddress ?? "";
-  const initials = (user?.firstName?.[0] ?? "") + (user?.lastName?.[0] ?? user?.firstName?.[1] ?? "");
+  const { user } = useAuth();
+  const name = user?.name || user?.email?.split("@")[0] || "Account";
+  const email = user?.email ?? "";
+  const initials = name.slice(0, 2).toUpperCase();
+
+  async function handleSignOut() {
+    await authClient.signOut();
+    window.location.href = "/";
+  }
 
   return (
     <DropdownMenu>
@@ -40,26 +43,18 @@ function AccountMenu({ collapsed = false }: { collapsed?: boolean }) {
           <Tooltip delayDuration={0}>
             <TooltipTrigger asChild>
               <button className="h-10 w-10 mx-auto flex items-center justify-center rounded-xl hover:bg-gray-100 transition-colors shrink-0">
-                {user?.imageUrl ? (
-                  <img src={user.imageUrl} alt={name} className="h-8 w-8 rounded-full object-cover" />
-                ) : (
-                  <div className="h-8 w-8 rounded-full bg-violet-100 text-violet-700 text-xs font-bold flex items-center justify-center uppercase">
-                    {initials || <User className="h-4 w-4" />}
-                  </div>
-                )}
+                <div className="h-8 w-8 rounded-full bg-violet-100 text-violet-700 text-xs font-bold flex items-center justify-center uppercase">
+                  {initials || <User className="h-4 w-4" />}
+                </div>
               </button>
             </TooltipTrigger>
             <TooltipContent side="right" className="text-xs">{name}</TooltipContent>
           </Tooltip>
         ) : (
           <button className="w-full flex items-center gap-2.5 px-2 py-2 rounded-xl hover:bg-gray-50 transition-colors group text-left">
-            {user?.imageUrl ? (
-              <img src={user.imageUrl} alt={name} className="h-8 w-8 rounded-full object-cover shrink-0" />
-            ) : (
-              <div className="h-8 w-8 rounded-full bg-violet-100 text-violet-700 text-xs font-bold flex items-center justify-center uppercase shrink-0">
-                {initials || <User className="h-4 w-4" />}
-              </div>
-            )}
+            <div className="h-8 w-8 rounded-full bg-violet-100 text-violet-700 text-xs font-bold flex items-center justify-center uppercase shrink-0">
+              {initials || <User className="h-4 w-4" />}
+            </div>
             <div className="flex-1 min-w-0">
               <div className="text-sm font-medium text-gray-700 truncate leading-tight">{name}</div>
               {email && <div className="text-xs text-gray-400 truncate leading-tight">{email}</div>}
@@ -91,7 +86,7 @@ function AccountMenu({ collapsed = false }: { collapsed?: boolean }) {
         </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem
-          onClick={() => signOut({ redirectUrl: "/" })}
+          onClick={handleSignOut}
           className="cursor-pointer text-red-600 focus:text-red-600 gap-2"
         >
           <LogOut className="h-4 w-4" /> Esci
@@ -102,7 +97,7 @@ function AccountMenu({ collapsed = false }: { collapsed?: boolean }) {
 }
 
 export function DashboardLayout({ children }: { children: React.ReactNode }) {
-  const { isLoaded, userId } = useAuth();
+  const { isLoaded, isSignedIn } = useAuth();
   const [location] = useLocation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(() => {
@@ -124,7 +119,10 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
     );
   }
 
-  if (!userId) return <RedirectToSignIn />;
+  if (!isSignedIn) {
+    window.location.href = "/sign-in";
+    return null;
+  }
 
   const NAV_ITEMS = BASE_NAV_ITEMS.filter(item => !item.proOnly || isPro);
 

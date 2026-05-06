@@ -27,7 +27,7 @@ import CatalogPage from "@/pages/dashboard/catalog";
 import { PublicLayout } from "@/components/layout/public-layout";
 import { DashboardLayout } from "@/components/layout/dashboard-layout";
 import { useGetBusinessProfile } from "@workspace/api-client-react";
-import { useAuth } from "@clerk/react";
+import { useAuth } from "@/hooks/use-auth";
 
 const queryClient = new QueryClient();
 

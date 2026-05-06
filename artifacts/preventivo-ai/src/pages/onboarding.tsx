@@ -8,13 +8,13 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, Building2, Upload, X, ImageIcon, ArrowRight, Sparkles } from "lucide-react";
 import { Logo } from "@/components/logo";
-import { useAuth, RedirectToSignIn } from "@clerk/react";
+import { useAuth } from "@/hooks/use-auth";
 
 const ALLOWED_TYPES = ["image/svg+xml", "image/png", "image/jpeg", "image/jpg"];
 const MAX_SIZE_MB = 2;
 
 export default function OnboardingPage() {
-  const { isLoaded, userId } = useAuth();
+  const { isLoaded, isSignedIn } = useAuth();
   const [, setLocation] = useLocation();
   const updateProfile = useUpdateBusinessProfile();
   const queryClient = useQueryClient();
@@ -38,7 +38,10 @@ export default function OnboardingPage() {
     );
   }
 
-  if (!userId) return <RedirectToSignIn />;
+  if (!isSignedIn) {
+    window.location.href = "/sign-in";
+    return null;
+  }
 
   const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -55,7 +58,7 @@ export default function OnboardingPage() {
     try {
       const formData = new FormData();
       formData.append("logo", file);
-      const res = await fetch("/api/business-profile/logo", { method: "POST", body: formData });
+      const res = await fetch("/api/business-profile/logo", { method: "POST", body: formData, credentials: "include" });
       if (!res.ok) throw new Error("Upload fallito");
       const { logoUrl } = await res.json() as { logoUrl: string };
       setLogoPreview(logoUrl);

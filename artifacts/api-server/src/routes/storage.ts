@@ -1,6 +1,6 @@
 import { Router, type IRouter, type Request, type Response } from "express";
 import { Readable } from "stream";
-import { requireAuth } from "@clerk/express";
+import { requireAuth } from "../middlewares/authMiddleware";
 import {
   RequestUploadUrlBody,
   RequestUploadUrlResponse,
@@ -10,14 +10,7 @@ import { ObjectStorageService, ObjectNotFoundError } from "../lib/objectStorage.
 const router: IRouter = Router();
 const objectStorageService = new ObjectStorageService();
 
-/**
- * POST /storage/uploads/request-url
- *
- * Request a presigned URL for file upload. Requires authentication.
- * The client sends JSON metadata (name, size, contentType) — NOT the file.
- * Then uploads the file directly to the returned presigned URL.
- */
-router.post("/storage/uploads/request-url", requireAuth(), async (req: Request, res: Response) => {
+router.post("/storage/uploads/request-url", requireAuth, async (req: Request, res: Response) => {
   const parsed = RequestUploadUrlBody.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: "Missing or invalid required fields" });
@@ -43,12 +36,6 @@ router.post("/storage/uploads/request-url", requireAuth(), async (req: Request, 
   }
 });
 
-/**
- * GET /storage/public-objects/*
- *
- * Serve public assets from PUBLIC_OBJECT_SEARCH_PATHS.
- * These are unconditionally public — no authentication required.
- */
 router.get("/storage/public-objects/*filePath", async (req: Request, res: Response) => {
   try {
     const raw = req.params.filePath;
@@ -73,6 +60,31 @@ router.get("/storage/public-objects/*filePath", async (req: Request, res: Respon
   } catch (error) {
     req.log.error({ err: error }, "Error serving public object");
     res.status(500).json({ error: "Failed to serve public object" });
+  }
+});
+
+router.get("/storage/objects/*objectPath", requireAuth, async (req: Request, res: Response) => {
+  try {
+    const raw = req.params.objectPath;
+    const objectPath = Array.isArray(raw) ? raw.join("/") : raw;
+    const objectData = await objectStorageService.downloadPrivateObject(objectPath);
+
+    res.status(objectData.status);
+    objectData.headers.forEach((value: string, key: string) => res.setHeader(key, value));
+
+    if (objectData.body) {
+      const nodeStream = Readable.fromWeb(objectData.body as ReadableStream<Uint8Array>);
+      nodeStream.pipe(res);
+    } else {
+      res.end();
+    }
+  } catch (error) {
+    if (error instanceof ObjectNotFoundError) {
+      res.status(404).json({ error: "Object not found" });
+      return;
+    }
+    req.log.error({ err: error }, "Error serving private object");
+    res.status(500).json({ error: "Failed to serve object" });
   }
 });
 

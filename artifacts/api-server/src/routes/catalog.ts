@@ -1,18 +1,12 @@
 import { Router } from "express";
-import { requireAuth, getAuth } from "@clerk/express";
-import type { Request } from "express";
+import { requireAuth, getUserId } from "../middlewares/authMiddleware";
+import type { Response } from "express";
 import { db, priceCatalogItemsTable, quotesTable } from "@workspace/db";
 import { eq, desc, and } from "drizzle-orm";
 import type { QuoteChapter } from "@workspace/db";
 import { logger } from "../lib/logger.js";
 
 const router = Router();
-
-function getUserId(req: Request): string {
-  const { userId } = getAuth(req);
-  if (!userId) throw new Error("Unauthorized");
-  return userId;
-}
 
 function serializeItem(item: typeof priceCatalogItemsTable.$inferSelect) {
   return {
@@ -28,10 +22,9 @@ function serializeItem(item: typeof priceCatalogItemsTable.$inferSelect) {
   };
 }
 
-// GET /api/catalog
-router.get("/catalog", requireAuth(), async (req, res) => {
+router.get("/catalog", requireAuth, async (req, res) => {
   try {
-    const userId = getUserId(req);
+    const userId = getUserId(res);
     const items = await db
       .select()
       .from(priceCatalogItemsTable)
@@ -44,10 +37,9 @@ router.get("/catalog", requireAuth(), async (req, res) => {
   }
 });
 
-// POST /api/catalog
-router.post("/catalog", requireAuth(), async (req, res) => {
+router.post("/catalog", requireAuth, async (req, res) => {
   try {
-    const userId = getUserId(req);
+    const userId = getUserId(res);
     const { nome, categoria, um, prezzoUnitario, note } = req.body as {
       nome?: string;
       categoria?: string;
@@ -80,10 +72,9 @@ router.post("/catalog", requireAuth(), async (req, res) => {
   }
 });
 
-// POST /api/catalog/import-from-quotes
-router.post("/catalog/import-from-quotes", requireAuth(), async (req, res) => {
+router.post("/catalog/import-from-quotes", requireAuth, async (req, res) => {
   try {
-    const userId = getUserId(req);
+    const userId = getUserId(res);
 
     const quotes = await db
       .select({ capitoli: quotesTable.capitoli })
@@ -150,10 +141,9 @@ router.post("/catalog/import-from-quotes", requireAuth(), async (req, res) => {
   }
 });
 
-// PUT /api/catalog/:id
-router.put("/catalog/:id", requireAuth(), async (req, res) => {
+router.put("/catalog/:id", requireAuth, async (req, res) => {
   try {
-    const userId = getUserId(req);
+    const userId = getUserId(res);
     const id = String(req.params.id);
     const { nome, categoria, um, prezzoUnitario, note } = req.body as {
       nome?: string;
@@ -188,10 +178,9 @@ router.put("/catalog/:id", requireAuth(), async (req, res) => {
   }
 });
 
-// DELETE /api/catalog/:id
-router.delete("/catalog/:id", requireAuth(), async (req, res) => {
+router.delete("/catalog/:id", requireAuth, async (req, res) => {
   try {
-    const userId = getUserId(req);
+    const userId = getUserId(res);
     const id = String(req.params.id);
 
     const deleted = await db

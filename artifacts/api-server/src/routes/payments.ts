@@ -1,6 +1,5 @@
 import { Router } from "express";
-import { requireAuth, getAuth } from "@clerk/express";
-import type { Request } from "express";
+import { requireAuth, getUserId } from "../middlewares/authMiddleware";
 import { db, quotesTable, businessProfilesTable } from "@workspace/db";
 import { eq, sql } from "drizzle-orm";
 import { CreateCheckoutSessionBody } from "@workspace/api-zod";
@@ -71,21 +70,13 @@ export const PLANS = [
   },
 ];
 
-function getUserId(req: Request): string {
-  const { userId } = getAuth(req);
-  if (!userId) throw new Error("Unauthorized");
-  return userId;
-}
-
-// GET /api/payments/plans
 router.get("/payments/plans", (_req, res) => {
   res.json(PLANS);
 });
 
-// POST /api/payments/checkout
-router.post("/payments/checkout", requireAuth(), async (req, res) => {
+router.post("/payments/checkout", requireAuth, async (req, res) => {
   try {
-    const userId = getUserId(req);
+    const userId = getUserId(res);
     const parsed = CreateCheckoutSessionBody.safeParse(req.body);
     if (!parsed.success) {
       res.status(400).json({ error: "Invalid request", details: parsed.error });
@@ -154,10 +145,9 @@ router.post("/payments/checkout", requireAuth(), async (req, res) => {
   }
 });
 
-// GET /api/payments/subscription
-router.get("/payments/subscription", requireAuth(), async (req, res) => {
+router.get("/payments/subscription", requireAuth, async (req, res) => {
   try {
-    const userId = getUserId(req);
+    const userId = getUserId(res);
     const [profile] = await db
       .select()
       .from(businessProfilesTable)
@@ -166,7 +156,6 @@ router.get("/payments/subscription", requireAuth(), async (req, res) => {
     const isActive = profile?.subscriptionStatus === "active";
     const plan = PLANS.find(p => p.id === profile?.subscriptionPlan) ?? null;
 
-    // Compute quota usage for Starter (quotes created this month)
     let quotaUsed: number | null = null;
     let quotaLimit: number | null = null;
     let quotaRemaining: number | null = null;
@@ -208,10 +197,9 @@ router.get("/payments/subscription", requireAuth(), async (req, res) => {
   }
 });
 
-// POST /api/payments/unlock-quote — unlock a quote using an active subscription
-router.post("/payments/unlock-quote", requireAuth(), async (req, res) => {
+router.post("/payments/unlock-quote", requireAuth, async (req, res) => {
   try {
-    const userId = getUserId(req);
+    const userId = getUserId(res);
     const { quoteId } = req.body as { quoteId: string };
 
     if (!quoteId) {
@@ -254,10 +242,9 @@ router.post("/payments/unlock-quote", requireAuth(), async (req, res) => {
   }
 });
 
-// POST /api/payments/portal — Stripe Customer Portal (manage/upgrade subscription)
-router.post("/payments/portal", requireAuth(), async (req, res) => {
+router.post("/payments/portal", requireAuth, async (req, res) => {
   try {
-    const userId = getUserId(req);
+    const userId = getUserId(res);
     const [profile] = await db
       .select()
       .from(businessProfilesTable)
@@ -285,12 +272,9 @@ router.post("/payments/portal", requireAuth(), async (req, res) => {
   }
 });
 
-// GET /api/payments/verify/:quoteId
-// Verifies a Stripe payment and unlocks the quote if paid.
-// Used as a reliable fallback when the user returns from Stripe checkout.
-router.get("/payments/verify/:quoteId", requireAuth(), async (req, res) => {
+router.get("/payments/verify/:quoteId", requireAuth, async (req, res) => {
   try {
-    const userId = getUserId(req);
+    const userId = getUserId(res);
     const quoteId = req.params["quoteId"] as string;
 
     const [quote] = await db.select().from(quotesTable).where(eq(quotesTable.id, quoteId));

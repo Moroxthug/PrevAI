@@ -10,7 +10,9 @@ A SaaS web app for Italian freelancers/craftsmen to describe a job in natural la
 - `pnpm --filter @workspace/db run push` — push DB schema changes (dev only)
 - `pnpm --filter @workspace/api-server run dev` — run API server locally
 
-**Required env vars:** `DATABASE_URL`, `CLERK_PUBLISHABLE_KEY`, `CLERK_SECRET_KEY`, `VITE_CLERK_PUBLISHABLE_KEY`, `SESSION_SECRET`, `AI_INTEGRATIONS_OPENAI_BASE_URL`, `AI_INTEGRATIONS_OPENAI_API_KEY`, `DEFAULT_OBJECT_STORAGE_BUCKET_ID`, `PRIVATE_OBJECT_DIR`, `PUBLIC_OBJECT_SEARCH_PATHS`, `STRIPE_SECRET_KEY`, `STRIPE_PUBLISHABLE_KEY`, `ADMIN_EMAIL` (admin access — `bchysfmel@gmail.com`), `RESEND_API_KEY` (optional — needed for subscription emails from no-reply@prevai.it)
+**Required env vars:** `DATABASE_URL`, `SESSION_SECRET` (also used as `BETTER_AUTH_SECRET` fallback), `AI_INTEGRATIONS_OPENAI_BASE_URL`, `AI_INTEGRATIONS_OPENAI_API_KEY`, `DEFAULT_OBJECT_STORAGE_BUCKET_ID`, `PRIVATE_OBJECT_DIR`, `PUBLIC_OBJECT_SEARCH_PATHS`, `STRIPE_SECRET_KEY`, `STRIPE_PUBLISHABLE_KEY`, `ADMIN_EMAIL` (admin access — `bchysfmel@gmail.com`), `RESEND_API_KEY` (optional — needed for subscription emails from no-reply@prevai.it)
+
+**Optional:** `BETTER_AUTH_SECRET` (overrides SESSION_SECRET for auth signing), `BETTER_AUTH_URL` (overrides base URL derivation from REPLIT_DOMAINS)
 
 ## Stack
 
@@ -21,21 +23,26 @@ A SaaS web app for Italian freelancers/craftsmen to describe a job in natural la
 - **Frontend**: React + Vite (artifact: `preventivo-ai`, path `/`)
 - **API framework**: Express 5 (artifact: `api-server`, path `/api`)
 - **Database**: PostgreSQL + Drizzle ORM (`lib/db`)
-- **Auth**: Clerk (`@clerk/express` backend, `@clerk/react` frontend)
+- **Auth**: Better Auth (`better-auth` backend + `better-auth/react` frontend) — self-hosted, session cookies, Resend emails
 - **AI**: OpenAI via Replit AI Integrations (`lib/integrations-openai-ai-server`)
 - **Payments**: Stripe
 - **Object Storage**: Replit Object Storage via GCS presigned URLs
 - **Validation**: Zod (`zod/v4`), `drizzle-zod`
 - **API codegen**: Orval (from OpenAPI spec in `lib/api-spec`)
-- **Build**: esbuild (CJS bundle for API server)
+- **Build**: esbuild (CJS bundle for API server); `kysely` marked as external (Better Auth peer dep)
 
 ## Where things live
 
 - `lib/api-spec/openapi.yaml` — source of truth for API contract
 - `lib/api-client-react/src/generated/` — generated React Query hooks (do not edit)
 - `lib/api-zod/src/generated/` — generated Zod schemas (do not edit)
-- `lib/db/src/schema/` — Drizzle DB schema (quotes, business-profiles, catalog)
+- `lib/db/src/schema/` — Drizzle DB schema (quotes, business-profiles, catalog, **auth tables**)
+- `lib/db/src/schema/auth.ts` — Better Auth tables (auth_user, auth_session, auth_account, auth_verification)
+- `artifacts/api-server/src/lib/auth.ts` — Better Auth instance (Drizzle adapter + Resend email)
+- `artifacts/api-server/src/middlewares/authMiddleware.ts` — `requireAuth` middleware + `getUserId`/`getUserEmail` helpers
 - `artifacts/api-server/src/routes/` — Express route handlers
+- `artifacts/preventivo-ai/src/lib/auth-client.ts` — Better Auth React client
+- `artifacts/preventivo-ai/src/hooks/use-auth.ts` — custom `useAuth()` hook (wraps Better Auth session)
 - `artifacts/preventivo-ai/src/pages/` — React pages (home, dashboard/*, sign-in, sign-up, seo/*, onboarding)
 - `artifacts/preventivo-ai/src/components/layout/` — PublicLayout, DashboardLayout (collapsible sidebar)
 - `artifacts/preventivo-ai/src/pages/dashboard/settings.tsx` — unified Impostazioni page (Account + Piano tabs)
@@ -43,8 +50,10 @@ A SaaS web app for Italian freelancers/craftsmen to describe a job in natural la
 ## Architecture decisions
 
 - Contract-first API: OpenAPI spec → Orval codegen → typed React Query hooks + Zod validators
-- Clerk auth proxy only activated in production (`import.meta.env.PROD`); dev uses Clerk CDN directly
-- Backend uses `getAuth(req)` from `@clerk/express` to extract `userId` from JWT
+- **Auth**: Better Auth (self-hosted) replaces Clerk. Sessions stored in `auth_session` table. Session cookie (same-origin, `credentials: "include"`), no Bearer tokens.
+- Better Auth handler mounted via raw Express `app.use` middleware (before `express.json()`) to avoid Express 5 wildcard syntax issues. Base path: `/api/auth`.
+- `requireAuth` middleware reads session from cookie via `auth.api.getSession`; sets `res.locals.userId` / `res.locals.userEmail`.
+- `getUserId(res)` reads from `res.locals.userId`; throws 401 if absent.
 - AI prompt returns structured JSON only; server parses it and maps to DB schema
 - PDF generation returns HTML string; browser opens it in a new window and triggers `window.print()`
 - Plans are defined statically in `payments.ts` (no DB table needed)
@@ -59,7 +68,7 @@ A SaaS web app for Italian freelancers/craftsmen to describe a job in natural la
 ## Product
 
 - Landing page with hero, benefits, demo quote preview, pricing plans
-- Auth via Clerk (sign-in/sign-up pages)
+- Auth via Better Auth (custom sign-in/sign-up forms at `/sign-in`, `/sign-up`; password reset via email)
 - **Onboarding**: `/onboarding` — collects company name, logo, P.IVA, address, phone, email before first quote
 - **Collapsible sidebar**: Dashboard / Preventivi / Analytics / Listino (Pro only) / Impostazioni / Account Aziendale
 - Dashboard: stats overview, recent quotes
@@ -79,7 +88,8 @@ A SaaS web app for Italian freelancers/craftsmen to describe a job in natural la
 
 - `pnpm --filter @workspace/api-spec run codegen` must be re-run after any OpenAPI spec change
 - `pnpm --filter @workspace/db run push` required after schema changes (dev only — use migrations in prod)
-- Clerk proxy middleware (`clerkProxyMiddleware`) skips in development, only active in production
+- `kysely` is a peer dep of better-auth's drizzle adapter — must be installed in `api-server` and marked as `external` in `build.mjs` to avoid esbuild bundling conflicts
+- Better Auth session requires `credentials: "include"` on all fetch calls to `/api/*`
 - Do NOT run `pnpm dev` at workspace root — use workflow restart instead
 - Object Storage serving URL format: `/api/storage/objects/<uuid>` (objectPath from presigned URL response)
 - Legacy routes `/dashboard/profile` and `/dashboard/billing` still accessible but not in sidebar; use `/dashboard/settings` instead
@@ -87,6 +97,5 @@ A SaaS web app for Italian freelancers/craftsmen to describe a job in natural la
 ## Pointers
 
 - `.local/skills/pnpm-workspace/` — workspace conventions and patterns
-- `.local/skills/clerk-auth/` — Clerk auth setup and configuration
 - `.local/skills/react-vite/` — React+Vite frontend guidelines
 - `.local/skills/object-storage/` — Object Storage (GCS presigned URL) patterns

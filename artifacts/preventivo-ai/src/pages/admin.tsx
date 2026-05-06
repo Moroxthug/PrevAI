@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useAuth, useUser } from "@clerk/react";
+import { useAuth } from "@/hooks/use-auth";
 import { Link } from "wouter";
 import {
   Users, TrendingUp, FileText, Euro, ToggleLeft, ToggleRight,
@@ -41,8 +41,7 @@ function PlanBadge({ plan, status }: { plan: string | null; status: string | nul
 }
 
 export default function AdminPage() {
-  const { getToken, isLoaded } = useAuth();
-  const { user } = useUser();
+  const { isLoaded, user } = useAuth();
   const [tab, setTab] = useState<Tab>("overview");
   const [metrics, setMetrics] = useState<Metrics | null>(null);
   const [users, setUsers] = useState<AdminUser[]>([]);
@@ -52,13 +51,11 @@ export default function AdminPage() {
   const [savingKey, setSavingKey] = useState<string | null>(null);
 
   async function authFetch(path: string, options?: RequestInit) {
-    const token = await getToken();
     const r = await fetch(`${BASE}${path}`, {
       ...options,
       redirect: "manual",
       headers: {
         "Content-Type": "application/json",
-        ...(token ? { Authorization: `Bearer ${token}` } : {}),
         ...options?.headers,
       },
       credentials: "include",
@@ -159,7 +156,7 @@ export default function AdminPage() {
           </Link>
           <div>
             <h1 className="text-lg font-bold text-gray-900">Admin Dashboard</h1>
-            <p className="text-xs text-gray-400">Ciao, {user?.firstName ?? user?.emailAddresses[0]?.emailAddress}</p>
+            <p className="text-xs text-gray-400">Ciao, {user?.name ?? user?.email}</p>
           </div>
         </div>
         <button

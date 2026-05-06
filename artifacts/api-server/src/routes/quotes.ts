@@ -1,6 +1,5 @@
 import { Router } from "express";
-import { requireAuth, getAuth } from "@clerk/express";
-import type { Request } from "express";
+import { requireAuth, getUserId } from "../middlewares/authMiddleware";
 import multer from "multer";
 import { db, quotesTable, businessProfilesTable, priceCatalogItemsTable, quoteClientDataSchema, quoteCompanySnapshotSchema } from "@workspace/db";
 import { eq, desc, count, sum, sql } from "drizzle-orm";
@@ -100,12 +99,6 @@ CALCOLI:
 
 IMPORTANTISSIMO: output SOLO JSON puro, nessuna spiegazione, nessun markdown.`;
 
-function getUserId(req: Request): string {
-  const { userId } = getAuth(req);
-  if (!userId) throw new Error("Unauthorized");
-  return userId;
-}
-
 type QuoteRow = typeof quotesTable.$inferSelect;
 
 function serializeQuote(q: QuoteRow) {
@@ -137,9 +130,9 @@ function serializeQuote(q: QuoteRow) {
 }
 
 // GET /api/quotes/stats
-router.get("/quotes/stats", requireAuth(), async (req, res) => {
+router.get("/quotes/stats", requireAuth, async (req, res) => {
   try {
-    const userId = getUserId(req);
+    const userId = getUserId(res);
 
     const thisMonthStart = new Date();
     thisMonthStart.setDate(1);
@@ -197,9 +190,9 @@ router.get("/quotes/stats", requireAuth(), async (req, res) => {
 });
 
 // GET /api/quotes
-router.get("/quotes", requireAuth(), async (req, res) => {
+router.get("/quotes", requireAuth, async (req, res) => {
   try {
-    const userId = getUserId(req);
+    const userId = getUserId(res);
     const quotes = await db
       .select()
       .from(quotesTable)
@@ -237,9 +230,9 @@ ${examples.join("\n\n---\n\n")}`;
 }
 
 // POST /api/quotes  (multipart/form-data: rawInput, clientData?, companySnapshot?, images[])
-router.post("/quotes", requireAuth(), imageUpload.array("images", 3), async (req, res) => {
+router.post("/quotes", requireAuth, imageUpload.array("images", 3), async (req, res) => {
   try {
-    const userId = getUserId(req);
+    const userId = getUserId(res);
 
     // ── Quota enforcement ─────────────────────────────────────────────────────
     const [profile] = await db
@@ -519,9 +512,9 @@ Quando usi una voce del listino, applica il prezzo unitario esatto o molto simil
 });
 
 // GET /api/quotes/:id
-router.get("/quotes/:id", requireAuth(), async (req, res) => {
+router.get("/quotes/:id", requireAuth, async (req, res) => {
   try {
-    const userId = getUserId(req);
+    const userId = getUserId(res);
     const { id } = GetQuoteParams.parse(req.params);
 
     const [quote] = await db
@@ -546,9 +539,9 @@ router.get("/quotes/:id", requireAuth(), async (req, res) => {
 });
 
 // PUT /api/quotes/:id
-router.put("/quotes/:id", requireAuth(), async (req, res) => {
+router.put("/quotes/:id", requireAuth, async (req, res) => {
   try {
-    const userId = getUserId(req);
+    const userId = getUserId(res);
     const { id } = UpdateQuoteParams.parse(req.params);
     const parsed = UpdateQuoteBody.safeParse(req.body);
     if (!parsed.success) {
@@ -602,9 +595,9 @@ router.put("/quotes/:id", requireAuth(), async (req, res) => {
 });
 
 // DELETE /api/quotes/:id
-router.delete("/quotes/:id", requireAuth(), async (req, res) => {
+router.delete("/quotes/:id", requireAuth, async (req, res) => {
   try {
-    const userId = getUserId(req);
+    const userId = getUserId(res);
     const { id } = DeleteQuoteParams.parse(req.params);
 
     const [existing] = await db
@@ -630,9 +623,9 @@ router.delete("/quotes/:id", requireAuth(), async (req, res) => {
 });
 
 // POST /api/quotes/:id/generate-pdf
-router.post("/quotes/:id/generate-pdf", requireAuth(), async (req, res) => {
+router.post("/quotes/:id/generate-pdf", requireAuth, async (req, res) => {
   try {
-    const userId = getUserId(req);
+    const userId = getUserId(res);
     const { id } = GenerateQuotePdfParams.parse(req.params);
 
     const [quote] = await db
@@ -679,9 +672,9 @@ router.post("/quotes/:id/generate-pdf", requireAuth(), async (req, res) => {
 });
 
 // POST /api/quotes/:id/duplicate — clone a quote as a new draft
-router.post("/quotes/:id/duplicate", requireAuth(), async (req, res) => {
+router.post("/quotes/:id/duplicate", requireAuth, async (req, res) => {
   try {
-    const userId = getUserId(req);
+    const userId = getUserId(res);
     const id = req.params.id as string;
 
     const [original] = await db
@@ -731,9 +724,9 @@ router.post("/quotes/:id/duplicate", requireAuth(), async (req, res) => {
 });
 
 // POST /api/quotes/:id/regenerate — re-run AI on an existing quote
-router.post("/quotes/:id/regenerate", requireAuth(), async (req, res) => {
+router.post("/quotes/:id/regenerate", requireAuth, async (req, res) => {
   try {
-    const userId = getUserId(req);
+    const userId = getUserId(res);
     const id = req.params.id as string;
     const body = RegenerateQuoteBody.parse(req.body);
 
