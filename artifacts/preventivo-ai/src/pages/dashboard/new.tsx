@@ -120,7 +120,23 @@ export default function NewQuote() {
         images: photos.length > 0 ? photos : undefined,
       }
     }, {
-      onSuccess: (quote) => { setLocation(`/dashboard/quotes/${quote.id}`); }
+      onSuccess: (quote) => { setLocation(`/dashboard/quotes/${quote.id}`); },
+      onError: (err: unknown) => {
+        const status = (err as { status?: number })?.status;
+        if (status === 429) {
+          toast({
+            title: "Quota mensile raggiunta",
+            description: "Hai usato tutti i 20 preventivi del piano Starter questo mese. Passa a Pro per preventivi illimitati.",
+            variant: "destructive",
+          });
+        } else {
+          toast({
+            title: "Errore nella generazione",
+            description: "Si è verificato un errore. Riprova tra qualche istante.",
+            variant: "destructive",
+          });
+        }
+      },
     });
   };
 

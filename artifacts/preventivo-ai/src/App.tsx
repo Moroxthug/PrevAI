@@ -16,6 +16,9 @@ import ProfileSettings from "@/pages/dashboard/profile";
 import BillingPage from "@/pages/dashboard/billing";
 import SeoLanding from "@/pages/seo/[type]";
 import SeoCityLanding from "@/pages/seo/city-landing";
+import PrivacyPage from "@/pages/privacy";
+import TerminiPage from "@/pages/termini";
+import AdminPage from "@/pages/admin";
 
 import { PublicLayout } from "@/components/layout/public-layout";
 import { DashboardLayout } from "@/components/layout/dashboard-layout";
@@ -40,6 +43,10 @@ function Router() {
       
       <Route path="/seo/:type/:city" component={() => <PublicLayout><SeoCityLanding /></PublicLayout>} />
       <Route path="/seo/:type" component={() => <PublicLayout><SeoLanding /></PublicLayout>} />
+
+      <Route path="/privacy" component={PrivacyPage} />
+      <Route path="/termini" component={TerminiPage} />
+      <Route path="/admin" component={AdminPage} />
       
       <Route component={NotFound} />
     </Switch>

@@ -241,6 +241,30 @@ router.post("/quotes", requireAuth(), imageUpload.array("images", 3), async (req
   try {
     const userId = getUserId(req);
 
+    // ── Quota enforcement ─────────────────────────────────────────────────────
+    const [profile] = await db
+      .select({ subscriptionPlan: businessProfilesTable.subscriptionPlan, subscriptionStatus: businessProfilesTable.subscriptionStatus })
+      .from(businessProfilesTable)
+      .where(eq(businessProfilesTable.userId, userId));
+
+    if (profile?.subscriptionStatus === "active" && profile.subscriptionPlan === "monthly_starter") {
+      const now = new Date();
+      const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+      const nextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+      const [{ cnt }] = await db
+        .select({ cnt: sql<number>`count(*)::int` })
+        .from(quotesTable)
+        .where(sql`${quotesTable.userId} = ${userId} AND ${quotesTable.createdAt} >= ${monthStart.toISOString()} AND ${quotesTable.createdAt} < ${nextMonth.toISOString()}`);
+      if (cnt >= 20) {
+        res.status(429).json({
+          error: "Quota mensile raggiunta. Hai usato tutti i 20 preventivi del piano Starter questo mese. Passa al piano Pro per preventivi illimitati.",
+          code: "QUOTA_EXCEEDED",
+        });
+        return;
+      }
+    }
+    // ─────────────────────────────────────────────────────────────────────────
+
     const rawInput = typeof req.body.rawInput === "string" ? req.body.rawInput.trim() : "";
     if (!rawInput) {
       res.status(400).json({ error: "rawInput is required" });

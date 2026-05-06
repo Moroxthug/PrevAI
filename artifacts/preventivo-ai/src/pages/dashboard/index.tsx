@@ -12,6 +12,9 @@ import {
   Zap,
   Lock,
   CheckCircle2,
+  MessageSquare,
+  Download,
+  Building2,
 } from "lucide-react";
 import { useUser } from "@clerk/react";
 
@@ -180,27 +183,94 @@ export default function DashboardHome() {
         </div>
       </div>
 
-      {/* ── Stat cards ──────────────────────────────────────────── */}
-      <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
-        {STAT_CARDS.map(({ key, label, icon: Icon, color, accent, border, isCurrency }) => {
-          const raw = stats?.[key] ?? 0;
-          const value = isCurrency ? formatCurrency(raw as number) : String(raw);
-          return (
-            <div
-              key={key}
-              className={`bg-white rounded-2xl border ${border} p-4 shadow-sm hover-elevate transition-all`}
-            >
-              <div className="flex items-center justify-between mb-3">
-                <span className="text-xs font-medium text-gray-500">{label}</span>
-                <div className={`h-7 w-7 rounded-lg ${accent} flex items-center justify-center`}>
-                  <Icon className={`h-3.5 w-3.5 ${color}`} />
-                </div>
+      {/* ── Onboarding (zero-state) ──────────────────────────────── */}
+      {(stats?.total ?? 0) === 0 ? (
+        <div className="space-y-4">
+          {/* Big welcome card */}
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+            <div className="px-6 pt-8 pb-6 text-center">
+              <div
+                className="mx-auto h-16 w-16 rounded-2xl flex items-center justify-center mb-5"
+                style={{ background: "linear-gradient(135deg, rgba(124,58,237,0.12), rgba(6,182,212,0.12))" }}
+              >
+                <Sparkles className="h-8 w-8 text-violet-500" />
               </div>
-              <div className="text-2xl font-bold text-gray-900 truncate">{value}</div>
+              <h2 className="text-xl font-bold text-gray-900 mb-2">Benvenuto su PrevAI!</h2>
+              <p className="text-sm text-gray-500 max-w-md mx-auto mb-8">
+                Genera il tuo primo preventivo professionale in meno di 60 secondi.
+                Descrivi il lavoro e l'AI crea un computo metrico prezzato pronto da inviare al cliente.
+              </p>
+
+              {/* 3-step flow */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8 text-left">
+                {[
+                  { icon: Building2, num: "1", title: "Completa il profilo", desc: "Aggiungi ragione sociale, P.IVA e logo aziendale per PDF personalizzati.", href: "/dashboard/profile", cta: "Vai al profilo →" },
+                  { icon: MessageSquare, num: "2", title: "Descrivi il lavoro", desc: "Scrivi in italiano cosa devi fare: l'AI capisce e crea il preventivo.", href: "/dashboard/new", cta: "Crea preventivo →" },
+                  { icon: Download, num: "3", title: "Scarica il PDF", desc: "Preview immediata, poi sblocca e scarica il PDF professionale.", href: null, cta: null },
+                ].map(({ icon: Icon, num, title, desc, href, cta }) => (
+                  <div key={num} className="rounded-xl bg-gray-50 border border-gray-100 p-4">
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="h-6 w-6 rounded-full bg-violet-600 text-white text-xs font-bold flex items-center justify-center shrink-0">{num}</span>
+                      <Icon className="h-4 w-4 text-violet-500" />
+                      <span className="text-sm font-semibold text-gray-900">{title}</span>
+                    </div>
+                    <p className="text-xs text-gray-500 leading-relaxed mb-2">{desc}</p>
+                    {href && cta && (
+                      <Link href={href} className="text-xs font-semibold text-violet-600 hover:text-violet-700 transition-colors">{cta}</Link>
+                    )}
+                  </div>
+                ))}
+              </div>
+
+              <Link
+                href="/dashboard/new"
+                className="btn-gradient inline-flex h-11 items-center justify-center px-8 text-sm font-semibold gap-2"
+              >
+                <Plus className="h-4 w-4" />
+                Crea il primo preventivo
+              </Link>
             </div>
-          );
-        })}
-      </div>
+          </div>
+
+          {/* Quick links */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+            <Link href="/dashboard/profile" className="bg-white border border-gray-100 rounded-2xl p-4 flex items-center gap-3 hover:border-violet-200 hover:bg-violet-50/30 transition-all group shadow-sm">
+              <div className="h-8 w-8 rounded-xl bg-violet-100 flex items-center justify-center"><Building2 className="h-4 w-4 text-violet-500" /></div>
+              <span className="text-sm font-medium text-gray-700 group-hover:text-violet-700">Profilo azienda</span>
+            </Link>
+            <Link href="/dashboard/billing" className="bg-white border border-gray-100 rounded-2xl p-4 flex items-center gap-3 hover:border-amber-200 hover:bg-amber-50/30 transition-all group shadow-sm">
+              <div className="h-8 w-8 rounded-xl bg-amber-100 flex items-center justify-center"><Crown className="h-4 w-4 text-amber-500" /></div>
+              <span className="text-sm font-medium text-gray-700 group-hover:text-amber-700">Piani e prezzi</span>
+            </Link>
+            <Link href="/dashboard/new" className="bg-white border border-gray-100 rounded-2xl p-4 flex items-center gap-3 hover:border-emerald-200 hover:bg-emerald-50/30 transition-all group shadow-sm">
+              <div className="h-8 w-8 rounded-xl bg-emerald-100 flex items-center justify-center"><Sparkles className="h-4 w-4 text-emerald-500" /></div>
+              <span className="text-sm font-medium text-gray-700 group-hover:text-emerald-700">Crea preventivo</span>
+            </Link>
+          </div>
+        </div>
+      ) : (
+        <>
+          {/* ── Stat cards ────────────────────────────────────────── */}
+          <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
+            {STAT_CARDS.map(({ key, label, icon: Icon, color, accent, border, isCurrency }) => {
+              const raw = stats?.[key] ?? 0;
+              const value = isCurrency ? formatCurrency(raw as number) : String(raw);
+              return (
+                <div
+                  key={key}
+                  className={`bg-white rounded-2xl border ${border} p-4 shadow-sm hover-elevate transition-all`}
+                >
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="text-xs font-medium text-gray-500">{label}</span>
+                    <div className={`h-7 w-7 rounded-lg ${accent} flex items-center justify-center`}>
+                      <Icon className={`h-3.5 w-3.5 ${color}`} />
+                    </div>
+                  </div>
+                  <div className="text-2xl font-bold text-gray-900 truncate">{value}</div>
+                </div>
+              );
+            })}
+          </div>
 
       {/* ── Subscription upsell (not subscribed at all) ─────────── */}
       {!subscription?.isActive && (stats?.total ?? 0) > 0 && (
