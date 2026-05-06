@@ -88,14 +88,7 @@ app.post(
             logger.info({ quoteId, planType }, "Quote unlocked via webhook");
           }
 
-          const ALL_PLAN_INFO: Record<string, { name: string; price: number; interval: string | null }> = {
-            monthly_starter: { name: "Starter", price: 29, interval: "month" },
-            monthly_pro: { name: "Pro", price: 79, interval: "month" },
-            oneshot_watermark: { name: "Singolo con Watermark", price: 29, interval: null },
-            oneshot_clean: { name: "Singolo Pulito", price: 39, interval: null },
-          };
-
-          // If subscription mode, save subscription info to business profile
+          // If subscription mode, save subscription info to business profile + send welcome email
           if (userId && session.customer && session.mode === "subscription" && planType) {
             const customerId = session.customer as string;
             await db
@@ -115,28 +108,30 @@ app.post(
                 },
               });
             logger.info({ userId, planType }, "Subscription activated via webhook");
-          }
 
-          // Send receipt/welcome email for all completed purchases (subscription + one-shot)
-          if (userId && planType) {
+            // Send welcome/receipt email
             try {
               const clerkUser = await clerkClient.users.getUser(userId);
               const email = clerkUser.emailAddresses[0]?.emailAddress;
               const name = clerkUser.firstName || clerkUser.username || "Cliente";
               if (email) {
-                const planInfo = ALL_PLAN_INFO[planType];
-                if (planInfo) {
+                const planInfo: Record<string, { name: string; price: number; interval: string | null }> = {
+                  monthly_starter: { name: "Starter", price: 29, interval: "month" },
+                  monthly_pro: { name: "Pro", price: 79, interval: "month" },
+                };
+                const info = planInfo[planType];
+                if (info) {
                   await sendSubscriptionEmail({
                     toEmail: email,
                     toName: name,
-                    planName: planInfo.name,
-                    planPrice: planInfo.price,
-                    planInterval: planInfo.interval,
+                    planName: info.name,
+                    planPrice: info.price,
+                    planInterval: info.interval,
                   });
                 }
               }
             } catch (emailErr) {
-              logger.error({ err: emailErr }, "Failed to send purchase email (non-fatal)");
+              logger.error({ err: emailErr }, "Failed to send subscription email (non-fatal)");
             }
           }
         }
