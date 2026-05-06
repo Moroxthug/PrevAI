@@ -14,6 +14,7 @@ import QuotesList from "@/pages/dashboard/quotes/index";
 import QuoteDetail from "@/pages/dashboard/quotes/[id]";
 import ProfileSettings from "@/pages/dashboard/profile";
 import SeoLanding from "@/pages/seo/[type]";
+import SeoCityLanding from "@/pages/seo/city-landing";
 
 import { PublicLayout } from "@/components/layout/public-layout";
 import { DashboardLayout } from "@/components/layout/dashboard-layout";
@@ -35,6 +36,7 @@ function Router() {
       <Route path="/dashboard/quotes/:id" component={() => <DashboardLayout><QuoteDetail /></DashboardLayout>} />
       <Route path="/dashboard/profile" component={() => <DashboardLayout><ProfileSettings /></DashboardLayout>} />
       
+      <Route path="/seo/:type/:city" component={() => <PublicLayout><SeoCityLanding /></PublicLayout>} />
       <Route path="/seo/:type" component={() => <PublicLayout><SeoLanding /></PublicLayout>} />
       
       <Route component={NotFound} />
