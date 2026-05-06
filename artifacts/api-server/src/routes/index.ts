@@ -5,6 +5,7 @@ import businessProfileRouter from "./business-profile";
 import paymentsRouter from "./payments";
 import storageRouter from "./storage";
 import adminRouter from "./admin";
+import catalogRouter from "./catalog";
 
 const router: IRouter = Router();
 
@@ -14,5 +15,6 @@ router.use(businessProfileRouter);
 router.use(paymentsRouter);
 router.use(storageRouter);
 router.use(adminRouter);
+router.use(catalogRouter);
 
 export default router;

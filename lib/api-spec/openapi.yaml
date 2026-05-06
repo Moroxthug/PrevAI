@@ -17,6 +17,8 @@ tags:
     description: Stripe payment operations
   - name: storage
     description: Object storage upload and serving endpoints
+  - name: catalog
+    description: Price catalog management
 paths:
   /healthz:
     get:
@@ -377,6 +379,89 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/PortalSessionResult"
+
+  /catalog:
+    get:
+      operationId: listCatalogItems
+      tags: [catalog]
+      summary: List price catalog items for the authenticated user
+      responses:
+        "200":
+          description: List of catalog items
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/CatalogItem"
+    post:
+      operationId: createCatalogItem
+      tags: [catalog]
+      summary: Create a new price catalog item
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateCatalogItemBody"
+      responses:
+        "201":
+          description: Created catalog item
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CatalogItem"
+
+  /catalog/import-from-quotes:
+    post:
+      operationId: importCatalogFromQuotes
+      tags: [catalog]
+      summary: Import unique price items from existing quotes into the catalog
+      responses:
+        "200":
+          description: Import result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ImportCatalogResult"
+
+  /catalog/{id}:
+    put:
+      operationId: updateCatalogItem
+      tags: [catalog]
+      summary: Update a price catalog item
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateCatalogItemBody"
+      responses:
+        "200":
+          description: Updated catalog item
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CatalogItem"
+    delete:
+      operationId: deleteCatalogItem
+      tags: [catalog]
+      summary: Delete a price catalog item
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: Deleted
 
 components:
   schemas:
@@ -880,3 +965,78 @@ components:
       required:
         - uploadURL
         - objectPath
+
+    CatalogItem:
+      type: object
+      properties:
+        id:
+          type: string
+        userId:
+          type: string
+        nome:
+          type: string
+        categoria:
+          type: string
+          nullable: true
+        um:
+          type: string
+        prezzoUnitario:
+          type: number
+        note:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+      required:
+        - id
+        - userId
+        - nome
+        - um
+        - prezzoUnitario
+        - createdAt
+        - updatedAt
+
+    CreateCatalogItemBody:
+      type: object
+      properties:
+        nome:
+          type: string
+        categoria:
+          type: string
+        um:
+          type: string
+        prezzoUnitario:
+          type: number
+        note:
+          type: string
+      required:
+        - nome
+        - um
+        - prezzoUnitario
+
+    UpdateCatalogItemBody:
+      type: object
+      properties:
+        nome:
+          type: string
+        categoria:
+          type: string
+        um:
+          type: string
+        prezzoUnitario:
+          type: number
+        note:
+          type: string
+
+    ImportCatalogResult:
+      type: object
+      properties:
+        imported:
+          type: number
+        skipped:
+          type: number
+      required:
+        - imported
+        - skipped

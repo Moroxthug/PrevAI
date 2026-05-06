@@ -1,19 +1,22 @@
 import { Link, useLocation } from "wouter";
 import { useAuth, useUser, useClerk, RedirectToSignIn } from "@clerk/react";
-import { LayoutDashboard, FileText, Menu, BarChart3, Settings, ChevronLeft, ChevronRight, Plus, LogOut, User, CreditCard, Building2, ChevronDown } from "lucide-react";
+import { LayoutDashboard, FileText, Menu, BarChart3, Settings, ChevronLeft, ChevronRight, Plus, LogOut, User, CreditCard, Building2, ChevronDown, BookOpen } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger, SheetTitle } from "@/components/ui/sheet";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Badge } from "@/components/ui/badge";
 import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { Logo } from "@/components/logo";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { useGetSubscription } from "@workspace/api-client-react";
 
-const NAV_ITEMS = [
-  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard, exact: true },
-  { href: "/dashboard/quotes", label: "Preventivi", icon: FileText, exact: false },
-  { href: "/dashboard/analytics", label: "Analytics", icon: BarChart3, exact: false },
-  { href: "/dashboard/settings", label: "Impostazioni", icon: Settings, exact: false },
+const BASE_NAV_ITEMS = [
+  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard, exact: true, proOnly: false },
+  { href: "/dashboard/quotes", label: "Preventivi", icon: FileText, exact: false, proOnly: false },
+  { href: "/dashboard/analytics", label: "Analytics", icon: BarChart3, exact: false, proOnly: false },
+  { href: "/dashboard/catalog", label: "Listino", icon: BookOpen, exact: false, proOnly: true },
+  { href: "/dashboard/settings", label: "Impostazioni", icon: Settings, exact: false, proOnly: false },
 ];
 
 function isActive(navHref: string, location: string, exact: boolean) {
@@ -106,6 +109,9 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
     try { return localStorage.getItem("sidebar-collapsed") === "true"; } catch { return false; }
   });
 
+  const { data: subscription } = useGetSubscription();
+  const isPro = subscription?.isActive && subscription?.plan === "monthly_pro";
+
   useEffect(() => {
     try { localStorage.setItem("sidebar-collapsed", String(isCollapsed)); } catch {}
   }, [isCollapsed]);
@@ -119,6 +125,8 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
   }
 
   if (!userId) return <RedirectToSignIn />;
+
+  const NAV_ITEMS = BASE_NAV_ITEMS.filter(item => !item.proOnly || isPro);
 
   const NavLinks = ({ collapsed = false, onClick }: { collapsed?: boolean; onClick?: () => void }) => (
     <nav className="flex flex-col gap-1">
@@ -139,7 +147,12 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
             )}
           >
             <item.icon className={cn("h-4 w-4 shrink-0", active ? "text-violet-600" : "text-gray-400")} />
-            {!collapsed && <span>{item.label}</span>}
+            {!collapsed && (
+              <span className="flex-1">{item.label}</span>
+            )}
+            {!collapsed && item.proOnly && (
+              <Badge className="text-[10px] px-1 py-0 h-4 bg-violet-100 text-violet-700 border-0 font-semibold">Pro</Badge>
+            )}
           </Link>
         );
 

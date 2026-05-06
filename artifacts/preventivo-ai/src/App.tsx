@@ -22,6 +22,7 @@ import SeoCityLanding from "@/pages/seo/city-landing";
 import PrivacyPage from "@/pages/privacy";
 import TerminiPage from "@/pages/termini";
 import AdminPage from "@/pages/admin";
+import CatalogPage from "@/pages/dashboard/catalog";
 
 import { PublicLayout } from "@/components/layout/public-layout";
 import { DashboardLayout } from "@/components/layout/dashboard-layout";
@@ -92,6 +93,9 @@ function Router() {
       )} />
       <Route path="/dashboard/billing" component={() => (
         <OnboardingGuard><DashboardLayout><BillingPage /></DashboardLayout></OnboardingGuard>
+      )} />
+      <Route path="/dashboard/catalog" component={() => (
+        <OnboardingGuard><DashboardLayout><CatalogPage /></DashboardLayout></OnboardingGuard>
       )} />
 
       <Route path="/seo/:type/:city" component={() => <PublicLayout><SeoCityLanding /></PublicLayout>} />

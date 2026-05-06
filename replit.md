@@ -34,7 +34,7 @@ A SaaS web app for Italian freelancers/craftsmen to describe a job in natural la
 - `lib/api-spec/openapi.yaml` — source of truth for API contract
 - `lib/api-client-react/src/generated/` — generated React Query hooks (do not edit)
 - `lib/api-zod/src/generated/` — generated Zod schemas (do not edit)
-- `lib/db/src/schema/` — Drizzle DB schema (quotes, business-profiles)
+- `lib/db/src/schema/` — Drizzle DB schema (quotes, business-profiles, catalog)
 - `artifacts/api-server/src/routes/` — Express route handlers
 - `artifacts/preventivo-ai/src/pages/` — React pages (home, dashboard/*, sign-in, sign-up, seo/*, onboarding)
 - `artifacts/preventivo-ai/src/components/layout/` — PublicLayout, DashboardLayout (collapsible sidebar)
@@ -61,7 +61,7 @@ A SaaS web app for Italian freelancers/craftsmen to describe a job in natural la
 - Landing page with hero, benefits, demo quote preview, pricing plans
 - Auth via Clerk (sign-in/sign-up pages)
 - **Onboarding**: `/onboarding` — collects company name, logo, P.IVA, address, phone, email before first quote
-- **Collapsible sidebar**: Dashboard / Preventivi / Analytics / Impostazioni / Account Aziendale
+- **Collapsible sidebar**: Dashboard / Preventivi / Analytics / Listino (Pro only) / Impostazioni / Account Aziendale
 - Dashboard: stats overview, recent quotes
 - **New quote page**: ChatGPT-style large textarea, photo upload inline, example chips, collapsible client data panel
 - Quote detail: always-clean preview (no watermark, company logo), all sections editable (capitoli, client data, condizioni), paywall only on "Scarica PDF" click

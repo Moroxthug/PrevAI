@@ -18,10 +18,13 @@ import type {
 
 import type {
   BusinessProfile,
+  CatalogItem,
   CheckoutResult,
+  CreateCatalogItemBody,
   CreateCheckoutBody,
   CreateQuoteBody,
   HealthStatus,
+  ImportCatalogResult,
   LogoUploadResult,
   PaymentVerifyResult,
   PdfResult,
@@ -33,6 +36,7 @@ import type {
   SubscriptionInfo,
   UnlockQuoteBody,
   UpdateBusinessProfileBody,
+  UpdateCatalogItemBody,
   UpdateQuoteBody,
   UploadBusinessProfileLogoBody,
   UploadUrlRequest,
@@ -1776,4 +1780,417 @@ export const useCreateCustomerPortalSession = <
   TContext
 > => {
   return useMutation(getCreateCustomerPortalSessionMutationOptions(options));
+};
+
+/**
+ * @summary List price catalog items for the authenticated user
+ */
+export const getListCatalogItemsUrl = () => {
+  return `/api/catalog`;
+};
+
+export const listCatalogItems = async (
+  options?: RequestInit,
+): Promise<CatalogItem[]> => {
+  return customFetch<CatalogItem[]>(getListCatalogItemsUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getListCatalogItemsQueryKey = () => {
+  return [`/api/catalog`] as const;
+};
+
+export const getListCatalogItemsQueryOptions = <
+  TData = Awaited<ReturnType<typeof listCatalogItems>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof listCatalogItems>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getListCatalogItemsQueryKey();
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof listCatalogItems>>
+  > = ({ signal }) => listCatalogItems({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof listCatalogItems>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type ListCatalogItemsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof listCatalogItems>>
+>;
+export type ListCatalogItemsQueryError = ErrorType<unknown>;
+
+/**
+ * @summary List price catalog items for the authenticated user
+ */
+
+export function useListCatalogItems<
+  TData = Awaited<ReturnType<typeof listCatalogItems>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof listCatalogItems>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getListCatalogItemsQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Create a new price catalog item
+ */
+export const getCreateCatalogItemUrl = () => {
+  return `/api/catalog`;
+};
+
+export const createCatalogItem = async (
+  createCatalogItemBody: CreateCatalogItemBody,
+  options?: RequestInit,
+): Promise<CatalogItem> => {
+  return customFetch<CatalogItem>(getCreateCatalogItemUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(createCatalogItemBody),
+  });
+};
+
+export const getCreateCatalogItemMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createCatalogItem>>,
+    TError,
+    { data: BodyType<CreateCatalogItemBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof createCatalogItem>>,
+  TError,
+  { data: BodyType<CreateCatalogItemBody> },
+  TContext
+> => {
+  const mutationKey = ["createCatalogItem"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof createCatalogItem>>,
+    { data: BodyType<CreateCatalogItemBody> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return createCatalogItem(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type CreateCatalogItemMutationResult = NonNullable<
+  Awaited<ReturnType<typeof createCatalogItem>>
+>;
+export type CreateCatalogItemMutationBody = BodyType<CreateCatalogItemBody>;
+export type CreateCatalogItemMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Create a new price catalog item
+ */
+export const useCreateCatalogItem = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createCatalogItem>>,
+    TError,
+    { data: BodyType<CreateCatalogItemBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof createCatalogItem>>,
+  TError,
+  { data: BodyType<CreateCatalogItemBody> },
+  TContext
+> => {
+  return useMutation(getCreateCatalogItemMutationOptions(options));
+};
+
+/**
+ * @summary Import unique price items from existing quotes into the catalog
+ */
+export const getImportCatalogFromQuotesUrl = () => {
+  return `/api/catalog/import-from-quotes`;
+};
+
+export const importCatalogFromQuotes = async (
+  options?: RequestInit,
+): Promise<ImportCatalogResult> => {
+  return customFetch<ImportCatalogResult>(getImportCatalogFromQuotesUrl(), {
+    ...options,
+    method: "POST",
+  });
+};
+
+export const getImportCatalogFromQuotesMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof importCatalogFromQuotes>>,
+    TError,
+    void,
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof importCatalogFromQuotes>>,
+  TError,
+  void,
+  TContext
+> => {
+  const mutationKey = ["importCatalogFromQuotes"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof importCatalogFromQuotes>>,
+    void
+  > = () => {
+    return importCatalogFromQuotes(requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type ImportCatalogFromQuotesMutationResult = NonNullable<
+  Awaited<ReturnType<typeof importCatalogFromQuotes>>
+>;
+
+export type ImportCatalogFromQuotesMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Import unique price items from existing quotes into the catalog
+ */
+export const useImportCatalogFromQuotes = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof importCatalogFromQuotes>>,
+    TError,
+    void,
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof importCatalogFromQuotes>>,
+  TError,
+  void,
+  TContext
+> => {
+  return useMutation(getImportCatalogFromQuotesMutationOptions(options));
+};
+
+/**
+ * @summary Update a price catalog item
+ */
+export const getUpdateCatalogItemUrl = (id: string) => {
+  return `/api/catalog/${id}`;
+};
+
+export const updateCatalogItem = async (
+  id: string,
+  updateCatalogItemBody: UpdateCatalogItemBody,
+  options?: RequestInit,
+): Promise<CatalogItem> => {
+  return customFetch<CatalogItem>(getUpdateCatalogItemUrl(id), {
+    ...options,
+    method: "PUT",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(updateCatalogItemBody),
+  });
+};
+
+export const getUpdateCatalogItemMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateCatalogItem>>,
+    TError,
+    { id: string; data: BodyType<UpdateCatalogItemBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof updateCatalogItem>>,
+  TError,
+  { id: string; data: BodyType<UpdateCatalogItemBody> },
+  TContext
+> => {
+  const mutationKey = ["updateCatalogItem"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof updateCatalogItem>>,
+    { id: string; data: BodyType<UpdateCatalogItemBody> }
+  > = (props) => {
+    const { id, data } = props ?? {};
+
+    return updateCatalogItem(id, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type UpdateCatalogItemMutationResult = NonNullable<
+  Awaited<ReturnType<typeof updateCatalogItem>>
+>;
+export type UpdateCatalogItemMutationBody = BodyType<UpdateCatalogItemBody>;
+export type UpdateCatalogItemMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Update a price catalog item
+ */
+export const useUpdateCatalogItem = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateCatalogItem>>,
+    TError,
+    { id: string; data: BodyType<UpdateCatalogItemBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof updateCatalogItem>>,
+  TError,
+  { id: string; data: BodyType<UpdateCatalogItemBody> },
+  TContext
+> => {
+  return useMutation(getUpdateCatalogItemMutationOptions(options));
+};
+
+/**
+ * @summary Delete a price catalog item
+ */
+export const getDeleteCatalogItemUrl = (id: string) => {
+  return `/api/catalog/${id}`;
+};
+
+export const deleteCatalogItem = async (
+  id: string,
+  options?: RequestInit,
+): Promise<void> => {
+  return customFetch<void>(getDeleteCatalogItemUrl(id), {
+    ...options,
+    method: "DELETE",
+  });
+};
+
+export const getDeleteCatalogItemMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deleteCatalogItem>>,
+    TError,
+    { id: string },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof deleteCatalogItem>>,
+  TError,
+  { id: string },
+  TContext
+> => {
+  const mutationKey = ["deleteCatalogItem"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof deleteCatalogItem>>,
+    { id: string }
+  > = (props) => {
+    const { id } = props ?? {};
+
+    return deleteCatalogItem(id, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type DeleteCatalogItemMutationResult = NonNullable<
+  Awaited<ReturnType<typeof deleteCatalogItem>>
+>;
+
+export type DeleteCatalogItemMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Delete a price catalog item
+ */
+export const useDeleteCatalogItem = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deleteCatalogItem>>,
+    TError,
+    { id: string },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof deleteCatalogItem>>,
+  TError,
+  { id: string },
+  TContext
+> => {
+  return useMutation(getDeleteCatalogItemMutationOptions(options));
 };

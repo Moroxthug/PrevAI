@@ -253,6 +253,39 @@ export interface UploadUrlResponse {
   metadata?: UploadUrlRequest;
 }
 
+export interface CatalogItem {
+  id: string;
+  userId: string;
+  nome: string;
+  categoria?: string | null;
+  um: string;
+  prezzoUnitario: number;
+  note?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateCatalogItemBody {
+  nome: string;
+  categoria?: string;
+  um: string;
+  prezzoUnitario: number;
+  note?: string;
+}
+
+export interface UpdateCatalogItemBody {
+  nome?: string;
+  categoria?: string;
+  um?: string;
+  prezzoUnitario?: number;
+  note?: string;
+}
+
+export interface ImportCatalogResult {
+  imported: number;
+  skipped: number;
+}
+
 export type UploadBusinessProfileLogoBody = {
   logo: Blob;
 };

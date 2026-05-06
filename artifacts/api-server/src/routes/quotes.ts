@@ -2,7 +2,7 @@ import { Router } from "express";
 import { requireAuth, getAuth } from "@clerk/express";
 import type { Request } from "express";
 import multer from "multer";
-import { db, quotesTable, businessProfilesTable, quoteClientDataSchema, quoteCompanySnapshotSchema } from "@workspace/db";
+import { db, quotesTable, businessProfilesTable, priceCatalogItemsTable, quoteClientDataSchema, quoteCompanySnapshotSchema } from "@workspace/db";
 import { eq, desc, count, sum, sql } from "drizzle-orm";
 import {
   UpdateQuoteBody,
@@ -320,8 +320,8 @@ router.post("/quotes", requireAuth(), imageUpload.array("images", 3), async (req
 Descrizione lavori: ${rawInput}`;
     }
 
-    // Fetch business profile + recent quotes in parallel
-    const [fetchedProfileResult, recentQuotes] = await Promise.all([
+    // Fetch business profile, recent quotes, and catalog items in parallel
+    const [fetchedProfileResult, recentQuotes, catalogItems] = await Promise.all([
       companySnapshotInput
         ? Promise.resolve([])
         : db.select().from(businessProfilesTable).where(eq(businessProfilesTable.userId, userId)),
@@ -334,6 +334,10 @@ Descrizione lavori: ${rawInput}`;
         .where(eq(quotesTable.userId, userId))
         .orderBy(desc(quotesTable.createdAt))
         .limit(5),
+      db.select()
+        .from(priceCatalogItemsTable)
+        .where(eq(priceCatalogItemsTable.userId, userId))
+        .orderBy(priceCatalogItemsTable.categoria, priceCatalogItemsTable.nome),
     ]);
     const [fetchedProfile] = fetchedProfileResult as (typeof businessProfilesTable.$inferSelect)[];
 
@@ -360,6 +364,16 @@ Descrizione lavori: ${rawInput}`;
     // Build past-quotes context for pricing consistency
     const pastContext = buildPastQuotesContext(recentQuotes as { rawInput: string; capitoli: unknown; totale: string }[]);
 
+    // Build catalog context if user has custom price items
+    const catalogContext = catalogItems.length > 0
+      ? `LISTINO PREZZI PERSONALIZZATO DELL'UTENTE (usa questi prezzi come riferimento PRIORITARIO quando le lavorazioni corrispondono — adatta le quantità al lavoro richiesto):
+${catalogItems
+  .map(item => `  - ${item.nome} (${item.um}): ${Number(item.prezzoUnitario).toFixed(2)}€/unità${item.categoria ? ` [${item.categoria}]` : ""}${item.note ? ` — ${item.note}` : ""}`)
+  .join("\n")}
+
+Quando usi una voce del listino, applica il prezzo unitario esatto o molto simile. Per lavorazioni non presenti nel listino, usa i prezzi di mercato standard.`
+      : "";
+
     const hasImages = imageDataUrls.length > 0;
 
     const completion = await openai.chat.completions.create({
@@ -367,6 +381,7 @@ Descrizione lavori: ${rawInput}`;
       max_completion_tokens: 8192,
       messages: [
         { role: "system", content: AI_PROMPT },
+        ...(catalogContext ? [{ role: "system" as const, content: catalogContext }] : []),
         ...(pastContext ? [{ role: "system" as const, content: pastContext }] : []),
         {
           role: "user",
@@ -756,21 +771,36 @@ router.post("/quotes/:id/regenerate", requireAuth(), async (req, res) => {
 Descrizione lavori: ${inputText}`;
     }
 
-    // Fetch recent quotes for pricing context
-    const recentQuotes = await db
-      .select({ rawInput: quotesTable.rawInput, capitoli: quotesTable.capitoli, totale: quotesTable.totale })
-      .from(quotesTable)
-      .where(eq(quotesTable.userId, userId))
-      .orderBy(desc(quotesTable.createdAt))
-      .limit(5);
+    // Fetch recent quotes and catalog in parallel for pricing context
+    const [recentQuotes, catalogItems] = await Promise.all([
+      db.select({ rawInput: quotesTable.rawInput, capitoli: quotesTable.capitoli, totale: quotesTable.totale })
+        .from(quotesTable)
+        .where(eq(quotesTable.userId, userId))
+        .orderBy(desc(quotesTable.createdAt))
+        .limit(5),
+      db.select()
+        .from(priceCatalogItemsTable)
+        .where(eq(priceCatalogItemsTable.userId, userId))
+        .orderBy(priceCatalogItemsTable.categoria, priceCatalogItemsTable.nome),
+    ]);
 
     const pastContext = buildPastQuotesContext(recentQuotes as { rawInput: string; capitoli: unknown; totale: string }[]);
+
+    const catalogContext = catalogItems.length > 0
+      ? `LISTINO PREZZI PERSONALIZZATO DELL'UTENTE (usa questi prezzi come riferimento PRIORITARIO quando le lavorazioni corrispondono — adatta le quantità al lavoro richiesto):
+${catalogItems
+  .map(item => `  - ${item.nome} (${item.um}): ${Number(item.prezzoUnitario).toFixed(2)}€/unità${item.categoria ? ` [${item.categoria}]` : ""}${item.note ? ` — ${item.note}` : ""}`)
+  .join("\n")}
+
+Quando usi una voce del listino, applica il prezzo unitario esatto o molto simile. Per lavorazioni non presenti nel listino, usa i prezzi di mercato standard.`
+      : "";
 
     const completion = await openai.chat.completions.create({
       model: "gpt-4o-mini",
       max_completion_tokens: 8192,
       messages: [
         { role: "system", content: AI_PROMPT },
+        ...(catalogContext ? [{ role: "system" as const, content: catalogContext }] : []),
         ...(pastContext ? [{ role: "system" as const, content: pastContext }] : []),
         { role: "user", content: userMessage },
       ],

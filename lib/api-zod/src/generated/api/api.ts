@@ -683,3 +683,72 @@ export const UnlockQuoteWithSubscriptionResponse = zod.object({
 export const CreateCustomerPortalSessionResponse = zod.object({
   url: zod.string(),
 });
+
+/**
+ * @summary List price catalog items for the authenticated user
+ */
+export const ListCatalogItemsResponseItem = zod.object({
+  id: zod.string(),
+  userId: zod.string(),
+  nome: zod.string(),
+  categoria: zod.string().nullish(),
+  um: zod.string(),
+  prezzoUnitario: zod.number(),
+  note: zod.string().nullish(),
+  createdAt: zod.string(),
+  updatedAt: zod.string(),
+});
+export const ListCatalogItemsResponse = zod.array(ListCatalogItemsResponseItem);
+
+/**
+ * @summary Create a new price catalog item
+ */
+export const CreateCatalogItemBody = zod.object({
+  nome: zod.string(),
+  categoria: zod.string().optional(),
+  um: zod.string(),
+  prezzoUnitario: zod.number(),
+  note: zod.string().optional(),
+});
+
+/**
+ * @summary Import unique price items from existing quotes into the catalog
+ */
+export const ImportCatalogFromQuotesResponse = zod.object({
+  imported: zod.number(),
+  skipped: zod.number(),
+});
+
+/**
+ * @summary Update a price catalog item
+ */
+export const UpdateCatalogItemParams = zod.object({
+  id: zod.coerce.string(),
+});
+
+export const UpdateCatalogItemBody = zod.object({
+  nome: zod.string().optional(),
+  categoria: zod.string().optional(),
+  um: zod.string().optional(),
+  prezzoUnitario: zod.number().optional(),
+  note: zod.string().optional(),
+});
+
+export const UpdateCatalogItemResponse = zod.object({
+  id: zod.string(),
+  userId: zod.string(),
+  nome: zod.string(),
+  categoria: zod.string().nullish(),
+  um: zod.string(),
+  prezzoUnitario: zod.number(),
+  note: zod.string().nullish(),
+  createdAt: zod.string(),
+  updatedAt: zod.string(),
+});
+
+/**
+ * @summary Delete a price catalog item
+ */
+export const DeleteCatalogItemParams = zod.object({
+  id: zod.coerce.string(),
+});
