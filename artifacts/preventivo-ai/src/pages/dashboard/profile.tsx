@@ -6,7 +6,7 @@ import { useGetBusinessProfile, useUpdateBusinessProfile } from "@workspace/api-
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, Save, Upload, X, ImageIcon } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -76,33 +76,29 @@ export default function ProfileSettings() {
 
     setIsUploadingLogo(true);
     try {
-      // Step 1: request presigned upload URL
-      const urlRes = await fetch("/api/storage/uploads/request-url", {
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const res = await fetch("/api/business-profile/logo", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: file.name, size: file.size, contentType: file.type }),
+        body: formData,
       });
-      if (!urlRes.ok) throw new Error("Impossibile ottenere URL di upload");
-      const { uploadURL, objectPath } = await urlRes.json() as { uploadURL: string; objectPath: string };
 
-      // Step 2: upload directly to GCS
-      const uploadRes = await fetch(uploadURL, {
-        method: "PUT",
-        headers: { "Content-Type": file.type },
-        body: file,
-      });
-      if (!uploadRes.ok) throw new Error("Upload fallito");
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({})) as { error?: string };
+        throw new Error(err.error ?? "Upload fallito");
+      }
 
-      // Step 3: serving URL = /api/storage + objectPath
-      const servingUrl = `/api/storage${objectPath}`;
-
-      // Step 4: save to business profile
-      await updateProfile.mutateAsync({ data: { logoUrl: servingUrl } });
+      const { logoUrl } = await res.json() as { logoUrl: string };
+      setLogoPreview(logoUrl);
       queryClient.invalidateQueries({ queryKey: getGetBusinessProfileQueryKey() });
-      setLogoPreview(servingUrl);
       toast({ title: "Logo caricato con successo" });
     } catch (err) {
-      toast({ title: "Errore caricamento logo", description: err instanceof Error ? err.message : "Errore sconosciuto", variant: "destructive" });
+      toast({
+        title: "Errore caricamento logo",
+        description: err instanceof Error ? err.message : "Errore sconosciuto",
+        variant: "destructive",
+      });
     } finally {
       setIsUploadingLogo(false);
       if (fileInputRef.current) fileInputRef.current.value = "";

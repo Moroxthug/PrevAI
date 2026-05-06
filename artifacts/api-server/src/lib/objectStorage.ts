@@ -189,6 +189,24 @@ export class ObjectStorageService {
     return normalizedPath;
   }
 
+  async uploadObjectBuffer({
+    subPath,
+    buffer,
+    contentType,
+  }: {
+    subPath: string;
+    buffer: Buffer;
+    contentType: string;
+  }): Promise<string> {
+    const privateObjectDir = this.getPrivateObjectDir();
+    const fullPath = `${privateObjectDir}/${subPath}`;
+    const { bucketName, objectName } = parseObjectPath(fullPath);
+    const bucket = objectStorageClient.bucket(bucketName);
+    const file = bucket.file(objectName);
+    await file.save(buffer, { contentType, resumable: false });
+    return `/objects/${subPath}`;
+  }
+
   async canAccessObjectEntity({
     userId,
     objectFile,
