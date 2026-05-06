@@ -695,6 +695,18 @@ components:
           nullable: true
         isActive:
           type: boolean
+        quotaUsed:
+          type: number
+          nullable: true
+        quotaLimit:
+          type: number
+          nullable: true
+        quotaRemaining:
+          type: number
+          nullable: true
+        quotaResetDate:
+          type: string
+          nullable: true
       required:
         - isActive
 

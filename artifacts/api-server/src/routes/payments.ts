@@ -181,11 +181,43 @@ router.get("/payments/subscription", requireAuth(), async (req, res) => {
       .where(eq(businessProfilesTable.userId, userId));
 
     const isActive = profile?.subscriptionStatus === "active";
+    const plan = PLANS.find(p => p.id === profile?.subscriptionPlan) ?? null;
+
+    // Compute quota usage for Starter (quotes created this month)
+    let quotaUsed: number | null = null;
+    let quotaLimit: number | null = null;
+    let quotaRemaining: number | null = null;
+    let quotaResetDate: string | null = null;
+
+    if (isActive && plan?.quotaPerMonth != null) {
+      const now = new Date();
+      const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+      const nextMonthStart = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+
+      const [{ count: used }] = await db
+        .select({ count: sql<number>`count(*)::int` })
+        .from(quotesTable)
+        .where(
+          sql`${quotesTable.userId} = ${userId}
+            AND ${quotesTable.createdAt} >= ${monthStart.toISOString()}
+            AND ${quotesTable.createdAt} < ${nextMonthStart.toISOString()}`
+        );
+
+      quotaUsed = used ?? 0;
+      quotaLimit = plan.quotaPerMonth;
+      quotaRemaining = Math.max(0, quotaLimit - quotaUsed);
+      quotaResetDate = nextMonthStart.toISOString();
+    }
+
     res.json({
       plan: profile?.subscriptionPlan ?? null,
       status: profile?.subscriptionStatus ?? null,
       periodEnd: profile?.subscriptionPeriodEnd?.toISOString() ?? null,
       isActive,
+      quotaUsed,
+      quotaLimit,
+      quotaRemaining,
+      quotaResetDate,
     });
   } catch (err) {
     logger.error({ err }, "Error getting subscription");

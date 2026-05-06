@@ -557,6 +557,10 @@ export const GetSubscriptionResponse = zod.object({
   status: zod.string().nullish(),
   periodEnd: zod.string().nullish(),
   isActive: zod.boolean(),
+  quotaUsed: zod.number().nullish(),
+  quotaLimit: zod.number().nullish(),
+  quotaRemaining: zod.number().nullish(),
+  quotaResetDate: zod.string().nullish(),
 });
 
 /**

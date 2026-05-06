@@ -171,6 +171,10 @@ export interface SubscriptionInfo {
   status?: string | null;
   periodEnd?: string | null;
   isActive: boolean;
+  quotaUsed?: number | null;
+  quotaLimit?: number | null;
+  quotaRemaining?: number | null;
+  quotaResetDate?: string | null;
 }
 
 export interface UnlockQuoteBody {

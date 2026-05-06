@@ -1,6 +1,6 @@
 import { Link, useLocation } from "wouter";
 import { UserButton, useAuth, RedirectToSignIn } from "@clerk/react";
-import { LayoutDashboard, FileText, Plus, User, Menu } from "lucide-react";
+import { LayoutDashboard, FileText, Plus, User, Menu, CreditCard } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger, SheetTitle } from "@/components/ui/sheet";
 import { useState } from "react";
@@ -28,6 +28,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
     { href: "/dashboard", label: "Overview", icon: LayoutDashboard },
     { href: "/dashboard/quotes", label: "Preventivi", icon: FileText },
     { href: "/dashboard/profile", label: "Profilo Aziendale", icon: User },
+    { href: "/dashboard/billing", label: "Piano & Fatturazione", icon: CreditCard },
   ];
 
   const NavLinks = ({ onClick }: { onClick?: () => void }) => (
