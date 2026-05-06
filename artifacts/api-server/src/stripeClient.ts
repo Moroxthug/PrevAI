@@ -2,6 +2,15 @@ import Stripe from 'stripe';
 import { StripeSync } from 'stripe-replit-sync';
 
 async function getCredentials(): Promise<{ publishableKey: string; secretKey: string }> {
+  // Env vars take priority over the Replit integration connector
+  const envSk = process.env.STRIPE_SECRET_KEY;
+  if (envSk) {
+    return {
+      publishableKey: process.env.STRIPE_PUBLISHABLE_KEY ?? '',
+      secretKey: envSk,
+    };
+  }
+
   const hostname = process.env.REPLIT_CONNECTORS_HOSTNAME;
   const xReplitToken = process.env.REPL_IDENTITY
     ? 'repl ' + process.env.REPL_IDENTITY
@@ -10,11 +19,8 @@ async function getCredentials(): Promise<{ publishableKey: string; secretKey: st
       : null;
 
   if (!hostname || !xReplitToken) {
-    // Fallback to env var for local dev without the integration
-    const sk = process.env.STRIPE_SECRET_KEY;
-    if (sk) return { publishableKey: process.env.STRIPE_PUBLISHABLE_KEY ?? '', secretKey: sk };
     throw new Error(
-      'Stripe integration not configured. Connect Stripe via the Integrations tab.'
+      'Stripe not configured. Set STRIPE_SECRET_KEY or connect Stripe via the Integrations tab.'
     );
   }
 
@@ -44,12 +50,7 @@ async function getCredentials(): Promise<{ publishableKey: string; secretKey: st
   const settings = data.items?.[0]?.settings;
 
   if (!settings?.publishable || !settings?.secret) {
-    // Fallback to env var
-    const sk = process.env.STRIPE_SECRET_KEY;
-    if (sk) return { publishableKey: process.env.STRIPE_PUBLISHABLE_KEY ?? '', secretKey: sk };
-    throw new Error(
-      `Stripe ${targetEnvironment} connection not found. Connect Stripe via the Integrations tab.`
-    );
+    throw new Error(`Stripe ${targetEnvironment} connection not found. Set STRIPE_SECRET_KEY or connect Stripe via the Integrations tab.`);
   }
 
   return {
