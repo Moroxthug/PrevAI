@@ -10,6 +10,8 @@ import {
   getClerkProxyHost,
 } from "./middlewares/clerkProxyMiddleware";
 import { WebhookHandlers } from "./webhookHandlers";
+import { db, quotesTable } from "@workspace/db";
+import { eq } from "drizzle-orm";
 import router from "./routes";
 import { logger } from "./lib/logger";
 
@@ -50,7 +52,27 @@ app.post(
     }
     const sig = Array.isArray(signature) ? signature[0] : signature;
     try {
+      // 1. Let stripe-replit-sync validate signature + sync data to stripe.* tables
       await WebhookHandlers.processWebhook(req.body as Buffer, sig);
+
+      // 2. Run custom business logic — safe to parse JSON since signature was already verified above
+      try {
+        const event = JSON.parse((req.body as Buffer).toString("utf8")) as {
+          type: string;
+          data: { object: { metadata?: Record<string, string>; payment_status?: string } };
+        };
+        if (event.type === "checkout.session.completed") {
+          const session = event.data.object;
+          const quoteId = session.metadata?.quoteId;
+          if (quoteId) {
+            await db.update(quotesTable).set({ status: "unlocked" }).where(eq(quotesTable.id, quoteId));
+            logger.info({ quoteId }, "Quote unlocked via webhook");
+          }
+        }
+      } catch (bizErr) {
+        logger.error({ err: bizErr }, "Webhook business logic error (non-fatal)");
+      }
+
       res.status(200).json({ received: true });
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : String(err);

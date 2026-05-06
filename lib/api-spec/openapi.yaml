@@ -255,6 +255,25 @@ paths:
         "200":
           description: OK
 
+  /payments/verify/{quoteId}:
+    get:
+      operationId: verifyPayment
+      tags: [payments]
+      summary: Verify a Stripe payment and unlock the quote if paid
+      parameters:
+        - in: path
+          name: quoteId
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Payment verification result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PaymentVerifyResult"
+
   /payments/plans:
     get:
       operationId: getPlans
@@ -618,6 +637,15 @@ components:
           enum: [monthly_starter, monthly_pro, oneshot_watermark, oneshot_clean]
       required:
         - planType
+
+    PaymentVerifyResult:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [draft, unlocked, pending_payment]
+      required:
+        - status
 
     CheckoutResult:
       type: object

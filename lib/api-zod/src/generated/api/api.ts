@@ -521,6 +521,17 @@ export const CreateCheckoutSessionResponse = zod.object({
 });
 
 /**
+ * @summary Verify a Stripe payment and unlock the quote if paid
+ */
+export const VerifyPaymentParams = zod.object({
+  quoteId: zod.coerce.string(),
+});
+
+export const VerifyPaymentResponse = zod.object({
+  status: zod.enum(["draft", "unlocked", "pending_payment"]),
+});
+
+/**
  * @summary Get available pricing plans
  */
 export const GetPlansResponseItem = zod.object({

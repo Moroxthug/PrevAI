@@ -6,6 +6,7 @@ import { eq, sql } from "drizzle-orm";
 import { CreateCheckoutSessionBody } from "@workspace/api-zod";
 import { getUncachableStripeClient } from "../stripeClient";
 import { logger } from "../lib/logger";
+import Stripe from "stripe";
 
 const router = Router();
 
@@ -166,6 +167,47 @@ router.post("/payments/checkout", requireAuth(), async (req, res) => {
     res.json({ url: session.url!, sessionId: session.id });
   } catch (err) {
     logger.error({ err }, "Error creating checkout session");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// GET /api/payments/verify/:quoteId
+// Verifies a Stripe payment and unlocks the quote if paid.
+// Used as a reliable fallback when the user returns from Stripe checkout.
+router.get("/payments/verify/:quoteId", requireAuth(), async (req, res) => {
+  try {
+    const userId = getUserId(req);
+    const quoteId = req.params["quoteId"] as string;
+
+    const [quote] = await db.select().from(quotesTable).where(eq(quotesTable.id, quoteId));
+    if (!quote || quote.userId !== userId) {
+      res.status(404).json({ error: "Quote not found" });
+      return;
+    }
+
+    if (quote.status === "unlocked") {
+      res.json({ status: "unlocked" });
+      return;
+    }
+
+    if (!quote.stripeSessionId) {
+      res.json({ status: quote.status });
+      return;
+    }
+
+    const stripe = await getUncachableStripeClient();
+    const session = await stripe.checkout.sessions.retrieve(quote.stripeSessionId);
+
+    if (session.payment_status === "paid" || session.status === "complete") {
+      await db.update(quotesTable).set({ status: "unlocked" }).where(eq(quotesTable.id, quoteId));
+      logger.info({ quoteId }, "Quote unlocked via verify endpoint");
+      res.json({ status: "unlocked" });
+      return;
+    }
+
+    res.json({ status: quote.status });
+  } catch (err) {
+    logger.error({ err }, "Error verifying payment");
     res.status(500).json({ error: "Internal server error" });
   }
 });

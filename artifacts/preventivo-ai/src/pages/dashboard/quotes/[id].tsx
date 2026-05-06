@@ -1,5 +1,5 @@
-import { useParams } from "wouter";
-import { useGetQuote, useGetBusinessProfile, useGenerateQuotePdf, useGetPlans, useUpdateQuote, useCreateCheckoutSession, getGetQuoteQueryKey } from "@workspace/api-client-react";
+import { useParams, useSearch } from "wouter";
+import { useGetQuote, useGetBusinessProfile, useGenerateQuotePdf, useGetPlans, useUpdateQuote, useCreateCheckoutSession, useVerifyPayment, getGetQuoteQueryKey, getVerifyPaymentQueryKey } from "@workspace/api-client-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
@@ -32,6 +32,10 @@ type EditCapitolo = {
 
 export default function QuoteDetail() {
   const { id } = useParams();
+  const search = useSearch();
+  const searchParams = new URLSearchParams(search);
+  const paymentResult = searchParams.get("payment");
+
   const { data: quote, isLoading: isLoadingQuote } = useGetQuote(id || "");
   const { data: profile, isLoading: isLoadingProfile } = useGetBusinessProfile();
   const { data: plans } = useGetPlans();
@@ -40,6 +44,25 @@ export default function QuoteDetail() {
   const createCheckout = useCreateCheckoutSession();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+
+  // When returning from Stripe with ?payment=success, verify and unlock the quote
+  const [verifyDone, setVerifyDone] = useState(false);
+  const verifyEnabled = !!id && paymentResult === "success" && !verifyDone && quote?.status !== "unlocked";
+  const { data: verifyData } = useVerifyPayment(id || "", {
+    query: {
+      queryKey: getVerifyPaymentQueryKey(id || ""),
+      enabled: verifyEnabled,
+      refetchInterval: verifyEnabled ? 2000 : false,
+    },
+  });
+
+  useEffect(() => {
+    if (verifyData?.status === "unlocked" && !verifyDone) {
+      setVerifyDone(true);
+      queryClient.invalidateQueries({ queryKey: getGetQuoteQueryKey(id || "") });
+      toast({ title: "Pagamento confermato!", description: "Il preventivo è stato sbloccato." });
+    }
+  }, [verifyData, verifyDone, id, queryClient, toast]);
 
   const [isPaywallOpen, setIsPaywallOpen] = useState(false);
   const [isEditingClient, setIsEditingClient] = useState(false);
@@ -943,65 +966,62 @@ export default function QuoteDetail() {
 
       {/* Paywall dialog */}
       <Dialog open={isPaywallOpen} onOpenChange={setIsPaywallOpen}>
-        <DialogContent className="sm:max-w-[680px]">
-          <DialogHeader>
-            <DialogTitle className="text-2xl">Sblocca il Preventivo</DialogTitle>
-            <DialogDescription>
-              Scegli un piano per rimuovere il watermark e scaricare il PDF pulito.
-            </DialogDescription>
-          </DialogHeader>
+        <DialogContent className="sm:max-w-[600px] max-h-[90vh] flex flex-col p-0">
+          <div className="px-6 pt-5 pb-3 border-b shrink-0">
+            <DialogHeader>
+              <DialogTitle className="text-lg">Sblocca il Preventivo</DialogTitle>
+              <DialogDescription className="text-sm">
+                Scegli un piano per rimuovere il watermark e scaricare il PDF pulito.
+              </DialogDescription>
+            </DialogHeader>
+          </div>
 
-          {/* Subscription plans */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
-            {plans?.filter(p => p.interval).map((plan, idx) => {
-              const isPro = plan.id === "monthly_pro";
-              return (
-                <Card
-                  key={plan.id}
-                  className={`flex flex-col plan-card-enter relative ${
-                    isPro
-                      ? "border-primary ring-1 ring-primary shadow-md"
-                      : ""
-                  }`}
-                  style={{ animationDelay: `${idx * 0.05}s` }}
-                >
-                  {isPro && (
-                    <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                      <span className="bg-primary text-primary-foreground text-xs font-bold px-3 py-0.5 rounded-full uppercase tracking-widest">
-                        ⭐ Pro
-                      </span>
-                    </div>
-                  )}
-                  <CardHeader className="pb-3 pt-5">
-                    <div className="flex items-center justify-between">
-                      <CardTitle className="text-base">{plan.name}</CardTitle>
+          <div className="overflow-y-auto flex-1 px-6 py-4 space-y-4">
+            {/* Subscription plans */}
+            <div className="grid grid-cols-2 gap-3">
+              {plans?.filter(p => p.interval).map((plan, idx) => {
+                const isPro = plan.id === "monthly_pro";
+                return (
+                  <div
+                    key={plan.id}
+                    className={`plan-card-enter relative rounded-lg border p-3 flex flex-col ${
+                      isPro ? "border-primary ring-1 ring-primary shadow-sm" : ""
+                    }`}
+                    style={{ animationDelay: `${idx * 0.05}s` }}
+                  >
+                    {isPro && (
+                      <div className="absolute -top-2.5 left-1/2 -translate-x-1/2">
+                        <span className="bg-primary text-primary-foreground text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-widest">
+                          ⭐ Pro
+                        </span>
+                      </div>
+                    )}
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="font-semibold text-sm">{plan.name}</span>
                       {!isPro && (
-                        <span className="text-xs font-semibold bg-muted text-muted-foreground px-2 py-0.5 rounded-full uppercase tracking-widest">
+                        <span className="text-[10px] font-semibold bg-muted text-muted-foreground px-1.5 py-0.5 rounded-full uppercase">
                           Starter
                         </span>
                       )}
                     </div>
-                    <div className="mt-2">
-                      <span className="text-2xl font-bold">€{plan.price}</span>
-                      <span className="text-muted-foreground text-sm">/mese</span>
+                    <div className="mb-2">
+                      <span className="text-xl font-bold">€{plan.price}</span>
+                      <span className="text-muted-foreground text-xs">/mese</span>
                     </div>
                     {isPro && (
-                      <div className="text-xs text-primary font-semibold mt-1">✓ Accesso completo sbloccato</div>
+                      <div className="text-[10px] text-primary font-semibold mb-2">✓ Accesso completo sbloccato</div>
                     )}
-                  </CardHeader>
-                  <CardContent className="flex-1 pb-3">
-                    <ul className="space-y-1.5 text-sm">
-                      {plan.features.map((feature, i) => (
-                        <li key={i} className="flex items-start gap-2 text-muted-foreground">
-                          <CheckCircle2 className={`h-4 w-4 shrink-0 mt-0.5 ${isPro ? "text-primary" : "text-muted-foreground/60"}`} />
-                          <span>{feature}</span>
+                    <ul className="space-y-1 mb-3 flex-1">
+                      {plan.features.slice(0, isPro ? 4 : 4).map((feature, i) => (
+                        <li key={i} className="flex items-start gap-1.5 text-muted-foreground">
+                          <CheckCircle2 className={`h-3 w-3 shrink-0 mt-0.5 ${isPro ? "text-primary" : "text-muted-foreground/60"}`} />
+                          <span className="text-xs">{feature}</span>
                         </li>
                       ))}
                     </ul>
-                  </CardContent>
-                  <div className="p-4 pt-0">
                     <Button
-                      className="w-full"
+                      size="sm"
+                      className="w-full text-xs h-8"
                       variant={isPro ? "default" : "outline"}
                       onClick={() => handleCheckout(plan.id)}
                       disabled={createCheckout.isPending}
@@ -1009,48 +1029,47 @@ export default function QuoteDetail() {
                       {createCheckout.isPending ? "..." : isPro ? "Scegli Pro" : "Scegli Starter"}
                     </Button>
                   </div>
-                </Card>
-              );
-            })}
-          </div>
+                );
+              })}
+            </div>
 
-          {/* Divider */}
-          <div className="flex items-center gap-3 my-1">
-            <div className="flex-1 h-px bg-border" />
-            <span className="text-xs text-muted-foreground">oppure acquisto singolo</span>
-            <div className="flex-1 h-px bg-border" />
-          </div>
+            {/* Divider */}
+            <div className="flex items-center gap-3">
+              <div className="flex-1 h-px bg-border" />
+              <span className="text-xs text-muted-foreground">oppure acquisto singolo</span>
+              <div className="flex-1 h-px bg-border" />
+            </div>
 
-          {/* One-shot plans */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {plans?.filter(p => !p.interval).map((plan, idx) => {
-              const isClean = plan.id === "oneshot_clean";
-              return (
-                <div
-                  key={plan.id}
-                  className={`plan-card-enter rounded-lg border p-4 flex items-center justify-between gap-4 hover:bg-muted/40 transition-colors ${
-                    isClean ? "border-primary/30" : ""
-                  }`}
-                  style={{ animationDelay: `${(idx + 2) * 0.05}s` }}
-                >
-                  <div>
-                    <div className="font-medium text-sm">{plan.name}</div>
-                    <div className="text-xs text-muted-foreground mt-0.5">{plan.features[0]}</div>
+            {/* One-shot plans */}
+            <div className="grid grid-cols-2 gap-3">
+              {plans?.filter(p => !p.interval).map((plan, idx) => {
+                const isClean = plan.id === "oneshot_clean";
+                return (
+                  <div
+                    key={plan.id}
+                    className={`plan-card-enter rounded-lg border p-3 flex flex-col hover:bg-muted/40 transition-colors ${
+                      isClean ? "border-primary/30" : ""
+                    }`}
+                    style={{ animationDelay: `${(idx + 2) * 0.05}s` }}
+                  >
+                    <div className="font-medium text-sm mb-0.5">{plan.name}</div>
+                    <div className="text-xs text-muted-foreground mb-2">{plan.features[0]}</div>
+                    <div className="flex items-center justify-between mt-auto">
+                      <span className="font-bold text-sm">€{plan.price}</span>
+                      <Button
+                        size="sm"
+                        variant={isClean ? "default" : "outline"}
+                        className="h-7 text-xs px-3"
+                        onClick={() => handleCheckout(plan.id)}
+                        disabled={createCheckout.isPending}
+                      >
+                        {createCheckout.isPending ? "..." : "Acquista"}
+                      </Button>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-3 shrink-0">
-                    <span className="font-bold">€{plan.price}</span>
-                    <Button
-                      size="sm"
-                      variant={isClean ? "default" : "outline"}
-                      onClick={() => handleCheckout(plan.id)}
-                      disabled={createCheckout.isPending}
-                    >
-                      {createCheckout.isPending ? "..." : "Acquista"}
-                    </Button>
-                  </div>
-                </div>
-              );
-            })}
+                );
+              })}
+            </div>
           </div>
         </DialogContent>
       </Dialog>

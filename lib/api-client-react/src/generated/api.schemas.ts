@@ -178,6 +178,19 @@ export interface CreateCheckoutBody {
   planType: CreateCheckoutBodyPlanType;
 }
 
+export type PaymentVerifyResultStatus =
+  (typeof PaymentVerifyResultStatus)[keyof typeof PaymentVerifyResultStatus];
+
+export const PaymentVerifyResultStatus = {
+  draft: "draft",
+  unlocked: "unlocked",
+  pending_payment: "pending_payment",
+} as const;
+
+export interface PaymentVerifyResult {
+  status: PaymentVerifyResultStatus;
+}
+
 export interface CheckoutResult {
   url: string;
   sessionId: string;

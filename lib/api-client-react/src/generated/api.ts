@@ -23,6 +23,7 @@ import type {
   CreateQuoteBody,
   HealthStatus,
   LogoUploadResult,
+  PaymentVerifyResult,
   PdfResult,
   Plan,
   Quote,
@@ -1207,6 +1208,93 @@ export const useStripeWebhook = <
 > => {
   return useMutation(getStripeWebhookMutationOptions(options));
 };
+
+/**
+ * @summary Verify a Stripe payment and unlock the quote if paid
+ */
+export const getVerifyPaymentUrl = (quoteId: string) => {
+  return `/api/payments/verify/${quoteId}`;
+};
+
+export const verifyPayment = async (
+  quoteId: string,
+  options?: RequestInit,
+): Promise<PaymentVerifyResult> => {
+  return customFetch<PaymentVerifyResult>(getVerifyPaymentUrl(quoteId), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getVerifyPaymentQueryKey = (quoteId: string) => {
+  return [`/api/payments/verify/${quoteId}`] as const;
+};
+
+export const getVerifyPaymentQueryOptions = <
+  TData = Awaited<ReturnType<typeof verifyPayment>>,
+  TError = ErrorType<unknown>,
+>(
+  quoteId: string,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof verifyPayment>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getVerifyPaymentQueryKey(quoteId);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof verifyPayment>>> = ({
+    signal,
+  }) => verifyPayment(quoteId, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!quoteId,
+    ...queryOptions,
+  } as UseQueryOptions<
+    Awaited<ReturnType<typeof verifyPayment>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type VerifyPaymentQueryResult = NonNullable<
+  Awaited<ReturnType<typeof verifyPayment>>
+>;
+export type VerifyPaymentQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Verify a Stripe payment and unlock the quote if paid
+ */
+
+export function useVerifyPayment<
+  TData = Awaited<ReturnType<typeof verifyPayment>>,
+  TError = ErrorType<unknown>,
+>(
+  quoteId: string,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof verifyPayment>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getVerifyPaymentQueryOptions(quoteId, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
 
 /**
  * @summary Get available pricing plans

@@ -1,9 +1,10 @@
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, CheckCircle2, FileText, Zap, Lock, Star } from "lucide-react";
 import { useGetPlans } from "@workspace/api-client-react";
 import { useScrollFade } from "@/hooks/use-scroll-fade";
 import { Badge } from "@/components/ui/badge";
+import { useUser } from "@clerk/react";
 
 function ScrollSection({
   children,
@@ -28,9 +29,15 @@ function ScrollSection({
 
 export default function Home() {
   const { data: plans } = useGetPlans();
+  const { isSignedIn } = useUser();
+  const [, navigate] = useLocation();
 
   const subscriptionPlans = plans?.filter((p) => p.interval) ?? [];
   const oneshotPlans = plans?.filter((p) => !p.interval) ?? [];
+
+  const handlePlanClick = () => {
+    navigate(isSignedIn ? "/dashboard" : "/sign-up");
+  };
 
   return (
     <div className="flex flex-col min-h-screen bg-white">
@@ -383,19 +390,19 @@ export default function Home() {
                   </ul>
 
                   {isPro ? (
-                    <Link
-                      href="/sign-up"
+                    <button
+                      onClick={handlePlanClick}
                       className="btn-gradient inline-flex h-12 items-center justify-center w-full text-sm font-semibold"
                     >
                       Inizia con Pro
-                    </Link>
+                    </button>
                   ) : (
-                    <Link
-                      href="/sign-up"
+                    <button
+                      onClick={handlePlanClick}
                       className="btn-gradient-outline inline-flex h-12 items-center justify-center w-full text-sm font-semibold"
                     >
                       Inizia con Starter
-                    </Link>
+                    </button>
                   )}
                 </div>
               );
@@ -438,19 +445,19 @@ export default function Home() {
                     ))}
                   </ul>
                   {isClean ? (
-                    <Link
-                      href="/sign-up"
+                    <button
+                      onClick={handlePlanClick}
                       className="btn-gradient inline-flex h-10 items-center justify-center w-full text-sm font-semibold"
                     >
                       Acquista
-                    </Link>
+                    </button>
                   ) : (
-                    <Link
-                      href="/sign-up"
+                    <button
+                      onClick={handlePlanClick}
                       className="btn-gradient-outline inline-flex h-10 items-center justify-center w-full text-sm font-semibold"
                     >
                       Acquista
-                    </Link>
+                    </button>
                   )}
                 </div>
               );
