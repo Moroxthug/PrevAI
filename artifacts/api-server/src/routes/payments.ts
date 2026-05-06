@@ -112,36 +112,18 @@ router.post("/payments/checkout", requireAuth(), async (req, res) => {
       ? `${baseUrl}/dashboard/quotes/${quoteId}?payment=cancelled`
       : `${baseUrl}/dashboard?payment=cancelled`;
 
-    // Look up real Stripe price ID from the synced stripe schema
-    let priceId: string | null = null;
-    try {
-      const result = await db.execute(
-        sql`SELECT pr.id FROM stripe.prices pr
-            JOIN stripe.products prod ON prod.id = pr.product
-            WHERE prod.metadata->>'planId' = ${plan.id}
-              AND pr.active = true
-              AND prod.active = true
-            LIMIT 1`
-      );
-      priceId = (result.rows[0]?.id as string) ?? null;
-    } catch {
-      // stripe schema not yet available — fall through to price_data fallback
-    }
-
-    const lineItem = priceId
-      ? { price: priceId, quantity: 1 }
-      : {
-          price_data: {
-            currency: plan.currency,
-            product_data: {
-              name: `prevai – ${plan.name}`,
-              description: plan.features.join(", "),
-            },
-            unit_amount: plan.price * 100,
-            ...(plan.interval ? { recurring: { interval: plan.interval as "month" | "year" } } : {}),
-          },
-          quantity: 1,
-        };
+    const lineItem = {
+      price_data: {
+        currency: plan.currency,
+        product_data: {
+          name: `PrevAI – ${plan.name}`,
+          description: plan.features.join(", "),
+        },
+        unit_amount: plan.price * 100,
+        ...(plan.interval ? { recurring: { interval: plan.interval as "month" | "year" } } : {}),
+      },
+      quantity: 1,
+    };
 
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ["card"],
