@@ -47,7 +47,7 @@ REGOLE FONDAMENTALI:
 3. Organizza il lavoro in CAPITOLI logici (A, B, C, D, …) con titoli professionali (es: "Allestimento cantiere", "Opere di demolizione", "Nuove opere edili", "Impianto elettrico", ecc.)
 4. Ogni capitolo contiene VOCI di lavoro dettagliate con unità di misura professionali (mq, ml, mc, kg, ore, a.c., pezzi, cadauno, kw, etc.)
 5. Calcola subtotale per ogni capitolo. Il QUADRO SINTETICO è ricavato automaticamente dall'array capitoli (lettera + titolo + subtotale + osservazione); non serve un campo separato.
-6. Suggerisci uno sconto se appropriato (tipicamente 0–10%); usa 0 se non giustificato
+6. Applica uno sconto SOLO se l'utente lo richiede esplicitamente nella sua descrizione; altrimenti imposta sempre percentuale: 0
 7. Condizioni di pagamento tipiche edilizia: 30% acconto firma, 30% SAL intermedio, 30% SAL finale, 10% saldo fine lavori
 8. Sempre IVA 22% salvo indicazione contraria
 9. Il titolo_riga2 deve descrivere l'intervento e il luogo del cantiere
@@ -77,7 +77,7 @@ OUTPUT — SOLO JSON VALIDO, nessun testo extra:
       "subtotale": 2500.00
     }
   ],
-  "sconto": { "percentuale": 5, "importo_scontato": 0 },
+  "sconto": { "percentuale": 0, "importo_scontato": 0 },
   "condizioni_pagamento": [
     "30% acconto alla firma del contratto",
     "30% a completamento prima fase lavori",
@@ -196,6 +196,30 @@ router.get("/quotes", requireAuth(), async (req, res) => {
   }
 });
 
+function buildPastQuotesContext(
+  quotes: Array<{ rawInput: string; capitoli: unknown; totale: string }>
+): string {
+  const examples = quotes
+    .filter(q => Array.isArray(q.capitoli) && (q.capitoli as QuoteChapter[]).length > 0)
+    .slice(0, 3)
+    .map(q => {
+      const caps = q.capitoli as QuoteChapter[];
+      const voci = caps.flatMap(c => c.voci).slice(0, 8);
+      const prezziLines = voci
+        .map(v => `  - ${v.descrizione} (${v.um}): ${v.prezzoUnitario}€/unità`)
+        .join("\n");
+      const totale = new Intl.NumberFormat("it-IT", { style: "currency", currency: "EUR" }).format(Number(q.totale));
+      return `Lavoro: "${q.rawInput.slice(0, 120).replace(/\n/g, " ")}"\nTotale: ${totale}\nPrezzi applicati:\n${prezziLines}`;
+    });
+
+  if (examples.length === 0) return "";
+
+  return `STORICO PREVENTIVI DELL'UTENTE (usa come riferimento per coerenza di prezzi e stile):
+Questi sono i preventivi precedenti dello stesso utente. Mantieni coerenza con i prezzi unitari e le tipologie di lavoro già utilizzate, adattandoli al nuovo intervento.
+
+${examples.join("\n\n---\n\n")}`;
+}
+
 // POST /api/quotes  (multipart/form-data: rawInput, clientData?, companySnapshot?, images[])
 router.post("/quotes", requireAuth(), imageUpload.array("images", 3), async (req, res) => {
   try {
@@ -256,10 +280,22 @@ router.post("/quotes", requireAuth(), imageUpload.array("images", 3), async (req
 Descrizione lavori: ${rawInput}`;
     }
 
-    // Fetch business profile for companySnapshot if not provided
-    const [fetchedProfile] = companySnapshotInput
-      ? []
-      : await db.select().from(businessProfilesTable).where(eq(businessProfilesTable.userId, userId));
+    // Fetch business profile + recent quotes in parallel
+    const [fetchedProfileResult, recentQuotes] = await Promise.all([
+      companySnapshotInput
+        ? Promise.resolve([])
+        : db.select().from(businessProfilesTable).where(eq(businessProfilesTable.userId, userId)),
+      db.select({
+        rawInput: quotesTable.rawInput,
+        capitoli: quotesTable.capitoli,
+        totale: quotesTable.totale,
+      })
+        .from(quotesTable)
+        .where(eq(quotesTable.userId, userId))
+        .orderBy(desc(quotesTable.createdAt))
+        .limit(5),
+    ]);
+    const [fetchedProfile] = fetchedProfileResult as (typeof businessProfilesTable.$inferSelect)[];
 
     const resolvedSnapshot: QuoteCompanySnapshot | null = companySnapshotInput
       ? {
@@ -281,6 +317,9 @@ Descrizione lavori: ${rawInput}`;
           }
         : null;
 
+    // Build past-quotes context for pricing consistency
+    const pastContext = buildPastQuotesContext(recentQuotes as { rawInput: string; capitoli: unknown; totale: string }[]);
+
     const hasImages = imageDataUrls.length > 0;
 
     const completion = await openai.chat.completions.create({
@@ -288,6 +327,7 @@ Descrizione lavori: ${rawInput}`;
       max_completion_tokens: 8192,
       messages: [
         { role: "system", content: AI_PROMPT },
+        ...(pastContext ? [{ role: "system" as const, content: pastContext }] : []),
         {
           role: "user",
           content: hasImages
@@ -610,10 +650,12 @@ function generateQuoteHtml(
   const companyAddress = snap?.address || profile?.address || "";
   const companyPhone = snap?.phone || profile?.phone || "";
   const companyEmail = snap?.email || profile?.email || "";
-  const companyLogoUrl = snap?.logoUrl || profile?.logoUrl || "";
+  const companyLogoUrl = withWatermark
+    ? "/prevai-logo.png"
+    : (snap?.logoUrl || profile?.logoUrl || "");
 
   const logoHtml = companyLogoUrl
-    ? `<img src="${companyLogoUrl}" alt="Logo" style="max-height:60px;max-width:180px;object-fit:contain;" />`
+    ? `<img src="${companyLogoUrl}" alt="Logo" style="${withWatermark ? "max-height:36px;max-width:140px" : "max-height:60px;max-width:180px"};object-fit:contain;" />`
     : "";
 
   const companyHtml = `

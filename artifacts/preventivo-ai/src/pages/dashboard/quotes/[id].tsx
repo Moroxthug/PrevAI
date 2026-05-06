@@ -261,6 +261,9 @@ export default function QuoteDetail() {
   const companyAddress = quote.companySnapshot?.address || profile?.address;
   const companyPhone = quote.companySnapshot?.phone || profile?.phone;
   const companyEmail = quote.companySnapshot?.email || profile?.email;
+  const companyLogoUrl = isLocked
+    ? "/prevai-logo.png"
+    : (quote.companySnapshot?.logoUrl || profile?.logoUrl || "");
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500 max-w-5xl mx-auto">
@@ -319,6 +322,13 @@ export default function QuoteDetail() {
               {/* Company header */}
               <div className="flex justify-between items-start border-b-2 border-slate-800 pb-6 mb-6">
                 <div>
+                  {companyLogoUrl && (
+                    <img
+                      src={companyLogoUrl}
+                      alt={isLocked ? "prevai" : "Logo"}
+                      className={isLocked ? "h-7 mb-2 object-contain" : "max-h-14 max-w-[160px] object-contain mb-2"}
+                    />
+                  )}
                   <h2 className="text-xl font-bold text-slate-800">{companyName}</h2>
                   {companyVat && <div className="text-slate-500 text-xs mt-1">P.IVA: {companyVat}</div>}
                   {companyAddress && <div className="text-slate-500 text-xs">{companyAddress}</div>}
@@ -552,6 +562,13 @@ export default function QuoteDetail() {
                     <div className="p-8 text-black text-xs">
                       <div className="flex justify-between border-b-2 border-slate-800 pb-4 mb-4">
                         <div>
+                          {companyLogoUrl && (
+                            <img
+                              src={companyLogoUrl}
+                              alt={isLocked ? "prevai" : "Logo"}
+                              className={isLocked ? "h-4 mb-1 object-contain" : "max-h-8 max-w-[80px] object-contain mb-1"}
+                            />
+                          )}
                           <div className="text-xl font-bold text-slate-800">{companyName}</div>
                           {companyVat && <div className="text-slate-500 text-xs mt-1">P.IVA: {companyVat}</div>}
                           {companyAddress && <div className="text-slate-500 text-xs">{companyAddress}</div>}
