@@ -419,6 +419,25 @@ export default function QuoteDetail() {
               </div>
             )}
 
+            {/* Edit mode top banner */}
+            {isEditMode && !isEditLocked && (
+              <div className="bg-violet-50 border-b-2 border-violet-200 px-5 py-3 flex items-center justify-between gap-4 sticky top-0 z-20">
+                <span className="text-xs font-semibold text-violet-700 flex items-center gap-1.5">
+                  <Pencil className="h-3.5 w-3.5" />
+                  Modalità modifica — clicca su qualsiasi campo per modificarlo
+                </span>
+                <div className="flex gap-2 shrink-0">
+                  <Button size="sm" variant="outline" onClick={() => setIsEditMode(false)} className="h-7 text-xs gap-1">
+                    <X className="h-3 w-3" /> Annulla
+                  </Button>
+                  <Button size="sm" onClick={handleSaveEdit} disabled={updateQuote.isPending} className="h-7 text-xs gap-1">
+                    <Save className="h-3 w-3" />
+                    {updateQuote.isPending ? "Salvataggio..." : "Salva modifiche"}
+                  </Button>
+                </div>
+              </div>
+            )}
+
             <div className="p-8 sm:p-10">
               {/* Company header */}
               <div className="flex justify-between items-start border-b-2 border-slate-800 pb-6 mb-6">
@@ -446,13 +465,30 @@ export default function QuoteDetail() {
               </div>
 
               {/* Document title */}
-              {quote.titoloPreventivoRiga1 && (
-                <div className="text-center mb-1">
-                  <div className="text-sm font-bold uppercase tracking-wide text-slate-800">{quote.titoloPreventivoRiga1}</div>
-                  {quote.titoloPreventivoRiga2 && (
-                    <div className="text-xs text-slate-500 italic mt-0.5">{quote.titoloPreventivoRiga2}</div>
-                  )}
+              {isEditMode ? (
+                <div className="text-center mb-2 space-y-1">
+                  <input
+                    value={editTitolo1}
+                    onChange={e => setEditTitolo1(e.target.value)}
+                    className="w-full text-sm font-bold uppercase tracking-wide text-slate-800 text-center bg-transparent border border-transparent rounded px-1 py-0.5 hover:border-violet-300 focus:border-violet-400 focus:outline-none"
+                    placeholder="Titolo documento..."
+                  />
+                  <input
+                    value={editTitolo2}
+                    onChange={e => setEditTitolo2(e.target.value)}
+                    className="w-full text-xs text-slate-500 italic text-center bg-transparent border border-transparent rounded px-1 py-0.5 hover:border-violet-300 focus:border-violet-400 focus:outline-none"
+                    placeholder="Sottotitolo / oggetto..."
+                  />
                 </div>
+              ) : (
+                quote.titoloPreventivoRiga1 && (
+                  <div className="text-center mb-1">
+                    <div className="text-sm font-bold uppercase tracking-wide text-slate-800">{quote.titoloPreventivoRiga1}</div>
+                    {quote.titoloPreventivoRiga2 && (
+                      <div className="text-xs text-slate-500 italic mt-0.5">{quote.titoloPreventivoRiga2}</div>
+                    )}
+                  </div>
+                )
               )}
 
               {/* Client section */}
@@ -482,8 +518,8 @@ export default function QuoteDetail() {
                 )}
               </div>
 
-              {/* Quadro Sintetico */}
-              {hasCapitoli && (
+              {/* Quadro Sintetico — live from editCapitoli in edit mode */}
+              {(isEditMode ? editCapitoli.length > 0 : hasCapitoli) && (
                 <div className="mb-6">
                   <div className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">1. Quadro Sintetico</div>
                   <table className="w-full text-xs">
@@ -495,20 +531,152 @@ export default function QuoteDetail() {
                       </tr>
                     </thead>
                     <tbody>
-                      {capitoli.map((cap, i) => (
-                        <tr key={cap.lettera} className={i % 2 === 0 ? "bg-white" : "bg-slate-50"}>
-                          <td className="py-2 px-3 text-slate-700">{cap.lettera}. {cap.titolo}</td>
-                          <td className="py-2 px-3 text-right font-medium text-slate-800 whitespace-nowrap">{formatCurrency(cap.subtotale)}</td>
-                          <td className="py-2 px-3 text-slate-400 italic hidden sm:table-cell">{cap.osservazione ?? "Voce ordinaria"}</td>
-                        </tr>
-                      ))}
+                      {(isEditMode ? editCapitoli : capitoli).map((cap, i) => {
+                        const sub = isEditMode
+                          ? (cap as typeof editCapitoli[0]).voci.reduce((s, v) => s + Number(v.quantita) * Number(v.prezzoUnitario), 0)
+                          : (cap as typeof capitoli[0]).subtotale;
+                        return (
+                          <tr key={cap.lettera} className={i % 2 === 0 ? "bg-white" : "bg-slate-50"}>
+                            <td className="py-2 px-3 text-slate-700">{cap.lettera}. {cap.titolo}</td>
+                            <td className="py-2 px-3 text-right font-medium text-slate-800 whitespace-nowrap">{formatCurrency(sub)}</td>
+                            <td className="py-2 px-3 text-slate-400 italic hidden sm:table-cell">{cap.osservazione ?? "Voce ordinaria"}</td>
+                          </tr>
+                        );
+                      })}
                     </tbody>
                   </table>
                 </div>
               )}
 
               {/* Chapter detail sections */}
-              {hasCapitoli ? (
+              {isEditMode ? (
+                /* ── INLINE EDIT MODE ── */
+                <div className="mb-6">
+                  <div className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3">2. Computo Metrico Dettagliato</div>
+                  <div className="space-y-4">
+                    {editCapitoli.map((cap, capIdx) => {
+                      const capSub = cap.voci.reduce((s, v) => s + Number(v.quantita) * Number(v.prezzoUnitario), 0);
+                      return (
+                        <div key={capIdx} className="border-2 border-violet-200 rounded-lg overflow-hidden">
+                          {/* Chapter header — editable */}
+                          <div className="bg-violet-50 px-3 py-2 flex items-center gap-2 border-b border-violet-100">
+                            <span className="text-sm font-bold text-slate-400 shrink-0">{cap.lettera}.</span>
+                            <input
+                              value={cap.titolo}
+                              onChange={e => updateCapitolo(capIdx, "titolo", e.target.value)}
+                              className="flex-1 text-sm font-semibold text-slate-800 bg-transparent border border-transparent rounded px-1 py-0.5 hover:border-violet-300 focus:border-violet-400 focus:outline-none min-w-0"
+                              placeholder="Titolo capitolo..."
+                            />
+                            <input
+                              value={cap.osservazione ?? ""}
+                              onChange={e => updateCapitolo(capIdx, "osservazione", e.target.value)}
+                              className="w-28 text-xs text-slate-500 bg-transparent border border-transparent rounded px-1 py-0.5 hover:border-violet-300 focus:border-violet-400 focus:outline-none hidden sm:block"
+                              placeholder="Osservazione"
+                            />
+                            <span className="text-xs font-semibold text-slate-600 whitespace-nowrap shrink-0">{formatCurrency(capSub)}</span>
+                            <button
+                              onClick={() => removeCapitolo(capIdx)}
+                              className="text-red-300 hover:text-red-500 hover:bg-red-50 rounded p-1 transition-colors shrink-0"
+                              title="Elimina capitolo"
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </button>
+                          </div>
+                          {/* Voci table — fully editable */}
+                          <div className="overflow-x-auto">
+                            <table className="w-full text-xs">
+                              <thead>
+                                <tr className="bg-slate-700 text-white">
+                                  <th className="py-1.5 px-3 text-left font-medium">Descrizione</th>
+                                  <th className="py-1.5 px-1 text-center font-medium w-14">U.M.</th>
+                                  <th className="py-1.5 px-1 text-center font-medium w-16">Q.tà</th>
+                                  <th className="py-1.5 px-1 text-right font-medium w-24">P.u. (€)</th>
+                                  <th className="py-1.5 px-3 text-right font-medium w-20">Totale</th>
+                                  <th className="w-6"></th>
+                                </tr>
+                              </thead>
+                              <tbody className="divide-y divide-slate-100">
+                                {cap.voci.map((voce, vi) => {
+                                  const vTot = Number(voce.quantita) * Number(voce.prezzoUnitario);
+                                  return (
+                                    <tr key={vi} className={vi % 2 === 0 ? "bg-white" : "bg-slate-50/60"}>
+                                      <td className="py-1 px-2">
+                                        <input
+                                          value={voce.descrizione}
+                                          onChange={e => updateVoce(capIdx, vi, "descrizione", e.target.value)}
+                                          className="w-full bg-transparent border border-transparent rounded px-1 py-0.5 hover:border-violet-200 focus:border-violet-400 focus:outline-none text-slate-700"
+                                          placeholder="Descrizione voce..."
+                                        />
+                                      </td>
+                                      <td className="py-1 px-1">
+                                        <input
+                                          value={voce.um}
+                                          onChange={e => updateVoce(capIdx, vi, "um", e.target.value)}
+                                          className="w-full text-center bg-transparent border border-transparent rounded px-1 py-0.5 hover:border-violet-200 focus:border-violet-400 focus:outline-none text-slate-600"
+                                        />
+                                      </td>
+                                      <td className="py-1 px-1">
+                                        <input
+                                          type="number"
+                                          value={voce.quantita}
+                                          onChange={e => updateVoce(capIdx, vi, "quantita", e.target.value === "" ? 0 : Number(e.target.value))}
+                                          className="w-full text-center bg-transparent border border-transparent rounded px-1 py-0.5 hover:border-violet-200 focus:border-violet-400 focus:outline-none text-slate-600"
+                                          min={0} step={0.01}
+                                        />
+                                      </td>
+                                      <td className="py-1 px-1">
+                                        <input
+                                          type="number"
+                                          value={voce.prezzoUnitario}
+                                          onChange={e => updateVoce(capIdx, vi, "prezzoUnitario", e.target.value === "" ? 0 : Number(e.target.value))}
+                                          className="w-full text-right bg-transparent border border-transparent rounded px-1 py-0.5 hover:border-violet-200 focus:border-violet-400 focus:outline-none text-slate-600"
+                                          min={0} step={0.01}
+                                        />
+                                      </td>
+                                      <td className="py-1 px-3 text-right font-medium text-slate-800 whitespace-nowrap">
+                                        {formatCurrency(vTot)}
+                                      </td>
+                                      <td className="py-1 px-1">
+                                        <button
+                                          onClick={() => removeVoce(capIdx, vi)}
+                                          className="text-red-300 hover:text-red-500 p-0.5 rounded hover:bg-red-50 transition-colors"
+                                          title="Elimina voce"
+                                        >
+                                          <X className="h-3 w-3" />
+                                        </button>
+                                      </td>
+                                    </tr>
+                                  );
+                                })}
+                              </tbody>
+                            </table>
+                          </div>
+                          {/* Chapter footer */}
+                          <div className="bg-slate-50 border-t border-slate-100 px-3 py-2 flex items-center justify-between">
+                            <button
+                              onClick={() => addVoce(capIdx)}
+                              className="text-xs text-violet-600 hover:text-violet-800 font-medium flex items-center gap-1 hover:bg-violet-50 rounded px-2 py-1 transition-colors"
+                            >
+                              <Plus className="h-3 w-3" /> Aggiungi voce
+                            </button>
+                            <span className="text-xs font-bold text-slate-700">
+                              Subtotale: {formatCurrency(capSub)}
+                            </span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                    {/* Add chapter */}
+                    <button
+                      onClick={addCapitolo}
+                      className="w-full py-2.5 text-xs text-violet-600 hover:text-violet-800 font-medium border-2 border-dashed border-violet-200 hover:border-violet-400 rounded-lg transition-colors flex items-center justify-center gap-1.5"
+                    >
+                      <Plus className="h-3.5 w-3.5" /> Aggiungi capitolo
+                    </button>
+                  </div>
+                </div>
+              ) : hasCapitoli ? (
+                /* ── VIEW MODE with capitoli ── */
                 <div className="mb-6">
                   <div className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3">2. Computo Metrico Dettagliato</div>
                   <div className="space-y-4">
@@ -560,6 +728,7 @@ export default function QuoteDetail() {
                   </div>
                 </div>
               ) : (
+                /* ── VIEW MODE legacy items ── */
                 <table className="w-full mb-6 text-sm">
                   <thead>
                     <tr className="border-b-2 border-slate-800 text-slate-800">
@@ -587,30 +756,81 @@ export default function QuoteDetail() {
               {/* Totals */}
               <div className="flex justify-end pt-2 mb-6">
                 <div className="w-72 border border-slate-200 rounded overflow-hidden text-sm">
-                  <div className="flex justify-between px-4 py-2.5 text-slate-600 border-b border-slate-100">
-                    <span>Imponibile totale:</span>
-                    <span className="font-medium">{formatCurrency(quote.subtotale)}</span>
-                  </div>
-                  {sconto && sconto.percentuale > 0 && (
+                  {isEditMode ? (() => {
+                    const editSub = editCapitoli.reduce((s, cap) => s + cap.voci.reduce((cs, v) => cs + Number(v.quantita) * Number(v.prezzoUnitario), 0), 0);
+                    const editImponibile = editScontoPerc > 0 ? editSub * (1 - editScontoPerc / 100) : editSub;
+                    const editIvaVal = editImponibile * (editIvaPerc / 100);
+                    const editTot = editImponibile + editIvaVal;
+                    return (
+                      <>
+                        <div className="flex justify-between px-4 py-2.5 text-slate-600 border-b border-slate-100">
+                          <span>Imponibile totale:</span>
+                          <span className="font-medium">{formatCurrency(editSub)}</span>
+                        </div>
+                        <div className="flex items-center justify-between px-4 py-2 border-b border-slate-100 gap-3">
+                          <label className="text-slate-600 text-xs shrink-0">Sconto (%):</label>
+                          <input
+                            type="number"
+                            value={editScontoPerc}
+                            onChange={e => setEditScontoPerc(Math.max(0, Math.min(100, Number(e.target.value))))}
+                            className="w-16 text-right bg-violet-50 border border-violet-200 rounded px-2 py-0.5 text-sm focus:outline-none focus:border-violet-400"
+                            min={0} max={100} step={1}
+                          />
+                        </div>
+                        {editScontoPerc > 0 && (
+                          <div className="flex justify-between px-4 py-2 text-green-700 border-b border-slate-100">
+                            <span className="text-xs">Imponibile scontato:</span>
+                            <span className="font-medium">{formatCurrency(editImponibile)}</span>
+                          </div>
+                        )}
+                        <div className="flex items-center justify-between px-4 py-2 border-b border-slate-100 gap-3">
+                          <label className="text-slate-600 text-xs shrink-0">IVA (%):</label>
+                          <input
+                            type="number"
+                            value={editIvaPerc}
+                            onChange={e => setEditIvaPerc(Math.max(0, Number(e.target.value)))}
+                            className="w-16 text-right bg-violet-50 border border-violet-200 rounded px-2 py-0.5 text-sm focus:outline-none focus:border-violet-400"
+                            min={0} step={1}
+                          />
+                        </div>
+                        <div className="flex justify-between px-4 py-2 text-slate-600 border-b border-slate-100">
+                          <span className="text-xs">IVA:</span>
+                          <span className="font-medium">{formatCurrency(editIvaVal)}</span>
+                        </div>
+                        <div className="flex justify-between px-4 py-3 bg-slate-800 text-white font-bold text-base">
+                          <span>TOTALE</span>
+                          <span>{formatCurrency(editTot)}</span>
+                        </div>
+                      </>
+                    );
+                  })() : (
                     <>
                       <div className="flex justify-between px-4 py-2.5 text-slate-600 border-b border-slate-100">
-                        <span>Sconto ({sconto.percentuale}%):</span>
-                        <span className="font-medium text-green-700">−{formatCurrency(quote.subtotale - sconto.importoScontato)}</span>
+                        <span>Imponibile totale:</span>
+                        <span className="font-medium">{formatCurrency(quote.subtotale)}</span>
                       </div>
+                      {sconto && sconto.percentuale > 0 && (
+                        <>
+                          <div className="flex justify-between px-4 py-2.5 text-slate-600 border-b border-slate-100">
+                            <span>Sconto ({sconto.percentuale}%):</span>
+                            <span className="font-medium text-green-700">−{formatCurrency(quote.subtotale - sconto.importoScontato)}</span>
+                          </div>
+                          <div className="flex justify-between px-4 py-2.5 text-slate-600 border-b border-slate-100">
+                            <span>Imponibile scontato:</span>
+                            <span className="font-medium">{formatCurrency(sconto.importoScontato)}</span>
+                          </div>
+                        </>
+                      )}
                       <div className="flex justify-between px-4 py-2.5 text-slate-600 border-b border-slate-100">
-                        <span>Imponibile scontato:</span>
-                        <span className="font-medium">{formatCurrency(sconto.importoScontato)}</span>
+                        <span>IVA ({quote.ivaPercentuale}%):</span>
+                        <span className="font-medium">{formatCurrency(quote.ivaValore)}</span>
+                      </div>
+                      <div className="flex justify-between px-4 py-3 bg-slate-800 text-white font-bold text-base">
+                        <span>TOTALE</span>
+                        <span>{formatCurrency(quote.totale)}</span>
                       </div>
                     </>
                   )}
-                  <div className="flex justify-between px-4 py-2.5 text-slate-600 border-b border-slate-100">
-                    <span>IVA ({quote.ivaPercentuale}%):</span>
-                    <span className="font-medium">{formatCurrency(quote.ivaValore)}</span>
-                  </div>
-                  <div className="flex justify-between px-4 py-3 bg-slate-800 text-white font-bold text-base">
-                    <span>TOTALE</span>
-                    <span>{formatCurrency(quote.totale)}</span>
-                  </div>
                 </div>
               </div>
 
@@ -630,10 +850,22 @@ export default function QuoteDetail() {
               )}
 
               {/* Notes */}
-              {quote.note && (
-                <div className="pt-4 border-t border-slate-100 text-xs text-slate-400">
-                  <strong>Note: </strong>{quote.note}
+              {isEditMode ? (
+                <div className="pt-4 border-t border-violet-100">
+                  <div className="text-xs font-semibold text-slate-400 mb-1.5 uppercase tracking-wider">Note finali</div>
+                  <textarea
+                    value={editNote}
+                    onChange={e => setEditNote(e.target.value)}
+                    className="w-full text-xs text-slate-500 bg-violet-50/50 border border-violet-200 rounded p-2 focus:outline-none focus:border-violet-400 resize-none min-h-[60px]"
+                    placeholder="Note finali, condizioni aggiuntive..."
+                  />
                 </div>
+              ) : (
+                quote.note && (
+                  <div className="pt-4 border-t border-slate-100 text-xs text-slate-400">
+                    <strong>Note: </strong>{quote.note}
+                  </div>
+                )
               )}
             </div>
           </Card>
@@ -846,266 +1078,6 @@ export default function QuoteDetail() {
         </DialogContent>
       </Dialog>
 
-      {/* ── EDIT PANEL ── */}
-      {isEditMode && !isEditLocked && (
-        <Card className="border-primary/40 shadow-md animate-in slide-in-from-bottom-4 duration-300">
-          <CardHeader className="border-b">
-            <div className="flex items-center justify-between">
-              <div>
-                <CardTitle className="flex items-center gap-2">
-                  <Pencil className="h-5 w-5 text-primary" />
-                  Modifica Preventivo
-                </CardTitle>
-                <CardDescription className="mt-1">Modifica le voci, i prezzi e i titoli. Il totale verrà ricalcolato automaticamente al salvataggio.</CardDescription>
-              </div>
-              <div className="flex gap-2">
-                <Button variant="outline" onClick={() => setIsEditMode(false)}>
-                  <X className="h-4 w-4 mr-2" />
-                  Annulla
-                </Button>
-                <Button onClick={handleSaveEdit} disabled={updateQuote.isPending}>
-                  <Save className="h-4 w-4 mr-2" />
-                  {updateQuote.isPending ? "Salvataggio..." : "Salva Modifiche"}
-                </Button>
-              </div>
-            </div>
-          </CardHeader>
-
-          <CardContent className="pt-6 space-y-8">
-            {/* Titoli */}
-            <div>
-              <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground mb-3">Titoli Documento</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-1.5">
-                  <Label>Titolo riga 1</Label>
-                  <Input
-                    value={editTitolo1}
-                    onChange={e => setEditTitolo1(e.target.value)}
-                    placeholder="Analisi Economica e Computo Metrico Prezzato"
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <Label>Titolo riga 2 (sottotitolo)</Label>
-                  <Input
-                    value={editTitolo2}
-                    onChange={e => setEditTitolo2(e.target.value)}
-                    placeholder="Intervento di... – Comune (Prov)"
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* Capitoli */}
-            <div>
-              <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground mb-3">Capitoli e Voci</h3>
-              <div className="space-y-6">
-                {editCapitoli.map((cap, capIdx) => {
-                  const capSubtotale = cap.voci.reduce(
-                    (s, v) => s + Number(v.quantita) * Number(v.prezzoUnitario), 0
-                  );
-                  return (
-                    <div key={capIdx} className="border rounded-lg overflow-hidden">
-                      {/* Chapter header */}
-                      <div className="bg-slate-50 px-4 py-3 flex items-center gap-3 border-b">
-                        <span className="text-sm font-bold text-slate-500 w-8 shrink-0">{cap.lettera}.</span>
-                        <Input
-                          value={cap.titolo}
-                          onChange={e => updateCapitolo(capIdx, "titolo", e.target.value)}
-                          className="font-semibold text-sm h-8 flex-1"
-                          placeholder="Titolo capitolo"
-                        />
-                        <Input
-                          value={cap.osservazione}
-                          onChange={e => updateCapitolo(capIdx, "osservazione", e.target.value)}
-                          className="text-xs h-8 w-40 text-muted-foreground"
-                          placeholder="Osservazione"
-                        />
-                        <span className="text-sm font-semibold text-slate-700 whitespace-nowrap shrink-0">
-                          {formatCurrency(capSubtotale)}
-                        </span>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8 text-destructive hover:bg-destructive/10 shrink-0"
-                          onClick={() => removeCapitolo(capIdx)}
-                        >
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </Button>
-                      </div>
-
-                      {/* Voci table */}
-                      <div className="overflow-x-auto">
-                        <table className="w-full text-sm">
-                          <thead>
-                            <tr className="bg-slate-100 text-slate-600">
-                              <th className="py-2 px-3 text-left font-medium text-xs">Descrizione</th>
-                              <th className="py-2 px-2 text-center font-medium text-xs w-16">U.M.</th>
-                              <th className="py-2 px-2 text-center font-medium text-xs w-20">Q.tà</th>
-                              <th className="py-2 px-2 text-center font-medium text-xs w-28">P.U. (€)</th>
-                              <th className="py-2 px-3 text-right font-medium text-xs w-28">Totale</th>
-                              <th className="w-8"></th>
-                            </tr>
-                          </thead>
-                          <tbody className="divide-y divide-slate-100">
-                            {cap.voci.map((voce, vi) => {
-                              const voceTotal = Number(voce.quantita) * Number(voce.prezzoUnitario);
-                              return (
-                                <tr key={vi} className={cn("group", vi % 2 === 0 ? "bg-white" : "bg-slate-50/50")}>
-                                  <td className="py-1.5 px-3">
-                                    <Input
-                                      value={voce.descrizione}
-                                      onChange={e => updateVoce(capIdx, vi, "descrizione", e.target.value)}
-                                      className="h-8 text-xs border-transparent focus:border-input bg-transparent"
-                                      placeholder="Descrizione lavorazione"
-                                    />
-                                  </td>
-                                  <td className="py-1.5 px-2">
-                                    <Input
-                                      value={voce.um}
-                                      onChange={e => updateVoce(capIdx, vi, "um", e.target.value)}
-                                      className="h-8 text-xs text-center border-transparent focus:border-input bg-transparent w-14"
-                                      placeholder="mq"
-                                    />
-                                  </td>
-                                  <td className="py-1.5 px-2">
-                                    <Input
-                                      type="number"
-                                      value={voce.quantita}
-                                      onChange={e => updateVoce(capIdx, vi, "quantita", e.target.value === "" ? 0 : Number(e.target.value))}
-                                      className="h-8 text-xs text-center border-transparent focus:border-input bg-transparent w-18"
-                                      min={0}
-                                      step={0.01}
-                                    />
-                                  </td>
-                                  <td className="py-1.5 px-2">
-                                    <Input
-                                      type="number"
-                                      value={voce.prezzoUnitario}
-                                      onChange={e => updateVoce(capIdx, vi, "prezzoUnitario", e.target.value === "" ? 0 : Number(e.target.value))}
-                                      className="h-8 text-xs text-right border-transparent focus:border-input bg-transparent w-26"
-                                      min={0}
-                                      step={0.01}
-                                    />
-                                  </td>
-                                  <td className="py-1.5 px-3 text-right text-xs font-medium text-slate-700 whitespace-nowrap">
-                                    {formatCurrency(voceTotal)}
-                                  </td>
-                                  <td className="py-1.5 px-1">
-                                    <Button
-                                      variant="ghost"
-                                      size="icon"
-                                      className="h-7 w-7 opacity-0 group-hover:opacity-100 text-destructive hover:bg-destructive/10"
-                                      onClick={() => removeVoce(capIdx, vi)}
-                                    >
-                                      <X className="h-3 w-3" />
-                                    </Button>
-                                  </td>
-                                </tr>
-                              );
-                            })}
-                          </tbody>
-                        </table>
-                      </div>
-
-                      {/* Add voce */}
-                      <div className="px-4 py-2 bg-white border-t">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="gap-1.5 text-xs text-primary hover:text-primary"
-                          onClick={() => addVoce(capIdx)}
-                        >
-                          <Plus className="h-3.5 w-3.5" />
-                          Aggiungi voce
-                        </Button>
-                      </div>
-                    </div>
-                  );
-                })}
-
-                {/* Add chapter */}
-                <Button variant="outline" className="w-full gap-2 border-dashed" onClick={addCapitolo}>
-                  <Plus className="h-4 w-4" />
-                  Aggiungi Capitolo
-                </Button>
-              </div>
-            </div>
-
-            {/* Sconto e IVA */}
-            <div>
-              <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground mb-3">Sconto e IVA</h3>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div className="space-y-1.5">
-                  <Label>Sconto (%)</Label>
-                  <Input
-                    type="number"
-                    value={editScontoPerc}
-                    onChange={e => setEditScontoPerc(Math.max(0, Math.min(100, Number(e.target.value))))}
-                    min={0}
-                    max={100}
-                    step={1}
-                    placeholder="0"
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <Label>IVA (%)</Label>
-                  <Input
-                    type="number"
-                    value={editIvaPerc}
-                    onChange={e => setEditIvaPerc(Math.max(0, Number(e.target.value)))}
-                    min={0}
-                    step={1}
-                    placeholder="22"
-                  />
-                </div>
-                <div className="col-span-2 flex items-end">
-                  <div className="bg-muted/50 rounded-lg px-4 py-2.5 w-full text-sm">
-                    {(() => {
-                      const sub = editCapitoli.reduce(
-                        (s, cap) => s + cap.voci.reduce((cs, v) => cs + Number(v.quantita) * Number(v.prezzoUnitario), 0), 0
-                      );
-                      const imponibile = editScontoPerc > 0 ? sub * (1 - editScontoPerc / 100) : sub;
-                      const iva = imponibile * (editIvaPerc / 100);
-                      const tot = imponibile + iva;
-                      return (
-                        <div className="space-y-1">
-                          <div className="flex justify-between text-muted-foreground"><span>Imponibile:</span><span>{formatCurrency(sub)}</span></div>
-                          {editScontoPerc > 0 && <div className="flex justify-between text-green-600"><span>Dopo sconto:</span><span>{formatCurrency(imponibile)}</span></div>}
-                          <div className="flex justify-between text-muted-foreground"><span>IVA {editIvaPerc}%:</span><span>{formatCurrency(iva)}</span></div>
-                          <div className="flex justify-between font-bold border-t pt-1"><span>Totale:</span><span>{formatCurrency(tot)}</span></div>
-                        </div>
-                      );
-                    })()}
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Note */}
-            <div>
-              <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground mb-3">Note Finali</h3>
-              <Textarea
-                value={editNote}
-                onChange={e => setEditNote(e.target.value)}
-                placeholder="Preventivo valido 30 giorni dalla data di emissione..."
-                className="resize-none min-h-[80px]"
-              />
-            </div>
-
-            {/* Save row */}
-            <div className="flex justify-end gap-2 pt-2 border-t">
-              <Button variant="outline" onClick={() => setIsEditMode(false)}>
-                <X className="h-4 w-4 mr-2" />
-                Annulla
-              </Button>
-              <Button onClick={handleSaveEdit} disabled={updateQuote.isPending} size="lg">
-                <Save className="h-4 w-4 mr-2" />
-                {updateQuote.isPending ? "Salvataggio in corso..." : "Salva tutte le modifiche"}
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      )}
 
       {/* Paywall dialog */}
       <Dialog open={isPaywallOpen} onOpenChange={setIsPaywallOpen}>
