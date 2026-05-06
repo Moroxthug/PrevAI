@@ -569,3 +569,10 @@ export const UnlockQuoteWithSubscriptionBody = zod.object({
 export const UnlockQuoteWithSubscriptionResponse = zod.object({
   status: zod.enum(["draft", "unlocked", "pending_payment"]),
 });
+
+/**
+ * @summary Create a Stripe Customer Portal session for subscription management
+ */
+export const CreateCustomerPortalSessionResponse = zod.object({
+  url: zod.string(),
+});

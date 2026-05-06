@@ -227,14 +227,45 @@ router.post("/payments/unlock-quote", requireAuth(), async (req, res) => {
     if (quote.status !== "unlocked") {
       await db
         .update(quotesTable)
-        .set({ status: "unlocked" })
+        .set({ status: "unlocked", unlockedWithPlan: profile.subscriptionPlan ?? null })
         .where(eq(quotesTable.id, quoteId));
-      logger.info({ quoteId, userId }, "Quote unlocked via subscription");
+      logger.info({ quoteId, userId, plan: profile.subscriptionPlan }, "Quote unlocked via subscription");
     }
 
     res.json({ status: "unlocked" });
   } catch (err) {
     logger.error({ err }, "Error unlocking quote with subscription");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// POST /api/payments/portal — Stripe Customer Portal (manage/upgrade subscription)
+router.post("/payments/portal", requireAuth(), async (req, res) => {
+  try {
+    const userId = getUserId(req);
+    const [profile] = await db
+      .select()
+      .from(businessProfilesTable)
+      .where(eq(businessProfilesTable.userId, userId));
+
+    if (!profile?.stripeCustomerId) {
+      res.status(400).json({ error: "No Stripe customer found — subscribe first" });
+      return;
+    }
+
+    const stripe = await getUncachableStripeClient();
+    const baseUrl = process.env.REPLIT_DOMAINS
+      ? `https://${process.env.REPLIT_DOMAINS.split(",")[0]}`
+      : "http://localhost:80";
+
+    const portalSession = await stripe.billingPortal.sessions.create({
+      customer: profile.stripeCustomerId,
+      return_url: `${baseUrl}/dashboard`,
+    });
+
+    res.json({ url: portalSession.url });
+  } catch (err) {
+    logger.error({ err }, "Error creating customer portal session");
     res.status(500).json({ error: "Internal server error" });
   }
 });
@@ -267,8 +298,12 @@ router.get("/payments/verify/:quoteId", requireAuth(), async (req, res) => {
     const session = await stripe.checkout.sessions.retrieve(quote.stripeSessionId);
 
     if (session.payment_status === "paid" || session.status === "complete") {
-      await db.update(quotesTable).set({ status: "unlocked" }).where(eq(quotesTable.id, quoteId));
-      logger.info({ quoteId }, "Quote unlocked via verify endpoint");
+      const planType = (session.metadata as Record<string, string> | null)?.planType ?? null;
+      await db
+        .update(quotesTable)
+        .set({ status: "unlocked", unlockedWithPlan: planType })
+        .where(eq(quotesTable.id, quoteId));
+      logger.info({ quoteId, planType }, "Quote unlocked via verify endpoint");
       res.json({ status: "unlocked" });
       return;
     }

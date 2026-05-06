@@ -221,6 +221,10 @@ export interface Plan {
   quotaPerMonth?: number | null;
 }
 
+export interface PortalSessionResult {
+  url: string;
+}
+
 export interface LogoUploadResult {
   logoUrl: string;
 }

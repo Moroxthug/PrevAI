@@ -12,6 +12,8 @@ import {
 import { WebhookHandlers } from "./webhookHandlers";
 import { db, quotesTable, businessProfilesTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
+import { clerkClient } from "@clerk/express";
+import { sendSubscriptionEmail } from "./lib/email";
 import router from "./routes";
 import { logger } from "./lib/logger";
 
@@ -77,13 +79,16 @@ app.post(
           const userId = session.metadata?.userId;
           const planType = session.metadata?.planType;
 
-          // Unlock the specific quote
+          // Unlock the specific quote with the plan info
           if (quoteId) {
-            await db.update(quotesTable).set({ status: "unlocked" }).where(eq(quotesTable.id, quoteId));
-            logger.info({ quoteId }, "Quote unlocked via webhook");
+            await db
+              .update(quotesTable)
+              .set({ status: "unlocked", unlockedWithPlan: planType ?? null })
+              .where(eq(quotesTable.id, quoteId));
+            logger.info({ quoteId, planType }, "Quote unlocked via webhook");
           }
 
-          // If subscription mode, save subscription info to business profile
+          // If subscription mode, save subscription info to business profile + send email
           if (userId && session.customer && session.mode === "subscription" && planType) {
             const customerId = session.customer as string;
             await db
@@ -103,6 +108,31 @@ app.post(
                 },
               });
             logger.info({ userId, planType }, "Subscription activated via webhook");
+
+            // Send welcome/receipt email
+            try {
+              const clerkUser = await clerkClient.users.getUser(userId);
+              const email = clerkUser.emailAddresses[0]?.emailAddress;
+              const name = clerkUser.firstName || clerkUser.username || "Cliente";
+              if (email) {
+                const planNames: Record<string, { name: string; price: number; interval: string }> = {
+                  monthly_starter: { name: "Starter", price: 29, interval: "month" },
+                  monthly_pro: { name: "Pro", price: 79, interval: "month" },
+                };
+                const planInfo = planNames[planType];
+                if (planInfo) {
+                  await sendSubscriptionEmail({
+                    toEmail: email,
+                    toName: name,
+                    planName: planInfo.name,
+                    planPrice: planInfo.price,
+                    planInterval: planInfo.interval,
+                  });
+                }
+              }
+            } catch (emailErr) {
+              logger.error({ err: emailErr }, "Failed to send subscription email (non-fatal)");
+            }
           }
         }
 

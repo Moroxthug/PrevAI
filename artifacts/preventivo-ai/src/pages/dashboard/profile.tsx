@@ -2,13 +2,13 @@ import { useState, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { useGetBusinessProfile, useUpdateBusinessProfile } from "@workspace/api-client-react";
+import { useGetBusinessProfile, useUpdateBusinessProfile, useGetSubscription, useCreateCustomerPortalSession } from "@workspace/api-client-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Save, Upload, X, ImageIcon } from "lucide-react";
+import { Loader2, Save, Upload, X, ImageIcon, Crown } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useQueryClient } from "@tanstack/react-query";
 import { getGetBusinessProfileQueryKey } from "@workspace/api-client-react";
@@ -31,6 +31,17 @@ export default function ProfileSettings() {
   const updateProfile = useUpdateBusinessProfile();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { data: subscription } = useGetSubscription();
+  const createPortal = useCreateCustomerPortalSession();
+
+  const isStarter = subscription?.isActive && subscription?.plan === "monthly_starter";
+
+  const handleUpgrade = () => {
+    createPortal.mutate(undefined, {
+      onSuccess: (result) => { window.location.href = result.url; },
+      onError: () => toast({ title: "Errore apertura portale", variant: "destructive" }),
+    });
+  };
 
   const [isUploadingLogo, setIsUploadingLogo] = useState(false);
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
@@ -142,72 +153,110 @@ export default function ProfileSettings() {
         <p className="text-muted-foreground mt-1">Queste informazioni appariranno nell'intestazione dei tuoi preventivi.</p>
       </div>
 
-      {/* Logo Upload Card */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Logo Aziendale</CardTitle>
-          <CardDescription>Carica il tuo logo (SVG, PNG o JPG, max 2 MB). Apparirà in cima ai PDF dei preventivi.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="flex items-center gap-6">
-            {/* Logo preview */}
-            <div className="w-32 h-20 border-2 border-dashed border-muted-foreground/30 rounded-lg flex items-center justify-center bg-muted/20 overflow-hidden shrink-0">
-              {currentLogoUrl ? (
-                <img
-                  src={currentLogoUrl}
-                  alt="Logo aziendale"
-                  className="max-h-full max-w-full object-contain p-1"
-                />
-              ) : (
-                <div className="flex flex-col items-center gap-1 text-muted-foreground">
-                  <ImageIcon className="h-6 w-6" />
-                  <span className="text-xs">Nessun logo</span>
-                </div>
-              )}
+      {/* Logo Upload Card — hidden for Starter, replaced with upgrade prompt */}
+      {isStarter ? (
+        <Card className="border-violet-200 bg-gradient-to-br from-violet-50 to-cyan-50">
+          <CardHeader>
+            <div className="flex items-center gap-2">
+              <Crown className="h-5 w-5 text-violet-500" />
+              <CardTitle>Logo Aziendale — Solo Piano Pro</CardTitle>
             </div>
-
-            {/* Upload controls */}
-            <div className="space-y-2">
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept=".svg,.png,.jpg,.jpeg"
-                className="hidden"
-                onChange={handleLogoFileChange}
-                disabled={isUploadingLogo}
-              />
+            <CardDescription>
+              Con il piano <strong>Starter</strong> i tuoi preventivi mostrano il logo PrevAI con filigrana.<br/>
+              Passa a <strong>Pro</strong> per usare il tuo logo aziendale e ottenere PDF puliti senza filigrana.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center gap-4">
+              <div className="flex-1 space-y-1.5">
+                {["PDF senza filigrana", "Tuo logo aziendale", "Preventivi illimitati"].map((f) => (
+                  <div key={f} className="flex items-center gap-2 text-sm text-foreground">
+                    <span className="text-violet-500 font-bold">✓</span> {f}
+                  </div>
+                ))}
+              </div>
               <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => fileInputRef.current?.click()}
-                disabled={isUploadingLogo}
-                className="gap-2"
+                onClick={handleUpgrade}
+                disabled={createPortal.isPending}
+                className="shrink-0"
               >
-                {isUploadingLogo ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
+                {createPortal.isPending ? (
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
                 ) : (
-                  <Upload className="h-4 w-4" />
+                  <Crown className="h-4 w-4 mr-2" />
                 )}
-                {isUploadingLogo ? "Caricamento..." : "Carica logo"}
+                Passa a Pro
               </Button>
-              {currentLogoUrl && (
+            </div>
+          </CardContent>
+        </Card>
+      ) : (
+        <Card>
+          <CardHeader>
+            <CardTitle>Logo Aziendale</CardTitle>
+            <CardDescription>Carica il tuo logo (SVG, PNG o JPG, max 2 MB). Apparirà in cima ai PDF dei preventivi.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center gap-6">
+              {/* Logo preview */}
+              <div className="w-32 h-20 border-2 border-dashed border-muted-foreground/30 rounded-lg flex items-center justify-center bg-muted/20 overflow-hidden shrink-0">
+                {currentLogoUrl ? (
+                  <img
+                    src={currentLogoUrl}
+                    alt="Logo aziendale"
+                    className="max-h-full max-w-full object-contain p-1"
+                  />
+                ) : (
+                  <div className="flex flex-col items-center gap-1 text-muted-foreground">
+                    <ImageIcon className="h-6 w-6" />
+                    <span className="text-xs">Nessun logo</span>
+                  </div>
+                )}
+              </div>
+
+              {/* Upload controls */}
+              <div className="space-y-2">
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept=".svg,.png,.jpg,.jpeg"
+                  className="hidden"
+                  onChange={handleLogoFileChange}
+                  disabled={isUploadingLogo}
+                />
                 <Button
                   type="button"
-                  variant="ghost"
+                  variant="outline"
                   size="sm"
-                  onClick={handleRemoveLogo}
-                  className="gap-2 text-destructive hover:text-destructive"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={isUploadingLogo}
+                  className="gap-2"
                 >
-                  <X className="h-4 w-4" />
-                  Rimuovi
+                  {isUploadingLogo ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Upload className="h-4 w-4" />
+                  )}
+                  {isUploadingLogo ? "Caricamento..." : "Carica logo"}
                 </Button>
-              )}
-              <p className="text-xs text-muted-foreground">Formati: SVG, PNG, JPG • Max 2 MB</p>
+                {currentLogoUrl && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleRemoveLogo}
+                    className="gap-2 text-destructive hover:text-destructive"
+                  >
+                    <X className="h-4 w-4" />
+                    Rimuovi
+                  </Button>
+                )}
+                <p className="text-xs text-muted-foreground">Formati: SVG, PNG, JPG • Max 2 MB</p>
+              </div>
             </div>
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      )}
 
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)}>

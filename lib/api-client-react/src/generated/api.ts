@@ -26,6 +26,7 @@ import type {
   PaymentVerifyResult,
   PdfResult,
   Plan,
+  PortalSessionResult,
   Quote,
   QuoteStats,
   SubscriptionInfo,
@@ -1522,4 +1523,85 @@ export const useUnlockQuoteWithSubscription = <
   TContext
 > => {
   return useMutation(getUnlockQuoteWithSubscriptionMutationOptions(options));
+};
+
+/**
+ * @summary Create a Stripe Customer Portal session for subscription management
+ */
+export const getCreateCustomerPortalSessionUrl = () => {
+  return `/api/payments/portal`;
+};
+
+export const createCustomerPortalSession = async (
+  options?: RequestInit,
+): Promise<PortalSessionResult> => {
+  return customFetch<PortalSessionResult>(getCreateCustomerPortalSessionUrl(), {
+    ...options,
+    method: "POST",
+  });
+};
+
+export const getCreateCustomerPortalSessionMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createCustomerPortalSession>>,
+    TError,
+    void,
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof createCustomerPortalSession>>,
+  TError,
+  void,
+  TContext
+> => {
+  const mutationKey = ["createCustomerPortalSession"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof createCustomerPortalSession>>,
+    void
+  > = () => {
+    return createCustomerPortalSession(requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type CreateCustomerPortalSessionMutationResult = NonNullable<
+  Awaited<ReturnType<typeof createCustomerPortalSession>>
+>;
+
+export type CreateCustomerPortalSessionMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Create a Stripe Customer Portal session for subscription management
+ */
+export const useCreateCustomerPortalSession = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createCustomerPortalSession>>,
+    TError,
+    void,
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof createCustomerPortalSession>>,
+  TError,
+  void,
+  TContext
+> => {
+  return useMutation(getCreateCustomerPortalSessionMutationOptions(options));
 };

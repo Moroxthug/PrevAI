@@ -1,4 +1,4 @@
-import { useGetQuoteStats, useGetSubscription } from "@workspace/api-client-react";
+import { useGetQuoteStats, useGetSubscription, useCreateCustomerPortalSession } from "@workspace/api-client-react";
 import { Link } from "wouter";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -96,6 +96,39 @@ function StatusBadge({ status }: { status: string }) {
   }
 }
 
+function StarterUpgradeCard() {
+  const createPortal = useCreateCustomerPortalSession();
+
+  const handleUpgrade = () => {
+    createPortal.mutate(undefined, {
+      onSuccess: (result) => { window.location.href = result.url; },
+    });
+  };
+
+  return (
+    <div className="bg-gradient-to-r from-amber-50 to-violet-50 border border-amber-200 rounded-2xl p-5 flex items-center justify-between gap-4">
+      <div className="flex items-center gap-3">
+        <div className="h-10 w-10 rounded-xl bg-amber-100 flex items-center justify-center shrink-0">
+          <Crown className="h-5 w-5 text-amber-600" />
+        </div>
+        <div>
+          <div className="font-semibold text-gray-900 text-sm">Passa a Pro — PDF senza filigrana</div>
+          <div className="text-xs text-gray-500 mt-0.5">
+            Sei su Starter: i PDF hanno filigrana e logo PrevAI. Pro ti dà il tuo logo e PDF puliti.
+          </div>
+        </div>
+      </div>
+      <button
+        onClick={handleUpgrade}
+        disabled={createPortal.isPending}
+        className="shrink-0 btn-gradient inline-flex h-9 items-center justify-center px-4 text-sm font-semibold disabled:opacity-60"
+      >
+        {createPortal.isPending ? "..." : "Upgrade a Pro"}
+      </button>
+    </div>
+  );
+}
+
 export default function DashboardHome() {
   const { data: stats, isLoading: isLoadingStats } = useGetQuoteStats();
   const { data: subscription } = useGetSubscription();
@@ -169,7 +202,7 @@ export default function DashboardHome() {
         })}
       </div>
 
-      {/* ── Subscription upsell (only if not subscribed) ────────── */}
+      {/* ── Subscription upsell (not subscribed at all) ─────────── */}
       {!subscription?.isActive && (stats?.total ?? 0) > 0 && (
         <div className="bg-gradient-to-r from-violet-50 to-cyan-50 border border-violet-100 rounded-2xl p-5 flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">
@@ -190,6 +223,11 @@ export default function DashboardHome() {
             Passa a Pro
           </Link>
         </div>
+      )}
+
+      {/* ── Upgrade upsell (Starter → Pro) ──────────────────────── */}
+      {subscription?.isActive && subscription?.plan === "monthly_starter" && (
+        <StarterUpgradeCard />
       )}
 
       {/* ── Recent quotes ───────────────────────────────────────── */}

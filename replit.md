@@ -10,7 +10,7 @@ A SaaS web app for Italian freelancers/craftsmen to describe a job in natural la
 - `pnpm --filter @workspace/db run push` — push DB schema changes (dev only)
 - `pnpm --filter @workspace/api-server run dev` — run API server locally
 
-**Required env vars:** `DATABASE_URL`, `CLERK_PUBLISHABLE_KEY`, `CLERK_SECRET_KEY`, `VITE_CLERK_PUBLISHABLE_KEY`, `SESSION_SECRET`, `AI_INTEGRATIONS_OPENAI_BASE_URL`, `AI_INTEGRATIONS_OPENAI_API_KEY`, `DEFAULT_OBJECT_STORAGE_BUCKET_ID`, `PRIVATE_OBJECT_DIR`, `PUBLIC_OBJECT_SEARCH_PATHS`, `STRIPE_SECRET_KEY` (optional), `STRIPE_WEBHOOK_SECRET` (optional)
+**Required env vars:** `DATABASE_URL`, `CLERK_PUBLISHABLE_KEY`, `CLERK_SECRET_KEY`, `VITE_CLERK_PUBLISHABLE_KEY`, `SESSION_SECRET`, `AI_INTEGRATIONS_OPENAI_BASE_URL`, `AI_INTEGRATIONS_OPENAI_API_KEY`, `DEFAULT_OBJECT_STORAGE_BUCKET_ID`, `PRIVATE_OBJECT_DIR`, `PUBLIC_OBJECT_SEARCH_PATHS`, `STRIPE_SECRET_KEY` (optional), `STRIPE_WEBHOOK_SECRET` (optional), `RESEND_API_KEY` (optional — needed for subscription emails from no-reply@prevai.it)
 
 ## Stack
 
@@ -53,7 +53,11 @@ A SaaS web app for Italian freelancers/craftsmen to describe a job in natural la
 - Logo upload uses a two-step presigned URL flow: client requests URL → PUTs file directly to GCS → saves serving URL `/api/storage/objects/...` in business_profiles
 - `companySnapshot` is captured at quote creation time (snapshot of profile at that moment), so PDF always reflects the correct company data even if the profile later changes
 - Subscription state stored in `business_profiles` (`subscriptionPlan`, `subscriptionStatus`, `stripeCustomerId`); set by webhook on `checkout.session.completed` (mode=subscription); cleared on `customer.subscription.deleted`
-- Quote auto-unlock: on quote detail load, if `subscriptionStatus === "active"`, frontend calls `POST /api/payments/unlock-quote` which unlocks without payment
+- Quote auto-unlock: on quote detail load, if `subscriptionStatus === "active"`, frontend calls `POST /api/payments/unlock-quote` which unlocks without payment; saves `unlockedWithPlan` on the quote
+- PDF watermark is plan-aware: `monthly_starter` and `oneshot_watermark` keep watermark + PrevAI logo (inline SVG) even when unlocked; `monthly_pro` and `oneshot_clean` get user logo + no watermark
+- Upgrade flow: `POST /api/payments/portal` creates a Stripe Customer Portal session for Starter→Pro upgrade; Stripe handles proration
+- Email notification: on subscription activation, webhook calls Resend API (`artifacts/api-server/src/lib/email.ts`) to send welcome+receipt HTML email from `no-reply@prevai.it`; silently skips if `RESEND_API_KEY` is unset
+- Logo upload hidden for Starter users (profile page shows upgrade CTA instead)
 
 ## Product
 

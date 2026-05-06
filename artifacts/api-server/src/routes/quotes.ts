@@ -613,9 +613,13 @@ router.post("/quotes/:id/generate-pdf", requireAuth(), async (req, res) => {
       .from(businessProfilesTable)
       .where(eq(businessProfilesTable.userId, userId));
 
-    // Draft quotes render with "BOZZA NON VALIDA" watermark so users can preview;
-    // only unlocked quotes produce the clean, printable PDF.
-    const withWatermark = quote.status !== "unlocked";
+    // Draft quotes get watermark; unlocked quotes use the plan's hasWatermark setting.
+    // Starter/oneshot_watermark plans keep watermark even when unlocked.
+    const planHasWatermark = (plan: string | null | undefined) =>
+      !plan || plan === "monthly_starter" || plan === "oneshot_watermark";
+
+    const withWatermark =
+      quote.status !== "unlocked" || planHasWatermark(quote.unlockedWithPlan);
     const html = generateQuoteHtml(quote, withWatermark, profile ?? null);
     res.json({ htmlContent: html, pdfUrl: quote.pdfUrl, isDraft: withWatermark });
   } catch (err) {
@@ -664,8 +668,12 @@ function generateQuoteHtml(
   const companyAddress = snap?.address || profile?.address || "";
   const companyPhone = snap?.phone || profile?.phone || "";
   const companyEmail = snap?.email || profile?.email || "";
+  // Inline SVG logo for PrevAI (used on watermarked/Starter quotes)
+  const prevaiLogoSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="110" height="30" viewBox="0 0 110 30"><defs><linearGradient id="pg" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" style="stop-color:#7c3aed"/><stop offset="100%" style="stop-color:#06b6d4"/></linearGradient></defs><rect width="26" height="26" rx="5" y="2" fill="url(#pg)"/><text x="13" y="19" font-family="system-ui,sans-serif" font-size="14" font-weight="bold" fill="white" text-anchor="middle">P</text><text x="34" y="21" font-family="system-ui,sans-serif" font-size="16" font-weight="700" fill="#1a1a2e">prev</text><text x="63" y="21" font-family="system-ui,sans-serif" font-size="16" font-weight="700" fill="#7c3aed">ai</text></svg>`;
+  const prevaiLogoDataUri = `data:image/svg+xml;base64,${Buffer.from(prevaiLogoSvg).toString("base64")}`;
+
   const companyLogoUrl = withWatermark
-    ? "/prevai-logo.png"
+    ? prevaiLogoDataUri
     : (snap?.logoUrl || profile?.logoUrl || "");
 
   const logoHtml = companyLogoUrl

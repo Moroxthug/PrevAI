@@ -1,0 +1,143 @@
+import { Resend } from "resend";
+import { logger } from "./logger";
+
+const PREVAI_LOGO_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="120" height="32" viewBox="0 0 120 32">
+  <defs>
+    <linearGradient id="g" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#7c3aed"/>
+      <stop offset="100%" style="stop-color:#06b6d4"/>
+    </linearGradient>
+  </defs>
+  <rect width="28" height="28" rx="6" y="2" fill="url(#g)"/>
+  <text x="14" y="20" font-family="system-ui,sans-serif" font-size="15" font-weight="bold" fill="white" text-anchor="middle">P</text>
+  <text x="38" y="22" font-family="system-ui,sans-serif" font-size="18" font-weight="700" fill="#1a1a2e">prev</text>
+  <text x="70" y="22" font-family="system-ui,sans-serif" font-size="18" font-weight="700" fill="#7c3aed">ai</text>
+</svg>`;
+
+const LOGO_DATA_URI = `data:image/svg+xml;base64,${Buffer.from(PREVAI_LOGO_SVG).toString("base64")}`;
+
+function buildSubscriptionEmail(params: {
+  userName: string;
+  planName: string;
+  planPrice: number;
+  planInterval: string;
+}) {
+  const { userName, planName, planPrice, planInterval } = params;
+  const date = new Date().toLocaleDateString("it-IT", { day: "2-digit", month: "long", year: "numeric" });
+
+  return `<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Benvenuto su PrevAI – Piano ${planName} attivato</title>
+<style>
+  body { margin:0; padding:0; background:#f5f3ff; font-family:system-ui,-apple-system,sans-serif; }
+  .wrapper { max-width:560px; margin:32px auto; background:#ffffff; border-radius:16px; overflow:hidden; box-shadow:0 4px 24px rgba(124,58,237,0.08); }
+  .header { background:linear-gradient(135deg,#7c3aed,#06b6d4); padding:32px 40px; text-align:center; }
+  .header img { height:36px; }
+  .header h1 { color:white; font-size:22px; font-weight:700; margin:16px 0 4px; }
+  .header p { color:rgba(255,255,255,0.85); font-size:14px; margin:0; }
+  .body { padding:32px 40px; }
+  .greeting { font-size:16px; color:#1a1a2e; margin-bottom:20px; }
+  .receipt-box { background:#f5f3ff; border:1px solid #ede9fe; border-radius:12px; padding:20px 24px; margin:24px 0; }
+  .receipt-row { display:flex; justify-content:space-between; align-items:center; padding:8px 0; border-bottom:1px solid #ede9fe; font-size:14px; }
+  .receipt-row:last-child { border-bottom:none; font-weight:700; color:#7c3aed; font-size:16px; }
+  .receipt-label { color:#6b7280; }
+  .features { margin:24px 0; }
+  .feature { display:flex; align-items:flex-start; gap:10px; margin-bottom:10px; font-size:14px; color:#374151; }
+  .check { color:#7c3aed; font-size:16px; flex-shrink:0; }
+  .cta { text-align:center; margin:28px 0; }
+  .btn { display:inline-block; background:linear-gradient(135deg,#7c3aed,#06b6d4); color:white; font-size:15px; font-weight:600; padding:13px 32px; border-radius:10px; text-decoration:none; }
+  .footer { background:#f9fafb; padding:20px 40px; text-align:center; font-size:12px; color:#9ca3af; border-top:1px solid #f3f4f6; }
+</style>
+</head>
+<body>
+<div class="wrapper">
+  <div class="header">
+    <img src="${LOGO_DATA_URI}" alt="PrevAI" />
+    <h1>🎉 Piano ${planName} attivato!</h1>
+    <p>Il tuo abbonamento è attivo da oggi, ${date}</p>
+  </div>
+  <div class="body">
+    <p class="greeting">Ciao ${userName},<br/><br/>il tuo abbonamento <strong>PrevAI ${planName}</strong> è stato attivato con successo. Puoi già iniziare a creare preventivi professionali illimitati.</p>
+    
+    <div class="receipt-box">
+      <div class="receipt-row">
+        <span class="receipt-label">Piano</span>
+        <span><strong>PrevAI ${planName}</strong></span>
+      </div>
+      <div class="receipt-row">
+        <span class="receipt-label">Data attivazione</span>
+        <span>${date}</span>
+      </div>
+      <div class="receipt-row">
+        <span class="receipt-label">Rinnovo</span>
+        <span>Mensile automatico</span>
+      </div>
+      <div class="receipt-row">
+        <span class="receipt-label">Importo</span>
+        <span>€${planPrice}/${planInterval === "month" ? "mese" : "anno"}</span>
+      </div>
+    </div>
+
+    <div class="features">
+      ${planName === "Pro" ? `
+      <div class="feature"><span class="check">✓</span> Preventivi illimitati senza filigrana</div>
+      <div class="feature"><span class="check">✓</span> PDF puliti con il tuo logo aziendale</div>
+      <div class="feature"><span class="check">✓</span> Template premium ad alta qualità</div>
+      <div class="feature"><span class="check">✓</span> Branding completamente personalizzabile</div>
+      ` : `
+      <div class="feature"><span class="check">✓</span> Fino a 20 preventivi al mese</div>
+      <div class="feature"><span class="check">✓</span> Download PDF professionale</div>
+      <div class="feature"><span class="check">✓</span> Supporto email incluso</div>
+      `}
+    </div>
+
+    <div class="cta">
+      <a href="https://prevai.it/dashboard" class="btn">Vai alla dashboard →</a>
+    </div>
+
+    <p style="font-size:13px;color:#6b7280;text-align:center;">Hai domande? Rispondiamo su <a href="mailto:supporto@prevai.it" style="color:#7c3aed;">supporto@prevai.it</a></p>
+  </div>
+  <div class="footer">
+    PrevAI · Preventivi professionali con l'AI<br/>
+    Hai ricevuto questa email perché hai sottoscritto un abbonamento su PrevAI.<br/>
+    Per disdire l'abbonamento accedi alla tua dashboard e vai su Gestisci Piano.
+  </div>
+</div>
+</body>
+</html>`;
+}
+
+export async function sendSubscriptionEmail(params: {
+  toEmail: string;
+  toName: string;
+  planName: string;
+  planPrice: number;
+  planInterval: string;
+}): Promise<void> {
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!apiKey) {
+    logger.warn("RESEND_API_KEY not set — skipping subscription email");
+    return;
+  }
+
+  try {
+    const resend = new Resend(apiKey);
+    await resend.emails.send({
+      from: "PrevAI <no-reply@prevai.it>",
+      to: [params.toEmail],
+      subject: `🎉 Piano ${params.planName} attivato – Benvenuto su PrevAI!`,
+      html: buildSubscriptionEmail({
+        userName: params.toName,
+        planName: params.planName,
+        planPrice: params.planPrice,
+        planInterval: params.planInterval,
+      }),
+    });
+    logger.info({ to: params.toEmail, plan: params.planName }, "Subscription email sent");
+  } catch (err) {
+    logger.error({ err }, "Failed to send subscription email (non-fatal)");
+  }
+}
