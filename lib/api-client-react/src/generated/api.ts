@@ -202,11 +202,22 @@ export const createQuote = async (
   createQuoteBody: CreateQuoteBody,
   options?: RequestInit,
 ): Promise<Quote> => {
+  const formData = new FormData();
+  formData.append(`rawInput`, createQuoteBody.rawInput);
+  if (createQuoteBody.clientData !== undefined) {
+    formData.append(`clientData`, createQuoteBody.clientData);
+  }
+  if (createQuoteBody.companySnapshot !== undefined) {
+    formData.append(`companySnapshot`, createQuoteBody.companySnapshot);
+  }
+  if (createQuoteBody.images !== undefined) {
+    createQuoteBody.images.forEach((value) => formData.append(`images`, value));
+  }
+
   return customFetch<Quote>(getCreateQuoteUrl(), {
     ...options,
     method: "POST",
-    headers: { "Content-Type": "application/json", ...options?.headers },
-    body: JSON.stringify(createQuoteBody),
+    body: formData,
   });
 };
 

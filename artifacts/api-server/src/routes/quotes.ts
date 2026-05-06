@@ -1,10 +1,10 @@
 import { Router } from "express";
 import { requireAuth, getAuth } from "@clerk/express";
 import type { Request } from "express";
+import multer from "multer";
 import { db, quotesTable, businessProfilesTable } from "@workspace/db";
 import { eq, desc, count, sum } from "drizzle-orm";
 import {
-  CreateQuoteBody,
   UpdateQuoteBody,
   GetQuoteParams,
   UpdateQuoteParams,
@@ -14,6 +14,20 @@ import {
 import { openai } from "@workspace/integrations-openai-ai-server";
 import type { QuoteChapter, QuoteDiscount, QuoteCompanySnapshot, QuoteClientData } from "@workspace/db";
 import { logger } from "../lib/logger.js";
+
+const ALLOWED_IMAGE_MIMES = ["image/jpeg", "image/png", "image/webp", "image/heic", "image/heif"];
+
+const imageUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 5 * 1024 * 1024, files: 3 },
+  fileFilter: (_req, file, cb) => {
+    if (ALLOWED_IMAGE_MIMES.includes(file.mimetype)) {
+      cb(null, true);
+    } else {
+      cb(new Error(`Unsupported image type: ${file.mimetype}. Use JPG, PNG, WEBP or HEIC.`));
+    }
+  },
+});
 
 const router = Router();
 
@@ -182,17 +196,41 @@ router.get("/quotes", requireAuth(), async (req, res) => {
   }
 });
 
-// POST /api/quotes
-router.post("/quotes", requireAuth(), async (req, res) => {
+// POST /api/quotes  (multipart/form-data: rawInput, clientData?, companySnapshot?, images[])
+router.post("/quotes", requireAuth(), imageUpload.array("images", 3), async (req, res) => {
   try {
     const userId = getUserId(req);
-    const parsed = CreateQuoteBody.safeParse(req.body);
-    if (!parsed.success) {
-      res.status(400).json({ error: "Invalid request", details: parsed.error });
+
+    const rawInput = typeof req.body.rawInput === "string" ? req.body.rawInput.trim() : "";
+    if (!rawInput) {
+      res.status(400).json({ error: "rawInput is required" });
       return;
     }
 
-    const { rawInput, clientData: clientDataInput, companySnapshot: companySnapshotInput, imagesBase64 } = parsed.data;
+    let clientDataInput: QuoteClientData | undefined;
+    if (req.body.clientData) {
+      try {
+        clientDataInput = JSON.parse(req.body.clientData) as QuoteClientData;
+      } catch {
+        res.status(400).json({ error: "clientData must be valid JSON" });
+        return;
+      }
+    }
+
+    let companySnapshotInput: QuoteCompanySnapshot | undefined;
+    if (req.body.companySnapshot) {
+      try {
+        companySnapshotInput = JSON.parse(req.body.companySnapshot) as QuoteCompanySnapshot;
+      } catch {
+        res.status(400).json({ error: "companySnapshot must be valid JSON" });
+        return;
+      }
+    }
+
+    const uploadedFiles = (req.files as Express.Multer.File[]) ?? [];
+    const imageDataUrls = uploadedFiles.map(
+      (f) => `data:${f.mimetype};base64,${f.buffer.toString("base64")}`
+    );
 
     // Build user message: inject client data as context so AI doesn't invent it
     let userMessage = rawInput;
@@ -229,7 +267,7 @@ Descrizione lavori: ${rawInput}`;
           }
         : null;
 
-    const hasImages = Array.isArray(imagesBase64) && imagesBase64.length > 0;
+    const hasImages = imageDataUrls.length > 0;
 
     const completion = await openai.chat.completions.create({
       model: hasImages ? "gpt-4o" : "gpt-4o-mini",
@@ -241,7 +279,7 @@ Descrizione lavori: ${rawInput}`;
           content: hasImages
             ? [
                 { type: "text" as const, text: userMessage },
-                ...imagesBase64!.map(img => ({
+                ...imageDataUrls.map(img => ({
                   type: "image_url" as const,
                   image_url: { url: img, detail: "high" as const },
                 })),

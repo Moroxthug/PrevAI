@@ -52,7 +52,7 @@ paths:
       requestBody:
         required: true
         content:
-          application/json:
+          multipart/form-data:
             schema:
               $ref: "#/components/schemas/CreateQuoteBody"
       responses:
@@ -499,15 +499,18 @@ components:
         rawInput:
           type: string
         clientData:
-          $ref: "#/components/schemas/QuoteClientData"
+          type: string
+          description: JSON-encoded QuoteClientData object
         companySnapshot:
-          $ref: "#/components/schemas/QuoteCompanySnapshot"
-        imagesBase64:
+          type: string
+          description: JSON-encoded QuoteCompanySnapshot object
+        images:
           type: array
-          description: Up to 3 base64-encoded images (data URLs) passed to OpenAI vision
+          description: Up to 3 image files (JPG, PNG, WEBP, HEIC) passed to OpenAI vision
           maxItems: 3
           items:
             type: string
+            format: binary
       required:
         - rawInput
 

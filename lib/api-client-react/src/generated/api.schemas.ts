@@ -101,13 +101,15 @@ export interface QuoteStats {
 
 export interface CreateQuoteBody {
   rawInput: string;
-  clientData?: QuoteClientData;
-  companySnapshot?: QuoteCompanySnapshot;
+  /** JSON-encoded QuoteClientData object */
+  clientData?: string;
+  /** JSON-encoded QuoteCompanySnapshot object */
+  companySnapshot?: string;
   /**
-   * Up to 3 base64-encoded images (data URLs) passed to OpenAI vision
+   * Up to 3 image files (JPG, PNG, WEBP, HEIC) passed to OpenAI vision
    * @maxItems 3
    */
-  imagesBase64?: string[];
+  images?: Blob[];
 }
 
 export type UpdateQuoteBodyStatus =

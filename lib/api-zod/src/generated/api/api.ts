@@ -92,37 +92,24 @@ export const ListQuotesResponse = zod.array(ListQuotesResponseItem);
 /**
  * @summary Create a new AI-generated quote
  */
-export const createQuoteBodyImagesBase64Max = 3;
+export const createQuoteBodyImagesMax = 3;
 
 export const CreateQuoteBody = zod.object({
   rawInput: zod.string(),
   clientData: zod
-    .object({
-      nome: zod.string(),
-      indirizzo: zod.string(),
-      codiceFiscale: zod.string().optional(),
-      partitaIva: zod.string().optional(),
-      citta: zod.string().optional(),
-      cap: zod.string().optional(),
-      provincia: zod.string().optional(),
-    })
-    .optional(),
+    .string()
+    .optional()
+    .describe("JSON-encoded QuoteClientData object"),
   companySnapshot: zod
-    .object({
-      companyName: zod.string(),
-      vatNumber: zod.string().optional(),
-      address: zod.string().optional(),
-      phone: zod.string().optional(),
-      email: zod.string().optional(),
-      logoUrl: zod.string().optional(),
-    })
-    .optional(),
-  imagesBase64: zod
-    .array(zod.string())
-    .max(createQuoteBodyImagesBase64Max)
+    .string()
+    .optional()
+    .describe("JSON-encoded QuoteCompanySnapshot object"),
+  images: zod
+    .array(zod.instanceof(File))
+    .max(createQuoteBodyImagesMax)
     .optional()
     .describe(
-      "Up to 3 base64-encoded images (data URLs) passed to OpenAI vision",
+      "Up to 3 image files (JPG, PNG, WEBP, HEIC) passed to OpenAI vision",
     ),
 });
 

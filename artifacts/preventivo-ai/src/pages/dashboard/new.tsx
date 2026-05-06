@@ -15,15 +15,6 @@ const MAX_FILES = 3;
 const MAX_SIZE_MB = 5;
 const MAX_SIZE_BYTES = MAX_SIZE_MB * 1024 * 1024;
 
-function fileToBase64(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result as string);
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
-  });
-}
-
 export default function NewQuote() {
   const [input, setInput] = useState("");
   const [, setLocation] = useLocation();
@@ -90,7 +81,7 @@ export default function NewQuote() {
 
   const handleExampleClick = (example: string) => { setInput(example); };
 
-  const handleSubmit = async () => {
+  const handleSubmit = () => {
     if (!input.trim()) return;
 
     const clientData = clientNome.trim()
@@ -116,17 +107,14 @@ export default function NewQuote() {
         }
       : undefined;
 
-    let imagesBase64: string[] | undefined;
-    if (photos.length > 0) {
-      try {
-        imagesBase64 = await Promise.all(photos.map(fileToBase64));
-      } catch {
-        toast({ title: "Errore", description: "Impossibile leggere le foto. Riprova.", variant: "destructive" });
-        return;
+    createQuote.mutate({
+      data: {
+        rawInput: input,
+        clientData: clientData ? JSON.stringify(clientData) : undefined,
+        companySnapshot: companySnapshot ? JSON.stringify(companySnapshot) : undefined,
+        images: photos.length > 0 ? photos : undefined,
       }
-    }
-
-    createQuote.mutate({ data: { rawInput: input, clientData, companySnapshot, imagesBase64 } }, {
+    }, {
       onSuccess: (quote) => { setLocation(`/dashboard/quotes/${quote.id}`); }
     });
   };
@@ -321,7 +309,7 @@ export default function NewQuote() {
               <span className="text-xs text-muted-foreground">{photos.length}/{MAX_FILES} foto</span>
             </div>
 
-            {/* Previews */}
+            {/* Thumbnails (shown when at least 1 photo selected) */}
             {photos.length > 0 && (
               <div className="flex flex-wrap gap-3">
                 {photoPreviews.map((src, idx) => (
@@ -345,7 +333,7 @@ export default function NewQuote() {
                   </div>
                 ))}
 
-                {/* Add more slot */}
+                {/* "Add more" slot when < 3 photos */}
                 {photos.length < MAX_FILES && (
                   <button
                     type="button"
@@ -450,7 +438,7 @@ export default function NewQuote() {
           ) : photos.length > 0 ? (
             <p className="text-xs text-primary flex items-center gap-1 font-medium">
               <Camera className="h-3 w-3" />
-              {photos.length} foto allegate · l'AI utilizzerà la vision
+              {photos.length} {photos.length === 1 ? "foto allegata" : "foto allegate"} · l'AI utilizzerà la vision
             </p>
           ) : null}
           <Button
