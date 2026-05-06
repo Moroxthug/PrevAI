@@ -1,0 +1,147 @@
+Aggiorna l’app SaaS esistente "PreventivoAI" SENZA cambiare stack, architettura, database, colori o design system già presenti.
+
+NON rifare il progetto. NON cambiare branding, palette colori o struttura tecnica. 
+Devi solo applicare miglioramenti specifici a pricing, UI/UX e differenziazione piani.
+
+---
+
+# 💳 AGGIORNAMENTO TIER & PRICING (SOLO LOGICA + UI)
+
+Sostituisci il sistema attuale di pricing con questo:
+
+## 🟡 Piano STARTER — 19€/mese
+- 20 preventivi al mese
+- PDF con watermark
+- template base
+- branding del sistema visibile
+- export PDF standard
+
+---
+
+## 🟣 Piano PRO — 59€/mese (PREMIUM)
+- preventivi illimitati
+- NO watermark
+- template premium PDF
+- branding completamente personalizzabile
+- storico clienti completo
+- export PDF ad alta qualità
+- priorità generazione AI
+
+---
+
+## 🧾 ONE-SHOT PAYMENTS
+
+- 29€ → 1 preventivo con watermark
+- 39€ → 1 preventivo senza watermark
+
+---
+
+# 🎯 DIFFERENZIAZIONE VISIVA TRA TIER (IMPORTANTISSIMO)
+
+Devi rendere chiaramente percepibile la differenza tra Starter e Pro nella UI.
+
+## REGOLE UI:
+
+### Starter UI
+- badge “Starter”
+- elementi leggermente più semplici
+- watermark visibile nel preview PDF
+- alcune opzioni disabilitate con lock icon
+
+---
+
+### Pro UI (premium feeling)
+- badge “Pro” evidenziato
+- interfaccia più “pulita” (meno elementi bloccati)
+- preview PDF senza watermark
+- elementi branding attivi
+- indicazione “full access unlocked”
+
+---
+
+### Paywall UI
+- confronto visivo tra Starter vs Pro
+- highlight del piano Pro come “consigliato”
+- animazione soft su piano Pro (pulse leggero o glow, senza cambiare colori base)
+
+---
+
+# 🎨 MIGLIORAMENTI UI (LANDING + DASHBOARD)
+
+NON cambiare colori esistenti.
+
+Devi solo rendere UI più moderna e pulita.
+
+---
+
+## LANDING PAGE
+
+Miglioramenti:
+
+- più spazio bianco tra sezioni
+- typography più leggibile (senza cambiare font se già presente)
+- CTA più evidenti ma coerenti con stile attuale
+- sezioni meglio distanziate
+
+---
+
+## DASHBOARD
+
+Miglioramenti:
+
+- layout più ordinato e con spacing coerente
+- card più pulite
+- meno elementi visivamente pesanti
+- migliore gerarchia visiva tra:
+  - CTA principale (nuovo preventivo)
+  - lista preventivi
+  - statistiche
+
+---
+
+# ✨ ANIMAZIONI (LEGGERISSIME, NON INVASIVE)
+
+Aggiungi solo micro-animazioni UI:
+
+## Landing page:
+- fade-in al scroll delle sezioni
+- hover leggero su bottoni e card
+- transizioni smooth tra sezioni
+
+---
+
+## Dashboard:
+- animazione apertura nuovo preventivo (fade + slide leggero)
+- animazione loading AI (dot typing o skeleton)
+- hover soft sulle righe tabella preventivi
+
+---
+
+## Paywall:
+- animazione comparazione piani (slide orizzontale o fade tra card)
+- highlight soft piano Pro (pulse leggero, non lampeggiante)
+
+---
+
+# ⚠️ REGOLE IMPORTANTI
+
+- NON cambiare colori esistenti
+- NON cambiare stack tecnologico
+- NON rifare UI da zero
+- NON aggiungere nuove feature non richieste
+- NON modificare database o backend logica se non strettamente necessario per pricing
+- mantieni struttura attuale del progetto
+
+---
+
+# 🎯 OBIETTIVO
+
+Migliorare:
+- percezione premium del piano Pro
+- chiarezza differenza tra tier
+- pulizia UI generale
+- micro-interazioni per rendere il prodotto più moderno
+
+Senza cambiare identità visiva o architettura esistente.
+
+Aggiorna solo UI/UX e pricing logic.

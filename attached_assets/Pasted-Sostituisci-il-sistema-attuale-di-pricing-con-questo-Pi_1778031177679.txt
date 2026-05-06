@@ -1,0 +1,100 @@
+Sostituisci il sistema attuale di pricing con questo:
+
+## 🟡 Piano STARTER — 29€/mese
+- 20 preventivi al mese
+mantieni cio che abbiamo gia concordato. 
+
+## 🟣 Piano PRO — 79€/mese (PREMIUM)
+- preventivi illimitati
+- NO watermark
+- template premium PDF
+- branding completamente personalizzabile
+- storico clienti completo
+- export PDF ad alta qualità
+- priorità generazione AI, quindi generazione con foto disponibile solo nella versione pro, non la base.
+
+---
+
+## 🧾 pagamenti singoli, da non includere nelle tier ma da mettere tra le opzioni prima di scegliere se andare con abbonamento o pagamento singolo.
+
+- 29€ → 1 preventivo con watermark
+- 39€ → 1 preventivo senza watermark
+
+---
+
+# 🎯 DIFFERENZIAZIONE VISIVA TRA TIER (IMPORTANTISSIMO)
+
+Devi rendere chiaramente percepibile la differenza tra Starter e Pro nella UI.
+quindi ### Starter UI
+- badge “Starter”
+- elementi leggermente più semplici
+- watermark visibile nel preview PDF
+- alcune opzioni disabilitate con lock icon
+
+---
+
+### Pro UI (premium feeling)
+- badge “Pro” evidenziato
+- interfaccia più “pulita” (meno elementi bloccati)
+- preview PDF senza watermark
+- elementi branding attivi
+- indicazione “full access unlocked”
+
+per quanto riguarda l'ui 
+## LANDING PAGE
+
+Miglioramenti:
+
+- più spazio bianco tra sezioni
+- typography più leggibile (senza cambiare font se già presente)
+- CTA più evidenti ma coerenti con stile attuale
+- sezioni meglio distanziate
+
+---
+
+## DASHBOARD
+
+Miglioramenti:
+
+- layout più ordinato e con spacing coerente
+- card più pulite
+- meno elementi visivamente pesanti
+- migliore gerarchia visiva tra:
+  - CTA principale (nuovo preventivo)
+  - lista preventivi
+  - statistiche
+
+---
+
+# ✨ ANIMAZIONI (LEGGERISSIME, NON INVASIVE)
+
+Aggiungi solo micro-animazioni UI:
+
+## Landing page:
+- fade-in al scroll delle sezioni
+- hover leggero su bottoni e card
+- transizioni smooth tra sezioni
+---
+
+## Dashboard:
+- animazione apertura nuovo preventivo (fade + slide leggero)
+- animazione loading AI (dot typing o skeleton)
+- hover soft sulle righe tabella preventivi
+
+---
+
+## Paywall:
+- animazione comparazione piani (slide orizzontale o fade tra card)
+- highlight soft piano Pro (pulse leggero, non lampeggiante)
+
+---
+
+# ⚠️ REGOLE IMPORTANTI
+
+- NON cambiare colori esistenti
+- NON cambiare stack tecnologico
+- NON rifare UI da zero
+- NON aggiungere nuove feature non richieste
+- NON modificare database o backend logica se non strettamente necessario per pricing
+- mantieni struttura attuale del progetto
+
