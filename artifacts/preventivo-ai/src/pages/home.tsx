@@ -1,9 +1,8 @@
 import { Link, useLocation } from "wouter";
-import { Button } from "@/components/ui/button";
+import { useEffect } from "react";
 import { ArrowRight, CheckCircle2, FileText, Zap, Lock, Star } from "lucide-react";
 import { useGetPlans } from "@workspace/api-client-react";
 import { useScrollFade } from "@/hooks/use-scroll-fade";
-import { Badge } from "@/components/ui/badge";
 import { useUser } from "@clerk/react";
 
 function ScrollSection({
@@ -31,6 +30,10 @@ export default function Home() {
   const { data: plans } = useGetPlans();
   const { isSignedIn } = useUser();
   const [, navigate] = useLocation();
+
+  useEffect(() => {
+    document.title = "prevai – Preventivi Online per Artigiani e Aziende | AI in 30 Secondi";
+  }, []);
 
   const subscriptionPlans = plans?.filter((p) => p.interval) ?? [];
   const oneshotPlans = plans?.filter((p) => !p.interval) ?? [];
@@ -530,6 +533,8 @@ export default function Home() {
               { href: "/seo/tetto", label: "Coperture e Tetti" },
               { href: "/seo/condizionatori", label: "Climatizzatori" },
               { href: "/seo/giardiniere", label: "Giardinieri" },
+              { href: "/seo/termoidraulico", label: "Termoidraulici" },
+              { href: "/seo/freelance", label: "Freelance" },
               { href: "/seo/geometra", label: "Geometri" },
             ].map(({ href, label }) => (
               <Link
