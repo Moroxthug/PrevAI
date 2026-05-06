@@ -92,6 +92,8 @@ export const ListQuotesResponse = zod.array(ListQuotesResponseItem);
 /**
  * @summary Create a new AI-generated quote
  */
+export const createQuoteBodyImagesBase64Max = 3;
+
 export const CreateQuoteBody = zod.object({
   rawInput: zod.string(),
   clientData: zod
@@ -115,6 +117,13 @@ export const CreateQuoteBody = zod.object({
       logoUrl: zod.string().optional(),
     })
     .optional(),
+  imagesBase64: zod
+    .array(zod.string())
+    .max(createQuoteBodyImagesBase64Max)
+    .optional()
+    .describe(
+      "Up to 3 base64-encoded images (data URLs) passed to OpenAI vision",
+    ),
 });
 
 /**

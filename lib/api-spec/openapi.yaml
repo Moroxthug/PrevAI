@@ -502,6 +502,12 @@ components:
           $ref: "#/components/schemas/QuoteClientData"
         companySnapshot:
           $ref: "#/components/schemas/QuoteCompanySnapshot"
+        imagesBase64:
+          type: array
+          description: Up to 3 base64-encoded images (data URLs) passed to OpenAI vision
+          maxItems: 3
+          items:
+            type: string
       required:
         - rawInput
 

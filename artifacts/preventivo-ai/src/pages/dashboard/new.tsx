@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef, useCallback } from "react";
 import { useLocation, Link } from "wouter";
 import { useCreateQuote, useGetBusinessProfile } from "@workspace/api-client-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
@@ -7,15 +7,30 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { ArrowRight, Sparkles, Loader2, Building2, User, FileText, Info, ChevronDown, ChevronUp } from "lucide-react";
+import { ArrowRight, Sparkles, Loader2, Building2, User, FileText, Info, ChevronDown, ChevronUp, ImagePlus, X, Camera } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+
+const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp", "image/heic", "image/heif"];
+const MAX_FILES = 3;
+const MAX_SIZE_MB = 5;
+const MAX_SIZE_BYTES = MAX_SIZE_MB * 1024 * 1024;
+
+function fileToBase64(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
 
 export default function NewQuote() {
   const [input, setInput] = useState("");
   const [, setLocation] = useLocation();
   const createQuote = useCreateQuote();
   const { data: profile } = useGetBusinessProfile();
+  const { toast } = useToast();
 
-  // Client data state
   const [clientNome, setClientNome] = useState("");
   const [clientIndirizzo, setClientIndirizzo] = useState("");
   const [clientCodiceFiscale, setClientCodiceFiscale] = useState("");
@@ -23,14 +38,59 @@ export default function NewQuote() {
   const [clientCitta, setClientCitta] = useState("");
   const [clientCap, setClientCap] = useState("");
   const [clientProvincia, setClientProvincia] = useState("");
-
   const [showCompanyDetails, setShowCompanyDetails] = useState(false);
 
-  const handleExampleClick = (example: string) => {
-    setInput(example);
+  const [photos, setPhotos] = useState<File[]>([]);
+  const [photoPreviews, setPhotoPreviews] = useState<string[]>([]);
+  const [isDragging, setIsDragging] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const addFiles = useCallback((files: FileList | File[]) => {
+    const fileArray = Array.from(files);
+    const remaining = MAX_FILES - photos.length;
+    if (remaining <= 0) {
+      toast({ title: "Massimo 3 foto", description: "Rimuovi una foto per aggiungerne un'altra.", variant: "destructive" });
+      return;
+    }
+
+    const valid: File[] = [];
+    for (const file of fileArray.slice(0, remaining)) {
+      if (!ALLOWED_TYPES.includes(file.type) && !file.name.toLowerCase().match(/\.(heic|heif)$/)) {
+        toast({ title: "Formato non supportato", description: `${file.name}: usa JPG, PNG, WEBP o HEIC.`, variant: "destructive" });
+        continue;
+      }
+      if (file.size > MAX_SIZE_BYTES) {
+        toast({ title: "File troppo grande", description: `${file.name}: massimo ${MAX_SIZE_MB}MB per foto.`, variant: "destructive" });
+        continue;
+      }
+      valid.push(file);
+    }
+
+    if (valid.length === 0) return;
+
+    const newPreviews = valid.map(f => URL.createObjectURL(f));
+    setPhotos(prev => [...prev, ...valid]);
+    setPhotoPreviews(prev => [...prev, ...newPreviews]);
+  }, [photos.length, toast]);
+
+  const removePhoto = (idx: number) => {
+    URL.revokeObjectURL(photoPreviews[idx]);
+    setPhotos(prev => prev.filter((_, i) => i !== idx));
+    setPhotoPreviews(prev => prev.filter((_, i) => i !== idx));
   };
 
-  const handleSubmit = () => {
+  const onDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+    addFiles(e.dataTransfer.files);
+  }, [addFiles]);
+
+  const onDragOver = (e: React.DragEvent) => { e.preventDefault(); setIsDragging(true); };
+  const onDragLeave = () => setIsDragging(false);
+
+  const handleExampleClick = (example: string) => { setInput(example); };
+
+  const handleSubmit = async () => {
     if (!input.trim()) return;
 
     const clientData = clientNome.trim()
@@ -56,10 +116,18 @@ export default function NewQuote() {
         }
       : undefined;
 
-    createQuote.mutate({ data: { rawInput: input, clientData, companySnapshot } }, {
-      onSuccess: (quote) => {
-        setLocation(`/dashboard/quotes/${quote.id}`);
+    let imagesBase64: string[] | undefined;
+    if (photos.length > 0) {
+      try {
+        imagesBase64 = await Promise.all(photos.map(fileToBase64));
+      } catch {
+        toast({ title: "Errore", description: "Impossibile leggere le foto. Riprova.", variant: "destructive" });
+        return;
       }
+    }
+
+    createQuote.mutate({ data: { rawInput: input, clientData, companySnapshot, imagesBase64 } }, {
+      onSuccess: (quote) => { setLocation(`/dashboard/quotes/${quote.id}`); }
     });
   };
 
@@ -231,7 +299,7 @@ export default function NewQuote() {
             <FileText className="h-4 w-4 text-primary" />
             <CardTitle className="text-base">3. Descrizione Lavori</CardTitle>
           </div>
-          <CardDescription>Descrivi il lavoro in linguaggio naturale. L'AI genererà un preventivo professionale strutturato a capitoli.</CardDescription>
+          <CardDescription>Descrivi il lavoro in linguaggio naturale. Puoi anche allegare fino a 3 foto (appunti, listini, cantiere): l'AI le analizzerà per un preventivo ancora più preciso.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <Textarea
@@ -241,7 +309,95 @@ export default function NewQuote() {
             onChange={(e) => setInput(e.target.value)}
             disabled={isSubmitting}
           />
-          
+
+          {/* Photo upload area */}
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-medium text-foreground flex items-center gap-2">
+                <Camera className="h-4 w-4 text-muted-foreground" />
+                Foto appunti / cantiere
+                <Badge variant="secondary" className="text-xs font-normal">opzionale</Badge>
+              </span>
+              <span className="text-xs text-muted-foreground">{photos.length}/{MAX_FILES} foto</span>
+            </div>
+
+            {/* Previews */}
+            {photos.length > 0 && (
+              <div className="flex flex-wrap gap-3">
+                {photoPreviews.map((src, idx) => (
+                  <div key={idx} className="relative group w-24 h-24 rounded-lg overflow-hidden border-2 border-border bg-muted shrink-0">
+                    <img
+                      src={src}
+                      alt={`Foto ${idx + 1}`}
+                      className="w-full h-full object-cover"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => removePhoto(idx)}
+                      disabled={isSubmitting}
+                      className="absolute top-1 right-1 bg-black/70 hover:bg-black rounded-full p-0.5 opacity-0 group-hover:opacity-100 transition-opacity disabled:opacity-30"
+                    >
+                      <X className="h-3 w-3 text-white" />
+                    </button>
+                    <div className="absolute bottom-0 inset-x-0 bg-black/50 text-white text-[10px] text-center py-0.5">
+                      {photos[idx] ? `${(photos[idx].size / 1024).toFixed(0)}kb` : ""}
+                    </div>
+                  </div>
+                ))}
+
+                {/* Add more slot */}
+                {photos.length < MAX_FILES && (
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={isSubmitting}
+                    className="w-24 h-24 rounded-lg border-2 border-dashed border-border hover:border-primary hover:bg-primary/5 transition-colors flex flex-col items-center justify-center gap-1 text-muted-foreground hover:text-primary disabled:opacity-50"
+                  >
+                    <ImagePlus className="h-5 w-5" />
+                    <span className="text-xs">Aggiungi</span>
+                  </button>
+                )}
+              </div>
+            )}
+
+            {/* Drop zone (shown only when no photos yet) */}
+            {photos.length === 0 && (
+              <div
+                onDrop={onDrop}
+                onDragOver={onDragOver}
+                onDragLeave={onDragLeave}
+                onClick={() => !isSubmitting && fileInputRef.current?.click()}
+                className={`relative border-2 border-dashed rounded-xl p-6 text-center cursor-pointer transition-colors ${
+                  isDragging
+                    ? "border-primary bg-primary/5"
+                    : "border-border hover:border-primary/60 hover:bg-muted/50"
+                } ${isSubmitting ? "opacity-50 cursor-not-allowed" : ""}`}
+              >
+                <ImagePlus className={`h-8 w-8 mx-auto mb-2 ${isDragging ? "text-primary" : "text-muted-foreground"}`} />
+                <p className="text-sm font-medium text-foreground">
+                  {isDragging ? "Rilascia le foto qui" : "Trascina le foto qui o clicca per scegliere"}
+                </p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  JPG, PNG, WEBP, HEIC · max {MAX_SIZE_MB}MB per foto · max {MAX_FILES} foto
+                </p>
+                <p className="text-xs text-muted-foreground mt-2 italic">
+                  L'AI analizzerà prezzi scritti a mano, misure, listini e immagini del cantiere
+                </p>
+              </div>
+            )}
+
+            {/* Hidden file input */}
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/jpeg,image/png,image/webp,image/heic,image/heif,.heic,.heif"
+              multiple
+              className="hidden"
+              onChange={e => { if (e.target.files) { addFiles(e.target.files); e.target.value = ""; } }}
+              disabled={isSubmitting}
+            />
+          </div>
+
           <div className="space-y-2">
             <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Esempi rapidi:</span>
             <div className="flex flex-wrap gap-2">
@@ -291,6 +447,11 @@ export default function NewQuote() {
               <Info className="h-3 w-3" />
               L'indirizzo del committente è obbligatorio
             </p>
+          ) : photos.length > 0 ? (
+            <p className="text-xs text-primary flex items-center gap-1 font-medium">
+              <Camera className="h-3 w-3" />
+              {photos.length} foto allegate · l'AI utilizzerà la vision
+            </p>
           ) : null}
           <Button
             onClick={handleSubmit}
@@ -301,7 +462,7 @@ export default function NewQuote() {
             {isSubmitting ? (
               <>
                 <Loader2 className="h-4 w-4 animate-spin" />
-                Generazione in corso...
+                {photos.length > 0 ? "Analisi foto in corso..." : "Generazione in corso..."}
               </>
             ) : (
               <>

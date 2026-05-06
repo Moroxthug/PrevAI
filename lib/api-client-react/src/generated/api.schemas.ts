@@ -103,6 +103,11 @@ export interface CreateQuoteBody {
   rawInput: string;
   clientData?: QuoteClientData;
   companySnapshot?: QuoteCompanySnapshot;
+  /**
+   * Up to 3 base64-encoded images (data URLs) passed to OpenAI vision
+   * @maxItems 3
+   */
+  imagesBase64?: string[];
 }
 
 export type UpdateQuoteBodyStatus =

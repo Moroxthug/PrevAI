@@ -192,7 +192,7 @@ router.post("/quotes", requireAuth(), async (req, res) => {
       return;
     }
 
-    const { rawInput, clientData: clientDataInput, companySnapshot: companySnapshotInput } = parsed.data;
+    const { rawInput, clientData: clientDataInput, companySnapshot: companySnapshotInput, imagesBase64 } = parsed.data;
 
     // Build user message: inject client data as context so AI doesn't invent it
     let userMessage = rawInput;
@@ -229,12 +229,25 @@ Descrizione lavori: ${rawInput}`;
           }
         : null;
 
+    const hasImages = Array.isArray(imagesBase64) && imagesBase64.length > 0;
+
     const completion = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
+      model: hasImages ? "gpt-4o" : "gpt-4o-mini",
       max_completion_tokens: 8192,
       messages: [
         { role: "system", content: AI_PROMPT },
-        { role: "user", content: userMessage },
+        {
+          role: "user",
+          content: hasImages
+            ? [
+                { type: "text" as const, text: userMessage },
+                ...imagesBase64!.map(img => ({
+                  type: "image_url" as const,
+                  image_url: { url: img, detail: "high" as const },
+                })),
+              ]
+            : userMessage,
+        },
       ],
     });
 
