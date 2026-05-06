@@ -10,7 +10,7 @@ A SaaS web app for Italian freelancers/craftsmen to describe a job in natural la
 - `pnpm --filter @workspace/db run push` — push DB schema changes (dev only)
 - `pnpm --filter @workspace/api-server run dev` — run API server locally
 
-**Required env vars:** `DATABASE_URL`, `CLERK_PUBLISHABLE_KEY`, `CLERK_SECRET_KEY`, `VITE_CLERK_PUBLISHABLE_KEY`, `SESSION_SECRET`, `AI_INTEGRATIONS_OPENAI_BASE_URL`, `AI_INTEGRATIONS_OPENAI_API_KEY`, `DEFAULT_OBJECT_STORAGE_BUCKET_ID`, `PRIVATE_OBJECT_DIR`, `PUBLIC_OBJECT_SEARCH_PATHS`, `STRIPE_SECRET_KEY` (optional), `STRIPE_WEBHOOK_SECRET` (optional), `RESEND_API_KEY` (optional — needed for subscription emails from no-reply@prevai.it)
+**Required env vars:** `DATABASE_URL`, `CLERK_PUBLISHABLE_KEY`, `CLERK_SECRET_KEY`, `VITE_CLERK_PUBLISHABLE_KEY`, `SESSION_SECRET`, `AI_INTEGRATIONS_OPENAI_BASE_URL`, `AI_INTEGRATIONS_OPENAI_API_KEY`, `DEFAULT_OBJECT_STORAGE_BUCKET_ID`, `PRIVATE_OBJECT_DIR`, `PUBLIC_OBJECT_SEARCH_PATHS`, `STRIPE_SECRET_KEY`, `STRIPE_PUBLISHABLE_KEY`, `ADMIN_EMAIL` (admin access — `bchysfmel@gmail.com`), `RESEND_API_KEY` (optional — needed for subscription emails from no-reply@prevai.it)
 
 ## Stack
 
@@ -74,7 +74,8 @@ A SaaS web app for Italian freelancers/craftsmen to describe a job in natural la
 
 ## User preferences
 
-_Populate as you build_
+- Admin email: `bchysfmel@gmail.com` — access `/admin` while logged in with this account
+- Stripe account: `acct_1TTwBIEKcNcM20o5` (bchysf@gmail.com) — env vars take priority over Replit integration connector
 
 ## Gotchas
 
