@@ -164,7 +164,7 @@ export default function QuotesList() {
             </div>
           ) : (
             <Button asChild className="mt-4">
-              <Link href="/dashboard/new">Crea il tuo primo preventivo</Link>
+              <Link href="/dashboard/new">Crea il tuo preventivo in 60 secondi!</Link>
             </Button>
           )}
         </div>

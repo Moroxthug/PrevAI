@@ -1,8 +1,9 @@
 import { Link, useLocation } from "wouter";
-import { UserButton, useAuth, RedirectToSignIn } from "@clerk/react";
-import { LayoutDashboard, FileText, User, Menu, CreditCard, BarChart3, Settings, ChevronLeft, ChevronRight, Plus } from "lucide-react";
+import { useAuth, useUser, useClerk, RedirectToSignIn } from "@clerk/react";
+import { LayoutDashboard, FileText, Menu, BarChart3, Settings, ChevronLeft, ChevronRight, Plus, LogOut, User, CreditCard, Building2, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger, SheetTitle } from "@/components/ui/sheet";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { Logo } from "@/components/logo";
@@ -13,13 +14,88 @@ const NAV_ITEMS = [
   { href: "/dashboard/quotes", label: "Preventivi", icon: FileText, exact: false },
   { href: "/dashboard/analytics", label: "Analytics", icon: BarChart3, exact: false },
   { href: "/dashboard/settings", label: "Impostazioni", icon: Settings, exact: false },
-  { href: "/dashboard/settings/account", label: "Account Aziendale", icon: User, exact: false },
 ];
 
 function isActive(navHref: string, location: string, exact: boolean) {
   if (exact) return location === navHref;
-  if (navHref === "/dashboard/settings" && location === "/dashboard/settings/account") return false;
   return location === navHref || location.startsWith(navHref + "/") || location.startsWith(navHref + "?");
+}
+
+function AccountMenu({ collapsed = false }: { collapsed?: boolean }) {
+  const { user } = useUser();
+  const { signOut } = useClerk();
+  const name = user?.firstName && user?.lastName
+    ? `${user.firstName} ${user.lastName}`
+    : user?.firstName || user?.username || user?.emailAddresses?.[0]?.emailAddress?.split("@")[0] || "Account";
+  const email = user?.emailAddresses?.[0]?.emailAddress ?? "";
+  const initials = (user?.firstName?.[0] ?? "") + (user?.lastName?.[0] ?? user?.firstName?.[1] ?? "");
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        {collapsed ? (
+          <Tooltip delayDuration={0}>
+            <TooltipTrigger asChild>
+              <button className="h-10 w-10 mx-auto flex items-center justify-center rounded-xl hover:bg-gray-100 transition-colors shrink-0">
+                {user?.imageUrl ? (
+                  <img src={user.imageUrl} alt={name} className="h-8 w-8 rounded-full object-cover" />
+                ) : (
+                  <div className="h-8 w-8 rounded-full bg-violet-100 text-violet-700 text-xs font-bold flex items-center justify-center uppercase">
+                    {initials || <User className="h-4 w-4" />}
+                  </div>
+                )}
+              </button>
+            </TooltipTrigger>
+            <TooltipContent side="right" className="text-xs">{name}</TooltipContent>
+          </Tooltip>
+        ) : (
+          <button className="w-full flex items-center gap-2.5 px-2 py-2 rounded-xl hover:bg-gray-50 transition-colors group text-left">
+            {user?.imageUrl ? (
+              <img src={user.imageUrl} alt={name} className="h-8 w-8 rounded-full object-cover shrink-0" />
+            ) : (
+              <div className="h-8 w-8 rounded-full bg-violet-100 text-violet-700 text-xs font-bold flex items-center justify-center uppercase shrink-0">
+                {initials || <User className="h-4 w-4" />}
+              </div>
+            )}
+            <div className="flex-1 min-w-0">
+              <div className="text-sm font-medium text-gray-700 truncate leading-tight">{name}</div>
+              {email && <div className="text-xs text-gray-400 truncate leading-tight">{email}</div>}
+            </div>
+            <ChevronDown className="h-3.5 w-3.5 text-gray-400 group-hover:text-gray-600 shrink-0" />
+          </button>
+        )}
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" side="top" className="w-52 mb-1">
+        <div className="px-2 py-1.5">
+          <div className="text-sm font-semibold text-gray-800 truncate">{name}</div>
+          {email && <div className="text-xs text-gray-400 truncate">{email}</div>}
+        </div>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem asChild>
+          <Link href="/dashboard/settings?tab=account" className="cursor-pointer flex items-center gap-2">
+            <Building2 className="h-4 w-4 text-gray-400" /> Profilo Aziendale
+          </Link>
+        </DropdownMenuItem>
+        <DropdownMenuItem asChild>
+          <Link href="/dashboard/settings?tab=billing" className="cursor-pointer flex items-center gap-2">
+            <CreditCard className="h-4 w-4 text-gray-400" /> Piano & Fatturazione
+          </Link>
+        </DropdownMenuItem>
+        <DropdownMenuItem asChild>
+          <Link href="/dashboard/settings" className="cursor-pointer flex items-center gap-2">
+            <Settings className="h-4 w-4 text-gray-400" /> Impostazioni
+          </Link>
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem
+          onClick={() => signOut({ redirectUrl: "/" })}
+          className="cursor-pointer text-red-600 focus:text-red-600 gap-2"
+        >
+          <LogOut className="h-4 w-4" /> Esci
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
 }
 
 export function DashboardLayout({ children }: { children: React.ReactNode }) {
@@ -132,9 +208,9 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
           <NavLinks collapsed={isCollapsed} />
         </div>
 
-        <div className={cn("border-t border-gray-100 py-3 flex items-center", isCollapsed ? "justify-center px-2" : "gap-3 px-4")}>
-          <UserButton appearance={{ elements: { avatarBox: "w-8 h-8" } }} />
-          {!isCollapsed && <span className="text-sm font-medium text-gray-400">Account</span>}
+        {/* Account section */}
+        <div className={cn("border-t border-gray-100 py-3", isCollapsed ? "px-2" : "px-3")}>
+          <AccountMenu collapsed={isCollapsed} />
         </div>
       </aside>
 
@@ -149,14 +225,14 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
                   <span className="sr-only">Toggle menu</span>
                 </Button>
               </SheetTrigger>
-              <SheetContent side="left" className="w-72 p-0 bg-white">
+              <SheetContent side="left" className="w-72 p-0 bg-white flex flex-col">
                 <SheetTitle className="sr-only">Menu di navigazione</SheetTitle>
                 <div className="h-16 flex items-center px-6 border-b border-gray-100">
                   <Link href="/dashboard" className="flex items-center" onClick={() => setIsMobileMenuOpen(false)}>
                     <Logo />
                   </Link>
                 </div>
-                <div className="p-4 flex flex-col gap-4">
+                <div className="flex-1 p-4 flex flex-col gap-4">
                   <Link
                     href="/dashboard/new"
                     onClick={() => setIsMobileMenuOpen(false)}
@@ -167,13 +243,16 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
                   </Link>
                   <NavLinks onClick={() => setIsMobileMenuOpen(false)} />
                 </div>
+                <div className="border-t border-gray-100 p-3">
+                  <AccountMenu />
+                </div>
               </SheetContent>
             </Sheet>
             <Link href="/dashboard" className="flex items-center">
               <Logo style={{ height: 28 }} />
             </Link>
           </div>
-          <UserButton appearance={{ elements: { avatarBox: "w-8 h-8" } }} />
+          <AccountMenu />
         </header>
 
         <main className="flex-1 overflow-auto p-4 md:p-8">

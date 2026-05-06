@@ -109,7 +109,7 @@ function OnboardingView() {
           </div>
           <Link href="/dashboard/new" className="btn-gradient inline-flex h-11 items-center justify-center px-8 text-sm font-semibold gap-2">
             <Plus className="h-4 w-4" />
-            Crea il primo preventivo
+            Crea il tuo preventivo in 60 secondi!
           </Link>
         </div>
       </div>
@@ -140,7 +140,7 @@ export default function DashboardHome() {
     new Intl.NumberFormat("it-IT", { style: "currency", currency: "EUR", maximumFractionDigits: 0 }).format(amount);
 
   const recentQuotes = stats?.recentQuotes || [];
-  const firstName = user?.firstName || "ciao";
+  const firstName = user?.firstName || user?.username || "";
   const isNewUser = !isLoadingStats && (stats?.total ?? 0) === 0;
 
   if (isLoadingStats) {
@@ -163,7 +163,7 @@ export default function DashboardHome() {
         <div className="relative flex items-start justify-between gap-4">
           <div>
             <div className="flex items-center gap-2 mb-1">
-              <h1 className="text-2xl font-bold tracking-tight">Ciao, {firstName}!</h1>
+              <h1 className="text-2xl font-bold tracking-tight">{firstName ? `Ciao, ${firstName}!` : "Bentornato!"}</h1>
               {subscription?.isActive && <PlanBadge plan={subscription.plan} />}
             </div>
             <p className="text-white/75 text-sm">
