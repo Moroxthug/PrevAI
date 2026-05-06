@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger, SheetTitle } from "@/components/ui/sheet";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
+import { Logo } from "@/components/logo";
 
 export function DashboardLayout({ children }: { children: React.ReactNode }) {
   const { isLoaded, userId } = useAuth();
@@ -30,11 +31,8 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
       {/* Desktop Sidebar */}
       <aside className="hidden md:flex w-64 flex-col border-r bg-card">
         <div className="h-16 flex items-center px-6 border-b">
-          <Link href="/dashboard" className="flex items-center gap-2 font-bold text-xl text-primary tracking-tight">
-            <div className="bg-primary text-primary-foreground p-1 rounded-md">
-              <FileText className="h-4 w-4" />
-            </div>
-            PreventivoAI
+          <Link href="/dashboard" className="flex items-center">
+            <Logo />
           </Link>
         </div>
 
@@ -90,11 +88,8 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
               <SheetContent side="left" className="w-72 p-0">
                 <SheetTitle className="sr-only">Menu di navigazione</SheetTitle>
                 <div className="h-16 flex items-center px-6 border-b">
-                  <Link href="/dashboard" className="flex items-center gap-2 font-bold text-xl text-primary tracking-tight" onClick={() => setIsMobileMenuOpen(false)}>
-                    <div className="bg-primary text-primary-foreground p-1 rounded-md">
-                      <FileText className="h-4 w-4" />
-                    </div>
-                    PreventivoAI
+                  <Link href="/dashboard" className="flex items-center" onClick={() => setIsMobileMenuOpen(false)}>
+                    <Logo />
                   </Link>
                 </div>
                 <div className="p-4 flex flex-col gap-6">
@@ -128,8 +123,8 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
                 </div>
               </SheetContent>
             </Sheet>
-            <Link href="/dashboard" className="font-bold text-lg text-primary tracking-tight">
-              PreventivoAI
+            <Link href="/dashboard" className="flex items-center">
+              <Logo style={{ height: 28 }} />
             </Link>
           </div>
           <UserButton appearance={{ elements: { avatarBox: "w-8 h-8" } }} />

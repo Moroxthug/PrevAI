@@ -21,7 +21,7 @@ export default function Home() {
             Crea preventivi professionali in <span className="text-primary">30 secondi</span> con l'AI
           </h1>
           <p className="mx-auto mt-6 max-w-2xl text-xl text-muted-foreground">
-            Dimentica Excel e i documenti scritti a mano. Descrivi il lavoro a parole tue e PreventivoAI genererà un documento impeccabile, pronto da inviare al cliente.
+            Dimentica Excel e i documenti scritti a mano. Descrivi il lavoro a parole tue e prevai genererà un documento impeccabile, pronto da inviare al cliente.
           </p>
           <div className="mt-10 flex flex-col sm:flex-row justify-center gap-4">
             <Button size="lg" className="h-14 px-8 text-lg" asChild>
@@ -40,7 +40,7 @@ export default function Home() {
       <section className="py-24 bg-muted/30">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
-            <h2 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl">Perché scegliere PreventivoAI?</h2>
+            <h2 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl">Perché scegliere prevai?</h2>
             <p className="mt-4 text-lg text-muted-foreground">Progettato specificamente per le esigenze delle piccole imprese italiane.</p>
           </div>
           

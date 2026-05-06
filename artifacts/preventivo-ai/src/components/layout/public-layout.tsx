@@ -1,6 +1,6 @@
 import { Link } from "wouter";
 import { UserButton, useAuth } from "@clerk/react";
-import { FileText } from "lucide-react";
+import { Logo } from "@/components/logo";
 
 export function PublicLayout({ children }: { children: React.ReactNode }) {
   const { isSignedIn } = useAuth();
@@ -9,11 +9,8 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
     <div className="min-h-[100dvh] flex flex-col bg-background text-foreground">
       <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="container mx-auto flex h-16 items-center justify-between px-4 sm:px-6 lg:px-8">
-          <Link href="/" className="flex items-center gap-2 font-bold text-xl text-primary tracking-tight">
-            <div className="bg-primary text-primary-foreground p-1.5 rounded-md">
-              <FileText className="h-5 w-5" />
-            </div>
-            PreventivoAI
+          <Link href="/" className="flex items-center">
+            <Logo />
           </Link>
           <nav className="flex items-center gap-4">
             {!isSignedIn ? (
@@ -41,9 +38,8 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
         <div className="container mx-auto px-4 md:px-6">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
             <div className="md:col-span-2">
-              <Link href="/" className="flex items-center gap-2 font-bold text-lg text-primary tracking-tight mb-4">
-                <FileText className="h-5 w-5" />
-                PreventivoAI
+              <Link href="/" className="flex items-center mb-4">
+                <Logo />
               </Link>
               <p className="text-sm text-muted-foreground max-w-xs">
                 Il software di preventivazione con AI per artigiani e PMI italiane.
@@ -70,7 +66,7 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
             </div>
           </div>
           <div className="mt-12 pt-8 border-t text-center text-sm text-muted-foreground">
-            &copy; {new Date().getFullYear()} PreventivoAI. Tutti i diritti riservati.
+            &copy; {new Date().getFullYear()} prevai. Tutti i diritti riservati.
           </div>
         </div>
       </footer>
