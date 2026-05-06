@@ -76,7 +76,12 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
                 <li><Link href="/seo/imbianchino" className="hover:text-foreground transition-colors">Imbianchino</Link></li>
                 <li><Link href="/seo/elettricista" className="hover:text-foreground transition-colors">Elettricista</Link></li>
                 <li><Link href="/seo/idraulico" className="hover:text-foreground transition-colors">Idraulico</Link></li>
-                <li><Link href="/seo/edilizia" className="hover:text-foreground transition-colors">Edilizia</Link></li>
+                <li><Link href="/seo/edilizia" className="hover:text-foreground transition-colors">Imprese Edili</Link></li>
+                <li><Link href="/seo/ristrutturazione" className="hover:text-foreground transition-colors">Ristrutturazioni</Link></li>
+                <li><Link href="/seo/carpentiere" className="hover:text-foreground transition-colors">Carpentieri</Link></li>
+                <li><Link href="/seo/falegname" className="hover:text-foreground transition-colors">Falegnami</Link></li>
+                <li><Link href="/seo/freelance" className="hover:text-foreground transition-colors">Freelance</Link></li>
+                <li><Link href="/seo/geometra" className="hover:text-foreground transition-colors">Geometri</Link></li>
               </ul>
             </div>
             <div>
