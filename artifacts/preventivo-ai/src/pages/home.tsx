@@ -1,14 +1,26 @@
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, CheckCircle2, FileText, Zap, Lock, Star, Sparkles as SparklesIcon } from "lucide-react";
+import { ArrowRight, CheckCircle2, FileText, Zap, Lock, Star } from "lucide-react";
 import { useGetPlans } from "@workspace/api-client-react";
 import { useScrollFade } from "@/hooks/use-scroll-fade";
 import { Badge } from "@/components/ui/badge";
 
-function ScrollSection({ children, className = "", id }: { children: React.ReactNode; className?: string; id?: string }) {
+function ScrollSection({
+  children,
+  className = "",
+  id,
+}: {
+  children: React.ReactNode;
+  className?: string;
+  id?: string;
+}) {
   const ref = useScrollFade();
   return (
-    <section id={id} ref={ref as React.RefObject<HTMLElement>} className={`fade-in-section ${className}`}>
+    <section
+      id={id}
+      ref={ref as React.RefObject<HTMLElement>}
+      className={`fade-in-section ${className}`}
+    >
       {children}
     </section>
   );
@@ -17,98 +29,139 @@ function ScrollSection({ children, className = "", id }: { children: React.React
 export default function Home() {
   const { data: plans } = useGetPlans();
 
-  const subscriptionPlans = plans?.filter(p => p.interval) ?? [];
-  const oneshotPlans = plans?.filter(p => !p.interval) ?? [];
+  const subscriptionPlans = plans?.filter((p) => p.interval) ?? [];
+  const oneshotPlans = plans?.filter((p) => !p.interval) ?? [];
 
   return (
-    <div className="flex flex-col min-h-screen">
-      {/* Hero Section */}
-      <section className="relative overflow-hidden bg-background pt-28 pb-36">
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-primary/10 via-background to-background" />
+    <div className="flex flex-col min-h-screen bg-white">
+      {/* ── Hero ─────────────────────────────────────────────── */}
+      <section className="relative overflow-hidden bg-white pt-28 pb-36">
+        {/* Animated mesh blobs */}
+        <div className="mesh-blob mesh-blob-1" />
+        <div className="mesh-blob mesh-blob-2" />
+        <div className="mesh-blob mesh-blob-3" />
+
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10 text-center">
-          <div className="inline-flex items-center rounded-full border border-primary/20 bg-primary/5 px-4 py-1.5 text-sm font-medium text-primary mb-10">
-            <Sparkles className="mr-2 h-4 w-4" />
+          {/* Badge pill */}
+          <div className="inline-flex items-center gap-2 rounded-full border border-violet-200 bg-violet-50 px-4 py-1.5 text-sm font-medium text-violet-700 mb-10">
+            <Sparkles className="h-4 w-4" />
             L'Intelligenza Artificiale per gli Artigiani Italiani
           </div>
-          <h1 className="mx-auto max-w-4xl text-5xl font-extrabold tracking-tight text-foreground sm:text-6xl lg:text-7xl leading-tight">
-            Crea preventivi professionali in <span className="text-primary">30 secondi</span> con l'AI
+
+          <h1 className="mx-auto max-w-4xl text-5xl font-extrabold tracking-tight text-gray-900 sm:text-6xl lg:text-7xl leading-[1.1]">
+            Crea preventivi professionali in{" "}
+            <span className="gradient-text">30 secondi</span> con l'AI
           </h1>
-          <p className="mx-auto mt-8 max-w-2xl text-xl text-muted-foreground leading-relaxed">
-            Dimentica Excel e i documenti scritti a mano. Descrivi il lavoro a parole tue e prevai genererà un documento impeccabile, pronto da inviare al cliente.
+
+          <p className="mx-auto mt-8 max-w-2xl text-xl text-gray-500 leading-relaxed">
+            Dimentica Excel e i documenti scritti a mano. Descrivi il lavoro a
+            parole tue e prevai genererà un documento impeccabile, pronto da
+            inviare al cliente.
           </p>
+
           <div className="mt-12 flex flex-col sm:flex-row justify-center gap-4">
-            <Button size="lg" className="h-14 px-8 text-lg transition-all hover:scale-105" asChild>
-              <Link href="/sign-up">
-                Inizia Gratuitamente <ArrowRight className="ml-2 h-5 w-5" />
-              </Link>
-            </Button>
-            <Button size="lg" variant="outline" className="h-14 px-8 text-lg transition-all hover:bg-muted" asChild>
-              <Link href="#demo">Vedi un esempio</Link>
-            </Button>
+            <Link
+              href="/sign-up"
+              className="btn-gradient inline-flex h-14 items-center justify-center px-8 text-lg font-semibold"
+            >
+              Inizia Gratuitamente
+              <ArrowRight className="ml-2 h-5 w-5" />
+            </Link>
+            <Link
+              href="#demo"
+              className="btn-gradient-outline inline-flex h-14 items-center justify-center px-8 text-lg font-semibold"
+            >
+              Vedi un esempio
+            </Link>
           </div>
         </div>
       </section>
 
-      {/* Features Section */}
-      <ScrollSection className="py-28 bg-muted/30">
+      {/* ── Features ─────────────────────────────────────────── */}
+      <ScrollSection className="py-28 bg-gray-50/60">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-20">
-            <h2 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl">Perché scegliere prevai?</h2>
-            <p className="mt-5 text-lg text-muted-foreground max-w-xl mx-auto">Progettato specificamente per le esigenze delle piccole imprese italiane.</p>
+            <h2 className="text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">
+              Perché scegliere{" "}
+              <span className="gradient-text">prevai</span>?
+            </h2>
+            <p className="mt-5 text-lg text-gray-500 max-w-xl mx-auto leading-relaxed">
+              Progettato specificamente per le esigenze delle piccole imprese
+              italiane.
+            </p>
           </div>
-          
+
           <div className="grid md:grid-cols-3 gap-8">
-            <div className="bg-card p-9 rounded-2xl border shadow-sm hover-elevate transition-all">
-              <div className="h-12 w-12 bg-primary/10 rounded-xl flex items-center justify-center text-primary mb-7">
-                <Zap className="h-6 w-6" />
+            {[
+              {
+                icon: <Zap className="h-6 w-6" />,
+                title: "Velocità Incredibile",
+                desc: "Non devi più passare le serate a fare preventivi. Descrivi il lavoro dal tuo smartphone mentre sei in cantiere.",
+              },
+              {
+                icon: <FileText className="h-6 w-6" />,
+                title: "Professionalità",
+                desc: "I preventivi generati sono completi di descrizioni dettagliate, quantità, unità di misura e calcolo IVA automatico.",
+              },
+              {
+                icon: <CheckCircle2 className="h-6 w-6" />,
+                title: "Zero Errori",
+                desc: "Calcoli matematici sempre corretti. L'AI struttura il documento assicurandosi che non manchi nessun dettaglio importante.",
+              },
+            ].map(({ icon, title, desc }) => (
+              <div
+                key={title}
+                className="card-soft bg-white p-9 rounded-2xl flex flex-col"
+              >
+                <div className="h-12 w-12 rounded-xl flex items-center justify-center mb-7 text-white"
+                  style={{ background: "linear-gradient(135deg, #7C3AED, #06B6D4)" }}
+                >
+                  {icon}
+                </div>
+                <h3 className="text-xl font-semibold mb-3 text-gray-900">{title}</h3>
+                <p className="text-gray-500 leading-relaxed">{desc}</p>
               </div>
-              <h3 className="text-xl font-semibold mb-3">Velocità Incredibile</h3>
-              <p className="text-muted-foreground leading-relaxed">Non devi più passare le serate a fare preventivi. Descrivi il lavoro dal tuo smartphone mentre sei in cantiere.</p>
-            </div>
-            
-            <div className="bg-card p-9 rounded-2xl border shadow-sm hover-elevate transition-all">
-              <div className="h-12 w-12 bg-primary/10 rounded-xl flex items-center justify-center text-primary mb-7">
-                <FileText className="h-6 w-6" />
-              </div>
-              <h3 className="text-xl font-semibold mb-3">Professionalità</h3>
-              <p className="text-muted-foreground leading-relaxed">I preventivi generati sono completi di descrizioni dettagliate, quantità, unità di misura e calcolo IVA automatico.</p>
-            </div>
-            
-            <div className="bg-card p-9 rounded-2xl border shadow-sm hover-elevate transition-all">
-              <div className="h-12 w-12 bg-primary/10 rounded-xl flex items-center justify-center text-primary mb-7">
-                <CheckCircle2 className="h-6 w-6" />
-              </div>
-              <h3 className="text-xl font-semibold mb-3">Zero Errori</h3>
-              <p className="text-muted-foreground leading-relaxed">Calcoli matematici sempre corretti. L'AI struttura il documento assicurandosi che non manchi nessun dettaglio importante.</p>
-            </div>
+            ))}
           </div>
         </div>
       </ScrollSection>
 
-      {/* Demo Section */}
-      <ScrollSection id="demo" className="py-28">
+      {/* ── Demo ─────────────────────────────────────────────── */}
+      <ScrollSection id="demo" className="py-28 bg-white">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid lg:grid-cols-2 gap-16 items-center">
             <div>
-              <h2 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl mb-6 leading-snug">Da un semplice testo a un documento professionale.</h2>
-              <div className="bg-muted p-6 rounded-xl mb-6 font-mono text-sm border">
-                "Devo tinteggiare un appartamento di 80mq con due mani di pittura lavabile bianca. Includere anche la rasatura di una parete rovinata in soggiorno."
+              <h2 className="text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl mb-6 leading-snug">
+                Da un semplice testo a un{" "}
+                <span className="gradient-text">documento professionale</span>.
+              </h2>
+              <div className="bg-gray-50 p-6 rounded-2xl mb-6 font-mono text-sm border border-gray-100 text-gray-700">
+                "Devo tinteggiare un appartamento di 80mq con due mani di
+                pittura lavabile bianca. Includere anche la rasatura di una
+                parete rovinata in soggiorno."
               </div>
-              <ArrowRight className="h-8 w-8 text-primary mx-auto lg:mx-0 mb-6 rotate-90 lg:rotate-0" />
-              <p className="text-lg text-muted-foreground leading-relaxed">
-                Il nostro motore AI comprende il linguaggio naturale, identifica le singole voci di costo, stima le quantità e impagina il tutto in un formato standard.
+              <ArrowRight className="h-8 w-8 text-violet-500 mx-auto lg:mx-0 mb-6 rotate-90 lg:rotate-0" />
+              <p className="text-lg text-gray-500 leading-relaxed">
+                Il nostro motore AI comprende il linguaggio naturale, identifica
+                le singole voci di costo, stima le quantità e impagina il tutto
+                in un formato standard.
               </p>
             </div>
+
             <div className="relative">
-              <div className="absolute -inset-4 bg-gradient-to-r from-primary/20 to-secondary/20 rounded-2xl blur-xl opacity-50" />
-              <div className="relative bg-card rounded-xl border shadow-xl overflow-hidden flex flex-col h-[500px]">
-                <div className="border-b bg-muted/50 px-4 py-3 flex items-center gap-2">
+              <div className="absolute -inset-4 rounded-2xl blur-2xl opacity-40"
+                style={{ background: "linear-gradient(135deg, rgba(124,58,237,0.15), rgba(6,182,212,0.15))" }}
+              />
+              <div className="relative bg-white rounded-2xl border border-gray-100 shadow-xl overflow-hidden flex flex-col h-[500px]">
+                <div className="border-b bg-gray-50 px-4 py-3 flex items-center gap-2">
                   <div className="flex gap-1.5">
                     <div className="w-3 h-3 rounded-full bg-red-400" />
                     <div className="w-3 h-3 rounded-full bg-amber-400" />
                     <div className="w-3 h-3 rounded-full bg-green-400" />
                   </div>
-                  <div className="text-xs font-medium text-muted-foreground ml-4">Preventivo_Mario_Rossi.pdf</div>
+                  <div className="text-xs font-medium text-gray-400 ml-4">
+                    Preventivo_Mario_Rossi.pdf
+                  </div>
                 </div>
                 <div className="p-8 flex-1 overflow-hidden bg-white text-black text-sm">
                   <div className="flex justify-between mb-8 border-b pb-4">
@@ -147,9 +200,18 @@ export default function Home() {
                   </table>
                   <div className="flex justify-end border-t border-gray-800 pt-4">
                     <div className="w-48 space-y-2">
-                      <div className="flex justify-between"><span>Imponibile:</span> <span>€ 1.450,00</span></div>
-                      <div className="flex justify-between text-gray-500"><span>IVA 22%:</span> <span>€ 319,00</span></div>
-                      <div className="flex justify-between font-bold text-lg text-blue-900 pt-2 border-t"><span>Totale:</span> <span>€ 1.769,00</span></div>
+                      <div className="flex justify-between">
+                        <span>Imponibile:</span>
+                        <span>€ 1.450,00</span>
+                      </div>
+                      <div className="flex justify-between text-gray-500">
+                        <span>IVA 22%:</span>
+                        <span>€ 319,00</span>
+                      </div>
+                      <div className="flex justify-between font-bold text-lg text-blue-900 pt-2 border-t">
+                        <span>Totale:</span>
+                        <span>€ 1.769,00</span>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -159,135 +221,183 @@ export default function Home() {
         </div>
       </ScrollSection>
 
-      {/* Pricing Section */}
-      <ScrollSection className="py-28 bg-muted/30">
+      {/* ── Pricing ──────────────────────────────────────────── */}
+      <ScrollSection className="py-28 bg-gray-50/60">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-20">
-            <h2 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl">Piani Semplici e Trasparenti</h2>
-            <p className="mt-5 text-lg text-muted-foreground max-w-xl mx-auto">Scegli l'abbonamento più adatto alla tua attività, oppure acquista un singolo preventivo.</p>
+            <h2 className="text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">
+              Piani Semplici e{" "}
+              <span className="gradient-text">Trasparenti</span>
+            </h2>
+            <p className="mt-5 text-lg text-gray-500 max-w-xl mx-auto leading-relaxed">
+              Scegli l'abbonamento più adatto alla tua attività, oppure
+              acquista un singolo preventivo.
+            </p>
           </div>
 
-          {/* Subscription Plans */}
-          <div className="grid md:grid-cols-2 gap-8 max-w-3xl mx-auto mb-16">
+          {/* Subscription plans */}
+          <div className="grid md:grid-cols-2 gap-8 max-w-3xl mx-auto mb-14">
             {subscriptionPlans.map((plan) => {
               const isPro = plan.id === "monthly_pro";
               return (
                 <div
                   key={plan.id}
-                  className={`bg-card rounded-2xl border p-8 flex flex-col hover-elevate transition-all relative ${
+                  className={`bg-white rounded-2xl p-8 flex flex-col relative transition-all duration-300 ${
                     isPro
-                      ? "border-primary shadow-lg pro-pulse"
-                      : "shadow-sm"
+                      ? "border-2 border-violet-300 shadow-xl shadow-violet-100/60 pro-pulse"
+                      : "card-soft"
                   }`}
                 >
                   {isPro && (
-                    <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                      <span className="bg-primary text-primary-foreground text-xs font-bold px-4 py-1 rounded-full uppercase tracking-widest shadow">
-                        Più popolare
+                    <div className="absolute -top-3.5 left-1/2 -translate-x-1/2">
+                      <span
+                        className="text-white text-xs font-bold px-4 py-1 rounded-full uppercase tracking-widest"
+                        style={{ background: "linear-gradient(135deg, #7C3AED, #06B6D4)" }}
+                      >
+                        ⭐ Più Popolare
                       </span>
                     </div>
                   )}
 
-                  <div className="flex items-center justify-between mb-6">
+                  <div className="flex items-start justify-between mb-6">
                     <div>
-                      <Badge
-                        variant={isPro ? "default" : "secondary"}
-                        className={`text-xs font-bold uppercase tracking-widest mb-3 ${
-                          isPro ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
-                        }`}
-                      >
-                        {isPro ? "⭐ Pro" : "Starter"}
-                      </Badge>
-                      <h3 className="text-2xl font-bold">{plan.name}</h3>
+                      {isPro ? (
+                        <span
+                          className="text-xs font-bold px-3 py-1 rounded-full text-white mb-3 inline-block"
+                          style={{ background: "linear-gradient(135deg, #7C3AED, #06B6D4)" }}
+                        >
+                          Pro
+                        </span>
+                      ) : (
+                        <span className="text-xs font-semibold px-3 py-1 rounded-full bg-gray-100 text-gray-500 mb-3 inline-block">
+                          Starter
+                        </span>
+                      )}
+                      <h3 className="text-2xl font-bold text-gray-900 mt-1">
+                        {plan.name}
+                      </h3>
                     </div>
                     {isPro && (
-                      <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center text-primary">
+                      <div
+                        className="h-10 w-10 rounded-full flex items-center justify-center text-white"
+                        style={{ background: "linear-gradient(135deg, #7C3AED, #06B6D4)" }}
+                      >
                         <Star className="h-5 w-5 fill-current" />
                       </div>
                     )}
                   </div>
 
-                  <div className="mb-6">
-                    <span className="text-4xl font-extrabold">€{plan.price}</span>
-                    <span className="text-muted-foreground">/mese</span>
+                  <div className="mb-5">
+                    <span className="text-4xl font-extrabold text-gray-900">€{plan.price}</span>
+                    <span className="text-gray-400">/mese</span>
                   </div>
 
                   {isPro && (
-                    <div className="mb-4 text-xs font-semibold text-primary uppercase tracking-widest">
+                    <p className="text-xs font-semibold gradient-text mb-5">
                       ✓ Accesso completo sbloccato
-                    </div>
+                    </p>
                   )}
 
                   <ul className="space-y-3 mb-8 flex-1">
                     {plan.features.map((feature, i) => {
-                      const isLocked = !isPro && (
-                        feature.toLowerCase().includes("illimitati") ||
-                        feature.toLowerCase().includes("premium") ||
-                        feature.toLowerCase().includes("foto")
-                      );
+                      const isLocked =
+                        !isPro &&
+                        (feature.toLowerCase().includes("illimitati") ||
+                          feature.toLowerCase().includes("premium") ||
+                          feature.toLowerCase().includes("foto"));
                       return (
-                        <li key={i} className="flex items-start gap-2">
+                        <li key={i} className="flex items-start gap-2.5">
                           {isLocked ? (
-                            <Lock className="h-4 w-4 text-muted-foreground/50 shrink-0 mt-0.5" />
+                            <Lock className="h-4 w-4 text-gray-300 shrink-0 mt-0.5" />
                           ) : (
-                            <CheckCircle2 className={`h-4 w-4 shrink-0 mt-0.5 ${isPro ? "text-primary" : "text-muted-foreground"}`} />
+                            <CheckCircle2
+                              className={`h-4 w-4 shrink-0 mt-0.5 ${
+                                isPro ? "text-violet-500" : "text-gray-400"
+                              }`}
+                            />
                           )}
-                          <span className={`text-sm ${isLocked ? "text-muted-foreground/50 line-through" : ""}`}>{feature}</span>
+                          <span
+                            className={`text-sm ${
+                              isLocked ? "text-gray-300 line-through" : "text-gray-600"
+                            }`}
+                          >
+                            {feature}
+                          </span>
                         </li>
                       );
                     })}
                   </ul>
 
-                  <Button
-                    asChild
-                    variant={isPro ? "default" : "outline"}
-                    className={`w-full h-12 transition-all hover:scale-105 ${isPro ? "shadow-md" : ""}`}
-                  >
-                    <Link href="/sign-up">{isPro ? "Inizia con Pro" : "Inizia con Starter"}</Link>
-                  </Button>
+                  {isPro ? (
+                    <Link
+                      href="/sign-up"
+                      className="btn-gradient inline-flex h-12 items-center justify-center w-full text-sm font-semibold"
+                    >
+                      Inizia con Pro
+                    </Link>
+                  ) : (
+                    <Link
+                      href="/sign-up"
+                      className="btn-gradient-outline inline-flex h-12 items-center justify-center w-full text-sm font-semibold"
+                    >
+                      Inizia con Starter
+                    </Link>
+                  )}
                 </div>
               );
             })}
           </div>
 
           {/* Divider */}
-          <div className="flex items-center gap-4 max-w-xl mx-auto mb-12">
-            <div className="flex-1 h-px bg-border" />
-            <span className="text-sm text-muted-foreground font-medium">oppure acquisto singolo</span>
-            <div className="flex-1 h-px bg-border" />
+          <div className="flex items-center gap-4 max-w-xl mx-auto mb-10">
+            <div className="flex-1 h-px bg-gray-200" />
+            <span className="text-sm text-gray-400 font-medium">
+              oppure acquisto singolo
+            </span>
+            <div className="flex-1 h-px bg-gray-200" />
           </div>
 
-          {/* One-shot Plans */}
-          <div className="grid md:grid-cols-2 gap-6 max-w-2xl mx-auto">
+          {/* One-shot plans */}
+          <div className="grid md:grid-cols-2 gap-5 max-w-2xl mx-auto">
             {oneshotPlans.map((plan) => {
               const isClean = plan.id === "oneshot_clean";
               return (
                 <div
                   key={plan.id}
-                  className={`bg-card rounded-xl border p-6 flex flex-col hover-elevate transition-all ${
-                    isClean ? "border-primary/30" : ""
+                  className={`bg-white rounded-2xl p-6 flex flex-col card-soft ${
+                    isClean ? "border border-violet-100" : ""
                   }`}
                 >
-                  <h3 className="text-base font-semibold mb-1">{plan.name}</h3>
+                  <h3 className="text-base font-semibold text-gray-900 mb-1">
+                    {plan.name}
+                  </h3>
                   <div className="mb-4">
-                    <span className="text-2xl font-bold">€{plan.price}</span>
-                    <span className="text-muted-foreground text-sm"> una tantum</span>
+                    <span className="text-2xl font-bold text-gray-900">€{plan.price}</span>
+                    <span className="text-gray-400 text-sm"> una tantum</span>
                   </div>
                   <ul className="space-y-2 mb-6 flex-1">
                     {plan.features.map((feature, i) => (
                       <li key={i} className="flex items-start gap-2">
-                        <CheckCircle2 className="h-4 w-4 text-primary shrink-0 mt-0.5" />
-                        <span className="text-sm text-muted-foreground">{feature}</span>
+                        <CheckCircle2 className="h-4 w-4 text-violet-400 shrink-0 mt-0.5" />
+                        <span className="text-sm text-gray-500">{feature}</span>
                       </li>
                     ))}
                   </ul>
-                  <Button
-                    asChild
-                    variant={isClean ? "default" : "outline"}
-                    className="w-full transition-all hover:scale-105"
-                  >
-                    <Link href="/sign-up">Acquista</Link>
-                  </Button>
+                  {isClean ? (
+                    <Link
+                      href="/sign-up"
+                      className="btn-gradient inline-flex h-10 items-center justify-center w-full text-sm font-semibold"
+                    >
+                      Acquista
+                    </Link>
+                  ) : (
+                    <Link
+                      href="/sign-up"
+                      className="btn-gradient-outline inline-flex h-10 items-center justify-center w-full text-sm font-semibold"
+                    >
+                      Acquista
+                    </Link>
+                  )}
                 </div>
               );
             })}
@@ -295,14 +405,32 @@ export default function Home() {
         </div>
       </ScrollSection>
 
-      {/* CTA Section */}
-      <ScrollSection className="py-28 bg-primary text-primary-foreground text-center">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-          <h2 className="text-3xl font-bold tracking-tight sm:text-4xl mb-6">Pronto a rivoluzionare la tua attività?</h2>
-          <p className="text-xl opacity-90 mb-12 max-w-2xl mx-auto leading-relaxed">Unisciti a centinaia di artigiani e professionisti italiani che risparmiano ore ogni settimana.</p>
-          <Button size="lg" variant="secondary" className="h-14 px-8 text-lg transition-all hover:scale-105" asChild>
-            <Link href="/sign-up">Crea il tuo Account Gratuito</Link>
-          </Button>
+      {/* ── CTA ──────────────────────────────────────────────── */}
+      <ScrollSection className="py-28 bg-white">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          {/* Gradient decorative ring */}
+          <div
+            className="inline-flex items-center justify-center w-16 h-16 rounded-full mb-8"
+            style={{ background: "linear-gradient(135deg, rgba(124,58,237,0.12), rgba(6,182,212,0.12))" }}
+          >
+            <Sparkles className="h-7 w-7 text-violet-500" />
+          </div>
+
+          <h2 className="text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl mb-6">
+            Pronto a{" "}
+            <span className="gradient-text">rivoluzionare</span> la tua attività?
+          </h2>
+          <p className="text-xl text-gray-500 mb-12 max-w-2xl mx-auto leading-relaxed">
+            Unisciti a centinaia di artigiani e professionisti italiani che
+            risparmiano ore ogni settimana.
+          </p>
+          <Link
+            href="/sign-up"
+            className="btn-gradient inline-flex h-14 items-center justify-center px-10 text-lg font-semibold"
+          >
+            Crea il tuo Account Gratuito
+            <ArrowRight className="ml-2 h-5 w-5" />
+          </Link>
         </div>
       </ScrollSection>
     </div>

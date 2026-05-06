@@ -13,7 +13,11 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   if (!isLoaded) {
-    return <div className="min-h-[100dvh] flex items-center justify-center"><div className="w-8 h-8 rounded-full border-4 border-primary border-t-transparent animate-spin" /></div>;
+    return (
+      <div className="min-h-[100dvh] flex items-center justify-center bg-white">
+        <div className="w-8 h-8 rounded-full border-[3px] border-violet-400 border-t-transparent animate-spin" />
+      </div>
+    );
   }
 
   if (!userId) {
@@ -26,57 +30,67 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
     { href: "/dashboard/profile", label: "Profilo Aziendale", icon: User },
   ];
 
+  const NavLinks = ({ onClick }: { onClick?: () => void }) => (
+    <nav className="flex flex-col gap-1">
+      {navItems.map((item) => {
+        const isActive =
+          location === item.href ||
+          (item.href !== "/dashboard" && location.startsWith(item.href));
+        return (
+          <Link
+            key={item.href}
+            href={item.href}
+            onClick={onClick}
+            className={cn(
+              "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all",
+              isActive
+                ? "text-violet-700 bg-violet-50 font-semibold"
+                : "text-gray-500 hover:bg-gray-50 hover:text-gray-900"
+            )}
+          >
+            <item.icon className={cn("h-4 w-4", isActive ? "text-violet-600" : "text-gray-400")} />
+            {item.label}
+          </Link>
+        );
+      })}
+    </nav>
+  );
+
   return (
-    <div className="min-h-[100dvh] flex bg-muted/20">
+    <div className="min-h-[100dvh] flex bg-gray-50/40">
       {/* Desktop Sidebar */}
-      <aside className="hidden md:flex w-64 flex-col border-r bg-card">
-        <div className="h-16 flex items-center px-6 border-b">
+      <aside className="hidden md:flex w-64 flex-col border-r border-gray-100 bg-white shadow-sm">
+        <div className="h-16 flex items-center px-6 border-b border-gray-100">
           <Link href="/dashboard" className="flex items-center">
             <Logo />
           </Link>
         </div>
 
         <div className="p-4 flex-1 flex flex-col gap-6">
-          <div className="px-2">
-            <Button asChild className="w-full justify-start gap-2 bg-secondary text-secondary-foreground hover:bg-secondary/90" size="lg">
-              <Link href="/dashboard/new">
-                <Plus className="h-4 w-4" />
-                Nuovo Preventivo
-              </Link>
-            </Button>
+          <div className="px-1">
+            <Link
+              href="/dashboard/new"
+              className="btn-gradient inline-flex w-full h-10 items-center justify-center gap-2 text-sm font-semibold"
+            >
+              <Plus className="h-4 w-4" />
+              Nuovo Preventivo
+            </Link>
           </div>
 
-          <nav className="flex flex-col gap-1 px-2">
-            {navItems.map((item) => {
-              const isActive = location === item.href || (item.href !== "/dashboard" && location.startsWith(item.href));
-              return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className={cn(
-                    "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors",
-                    isActive
-                      ? "bg-primary/10 text-primary"
-                      : "text-muted-foreground hover:bg-muted hover:text-foreground"
-                  )}
-                >
-                  <item.icon className="h-4 w-4" />
-                  {item.label}
-                </Link>
-              );
-            })}
-          </nav>
+          <div className="px-1">
+            <NavLinks />
+          </div>
         </div>
 
-        <div className="p-4 border-t flex items-center justify-between">
+        <div className="p-4 border-t border-gray-100 flex items-center gap-3">
           <UserButton appearance={{ elements: { avatarBox: "w-8 h-8" } }} />
-          <span className="text-sm font-medium text-muted-foreground">Account</span>
+          <span className="text-sm font-medium text-gray-400">Account</span>
         </div>
       </aside>
 
       {/* Mobile Layout */}
       <div className="flex-1 flex flex-col min-w-0">
-        <header className="md:hidden h-16 flex items-center justify-between px-4 border-b bg-card">
+        <header className="md:hidden h-16 flex items-center justify-between px-4 border-b border-gray-100 bg-white">
           <div className="flex items-center gap-2">
             <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
               <SheetTrigger asChild>
@@ -85,41 +99,27 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
                   <span className="sr-only">Toggle menu</span>
                 </Button>
               </SheetTrigger>
-              <SheetContent side="left" className="w-72 p-0">
+              <SheetContent side="left" className="w-72 p-0 bg-white">
                 <SheetTitle className="sr-only">Menu di navigazione</SheetTitle>
-                <div className="h-16 flex items-center px-6 border-b">
-                  <Link href="/dashboard" className="flex items-center" onClick={() => setIsMobileMenuOpen(false)}>
+                <div className="h-16 flex items-center px-6 border-b border-gray-100">
+                  <Link
+                    href="/dashboard"
+                    className="flex items-center"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                  >
                     <Logo />
                   </Link>
                 </div>
                 <div className="p-4 flex flex-col gap-6">
-                  <Button asChild className="w-full justify-start gap-2 bg-secondary text-secondary-foreground hover:bg-secondary/90" size="lg" onClick={() => setIsMobileMenuOpen(false)}>
-                    <Link href="/dashboard/new">
-                      <Plus className="h-4 w-4" />
-                      Nuovo Preventivo
-                    </Link>
-                  </Button>
-                  <nav className="flex flex-col gap-1">
-                    {navItems.map((item) => {
-                      const isActive = location === item.href || (item.href !== "/dashboard" && location.startsWith(item.href));
-                      return (
-                        <Link
-                          key={item.href}
-                          href={item.href}
-                          onClick={() => setIsMobileMenuOpen(false)}
-                          className={cn(
-                            "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors",
-                            isActive
-                              ? "bg-primary/10 text-primary"
-                              : "text-muted-foreground hover:bg-muted hover:text-foreground"
-                          )}
-                        >
-                          <item.icon className="h-4 w-4" />
-                          {item.label}
-                        </Link>
-                      );
-                    })}
-                  </nav>
+                  <Link
+                    href="/dashboard/new"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className="btn-gradient inline-flex w-full h-10 items-center justify-center gap-2 text-sm font-semibold"
+                  >
+                    <Plus className="h-4 w-4" />
+                    Nuovo Preventivo
+                  </Link>
+                  <NavLinks onClick={() => setIsMobileMenuOpen(false)} />
                 </div>
               </SheetContent>
             </Sheet>
@@ -131,9 +131,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
         </header>
 
         <main className="flex-1 overflow-auto p-4 md:p-8">
-          <div className="mx-auto max-w-5xl">
-            {children}
-          </div>
+          <div className="mx-auto max-w-5xl">{children}</div>
         </main>
       </div>
     </div>

@@ -6,8 +6,71 @@ import { FileText, TrendingUp, Clock, CheckCircle2, Plus, ArrowRight } from "luc
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 
+const STAT_CARDS = [
+  {
+    key: "total" as const,
+    label: "Totale Preventivi",
+    icon: FileText,
+    color: "text-violet-500",
+    accent: "bg-violet-50",
+    border: "border-l-violet-400",
+  },
+  {
+    key: "totalRevenue" as const,
+    label: "Fatturato Potenziale",
+    icon: TrendingUp,
+    color: "text-emerald-500",
+    accent: "bg-emerald-50",
+    border: "border-l-emerald-400",
+    sub: "Dai preventivi sbloccati",
+    isCurrency: true,
+  },
+  {
+    key: "pendingPayment" as const,
+    label: "In Attesa",
+    icon: Clock,
+    color: "text-amber-500",
+    accent: "bg-amber-50",
+    border: "border-l-amber-400",
+  },
+  {
+    key: "draft" as const,
+    label: "Bozze",
+    icon: CheckCircle2,
+    color: "text-blue-500",
+    accent: "bg-blue-50",
+    border: "border-l-blue-400",
+  },
+];
+
 export default function DashboardHome() {
   const { data: stats, isLoading } = useGetQuoteStats();
+
+  const formatCurrency = (amount: number) =>
+    new Intl.NumberFormat("it-IT", { style: "currency", currency: "EUR" }).format(amount);
+
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case "unlocked":
+        return (
+          <Badge className="bg-emerald-100 text-emerald-700 border-emerald-200 font-medium">
+            Sbloccato
+          </Badge>
+        );
+      case "pending_payment":
+        return (
+          <Badge className="bg-amber-100 text-amber-700 border-amber-200 font-medium">
+            In attesa
+          </Badge>
+        );
+      default:
+        return (
+          <Badge className="bg-gray-100 text-gray-500 border-gray-200 font-medium">
+            Bozza
+          </Badge>
+        );
+    }
+  };
 
   if (isLoading) {
     return (
@@ -17,8 +80,8 @@ export default function DashboardHome() {
           <Skeleton className="h-4 w-64" />
         </div>
         <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-4">
-          {[1, 2, 3, 4].map(i => (
-            <Card key={i} className="border-l-4 border-l-muted">
+          {[1, 2, 3, 4].map((i) => (
+            <Card key={i} className="border-l-4 border-l-gray-200 shadow-sm">
               <CardHeader className="flex flex-row items-center justify-between pb-2">
                 <Skeleton className="h-4 w-24" />
                 <Skeleton className="h-4 w-4 rounded-full" />
@@ -33,21 +96,6 @@ export default function DashboardHome() {
     );
   }
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR' }).format(amount);
-  };
-
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case 'unlocked':
-        return <Badge variant="default" className="bg-green-600 text-white">Sbloccato</Badge>;
-      case 'pending_payment':
-        return <Badge variant="secondary" className="bg-amber-500/20 text-amber-700 hover:bg-amber-500/30 border border-amber-500/30">In attesa</Badge>;
-      default:
-        return <Badge variant="outline" className="text-muted-foreground">Bozza</Badge>;
-    }
-  };
-
   const recentQuotes = stats?.recentQuotes || [];
 
   return (
@@ -55,126 +103,123 @@ export default function DashboardHome() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight text-foreground">Bentornato</h1>
-          <p className="text-muted-foreground mt-1.5">Ecco il riepilogo della tua attività.</p>
+          <h1 className="text-3xl font-bold tracking-tight text-gray-900">Bentornato</h1>
+          <p className="text-gray-500 mt-1.5">Ecco il riepilogo della tua attività.</p>
         </div>
-        <Button asChild size="lg" className="gap-2 shadow-sm transition-all hover:scale-105">
-          <Link href="/dashboard/new">
-            <Plus className="h-4 w-4" />
-            Nuovo Preventivo
-          </Link>
-        </Button>
+        <Link
+          href="/dashboard/new"
+          className="btn-gradient inline-flex h-10 items-center justify-center px-5 text-sm font-semibold gap-2"
+        >
+          <Plus className="h-4 w-4" />
+          Nuovo Preventivo
+        </Link>
       </div>
 
-      {/* Stats Cards */}
+      {/* Stats */}
       <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-4">
-        <Card className="hover-elevate transition-all border-l-4 border-l-primary">
-          <CardHeader className="flex flex-row items-center justify-between pb-2 pt-5 px-5">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Totale Preventivi</CardTitle>
-            <FileText className="h-4 w-4 text-primary" />
-          </CardHeader>
-          <CardContent className="px-5 pb-5">
-            <div className="text-2xl font-bold">{stats?.total || 0}</div>
-          </CardContent>
-        </Card>
-        
-        <Card className="hover-elevate transition-all border-l-4 border-l-green-600">
-          <CardHeader className="flex flex-row items-center justify-between pb-2 pt-5 px-5">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Fatturato Potenziale</CardTitle>
-            <TrendingUp className="h-4 w-4 text-green-600" />
-          </CardHeader>
-          <CardContent className="px-5 pb-5">
-            <div className="text-2xl font-bold">{formatCurrency(stats?.totalRevenue || 0)}</div>
-            <p className="text-xs text-muted-foreground mt-1">Dai preventivi sbloccati</p>
-          </CardContent>
-        </Card>
-        
-        <Card className="hover-elevate transition-all border-l-4 border-l-amber-500">
-          <CardHeader className="flex flex-row items-center justify-between pb-2 pt-5 px-5">
-            <CardTitle className="text-sm font-medium text-muted-foreground">In Attesa</CardTitle>
-            <Clock className="h-4 w-4 text-amber-500" />
-          </CardHeader>
-          <CardContent className="px-5 pb-5">
-            <div className="text-2xl font-bold">{stats?.pendingPayment || 0}</div>
-          </CardContent>
-        </Card>
-
-        <Card className="hover-elevate transition-all border-l-4 border-l-blue-500">
-          <CardHeader className="flex flex-row items-center justify-between pb-2 pt-5 px-5">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Bozze</CardTitle>
-            <CheckCircle2 className="h-4 w-4 text-blue-500" />
-          </CardHeader>
-          <CardContent className="px-5 pb-5">
-            <div className="text-2xl font-bold">{stats?.draft || 0}</div>
-          </CardContent>
-        </Card>
+        {STAT_CARDS.map(({ key, label, icon: Icon, color, accent, border, sub, isCurrency }) => {
+          const raw = stats?.[key] ?? 0;
+          const value = isCurrency ? formatCurrency(raw as number) : String(raw);
+          return (
+            <div
+              key={key}
+              className={`bg-white rounded-2xl border-l-4 ${border} p-5 shadow-sm hover-elevate transition-all`}
+            >
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-sm font-medium text-gray-500">{label}</span>
+                <div className={`h-8 w-8 rounded-lg ${accent} flex items-center justify-center`}>
+                  <Icon className={`h-4 w-4 ${color}`} />
+                </div>
+              </div>
+              <div className="text-2xl font-bold text-gray-900">{value}</div>
+              {sub && <p className="text-xs text-gray-400 mt-1">{sub}</p>}
+            </div>
+          );
+        })}
       </div>
 
       {/* Recent Quotes */}
-      <Card className="shadow-sm">
-        <CardHeader className="flex flex-row items-center justify-between px-6 pt-6 pb-4">
+      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm">
+        <div className="flex items-center justify-between px-6 pt-6 pb-4">
           <div>
-            <CardTitle className="text-lg">Preventivi Recenti</CardTitle>
-            <CardDescription className="mt-0.5">I tuoi ultimi 5 preventivi generati.</CardDescription>
+            <h2 className="text-lg font-semibold text-gray-900">Preventivi Recenti</h2>
+            <p className="text-sm text-gray-500 mt-0.5">I tuoi ultimi 5 preventivi generati.</p>
           </div>
-          <Button variant="ghost" size="sm" asChild className="gap-1 text-primary hover:text-primary">
-            <Link href="/dashboard/quotes">
-              Vedi tutti <ArrowRight className="h-4 w-4" />
-            </Link>
-          </Button>
-        </CardHeader>
-        <CardContent className="px-6 pb-6">
+          <Link
+            href="/dashboard/quotes"
+            className="inline-flex items-center gap-1 text-sm font-medium text-violet-600 hover:text-violet-700 transition-colors"
+          >
+            Vedi tutti <ArrowRight className="h-4 w-4" />
+          </Link>
+        </div>
+
+        <div className="px-6 pb-6">
           {recentQuotes.length === 0 ? (
-            <div className="text-center py-12 border-2 border-dashed rounded-xl bg-muted/20">
-              <FileText className="mx-auto h-10 w-10 text-muted-foreground/30 mb-4" />
-              <h3 className="text-base font-semibold text-foreground mb-1">Nessun preventivo ancora</h3>
-              <p className="text-sm text-muted-foreground max-w-sm mx-auto mb-6">
+            <div className="text-center py-14 border-2 border-dashed border-gray-100 rounded-2xl bg-gray-50/40">
+              <div
+                className="mx-auto h-14 w-14 rounded-2xl flex items-center justify-center mb-4"
+                style={{ background: "linear-gradient(135deg, rgba(124,58,237,0.08), rgba(6,182,212,0.08))" }}
+              >
+                <FileText className="h-7 w-7 text-violet-400" />
+              </div>
+              <h3 className="text-base font-semibold text-gray-900 mb-1">Nessun preventivo ancora</h3>
+              <p className="text-sm text-gray-500 max-w-sm mx-auto mb-6">
                 Descrivi un lavoro e lascia che l'AI generi un preventivo professionale in pochi secondi.
               </p>
-              <Button asChild>
-                <Link href="/dashboard/new">
-                  <Plus className="h-4 w-4 mr-2" />
-                  Crea il tuo primo preventivo
-                </Link>
-              </Button>
+              <Link
+                href="/dashboard/new"
+                className="btn-gradient inline-flex h-9 items-center justify-center px-5 text-sm font-semibold gap-2"
+              >
+                <Plus className="h-4 w-4" />
+                Crea il tuo primo preventivo
+              </Link>
             </div>
           ) : (
-            <div className="divide-y">
+            <div className="divide-y divide-gray-50">
               {recentQuotes.map((quote) => (
                 <div
                   key={quote.id}
-                  className="quote-row flex items-center justify-between py-4 px-3 rounded-lg -mx-3 cursor-pointer"
+                  className="quote-row flex items-center justify-between py-4 px-3 rounded-xl -mx-3 cursor-pointer"
                 >
                   <div className="flex items-center gap-4">
-                    <div className="h-9 w-9 rounded-full bg-primary/8 flex items-center justify-center text-primary shrink-0">
-                      <FileText className="h-4 w-4" />
+                    <div
+                      className="h-9 w-9 rounded-xl flex items-center justify-center shrink-0"
+                      style={{ background: "linear-gradient(135deg, rgba(124,58,237,0.10), rgba(6,182,212,0.10))" }}
+                    >
+                      <FileText className="h-4 w-4 text-violet-500" />
                     </div>
                     <div>
-                      <Link href={`/dashboard/quotes/${quote.id}`} className="font-medium hover:underline focus:outline-none text-sm">
+                      <Link
+                        href={`/dashboard/quotes/${quote.id}`}
+                        className="font-medium text-gray-900 hover:text-violet-600 transition-colors text-sm"
+                      >
                         {quote.clientData?.nome || "Cliente Non Specificato"}
                       </Link>
                       <div className="flex items-center gap-2 mt-1">
                         {getStatusBadge(quote.status)}
-                        <span className="text-xs text-muted-foreground">
-                          {new Date(quote.createdAt).toLocaleDateString('it-IT')}
+                        <span className="text-xs text-gray-400">
+                          {new Date(quote.createdAt).toLocaleDateString("it-IT")}
                         </span>
                       </div>
                     </div>
                   </div>
-                  <div className="text-right flex items-center gap-4">
-                    <div className="font-bold text-sm">{formatCurrency(quote.totale)}</div>
-                    <Button variant="ghost" size="sm" asChild className="text-primary hover:text-primary px-2">
-                      <Link href={`/dashboard/quotes/${quote.id}`}>
-                        <ArrowRight className="h-4 w-4" />
-                      </Link>
-                    </Button>
+                  <div className="text-right flex items-center gap-3">
+                    <div className="font-bold text-sm text-gray-900">
+                      {new Intl.NumberFormat("it-IT", { style: "currency", currency: "EUR" }).format(quote.totale)}
+                    </div>
+                    <Link
+                      href={`/dashboard/quotes/${quote.id}`}
+                      className="h-8 w-8 rounded-full flex items-center justify-center text-gray-400 hover:text-violet-600 hover:bg-violet-50 transition-all"
+                    >
+                      <ArrowRight className="h-4 w-4" />
+                    </Link>
                   </div>
                 </div>
               ))}
             </div>
           )}
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     </div>
   );
 }
