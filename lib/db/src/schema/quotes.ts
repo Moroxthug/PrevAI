@@ -87,6 +87,7 @@ export const quotesTable = pgTable("quotes", {
   rawInput: text("raw_input").notNull().default(""),
   stripeSessionId: text("stripe_session_id"),
   unlockedWithPlan: text("unlocked_with_plan"),
+  pdfDownloadedAt: timestamp("pdf_downloaded_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
 });

@@ -55,6 +55,7 @@ A SaaS web app for Italian freelancers/craftsmen to describe a job in natural la
 - Subscription state stored in `business_profiles` (`subscriptionPlan`, `subscriptionStatus`, `stripeCustomerId`); set by webhook on `checkout.session.completed` (mode=subscription); cleared on `customer.subscription.deleted`
 - Quote auto-unlock: on quote detail load, if `subscriptionStatus === "active"`, frontend calls `POST /api/payments/unlock-quote` which unlocks without payment; saves `unlockedWithPlan` on the quote
 - PDF watermark is plan-aware: `monthly_starter` and `oneshot_watermark` keep watermark + PrevAI logo (inline SVG) even when unlocked; `monthly_pro` and `oneshot_clean` get user logo + no watermark
+- Quote editing locked after first PDF download (`pdfDownloadedAt` timestamp column); `POST /api/quotes/:id/regenerate` re-runs AI on an existing quote (blocked after download too)
 - Upgrade flow: `POST /api/payments/portal` creates a Stripe Customer Portal session for Starter→Pro upgrade; Stripe handles proration
 - Email notification: on subscription activation, webhook calls Resend API (`artifacts/api-server/src/lib/email.ts`) to send welcome+receipt HTML email from `no-reply@prevai.it`; silently skips if `RESEND_API_KEY` is unset
 - Logo upload hidden for Starter users (profile page shows upgrade CTA instead)

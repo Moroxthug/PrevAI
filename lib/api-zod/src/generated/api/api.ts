@@ -83,7 +83,8 @@ export const ListQuotesResponseItem = zod.object({
   note: zod.string(),
   status: zod.enum(["draft", "unlocked", "pending_payment"]),
   pdfUrl: zod.string().nullish(),
-  rawInput: zod.string().optional(),
+  rawInput: zod.string(),
+  pdfDownloadedAt: zod.string().nullish(),
   createdAt: zod.string(),
   updatedAt: zod.string(),
 });
@@ -192,7 +193,8 @@ export const GetQuoteStatsResponse = zod.object({
       note: zod.string(),
       status: zod.enum(["draft", "unlocked", "pending_payment"]),
       pdfUrl: zod.string().nullish(),
-      rawInput: zod.string().optional(),
+      rawInput: zod.string(),
+      pdfDownloadedAt: zod.string().nullish(),
       createdAt: zod.string(),
       updatedAt: zod.string(),
     }),
@@ -272,7 +274,8 @@ export const GetQuoteResponse = zod.object({
   note: zod.string(),
   status: zod.enum(["draft", "unlocked", "pending_payment"]),
   pdfUrl: zod.string().nullish(),
-  rawInput: zod.string().optional(),
+  rawInput: zod.string(),
+  pdfDownloadedAt: zod.string().nullish(),
   createdAt: zod.string(),
   updatedAt: zod.string(),
 });
@@ -410,7 +413,8 @@ export const UpdateQuoteResponse = zod.object({
   note: zod.string(),
   status: zod.enum(["draft", "unlocked", "pending_payment"]),
   pdfUrl: zod.string().nullish(),
-  rawInput: zod.string().optional(),
+  rawInput: zod.string(),
+  pdfDownloadedAt: zod.string().nullish(),
   createdAt: zod.string(),
   updatedAt: zod.string(),
 });
@@ -433,6 +437,98 @@ export const GenerateQuotePdfResponse = zod.object({
   pdfUrl: zod.string().optional(),
   htmlContent: zod.string(),
   isDraft: zod.boolean().optional(),
+});
+
+/**
+ * @summary Regenerate a quote using AI (replaces AI content in-place)
+ */
+export const RegenerateQuoteParams = zod.object({
+  id: zod.coerce.string(),
+});
+
+export const RegenerateQuoteBody = zod.object({
+  newDescription: zod
+    .string()
+    .optional()
+    .describe(
+      "Optional new description; if omitted, the original rawInput is reused",
+    ),
+  keepClientData: zod
+    .boolean()
+    .optional()
+    .describe("If true, existing client data is preserved (default true)"),
+});
+
+export const RegenerateQuoteResponse = zod.object({
+  id: zod.string(),
+  userId: zod.string(),
+  clientData: zod.object({
+    nome: zod.string(),
+    indirizzo: zod.string(),
+    codiceFiscale: zod.string().optional(),
+    partitaIva: zod.string().optional(),
+    citta: zod.string().optional(),
+    cap: zod.string().optional(),
+    provincia: zod.string().optional(),
+  }),
+  descrizioneGenerale: zod.string(),
+  items: zod.array(
+    zod.object({
+      descrizione: zod.string(),
+      quantita: zod.number(),
+      unita: zod.string(),
+      prezzoUnitario: zod.number(),
+      totale: zod.number(),
+    }),
+  ),
+  capitoli: zod.array(
+    zod.object({
+      lettera: zod.string(),
+      titolo: zod.string(),
+      voci: zod.array(
+        zod.object({
+          descrizione: zod.string(),
+          um: zod.string(),
+          quantita: zod.number(),
+          prezzoUnitario: zod.number(),
+          totale: zod.number(),
+        }),
+      ),
+      subtotale: zod.number(),
+      osservazione: zod.string().optional(),
+    }),
+  ),
+  sconto: zod
+    .object({
+      percentuale: zod.number(),
+      importoScontato: zod.number(),
+    })
+    .nullish(),
+  condizioniPagamento: zod.array(zod.string()),
+  titoloPreventivoRiga1: zod.string().nullish(),
+  titoloPreventivoRiga2: zod.string().nullish(),
+  numeroPreventivoData: zod.string().nullish(),
+  companySnapshot: zod
+    .object({
+      companyName: zod.string(),
+      vatNumber: zod.string().optional(),
+      address: zod.string().optional(),
+      phone: zod.string().optional(),
+      email: zod.string().optional(),
+      logoUrl: zod.string().optional(),
+    })
+    .nullish(),
+  subtotale: zod.number(),
+  ivaPercentuale: zod.number(),
+  ivaValore: zod.number(),
+  totale: zod.number(),
+  note: zod.string(),
+  status: zod.enum(["draft", "unlocked", "pending_payment"]),
+  pdfUrl: zod.string().nullish(),
+  rawInput: zod.string(),
+  pdfDownloadedAt: zod.string().nullish(),
+  createdAt: zod.string(),
+  updatedAt: zod.string(),
 });
 
 /**

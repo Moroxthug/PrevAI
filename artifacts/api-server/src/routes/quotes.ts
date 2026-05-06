@@ -3,13 +3,14 @@ import { requireAuth, getAuth } from "@clerk/express";
 import type { Request } from "express";
 import multer from "multer";
 import { db, quotesTable, businessProfilesTable, quoteClientDataSchema, quoteCompanySnapshotSchema } from "@workspace/db";
-import { eq, desc, count, sum } from "drizzle-orm";
+import { eq, desc, count, sum, sql } from "drizzle-orm";
 import {
   UpdateQuoteBody,
   GetQuoteParams,
   UpdateQuoteParams,
   DeleteQuoteParams,
   GenerateQuotePdfParams,
+  RegenerateQuoteBody,
 } from "@workspace/api-zod";
 import { openai } from "@workspace/integrations-openai-ai-server";
 import type { QuoteChapter, QuoteDiscount, QuoteCompanySnapshot, QuoteClientData } from "@workspace/db";
@@ -129,6 +130,7 @@ function serializeQuote(q: QuoteRow) {
     status: q.status,
     pdfUrl: q.pdfUrl ?? null,
     rawInput: q.rawInput,
+    pdfDownloadedAt: q.pdfDownloadedAt?.toISOString() ?? null,
     createdAt: q.createdAt.toISOString(),
     updatedAt: q.updatedAt.toISOString(),
   };
@@ -621,9 +623,176 @@ router.post("/quotes/:id/generate-pdf", requireAuth(), async (req, res) => {
     const withWatermark =
       quote.status !== "unlocked" || planHasWatermark(quote.unlockedWithPlan);
     const html = generateQuoteHtml(quote, withWatermark, profile ?? null);
+
+    // Track first download time (lock editing after this point)
+    if (!quote.pdfDownloadedAt) {
+      await db
+        .update(quotesTable)
+        .set({ pdfDownloadedAt: new Date() })
+        .where(eq(quotesTable.id, id));
+    }
+
     res.json({ htmlContent: html, pdfUrl: quote.pdfUrl, isDraft: withWatermark });
   } catch (err) {
     req.log.error({ err }, "Error generating PDF");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// POST /api/quotes/:id/regenerate — re-run AI on an existing quote
+router.post("/quotes/:id/regenerate", requireAuth(), async (req, res) => {
+  try {
+    const userId = getUserId(req);
+    const id = req.params.id as string;
+    const body = RegenerateQuoteBody.parse(req.body);
+
+    const [quote] = await db
+      .select()
+      .from(quotesTable)
+      .where(eq(quotesTable.id, id));
+
+    if (!quote) {
+      res.status(404).json({ error: "Not found" });
+      return;
+    }
+    if (quote.userId !== userId) {
+      res.status(403).json({ error: "Forbidden" });
+      return;
+    }
+    if (quote.pdfDownloadedAt) {
+      res.status(409).json({ error: "Cannot regenerate a quote that has already been downloaded" });
+      return;
+    }
+
+    const inputText = body.newDescription?.trim() || quote.rawInput;
+    const keepClientData = body.keepClientData !== false;
+
+    const currentClientData = keepClientData
+      ? (quote.clientData as QuoteClientData)
+      : undefined;
+
+    let userMessage = inputText;
+    if (currentClientData?.nome) {
+      userMessage = `Dati committente (NON generare di nuovo, usa questi valori esatti):
+- Nome/Ragione Sociale: ${currentClientData.nome}
+- Indirizzo: ${currentClientData.indirizzo || ""}
+
+Descrizione lavori: ${inputText}`;
+    }
+
+    // Fetch recent quotes for pricing context
+    const recentQuotes = await db
+      .select({ rawInput: quotesTable.rawInput, capitoli: quotesTable.capitoli, totale: quotesTable.totale })
+      .from(quotesTable)
+      .where(eq(quotesTable.userId, userId))
+      .orderBy(desc(quotesTable.createdAt))
+      .limit(5);
+
+    const pastContext = buildPastQuotesContext(recentQuotes as { rawInput: string; capitoli: unknown; totale: string }[]);
+
+    const completion = await openai.chat.completions.create({
+      model: "gpt-4o-mini",
+      max_completion_tokens: 8192,
+      messages: [
+        { role: "system", content: AI_PROMPT },
+        ...(pastContext ? [{ role: "system" as const, content: pastContext }] : []),
+        { role: "user", content: userMessage },
+      ],
+    });
+
+    const content = completion.choices[0]?.message?.content ?? "{}";
+    let aiData: {
+      titolo_riga1?: string;
+      titolo_riga2?: string;
+      numero_preventivo_data?: string;
+      cliente?: { nome?: string; indirizzo?: string };
+      descrizione_generale?: string;
+      capitoli?: Array<{
+        lettera?: string;
+        titolo?: string;
+        osservazione?: string;
+        voci?: Array<{
+          descrizione?: string;
+          um?: string;
+          quantita?: number;
+          prezzo_unitario?: number;
+          totale?: number;
+        }>;
+        subtotale?: number;
+      }>;
+      sconto?: { percentuale?: number; importo_scontato?: number } | null;
+      condizioni_pagamento?: string[];
+      subtotale?: number;
+      iva_percentuale?: number;
+      iva_valore?: number;
+      totale?: number;
+      note?: string;
+    };
+
+    try {
+      const cleaned = content.trim().replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/i, "");
+      aiData = JSON.parse(cleaned);
+    } catch {
+      req.log.error({ content }, "Failed to parse AI JSON in regenerate");
+      res.status(500).json({ error: "AI returned invalid JSON" });
+      return;
+    }
+
+    const capitoli: QuoteChapter[] = (aiData.capitoli ?? []).map((cap) => ({
+      lettera: cap.lettera ?? "A",
+      titolo: cap.titolo ?? "",
+      osservazione: cap.osservazione ?? "Voce ordinaria",
+      voci: (cap.voci ?? []).map((v) => ({
+        descrizione: v.descrizione ?? "",
+        um: v.um ?? "a.c.",
+        quantita: Number(v.quantita ?? 0),
+        prezzoUnitario: Number(v.prezzo_unitario ?? 0),
+        totale: Number(v.totale ?? 0),
+      })),
+      subtotale: Number(cap.subtotale ?? 0),
+    }));
+
+    const scontoRaw = aiData.sconto;
+    const sconto: QuoteDiscount | null =
+      scontoRaw && Number(scontoRaw.percentuale ?? 0) > 0
+        ? { percentuale: Number(scontoRaw.percentuale), importoScontato: Number(scontoRaw.importo_scontato ?? 0) }
+        : null;
+
+    const condizioniPagamento = aiData.condizioni_pagamento ?? quote.condizioniPagamento ?? [];
+    const subtotale = Number(aiData.subtotale ?? 0);
+    const ivaPercentuale = Number(aiData.iva_percentuale ?? 22);
+    const ivaValore = Number(aiData.iva_valore ?? 0);
+    const totale = Number(aiData.totale ?? 0);
+
+    const resolvedClientData: QuoteClientData = keepClientData && currentClientData?.nome
+      ? currentClientData
+      : { nome: aiData.cliente?.nome ?? "", indirizzo: aiData.cliente?.indirizzo ?? "" };
+
+    const [updated] = await db
+      .update(quotesTable)
+      .set({
+        rawInput: inputText,
+        clientData: resolvedClientData,
+        descrizioneGenerale: aiData.descrizione_generale ?? "",
+        items: [],
+        capitoli,
+        sconto,
+        condizioniPagamento,
+        titoloPreventivoRiga1: aiData.titolo_riga1 ?? quote.titoloPreventivoRiga1,
+        titoloPreventivoRiga2: aiData.titolo_riga2 ?? "",
+        numeroPreventivoData: aiData.numero_preventivo_data ?? quote.numeroPreventivoData,
+        subtotale: subtotale.toFixed(2),
+        ivaPercentuale: ivaPercentuale.toFixed(2),
+        ivaValore: ivaValore.toFixed(2),
+        totale: totale.toFixed(2),
+        note: aiData.note ?? quote.note,
+      })
+      .where(eq(quotesTable.id, id))
+      .returning();
+
+    res.json(serializeQuote(updated!));
+  } catch (err) {
+    req.log.error({ err }, "Error regenerating quote");
     res.status(500).json({ error: "Internal server error" });
   }
 });

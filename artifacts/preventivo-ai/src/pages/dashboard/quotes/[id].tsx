@@ -1,12 +1,12 @@
 import { useParams, useSearch } from "wouter";
-import { useGetQuote, useGetBusinessProfile, useGenerateQuotePdf, useGetPlans, useUpdateQuote, useCreateCheckoutSession, useVerifyPayment, useGetSubscription, useUnlockQuoteWithSubscription, useCreateCustomerPortalSession, getGetQuoteQueryKey, getVerifyPaymentQueryKey } from "@workspace/api-client-react";
+import { useGetQuote, useGetBusinessProfile, useGenerateQuotePdf, useGetPlans, useUpdateQuote, useCreateCheckoutSession, useVerifyPayment, useGetSubscription, useUnlockQuoteWithSubscription, useCreateCustomerPortalSession, useRegenerateQuote, getGetQuoteQueryKey, getVerifyPaymentQueryKey } from "@workspace/api-client-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
-import { Download, Lock, CheckCircle2, Edit2, Save, FileText, ChevronDown, ChevronRight, Plus, Trash2, X, Pencil } from "lucide-react";
+import { Download, Lock, CheckCircle2, Edit2, Save, FileText, ChevronDown, ChevronRight, Plus, Trash2, X, Pencil, Sparkles, AlertTriangle, RefreshCw, Loader2 } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 import { format } from "date-fns";
 import { it } from "date-fns/locale";
@@ -49,6 +49,11 @@ export default function QuoteDetail() {
   const { data: subscription } = useGetSubscription();
   const unlockWithSub = useUnlockQuoteWithSubscription();
   const createPortal = useCreateCustomerPortalSession();
+  const regenerateQuote = useRegenerateQuote();
+
+  // Regen panel state
+  const [isRegenOpen, setIsRegenOpen] = useState(false);
+  const [regenDescription, setRegenDescription] = useState("");
 
   const handleUpgrade = () => {
     createPortal.mutate(undefined, {
@@ -158,10 +163,37 @@ export default function QuoteDetail() {
   const handleDownload = () => {
     if (!id || !quote) return;
     generatePdf.mutate({ id }, {
-      onSuccess: (result) => { openPdfWindow(result.htmlContent); },
+      onSuccess: (result) => {
+        openPdfWindow(result.htmlContent);
+        // Refresh quote to pick up the new pdfDownloadedAt (editing lock)
+        queryClient.invalidateQueries({ queryKey: getGetQuoteQueryKey(id) });
+      },
       onError: () => {
         toast({ title: "Errore", description: "Impossibile generare il PDF", variant: "destructive" });
       }
+    });
+  };
+
+  const handleRegenerate = () => {
+    if (!id) return;
+    regenerateQuote.mutate({
+      id,
+      data: {
+        newDescription: regenDescription.trim() || undefined,
+        keepClientData: true,
+      },
+    }, {
+      onSuccess: (updatedQuote) => {
+        setIsRegenOpen(false);
+        setRegenDescription("");
+        setIsEditMode(false);
+        initializedForId.current = null; // force re-init of edit state
+        queryClient.setQueryData(getGetQuoteQueryKey(id), updatedQuote);
+        toast({ title: "Preventivo rigenerato con AI", description: "Il contenuto è stato aggiornato." });
+      },
+      onError: () => {
+        toast({ title: "Errore rigenerazione", description: "Impossibile rigenerare il preventivo", variant: "destructive" });
+      },
     });
   };
 
@@ -303,6 +335,8 @@ export default function QuoteDetail() {
   if (!quote) return <div>Preventivo non trovato</div>;
 
   const isLocked = quote.status !== "unlocked";
+  // Editing is permanently locked once the PDF has been downloaded
+  const isEditLocked = !!quote.pdfDownloadedAt;
   const formatCurrency = (amount: number) =>
     new Intl.NumberFormat("it-IT", { style: "currency", currency: "EUR" }).format(amount);
 
@@ -337,18 +371,30 @@ export default function QuoteDetail() {
             </span>
           </div>
         </div>
-        <div className="flex gap-2">
-          <Button
-            variant={isEditMode ? "default" : "outline"}
-            className="gap-2"
-            onClick={isEditMode ? () => setIsEditMode(false) : enterEditMode}
-          >
-            {isEditMode ? <X className="h-4 w-4" /> : <Pencil className="h-4 w-4" />}
-            {isEditMode ? "Annulla Modifica" : "Modifica Preventivo"}
-          </Button>
+        <div className="flex flex-wrap gap-2">
+          {!isEditLocked && (
+            <Button
+              variant={isEditMode ? "default" : "outline"}
+              className="gap-2"
+              onClick={isEditMode ? () => setIsEditMode(false) : enterEditMode}
+            >
+              {isEditMode ? <X className="h-4 w-4" /> : <Pencil className="h-4 w-4" />}
+              {isEditMode ? "Chiudi Editor" : "Modifica Preventivo"}
+            </Button>
+          )}
+          {!isEditLocked && (
+            <Button
+              variant="outline"
+              className="gap-2"
+              onClick={() => setIsRegenOpen(true)}
+            >
+              <Sparkles className="h-4 w-4" />
+              Rigenera con AI
+            </Button>
+          )}
           {!isLocked && (
             <Button onClick={handleDownload} variant="outline" disabled={generatePdf.isPending} className="gap-2">
-              {generatePdf.isPending ? <Skeleton className="h-4 w-4 rounded-full" /> : <Download className="h-4 w-4" />}
+              {generatePdf.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
               Scarica / Stampa PDF
             </Button>
           )}
@@ -427,9 +473,11 @@ export default function QuoteDetail() {
                       <div className="font-semibold text-slate-800">{quote.clientData?.nome || "——"}</div>
                       {quote.clientData?.indirizzo && <div className="text-slate-500 text-sm">{quote.clientData.indirizzo}</div>}
                     </div>
-                    <Button variant="ghost" size="icon" className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity shrink-0" onClick={() => setIsEditingClient(true)}>
-                      <Edit2 className="h-3.5 w-3.5" />
-                    </Button>
+                    {!isEditLocked && (
+                      <Button variant="ghost" size="icon" className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity shrink-0" onClick={() => setIsEditingClient(true)}>
+                        <Edit2 className="h-3.5 w-3.5" />
+                      </Button>
+                    )}
                   </div>
                 )}
               </div>
@@ -681,22 +729,40 @@ export default function QuoteDetail() {
               )}
               {!isLocked && (
                 <Button onClick={handleDownload} disabled={generatePdf.isPending} className="w-full justify-start gap-2" variant="outline">
-                  <Download className="h-4 w-4" />
+                  {generatePdf.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
                   Scarica PDF
                 </Button>
               )}
-              <Button
-                variant="outline"
-                className="w-full justify-start gap-2"
-                onClick={isEditMode ? () => setIsEditMode(false) : enterEditMode}
-              >
-                <Pencil className="h-4 w-4" />
-                {isEditMode ? "Chiudi Editor" : "Modifica Voci"}
-              </Button>
-              <Button variant="outline" className="w-full justify-start gap-2" onClick={() => setIsEditingClient(true)}>
-                <Edit2 className="h-4 w-4" />
-                Modifica Committente
-              </Button>
+              {!isEditLocked && (
+                <>
+                  <Button
+                    variant="outline"
+                    className="w-full justify-start gap-2"
+                    onClick={isEditMode ? () => setIsEditMode(false) : enterEditMode}
+                  >
+                    <Pencil className="h-4 w-4" />
+                    {isEditMode ? "Chiudi Editor" : "Modifica Voci"}
+                  </Button>
+                  <Button variant="outline" className="w-full justify-start gap-2" onClick={() => setIsEditingClient(true)}>
+                    <Edit2 className="h-4 w-4" />
+                    Modifica Committente
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="w-full justify-start gap-2 text-violet-600 border-violet-200 hover:bg-violet-50"
+                    onClick={() => setIsRegenOpen(true)}
+                  >
+                    <Sparkles className="h-4 w-4" />
+                    Rigenera con AI
+                  </Button>
+                </>
+              )}
+              {isEditLocked && (
+                <div className="flex items-start gap-2 text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg p-2.5">
+                  <AlertTriangle className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+                  Preventivo scaricato — modifiche disabilitate.
+                </div>
+              )}
             </CardContent>
           </Card>
 
@@ -735,8 +801,53 @@ export default function QuoteDetail() {
         </div>
       </div>
 
+      {/* ── AI REGEN DIALOG ── */}
+      <Dialog open={isRegenOpen} onOpenChange={setIsRegenOpen}>
+        <DialogContent className="sm:max-w-[520px]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Sparkles className="h-5 w-5 text-violet-500" />
+              Rigenera con AI
+            </DialogTitle>
+            <DialogDescription>
+              L'AI riscriverà il preventivo mantenendo i dati del committente. Puoi descrivere cosa cambiare o lasciare vuoto per rigenerare dalla descrizione originale.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 pt-2">
+            <div className="rounded-lg bg-muted/50 border px-4 py-3 text-sm text-muted-foreground italic">
+              "{quote.rawInput}"
+            </div>
+            <div className="space-y-1.5">
+              <Label>Nuove istruzioni (opzionale)</Label>
+              <Textarea
+                value={regenDescription}
+                onChange={e => setRegenDescription(e.target.value)}
+                placeholder="Es: aggiungi anche la tinteggiatura del soffitto, aumenta la superficie delle pareti a 120mq..."
+                className="resize-none min-h-[90px]"
+                disabled={regenerateQuote.isPending}
+              />
+              <p className="text-xs text-muted-foreground">
+                Se vuoti, viene usata la descrizione originale. Se compili, la sostituisce completamente.
+              </p>
+            </div>
+            <div className="flex gap-2 justify-end pt-1">
+              <Button variant="outline" onClick={() => { setIsRegenOpen(false); setRegenDescription(""); }} disabled={regenerateQuote.isPending}>
+                Annulla
+              </Button>
+              <Button onClick={handleRegenerate} disabled={regenerateQuote.isPending} className="gap-2">
+                {regenerateQuote.isPending ? (
+                  <><Loader2 className="h-4 w-4 animate-spin" /> Generazione in corso...</>
+                ) : (
+                  <><RefreshCw className="h-4 w-4" /> Rigenera</>
+                )}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       {/* ── EDIT PANEL ── */}
-      {isEditMode && (
+      {isEditMode && !isEditLocked && (
         <Card className="border-primary/40 shadow-md animate-in slide-in-from-bottom-4 duration-300">
           <CardHeader className="border-b">
             <div className="flex items-center justify-between">

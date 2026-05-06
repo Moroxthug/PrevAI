@@ -29,6 +29,7 @@ import type {
   PortalSessionResult,
   Quote,
   QuoteStats,
+  RegenerateQuoteBody,
   SubscriptionInfo,
   UnlockQuoteBody,
   UpdateBusinessProfileBody,
@@ -705,6 +706,93 @@ export const useGenerateQuotePdf = <
   TContext
 > => {
   return useMutation(getGenerateQuotePdfMutationOptions(options));
+};
+
+/**
+ * @summary Regenerate a quote using AI (replaces AI content in-place)
+ */
+export const getRegenerateQuoteUrl = (id: string) => {
+  return `/api/quotes/${id}/regenerate`;
+};
+
+export const regenerateQuote = async (
+  id: string,
+  regenerateQuoteBody: RegenerateQuoteBody,
+  options?: RequestInit,
+): Promise<Quote> => {
+  return customFetch<Quote>(getRegenerateQuoteUrl(id), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(regenerateQuoteBody),
+  });
+};
+
+export const getRegenerateQuoteMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof regenerateQuote>>,
+    TError,
+    { id: string; data: BodyType<RegenerateQuoteBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof regenerateQuote>>,
+  TError,
+  { id: string; data: BodyType<RegenerateQuoteBody> },
+  TContext
+> => {
+  const mutationKey = ["regenerateQuote"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof regenerateQuote>>,
+    { id: string; data: BodyType<RegenerateQuoteBody> }
+  > = (props) => {
+    const { id, data } = props ?? {};
+
+    return regenerateQuote(id, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type RegenerateQuoteMutationResult = NonNullable<
+  Awaited<ReturnType<typeof regenerateQuote>>
+>;
+export type RegenerateQuoteMutationBody = BodyType<RegenerateQuoteBody>;
+export type RegenerateQuoteMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Regenerate a quote using AI (replaces AI content in-place)
+ */
+export const useRegenerateQuote = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof regenerateQuote>>,
+    TError,
+    { id: string; data: BodyType<RegenerateQuoteBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof regenerateQuote>>,
+  TError,
+  { id: string; data: BodyType<RegenerateQuoteBody> },
+  TContext
+> => {
+  return useMutation(getRegenerateQuoteMutationOptions(options));
 };
 
 /**

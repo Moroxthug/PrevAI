@@ -85,7 +85,8 @@ export interface Quote {
   note: string;
   status: QuoteStatus;
   pdfUrl?: string | null;
-  rawInput?: string;
+  rawInput: string;
+  pdfDownloadedAt?: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -139,6 +140,13 @@ export interface UpdateQuoteBody {
   totale?: number;
   note?: string;
   status?: UpdateQuoteBodyStatus;
+}
+
+export interface RegenerateQuoteBody {
+  /** Optional new description; if omitted, the original rawInput is reused */
+  newDescription?: string;
+  /** If true, existing client data is preserved (default true) */
+  keepClientData?: boolean;
 }
 
 export interface PdfResult {
