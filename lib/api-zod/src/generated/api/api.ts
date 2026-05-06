@@ -122,6 +122,9 @@ export const GetQuoteStatsResponse = zod.object({
   unlocked: zod.number(),
   pendingPayment: zod.number(),
   totalRevenue: zod.number(),
+  unlockedRevenue: zod.number(),
+  thisMonth: zod.number(),
+  avgValue: zod.number(),
   recentQuotes: zod.array(
     zod.object({
       id: zod.string(),
@@ -545,3 +548,24 @@ export const GetPlansResponseItem = zod.object({
   quotaPerMonth: zod.number().nullish(),
 });
 export const GetPlansResponse = zod.array(GetPlansResponseItem);
+
+/**
+ * @summary Get the current user subscription status
+ */
+export const GetSubscriptionResponse = zod.object({
+  plan: zod.string().nullish(),
+  status: zod.string().nullish(),
+  periodEnd: zod.string().nullish(),
+  isActive: zod.boolean(),
+});
+
+/**
+ * @summary Unlock a quote using an active subscription
+ */
+export const UnlockQuoteWithSubscriptionBody = zod.object({
+  quoteId: zod.string(),
+});
+
+export const UnlockQuoteWithSubscriptionResponse = zod.object({
+  status: zod.enum(["draft", "unlocked", "pending_payment"]),
+});

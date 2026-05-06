@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { requireAuth, getAuth } from "@clerk/express";
 import type { Request } from "express";
-import { db, quotesTable } from "@workspace/db";
+import { db, quotesTable, businessProfilesTable } from "@workspace/db";
 import { eq, sql } from "drizzle-orm";
 import { CreateCheckoutSessionBody } from "@workspace/api-zod";
 import { getUncachableStripeClient } from "../stripeClient";
@@ -167,6 +167,74 @@ router.post("/payments/checkout", requireAuth(), async (req, res) => {
     res.json({ url: session.url!, sessionId: session.id });
   } catch (err) {
     logger.error({ err }, "Error creating checkout session");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// GET /api/payments/subscription
+router.get("/payments/subscription", requireAuth(), async (req, res) => {
+  try {
+    const userId = getUserId(req);
+    const [profile] = await db
+      .select()
+      .from(businessProfilesTable)
+      .where(eq(businessProfilesTable.userId, userId));
+
+    const isActive = profile?.subscriptionStatus === "active";
+    res.json({
+      plan: profile?.subscriptionPlan ?? null,
+      status: profile?.subscriptionStatus ?? null,
+      periodEnd: profile?.subscriptionPeriodEnd?.toISOString() ?? null,
+      isActive,
+    });
+  } catch (err) {
+    logger.error({ err }, "Error getting subscription");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// POST /api/payments/unlock-quote — unlock a quote using an active subscription
+router.post("/payments/unlock-quote", requireAuth(), async (req, res) => {
+  try {
+    const userId = getUserId(req);
+    const { quoteId } = req.body as { quoteId: string };
+
+    if (!quoteId) {
+      res.status(400).json({ error: "quoteId required" });
+      return;
+    }
+
+    const [profile] = await db
+      .select()
+      .from(businessProfilesTable)
+      .where(eq(businessProfilesTable.userId, userId));
+
+    if (profile?.subscriptionStatus !== "active") {
+      res.status(403).json({ error: "No active subscription" });
+      return;
+    }
+
+    const [quote] = await db
+      .select()
+      .from(quotesTable)
+      .where(eq(quotesTable.id, quoteId));
+
+    if (!quote || quote.userId !== userId) {
+      res.status(404).json({ error: "Quote not found" });
+      return;
+    }
+
+    if (quote.status !== "unlocked") {
+      await db
+        .update(quotesTable)
+        .set({ status: "unlocked" })
+        .where(eq(quotesTable.id, quoteId));
+      logger.info({ quoteId, userId }, "Quote unlocked via subscription");
+    }
+
+    res.json({ status: "unlocked" });
+  } catch (err) {
+    logger.error({ err }, "Error unlocking quote with subscription");
     res.status(500).json({ error: "Internal server error" });
   }
 });

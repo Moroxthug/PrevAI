@@ -15,6 +15,9 @@ export const businessProfilesTable = pgTable("business_profiles", {
   phone: text("phone"),
   email: text("email"),
   stripeCustomerId: text("stripe_customer_id"),
+  subscriptionPlan: text("subscription_plan"),
+  subscriptionStatus: text("subscription_status"),
+  subscriptionPeriodEnd: timestamp("subscription_period_end", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
 });

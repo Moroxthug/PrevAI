@@ -28,6 +28,8 @@ import type {
   Plan,
   Quote,
   QuoteStats,
+  SubscriptionInfo,
+  UnlockQuoteBody,
   UpdateBusinessProfileBody,
   UpdateQuoteBody,
   UploadBusinessProfileLogoBody,
@@ -1360,3 +1362,164 @@ export function useGetPlans<
 
   return { ...query, queryKey: queryOptions.queryKey };
 }
+
+/**
+ * @summary Get the current user subscription status
+ */
+export const getGetSubscriptionUrl = () => {
+  return `/api/payments/subscription`;
+};
+
+export const getSubscription = async (
+  options?: RequestInit,
+): Promise<SubscriptionInfo> => {
+  return customFetch<SubscriptionInfo>(getGetSubscriptionUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetSubscriptionQueryKey = () => {
+  return [`/api/payments/subscription`] as const;
+};
+
+export const getGetSubscriptionQueryOptions = <
+  TData = Awaited<ReturnType<typeof getSubscription>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getSubscription>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetSubscriptionQueryKey();
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getSubscription>>> = ({
+    signal,
+  }) => getSubscription({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getSubscription>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetSubscriptionQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getSubscription>>
+>;
+export type GetSubscriptionQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Get the current user subscription status
+ */
+
+export function useGetSubscription<
+  TData = Awaited<ReturnType<typeof getSubscription>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getSubscription>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetSubscriptionQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Unlock a quote using an active subscription
+ */
+export const getUnlockQuoteWithSubscriptionUrl = () => {
+  return `/api/payments/unlock-quote`;
+};
+
+export const unlockQuoteWithSubscription = async (
+  unlockQuoteBody: UnlockQuoteBody,
+  options?: RequestInit,
+): Promise<PaymentVerifyResult> => {
+  return customFetch<PaymentVerifyResult>(getUnlockQuoteWithSubscriptionUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(unlockQuoteBody),
+  });
+};
+
+export const getUnlockQuoteWithSubscriptionMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof unlockQuoteWithSubscription>>,
+    TError,
+    { data: BodyType<UnlockQuoteBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof unlockQuoteWithSubscription>>,
+  TError,
+  { data: BodyType<UnlockQuoteBody> },
+  TContext
+> => {
+  const mutationKey = ["unlockQuoteWithSubscription"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof unlockQuoteWithSubscription>>,
+    { data: BodyType<UnlockQuoteBody> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return unlockQuoteWithSubscription(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type UnlockQuoteWithSubscriptionMutationResult = NonNullable<
+  Awaited<ReturnType<typeof unlockQuoteWithSubscription>>
+>;
+export type UnlockQuoteWithSubscriptionMutationBody = BodyType<UnlockQuoteBody>;
+export type UnlockQuoteWithSubscriptionMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Unlock a quote using an active subscription
+ */
+export const useUnlockQuoteWithSubscription = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof unlockQuoteWithSubscription>>,
+    TError,
+    { data: BodyType<UnlockQuoteBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof unlockQuoteWithSubscription>>,
+  TError,
+  { data: BodyType<UnlockQuoteBody> },
+  TContext
+> => {
+  return useMutation(getUnlockQuoteWithSubscriptionMutationOptions(options));
+};

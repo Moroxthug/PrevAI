@@ -139,6 +139,10 @@ router.get("/quotes/stats", requireAuth(), async (req, res) => {
   try {
     const userId = getUserId(req);
 
+    const thisMonthStart = new Date();
+    thisMonthStart.setDate(1);
+    thisMonthStart.setHours(0, 0, 0, 0);
+
     const [recentQuotes, statsResult, allForStats] = await Promise.all([
       db
         .select()
@@ -154,24 +158,34 @@ router.get("/quotes/stats", requireAuth(), async (req, res) => {
         .from(quotesTable)
         .where(eq(quotesTable.userId, userId)),
       db
-        .select({ status: quotesTable.status })
+        .select({ status: quotesTable.status, totale: quotesTable.totale, createdAt: quotesTable.createdAt })
         .from(quotesTable)
         .where(eq(quotesTable.userId, userId)),
     ]);
 
     const allStatusCounts = { draft: 0, unlocked: 0, pending_payment: 0 };
+    let thisMonth = 0;
+    let unlockedRevenue = 0;
     for (const q of allForStats) {
       if (q.status in allStatusCounts) {
         allStatusCounts[q.status as keyof typeof allStatusCounts]++;
       }
+      if (q.createdAt >= thisMonthStart) thisMonth++;
+      if (q.status === "unlocked") unlockedRevenue += Number(q.totale ?? 0);
     }
 
+    const total = Number(statsResult[0]?.total ?? 0);
+    const avgValue = total > 0 ? Number(statsResult[0]?.totalRevenue ?? 0) / total : 0;
+
     res.json({
-      total: statsResult[0]?.total ?? 0,
+      total,
       draft: allStatusCounts.draft,
       unlocked: allStatusCounts.unlocked,
       pendingPayment: allStatusCounts.pending_payment,
       totalRevenue: Number(statsResult[0]?.totalRevenue ?? 0),
+      unlockedRevenue,
+      thisMonth,
+      avgValue,
       recentQuotes: recentQuotes.map(serializeQuote),
     });
   } catch (err) {

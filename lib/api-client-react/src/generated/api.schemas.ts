@@ -96,6 +96,9 @@ export interface QuoteStats {
   unlocked: number;
   pendingPayment: number;
   totalRevenue: number;
+  unlockedRevenue: number;
+  thisMonth: number;
+  avgValue: number;
   recentQuotes: Quote[];
 }
 
@@ -161,6 +164,17 @@ export interface UpdateBusinessProfileBody {
   logoUrl?: string;
   phone?: string;
   email?: string;
+}
+
+export interface SubscriptionInfo {
+  plan?: string | null;
+  status?: string | null;
+  periodEnd?: string | null;
+  isActive: boolean;
+}
+
+export interface UnlockQuoteBody {
+  quoteId: string;
 }
 
 export type CreateCheckoutBodyPlanType =

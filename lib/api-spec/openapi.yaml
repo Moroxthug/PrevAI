@@ -289,6 +289,38 @@ paths:
                 items:
                   $ref: "#/components/schemas/Plan"
 
+  /payments/subscription:
+    get:
+      operationId: getSubscription
+      tags: [payments]
+      summary: Get the current user subscription status
+      responses:
+        "200":
+          description: Subscription info
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SubscriptionInfo"
+
+  /payments/unlock-quote:
+    post:
+      operationId: unlockQuoteWithSubscription
+      tags: [payments]
+      summary: Unlock a quote using an active subscription
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UnlockQuoteBody"
+      responses:
+        "200":
+          description: Quote unlocked
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PaymentVerifyResult"
+
 components:
   schemas:
     HealthStatus:
@@ -500,6 +532,12 @@ components:
           type: number
         totalRevenue:
           type: number
+        unlockedRevenue:
+          type: number
+        thisMonth:
+          type: number
+        avgValue:
+          type: number
         recentQuotes:
           type: array
           items:
@@ -510,6 +548,9 @@ components:
         - unlocked
         - pendingPayment
         - totalRevenue
+        - unlockedRevenue
+        - thisMonth
+        - avgValue
         - recentQuotes
 
     CreateQuoteBody:
@@ -626,6 +667,31 @@ components:
           type: string
         email:
           type: string
+
+    SubscriptionInfo:
+      type: object
+      properties:
+        plan:
+          type: string
+          nullable: true
+        status:
+          type: string
+          nullable: true
+        periodEnd:
+          type: string
+          nullable: true
+        isActive:
+          type: boolean
+      required:
+        - isActive
+
+    UnlockQuoteBody:
+      type: object
+      properties:
+        quoteId:
+          type: string
+      required:
+        - quoteId
 
     CreateCheckoutBody:
       type: object

@@ -10,7 +10,7 @@ import {
   getClerkProxyHost,
 } from "./middlewares/clerkProxyMiddleware";
 import { WebhookHandlers } from "./webhookHandlers";
-import { db, quotesTable } from "@workspace/db";
+import { db, quotesTable, businessProfilesTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
 import router from "./routes";
 import { logger } from "./lib/logger";
@@ -59,14 +59,62 @@ app.post(
       try {
         const event = JSON.parse((req.body as Buffer).toString("utf8")) as {
           type: string;
-          data: { object: { metadata?: Record<string, string>; payment_status?: string } };
+          data: {
+            object: {
+              metadata?: Record<string, string>;
+              payment_status?: string;
+              customer?: string;
+              mode?: string;
+              status?: string;
+              current_period_end?: number;
+            };
+          };
         };
+
         if (event.type === "checkout.session.completed") {
           const session = event.data.object;
           const quoteId = session.metadata?.quoteId;
+          const userId = session.metadata?.userId;
+          const planType = session.metadata?.planType;
+
+          // Unlock the specific quote
           if (quoteId) {
             await db.update(quotesTable).set({ status: "unlocked" }).where(eq(quotesTable.id, quoteId));
             logger.info({ quoteId }, "Quote unlocked via webhook");
+          }
+
+          // If subscription mode, save subscription info to business profile
+          if (userId && session.customer && session.mode === "subscription" && planType) {
+            const customerId = session.customer as string;
+            await db
+              .insert(businessProfilesTable)
+              .values({
+                userId,
+                stripeCustomerId: customerId,
+                subscriptionPlan: planType,
+                subscriptionStatus: "active",
+              })
+              .onConflictDoUpdate({
+                target: businessProfilesTable.userId,
+                set: {
+                  stripeCustomerId: customerId,
+                  subscriptionPlan: planType,
+                  subscriptionStatus: "active",
+                },
+              });
+            logger.info({ userId, planType }, "Subscription activated via webhook");
+          }
+        }
+
+        // Handle subscription cancellation
+        if (event.type === "customer.subscription.deleted") {
+          const sub = event.data.object;
+          if (sub.customer) {
+            await db
+              .update(businessProfilesTable)
+              .set({ subscriptionStatus: "cancelled", subscriptionPlan: null })
+              .where(eq(businessProfilesTable.stripeCustomerId, sub.customer as string));
+            logger.info({ customer: sub.customer }, "Subscription cancelled via webhook");
           }
         }
       } catch (bizErr) {

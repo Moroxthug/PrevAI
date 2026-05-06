@@ -52,6 +52,8 @@ A SaaS web app for Italian freelancers/craftsmen to describe a job in natural la
 - Plans are defined statically in `payments.ts` (no DB table needed)
 - Logo upload uses a two-step presigned URL flow: client requests URL → PUTs file directly to GCS → saves serving URL `/api/storage/objects/...` in business_profiles
 - `companySnapshot` is captured at quote creation time (snapshot of profile at that moment), so PDF always reflects the correct company data even if the profile later changes
+- Subscription state stored in `business_profiles` (`subscriptionPlan`, `subscriptionStatus`, `stripeCustomerId`); set by webhook on `checkout.session.completed` (mode=subscription); cleared on `customer.subscription.deleted`
+- Quote auto-unlock: on quote detail load, if `subscriptionStatus === "active"`, frontend calls `POST /api/payments/unlock-quote` which unlocks without payment
 
 ## Product
 

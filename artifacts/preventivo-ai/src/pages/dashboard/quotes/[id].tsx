@@ -1,5 +1,5 @@
 import { useParams, useSearch } from "wouter";
-import { useGetQuote, useGetBusinessProfile, useGenerateQuotePdf, useGetPlans, useUpdateQuote, useCreateCheckoutSession, useVerifyPayment, getGetQuoteQueryKey, getVerifyPaymentQueryKey } from "@workspace/api-client-react";
+import { useGetQuote, useGetBusinessProfile, useGenerateQuotePdf, useGetPlans, useUpdateQuote, useCreateCheckoutSession, useVerifyPayment, useGetSubscription, useUnlockQuoteWithSubscription, getGetQuoteQueryKey, getVerifyPaymentQueryKey } from "@workspace/api-client-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
@@ -44,6 +44,28 @@ export default function QuoteDetail() {
   const createCheckout = useCreateCheckoutSession();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+
+  // Subscription status
+  const { data: subscription } = useGetSubscription();
+  const unlockWithSub = useUnlockQuoteWithSubscription();
+
+  // Auto-unlock if user has active subscription and quote is locked
+  const [subUnlockDone, setSubUnlockDone] = useState(false);
+  useEffect(() => {
+    if (
+      subscription?.isActive &&
+      quote?.status !== "unlocked" &&
+      id &&
+      !subUnlockDone
+    ) {
+      setSubUnlockDone(true);
+      unlockWithSub.mutate({ data: { quoteId: id } }, {
+        onSuccess: () => {
+          queryClient.invalidateQueries({ queryKey: getGetQuoteQueryKey(id) });
+        },
+      });
+    }
+  }, [subscription, quote?.status, id, subUnlockDone, unlockWithSub, queryClient]);
 
   // When returning from Stripe with ?payment=success, verify and unlock the quote
   const [verifyDone, setVerifyDone] = useState(false);
