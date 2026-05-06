@@ -406,6 +406,8 @@ export default function DashboardHome() {
           <span className="text-sm font-medium text-gray-700 group-hover:text-emerald-700">Profilo azienda</span>
         </Link>
       </div>
+        </>
+      )}
     </div>
   );
 }

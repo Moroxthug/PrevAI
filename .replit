@@ -38,3 +38,8 @@ externalPort = 3000
 
 [nix]
 channel = "stable-25_05"
+
+[userenv]
+
+[userenv.shared]
+ADMIN_CLERK_USER_ID = "user_3DKxHCL2f47wjo7XFVskCVpwl6g"
