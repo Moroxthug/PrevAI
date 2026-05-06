@@ -2,7 +2,7 @@ import { Router } from "express";
 import { requireAuth, getAuth } from "@clerk/express";
 import type { Request } from "express";
 import multer from "multer";
-import { db, quotesTable, businessProfilesTable } from "@workspace/db";
+import { db, quotesTable, businessProfilesTable, quoteClientDataSchema, quoteCompanySnapshotSchema } from "@workspace/db";
 import { eq, desc, count, sum } from "drizzle-orm";
 import {
   UpdateQuoteBody,
@@ -209,22 +209,36 @@ router.post("/quotes", requireAuth(), imageUpload.array("images", 3), async (req
 
     let clientDataInput: QuoteClientData | undefined;
     if (req.body.clientData) {
+      let parsed: unknown;
       try {
-        clientDataInput = JSON.parse(req.body.clientData) as QuoteClientData;
+        parsed = JSON.parse(req.body.clientData);
       } catch {
         res.status(400).json({ error: "clientData must be valid JSON" });
         return;
       }
+      const result = quoteClientDataSchema.safeParse(parsed);
+      if (!result.success) {
+        res.status(400).json({ error: "Invalid clientData", details: result.error });
+        return;
+      }
+      clientDataInput = result.data;
     }
 
     let companySnapshotInput: QuoteCompanySnapshot | undefined;
     if (req.body.companySnapshot) {
+      let parsed: unknown;
       try {
-        companySnapshotInput = JSON.parse(req.body.companySnapshot) as QuoteCompanySnapshot;
+        parsed = JSON.parse(req.body.companySnapshot);
       } catch {
         res.status(400).json({ error: "companySnapshot must be valid JSON" });
         return;
       }
+      const result = quoteCompanySnapshotSchema.safeParse(parsed);
+      if (!result.success) {
+        res.status(400).json({ error: "Invalid companySnapshot", details: result.error });
+        return;
+      }
+      companySnapshotInput = result.data;
     }
 
     const uploadedFiles = (req.files as Express.Multer.File[]) ?? [];

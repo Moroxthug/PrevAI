@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import { useLocation, Link } from "wouter";
 import { useCreateQuote, useGetBusinessProfile } from "@workspace/api-client-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
@@ -35,6 +35,11 @@ export default function NewQuote() {
   const [photoPreviews, setPhotoPreviews] = useState<string[]>([]);
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    return () => { photoPreviews.forEach(url => URL.revokeObjectURL(url)); };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const addFiles = useCallback((files: FileList | File[]) => {
     const fileArray = Array.from(files);

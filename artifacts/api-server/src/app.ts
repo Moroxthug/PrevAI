@@ -1,8 +1,9 @@
-import express, { type Express } from "express";
+import express, { type Express, type Request, type Response, type NextFunction } from "express";
 import cors from "cors";
 import pinoHttp from "pino-http";
 import { clerkMiddleware } from "@clerk/express";
 import { publishableKeyFromHost } from "@clerk/shared/keys";
+import multer from "multer";
 import {
   CLERK_PROXY_PATH,
   clerkProxyMiddleware,
@@ -50,5 +51,24 @@ app.use(
 );
 
 app.use("/api", router);
+
+// Multer error handler — must be 4-arity to be recognized as an error middleware
+app.use((err: unknown, _req: Request, res: Response, _next: NextFunction) => {
+  if (err instanceof multer.MulterError) {
+    const messages: Record<string, string> = {
+      LIMIT_FILE_SIZE: "File troppo grande: massimo 5MB per immagine.",
+      LIMIT_FILE_COUNT: "Troppi file: puoi allegare al massimo 3 immagini.",
+      LIMIT_UNEXPECTED_FILE: "Campo file non previsto.",
+    };
+    res.status(400).json({ error: messages[err.code] ?? `Errore upload: ${err.message}` });
+    return;
+  }
+  if (err instanceof Error && err.message.startsWith("Unsupported image type")) {
+    res.status(400).json({ error: err.message });
+    return;
+  }
+  logger.error(err, "Unhandled error");
+  res.status(500).json({ error: "Internal server error" });
+});
 
 export default app;
