@@ -77,7 +77,7 @@ export default function ProfileSettings() {
     setIsUploadingLogo(true);
     try {
       const formData = new FormData();
-      formData.append("file", file);
+      formData.append("logo", file);
 
       const res = await fetch("/api/business-profile/logo", {
         method: "POST",

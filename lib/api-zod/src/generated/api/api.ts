@@ -506,13 +506,6 @@ export const RequestUploadUrlResponse = zod.object({
 });
 
 /**
- * @summary Serve an object entity from PRIVATE_OBJECT_DIR
- */
-export const GetStorageObjectParams = zod.object({
-  objectPath: zod.coerce.string(),
-});
-
-/**
  * @summary Create a Stripe checkout session to unlock a PDF
  */
 export const CreateCheckoutSessionBody = zod.object({

@@ -15,6 +15,12 @@ const upload = multer({
   limits: { fileSize: 2 * 1024 * 1024 },
 });
 
+// Accept both "logo" (canonical) and "file" (legacy alias) field names
+const uploadLogo = upload.fields([
+  { name: "logo", maxCount: 1 },
+  { name: "file", maxCount: 1 },
+]);
+
 const ALLOWED_LOGO_MIMES = ["image/svg+xml", "image/png", "image/jpeg"];
 
 function getUserId(req: Request): string {
@@ -122,17 +128,20 @@ router.put("/business-profile", requireAuth(), async (req, res) => {
 router.post(
   "/business-profile/logo",
   requireAuth(),
-  upload.single("file"),
+  uploadLogo,
   async (req, res) => {
     try {
       const userId = getUserId(req);
 
-      if (!req.file) {
-        res.status(400).json({ error: "No file uploaded" });
+      const files = req.files as Record<string, Express.Multer.File[]> | undefined;
+      const uploadedFile = files?.["logo"]?.[0] ?? files?.["file"]?.[0];
+
+      if (!uploadedFile) {
+        res.status(400).json({ error: "No file uploaded. Send the file in the 'logo' field." });
         return;
       }
 
-      const { mimetype, size, originalname, buffer } = req.file;
+      const { mimetype, size, originalname, buffer } = uploadedFile;
 
       if (!ALLOWED_LOGO_MIMES.includes(mimetype)) {
         res.status(400).json({
