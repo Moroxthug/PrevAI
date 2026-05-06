@@ -1,4 +1,5 @@
 import { Switch, Route, Router as WouterRouter, useLocation } from "wouter";
+import { useEffect } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -36,15 +37,21 @@ function OnboardingGuard({ children }: { children: React.ReactNode }) {
     query: { queryKey: ["getBusinessProfile"], enabled: isLoaded && !!userId, retry: false }
   });
 
-  if (!isLoaded || isLoading) return <>{children}</>;
-  if (!userId) return <>{children}</>;
-  if (location === "/onboarding") return <>{children}</>;
+  const shouldRedirect =
+    isLoaded &&
+    !isLoading &&
+    !!userId &&
+    location !== "/onboarding" &&
+    profile !== undefined &&
+    profile.companyName === "";
 
-  if (profile && profile.companyName === "") {
-    setLocation("/onboarding");
-    return null;
-  }
+  useEffect(() => {
+    if (shouldRedirect) {
+      setLocation("/onboarding");
+    }
+  }, [shouldRedirect, setLocation]);
 
+  if (shouldRedirect) return null;
   return <>{children}</>;
 }
 

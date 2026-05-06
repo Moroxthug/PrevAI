@@ -458,7 +458,7 @@ export default function QuoteDetail() {
               </div>
             )}
 
-            <div className="p-8 sm:p-10">
+            <div className={cn("p-8 sm:p-10", !isEditMode && "pointer-events-none select-none")}>
               {/* Company header */}
               <div className="flex justify-between items-start border-b-2 border-slate-800 pb-6 mb-6">
                 <div>
