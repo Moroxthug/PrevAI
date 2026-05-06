@@ -43,3 +43,4 @@ channel = "stable-25_05"
 
 [userenv.shared]
 ADMIN_CLERK_USER_ID = "user_3DKxHCL2f47wjo7XFVskCVpwl6g"
+ADMIN_EMAIL = "bchysfmel@gmail.com"

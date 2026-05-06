@@ -1,5 +1,5 @@
 import { Router, type Request, type Response, type NextFunction } from "express";
-import { requireAuth, getAuth } from "@clerk/express";
+import { getAuth } from "@clerk/express";
 import { clerkClient } from "@clerk/express";
 import { db, quotesTable, businessProfilesTable, settingsTable } from "@workspace/db";
 import { eq, sql, desc, count } from "drizzle-orm";
@@ -7,14 +7,23 @@ import { logger } from "../lib/logger";
 
 const router = Router();
 
-function isAdmin(req: Request): boolean {
+async function isAdmin(req: Request): Promise<boolean> {
   const { userId } = getAuth(req);
-  const adminId = process.env.ADMIN_CLERK_USER_ID;
-  return !!userId && !!adminId && userId === adminId;
+  if (!userId) return false;
+  const adminEmail = process.env.ADMIN_EMAIL;
+  if (!adminEmail) return false;
+  try {
+    const user = await clerkClient.users.getUser(userId);
+    const email = user.emailAddresses[0]?.emailAddress ?? "";
+    return email.toLowerCase() === adminEmail.toLowerCase();
+  } catch {
+    return false;
+  }
 }
 
-function requireAdmin(req: Request, res: Response, next: NextFunction): void {
-  if (!isAdmin(req)) {
+async function requireAdmin(req: Request, res: Response, next: NextFunction): Promise<void> {
+  const ok = await isAdmin(req);
+  if (!ok) {
     res.status(403).json({ error: "Forbidden" });
     return;
   }
@@ -36,7 +45,7 @@ router.get("/settings/registration", async (_req, res) => {
 });
 
 // All routes below require admin ──────────────────────────────────────────────
-router.use("/admin", requireAuth(), requireAdmin);
+router.use("/admin", requireAdmin);
 
 // GET /api/admin/metrics
 router.get("/admin/metrics", async (_req, res) => {

@@ -36,78 +36,25 @@ function PlanBadge({ plan }: { plan: string | null | undefined }) {
 }
 
 const STAT_CARDS = [
-  {
-    key: "thisMonth" as const,
-    label: "Questo Mese",
-    icon: CalendarDays,
-    color: "text-violet-500",
-    accent: "bg-violet-50",
-    gradient: "from-violet-500/10 to-violet-500/5",
-    border: "border-violet-200",
-  },
-  {
-    key: "unlocked" as const,
-    label: "Sbloccati",
-    icon: CheckCircle2,
-    color: "text-emerald-500",
-    accent: "bg-emerald-50",
-    gradient: "from-emerald-500/10 to-emerald-500/5",
-    border: "border-emerald-200",
-  },
-  {
-    key: "unlockedRevenue" as const,
-    label: "Fatturato Sbloccato",
-    icon: TrendingUp,
-    color: "text-blue-500",
-    accent: "bg-blue-50",
-    gradient: "from-blue-500/10 to-blue-500/5",
-    border: "border-blue-200",
-    isCurrency: true,
-  },
-  {
-    key: "avgValue" as const,
-    label: "Valore Medio",
-    icon: Sparkles,
-    color: "text-amber-500",
-    accent: "bg-amber-50",
-    gradient: "from-amber-500/10 to-amber-500/5",
-    border: "border-amber-200",
-    isCurrency: true,
-  },
+  { key: "thisMonth" as const, label: "Questo Mese", icon: CalendarDays, color: "text-violet-500", accent: "bg-violet-50", border: "border-violet-200" },
+  { key: "unlocked" as const, label: "Sbloccati", icon: CheckCircle2, color: "text-emerald-500", accent: "bg-emerald-50", border: "border-emerald-200" },
+  { key: "unlockedRevenue" as const, label: "Fatturato Sbloccato", icon: TrendingUp, color: "text-blue-500", accent: "bg-blue-50", border: "border-blue-200", isCurrency: true },
+  { key: "avgValue" as const, label: "Valore Medio", icon: Sparkles, color: "text-amber-500", accent: "bg-amber-50", border: "border-amber-200", isCurrency: true },
 ];
 
 function StatusBadge({ status }: { status: string }) {
   switch (status) {
     case "unlocked":
-      return (
-        <span className="inline-flex items-center gap-1 text-[11px] font-semibold bg-emerald-50 text-emerald-600 border border-emerald-200 px-2 py-0.5 rounded-full">
-          <CheckCircle2 className="h-3 w-3" /> Sbloccato
-        </span>
-      );
+      return <span className="inline-flex items-center gap-1 text-[11px] font-semibold bg-emerald-50 text-emerald-600 border border-emerald-200 px-2 py-0.5 rounded-full"><CheckCircle2 className="h-3 w-3" /> Sbloccato</span>;
     case "pending_payment":
-      return (
-        <span className="inline-flex items-center gap-1 text-[11px] font-semibold bg-amber-50 text-amber-600 border border-amber-200 px-2 py-0.5 rounded-full">
-          In attesa
-        </span>
-      );
+      return <span className="inline-flex items-center gap-1 text-[11px] font-semibold bg-amber-50 text-amber-600 border border-amber-200 px-2 py-0.5 rounded-full">In attesa</span>;
     default:
-      return (
-        <span className="inline-flex items-center gap-1 text-[11px] font-semibold bg-gray-50 text-gray-500 border border-gray-200 px-2 py-0.5 rounded-full">
-          <Lock className="h-3 w-3" /> Bozza
-        </span>
-      );
+      return <span className="inline-flex items-center gap-1 text-[11px] font-semibold bg-gray-50 text-gray-500 border border-gray-200 px-2 py-0.5 rounded-full"><Lock className="h-3 w-3" /> Bozza</span>;
   }
 }
 
 function StarterUpgradeCard() {
   const createPortal = useCreateCustomerPortalSession();
-
-  const handleUpgrade = () => {
-    createPortal.mutate(undefined, {
-      onSuccess: (result) => { window.location.href = result.url; },
-    });
-  };
-
   return (
     <div className="bg-gradient-to-r from-amber-50 to-violet-50 border border-amber-200 rounded-2xl p-5 flex items-center justify-between gap-4">
       <div className="flex items-center gap-3">
@@ -116,18 +63,70 @@ function StarterUpgradeCard() {
         </div>
         <div>
           <div className="font-semibold text-gray-900 text-sm">Passa a Pro — PDF senza filigrana</div>
-          <div className="text-xs text-gray-500 mt-0.5">
-            Sei su Starter: i PDF hanno filigrana e logo PrevAI. Pro ti dà il tuo logo e PDF puliti.
-          </div>
+          <div className="text-xs text-gray-500 mt-0.5">Sei su Starter: i PDF hanno filigrana e logo PrevAI. Pro ti dà il tuo logo e PDF puliti.</div>
         </div>
       </div>
       <button
-        onClick={handleUpgrade}
+        onClick={() => createPortal.mutate(undefined, { onSuccess: (r) => { window.location.href = r.url; } })}
         disabled={createPortal.isPending}
         className="shrink-0 btn-gradient inline-flex h-9 items-center justify-center px-4 text-sm font-semibold disabled:opacity-60"
       >
         {createPortal.isPending ? "..." : "Upgrade a Pro"}
       </button>
+    </div>
+  );
+}
+
+function OnboardingView() {
+  return (
+    <div className="space-y-4">
+      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+        <div className="px-6 pt-8 pb-6 text-center">
+          <div className="mx-auto h-16 w-16 rounded-2xl flex items-center justify-center mb-5" style={{ background: "linear-gradient(135deg, rgba(124,58,237,0.12), rgba(6,182,212,0.12))" }}>
+            <Sparkles className="h-8 w-8 text-violet-500" />
+          </div>
+          <h2 className="text-xl font-bold text-gray-900 mb-2">Benvenuto su PrevAI!</h2>
+          <p className="text-sm text-gray-500 max-w-md mx-auto mb-8">
+            Genera il tuo primo preventivo professionale in meno di 60 secondi.
+            Descrivi il lavoro e l'AI crea un computo metrico prezzato pronto da inviare al cliente.
+          </p>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8 text-left">
+            {[
+              { icon: Building2, num: "1", title: "Completa il profilo", desc: "Aggiungi ragione sociale, P.IVA e logo aziendale per PDF personalizzati.", href: "/dashboard/profile", cta: "Vai al profilo →" },
+              { icon: MessageSquare, num: "2", title: "Descrivi il lavoro", desc: "Scrivi in italiano cosa devi fare: l'AI capisce e crea il preventivo.", href: "/dashboard/new", cta: "Crea preventivo →" },
+              { icon: Download, num: "3", title: "Scarica il PDF", desc: "Preview immediata, poi sblocca e scarica il PDF professionale.", href: null, cta: null },
+            ].map(({ icon: Icon, num, title, desc, href, cta }) => (
+              <div key={num} className="rounded-xl bg-gray-50 border border-gray-100 p-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="h-6 w-6 rounded-full bg-violet-600 text-white text-xs font-bold flex items-center justify-center shrink-0">{num}</span>
+                  <Icon className="h-4 w-4 text-violet-500" />
+                  <span className="text-sm font-semibold text-gray-900">{title}</span>
+                </div>
+                <p className="text-xs text-gray-500 leading-relaxed mb-2">{desc}</p>
+                {href && cta && <Link href={href} className="text-xs font-semibold text-violet-600 hover:text-violet-700 transition-colors">{cta}</Link>}
+              </div>
+            ))}
+          </div>
+          <Link href="/dashboard/new" className="btn-gradient inline-flex h-11 items-center justify-center px-8 text-sm font-semibold gap-2">
+            <Plus className="h-4 w-4" />
+            Crea il primo preventivo
+          </Link>
+        </div>
+      </div>
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+        <Link href="/dashboard/profile" className="bg-white border border-gray-100 rounded-2xl p-4 flex items-center gap-3 hover:border-violet-200 hover:bg-violet-50/30 transition-all group shadow-sm">
+          <div className="h-8 w-8 rounded-xl bg-violet-100 flex items-center justify-center"><Building2 className="h-4 w-4 text-violet-500" /></div>
+          <span className="text-sm font-medium text-gray-700 group-hover:text-violet-700">Profilo azienda</span>
+        </Link>
+        <Link href="/dashboard/billing" className="bg-white border border-gray-100 rounded-2xl p-4 flex items-center gap-3 hover:border-amber-200 hover:bg-amber-50/30 transition-all group shadow-sm">
+          <div className="h-8 w-8 rounded-xl bg-amber-100 flex items-center justify-center"><Crown className="h-4 w-4 text-amber-500" /></div>
+          <span className="text-sm font-medium text-gray-700 group-hover:text-amber-700">Piani e prezzi</span>
+        </Link>
+        <Link href="/dashboard/new" className="bg-white border border-gray-100 rounded-2xl p-4 flex items-center gap-3 hover:border-emerald-200 hover:bg-emerald-50/30 transition-all group shadow-sm">
+          <div className="h-8 w-8 rounded-xl bg-emerald-100 flex items-center justify-center"><Sparkles className="h-4 w-4 text-emerald-500" /></div>
+          <span className="text-sm font-medium text-gray-700 group-hover:text-emerald-700">Crea preventivo</span>
+        </Link>
+      </div>
     </div>
   );
 }
@@ -142,6 +141,7 @@ export default function DashboardHome() {
 
   const recentQuotes = stats?.recentQuotes || [];
   const firstName = user?.firstName || "ciao";
+  const isNewUser = !isLoadingStats && (stats?.total ?? 0) === 0;
 
   if (isLoadingStats) {
     return (
@@ -157,10 +157,9 @@ export default function DashboardHome() {
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
-      {/* ── Hero header ─────────────────────────────────────────── */}
+      {/* Hero header */}
       <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-violet-600 via-violet-500 to-cyan-500 p-6 text-white shadow-lg">
-        <div className="absolute inset-0 opacity-10"
-          style={{ backgroundImage: "radial-gradient(circle at 80% 20%, white 0%, transparent 60%)" }} />
+        <div className="absolute inset-0 opacity-10" style={{ backgroundImage: "radial-gradient(circle at 80% 20%, white 0%, transparent 60%)" }} />
         <div className="relative flex items-start justify-between gap-4">
           <div>
             <div className="flex items-center gap-2 mb-1">
@@ -168,98 +167,32 @@ export default function DashboardHome() {
               {subscription?.isActive && <PlanBadge plan={subscription.plan} />}
             </div>
             <p className="text-white/75 text-sm">
-              {subscription?.isActive
-                ? `Piano ${subscription.plan === "monthly_pro" ? "Pro attivo" : "Starter attivo"} — preventivi illimitati`
-                : "Hai " + (stats?.total ?? 0) + " preventivi totali nel tuo archivio."}
+              {isNewUser
+                ? "Benvenuto! Crea il tuo primo preventivo in 60 secondi."
+                : subscription?.isActive
+                  ? `Piano ${subscription.plan === "monthly_pro" ? "Pro attivo" : "Starter attivo"} — preventivi illimitati`
+                  : "Hai " + (stats?.total ?? 0) + " preventivi totali nel tuo archivio."}
             </p>
           </div>
-          <Link
-            href="/dashboard/new"
-            className="shrink-0 inline-flex items-center gap-1.5 h-9 px-4 rounded-xl bg-white/20 hover:bg-white/30 text-white text-sm font-semibold transition-colors backdrop-blur-sm border border-white/20"
-          >
+          <Link href="/dashboard/new" className="shrink-0 inline-flex items-center gap-1.5 h-9 px-4 rounded-xl bg-white/20 hover:bg-white/30 text-white text-sm font-semibold transition-colors backdrop-blur-sm border border-white/20">
             <Plus className="h-4 w-4" />
             Nuovo
           </Link>
         </div>
       </div>
 
-      {/* ── Onboarding (zero-state) ──────────────────────────────── */}
-      {(stats?.total ?? 0) === 0 ? (
-        <div className="space-y-4">
-          {/* Big welcome card */}
-          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-            <div className="px-6 pt-8 pb-6 text-center">
-              <div
-                className="mx-auto h-16 w-16 rounded-2xl flex items-center justify-center mb-5"
-                style={{ background: "linear-gradient(135deg, rgba(124,58,237,0.12), rgba(6,182,212,0.12))" }}
-              >
-                <Sparkles className="h-8 w-8 text-violet-500" />
-              </div>
-              <h2 className="text-xl font-bold text-gray-900 mb-2">Benvenuto su PrevAI!</h2>
-              <p className="text-sm text-gray-500 max-w-md mx-auto mb-8">
-                Genera il tuo primo preventivo professionale in meno di 60 secondi.
-                Descrivi il lavoro e l'AI crea un computo metrico prezzato pronto da inviare al cliente.
-              </p>
-
-              {/* 3-step flow */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8 text-left">
-                {[
-                  { icon: Building2, num: "1", title: "Completa il profilo", desc: "Aggiungi ragione sociale, P.IVA e logo aziendale per PDF personalizzati.", href: "/dashboard/profile", cta: "Vai al profilo →" },
-                  { icon: MessageSquare, num: "2", title: "Descrivi il lavoro", desc: "Scrivi in italiano cosa devi fare: l'AI capisce e crea il preventivo.", href: "/dashboard/new", cta: "Crea preventivo →" },
-                  { icon: Download, num: "3", title: "Scarica il PDF", desc: "Preview immediata, poi sblocca e scarica il PDF professionale.", href: null, cta: null },
-                ].map(({ icon: Icon, num, title, desc, href, cta }) => (
-                  <div key={num} className="rounded-xl bg-gray-50 border border-gray-100 p-4">
-                    <div className="flex items-center gap-2 mb-2">
-                      <span className="h-6 w-6 rounded-full bg-violet-600 text-white text-xs font-bold flex items-center justify-center shrink-0">{num}</span>
-                      <Icon className="h-4 w-4 text-violet-500" />
-                      <span className="text-sm font-semibold text-gray-900">{title}</span>
-                    </div>
-                    <p className="text-xs text-gray-500 leading-relaxed mb-2">{desc}</p>
-                    {href && cta && (
-                      <Link href={href} className="text-xs font-semibold text-violet-600 hover:text-violet-700 transition-colors">{cta}</Link>
-                    )}
-                  </div>
-                ))}
-              </div>
-
-              <Link
-                href="/dashboard/new"
-                className="btn-gradient inline-flex h-11 items-center justify-center px-8 text-sm font-semibold gap-2"
-              >
-                <Plus className="h-4 w-4" />
-                Crea il primo preventivo
-              </Link>
-            </div>
-          </div>
-
-          {/* Quick links */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-            <Link href="/dashboard/profile" className="bg-white border border-gray-100 rounded-2xl p-4 flex items-center gap-3 hover:border-violet-200 hover:bg-violet-50/30 transition-all group shadow-sm">
-              <div className="h-8 w-8 rounded-xl bg-violet-100 flex items-center justify-center"><Building2 className="h-4 w-4 text-violet-500" /></div>
-              <span className="text-sm font-medium text-gray-700 group-hover:text-violet-700">Profilo azienda</span>
-            </Link>
-            <Link href="/dashboard/billing" className="bg-white border border-gray-100 rounded-2xl p-4 flex items-center gap-3 hover:border-amber-200 hover:bg-amber-50/30 transition-all group shadow-sm">
-              <div className="h-8 w-8 rounded-xl bg-amber-100 flex items-center justify-center"><Crown className="h-4 w-4 text-amber-500" /></div>
-              <span className="text-sm font-medium text-gray-700 group-hover:text-amber-700">Piani e prezzi</span>
-            </Link>
-            <Link href="/dashboard/new" className="bg-white border border-gray-100 rounded-2xl p-4 flex items-center gap-3 hover:border-emerald-200 hover:bg-emerald-50/30 transition-all group shadow-sm">
-              <div className="h-8 w-8 rounded-xl bg-emerald-100 flex items-center justify-center"><Sparkles className="h-4 w-4 text-emerald-500" /></div>
-              <span className="text-sm font-medium text-gray-700 group-hover:text-emerald-700">Crea preventivo</span>
-            </Link>
-          </div>
-        </div>
+      {/* Onboarding vs normal view */}
+      {isNewUser ? (
+        <OnboardingView />
       ) : (
-        <>
-          {/* ── Stat cards ────────────────────────────────────────── */}
+        <div className="space-y-6">
+          {/* Stat cards */}
           <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
             {STAT_CARDS.map(({ key, label, icon: Icon, color, accent, border, isCurrency }) => {
               const raw = stats?.[key] ?? 0;
               const value = isCurrency ? formatCurrency(raw as number) : String(raw);
               return (
-                <div
-                  key={key}
-                  className={`bg-white rounded-2xl border ${border} p-4 shadow-sm hover-elevate transition-all`}
-                >
+                <div key={key} className={`bg-white rounded-2xl border ${border} p-4 shadow-sm hover-elevate transition-all`}>
                   <div className="flex items-center justify-between mb-3">
                     <span className="text-xs font-medium text-gray-500">{label}</span>
                     <div className={`h-7 w-7 rounded-lg ${accent} flex items-center justify-center`}>
@@ -272,141 +205,84 @@ export default function DashboardHome() {
             })}
           </div>
 
-      {/* ── Subscription upsell (not subscribed at all) ─────────── */}
-      {!subscription?.isActive && (stats?.total ?? 0) > 0 && (
-        <div className="bg-gradient-to-r from-violet-50 to-cyan-50 border border-violet-100 rounded-2xl p-5 flex items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-xl bg-violet-100 flex items-center justify-center shrink-0">
-              <Crown className="h-5 w-5 text-violet-500" />
+          {/* Subscription upsell */}
+          {!subscription?.isActive && (
+            <div className="bg-gradient-to-r from-violet-50 to-cyan-50 border border-violet-100 rounded-2xl p-5 flex items-center justify-between gap-4">
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 rounded-xl bg-violet-100 flex items-center justify-center shrink-0">
+                  <Crown className="h-5 w-5 text-violet-500" />
+                </div>
+                <div>
+                  <div className="font-semibold text-gray-900 text-sm">Sblocca tutti i preventivi</div>
+                  <div className="text-xs text-gray-500 mt-0.5">Con il piano Pro tutti i preventivi vengono sbloccati automaticamente.</div>
+                </div>
+              </div>
+              <Link href="/dashboard/billing" className="shrink-0 btn-gradient inline-flex h-9 items-center justify-center px-4 text-sm font-semibold">
+                Passa a Pro
+              </Link>
+            </div>
+          )}
+
+          {/* Starter → Pro upsell */}
+          {subscription?.isActive && subscription?.plan === "monthly_starter" && <StarterUpgradeCard />}
+
+          {/* Recent quotes */}
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-gray-50">
+              <div>
+                <h2 className="text-base font-semibold text-gray-900">Preventivi Recenti</h2>
+                <p className="text-xs text-gray-400 mt-0.5">Ultimi {recentQuotes.length} generati</p>
+              </div>
+              <Link href="/dashboard/quotes" className="inline-flex items-center gap-1 text-xs font-semibold text-violet-600 hover:text-violet-700 transition-colors">
+                Vedi tutti <ArrowRight className="h-3.5 w-3.5" />
+              </Link>
             </div>
             <div>
-              <div className="font-semibold text-gray-900 text-sm">Sblocca tutti i preventivi</div>
-              <div className="text-xs text-gray-500 mt-0.5">
-                Con il piano Pro tutti i preventivi vengono sbloccati automaticamente.
-              </div>
+              {recentQuotes.map((quote, idx) => (
+                <Link
+                  key={quote.id}
+                  href={`/dashboard/quotes/${quote.id}`}
+                  className={`flex items-center justify-between px-5 py-3.5 hover:bg-gray-50/80 transition-colors cursor-pointer ${idx !== recentQuotes.length - 1 ? "border-b border-gray-50" : ""}`}
+                >
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="h-8 w-8 rounded-xl flex items-center justify-center shrink-0" style={{ background: "linear-gradient(135deg, rgba(124,58,237,0.10), rgba(6,182,212,0.10))" }}>
+                      <FileText className="h-3.5 w-3.5 text-violet-500" />
+                    </div>
+                    <div className="min-w-0">
+                      <div className="font-medium text-gray-900 text-sm truncate">{quote.clientData?.nome || "Cliente non specificato"}</div>
+                      <div className="flex items-center gap-2 mt-0.5">
+                        <StatusBadge status={quote.status} />
+                        <span className="text-[11px] text-gray-400">{new Date(quote.createdAt).toLocaleDateString("it-IT")}</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0 ml-3">
+                    <span className="font-bold text-sm text-gray-900">
+                      {new Intl.NumberFormat("it-IT", { style: "currency", currency: "EUR", maximumFractionDigits: 0 }).format(quote.totale)}
+                    </span>
+                    <ArrowRight className="h-3.5 w-3.5 text-gray-300" />
+                  </div>
+                </Link>
+              ))}
             </div>
           </div>
-          <Link
-            href="/dashboard/quotes"
-            className="shrink-0 btn-gradient inline-flex h-9 items-center justify-center px-4 text-sm font-semibold"
-          >
-            Passa a Pro
-          </Link>
-        </div>
-      )}
 
-      {/* ── Upgrade upsell (Starter → Pro) ──────────────────────── */}
-      {subscription?.isActive && subscription?.plan === "monthly_starter" && (
-        <StarterUpgradeCard />
-      )}
-
-      {/* ── Recent quotes ───────────────────────────────────────── */}
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-50">
-          <div>
-            <h2 className="text-base font-semibold text-gray-900">Preventivi Recenti</h2>
-            <p className="text-xs text-gray-400 mt-0.5">Ultimi {recentQuotes.length} generati</p>
-          </div>
-          <Link
-            href="/dashboard/quotes"
-            className="inline-flex items-center gap-1 text-xs font-semibold text-violet-600 hover:text-violet-700 transition-colors"
-          >
-            Vedi tutti <ArrowRight className="h-3.5 w-3.5" />
-          </Link>
-        </div>
-
-        {recentQuotes.length === 0 ? (
-          <div className="text-center py-12 px-6">
-            <div
-              className="mx-auto h-14 w-14 rounded-2xl flex items-center justify-center mb-4"
-              style={{ background: "linear-gradient(135deg, rgba(124,58,237,0.08), rgba(6,182,212,0.08))" }}
-            >
-              <FileText className="h-7 w-7 text-violet-400" />
-            </div>
-            <h3 className="text-sm font-semibold text-gray-900 mb-1">Nessun preventivo ancora</h3>
-            <p className="text-xs text-gray-500 max-w-xs mx-auto mb-5">
-              Descrivi un lavoro e l'AI genera un preventivo professionale in pochi secondi.
-            </p>
-            <Link
-              href="/dashboard/new"
-              className="btn-gradient inline-flex h-9 items-center justify-center px-5 text-sm font-semibold gap-2"
-            >
-              <Plus className="h-4 w-4" />
-              Crea il primo preventivo
+          {/* Quick actions */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+            <Link href="/dashboard/new" className="bg-white border border-gray-100 rounded-2xl p-4 flex items-center gap-3 hover:border-violet-200 hover:bg-violet-50/30 transition-all group shadow-sm">
+              <div className="h-8 w-8 rounded-xl bg-violet-100 flex items-center justify-center"><Plus className="h-4 w-4 text-violet-500" /></div>
+              <span className="text-sm font-medium text-gray-700 group-hover:text-violet-700">Nuovo preventivo</span>
+            </Link>
+            <Link href="/dashboard/quotes" className="bg-white border border-gray-100 rounded-2xl p-4 flex items-center gap-3 hover:border-blue-200 hover:bg-blue-50/30 transition-all group shadow-sm">
+              <div className="h-8 w-8 rounded-xl bg-blue-100 flex items-center justify-center"><FileText className="h-4 w-4 text-blue-500" /></div>
+              <span className="text-sm font-medium text-gray-700 group-hover:text-blue-700">Tutti i preventivi</span>
+            </Link>
+            <Link href="/dashboard/profile" className="bg-white border border-gray-100 rounded-2xl p-4 flex items-center gap-3 hover:border-emerald-200 hover:bg-emerald-50/30 transition-all group shadow-sm">
+              <div className="h-8 w-8 rounded-xl bg-emerald-100 flex items-center justify-center"><Sparkles className="h-4 w-4 text-emerald-500" /></div>
+              <span className="text-sm font-medium text-gray-700 group-hover:text-emerald-700">Profilo azienda</span>
             </Link>
           </div>
-        ) : (
-          <div>
-            {recentQuotes.map((quote, idx) => (
-              <Link
-                key={quote.id}
-                href={`/dashboard/quotes/${quote.id}`}
-                className={`flex items-center justify-between px-5 py-3.5 hover:bg-gray-50/80 transition-colors cursor-pointer ${
-                  idx !== recentQuotes.length - 1 ? "border-b border-gray-50" : ""
-                }`}
-              >
-                <div className="flex items-center gap-3 min-w-0">
-                  <div
-                    className="h-8 w-8 rounded-xl flex items-center justify-center shrink-0"
-                    style={{ background: "linear-gradient(135deg, rgba(124,58,237,0.10), rgba(6,182,212,0.10))" }}
-                  >
-                    <FileText className="h-3.5 w-3.5 text-violet-500" />
-                  </div>
-                  <div className="min-w-0">
-                    <div className="font-medium text-gray-900 text-sm truncate">
-                      {quote.clientData?.nome || "Cliente non specificato"}
-                    </div>
-                    <div className="flex items-center gap-2 mt-0.5">
-                      <StatusBadge status={quote.status} />
-                      <span className="text-[11px] text-gray-400">
-                        {new Date(quote.createdAt).toLocaleDateString("it-IT")}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2 shrink-0 ml-3">
-                  <span className="font-bold text-sm text-gray-900">
-                    {new Intl.NumberFormat("it-IT", { style: "currency", currency: "EUR", maximumFractionDigits: 0 }).format(quote.totale)}
-                  </span>
-                  <ArrowRight className="h-3.5 w-3.5 text-gray-300" />
-                </div>
-              </Link>
-            ))}
-          </div>
-        )}
-      </div>
-
-      {/* ── Quick actions ───────────────────────────────────────── */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-        <Link
-          href="/dashboard/new"
-          className="bg-white border border-gray-100 rounded-2xl p-4 flex items-center gap-3 hover:border-violet-200 hover:bg-violet-50/30 transition-all group shadow-sm"
-        >
-          <div className="h-8 w-8 rounded-xl bg-violet-100 flex items-center justify-center">
-            <Plus className="h-4 w-4 text-violet-500" />
-          </div>
-          <span className="text-sm font-medium text-gray-700 group-hover:text-violet-700">Nuovo preventivo</span>
-        </Link>
-        <Link
-          href="/dashboard/quotes"
-          className="bg-white border border-gray-100 rounded-2xl p-4 flex items-center gap-3 hover:border-blue-200 hover:bg-blue-50/30 transition-all group shadow-sm"
-        >
-          <div className="h-8 w-8 rounded-xl bg-blue-100 flex items-center justify-center">
-            <FileText className="h-4 w-4 text-blue-500" />
-          </div>
-          <span className="text-sm font-medium text-gray-700 group-hover:text-blue-700">Tutti i preventivi</span>
-        </Link>
-        <Link
-          href="/dashboard/profile"
-          className="bg-white border border-gray-100 rounded-2xl p-4 flex items-center gap-3 hover:border-emerald-200 hover:bg-emerald-50/30 transition-all group shadow-sm"
-        >
-          <div className="h-8 w-8 rounded-xl bg-emerald-100 flex items-center justify-center">
-            <Sparkles className="h-4 w-4 text-emerald-500" />
-          </div>
-          <span className="text-sm font-medium text-gray-700 group-hover:text-emerald-700">Profilo azienda</span>
-        </Link>
-      </div>
-        </>
+        </div>
       )}
     </div>
   );
