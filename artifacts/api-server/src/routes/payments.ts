@@ -1,18 +1,15 @@
-import express, { Router } from "express";
+import { Router } from "express";
 import { requireAuth, getAuth } from "@clerk/express";
 import type { Request } from "express";
-import Stripe from "stripe";
 import { db, quotesTable } from "@workspace/db";
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { CreateCheckoutSessionBody } from "@workspace/api-zod";
+import { getUncachableStripeClient } from "../stripeClient";
 import { logger } from "../lib/logger";
 
 const router = Router();
 
-const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY ?? "";
-const STRIPE_WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET ?? "";
-
-const PLANS = [
+export const PLANS = [
   {
     id: "monthly_starter",
     name: "Starter",
@@ -101,12 +98,7 @@ router.post("/payments/checkout", requireAuth(), async (req, res) => {
       return;
     }
 
-    if (!STRIPE_SECRET_KEY) {
-      res.status(503).json({ error: "Stripe not configured. Please add STRIPE_SECRET_KEY." });
-      return;
-    }
-
-    const stripe = new Stripe(STRIPE_SECRET_KEY);
+    const stripe = await getUncachableStripeClient();
 
     const baseUrl = process.env.REPLIT_DOMAINS
       ? `https://${process.env.REPLIT_DOMAINS.split(",")[0]}`
@@ -119,22 +111,40 @@ router.post("/payments/checkout", requireAuth(), async (req, res) => {
       ? `${baseUrl}/dashboard/quotes/${quoteId}?payment=cancelled`
       : `${baseUrl}/dashboard?payment=cancelled`;
 
-    const session = await stripe.checkout.sessions.create({
-      payment_method_types: ["card"],
-      line_items: [
-        {
+    // Look up real Stripe price ID from the synced stripe schema
+    let priceId: string | null = null;
+    try {
+      const result = await db.execute(
+        sql`SELECT pr.id FROM stripe.prices pr
+            JOIN stripe.products prod ON prod.id = pr.product
+            WHERE prod.metadata->>'planId' = ${plan.id}
+              AND pr.active = true
+              AND prod.active = true
+            LIMIT 1`
+      );
+      priceId = (result.rows[0]?.id as string) ?? null;
+    } catch {
+      // stripe schema not yet available — fall through to price_data fallback
+    }
+
+    const lineItem = priceId
+      ? { price: priceId, quantity: 1 }
+      : {
           price_data: {
             currency: plan.currency,
             product_data: {
-              name: `PreventivoAI - ${plan.name}`,
+              name: `prevai – ${plan.name}`,
               description: plan.features.join(", "),
             },
             unit_amount: plan.price * 100,
             ...(plan.interval ? { recurring: { interval: plan.interval as "month" | "year" } } : {}),
           },
           quantity: 1,
-        },
-      ],
+        };
+
+    const session = await stripe.checkout.sessions.create({
+      payment_method_types: ["card"],
+      line_items: [lineItem],
       mode: plan.interval ? "subscription" : "payment",
       success_url: successUrl,
       cancel_url: cancelUrl,
@@ -159,45 +169,5 @@ router.post("/payments/checkout", requireAuth(), async (req, res) => {
     res.status(500).json({ error: "Internal server error" });
   }
 });
-
-// POST /api/payments/webhook
-router.post(
-  "/payments/webhook",
-  express.raw({ type: "application/json" }),
-  async (req, res) => {
-    if (!STRIPE_SECRET_KEY) {
-      res.status(200).end();
-      return;
-    }
-
-    const stripe = new Stripe(STRIPE_SECRET_KEY);
-    const sig = req.headers["stripe-signature"] as string;
-
-    let event: Stripe.Event;
-    try {
-      event = stripe.webhooks.constructEvent(req.body as Buffer, sig, STRIPE_WEBHOOK_SECRET);
-    } catch (err) {
-      logger.error({ err }, "Stripe webhook signature verification failed");
-      res.status(400).json({ error: "Webhook signature verification failed" });
-      return;
-    }
-
-    if (event.type === "checkout.session.completed") {
-      const session = event.data.object as Stripe.Checkout.Session;
-      const { quoteId, planType } = session.metadata ?? {};
-
-      if (quoteId) {
-        const plan = PLANS.find((p) => p.id === planType);
-        await db
-          .update(quotesTable)
-          .set({ status: "unlocked" })
-          .where(eq(quotesTable.id, quoteId));
-        logger.info({ quoteId, planType, hasWatermark: plan?.hasWatermark }, "Quote unlocked");
-      }
-    }
-
-    res.json({ received: true });
-  }
-);
 
 export default router;
