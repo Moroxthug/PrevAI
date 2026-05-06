@@ -25,7 +25,9 @@ function Router() {
     <Switch>
       <Route path="/" component={() => <PublicLayout><Home /></PublicLayout>} />
       <Route path="/sign-in" component={() => <PublicLayout><SignInPage /></PublicLayout>} />
+      <Route path="/sign-in/:rest*" component={() => <PublicLayout><SignInPage /></PublicLayout>} />
       <Route path="/sign-up" component={() => <PublicLayout><SignUpPage /></PublicLayout>} />
+      <Route path="/sign-up/:rest*" component={() => <PublicLayout><SignUpPage /></PublicLayout>} />
       
       <Route path="/dashboard" component={() => <DashboardLayout><DashboardHome /></DashboardLayout>} />
       <Route path="/dashboard/new" component={() => <DashboardLayout><NewQuote /></DashboardLayout>} />
