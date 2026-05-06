@@ -129,6 +129,7 @@ router.post("/payments/checkout", requireAuth(), async (req, res) => {
       payment_method_types: ["card"],
       line_items: [lineItem],
       mode: plan.interval ? "subscription" : "payment",
+      allow_promotion_codes: true,
       success_url: successUrl,
       cancel_url: cancelUrl,
       metadata: {
