@@ -1,7 +1,7 @@
-import { useEffect } from "react";
 import { useParams, Link } from "wouter";
 import { ArrowRight, CheckCircle2, MapPin, Clock, Shield, FileText, TrendingUp, Building2 } from "lucide-react";
-import { SECTORS, DEFAULT_SECTOR, CITIES_BY_SLUG } from "@/data/seo-data";
+import { SECTORS, DEFAULT_SECTOR, CITIES_BY_SLUG, getCityTitle, getCityDesc } from "@/data/seo-data";
+import { SeoHead } from "@/components/seo-head";
 
 // Varianti di testo per l'intro geo, per diversificare il contenuto fra le città
 function getCityIntro(sectorLabel: string, sectorLabelPlural: string, cityName: string, regionName: string): string {
@@ -37,66 +37,85 @@ export default function SeoCityLanding() {
   const regionName = city?.region ?? "Italia";
   const nearby = city ? getNearbyLabels(city.nearbySlug) : [];
 
-  const titleTag = `Preventivo ${s.label} a ${cityName} | prevai – AI in 30s`;
-  const metaDesc = `Software di preventivazione AI per ${s.labelPlural} a ${cityName}. Crea preventivi professionali in 30 secondi. Nessuna carta di credito. Usato in tutta ${regionName}.`;
+  const titleTag = getCityTitle(s, cityName, citySlug);
+  const metaDesc = getCityDesc(s, cityName, citySlug, regionName);
+  const canonical = `https://www.prevai.it/seo/${s.slug}/${citySlug}`;
 
-  useEffect(() => {
-    document.title = titleTag;
+  const cityFaq = [
+    {
+      q: `Come faccio un preventivo professionale a ${cityName}?`,
+      a: `Con prevai bastano 30 secondi. Descrivi il lavoro in italiano nel campo di testo, il motore AI genera automaticamente il documento con voci di costo, quantità, prezzi unitari e IVA. Puoi scaricarlo come PDF e inviarlo subito al tuo cliente a ${cityName}.`,
+    },
+    {
+      q: `prevai funziona per ${s.labelPlural} a ${cityName} e in tutta la ${regionName}?`,
+      a: `Sì. prevai è un'applicazione web accessibile da qualsiasi dispositivo con connessione internet. Non ci sono limitazioni geografiche: funziona a ${cityName} come in qualsiasi altra città italiana.`,
+    },
+    {
+      q: `Quanto costa il software per ${s.labelPlural}?`,
+      a: `Il piano Starter è 29 €/mese con 20 preventivi inclusi. Il piano Pro è 79 €/mese con preventivi illimitati. Puoi anche acquistare preventivi singoli da 29 € senza abbonamento.`,
+    },
+    {
+      q: `Devo installare qualcosa per usarlo a ${cityName}?`,
+      a: `No. prevai funziona direttamente dal browser del tuo smartphone, tablet o PC. Nessun download, nessuna installazione, nessun aggiornamento manuale.`,
+    },
+  ];
 
-    let meta = document.querySelector('meta[name="description"]') as HTMLMetaElement | null;
-    if (!meta) {
-      meta = document.createElement("meta");
-      meta.name = "description";
-      document.head.appendChild(meta);
-    }
-    meta.content = metaDesc;
-
-    // canonical
-    let canonical = document.querySelector('link[rel="canonical"]') as HTMLLinkElement | null;
-    if (!canonical) {
-      canonical = document.createElement("link");
-      canonical.rel = "canonical";
-      document.head.appendChild(canonical);
-    }
-    canonical.href = `https://www.prevai.it/seo/${s.slug}/${citySlug}`;
-
-    // JSON-LD
-    const jsonLd = {
+  const jsonLd = [
+    {
       "@context": "https://schema.org",
-      "@type": "SoftwareApplication",
+      "@type": "SoftwareApplication" as const,
       name: "prevai",
       description: `Software di preventivazione AI per ${s.labelPlural} a ${cityName} (${regionName}).`,
-      url: `https://www.prevai.it/seo/${s.slug}/${citySlug}`,
+      url: canonical,
       applicationCategory: "BusinessApplication",
       operatingSystem: "Web",
       inLanguage: "it",
       offers: { "@type": "Offer", price: "0", priceCurrency: "EUR", availability: "https://schema.org/InStock" },
+    },
+    {
+      "@context": "https://schema.org",
+      "@type": "Service" as const,
+      name: `Preventivi ${s.label} a ${cityName}`,
+      description: `Software di preventivazione AI per ${s.labelPlural} a ${cityName}`,
+      serviceType: `Preventivazione ${s.label}`,
+      provider: { "@type": "Organization", name: "prevai", url: "https://www.prevai.it" },
       areaServed: [
         { "@type": "City", name: cityName },
         { "@type": "State", name: regionName },
         { "@type": "Country", name: "Italia" },
       ],
-    };
-    let script = document.getElementById("seo-geo-jsonld") as HTMLScriptElement | null;
-    if (!script) {
-      script = document.createElement("script");
-      script.id = "seo-geo-jsonld";
-      script.type = "application/ld+json";
-      document.head.appendChild(script);
-    }
-    script.textContent = JSON.stringify(jsonLd);
-
-    return () => {
-      document.title = "prevai – Preventivi Facili";
-      if (script?.parentNode) script.parentNode.removeChild(script);
-      if (canonical?.parentNode) canonical.parentNode.removeChild(canonical);
-    };
-  }, [titleTag, metaDesc, s.slug, citySlug, s.labelPlural, cityName, regionName]);
+      url: canonical,
+    },
+    {
+      "@context": "https://schema.org",
+      "@type": "BreadcrumbList" as const,
+      itemListElement: [
+        { "@type": "ListItem", position: 1, name: "Home", item: "https://www.prevai.it" },
+        { "@type": "ListItem", position: 2, name: s.label, item: `https://www.prevai.it/seo/${s.slug}` },
+        { "@type": "ListItem", position: 3, name: cityName, item: canonical },
+      ],
+    },
+    {
+      "@context": "https://schema.org",
+      "@type": "FAQPage" as const,
+      mainEntity: cityFaq.map((f) => ({
+        "@type": "Question",
+        name: f.q,
+        acceptedAnswer: { "@type": "Answer", text: f.a },
+      })),
+    },
+  ];
 
   const intro = getCityIntro(s.label, s.labelPlural, cityName, regionName);
 
   return (
     <div className="flex flex-col min-h-screen bg-white">
+      <SeoHead
+        title={titleTag}
+        description={metaDesc}
+        canonical={canonical}
+        jsonLd={jsonLd}
+      />
 
       {/* ── Hero ─────────────────────────────────────────────── */}
       <section className="relative overflow-hidden bg-white pt-24 pb-20">

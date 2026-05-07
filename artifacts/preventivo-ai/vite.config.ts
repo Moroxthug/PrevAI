@@ -38,6 +38,32 @@ export default defineConfig({
   build: {
     outDir: path.resolve(import.meta.dirname, "dist/public"),
     emptyOutDir: true,
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (
+            id.includes("recharts") ||
+            id.includes("d3-") ||
+            id.includes("victory") ||
+            id.includes("/pages/dashboard/") ||
+            id.includes("DashboardLayout") ||
+            id.includes("dashboard-layout")
+          ) {
+            return "dashboard";
+          }
+          if (id.includes("/pages/seo/") || id.includes("seo-data")) {
+            return "seo";
+          }
+          if (
+            id.includes("node_modules/react-helmet-async") ||
+            id.includes("node_modules/react-dom") ||
+            id.includes("node_modules/react/")
+          ) {
+            return "vendor-react";
+          }
+        },
+      },
+    },
   },
   server: {
     port,

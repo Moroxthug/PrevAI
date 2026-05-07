@@ -1,5 +1,5 @@
 import { Switch, Route, Router as WouterRouter, useLocation } from "wouter";
-import { useEffect } from "react";
+import { useEffect, lazy, Suspense } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -8,21 +8,23 @@ import NotFound from "@/pages/not-found";
 import Home from "@/pages/home";
 import SignInPage from "@/pages/sign-in";
 import SignUpPage from "@/pages/sign-up";
-import DashboardHome from "@/pages/dashboard/index";
-import NewQuote from "@/pages/dashboard/new";
-import QuotesList from "@/pages/dashboard/quotes/index";
-import QuoteDetail from "@/pages/dashboard/quotes/[id]";
-import ProfileSettings from "@/pages/dashboard/profile";
-import BillingPage from "@/pages/dashboard/billing";
-import SettingsPage from "@/pages/dashboard/settings";
-import AnalyticsPage from "@/pages/dashboard/analytics";
 import OnboardingPage from "@/pages/onboarding";
-import SeoLanding from "@/pages/seo/[type]";
-import SeoCityLanding from "@/pages/seo/city-landing";
 import PrivacyPage from "@/pages/privacy";
 import TerminiPage from "@/pages/termini";
-import AdminPage from "@/pages/admin";
-import CatalogPage from "@/pages/dashboard/catalog";
+
+const DashboardHome = lazy(() => import("@/pages/dashboard/index"));
+const NewQuote = lazy(() => import("@/pages/dashboard/new"));
+const QuotesList = lazy(() => import("@/pages/dashboard/quotes/index"));
+const QuoteDetail = lazy(() => import("@/pages/dashboard/quotes/[id]"));
+const ProfileSettings = lazy(() => import("@/pages/dashboard/profile"));
+const BillingPage = lazy(() => import("@/pages/dashboard/billing"));
+const SettingsPage = lazy(() => import("@/pages/dashboard/settings"));
+const CatalogPage = lazy(() => import("@/pages/dashboard/catalog"));
+const AnalyticsPage = lazy(() => import("@/pages/dashboard/analytics"));
+const AdminPage = lazy(() => import("@/pages/admin"));
+
+const SeoLanding = lazy(() => import("@/pages/seo/[type]"));
+const SeoCityLanding = lazy(() => import("@/pages/seo/city-landing"));
 
 import { PublicLayout } from "@/components/layout/public-layout";
 import { DashboardLayout } from "@/components/layout/dashboard-layout";
@@ -56,6 +58,10 @@ function OnboardingGuard({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
+function DashSuspense({ children }: { children: React.ReactNode }) {
+  return <Suspense fallback={null}>{children}</Suspense>;
+}
+
 function Router() {
   return (
     <Switch>
@@ -68,42 +74,42 @@ function Router() {
       <Route path="/onboarding" component={OnboardingPage} />
 
       <Route path="/dashboard" component={() => (
-        <OnboardingGuard><DashboardLayout><DashboardHome /></DashboardLayout></OnboardingGuard>
+        <OnboardingGuard><DashboardLayout><DashSuspense><DashboardHome /></DashSuspense></DashboardLayout></OnboardingGuard>
       )} />
       <Route path="/dashboard/new" component={() => (
-        <OnboardingGuard><DashboardLayout><NewQuote /></DashboardLayout></OnboardingGuard>
+        <OnboardingGuard><DashboardLayout><DashSuspense><NewQuote /></DashSuspense></DashboardLayout></OnboardingGuard>
       )} />
       <Route path="/dashboard/quotes" component={() => (
-        <OnboardingGuard><DashboardLayout><QuotesList /></DashboardLayout></OnboardingGuard>
+        <OnboardingGuard><DashboardLayout><DashSuspense><QuotesList /></DashSuspense></DashboardLayout></OnboardingGuard>
       )} />
       <Route path="/dashboard/quotes/:id" component={() => (
-        <OnboardingGuard><DashboardLayout><QuoteDetail /></DashboardLayout></OnboardingGuard>
+        <OnboardingGuard><DashboardLayout><DashSuspense><QuoteDetail /></DashSuspense></DashboardLayout></OnboardingGuard>
       )} />
       <Route path="/dashboard/analytics" component={() => (
-        <OnboardingGuard><DashboardLayout><AnalyticsPage /></DashboardLayout></OnboardingGuard>
+        <OnboardingGuard><DashboardLayout><DashSuspense><AnalyticsPage /></DashSuspense></DashboardLayout></OnboardingGuard>
       )} />
       <Route path="/dashboard/settings/account" component={() => (
-        <OnboardingGuard><DashboardLayout><SettingsPage /></DashboardLayout></OnboardingGuard>
+        <OnboardingGuard><DashboardLayout><DashSuspense><SettingsPage /></DashSuspense></DashboardLayout></OnboardingGuard>
       )} />
       <Route path="/dashboard/settings" component={() => (
-        <OnboardingGuard><DashboardLayout><SettingsPage /></DashboardLayout></OnboardingGuard>
+        <OnboardingGuard><DashboardLayout><DashSuspense><SettingsPage /></DashSuspense></DashboardLayout></OnboardingGuard>
       )} />
       <Route path="/dashboard/profile" component={() => (
-        <OnboardingGuard><DashboardLayout><ProfileSettings /></DashboardLayout></OnboardingGuard>
+        <OnboardingGuard><DashboardLayout><DashSuspense><ProfileSettings /></DashSuspense></DashboardLayout></OnboardingGuard>
       )} />
       <Route path="/dashboard/billing" component={() => (
-        <OnboardingGuard><DashboardLayout><BillingPage /></DashboardLayout></OnboardingGuard>
+        <OnboardingGuard><DashboardLayout><DashSuspense><BillingPage /></DashSuspense></DashboardLayout></OnboardingGuard>
       )} />
       <Route path="/dashboard/catalog" component={() => (
-        <OnboardingGuard><DashboardLayout><CatalogPage /></DashboardLayout></OnboardingGuard>
+        <OnboardingGuard><DashboardLayout><DashSuspense><CatalogPage /></DashSuspense></DashboardLayout></OnboardingGuard>
       )} />
 
-      <Route path="/seo/:type/:city" component={() => <PublicLayout><SeoCityLanding /></PublicLayout>} />
-      <Route path="/seo/:type" component={() => <PublicLayout><SeoLanding /></PublicLayout>} />
+      <Route path="/seo/:type/:city" component={() => <PublicLayout><Suspense fallback={null}><SeoCityLanding /></Suspense></PublicLayout>} />
+      <Route path="/seo/:type" component={() => <PublicLayout><Suspense fallback={null}><SeoLanding /></Suspense></PublicLayout>} />
 
       <Route path="/privacy" component={PrivacyPage} />
       <Route path="/termini" component={TerminiPage} />
-      <Route path="/admin" component={AdminPage} />
+      <Route path="/admin" component={() => <DashSuspense><AdminPage /></DashSuspense>} />
 
       <Route component={NotFound} />
     </Switch>

@@ -1,6 +1,6 @@
 import { Link, useLocation } from "wouter";
-import { useEffect } from "react";
 import { ArrowRight, CheckCircle2, FileText, Zap, Lock, Star } from "lucide-react";
+import { SeoHead } from "@/components/seo-head";
 import { useGetPlans } from "@workspace/api-client-react";
 import { useScrollFade } from "@/hooks/use-scroll-fade";
 import { useAuth } from "@/hooks/use-auth";
@@ -31,10 +31,6 @@ export default function Home() {
   const { isSignedIn } = useAuth();
   const [, navigate] = useLocation();
 
-  useEffect(() => {
-    document.title = "prevai – Preventivi Online per Artigiani e Aziende | AI in 30 Secondi";
-  }, []);
-
   const subscriptionPlans = plans?.filter((p) => p.interval) ?? [];
   const oneshotPlans = plans?.filter((p) => !p.interval) ?? [];
 
@@ -42,8 +38,32 @@ export default function Home() {
     navigate(isSignedIn ? "/dashboard" : "/sign-up");
   };
 
+  const websiteJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    name: "prevai",
+    url: "https://www.prevai.it",
+    description:
+      "Software AI per preventivi professionali in 30 secondi. Per artigiani, PMI e freelance italiani.",
+    inLanguage: "it",
+    potentialAction: {
+      "@type": "SearchAction",
+      target: {
+        "@type": "EntryPoint",
+        urlTemplate: "https://www.prevai.it/seo/{search_term_string}",
+      },
+      "query-input": "required name=search_term_string",
+    },
+  };
+
   return (
     <div className="flex flex-col min-h-screen bg-white">
+      <SeoHead
+        title="prevai – Preventivi Online per Artigiani e Aziende | AI in 30 Secondi"
+        description="Dimentica Excel e i documenti scritti a mano. Descrivi il lavoro a parole tue e prevai genera un preventivo professionale con IVA, voci di costo e totali in 30 secondi."
+        canonical="https://www.prevai.it"
+        jsonLd={[websiteJsonLd]}
+      />
       {/* ── Hero ─────────────────────────────────────────────── */}
       <section className="relative overflow-hidden bg-white pt-28 pb-36">
         {/* Animated mesh blobs */}
