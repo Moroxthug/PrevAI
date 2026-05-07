@@ -710,8 +710,8 @@ export default function QuoteDetail() {
                 )}
               </div>
 
-              {/* Quadro Sintetico — live from editCapitoli in edit mode */}
-              {(isEditMode ? editCapitoli.length > 0 : hasCapitoli) && (
+              {/* Quadro Sintetico — shown for Standard template in edit mode or view mode */}
+              {localTemplateId === "standard" && (isEditMode ? editCapitoli.length > 0 : hasCapitoli) && (
                 <div className="mb-6">
                   <div className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">1. Quadro Sintetico</div>
                   <table className="w-full text-xs">
@@ -740,9 +740,9 @@ export default function QuoteDetail() {
                 </div>
               )}
 
-              {/* Chapter detail sections */}
+              {/* Chapter detail sections — branched by template */}
               {isEditMode ? (
-                /* ── INLINE EDIT MODE ── */
+                /* ── INLINE EDIT MODE (shared across all templates) ── */
                 <div className="mb-6">
                   <div className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3">2. Computo Metrico Dettagliato</div>
                   <div className="space-y-4">
@@ -867,8 +867,77 @@ export default function QuoteDetail() {
                     </button>
                   </div>
                 </div>
+              ) : localTemplateId === "arosio" && hasCapitoli ? (
+                /* ── AROSIO VIEW: numbered sections, dark navy headers, subtotals ── */
+                <div className="mb-6">
+                  <table className="w-full text-xs border-collapse">
+                    <thead>
+                      <tr className="bg-slate-900 text-white">
+                        <th className="py-2 px-3 text-center w-10 font-semibold">N°</th>
+                        <th className="py-2 px-3 text-left font-semibold">Descrizione</th>
+                        <th className="py-2 px-2 text-center w-10 font-semibold">U.M.</th>
+                        <th className="py-2 px-2 text-right w-20 font-semibold">P.U.</th>
+                        <th className="py-2 px-3 text-right w-24 font-semibold">Totale</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {capitoli.map((cap, ci) => (
+                        <>
+                          <tr key={`hdr-${cap.lettera}`}>
+                            <td colSpan={5} className="py-2 px-3 font-bold text-white text-xs tracking-wider uppercase bg-slate-800">
+                              {String(ci + 1).padStart(2, "0")}_ {cap.titolo.toUpperCase()}
+                            </td>
+                          </tr>
+                          {cap.voci.map((voce, vi) => (
+                            <tr key={`${cap.lettera}-${vi}`} className={vi % 2 === 0 ? "bg-white" : "bg-slate-50"}>
+                              <td className="py-2 px-3 text-center text-slate-500 font-medium">{ci + 1}.{vi + 1}</td>
+                              <td className="py-2 px-3 text-slate-700">{voce.descrizione}</td>
+                              <td className="py-2 px-2 text-center text-slate-500">{voce.um}</td>
+                              <td className="py-2 px-2 text-right text-slate-600 whitespace-nowrap">{formatCurrency(voce.prezzoUnitario)}</td>
+                              <td className="py-2 px-3 text-right font-medium text-slate-800 whitespace-nowrap">{formatCurrency(voce.totale)}</td>
+                            </tr>
+                          ))}
+                          <tr key={`sub-${cap.lettera}`} className="bg-slate-200 border-t border-slate-300">
+                            <td colSpan={4} className="py-1.5 px-3 text-right font-bold text-slate-700 text-xs">
+                              {String.fromCharCode(65 + ci)}_ TOTALE (IVA esclusa)
+                            </td>
+                            <td className="py-1.5 px-3 text-right font-bold text-slate-900 whitespace-nowrap">{formatCurrency(cap.subtotale)}</td>
+                          </tr>
+                        </>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ) : localTemplateId === "mariagrazia" && hasCapitoli ? (
+                /* ── MARIAGRAZIA VIEW: flat numbered list across all chapters ── */
+                <div className="mb-6">
+                  <table className="w-full text-xs border-collapse">
+                    <thead>
+                      <tr className="bg-slate-700 text-white">
+                        <th className="py-2 px-2 text-center w-8 font-semibold">N°</th>
+                        <th className="py-2 px-3 text-left font-semibold">Descrizione</th>
+                        <th className="py-2 px-2 text-center w-10 font-semibold">U.M.</th>
+                        <th className="py-2 px-2 text-center w-10 font-semibold">Q.tà</th>
+                        <th className="py-2 px-2 text-right w-20 font-semibold">P.U.</th>
+                        <th className="py-2 px-3 text-right w-24 font-semibold">Totale</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {capitoli.flatMap((cap) => cap.voci.map(v => ({ ...v, chapter: cap.titolo }))).map((row, i) => (
+                        <tr key={i} className={i % 2 === 0 ? "bg-white" : "bg-slate-50"}>
+                          <td className="py-2 px-2 text-center font-semibold text-slate-500">{i + 1}</td>
+                          <td className="py-2 px-3 text-slate-700">{row.descrizione}</td>
+                          <td className="py-2 px-2 text-center text-slate-500">{row.um}</td>
+                          <td className="py-2 px-2 text-center text-slate-500">{row.quantita}</td>
+                          <td className="py-2 px-2 text-right text-slate-600 whitespace-nowrap">{formatCurrency(row.prezzoUnitario)}</td>
+                          <td className="py-2 px-3 text-right font-medium text-slate-800 whitespace-nowrap">{formatCurrency(row.totale)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               ) : hasCapitoli ? (
-                /* ── VIEW MODE with capitoli ── */
+                /* ── STANDARD VIEW: collapsible chapters ── */
                 <div className="mb-6">
                   <div className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3">2. Computo Metrico Dettagliato</div>
                   <div className="space-y-4">
@@ -920,7 +989,7 @@ export default function QuoteDetail() {
                   </div>
                 </div>
               ) : (
-                /* ── VIEW MODE legacy items ── */
+                /* ── LEGACY ITEMS (no chapters, any template) ── */
                 <table className="w-full mb-6 text-sm">
                   <thead>
                     <tr className="border-b-2 border-slate-800 text-slate-800">

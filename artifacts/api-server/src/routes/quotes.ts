@@ -606,6 +606,25 @@ router.put("/quotes/:id", requireAuth, async (req, res) => {
     const updates: Partial<typeof existing> = {};
     const body = parsed.data;
 
+    // Template entitlement and lock checks
+    if (body.templateId !== undefined) {
+      if (existing.pdfDownloadedAt) {
+        res.status(400).json({ error: "LOCKED", message: "Template cannot be changed after PDF download" });
+        return;
+      }
+      if (body.templateId !== "standard") {
+        const [profileData] = await db
+          .select({ subscriptionStatus: businessProfilesTable.subscriptionStatus, subscriptionPlan: businessProfilesTable.subscriptionPlan })
+          .from(businessProfilesTable)
+          .where(eq(businessProfilesTable.userId, userId));
+        const isProUser = profileData?.subscriptionStatus === "active" && profileData?.subscriptionPlan === "monthly_pro";
+        if (!isProUser) {
+          res.status(403).json({ error: "PRO_REQUIRED", message: "This template requires an active Pro subscription" });
+          return;
+        }
+      }
+    }
+
     if (body.clientData !== undefined) updates.clientData = body.clientData;
     if (body.descrizioneGenerale !== undefined) updates.descrizioneGenerale = body.descrizioneGenerale;
     if (body.items !== undefined) updates.items = body.items;
