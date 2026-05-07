@@ -106,6 +106,12 @@ export default function QuoteDetail() {
     }
   }, [verifyData, verifyDone, id, queryClient, toast]);
 
+  const [localTemplateId, setLocalTemplateId] = useState<string>("standard");
+
+  useEffect(() => {
+    setLocalTemplateId(quote?.templateId ?? "standard");
+  }, [quote?.templateId]);
+
   const [isCapitolatoDialogOpen, setIsCapitolatoDialogOpen] = useState(false);
   const [isPaywallOpen, setIsPaywallOpen] = useState(false);
   const [isEditingClient, setIsEditingClient] = useState(false);
@@ -447,7 +453,7 @@ export default function QuoteDetail() {
             )}
             <Badge variant="outline" className="gap-1 text-slate-500">
               <LayoutTemplate className="h-3 w-3" />
-              {quote.templateId === "professionale" ? "Professionale" : quote.templateId === "elegante" ? "Elegante" : "Standard"}
+              {localTemplateId === "arosio" ? "Arosio" : localTemplateId === "mariagrazia" ? "MariaGrazia" : "Standard"}
             </Badge>
             <span className="text-sm text-muted-foreground">
               Creato il {format(new Date(quote.createdAt), "dd MMMM yyyy", { locale: it })}
@@ -540,9 +546,28 @@ export default function QuoteDetail() {
               </div>
             )}
 
+            {/* Template-reactive preview banner */}
+            {localTemplateId !== "standard" && (
+              <div className={cn(
+                "px-5 py-2 flex items-center gap-2 text-xs font-semibold border-b",
+                localTemplateId === "arosio"
+                  ? "bg-slate-900 text-white border-slate-700"
+                  : "bg-amber-50 text-amber-900 border-amber-200"
+              )}>
+                <LayoutTemplate className="h-3.5 w-3.5 shrink-0" />
+                {localTemplateId === "arosio"
+                  ? "Template Arosio — capitolato numerato con subtotali per capitolo"
+                  : "Template MariaGrazia — lista numerata con header OFFERTA"}
+                <span className="ml-auto opacity-60 font-normal">Anteprima • il PDF finale rispecchia questo stile</span>
+              </div>
+            )}
+
             <div className={cn("p-8 sm:p-10", !isEditMode && "pointer-events-none select-none")}>
               {/* Company header */}
-              <div className="flex justify-between items-start border-b-2 border-slate-800 pb-6 mb-6">
+              <div className={cn(
+                "flex justify-between items-start pb-6 mb-6 border-b-2",
+                localTemplateId === "arosio" ? "border-slate-900" : "border-slate-800"
+              )}>
                 <div>
                   {companyLogoUrl && (
                     <img
@@ -1143,49 +1168,64 @@ export default function QuoteDetail() {
               <CardTitle className="text-sm font-semibold flex items-center gap-2">
                 <LayoutTemplate className="h-4 w-4 text-muted-foreground" />
                 Template PDF
-                {!isPro && <Lock className="h-3 w-3 text-muted-foreground ml-auto" />}
               </CardTitle>
-              {!isPro && (
-                <CardDescription className="text-xs">Disponibile con piano Pro</CardDescription>
-              )}
+              <CardDescription className="text-xs">
+                {isEditLocked ? "Bloccato dopo il primo download" : "Scegli il layout del tuo PDF"}
+              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-2 pt-0">
               {(
                 [
-                  { id: "standard", label: "Standard", desc: "Computo metrico con quadro sintetico e blocco firma" },
-                  { id: "professionale", label: "Professionale", desc: "Capitolato numerato con sezioni e subtotali per capitolo" },
-                  { id: "elegante", label: "Elegante", desc: "Lista numerata pulita con header OFFERTA aziendale" },
+                  { id: "standard", label: "Standard", desc: "Computo metrico con quadro sintetico e blocco firma", proOnly: false },
+                  { id: "arosio", label: "Arosio", desc: "Capitolato numerato con sezioni e subtotali per capitolo", proOnly: true },
+                  { id: "mariagrazia", label: "MariaGrazia", desc: "Lista numerata pulita con header OFFERTA aziendale", proOnly: true },
                 ] as const
               ).map(tmpl => {
-                const isActive = (quote.templateId ?? "standard") === tmpl.id;
-                const canChange = isPro && !isEditLocked;
+                const isActive = localTemplateId === tmpl.id;
+                const isLockable = isEditLocked;
+                const requiresPro = tmpl.proOnly && !isPro;
+                const isClickable = !isLockable && !requiresPro;
+                const isProClickable = !isLockable && isPro;
                 return (
                   <button
                     key={tmpl.id}
+                    disabled={isLockable}
                     onClick={() => {
-                      if (!canChange) { if (!isPro) setIsPaywallOpen(true); return; }
+                      if (isLockable) return;
+                      if (requiresPro) { setIsPaywallOpen(true); return; }
                       if (isActive || !id) return;
+                      // Optimistic update
+                      setLocalTemplateId(tmpl.id);
                       updateQuote.mutate({ id, data: { templateId: tmpl.id } }, {
                         onSuccess: (updated) => {
                           queryClient.setQueryData(getGetQuoteQueryKey(id), updated);
                           toast({ title: "Template aggiornato", description: `Template "${tmpl.label}" selezionato.` });
                         },
-                        onError: () => toast({ title: "Errore", description: "Impossibile cambiare template", variant: "destructive" }),
+                        onError: () => {
+                          // Rollback
+                          setLocalTemplateId(quote.templateId ?? "standard");
+                          toast({ title: "Errore", description: "Impossibile cambiare template", variant: "destructive" });
+                        },
                       });
                     }}
                     className={cn(
                       "w-full text-left px-3 py-2.5 rounded-lg border text-xs transition-all",
                       isActive
                         ? "border-violet-400 bg-violet-50 text-violet-900 ring-1 ring-violet-300"
-                        : canChange
-                          ? "border-slate-200 hover:border-violet-300 hover:bg-slate-50 text-slate-700"
-                          : "border-slate-200 opacity-60 text-slate-500 cursor-not-allowed"
+                        : isClickable || isProClickable
+                          ? "border-slate-200 hover:border-violet-300 hover:bg-slate-50 text-slate-700 cursor-pointer"
+                          : requiresPro
+                            ? "border-slate-200 hover:border-amber-300 hover:bg-amber-50 text-slate-600 cursor-pointer"
+                            : "border-slate-200 opacity-50 text-slate-400 cursor-not-allowed"
                     )}
                   >
                     <div className="font-semibold flex items-center gap-1.5">
                       {isActive && <CheckCircle2 className="h-3 w-3 text-violet-600 shrink-0" />}
-                      {!isActive && !canChange && <Lock className="h-3 w-3 shrink-0" />}
                       {tmpl.label}
+                      {tmpl.proOnly && !isPro && (
+                        <span className="ml-auto text-[10px] font-bold text-amber-700 bg-amber-100 border border-amber-300 rounded px-1.5 py-0.5 leading-none">PRO</span>
+                      )}
+                      {isEditLocked && <Lock className="h-3 w-3 ml-auto text-slate-400 shrink-0" />}
                     </div>
                     <div className="text-slate-500 mt-0.5 leading-snug">{tmpl.desc}</div>
                   </button>

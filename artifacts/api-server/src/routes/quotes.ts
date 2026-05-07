@@ -1145,8 +1145,8 @@ function generateQuoteHtml(
   profile: ProfileRow
 ): string {
   const templateId = (quote.templateId as string | null) ?? "standard";
-  if (templateId === "professionale") return generateHtmlProfessionale(quote, withWatermark, profile);
-  if (templateId === "elegante") return generateHtmlElegante(quote, withWatermark, profile);
+  if (templateId === "arosio") return generateHtmlProfessionale(quote, withWatermark, profile);
+  if (templateId === "mariagrazia") return generateHtmlElegante(quote, withWatermark, profile);
   return generateHtmlStandard(quote, withWatermark, profile);
 }
 

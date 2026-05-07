@@ -687,7 +687,7 @@ components:
           type: ["string", "null"]
         templateId:
           type: string
-          enum: [standard, professionale, elegante]
+          enum: [standard, arosio, mariagrazia]
           nullable: true
         createdAt:
           type: string
@@ -810,7 +810,7 @@ components:
           enum: [draft, unlocked, pending_payment]
         templateId:
           type: string
-          enum: [standard, professionale, elegante]
+          enum: [standard, arosio, mariagrazia]
 
     RegenerateQuoteBody:
       type: object

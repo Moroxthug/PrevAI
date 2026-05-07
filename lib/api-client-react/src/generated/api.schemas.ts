@@ -71,8 +71,8 @@ export type QuoteTemplateId =
 
 export const QuoteTemplateId = {
   standard: "standard",
-  professionale: "professionale",
-  elegante: "elegante",
+  arosio: "arosio",
+  mariagrazia: "mariagrazia",
 } as const;
 
 export interface Quote {
@@ -144,8 +144,8 @@ export type UpdateQuoteBodyTemplateId =
 
 export const UpdateQuoteBodyTemplateId = {
   standard: "standard",
-  professionale: "professionale",
-  elegante: "elegante",
+  arosio: "arosio",
+  mariagrazia: "mariagrazia",
 } as const;
 
 export interface UpdateQuoteBody {
