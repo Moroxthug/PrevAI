@@ -743,6 +743,10 @@ router.post("/quotes/:id/generate-pdf", requireAuth, async (req, res) => {
             .where(eq(businessProfilesTable.userId, userId)),
         ]);
         req.log.info({ quoteId: id, userId }, "Quote auto-unlocked via trial");
+      } else {
+        // Trial inactive and no subscription — block the download
+        res.status(402).json({ error: "Payment required", code: "trial_expired" });
+        return;
       }
     }
 

@@ -188,9 +188,17 @@ export default function QuoteDetail() {
         openPdfWindow(result.htmlContent);
         // Refresh quote to pick up the new pdfDownloadedAt (editing lock)
         queryClient.invalidateQueries({ queryKey: getGetQuoteQueryKey(id) });
+        // Also refresh trial status so the banner + button state updates
+        queryClient.invalidateQueries({ queryKey: ["getTrialStatus"] });
       },
-      onError: () => {
-        toast({ title: "Errore", description: "Impossibile generare il PDF", variant: "destructive" });
+      onError: (err: unknown) => {
+        // 402 means trial expired or no entitlement — open paywall
+        const status = (err as { status?: number })?.status;
+        if (status === 402) {
+          setIsPaywallOpen(true);
+        } else {
+          toast({ title: "Errore", description: "Impossibile generare il PDF", variant: "destructive" });
+        }
       }
     });
   };
