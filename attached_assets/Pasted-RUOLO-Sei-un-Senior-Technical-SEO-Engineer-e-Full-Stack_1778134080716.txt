@@ -1,0 +1,223 @@
+RUOLO:
+Sei un Senior Technical SEO Engineer e Full-Stack Architect specializzato in sistemi di Programmatic SEO (pSEO) su larga scala per SaaS.
+
+OBIETTIVO:
+Trasformare “prevai” in un ecosistema SEO scalabile e altamente indicizzabile per il mercato italiano.
+
+L’obiettivo NON è migliorare testi o copy.
+L’obiettivo è:
+- migliorare crawlability
+- migliorare distribuzione PageRank
+- ridurre rischio doorway pages
+- aumentare autorità semantica
+- migliorare struttura di linking interno
+- stabilizzare indicizzazione Google
+- mantenere performance e hydration React
+
+IMPORTANTE:
+NON rompere l’attuale architettura prerender.
+NON introdurre SSR.
+NON modificare il modello React esistente.
+NON creare mismatch di hydration.
+
+==================================================
+FASE 1 — PRERENDER HOMEPAGE
+==================================================
+
+Modifica la pipeline di prerendering affinché la homepage (/) venga completamente prerenderizzata in HTML statico.
+
+Il body della homepage deve contenere:
+
+- H1 principale
+- hero section completa
+- proposta di valore
+- CTA principali
+- sezione link SEO (settori + città principali)
+
+REQUISITI:
+- contenuto presente nell’HTML iniziale (non solo JS)
+- compatibile con hydration React
+- nessun impatto negativo su runtime
+
+==================================================
+FASE 2 — ARCHITETTURA INTERNAL LINKING
+==================================================
+
+Implementa una struttura completa Hub & Spoke SEO.
+
+A. HOMEPAGE
+Aggiungere una sezione HTML visibile con link a:
+- tutti i settori principali (/seo/:sector)
+- città principali italiane
+- pagine ad alta intenzione commerciale
+
+Esempio:
+"Preventivi per Professione"
+"Preventivi nelle principali città"
+
+---
+
+B. PAGINE SETTORE (/seo/:sector)
+
+Aggiungere:
+- breadcrumb HTML visibile (non solo JSON-LD)
+- link verso tutte le città rilevanti per quel settore
+- link verso settori correlati
+- grouping per regioni (se utile)
+
+Esempio:
+"Imbianchini in Lombardia"
+- Milano
+- Bergamo
+- Brescia
+
+---
+
+C. PAGINE CITTÀ (/seo/:sector/:city)
+
+Aggiungere:
+- breadcrumb HTML visibile
+- link al settore principale
+- link alle città vicine
+- link a settori correlati nella stessa città
+- sezione di navigazione contestuale
+
+IMPORTANTE:
+Tutti i link devono esistere nell’HTML renderizzato prima della hydration.
+
+==================================================
+FASE 3 — RIDUZIONE FOOTPRINT TEMPLATE
+==================================================
+
+Riduci la ripetizione strutturale tra le pagine.
+
+A. Attiva le varianti già esistenti:
+- titleVariants
+- descriptionVariants
+
+Usa una funzione hash deterministica per alternare le varianti invece di usare sempre [0].
+
+---
+
+B. Introduci variazione reale nelle strutture H2:
+
+Esempi:
+Versione A:
+- benefici
+- processo
+- FAQ
+
+Versione B:
+- FAQ
+- casi d’uso
+- benefici
+
+Versione C:
+- pricing
+- processo
+- FAQ
+
+---
+
+C. Varia CTA, titoli sezioni e micro-strutture
+
+OBIETTIVO:
+ridurre pattern ripetibili facilmente rilevabili da Google.
+
+==================================================
+FASE 4 — ARRICCHIMENTO SEMANTICO LOCALE
+==================================================
+
+Migliora il valore reale delle pagine città.
+
+Per ogni pagina città aggiungere contesto locale concreto:
+
+Esempi:
+- Roma → condomini, edilizia storica, permessi
+- Milano → ristrutturazioni premium, alta competizione
+- Napoli → forte domanda residenziale
+- Torino → ristrutturazioni economiche e industriali
+
+REQUISITI:
+- contenuto utile e reale
+- NON filler generico AI
+- NON testo ripetitivo
+- deve migliorare rilevanza SEO locale
+
+==================================================
+FASE 5 — SITEMAP AUTOMATICA
+==================================================
+
+Genera sitemap.xml automaticamente da seo-data.ts.
+
+REQUISITI:
+- generazione dinamica a build time
+- esclusione di:
+  - /sign-in
+  - /sign-up
+  - /dashboard/*
+- includere solo pagine indicizzabili
+- sincronizzazione automatica con dataset SEO
+
+==================================================
+FASE 6 — STRATEGIA DI INDICIZZAZIONE
+==================================================
+
+Implementa una logica di priorità SEO:
+
+- priorità alta: città principali + settori principali
+- priorità media: città secondarie
+- priorità bassa: long-tail meno competitive
+
+Ridurre spreco crawl budget su pagine a basso valore.
+
+==================================================
+FASE 7 — BREADCRUMB HTML VISIBILE
+==================================================
+
+Aggiungere breadcrumb NAV reale (non solo JSON-LD):
+
+Esempio:
+Home > Imbianchini > Milano
+
+REQUISITI:
+- HTML semantico <nav>
+- link cliccabili
+- coerente con JSON-LD già esistente
+
+==================================================
+FASE 8 — HARDENING SEO TECNICO
+==================================================
+
+Verificare e garantire:
+
+- canonical corretti
+- nessuna pagina orfana
+- nessun link rotto
+- struttura crawl coerente
+- SEO pages senza dipendenze JS per contenuto
+- preload ottimizzato (no bundle inutili su SEO pages)
+
+==================================================
+FASE 9 — REPORT FINALE
+==================================================
+
+Dopo le modifiche, generare report con:
+
+- file modificati
+- cambi architetturali
+- nuova struttura linking
+- logica sitemap
+- strategia di variabilità contenuti
+- rischi residui SEO
+- impatto previsto su indicizzazione Google
+
+==================================================
+VINCOLI IMPORTANTI
+==================================================
+
+- NON modificare UI in modo distruttivo
+- NON rompere hydration React
+- NON rimuovere prerender SEO esistente
+- NON ridurre performance
+- NON creare regressioni su build
