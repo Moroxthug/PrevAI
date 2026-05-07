@@ -13,6 +13,8 @@ import {
   CITY_CONTEXT,
 } from "../src/data/seo-data.js";
 import type { SectorData, CityData } from "../src/data/seo-data.js";
+import { CITY_INTELLIGENCE, DEMAND_TEXT } from "../src/data/seo-intelligence.js";
+import type { CityIntelligence } from "../src/data/seo-intelligence.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const distDir = join(__dirname, "../dist/public");
@@ -276,6 +278,8 @@ function buildSectorJsonLd(s: SectorData): object[] {
 
 function buildCityJsonLd(s: SectorData, city: CityData): object[] {
   const canonical = `${BASE_URL}/seo/${s.slug}/${city.slug}`;
+  const intelJ = CITY_INTELLIGENCE[city.slug];
+  const pricePctJ = intelJ ? Math.round(Math.abs(intelJ.priceIndex - 1.0) * 100) : 0;
   const cityFaq = [
     {
       q: `Come faccio un preventivo professionale a ${city.name}?`,
@@ -286,12 +290,20 @@ function buildCityJsonLd(s: SectorData, city: CityData): object[] {
       a: `Sì. prevai è un'applicazione web accessibile da qualsiasi dispositivo con connessione internet. Non ci sono limitazioni geografiche: funziona a ${city.name} come in qualsiasi altra città italiana.`,
     },
     {
-      q: `Quanto costa il software per ${s.labelPlural}?`,
-      a: `Il piano Starter è 29 €/mese con 20 preventivi inclusi. Il piano Pro è 79 €/mese con preventivi illimitati. Puoi anche acquistare preventivi singoli da 29 € senza abbonamento.`,
+      q: `Quanto costano i servizi di ${s.label.toLowerCase()} a ${city.name}?`,
+      a: intelJ
+        ? intelJ.priceIndex > 1.05
+          ? `I prezzi per ${s.labelPlural} a ${city.name} sono mediamente il ${pricePctJ}% superiori alla media nazionale. Un preventivo professionale e dettagliato è essenziale per valorizzare il tuo lavoro.`
+          : intelJ.priceIndex < 0.95
+            ? `A ${city.name} i prezzi per ${s.labelPlural} sono mediamente il ${pricePctJ}% inferiori alla media nazionale. Rispondere velocemente con un preventivo professionale è il modo più efficace per distinguersi.`
+            : `I prezzi per ${s.labelPlural} a ${city.name} sono in linea con la media nazionale. La velocità di risposta e la qualità del preventivo sono i fattori decisivi.`
+        : `I prezzi variano in base alla complessità del lavoro. Con prevai puoi generare preventivi professionali in 30 secondi.`,
     },
     {
-      q: `Devo installare qualcosa per usarlo a ${city.name}?`,
-      a: `No. prevai funziona direttamente dal browser del tuo smartphone, tablet o PC. Nessun download, nessuna installazione, nessun aggiornamento manuale.`,
+      q: `Qual è il tempo medio di risposta per ${s.labelPlural} a ${city.name}?`,
+      a: intelJ
+        ? `A ${city.name} i tempi di risposta stimati per ${s.labelPlural} sono di ${intelJ.avgLeadTime}. La domanda locale è ${DEMAND_TEXT[intelJ.demandLevel]}: inviare subito un preventivo professionale è fondamentale per aggiudicarsi la commessa.`
+        : `Con prevai puoi rispondere a nuove richieste in 30 secondi, aumentando le tue probabilità di aggiudicarti ogni commessa.`,
     },
   ];
   return [
@@ -512,21 +524,85 @@ function buildSectorBodyHtml(s: SectorData): string {
 
 // ─── Phase 3: City body — 3 layout variants ────────────────────────────────
 
-function getCityIntro(sectorLabel: string, sectorLabelPlural: string, cityName: string, regionName: string): string {
-  const variants = [
-    `Sei un ${sectorLabel.toLowerCase()} a ${cityName} e perdi ore a fare preventivi su Excel o carta? prevai è il software di preventivazione con AI pensato per i professionisti del settore in ${regionName}. Descrivi il lavoro in italiano, ottieni un documento professionale in 30 secondi.`,
-    `${cityName} conta migliaia di artigiani e PMI attive nel settore. I ${sectorLabelPlural} che usano prevai rispondono ai clienti in pochi minuti anziché in giorni, e vincono più lavori. Nessun Excel, nessun foglio di carta.`,
-    `In una città come ${cityName} la concorrenza è alta. I ${sectorLabelPlural} che inviano il preventivo per primi hanno un vantaggio decisivo. Con prevai lo fai in 30 secondi ancora mentre sei dal cliente — direttamente dallo smartphone.`,
-    `Operare come ${sectorLabel.toLowerCase()} a ${cityName} significa gestire tanti clienti con richieste diverse. prevai semplifica la parte amministrativa: descrivi il lavoro, l'AI genera il preventivo completo e tu ti concentri sul mestiere.`,
-  ];
-  return variants[strHash(cityName) % variants.length];
+function getCityIntro(s: SectorData, city: CityData): string {
+  const isService = s.sectorType === "service";
+  const variants = isService
+    ? [
+        `Gestisci un'attività nel settore ${s.label.toLowerCase()} a ${city.name}? prevai è il software di preventivazione con AI pensato per i professionisti del settore in ${city.region}. Descrivi il lavoro in italiano, ottieni un documento professionale in 30 secondi.`,
+        `${city.name} conta migliaia di cantieri e commesse nel settore ${s.label.toLowerCase()} ogni anno. I professionisti che usano prevai rispondono ai clienti in pochi minuti anziché in giorni, vincendo più lavori. Nessun Excel, nessun foglio di carta.`,
+        `In un mercato come ${city.name} la competizione nel settore ${s.label.toLowerCase()} è alta. Chi invia il preventivo per primo ha un vantaggio decisivo. Con prevai lo fai in 30 secondi ancora mentre sei dal cliente — direttamente dallo smartphone.`,
+        `Coordinare un'attività di ${s.label.toLowerCase()} a ${city.name} significa gestire preventivi complessi. prevai semplifica la parte amministrativa: descrivi il lavoro, l'AI genera il preventivo completo e tu ti concentri sulla qualità.`,
+      ]
+    : [
+        `Sei un ${s.label.toLowerCase()} a ${city.name} e perdi ore a fare preventivi su Excel o carta? prevai è il software di preventivazione con AI pensato per i professionisti del settore in ${city.region}. Descrivi il lavoro in italiano, ottieni un documento professionale in 30 secondi.`,
+        `${city.name} conta migliaia di artigiani e PMI attive nel settore. I ${s.labelPlural} che usano prevai rispondono ai clienti in pochi minuti anziché in giorni, e vincono più lavori. Nessun Excel, nessun foglio di carta.`,
+        `In una città come ${city.name} la concorrenza tra ${s.labelPlural} è alta. Chi invia il preventivo per primo ha un vantaggio decisivo. Con prevai lo fai in 30 secondi ancora mentre sei dal cliente — direttamente dallo smartphone.`,
+        `Operare come ${s.label.toLowerCase()} a ${city.name} significa gestire tanti clienti con richieste diverse. prevai semplifica la parte amministrativa: descrivi il lavoro, l'AI genera il preventivo completo e tu ti concentri sul mestiere.`,
+      ];
+  return variants[strHash(city.slug) % variants.length];
+}
+
+// ─── Phase 9: Osservatorio Prezzi e Domanda ────────────────────────────────
+
+function buildOsservatorio(s: SectorData, city: CityData, intel: CityIntelligence): string {
+  const pct = Math.round(Math.abs(intel.priceIndex - 1.0) * 100);
+  const priceLabel = intel.priceIndex > 1.0 ? `+${pct}%` : intel.priceIndex < 1.0 ? `\u2212${pct}%` : `\u00b10%`;
+  const priceColor =
+    intel.priceIndex > 1.05 ? "text-amber-600" : intel.priceIndex < 0.95 ? "text-green-600" : "text-gray-800";
+  const demandLabels: Record<CityIntelligence["demandLevel"], string> = {
+    LOW: "Moderata", MEDIUM: "Media", HIGH: "Elevata", CRITICAL: "Molto elevata",
+  };
+  const demandColors: Record<CityIntelligence["demandLevel"], string> = {
+    LOW: "text-green-600", MEDIUM: "text-blue-600", HIGH: "text-amber-600", CRITICAL: "text-red-600",
+  };
+  const [sv1, sv2, sv3] = intel.topServices;
+  void s;
+  return `<section class="py-10 bg-white border-b border-gray-100" aria-label="Osservatorio prezzi e domanda ${esc(city.name)}">
+  <div class="container mx-auto px-4 sm:px-6 lg:px-8 max-w-4xl">
+    <div class="rounded-2xl border border-violet-100 bg-gradient-to-br from-violet-50/40 to-cyan-50/20 p-6 md:p-8">
+      <div class="flex items-center gap-3 mb-6">
+        <div class="h-8 w-8 rounded-lg bg-violet-100 flex items-center justify-center shrink-0" aria-hidden="true">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-violet-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+        </div>
+        <h2 class="text-base font-bold text-gray-900">Osservatorio Prezzi e Domanda: ${esc(city.name)}</h2>
+      </div>
+      <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-5">
+        <div class="bg-white rounded-xl p-4 border border-gray-100 text-center">
+          <div class="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-1">Indice prezzi</div>
+          <div class="text-2xl font-bold ${priceColor}">${priceLabel}</div>
+          <div class="text-xs text-gray-400 mt-1">vs. media nazionale</div>
+        </div>
+        <div class="bg-white rounded-xl p-4 border border-gray-100 text-center">
+          <div class="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-1">Domanda</div>
+          <div class="text-base font-bold ${demandColors[intel.demandLevel]}">${demandLabels[intel.demandLevel]}</div>
+          <div class="text-xs text-gray-400 mt-1">${esc(city.region)}</div>
+        </div>
+        <div class="bg-white rounded-xl p-4 border border-gray-100 text-center">
+          <div class="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-1">Lead time</div>
+          <div class="text-base font-bold text-gray-800">${esc(intel.avgLeadTime)}</div>
+          <div class="text-xs text-gray-400 mt-1">risposta stimata</div>
+        </div>
+        <div class="bg-white rounded-xl p-4 border border-gray-100">
+          <div class="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-2">Servizi top</div>
+          <ul class="space-y-1.5">
+            <li class="flex items-start gap-1 text-xs text-gray-600"><span class="text-violet-400 shrink-0 font-bold" aria-hidden="true">&rsaquo;</span>${esc(sv1)}</li>
+            <li class="flex items-start gap-1 text-xs text-gray-600"><span class="text-violet-400 shrink-0 font-bold" aria-hidden="true">&rsaquo;</span>${esc(sv2)}</li>
+            <li class="flex items-start gap-1 text-xs text-gray-600"><span class="text-violet-400 shrink-0 font-bold" aria-hidden="true">&rsaquo;</span>${esc(sv3)}</li>
+          </ul>
+        </div>
+      </div>
+      <p class="text-sm text-gray-500 leading-relaxed border-t border-violet-100 pt-4">${esc(intel.localInsight)}</p>
+    </div>
+  </div>
+</section>`;
 }
 
 function buildCityBodyHtml(s: SectorData, city: CityData): string {
   const layout = strHash(s.slug + city.slug) % 3;
   const cityName = city.name;
   const regionName = city.region;
-  const intro = getCityIntro(s.label, s.labelPlural, cityName, regionName);
+  const intel = CITY_INTELLIGENCE[city.slug];
+  const intro = getCityIntro(s, city);
 
   const breadcrumb = buildBreadcrumb([
     { name: "Home", href: "/" },
@@ -557,10 +633,12 @@ function buildCityBodyHtml(s: SectorData, city: CityData): string {
     </div>
   </section>`;
 
+  const sOsservatorio = intel ? buildOsservatorio(s, city, intel) : "";
+
   const sBenefits = `<section class="py-20 bg-gray-50">
     <div class="container mx-auto px-4 sm:px-6 lg:px-8">
       <div class="text-center mb-14">
-        <h2 class="text-3xl font-bold text-gray-900">Perché i ${esc(s.labelPlural)} di ${esc(cityName)} usano prevai</h2>
+        <h2 class="text-3xl font-bold text-gray-900">Perché i ${esc(s.labelPlural)} di ${esc(cityName)} scelgono prevai</h2>
       </div>
       <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
         ${s.benefits.map((b) => `<div class="card-soft bg-white p-7 rounded-2xl flex flex-col">
@@ -611,6 +689,8 @@ function buildCityBodyHtml(s: SectorData, city: CityData): string {
     </div>
   </section>`;
 
+  // Dynamic FAQ: 2 static + 2 from CITY_INTELLIGENCE
+  const pricePct = intel ? Math.round(Math.abs(intel.priceIndex - 1.0) * 100) : 0;
   const cityFaqItems = [
     {
       q: `Come faccio un preventivo professionale a ${cityName}?`,
@@ -621,12 +701,26 @@ function buildCityBodyHtml(s: SectorData, city: CityData): string {
       a: `Sì. prevai è un'applicazione web accessibile da qualsiasi dispositivo con connessione internet. Non ci sono limitazioni geografiche: funziona a ${cityName} come in qualsiasi altra città italiana.`,
     },
     {
-      q: `Quanto costa il software per ${s.labelPlural}?`,
-      a: `Il piano Starter è 29 €/mese con 20 preventivi inclusi. Il piano Pro è 79 €/mese con preventivi illimitati. Puoi anche acquistare preventivi singoli da 29 € senza abbonamento.`,
+      q: `Quanto costano i servizi di ${s.label.toLowerCase()} a ${cityName}?`,
+      a: intel
+        ? intel.priceIndex > 1.05
+          ? `I prezzi per servizi di ${s.label.toLowerCase()} a ${cityName} sono mediamente il ${pricePct}% superiori alla media nazionale. Presentare un preventivo professionale e dettagliato è essenziale per giustificare il prezzo e conquistare la fiducia del cliente.`
+          : intel.priceIndex < 0.95
+            ? `A ${cityName} i prezzi per ${s.labelPlural} sono mediamente il ${pricePct}% inferiori alla media nazionale. In un mercato competitivo come questo, rispondere velocemente con un preventivo professionale è il modo più efficace per distinguersi.`
+            : `I prezzi per ${s.labelPlural} a ${cityName} si attestano in linea con la media nazionale. La velocità di risposta e la qualità del preventivo sono i fattori che fanno la differenza per vincere la commessa.`
+        : `I prezzi variano in base alla complessità del lavoro e alla zona. Con prevai puoi generare preventivi professionali in 30 secondi e mostrare subito la tua competitività.`,
     },
     {
-      q: `Devo installare qualcosa per usarlo a ${cityName}?`,
-      a: `No. prevai funziona direttamente dal browser del tuo smartphone, tablet o PC. Nessun download, nessuna installazione, nessun aggiornamento manuale.`,
+      q: `Qual è il tempo medio di risposta per ${s.labelPlural} a ${cityName}?`,
+      a: intel
+        ? intel.demandLevel === "CRITICAL"
+          ? `A ${cityName} la domanda è molto elevata: i tempi di attesa stimati sono di ${intel.avgLeadTime}. Inviare il preventivo in pochi minuti dall'ispezione — come permette prevai — aumenta significativamente le probabilità di aggiudicarsi il lavoro.`
+          : intel.demandLevel === "HIGH"
+            ? `Con una domanda ${DEMAND_TEXT[intel.demandLevel]} a ${cityName}, i professionisti rispondono tipicamente entro ${intel.avgLeadTime}. Inviare subito un preventivo professionale è il modo migliore per assicurarsi la commessa.`
+            : intel.demandLevel === "MEDIUM"
+              ? `A ${cityName} i tempi di risposta standard per ${s.labelPlural} sono di circa ${intel.avgLeadTime}. Un preventivo professionale inviato in giornata può fare la differenza rispetto ai concorrenti.`
+              : `Il mercato di ${cityName} registra una domanda ${DEMAND_TEXT[intel.demandLevel]} per questo tipo di servizio, con tempi di risposta di circa ${intel.avgLeadTime}. Professionalità e rapidità del preventivo restano fattori differenzianti importanti.`
+        : `I tempi dipendono dalla disponibilità locale. Con prevai puoi rispondere a nuove richieste in 30 secondi e aumentare le tue chance di aggiudicarti ogni commessa.`,
     },
   ];
 
@@ -648,7 +742,15 @@ function buildCityBodyHtml(s: SectorData, city: CityData): string {
     .map((slug) => {
       const nearbyCity = CITIES_BY_SLUG[slug];
       if (!nearbyCity) return "";
-      return `<a href="/seo/${esc(s.slug)}/${esc(nearbyCity.slug)}" class="inline-flex items-center gap-1.5 rounded-full border border-gray-200 px-3.5 py-1.5 text-sm text-gray-500 hover:border-violet-300 hover:text-violet-600 transition-colors">${esc(nearbyCity.name)}</a>`;
+      const nearbyIntel = CITY_INTELLIGENCE[slug];
+      const anchorText = nearbyIntel
+        ? nearbyIntel.priceIndex > 1.05
+          ? `Preventivi ${s.label} a ${nearbyCity.name}`
+          : nearbyIntel.priceIndex < 0.95
+            ? `Costi ${s.label.toLowerCase()} a ${nearbyCity.name}`
+            : `${s.label} a ${nearbyCity.name}`
+        : nearbyCity.name;
+      return `<a href="/seo/${esc(s.slug)}/${esc(nearbyCity.slug)}" class="inline-flex items-center gap-1.5 rounded-full border border-gray-200 px-3.5 py-1.5 text-sm text-gray-500 hover:border-violet-300 hover:text-violet-600 transition-colors">${esc(anchorText)}</a>`;
     })
     .filter(Boolean)
     .join("\n          ");
@@ -703,6 +805,7 @@ function buildCityBodyHtml(s: SectorData, city: CityData): string {
   return `<div class="flex flex-col min-h-screen bg-white">
   ${breadcrumb}
   ${sHero}
+  ${sOsservatorio}
   ${mainSections.join("\n  ")}
   ${sContext}
   ${sNearby}

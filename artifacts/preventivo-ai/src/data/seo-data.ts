@@ -1,5 +1,6 @@
 export interface SectorData {
   slug: string;
+  sectorType: "professional" | "service";
   label: string;
   labelPlural: string;
   titleTag: string;
@@ -23,6 +24,7 @@ export interface SectorData {
 export const SECTORS: Record<string, SectorData> = {
   imbianchino: {
     slug: "imbianchino",
+    sectorType: "professional",
     label: "Imbianchino",
     labelPlural: "imbianchini",
     titleTag: "Preventivo Imbianchino Online | prevai – AI in 30s",
@@ -73,6 +75,7 @@ export const SECTORS: Record<string, SectorData> = {
 
   elettricista: {
     slug: "elettricista",
+    sectorType: "professional",
     label: "Elettricista",
     labelPlural: "elettricisti",
     titleTag: "Preventivo Elettricista Online | prevai – AI in 30s",
@@ -123,6 +126,7 @@ export const SECTORS: Record<string, SectorData> = {
 
   idraulico: {
     slug: "idraulico",
+    sectorType: "professional",
     label: "Idraulico",
     labelPlural: "idraulici",
     titleTag: "Preventivo Idraulico Online | prevai – AI in 30s",
@@ -173,6 +177,7 @@ export const SECTORS: Record<string, SectorData> = {
 
   edilizia: {
     slug: "edilizia",
+    sectorType: "service",
     label: "Impresa Edile",
     labelPlural: "imprese edili",
     titleTag: "Preventivi per Imprese Edili | prevai – AI in 30s",
@@ -223,6 +228,7 @@ export const SECTORS: Record<string, SectorData> = {
 
   ristrutturazione: {
     slug: "ristrutturazione",
+    sectorType: "service",
     label: "Ristrutturazione",
     labelPlural: "ristrutturatori",
     titleTag: "Preventivo Ristrutturazione Casa | prevai – AI",
@@ -273,6 +279,7 @@ export const SECTORS: Record<string, SectorData> = {
 
   carpentiere: {
     slug: "carpentiere",
+    sectorType: "professional",
     label: "Carpentiere",
     labelPlural: "carpentieri",
     titleTag: "Preventivo Carpentiere e Fabbro | prevai – AI",
@@ -323,6 +330,7 @@ export const SECTORS: Record<string, SectorData> = {
 
   falegname: {
     slug: "falegname",
+    sectorType: "professional",
     label: "Falegname",
     labelPlural: "falegnami",
     titleTag: "Preventivo Falegname e Mobilificio | prevai – AI",
@@ -373,6 +381,7 @@ export const SECTORS: Record<string, SectorData> = {
 
   termoidraulico: {
     slug: "termoidraulico",
+    sectorType: "professional",
     label: "Termoidraulico",
     labelPlural: "termoidraulici",
     titleTag: "Preventivo Termoidraulico Online | prevai – AI",
@@ -423,6 +432,7 @@ export const SECTORS: Record<string, SectorData> = {
 
   freelance: {
     slug: "freelance",
+    sectorType: "professional",
     label: "Freelance",
     labelPlural: "freelance e consulenti",
     titleTag: "Preventivo per Freelance e Consulenti | prevai",
@@ -473,6 +483,7 @@ export const SECTORS: Record<string, SectorData> = {
 
   geometra: {
     slug: "geometra",
+    sectorType: "professional",
     label: "Geometra",
     labelPlural: "geometri",
     titleTag: "Preventivo per Geometri e Studi Tecnici | prevai",
@@ -523,6 +534,7 @@ export const SECTORS: Record<string, SectorData> = {
 
   muratore: {
     slug: "muratore",
+    sectorType: "professional",
     label: "Muratore",
     labelPlural: "muratori",
     titleTag: "Preventivo Muratore Online | Offerta Muratura AI – prevai",
@@ -573,6 +585,7 @@ export const SECTORS: Record<string, SectorData> = {
 
   giardiniere: {
     slug: "giardiniere",
+    sectorType: "professional",
     label: "Giardiniere",
     labelPlural: "giardinieri",
     titleTag: "Preventivo Giardiniere Online | Manutenzione Giardino – prevai",
@@ -623,6 +636,7 @@ export const SECTORS: Record<string, SectorData> = {
 
   piastrellista: {
     slug: "piastrellista",
+    sectorType: "professional",
     label: "Piastrellista",
     labelPlural: "piastrellisti",
     titleTag: "Preventivo Piastrellista | Posa Piastrelle Online – prevai",
@@ -673,6 +687,7 @@ export const SECTORS: Record<string, SectorData> = {
 
   serramentista: {
     slug: "serramentista",
+    sectorType: "professional",
     label: "Serramentista",
     labelPlural: "serramentisti",
     titleTag: "Preventivo Serramentista | Infissi e Finestre Online – prevai",
@@ -723,6 +738,7 @@ export const SECTORS: Record<string, SectorData> = {
 
   tetto: {
     slug: "tetto",
+    sectorType: "service",
     label: "Copertura e Tetto",
     labelPlural: "imprese di coperture",
     titleTag: "Preventivo Rifacimento Tetto | Coperture Online – prevai",
@@ -773,6 +789,7 @@ export const SECTORS: Record<string, SectorData> = {
 
   condizionatori: {
     slug: "condizionatori",
+    sectorType: "service",
     label: "Condizionatore",
     labelPlural: "installatori di climatizzatori",
     titleTag: "Preventivo Condizionatore e Climatizzatore | prevai – AI",
@@ -823,6 +840,7 @@ export const SECTORS: Record<string, SectorData> = {
 
   pittore: {
     slug: "pittore",
+    sectorType: "professional",
     label: "Pittore Edile",
     labelPlural: "pittori edili",
     titleTag: "Preventivo Pittore Edile | Verniciatura Online – prevai",
@@ -873,6 +891,7 @@ export const SECTORS: Record<string, SectorData> = {
 
   pavimentista: {
     slug: "pavimentista",
+    sectorType: "professional",
     label: "Pavimentista",
     labelPlural: "pavimentisti",
     titleTag: "Preventivo Posa Pavimento | Pavimentista Online – prevai",
@@ -923,6 +942,7 @@ export const SECTORS: Record<string, SectorData> = {
 
   "modello-excel": {
     slug: "modello-excel",
+    sectorType: "service",
     label: "Preventivo Excel",
     labelPlural: "utenti Excel",
     titleTag: "Modello Preventivo Excel Gratis | Alternativa Migliore – prevai",
@@ -973,6 +993,7 @@ export const SECTORS: Record<string, SectorData> = {
 
   "modello-word": {
     slug: "modello-word",
+    sectorType: "service",
     label: "Preventivo Word",
     labelPlural: "utenti Word",
     titleTag: "Modello Preventivo Word Gratis | Preventivo Online AI – prevai",
@@ -1023,6 +1044,7 @@ export const SECTORS: Record<string, SectorData> = {
 
   "come-fare-preventivo": {
     slug: "come-fare-preventivo",
+    sectorType: "service",
     label: "Preventivo Professionale",
     labelPlural: "professionisti",
     titleTag: "Come Fare un Preventivo Professionale Online | Guida prevai",
@@ -1073,6 +1095,7 @@ export const SECTORS: Record<string, SectorData> = {
 
   "preventivi-gratis": {
     slug: "preventivi-gratis",
+    sectorType: "service",
     label: "Preventivi Gratis",
     labelPlural: "artigiani e PMI",
     titleTag: "Preventivi Online Gratis | Software Preventivi Gratuito – prevai",
@@ -1124,6 +1147,7 @@ export const SECTORS: Record<string, SectorData> = {
 
 export const DEFAULT_SECTOR: SectorData = {
   slug: "professionista",
+  sectorType: "professional",
   label: "Professionista",
   labelPlural: "professionisti",
   titleTag: "Preventivi Online per Professionisti | prevai – AI",
@@ -1338,10 +1362,10 @@ const CITY_TITLE_FORMULAS: Array<(label: string, labelPlural: string, city: stri
 
 const CITY_DESC_FORMULAS: Array<(label: string, labelPlural: string, city: string, region: string) => string> = [
   (_l, labelPlural, city, region) => `Software di preventivazione AI per ${labelPlural} a ${city}. Crea preventivi professionali in 30 secondi. Nessuna carta di credito. Usato in tutta ${region}.`,
-  (label, _lp, city) => `Sei un ${label.toLowerCase()} a ${city}? Genera preventivi professionali in 30 secondi con l'AI. Niente Excel, niente errori. Provalo gratis.`,
+  (_l, labelPlural, city) => `I ${labelPlural} a ${city} generano preventivi professionali con prevai in 30 secondi. Niente Excel, niente errori. Provalo gratis.`,
   (_l, labelPlural, city) => `I ${labelPlural} a ${city} usano prevai per creare preventivi in 30 secondi. Professionale, veloce, senza errori. Prova gratis.`,
   (label, _lp, city, region) => `Preventivo ${label.toLowerCase()} a ${city} in 30 secondi con l'AI. Software professionale per artigiani in ${region}. Nessun impegno.`,
-  (label, _lp, city) => `Crea il tuo preventivo da ${label.toLowerCase()} a ${city} in 30 secondi. prevai AI per artigiani e PMI italiane. Provalo gratis.`,
+  (_l, labelPlural, city) => `Preventivi per ${labelPlural} a ${city} in 30 secondi con AI. Nessuna installazione richiesta. Provalo gratis.`,
 ];
 
 export function getCityTitle(sector: SectorData, cityName: string, citySlug: string): string {

@@ -1,0 +1,131 @@
+Sei un Senior Staff Engineer e SEO Architect. Devi evolvere il progetto Prevai da sistema pSEO statico a “Local Pricing Intelligence Engine 2.0”, mantenendo invariati routing, framework (React + Wouter), build system e deployment statico. Non devi introdurre nuove infrastrutture, ma rafforzare il data layer e la qualità semantica delle pagine esistenti.
+
+L’obiettivo non è generare più pagine, ma trasformare ogni pagina esistente in un nodo informativo unico, con intelligence locale reale, coerenza strutturale globale e segnali anti-doorway.
+
+1. EVOLUZIONE DATA LAYER (seo-data.ts → SEO INTELLIGENCE GRAPH)
+
+Modifica src/data/seo-data.ts senza cambiare la struttura base dei settori e città, ma introducendo un nuovo layer chiamato CITY_INTELLIGENCE.
+
+Per ogni città (110 totali) genera un oggetto deterministico e coerente basato su macro-area geografica italiana (Nord Ovest, Nord Est, Centro, Sud, Isole). Non inventare dati casuali incoerenti: i valori devono essere coerenti per cluster geografico.
+
+Ogni città deve avere:
+
+priceIndex: numero float tra 0.75 e 1.25 che rappresenta il livello prezzi locale rispetto alla media nazionale
+demandLevel: enum coerente (LOW, MEDIUM, HIGH, CRITICAL) derivato dalla densità urbana e attività edilizia regionale
+topServices: array di 3 servizi realmente coerenti con la domanda locale (es. coastal cities → impermeabilizzazione, metropoli → ristrutturazione, Sud → efficientamento energetico)
+localInsight: frase unica di intelligence economica locale (non descrittiva generica, ma osservazionale)
+avgLeadTime: range realistico in giorni (stringa, es. "3–5 giorni", "7–10 giorni")
+
+Questo layer non è contenuto SEO: è un sistema di intelligence strutturale riusato nel rendering.
+
+2. EVOLUZIONE PRERENDER (prerender-seo.ts → INTELLIGENCE RENDER ENGINE)
+
+Senza modificare routing o React, estendi il prerender statico.
+
+Ogni pagina città deve includere una nuova sezione obbligatoria immediatamente dopo H1:
+
+“Osservatorio Prezzi e Domanda: {City}”
+
+Questa sezione deve derivare esclusivamente da CITY_INTELLIGENCE e trasformare dati numerici in insight leggibili.
+
+Esempio logico (non testuale rigido):
+
+priceIndex deve diventare confronto rispetto media nazionale
+demandLevel deve diventare interpretazione di mercato
+avgLeadTime deve diventare indicatore operativo
+topServices devono essere reinterpretati come segnali di mercato locale
+
+Questa sezione deve rendere ogni pagina non duplicabile semanticamente.
+
+3. FAQ ENGINE DINAMICO (ANTI-DUPLICATE SYSTEM)
+
+Le FAQ non devono più essere template statico.
+
+Regola obbligatoria:
+
+2 FAQ restano globali per settore (stabili)
+2 FAQ devono essere generate dinamicamente da CITY_INTELLIGENCE
+
+Esempio logico:
+
+Domanda: “Quanto costa un servizio di {sector} a {city} rispetto alla {region}?”
+Risposta: deve derivare da priceIndex e cluster regionale
+
+Le FAQ devono diventare dataset-driven, non testo statico.
+
+4. FIX SEMANTICO SECTOR TYPE SYSTEM
+
+Introduce una distinzione strutturale nei settori:
+
+professional (es. elettricista, idraulico, muratore)
+service (es. ristrutturazione, edilizia, preventivi-gratis)
+
+Correggi tutte le funzioni di generazione intro (getCityIntro o equivalente) affinché non generino grammatica errata.
+
+Esempio corretto:
+
+“Sei un elettricista a Milano” (professional)
+“Cerchi un servizio di ristrutturazione a Milano” (service)
+
+Non deve esistere più nessuna combinazione semanticamente errata.
+
+5. INTERNAL LINK GRAPH POTENZIATO (CONTESTUALIZZATO)
+
+Senza aumentare numero di link, aumenta qualità semantica dei link.
+
+Ogni “città vicina” deve includere contesto implicito nel testo del link, non solo anchor generico.
+
+Esempio:
+“Milano” → “Prezzi a Milano”
+“Bergamo” → “Costi medi a Bergamo”
+
+Ogni link deve contribuire a semantic clustering geografico.
+
+6. ANTI-DOORWAY TRANSFORMATION RULE
+
+Trasforma il sistema da “template replicato” a “node-based unique page system”.
+
+Vincolo obbligatorio:
+
+Ogni pagina città deve contenere almeno:
+
+1 insight numerico (da priceIndex)
+1 insight operativo (da avgLeadTime)
+1 insight di mercato (da demandLevel)
+1 insight settoriale (da topServices)
+
+Se anche uno di questi manca, la pagina è considerata SEO-invalid.
+
+7. COERENZA GLOBALE (CRITICAL RULE)
+
+Non devono esistere:
+
+duplicazioni testuali tra città
+FAQ identiche replicate senza trasformazione
+intro paragraph identici tra cluster città
+variazioni solo nominali senza variazione semantica
+
+Ogni città deve essere riconoscibile come nodo informativo autonomo.
+
+8. OUTPUT ATTESO
+
+Dopo l’implementazione:
+
+ogni pagina SEO deve sembrare un “Google Maps + SaaS + market report page”
+non più landing page statiche
+ma nodi di intelligence locale per settore
+
+Prevai deve evolvere da:
+“generatore preventivi”
+a:
+“Local Pricing Intelligence System per il mercato italiano”
+
+VINCOLO FINALE
+
+Non modificare routing, non introdurre nuovi framework, non cambiare architettura React/Wouter.
+
+Lavora solo su:
+
+seo-data.ts (data layer)
+prerender-seo.ts (render intelligence layer)
+funzioni di generazione contenuti SEO
