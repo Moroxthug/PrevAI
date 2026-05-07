@@ -1,5 +1,12 @@
-import { useGetQuoteStats, useGetSubscription, useCreateCustomerPortalSession, useGetTrialStatus } from "@workspace/api-client-react";
-import { Link } from "wouter";
+import {
+  useGetQuoteStats,
+  useGetSubscription,
+  useCreateCustomerPortalSession,
+  useGetTrialStatus,
+  useCreateQuote,
+  useGetBusinessProfile,
+} from "@workspace/api-client-react";
+import { Link, useLocation } from "wouter";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   FileText,
@@ -17,26 +24,64 @@ import {
   Building2,
   Clock,
   Gift,
+  ImagePlus,
+  Mic,
+  X,
+  User,
+  Loader2,
 } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
+import { useClientMemory } from "@/hooks/use-client-memory";
+import type { SavedClient } from "@/hooks/use-client-memory";
+import { useState, useRef, useCallback, useEffect } from "react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { useToast } from "@/hooks/use-toast";
+import { cn } from "@/lib/utils";
 
+/* ─── plan helpers ─────────────────────────────────────────────────────────── */
+
+function getMaxPhotos(plan: string | null | undefined, isActive: boolean): number {
+  if (!isActive) return 0;
+  if (plan === "monthly_elite") return 5;
+  if (plan === "monthly_pro") return 3;
+  if (plan === "monthly_starter") return 1;
+  return 0;
+}
+
+const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp", "image/heic", "image/heif"];
+const MAX_SIZE_BYTES = 5 * 1024 * 1024;
+
+interface ClientForm {
+  nome: string; indirizzo: string; citta: string;
+  cap: string; provincia: string; codiceFiscale: string; partitaIva: string;
+}
+const emptyClient: ClientForm = {
+  nome: "", indirizzo: "", citta: "", cap: "", provincia: "", codiceFiscale: "", partitaIva: "",
+};
+
+/* ─── PlanBadge ─────────────────────────────────────────────────────────── */
 function PlanBadge({ plan }: { plan: string | null | undefined }) {
   if (!plan) return null;
+  const isElite = plan === "monthly_elite";
   const isPro = plan === "monthly_pro";
   return (
     <span
       className={`inline-flex items-center gap-1 text-xs font-bold px-2 py-0.5 rounded-full ${
-        isPro
-          ? "bg-amber-100 text-amber-700 border border-amber-200"
-          : "bg-violet-100 text-violet-700 border border-violet-200"
+        isElite
+          ? "bg-cyan-100 text-cyan-700 border border-cyan-200"
+          : isPro
+            ? "bg-amber-100 text-amber-700 border border-amber-200"
+            : "bg-violet-100 text-violet-700 border border-violet-200"
       }`}
     >
-      {isPro ? <Crown className="h-2.5 w-2.5" /> : <Zap className="h-2.5 w-2.5" />}
-      {isPro ? "Pro" : "Starter"}
+      {isPro || isElite ? <Crown className="h-2.5 w-2.5" /> : <Zap className="h-2.5 w-2.5" />}
+      {isElite ? "Elite" : isPro ? "Pro" : "Starter"}
     </span>
   );
 }
 
+/* ─── STAT_CARDS ─────────────────────────────────────────────────────────── */
 const STAT_CARDS = [
   { key: "thisMonth" as const, label: "Questo Mese", icon: CalendarDays, color: "text-violet-500", accent: "bg-violet-50", border: "border-violet-200" },
   { key: "unlocked" as const, label: "Sbloccati", icon: CheckCircle2, color: "text-emerald-500", accent: "bg-emerald-50", border: "border-emerald-200" },
@@ -44,6 +89,7 @@ const STAT_CARDS = [
   { key: "avgValue" as const, label: "Valore Medio", icon: Sparkles, color: "text-amber-500", accent: "bg-amber-50", border: "border-amber-200", isCurrency: true },
 ];
 
+/* ─── StatusBadge ────────────────────────────────────────────────────────── */
 function StatusBadge({ status }: { status: string }) {
   switch (status) {
     case "unlocked":
@@ -55,6 +101,7 @@ function StatusBadge({ status }: { status: string }) {
   }
 }
 
+/* ─── StarterUpgradeCard ─────────────────────────────────────────────────── */
 function StarterUpgradeCard() {
   const createPortal = useCreateCustomerPortalSession();
   return (
@@ -79,6 +126,7 @@ function StarterUpgradeCard() {
   );
 }
 
+/* ─── OnboardingView ─────────────────────────────────────────────────────── */
 function OnboardingView() {
   return (
     <div className="space-y-3">
@@ -133,6 +181,7 @@ function OnboardingView() {
   );
 }
 
+/* ─── TrialBanner ────────────────────────────────────────────────────────── */
 function TrialBanner({ downloadsUsed, downloadsLimit, daysLeft }: { downloadsUsed: number; downloadsLimit: number; daysLeft: number | null | undefined }) {
   const remaining = downloadsLimit - downloadsUsed;
   return (
@@ -153,7 +202,7 @@ function TrialBanner({ downloadsUsed, downloadsLimit, daysLeft }: { downloadsUse
           </div>
           <div className="text-xs text-gray-500 mt-0.5">
             {remaining > 0
-              ? `Hai ancora ${remaining} download gratuito${remaining > 1 ? "" : ""} su ${downloadsLimit} — PDF senza costi!`
+              ? `Hai ancora ${remaining} download gratuito su ${downloadsLimit} — PDF senza costi!`
               : "Hai esaurito i download gratuiti. Abbonati per continuare."}
           </div>
         </div>
@@ -172,6 +221,392 @@ function TrialBanner({ downloadsUsed, downloadsLimit, daysLeft }: { downloadsUse
   );
 }
 
+/* ─── DashboardQuickBar ──────────────────────────────────────────────────── */
+function DashboardQuickBar() {
+  const [input, setInput] = useState("");
+  const [, setLocation] = useLocation();
+  const createQuote = useCreateQuote();
+  const { data: profile } = useGetBusinessProfile();
+  const { data: subscription } = useGetSubscription();
+  const { toast } = useToast();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const { clients: savedClients, upsertClient } = useClientMemory();
+
+  const [photos, setPhotos] = useState<File[]>([]);
+  const [photoPreviews, setPhotoPreviews] = useState<string[]>([]);
+  const maxPhotos = getMaxPhotos(subscription?.plan, !!subscription?.isActive);
+  const photoAllowed = maxPhotos > 0;
+
+  const [clientMode, setClientMode] = useState<"none" | "saved" | "new">("none");
+  const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
+  const [clientForm, setClientForm] = useState<ClientForm>(emptyClient);
+  const [rememberClient, setRememberClient] = useState(false);
+  const [clientOpen, setClientOpen] = useState(false);
+
+  useEffect(() => {
+    return () => { photoPreviews.forEach(url => URL.revokeObjectURL(url)); };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const addFiles = useCallback((files: FileList | File[]) => {
+    const arr = Array.from(files);
+    const remaining = maxPhotos - photos.length;
+    if (remaining <= 0) {
+      toast({ title: `Massimo ${maxPhotos} foto`, description: "Rimuovi una foto per aggiungerne un'altra.", variant: "destructive" });
+      return;
+    }
+    const valid: File[] = [];
+    for (const file of arr.slice(0, remaining)) {
+      if (!ALLOWED_TYPES.includes(file.type) && !file.name.toLowerCase().match(/\.(heic|heif)$/)) {
+        toast({ title: "Formato non supportato", description: `${file.name}: usa JPG, PNG, WEBP o HEIC.`, variant: "destructive" });
+        continue;
+      }
+      if (file.size > MAX_SIZE_BYTES) {
+        toast({ title: "File troppo grande", description: `${file.name}: massimo 5MB.`, variant: "destructive" });
+        continue;
+      }
+      valid.push(file);
+    }
+    if (valid.length === 0) return;
+    const previews = valid.map(f => URL.createObjectURL(f));
+    setPhotos(prev => [...prev, ...valid]);
+    setPhotoPreviews(prev => [...prev, ...previews]);
+  }, [maxPhotos, photos.length, toast]);
+
+  const removePhoto = (idx: number) => {
+    URL.revokeObjectURL(photoPreviews[idx]);
+    setPhotos(prev => prev.filter((_, i) => i !== idx));
+    setPhotoPreviews(prev => prev.filter((_, i) => i !== idx));
+  };
+
+  const getClientData = () => {
+    const f = clientForm;
+    if (!f.nome.trim()) return undefined;
+    return {
+      nome: f.nome.trim(),
+      ...(f.indirizzo.trim() && { indirizzo: f.indirizzo.trim() }),
+      ...(f.citta.trim() && { citta: f.citta.trim() }),
+      ...(f.cap.trim() && { cap: f.cap.trim() }),
+      ...(f.provincia.trim() && { provincia: f.provincia.trim() }),
+      ...(f.codiceFiscale.trim() && { codiceFiscale: f.codiceFiscale.trim() }),
+      ...(f.partitaIva.trim() && { partitaIva: f.partitaIva.trim() }),
+    };
+  };
+
+  const handleSubmit = () => {
+    if (!input.trim() || isSubmitting) return;
+    const clientData = getClientData();
+    if (rememberClient && clientData) upsertClient(clientData);
+
+    const companySnapshot = profile
+      ? {
+          companyName: profile.companyName || "",
+          ...(profile.vatNumber && { vatNumber: profile.vatNumber }),
+          ...(profile.address && { address: profile.address }),
+          ...(profile.phone && { phone: profile.phone }),
+          ...(profile.email && { email: profile.email }),
+          ...(profile.logoUrl && { logoUrl: profile.logoUrl }),
+        }
+      : undefined;
+
+    createQuote.mutate(
+      {
+        data: {
+          rawInput: input,
+          clientData: clientData ? JSON.stringify(clientData) : undefined,
+          companySnapshot: companySnapshot ? JSON.stringify(companySnapshot) : undefined,
+          images: photos.length > 0 ? photos : undefined,
+        },
+      },
+      {
+        onSuccess: (quote) => { setLocation(`/dashboard/quotes/${quote.id}`); },
+        onError: (err: unknown) => {
+          const status = (err as { status?: number })?.status;
+          if (status === 429) {
+            toast({ title: "Quota mensile raggiunta", description: "Hai raggiunto il limite del tuo piano. Passa a Pro per preventivi illimitati.", variant: "destructive" });
+          } else {
+            toast({ title: "Errore nella generazione", description: "Si è verificato un errore. Riprova tra qualche istante.", variant: "destructive" });
+          }
+        },
+      }
+    );
+  };
+
+  const isSubmitting = createQuote.isPending;
+  const canSubmit = input.trim().length > 0 && !isSubmitting;
+
+  const selectSavedClient = (c: SavedClient) => {
+    setSelectedClientId(c.id);
+    setClientMode("saved");
+    setClientForm({
+      nome: c.nome, indirizzo: c.indirizzo || "", citta: c.citta || "",
+      cap: c.cap || "", provincia: c.provincia || "",
+      codiceFiscale: c.codiceFiscale || "", partitaIva: c.partitaIva || "",
+    });
+    setClientOpen(false);
+  };
+
+  const clearClient = () => {
+    setClientMode("none");
+    setSelectedClientId(null);
+    setClientForm(emptyClient);
+  };
+
+  return (
+    <div className="space-y-2">
+      {/* ── AI Bar ── */}
+      <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+        {/* Photo strip */}
+        {photos.length > 0 && (
+          <div className="px-3 pt-3 flex gap-2 flex-wrap border-b border-gray-100 pb-3">
+            {photoPreviews.map((src, idx) => (
+              <div key={idx} className="relative group w-12 h-12 rounded-lg overflow-hidden border border-gray-200 bg-gray-50 shrink-0">
+                <img src={src} alt="" className="w-full h-full object-cover" />
+                <button type="button" onClick={() => removePhoto(idx)} disabled={isSubmitting}
+                  className="absolute top-0.5 right-0.5 bg-black/70 rounded-full p-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <X className="h-2 w-2 text-white" />
+                </button>
+              </div>
+            ))}
+            {photos.length < maxPhotos && (
+              <button type="button" onClick={() => fileInputRef.current?.click()} disabled={isSubmitting}
+                className="w-12 h-12 rounded-lg border-2 border-dashed border-gray-200 hover:border-violet-300 flex flex-col items-center justify-center gap-0.5 text-gray-400 hover:text-violet-500 transition-colors text-[9px]">
+                <ImagePlus className="h-3 w-3" />
+                <span>Aggiungi</span>
+              </button>
+            )}
+          </div>
+        )}
+
+        {/* Bar row */}
+        <div className="flex items-center gap-2 px-3 py-3">
+          {/* Upload */}
+          <div className="group relative shrink-0">
+            {photoAllowed ? (
+              <button type="button" onClick={() => fileInputRef.current?.click()}
+                disabled={isSubmitting || photos.length >= maxPhotos}
+                className={cn(
+                  "h-8 w-8 flex items-center justify-center rounded-xl transition-colors",
+                  photos.length > 0 ? "bg-violet-100 text-violet-600 hover:bg-violet-200" : "text-gray-400 hover:bg-gray-100",
+                  (isSubmitting || photos.length >= maxPhotos) && "opacity-40 cursor-not-allowed"
+                )}>
+                <ImagePlus className="h-4 w-4" />
+              </button>
+            ) : (
+              <button type="button" disabled className="h-8 w-8 flex items-center justify-center rounded-xl text-gray-300 cursor-not-allowed">
+                <Lock className="h-4 w-4" />
+              </button>
+            )}
+            {!photoAllowed && (
+              <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2.5 py-1 bg-gray-900 text-white text-[11px] font-medium rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none shadow-lg z-10">
+                Disponibile con piano a pagamento
+                <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-gray-900" />
+              </div>
+            )}
+          </div>
+
+          <Sparkles className="h-4 w-4 text-violet-400 shrink-0" />
+          <input
+            value={input}
+            onChange={e => setInput(e.target.value)}
+            onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey && canSubmit) { e.preventDefault(); handleSubmit(); } }}
+            placeholder="Descrivi il lavoro e ottieni un preventivo in 30 secondi..."
+            className="flex-1 text-sm outline-none placeholder:text-gray-400 text-gray-800 bg-transparent min-w-0"
+            disabled={isSubmitting}
+          />
+
+          {/* Mic */}
+          <div className="group relative shrink-0">
+            <button disabled className="h-8 w-8 flex items-center justify-center rounded-xl text-gray-400 cursor-not-allowed hover:bg-gray-100 transition-colors">
+              <Mic className="h-4 w-4" />
+            </button>
+            <div className="absolute bottom-full right-0 mb-2 px-2.5 py-1 bg-gray-900 text-white text-[11px] font-medium rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none shadow-lg z-10">
+              Funzione in arrivo
+              <div className="absolute top-full right-3 border-4 border-transparent border-t-gray-900" />
+            </div>
+          </div>
+
+          {/* Send */}
+          <button onClick={handleSubmit} disabled={!canSubmit}
+            className={cn(
+              "h-9 w-9 rounded-full flex items-center justify-center shrink-0 transition-all",
+              canSubmit ? "btn-gradient shadow-sm" : "bg-gray-100 cursor-not-allowed"
+            )}>
+            {isSubmitting
+              ? <Loader2 className="h-4 w-4 animate-spin text-white" />
+              : <ArrowRight className={cn("h-4 w-4", canSubmit ? "text-white" : "text-gray-300")} />
+            }
+          </button>
+        </div>
+
+        {isSubmitting && (
+          <div className="px-3 pb-3 text-xs text-violet-600 font-medium flex items-center gap-1.5">
+            <Loader2 className="h-3 w-3 animate-spin" />
+            {photos.length > 0 ? "Analisi foto e generazione in corso..." : "Generazione preventivo in corso..."}
+          </div>
+        )}
+      </div>
+
+      <input ref={fileInputRef} type="file"
+        accept="image/jpeg,image/png,image/webp,image/heic,image/heif,.heic,.heif"
+        multiple className="hidden"
+        onChange={e => { if (e.target.files) { addFiles(e.target.files); e.target.value = ""; } }}
+        disabled={isSubmitting}
+      />
+
+      {/* ── Client Section ── */}
+      <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+        {/* Header */}
+        <button
+          type="button"
+          onClick={() => setClientOpen(v => !v)}
+          className="w-full px-4 py-2.5 flex items-center justify-between hover:bg-gray-50/60 transition-colors"
+        >
+          <div className="flex items-center gap-2">
+            <User className="h-3.5 w-3.5 text-gray-400" />
+            <span className="text-xs font-medium text-gray-600">Committente</span>
+            {clientForm.nome && (
+              <span className="text-xs font-semibold text-violet-700 bg-violet-50 border border-violet-100 px-2 py-0.5 rounded-full">
+                {clientForm.nome}
+              </span>
+            )}
+          </div>
+          <span className="text-[11px] text-gray-400">
+            {clientForm.nome ? "selezionato" : clientOpen ? "chiudi" : "opzionale ↓"}
+          </span>
+        </button>
+
+        {/* Saved clients row (always visible if any) */}
+        {savedClients.length > 0 && !clientOpen && clientMode !== "new" && (
+          <div className="px-4 pb-3 flex flex-wrap gap-1.5 border-t border-gray-50 pt-2">
+            {savedClients.slice(0, 5).map(c => (
+              <button
+                key={c.id}
+                type="button"
+                onClick={() => selectSavedClient(c)}
+                className={cn(
+                  "inline-flex items-center gap-1 text-[11px] px-2 py-1 rounded-lg border transition-all",
+                  selectedClientId === c.id
+                    ? "border-violet-300 bg-violet-50 text-violet-700 font-semibold"
+                    : "border-gray-200 text-gray-600 hover:border-violet-200 hover:bg-violet-50/50"
+                )}
+              >
+                <User className="h-2.5 w-2.5" />
+                {c.nome}
+              </button>
+            ))}
+            <button
+              type="button"
+              onClick={() => { setClientOpen(true); setClientMode("new"); setSelectedClientId(null); setClientForm(emptyClient); }}
+              className="inline-flex items-center gap-1 text-[11px] px-2 py-1 rounded-lg border border-dashed border-gray-300 text-gray-500 hover:border-violet-300 hover:text-violet-600 transition-all"
+            >
+              + Nuovo
+            </button>
+            {selectedClientId && (
+              <button type="button" onClick={clearClient} className="inline-flex items-center gap-1 text-[11px] px-2 py-1 text-red-400 hover:text-red-600 transition-colors">
+                × Rimuovi
+              </button>
+            )}
+          </div>
+        )}
+
+        {/* Expanded panel */}
+        {(clientOpen || (savedClients.length === 0)) && (
+          <div className="border-t border-gray-50 px-4 pt-3 pb-4 animate-in fade-in slide-in-from-top-1 duration-200">
+            {/* Saved clients in expanded view */}
+            {savedClients.length > 0 && clientMode !== "new" && (
+              <div className="flex flex-wrap gap-1.5 mb-3">
+                {savedClients.slice(0, 6).map(c => (
+                  <button key={c.id} type="button" onClick={() => selectSavedClient(c)}
+                    className={cn(
+                      "inline-flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded-xl border transition-all",
+                      selectedClientId === c.id
+                        ? "border-violet-300 bg-violet-50 text-violet-700 font-semibold shadow-sm"
+                        : "border-gray-200 text-gray-600 hover:border-violet-200 hover:bg-violet-50/50"
+                    )}>
+                    <User className="h-3 w-3" />
+                    {c.nome}
+                  </button>
+                ))}
+                <button type="button" onClick={() => { setClientMode("new"); setSelectedClientId(null); setClientForm(emptyClient); }}
+                  className="inline-flex items-center gap-1 text-xs px-2.5 py-1.5 rounded-xl border border-dashed border-gray-300 text-gray-500 hover:border-violet-300 hover:text-violet-600 transition-all">
+                  + Nuovo cliente
+                </button>
+              </div>
+            )}
+
+            {/* No saved clients or new form */}
+            {(savedClients.length === 0 || clientMode === "new") && (
+              <div className="space-y-2.5">
+                <div className="space-y-1">
+                  <Label className="text-xs font-medium text-gray-600">Nome / Ragione Sociale</Label>
+                  <Input placeholder="Es. Rossi Mario" value={clientForm.nome}
+                    onChange={e => setClientForm(f => ({ ...f, nome: e.target.value }))}
+                    disabled={isSubmitting} className="h-8 text-sm" />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs font-medium text-gray-600">Indirizzo</Label>
+                  <Input placeholder="Via Garibaldi 10" value={clientForm.indirizzo}
+                    onChange={e => setClientForm(f => ({ ...f, indirizzo: e.target.value }))}
+                    disabled={isSubmitting} className="h-8 text-sm" />
+                </div>
+                <div className="grid grid-cols-5 gap-2">
+                  <div className="col-span-3 space-y-1">
+                    <Label className="text-xs font-medium text-gray-600">Comune</Label>
+                    <Input placeholder="Milano" value={clientForm.citta}
+                      onChange={e => setClientForm(f => ({ ...f, citta: e.target.value }))}
+                      disabled={isSubmitting} className="h-8 text-sm" />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs font-medium text-gray-600">Prov.</Label>
+                    <Input placeholder="MI" value={clientForm.provincia}
+                      onChange={e => setClientForm(f => ({ ...f, provincia: e.target.value.toUpperCase() }))}
+                      disabled={isSubmitting} className="h-8 text-sm" maxLength={2} />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs font-medium text-gray-600">CAP</Label>
+                    <Input placeholder="20100" value={clientForm.cap}
+                      onChange={e => setClientForm(f => ({ ...f, cap: e.target.value }))}
+                      disabled={isSubmitting} className="h-8 text-sm" maxLength={5} />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="space-y-1">
+                    <Label className="text-xs font-medium text-gray-600">C.F.</Label>
+                    <Input placeholder="RSSMRA80A01H501Z" value={clientForm.codiceFiscale}
+                      onChange={e => setClientForm(f => ({ ...f, codiceFiscale: e.target.value.toUpperCase() }))}
+                      disabled={isSubmitting} className="h-8 text-sm" maxLength={16} />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs font-medium text-gray-600">P. IVA</Label>
+                    <Input placeholder="IT12345678901" value={clientForm.partitaIva}
+                      onChange={e => setClientForm(f => ({ ...f, partitaIva: e.target.value }))}
+                      disabled={isSubmitting} className="h-8 text-sm" maxLength={13} />
+                  </div>
+                </div>
+                <div className="flex items-center justify-between pt-0.5">
+                  <label className="flex items-center gap-2 text-xs text-gray-600 cursor-pointer select-none">
+                    <input type="checkbox" checked={rememberClient} onChange={e => setRememberClient(e.target.checked)}
+                      className="rounded border-gray-300 text-violet-600 focus:ring-violet-500" />
+                    Ricorda questo cliente
+                  </label>
+                  {clientMode === "new" && (
+                    <button type="button" onClick={clearClient} className="text-xs text-gray-400 hover:text-gray-600 transition-colors">
+                      Annulla
+                    </button>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* ─── DashboardHome (default export) ────────────────────────────────────── */
 export default function DashboardHome() {
   const { data: stats, isLoading: isLoadingStats } = useGetQuoteStats();
   const { data: subscription } = useGetSubscription();
@@ -189,6 +624,7 @@ export default function DashboardHome() {
     return (
       <div className="space-y-5 animate-in fade-in slide-in-from-bottom-4 duration-500">
         <Skeleton className="h-20 w-full rounded-xl" />
+        <Skeleton className="h-32 w-full rounded-xl" />
         <div className="grid gap-3 grid-cols-2 lg:grid-cols-4">
           {[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-20 rounded-xl" />)}
         </div>
@@ -199,7 +635,7 @@ export default function DashboardHome() {
 
   return (
     <div className="space-y-4 animate-in fade-in duration-500">
-      {/* Hero header */}
+      {/* ── div 1: Hero greeting ── */}
       <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-violet-600 via-violet-500 to-cyan-500 px-5 py-4 text-white shadow-md">
         <div className="absolute inset-0 opacity-10" style={{ backgroundImage: "radial-gradient(circle at 80% 20%, white 0%, transparent 60%)" }} />
         <div className="relative flex items-center justify-between gap-4">
@@ -212,8 +648,8 @@ export default function DashboardHome() {
               {isNewUser
                 ? "Benvenuto! Crea il tuo primo preventivo in 60 secondi."
                 : subscription?.isActive
-                  ? `Piano ${subscription.plan === "monthly_pro" ? "Pro attivo" : "Starter attivo"} — preventivi illimitati`
-                  : "Hai " + (stats?.total ?? 0) + " preventivi totali nel tuo archivio."}
+                  ? `Piano ${subscription.plan === "monthly_pro" ? "Pro" : subscription.plan === "monthly_elite" ? "Elite" : "Starter"} attivo — ${subscription.plan === "monthly_starter" ? "10 preventivi/mese" : "preventivi illimitati"}`
+                  : `Hai ${stats?.total ?? 0} preventivi totali nel tuo archivio.`}
             </p>
           </div>
           <Link href="/dashboard/new" className="shrink-0 inline-flex items-center gap-1.5 h-8 px-3 rounded-lg bg-white/20 hover:bg-white/30 text-white text-xs font-semibold transition-colors backdrop-blur-sm border border-white/20">
@@ -223,7 +659,10 @@ export default function DashboardHome() {
         </div>
       </div>
 
-      {/* Free trial banner — show when trial is active and no paid subscription */}
+      {/* ── div 2: AI bar + client section ── */}
+      <DashboardQuickBar />
+
+      {/* ── Trial banner ── */}
       {trialStatus?.isTrialActive && !subscription?.isActive && (
         <TrialBanner
           downloadsUsed={trialStatus.trialDownloadsUsed}
@@ -232,7 +671,7 @@ export default function DashboardHome() {
         />
       )}
 
-      {/* Onboarding vs normal view */}
+      {/* ── Onboarding vs normal view ── */}
       {isNewUser ? (
         <OnboardingView />
       ) : (
