@@ -1,5 +1,6 @@
+import { useEffect } from "react";
 import { useParams } from "wouter";
-import { ArrowRight, CheckCircle2, MapPin, Clock, BarChart2 } from "lucide-react";
+import { ArrowRight, CheckCircle2, MapPin, BarChart2 } from "lucide-react";
 import { SECTORS, DEFAULT_SECTOR, CITIES_BY_SLUG, getCityTitle, getCityDesc } from "@/data/seo-data";
 import {
   getCityIntro,
@@ -13,6 +14,7 @@ import {
   getCityContextText,
   getCityRelatedSectors,
   buildCityJsonLd,
+  verifyCityContentInDev,
 } from "@/data/seo-render-engine";
 import { SeoHead } from "@/components/seo-head";
 
@@ -42,16 +44,23 @@ export default function SeoCityLanding() {
   const relatedSectors = getCityRelatedSectors(s.slug);
   const jsonLd = city ? buildCityJsonLd(s, city) : [];
 
+  useEffect(() => {
+    if (city) {
+      verifyCityContentInDev(s, city, {
+        intro,
+        faqAnswers: faqItems.map((f) => f.a),
+        ctaButton: cta.button,
+      });
+    }
+  }, [s, city, intro, faqItems, cta.button]);
+
   const sBenefits = (
-    <section className="py-20 bg-gray-50/60" key="benefits">
+    <section className="py-20 bg-gray-50" key="benefits">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-14">
           <h2 className="text-3xl font-bold text-gray-900">
             Perché i {s.labelPlural} di {cityName} scelgono prevai
           </h2>
-          <p className="text-gray-500 mt-3 max-w-xl mx-auto">
-            Risparmia tempo amministrativo ogni settimana e presenta ai tuoi clienti un documento che ispira fiducia.
-          </p>
         </div>
         <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
           {s.benefits.map((b) => (
@@ -98,15 +107,12 @@ export default function SeoCityLanding() {
   );
 
   const sUseCases = (
-    <section className="py-20 bg-gray-50/60" key="usecases">
+    <section className={`py-20 ${layout === 2 ? "bg-white" : "bg-gray-50"}`} key="usecases">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-3xl">
         <div className="text-center mb-12">
           <h2 className="text-3xl font-bold text-gray-900">
             Preventivi per questi lavori a {cityName}
           </h2>
-          <p className="text-gray-500 mt-3">
-            Casi d'uso più comuni per i {s.labelPlural} che operano in {regionName}.
-          </p>
         </div>
         <div className="grid sm:grid-cols-2 gap-3">
           {s.useCases.map((uc) => (
@@ -121,7 +127,7 @@ export default function SeoCityLanding() {
   );
 
   const sFaq = (
-    <section className="py-20 bg-gray-50/60" key="faq">
+    <section className="py-20 bg-gray-50" key="faq">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-3xl">
         <div className="text-center mb-12">
           <h2 className="text-3xl font-bold text-gray-900">Domande frequenti</h2>
@@ -290,7 +296,6 @@ export default function SeoCityLanding() {
                   href={`/seo/${s.slug}/${slug}`}
                   className="inline-flex items-center gap-1.5 rounded-full border border-gray-200 px-3.5 py-1.5 text-sm text-gray-500 hover:border-violet-300 hover:text-violet-600 transition-colors"
                 >
-                  <MapPin className="h-3 w-3" />
                   {anchorText}
                 </a>
               ))}
@@ -323,12 +328,8 @@ export default function SeoCityLanding() {
       )}
 
       {/* ── CTA finale ───────────────────────────────────────── */}
-      <section className="py-24 bg-gray-50/60">
+      <section className="py-24 bg-gray-50">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 text-center max-w-2xl">
-          <div className="flex items-center justify-center gap-2 mb-6">
-            <Clock className="h-5 w-5 text-violet-500" />
-            <span className="text-sm font-semibold text-violet-600">Risparmia ore ogni settimana</span>
-          </div>
           <h2 className="text-3xl font-bold text-gray-900 mb-4">
             {cta.headingPrefix}
             <span className="gradient-text">{cta.headingGradient}</span>
