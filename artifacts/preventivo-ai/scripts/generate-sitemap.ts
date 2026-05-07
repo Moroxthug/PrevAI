@@ -9,6 +9,12 @@ import { SECTORS, CITIES, CITY_SECTORS } from "../src/data/seo-data.js";
 const BASE_URL = "https://www.prevai.it";
 const TODAY = new Date().toISOString().split("T")[0];
 
+const TIER1_CITY_SLUGS = new Set([
+  "roma", "milano", "napoli", "torino", "palermo", "genova", "bologna",
+  "firenze", "bari", "catania", "venezia", "verona", "messina", "padova",
+  "trieste", "brescia", "reggio-calabria", "modena", "parma", "prato",
+]);
+
 function url(loc: string, priority: string, changefreq: string): string {
   return `  <url>
     <loc>${loc}</loc>
@@ -23,16 +29,17 @@ const entries: string[] = [];
 entries.push(url(`${BASE_URL}/`, "1.0", "weekly"));
 entries.push(url(`${BASE_URL}/privacy`, "0.4", "yearly"));
 entries.push(url(`${BASE_URL}/termini`, "0.4", "yearly"));
-entries.push(url(`${BASE_URL}/sign-up`, "0.4", "monthly"));
-entries.push(url(`${BASE_URL}/sign-in`, "0.4", "monthly"));
 
+const citySectorSet = new Set(CITY_SECTORS);
 for (const sectorSlug of Object.keys(SECTORS)) {
-  entries.push(url(`${BASE_URL}/seo/${sectorSlug}`, "0.7", "monthly"));
+  const priority = citySectorSet.has(sectorSlug) ? "0.8" : "0.7";
+  entries.push(url(`${BASE_URL}/seo/${sectorSlug}`, priority, "monthly"));
 }
 
 for (const sectorSlug of CITY_SECTORS) {
   for (const city of CITIES) {
-    entries.push(url(`${BASE_URL}/seo/${sectorSlug}/${city.slug}`, "0.6", "monthly"));
+    const priority = TIER1_CITY_SLUGS.has(city.slug) ? "0.7" : "0.6";
+    entries.push(url(`${BASE_URL}/seo/${sectorSlug}/${city.slug}`, priority, "monthly"));
   }
 }
 

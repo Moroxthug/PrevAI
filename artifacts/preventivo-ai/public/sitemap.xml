@@ -19,76 +19,64 @@
     <priority>0.4</priority>
   </url>
   <url>
-    <loc>https://www.prevai.it/sign-up</loc>
-    <lastmod>2026-05-07</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.4</priority>
-  </url>
-  <url>
-    <loc>https://www.prevai.it/sign-in</loc>
-    <lastmod>2026-05-07</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.4</priority>
-  </url>
-  <url>
     <loc>https://www.prevai.it/seo/imbianchino</loc>
     <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.7</priority>
+    <priority>0.8</priority>
   </url>
   <url>
     <loc>https://www.prevai.it/seo/elettricista</loc>
     <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.7</priority>
+    <priority>0.8</priority>
   </url>
   <url>
     <loc>https://www.prevai.it/seo/idraulico</loc>
     <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.7</priority>
+    <priority>0.8</priority>
   </url>
   <url>
     <loc>https://www.prevai.it/seo/edilizia</loc>
     <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.7</priority>
+    <priority>0.8</priority>
   </url>
   <url>
     <loc>https://www.prevai.it/seo/ristrutturazione</loc>
     <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.7</priority>
+    <priority>0.8</priority>
   </url>
   <url>
     <loc>https://www.prevai.it/seo/carpentiere</loc>
     <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.7</priority>
+    <priority>0.8</priority>
   </url>
   <url>
     <loc>https://www.prevai.it/seo/falegname</loc>
     <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.7</priority>
+    <priority>0.8</priority>
   </url>
   <url>
     <loc>https://www.prevai.it/seo/termoidraulico</loc>
     <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.7</priority>
+    <priority>0.8</priority>
   </url>
   <url>
     <loc>https://www.prevai.it/seo/freelance</loc>
     <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.7</priority>
+    <priority>0.8</priority>
   </url>
   <url>
     <loc>https://www.prevai.it/seo/geometra</loc>
     <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.7</priority>
+    <priority>0.8</priority>
   </url>
   <url>
     <loc>https://www.prevai.it/seo/muratore</loc>
@@ -166,7 +154,7 @@
     <loc>https://www.prevai.it/seo/imbianchino/milano</loc>
     <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
+    <priority>0.7</priority>
   </url>
   <url>
     <loc>https://www.prevai.it/seo/imbianchino/bergamo</loc>
@@ -178,7 +166,7 @@
     <loc>https://www.prevai.it/seo/imbianchino/brescia</loc>
     <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
+    <priority>0.7</priority>
   </url>
   <url>
     <loc>https://www.prevai.it/seo/imbianchino/como</loc>
@@ -238,7 +226,7 @@
     <loc>https://www.prevai.it/seo/imbianchino/torino</loc>
     <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
+    <priority>0.7</priority>
   </url>
   <url>
     <loc>https://www.prevai.it/seo/imbianchino/alessandria</loc>
@@ -286,7 +274,7 @@
     <loc>https://www.prevai.it/seo/imbianchino/genova</loc>
     <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
+    <priority>0.7</priority>
   </url>
   <url>
     <loc>https://www.prevai.it/seo/imbianchino/imperia</loc>
@@ -316,19 +304,19 @@
     <loc>https://www.prevai.it/seo/imbianchino/venezia</loc>
     <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
+    <priority>0.7</priority>
   </url>
   <url>
     <loc>https://www.prevai.it/seo/imbianchino/verona</loc>
     <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
+    <priority>0.7</priority>
   </url>
   <url>
     <loc>https://www.prevai.it/seo/imbianchino/padova</loc>
     <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
+    <priority>0.7</priority>
   </url>
   <url>
     <loc>https://www.prevai.it/seo/imbianchino/vicenza</loc>
@@ -358,19 +346,19 @@
     <loc>https://www.prevai.it/seo/imbianchino/bologna</loc>
     <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
+    <priority>0.7</priority>
   </url>
   <url>
     <loc>https://www.prevai.it/seo/imbianchino/modena</loc>
     <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
+    <priority>0.7</priority>
   </url>
   <url>
     <loc>https://www.prevai.it/seo/imbianchino/parma</loc>
     <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
+    <priority>0.7</priority>
   </url>
   <url>
     <loc>https://www.prevai.it/seo/imbianchino/reggio-emilia</loc>
@@ -418,7 +406,7 @@
     <loc>https://www.prevai.it/seo/imbianchino/trieste</loc>
     <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
+    <priority>0.7</priority>
   </url>
   <url>
     <loc>https://www.prevai.it/seo/imbianchino/udine</loc>
@@ -454,7 +442,7 @@
     <loc>https://www.prevai.it/seo/imbianchino/firenze</loc>
     <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
+    <priority>0.7</priority>
   </url>
   <url>
     <loc>https://www.prevai.it/seo/imbianchino/arezzo</loc>
@@ -502,7 +490,7 @@
     <loc>https://www.prevai.it/seo/imbianchino/prato</loc>
     <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
+    <priority>0.7</priority>
   </url>
   <url>
     <loc>https://www.prevai.it/seo/imbianchino/siena</loc>
@@ -556,7 +544,7 @@
     <loc>https://www.prevai.it/seo/imbianchino/roma</loc>
     <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
+    <priority>0.7</priority>
   </url>
   <url>
     <loc>https://www.prevai.it/seo/imbianchino/frosinone</loc>
@@ -622,7 +610,7 @@
     <loc>https://www.prevai.it/seo/imbianchino/napoli</loc>
     <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
+    <priority>0.7</priority>
   </url>
   <url>
     <loc>https://www.prevai.it/seo/imbianchino/avellino</loc>
@@ -652,7 +640,7 @@
     <loc>https://www.prevai.it/seo/imbianchino/bari</loc>
     <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
+    <priority>0.7</priority>
   </url>
   <url>
     <loc>https://www.prevai.it/seo/imbianchino/barletta</loc>
@@ -718,7 +706,7 @@
     <loc>https://www.prevai.it/seo/imbianchino/reggio-calabria</loc>
     <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
+    <priority>0.7</priority>
   </url>
   <url>
     <loc>https://www.prevai.it/seo/imbianchino/vibo-valentia</loc>
@@ -742,7 +730,7 @@
     <loc>https://www.prevai.it/seo/imbianchino/catania</loc>
     <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
+    <priority>0.7</priority>
   </url>
   <url>
     <loc>https://www.prevai.it/seo/imbianchino/enna</loc>
@@ -754,13 +742,13 @@
     <loc>https://www.prevai.it/seo/imbianchino/messina</loc>
     <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
+    <priority>0.7</priority>
   </url>
   <url>
     <loc>https://www.prevai.it/seo/imbianchino/palermo</loc>
     <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
+    <priority>0.7</priority>
   </url>
   <url>
     <loc>https://www.prevai.it/seo/imbianchino/ragusa</loc>
@@ -814,7 +802,7 @@
     <loc>https://www.prevai.it/seo/elettricista/milano</loc>
     <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
+    <priority>0.7</priority>
   </url>
   <url>
     <loc>https://www.prevai.it/seo/elettricista/bergamo</loc>
@@ -826,7 +814,7 @@
     <loc>https://www.prevai.it/seo/elettricista/brescia</loc>
     <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
+    <priority>0.7</priority>
   </url>
   <url>
     <loc>https://www.prevai.it/seo/elettricista/como</loc>
@@ -886,7 +874,7 @@
     <loc>https://www.prevai.it/seo/elettricista/torino</loc>
     <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
+    <priority>0.7</priority>
   </url>
   <url>
     <loc>https://www.prevai.it/seo/elettricista/alessandria</loc>
@@ -934,7 +922,7 @@
     <loc>https://www.prevai.it/seo/elettricista/genova</loc>
     <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
+    <priority>0.7</priority>
   </url>
   <url>
     <loc>https://www.prevai.it/seo/elettricista/imperia</loc>
@@ -964,19 +952,19 @@
     <loc>https://www.prevai.it/seo/elettricista/venezia</loc>
     <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
+    <priority>0.7</priority>
   </url>
   <url>
     <loc>https://www.prevai.it/seo/elettricista/verona</loc>
     <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
+    <priority>0.7</priority>
   </url>
   <url>
     <loc>https://www.prevai.it/seo/elettricista/padova</loc>
     <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
+    <priority>0.7</priority>
   </url>
   <url>
     <loc>https://www.prevai.it/seo/elettricista/vicenza</loc>
@@ -1006,19 +994,19 @@
     <loc>https://www.prevai.it/seo/elettricista/bologna</loc>
     <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
+    <priority>0.7</priority>
   </url>
   <url>
     <loc>https://www.prevai.it/seo/elettricista/modena</loc>
     <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
+    <priority>0.7</priority>
   </url>
   <url>
     <loc>https://www.prevai.it/seo/elettricista/parma</loc>
     <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
+    <priority>0.7</priority>
   </url>
   <url>
     <loc>https://www.prevai.it/seo/elettricista/reggio-emilia</loc>
@@ -1066,7 +1054,7 @@
     <loc>https://www.prevai.it/seo/elettricista/trieste</loc>
     <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
+    <priority>0.7</priority>
   </url>
   <url>
     <loc>https://www.prevai.it/seo/elettricista/udine</loc>
@@ -1102,7 +1090,7 @@
     <loc>https://www.prevai.it/seo/elettricista/firenze</loc>
     <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
+    <priority>0.7</priority>
   </url>
   <url>
     <loc>https://www.prevai.it/seo/elettricista/arezzo</loc>
@@ -1150,7 +1138,7 @@
     <loc>https://www.prevai.it/seo/elettricista/prato</loc>
     <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
+    <priority>0.7</priority>
   </url>
   <url>
     <loc>https://www.prevai.it/seo/elettricista/siena</loc>
@@ -1204,7 +1192,7 @@
     <loc>https://www.prevai.it/seo/elettricista/roma</loc>
     <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
+    <priority>0.7</priority>
   </url>
   <url>
     <loc>https://www.prevai.it/seo/elettricista/frosinone</loc>
@@ -1270,7 +1258,7 @@
     <loc>https://www.prevai.it/seo/elettricista/napoli</loc>
     <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
+    <priority>0.7</priority>
   </url>
   <url>
     <loc>https://www.prevai.it/seo/elettricista/avellino</loc>
@@ -1300,7 +1288,7 @@
     <loc>https://www.prevai.it/seo/elettricista/bari</loc>
     <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
+    <priority>0.7</priority>
   </url>
   <url>
     <loc>https://www.prevai.it/seo/elettricista/barletta</loc>
@@ -1366,7 +1354,7 @@
     <loc>https://www.prevai.it/seo/elettricista/reggio-calabria</loc>
     <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
+    <priority>0.7</priority>
   </url>
   <url>
     <loc>https://www.prevai.it/seo/elettricista/vibo-valentia</loc>
@@ -1390,7 +1378,7 @@
     <loc>https://www.prevai.it/seo/elettricista/catania</loc>
     <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
+    <priority>0.7</priority>
   </url>
   <url>
     <loc>https://www.prevai.it/seo/elettricista/enna</loc>
@@ -1402,13 +1390,13 @@
     <loc>https://www.prevai.it/seo/elettricista/messina</loc>
     <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
+    <priority>0.7</priority>
   </url>
   <url>
     <loc>https://www.prevai.it/seo/elettricista/palermo</loc>
     <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
+    <priority>0.7</priority>
   </url>
   <url>
     <loc>https://www.prevai.it/seo/elettricista/ragusa</loc>
@@ -1462,7 +1450,7 @@
     <loc>https://www.prevai.it/seo/idraulico/milano</loc>
     <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
+    <priority>0.7</priority>
   </url>
   <url>
     <loc>https://www.prevai.it/seo/idraulico/bergamo</loc>
@@ -1474,7 +1462,7 @@
     <loc>https://www.prevai.it/seo/idraulico/brescia</loc>
     <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
+    <priority>0.7</priority>
   </url>
   <url>
     <loc>https://www.prevai.it/seo/idraulico/como</loc>
@@ -1534,7 +1522,7 @@
     <loc>https://www.prevai.it/seo/idraulico/torino</loc>
     <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
+    <priority>0.7</priority>
   </url>
   <url>
     <loc>https://www.prevai.it/seo/idraulico/alessandria</loc>
@@ -1582,7 +1570,7 @@
     <loc>https://www.prevai.it/seo/idraulico/genova</loc>
     <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
+    <priority>0.7</priority>
   </url>
   <url>
     <loc>https://www.prevai.it/seo/idraulico/imperia</loc>
@@ -1612,19 +1600,19 @@
     <loc>https://www.prevai.it/seo/idraulico/venezia</loc>
     <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
+    <priority>0.7</priority>
   </url>
   <url>
     <loc>https://www.prevai.it/seo/idraulico/verona</loc>
     <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
+    <priority>0.7</priority>
   </url>
   <url>
     <loc>https://www.prevai.it/seo/idraulico/padova</loc>
     <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
+    <priority>0.7</priority>
   </url>
   <url>
     <loc>https://www.prevai.it/seo/idraulico/vicenza</loc>
@@ -1654,19 +1642,19 @@
     <loc>https://www.prevai.it/seo/idraulico/bologna</loc>
     <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
+    <priority>0.7</priority>
   </url>
   <url>
     <loc>https://www.prevai.it/seo/idraulico/modena</loc>
     <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
+    <priority>0.7</priority>
   </url>
   <url>
     <loc>https://www.prevai.it/seo/idraulico/parma</loc>
     <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
+    <priority>0.7</priority>
   </url>
   <url>
     <loc>https://www.prevai.it/seo/idraulico/reggio-emilia</loc>
@@ -1714,7 +1702,7 @@
     <loc>https://www.prevai.it/seo/idraulico/trieste</loc>
     <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
+    <priority>0.7</priority>
   </url>
   <url>
     <loc>https://www.prevai.it/seo/idraulico/udine</loc>
@@ -1750,7 +1738,7 @@
     <loc>https://www.prevai.it/seo/idraulico/firenze</loc>
     <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
+    <priority>0.7</priority>
   </url>
   <url>
     <loc>https://www.prevai.it/seo/idraulico/arezzo</loc>
@@ -1798,7 +1786,7 @@
     <loc>https://www.prevai.it/seo/idraulico/prato</loc>
     <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
+    <priority>0.7</priority>
   </url>
   <url>
     <loc>https://www.prevai.it/seo/idraulico/siena</loc>
@@ -1852,7 +1840,7 @@
     <loc>https://www.prevai.it/seo/idraulico/roma</loc>
     <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
+    <priority>0.7</priority>
   </url>
   <url>
     <loc>https://www.prevai.it/seo/idraulico/frosinone</loc>
@@ -1918,7 +1906,7 @@
     <loc>https://www.prevai.it/seo/idraulico/napoli</loc>
     <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
+    <priority>0.7</priority>
   </url>
   <url>
     <loc>https://www.prevai.it/seo/idraulico/avellino</loc>
@@ -1948,7 +1936,7 @@
     <loc>https://www.prevai.it/seo/idraulico/bari</loc>
     <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
+    <priority>0.7</priority>
   </url>
   <url>
     <loc>https://www.prevai.it/seo/idraulico/barletta</loc>
@@ -2014,7 +2002,7 @@
     <loc>https://www.prevai.it/seo/idraulico/reggio-calabria</loc>
     <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
+    <priority>0.7</priority>
   </url>
   <url>
     <loc>https://www.prevai.it/seo/idraulico/vibo-valentia</loc>
@@ -2038,7 +2026,7 @@
     <loc>https://www.prevai.it/seo/idraulico/catania</loc>
     <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
+    <priority>0.7</priority>
   </url>
   <url>
     <loc>https://www.prevai.it/seo/idraulico/enna</loc>
@@ -2050,13 +2038,13 @@
     <loc>https://www.prevai.it/seo/idraulico/messina</loc>
     <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
+    <priority>0.7</priority>
   </url>
   <url>
     <loc>https://www.prevai.it/seo/idraulico/palermo</loc>
     <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
+    <priority>0.7</priority>
   </url>
   <url>
     <loc>https://www.prevai.it/seo/idraulico/ragusa</loc>
@@ -2110,7 +2098,7 @@
     <loc>https://www.prevai.it/seo/edilizia/milano</loc>
     <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
+    <priority>0.7</priority>
   </url>
   <url>
     <loc>https://www.prevai.it/seo/edilizia/bergamo</loc>
@@ -2122,7 +2110,7 @@
     <loc>https://www.prevai.it/seo/edilizia/brescia</loc>
     <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
+    <priority>0.7</priority>
   </url>
   <url>
     <loc>https://www.prevai.it/seo/edilizia/como</loc>
@@ -2182,7 +2170,7 @@
     <loc>https://www.prevai.it/seo/edilizia/torino</loc>
     <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
+    <priority>0.7</priority>
   </url>
   <url>
     <loc>https://www.prevai.it/seo/edilizia/alessandria</loc>
@@ -2230,7 +2218,7 @@
     <loc>https://www.prevai.it/seo/edilizia/genova</loc>
     <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
+    <priority>0.7</priority>
   </url>
   <url>
     <loc>https://www.prevai.it/seo/edilizia/imperia</loc>
@@ -2260,19 +2248,19 @@
     <loc>https://www.prevai.it/seo/edilizia/venezia</loc>
     <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
+    <priority>0.7</priority>
   </url>
   <url>
     <loc>https://www.prevai.it/seo/edilizia/verona</loc>
     <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
+    <priority>0.7</priority>
   </url>
   <url>
     <loc>https://www.prevai.it/seo/edilizia/padova</loc>
     <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
+    <priority>0.7</priority>
   </url>
   <url>
     <loc>https://www.prevai.it/seo/edilizia/vicenza</loc>
@@ -2302,19 +2290,19 @@
     <loc>https://www.prevai.it/seo/edilizia/bologna</loc>
     <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
+    <priority>0.7</priority>
   </url>
   <url>
     <loc>https://www.prevai.it/seo/edilizia/modena</loc>
     <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
+    <priority>0.7</priority>
   </url>
   <url>
     <loc>https://www.prevai.it/seo/edilizia/parma</loc>
     <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
+    <priority>0.7</priority>
   </url>
   <url>
     <loc>https://www.prevai.it/seo/edilizia/reggio-emilia</loc>
@@ -2362,7 +2350,7 @@
     <loc>https://www.prevai.it/seo/edilizia/trieste</loc>
     <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
+    <priority>0.7</priority>
   </url>
   <url>
     <loc>https://www.prevai.it/seo/edilizia/udine</loc>
@@ -2398,7 +2386,7 @@
     <loc>https://www.prevai.it/seo/edilizia/firenze</loc>
     <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
+    <priority>0.7</priority>
   </url>
   <url>
     <loc>https://www.prevai.it/seo/edilizia/arezzo</loc>
@@ -2446,7 +2434,7 @@
     <loc>https://www.prevai.it/seo/edilizia/prato</loc>
     <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
+    <priority>0.7</priority>
   </url>
   <url>
     <loc>https://www.prevai.it/seo/edilizia/siena</loc>
@@ -2500,7 +2488,7 @@
     <loc>https://www.prevai.it/seo/edilizia/roma</loc>
     <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
+    <priority>0.7</priority>
   </url>
   <url>
     <loc>https://www.prevai.it/seo/edilizia/frosinone</loc>
@@ -2566,7 +2554,7 @@
     <loc>https://www.prevai.it/seo/edilizia/napoli</loc>
     <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
+    <priority>0.7</priority>
   </url>
   <url>
     <loc>https://www.prevai.it/seo/edilizia/avellino</loc>
@@ -2596,7 +2584,7 @@
     <loc>https://www.prevai.it/seo/edilizia/bari</loc>
     <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
+    <priority>0.7</priority>
   </url>
   <url>
     <loc>https://www.prevai.it/seo/edilizia/barletta</loc>
@@ -2662,7 +2650,7 @@
     <loc>https://www.prevai.it/seo/edilizia/reggio-calabria</loc>
     <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
+    <priority>0.7</priority>
   </url>
   <url>
     <loc>https://www.prevai.it/seo/edilizia/vibo-valentia</loc>
@@ -2686,7 +2674,7 @@
     <loc>https://www.prevai.it/seo/edilizia/catania</loc>
     <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
+    <priority>0.7</priority>
   </url>
   <url>
     <loc>https://www.prevai.it/seo/edilizia/enna</loc>
@@ -2698,13 +2686,13 @@
     <loc>https://www.prevai.it/seo/edilizia/messina</loc>
     <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
+    <priority>0.7</priority>
   </url>
   <url>
     <loc>https://www.prevai.it/seo/edilizia/palermo</loc>
     <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
+    <priority>0.7</priority>
   </url>
   <url>
     <loc>https://www.prevai.it/seo/edilizia/ragusa</loc>
@@ -2758,7 +2746,7 @@
     <loc>https://www.prevai.it/seo/ristrutturazione/milano</loc>
     <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
+    <priority>0.7</priority>
   </url>
   <url>
     <loc>https://www.prevai.it/seo/ristrutturazione/bergamo</loc>
@@ -2770,7 +2758,7 @@
     <loc>https://www.prevai.it/seo/ristrutturazione/brescia</loc>
     <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
+    <priority>0.7</priority>
   </url>
   <url>
     <loc>https://www.prevai.it/seo/ristrutturazione/como</loc>
@@ -2830,7 +2818,7 @@
     <loc>https://www.prevai.it/seo/ristrutturazione/torino</loc>
     <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
+    <priority>0.7</priority>
   </url>
   <url>
     <loc>https://www.prevai.it/seo/ristrutturazione/alessandria</loc>
@@ -2878,7 +2866,7 @@
     <loc>https://www.prevai.it/seo/ristrutturazione/genova</loc>
     <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
+    <priority>0.7</priority>
   </url>
   <url>
     <loc>https://www.prevai.it/seo/ristrutturazione/imperia</loc>
@@ -2908,19 +2896,19 @@
     <loc>https://www.prevai.it/seo/ristrutturazione/venezia</loc>
     <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
+    <priority>0.7</priority>
   </url>
   <url>
     <loc>https://www.prevai.it/seo/ristrutturazione/verona</loc>
     <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
+    <priority>0.7</priority>
   </url>
   <url>
     <loc>https://www.prevai.it/seo/ristrutturazione/padova</loc>
     <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
+    <priority>0.7</priority>
   </url>
   <url>
     <loc>https://www.prevai.it/seo/ristrutturazione/vicenza</loc>
@@ -2950,19 +2938,19 @@
     <loc>https://www.prevai.it/seo/ristrutturazione/bologna</loc>
     <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
+    <priority>0.7</priority>
   </url>
   <url>
     <loc>https://www.prevai.it/seo/ristrutturazione/modena</loc>
     <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
+    <priority>0.7</priority>
   </url>
   <url>
     <loc>https://www.prevai.it/seo/ristrutturazione/parma</loc>
     <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
+    <priority>0.7</priority>
   </url>
   <url>
     <loc>https://www.prevai.it/seo/ristrutturazione/reggio-emilia</loc>
@@ -3010,7 +2998,7 @@
     <loc>https://www.prevai.it/seo/ristrutturazione/trieste</loc>
     <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
+    <priority>0.7</priority>
   </url>
   <url>
     <loc>https://www.prevai.it/seo/ristrutturazione/udine</loc>
@@ -3046,7 +3034,7 @@
     <loc>https://www.prevai.it/seo/ristrutturazione/firenze</loc>
     <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
+    <priority>0.7</priority>
   </url>
   <url>
     <loc>https://www.prevai.it/seo/ristrutturazione/arezzo</loc>
@@ -3094,7 +3082,7 @@
     <loc>https://www.prevai.it/seo/ristrutturazione/prato</loc>
     <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
+    <priority>0.7</priority>
   </url>
   <url>
     <loc>https://www.prevai.it/seo/ristrutturazione/siena</loc>
@@ -3148,7 +3136,7 @@
     <loc>https://www.prevai.it/seo/ristrutturazione/roma</loc>
     <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
+    <priority>0.7</priority>
   </url>
   <url>
     <loc>https://www.prevai.it/seo/ristrutturazione/frosinone</loc>
@@ -3214,7 +3202,7 @@
     <loc>https://www.prevai.it/seo/ristrutturazione/napoli</loc>
     <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
+    <priority>0.7</priority>
   </url>
   <url>
     <loc>https://www.prevai.it/seo/ristrutturazione/avellino</loc>
@@ -3244,7 +3232,7 @@
     <loc>https://www.prevai.it/seo/ristrutturazione/bari</loc>
     <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
+    <priority>0.7</priority>
   </url>
   <url>
     <loc>https://www.prevai.it/seo/ristrutturazione/barletta</loc>
@@ -3310,7 +3298,7 @@
     <loc>https://www.prevai.it/seo/ristrutturazione/reggio-calabria</loc>
     <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
+    <priority>0.7</priority>
   </url>
   <url>
     <loc>https://www.prevai.it/seo/ristrutturazione/vibo-valentia</loc>
@@ -3334,7 +3322,7 @@
     <loc>https://www.prevai.it/seo/ristrutturazione/catania</loc>
     <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
+    <priority>0.7</priority>
   </url>
   <url>
     <loc>https://www.prevai.it/seo/ristrutturazione/enna</loc>
@@ -3346,13 +3334,13 @@
     <loc>https://www.prevai.it/seo/ristrutturazione/messina</loc>
     <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
+    <priority>0.7</priority>
   </url>
   <url>
     <loc>https://www.prevai.it/seo/ristrutturazione/palermo</loc>
     <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
+    <priority>0.7</priority>
   </url>
   <url>
     <loc>https://www.prevai.it/seo/ristrutturazione/ragusa</loc>
@@ -3406,7 +3394,7 @@
     <loc>https://www.prevai.it/seo/carpentiere/milano</loc>
     <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
+    <priority>0.7</priority>
   </url>
   <url>
     <loc>https://www.prevai.it/seo/carpentiere/bergamo</loc>
@@ -3418,7 +3406,7 @@
     <loc>https://www.prevai.it/seo/carpentiere/brescia</loc>
     <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
+    <priority>0.7</priority>
   </url>
   <url>
     <loc>https://www.prevai.it/seo/carpentiere/como</loc>
@@ -3478,7 +3466,7 @@
     <loc>https://www.prevai.it/seo/carpentiere/torino</loc>
     <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
+    <priority>0.7</priority>
   </url>
   <url>
     <loc>https://www.prevai.it/seo/carpentiere/alessandria</loc>
@@ -3526,7 +3514,7 @@
     <loc>https://www.prevai.it/seo/carpentiere/genova</loc>
     <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
+    <priority>0.7</priority>
   </url>
   <url>
     <loc>https://www.prevai.it/seo/carpentiere/imperia</loc>
@@ -3556,19 +3544,19 @@
     <loc>https://www.prevai.it/seo/carpentiere/venezia</loc>
     <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
+    <priority>0.7</priority>
   </url>
   <url>
     <loc>https://www.prevai.it/seo/carpentiere/verona</loc>
     <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
+    <priority>0.7</priority>
   </url>
   <url>
     <loc>https://www.prevai.it/seo/carpentiere/padova</loc>
     <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
+    <priority>0.7</priority>
   </url>
   <url>
     <loc>https://www.prevai.it/seo/carpentiere/vicenza</loc>
@@ -3598,19 +3586,19 @@
     <loc>https://www.prevai.it/seo/carpentiere/bologna</loc>
     <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
+    <priority>0.7</priority>
   </url>
   <url>
     <loc>https://www.prevai.it/seo/carpentiere/modena</loc>
     <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
+    <priority>0.7</priority>
   </url>
   <url>
     <loc>https://www.prevai.it/seo/carpentiere/parma</loc>
     <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
+    <priority>0.7</priority>
   </url>
   <url>
     <loc>https://www.prevai.it/seo/carpentiere/reggio-emilia</loc>
@@ -3658,7 +3646,7 @@
     <loc>https://www.prevai.it/seo/carpentiere/trieste</loc>
     <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
+    <priority>0.7</priority>
   </url>
   <url>
     <loc>https://www.prevai.it/seo/carpentiere/udine</loc>
@@ -3694,7 +3682,7 @@
     <loc>https://www.prevai.it/seo/carpentiere/firenze</loc>
     <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
+    <priority>0.7</priority>
   </url>
   <url>
     <loc>https://www.prevai.it/seo/carpentiere/arezzo</loc>
@@ -3742,7 +3730,7 @@
     <loc>https://www.prevai.it/seo/carpentiere/prato</loc>
     <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
+    <priority>0.7</priority>
   </url>
   <url>
     <loc>https://www.prevai.it/seo/carpentiere/siena</loc>
@@ -3796,7 +3784,7 @@
     <loc>https://www.prevai.it/seo/carpentiere/roma</loc>
     <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
+    <priority>0.7</priority>
   </url>
   <url>
     <loc>https://www.prevai.it/seo/carpentiere/frosinone</loc>
@@ -3862,7 +3850,7 @@
     <loc>https://www.prevai.it/seo/carpentiere/napoli</loc>
     <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
+    <priority>0.7</priority>
   </url>
   <url>
     <loc>https://www.prevai.it/seo/carpentiere/avellino</loc>
@@ -3892,7 +3880,7 @@
     <loc>https://www.prevai.it/seo/carpentiere/bari</loc>
     <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
+    <priority>0.7</priority>
   </url>
   <url>
     <loc>https://www.prevai.it/seo/carpentiere/barletta</loc>
@@ -3958,7 +3946,7 @@
     <loc>https://www.prevai.it/seo/carpentiere/reggio-calabria</loc>
     <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
+    <priority>0.7</priority>
   </url>
   <url>
     <loc>https://www.prevai.it/seo/carpentiere/vibo-valentia</loc>
@@ -3982,7 +3970,7 @@
     <loc>https://www.prevai.it/seo/carpentiere/catania</loc>
     <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
+    <priority>0.7</priority>
   </url>
   <url>
     <loc>https://www.prevai.it/seo/carpentiere/enna</loc>
@@ -3994,13 +3982,13 @@
     <loc>https://www.prevai.it/seo/carpentiere/messina</loc>
     <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
+    <priority>0.7</priority>
   </url>
   <url>
     <loc>https://www.prevai.it/seo/carpentiere/palermo</loc>
     <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
+    <priority>0.7</priority>
   </url>
   <url>
     <loc>https://www.prevai.it/seo/carpentiere/ragusa</loc>
@@ -4054,7 +4042,7 @@
     <loc>https://www.prevai.it/seo/falegname/milano</loc>
     <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
+    <priority>0.7</priority>
   </url>
   <url>
     <loc>https://www.prevai.it/seo/falegname/bergamo</loc>
@@ -4066,7 +4054,7 @@
     <loc>https://www.prevai.it/seo/falegname/brescia</loc>
     <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
+    <priority>0.7</priority>
   </url>
   <url>
     <loc>https://www.prevai.it/seo/falegname/como</loc>
@@ -4126,7 +4114,7 @@
     <loc>https://www.prevai.it/seo/falegname/torino</loc>
     <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
+    <priority>0.7</priority>
   </url>
   <url>
     <loc>https://www.prevai.it/seo/falegname/alessandria</loc>
@@ -4174,7 +4162,7 @@
     <loc>https://www.prevai.it/seo/falegname/genova</loc>
     <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
+    <priority>0.7</priority>
   </url>
   <url>
     <loc>https://www.prevai.it/seo/falegname/imperia</loc>
@@ -4204,19 +4192,19 @@
     <loc>https://www.prevai.it/seo/falegname/venezia</loc>
     <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
+    <priority>0.7</priority>
   </url>
   <url>
     <loc>https://www.prevai.it/seo/falegname/verona</loc>
     <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
+    <priority>0.7</priority>
   </url>
   <url>
     <loc>https://www.prevai.it/seo/falegname/padova</loc>
     <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
+    <priority>0.7</priority>
   </url>
   <url>
     <loc>https://www.prevai.it/seo/falegname/vicenza</loc>
@@ -4246,19 +4234,19 @@
     <loc>https://www.prevai.it/seo/falegname/bologna</loc>
     <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
+    <priority>0.7</priority>
   </url>
   <url>
     <loc>https://www.prevai.it/seo/falegname/modena</loc>
     <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
+    <priority>0.7</priority>
   </url>
   <url>
     <loc>https://www.prevai.it/seo/falegname/parma</loc>
     <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
+    <priority>0.7</priority>
   </url>
   <url>
     <loc>https://www.prevai.it/seo/falegname/reggio-emilia</loc>
@@ -4306,7 +4294,7 @@
     <loc>https://www.prevai.it/seo/falegname/trieste</loc>
     <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
+    <priority>0.7</priority>
   </url>
   <url>
     <loc>https://www.prevai.it/seo/falegname/udine</loc>
@@ -4342,7 +4330,7 @@
     <loc>https://www.prevai.it/seo/falegname/firenze</loc>
     <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
+    <priority>0.7</priority>
   </url>
   <url>
     <loc>https://www.prevai.it/seo/falegname/arezzo</loc>
@@ -4390,7 +4378,7 @@
     <loc>https://www.prevai.it/seo/falegname/prato</loc>
     <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
+    <priority>0.7</priority>
   </url>
   <url>
     <loc>https://www.prevai.it/seo/falegname/siena</loc>
@@ -4444,7 +4432,7 @@
     <loc>https://www.prevai.it/seo/falegname/roma</loc>
     <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
+    <priority>0.7</priority>
   </url>
   <url>
     <loc>https://www.prevai.it/seo/falegname/frosinone</loc>
@@ -4510,7 +4498,7 @@
     <loc>https://www.prevai.it/seo/falegname/napoli</loc>
     <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
+    <priority>0.7</priority>
   </url>
   <url>
     <loc>https://www.prevai.it/seo/falegname/avellino</loc>
@@ -4540,7 +4528,7 @@
     <loc>https://www.prevai.it/seo/falegname/bari</loc>
     <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
+    <priority>0.7</priority>
   </url>
   <url>
     <loc>https://www.prevai.it/seo/falegname/barletta</loc>
@@ -4606,7 +4594,7 @@
     <loc>https://www.prevai.it/seo/falegname/reggio-calabria</loc>
     <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
+    <priority>0.7</priority>
   </url>
   <url>
     <loc>https://www.prevai.it/seo/falegname/vibo-valentia</loc>
@@ -4630,7 +4618,7 @@
     <loc>https://www.prevai.it/seo/falegname/catania</loc>
     <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
+    <priority>0.7</priority>
   </url>
   <url>
     <loc>https://www.prevai.it/seo/falegname/enna</loc>
@@ -4642,13 +4630,13 @@
     <loc>https://www.prevai.it/seo/falegname/messina</loc>
     <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
+    <priority>0.7</priority>
   </url>
   <url>
     <loc>https://www.prevai.it/seo/falegname/palermo</loc>
     <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
+    <priority>0.7</priority>
   </url>
   <url>
     <loc>https://www.prevai.it/seo/falegname/ragusa</loc>
@@ -4702,7 +4690,7 @@
     <loc>https://www.prevai.it/seo/termoidraulico/milano</loc>
     <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
+    <priority>0.7</priority>
   </url>
   <url>
     <loc>https://www.prevai.it/seo/termoidraulico/bergamo</loc>
@@ -4714,7 +4702,7 @@
     <loc>https://www.prevai.it/seo/termoidraulico/brescia</loc>
     <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
+    <priority>0.7</priority>
   </url>
   <url>
     <loc>https://www.prevai.it/seo/termoidraulico/como</loc>
@@ -4774,7 +4762,7 @@
     <loc>https://www.prevai.it/seo/termoidraulico/torino</loc>
     <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
+    <priority>0.7</priority>
   </url>
   <url>
     <loc>https://www.prevai.it/seo/termoidraulico/alessandria</loc>
@@ -4822,7 +4810,7 @@
     <loc>https://www.prevai.it/seo/termoidraulico/genova</loc>
     <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
+    <priority>0.7</priority>
   </url>
   <url>
     <loc>https://www.prevai.it/seo/termoidraulico/imperia</loc>
@@ -4852,19 +4840,19 @@
     <loc>https://www.prevai.it/seo/termoidraulico/venezia</loc>
     <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
+    <priority>0.7</priority>
   </url>
   <url>
     <loc>https://www.prevai.it/seo/termoidraulico/verona</loc>
     <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
+    <priority>0.7</priority>
   </url>
   <url>
     <loc>https://www.prevai.it/seo/termoidraulico/padova</loc>
     <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
+    <priority>0.7</priority>
   </url>
   <url>
     <loc>https://www.prevai.it/seo/termoidraulico/vicenza</loc>
@@ -4894,19 +4882,19 @@
     <loc>https://www.prevai.it/seo/termoidraulico/bologna</loc>
     <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
+    <priority>0.7</priority>
   </url>
   <url>
     <loc>https://www.prevai.it/seo/termoidraulico/modena</loc>
     <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
+    <priority>0.7</priority>
   </url>
   <url>
     <loc>https://www.prevai.it/seo/termoidraulico/parma</loc>
     <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
+    <priority>0.7</priority>
   </url>
   <url>
     <loc>https://www.prevai.it/seo/termoidraulico/reggio-emilia</loc>
@@ -4954,7 +4942,7 @@
     <loc>https://www.prevai.it/seo/termoidraulico/trieste</loc>
     <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
+    <priority>0.7</priority>
   </url>
   <url>
     <loc>https://www.prevai.it/seo/termoidraulico/udine</loc>
@@ -4990,7 +4978,7 @@
     <loc>https://www.prevai.it/seo/termoidraulico/firenze</loc>
     <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
+    <priority>0.7</priority>
   </url>
   <url>
     <loc>https://www.prevai.it/seo/termoidraulico/arezzo</loc>
@@ -5038,7 +5026,7 @@
     <loc>https://www.prevai.it/seo/termoidraulico/prato</loc>
     <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
+    <priority>0.7</priority>
   </url>
   <url>
     <loc>https://www.prevai.it/seo/termoidraulico/siena</loc>
@@ -5092,7 +5080,7 @@
     <loc>https://www.prevai.it/seo/termoidraulico/roma</loc>
     <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
+    <priority>0.7</priority>
   </url>
   <url>
     <loc>https://www.prevai.it/seo/termoidraulico/frosinone</loc>
@@ -5158,7 +5146,7 @@
     <loc>https://www.prevai.it/seo/termoidraulico/napoli</loc>
     <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
+    <priority>0.7</priority>
   </url>
   <url>
     <loc>https://www.prevai.it/seo/termoidraulico/avellino</loc>
@@ -5188,7 +5176,7 @@
     <loc>https://www.prevai.it/seo/termoidraulico/bari</loc>
     <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
+    <priority>0.7</priority>
   </url>
   <url>
     <loc>https://www.prevai.it/seo/termoidraulico/barletta</loc>
@@ -5254,7 +5242,7 @@
     <loc>https://www.prevai.it/seo/termoidraulico/reggio-calabria</loc>
     <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
+    <priority>0.7</priority>
   </url>
   <url>
     <loc>https://www.prevai.it/seo/termoidraulico/vibo-valentia</loc>
@@ -5278,7 +5266,7 @@
     <loc>https://www.prevai.it/seo/termoidraulico/catania</loc>
     <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
+    <priority>0.7</priority>
   </url>
   <url>
     <loc>https://www.prevai.it/seo/termoidraulico/enna</loc>
@@ -5290,13 +5278,13 @@
     <loc>https://www.prevai.it/seo/termoidraulico/messina</loc>
     <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
+    <priority>0.7</priority>
   </url>
   <url>
     <loc>https://www.prevai.it/seo/termoidraulico/palermo</loc>
     <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
+    <priority>0.7</priority>
   </url>
   <url>
     <loc>https://www.prevai.it/seo/termoidraulico/ragusa</loc>
@@ -5350,7 +5338,7 @@
     <loc>https://www.prevai.it/seo/freelance/milano</loc>
     <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
+    <priority>0.7</priority>
   </url>
   <url>
     <loc>https://www.prevai.it/seo/freelance/bergamo</loc>
@@ -5362,7 +5350,7 @@
     <loc>https://www.prevai.it/seo/freelance/brescia</loc>
     <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
+    <priority>0.7</priority>
   </url>
   <url>
     <loc>https://www.prevai.it/seo/freelance/como</loc>
@@ -5422,7 +5410,7 @@
     <loc>https://www.prevai.it/seo/freelance/torino</loc>
     <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
+    <priority>0.7</priority>
   </url>
   <url>
     <loc>https://www.prevai.it/seo/freelance/alessandria</loc>
@@ -5470,7 +5458,7 @@
     <loc>https://www.prevai.it/seo/freelance/genova</loc>
     <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
+    <priority>0.7</priority>
   </url>
   <url>
     <loc>https://www.prevai.it/seo/freelance/imperia</loc>
@@ -5500,19 +5488,19 @@
     <loc>https://www.prevai.it/seo/freelance/venezia</loc>
     <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
+    <priority>0.7</priority>
   </url>
   <url>
     <loc>https://www.prevai.it/seo/freelance/verona</loc>
     <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
+    <priority>0.7</priority>
   </url>
   <url>
     <loc>https://www.prevai.it/seo/freelance/padova</loc>
     <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
+    <priority>0.7</priority>
   </url>
   <url>
     <loc>https://www.prevai.it/seo/freelance/vicenza</loc>
@@ -5542,19 +5530,19 @@
     <loc>https://www.prevai.it/seo/freelance/bologna</loc>
     <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
+    <priority>0.7</priority>
   </url>
   <url>
     <loc>https://www.prevai.it/seo/freelance/modena</loc>
     <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
+    <priority>0.7</priority>
   </url>
   <url>
     <loc>https://www.prevai.it/seo/freelance/parma</loc>
     <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
+    <priority>0.7</priority>
   </url>
   <url>
     <loc>https://www.prevai.it/seo/freelance/reggio-emilia</loc>
@@ -5602,7 +5590,7 @@
     <loc>https://www.prevai.it/seo/freelance/trieste</loc>
     <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
+    <priority>0.7</priority>
   </url>
   <url>
     <loc>https://www.prevai.it/seo/freelance/udine</loc>
@@ -5638,7 +5626,7 @@
     <loc>https://www.prevai.it/seo/freelance/firenze</loc>
     <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
+    <priority>0.7</priority>
   </url>
   <url>
     <loc>https://www.prevai.it/seo/freelance/arezzo</loc>
@@ -5686,7 +5674,7 @@
     <loc>https://www.prevai.it/seo/freelance/prato</loc>
     <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
+    <priority>0.7</priority>
   </url>
   <url>
     <loc>https://www.prevai.it/seo/freelance/siena</loc>
@@ -5740,7 +5728,7 @@
     <loc>https://www.prevai.it/seo/freelance/roma</loc>
     <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
+    <priority>0.7</priority>
   </url>
   <url>
     <loc>https://www.prevai.it/seo/freelance/frosinone</loc>
@@ -5806,7 +5794,7 @@
     <loc>https://www.prevai.it/seo/freelance/napoli</loc>
     <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
+    <priority>0.7</priority>
   </url>
   <url>
     <loc>https://www.prevai.it/seo/freelance/avellino</loc>
@@ -5836,7 +5824,7 @@
     <loc>https://www.prevai.it/seo/freelance/bari</loc>
     <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
+    <priority>0.7</priority>
   </url>
   <url>
     <loc>https://www.prevai.it/seo/freelance/barletta</loc>
@@ -5902,7 +5890,7 @@
     <loc>https://www.prevai.it/seo/freelance/reggio-calabria</loc>
     <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
+    <priority>0.7</priority>
   </url>
   <url>
     <loc>https://www.prevai.it/seo/freelance/vibo-valentia</loc>
@@ -5926,7 +5914,7 @@
     <loc>https://www.prevai.it/seo/freelance/catania</loc>
     <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
+    <priority>0.7</priority>
   </url>
   <url>
     <loc>https://www.prevai.it/seo/freelance/enna</loc>
@@ -5938,13 +5926,13 @@
     <loc>https://www.prevai.it/seo/freelance/messina</loc>
     <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
+    <priority>0.7</priority>
   </url>
   <url>
     <loc>https://www.prevai.it/seo/freelance/palermo</loc>
     <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
+    <priority>0.7</priority>
   </url>
   <url>
     <loc>https://www.prevai.it/seo/freelance/ragusa</loc>
@@ -5998,7 +5986,7 @@
     <loc>https://www.prevai.it/seo/geometra/milano</loc>
     <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
+    <priority>0.7</priority>
   </url>
   <url>
     <loc>https://www.prevai.it/seo/geometra/bergamo</loc>
@@ -6010,7 +5998,7 @@
     <loc>https://www.prevai.it/seo/geometra/brescia</loc>
     <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
+    <priority>0.7</priority>
   </url>
   <url>
     <loc>https://www.prevai.it/seo/geometra/como</loc>
@@ -6070,7 +6058,7 @@
     <loc>https://www.prevai.it/seo/geometra/torino</loc>
     <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
+    <priority>0.7</priority>
   </url>
   <url>
     <loc>https://www.prevai.it/seo/geometra/alessandria</loc>
@@ -6118,7 +6106,7 @@
     <loc>https://www.prevai.it/seo/geometra/genova</loc>
     <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
+    <priority>0.7</priority>
   </url>
   <url>
     <loc>https://www.prevai.it/seo/geometra/imperia</loc>
@@ -6148,19 +6136,19 @@
     <loc>https://www.prevai.it/seo/geometra/venezia</loc>
     <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
+    <priority>0.7</priority>
   </url>
   <url>
     <loc>https://www.prevai.it/seo/geometra/verona</loc>
     <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
+    <priority>0.7</priority>
   </url>
   <url>
     <loc>https://www.prevai.it/seo/geometra/padova</loc>
     <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
+    <priority>0.7</priority>
   </url>
   <url>
     <loc>https://www.prevai.it/seo/geometra/vicenza</loc>
@@ -6190,19 +6178,19 @@
     <loc>https://www.prevai.it/seo/geometra/bologna</loc>
     <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
+    <priority>0.7</priority>
   </url>
   <url>
     <loc>https://www.prevai.it/seo/geometra/modena</loc>
     <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
+    <priority>0.7</priority>
   </url>
   <url>
     <loc>https://www.prevai.it/seo/geometra/parma</loc>
     <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
+    <priority>0.7</priority>
   </url>
   <url>
     <loc>https://www.prevai.it/seo/geometra/reggio-emilia</loc>
@@ -6250,7 +6238,7 @@
     <loc>https://www.prevai.it/seo/geometra/trieste</loc>
     <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
+    <priority>0.7</priority>
   </url>
   <url>
     <loc>https://www.prevai.it/seo/geometra/udine</loc>
@@ -6286,7 +6274,7 @@
     <loc>https://www.prevai.it/seo/geometra/firenze</loc>
     <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
+    <priority>0.7</priority>
   </url>
   <url>
     <loc>https://www.prevai.it/seo/geometra/arezzo</loc>
@@ -6334,7 +6322,7 @@
     <loc>https://www.prevai.it/seo/geometra/prato</loc>
     <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
+    <priority>0.7</priority>
   </url>
   <url>
     <loc>https://www.prevai.it/seo/geometra/siena</loc>
@@ -6388,7 +6376,7 @@
     <loc>https://www.prevai.it/seo/geometra/roma</loc>
     <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
+    <priority>0.7</priority>
   </url>
   <url>
     <loc>https://www.prevai.it/seo/geometra/frosinone</loc>
@@ -6454,7 +6442,7 @@
     <loc>https://www.prevai.it/seo/geometra/napoli</loc>
     <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
+    <priority>0.7</priority>
   </url>
   <url>
     <loc>https://www.prevai.it/seo/geometra/avellino</loc>
@@ -6484,7 +6472,7 @@
     <loc>https://www.prevai.it/seo/geometra/bari</loc>
     <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
+    <priority>0.7</priority>
   </url>
   <url>
     <loc>https://www.prevai.it/seo/geometra/barletta</loc>
@@ -6550,7 +6538,7 @@
     <loc>https://www.prevai.it/seo/geometra/reggio-calabria</loc>
     <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
+    <priority>0.7</priority>
   </url>
   <url>
     <loc>https://www.prevai.it/seo/geometra/vibo-valentia</loc>
@@ -6574,7 +6562,7 @@
     <loc>https://www.prevai.it/seo/geometra/catania</loc>
     <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
+    <priority>0.7</priority>
   </url>
   <url>
     <loc>https://www.prevai.it/seo/geometra/enna</loc>
@@ -6586,13 +6574,13 @@
     <loc>https://www.prevai.it/seo/geometra/messina</loc>
     <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
+    <priority>0.7</priority>
   </url>
   <url>
     <loc>https://www.prevai.it/seo/geometra/palermo</loc>
     <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
+    <priority>0.7</priority>
   </url>
   <url>
     <loc>https://www.prevai.it/seo/geometra/ragusa</loc>
