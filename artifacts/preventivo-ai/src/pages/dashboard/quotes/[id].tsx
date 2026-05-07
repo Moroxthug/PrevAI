@@ -1,5 +1,5 @@
 import { useParams, useSearch } from "wouter";
-import { useGetQuote, useGetBusinessProfile, useGenerateQuotePdf, useGetPlans, useUpdateQuote, useCreateCheckoutSession, useVerifyPayment, useGetSubscription, useUnlockQuoteWithSubscription, useCreateCustomerPortalSession, useRegenerateQuote, useDuplicateQuote, useUpgradeToCapitolatoPro, useGenerateQuotePdfPro, useGetTrialStatus, getGetQuoteQueryKey, getVerifyPaymentQueryKey, getListQuotesQueryKey } from "@workspace/api-client-react";
+import { useGetQuote, useGetBusinessProfile, useGenerateQuotePdf, useGetPlans, useUpdateQuote, useCreateCheckoutSession, useVerifyPayment, useGetSubscription, useUnlockQuoteWithSubscription, useCreateCustomerPortalSession, useRegenerateQuote, useDuplicateQuote, useUpgradeToCapitolatoPro, useGenerateQuotePdfPro, useGetTrialStatus, getGetQuoteQueryKey, getVerifyPaymentQueryKey, getListQuotesQueryKey, getGetTrialStatusQueryKey } from "@workspace/api-client-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
@@ -189,7 +189,7 @@ export default function QuoteDetail() {
         // Refresh quote to pick up the new pdfDownloadedAt (editing lock)
         queryClient.invalidateQueries({ queryKey: getGetQuoteQueryKey(id) });
         // Also refresh trial status so the banner + button state updates
-        queryClient.invalidateQueries({ queryKey: ["getTrialStatus"] });
+        queryClient.invalidateQueries({ queryKey: getGetTrialStatusQueryKey() });
       },
       onError: (err: unknown) => {
         // 402 means trial expired or no entitlement — open paywall
