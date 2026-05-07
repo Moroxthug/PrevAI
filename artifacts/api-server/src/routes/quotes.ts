@@ -3,7 +3,7 @@ import { requireAuth, getUserId } from "../middlewares/authMiddleware";
 import multer from "multer";
 import { db, quotesTable, businessProfilesTable, priceCatalogItemsTable, quoteClientDataSchema, quoteCompanySnapshotSchema, quoteChapterSchema } from "@workspace/db";
 import { eq, desc, count, sum, sql } from "drizzle-orm";
-import { getTrialStatus } from "./payments.js";
+import { getTrialStatus, PLANS } from "./payments.js";
 import {
   UpdateQuoteBody,
   GetQuoteParams,
@@ -270,20 +270,23 @@ router.post("/quotes", requireAuth, imageUpload.array("images", 3), async (req, 
       .from(businessProfilesTable)
       .where(eq(businessProfilesTable.userId, userId));
 
-    if (profile?.subscriptionStatus === "active" && profile.subscriptionPlan === "monthly_starter") {
-      const now = new Date();
-      const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-      const nextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1);
-      const [{ cnt }] = await db
-        .select({ cnt: sql<number>`count(*)::int` })
-        .from(quotesTable)
-        .where(sql`${quotesTable.userId} = ${userId} AND ${quotesTable.createdAt} >= ${monthStart.toISOString()} AND ${quotesTable.createdAt} < ${nextMonth.toISOString()}`);
-      if (cnt >= 20) {
-        res.status(429).json({
-          error: "Quota mensile raggiunta. Hai usato tutti i 20 preventivi del piano Starter questo mese. Passa al piano Pro per preventivi illimitati.",
-          code: "QUOTA_EXCEEDED",
-        });
-        return;
+    if (profile?.subscriptionStatus === "active" && profile.subscriptionPlan) {
+      const plan = PLANS.find(p => p.id === profile.subscriptionPlan);
+      if (plan?.quotaPerMonth != null) {
+        const now = new Date();
+        const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+        const nextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+        const [{ cnt }] = await db
+          .select({ cnt: sql<number>`count(*)::int` })
+          .from(quotesTable)
+          .where(sql`${quotesTable.userId} = ${userId} AND ${quotesTable.createdAt} >= ${monthStart.toISOString()} AND ${quotesTable.createdAt} < ${nextMonth.toISOString()}`);
+        if (cnt >= plan.quotaPerMonth) {
+          res.status(429).json({
+            error: `Quota mensile raggiunta. Hai usato tutti i ${plan.quotaPerMonth} preventivi del piano ${plan.name} questo mese. Passa a un piano superiore per continuare.`,
+            code: "QUOTA_EXCEEDED",
+          });
+          return;
+        }
       }
     }
     // ─────────────────────────────────────────────────────────────────────────
@@ -2458,17 +2461,20 @@ router.post("/quotes/manual", requireAuth, async (req, res) => {
       .from(businessProfilesTable)
       .where(eq(businessProfilesTable.userId, userId));
 
-    if (profile?.subscriptionStatus === "active" && profile.subscriptionPlan === "monthly_starter") {
-      const now = new Date();
-      const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-      const nextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1);
-      const [{ cnt }] = await db
-        .select({ cnt: sql<number>`count(*)::int` })
-        .from(quotesTable)
-        .where(sql`${quotesTable.userId} = ${userId} AND ${quotesTable.createdAt} >= ${monthStart.toISOString()} AND ${quotesTable.createdAt} < ${nextMonth.toISOString()}`);
-      if (cnt >= 20) {
-        res.status(429).json({ error: "Quota mensile raggiunta.", code: "QUOTA_EXCEEDED" });
-        return;
+    if (profile?.subscriptionStatus === "active" && profile.subscriptionPlan) {
+      const plan = PLANS.find(p => p.id === profile.subscriptionPlan);
+      if (plan?.quotaPerMonth != null) {
+        const now = new Date();
+        const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+        const nextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+        const [{ cnt }] = await db
+          .select({ cnt: sql<number>`count(*)::int` })
+          .from(quotesTable)
+          .where(sql`${quotesTable.userId} = ${userId} AND ${quotesTable.createdAt} >= ${monthStart.toISOString()} AND ${quotesTable.createdAt} < ${nextMonth.toISOString()}`);
+        if (cnt >= plan.quotaPerMonth) {
+          res.status(429).json({ error: `Quota mensile raggiunta. Hai usato tutti i ${plan.quotaPerMonth} preventivi del piano ${plan.name} questo mese.`, code: "QUOTA_EXCEEDED" });
+          return;
+        }
       }
     }
 
