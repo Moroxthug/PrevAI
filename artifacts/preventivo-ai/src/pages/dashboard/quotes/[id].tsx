@@ -1,12 +1,12 @@
 import { useParams, useSearch } from "wouter";
-import { useGetQuote, useGetBusinessProfile, useGenerateQuotePdf, useGetPlans, useUpdateQuote, useCreateCheckoutSession, useVerifyPayment, useGetSubscription, useUnlockQuoteWithSubscription, useCreateCustomerPortalSession, useRegenerateQuote, useDuplicateQuote, getGetQuoteQueryKey, getVerifyPaymentQueryKey, getListQuotesQueryKey } from "@workspace/api-client-react";
+import { useGetQuote, useGetBusinessProfile, useGenerateQuotePdf, useGetPlans, useUpdateQuote, useCreateCheckoutSession, useVerifyPayment, useGetSubscription, useUnlockQuoteWithSubscription, useCreateCustomerPortalSession, useRegenerateQuote, useDuplicateQuote, useUpgradeToCapitolatoPro, useGenerateQuotePdfPro, getGetQuoteQueryKey, getVerifyPaymentQueryKey, getListQuotesQueryKey } from "@workspace/api-client-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
-import { Download, Lock, CheckCircle2, Edit2, Save, FileText, ChevronDown, ChevronRight, Plus, Trash2, X, Pencil, Sparkles, AlertTriangle, RefreshCw, Loader2, Copy } from "lucide-react";
+import { Download, Lock, CheckCircle2, Edit2, Save, FileText, ChevronDown, ChevronRight, Plus, Trash2, X, Pencil, Sparkles, AlertTriangle, RefreshCw, Loader2, Copy, Star, FileDown } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 import { useLocation } from "wouter";
 import { format } from "date-fns";
@@ -43,6 +43,8 @@ export default function QuoteDetail() {
   const generatePdf = useGenerateQuotePdf();
   const updateQuote = useUpdateQuote();
   const createCheckout = useCreateCheckoutSession();
+  const upgradeToCapitolato = useUpgradeToCapitolatoPro();
+  const generatePdfPro = useGenerateQuotePdfPro();
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -104,6 +106,7 @@ export default function QuoteDetail() {
     }
   }, [verifyData, verifyDone, id, queryClient, toast]);
 
+  const [isCapitolatoDialogOpen, setIsCapitolatoDialogOpen] = useState(false);
   const [isPaywallOpen, setIsPaywallOpen] = useState(false);
   const [isEditingClient, setIsEditingClient] = useState(false);
   const [clientName, setClientName] = useState("");
@@ -204,6 +207,43 @@ export default function QuoteDetail() {
       },
       onError: () => {
         toast({ title: "Errore rigenerazione", description: "Impossibile rigenerare il preventivo", variant: "destructive" });
+      },
+    });
+  };
+
+  const handleUpgradeToCapitolato = () => {
+    if (!id) return;
+    if (!isPro) { setIsPaywallOpen(true); return; }
+    setIsCapitolatoDialogOpen(true);
+  };
+
+  const handleConfirmCapitolatoUpgrade = () => {
+    if (!id) return;
+    upgradeToCapitolato.mutate({ id }, {
+      onSuccess: (updatedQuote) => {
+        setIsCapitolatoDialogOpen(false);
+        queryClient.setQueryData(getGetQuoteQueryKey(id), updatedQuote);
+        toast({ title: "Capitolato Pro attivato!", description: "Le descrizioni sono state arricchite con terminologia professionale." });
+      },
+      onError: (err: unknown) => {
+        setIsCapitolatoDialogOpen(false);
+        const msg = (err as { data?: { error?: string } })?.data?.error ?? "Impossibile arricchire il preventivo";
+        toast({ title: "Errore", description: msg, variant: "destructive" });
+      },
+    });
+  };
+
+  const handleDownloadProPdf = () => {
+    if (!id || !quote) return;
+    generatePdfPro.mutate({ id }, {
+      onSuccess: (result) => {
+        const pdfFullUrl = result.pdfUrl.startsWith("/api") ? result.pdfUrl : `/api/storage${result.pdfUrl}`;
+        window.open(pdfFullUrl, "_blank");
+        queryClient.invalidateQueries({ queryKey: getGetQuoteQueryKey(id) });
+        toast({ title: "PDF Pro generato!", description: "Il PDF professionale è pronto per il download." });
+      },
+      onError: () => {
+        toast({ title: "Errore", description: "Impossibile generare il PDF professionale", variant: "destructive" });
       },
     });
   };
@@ -393,11 +433,17 @@ export default function QuoteDetail() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Dettaglio Preventivo</h1>
-          <div className="flex items-center gap-3 mt-2">
+          <div className="flex items-center gap-3 mt-2 flex-wrap">
             {isLocked ? (
               <Badge variant="outline" className="text-muted-foreground"><Lock className="h-3 w-3 mr-1" /> Bozza Bloccata</Badge>
             ) : (
               <Badge variant="default" className="bg-green-600"><CheckCircle2 className="h-3 w-3 mr-1" /> Sbloccato</Badge>
+            )}
+            {quote.capitolatoPro && (
+              <Badge className="bg-violet-600 text-white gap-1">
+                <Star className="h-3 w-3" />
+                Capitolato Pro
+              </Badge>
             )}
             <span className="text-sm text-muted-foreground">
               Creato il {format(new Date(quote.createdAt), "dd MMMM yyyy", { locale: it })}
@@ -436,6 +482,33 @@ export default function QuoteDetail() {
               : isLocked ? <Lock className="h-4 w-4" /> : <Download className="h-4 w-4" />}
             Scarica PDF
           </Button>
+          {!quote.capitolatoPro && (
+            <Button
+              variant="outline"
+              className="gap-2 border-violet-300 text-violet-700 hover:bg-violet-50"
+              onClick={handleUpgradeToCapitolato}
+              disabled={upgradeToCapitolato.isPending}
+            >
+              {upgradeToCapitolato.isPending
+                ? <Loader2 className="h-4 w-4 animate-spin" />
+                : <Star className="h-4 w-4" />}
+              {isPro ? "Migliora in Capitolato Pro" : "Capitolato Pro"}
+              {!isPro && <Lock className="h-3 w-3 ml-1 opacity-60" />}
+            </Button>
+          )}
+          {quote.capitolatoPro && isPro && (
+            <Button
+              variant="outline"
+              className="gap-2 border-violet-400 text-violet-800 hover:bg-violet-50"
+              onClick={handleDownloadProPdf}
+              disabled={generatePdfPro.isPending}
+            >
+              {generatePdfPro.isPending
+                ? <Loader2 className="h-4 w-4 animate-spin" />
+                : <FileDown className="h-4 w-4" />}
+              Scarica PDF Pro
+            </Button>
+          )}
         </div>
       </div>
 
@@ -1094,6 +1167,42 @@ export default function QuoteDetail() {
           </Card>
         </div>
       </div>
+
+      {/* ── CAPITOLATO PRO DIALOG ── */}
+      <Dialog open={isCapitolatoDialogOpen} onOpenChange={setIsCapitolatoDialogOpen}>
+        <DialogContent className="sm:max-w-[480px]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Star className="h-5 w-5 text-violet-600" />
+              Migliora in Capitolato Pro
+            </DialogTitle>
+            <DialogDescription>
+              L'AI riscriverà ogni voce del preventivo con terminologia professionale da Capitolato Speciale d'Appalto (3–5 frasi tecniche, materiali con normative UNI/CEI, inclusioni ed esclusioni). Le quantità e i prezzi rimangono invariati.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="rounded-lg bg-violet-50 border border-violet-200 px-4 py-3 text-sm text-violet-800 space-y-1">
+            <p className="font-semibold">Cosa verrà aggiornato:</p>
+            <ul className="list-disc list-inside space-y-0.5 text-violet-700">
+              <li>Descrizioni di ogni voce in stile capitolato</li>
+              <li>Specifiche tecniche e normative</li>
+              <li>Elenco inclusi/esclusi per ogni voce</li>
+            </ul>
+          </div>
+          <div className="flex gap-2 justify-end pt-2">
+            <Button variant="outline" onClick={() => setIsCapitolatoDialogOpen(false)} disabled={upgradeToCapitolato.isPending}>
+              Annulla
+            </Button>
+            <Button
+              onClick={handleConfirmCapitolatoUpgrade}
+              disabled={upgradeToCapitolato.isPending}
+              className="gap-2 bg-violet-600 hover:bg-violet-700 text-white"
+            >
+              {upgradeToCapitolato.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Star className="h-4 w-4" />}
+              {upgradeToCapitolato.isPending ? "Miglioramento in corso..." : "Migliora ora"}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* ── AI REGEN DIALOG ── */}
       <Dialog open={isRegenOpen} onOpenChange={setIsRegenOpen}>

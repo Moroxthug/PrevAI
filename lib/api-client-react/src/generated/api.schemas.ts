@@ -87,6 +87,9 @@ export interface Quote {
   pdfUrl?: string | null;
   rawInput: string;
   pdfDownloadedAt?: string | null;
+  capitolatoPro: boolean;
+  /** @nullable */
+  capitolatoPdfUrl?: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -231,6 +234,11 @@ export interface Plan {
   features: string[];
   hasWatermark: boolean;
   quotaPerMonth?: number | null;
+}
+
+export interface CapitolatoPdfResult {
+  pdfUrl: string;
+  quoteId: string;
 }
 
 export interface PortalSessionResult {

@@ -5,6 +5,7 @@ import {
   timestamp,
   numeric,
   jsonb,
+  boolean,
 } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
@@ -87,6 +88,8 @@ export const quotesTable = pgTable("quotes", {
   rawInput: text("raw_input").notNull().default(""),
   stripeSessionId: text("stripe_session_id"),
   unlockedWithPlan: text("unlocked_with_plan"),
+  capitolatoPro: boolean("capitolato_pro").notNull().default(false),
+  capitolatoPdfUrl: text("capitolato_pdf_url"),
   pdfDownloadedAt: timestamp("pdf_downloaded_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),

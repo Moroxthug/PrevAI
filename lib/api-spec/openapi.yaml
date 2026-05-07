@@ -196,6 +196,44 @@ paths:
               schema:
                 $ref: "#/components/schemas/Quote"
 
+  /quotes/{id}/upgrade-to-capitolato:
+    post:
+      operationId: upgradeToCapitolatoPro
+      tags: [quotes]
+      summary: Upgrade quote descriptions to professional capitolato style using AI (Pro only)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Upgraded quote with professional capitolato descriptions
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Quote"
+
+  /quotes/{id}/generate-pdf-pro:
+    post:
+      operationId: generateQuotePdfPro
+      tags: [quotes]
+      summary: Generate a server-side PDF for a capitolato quote and persist the URL (Pro only)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: PDF stored and URL returned
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CapitolatoPdfResult"
+
   /business-profile:
     get:
       operationId: getBusinessProfile
@@ -643,6 +681,10 @@ components:
         pdfDownloadedAt:
           type: string
           nullable: true
+        capitolatoPro:
+          type: boolean
+        capitolatoPdfUrl:
+          type: ["string", "null"]
         createdAt:
           type: string
         updatedAt:
@@ -662,6 +704,7 @@ components:
         - note
         - status
         - rawInput
+        - capitolatoPro
         - createdAt
         - updatedAt
 
@@ -922,6 +965,17 @@ components:
         - currency
         - features
         - hasWatermark
+
+    CapitolatoPdfResult:
+      type: object
+      properties:
+        pdfUrl:
+          type: string
+        quoteId:
+          type: string
+      required:
+        - pdfUrl
+        - quoteId
 
     PortalSessionResult:
       type: object

@@ -18,6 +18,7 @@ import type {
 
 import type {
   BusinessProfile,
+  CapitolatoPdfResult,
   CatalogItem,
   CheckoutResult,
   CreateCatalogItemBody,
@@ -881,6 +882,174 @@ export const useRegenerateQuote = <
   TContext
 > => {
   return useMutation(getRegenerateQuoteMutationOptions(options));
+};
+
+/**
+ * @summary Upgrade quote descriptions to professional capitolato style using AI (Pro only)
+ */
+export const getUpgradeToCapitolatoProUrl = (id: string) => {
+  return `/api/quotes/${id}/upgrade-to-capitolato`;
+};
+
+export const upgradeToCapitolatoPro = async (
+  id: string,
+  options?: RequestInit,
+): Promise<Quote> => {
+  return customFetch<Quote>(getUpgradeToCapitolatoProUrl(id), {
+    ...options,
+    method: "POST",
+  });
+};
+
+export const getUpgradeToCapitolatoProMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof upgradeToCapitolatoPro>>,
+    TError,
+    { id: string },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof upgradeToCapitolatoPro>>,
+  TError,
+  { id: string },
+  TContext
+> => {
+  const mutationKey = ["upgradeToCapitolatoPro"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof upgradeToCapitolatoPro>>,
+    { id: string }
+  > = (props) => {
+    const { id } = props ?? {};
+
+    return upgradeToCapitolatoPro(id, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type UpgradeToCapitolatoProMutationResult = NonNullable<
+  Awaited<ReturnType<typeof upgradeToCapitolatoPro>>
+>;
+
+export type UpgradeToCapitolatoProMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Upgrade quote descriptions to professional capitolato style using AI (Pro only)
+ */
+export const useUpgradeToCapitolatoPro = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof upgradeToCapitolatoPro>>,
+    TError,
+    { id: string },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof upgradeToCapitolatoPro>>,
+  TError,
+  { id: string },
+  TContext
+> => {
+  return useMutation(getUpgradeToCapitolatoProMutationOptions(options));
+};
+
+/**
+ * @summary Generate a server-side PDF for a capitolato quote and persist the URL (Pro only)
+ */
+export const getGenerateQuotePdfProUrl = (id: string) => {
+  return `/api/quotes/${id}/generate-pdf-pro`;
+};
+
+export const generateQuotePdfPro = async (
+  id: string,
+  options?: RequestInit,
+): Promise<CapitolatoPdfResult> => {
+  return customFetch<CapitolatoPdfResult>(getGenerateQuotePdfProUrl(id), {
+    ...options,
+    method: "POST",
+  });
+};
+
+export const getGenerateQuotePdfProMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof generateQuotePdfPro>>,
+    TError,
+    { id: string },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof generateQuotePdfPro>>,
+  TError,
+  { id: string },
+  TContext
+> => {
+  const mutationKey = ["generateQuotePdfPro"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof generateQuotePdfPro>>,
+    { id: string }
+  > = (props) => {
+    const { id } = props ?? {};
+
+    return generateQuotePdfPro(id, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type GenerateQuotePdfProMutationResult = NonNullable<
+  Awaited<ReturnType<typeof generateQuotePdfPro>>
+>;
+
+export type GenerateQuotePdfProMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Generate a server-side PDF for a capitolato quote and persist the URL (Pro only)
+ */
+export const useGenerateQuotePdfPro = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof generateQuotePdfPro>>,
+    TError,
+    { id: string },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof generateQuotePdfPro>>,
+  TError,
+  { id: string },
+  TContext
+> => {
+  return useMutation(getGenerateQuotePdfProMutationOptions(options));
 };
 
 /**

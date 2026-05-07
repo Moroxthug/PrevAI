@@ -14,6 +14,14 @@ import {
 import { openai } from "@workspace/integrations-openai-ai-server";
 import type { QuoteChapter, QuoteDiscount, QuoteCompanySnapshot, QuoteClientData, QuoteItem } from "@workspace/db";
 import { logger } from "../lib/logger.js";
+import type { TDocumentDefinitions, Content } from "pdfmake/interfaces";
+// pdfmake uses CJS export=; cast to constructor type for ESM interop
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const PdfPrinter = (await import("pdfmake")).default as any as new (fonts: Record<string, Record<string, string>>) => { createPdfKitDocument(dd: TDocumentDefinitions): NodeJS.EventEmitter & { end(): void } };
+import { ObjectStorageService } from "../lib/objectStorage.js";
+import { randomUUID } from "crypto";
+
+const objectStorage = new ObjectStorageService();
 
 const ALLOWED_IMAGE_MIMES = ["image/jpeg", "image/png", "image/webp", "image/heic", "image/heif"];
 
@@ -124,6 +132,8 @@ function serializeQuote(q: QuoteRow) {
     pdfUrl: q.pdfUrl ?? null,
     rawInput: q.rawInput,
     pdfDownloadedAt: q.pdfDownloadedAt?.toISOString() ?? null,
+    capitolatoPro: q.capitolatoPro ?? false,
+    capitolatoPdfUrl: q.capitolatoPdfUrl ?? null,
     createdAt: q.createdAt.toISOString(),
     updatedAt: q.updatedAt.toISOString(),
   };
@@ -368,6 +378,18 @@ Quando usi una voce del listino, applica il prezzo unitario esatto o molto simil
       : "";
 
     const hasImages = imageDataUrls.length > 0;
+    const isProUser = profile?.subscriptionStatus === "active" && profile?.subscriptionPlan === "monthly_pro";
+
+    const capitolatoProContext = isProUser
+      ? `MODALITÀ CAPITOLATO PROFESSIONALE (attiva per utente Pro):
+Per ogni voce di lavoro, scrivi la descrizione in stile CAPITOLATO TECNICO PROFESSIONALE con 3-5 frasi complete in italiano tecnico:
+- Descrivi le operazioni eseguite e le modalità esecutive
+- Specifica i materiali utilizzati con caratteristiche tecniche e standard normativi (es. "conforme norma UNI EN...")
+- Indica cosa è compreso nella voce (forniture, lavorazioni, trasporti)
+- Indica eventuali esclusioni rilevanti
+- Usa terminologia professionale edilizia/impiantistica italiana
+Esempio: "Demolizione e rimozione di pavimentazione esistente in piastrelle ceramiche compreso il distacco mediante scalpellatura meccanica e la rimozione del massetto di allettamento per uno spessore medio di 5 cm. Compresi il carico, il trasporto e lo smaltimento del materiale di risulta presso discarica autorizzata secondo D.Lgs. 152/2006. Esclusi lavori di ripristino strutturale del sottofondo e impermeabilizzazioni."`
+      : "";
 
     const completion = await openai.chat.completions.create({
       model: hasImages ? "gpt-4o" : "gpt-4o-mini",
@@ -376,6 +398,7 @@ Quando usi una voce del listino, applica il prezzo unitario esatto o molto simil
         { role: "system", content: AI_PROMPT },
         ...(catalogContext ? [{ role: "system" as const, content: catalogContext }] : []),
         ...(pastContext ? [{ role: "system" as const, content: pastContext }] : []),
+        ...(capitolatoProContext ? [{ role: "system" as const, content: capitolatoProContext }] : []),
         {
           role: "user",
           content: hasImages
@@ -492,6 +515,7 @@ Quando usi una voce del listino, applica il prezzo unitario esatto o molto simil
         capitoli,
         sconto,
         condizioniPagamento,
+        capitolatoPro: isProUser,
         titoloPreventivoRiga1: aiData.titolo_riga1 ?? "Analisi Economica e Computo Metrico Prezzato",
         titoloPreventivoRiga2: aiData.titolo_riga2 ?? "",
         numeroPreventivoData: aiData.numero_preventivo_data ?? "",
@@ -892,6 +916,182 @@ Quando usi una voce del listino, applica il prezzo unitario esatto o molto simil
     res.json(serializeQuote(updated!));
   } catch (err) {
     req.log.error({ err }, "Error regenerating quote");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// POST /api/quotes/:id/upgrade-to-capitolato — rewrite descriptions in professional capitolato style (Pro only)
+router.post("/quotes/:id/upgrade-to-capitolato", requireAuth, async (req, res) => {
+  try {
+    const userId = getUserId(res);
+    const id = req.params.id as string;
+
+    const [quote] = await db.select().from(quotesTable).where(eq(quotesTable.id, id));
+    if (!quote) { res.status(404).json({ error: "Not found" }); return; }
+    if (quote.userId !== userId) { res.status(403).json({ error: "Forbidden" }); return; }
+
+    // Check Pro plan
+    const [profile] = await db
+      .select({ subscriptionPlan: businessProfilesTable.subscriptionPlan, subscriptionStatus: businessProfilesTable.subscriptionStatus })
+      .from(businessProfilesTable)
+      .where(eq(businessProfilesTable.userId, userId));
+
+    const isProUser = profile?.subscriptionStatus === "active" && profile?.subscriptionPlan === "monthly_pro";
+    if (!isProUser) {
+      res.status(403).json({ error: "Piano Pro richiesto", code: "PRO_REQUIRED" });
+      return;
+    }
+
+    const capitoli = Array.isArray(quote.capitoli) ? (quote.capitoli as QuoteChapter[]) : [];
+    if (capitoli.length === 0) {
+      res.status(400).json({ error: "Il preventivo non ha capitoli da arricchire" });
+      return;
+    }
+
+    const capitolatoPrompt = `Sei un redattore esperto di CAPITOLATI TECNICI professionali per il settore edilizio e impiantistico italiano.
+
+Per ogni voce del preventivo, riscrivi la "descrizione" in stile CAPITOLATO SPECIALE D'APPALTO professionale, con 3-5 frasi tecniche in italiano formale:
+- Descrivi le operazioni eseguite con modalità esecutive dettagliate
+- Specifica materiali con caratteristiche tecniche e standard normativi italiani/europei (UNI, CEI, UNI EN, D.Lgs.)
+- Indica esplicitamente cosa è COMPRESO nella voce (es. "Compresi carico, trasporto e smaltimento...")
+- Indica eventuali ESCLUSIONI rilevanti (es. "Esclusi lavori di...")
+- Mantieni invariati: um, quantita, prezzo_unitario, totale, lettera, titolo, osservazione, subtotale
+
+REGOLA FONDAMENTALE: restituisci SOLO JSON valido con questa struttura esatta (nessun testo aggiuntivo):
+{
+  "capitoli": [
+    {
+      "lettera": "A",
+      "titolo": "...",
+      "osservazione": "...",
+      "voci": [
+        {
+          "descrizione": "Descrizione capitolato professionale qui...",
+          "um": "...",
+          "quantita": 0,
+          "prezzo_unitario": 0,
+          "totale": 0
+        }
+      ],
+      "subtotale": 0
+    }
+  ]
+}`;
+
+    const inputCapitoli = JSON.stringify(capitoli.map(cap => ({
+      lettera: cap.lettera,
+      titolo: cap.titolo,
+      osservazione: cap.osservazione,
+      voci: cap.voci.map(v => ({
+        descrizione: v.descrizione,
+        um: v.um,
+        quantita: v.quantita,
+        prezzo_unitario: v.prezzoUnitario,
+        totale: v.totale,
+      })),
+      subtotale: cap.subtotale,
+    })));
+
+    const completion = await openai.chat.completions.create({
+      model: "gpt-4o",
+      max_completion_tokens: 8192,
+      messages: [
+        { role: "system", content: capitolatoPrompt },
+        { role: "user", content: `Ecco il preventivo da arricchire in stile capitolato:\n${inputCapitoli}` },
+      ],
+    });
+
+    const content = completion.choices[0]?.message?.content ?? "{}";
+    let aiData: { capitoli?: Array<{ lettera?: string; titolo?: string; osservazione?: string; voci?: Array<{ descrizione?: string; um?: string; quantita?: number; prezzo_unitario?: number; totale?: number }>; subtotale?: number }> };
+
+    try {
+      const cleaned = content.trim().replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/i, "");
+      aiData = JSON.parse(cleaned);
+    } catch {
+      req.log.error({ content }, "Failed to parse AI JSON in upgrade-to-capitolato");
+      res.status(500).json({ error: "AI returned invalid JSON" });
+      return;
+    }
+
+    const updatedCapitoli: QuoteChapter[] = (aiData.capitoli ?? []).map((cap, i) => {
+      const orig = capitoli[i] ?? capitoli[0];
+      return {
+        lettera: cap.lettera ?? orig.lettera,
+        titolo: cap.titolo ?? orig.titolo,
+        osservazione: cap.osservazione ?? orig.osservazione ?? "Voce ordinaria",
+        voci: (cap.voci ?? []).map((v, vi) => {
+          const origV = orig.voci[vi] ?? orig.voci[0] ?? {};
+          return {
+            descrizione: v.descrizione ?? origV.descrizione ?? "",
+            um: v.um ?? origV.um ?? "a.c.",
+            quantita: Number(v.quantita ?? origV.quantita ?? 0),
+            prezzoUnitario: Number(v.prezzo_unitario ?? origV.prezzoUnitario ?? 0),
+            totale: Number(v.totale ?? origV.totale ?? 0),
+          };
+        }),
+        subtotale: Number(cap.subtotale ?? orig.subtotale ?? 0),
+      };
+    });
+
+    const [updated] = await db
+      .update(quotesTable)
+      .set({ capitoli: updatedCapitoli, capitolatoPro: true })
+      .where(eq(quotesTable.id, id))
+      .returning();
+
+    res.json(serializeQuote(updated!));
+  } catch (err) {
+    req.log.error({ err }, "Error upgrading quote to capitolato");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// POST /api/quotes/:id/generate-pdf-pro — server-side PDF for capitolato quotes (Pro only)
+router.post("/quotes/:id/generate-pdf-pro", requireAuth, async (req, res) => {
+  try {
+    const userId = getUserId(res);
+    const id = req.params.id as string;
+
+    const [quote] = await db.select().from(quotesTable).where(eq(quotesTable.id, id));
+    if (!quote) { res.status(404).json({ error: "Not found" }); return; }
+    if (quote.userId !== userId) { res.status(403).json({ error: "Forbidden" }); return; }
+    if (!quote.capitolatoPro) {
+      res.status(400).json({ error: "Il preventivo non è stato arricchito in formato capitolato" });
+      return;
+    }
+
+    // Check Pro plan
+    const [profile] = await db
+      .select()
+      .from(businessProfilesTable)
+      .where(eq(businessProfilesTable.userId, userId));
+
+    const isProUser = profile?.subscriptionStatus === "active" && profile?.subscriptionPlan === "monthly_pro";
+    if (!isProUser) {
+      res.status(403).json({ error: "Piano Pro richiesto", code: "PRO_REQUIRED" });
+      return;
+    }
+
+    // Generate the PDF
+    const pdfBuffer = await generateCapitolatoPdfBuffer(quote, profile ?? null);
+
+    // Upload to Object Storage
+    const subPath = `capitolato-pdfs/${randomUUID()}.pdf`;
+    const pdfPath = await objectStorage.uploadObjectBuffer({
+      subPath,
+      buffer: pdfBuffer,
+      contentType: "application/pdf",
+    });
+
+    // Persist the URL on the quote
+    await db
+      .update(quotesTable)
+      .set({ capitolatoPdfUrl: pdfPath })
+      .where(eq(quotesTable.id, id));
+
+    res.json({ pdfUrl: pdfPath, quoteId: id });
+  } catch (err) {
+    req.log.error({ err }, "Error generating Pro PDF");
     res.status(500).json({ error: "Internal server error" });
   }
 });
@@ -1364,6 +1564,318 @@ function generateQuoteHtml(
   ${footerHtml}
 </body>
 </html>`;
+}
+
+async function generateCapitolatoPdfBuffer(quote: QuoteRow, profile: ProfileRow): Promise<Buffer> {
+  const printer = new PdfPrinter({
+    Helvetica: {
+      normal: "Helvetica",
+      bold: "Helvetica-Bold",
+      italics: "Helvetica-Oblique",
+      bolditalics: "Helvetica-BoldOblique",
+    },
+  });
+
+  const capitoli: QuoteChapter[] = Array.isArray(quote.capitoli) && quote.capitoli.length > 0
+    ? quote.capitoli as QuoteChapter[]
+    : [];
+  const clientData = (quote.clientData ?? { nome: "", indirizzo: "" }) as QuoteClientData;
+  const sconto = quote.sconto as QuoteDiscount | null;
+  const condizioniPagamento: string[] = Array.isArray(quote.condizioniPagamento) ? quote.condizioniPagamento : [];
+  const snap = (quote.companySnapshot as QuoteCompanySnapshot | null) ?? null;
+
+  const companyName = snap?.companyName || profile?.companyName || "";
+  const companyVat = snap?.vatNumber || profile?.vatNumber || "";
+  const companyAddress = snap?.address || profile?.address || "";
+  const companyPhone = snap?.phone || profile?.phone || "";
+  const companyEmail = snap?.email || profile?.email || "";
+  const titolo1 = quote.titoloPreventivoRiga1 || "Analisi Economica e Computo Metrico Prezzato";
+  const titolo2 = quote.titoloPreventivoRiga2 || "";
+  const numeroData = quote.numeroPreventivoData || `N° ${quote.id.slice(0, 4).toUpperCase()} del ${new Date().toLocaleDateString("it-IT")}`;
+  const subtotale = Number(quote.subtotale);
+  const ivaPerc = Number(quote.ivaPercentuale);
+  const ivaValore = Number(quote.ivaValore);
+  const totale = Number(quote.totale);
+
+  const DARK = "#1a1a2e";
+  const LIGHT_BG = "#f4f6f9";
+  const GRAY = "#888888";
+
+  // Company header column
+  const companyInfoStack: Content[] = [
+    { text: companyName, fontSize: 13, bold: true, color: DARK, margin: [0, 4, 0, 2] },
+  ];
+  if (companyVat) companyInfoStack.push({ text: `P.IVA / C.F.: ${companyVat}`, fontSize: 8, color: "#555555" });
+  if (companyAddress) companyInfoStack.push({ text: companyAddress, fontSize: 8, color: "#555555" });
+  if (companyPhone) companyInfoStack.push({ text: `Tel: ${companyPhone}`, fontSize: 8, color: "#555555" });
+  if (companyEmail) companyInfoStack.push({ text: companyEmail, fontSize: 8, color: "#555555" });
+
+  // Quadro sintetico table body
+  const quadroBody: Content[][] = [
+    [
+      { text: "Capitolo", style: "tableHeader" },
+      { text: "Importo netto", style: "tableHeaderRight" },
+      { text: "Osservazione", style: "tableHeader" },
+    ],
+    ...capitoli.map(cap => [
+      { text: `${cap.lettera}. ${cap.titolo}`, fontSize: 9, color: "#1a1a1a" } as Content,
+      { text: `€ ${formatEur(cap.subtotale)}`, fontSize: 9, alignment: "right" as const, bold: true } as Content,
+      { text: cap.osservazione ?? "Voce ordinaria", fontSize: 8, color: "#666666", italics: true } as Content,
+    ]),
+  ];
+
+  // Chapter detail tables
+  const chaptersContent: Content[] = capitoli.flatMap(cap => {
+    const bodyRows: Content[][] = [
+      [
+        { text: "Descrizione", style: "tableHeader" },
+        { text: "U.M.", style: "tableHeaderCenter" },
+        { text: "Q.tà", style: "tableHeaderCenter" },
+        { text: "P.u. (€)", style: "tableHeaderRight" },
+        { text: "Totale (€)", style: "tableHeaderRight" },
+      ],
+      ...cap.voci.map((v, vi) => [
+        { text: v.descrizione, fontSize: 8, color: "#1a1a1a", fillColor: vi % 2 === 0 ? null : "#f8f9fb" } as Content,
+        { text: v.um, fontSize: 8, alignment: "center" as const, fillColor: vi % 2 === 0 ? null : "#f8f9fb" } as Content,
+        { text: String(v.quantita), fontSize: 8, alignment: "center" as const, fillColor: vi % 2 === 0 ? null : "#f8f9fb" } as Content,
+        { text: formatEur(v.prezzoUnitario), fontSize: 8, alignment: "right" as const, fillColor: vi % 2 === 0 ? null : "#f8f9fb" } as Content,
+        { text: formatEur(v.totale), fontSize: 8, alignment: "right" as const, bold: true, fillColor: vi % 2 === 0 ? null : "#f8f9fb" } as Content,
+      ]),
+      [
+        { text: `Subtotale capitolo ${cap.lettera}`, colSpan: 4, fontSize: 8.5, bold: true, fillColor: "#edf0f5", color: DARK } as Content,
+        {} as Content, {} as Content, {} as Content,
+        { text: `€ ${formatEur(cap.subtotale)}`, fontSize: 8.5, alignment: "right" as const, bold: true, fillColor: "#edf0f5", color: DARK } as Content,
+      ],
+    ];
+
+    return [
+      {
+        text: `${cap.lettera}. ${cap.titolo}`,
+        fontSize: 10,
+        bold: true,
+        color: DARK,
+        fillColor: LIGHT_BG,
+        background: LIGHT_BG,
+        margin: [0, 10, 0, 4],
+        decoration: undefined,
+      } as Content,
+      {
+        table: {
+          headerRows: 1,
+          widths: ["*", 35, 35, 65, 65],
+          body: bodyRows,
+        },
+        layout: {
+          hLineWidth: () => 0.5,
+          vLineWidth: () => 0,
+          hLineColor: () => "#dddddd",
+          paddingLeft: () => 6,
+          paddingRight: () => 6,
+          paddingTop: () => 4,
+          paddingBottom: () => 4,
+          fillColor: (rowIndex: number) => {
+            if (rowIndex === 0) return DARK;
+            if (rowIndex === bodyRows.length - 1) return "#edf0f5";
+            return null;
+          },
+        },
+        margin: [0, 0, 0, 14] as [number, number, number, number],
+      } as Content,
+    ] as Content[];
+  });
+
+  // Totals section
+  const totalsRows: Content[][] = [
+    [
+      { text: "TOTALE IMPONIBILE", style: "totLabel" },
+      { text: `€ ${formatEur(subtotale)}`, style: "totValue" },
+    ],
+  ];
+  if (sconto && sconto.percentuale > 0) {
+    totalsRows.push([
+      { text: `SCONTO (${sconto.percentuale}%)`, style: "totLabel" },
+      { text: `-€ ${formatEur(subtotale - sconto.importoScontato)}`, style: "totValue" },
+    ]);
+    totalsRows.push([
+      { text: "IMPONIBILE SCONTATO", style: "totLabel" },
+      { text: `€ ${formatEur(sconto.importoScontato)}`, style: "totValue" },
+    ]);
+  }
+  totalsRows.push([
+    { text: `IVA (${ivaPerc.toFixed(0)}%)`, style: "totLabel" },
+    { text: `€ ${formatEur(ivaValore)}`, style: "totValue" },
+  ]);
+  totalsRows.push([
+    { text: "TOTALE + IVA", fontSize: 10, bold: true, color: "white", fillColor: DARK } as Content,
+    { text: `€ ${formatEur(totale)}`, fontSize: 10, bold: true, alignment: "right" as const, color: "white", fillColor: DARK } as Content,
+  ]);
+
+  // Payment conditions
+  const condizioniContent: Content[] = condizioniPagamento.length > 0
+    ? [
+        { text: "CONDIZIONI DI PAGAMENTO", style: "sectionHeading", margin: [0, 14, 0, 4] as [number, number, number, number] },
+        {
+          ul: condizioniPagamento.map(c => ({ text: c.toUpperCase(), fontSize: 8.5, bold: true })),
+          margin: [0, 0, 0, 4] as [number, number, number, number],
+        },
+        {
+          text: "N.B. I LAVORI RICHIESTI NON PRESENTI SU QUESTO PREVENTIVO VANNO PREVENTIVATI E PAGATI SEPARATAMENTE.",
+          fontSize: 8,
+          color: "#cc0000",
+          bold: true,
+          margin: [0, 4, 0, 0] as [number, number, number, number],
+        },
+      ]
+    : [];
+
+  const docDefinition: TDocumentDefinitions = {
+    pageSize: "A4",
+    pageMargins: [40, 50, 40, 50],
+    defaultStyle: {
+      font: "Helvetica",
+      fontSize: 9,
+      color: "#1a1a1a",
+    },
+    styles: {
+      tableHeader: { color: "white", bold: true, fontSize: 8, fillColor: DARK },
+      tableHeaderCenter: { color: "white", bold: true, fontSize: 8, fillColor: DARK, alignment: "center" },
+      tableHeaderRight: { color: "white", bold: true, fontSize: 8, fillColor: DARK, alignment: "right" },
+      sectionHeading: { fontSize: 9, bold: true, color: GRAY, characterSpacing: 0.5 },
+      totLabel: { fontSize: 8.5, bold: true, color: "#333333" },
+      totValue: { fontSize: 9, bold: true, alignment: "right" },
+      chapterHeading: { fontSize: 10, bold: true, color: DARK, background: LIGHT_BG },
+    },
+    header: {
+      margin: [40, 14, 40, 0],
+      table: {
+        widths: ["*", "auto"],
+        body: [
+          [
+            { stack: companyInfoStack, border: [false, false, false, true] },
+            {
+              stack: [
+                { text: "CAPITOLATO PRO", fontSize: 7, bold: true, color: "#7c3aed", alignment: "right", characterSpacing: 1 },
+                { text: numeroData, fontSize: 10, bold: true, color: DARK, alignment: "right" },
+                { text: `Data: ${new Date().toLocaleDateString("it-IT")}`, fontSize: 8, color: "#555555", alignment: "right" },
+              ],
+              border: [false, false, false, true],
+            },
+          ],
+        ],
+      },
+      layout: {
+        hLineWidth: (i: number) => i === 1 ? 2 : 0,
+        vLineWidth: () => 0,
+        hLineColor: () => DARK,
+        paddingLeft: () => 0,
+        paddingRight: () => 0,
+        paddingBottom: () => 8,
+      },
+    },
+    content: [
+      // Document title
+      { text: titolo1.toUpperCase(), fontSize: 12, bold: true, alignment: "center", color: DARK, margin: [0, 6, 0, 0] },
+      ...(titolo2 ? [{ text: titolo2, fontSize: 9, alignment: "center" as const, color: "#444444", italics: true, margin: [0, 2, 0, 8] as [number, number, number, number] }] : [{ text: "", margin: [0, 0, 0, 8] as [number, number, number, number] }]),
+
+      // Client box
+      {
+        fillColor: LIGHT_BG,
+        table: {
+          widths: ["*"],
+          body: [[
+            {
+              border: [true, true, true, true],
+              stack: [
+                { text: "SPETT.LE COMMITTENTE", fontSize: 7, bold: true, color: GRAY, characterSpacing: 0.5 },
+                { text: clientData.nome || "——", fontSize: 10, bold: true, color: DARK },
+                ...(clientData.indirizzo ? [{ text: clientData.indirizzo, fontSize: 8.5, color: "#555" }] : []),
+                ...(clientData.citta ? [{ text: [clientData.citta, clientData.cap, clientData.provincia].filter(Boolean).join(" "), fontSize: 8, color: "#666" }] : []),
+                ...((clientData.codiceFiscale || clientData.partitaIva) ? [{ text: [clientData.codiceFiscale ? `C.F.: ${clientData.codiceFiscale}` : "", clientData.partitaIva ? `P.IVA: ${clientData.partitaIva}` : ""].filter(Boolean).join("  ·  "), fontSize: 8, color: "#666" }] : []),
+              ],
+              margin: [10, 8, 10, 8] as [number, number, number, number],
+              fillColor: LIGHT_BG,
+            },
+          ]],
+        },
+        layout: { hLineWidth: () => 0.5, vLineWidth: () => 0.5, hLineColor: () => "#c5cce0", vLineColor: () => "#c5cce0", paddingLeft: () => 0, paddingRight: () => 0, paddingTop: () => 0, paddingBottom: () => 0 },
+        margin: [0, 0, 0, 14] as [number, number, number, number],
+      },
+
+      // Quadro sintetico
+      ...(capitoli.length > 0 ? [
+        { text: "1. QUADRO SINTETICO", style: "sectionHeading", margin: [0, 0, 0, 6] as [number, number, number, number] },
+        {
+          table: { headerRows: 1, widths: ["*", 120, 120], body: quadroBody },
+          layout: {
+            hLineWidth: () => 0.5,
+            vLineWidth: () => 0,
+            hLineColor: () => "#dddddd",
+            fillColor: (rowIndex: number) => rowIndex === 0 ? DARK : (rowIndex % 2 === 0 ? "#f8f9fb" : null),
+            paddingLeft: () => 8,
+            paddingRight: () => 8,
+            paddingTop: () => 5,
+            paddingBottom: () => 5,
+          },
+          margin: [0, 0, 0, 14] as [number, number, number, number],
+        },
+      ] as Content[] : []),
+
+      // Chapters
+      ...(capitoli.length > 0 ? [
+        { text: "2. COMPUTO METRICO DETTAGLIATO", style: "sectionHeading", margin: [0, 0, 0, 6] as [number, number, number, number] },
+        ...chaptersContent,
+      ] as Content[] : []),
+
+      // Totals
+      {
+        columns: [
+          { width: "*", text: "" },
+          {
+            width: 320,
+            table: { widths: ["*", 120], body: totalsRows },
+            layout: {
+              hLineWidth: () => 0.5,
+              vLineWidth: () => 0,
+              hLineColor: () => "#dde1ec",
+              paddingLeft: () => 10,
+              paddingRight: () => 10,
+              paddingTop: () => 6,
+              paddingBottom: () => 6,
+              fillColor: (rowIndex: number) => rowIndex === totalsRows.length - 1 ? DARK : null,
+            },
+          },
+        ],
+        margin: [0, 0, 0, 14] as [number, number, number, number],
+      },
+
+      // Payment conditions
+      ...condizioniContent,
+
+      // Note
+      ...(quote.note ? [
+        { text: "NOTE", style: "sectionHeading", margin: [0, 14, 0, 4] as [number, number, number, number] },
+        { text: quote.note, fontSize: 8, color: "#333" },
+      ] as Content[] : []),
+    ],
+    footer: profile?.companyName
+      ? {
+          margin: [40, 0, 40, 14],
+          text: `${profile.companyName}${profile.address ? " – " + profile.address : ""}`,
+          fontSize: 7.5,
+          color: "#aaaaaa",
+          alignment: "center",
+        }
+      : undefined,
+  };
+
+  const pdfDoc = printer.createPdfKitDocument(docDefinition);
+  return new Promise<Buffer>((resolve, reject) => {
+    const chunks: Buffer[] = [];
+    pdfDoc.on("data", (chunk: Buffer) => chunks.push(chunk));
+    pdfDoc.on("end", () => resolve(Buffer.concat(chunks)));
+    pdfDoc.on("error", reject);
+    pdfDoc.end();
+  });
 }
 
 export { generateQuoteHtml };
