@@ -6,7 +6,7 @@ export function Logo({ className = "", style }: { className?: string; style?: Re
       src="/prevai-logo.png"
       alt="prevai"
       className={className}
-      style={{ height: 44, width: "auto", objectFit: "contain", ...style }}
+      style={{ height: 72, width: "auto", objectFit: "contain", ...style }}
     />
   );
 }
