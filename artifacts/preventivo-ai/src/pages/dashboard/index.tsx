@@ -29,6 +29,8 @@ import {
   X,
   User,
   Loader2,
+  ChevronDown,
+  ChevronUp,
 } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { useClientMemory } from "@/hooks/use-client-memory";
@@ -457,7 +459,7 @@ function DashboardQuickBar() {
 
       {/* ── Client Section ── */}
       <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
-        {/* Header */}
+        {/* Header — always clickable to toggle */}
         <button
           type="button"
           onClick={() => setClientOpen(v => !v)}
@@ -466,20 +468,26 @@ function DashboardQuickBar() {
           <div className="flex items-center gap-2">
             <User className="h-3.5 w-3.5 text-gray-400" />
             <span className="text-xs font-medium text-gray-600">Committente</span>
-            {clientForm.nome && (
+            {clientForm.nome && !clientOpen && (
               <span className="text-xs font-semibold text-violet-700 bg-violet-50 border border-violet-100 px-2 py-0.5 rounded-full">
                 {clientForm.nome}
               </span>
             )}
           </div>
-          <span className="text-[11px] text-gray-400">
-            {clientForm.nome ? "selezionato" : clientOpen ? "chiudi" : "opzionale ↓"}
-          </span>
+          <div className="flex items-center gap-1.5">
+            {!clientOpen && !clientForm.nome && (
+              <span className="text-[11px] text-gray-400">opzionale</span>
+            )}
+            {clientOpen
+              ? <ChevronUp className="h-3.5 w-3.5 text-gray-400" />
+              : <ChevronDown className="h-3.5 w-3.5 text-gray-400" />
+            }
+          </div>
         </button>
 
-        {/* Saved clients row (always visible if any) */}
-        {savedClients.length > 0 && !clientOpen && clientMode !== "new" && (
-          <div className="px-4 pb-3 flex flex-wrap gap-1.5 border-t border-gray-50 pt-2">
+        {/* Collapsed: compact chips for saved clients */}
+        {!clientOpen && savedClients.length > 0 && (
+          <div className="px-4 pb-2.5 flex flex-wrap gap-1.5 border-t border-gray-50 pt-2">
             {savedClients.slice(0, 5).map(c => (
               <button
                 key={c.id}
@@ -512,9 +520,9 @@ function DashboardQuickBar() {
         )}
 
         {/* Expanded panel */}
-        {(clientOpen || (savedClients.length === 0)) && (
-          <div className="border-t border-gray-50 px-4 pt-3 pb-4 animate-in fade-in slide-in-from-top-1 duration-200">
-            {/* Saved clients in expanded view */}
+        {clientOpen && (
+          <div className="border-t border-gray-100 px-4 pt-3 pb-4 animate-in fade-in slide-in-from-top-1 duration-200">
+            {/* Saved clients chips in expanded view */}
             {savedClients.length > 0 && clientMode !== "new" && (
               <div className="flex flex-wrap gap-1.5 mb-3">
                 {savedClients.slice(0, 6).map(c => (
@@ -536,9 +544,20 @@ function DashboardQuickBar() {
               </div>
             )}
 
-            {/* No saved clients or new form */}
-            {(savedClients.length === 0 || clientMode === "new") && (
-              <div className="space-y-2.5">
+            {/* No saved clients CTA (collapsed-like prompt) */}
+            {savedClients.length === 0 && clientMode !== "new" && (
+              <button
+                type="button"
+                onClick={() => setClientMode("new")}
+                className="w-full mb-3 py-2 rounded-xl border border-dashed border-gray-200 text-xs text-gray-500 hover:border-violet-300 hover:text-violet-600 hover:bg-violet-50/30 transition-all"
+              >
+                + Aggiungi dati committente
+              </button>
+            )}
+
+            {/* Form */}
+            {(clientMode === "new") && (
+              <div className="space-y-2.5 animate-in fade-in slide-in-from-top-1 duration-150">
                 <div className="space-y-1">
                   <Label className="text-xs font-medium text-gray-600">Nome / Ragione Sociale</Label>
                   <Input placeholder="Es. Rossi Mario" value={clientForm.nome}
@@ -591,11 +610,9 @@ function DashboardQuickBar() {
                       className="rounded border-gray-300 text-violet-600 focus:ring-violet-500" />
                     Ricorda questo cliente
                   </label>
-                  {clientMode === "new" && (
-                    <button type="button" onClick={clearClient} className="text-xs text-gray-400 hover:text-gray-600 transition-colors">
-                      Annulla
-                    </button>
-                  )}
+                  <button type="button" onClick={clearClient} className="text-xs text-gray-400 hover:text-gray-600 transition-colors">
+                    Annulla
+                  </button>
                 </div>
               </div>
             )}

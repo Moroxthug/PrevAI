@@ -263,7 +263,9 @@ export default function ManualQuoteBuilder({ clientData, profileData }: ManualQu
     const body: CreateManualQuoteBody = {
       templateId,
       capitoli,
-      clientData: clientData?.nome ? clientData : undefined,
+      clientData: clientData?.nome
+        ? { ...clientData, indirizzo: clientData.indirizzo ?? "" }
+        : undefined,
       companySnapshot,
       titoloPreventivoRiga1: titoloRiga1 || undefined,
       titoloPreventivoRiga2: titoloRiga2 || undefined,
