@@ -262,6 +262,39 @@ export interface CapitolatoPdfResult {
   quoteId: string;
 }
 
+export type CreateManualQuoteBodyTemplateId =
+  (typeof CreateManualQuoteBodyTemplateId)[keyof typeof CreateManualQuoteBodyTemplateId];
+
+export const CreateManualQuoteBodyTemplateId = {
+  standard: "standard",
+  arosio: "arosio",
+  mariagrazia: "mariagrazia",
+} as const;
+
+export interface CreateManualQuoteBody {
+  templateId?: CreateManualQuoteBodyTemplateId;
+  capitoli: QuoteChapter[];
+  clientData?: QuoteClientData;
+  companySnapshot?: QuoteCompanySnapshot;
+  titoloPreventivoRiga1?: string;
+  titoloPreventivoRiga2?: string;
+  descrizioneGenerale?: string;
+  ivaPercentuale?: number;
+  condizioniPagamento?: string[];
+  note?: string;
+}
+
+export interface SuggestItemDescriptionBody {
+  /** Short description of the work item */
+  brief: string;
+  /** Optional context about the overall project */
+  context?: string;
+}
+
+export interface SuggestItemDescriptionResult {
+  description: string;
+}
+
 export interface PortalSessionResult {
   url: string;
 }

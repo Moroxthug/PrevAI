@@ -3,7 +3,7 @@ import { useLocation } from "wouter";
 import { useCreateQuote, useGetBusinessProfile, useGetSubscription } from "@workspace/api-client-react";
 import {
   Sparkles, Mic, ImagePlus, ArrowRight, Loader2,
-  X, User, Lock,
+  X, User, Lock, Bot, PencilLine,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Input } from "@/components/ui/input";
@@ -11,6 +11,7 @@ import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 import { useClientMemory } from "@/hooks/use-client-memory";
 import type { SavedClient } from "@/hooks/use-client-memory";
+import ManualQuoteBuilder from "@/components/manual-quote-builder";
 
 const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp", "image/heic", "image/heif"];
 const MAX_SIZE_MB = 5;
@@ -45,7 +46,167 @@ const emptyClient: ClientForm = {
   nome: "", indirizzo: "", citta: "", cap: "", provincia: "", codiceFiscale: "", partitaIva: "",
 };
 
+// ─── Shared client selector used in both tabs ───────────────────────────────
+interface ClientSelectorProps {
+  clientMode: "none" | "saved" | "new";
+  setClientMode: (m: "none" | "saved" | "new") => void;
+  selectedClientId: string | null;
+  setSelectedClientId: (id: string | null) => void;
+  clientForm: ClientForm;
+  setClientForm: (fn: (prev: ClientForm) => ClientForm) => void;
+  rememberClient: boolean;
+  setRememberClient: (v: boolean) => void;
+  savedClients: SavedClient[];
+  selectSavedClient: (c: SavedClient) => void;
+  clearClient: () => void;
+  disabled?: boolean;
+}
+
+function ClientSelector({
+  clientMode, setClientMode, selectedClientId,
+  clientForm, setClientForm, rememberClient, setRememberClient,
+  savedClients, selectSavedClient, clearClient, disabled,
+}: ClientSelectorProps) {
+  return (
+    <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+      <div className="px-4 py-3 flex items-center justify-between border-b border-gray-50">
+        <div className="flex items-center gap-2">
+          <User className="h-4 w-4 text-gray-400" />
+          <span className="text-sm font-medium text-gray-700">Committente</span>
+          {clientForm.nome && (
+            <span className="text-xs font-semibold text-violet-700 bg-violet-50 border border-violet-100 px-2 py-0.5 rounded-full">
+              {clientForm.nome}
+            </span>
+          )}
+        </div>
+        <span className="text-xs text-gray-400">opzionale</span>
+      </div>
+
+      {savedClients.length > 0 && clientMode !== "new" && (
+        <div className="px-4 pt-3 pb-2 flex flex-wrap gap-2">
+          {savedClients.slice(0, 6).map(c => (
+            <button
+              key={c.id}
+              type="button"
+              onClick={() => selectSavedClient(c)}
+              className={cn(
+                "inline-flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded-xl border transition-all",
+                selectedClientId === c.id
+                  ? "border-violet-300 bg-violet-50 text-violet-700 font-semibold shadow-sm"
+                  : "border-gray-200 text-gray-600 hover:border-violet-200 hover:bg-violet-50/50"
+              )}
+            >
+              <User className="h-3 w-3" />
+              {c.nome}
+            </button>
+          ))}
+          <button
+            type="button"
+            onClick={() => { setClientMode("new"); }}
+            className="inline-flex items-center gap-1 text-xs px-2.5 py-1.5 rounded-xl border border-dashed border-gray-300 text-gray-500 hover:border-violet-300 hover:text-violet-600 transition-all"
+          >
+            + Nuovo
+          </button>
+        </div>
+      )}
+
+      {clientMode === "saved" && selectedClientId && (
+        <div className="px-4 pb-3 flex items-center justify-between">
+          <span className="text-[11px] text-gray-400">
+            {[clientForm.indirizzo, clientForm.citta, clientForm.provincia].filter(Boolean).join(", ") || "Nessun indirizzo salvato"}
+          </span>
+          <button type="button" onClick={clearClient} className="text-[11px] text-gray-400 hover:text-red-500 transition-colors">
+            Rimuovi
+          </button>
+        </div>
+      )}
+
+      {savedClients.length === 0 && clientMode === "none" && (
+        <div className="px-4 py-3">
+          <button
+            type="button"
+            onClick={() => setClientMode("new")}
+            className="w-full py-2.5 rounded-xl border border-dashed border-gray-200 text-xs text-gray-500 hover:border-violet-300 hover:text-violet-600 hover:bg-violet-50/30 transition-all"
+          >
+            + Aggiungi dati committente
+          </button>
+        </div>
+      )}
+
+      {clientMode === "new" && (
+        <div className="px-4 pb-4 pt-3 space-y-2.5 animate-in fade-in slide-in-from-top-1 duration-200 border-t border-gray-50">
+          <div className="space-y-1">
+            <Label className="text-xs font-medium text-gray-600">Nome / Ragione Sociale *</Label>
+            <Input
+              placeholder="Es. Rossi Mario"
+              value={clientForm.nome}
+              onChange={e => setClientForm(f => ({ ...f, nome: e.target.value }))}
+              disabled={disabled}
+              className="h-9 text-sm"
+            />
+          </div>
+          <div className="space-y-1">
+            <Label className="text-xs font-medium text-gray-600">Indirizzo</Label>
+            <Input
+              placeholder="Es. Via Garibaldi 10"
+              value={clientForm.indirizzo}
+              onChange={e => setClientForm(f => ({ ...f, indirizzo: e.target.value }))}
+              disabled={disabled}
+              className="h-9 text-sm"
+            />
+          </div>
+          <div className="grid grid-cols-5 gap-2">
+            <div className="col-span-3 space-y-1">
+              <Label className="text-xs font-medium text-gray-600">Comune</Label>
+              <Input placeholder="Milano" value={clientForm.citta} onChange={e => setClientForm(f => ({ ...f, citta: e.target.value }))} disabled={disabled} className="h-9 text-sm" />
+            </div>
+            <div className="col-span-1 space-y-1">
+              <Label className="text-xs font-medium text-gray-600">Prov.</Label>
+              <Input placeholder="MI" value={clientForm.provincia} onChange={e => setClientForm(f => ({ ...f, provincia: e.target.value.toUpperCase() }))} disabled={disabled} className="h-9 text-sm" maxLength={2} />
+            </div>
+            <div className="col-span-1 space-y-1">
+              <Label className="text-xs font-medium text-gray-600">CAP</Label>
+              <Input placeholder="20100" value={clientForm.cap} onChange={e => setClientForm(f => ({ ...f, cap: e.target.value }))} disabled={disabled} className="h-9 text-sm" maxLength={5} />
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <div className="space-y-1">
+              <Label className="text-xs font-medium text-gray-600">Codice Fiscale</Label>
+              <Input placeholder="RSSMRA80A01H501Z" value={clientForm.codiceFiscale} onChange={e => setClientForm(f => ({ ...f, codiceFiscale: e.target.value.toUpperCase() }))} disabled={disabled} className="h-9 text-sm" maxLength={16} />
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs font-medium text-gray-600">P. IVA</Label>
+              <Input placeholder="IT12345678901" value={clientForm.partitaIva} onChange={e => setClientForm(f => ({ ...f, partitaIva: e.target.value }))} disabled={disabled} className="h-9 text-sm" maxLength={13} />
+            </div>
+          </div>
+          <div className="flex items-center justify-between pt-1">
+            <label className="flex items-center gap-2 text-xs text-gray-600 cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={rememberClient}
+                onChange={e => setRememberClient(e.target.checked)}
+                className="rounded border-gray-300 text-violet-600 focus:ring-violet-500"
+              />
+              Ricorda questo cliente
+            </label>
+            <button
+              type="button"
+              onClick={clearClient}
+              className="text-xs text-gray-400 hover:text-gray-600 transition-colors"
+            >
+              Annulla
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Main page ───────────────────────────────────────────────────────────────
 export default function NewQuote() {
+  const [activeTab, setActiveTab] = useState<"ai" | "manual">("ai");
+
   const [input, setInput] = useState("");
   const [, setLocation] = useLocation();
   const createQuote = useCreateQuote();
@@ -139,8 +300,8 @@ export default function NewQuote() {
     };
   };
 
-  const handleSubmit = () => {
-    if (!input.trim() || isSubmitting) return;
+  const handleAiSubmit = () => {
+    if (!input.trim() || isAiSubmitting) return;
     const clientData = getClientData();
     if (rememberClient && clientData) upsertClient(clientData);
 
@@ -178,8 +339,8 @@ export default function NewQuote() {
     );
   };
 
-  const isSubmitting = createQuote.isPending;
-  const canSubmit = input.trim().length > 0 && !isSubmitting;
+  const isAiSubmitting = createQuote.isPending;
+  const canAiSubmit = input.trim().length > 0 && !isAiSubmitting;
 
   const selectSavedClient = (c: SavedClient) => {
     setSelectedClientId(c.id);
@@ -205,305 +366,238 @@ export default function NewQuote() {
         ? "3 foto/preventivo · Pro"
         : "5 foto/preventivo · Elite";
 
+  const clientData = getClientData();
+
   return (
-    <div className="max-w-2xl mx-auto animate-in fade-in duration-500 py-6 space-y-3">
+    <div className="max-w-2xl mx-auto animate-in fade-in duration-500 py-6 space-y-4">
       {/* Header */}
-      <div className="mb-2">
+      <div className="mb-1">
         <h1 className="text-2xl font-bold tracking-tight text-gray-900">Nuovo Preventivo</h1>
         <p className="text-sm text-gray-500 mt-0.5">
-          Descrivi il lavoro e l'AI genera il preventivo in 30 secondi.
+          Genera con AI o costruisci manualmente voce per voce.
         </p>
       </div>
 
-      {/* ══════════════ AI BAR ══════════════ */}
-      <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
-        {/* Photo strip */}
-        {photos.length > 0 && (
-          <div className="px-3 pt-3 flex gap-2 flex-wrap border-b border-gray-100 pb-3">
-            {photoPreviews.map((src, idx) => (
-              <div key={idx} className="relative group w-14 h-14 rounded-lg overflow-hidden border border-gray-200 bg-gray-50 shrink-0">
-                <img src={src} alt={`Foto ${idx + 1}`} className="w-full h-full object-cover" />
-                <button
-                  type="button"
-                  onClick={() => removePhoto(idx)}
-                  disabled={isSubmitting}
-                  className="absolute top-0.5 right-0.5 bg-black/70 hover:bg-black rounded-full p-0.5 opacity-0 group-hover:opacity-100 transition-opacity"
-                >
-                  <X className="h-2.5 w-2.5 text-white" />
-                </button>
-              </div>
-            ))}
-            {photos.length < maxPhotos && (
-              <button
-                type="button"
-                onClick={() => fileInputRef.current?.click()}
-                disabled={isSubmitting}
-                className="w-14 h-14 rounded-lg border-2 border-dashed border-gray-200 hover:border-violet-300 flex flex-col items-center justify-center gap-0.5 text-gray-400 hover:text-violet-500 transition-colors text-[10px]"
-              >
-                <ImagePlus className="h-3.5 w-3.5" />
-                <span>Aggiungi</span>
-              </button>
-            )}
-          </div>
-        )}
+      {/* ── Tab switcher ── */}
+      <div className="flex gap-1 bg-gray-100 rounded-xl p-1">
+        <button
+          type="button"
+          onClick={() => setActiveTab("ai")}
+          className={cn(
+            "flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-sm font-semibold transition-all",
+            activeTab === "ai"
+              ? "bg-white text-violet-700 shadow-sm"
+              : "text-gray-500 hover:text-gray-700"
+          )}
+        >
+          <Bot className="h-4 w-4" />
+          Genera con AI
+        </button>
+        <button
+          type="button"
+          onClick={() => setActiveTab("manual")}
+          className={cn(
+            "flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-sm font-semibold transition-all",
+            activeTab === "manual"
+              ? "bg-white text-violet-700 shadow-sm"
+              : "text-gray-500 hover:text-gray-700"
+          )}
+        >
+          <PencilLine className="h-4 w-4" />
+          Manuale
+        </button>
+      </div>
 
-        {/* Bar row */}
-        <div className="flex items-center gap-2 px-3 py-3">
-          {/* Upload button */}
-          <div className="group relative shrink-0">
-            {photoAllowed ? (
+      {/* ══ AI TAB ══════════════════════════════════════════════════════════ */}
+      {activeTab === "ai" && (
+        <div className="space-y-3 animate-in fade-in duration-200">
+          {/* AI bar card */}
+          <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+            {/* Photo strip */}
+            {photos.length > 0 && (
+              <div className="px-3 pt-3 flex gap-2 flex-wrap border-b border-gray-100 pb-3">
+                {photoPreviews.map((src, idx) => (
+                  <div key={idx} className="relative group w-14 h-14 rounded-lg overflow-hidden border border-gray-200 bg-gray-50 shrink-0">
+                    <img src={src} alt={`Foto ${idx + 1}`} className="w-full h-full object-cover" />
+                    <button
+                      type="button"
+                      onClick={() => removePhoto(idx)}
+                      disabled={isAiSubmitting}
+                      className="absolute top-0.5 right-0.5 bg-black/70 hover:bg-black rounded-full p-0.5 opacity-0 group-hover:opacity-100 transition-opacity"
+                    >
+                      <X className="h-2.5 w-2.5 text-white" />
+                    </button>
+                  </div>
+                ))}
+                {photos.length < maxPhotos && (
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={isAiSubmitting}
+                    className="w-14 h-14 rounded-lg border-2 border-dashed border-gray-200 hover:border-violet-300 flex flex-col items-center justify-center gap-0.5 text-gray-400 hover:text-violet-500 transition-colors text-[10px]"
+                  >
+                    <ImagePlus className="h-3.5 w-3.5" />
+                    <span>Aggiungi</span>
+                  </button>
+                )}
+              </div>
+            )}
+
+            {/* Bar row */}
+            <div className="flex items-center gap-2 px-3 py-3">
+              <div className="group relative shrink-0">
+                {photoAllowed ? (
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={isAiSubmitting || photos.length >= maxPhotos}
+                    title={`Allega foto (max ${maxPhotos})`}
+                    className={cn(
+                      "h-8 w-8 flex items-center justify-center rounded-xl transition-colors",
+                      photos.length > 0
+                        ? "bg-violet-100 text-violet-600 hover:bg-violet-200"
+                        : "text-gray-400 hover:bg-gray-100",
+                      (isAiSubmitting || photos.length >= maxPhotos) && "opacity-40 cursor-not-allowed"
+                    )}
+                  >
+                    <ImagePlus className="h-4 w-4" />
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    disabled
+                    className="h-8 w-8 flex items-center justify-center rounded-xl text-gray-300 cursor-not-allowed"
+                  >
+                    <Lock className="h-4 w-4" />
+                  </button>
+                )}
+                {!photoAllowed && (
+                  <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2.5 py-1 bg-gray-900 text-white text-[11px] font-medium rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none shadow-lg z-10">
+                    Disponibile con piano a pagamento
+                    <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-gray-900" />
+                  </div>
+                )}
+              </div>
+
+              <Sparkles className="h-4 w-4 text-violet-400 shrink-0" />
+              <input
+                value={input}
+                onChange={e => setInput(e.target.value)}
+                onKeyDown={e => {
+                  if (e.key === "Enter" && !e.shiftKey && canAiSubmit) {
+                    e.preventDefault();
+                    handleAiSubmit();
+                  }
+                }}
+                placeholder="Descrivi il lavoro e ottieni un preventivo in 30 secondi..."
+                className="flex-1 text-sm outline-none placeholder:text-gray-400 text-gray-800 bg-transparent min-w-0"
+                disabled={isAiSubmitting}
+              />
+
+              <div className="group relative shrink-0">
+                <button
+                  disabled
+                  className="h-8 w-8 flex items-center justify-center rounded-xl text-gray-400 cursor-not-allowed hover:bg-gray-100 transition-colors"
+                >
+                  <Mic className="h-4 w-4" />
+                </button>
+                <div className="absolute bottom-full right-0 mb-2 px-2.5 py-1 bg-gray-900 text-white text-[11px] font-medium rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none shadow-lg z-10">
+                  Funzione in arrivo
+                  <div className="absolute top-full right-3 border-4 border-transparent border-t-gray-900" />
+                </div>
+              </div>
+
               <button
-                type="button"
-                onClick={() => fileInputRef.current?.click()}
-                disabled={isSubmitting || photos.length >= maxPhotos}
-                title={`Allega foto (max ${maxPhotos})`}
+                onClick={handleAiSubmit}
+                disabled={!canAiSubmit}
                 className={cn(
-                  "h-8 w-8 flex items-center justify-center rounded-xl transition-colors",
-                  photos.length > 0
-                    ? "bg-violet-100 text-violet-600 hover:bg-violet-200"
-                    : "text-gray-400 hover:bg-gray-100",
-                  (isSubmitting || photos.length >= maxPhotos) && "opacity-40 cursor-not-allowed"
+                  "h-9 w-9 rounded-full flex items-center justify-center shrink-0 transition-all",
+                  canAiSubmit ? "btn-gradient shadow-sm" : "bg-gray-100 cursor-not-allowed"
                 )}
               >
-                <ImagePlus className="h-4 w-4" />
+                {isAiSubmitting
+                  ? <Loader2 className="h-4 w-4 animate-spin text-white" />
+                  : <ArrowRight className={cn("h-4 w-4", canAiSubmit ? "text-white" : "text-gray-300")} />
+                }
               </button>
-            ) : (
-              <button
-                type="button"
-                disabled
-                className="h-8 w-8 flex items-center justify-center rounded-xl text-gray-300 cursor-not-allowed"
-              >
-                <Lock className="h-4 w-4" />
-              </button>
-            )}
-            {!photoAllowed && (
-              <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2.5 py-1 bg-gray-900 text-white text-[11px] font-medium rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none shadow-lg z-10">
-                Disponibile con piano a pagamento
-                <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-gray-900" />
+            </div>
+
+            {photoAllowed && photos.length === 0 && (
+              <div className="px-3 pb-1.5 -mt-1 text-[11px] text-violet-500 font-medium">
+                {planPhotoLabel} — clicca 📎 per allegare foto di cantiere o appunti
               </div>
             )}
+
+            <div className="px-3 pb-3 border-t border-gray-50 pt-2.5">
+              <div className="flex flex-wrap gap-1.5 items-center">
+                <span className="text-[11px] text-gray-400 font-medium uppercase tracking-wide mr-1">Es:</span>
+                {EXAMPLES.map(ex => (
+                  <button
+                    key={ex.label}
+                    type="button"
+                    onClick={() => setInput(ex.text)}
+                    disabled={isAiSubmitting}
+                    className="text-xs px-2.5 py-1 rounded-full border border-gray-200 text-gray-600 hover:border-violet-300 hover:text-violet-600 hover:bg-violet-50 transition-colors disabled:opacity-40"
+                  >
+                    {ex.label}
+                  </button>
+                ))}
+              </div>
+            </div>
           </div>
 
-          {/* Sparkles + input */}
-          <Sparkles className="h-4 w-4 text-violet-400 shrink-0" />
           <input
-            value={input}
-            onChange={e => setInput(e.target.value)}
-            onKeyDown={e => {
-              if (e.key === "Enter" && !e.shiftKey && canSubmit) {
-                e.preventDefault();
-                handleSubmit();
-              }
-            }}
-            placeholder="Descrivi il lavoro e ottieni un preventivo in 30 secondi..."
-            className="flex-1 text-sm outline-none placeholder:text-gray-400 text-gray-800 bg-transparent min-w-0"
-            disabled={isSubmitting}
+            ref={fileInputRef}
+            type="file"
+            accept="image/jpeg,image/png,image/webp,image/heic,image/heif,.heic,.heif"
+            multiple
+            className="hidden"
+            onChange={e => { if (e.target.files) { addFiles(e.target.files); e.target.value = ""; } }}
+            disabled={isAiSubmitting}
           />
 
-          {/* Mic button */}
-          <div className="group relative shrink-0">
-            <button
-              disabled
-              className="h-8 w-8 flex items-center justify-center rounded-xl text-gray-400 cursor-not-allowed hover:bg-gray-100 transition-colors"
-            >
-              <Mic className="h-4 w-4" />
-            </button>
-            <div className="absolute bottom-full right-0 mb-2 px-2.5 py-1 bg-gray-900 text-white text-[11px] font-medium rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none shadow-lg z-10">
-              Funzione in arrivo
-              <div className="absolute top-full right-3 border-4 border-transparent border-t-gray-900" />
-            </div>
-          </div>
-
-          {/* Send */}
-          <button
-            onClick={handleSubmit}
-            disabled={!canSubmit}
-            className={cn(
-              "h-9 w-9 rounded-full flex items-center justify-center shrink-0 transition-all",
-              canSubmit ? "btn-gradient shadow-sm" : "bg-gray-100 cursor-not-allowed"
-            )}
-          >
-            {isSubmitting
-              ? <Loader2 className="h-4 w-4 animate-spin text-white" />
-              : <ArrowRight className={cn("h-4 w-4", canSubmit ? "text-white" : "text-gray-300")} />
-            }
-          </button>
+          {/* Client selector for AI tab */}
+          <ClientSelector
+            clientMode={clientMode}
+            setClientMode={setClientMode}
+            selectedClientId={selectedClientId}
+            setSelectedClientId={setSelectedClientId}
+            clientForm={clientForm}
+            setClientForm={setClientForm}
+            rememberClient={rememberClient}
+            setRememberClient={setRememberClient}
+            savedClients={savedClients}
+            selectSavedClient={selectSavedClient}
+            clearClient={clearClient}
+            disabled={isAiSubmitting}
+          />
         </div>
+      )}
 
-        {/* Photo hint */}
-        {photoAllowed && photos.length === 0 && (
-          <div className="px-3 pb-1.5 -mt-1 text-[11px] text-violet-500 font-medium">
-            {planPhotoLabel} — clicca 📎 per allegare foto di cantiere o appunti
-          </div>
-        )}
+      {/* ══ MANUAL TAB ══════════════════════════════════════════════════════ */}
+      {activeTab === "manual" && (
+        <div className="space-y-4 animate-in fade-in duration-200">
+          {/* Client selector for manual tab */}
+          <ClientSelector
+            clientMode={clientMode}
+            setClientMode={setClientMode}
+            selectedClientId={selectedClientId}
+            setSelectedClientId={setSelectedClientId}
+            clientForm={clientForm}
+            setClientForm={setClientForm}
+            rememberClient={rememberClient}
+            setRememberClient={setRememberClient}
+            savedClients={savedClients}
+            selectSavedClient={selectSavedClient}
+            clearClient={clearClient}
+          />
 
-        {/* Examples */}
-        <div className="px-3 pb-3 border-t border-gray-50 pt-2.5">
-          <div className="flex flex-wrap gap-1.5 items-center">
-            <span className="text-[11px] text-gray-400 font-medium uppercase tracking-wide mr-1">Es:</span>
-            {EXAMPLES.map(ex => (
-              <button
-                key={ex.label}
-                type="button"
-                onClick={() => setInput(ex.text)}
-                disabled={isSubmitting}
-                className="text-xs px-2.5 py-1 rounded-full border border-gray-200 text-gray-600 hover:border-violet-300 hover:text-violet-600 hover:bg-violet-50 transition-colors disabled:opacity-40"
-              >
-                {ex.label}
-              </button>
-            ))}
-          </div>
+          <ManualQuoteBuilder
+            clientData={clientData}
+            profileData={profile ?? undefined}
+          />
         </div>
-      </div>
-
-      <input
-        ref={fileInputRef}
-        type="file"
-        accept="image/jpeg,image/png,image/webp,image/heic,image/heif,.heic,.heif"
-        multiple
-        className="hidden"
-        onChange={e => { if (e.target.files) { addFiles(e.target.files); e.target.value = ""; } }}
-        disabled={isSubmitting}
-      />
-
-      {/* ══════════════ CLIENT SELECTOR ══════════════ */}
-      <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
-        {/* Header row */}
-        <div className="px-4 py-3 flex items-center justify-between border-b border-gray-50">
-          <div className="flex items-center gap-2">
-            <User className="h-4 w-4 text-gray-400" />
-            <span className="text-sm font-medium text-gray-700">Committente</span>
-            {clientForm.nome && (
-              <span className="text-xs font-semibold text-violet-700 bg-violet-50 border border-violet-100 px-2 py-0.5 rounded-full">
-                {clientForm.nome}
-              </span>
-            )}
-          </div>
-          <span className="text-xs text-gray-400">opzionale</span>
-        </div>
-
-        {/* Saved clients chips */}
-        {savedClients.length > 0 && clientMode !== "new" && (
-          <div className="px-4 pt-3 pb-2 flex flex-wrap gap-2">
-            {savedClients.slice(0, 6).map(c => (
-              <button
-                key={c.id}
-                type="button"
-                onClick={() => selectSavedClient(c)}
-                className={cn(
-                  "inline-flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded-xl border transition-all",
-                  selectedClientId === c.id
-                    ? "border-violet-300 bg-violet-50 text-violet-700 font-semibold shadow-sm"
-                    : "border-gray-200 text-gray-600 hover:border-violet-200 hover:bg-violet-50/50"
-                )}
-              >
-                <User className="h-3 w-3" />
-                {c.nome}
-              </button>
-            ))}
-            <button
-              type="button"
-              onClick={() => { setClientMode("new"); setSelectedClientId(null); setClientForm(emptyClient); }}
-              className="inline-flex items-center gap-1 text-xs px-2.5 py-1.5 rounded-xl border border-dashed border-gray-300 text-gray-500 hover:border-violet-300 hover:text-violet-600 transition-all"
-            >
-              + Nuovo
-            </button>
-          </div>
-        )}
-
-        {/* Selected client details row */}
-        {clientMode === "saved" && selectedClientId && (
-          <div className="px-4 pb-3 flex items-center justify-between">
-            <span className="text-[11px] text-gray-400">
-              {[clientForm.indirizzo, clientForm.citta, clientForm.provincia].filter(Boolean).join(", ") || "Nessun indirizzo salvato"}
-            </span>
-            <button type="button" onClick={clearClient} className="text-[11px] text-gray-400 hover:text-red-500 transition-colors">
-              Rimuovi
-            </button>
-          </div>
-        )}
-
-        {/* No saved clients CTA */}
-        {savedClients.length === 0 && clientMode === "none" && (
-          <div className="px-4 py-3">
-            <button
-              type="button"
-              onClick={() => setClientMode("new")}
-              className="w-full py-2.5 rounded-xl border border-dashed border-gray-200 text-xs text-gray-500 hover:border-violet-300 hover:text-violet-600 hover:bg-violet-50/30 transition-all"
-            >
-              + Aggiungi dati committente
-            </button>
-          </div>
-        )}
-
-        {/* New client form */}
-        {clientMode === "new" && (
-          <div className="px-4 pb-4 pt-3 space-y-2.5 animate-in fade-in slide-in-from-top-1 duration-200 border-t border-gray-50">
-            <div className="space-y-1">
-              <Label className="text-xs font-medium text-gray-600">Nome / Ragione Sociale *</Label>
-              <Input
-                placeholder="Es. Rossi Mario"
-                value={clientForm.nome}
-                onChange={e => setClientForm(f => ({ ...f, nome: e.target.value }))}
-                disabled={isSubmitting}
-                className="h-9 text-sm"
-              />
-            </div>
-            <div className="space-y-1">
-              <Label className="text-xs font-medium text-gray-600">Indirizzo</Label>
-              <Input
-                placeholder="Es. Via Garibaldi 10"
-                value={clientForm.indirizzo}
-                onChange={e => setClientForm(f => ({ ...f, indirizzo: e.target.value }))}
-                disabled={isSubmitting}
-                className="h-9 text-sm"
-              />
-            </div>
-            <div className="grid grid-cols-5 gap-2">
-              <div className="col-span-3 space-y-1">
-                <Label className="text-xs font-medium text-gray-600">Comune</Label>
-                <Input placeholder="Milano" value={clientForm.citta} onChange={e => setClientForm(f => ({ ...f, citta: e.target.value }))} disabled={isSubmitting} className="h-9 text-sm" />
-              </div>
-              <div className="col-span-1 space-y-1">
-                <Label className="text-xs font-medium text-gray-600">Prov.</Label>
-                <Input placeholder="MI" value={clientForm.provincia} onChange={e => setClientForm(f => ({ ...f, provincia: e.target.value.toUpperCase() }))} disabled={isSubmitting} className="h-9 text-sm" maxLength={2} />
-              </div>
-              <div className="col-span-1 space-y-1">
-                <Label className="text-xs font-medium text-gray-600">CAP</Label>
-                <Input placeholder="20100" value={clientForm.cap} onChange={e => setClientForm(f => ({ ...f, cap: e.target.value }))} disabled={isSubmitting} className="h-9 text-sm" maxLength={5} />
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-2">
-              <div className="space-y-1">
-                <Label className="text-xs font-medium text-gray-600">Codice Fiscale</Label>
-                <Input placeholder="RSSMRA80A01H501Z" value={clientForm.codiceFiscale} onChange={e => setClientForm(f => ({ ...f, codiceFiscale: e.target.value.toUpperCase() }))} disabled={isSubmitting} className="h-9 text-sm" maxLength={16} />
-              </div>
-              <div className="space-y-1">
-                <Label className="text-xs font-medium text-gray-600">P. IVA</Label>
-                <Input placeholder="IT12345678901" value={clientForm.partitaIva} onChange={e => setClientForm(f => ({ ...f, partitaIva: e.target.value }))} disabled={isSubmitting} className="h-9 text-sm" maxLength={13} />
-              </div>
-            </div>
-            <div className="flex items-center justify-between pt-1">
-              <label className="flex items-center gap-2 text-xs text-gray-600 cursor-pointer select-none">
-                <input
-                  type="checkbox"
-                  checked={rememberClient}
-                  onChange={e => setRememberClient(e.target.checked)}
-                  className="rounded border-gray-300 text-violet-600 focus:ring-violet-500"
-                />
-                Ricorda questo cliente
-              </label>
-              <button
-                type="button"
-                onClick={clearClient}
-                className="text-xs text-gray-400 hover:text-gray-600 transition-colors"
-              >
-                Annulla
-              </button>
-            </div>
-          </div>
-        )}
-      </div>
+      )}
     </div>
   );
 }

@@ -208,6 +208,72 @@ export const GetQuoteStatsResponse = zod.object({
 });
 
 /**
+ * @summary Create a new manually-built quote (no AI generation)
+ */
+export const CreateManualQuoteBody = zod.object({
+  templateId: zod.enum(["standard", "arosio", "mariagrazia"]).optional(),
+  capitoli: zod.array(
+    zod.object({
+      lettera: zod.string(),
+      titolo: zod.string(),
+      voci: zod.array(
+        zod.object({
+          descrizione: zod.string(),
+          um: zod.string(),
+          quantita: zod.number(),
+          prezzoUnitario: zod.number(),
+          totale: zod.number(),
+        }),
+      ),
+      subtotale: zod.number(),
+      osservazione: zod.string().optional(),
+    }),
+  ),
+  clientData: zod
+    .object({
+      nome: zod.string(),
+      indirizzo: zod.string(),
+      codiceFiscale: zod.string().optional(),
+      partitaIva: zod.string().optional(),
+      citta: zod.string().optional(),
+      cap: zod.string().optional(),
+      provincia: zod.string().optional(),
+    })
+    .optional(),
+  companySnapshot: zod
+    .object({
+      companyName: zod.string(),
+      vatNumber: zod.string().optional(),
+      address: zod.string().optional(),
+      phone: zod.string().optional(),
+      email: zod.string().optional(),
+      logoUrl: zod.string().optional(),
+    })
+    .optional(),
+  titoloPreventivoRiga1: zod.string().optional(),
+  titoloPreventivoRiga2: zod.string().optional(),
+  descrizioneGenerale: zod.string().optional(),
+  ivaPercentuale: zod.number().optional(),
+  condizioniPagamento: zod.array(zod.string()).optional(),
+  note: zod.string().optional(),
+});
+
+/**
+ * @summary Get an AI-generated professional description for a quote line item
+ */
+export const SuggestItemDescriptionBody = zod.object({
+  brief: zod.string().describe("Short description of the work item"),
+  context: zod
+    .string()
+    .optional()
+    .describe("Optional context about the overall project"),
+});
+
+export const SuggestItemDescriptionResponse = zod.object({
+  description: zod.string(),
+});
+
+/**
  * @summary Get a single quote
  */
 export const GetQuoteParams = zod.object({

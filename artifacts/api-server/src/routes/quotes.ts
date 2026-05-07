@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { requireAuth, getUserId } from "../middlewares/authMiddleware";
 import multer from "multer";
-import { db, quotesTable, businessProfilesTable, priceCatalogItemsTable, quoteClientDataSchema, quoteCompanySnapshotSchema } from "@workspace/db";
+import { db, quotesTable, businessProfilesTable, priceCatalogItemsTable, quoteClientDataSchema, quoteCompanySnapshotSchema, quoteChapterSchema } from "@workspace/db";
 import { eq, desc, count, sum, sql } from "drizzle-orm";
 import { getTrialStatus } from "./payments.js";
 import {
@@ -13,7 +13,7 @@ import {
   RegenerateQuoteBody,
 } from "@workspace/api-zod";
 import { openai } from "@workspace/integrations-openai-ai-server";
-import type { QuoteChapter, QuoteDiscount, QuoteCompanySnapshot, QuoteClientData, QuoteItem } from "@workspace/db";
+import type { QuoteChapter, QuoteChapterItem, QuoteDiscount, QuoteCompanySnapshot, QuoteClientData, QuoteItem } from "@workspace/db";
 import { logger } from "../lib/logger.js";
 import { createRequire as _pdfCrReq } from "node:module";
 import type { TDocumentDefinitions, Content } from "pdfmake/interfaces";
@@ -2442,6 +2442,198 @@ async function generateCapitolatoPdfBuffer(quote: QuoteRow, profile: ProfileRow)
 
   return _pdfmake.createPdf(docDefinition).getBuffer();
 }
+
+// POST /api/quotes/manual — create a manually-built quote (no AI)
+router.post("/quotes/manual", requireAuth, async (req, res) => {
+  try {
+    const userId = getUserId(res);
+
+    // Quota enforcement (same as AI route)
+    const [profile] = await db
+      .select({
+        subscriptionPlan: businessProfilesTable.subscriptionPlan,
+        subscriptionStatus: businessProfilesTable.subscriptionStatus,
+        trialStartedAt: businessProfilesTable.trialStartedAt,
+      })
+      .from(businessProfilesTable)
+      .where(eq(businessProfilesTable.userId, userId));
+
+    if (profile?.subscriptionStatus === "active" && profile.subscriptionPlan === "monthly_starter") {
+      const now = new Date();
+      const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+      const nextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+      const [{ cnt }] = await db
+        .select({ cnt: sql<number>`count(*)::int` })
+        .from(quotesTable)
+        .where(sql`${quotesTable.userId} = ${userId} AND ${quotesTable.createdAt} >= ${monthStart.toISOString()} AND ${quotesTable.createdAt} < ${nextMonth.toISOString()}`);
+      if (cnt >= 20) {
+        res.status(429).json({ error: "Quota mensile raggiunta.", code: "QUOTA_EXCEEDED" });
+        return;
+      }
+    }
+
+    const {
+      capitoli: rawCapitoli,
+      clientData: rawClientData,
+      companySnapshot: rawSnapshot,
+      templateId,
+      titoloPreventivoRiga1,
+      titoloPreventivoRiga2,
+      descrizioneGenerale,
+      ivaPercentuale: rawIva,
+      condizioniPagamento,
+      note,
+    } = req.body as {
+      capitoli?: unknown;
+      clientData?: unknown;
+      companySnapshot?: unknown;
+      templateId?: string;
+      titoloPreventivoRiga1?: string;
+      titoloPreventivoRiga2?: string;
+      descrizioneGenerale?: string;
+      ivaPercentuale?: number;
+      condizioniPagamento?: string[];
+      note?: string;
+    };
+
+    // Validate capitoli
+    const capitoliResult = quoteChapterSchema.array().safeParse(rawCapitoli);
+    if (!capitoliResult.success) {
+      res.status(400).json({ error: "Invalid capitoli", details: capitoliResult.error });
+      return;
+    }
+    const capitoli = capitoliResult.data as QuoteChapter[];
+
+    // Validate optional clientData
+    let clientDataInput: QuoteClientData | undefined;
+    if (rawClientData) {
+      const r = quoteClientDataSchema.safeParse(rawClientData);
+      if (!r.success) {
+        res.status(400).json({ error: "Invalid clientData", details: r.error });
+        return;
+      }
+      clientDataInput = r.data;
+    }
+
+    // Resolve company snapshot
+    let resolvedSnapshot: QuoteCompanySnapshot | null = null;
+    if (rawSnapshot) {
+      const r = quoteCompanySnapshotSchema.safeParse(rawSnapshot);
+      if (r.success) resolvedSnapshot = r.data;
+    }
+    if (!resolvedSnapshot) {
+      const [bp] = await db.select().from(businessProfilesTable).where(eq(businessProfilesTable.userId, userId));
+      if (bp) {
+        resolvedSnapshot = {
+          companyName: bp.companyName,
+          vatNumber: bp.vatNumber ?? undefined,
+          address: bp.address ?? undefined,
+          phone: bp.phone ?? undefined,
+          email: bp.email ?? undefined,
+          logoUrl: bp.logoUrl ?? undefined,
+        };
+      }
+    }
+
+    // Recalculate totals server-side (never trust client)
+    const recalcCapitoli = capitoli.map(cap => {
+      const voci = cap.voci.map(v => ({
+        ...v,
+        totale: Math.round(v.quantita * v.prezzoUnitario * 100) / 100,
+      }));
+      const subtotale = voci.reduce((s, v) => s + v.totale, 0);
+      return { ...cap, voci, subtotale: Math.round(subtotale * 100) / 100 };
+    });
+
+    const subtotale = recalcCapitoli.reduce((s, c) => s + c.subtotale, 0);
+    const ivaPercentuale = typeof rawIva === "number" && rawIva >= 0 ? rawIva : 22;
+    const ivaValore = Math.round(subtotale * (ivaPercentuale / 100) * 100) / 100;
+    const totale = Math.round((subtotale + ivaValore) * 100) / 100;
+
+    // Auto-generate numero preventivo
+    const today = new Date();
+    const dd = String(today.getDate()).padStart(2, "0");
+    const mm = String(today.getMonth() + 1).padStart(2, "0");
+    const yyyy = today.getFullYear();
+    const numeroPreventivoData = `N° 1.${yyyy} del ${dd}/${mm}/${yyyy}`;
+
+    const [quote] = await db
+      .insert(quotesTable)
+      .values({
+        userId,
+        rawInput: `[Preventivo manuale] ${titoloPreventivoRiga2 ?? descrizioneGenerale ?? ""}`.trim(),
+        capitoli: recalcCapitoli,
+        clientData: clientDataInput ?? { nome: "", indirizzo: "" },
+        companySnapshot: resolvedSnapshot,
+        templateId: (["standard", "arosio", "mariagrazia"].includes(templateId ?? "") ? templateId : "standard") as "standard" | "arosio" | "mariagrazia",
+        titoloPreventivoRiga1: titoloPreventivoRiga1 ?? "Analisi Economica e Computo Metrico Prezzato",
+        titoloPreventivoRiga2: titoloPreventivoRiga2 ?? "",
+        descrizioneGenerale: descrizioneGenerale ?? "",
+        numeroPreventivoData,
+        subtotale: subtotale.toFixed(2),
+        ivaPercentuale: ivaPercentuale.toFixed(2),
+        ivaValore: ivaValore.toFixed(2),
+        totale: totale.toFixed(2),
+        condizioniPagamento: Array.isArray(condizioniPagamento) ? condizioniPagamento : [
+          "30% acconto alla firma",
+          "30% a SAL intermedio",
+          "30% a SAL finale",
+          "10% saldo fine lavori",
+        ],
+        note: note ?? "Preventivo valido 30 giorni",
+        status: "draft",
+      })
+      .returning();
+
+    // Start trial on first quote creation
+    if (!profile?.trialStartedAt) {
+      await db
+        .update(businessProfilesTable)
+        .set({ trialStartedAt: new Date() })
+        .where(eq(businessProfilesTable.userId, userId));
+    }
+
+    res.status(201).json(serializeQuote(quote!));
+  } catch (err) {
+    req.log.error({ err }, "Error creating manual quote");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// POST /api/quotes/suggest-item-description — AI helper for manual quote items
+router.post("/quotes/suggest-item-description", requireAuth, async (req, res) => {
+  try {
+    const { brief, context } = req.body as { brief?: string; context?: string };
+    if (!brief || typeof brief !== "string" || !brief.trim()) {
+      res.status(400).json({ error: "brief is required" });
+      return;
+    }
+
+    const systemPrompt = `Sei un esperto di preventivi per l'edilizia e artigianato italiano.
+Genera UNA sola descrizione professionale e tecnica per una voce di lavoro/materiale da inserire in un computo metrico.
+La descrizione deve essere precisa, professionale e in italiano. Massimo 2 righe. Solo la descrizione, nessun'altra spiegazione.`;
+
+    const userMsg = context
+      ? `Progetto: ${context}\nVoce di lavoro: ${brief}`
+      : `Voce di lavoro: ${brief}`;
+
+    const completion = await openai.chat.completions.create({
+      model: "gpt-4o-mini",
+      messages: [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: userMsg },
+      ],
+      max_tokens: 150,
+      temperature: 0.4,
+    });
+
+    const description = completion.choices[0]?.message?.content?.trim() ?? brief;
+    res.json({ description });
+  } catch (err) {
+    req.log.error({ err }, "Error suggesting item description");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
 
 export { generateQuoteHtml };
 export default router;

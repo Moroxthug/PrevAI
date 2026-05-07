@@ -23,6 +23,7 @@ import type {
   CheckoutResult,
   CreateCatalogItemBody,
   CreateCheckoutBody,
+  CreateManualQuoteBody,
   CreateQuoteBody,
   HealthStatus,
   ImportCatalogResult,
@@ -35,6 +36,8 @@ import type {
   QuoteStats,
   RegenerateQuoteBody,
   SubscriptionInfo,
+  SuggestItemDescriptionBody,
+  SuggestItemDescriptionResult,
   TrialStatus,
   UnlockQuoteBody,
   UpdateBusinessProfileBody,
@@ -373,6 +376,182 @@ export function useGetQuoteStats<
 
   return { ...query, queryKey: queryOptions.queryKey };
 }
+
+/**
+ * @summary Create a new manually-built quote (no AI generation)
+ */
+export const getCreateManualQuoteUrl = () => {
+  return `/api/quotes/manual`;
+};
+
+export const createManualQuote = async (
+  createManualQuoteBody: CreateManualQuoteBody,
+  options?: RequestInit,
+): Promise<Quote> => {
+  return customFetch<Quote>(getCreateManualQuoteUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(createManualQuoteBody),
+  });
+};
+
+export const getCreateManualQuoteMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createManualQuote>>,
+    TError,
+    { data: BodyType<CreateManualQuoteBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof createManualQuote>>,
+  TError,
+  { data: BodyType<CreateManualQuoteBody> },
+  TContext
+> => {
+  const mutationKey = ["createManualQuote"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof createManualQuote>>,
+    { data: BodyType<CreateManualQuoteBody> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return createManualQuote(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type CreateManualQuoteMutationResult = NonNullable<
+  Awaited<ReturnType<typeof createManualQuote>>
+>;
+export type CreateManualQuoteMutationBody = BodyType<CreateManualQuoteBody>;
+export type CreateManualQuoteMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Create a new manually-built quote (no AI generation)
+ */
+export const useCreateManualQuote = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createManualQuote>>,
+    TError,
+    { data: BodyType<CreateManualQuoteBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof createManualQuote>>,
+  TError,
+  { data: BodyType<CreateManualQuoteBody> },
+  TContext
+> => {
+  return useMutation(getCreateManualQuoteMutationOptions(options));
+};
+
+/**
+ * @summary Get an AI-generated professional description for a quote line item
+ */
+export const getSuggestItemDescriptionUrl = () => {
+  return `/api/quotes/suggest-item-description`;
+};
+
+export const suggestItemDescription = async (
+  suggestItemDescriptionBody: SuggestItemDescriptionBody,
+  options?: RequestInit,
+): Promise<SuggestItemDescriptionResult> => {
+  return customFetch<SuggestItemDescriptionResult>(
+    getSuggestItemDescriptionUrl(),
+    {
+      ...options,
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...options?.headers },
+      body: JSON.stringify(suggestItemDescriptionBody),
+    },
+  );
+};
+
+export const getSuggestItemDescriptionMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof suggestItemDescription>>,
+    TError,
+    { data: BodyType<SuggestItemDescriptionBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof suggestItemDescription>>,
+  TError,
+  { data: BodyType<SuggestItemDescriptionBody> },
+  TContext
+> => {
+  const mutationKey = ["suggestItemDescription"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof suggestItemDescription>>,
+    { data: BodyType<SuggestItemDescriptionBody> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return suggestItemDescription(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type SuggestItemDescriptionMutationResult = NonNullable<
+  Awaited<ReturnType<typeof suggestItemDescription>>
+>;
+export type SuggestItemDescriptionMutationBody =
+  BodyType<SuggestItemDescriptionBody>;
+export type SuggestItemDescriptionMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Get an AI-generated professional description for a quote line item
+ */
+export const useSuggestItemDescription = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof suggestItemDescription>>,
+    TError,
+    { data: BodyType<SuggestItemDescriptionBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof suggestItemDescription>>,
+  TError,
+  { data: BodyType<SuggestItemDescriptionBody> },
+  TContext
+> => {
+  return useMutation(getSuggestItemDescriptionMutationOptions(options));
+};
 
 /**
  * @summary Get a single quote

@@ -78,6 +78,44 @@ paths:
               schema:
                 $ref: "#/components/schemas/QuoteStats"
 
+  /quotes/manual:
+    post:
+      operationId: createManualQuote
+      tags: [quotes]
+      summary: Create a new manually-built quote (no AI generation)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateManualQuoteBody"
+      responses:
+        "201":
+          description: Created quote
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Quote"
+
+  /quotes/suggest-item-description:
+    post:
+      operationId: suggestItemDescription
+      tags: [quotes]
+      summary: Get an AI-generated professional description for a quote line item
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SuggestItemDescriptionBody"
+      responses:
+        "200":
+          description: Suggested description
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuggestItemDescriptionResult"
+
   /quotes/{id}:
     get:
       operationId: getQuote
@@ -996,6 +1034,57 @@ components:
       required:
         - pdfUrl
         - quoteId
+
+    CreateManualQuoteBody:
+      type: object
+      properties:
+        templateId:
+          type: string
+          enum: [standard, arosio, mariagrazia]
+        capitoli:
+          type: array
+          items:
+            $ref: "#/components/schemas/QuoteChapter"
+        clientData:
+          $ref: "#/components/schemas/QuoteClientData"
+        companySnapshot:
+          $ref: "#/components/schemas/QuoteCompanySnapshot"
+        titoloPreventivoRiga1:
+          type: string
+        titoloPreventivoRiga2:
+          type: string
+        descrizioneGenerale:
+          type: string
+        ivaPercentuale:
+          type: number
+        condizioniPagamento:
+          type: array
+          items:
+            type: string
+        note:
+          type: string
+      required:
+        - capitoli
+
+    SuggestItemDescriptionBody:
+      type: object
+      properties:
+        brief:
+          type: string
+          description: Short description of the work item
+        context:
+          type: string
+          description: Optional context about the overall project
+      required:
+        - brief
+
+    SuggestItemDescriptionResult:
+      type: object
+      properties:
+        description:
+          type: string
+      required:
+        - description
 
     PortalSessionResult:
       type: object
