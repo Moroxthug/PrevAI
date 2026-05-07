@@ -1,5 +1,5 @@
 import { Link, useLocation } from "wouter";
-import { ArrowRight, CheckCircle2, FileText, Zap, Lock, Star, Sparkles } from "lucide-react";
+import { ArrowRight, CheckCircle2, FileText, Zap, Lock, Star, Sparkles, Mic, ImagePlus, Check, X } from "lucide-react";
 import { SeoHead } from "@/components/seo-head";
 import { useGetPlans } from "@workspace/api-client-react";
 import { useScrollFade } from "@/hooks/use-scroll-fade";
@@ -75,33 +75,8 @@ export default function Home() {
         jsonLd={[websiteJsonLd]}
       />
 
-      {/* ── Homepage AI Input Bar ────────────────────────────── */}
-      <div className="sticky top-16 z-20 bg-white/95 backdrop-blur-sm border-b border-gray-100 shadow-sm py-2.5">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 focus-within:border-violet-400 focus-within:ring-2 focus-within:ring-violet-100 transition-all max-w-3xl mx-auto">
-            <Sparkles className="h-4 w-4 text-violet-500 shrink-0" />
-            <input
-              ref={homepageInputRef}
-              value={homepageInput}
-              onChange={(e) => setHomepageInput(e.target.value)}
-              onKeyDown={(e) => { if (e.key === "Enter" && homepageInput.trim()) handleHomepageSubmit(); }}
-              placeholder="Descrivi il lavoro e ottieni un preventivo professionale in 30 secondi..."
-              className="flex-1 text-sm outline-none placeholder:text-gray-400 text-gray-800 bg-transparent min-w-0"
-            />
-            <button
-              onClick={handleHomepageSubmit}
-              disabled={!homepageInput.trim()}
-              className="shrink-0 btn-gradient inline-flex h-8 items-center justify-center px-3 text-xs font-semibold gap-1.5 disabled:opacity-40 rounded-lg"
-            >
-              <ArrowRight className="h-3.5 w-3.5" />
-              <span className="hidden sm:inline">Genera</span>
-            </button>
-          </div>
-        </div>
-      </div>
-
       {/* ── Hero ─────────────────────────────────────────────── */}
-      <section className="relative overflow-hidden bg-white pt-10 pb-24">
+      <section className="relative overflow-hidden bg-white pt-10 pb-20">
         {/* Animated mesh blobs */}
         <div className="mesh-blob mesh-blob-1" />
         <div className="mesh-blob mesh-blob-2" />
@@ -113,23 +88,79 @@ export default function Home() {
             <span className="gradient-text">30 secondi</span> con l'AI
           </h1>
 
-          <p className="mx-auto mt-5 max-w-xl text-base text-gray-500 leading-relaxed">
+          {/* ── AI Input Bar ── */}
+          <div className="mt-8 mx-auto max-w-2xl">
+            <div className="flex items-center gap-2 bg-white border border-gray-200 rounded-2xl px-4 py-3 shadow-lg focus-within:border-violet-400 focus-within:ring-2 focus-within:ring-violet-100 transition-all">
+              {/* Upload foto — sinistra */}
+              <div className="group relative shrink-0">
+                <button
+                  disabled
+                  className="h-8 w-8 flex items-center justify-center rounded-xl text-gray-400 cursor-not-allowed hover:bg-gray-100 transition-colors"
+                >
+                  <ImagePlus className="h-4 w-4" />
+                </button>
+                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2.5 py-1 bg-gray-900 text-white text-[11px] font-medium rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none shadow-lg">
+                  Funzione in arrivo
+                  <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-gray-900" />
+                </div>
+              </div>
+
+              {/* Input */}
+              <Sparkles className="h-4 w-4 text-violet-400 shrink-0" />
+              <input
+                ref={homepageInputRef}
+                value={homepageInput}
+                onChange={(e) => setHomepageInput(e.target.value)}
+                onKeyDown={(e) => { if (e.key === "Enter" && homepageInput.trim()) handleHomepageSubmit(); }}
+                placeholder="Descrivi il lavoro e ottieni un preventivo in 30 secondi..."
+                className="flex-1 text-sm outline-none placeholder:text-gray-400 text-gray-800 bg-transparent min-w-0"
+              />
+
+              {/* Microfono — destra, prima del send */}
+              <div className="group relative shrink-0">
+                <button
+                  disabled
+                  className="h-8 w-8 flex items-center justify-center rounded-xl text-gray-400 cursor-not-allowed hover:bg-gray-100 transition-colors"
+                >
+                  <Mic className="h-4 w-4" />
+                </button>
+                <div className="absolute bottom-full right-0 mb-2 px-2.5 py-1 bg-gray-900 text-white text-[11px] font-medium rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none shadow-lg">
+                  Funzione in arrivo
+                  <div className="absolute top-full right-3 border-4 border-transparent border-t-gray-900" />
+                </div>
+              </div>
+
+              {/* Send */}
+              <button
+                onClick={handleHomepageSubmit}
+                disabled={!homepageInput.trim()}
+                className="shrink-0 btn-gradient inline-flex h-8 w-8 items-center justify-center rounded-xl disabled:opacity-40 transition-all"
+              >
+                <ArrowRight className="h-4 w-4" />
+              </button>
+            </div>
+            <p className="mt-2.5 text-xs text-gray-400">
+              7 giorni gratis · Nessuna carta richiesta
+            </p>
+          </div>
+
+          <p className="mx-auto mt-6 max-w-xl text-sm text-gray-500 leading-relaxed">
             Dimentica Excel e i documenti scritti a mano. Descrivi il lavoro a
             parole tue e prevai genererà un documento impeccabile, pronto da
             inviare al cliente.
           </p>
 
-          <div className="mt-8 flex flex-col sm:flex-row justify-center gap-3">
+          <div className="mt-6 flex flex-col sm:flex-row justify-center gap-3">
             <button
               onClick={() => navigate(isSignedIn ? "/dashboard/new" : "/sign-up")}
-              className="btn-gradient inline-flex h-11 items-center justify-center px-6 text-sm font-semibold"
+              className="btn-gradient inline-flex h-10 items-center justify-center px-6 text-sm font-semibold"
             >
               Inizia Gratuitamente
               <ArrowRight className="ml-2 h-4 w-4" />
             </button>
             <Link
               href="#demo"
-              className="btn-gradient-outline inline-flex h-11 items-center justify-center px-6 text-sm font-semibold"
+              className="btn-gradient-outline inline-flex h-10 items-center justify-center px-6 text-sm font-semibold"
             >
               Vedi un esempio
             </Link>
@@ -137,48 +168,102 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ── Features ─────────────────────────────────────────── */}
-      <ScrollSection className="py-16 bg-gray-50/60">
+      {/* ── Comparison table ─────────────────────────────────── */}
+      <ScrollSection className="py-14 bg-gray-50/60">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-8">
-            <h2 className="text-2xl font-bold tracking-tight text-gray-900 sm:text-3xl">
-              Perché scegliere{" "}
-              <span className="gradient-text">prevai</span>?
-            </h2>
-          </div>
+          <div className="max-w-3xl mx-auto">
+            <div className="text-center mb-8">
+              <span className="inline-block bg-violet-100 text-violet-700 text-xs font-bold px-3 py-0.5 rounded-full uppercase tracking-wider mb-3">Confronto</span>
+              <h2 className="text-2xl font-bold tracking-tight text-gray-900 sm:text-3xl">
+                prevai vs{" "}
+                <span className="gradient-text">Word ed Excel</span>
+              </h2>
+            </div>
 
-          <div className="grid md:grid-cols-3 gap-5 items-stretch">
-            {[
-              {
-                icon: <Zap className="h-5 w-5" />,
-                title: "Velocità Incredibile",
-                desc: "Non devi più passare le serate a fare preventivi. Descrivi il lavoro dal tuo smartphone mentre sei in cantiere.",
-              },
-              {
-                icon: <FileText className="h-5 w-5" />,
-                title: "Professionalità",
-                desc: "I preventivi generati sono completi di descrizioni dettagliate, quantità, unità di misura e calcolo IVA automatico.",
-              },
-              {
-                icon: <CheckCircle2 className="h-5 w-5" />,
-                title: "Zero Errori",
-                desc: "Calcoli matematici sempre corretti. L'AI struttura il documento assicurandosi che non manchi nessun dettaglio importante.",
-              },
-            ].map(({ icon, title, desc }) => (
-              <div
-                key={title}
-                className="card-soft bg-white p-6 rounded-xl flex flex-col h-full"
-              >
-                <div
-                  className="h-10 w-10 rounded-lg flex items-center justify-center mb-4 text-white shrink-0"
-                  style={{ background: "linear-gradient(135deg, #7C3AED, #06B6D4)" }}
-                >
-                  {icon}
-                </div>
-                <h3 className="text-base font-semibold mb-2 text-gray-900 leading-snug">{title}</h3>
-                <p className="text-sm text-gray-500 leading-relaxed flex-1">{desc}</p>
+            <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
+              {/* Header */}
+              <div className="grid grid-cols-4 border-b border-gray-100">
+                <div className="px-5 py-3.5 text-xs font-semibold text-gray-400 uppercase tracking-wider">Funzione</div>
+                {[
+                  { label: "prevai", gradient: true },
+                  { label: "Word", gradient: false },
+                  { label: "Excel", gradient: false },
+                ].map(({ label, gradient }) => (
+                  <div key={label} className={`px-4 py-3.5 text-center text-sm font-bold ${gradient ? "bg-gradient-to-b from-violet-50 to-cyan-50/40" : ""}`}>
+                    {gradient ? <span className="gradient-text">{label}</span> : <span className="text-gray-400">{label}</span>}
+                  </div>
+                ))}
               </div>
-            ))}
+
+              {/* Rows */}
+              {[
+                {
+                  feature: "Preventivo in 30 secondi",
+                  prevai: { ok: true, label: "~30 sec" },
+                  word:   { ok: false, label: "30–60 min" },
+                  excel:  { ok: false, label: "20–40 min" },
+                },
+                {
+                  feature: "Upload foto del cantiere",
+                  prevai: { ok: true,  label: "Integrato" },
+                  word:   { ok: false, label: "Non supportato" },
+                  excel:  { ok: false, label: "Non supportato" },
+                },
+                {
+                  feature: "Descrizione vocale",
+                  prevai: { ok: true,  label: "In arrivo" },
+                  word:   { ok: false, label: "Non disponibile" },
+                  excel:  { ok: false, label: "Non disponibile" },
+                },
+                {
+                  feature: "Calcolo IVA automatico",
+                  prevai: { ok: true,  label: "Sempre corretto" },
+                  word:   { ok: false, label: "Manuale" },
+                  excel:  { ok: true,  label: "Con formule" },
+                },
+                {
+                  feature: "PDF professionale",
+                  prevai: { ok: true,  label: "Con logo e branding" },
+                  word:   { ok: true,  label: "Solo testo" },
+                  excel:  { ok: false, label: "Layout difficile" },
+                },
+                {
+                  feature: "Nessuna competenza richiesta",
+                  prevai: { ok: true,  label: "Solo descrizione" },
+                  word:   { ok: false, label: "Formattazione manuale" },
+                  excel:  { ok: false, label: "Formule complesse" },
+                },
+              ].map(({ feature, prevai, word, excel }, rowIdx) => (
+                <div key={feature} className={`grid grid-cols-4 border-b border-gray-100 last:border-0 ${rowIdx % 2 === 1 ? "bg-gray-50/50" : ""}`}>
+                  <div className="px-5 py-3.5 text-sm text-gray-700 font-medium flex items-center">{feature}</div>
+                  {[
+                    { cell: prevai, highlight: true },
+                    { cell: word,   highlight: false },
+                    { cell: excel,  highlight: false },
+                  ].map(({ cell, highlight }, i) => (
+                    <div key={i} className={`px-4 py-3.5 flex flex-col items-center justify-center gap-0.5 ${highlight ? "bg-gradient-to-b from-violet-50/60 to-cyan-50/30" : ""}`}>
+                      {cell.ok
+                        ? <Check className={`h-4 w-4 ${highlight ? "text-violet-600" : "text-emerald-500"}`} />
+                        : <X className="h-4 w-4 text-gray-300" />
+                      }
+                      <span className={`text-[11px] font-medium text-center leading-tight ${cell.ok ? (highlight ? "text-violet-700" : "text-gray-600") : "text-gray-300"}`}>
+                        {cell.label}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              ))}
+            </div>
+
+            <div className="mt-5 text-center">
+              <button
+                onClick={() => navigate(isSignedIn ? "/dashboard/new" : "/sign-up")}
+                className="btn-gradient inline-flex h-10 items-center justify-center px-6 text-sm font-semibold"
+              >
+                Prova prevai gratis
+                <ArrowRight className="ml-2 h-4 w-4" />
+              </button>
+            </div>
           </div>
         </div>
       </ScrollSection>
