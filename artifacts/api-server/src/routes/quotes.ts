@@ -17,10 +17,21 @@ import { logger } from "../lib/logger.js";
 import { createRequire as _pdfCrReq } from "node:module";
 import type { TDocumentDefinitions, Content } from "pdfmake/interfaces";
 
-// pdfmake uses CJS `export =`; load via createRequire so the constructor is callable without `as any`
-type PdfPrinterInstance = { createPdfKitDocument(dd: TDocumentDefinitions): NodeJS.EventEmitter & { end(): void } };
-type PdfPrinterCtor = new (fonts: Record<string, Record<string, string>>) => PdfPrinterInstance;
-const PdfPrinter = _pdfCrReq(import.meta.url)("pdfmake") as PdfPrinterCtor;
+// pdfmake 0.3.x exports a singleton instance (not a constructor).
+// Load via createRequire for ESM compatibility; set fonts on the instance once at module load.
+type PdfMakeInstance = {
+  fonts: Record<string, Record<string, string>>;
+  createPdf(docDef: TDocumentDefinitions): { getBuffer(): Promise<Buffer> };
+};
+const _pdfmake = _pdfCrReq(import.meta.url)("pdfmake") as PdfMakeInstance;
+_pdfmake.fonts = {
+  Helvetica: {
+    normal: "Helvetica",
+    bold: "Helvetica-Bold",
+    italics: "Helvetica-Oblique",
+    bolditalics: "Helvetica-BoldOblique",
+  },
+};
 import { ObjectStorageService } from "../lib/objectStorage.js";
 import { randomUUID } from "crypto";
 
@@ -1621,15 +1632,6 @@ async function fetchLogoDataUri(logoUrl: string | null | undefined): Promise<str
 }
 
 async function generateCapitolatoPdfBuffer(quote: QuoteRow, profile: ProfileRow): Promise<Buffer> {
-  const printer = new PdfPrinter({
-    Helvetica: {
-      normal: "Helvetica",
-      bold: "Helvetica-Bold",
-      italics: "Helvetica-Oblique",
-      bolditalics: "Helvetica-BoldOblique",
-    },
-  });
-
   const capitoli: QuoteChapter[] = Array.isArray(quote.capitoli) && quote.capitoli.length > 0
     ? quote.capitoli as QuoteChapter[]
     : [];
@@ -2000,14 +2002,7 @@ async function generateCapitolatoPdfBuffer(quote: QuoteRow, profile: ProfileRow)
     }),
   };
 
-  const pdfDoc = printer.createPdfKitDocument(docDefinition);
-  return new Promise<Buffer>((resolve, reject) => {
-    const chunks: Buffer[] = [];
-    pdfDoc.on("data", (chunk: Buffer) => chunks.push(chunk));
-    pdfDoc.on("end", () => resolve(Buffer.concat(chunks)));
-    pdfDoc.on("error", reject);
-    pdfDoc.end();
-  });
+  return _pdfmake.createPdf(docDefinition).getBuffer();
 }
 
 export { generateQuoteHtml };
