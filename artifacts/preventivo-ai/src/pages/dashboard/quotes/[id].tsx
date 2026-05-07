@@ -506,7 +506,7 @@ export default function QuoteDetail() {
               {generatePdfPro.isPending
                 ? <Loader2 className="h-4 w-4 animate-spin" />
                 : <FileDown className="h-4 w-4" />}
-              Scarica PDF Pro
+              Scarica PDF Professionale
             </Button>
           )}
         </div>

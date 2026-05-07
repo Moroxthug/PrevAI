@@ -385,11 +385,12 @@ Quando usi una voce del listino, applica il prezzo unitario esatto o molto simil
 
     const capitolatoProContext = isProUser
       ? `MODALITÀ CAPITOLATO PROFESSIONALE (attiva per utente Pro):
-Per ogni voce di lavoro, scrivi la descrizione in stile CAPITOLATO TECNICO PROFESSIONALE con 3-5 frasi complete in italiano tecnico:
-- Descrivi le operazioni eseguite e le modalità esecutive
-- Specifica i materiali utilizzati con caratteristiche tecniche e standard normativi (es. "conforme norma UNI EN...")
-- Indica cosa è compreso nella voce (forniture, lavorazioni, trasporti)
-- Indica eventuali esclusioni rilevanti
+Per ogni voce di lavoro, scrivi la descrizione in stile CAPITOLATO TECNICO PROFESSIONALE con ALMENO 4-6 linee tecniche in italiano formale:
+- Descrivi con precisione le operazioni eseguite e le modalità esecutive (ciclo lavorativo, tecniche, successione delle fasi)
+- Specifica materiali, prodotti e componenti con caratteristiche tecniche e standard normativi italiani/europei (UNI, CEI, UNI EN, D.Lgs., D.M.)
+- Indica le caratteristiche di qualità, resistenza, classe o certificazione richieste per i materiali
+- Indica esplicitamente cosa è COMPRESO nella voce (forniture, lavorazioni, carico, trasporto, smaltimento)
+- Indica eventuali ESCLUSIONI rilevanti e/o oneri a carico del committente
 - Usa terminologia professionale edilizia/impiantistica italiana
 Esempio: "Demolizione e rimozione di pavimentazione esistente in piastrelle ceramiche compreso il distacco mediante scalpellatura meccanica e la rimozione del massetto di allettamento per uno spessore medio di 5 cm. Compresi il carico, il trasporto e lo smaltimento del materiale di risulta presso discarica autorizzata secondo D.Lgs. 152/2006. Esclusi lavori di ripristino strutturale del sottofondo e impermeabilizzazioni."`
       : "";
