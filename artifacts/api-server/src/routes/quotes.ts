@@ -14,10 +14,13 @@ import {
 import { openai } from "@workspace/integrations-openai-ai-server";
 import type { QuoteChapter, QuoteDiscount, QuoteCompanySnapshot, QuoteClientData, QuoteItem } from "@workspace/db";
 import { logger } from "../lib/logger.js";
+import { createRequire as _pdfCrReq } from "node:module";
 import type { TDocumentDefinitions, Content } from "pdfmake/interfaces";
-// pdfmake uses CJS export=; cast to constructor type for ESM interop
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const PdfPrinter = (await import("pdfmake")).default as any as new (fonts: Record<string, Record<string, string>>) => { createPdfKitDocument(dd: TDocumentDefinitions): NodeJS.EventEmitter & { end(): void } };
+
+// pdfmake uses CJS `export =`; load via createRequire so the constructor is callable without `as any`
+type PdfPrinterInstance = { createPdfKitDocument(dd: TDocumentDefinitions): NodeJS.EventEmitter & { end(): void } };
+type PdfPrinterCtor = new (fonts: Record<string, Record<string, string>>) => PdfPrinterInstance;
+const PdfPrinter = _pdfCrReq(import.meta.url)("pdfmake") as PdfPrinterCtor;
 import { ObjectStorageService } from "../lib/objectStorage.js";
 import { randomUUID } from "crypto";
 
@@ -1013,23 +1016,38 @@ REGOLA FONDAMENTALE: restituisci SOLO JSON valido con questa struttura esatta (n
       return;
     }
 
-    const updatedCapitoli: QuoteChapter[] = (aiData.capitoli ?? []).map((cap, i) => {
-      const orig = capitoli[i] ?? capitoli[0];
+    // Validate: AI must return exactly the same number of chapters and voci counts
+    const aiCapitoli = aiData.capitoli ?? [];
+    if (aiCapitoli.length !== capitoli.length) {
+      req.log.error({ aiCount: aiCapitoli.length, origCount: capitoli.length }, "AI chapter count mismatch in upgrade-to-capitolato");
+      res.status(500).json({ error: "Risposta AI non valida: struttura dei capitoli non corrispondente" });
+      return;
+    }
+    for (let i = 0; i < aiCapitoli.length; i++) {
+      const aiVoci = aiCapitoli[i]?.voci ?? [];
+      const origVoci = capitoli[i]?.voci ?? [];
+      if (aiVoci.length !== origVoci.length) {
+        req.log.error({ chapIdx: i, aiVociCount: aiVoci.length, origVociCount: origVoci.length }, "AI voci count mismatch");
+        res.status(500).json({ error: "Risposta AI non valida: numero di voci non corrispondente nel capitolo " + (i + 1) });
+        return;
+      }
+    }
+
+    // Build updated chapters: ONLY take `descrizione` from AI; preserve all economic data from originals
+    const updatedCapitoli: QuoteChapter[] = capitoli.map((orig, i) => {
+      const aiCap = aiCapitoli[i]!;
       return {
-        lettera: cap.lettera ?? orig.lettera,
-        titolo: cap.titolo ?? orig.titolo,
-        osservazione: cap.osservazione ?? orig.osservazione ?? "Voce ordinaria",
-        voci: (cap.voci ?? []).map((v, vi) => {
-          const origV = orig.voci[vi] ?? orig.voci[0] ?? {};
-          return {
-            descrizione: v.descrizione ?? origV.descrizione ?? "",
-            um: v.um ?? origV.um ?? "a.c.",
-            quantita: Number(v.quantita ?? origV.quantita ?? 0),
-            prezzoUnitario: Number(v.prezzo_unitario ?? origV.prezzoUnitario ?? 0),
-            totale: Number(v.totale ?? origV.totale ?? 0),
-          };
-        }),
-        subtotale: Number(cap.subtotale ?? orig.subtotale ?? 0),
+        lettera: orig.lettera,
+        titolo: orig.titolo,
+        osservazione: orig.osservazione,
+        voci: orig.voci.map((origV, vi) => ({
+          descrizione: aiCap.voci?.[vi]?.descrizione ?? origV.descrizione,
+          um: origV.um,
+          quantita: origV.quantita,
+          prezzoUnitario: origV.prezzoUnitario,
+          totale: origV.totale,
+        })),
+        subtotale: orig.subtotale,
       };
     });
 
@@ -1566,6 +1584,23 @@ function generateQuoteHtml(
 </html>`;
 }
 
+/** Attempt to load a logo image from object storage and encode as base64 data URI for pdfmake. */
+async function fetchLogoDataUri(logoObjectPath: string | null | undefined): Promise<string | null> {
+  if (!logoObjectPath) return null;
+  try {
+    // objectPath format: /objects/<subPath> → served at /api/storage/objects/<subPath>
+    // Download directly using the private storage client (same process, no HTTP round-trip)
+    const subPath = logoObjectPath.replace(/^\/objects\//, "");
+    const res = await objectStorage.downloadPrivateObject(subPath).catch(() => null);
+    if (!res || !res.ok) return null;
+    const buf = Buffer.from(await res.arrayBuffer());
+    const ct = res.headers.get("content-type") ?? "image/png";
+    return `data:${ct};base64,${buf.toString("base64")}`;
+  } catch {
+    return null;
+  }
+}
+
 async function generateCapitolatoPdfBuffer(quote: QuoteRow, profile: ProfileRow): Promise<Buffer> {
   const printer = new PdfPrinter({
     Helvetica: {
@@ -1596,12 +1631,17 @@ async function generateCapitolatoPdfBuffer(quote: QuoteRow, profile: ProfileRow)
   const ivaPerc = Number(quote.ivaPercentuale);
   const ivaValore = Number(quote.ivaValore);
   const totale = Number(quote.totale);
+  const isDraft = quote.status !== "unlocked";
 
   const DARK = "#1a1a2e";
   const LIGHT_BG = "#f4f6f9";
   const GRAY = "#888888";
 
-  // Company header column
+  // Fetch company logo (best-effort; null if unavailable)
+  const logoPath = snap?.logoUrl || profile?.logoUrl || null;
+  const logoDataUri = await fetchLogoDataUri(logoPath);
+
+  // Company header stack (right of logo or full-width if no logo)
   const companyInfoStack: Content[] = [
     { text: companyName, fontSize: 13, bold: true, color: DARK, margin: [0, 4, 0, 2] },
   ];
@@ -1609,6 +1649,16 @@ async function generateCapitolatoPdfBuffer(quote: QuoteRow, profile: ProfileRow)
   if (companyAddress) companyInfoStack.push({ text: companyAddress, fontSize: 8, color: "#555555" });
   if (companyPhone) companyInfoStack.push({ text: `Tel: ${companyPhone}`, fontSize: 8, color: "#555555" });
   if (companyEmail) companyInfoStack.push({ text: companyEmail, fontSize: 8, color: "#555555" });
+
+  // Header left cell: logo + company info
+  const headerLeftContent: Content = logoDataUri
+    ? {
+        columns: [
+          { image: logoDataUri, fit: [56, 56] as [number, number], margin: [0, 4, 10, 0] as [number, number, number, number] },
+          { stack: companyInfoStack },
+        ],
+      }
+    : { stack: companyInfoStack };
 
   // Quadro sintetico table body
   const quadroBody: Content[][] = [
@@ -1624,26 +1674,31 @@ async function generateCapitolatoPdfBuffer(quote: QuoteRow, profile: ProfileRow)
     ]),
   ];
 
-  // Chapter detail tables
+  // Chapter detail tables — includes N° column
   const chaptersContent: Content[] = capitoli.flatMap(cap => {
     const bodyRows: Content[][] = [
       [
+        { text: "N°", style: "tableHeaderCenter" },
         { text: "Descrizione", style: "tableHeader" },
         { text: "U.M.", style: "tableHeaderCenter" },
         { text: "Q.tà", style: "tableHeaderCenter" },
         { text: "P.u. (€)", style: "tableHeaderRight" },
         { text: "Totale (€)", style: "tableHeaderRight" },
       ],
-      ...cap.voci.map((v, vi) => [
-        { text: v.descrizione, fontSize: 8, color: "#1a1a1a", fillColor: vi % 2 === 0 ? null : "#f8f9fb" } as Content,
-        { text: v.um, fontSize: 8, alignment: "center" as const, fillColor: vi % 2 === 0 ? null : "#f8f9fb" } as Content,
-        { text: String(v.quantita), fontSize: 8, alignment: "center" as const, fillColor: vi % 2 === 0 ? null : "#f8f9fb" } as Content,
-        { text: formatEur(v.prezzoUnitario), fontSize: 8, alignment: "right" as const, fillColor: vi % 2 === 0 ? null : "#f8f9fb" } as Content,
-        { text: formatEur(v.totale), fontSize: 8, alignment: "right" as const, bold: true, fillColor: vi % 2 === 0 ? null : "#f8f9fb" } as Content,
-      ]),
+      ...cap.voci.map((v, vi) => {
+        const bg = vi % 2 === 0 ? null : "#f8f9fb";
+        return [
+          { text: String(vi + 1), fontSize: 8, alignment: "center" as const, color: "#666", fillColor: bg } as Content,
+          { text: v.descrizione, fontSize: 8, color: "#1a1a1a", fillColor: bg } as Content,
+          { text: v.um, fontSize: 8, alignment: "center" as const, fillColor: bg } as Content,
+          { text: String(v.quantita), fontSize: 8, alignment: "center" as const, fillColor: bg } as Content,
+          { text: formatEur(v.prezzoUnitario), fontSize: 8, alignment: "right" as const, fillColor: bg } as Content,
+          { text: formatEur(v.totale), fontSize: 8, alignment: "right" as const, bold: true, fillColor: bg } as Content,
+        ];
+      }),
       [
-        { text: `Subtotale capitolo ${cap.lettera}`, colSpan: 4, fontSize: 8.5, bold: true, fillColor: "#edf0f5", color: DARK } as Content,
-        {} as Content, {} as Content, {} as Content,
+        { text: `Subtotale capitolo ${cap.lettera}`, colSpan: 5, fontSize: 8.5, bold: true, fillColor: "#edf0f5", color: DARK } as Content,
+        {} as Content, {} as Content, {} as Content, {} as Content,
         { text: `€ ${formatEur(cap.subtotale)}`, fontSize: 8.5, alignment: "right" as const, bold: true, fillColor: "#edf0f5", color: DARK } as Content,
       ],
     ];
@@ -1654,23 +1709,20 @@ async function generateCapitolatoPdfBuffer(quote: QuoteRow, profile: ProfileRow)
         fontSize: 10,
         bold: true,
         color: DARK,
-        fillColor: LIGHT_BG,
-        background: LIGHT_BG,
         margin: [0, 10, 0, 4],
-        decoration: undefined,
       } as Content,
       {
         table: {
           headerRows: 1,
-          widths: ["*", 35, 35, 65, 65],
+          widths: [18, "*", 32, 32, 60, 60],
           body: bodyRows,
         },
         layout: {
           hLineWidth: () => 0.5,
           vLineWidth: () => 0,
           hLineColor: () => "#dddddd",
-          paddingLeft: () => 6,
-          paddingRight: () => 6,
+          paddingLeft: () => 5,
+          paddingRight: () => 5,
           paddingTop: () => 4,
           paddingBottom: () => 4,
           fillColor: (rowIndex: number) => {
@@ -1728,9 +1780,46 @@ async function generateCapitolatoPdfBuffer(quote: QuoteRow, profile: ProfileRow)
       ]
     : [];
 
+  // Acceptance signature section
+  const signatureSection: Content[] = [
+    { text: "ACCETTAZIONE DEL PREVENTIVO", style: "sectionHeading", margin: [0, 20, 0, 6] as [number, number, number, number] },
+    {
+      text: "Il/La sottoscritto/a, presa visione del presente preventivo, accetta le condizioni sopra indicate e autorizza l'esecuzione dei lavori.",
+      fontSize: 8,
+      color: "#444",
+      margin: [0, 0, 0, 14] as [number, number, number, number],
+    },
+    {
+      columns: [
+        {
+          width: "*",
+          stack: [
+            { text: "Data e Luogo", fontSize: 8, color: GRAY },
+            { canvas: [{ type: "line", x1: 0, y1: 10, x2: 160, y2: 10, lineWidth: 0.5, lineColor: "#aaaaaa" }] },
+          ],
+        },
+        {
+          width: "*",
+          stack: [
+            { text: "Firma del Committente", fontSize: 8, color: GRAY },
+            { canvas: [{ type: "line", x1: 0, y1: 10, x2: 200, y2: 10, lineWidth: 0.5, lineColor: "#aaaaaa" }] },
+          ],
+        },
+        {
+          width: "*",
+          stack: [
+            { text: "Firma dell'Esecutore", fontSize: 8, color: GRAY },
+            { canvas: [{ type: "line", x1: 0, y1: 10, x2: 160, y2: 10, lineWidth: 0.5, lineColor: "#aaaaaa" }] },
+          ],
+        },
+      ],
+      columnGap: 20,
+    } as Content,
+  ];
+
   const docDefinition: TDocumentDefinitions = {
     pageSize: "A4",
-    pageMargins: [40, 50, 40, 50],
+    pageMargins: [40, 70, 40, 50] as [number, number, number, number],
     defaultStyle: {
       font: "Helvetica",
       fontSize: 9,
@@ -1743,25 +1832,39 @@ async function generateCapitolatoPdfBuffer(quote: QuoteRow, profile: ProfileRow)
       sectionHeading: { fontSize: 9, bold: true, color: GRAY, characterSpacing: 0.5 },
       totLabel: { fontSize: 8.5, bold: true, color: "#333333" },
       totValue: { fontSize: 9, bold: true, alignment: "right" },
-      chapterHeading: { fontSize: 10, bold: true, color: DARK, background: LIGHT_BG },
     },
-    header: {
-      margin: [40, 14, 40, 0],
+    // BOZZA diagonal watermark for draft/unpaid quotes
+    ...(isDraft ? {
+      watermark: {
+        text: "BOZZA",
+        color: "#cccccc",
+        opacity: 0.18,
+        bold: true,
+        italics: false,
+        fontSize: 120,
+        angle: -45,
+      },
+    } : {}),
+    header: (currentPage: number, pageCount: number): Content => ({
+      margin: [40, 14, 40, 0] as [number, number, number, number],
       table: {
         widths: ["*", "auto"],
-        body: [
+        // pdfmake TableCell borders use [bool,bool,bool,bool] which TS types don't fully model;
+        // double-cast through unknown to satisfy the strict union
+        body: ([
           [
-            { stack: companyInfoStack, border: [false, false, false, true] },
+            { ...(headerLeftContent as object), border: [false, false, false, true] },
             {
               stack: [
                 { text: "CAPITOLATO PRO", fontSize: 7, bold: true, color: "#7c3aed", alignment: "right", characterSpacing: 1 },
                 { text: numeroData, fontSize: 10, bold: true, color: DARK, alignment: "right" },
                 { text: `Data: ${new Date().toLocaleDateString("it-IT")}`, fontSize: 8, color: "#555555", alignment: "right" },
+                { text: `Pag. ${currentPage}/${pageCount}`, fontSize: 7, color: GRAY, alignment: "right", margin: [0, 2, 0, 0] },
               ],
               border: [false, false, false, true],
             },
           ],
-        ],
+        ] as unknown) as Content[][],
       },
       layout: {
         hLineWidth: (i: number) => i === 1 ? 2 : 0,
@@ -1771,15 +1874,14 @@ async function generateCapitolatoPdfBuffer(quote: QuoteRow, profile: ProfileRow)
         paddingRight: () => 0,
         paddingBottom: () => 8,
       },
-    },
+    }),
     content: [
       // Document title
-      { text: titolo1.toUpperCase(), fontSize: 12, bold: true, alignment: "center", color: DARK, margin: [0, 6, 0, 0] },
+      { text: titolo1.toUpperCase(), fontSize: 12, bold: true, alignment: "center", color: DARK, margin: [0, 6, 0, 0] as [number, number, number, number] },
       ...(titolo2 ? [{ text: titolo2, fontSize: 9, alignment: "center" as const, color: "#444444", italics: true, margin: [0, 2, 0, 8] as [number, number, number, number] }] : [{ text: "", margin: [0, 0, 0, 8] as [number, number, number, number] }]),
 
       // Client box
       {
-        fillColor: LIGHT_BG,
         table: {
           widths: ["*"],
           body: [[
@@ -1799,7 +1901,7 @@ async function generateCapitolatoPdfBuffer(quote: QuoteRow, profile: ProfileRow)
         },
         layout: { hLineWidth: () => 0.5, vLineWidth: () => 0.5, hLineColor: () => "#c5cce0", vLineColor: () => "#c5cce0", paddingLeft: () => 0, paddingRight: () => 0, paddingTop: () => 0, paddingBottom: () => 0 },
         margin: [0, 0, 0, 14] as [number, number, number, number],
-      },
+      } as Content,
 
       // Quadro sintetico
       ...(capitoli.length > 0 ? [
@@ -1846,7 +1948,7 @@ async function generateCapitolatoPdfBuffer(quote: QuoteRow, profile: ProfileRow)
           },
         ],
         margin: [0, 0, 0, 14] as [number, number, number, number],
-      },
+      } as Content,
 
       // Payment conditions
       ...condizioniContent,
@@ -1856,16 +1958,27 @@ async function generateCapitolatoPdfBuffer(quote: QuoteRow, profile: ProfileRow)
         { text: "NOTE", style: "sectionHeading", margin: [0, 14, 0, 4] as [number, number, number, number] },
         { text: quote.note, fontSize: 8, color: "#333" },
       ] as Content[] : []),
+
+      // Acceptance signature section
+      ...signatureSection,
     ],
-    footer: profile?.companyName
-      ? {
-          margin: [40, 0, 40, 14],
-          text: `${profile.companyName}${profile.address ? " – " + profile.address : ""}`,
+    footer: (currentPage: number, _pageCount: number): Content => ({
+      margin: [40, 0, 40, 14] as [number, number, number, number],
+      columns: [
+        {
+          text: `${companyName}${companyAddress ? " – " + companyAddress : ""}`,
           fontSize: 7.5,
           color: "#aaaaaa",
-          alignment: "center",
-        }
-      : undefined,
+        },
+        {
+          text: isDraft ? "DOCUMENTO PROVVISORIO – NON VALIDO AI FINI CONTRATTUALI" : "Documento generato con Prevai",
+          fontSize: 7.5,
+          color: isDraft ? "#cc8800" : "#aaaaaa",
+          alignment: "right",
+          bold: isDraft,
+        },
+      ],
+    }),
   };
 
   const pdfDoc = printer.createPdfKitDocument(docDefinition);
