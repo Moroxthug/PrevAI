@@ -219,6 +219,7 @@ export type CreateCheckoutBodyPlanType =
 export const CreateCheckoutBodyPlanType = {
   monthly_starter: "monthly_starter",
   monthly_pro: "monthly_pro",
+  monthly_elite: "monthly_elite",
   oneshot_watermark: "oneshot_watermark",
   oneshot_clean: "oneshot_clean",
 } as const;

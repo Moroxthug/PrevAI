@@ -969,7 +969,7 @@ components:
           type: string
         planType:
           type: string
-          enum: [monthly_starter, monthly_pro, oneshot_watermark, oneshot_clean]
+          enum: [monthly_starter, monthly_pro, monthly_elite, oneshot_watermark, oneshot_clean]
       required:
         - planType
 

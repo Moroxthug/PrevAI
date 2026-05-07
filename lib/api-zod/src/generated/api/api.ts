@@ -792,6 +792,7 @@ export const CreateCheckoutSessionBody = zod.object({
   planType: zod.enum([
     "monthly_starter",
     "monthly_pro",
+    "monthly_elite",
     "oneshot_watermark",
     "oneshot_clean",
   ]),
