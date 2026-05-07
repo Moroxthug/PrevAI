@@ -1,9 +1,10 @@
 import { Link, useLocation } from "wouter";
-import { ArrowRight, CheckCircle2, FileText, Zap, Lock, Star } from "lucide-react";
+import { ArrowRight, CheckCircle2, FileText, Zap, Lock, Star, Sparkles } from "lucide-react";
 import { SeoHead } from "@/components/seo-head";
 import { useGetPlans } from "@workspace/api-client-react";
 import { useScrollFade } from "@/hooks/use-scroll-fade";
 import { useAuth } from "@/hooks/use-auth";
+import { useState, useRef } from "react";
 
 function ScrollSection({
   children,
@@ -30,12 +31,21 @@ export default function Home() {
   const { data: plans } = useGetPlans();
   const { isSignedIn } = useAuth();
   const [, navigate] = useLocation();
+  const [homepageInput, setHomepageInput] = useState("");
+  const homepageInputRef = useRef<HTMLInputElement>(null);
 
   const subscriptionPlans = plans?.filter((p) => p.interval) ?? [];
   const oneshotPlans = plans?.filter((p) => !p.interval) ?? [];
 
   const handlePlanClick = () => {
     navigate(isSignedIn ? "/dashboard" : "/sign-up");
+  };
+
+  const handleHomepageSubmit = () => {
+    const trimmed = homepageInput.trim();
+    if (!trimmed) return;
+    sessionStorage.setItem("prevai:homepage_prompt", trimmed);
+    navigate(isSignedIn ? "/dashboard/new" : "/sign-up?next=/dashboard/new");
   };
 
   const websiteJsonLd = {
@@ -64,8 +74,34 @@ export default function Home() {
         canonical="https://www.prevai.it"
         jsonLd={[websiteJsonLd]}
       />
+
+      {/* ── Homepage AI Input Bar ────────────────────────────── */}
+      <div className="sticky top-16 z-20 bg-white/95 backdrop-blur-sm border-b border-gray-100 shadow-sm py-2.5">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 focus-within:border-violet-400 focus-within:ring-2 focus-within:ring-violet-100 transition-all max-w-3xl mx-auto">
+            <Sparkles className="h-4 w-4 text-violet-500 shrink-0" />
+            <input
+              ref={homepageInputRef}
+              value={homepageInput}
+              onChange={(e) => setHomepageInput(e.target.value)}
+              onKeyDown={(e) => { if (e.key === "Enter" && homepageInput.trim()) handleHomepageSubmit(); }}
+              placeholder="Descrivi il lavoro e ottieni un preventivo professionale in 30 secondi..."
+              className="flex-1 text-sm outline-none placeholder:text-gray-400 text-gray-800 bg-transparent min-w-0"
+            />
+            <button
+              onClick={handleHomepageSubmit}
+              disabled={!homepageInput.trim()}
+              className="shrink-0 btn-gradient inline-flex h-8 items-center justify-center px-3 text-xs font-semibold gap-1.5 disabled:opacity-40 rounded-lg"
+            >
+              <ArrowRight className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Genera</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
       {/* ── Hero ─────────────────────────────────────────────── */}
-      <section className="relative overflow-hidden bg-white pt-20 pb-24">
+      <section className="relative overflow-hidden bg-white pt-10 pb-24">
         {/* Animated mesh blobs */}
         <div className="mesh-blob mesh-blob-1" />
         <div className="mesh-blob mesh-blob-2" />

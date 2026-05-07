@@ -7,6 +7,38 @@ import { getUncachableStripeClient } from "../stripeClient";
 import { logger } from "../lib/logger";
 import Stripe from "stripe";
 
+const TRIAL_DAYS = 7;
+const TRIAL_DOWNLOAD_LIMIT = 3;
+
+export function getTrialStatus(profile: typeof businessProfilesTable.$inferSelect | null | undefined) {
+  if (!profile?.trialStartedAt) {
+    return {
+      isTrialActive: false,
+      trialStartedAt: null,
+      trialDownloadsUsed: 0,
+      trialDownloadsLimit: TRIAL_DOWNLOAD_LIMIT,
+      trialDaysLeft: null,
+      trialExpiresAt: null,
+    };
+  }
+  const now = new Date();
+  const started = profile.trialStartedAt;
+  const expiresAt = new Date(started.getTime() + TRIAL_DAYS * 24 * 60 * 60 * 1000);
+  const downloadsUsed = profile.trialDownloadsUsed ?? 0;
+  const isExpiredByTime = now > expiresAt;
+  const isExpiredByDownloads = downloadsUsed >= TRIAL_DOWNLOAD_LIMIT;
+  const daysLeft = Math.max(0, Math.ceil((expiresAt.getTime() - now.getTime()) / (24 * 60 * 60 * 1000)));
+  const isTrialActive = !isExpiredByTime && !isExpiredByDownloads;
+  return {
+    isTrialActive,
+    trialStartedAt: started.toISOString(),
+    trialDownloadsUsed: downloadsUsed,
+    trialDownloadsLimit: TRIAL_DOWNLOAD_LIMIT,
+    trialDaysLeft: isTrialActive ? daysLeft : 0,
+    trialExpiresAt: expiresAt.toISOString(),
+  };
+}
+
 const router = Router();
 
 export const PLANS = [
@@ -72,6 +104,20 @@ export const PLANS = [
 
 router.get("/payments/plans", (_req, res) => {
   res.json(PLANS);
+});
+
+router.get("/payments/trial-status", requireAuth, async (req, res) => {
+  try {
+    const userId = getUserId(res);
+    const [profile] = await db
+      .select()
+      .from(businessProfilesTable)
+      .where(eq(businessProfilesTable.userId, userId));
+    res.json(getTrialStatus(profile ?? null));
+  } catch (err) {
+    logger.error({ err }, "Error getting trial status");
+    res.status(500).json({ error: "Internal server error" });
+  }
 });
 
 router.post("/payments/checkout", requireAuth, async (req, res) => {

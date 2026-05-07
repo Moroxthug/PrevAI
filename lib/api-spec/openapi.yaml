@@ -405,6 +405,19 @@ paths:
               schema:
                 $ref: "#/components/schemas/PaymentVerifyResult"
 
+  /payments/trial-status:
+    get:
+      operationId: getTrialStatus
+      tags: [payments]
+      summary: Get the current user's free-trial status
+      responses:
+        "200":
+          description: Trial status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TrialStatus"
+
   /payments/portal:
     post:
       operationId: createCustomerPortalSession
@@ -1101,3 +1114,26 @@ components:
       required:
         - imported
         - skipped
+
+    TrialStatus:
+      type: object
+      properties:
+        isTrialActive:
+          type: boolean
+        trialStartedAt:
+          type: string
+          nullable: true
+        trialDownloadsUsed:
+          type: number
+        trialDownloadsLimit:
+          type: number
+        trialDaysLeft:
+          type: number
+          nullable: true
+        trialExpiresAt:
+          type: string
+          nullable: true
+      required:
+        - isTrialActive
+        - trialDownloadsUsed
+        - trialDownloadsLimit

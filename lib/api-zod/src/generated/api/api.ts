@@ -788,6 +788,18 @@ export const UnlockQuoteWithSubscriptionResponse = zod.object({
 });
 
 /**
+ * @summary Get the current user's free-trial status
+ */
+export const GetTrialStatusResponse = zod.object({
+  isTrialActive: zod.boolean(),
+  trialStartedAt: zod.string().nullish(),
+  trialDownloadsUsed: zod.number(),
+  trialDownloadsLimit: zod.number(),
+  trialDaysLeft: zod.number().nullish(),
+  trialExpiresAt: zod.string().nullish(),
+});
+
+/**
  * @summary Create a Stripe Customer Portal session for subscription management
  */
 export const CreateCustomerPortalSessionResponse = zod.object({

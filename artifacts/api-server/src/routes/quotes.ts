@@ -3,6 +3,7 @@ import { requireAuth, getUserId } from "../middlewares/authMiddleware";
 import multer from "multer";
 import { db, quotesTable, businessProfilesTable, priceCatalogItemsTable, quoteClientDataSchema, quoteCompanySnapshotSchema } from "@workspace/db";
 import { eq, desc, count, sum, sql } from "drizzle-orm";
+import { getTrialStatus } from "./payments.js";
 import {
   UpdateQuoteBody,
   GetQuoteParams,
@@ -261,7 +262,11 @@ router.post("/quotes", requireAuth, imageUpload.array("images", 3), async (req, 
 
     // ── Quota enforcement ─────────────────────────────────────────────────────
     const [profile] = await db
-      .select({ subscriptionPlan: businessProfilesTable.subscriptionPlan, subscriptionStatus: businessProfilesTable.subscriptionStatus })
+      .select({
+        subscriptionPlan: businessProfilesTable.subscriptionPlan,
+        subscriptionStatus: businessProfilesTable.subscriptionStatus,
+        trialStartedAt: businessProfilesTable.trialStartedAt,
+      })
       .from(businessProfilesTable)
       .where(eq(businessProfilesTable.userId, userId));
 
@@ -544,6 +549,14 @@ Esempio: "Demolizione e rimozione di pavimentazione esistente in piastrelle cera
       })
       .returning();
 
+    // Start trial on first quote creation
+    if (!profile?.trialStartedAt) {
+      await db
+        .update(businessProfilesTable)
+        .set({ trialStartedAt: new Date() })
+        .where(eq(businessProfilesTable.userId, userId));
+    }
+
     res.status(201).json(serializeQuote(quote!));
   } catch (err) {
     req.log.error({ err }, "Error creating quote");
@@ -712,8 +725,33 @@ router.post("/quotes/:id/generate-pdf", requireAuth, async (req, res) => {
     const planHasWatermark = (plan: string | null | undefined) =>
       !plan || plan === "monthly_starter" || plan === "oneshot_watermark";
 
+    // Trial auto-unlock: if user is in trial and quote is draft, unlock it and count the download
+    let effectiveStatus = quote.status;
+    if (quote.status === "draft" && profile?.subscriptionStatus !== "active") {
+      const trial = getTrialStatus(profile ?? null);
+      if (trial.isTrialActive) {
+        effectiveStatus = "unlocked";
+        const updates: Partial<typeof businessProfilesTable.$inferSelect> = {
+          trialDownloadsUsed: (profile?.trialDownloadsUsed ?? 0) + 1,
+        };
+        await Promise.all([
+          db.update(quotesTable)
+            .set({ status: "unlocked", unlockedWithPlan: "trial" })
+            .where(eq(quotesTable.id, id)),
+          db.update(businessProfilesTable)
+            .set(updates)
+            .where(eq(businessProfilesTable.userId, userId)),
+        ]);
+        req.log.info({ quoteId: id, userId }, "Quote auto-unlocked via trial");
+      }
+    }
+
+    // Trial downloads get clean PDFs (no watermark)
+    const unlockedPlan = effectiveStatus === "unlocked" && quote.status === "draft"
+      ? "trial"
+      : quote.unlockedWithPlan;
     const withWatermark =
-      quote.status !== "unlocked" || planHasWatermark(quote.unlockedWithPlan);
+      effectiveStatus !== "unlocked" || planHasWatermark(unlockedPlan);
     const html = generateQuoteHtml(quote, withWatermark, profile ?? null);
 
     // Track first download time (lock editing after this point)

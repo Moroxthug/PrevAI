@@ -42,6 +42,17 @@ export default function NewQuote() {
   const [photoPreviews, setPhotoPreviews] = useState<string[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Pre-fill from homepage AI bar via sessionStorage
+  useEffect(() => {
+    const saved = sessionStorage.getItem("prevai:homepage_prompt");
+    if (saved) {
+      sessionStorage.removeItem("prevai:homepage_prompt");
+      setInput(saved);
+      setTimeout(autoResize, 0);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   useEffect(() => {
     return () => { photoPreviews.forEach(url => URL.revokeObjectURL(url)); };
   // eslint-disable-next-line react-hooks/exhaustive-deps

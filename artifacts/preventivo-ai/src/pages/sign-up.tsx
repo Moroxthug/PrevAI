@@ -1,11 +1,13 @@
 import { useState, useEffect } from "react";
-import { Link, useLocation } from "wouter";
+import { Link, useLocation, useSearch } from "wouter";
 import { Logo } from "@/components/logo";
 import { authClient } from "@/lib/auth-client";
 import { Eye, EyeOff, Loader2, AlertCircle } from "lucide-react";
 
 export default function SignUpPage() {
   const [, navigate] = useLocation();
+  const search = useSearch();
+  const nextPath = new URLSearchParams(search).get("next") ?? "/onboarding";
   const [registrationOpen, setRegistrationOpen] = useState<boolean | null>(null);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -35,7 +37,7 @@ export default function SignUpPage() {
         name: name.trim(),
         email: email.trim(),
         password,
-        callbackURL: "/onboarding",
+        callbackURL: nextPath,
       });
       if (result.error) {
         const msg = result.error.message ?? "";
@@ -45,7 +47,7 @@ export default function SignUpPage() {
           setError(msg || "Errore durante la registrazione. Riprova.");
         }
       } else {
-        navigate("/onboarding");
+        navigate(nextPath);
       }
     } catch {
       setError("Errore di connessione. Riprova tra qualche secondo.");

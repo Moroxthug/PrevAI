@@ -35,6 +35,7 @@ import type {
   QuoteStats,
   RegenerateQuoteBody,
   SubscriptionInfo,
+  TrialStatus,
   UnlockQuoteBody,
   UpdateBusinessProfileBody,
   UpdateCatalogItemBody,
@@ -1869,6 +1870,81 @@ export const useUnlockQuoteWithSubscription = <
 > => {
   return useMutation(getUnlockQuoteWithSubscriptionMutationOptions(options));
 };
+
+/**
+ * @summary Get the current user's free-trial status
+ */
+export const getGetTrialStatusUrl = () => {
+  return `/api/payments/trial-status`;
+};
+
+export const getTrialStatus = async (
+  options?: RequestInit,
+): Promise<TrialStatus> => {
+  return customFetch<TrialStatus>(getGetTrialStatusUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetTrialStatusQueryKey = () => {
+  return [`/api/payments/trial-status`] as const;
+};
+
+export const getGetTrialStatusQueryOptions = <
+  TData = Awaited<ReturnType<typeof getTrialStatus>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getTrialStatus>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetTrialStatusQueryKey();
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getTrialStatus>>> = ({
+    signal,
+  }) => getTrialStatus({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getTrialStatus>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetTrialStatusQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getTrialStatus>>
+>;
+export type GetTrialStatusQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Get the current user's free-trial status
+ */
+
+export function useGetTrialStatus<
+  TData = Awaited<ReturnType<typeof getTrialStatus>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getTrialStatus>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetTrialStatusQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
 
 /**
  * @summary Create a Stripe Customer Portal session for subscription management

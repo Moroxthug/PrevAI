@@ -1,5 +1,5 @@
 import { useParams, useSearch } from "wouter";
-import { useGetQuote, useGetBusinessProfile, useGenerateQuotePdf, useGetPlans, useUpdateQuote, useCreateCheckoutSession, useVerifyPayment, useGetSubscription, useUnlockQuoteWithSubscription, useCreateCustomerPortalSession, useRegenerateQuote, useDuplicateQuote, useUpgradeToCapitolatoPro, useGenerateQuotePdfPro, getGetQuoteQueryKey, getVerifyPaymentQueryKey, getListQuotesQueryKey } from "@workspace/api-client-react";
+import { useGetQuote, useGetBusinessProfile, useGenerateQuotePdf, useGetPlans, useUpdateQuote, useCreateCheckoutSession, useVerifyPayment, useGetSubscription, useUnlockQuoteWithSubscription, useCreateCustomerPortalSession, useRegenerateQuote, useDuplicateQuote, useUpgradeToCapitolatoPro, useGenerateQuotePdfPro, useGetTrialStatus, getGetQuoteQueryKey, getVerifyPaymentQueryKey, getListQuotesQueryKey } from "@workspace/api-client-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
@@ -50,6 +50,7 @@ export default function QuoteDetail() {
 
   // Subscription status
   const { data: subscription } = useGetSubscription();
+  const { data: trialStatus } = useGetTrialStatus();
   const unlockWithSub = useUnlockQuoteWithSubscription();
   const createPortal = useCreateCustomerPortalSession();
   const regenerateQuote = useRegenerateQuote();
@@ -414,8 +415,9 @@ export default function QuoteDetail() {
   if (!quote) return <div>Preventivo non trovato</div>;
 
   const isPro = subscription?.isActive && subscription?.plan === "monthly_pro";
-  // Pro subscribers can always download — paywall only applies to Starter and one-shot
-  const isLocked = quote.status !== "unlocked" && !isPro;
+  const isTrialActive = trialStatus?.isTrialActive ?? false;
+  // Pro subscribers and active trial users can always download
+  const isLocked = quote.status !== "unlocked" && !isPro && !isTrialActive;
   // Editing is permanently locked once the PDF has been downloaded
   const isEditLocked = !!quote.pdfDownloadedAt;
   const formatCurrency = (amount: number) =>

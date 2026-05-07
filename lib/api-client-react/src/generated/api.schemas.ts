@@ -315,6 +315,15 @@ export interface ImportCatalogResult {
   skipped: number;
 }
 
+export interface TrialStatus {
+  isTrialActive: boolean;
+  trialStartedAt?: string | null;
+  trialDownloadsUsed: number;
+  trialDownloadsLimit: number;
+  trialDaysLeft?: number | null;
+  trialExpiresAt?: string | null;
+}
+
 export type UploadBusinessProfileLogoBody = {
   logo: Blob;
 };

@@ -2,6 +2,7 @@ import {
   pgTable,
   text,
   timestamp,
+  integer,
 } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
@@ -18,6 +19,8 @@ export const businessProfilesTable = pgTable("business_profiles", {
   subscriptionPlan: text("subscription_plan"),
   subscriptionStatus: text("subscription_status"),
   subscriptionPeriodEnd: timestamp("subscription_period_end", { withTimezone: true }),
+  trialStartedAt: timestamp("trial_started_at", { withTimezone: true }),
+  trialDownloadsUsed: integer("trial_downloads_used").notNull().default(0),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
 });

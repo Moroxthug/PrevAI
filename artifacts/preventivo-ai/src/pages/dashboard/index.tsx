@@ -1,4 +1,4 @@
-import { useGetQuoteStats, useGetSubscription, useCreateCustomerPortalSession } from "@workspace/api-client-react";
+import { useGetQuoteStats, useGetSubscription, useCreateCustomerPortalSession, useGetTrialStatus } from "@workspace/api-client-react";
 import { Link } from "wouter";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -15,6 +15,8 @@ import {
   MessageSquare,
   Download,
   Building2,
+  Clock,
+  Gift,
 } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 
@@ -131,9 +133,49 @@ function OnboardingView() {
   );
 }
 
+function TrialBanner({ downloadsUsed, downloadsLimit, daysLeft }: { downloadsUsed: number; downloadsLimit: number; daysLeft: number | null | undefined }) {
+  const remaining = downloadsLimit - downloadsUsed;
+  return (
+    <div className="bg-gradient-to-r from-violet-50 to-cyan-50 border border-violet-200 rounded-xl p-3.5 flex items-center justify-between gap-3">
+      <div className="flex items-center gap-3 min-w-0">
+        <div className="h-8 w-8 rounded-lg bg-violet-100 flex items-center justify-center shrink-0">
+          <Gift className="h-4 w-4 text-violet-600" />
+        </div>
+        <div className="min-w-0">
+          <div className="font-semibold text-gray-900 text-sm">
+            Prova gratuita attiva
+            {typeof daysLeft === "number" && (
+              <span className="ml-2 inline-flex items-center gap-1 text-[11px] font-medium text-violet-600 bg-violet-100 px-1.5 py-0.5 rounded-full">
+                <Clock className="h-2.5 w-2.5" />
+                {daysLeft === 0 ? "Scade oggi" : `${daysLeft} giorn${daysLeft === 1 ? "o" : "i"} riman${daysLeft === 1 ? "e" : "ono"}`}
+              </span>
+            )}
+          </div>
+          <div className="text-xs text-gray-500 mt-0.5">
+            {remaining > 0
+              ? `Hai ancora ${remaining} download gratuito${remaining > 1 ? "" : ""} su ${downloadsLimit} — PDF senza costi!`
+              : "Hai esaurito i download gratuiti. Abbonati per continuare."}
+          </div>
+        </div>
+      </div>
+      {remaining > 0 ? (
+        <Link href="/dashboard/new" className="shrink-0 btn-gradient inline-flex h-8 items-center justify-center px-3 text-xs font-semibold gap-1">
+          <Sparkles className="h-3 w-3" />
+          Crea ora
+        </Link>
+      ) : (
+        <Link href="/dashboard/billing" className="shrink-0 btn-gradient inline-flex h-8 items-center justify-center px-3 text-xs font-semibold">
+          Abbonati
+        </Link>
+      )}
+    </div>
+  );
+}
+
 export default function DashboardHome() {
   const { data: stats, isLoading: isLoadingStats } = useGetQuoteStats();
   const { data: subscription } = useGetSubscription();
+  const { data: trialStatus } = useGetTrialStatus();
   const { user } = useAuth();
 
   const formatCurrency = (amount: number) =>
@@ -180,6 +222,15 @@ export default function DashboardHome() {
           </Link>
         </div>
       </div>
+
+      {/* Free trial banner — show when trial is active and no paid subscription */}
+      {trialStatus?.isTrialActive && !subscription?.isActive && (
+        <TrialBanner
+          downloadsUsed={trialStatus.trialDownloadsUsed}
+          downloadsLimit={trialStatus.trialDownloadsLimit}
+          daysLeft={trialStatus.trialDaysLeft}
+        />
+      )}
 
       {/* Onboarding vs normal view */}
       {isNewUser ? (
