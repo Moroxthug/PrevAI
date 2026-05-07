@@ -496,7 +496,7 @@ export default function QuoteDetail() {
               {!isPro && <Lock className="h-3 w-3 ml-1 opacity-60" />}
             </Button>
           )}
-          {quote.capitolatoPro && isPro && (
+          {quote.capitolatoPro && isPro && quote.status === "unlocked" && (
             <Button
               variant="outline"
               className="gap-2 border-violet-400 text-violet-800 hover:bg-violet-50"
