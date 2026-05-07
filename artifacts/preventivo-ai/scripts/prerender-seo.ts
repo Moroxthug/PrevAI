@@ -15,6 +15,13 @@ import {
 import type { SectorData, CityData } from "../src/data/seo-data.js";
 import { CITY_INTELLIGENCE, DEMAND_TEXT } from "../src/data/seo-intelligence.js";
 import type { CityIntelligence } from "../src/data/seo-intelligence.js";
+import {
+  strHash,
+  getCityIntro,
+  getCityFaqItems,
+  getNearbyAnchors,
+  buildCityJsonLd as buildCityJsonLdFromEngine,
+} from "../src/data/seo-render-engine.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const distDir = join(__dirname, "../dist/public");
@@ -58,10 +65,6 @@ function esc(s: string): string {
     .replace(/"/g, "&quot;")
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;");
-}
-
-function strHash(s: string): number {
-  return s.split("").reduce((acc, c) => acc + c.charCodeAt(0), 0);
 }
 
 function buildHeadBlock(opts: {
@@ -277,80 +280,7 @@ function buildSectorJsonLd(s: SectorData): object[] {
 }
 
 function buildCityJsonLd(s: SectorData, city: CityData): object[] {
-  const canonical = `${BASE_URL}/seo/${s.slug}/${city.slug}`;
-  const intelJ = CITY_INTELLIGENCE[city.slug];
-  const pricePctJ = intelJ ? Math.round(Math.abs(intelJ.priceIndex - 1.0) * 100) : 0;
-  const cityFaq = [
-    {
-      q: `Come faccio un preventivo professionale a ${city.name}?`,
-      a: `Con prevai bastano 30 secondi. Descrivi il lavoro in italiano nel campo di testo, il motore AI genera automaticamente il documento con voci di costo, quantità, prezzi unitari e IVA. Puoi scaricarlo come PDF e inviarlo subito al tuo cliente a ${city.name}.`,
-    },
-    {
-      q: `prevai funziona per ${s.labelPlural} a ${city.name} e in tutta la ${city.region}?`,
-      a: `Sì. prevai è un'applicazione web accessibile da qualsiasi dispositivo con connessione internet. Non ci sono limitazioni geografiche: funziona a ${city.name} come in qualsiasi altra città italiana.`,
-    },
-    {
-      q: `Quanto costano i servizi di ${s.label.toLowerCase()} a ${city.name}?`,
-      a: intelJ
-        ? intelJ.priceIndex > 1.05
-          ? `I prezzi per ${s.labelPlural} a ${city.name} sono mediamente il ${pricePctJ}% superiori alla media nazionale. Un preventivo professionale e dettagliato è essenziale per valorizzare il tuo lavoro.`
-          : intelJ.priceIndex < 0.95
-            ? `A ${city.name} i prezzi per ${s.labelPlural} sono mediamente il ${pricePctJ}% inferiori alla media nazionale. Rispondere velocemente con un preventivo professionale è il modo più efficace per distinguersi.`
-            : `I prezzi per ${s.labelPlural} a ${city.name} sono in linea con la media nazionale. La velocità di risposta e la qualità del preventivo sono i fattori decisivi.`
-        : `I prezzi variano in base alla complessità del lavoro. Con prevai puoi generare preventivi professionali in 30 secondi.`,
-    },
-    {
-      q: `Qual è il tempo medio di risposta per ${s.labelPlural} a ${city.name}?`,
-      a: intelJ
-        ? `A ${city.name} i tempi di risposta stimati per ${s.labelPlural} sono di ${intelJ.avgLeadTime}. La domanda locale è ${DEMAND_TEXT[intelJ.demandLevel]}: inviare subito un preventivo professionale è fondamentale per aggiudicarsi la commessa.`
-        : `Con prevai puoi rispondere a nuove richieste in 30 secondi, aumentando le tue probabilità di aggiudicarti ogni commessa.`,
-    },
-  ];
-  return [
-    {
-      "@context": "https://schema.org",
-      "@type": "SoftwareApplication",
-      name: "prevai",
-      description: `Software di preventivazione AI per ${s.labelPlural} a ${city.name} (${city.region}).`,
-      url: canonical,
-      applicationCategory: "BusinessApplication",
-      operatingSystem: "Web",
-      inLanguage: "it",
-      offers: { "@type": "Offer", price: "0", priceCurrency: "EUR", availability: "https://schema.org/InStock" },
-    },
-    {
-      "@context": "https://schema.org",
-      "@type": "Service",
-      name: `Preventivi ${s.label} a ${city.name}`,
-      description: `Software di preventivazione AI per ${s.labelPlural} a ${city.name}`,
-      serviceType: `Preventivazione ${s.label}`,
-      provider: { "@type": "Organization", name: "prevai", url: BASE_URL },
-      areaServed: [
-        { "@type": "City", name: city.name },
-        { "@type": "State", name: city.region },
-        { "@type": "Country", name: "Italia" },
-      ],
-      url: canonical,
-    },
-    {
-      "@context": "https://schema.org",
-      "@type": "BreadcrumbList",
-      itemListElement: [
-        { "@type": "ListItem", position: 1, name: "Home", item: BASE_URL },
-        { "@type": "ListItem", position: 2, name: s.label, item: `${BASE_URL}/seo/${s.slug}` },
-        { "@type": "ListItem", position: 3, name: city.name, item: canonical },
-      ],
-    },
-    {
-      "@context": "https://schema.org",
-      "@type": "FAQPage",
-      mainEntity: cityFaq.map((f) => ({
-        "@type": "Question",
-        name: f.q,
-        acceptedAnswer: { "@type": "Answer", text: f.a },
-      })),
-    },
-  ];
+  return buildCityJsonLdFromEngine(s, city);
 }
 
 // ─── Phase 3: Sector body — 2 layout variants ──────────────────────────────
@@ -524,24 +454,6 @@ function buildSectorBodyHtml(s: SectorData): string {
 
 // ─── Phase 3: City body — 3 layout variants ────────────────────────────────
 
-function getCityIntro(s: SectorData, city: CityData): string {
-  const isService = s.sectorType === "service";
-  const variants = isService
-    ? [
-        `Gestisci un'attività nel settore ${s.label.toLowerCase()} a ${city.name}? prevai è il software di preventivazione con AI pensato per i professionisti del settore in ${city.region}. Descrivi il lavoro in italiano, ottieni un documento professionale in 30 secondi.`,
-        `${city.name} conta migliaia di cantieri e commesse nel settore ${s.label.toLowerCase()} ogni anno. I professionisti che usano prevai rispondono ai clienti in pochi minuti anziché in giorni, vincendo più lavori. Nessun Excel, nessun foglio di carta.`,
-        `In un mercato come ${city.name} la competizione nel settore ${s.label.toLowerCase()} è alta. Chi invia il preventivo per primo ha un vantaggio decisivo. Con prevai lo fai in 30 secondi ancora mentre sei dal cliente — direttamente dallo smartphone.`,
-        `Coordinare un'attività di ${s.label.toLowerCase()} a ${city.name} significa gestire preventivi complessi. prevai semplifica la parte amministrativa: descrivi il lavoro, l'AI genera il preventivo completo e tu ti concentri sulla qualità.`,
-      ]
-    : [
-        `Sei un ${s.label.toLowerCase()} a ${city.name} e perdi ore a fare preventivi su Excel o carta? prevai è il software di preventivazione con AI pensato per i professionisti del settore in ${city.region}. Descrivi il lavoro in italiano, ottieni un documento professionale in 30 secondi.`,
-        `${city.name} conta migliaia di artigiani e PMI attive nel settore. I ${s.labelPlural} che usano prevai rispondono ai clienti in pochi minuti anziché in giorni, e vincono più lavori. Nessun Excel, nessun foglio di carta.`,
-        `In una città come ${city.name} la concorrenza tra ${s.labelPlural} è alta. Chi invia il preventivo per primo ha un vantaggio decisivo. Con prevai lo fai in 30 secondi ancora mentre sei dal cliente — direttamente dallo smartphone.`,
-        `Operare come ${s.label.toLowerCase()} a ${city.name} significa gestire tanti clienti con richieste diverse. prevai semplifica la parte amministrativa: descrivi il lavoro, l'AI genera il preventivo completo e tu ti concentri sul mestiere.`,
-      ];
-  return variants[strHash(city.slug) % variants.length];
-}
-
 // ─── Phase 9: Osservatorio Prezzi e Domanda ────────────────────────────────
 
 function buildOsservatorio(s: SectorData, city: CityData, intel: CityIntelligence): string {
@@ -689,40 +601,7 @@ function buildCityBodyHtml(s: SectorData, city: CityData): string {
     </div>
   </section>`;
 
-  // Dynamic FAQ: 2 static + 2 from CITY_INTELLIGENCE
-  const pricePct = intel ? Math.round(Math.abs(intel.priceIndex - 1.0) * 100) : 0;
-  const cityFaqItems = [
-    {
-      q: `Come faccio un preventivo professionale a ${cityName}?`,
-      a: `Con prevai bastano 30 secondi. Descrivi il lavoro in italiano nel campo di testo, il motore AI genera automaticamente il documento con voci di costo, quantità, prezzi unitari e IVA. Puoi scaricarlo come PDF e inviarlo subito al tuo cliente a ${cityName}.`,
-    },
-    {
-      q: `prevai funziona per ${s.labelPlural} a ${cityName} e in tutta la ${regionName}?`,
-      a: `Sì. prevai è un'applicazione web accessibile da qualsiasi dispositivo con connessione internet. Non ci sono limitazioni geografiche: funziona a ${cityName} come in qualsiasi altra città italiana.`,
-    },
-    {
-      q: `Quanto costano i servizi di ${s.label.toLowerCase()} a ${cityName}?`,
-      a: intel
-        ? intel.priceIndex > 1.05
-          ? `I prezzi per servizi di ${s.label.toLowerCase()} a ${cityName} sono mediamente il ${pricePct}% superiori alla media nazionale. Presentare un preventivo professionale e dettagliato è essenziale per giustificare il prezzo e conquistare la fiducia del cliente.`
-          : intel.priceIndex < 0.95
-            ? `A ${cityName} i prezzi per ${s.labelPlural} sono mediamente il ${pricePct}% inferiori alla media nazionale. In un mercato competitivo come questo, rispondere velocemente con un preventivo professionale è il modo più efficace per distinguersi.`
-            : `I prezzi per ${s.labelPlural} a ${cityName} si attestano in linea con la media nazionale. La velocità di risposta e la qualità del preventivo sono i fattori che fanno la differenza per vincere la commessa.`
-        : `I prezzi variano in base alla complessità del lavoro e alla zona. Con prevai puoi generare preventivi professionali in 30 secondi e mostrare subito la tua competitività.`,
-    },
-    {
-      q: `Qual è il tempo medio di risposta per ${s.labelPlural} a ${cityName}?`,
-      a: intel
-        ? intel.demandLevel === "CRITICAL"
-          ? `A ${cityName} la domanda è molto elevata: i tempi di attesa stimati sono di ${intel.avgLeadTime}. Inviare il preventivo in pochi minuti dall'ispezione — come permette prevai — aumenta significativamente le probabilità di aggiudicarsi il lavoro.`
-          : intel.demandLevel === "HIGH"
-            ? `Con una domanda ${DEMAND_TEXT[intel.demandLevel]} a ${cityName}, i professionisti rispondono tipicamente entro ${intel.avgLeadTime}. Inviare subito un preventivo professionale è il modo migliore per assicurarsi la commessa.`
-            : intel.demandLevel === "MEDIUM"
-              ? `A ${cityName} i tempi di risposta standard per ${s.labelPlural} sono di circa ${intel.avgLeadTime}. Un preventivo professionale inviato in giornata può fare la differenza rispetto ai concorrenti.`
-              : `Il mercato di ${cityName} registra una domanda ${DEMAND_TEXT[intel.demandLevel]} per questo tipo di servizio, con tempi di risposta di circa ${intel.avgLeadTime}. Professionalità e rapidità del preventivo restano fattori differenzianti importanti.`
-        : `I tempi dipendono dalla disponibilità locale. Con prevai puoi rispondere a nuove richieste in 30 secondi e aumentare le tue chance di aggiudicarti ogni commessa.`,
-    },
-  ];
+  const cityFaqItems = getCityFaqItems(s, city);
 
   const sFaq = `<section class="py-20 bg-gray-50">
     <div class="container mx-auto px-4 sm:px-6 lg:px-8 max-w-3xl">
@@ -738,21 +617,10 @@ function buildCityBodyHtml(s: SectorData, city: CityData): string {
     </div>
   </section>`;
 
-  const nearbyLinks = city.nearbySlug
-    .map((slug) => {
-      const nearbyCity = CITIES_BY_SLUG[slug];
-      if (!nearbyCity) return "";
-      const nearbyIntel = CITY_INTELLIGENCE[slug];
-      const anchorText = nearbyIntel
-        ? nearbyIntel.priceIndex > 1.05
-          ? `Preventivi ${s.label} a ${nearbyCity.name}`
-          : nearbyIntel.priceIndex < 0.95
-            ? `Costi ${s.label.toLowerCase()} a ${nearbyCity.name}`
-            : `${s.label} a ${nearbyCity.name}`
-        : nearbyCity.name;
-      return `<a href="/seo/${esc(s.slug)}/${esc(nearbyCity.slug)}" class="inline-flex items-center gap-1.5 rounded-full border border-gray-200 px-3.5 py-1.5 text-sm text-gray-500 hover:border-violet-300 hover:text-violet-600 transition-colors">${esc(anchorText)}</a>`;
-    })
-    .filter(Boolean)
+  const nearbyLinks = getNearbyAnchors(s, city)
+    .map(({ slug, anchorText }) =>
+      `<a href="/seo/${esc(s.slug)}/${esc(slug)}" class="inline-flex items-center gap-1.5 rounded-full border border-gray-200 px-3.5 py-1.5 text-sm text-gray-500 hover:border-violet-300 hover:text-violet-600 transition-colors">${esc(anchorText)}</a>`
+    )
     .join("\n          ");
 
   const sNearby = nearbyLinks
