@@ -7,7 +7,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Download, Lock, CheckCircle2, Edit2, Save, FileText, ChevronDown, ChevronRight, Plus, Trash2, X, Pencil, Sparkles, AlertTriangle, RefreshCw, Loader2, Copy, Star, FileDown, LayoutTemplate } from "lucide-react";
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, Fragment } from "react";
 import { useLocation } from "wouter";
 import { format } from "date-fns";
 import { it } from "date-fns/locale";
@@ -453,7 +453,7 @@ export default function QuoteDetail() {
             )}
             <Badge variant="outline" className="gap-1 text-slate-500">
               <LayoutTemplate className="h-3 w-3" />
-              {localTemplateId === "arosio" ? "Arosio" : localTemplateId === "mariagrazia" ? "MariaGrazia" : "Standard"}
+              {localTemplateId === "arosio" ? "Professionale" : localTemplateId === "mariagrazia" ? "Elegante" : "Standard"}
             </Badge>
             <span className="text-sm text-muted-foreground">
               Creato il {format(new Date(quote.createdAt), "dd MMMM yyyy", { locale: it })}
@@ -556,8 +556,8 @@ export default function QuoteDetail() {
               )}>
                 <LayoutTemplate className="h-3.5 w-3.5 shrink-0" />
                 {localTemplateId === "arosio"
-                  ? "Template Arosio — capitolato numerato con subtotali per capitolo"
-                  : "Template MariaGrazia — lista numerata con header OFFERTA"}
+                  ? "Template Professionale — capitolato numerato con subtotali per capitolo"
+                  : "Template Elegante — lista numerata con header OFFERTA"}
                 <span className="ml-auto opacity-60 font-normal">Anteprima • il PDF finale rispecchia questo stile</span>
               </div>
             )}
@@ -882,8 +882,8 @@ export default function QuoteDetail() {
                     </thead>
                     <tbody>
                       {capitoli.map((cap, ci) => (
-                        <>
-                          <tr key={`hdr-${cap.lettera}`}>
+                        <Fragment key={cap.lettera}>
+                          <tr>
                             <td colSpan={5} className="py-2 px-3 font-bold text-white text-xs tracking-wider uppercase bg-slate-800">
                               {String(ci + 1).padStart(2, "0")}_ {cap.titolo.toUpperCase()}
                             </td>
@@ -897,13 +897,13 @@ export default function QuoteDetail() {
                               <td className="py-2 px-3 text-right font-medium text-slate-800 whitespace-nowrap">{formatCurrency(voce.totale)}</td>
                             </tr>
                           ))}
-                          <tr key={`sub-${cap.lettera}`} className="bg-slate-200 border-t border-slate-300">
+                          <tr className="bg-slate-200 border-t border-slate-300">
                             <td colSpan={4} className="py-1.5 px-3 text-right font-bold text-slate-700 text-xs">
                               {String.fromCharCode(65 + ci)}_ TOTALE (IVA esclusa)
                             </td>
                             <td className="py-1.5 px-3 text-right font-bold text-slate-900 whitespace-nowrap">{formatCurrency(cap.subtotale)}</td>
                           </tr>
-                        </>
+                        </Fragment>
                       ))}
                     </tbody>
                   </table>
@@ -1246,8 +1246,8 @@ export default function QuoteDetail() {
               {(
                 [
                   { id: "standard", label: "Standard", desc: "Computo metrico con quadro sintetico e blocco firma", proOnly: false },
-                  { id: "arosio", label: "Arosio", desc: "Capitolato numerato con sezioni e subtotali per capitolo", proOnly: true },
-                  { id: "mariagrazia", label: "MariaGrazia", desc: "Lista numerata pulita con header OFFERTA aziendale", proOnly: true },
+                  { id: "arosio", label: "Professionale", desc: "Capitolato numerato con sezioni e subtotali per capitolo", proOnly: true },
+                  { id: "mariagrazia", label: "Elegante", desc: "Lista numerata pulita con header OFFERTA aziendale", proOnly: true },
                 ] as const
               ).map(tmpl => {
                 const isActive = localTemplateId === tmpl.id;
