@@ -1,0 +1,399 @@
+OBIETTIVO:
+Trasformare l’attuale architettura SEO di prevai.it da semplice React SPA CSR ad una struttura SEO-first altamente indicizzabile, scalabile e resistente ai rischi di doorway/thin content, mantenendo intatta l’attuale UX/UI e il funzionamento dell’applicazione.
+
+IMPORTANTE:
+- NON rompere l’app esistente
+- NON modificare il design attuale
+- NON cambiare il branding
+- NON alterare il flow auth/dashboard
+- Concentrarsi SOLO sull’ottimizzazione SEO tecnica, rendering, indexing, metadata, internal linking e qualità semantica
+- Tutte le modifiche devono essere production-ready
+
+==================================================
+1. MIGRAZIONE SEO RENDERING — PRIORITÀ MASSIMA
+==================================================
+
+PROBLEMA ATTUALE:
+Il sito è una React SPA CSR pura con metadata iniettati via useEffect.
+Google riceve inizialmente:
+<div id="root"></div>
+
+Questo crea:
+- second wave indexing
+- lentezza indicizzazione
+- rischio pagine non renderizzate
+- problemi Bing/social previews
+- scarso trust SEO
+
+IMPLEMENTARE UNA DELLE SEGUENTI SOLUZIONI:
+
+PREFERITA:
+- SSR o SSG compatibile con Vite
+
+ALTERNATIVE ACCETTABILI:
+- vite-ssg
+- react-snap
+- prerender.io
+- prerender middleware
+- static prerendering delle pagine SEO
+
+OBIETTIVO:
+Googlebot deve ricevere HTML COMPLETO già renderizzato con:
+- title
+- meta description
+- canonical
+- JSON-LD
+- H1/H2
+- contenuto SEO
+- internal links
+
+senza dover eseguire JavaScript.
+
+IMPORTANTE:
+- Le pagine dashboard/auth possono restare CSR
+- SOLO le pagine SEO devono essere prerenderizzate/SSR
+
+==================================================
+2. RENDERING SEO SERVER-SIDE DEI METADATA
+==================================================
+
+Rimuovere l’attuale sistema:
+- useEffect
+- document.title
+- appendChild meta tags
+
+Sostituire con rendering SEO reale lato server/prerender.
+
+Ogni pagina SEO deve avere:
+- title univoco
+- meta description univoca
+- canonical
+- OG tags dinamici
+- Twitter cards
+- JSON-LD server-rendered
+
+direttamente nell’HTML iniziale.
+
+==================================================
+3. HOMEPAGE SEO AUTHORITY DISTRIBUTION
+==================================================
+
+Attualmente la homepage non distribuisce authority alle pagine SEO.
+
+IMPLEMENTARE:
+
+SEZIONE:
+“Professioni supportate”
+
+con link crawlable verso:
+- /seo/imbianchino
+- /seo/elettricista
+- /seo/idraulico
+- /seo/edilizia
+- ecc.
+
+Aggiungere anche:
+- footer SEO
+- links strutturati
+- anchor text naturali
+
+OBIETTIVO:
+trasferire authority homepage → pagine settore.
+
+==================================================
+4. HUB & SPOKE INTERNAL LINKING COMPLETO
+==================================================
+
+IMPLEMENTARE:
+
+A. PAGINE SETTORE
+Ogni pagina settore deve linkare:
+- top 10/15 città principali
+- città correlate
+- eventuali pagine informative correlate
+
+Esempio:
+Pagina /seo/edilizia deve linkare:
+- /seo/edilizia/milano
+- /seo/edilizia/roma
+- /seo/edilizia/torino
+- ecc.
+
+B. PAGINE CITY
+Ogni pagina city deve linkare:
+- pagina settore parent
+- città vicine
+- professioni correlate nella stessa città
+
+Esempio:
+/seo/idraulico/milano
+→ link a:
+- /seo/elettricista/milano
+- /seo/ristrutturazione/milano
+- /seo/idraulico/bergamo
+
+C. BREADCRUMB NAVIGATION
+Implementare breadcrumb visivo + schema.
+
+Esempio:
+Home > Edilizia > Milano
+
+con BreadcrumbList JSON-LD.
+
+==================================================
+5. RIDUZIONE RISCHIO DOORWAY / THIN CONTENT
+==================================================
+
+PROBLEMA:
+Le city pages sono troppo simili semanticamente.
+
+IMPLEMENTARE CONTENUTO LOCALIZZATO REALE.
+
+Per ogni città aggiungere blocchi dinamici come:
+
+- contesto economico locale
+- fascia prezzi locale
+- tipo di lavori più richiesti
+- caratteristiche del mercato locale
+- problematiche tipiche della zona
+- esempi realistici locali
+- riferimenti geografici contestuali
+- densità competitiva
+- informazioni sul mercato edilizio locale
+
+ESEMPI:
+
+MILANO:
+- condomini
+- ristrutturazioni premium
+- alta concorrenza
+- prezzi più alti
+
+ROMA:
+- edifici storici
+- permessi
+- ristrutturazioni complesse
+
+NAPOLI:
+- ristrutturazioni economiche
+- lavori piccoli/medi
+- contesto diverso
+
+IMPORTANTE:
+NON usare semplice replace di cityName.
+Ogni città deve avere:
+- segnali semantici realmente differenti
+- paragrafi unici
+- blocchi variabili
+- FAQ diverse
+- use cases differenti
+
+==================================================
+6. VARIAZIONE TEMPLATE AVANZATA
+==================================================
+
+IMPLEMENTARE:
+sistema multi-template.
+
+NON usare:
+1 solo layout per 1.030 pagine.
+
+Creare:
+- varianti H1
+- varianti hero
+- varianti CTA
+- varianti FAQ
+- varianti sezioni
+- ordine diverso dei blocchi
+- differenti combinazioni contenuto
+
+OBIETTIVO:
+ridurre template footprint detection.
+
+==================================================
+7. METADATA DINAMICI AVANZATI
+==================================================
+
+GENERARE:
+
+A. TITLE TAG variabili
+NON usare pattern identico.
+
+Creare multiple formule:
+- “Preventivo Idraulico Milano | ...”
+- “Software Preventivi per Idraulici a Milano”
+- “Crea Preventivi Idraulici Professionali a Milano”
+- ecc.
+
+B. META DESCRIPTION variabili
+Creare molte varianti.
+
+NON usare:
+“Software di preventivazione AI per...”
+su tutte le pagine.
+
+C. OG TAGS dinamici
+Ogni pagina deve avere:
+- og:title
+- og:description
+- og:url
+- og:image
+
+specifici.
+
+==================================================
+8. SCHEMA MARKUP AVANZATO
+==================================================
+
+Mantenere SoftwareApplication MA aggiungere:
+
+- BreadcrumbList
+- Service
+- FAQPage
+- LocalBusiness-like signals dove coerente
+- WebSite
+- Organization
+
+Migliorare areaServed.
+
+==================================================
+9. SITEMAP DINAMICA
+==================================================
+
+Sostituire sitemap.xml statica con:
+
+GENERAZIONE AUTOMATICA.
+
+Requisiti:
+- aggiornamento automatico
+- aggiunta automatica nuove città/settori
+- segmentazione sitemap se necessario
+- priorità corrette
+- lastmod dinamico
+
+==================================================
+10. ROBOTS.TXT OTTIMIZZATO
+==================================================
+
+AGGIUNGERE:
+
+Disallow: /dashboard
+Disallow: /admin
+Disallow: /onboarding
+
+Preservare crawl budget.
+
+==================================================
+11. PERFORMANCE SEO
+==================================================
+
+OTTIMIZZARE:
+
+- route-based code splitting
+- lazy loading
+- preload font
+- critical CSS
+- image optimization
+- hydration minimization
+- caching
+
+TARGET:
+- Lighthouse mobile > 90
+- LCP < 2.5s
+- CLS < 0.1
+
+==================================================
+12. PAGINE INFORMATIVE DI SUPPORTO
+==================================================
+
+Creare architettura support content:
+
+ESEMPI:
+- /guida/preventivo-edile
+- /guida/prezzi-ristrutturazione-milano
+- /guida/errori-preventivi-idraulico
+- /guida/come-fare-preventivo-professionale
+
+OBIETTIVO:
+- aumentare topical authority
+- migliorare internal linking
+- ridurre rischio doorway
+- creare traffico informativo
+
+==================================================
+13. INTERNAL LINKING AUTOMATICO
+==================================================
+
+Creare sistema automatico che:
+- collega professioni correlate
+- collega città correlate
+- collega guide informative
+- collega pagine ad alta conversione
+
+con anchor text naturali e variabili.
+
+==================================================
+14. SOCIAL SHARING SEO
+==================================================
+
+Implementare:
+- OG image dinamiche
+- preview ottimizzate WhatsApp
+- preview Telegram
+- preview LinkedIn
+- preview X/Twitter
+
+==================================================
+15. OUTPUT RICHIESTO
+==================================================
+
+Alla fine della implementazione fornire:
+
+A. elenco modifiche SEO implementate
+
+B. nuova architettura rendering
+
+C. esempio HTML finale renderizzato server-side
+
+D. esempio metadata finali
+
+E. esempio internal linking finale
+
+F. esempio JSON-LD finale
+
+G. verifica rischio doorway ridotto
+
+H. nuova struttura sitemap
+
+I. performance improvements implementati
+
+J. eventuali punti ancora critici
+
+==================================================
+IMPORTANTE
+==================================================
+
+NON fare modifiche superficiali.
+
+Questo deve trasformare prevai.it in:
+- una piattaforma SEO-first
+- indicizzabile correttamente
+- scalabile programmaticamente
+- resistente a doorway/thin content
+- ottimizzata per Googlebot reale
+
+Mantenere:
+- design attuale
+- UX attuale
+- branding attuale
+- logica business attuale
+
+Ottimizzare SOLO:
+- SEO tecnico
+- rendering
+- crawling
+- indexing
+- metadata
+- semantic uniqueness
+- authority flow
+- topical structure
