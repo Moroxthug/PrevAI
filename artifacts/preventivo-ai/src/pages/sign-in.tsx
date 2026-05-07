@@ -1,11 +1,19 @@
 import { useState } from "react";
-import { Link, useLocation } from "wouter";
+import { Link, useLocation, useSearch } from "wouter";
 import { Logo } from "@/components/logo";
 import { authClient } from "@/lib/auth-client";
 import { Eye, EyeOff, Loader2, AlertCircle } from "lucide-react";
 
+function safeLocalPath(raw: string | null, fallback: string): string {
+  if (!raw) return fallback;
+  if (/^\/[^/]/.test(raw) || raw === "/") return raw;
+  return fallback;
+}
+
 export default function SignInPage() {
   const [, navigate] = useLocation();
+  const search = useSearch();
+  const nextPath = safeLocalPath(new URLSearchParams(search).get("next"), "/dashboard");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -26,12 +34,12 @@ export default function SignInPage() {
       const result = await authClient.signIn.email({
         email: email.trim(),
         password,
-        callbackURL: "/dashboard",
+        callbackURL: nextPath,
       });
       if (result.error) {
         setError(result.error.message ?? "Credenziali non valide. Riprova.");
       } else {
-        navigate("/dashboard");
+        navigate(nextPath);
       }
     } catch {
       setError("Errore di connessione. Riprova tra qualche secondo.");
@@ -198,7 +206,7 @@ export default function SignInPage() {
           {!resetMode && (
             <div className="px-8 py-4 bg-gray-50 border-t border-gray-100 text-center">
               <span className="text-sm text-gray-500">Non hai un account? </span>
-              <Link href="/sign-up" className="text-sm text-violet-600 font-semibold hover:underline">
+              <Link href={nextPath !== "/dashboard" ? `/sign-up?next=${encodeURIComponent(nextPath)}` : "/sign-up"} className="text-sm text-violet-600 font-semibold hover:underline">
                 Registrati
               </Link>
             </div>

@@ -4,10 +4,19 @@ import { Logo } from "@/components/logo";
 import { authClient } from "@/lib/auth-client";
 import { Eye, EyeOff, Loader2, AlertCircle } from "lucide-react";
 
+function safeLocalPath(raw: string | null, fallback: string): string {
+  if (!raw) return fallback;
+  try {
+    // Only allow paths starting with "/" that are not protocol-relative (//) or external
+    if (/^\/[^/]/.test(raw) || raw === "/") return raw;
+  } catch {}
+  return fallback;
+}
+
 export default function SignUpPage() {
   const [, navigate] = useLocation();
   const search = useSearch();
-  const nextPath = new URLSearchParams(search).get("next") ?? "/onboarding";
+  const nextPath = safeLocalPath(new URLSearchParams(search).get("next"), "/onboarding");
   const [registrationOpen, setRegistrationOpen] = useState<boolean | null>(null);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -182,7 +191,7 @@ export default function SignUpPage() {
 
           <div className="px-8 py-4 bg-gray-50 border-t border-gray-100 text-center">
             <span className="text-sm text-gray-500">Hai già un account? </span>
-            <Link href="/sign-in" className="text-sm text-violet-600 font-semibold hover:underline">
+            <Link href={nextPath !== "/onboarding" ? `/sign-in?next=${encodeURIComponent(nextPath)}` : "/sign-in"} className="text-sm text-violet-600 font-semibold hover:underline">
               Accedi
             </Link>
           </div>
