@@ -19,6 +19,10 @@ import {
   strHash,
   getCityIntro,
   getCityFaqItems,
+  getCityLayout,
+  getCityCtaVariant,
+  getCityCtaTexts,
+  getCityHowItWorksSteps,
   getNearbyAnchors,
   buildCityJsonLd as buildCityJsonLdFromEngine,
 } from "../src/data/seo-render-engine.js";
@@ -510,7 +514,7 @@ function buildOsservatorio(s: SectorData, city: CityData, intel: CityIntelligenc
 }
 
 function buildCityBodyHtml(s: SectorData, city: CityData): string {
-  const layout = strHash(s.slug + city.slug) % 3;
+  const layout = getCityLayout(s, city);
   const cityName = city.name;
   const regionName = city.region;
   const intel = CITY_INTELLIGENCE[city.slug];
@@ -562,27 +566,18 @@ function buildCityBodyHtml(s: SectorData, city: CityData): string {
     </div>
   </section>`;
 
+  const howItWorksSteps = getCityHowItWorksSteps(cityName);
   const sHowItWorks = `<section class="py-20 bg-white">
     <div class="container mx-auto px-4 sm:px-6 lg:px-8 max-w-4xl">
       <div class="text-center mb-14">
         <h2 class="text-3xl font-bold text-gray-900">Preventivo professionale a ${esc(cityName)} in 3 passi</h2>
       </div>
       <div class="grid md:grid-cols-3 gap-10">
-        <div>
-          <div class="h-10 w-10 rounded-full flex items-center justify-center text-white font-bold text-sm mb-5" style="background:linear-gradient(135deg,#7C3AED,#06B6D4)" aria-hidden="true">1</div>
-          <h3 class="text-base font-semibold text-gray-900 mb-2">Descrivi il lavoro</h3>
-          <p class="text-sm text-gray-500 leading-relaxed">Dal tuo smartphone a ${esc(cityName)}, scrivi cosa devi fare nel linguaggio che usi ogni giorno. L&apos;AI capisce la terminologia di settore.</p>
-        </div>
-        <div>
-          <div class="h-10 w-10 rounded-full flex items-center justify-center text-white font-bold text-sm mb-5" style="background:linear-gradient(135deg,#7C3AED,#06B6D4)" aria-hidden="true">2</div>
-          <h3 class="text-base font-semibold text-gray-900 mb-2">L&apos;AI genera il preventivo</h3>
-          <p class="text-sm text-gray-500 leading-relaxed">prevai identifica le voci di costo, stima le quantità e calcola totali e IVA in automatico. Zero errori, zero calcoli manuali.</p>
-        </div>
-        <div>
-          <div class="h-10 w-10 rounded-full flex items-center justify-center text-white font-bold text-sm mb-5" style="background:linear-gradient(135deg,#7C3AED,#06B6D4)" aria-hidden="true">3</div>
-          <h3 class="text-base font-semibold text-gray-900 mb-2">Invia al cliente</h3>
-          <p class="text-sm text-gray-500 leading-relaxed">PDF professionale in 30 secondi. Lo mandi via WhatsApp o email al tuo cliente a ${esc(cityName)} prima ancora di uscire dal cantiere.</p>
-        </div>
+        ${howItWorksSteps.map((step) => `<div>
+          <div class="h-10 w-10 rounded-full flex items-center justify-center text-white font-bold text-sm mb-5" style="background:linear-gradient(135deg,#7C3AED,#06B6D4)" aria-hidden="true">${esc(step.n)}</div>
+          <h3 class="text-base font-semibold text-gray-900 mb-2">${esc(step.title)}</h3>
+          <p class="text-sm text-gray-500 leading-relaxed">${esc(step.desc)}</p>
+        </div>`).join("")}
       </div>
     </div>
   </section>`;
@@ -639,15 +634,9 @@ function buildCityBodyHtml(s: SectorData, city: CityData): string {
   const sContext = buildCityContextBlock(city, s);
   const sRelated = buildRelatedSectorsSection(s, `Scopri anche: preventivi per`);
 
-  const ctaVariant = strHash(s.slug + city.slug + "cta") % 3;
+  const ctaTexts = getCityCtaTexts(getCityCtaVariant(s, city), cityName);
   const ctaHeading =
-    ctaVariant === 0
-      ? `Inizia a creare preventivi a ${esc(cityName)} <span class="gradient-text">in 30 secondi</span>`
-      : ctaVariant === 1
-        ? `Il tuo primo PDF professionale a ${esc(cityName)} è <span class="gradient-text">completamente gratis</span>`
-        : `Smetti di perdere tempo. Genera il preventivo <span class="gradient-text">mentre sei ancora dal cliente</span>`;
-  const ctaBtn =
-    ctaVariant === 0 ? "Inizia Gratuitamente" : ctaVariant === 1 ? "Crea account gratuito" : "Prova gratis — nessun impegno";
+    `${esc(ctaTexts.headingPrefix)}<span class="gradient-text">${esc(ctaTexts.headingGradient)}</span>`;
 
   const sCta = `<section class="py-24 bg-gray-50">
     <div class="container mx-auto px-4 sm:px-6 lg:px-8 text-center max-w-2xl">
@@ -656,7 +645,7 @@ function buildCityBodyHtml(s: SectorData, city: CityData): string {
         Nessuna carta di credito richiesta. Il tuo primo preventivo professionale è gratis.
       </p>
       <a href="/sign-up" class="btn-gradient inline-flex h-14 items-center justify-center px-10 text-lg font-semibold">
-        ${ctaBtn}
+        ${esc(ctaTexts.button)}
         <svg xmlns="http://www.w3.org/2000/svg" class="ml-2 h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
       </a>
       <p class="text-sm text-gray-400 mt-4">Preventivo pronto in 30 secondi &middot; Nessun impegno</p>
