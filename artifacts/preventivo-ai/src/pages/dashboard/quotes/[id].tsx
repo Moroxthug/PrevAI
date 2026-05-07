@@ -741,8 +741,248 @@ export default function QuoteDetail() {
               )}
 
               {/* Chapter detail sections — branched by template */}
-              {isEditMode ? (
-                /* ── INLINE EDIT MODE (shared across all templates) ── */
+              {isEditMode && localTemplateId === "arosio" ? (
+                /* ── AROSIO EDITOR: dark navy headers, numbered items, subtotals ── */
+                <div className="mb-6">
+                  <div className="overflow-x-auto border border-slate-200 rounded-lg">
+                    <table className="w-full text-xs border-collapse">
+                      <thead>
+                        <tr className="bg-slate-900 text-white">
+                          <th className="py-2 px-3 text-center w-10 font-semibold">N°</th>
+                          <th className="py-2 px-3 text-left font-semibold">Descrizione</th>
+                          <th className="py-2 px-1 text-center w-12 font-semibold">U.M.</th>
+                          <th className="py-2 px-1 text-center w-12 font-semibold">Q.tà</th>
+                          <th className="py-2 px-1 text-right w-24 font-semibold">P.U. (€)</th>
+                          <th className="py-2 px-3 text-right w-24 font-semibold">Totale</th>
+                          <th className="w-6"></th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {editCapitoli.map((cap, ci) => {
+                          const capSub = cap.voci.reduce((s, v) => s + Number(v.quantita) * Number(v.prezzoUnitario), 0);
+                          return (
+                            <Fragment key={ci}>
+                              <tr>
+                                <td colSpan={7} className="py-0 px-0 bg-slate-800">
+                                  <div className="flex items-center gap-2 px-3 py-1.5">
+                                    <span className="text-white font-bold text-xs whitespace-nowrap">
+                                      {String(ci + 1).padStart(2, "0")}_
+                                    </span>
+                                    <input
+                                      value={cap.titolo}
+                                      onChange={e => updateCapitolo(ci, "titolo", e.target.value)}
+                                      className="flex-1 text-white font-bold text-xs uppercase bg-transparent border border-transparent rounded px-1 py-0.5 hover:border-slate-500 focus:border-slate-300 focus:outline-none placeholder-slate-400 tracking-wider min-w-0"
+                                      placeholder="TITOLO CAPITOLO..."
+                                    />
+                                    <span className="text-slate-300 text-xs whitespace-nowrap shrink-0">{formatCurrency(capSub)}</span>
+                                    <button
+                                      onClick={() => removeCapitolo(ci)}
+                                      className="text-slate-400 hover:text-red-400 p-0.5 rounded transition-colors shrink-0"
+                                      title="Elimina capitolo"
+                                    >
+                                      <Trash2 className="h-3.5 w-3.5" />
+                                    </button>
+                                  </div>
+                                </td>
+                              </tr>
+                              {cap.voci.map((voce, vi) => {
+                                const vTot = Number(voce.quantita) * Number(voce.prezzoUnitario);
+                                return (
+                                  <tr key={vi} className={vi % 2 === 0 ? "bg-white" : "bg-slate-50"}>
+                                    <td className="py-1 px-3 text-center text-slate-500 font-medium whitespace-nowrap">{ci + 1}.{vi + 1}</td>
+                                    <td className="py-1 px-2">
+                                      <input
+                                        value={voce.descrizione}
+                                        onChange={e => updateVoce(ci, vi, "descrizione", e.target.value)}
+                                        className="w-full bg-transparent border border-transparent rounded px-1 py-0.5 hover:border-violet-200 focus:border-violet-400 focus:outline-none text-slate-700"
+                                        placeholder="Descrizione..."
+                                      />
+                                    </td>
+                                    <td className="py-1 px-1">
+                                      <input
+                                        value={voce.um}
+                                        onChange={e => updateVoce(ci, vi, "um", e.target.value)}
+                                        className="w-full text-center bg-transparent border border-transparent rounded px-1 py-0.5 hover:border-violet-200 focus:border-violet-400 focus:outline-none text-slate-600"
+                                      />
+                                    </td>
+                                    <td className="py-1 px-1">
+                                      <input
+                                        type="number"
+                                        value={voce.quantita}
+                                        onChange={e => updateVoce(ci, vi, "quantita", e.target.value === "" ? 0 : Number(e.target.value))}
+                                        className="w-full text-center bg-transparent border border-transparent rounded px-1 py-0.5 hover:border-violet-200 focus:border-violet-400 focus:outline-none text-slate-600"
+                                        min={0} step={0.01}
+                                      />
+                                    </td>
+                                    <td className="py-1 px-1">
+                                      <input
+                                        type="number"
+                                        value={voce.prezzoUnitario}
+                                        onChange={e => updateVoce(ci, vi, "prezzoUnitario", e.target.value === "" ? 0 : Number(e.target.value))}
+                                        className="w-full text-right bg-transparent border border-transparent rounded px-1 py-0.5 hover:border-violet-200 focus:border-violet-400 focus:outline-none text-slate-600"
+                                        min={0} step={0.01}
+                                      />
+                                    </td>
+                                    <td className="py-1 px-3 text-right font-medium text-slate-800 whitespace-nowrap">{formatCurrency(vTot)}</td>
+                                    <td className="py-1 px-1">
+                                      <button
+                                        onClick={() => removeVoce(ci, vi)}
+                                        className="text-red-300 hover:text-red-500 p-0.5 rounded hover:bg-red-50 transition-colors"
+                                        title="Elimina voce"
+                                      >
+                                        <X className="h-3 w-3" />
+                                      </button>
+                                    </td>
+                                  </tr>
+                                );
+                              })}
+                              <tr className="bg-slate-200 border-t border-slate-300">
+                                <td colSpan={5} className="py-1.5 px-3">
+                                  <button
+                                    onClick={() => addVoce(ci)}
+                                    className="text-xs text-violet-600 hover:text-violet-800 font-medium flex items-center gap-1"
+                                  >
+                                    <Plus className="h-3 w-3" /> Aggiungi voce
+                                  </button>
+                                </td>
+                                <td className="py-1.5 px-3 text-right font-bold text-slate-900 whitespace-nowrap">{formatCurrency(capSub)}</td>
+                                <td></td>
+                              </tr>
+                            </Fragment>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                  <button
+                    onClick={addCapitolo}
+                    className="mt-3 w-full py-2.5 text-xs text-violet-600 hover:text-violet-800 font-medium border-2 border-dashed border-violet-200 hover:border-violet-400 rounded-lg transition-colors flex items-center justify-center gap-1.5"
+                  >
+                    <Plus className="h-3.5 w-3.5" /> Aggiungi capitolo
+                  </button>
+                </div>
+              ) : isEditMode && localTemplateId === "mariagrazia" ? (
+                /* ── MARIAGRAZIA EDITOR: grouped by chapter, flat table style ── */
+                <div className="mb-6">
+                  <div className="overflow-x-auto border border-slate-200 rounded-lg">
+                    <table className="w-full text-xs border-collapse">
+                      <thead>
+                        <tr className="bg-slate-700 text-white">
+                          <th className="py-2 px-2 text-center w-8 font-semibold">N°</th>
+                          <th className="py-2 px-3 text-left font-semibold">Descrizione</th>
+                          <th className="py-2 px-1 text-center w-12 font-semibold">U.M.</th>
+                          <th className="py-2 px-1 text-center w-12 font-semibold">Q.tà</th>
+                          <th className="py-2 px-1 text-right w-24 font-semibold">P.U. (€)</th>
+                          <th className="py-2 px-3 text-right w-24 font-semibold">Totale</th>
+                          <th className="w-6"></th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {(() => {
+                          let globalIdx = 0;
+                          return editCapitoli.map((cap, ci) => {
+                            const capSub = cap.voci.reduce((s, v) => s + Number(v.quantita) * Number(v.prezzoUnitario), 0);
+                            return (
+                              <Fragment key={ci}>
+                                <tr>
+                                  <td colSpan={7} className="py-0 px-0 bg-slate-600">
+                                    <div className="flex items-center gap-2 px-3 py-1.5">
+                                      <input
+                                        value={cap.titolo}
+                                        onChange={e => updateCapitolo(ci, "titolo", e.target.value)}
+                                        className="flex-1 text-white font-semibold text-xs bg-transparent border border-transparent rounded px-1 py-0.5 hover:border-slate-400 focus:border-slate-200 focus:outline-none placeholder-slate-300 min-w-0"
+                                        placeholder="Titolo capitolo..."
+                                      />
+                                      <span className="text-slate-200 text-xs whitespace-nowrap shrink-0">{formatCurrency(capSub)}</span>
+                                      <button
+                                        onClick={() => removeCapitolo(ci)}
+                                        className="text-slate-400 hover:text-red-400 p-0.5 rounded transition-colors shrink-0"
+                                        title="Elimina capitolo"
+                                      >
+                                        <Trash2 className="h-3.5 w-3.5" />
+                                      </button>
+                                    </div>
+                                  </td>
+                                </tr>
+                                {cap.voci.map((voce, vi) => {
+                                  const rowNum = ++globalIdx;
+                                  const vTot = Number(voce.quantita) * Number(voce.prezzoUnitario);
+                                  return (
+                                    <tr key={vi} className={vi % 2 === 0 ? "bg-white" : "bg-slate-50"}>
+                                      <td className="py-1 px-2 text-center font-semibold text-slate-500">{rowNum}</td>
+                                      <td className="py-1 px-2">
+                                        <input
+                                          value={voce.descrizione}
+                                          onChange={e => updateVoce(ci, vi, "descrizione", e.target.value)}
+                                          className="w-full bg-transparent border border-transparent rounded px-1 py-0.5 hover:border-violet-200 focus:border-violet-400 focus:outline-none text-slate-700"
+                                          placeholder="Descrizione..."
+                                        />
+                                      </td>
+                                      <td className="py-1 px-1">
+                                        <input
+                                          value={voce.um}
+                                          onChange={e => updateVoce(ci, vi, "um", e.target.value)}
+                                          className="w-full text-center bg-transparent border border-transparent rounded px-1 py-0.5 hover:border-violet-200 focus:border-violet-400 focus:outline-none text-slate-600"
+                                        />
+                                      </td>
+                                      <td className="py-1 px-1">
+                                        <input
+                                          type="number"
+                                          value={voce.quantita}
+                                          onChange={e => updateVoce(ci, vi, "quantita", e.target.value === "" ? 0 : Number(e.target.value))}
+                                          className="w-full text-center bg-transparent border border-transparent rounded px-1 py-0.5 hover:border-violet-200 focus:border-violet-400 focus:outline-none text-slate-600"
+                                          min={0} step={0.01}
+                                        />
+                                      </td>
+                                      <td className="py-1 px-1">
+                                        <input
+                                          type="number"
+                                          value={voce.prezzoUnitario}
+                                          onChange={e => updateVoce(ci, vi, "prezzoUnitario", e.target.value === "" ? 0 : Number(e.target.value))}
+                                          className="w-full text-right bg-transparent border border-transparent rounded px-1 py-0.5 hover:border-violet-200 focus:border-violet-400 focus:outline-none text-slate-600"
+                                          min={0} step={0.01}
+                                        />
+                                      </td>
+                                      <td className="py-1 px-3 text-right font-medium text-slate-800 whitespace-nowrap">{formatCurrency(vTot)}</td>
+                                      <td className="py-1 px-1">
+                                        <button
+                                          onClick={() => removeVoce(ci, vi)}
+                                          className="text-red-300 hover:text-red-500 p-0.5 rounded hover:bg-red-50 transition-colors"
+                                          title="Elimina voce"
+                                        >
+                                          <X className="h-3 w-3" />
+                                        </button>
+                                      </td>
+                                    </tr>
+                                  );
+                                })}
+                                <tr className="bg-slate-100 border-t border-slate-200">
+                                  <td colSpan={6} className="py-1.5 px-3">
+                                    <button
+                                      onClick={() => addVoce(ci)}
+                                      className="text-xs text-violet-600 hover:text-violet-800 font-medium flex items-center gap-1"
+                                    >
+                                      <Plus className="h-3 w-3" /> Aggiungi voce
+                                    </button>
+                                  </td>
+                                  <td></td>
+                                </tr>
+                              </Fragment>
+                            );
+                          });
+                        })()}
+                      </tbody>
+                    </table>
+                  </div>
+                  <button
+                    onClick={addCapitolo}
+                    className="mt-3 w-full py-2.5 text-xs text-violet-600 hover:text-violet-800 font-medium border-2 border-dashed border-violet-200 hover:border-violet-400 rounded-lg transition-colors flex items-center justify-center gap-1.5"
+                  >
+                    <Plus className="h-3.5 w-3.5" /> Aggiungi capitolo
+                  </button>
+                </div>
+              ) : isEditMode ? (
+                /* ── STANDARD INLINE EDIT MODE ── */
                 <div className="mb-6">
                   <div className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3">2. Computo Metrico Dettagliato</div>
                   <div className="space-y-4">
