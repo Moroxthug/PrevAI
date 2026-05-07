@@ -953,11 +953,12 @@ router.post("/quotes/:id/upgrade-to-capitolato", requireAuth, async (req, res) =
 
     const capitolatoPrompt = `Sei un redattore esperto di CAPITOLATI TECNICI professionali per il settore edilizio e impiantistico italiano.
 
-Per ogni voce del preventivo, riscrivi la "descrizione" in stile CAPITOLATO SPECIALE D'APPALTO professionale, con 3-5 frasi tecniche in italiano formale:
-- Descrivi le operazioni eseguite con modalità esecutive dettagliate
-- Specifica materiali con caratteristiche tecniche e standard normativi italiani/europei (UNI, CEI, UNI EN, D.Lgs.)
-- Indica esplicitamente cosa è COMPRESO nella voce (es. "Compresi carico, trasporto e smaltimento...")
-- Indica eventuali ESCLUSIONI rilevanti (es. "Esclusi lavori di...")
+Per ogni voce del preventivo, riscrivi la "descrizione" in stile CAPITOLATO SPECIALE D'APPALTO professionale, con ALMENO 4-6 linee tecniche in italiano formale:
+- Descrivi con precisione le operazioni eseguite e le modalità esecutive (ciclo lavorativo, tecniche, successione delle fasi)
+- Specifica materiali, prodotti e componenti con caratteristiche tecniche e standard normativi italiani/europei (UNI, CEI, UNI EN, D.Lgs., D.M.)
+- Indica le caratteristiche di qualità, resistenza, classe o certificazione richieste per i materiali
+- Indica esplicitamente cosa è COMPRESO nella voce (es. "Compresi carico, trasporto, smaltimento a discarica autorizzata...")
+- Indica eventuali ESCLUSIONI rilevanti e/o oneri a carico del committente (es. "Esclusi lavori di...")
 - Mantieni invariati: um, quantita, prezzo_unitario, totale, lettera, titolo, osservazione, subtotale
 
 REGOLA FONDAMENTALE: restituisci SOLO JSON valido con questa struttura esatta (nessun testo aggiuntivo):
@@ -1584,19 +1585,36 @@ function generateQuoteHtml(
 </html>`;
 }
 
-/** Attempt to load a logo image from object storage and encode as base64 data URI for pdfmake. */
-async function fetchLogoDataUri(logoObjectPath: string | null | undefined): Promise<string | null> {
-  if (!logoObjectPath) return null;
+/**
+ * Attempt to load a logo image from object storage and encode as base64 data URI for pdfmake.
+ *
+ * Supported URL formats:
+ *   - `/api/storage/public-objects/<subPath>`  (logo uploads — public GCS objects)
+ *   - `/objects/<subPath>`                     (private GCS objects, fallback)
+ */
+async function fetchLogoDataUri(logoUrl: string | null | undefined): Promise<string | null> {
+  if (!logoUrl) return null;
   try {
-    // objectPath format: /objects/<subPath> → served at /api/storage/objects/<subPath>
-    // Download directly using the private storage client (same process, no HTTP round-trip)
-    const subPath = logoObjectPath.replace(/^\/objects\//, "");
-    const res = await objectStorage.downloadPrivateObject(subPath).catch(() => null);
-    if (!res || !res.ok) return null;
-    const buf = Buffer.from(await res.arrayBuffer());
-    const ct = res.headers.get("content-type") ?? "image/png";
+    let response: Response | null = null;
+
+    if (logoUrl.startsWith("/api/storage/public-objects/")) {
+      // Public logo: extract subPath and search across PUBLIC_OBJECT_SEARCH_PATHS
+      const subPath = logoUrl.replace(/^\/api\/storage\/public-objects\//, "");
+      const file = await objectStorage.searchPublicObject(subPath).catch(() => null);
+      if (!file) return null;
+      response = await objectStorage.downloadObject(file, { isPublic: true, cacheTtlSec: 3600 }).catch(() => null);
+    } else if (logoUrl.startsWith("/objects/")) {
+      // Private object (legacy path)
+      const subPath = logoUrl.replace(/^\/objects\//, "");
+      response = await objectStorage.downloadPrivateObject(subPath).catch(() => null);
+    }
+
+    if (!response || !response.ok) return null;
+    const buf = Buffer.from(await response.arrayBuffer());
+    const ct = response.headers.get("content-type") ?? "image/png";
     return `data:${ct};base64,${buf.toString("base64")}`;
   } catch {
+    // Best-effort: if logo fetch fails, proceed without logo
     return null;
   }
 }
