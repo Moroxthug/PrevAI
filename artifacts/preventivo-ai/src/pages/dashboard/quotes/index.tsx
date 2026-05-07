@@ -27,10 +27,10 @@ const formatCurrency = (amount: number) =>
 
 function StatusBadge({ status }: { status: string }) {
   if (status === "unlocked")
-    return <Badge className="bg-violet-100 text-violet-700 hover:bg-violet-100 border-0">Sbloccato</Badge>;
+    return <Badge className="bg-violet-100 text-violet-700 hover:bg-violet-100 border-0 text-[11px] px-1.5 py-0">Sbloccato</Badge>;
   if (status === "pending_payment")
-    return <Badge className="bg-amber-100 text-amber-700 hover:bg-amber-100 border-0">In attesa</Badge>;
-  return <Badge variant="outline" className="text-slate-500">Bozza</Badge>;
+    return <Badge className="bg-amber-100 text-amber-700 hover:bg-amber-100 border-0 text-[11px] px-1.5 py-0">In attesa</Badge>;
+  return <Badge variant="outline" className="text-slate-500 text-[11px] px-1.5 py-0">Bozza</Badge>;
 }
 
 export default function QuotesList() {
@@ -87,19 +87,19 @@ export default function QuotesList() {
     : null;
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-500">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div className="space-y-4 animate-in fade-in duration-500">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">I Miei Preventivi</h1>
-          <p className="text-muted-foreground">Gestisci e visualizza tutti i preventivi generati.</p>
+          <h1 className="text-xl font-bold tracking-tight">I Miei Preventivi</h1>
+          <p className="text-sm text-muted-foreground">Gestisci e visualizza tutti i preventivi generati.</p>
         </div>
         <div className="flex items-center gap-2">
-          <div className="relative w-full sm:w-[260px]">
-            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+          <div className="relative w-full sm:w-[220px]">
+            <Search className="absolute left-2.5 top-2 h-3.5 w-3.5 text-muted-foreground" />
             <Input
               type="search"
               placeholder="Cerca cliente o descrizione…"
-              className="pl-9"
+              className="pl-8 h-8 text-sm"
               value={searchTerm}
               onChange={e => setSearchTerm(e.target.value)}
             />
@@ -107,22 +107,22 @@ export default function QuotesList() {
           {/* Status filter */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="outline" className="gap-1.5 shrink-0">
+              <Button variant="outline" size="sm" className="gap-1.5 shrink-0 h-8 text-xs">
                 <span>{STATUS_LABELS[statusFilter]}</span>
                 {counts && statusFilter !== "all" && (
                   <Badge className="h-4 min-w-4 px-1 text-[10px] bg-violet-100 text-violet-700 border-0 ml-0.5">
                     {counts[statusFilter]}
                   </Badge>
                 )}
-                <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
+                <ChevronDown className="h-3 w-3 text-muted-foreground" />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-40">
+            <DropdownMenuContent align="end" className="w-36">
               {(Object.keys(STATUS_LABELS) as StatusFilter[]).map(s => (
                 <DropdownMenuItem
                   key={s}
                   onClick={() => setStatusFilter(s)}
-                  className="flex items-center justify-between"
+                  className="flex items-center justify-between text-sm"
                 >
                   <span className={statusFilter === s ? "font-semibold" : ""}>{STATUS_LABELS[s]}</span>
                   {counts && (
@@ -136,109 +136,109 @@ export default function QuotesList() {
       </div>
 
       {isLoading ? (
-        <div className="space-y-3">
+        <div className="space-y-2">
           {[1, 2, 3, 4, 5].map(i => (
             <Card key={i}>
-              <CardContent className="p-4">
+              <CardContent className="p-3">
                 <div className="flex justify-between items-center">
-                  <div className="space-y-2">
-                    <Skeleton className="h-5 w-48" />
-                    <Skeleton className="h-4 w-32" />
+                  <div className="space-y-1.5">
+                    <Skeleton className="h-4 w-40" />
+                    <Skeleton className="h-3 w-28" />
                   </div>
-                  <Skeleton className="h-8 w-24" />
+                  <Skeleton className="h-7 w-20" />
                 </div>
               </CardContent>
             </Card>
           ))}
         </div>
       ) : filteredQuotes.length === 0 ? (
-        <div className="text-center py-12 border-2 border-dashed rounded-lg bg-muted/20">
-          <FileText className="mx-auto h-12 w-12 text-muted-foreground mb-4 opacity-20" />
-          <h3 className="text-lg font-medium text-foreground mb-2">Nessun preventivo trovato</h3>
+        <div className="text-center py-10 border-2 border-dashed rounded-lg bg-muted/20">
+          <FileText className="mx-auto h-10 w-10 text-muted-foreground mb-3 opacity-20" />
+          <h3 className="text-base font-medium text-foreground mb-1">Nessun preventivo trovato</h3>
           {searchTerm || statusFilter !== "all" ? (
             <div className="space-y-2">
-              <p className="text-muted-foreground">Nessun risultato per i filtri applicati.</p>
+              <p className="text-sm text-muted-foreground">Nessun risultato per i filtri applicati.</p>
               <Button variant="ghost" size="sm" onClick={() => { setSearchTerm(""); setStatusFilter("all"); }}>
                 Rimuovi filtri
               </Button>
             </div>
           ) : (
-            <Button asChild className="mt-4">
+            <Button asChild size="sm" className="mt-3">
               <Link href="/dashboard/new">Crea il tuo preventivo in 60 secondi!</Link>
             </Button>
           )}
         </div>
       ) : (
-        <div className="space-y-3">
+        <div className="space-y-2">
           {filteredQuotes.map((quote, i) => (
             <Card
               key={quote.id}
               className="hover-elevate transition-all overflow-hidden animate-in fade-in slide-in-from-bottom-2"
-              style={{ animationDelay: `${i * 40}ms` }}
+              style={{ animationDelay: `${i * 30}ms` }}
             >
               <CardContent className="p-0">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between p-4 gap-4">
-                  <div className="flex items-start gap-4">
-                    <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center text-primary shrink-0 hidden sm:flex">
-                      <FileText className="h-5 w-5" />
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between px-3 py-2.5 gap-3">
+                  <div className="flex items-start gap-3">
+                    <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary shrink-0 hidden sm:flex">
+                      <FileText className="h-4 w-4" />
                     </div>
                     <div className="min-w-0">
                       <Link
                         href={`/dashboard/quotes/${quote.id}`}
-                        className="font-semibold text-lg hover:text-primary hover:underline focus:outline-none line-clamp-1"
+                        className="font-semibold text-sm hover:text-primary hover:underline focus:outline-none line-clamp-1"
                       >
                         {quote.clientData?.nome || "Cliente Non Specificato"}
                       </Link>
-                      <div className="text-sm text-muted-foreground mt-0.5 line-clamp-1">
+                      <div className="text-xs text-muted-foreground mt-0.5 line-clamp-1">
                         {quote.descrizioneGenerale || "Nessuna descrizione"}
                       </div>
-                      <div className="flex items-center gap-2 mt-1.5">
+                      <div className="flex items-center gap-1.5 mt-1">
                         <StatusBadge status={quote.status} />
-                        <span className="text-xs text-muted-foreground">
+                        <span className="text-[10px] text-muted-foreground">
                           {format(new Date(quote.createdAt), "dd MMM yyyy", { locale: it })}
                         </span>
                       </div>
                     </div>
                   </div>
 
-                  <div className="flex items-center justify-between sm:justify-end gap-4 w-full sm:w-auto border-t sm:border-0 pt-3 sm:pt-0 shrink-0">
-                    <div className="font-bold text-lg tabular-nums">{formatCurrency(quote.totale)}</div>
+                  <div className="flex items-center justify-between sm:justify-end gap-3 w-full sm:w-auto border-t sm:border-0 pt-2 sm:pt-0 shrink-0">
+                    <div className="font-bold text-sm tabular-nums">{formatCurrency(quote.totale)}</div>
 
                     <div className="flex items-center gap-1">
-                      <Button variant="secondary" size="sm" asChild>
+                      <Button variant="secondary" size="sm" className="h-7 text-xs" asChild>
                         <Link href={`/dashboard/quotes/${quote.id}`}>
-                          <Eye className="h-4 w-4 mr-1.5" /> Apri
+                          <Eye className="h-3.5 w-3.5 mr-1" /> Apri
                         </Link>
                       </Button>
 
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon" className="h-8 w-8">
+                          <Button variant="ghost" size="icon" className="h-7 w-7">
                             {duplicatingId === quote.id
-                              ? <Loader2 className="h-4 w-4 animate-spin" />
-                              : <MoreVertical className="h-4 w-4" />}
+                              ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                              : <MoreVertical className="h-3.5 w-3.5" />}
                             <span className="sr-only">Opzioni</span>
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
                           <DropdownMenuItem asChild>
-                            <Link href={`/dashboard/quotes/${quote.id}`} className="cursor-pointer w-full flex items-center">
-                              <Eye className="mr-2 h-4 w-4" /> Visualizza
+                            <Link href={`/dashboard/quotes/${quote.id}`} className="cursor-pointer w-full flex items-center text-sm">
+                              <Eye className="mr-2 h-3.5 w-3.5" /> Visualizza
                             </Link>
                           </DropdownMenuItem>
                           <DropdownMenuItem
                             onClick={() => handleDuplicate(quote.id)}
                             disabled={duplicatingId === quote.id}
-                            className="cursor-pointer"
+                            className="cursor-pointer text-sm"
                           >
-                            <Copy className="mr-2 h-4 w-4" /> Duplica
+                            <Copy className="mr-2 h-3.5 w-3.5" /> Duplica
                           </DropdownMenuItem>
                           <DropdownMenuSeparator />
                           <DropdownMenuItem
                             onClick={() => handleDelete(quote.id)}
-                            className="text-destructive focus:text-destructive cursor-pointer"
+                            className="text-destructive focus:text-destructive cursor-pointer text-sm"
                           >
-                            <Trash2 className="mr-2 h-4 w-4" /> Elimina
+                            <Trash2 className="mr-2 h-3.5 w-3.5" /> Elimina
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
