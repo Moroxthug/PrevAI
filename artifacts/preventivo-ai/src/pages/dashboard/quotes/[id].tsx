@@ -1700,54 +1700,50 @@ export default function QuoteDetail() {
           </div>
 
           <div className="overflow-y-auto flex-1 px-6 py-4 space-y-4">
-            {/* If user is on Starter → show upgrade card */}
+            {/* If user is on Starter → show upgrade options */}
             {subscription?.isActive && subscription?.plan === "monthly_starter" ? (
               <div className="space-y-4">
-                <div className="rounded-xl border border-primary ring-1 ring-primary bg-gradient-to-br from-violet-50 to-cyan-50 p-5 flex flex-col gap-4">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-lg">⭐</div>
-                    <div>
-                      <div className="font-bold text-base">PrevAI Pro — €79/mese</div>
-                      <div className="text-xs text-muted-foreground">PDF senza filigrana, con il tuo logo aziendale</div>
+                <div className="grid grid-cols-2 gap-3">
+                  {[
+                    { id: "monthly_pro", label: "Pro", price: "€49/mese", badge: "⭐ Più Popolare", features: ["60 preventivi/mese", "PDF senza filigrana", "Tutti i template", "Upload foto + voce"], highlight: true },
+                    { id: "monthly_elite", label: "Elite", price: "€59/mese", badge: "👑 Illimitato", features: ["Preventivi illimitati", "PDF senza filigrana", "Tutti i template", "Supporto dedicato"], highlight: false },
+                  ].map((opt) => (
+                    <div key={opt.id} className={`relative rounded-xl border p-4 flex flex-col ${opt.highlight ? "border-primary ring-1 ring-primary shadow-sm bg-gradient-to-br from-violet-50 to-cyan-50" : "border-amber-300 bg-amber-50/30"}`}>
+                      <div className={`absolute -top-2.5 left-1/2 -translate-x-1/2 text-[10px] font-bold px-2 py-0.5 rounded-full text-white whitespace-nowrap ${opt.highlight ? "bg-primary" : "bg-amber-500"}`}>
+                        {opt.badge}
+                      </div>
+                      <div className="font-bold text-sm mb-0.5 mt-1">{opt.label}</div>
+                      <div className="text-base font-extrabold text-gray-900 mb-2">{opt.price}</div>
+                      <ul className="space-y-1 mb-3 flex-1">
+                        {opt.features.map((f, i) => (
+                          <li key={i} className="flex items-center gap-1.5 text-xs text-foreground">
+                            <CheckCircle2 className={`h-3 w-3 shrink-0 ${opt.highlight ? "text-primary" : "text-amber-500"}`} />
+                            {f}
+                          </li>
+                        ))}
+                      </ul>
+                      <Button size="sm" className={`w-full text-xs h-8 ${opt.highlight ? "" : "bg-amber-500 hover:bg-amber-600 border-0"}`}
+                        onClick={handleUpgrade} disabled={createPortal.isPending}>
+                        {createPortal.isPending ? "..." : `Passa a ${opt.label} →`}
+                      </Button>
                     </div>
-                  </div>
-                  <ul className="space-y-1.5">
-                    {["PDF puliti senza filigrana", "Usa il tuo logo aziendale", "Preventivi illimitati", "Branding completamente tuo"].map((f, i) => (
-                      <li key={i} className="flex items-center gap-2 text-sm text-foreground">
-                        <CheckCircle2 className="h-4 w-4 text-primary shrink-0" />
-                        {f}
-                      </li>
-                    ))}
-                  </ul>
-                  <Button
-                    className="w-full"
-                    onClick={handleUpgrade}
-                    disabled={createPortal.isPending}
-                  >
-                    {createPortal.isPending ? "Apertura portale..." : "Passa a Pro →"}
-                  </Button>
-                  <p className="text-[11px] text-muted-foreground text-center">
-                    Gestisci il tuo abbonamento su Stripe • Annulla in qualsiasi momento
-                  </p>
+                  ))}
                 </div>
+                <p className="text-[11px] text-muted-foreground text-center">
+                  Gestito su Stripe • Annulla in qualsiasi momento
+                </p>
 
-                {/* Divider */}
                 <div className="flex items-center gap-3">
                   <div className="flex-1 h-px bg-border" />
                   <span className="text-xs text-muted-foreground">oppure acquisto singolo</span>
                   <div className="flex-1 h-px bg-border" />
                 </div>
 
-                {/* One-shot plans for Starter users too */}
                 <div className="grid grid-cols-2 gap-3">
-                  {plans?.filter(p => !p.interval).map((plan, idx) => {
+                  {plans?.filter(p => !p.interval).map((plan) => {
                     const isClean = plan.id === "oneshot_clean";
                     return (
-                      <div
-                        key={plan.id}
-                        className={`rounded-lg border p-3 flex flex-col hover:bg-muted/40 transition-colors ${isClean ? "border-primary/30" : ""}`}
-                        style={{ animationDelay: `${idx * 0.05}s` }}
-                      >
+                      <div key={plan.id} className={`rounded-lg border p-3 flex flex-col hover:bg-muted/40 transition-colors ${isClean ? "border-primary/30" : ""}`}>
                         <div className="font-medium text-sm mb-0.5">{plan.name}</div>
                         <div className="text-xs text-muted-foreground mb-2">{plan.features[0]}</div>
                         <div className="flex items-center justify-between mt-auto">
@@ -1764,75 +1760,65 @@ export default function QuoteDetail() {
               </div>
             ) : (
               <>
-                {/* Subscription plans */}
-                <div className="grid grid-cols-2 gap-3">
+                {/* Subscription plans — 3 columns */}
+                <div className="grid grid-cols-3 gap-2">
                   {plans?.filter(p => p.interval).map((plan, idx) => {
                     const isPro = plan.id === "monthly_pro";
+                    const isElite = plan.id === "monthly_elite";
                     return (
                       <div
                         key={plan.id}
                         className={`plan-card-enter relative rounded-lg border p-3 flex flex-col ${
-                          isPro ? "border-primary ring-1 ring-primary shadow-sm" : ""
+                          isPro ? "border-primary ring-1 ring-primary shadow-sm" : isElite ? "border-amber-300" : ""
                         }`}
                         style={{ animationDelay: `${idx * 0.05}s` }}
                       >
                         {isPro && (
                           <div className="absolute -top-2.5 left-1/2 -translate-x-1/2">
-                            <span className="bg-primary text-primary-foreground text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-widest">
-                              ⭐ Pro
-                            </span>
+                            <span className="bg-primary text-primary-foreground text-[10px] font-bold px-2 py-0.5 rounded-full">⭐ Pop</span>
                           </div>
                         )}
-                        <div className="flex items-center justify-between mb-1">
-                          <span className="font-semibold text-sm">{plan.name}</span>
-                          {!isPro && (
-                            <span className="text-[10px] font-semibold bg-muted text-muted-foreground px-1.5 py-0.5 rounded-full uppercase">
-                              Starter
-                            </span>
-                          )}
-                        </div>
-                        <div className="mb-2">
-                          <span className="text-xl font-bold">€{plan.price}</span>
-                          <span className="text-muted-foreground text-xs">/mese</span>
-                        </div>
-                        {isPro && (
-                          <div className="text-[10px] text-primary font-semibold mb-2">✓ PDF senza filigrana, logo tuo</div>
+                        {isElite && (
+                          <div className="absolute -top-2.5 left-1/2 -translate-x-1/2">
+                            <span className="bg-amber-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">👑 ∞</span>
+                          </div>
                         )}
-                        <ul className="space-y-1 mb-3 flex-1">
-                          {plan.features.slice(0, 4).map((feature, i) => (
-                            <li key={i} className="flex items-start gap-1.5 text-muted-foreground">
-                              <CheckCircle2 className={`h-3 w-3 shrink-0 mt-0.5 ${isPro ? "text-primary" : "text-muted-foreground/60"}`} />
-                              <span className="text-xs">{feature}</span>
+                        <div className="font-semibold text-xs mt-1 mb-0.5">{plan.name}</div>
+                        <div className="mb-1.5">
+                          <span className="text-base font-bold">€{plan.price}</span>
+                          <span className="text-muted-foreground text-[10px]">/mese</span>
+                        </div>
+                        <ul className="space-y-0.5 mb-2.5 flex-1">
+                          {plan.features.slice(0, 3).map((feature, i) => (
+                            <li key={i} className="flex items-start gap-1 text-muted-foreground">
+                              <CheckCircle2 className={`h-2.5 w-2.5 shrink-0 mt-0.5 ${isPro ? "text-primary" : isElite ? "text-amber-500" : "text-muted-foreground/60"}`} />
+                              <span className="text-[10px] leading-snug">{feature}</span>
                             </li>
                           ))}
                         </ul>
-                        <Button size="sm" className="w-full text-xs h-8" variant={isPro ? "default" : "outline"}
+                        <Button size="sm" className={`w-full text-[10px] h-7 ${isElite ? "bg-amber-500 hover:bg-amber-600 border-0" : ""}`}
+                          variant={isPro ? "default" : isElite ? "default" : "outline"}
                           onClick={() => handleCheckout(plan.id)} disabled={createCheckout.isPending}>
-                          {createCheckout.isPending ? "..." : isPro ? "Scegli Pro" : "Scegli Starter"}
+                          {createCheckout.isPending ? "..." : `Scegli ${plan.name}`}
                         </Button>
                       </div>
                     );
                   })}
                 </div>
 
-                {/* Divider */}
                 <div className="flex items-center gap-3">
                   <div className="flex-1 h-px bg-border" />
                   <span className="text-xs text-muted-foreground">oppure acquisto singolo</span>
                   <div className="flex-1 h-px bg-border" />
                 </div>
 
-                {/* One-shot plans */}
                 <div className="grid grid-cols-2 gap-3">
                   {plans?.filter(p => !p.interval).map((plan, idx) => {
                     const isClean = plan.id === "oneshot_clean";
                     return (
-                      <div
-                        key={plan.id}
-                        className={`plan-card-enter rounded-lg border p-3 flex flex-col hover:bg-muted/40 transition-colors ${
-                          isClean ? "border-primary/30" : ""
-                        }`}
-                        style={{ animationDelay: `${(idx + 2) * 0.05}s` }}
+                      <div key={plan.id}
+                        className={`plan-card-enter rounded-lg border p-3 flex flex-col hover:bg-muted/40 transition-colors ${isClean ? "border-primary/30" : ""}`}
+                        style={{ animationDelay: `${(idx + 3) * 0.05}s` }}
                       >
                         <div className="font-medium text-sm mb-0.5">{plan.name}</div>
                         <div className="text-xs text-muted-foreground mb-2">{plan.features[0]}</div>

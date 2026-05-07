@@ -64,8 +64,8 @@ function StarterUpgradeCard() {
           <Crown className="h-4 w-4 text-amber-600" />
         </div>
         <div>
-          <div className="font-semibold text-gray-900 text-sm">Passa a Pro — PDF senza filigrana</div>
-          <div className="text-xs text-gray-500 mt-0.5">Sei su Starter: i PDF hanno filigrana e logo PrevAI. Pro ti dà il tuo logo e PDF puliti.</div>
+          <div className="font-semibold text-gray-900 text-sm">Passa a Pro — PDF puliti, tutti i template</div>
+          <div className="text-xs text-gray-500 mt-0.5">Sei su Starter: PDF con riga prevai.it, solo template Standard. Pro sblocca tutto a €49/mese.</div>
         </div>
       </div>
       <button

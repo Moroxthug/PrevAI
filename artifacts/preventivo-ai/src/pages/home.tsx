@@ -342,182 +342,156 @@ export default function Home() {
       </ScrollSection>
 
       {/* ── Pricing ──────────────────────────────────────────── */}
-      <ScrollSection className="py-16 bg-gray-50/60">
+      <ScrollSection className="py-14 bg-gray-50/60" id="prezzi">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-10">
+          <div className="text-center mb-8">
             <h2 className="text-2xl font-bold tracking-tight text-gray-900 sm:text-3xl">
               Piani Semplici e{" "}
               <span className="gradient-text">Trasparenti</span>
             </h2>
-            <p className="mt-3 text-sm text-gray-500 max-w-xl mx-auto leading-relaxed">
-              Scegli l'abbonamento più adatto alla tua attività, oppure
-              acquista un singolo preventivo.
+            <p className="mt-2 text-sm text-gray-500 max-w-xl mx-auto leading-relaxed">
+              7 giorni di prova gratuita inclusi — nessuna carta richiesta.
             </p>
           </div>
 
-          {/* Subscription plans */}
-          <div className="grid md:grid-cols-2 gap-5 max-w-2xl mx-auto mb-10">
+          {/* Beta coupon banner */}
+          <div className="max-w-3xl mx-auto mb-7">
+            <div className="bg-gradient-to-r from-violet-600 to-cyan-500 rounded-xl px-4 py-3 flex items-center justify-between gap-3 shadow-md">
+              <div className="flex items-center gap-2.5 min-w-0">
+                <span className="text-lg shrink-0">🎁</span>
+                <div className="min-w-0">
+                  <span className="text-white font-semibold text-sm">Offerta lancio — primi 50 clienti</span>
+                  <span className="text-white/80 text-xs ml-2 hidden sm:inline">50% di sconto sul primo mese</span>
+                </div>
+              </div>
+              <div className="flex items-center gap-2 shrink-0">
+                <code className="bg-white/20 text-white font-bold text-xs px-2.5 py-1 rounded-lg tracking-wider border border-white/30">
+                  BETAPREVAI
+                </code>
+                <button
+                  onClick={handlePlanClick}
+                  className="bg-white text-violet-700 font-bold text-xs px-3 py-1.5 rounded-lg hover:bg-violet-50 transition-colors"
+                >
+                  Usa →
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Subscription plans — 3 columns */}
+          <div className="grid md:grid-cols-3 gap-4 max-w-4xl mx-auto mb-8">
             {subscriptionPlans.map((plan) => {
               const isPro = plan.id === "monthly_pro";
+              const isElite = plan.id === "monthly_elite";
+              const isStarter = plan.id === "monthly_starter";
               return (
                 <div
                   key={plan.id}
-                  className={`bg-white rounded-xl p-6 flex flex-col relative transition-all duration-300 ${
+                  className={`bg-white rounded-xl p-5 flex flex-col relative transition-all duration-300 ${
                     isPro
                       ? "border-2 border-violet-300 shadow-xl shadow-violet-100/60 pro-pulse"
-                      : "card-soft"
+                      : isElite
+                        ? "border-2 border-amber-300 shadow-lg shadow-amber-100/40"
+                        : "card-soft"
                   }`}
                 >
                   {isPro && (
                     <div className="absolute -top-3 left-1/2 -translate-x-1/2">
                       <span
-                        className="text-white text-xs font-bold px-3 py-0.5 rounded-full uppercase tracking-widest"
+                        className="text-white text-[10px] font-bold px-2.5 py-0.5 rounded-full uppercase tracking-widest whitespace-nowrap"
                         style={{ background: "linear-gradient(135deg, #7C3AED, #06B6D4)" }}
                       >
                         ⭐ Più Popolare
                       </span>
                     </div>
                   )}
-
-                  <div className="flex items-start justify-between mb-4">
-                    <div>
-                      {isPro ? (
-                        <span
-                          className="text-xs font-bold px-2.5 py-0.5 rounded-full text-white mb-2 inline-block"
-                          style={{ background: "linear-gradient(135deg, #7C3AED, #06B6D4)" }}
-                        >
-                          Pro
-                        </span>
-                      ) : (
-                        <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-gray-100 text-gray-500 mb-2 inline-block">
-                          Starter
-                        </span>
-                      )}
-                      <h3 className="text-xl font-bold text-gray-900 mt-0.5">
-                        {plan.name}
-                      </h3>
+                  {isElite && (
+                    <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+                      <span className="bg-amber-500 text-white text-[10px] font-bold px-2.5 py-0.5 rounded-full uppercase tracking-widest whitespace-nowrap">
+                        👑 Illimitato
+                      </span>
                     </div>
-                    {isPro && (
-                      <div
-                        className="h-9 w-9 rounded-full flex items-center justify-center text-white"
-                        style={{ background: "linear-gradient(135deg, #7C3AED, #06B6D4)" }}
-                      >
-                        <Star className="h-4 w-4 fill-current" />
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="mb-4">
-                    <span className="text-3xl font-extrabold text-gray-900">€{plan.price}</span>
-                    <span className="text-gray-400 text-sm">/mese</span>
-                  </div>
-
-                  {isPro && (
-                    <p className="text-xs font-semibold gradient-text mb-4">
-                      ✓ Accesso completo sbloccato
-                    </p>
                   )}
 
-                  <ul className="space-y-2 mb-6 flex-1">
-                    {plan.features.map((feature, i) => {
-                      const isLocked =
-                        !isPro &&
-                        (feature.toLowerCase().includes("illimitati") ||
-                          feature.toLowerCase().includes("premium") ||
-                          feature.toLowerCase().includes("foto"));
-                      return (
-                        <li key={i} className="flex items-start gap-2">
-                          {isLocked ? (
-                            <Lock className="h-3.5 w-3.5 text-gray-300 shrink-0 mt-0.5" />
-                          ) : (
-                            <CheckCircle2
-                              className={`h-3.5 w-3.5 shrink-0 mt-0.5 ${
-                                isPro ? "text-violet-500" : "text-gray-400"
-                              }`}
-                            />
-                          )}
-                          <span
-                            className={`text-sm ${
-                              isLocked ? "text-gray-300 line-through" : "text-gray-600"
-                            }`}
-                          >
-                            {feature}
-                          </span>
-                        </li>
-                      );
-                    })}
+                  <div className="mb-3">
+                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full mb-1.5 inline-block ${
+                      isPro ? "bg-violet-100 text-violet-700" : isElite ? "bg-amber-100 text-amber-700" : "bg-gray-100 text-gray-500"
+                    }`}>
+                      {plan.name}
+                    </span>
+                    <div className="flex items-end gap-1">
+                      <span className="text-2xl font-extrabold text-gray-900">€{plan.price}</span>
+                      <span className="text-gray-400 text-xs mb-0.5">/mese</span>
+                    </div>
+                  </div>
+
+                  <ul className="space-y-1.5 mb-5 flex-1">
+                    {plan.features.map((feature, i) => (
+                      <li key={i} className="flex items-start gap-1.5">
+                        <CheckCircle2 className={`h-3 w-3 shrink-0 mt-0.5 ${
+                          isPro ? "text-violet-500" : isElite ? "text-amber-500" : "text-gray-400"
+                        }`} />
+                        <span className="text-xs text-gray-600 leading-snug">{feature}</span>
+                      </li>
+                    ))}
                   </ul>
 
-                  {isPro ? (
-                    <button
-                      onClick={handlePlanClick}
-                      className="btn-gradient inline-flex h-10 items-center justify-center w-full text-sm font-semibold"
-                    >
-                      Inizia con Pro
-                    </button>
-                  ) : (
-                    <button
-                      onClick={handlePlanClick}
-                      className="btn-gradient-outline inline-flex h-10 items-center justify-center w-full text-sm font-semibold"
-                    >
-                      Inizia con Starter
-                    </button>
-                  )}
+                  <button
+                    onClick={handlePlanClick}
+                    className={`inline-flex h-9 items-center justify-center w-full text-xs font-semibold rounded-lg transition-all ${
+                      isPro
+                        ? "btn-gradient"
+                        : isElite
+                          ? "bg-amber-500 hover:bg-amber-600 text-white"
+                          : "btn-gradient-outline"
+                    }`}
+                  >
+                    {isStarter ? "Inizia con Starter" : isPro ? "Inizia con Pro" : "Inizia con Elite"}
+                  </button>
                 </div>
               );
             })}
           </div>
 
           {/* Divider */}
-          <div className="flex items-center gap-4 max-w-xl mx-auto mb-8">
+          <div className="flex items-center gap-4 max-w-xl mx-auto mb-6">
             <div className="flex-1 h-px bg-gray-200" />
-            <span className="text-xs text-gray-400 font-medium">
-              oppure acquisto singolo
-            </span>
+            <span className="text-xs text-gray-400 font-medium">oppure acquisto singolo</span>
             <div className="flex-1 h-px bg-gray-200" />
           </div>
 
           {/* One-shot plans */}
-          <div className="grid md:grid-cols-2 gap-4 max-w-xl mx-auto">
+          <div className="grid md:grid-cols-2 gap-3 max-w-md mx-auto">
             {oneshotPlans.map((plan) => {
               const isClean = plan.id === "oneshot_clean";
               return (
                 <div
                   key={plan.id}
-                  className={`bg-white rounded-xl p-5 flex flex-col card-soft ${
+                  className={`bg-white rounded-xl p-4 flex flex-col card-soft ${
                     isClean ? "border border-violet-100" : ""
                   }`}
                 >
-                  <h3 className="text-sm font-semibold text-gray-900 mb-1">
-                    {plan.name}
-                  </h3>
-                  <div className="mb-3">
-                    <span className="text-xl font-bold text-gray-900">€{plan.price}</span>
-                    <span className="text-gray-400 text-xs"> una tantum</span>
+                  <h3 className="text-xs font-semibold text-gray-900 mb-0.5">{plan.name}</h3>
+                  <div className="mb-2">
+                    <span className="text-lg font-bold text-gray-900">€{plan.price}</span>
+                    <span className="text-gray-400 text-[10px]"> una tantum</span>
                   </div>
-                  <ul className="space-y-1.5 mb-5 flex-1">
+                  <ul className="space-y-1 mb-4 flex-1">
                     {plan.features.map((feature, i) => (
-                      <li key={i} className="flex items-start gap-2">
-                        <CheckCircle2 className="h-3.5 w-3.5 text-violet-400 shrink-0 mt-0.5" />
-                        <span className="text-xs text-gray-500">{feature}</span>
+                      <li key={i} className="flex items-start gap-1.5">
+                        <CheckCircle2 className="h-3 w-3 text-violet-400 shrink-0 mt-0.5" />
+                        <span className="text-[11px] text-gray-500">{feature}</span>
                       </li>
                     ))}
                   </ul>
-                  {isClean ? (
-                    <button
-                      onClick={handlePlanClick}
-                      className="btn-gradient inline-flex h-9 items-center justify-center w-full text-sm font-semibold"
-                    >
-                      Acquista
-                    </button>
-                  ) : (
-                    <button
-                      onClick={handlePlanClick}
-                      className="btn-gradient-outline inline-flex h-9 items-center justify-center w-full text-sm font-semibold"
-                    >
-                      Acquista
-                    </button>
-                  )}
+                  <button
+                    onClick={handlePlanClick}
+                    className={`inline-flex h-8 items-center justify-center w-full text-xs font-semibold rounded-lg transition-all ${
+                      isClean ? "btn-gradient" : "btn-gradient-outline"
+                    }`}
+                  >
+                    Acquista
+                  </button>
                 </div>
               );
             })}
