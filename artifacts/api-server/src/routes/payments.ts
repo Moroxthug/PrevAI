@@ -44,6 +44,7 @@ const router = Router();
 export const PLANS = [
   {
     id: "monthly_starter",
+    stripePriceId: "price_1TUSSEE2ZxgzSomHxDR0cLUk",
     name: "Starter",
     price: 19,
     currency: "eur",
@@ -62,6 +63,7 @@ export const PLANS = [
   },
   {
     id: "monthly_pro",
+    stripePriceId: "price_1TUSSFE2ZxgzSomHblZkFIdj",
     name: "Pro",
     price: 49,
     currency: "eur",
@@ -81,6 +83,7 @@ export const PLANS = [
   },
   {
     id: "monthly_elite",
+    stripePriceId: "price_1TUSRhE2ZxgzSomHmHPn5BJJ",
     name: "Elite",
     price: 59,
     currency: "eur",
@@ -101,6 +104,7 @@ export const PLANS = [
   },
   {
     id: "oneshot_watermark",
+    stripePriceId: "price_1TUSSGE2ZxgzSomHAt1w4bWp",
     name: "Singolo Base",
     price: 5,
     currency: "eur",
@@ -112,6 +116,7 @@ export const PLANS = [
   },
   {
     id: "oneshot_clean",
+    stripePriceId: "price_1TUSSHE2ZxgzSomHxg5Q1LXu",
     name: "Singolo Pro",
     price: 9,
     currency: "eur",
@@ -170,22 +175,9 @@ router.post("/payments/checkout", requireAuth, async (req, res) => {
       ? `${baseUrl}/dashboard/quotes/${quoteId}?payment=cancelled`
       : `${baseUrl}/dashboard?payment=cancelled`;
 
-    const lineItem = {
-      price_data: {
-        currency: plan.currency,
-        product_data: {
-          name: `PrevAI – ${plan.name}`,
-          description: plan.features.join(", "),
-        },
-        unit_amount: plan.price * 100,
-        ...(plan.interval ? { recurring: { interval: plan.interval as "month" | "year" } } : {}),
-      },
-      quantity: 1,
-    };
-
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ["card"],
-      line_items: [lineItem],
+      line_items: [{ price: plan.stripePriceId, quantity: 1 }],
       mode: plan.interval ? "subscription" : "payment",
       allow_promotion_codes: true,
       success_url: successUrl,

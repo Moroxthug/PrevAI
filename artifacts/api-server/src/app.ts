@@ -3,7 +3,6 @@ import cors from "cors";
 import pinoHttp from "pino-http";
 import { toNodeHandler } from "better-auth/node";
 import multer from "multer";
-import { WebhookHandlers } from "./webhookHandlers";
 import { db, quotesTable, businessProfilesTable, authUsersTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
 import { auth } from "./lib/auth";
@@ -54,110 +53,134 @@ app.post(
       return;
     }
     const sig = Array.isArray(signature) ? signature[0] : signature;
-    try {
-      await WebhookHandlers.processWebhook(req.body as Buffer, sig);
 
-      try {
-        const event = JSON.parse((req.body as Buffer).toString("utf8")) as {
-          type: string;
-          data: {
-            object: {
-              metadata?: Record<string, string>;
-              payment_status?: string;
-              customer?: string;
-              mode?: string;
-              status?: string;
-              current_period_end?: number;
-            };
-          };
+    const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+    if (!webhookSecret) {
+      logger.error("STRIPE_WEBHOOK_SECRET not set — cannot verify webhook signature");
+      res.status(500).json({ error: "Webhook secret not configured" });
+      return;
+    }
+
+    let event: {
+      type: string;
+      data: {
+        object: {
+          metadata?: Record<string, string>;
+          payment_status?: string;
+          customer?: string;
+          mode?: string;
+          status?: string;
+          current_period_end?: number;
+          plan?: { id?: string };
+          items?: { data?: { price?: { id?: string } }[] };
         };
+      };
+    };
 
-        if (event.type === "checkout.session.completed") {
-          const session = event.data.object;
-          const quoteId = session.metadata?.quoteId;
-          const userId = session.metadata?.userId;
-          const planType = session.metadata?.planType;
+    try {
+      const { getUncachableStripeClient } = await import("./stripeClient");
+      const stripe = await getUncachableStripeClient();
+      event = stripe.webhooks.constructEvent(req.body as Buffer, sig, webhookSecret) as typeof event;
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      logger.error({ err }, "Stripe webhook signature verification failed");
+      res.status(400).json({ error: `Webhook signature error: ${message}` });
+      return;
+    }
 
-          if (quoteId) {
-            await db
-              .update(quotesTable)
-              .set({ status: "unlocked", unlockedWithPlan: planType ?? null })
-              .where(eq(quotesTable.id, quoteId));
-            logger.info({ quoteId, planType }, "Quote unlocked via webhook");
-          }
+    try {
+      if (event.type === "checkout.session.completed") {
+        const session = event.data.object;
+        const quoteId = session.metadata?.quoteId;
+        const userId = session.metadata?.userId;
+        const planType = session.metadata?.planType;
 
-          if (userId && session.customer && session.mode === "subscription" && planType) {
-            const customerId = session.customer as string;
-            await db
-              .insert(businessProfilesTable)
-              .values({
-                userId,
+        if (quoteId) {
+          await db
+            .update(quotesTable)
+            .set({ status: "unlocked", unlockedWithPlan: planType ?? null })
+            .where(eq(quotesTable.id, quoteId));
+          logger.info({ quoteId, planType }, "Quote unlocked via webhook");
+        }
+
+        if (userId && session.customer && session.mode === "subscription" && planType) {
+          const customerId = session.customer as string;
+          await db
+            .insert(businessProfilesTable)
+            .values({
+              userId,
+              stripeCustomerId: customerId,
+              subscriptionPlan: planType,
+              subscriptionStatus: "active",
+            })
+            .onConflictDoUpdate({
+              target: businessProfilesTable.userId,
+              set: {
                 stripeCustomerId: customerId,
                 subscriptionPlan: planType,
                 subscriptionStatus: "active",
-              })
-              .onConflictDoUpdate({
-                target: businessProfilesTable.userId,
-                set: {
-                  stripeCustomerId: customerId,
-                  subscriptionPlan: planType,
-                  subscriptionStatus: "active",
-                },
-              });
-            logger.info({ userId, planType }, "Subscription activated via webhook");
+              },
+            });
+          logger.info({ userId, planType }, "Subscription activated via webhook");
 
-            try {
-              const [authUser] = await db
-                .select({ email: authUsersTable.email, name: authUsersTable.name })
-                .from(authUsersTable)
-                .where(eq(authUsersTable.id, userId));
+          try {
+            const [authUser] = await db
+              .select({ email: authUsersTable.email, name: authUsersTable.name })
+              .from(authUsersTable)
+              .where(eq(authUsersTable.id, userId));
 
-              const email = authUser?.email;
-              const name = authUser?.name || "Cliente";
+            const email = authUser?.email;
+            const name = authUser?.name || "Cliente";
 
-              if (email) {
-                const planInfo: Record<string, { name: string; price: number; interval: string | null }> = {
-                  monthly_starter: { name: "Starter", price: 19, interval: "month" },
-                  monthly_pro: { name: "Pro", price: 49, interval: "month" },
-                  monthly_elite: { name: "Elite", price: 59, interval: "month" },
-                };
-                const info = planInfo[planType];
-                if (info) {
-                  await sendSubscriptionEmail({
-                    toEmail: email,
-                    toName: name,
-                    planName: info.name,
-                    planPrice: info.price,
-                    planInterval: info.interval,
-                  });
-                }
+            if (email) {
+              const planInfo: Record<string, { name: string; price: number; interval: string | null }> = {
+                monthly_starter: { name: "Starter", price: 19, interval: "month" },
+                monthly_pro: { name: "Pro", price: 49, interval: "month" },
+                monthly_elite: { name: "Elite", price: 59, interval: "month" },
+              };
+              const info = planInfo[planType];
+              if (info) {
+                await sendSubscriptionEmail({
+                  toEmail: email,
+                  toName: name,
+                  planName: info.name,
+                  planPrice: info.price,
+                  planInterval: info.interval,
+                });
               }
-            } catch (emailErr) {
-              logger.error({ err: emailErr }, "Failed to send subscription email (non-fatal)");
             }
+          } catch (emailErr) {
+            logger.error({ err: emailErr }, "Failed to send subscription email (non-fatal)");
           }
         }
-
-        if (event.type === "customer.subscription.deleted") {
-          const sub = event.data.object;
-          if (sub.customer) {
-            await db
-              .update(businessProfilesTable)
-              .set({ subscriptionStatus: "cancelled", subscriptionPlan: null })
-              .where(eq(businessProfilesTable.stripeCustomerId, sub.customer as string));
-            logger.info({ customer: sub.customer }, "Subscription cancelled via webhook");
-          }
-        }
-      } catch (bizErr) {
-        logger.error({ err: bizErr }, "Webhook business logic error (non-fatal)");
       }
 
-      res.status(200).json({ received: true });
-    } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : String(err);
-      logger.error({ err }, "Stripe webhook error");
-      res.status(400).json({ error: message });
+      if (event.type === "customer.subscription.updated") {
+        const sub = event.data.object;
+        if (sub.customer && sub.status === "active") {
+          await db
+            .update(businessProfilesTable)
+            .set({ subscriptionStatus: "active" })
+            .where(eq(businessProfilesTable.stripeCustomerId, sub.customer as string));
+          logger.info({ customer: sub.customer }, "Subscription updated via webhook");
+        }
+      }
+
+      if (event.type === "customer.subscription.deleted") {
+        const sub = event.data.object;
+        if (sub.customer) {
+          await db
+            .update(businessProfilesTable)
+            .set({ subscriptionStatus: "cancelled", subscriptionPlan: null })
+            .where(eq(businessProfilesTable.stripeCustomerId, sub.customer as string));
+          logger.info({ customer: sub.customer }, "Subscription cancelled via webhook");
+        }
+      }
+    } catch (bizErr) {
+      logger.error({ err: bizErr }, "Webhook business logic error (non-fatal)");
     }
+
+    res.status(200).json({ received: true });
   }
 );
 // ─────────────────────────────────────────────────────────────────────────────
