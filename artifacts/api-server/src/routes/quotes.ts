@@ -148,6 +148,7 @@ function serializeQuote(q: QuoteRow) {
     pdfDownloadedAt: q.pdfDownloadedAt?.toISOString() ?? null,
     capitolatoPro: q.capitolatoPro ?? false,
     capitolatoPdfUrl: q.capitolatoPdfUrl ?? null,
+    templateId: q.templateId ?? "standard",
     createdAt: q.createdAt.toISOString(),
     updatedAt: q.updatedAt.toISOString(),
   };
@@ -619,6 +620,7 @@ router.put("/quotes/:id", requireAuth, async (req, res) => {
     if (body.ivaPercentuale !== undefined) updates.ivaPercentuale = String(body.ivaPercentuale);
     if (body.ivaValore !== undefined) updates.ivaValore = String(body.ivaValore);
     if (body.totale !== undefined) updates.totale = String(body.totale);
+    if (body.templateId !== undefined) updates.templateId = body.templateId;
 
     const [updated] = await db
       .update(quotesTable)
@@ -752,6 +754,7 @@ router.post("/quotes/:id/duplicate", requireAuth, async (req, res) => {
         status: "draft",
         pdfUrl: null,
         pdfDownloadedAt: null,
+        templateId: original.templateId ?? "standard",
       })
       .returning();
 
@@ -1137,6 +1140,17 @@ function formatEur(amount: number): string {
 }
 
 function generateQuoteHtml(
+  quote: QuoteRow,
+  withWatermark: boolean,
+  profile: ProfileRow
+): string {
+  const templateId = (quote.templateId as string | null) ?? "standard";
+  if (templateId === "professionale") return generateHtmlProfessionale(quote, withWatermark, profile);
+  if (templateId === "elegante") return generateHtmlElegante(quote, withWatermark, profile);
+  return generateHtmlStandard(quote, withWatermark, profile);
+}
+
+function generateHtmlStandard(
   quote: QuoteRow,
   withWatermark: boolean,
   profile: ProfileRow
@@ -1592,6 +1606,368 @@ function generateQuoteHtml(
   ${totalsHtml}
   ${condizioniHtml}
   ${acceptanceHtml}
+  ${footerHtml}
+</body>
+</html>`;
+}
+
+function generateHtmlProfessionale(
+  quote: QuoteRow,
+  withWatermark: boolean,
+  profile: ProfileRow
+): string {
+  const clientData = (quote.clientData ?? { nome: "", indirizzo: "" }) as QuoteClientData;
+  const capitoli: QuoteChapter[] = Array.isArray(quote.capitoli) && quote.capitoli.length > 0
+    ? quote.capitoli as QuoteChapter[]
+    : [];
+  const legacyItems = Array.isArray(quote.items) ? quote.items : [];
+  const sconto = quote.sconto as QuoteDiscount | null;
+  const condizioniPagamento: string[] = Array.isArray(quote.condizioniPagamento)
+    ? quote.condizioniPagamento : [];
+
+  const titolo2 = quote.titoloPreventivoRiga2 || "";
+  const numeroData = quote.numeroPreventivoData || `N° ${quote.id.slice(0, 4).toUpperCase()} del ${new Date().toLocaleDateString("it-IT")}`;
+  const subtotale = Number(quote.subtotale);
+  const ivaPerc = Number(quote.ivaPercentuale);
+  const ivaValore = Number(quote.ivaValore);
+  const totale = Number(quote.totale);
+
+  const snap = (quote.companySnapshot as QuoteCompanySnapshot | null) ?? null;
+  const companyName = snap?.companyName || profile?.companyName || "";
+  const companyVat = snap?.vatNumber || profile?.vatNumber || "";
+  const companyAddress = snap?.address || profile?.address || "";
+  const companyPhone = snap?.phone || profile?.phone || "";
+  const companyEmail = snap?.email || profile?.email || "";
+  const prevaiLogoSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="110" height="30" viewBox="0 0 110 30"><defs><linearGradient id="pg" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" style="stop-color:#7c3aed"/><stop offset="100%" style="stop-color:#06b6d4"/></linearGradient></defs><rect width="26" height="26" rx="5" y="2" fill="url(#pg)"/><text x="13" y="19" font-family="system-ui,sans-serif" font-size="14" font-weight="bold" fill="white" text-anchor="middle">P</text><text x="34" y="21" font-family="system-ui,sans-serif" font-size="16" font-weight="700" fill="#1a1a2e">prev</text><text x="63" y="21" font-family="system-ui,sans-serif" font-size="16" font-weight="700" fill="#7c3aed">ai</text></svg>`;
+  const prevaiLogoDataUri = `data:image/svg+xml;base64,${Buffer.from(prevaiLogoSvg).toString("base64")}`;
+  const companyLogoUrl = withWatermark ? prevaiLogoDataUri : (snap?.logoUrl || profile?.logoUrl || "");
+  const logoHtml = companyLogoUrl ? `<img src="${companyLogoUrl}" alt="Logo" style="max-height:50px;max-width:160px;object-fit:contain;display:block;margin-bottom:4px;" />` : "";
+
+  const scontoHtml = sconto && sconto.percentuale > 0
+    ? `<tr><td class="tot-label">SCONTO (${sconto.percentuale}%)</td><td class="tot-value">−&nbsp;€&nbsp;${formatEur(Number(quote.subtotale) - sconto.importoScontato)}</td></tr>
+       <tr><td class="tot-label">IMPONIBILE SCONTATO</td><td class="tot-value">€&nbsp;${formatEur(sconto.importoScontato)}</td></tr>`
+    : "";
+
+  const hasCapitoli = capitoli.length > 0;
+  const bodyRows = hasCapitoli
+    ? capitoli.map((cap, ci) => {
+        const chapterIdx = String(ci + 1).padStart(2, "0");
+        const chapterLetter = String.fromCharCode(65 + ci);
+        const voceRows = cap.voci.map((v, vi) => `
+          <tr class="item-row">
+            <td class="col-nr">${ci + 1}.${vi + 1}</td>
+            <td class="col-desc">${v.descrizione}</td>
+            <td class="col-um">${v.um}</td>
+            <td class="col-unit">€&nbsp;${formatEur(v.prezzoUnitario)}</td>
+            <td class="col-tot">€&nbsp;${formatEur(v.totale)}</td>
+          </tr>`).join("");
+        return `
+          <tr><td colspan="5" class="section-header">${chapterIdx}_ ${cap.titolo.toUpperCase()}</td></tr>
+          ${voceRows}
+          <tr class="subtotale-row">
+            <td colspan="4">${chapterLetter}_ TOTALE (iva esclusa)</td>
+            <td>€&nbsp;${formatEur(cap.subtotale)}</td>
+          </tr>`;
+      }).join("")
+    : legacyItems.map((item, i) => `
+        <tr class="item-row">
+          <td class="col-nr">${i + 1}</td>
+          <td class="col-desc">${item.descrizione}</td>
+          <td class="col-um">${item.unita}</td>
+          <td class="col-unit">€&nbsp;${formatEur(Number(item.prezzoUnitario))}</td>
+          <td class="col-tot">€&nbsp;${formatEur(Number(item.totale))}</td>
+        </tr>`).join("");
+
+  const condizioniHtml = condizioniPagamento.length > 0
+    ? `<div class="condizioni">
+        <div class="condizioni-title">CONDIZIONI DI PAGAMENTO</div>
+        <ul>${condizioniPagamento.map(c => `<li>${c}</li>`).join("")}</ul>
+      </div>`
+    : "";
+
+  const footerHtml = companyName
+    ? `<div class="doc-footer">${companyName}${companyAddress ? ` — ${companyAddress}` : ""}</div>` : "";
+
+  const committente = [clientData.nome, clientData.indirizzo, clientData.citta, clientData.cap ? `CAP ${clientData.cap}` : "", clientData.provincia].filter(Boolean).join(" — ");
+
+  return `<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <title>Preventivo ${numeroData}</title>
+  <style>
+    @page { size: A4 portrait; margin: 12mm 16mm 14mm 16mm; }
+    * { box-sizing: border-box; }
+    body { font-family: Arial, Helvetica, sans-serif; font-size: 9pt; color: #1a1a1a; margin: 0; padding: 16px 20px; background: white; }
+    .header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 14px; }
+    .company-block { max-width: 55%; }
+    .company-name { font-size: 12pt; font-weight: 700; color: #1a1a2e; margin-bottom: 3px; }
+    .company-detail { font-size: 8pt; color: #555; line-height: 1.5; }
+    .doc-meta { text-align: right; }
+    .doc-meta h1 { font-size: 15pt; font-weight: 900; color: #1a1a2e; margin: 0 0 4px; letter-spacing: 1px; }
+    .doc-meta .doc-ref { font-size: 8.5pt; color: #444; line-height: 1.6; }
+    hr.sep { border: none; border-top: 2.5px solid #1a1a2e; margin: 0 0 10px; }
+    .oggetto { font-size: 9pt; font-weight: 600; margin-bottom: 8px; color: #222; }
+    .committente-box { background: #f4f6f9; border-left: 4px solid #1a1a2e; padding: 7px 12px; margin-bottom: 14px; font-size: 8.5pt; }
+    .committente-box .label { font-size: 7.5pt; font-weight: 700; text-transform: uppercase; color: #888; letter-spacing: 0.5px; }
+    table { width: 100%; border-collapse: collapse; }
+    .table-header-row th { background: #1a1a2e; color: white; padding: 6px 8px; font-size: 8pt; font-weight: 600; }
+    .table-header-row th.col-nr { text-align: center; }
+    .table-header-row th.col-unit, .table-header-row th.col-tot { text-align: right; }
+    .section-header td { background: #2d3561; color: white; font-weight: 700; font-size: 8.5pt; padding: 5px 8px; letter-spacing: 0.3px; }
+    tr.item-row td { padding: 5px 8px; font-size: 8pt; border-bottom: 1px solid #eee; vertical-align: top; }
+    tr.item-row:nth-child(even) td { background: #f8f9fb; }
+    .col-nr { width: 7%; text-align: center; font-weight: 600; }
+    .col-desc { width: 47%; }
+    .col-um { width: 7%; text-align: center; }
+    .col-unit { width: 17%; text-align: right; white-space: nowrap; }
+    .col-tot { width: 17%; text-align: right; font-weight: 700; white-space: nowrap; }
+    .subtotale-row td { background: #e8ecf4 !important; font-weight: 700; border-top: 2px solid #aab0cc; font-size: 8.5pt; padding: 6px 8px; }
+    .subtotale-row td:first-child { text-align: right; }
+    .subtotale-row td:last-child { text-align: right; white-space: nowrap; }
+    .totals-section { display: flex; justify-content: flex-end; margin: 14px 0; }
+    .table-totals { width: 320px; border: 1px solid #dde1ec; border-collapse: collapse; }
+    .table-totals td { padding: 6px 10px; font-size: 8.5pt; border-bottom: 1px solid #eee; }
+    .tot-label { font-weight: 600; color: #333; }
+    .tot-value { text-align: right; font-weight: 700; white-space: nowrap; }
+    .grand-total-row td { background: #1a1a2e !important; color: white !important; font-size: 10pt; font-weight: 700; border-bottom: none; }
+    .condizioni { border: 1px solid #dde1ec; border-radius: 2px; padding: 10px 14px; margin-bottom: 14px; }
+    .condizioni-title { font-size: 8.5pt; font-weight: 700; text-transform: uppercase; color: #1a1a2e; margin-bottom: 6px; letter-spacing: 0.5px; }
+    .condizioni ul { margin: 0; padding-left: 16px; }
+    .condizioni li { font-size: 8pt; margin-bottom: 3px; }
+    .doc-footer { margin-top: 14px; text-align: center; font-size: 7.5pt; color: #aaa; border-top: 1px solid #eee; padding-top: 6px; }
+    .watermark { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%) rotate(-45deg); font-size: 72pt; color: rgba(0,0,0,0.045); font-weight: 900; z-index: 9999; white-space: nowrap; pointer-events: none; letter-spacing: 4px; }
+    @media print { body { padding: 0; } .watermark { position: fixed; } }
+  </style>
+</head>
+<body>
+  ${withWatermark ? '<div class="watermark">BOZZA NON VALIDA</div>' : ""}
+
+  <div class="header">
+    <div class="company-block">
+      ${logoHtml}
+      <div class="company-name">${companyName}</div>
+      ${companyVat ? `<div class="company-detail">P.IVA / C.F.: ${companyVat}</div>` : ""}
+      ${companyAddress ? `<div class="company-detail">${companyAddress}</div>` : ""}
+      ${companyPhone ? `<div class="company-detail">Tel: ${companyPhone}</div>` : ""}
+      ${companyEmail ? `<div class="company-detail">${companyEmail}</div>` : ""}
+    </div>
+    <div class="doc-meta">
+      <h1>PREVENTIVO</h1>
+      <div class="doc-ref">${numeroData}</div>
+      <div class="doc-ref">Data: ${new Date().toLocaleDateString("it-IT")}</div>
+    </div>
+  </div>
+  <hr class="sep">
+  ${titolo2 ? `<div class="oggetto">OGGETTO: ${titolo2}</div>` : ""}
+
+  <div class="committente-box">
+    <div class="label">Committente</div>
+    <div style="font-weight:600;color:#1a1a2e;margin-top:2px;">${committente || "——"}</div>
+  </div>
+
+  <table>
+    <thead>
+      <tr class="table-header-row">
+        <th class="col-nr">Nr</th>
+        <th class="col-desc">Voce di Capitolato</th>
+        <th class="col-um">UM</th>
+        <th class="col-unit">Unitari (€)</th>
+        <th class="col-tot">Totale (€)</th>
+      </tr>
+    </thead>
+    <tbody>
+      ${bodyRows}
+    </tbody>
+  </table>
+
+  <div class="totals-section">
+    <table class="table-totals">
+      <tbody>
+        <tr><td class="tot-label">TOTALE IMPONIBILE</td><td class="tot-value">€&nbsp;${formatEur(subtotale)}</td></tr>
+        ${scontoHtml}
+        <tr><td class="tot-label">IVA (${ivaPerc.toFixed(0)}%)</td><td class="tot-value">€&nbsp;${formatEur(ivaValore)}</td></tr>
+        <tr class="grand-total-row"><td class="tot-label">TOTALE + IVA</td><td class="tot-value">€&nbsp;${formatEur(totale)}</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  ${condizioniHtml}
+  ${footerHtml}
+</body>
+</html>`;
+}
+
+function generateHtmlElegante(
+  quote: QuoteRow,
+  withWatermark: boolean,
+  profile: ProfileRow
+): string {
+  const clientData = (quote.clientData ?? { nome: "", indirizzo: "" }) as QuoteClientData;
+  const capitoli: QuoteChapter[] = Array.isArray(quote.capitoli) && quote.capitoli.length > 0
+    ? quote.capitoli as QuoteChapter[]
+    : [];
+  const legacyItems = Array.isArray(quote.items) ? quote.items : [];
+  const sconto = quote.sconto as QuoteDiscount | null;
+  const condizioniPagamento: string[] = Array.isArray(quote.condizioniPagamento)
+    ? quote.condizioniPagamento : [];
+
+  const titolo2 = quote.titoloPreventivoRiga2 || "";
+  const numeroData = quote.numeroPreventivoData || `N° ${quote.id.slice(0, 4).toUpperCase()} del ${new Date().toLocaleDateString("it-IT")}`;
+  const subtotale = Number(quote.subtotale);
+  const ivaPerc = Number(quote.ivaPercentuale);
+  const ivaValore = Number(quote.ivaValore);
+  const totale = Number(quote.totale);
+
+  const snap = (quote.companySnapshot as QuoteCompanySnapshot | null) ?? null;
+  const companyName = snap?.companyName || profile?.companyName || "";
+  const companyVat = snap?.vatNumber || profile?.vatNumber || "";
+  const companyAddress = snap?.address || profile?.address || "";
+  const companyPhone = snap?.phone || profile?.phone || "";
+  const companyEmail = snap?.email || profile?.email || "";
+  const prevaiLogoSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="110" height="30" viewBox="0 0 110 30"><defs><linearGradient id="pg" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" style="stop-color:#7c3aed"/><stop offset="100%" style="stop-color:#06b6d4"/></linearGradient></defs><rect width="26" height="26" rx="5" y="2" fill="url(#pg)"/><text x="13" y="19" font-family="system-ui,sans-serif" font-size="14" font-weight="bold" fill="white" text-anchor="middle">P</text><text x="34" y="21" font-family="system-ui,sans-serif" font-size="16" font-weight="700" fill="#1a1a2e">prev</text><text x="63" y="21" font-family="system-ui,sans-serif" font-size="16" font-weight="700" fill="#7c3aed">ai</text></svg>`;
+  const prevaiLogoDataUri = `data:image/svg+xml;base64,${Buffer.from(prevaiLogoSvg).toString("base64")}`;
+  const companyLogoUrl = withWatermark ? prevaiLogoDataUri : (snap?.logoUrl || profile?.logoUrl || "");
+  const logoHtml = companyLogoUrl ? `<img src="${companyLogoUrl}" alt="Logo" style="max-height:55px;max-width:170px;object-fit:contain;display:block;margin-bottom:6px;" />` : "";
+
+  // Merge all voci from all chapters into a flat numbered list
+  const hasCapitoli = capitoli.length > 0;
+  const allRows = hasCapitoli
+    ? capitoli.flatMap((cap, _ci) =>
+        cap.voci.map(v => ({ descrizione: v.descrizione, um: v.um, quantita: v.quantita, pu: v.prezzoUnitario, totale: v.totale, chapter: cap.titolo }))
+      )
+    : legacyItems.map(item => ({ descrizione: item.descrizione, um: item.unita, quantita: item.quantita, pu: Number(item.prezzoUnitario), totale: Number(item.totale), chapter: "" }));
+
+  const tableRows = allRows.map((row, i) => `
+    <tr class="${i % 2 === 0 ? "row-even" : "row-odd"}">
+      <td class="col-num">${i + 1}</td>
+      <td class="col-desc">${row.descrizione}</td>
+      <td class="col-um">${row.um}</td>
+      <td class="col-qty">${row.quantita}</td>
+      <td class="col-pu">€&nbsp;${formatEur(row.pu)}</td>
+      <td class="col-tot">€&nbsp;${formatEur(row.totale)}</td>
+    </tr>`).join("");
+
+  const scontoHtml = sconto && sconto.percentuale > 0
+    ? `<div class="total-row"><span>Sconto (${sconto.percentuale}%)</span><span>−&nbsp;€&nbsp;${formatEur(Number(quote.subtotale) - sconto.importoScontato)}</span></div>
+       <div class="total-row"><span>Imponibile scontato</span><span>€&nbsp;${formatEur(sconto.importoScontato)}</span></div>` : "";
+
+  const condizioniHtml = condizioniPagamento.length > 0
+    ? `<div class="condizioni">
+        <div class="condizioni-title">CONDIZIONI DI PAGAMENTO</div>
+        <ul>${condizioniPagamento.map(c => `<li>${c}</li>`).join("")}</ul>
+      </div>` : "";
+
+  const footerHtml = companyName
+    ? `<div class="doc-footer">${companyName}${companyAddress ? ` — ${companyAddress}` : ""}</div>` : "";
+
+  const clientLines = [clientData.nome, clientData.indirizzo, [clientData.citta, clientData.cap, clientData.provincia].filter(Boolean).join(" ")].filter(Boolean);
+
+  return `<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <title>Offerta ${numeroData}</title>
+  <style>
+    @page { size: A4 portrait; margin: 12mm 16mm 14mm 16mm; }
+    * { box-sizing: border-box; }
+    body { font-family: Arial, Helvetica, sans-serif; font-size: 9pt; color: #1a1a1a; margin: 0; padding: 16px 20px; background: white; }
+    .page-header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #333; padding-bottom: 12px; margin-bottom: 14px; }
+    .company-info { }
+    .company-name { font-size: 13pt; font-weight: 700; color: #1a1a1a; margin-bottom: 2px; }
+    .company-line { font-size: 8pt; color: #444; line-height: 1.5; }
+    .offerta-block { text-align: right; }
+    .offerta-label { font-size: 18pt; font-weight: 900; color: #1a1a1a; letter-spacing: 2px; margin-bottom: 4px; }
+    .offerta-meta { font-size: 8.5pt; color: #555; line-height: 1.6; }
+    .client-section { margin-bottom: 14px; padding: 8px 0; border-bottom: 1px solid #ddd; }
+    .client-label { font-size: 7.5pt; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: #888; margin-bottom: 3px; }
+    .client-name { font-size: 10pt; font-weight: 700; color: #1a1a1a; }
+    .client-line { font-size: 8.5pt; color: #444; }
+    ${titolo2 ? `.oggetto { font-size: 8.5pt; font-style: italic; color: #555; margin-bottom: 10px; }` : ""}
+    table { width: 100%; border-collapse: collapse; margin-bottom: 14px; }
+    thead th { background: #333; color: white; padding: 6px 8px; font-size: 8pt; font-weight: 600; }
+    thead th.col-num { text-align: center; width: 5%; }
+    thead th.col-desc { text-align: left; width: 42%; }
+    thead th.col-um { text-align: center; width: 7%; }
+    thead th.col-qty { text-align: center; width: 7%; }
+    thead th.col-pu { text-align: right; width: 18%; }
+    thead th.col-tot { text-align: right; width: 18%; }
+    .row-even td { background: #fff; }
+    .row-odd td { background: #f7f7f7; }
+    td { padding: 5px 8px; font-size: 8.5pt; border-bottom: 1px solid #eee; vertical-align: top; }
+    .col-num { text-align: center; font-weight: 600; color: #555; }
+    .col-desc { }
+    .col-um { text-align: center; }
+    .col-qty { text-align: center; }
+    .col-pu { text-align: right; white-space: nowrap; }
+    .col-tot { text-align: right; font-weight: 700; white-space: nowrap; }
+    .totals-block { display: flex; justify-content: flex-end; margin-bottom: 14px; }
+    .totals-inner { width: 300px; border: 1px solid #ccc; }
+    .total-row { display: flex; justify-content: space-between; padding: 6px 12px; font-size: 8.5pt; border-bottom: 1px solid #eee; }
+    .total-row span:last-child { font-weight: 700; white-space: nowrap; }
+    .grand-total { display: flex; justify-content: space-between; padding: 8px 12px; background: #333; color: white; font-size: 10pt; font-weight: 700; }
+    .condizioni { border: 1px solid #ddd; padding: 10px 14px; margin-bottom: 14px; }
+    .condizioni-title { font-size: 8.5pt; font-weight: 700; text-transform: uppercase; color: #333; margin-bottom: 6px; }
+    .condizioni ul { margin: 0; padding-left: 16px; }
+    .condizioni li { font-size: 8pt; margin-bottom: 3px; }
+    .doc-footer { margin-top: 14px; text-align: center; font-size: 7.5pt; color: #aaa; border-top: 1px solid #eee; padding-top: 6px; }
+    .watermark { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%) rotate(-45deg); font-size: 72pt; color: rgba(0,0,0,0.045); font-weight: 900; z-index: 9999; white-space: nowrap; pointer-events: none; letter-spacing: 4px; }
+    @media print { body { padding: 0; } .watermark { position: fixed; } }
+  </style>
+</head>
+<body>
+  ${withWatermark ? '<div class="watermark">BOZZA NON VALIDA</div>' : ""}
+
+  <div class="page-header">
+    <div class="company-info">
+      ${logoHtml}
+      <div class="company-name">${companyName}</div>
+      ${companyAddress ? `<div class="company-line">${companyAddress}</div>` : ""}
+      ${companyVat ? `<div class="company-line">C.F. / P.IVA: ${companyVat}</div>` : ""}
+      ${companyPhone ? `<div class="company-line">${companyPhone}</div>` : ""}
+      ${companyEmail ? `<div class="company-line">${companyEmail}</div>` : ""}
+    </div>
+    <div class="offerta-block">
+      <div class="offerta-label">OFFERTA</div>
+      <div class="offerta-meta">${numeroData}</div>
+      <div class="offerta-meta">Data: ${new Date().toLocaleDateString("it-IT")}</div>
+    </div>
+  </div>
+
+  <div class="client-section">
+    <div class="client-label">Committente</div>
+    ${clientLines[0] ? `<div class="client-name">${clientLines[0]}</div>` : ""}
+    ${clientLines.slice(1).map(l => `<div class="client-line">${l}</div>`).join("")}
+  </div>
+
+  ${titolo2 ? `<div class="oggetto">Oggetto: ${titolo2}</div>` : ""}
+
+  <table>
+    <thead>
+      <tr>
+        <th class="col-num">#</th>
+        <th class="col-desc">Descrizione</th>
+        <th class="col-um">U.M.</th>
+        <th class="col-qty">Q.</th>
+        <th class="col-pu">P. unitario</th>
+        <th class="col-tot">Importo</th>
+      </tr>
+    </thead>
+    <tbody>
+      ${tableRows}
+    </tbody>
+  </table>
+
+  <div class="totals-block">
+    <div class="totals-inner">
+      <div class="total-row"><span>Totale imponibile</span><span>€&nbsp;${formatEur(subtotale)}</span></div>
+      ${scontoHtml}
+      <div class="total-row"><span>IVA (${ivaPerc.toFixed(0)}%)</span><span>€&nbsp;${formatEur(ivaValore)}</span></div>
+      <div class="grand-total"><span>TOTALE</span><span>€&nbsp;${formatEur(totale)}</span></div>
+    </div>
+  </div>
+
+  ${condizioniHtml}
   ${footerHtml}
 </body>
 </html>`;

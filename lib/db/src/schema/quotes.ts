@@ -90,6 +90,7 @@ export const quotesTable = pgTable("quotes", {
   unlockedWithPlan: text("unlocked_with_plan"),
   capitolatoPro: boolean("capitolato_pro").notNull().default(false),
   capitolatoPdfUrl: text("capitolato_pdf_url"),
+  templateId: text("template_id").default("standard"),
   pdfDownloadedAt: timestamp("pdf_downloaded_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),

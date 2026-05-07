@@ -87,6 +87,7 @@ export const ListQuotesResponseItem = zod.object({
   pdfDownloadedAt: zod.string().nullish(),
   capitolatoPro: zod.boolean(),
   capitolatoPdfUrl: zod.string().nullish(),
+  templateId: zod.enum(["standard", "professionale", "elegante"]).nullish(),
   createdAt: zod.string(),
   updatedAt: zod.string(),
 });
@@ -199,6 +200,7 @@ export const GetQuoteStatsResponse = zod.object({
       pdfDownloadedAt: zod.string().nullish(),
       capitolatoPro: zod.boolean(),
       capitolatoPdfUrl: zod.string().nullish(),
+      templateId: zod.enum(["standard", "professionale", "elegante"]).nullish(),
       createdAt: zod.string(),
       updatedAt: zod.string(),
     }),
@@ -282,6 +284,7 @@ export const GetQuoteResponse = zod.object({
   pdfDownloadedAt: zod.string().nullish(),
   capitolatoPro: zod.boolean(),
   capitolatoPdfUrl: zod.string().nullish(),
+  templateId: zod.enum(["standard", "professionale", "elegante"]).nullish(),
   createdAt: zod.string(),
   updatedAt: zod.string(),
 });
@@ -351,6 +354,7 @@ export const UpdateQuoteBody = zod.object({
   totale: zod.number().optional(),
   note: zod.string().optional(),
   status: zod.enum(["draft", "unlocked", "pending_payment"]).optional(),
+  templateId: zod.enum(["standard", "professionale", "elegante"]).optional(),
 });
 
 export const UpdateQuoteResponse = zod.object({
@@ -423,6 +427,7 @@ export const UpdateQuoteResponse = zod.object({
   pdfDownloadedAt: zod.string().nullish(),
   capitolatoPro: zod.boolean(),
   capitolatoPdfUrl: zod.string().nullish(),
+  templateId: zod.enum(["standard", "professionale", "elegante"]).nullish(),
   createdAt: zod.string(),
   updatedAt: zod.string(),
 });
@@ -544,6 +549,7 @@ export const RegenerateQuoteResponse = zod.object({
   pdfDownloadedAt: zod.string().nullish(),
   capitolatoPro: zod.boolean(),
   capitolatoPdfUrl: zod.string().nullish(),
+  templateId: zod.enum(["standard", "professionale", "elegante"]).nullish(),
   createdAt: zod.string(),
   updatedAt: zod.string(),
 });
@@ -625,6 +631,7 @@ export const UpgradeToCapitolatoProResponse = zod.object({
   pdfDownloadedAt: zod.string().nullish(),
   capitolatoPro: zod.boolean(),
   capitolatoPdfUrl: zod.string().nullish(),
+  templateId: zod.enum(["standard", "professionale", "elegante"]).nullish(),
   createdAt: zod.string(),
   updatedAt: zod.string(),
 });

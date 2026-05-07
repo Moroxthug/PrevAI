@@ -6,7 +6,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
-import { Download, Lock, CheckCircle2, Edit2, Save, FileText, ChevronDown, ChevronRight, Plus, Trash2, X, Pencil, Sparkles, AlertTriangle, RefreshCw, Loader2, Copy, Star, FileDown } from "lucide-react";
+import { Download, Lock, CheckCircle2, Edit2, Save, FileText, ChevronDown, ChevronRight, Plus, Trash2, X, Pencil, Sparkles, AlertTriangle, RefreshCw, Loader2, Copy, Star, FileDown, LayoutTemplate } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 import { useLocation } from "wouter";
 import { format } from "date-fns";
@@ -445,6 +445,10 @@ export default function QuoteDetail() {
                 Capitolato Pro
               </Badge>
             )}
+            <Badge variant="outline" className="gap-1 text-slate-500">
+              <LayoutTemplate className="h-3 w-3" />
+              {quote.templateId === "professionale" ? "Professionale" : quote.templateId === "elegante" ? "Elegante" : "Standard"}
+            </Badge>
             <span className="text-sm text-muted-foreground">
               Creato il {format(new Date(quote.createdAt), "dd MMMM yyyy", { locale: it })}
             </span>
@@ -1129,6 +1133,68 @@ export default function QuoteDetail() {
                   <AlertTriangle className="h-3.5 w-3.5 mt-0.5 shrink-0" />
                   Preventivo scaricato — modifiche disabilitate.
                 </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Template picker */}
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                <LayoutTemplate className="h-4 w-4 text-muted-foreground" />
+                Template PDF
+                {!isPro && <Lock className="h-3 w-3 text-muted-foreground ml-auto" />}
+              </CardTitle>
+              {!isPro && (
+                <CardDescription className="text-xs">Disponibile con piano Pro</CardDescription>
+              )}
+            </CardHeader>
+            <CardContent className="space-y-2 pt-0">
+              {(
+                [
+                  { id: "standard", label: "Standard", desc: "Computo metrico con quadro sintetico e blocco firma" },
+                  { id: "professionale", label: "Professionale", desc: "Capitolato numerato con sezioni e subtotali per capitolo" },
+                  { id: "elegante", label: "Elegante", desc: "Lista numerata pulita con header OFFERTA aziendale" },
+                ] as const
+              ).map(tmpl => {
+                const isActive = (quote.templateId ?? "standard") === tmpl.id;
+                const canChange = isPro && !isEditLocked;
+                return (
+                  <button
+                    key={tmpl.id}
+                    onClick={() => {
+                      if (!canChange) { if (!isPro) setIsPaywallOpen(true); return; }
+                      if (isActive || !id) return;
+                      updateQuote.mutate({ id, data: { templateId: tmpl.id } }, {
+                        onSuccess: (updated) => {
+                          queryClient.setQueryData(getGetQuoteQueryKey(id), updated);
+                          toast({ title: "Template aggiornato", description: `Template "${tmpl.label}" selezionato.` });
+                        },
+                        onError: () => toast({ title: "Errore", description: "Impossibile cambiare template", variant: "destructive" }),
+                      });
+                    }}
+                    className={cn(
+                      "w-full text-left px-3 py-2.5 rounded-lg border text-xs transition-all",
+                      isActive
+                        ? "border-violet-400 bg-violet-50 text-violet-900 ring-1 ring-violet-300"
+                        : canChange
+                          ? "border-slate-200 hover:border-violet-300 hover:bg-slate-50 text-slate-700"
+                          : "border-slate-200 opacity-60 text-slate-500 cursor-not-allowed"
+                    )}
+                  >
+                    <div className="font-semibold flex items-center gap-1.5">
+                      {isActive && <CheckCircle2 className="h-3 w-3 text-violet-600 shrink-0" />}
+                      {!isActive && !canChange && <Lock className="h-3 w-3 shrink-0" />}
+                      {tmpl.label}
+                    </div>
+                    <div className="text-slate-500 mt-0.5 leading-snug">{tmpl.desc}</div>
+                  </button>
+                );
+              })}
+              {isEditLocked && (
+                <p className="text-xs text-amber-700 bg-amber-50 rounded px-2 py-1.5 border border-amber-200">
+                  Template bloccato dopo il primo download.
+                </p>
               )}
             </CardContent>
           </Card>

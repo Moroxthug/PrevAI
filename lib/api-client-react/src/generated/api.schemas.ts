@@ -65,6 +65,16 @@ export const QuoteStatus = {
   pending_payment: "pending_payment",
 } as const;
 
+export type QuoteTemplateId =
+  | (typeof QuoteTemplateId)[keyof typeof QuoteTemplateId]
+  | null;
+
+export const QuoteTemplateId = {
+  standard: "standard",
+  professionale: "professionale",
+  elegante: "elegante",
+} as const;
+
 export interface Quote {
   id: string;
   userId: string;
@@ -90,6 +100,7 @@ export interface Quote {
   capitolatoPro: boolean;
   /** @nullable */
   capitolatoPdfUrl?: string | null;
+  templateId?: QuoteTemplateId;
   createdAt: string;
   updatedAt: string;
 }
@@ -128,6 +139,15 @@ export const UpdateQuoteBodyStatus = {
   pending_payment: "pending_payment",
 } as const;
 
+export type UpdateQuoteBodyTemplateId =
+  (typeof UpdateQuoteBodyTemplateId)[keyof typeof UpdateQuoteBodyTemplateId];
+
+export const UpdateQuoteBodyTemplateId = {
+  standard: "standard",
+  professionale: "professionale",
+  elegante: "elegante",
+} as const;
+
 export interface UpdateQuoteBody {
   clientData?: QuoteClientData;
   descrizioneGenerale?: string;
@@ -143,6 +163,7 @@ export interface UpdateQuoteBody {
   totale?: number;
   note?: string;
   status?: UpdateQuoteBodyStatus;
+  templateId?: UpdateQuoteBodyTemplateId;
 }
 
 export interface RegenerateQuoteBody {

@@ -685,6 +685,10 @@ components:
           type: boolean
         capitolatoPdfUrl:
           type: ["string", "null"]
+        templateId:
+          type: string
+          enum: [standard, professionale, elegante]
+          nullable: true
         createdAt:
           type: string
         updatedAt:
@@ -804,6 +808,9 @@ components:
         status:
           type: string
           enum: [draft, unlocked, pending_payment]
+        templateId:
+          type: string
+          enum: [standard, professionale, elegante]
 
     RegenerateQuoteBody:
       type: object
