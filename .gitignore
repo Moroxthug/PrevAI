@@ -3,6 +3,22 @@
 # compiled output
 dist
 tmp
+
+# Track prerendered SEO HTML (needed for static serving / crawlers)
+# Un-ignore only the seo subtree; re-ignore everything else in dist/
+!artifacts/preventivo-ai/dist/
+!artifacts/preventivo-ai/dist/public/
+!artifacts/preventivo-ai/dist/public/seo/
+!artifacts/preventivo-ai/dist/public/seo/**
+artifacts/preventivo-ai/dist/*.mjs
+artifacts/preventivo-ai/dist/*.cjs
+artifacts/preventivo-ai/dist/public/index.html
+artifacts/preventivo-ai/dist/public/assets/
+artifacts/preventivo-ai/dist/public/favicon.svg
+artifacts/preventivo-ai/dist/public/opengraph.jpg
+artifacts/preventivo-ai/dist/public/prevai-logo.png
+artifacts/preventivo-ai/dist/public/robots.txt
+artifacts/preventivo-ai/dist/public/sitemap.xml
 out-tsc
 *.tsbuildinfo
 .expo
