@@ -134,8 +134,8 @@ app.post(
 
             if (email) {
               const planInfo: Record<string, { name: string; price: number; interval: string | null }> = {
-                monthly_starter: { name: "Starter", price: 29, interval: "month" },
-                monthly_pro: { name: "Pro", price: 79, interval: "month" },
+                monthly_starter: { name: "Starter", price: 19, interval: "month" },
+                monthly_pro: { name: "Pro", price: 49, interval: "month" },
                 monthly_elite: { name: "Elite", price: 59, interval: "month" },
               };
               const info = planInfo[planType];

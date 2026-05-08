@@ -79,7 +79,7 @@ export default function BillingPage() {
 
   const isElite = sub?.plan === "monthly_elite";
   const planLabel = isPro ? "Pro" : isStarter ? "Starter" : isElite ? "Elite" : null;
-  const planPrice = isPro ? "€79/mese" : isStarter ? "€29/mese" : isElite ? "€59/mese" : null;
+  const planPrice = isPro ? "€49/mese" : isStarter ? "€19/mese" : isElite ? "€59/mese" : null;
 
   const renewalDate = sub?.periodEnd
     ? new Date(sub.periodEnd).toLocaleDateString("it-IT", {
@@ -274,7 +274,7 @@ export default function BillingPage() {
               <div className="space-y-2">
                 <div className="flex items-center gap-2 font-semibold text-sm">
                   <Zap className="h-4 w-4 text-violet-500" />
-                  Starter — €29/mese
+                  Starter — €19/mese
                 </div>
                 <ul className="space-y-1.5 text-sm">
                   <li className="flex items-center gap-2 text-muted-foreground">
@@ -298,7 +298,7 @@ export default function BillingPage() {
               <div className="space-y-2 border-l pl-4">
                 <div className="flex items-center gap-2 font-semibold text-sm">
                   <Crown className="h-4 w-4 text-amber-500" />
-                  Pro — €79/mese
+                  Pro — €49/mese
                 </div>
                 <ul className="space-y-1.5 text-sm">
                   <li className="flex items-center gap-2 text-foreground">

@@ -44,9 +44,9 @@ const router = Router();
 export const PLANS = [
   {
     id: "monthly_starter",
-    stripePriceId: "price_1TTynnCaDBaDETvnQ9cg0Enl",
+    stripePriceId: "price_1TUdJjCaDBaDETvnCGbjTgIq",
     name: "Starter",
-    price: 29,
+    price: 19,
     currency: "eur",
     interval: "month",
     features: [
@@ -63,9 +63,9 @@ export const PLANS = [
   },
   {
     id: "monthly_pro",
-    stripePriceId: "price_1TTynoCaDBaDETvnVmtmBUev",
+    stripePriceId: "price_1TUdJjCaDBaDETvnfBv37ryF",
     name: "Pro",
-    price: 79,
+    price: 49,
     currency: "eur",
     interval: "month",
     features: [
@@ -83,7 +83,7 @@ export const PLANS = [
   },
   {
     id: "monthly_elite",
-    stripePriceId: "price_1TUdDuCaDBaDETvn8o9Z1xYm",
+    stripePriceId: "price_1TUdJjCaDBaDETvnCo3JKGJ7",
     name: "Elite",
     price: 59,
     currency: "eur",
@@ -104,9 +104,9 @@ export const PLANS = [
   },
   {
     id: "oneshot_watermark",
-    stripePriceId: "price_1TTynoCaDBaDETvnlzAJvgSY",
+    stripePriceId: "price_1TUdJjCaDBaDETvnRnYfWJWh",
     name: "Singolo con Watermark",
-    price: 29,
+    price: 3,
     currency: "eur",
     interval: null,
     features: ["1 preventivo PDF", "Riga prevai.it in calce", "Download immediato"],
@@ -116,9 +116,9 @@ export const PLANS = [
   },
   {
     id: "oneshot_clean",
-    stripePriceId: "price_1TTynoCaDBaDETvnd5NiV6Hi",
+    stripePriceId: "price_1TUdJkCaDBaDETvnVsY6ZWec",
     name: "Singolo Pulito",
-    price: 39,
+    price: 9,
     currency: "eur",
     interval: null,
     features: ["1 preventivo PDF pulito", "Logo aziendale", "Nessun watermark", "Download immediato"],
