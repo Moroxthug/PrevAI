@@ -45,7 +45,6 @@ import { cn } from "@/lib/utils";
 
 function getMaxPhotos(plan: string | null | undefined, isActive: boolean): number {
   if (!isActive) return 0;
-  if (plan === "monthly_elite") return 5;
   if (plan === "monthly_pro") return 3;
   if (plan === "monthly_starter") return 1;
   return 0;
@@ -65,20 +64,17 @@ const emptyClient: ClientForm = {
 /* ─── PlanBadge ─────────────────────────────────────────────────────────── */
 function PlanBadge({ plan }: { plan: string | null | undefined }) {
   if (!plan) return null;
-  const isElite = plan === "monthly_elite";
   const isPro = plan === "monthly_pro";
   return (
     <span
       className={`inline-flex items-center gap-1 text-xs font-bold px-2 py-0.5 rounded-full ${
-        isElite
-          ? "bg-cyan-100 text-cyan-700 border border-cyan-200"
-          : isPro
-            ? "bg-amber-100 text-amber-700 border border-amber-200"
-            : "bg-violet-100 text-violet-700 border border-violet-200"
+        isPro
+          ? "bg-amber-100 text-amber-700 border border-amber-200"
+          : "bg-violet-100 text-violet-700 border border-violet-200"
       }`}
     >
-      {isPro || isElite ? <Crown className="h-2.5 w-2.5" /> : <Zap className="h-2.5 w-2.5" />}
-      {isElite ? "Elite" : isPro ? "Pro" : "Starter"}
+      {isPro ? <Crown className="h-2.5 w-2.5" /> : <Zap className="h-2.5 w-2.5" />}
+      {isPro ? "Pro" : "Starter"}
     </span>
   );
 }
@@ -114,7 +110,7 @@ function StarterUpgradeCard() {
         </div>
         <div>
           <div className="font-semibold text-gray-900 text-sm">Passa a Pro — PDF puliti, tutti i template</div>
-          <div className="text-xs text-gray-500 mt-0.5">Sei su Starter: PDF con riga prevai.it, solo template Standard. Pro sblocca tutto a €49/mese.</div>
+          <div className="text-xs text-gray-500 mt-0.5">Sei su Starter: PDF con riga prevai.it, solo template Standard. Pro sblocca tutto a €79/mese.</div>
         </div>
       </div>
       <button
@@ -665,7 +661,7 @@ export default function DashboardHome() {
               {isNewUser
                 ? "Benvenuto! Crea il tuo primo preventivo in 60 secondi."
                 : subscription?.isActive
-                  ? `Piano ${subscription.plan === "monthly_pro" ? "Pro" : subscription.plan === "monthly_elite" ? "Elite" : "Starter"} attivo — ${subscription.plan === "monthly_starter" ? "10 preventivi/mese" : "preventivi illimitati"}`
+                  ? `Piano ${subscription.plan === "monthly_pro" ? "Pro" : "Starter"} attivo — ${subscription.plan === "monthly_starter" ? "10 preventivi/mese" : "60 preventivi/mese"}`
                   : `Hai ${stats?.total ?? 0} preventivi totali nel tuo archivio.`}
             </p>
           </div>

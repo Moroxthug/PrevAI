@@ -727,7 +727,7 @@ router.post("/quotes/:id/generate-pdf", requireAuth, async (req, res) => {
     // Starter/oneshot_watermark plans keep watermark even when unlocked.
     const planHasWatermark = (plan: string | null | undefined) =>
       !plan || plan === "monthly_starter" || plan === "oneshot_watermark";
-    // monthly_pro, monthly_elite, oneshot_clean = no watermark
+    // monthly_pro, oneshot_clean = no watermark
 
     // Trial auto-unlock: if user is in trial and quote is draft, unlock it and count the download
     let effectiveStatus = quote.status;
