@@ -26,6 +26,13 @@ import {
   getNearbyAnchors,
   buildCityJsonLd as buildCityJsonLdFromEngine,
 } from "../src/data/seo-render-engine.js";
+import {
+  BLOG_ARTICLES,
+  BLOG_LIST_TITLE,
+  BLOG_LIST_DESCRIPTION,
+  SECTOR_ARTICLES,
+} from "../src/data/blog-data.js";
+import type { BlogArticle } from "../src/data/blog-data.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const distDir = join(__dirname, "../dist/public");
@@ -219,6 +226,41 @@ function buildRelatedSectorsSection(s: SectorData, heading?: string): string {
     <h2 class="text-base font-semibold text-gray-500 mb-5 text-center">${esc(h)}</h2>
     <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
       ${links}
+    </div>
+  </div>
+</section>`;
+}
+
+// ─── Approfondimenti section (blog articles related to a sector) ─────────────
+
+function buildApprofondimentiSection(sectorSlug: string): string {
+  const slugs = SECTOR_ARTICLES[sectorSlug];
+  if (!slugs || slugs.length === 0) return "";
+  const articles = slugs
+    .map((slug) => BLOG_ARTICLES.find((a) => a.slug === slug))
+    .filter((a): a is BlogArticle => a !== null && a !== undefined)
+    .slice(0, 3);
+  if (articles.length === 0) return "";
+
+  const cards = articles
+    .map(
+      (a) =>
+        `<a href="/blog/${esc(a.slug)}" class="group flex flex-col bg-white rounded-xl border border-gray-100 hover:border-violet-200 hover:shadow-sm transition-all duration-200 p-5">
+          <span class="text-xs font-semibold text-violet-700 mb-2">${esc(a.category)}</span>
+          <span class="text-sm font-semibold text-gray-900 group-hover:text-violet-700 transition-colors leading-snug mb-3">${esc(a.title)}</span>
+          <span class="text-xs text-gray-400 mt-auto">${a.readingTimeMin} min di lettura</span>
+        </a>`
+    )
+    .join("\n      ");
+
+  return `<section class="py-14 bg-gray-50 border-t border-gray-100">
+  <div class="container mx-auto px-4 sm:px-6 lg:px-8 max-w-4xl">
+    <div class="flex items-center justify-between mb-6">
+      <h2 class="text-base font-semibold text-gray-900">Approfondimenti</h2>
+      <a href="/blog" class="text-xs font-semibold text-violet-600 hover:text-violet-700 transition-colors">Tutti gli articoli →</a>
+    </div>
+    <div class="grid sm:grid-cols-3 gap-4">
+      ${cards}
     </div>
   </div>
 </section>`;
@@ -440,6 +482,7 @@ function buildSectorBodyHtml(s: SectorData): string {
 
   const sRelated = buildRelatedSectorsSection(s, "Servizi correlati — genera preventivi per");
   const sCityGrid = CITY_SECTORS.includes(s.slug) ? buildSectorCityGrid(s) : "";
+  const sApprofondimenti = buildApprofondimentiSection(s.slug);
 
   const middleSections =
     layout === 0
@@ -452,6 +495,7 @@ function buildSectorBodyHtml(s: SectorData): string {
   ${middleSections.join("\n  ")}
   ${sRelated}
   ${sCityGrid}
+  ${sApprofondimenti}
   ${sCta}
 </div>`;
 }
@@ -850,5 +894,283 @@ for (const [sectorSlug, sector] of Object.entries(SECTORS)) {
     count++;
   }
 }
+
+// ─── Blog JSON-LD builders ───────────────────────────────────────────────────
+
+function buildBlogListJsonLd(): object[] {
+  return [
+    {
+      "@context": "https://schema.org",
+      "@type": "Blog",
+      name: BLOG_LIST_TITLE,
+      description: BLOG_LIST_DESCRIPTION,
+      url: `${BASE_URL}/blog`,
+      inLanguage: "it",
+      publisher: {
+        "@type": "Organization",
+        name: "prevai",
+        url: BASE_URL,
+        logo: { "@type": "ImageObject", url: `${BASE_URL}/favicon.svg` },
+      },
+    },
+    {
+      "@context": "https://schema.org",
+      "@type": "BreadcrumbList",
+      itemListElement: [
+        { "@type": "ListItem", position: 1, name: "Home", item: BASE_URL },
+        { "@type": "ListItem", position: 2, name: "Blog", item: `${BASE_URL}/blog` },
+      ],
+    },
+  ];
+}
+
+function buildArticleJsonLd(article: BlogArticle): object[] {
+  const canonical = `${BASE_URL}/blog/${article.slug}`;
+  return [
+    {
+      "@context": "https://schema.org",
+      "@type": "Article",
+      headline: article.title,
+      description: article.metaDescription,
+      url: canonical,
+      datePublished: article.publishedAt,
+      dateModified: article.publishedAt,
+      inLanguage: "it",
+      author: {
+        "@type": "Organization",
+        name: "prevai",
+        url: BASE_URL,
+      },
+      publisher: {
+        "@type": "Organization",
+        name: "prevai",
+        url: BASE_URL,
+        logo: { "@type": "ImageObject", url: `${BASE_URL}/favicon.svg` },
+      },
+    },
+    {
+      "@context": "https://schema.org",
+      "@type": "BreadcrumbList",
+      itemListElement: [
+        { "@type": "ListItem", position: 1, name: "Home", item: BASE_URL },
+        { "@type": "ListItem", position: 2, name: "Blog", item: `${BASE_URL}/blog` },
+        { "@type": "ListItem", position: 3, name: article.title, item: canonical },
+      ],
+    },
+  ];
+}
+
+// ─── Blog list page body HTML ─────────────────────────────────────────────────
+
+const BLOG_CATEGORY_STYLE: Record<string, string> = {
+  Professioni: "background:#f5f3ff;color:#6d28d9",
+  Prezzi: "background:#ecfeff;color:#0e7490",
+  Consigli: "background:#fffbeb;color:#d97706",
+  Tool: "background:#f0fdf4;color:#15803d",
+  Innovazione: "background:#eff6ff;color:#1d4ed8",
+  Business: "background:#fff1f2;color:#be123c",
+};
+
+function buildBlogListBodyHtml(): string {
+  const breadcrumb = `<nav aria-label="Percorso di navigazione" class="bg-white border-b border-gray-100">
+  <div class="container mx-auto px-4 sm:px-6 lg:px-8 py-3">
+    <ol class="flex items-center text-sm text-gray-500 flex-wrap">
+      <li><a href="/" class="hover:text-violet-600 transition-colors">Home</a></li>
+      <li aria-hidden="true" class="mx-1.5 text-gray-300 select-none">/</li>
+      <li class="text-gray-900 font-medium" aria-current="page">Blog</li>
+    </ol>
+  </div>
+</nav>`;
+
+  const hero = `<section class="bg-white pt-16 pb-12 border-b border-gray-100">
+  <div class="container mx-auto px-4 sm:px-6 lg:px-8 text-center max-w-3xl">
+    <div class="inline-flex items-center gap-2 rounded-full bg-violet-100 border border-violet-200 px-4 py-1.5 text-sm font-medium text-violet-700 mb-6">
+      Approfondimenti
+    </div>
+    <h1 class="text-4xl font-extrabold tracking-tight text-gray-900 sm:text-5xl mb-4 leading-tight">
+      Guide e consigli per <span class="gradient-text">artigiani e PMI</span>
+    </h1>
+    <p class="text-lg text-gray-500 max-w-2xl mx-auto">${esc(BLOG_LIST_DESCRIPTION)}</p>
+  </div>
+</section>`;
+
+  const cards = BLOG_ARTICLES.map((a) => {
+    const catStyle = BLOG_CATEGORY_STYLE[a.category] ?? "background:#f3f4f6;color:#374151";
+    const dateStr = new Date(a.publishedAt).toLocaleDateString("it-IT", { day: "numeric", month: "long", year: "numeric" });
+    return `<a href="/blog/${esc(a.slug)}" class="group flex flex-col bg-white rounded-2xl border border-gray-100 hover:border-violet-200 hover:shadow-md transition-all duration-200 overflow-hidden">
+      <div class="p-6 flex flex-col flex-1">
+        <div class="flex items-center justify-between mb-4">
+          <span class="text-xs font-semibold px-2.5 py-1 rounded-full" style="${catStyle}">${esc(a.category)}</span>
+          <span class="text-xs text-gray-400">${a.readingTimeMin} min</span>
+        </div>
+        <h2 class="text-sm font-bold text-gray-900 leading-snug mb-2 group-hover:text-violet-700 transition-colors flex-1">${esc(a.title)}</h2>
+        <p class="text-xs text-gray-500 leading-relaxed mb-4">${esc(a.metaDescription.slice(0, 130))}...</p>
+        <div class="flex items-center justify-between mt-auto pt-3 border-t border-gray-50">
+          <time class="text-xs text-gray-400" datetime="${a.publishedAt}">${dateStr}</time>
+          <span class="text-xs font-semibold text-violet-600">Leggi →</span>
+        </div>
+      </div>
+    </a>`;
+  }).join("\n    ");
+
+  const grid = `<section class="py-14">
+  <div class="container mx-auto px-4 sm:px-6 lg:px-8 max-w-5xl">
+    <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+      ${cards}
+    </div>
+  </div>
+</section>`;
+
+  const cta = `<section class="py-16 bg-gray-50 border-t border-gray-100">
+  <div class="container mx-auto px-4 sm:px-6 lg:px-8 text-center max-w-2xl">
+    <h2 class="text-2xl font-bold text-gray-900 mb-3">
+      Pronto a creare preventivi in <span class="gradient-text">30 secondi</span>?
+    </h2>
+    <p class="text-gray-500 mb-8 text-sm">Nessuna carta di credito. Nessun impegno. Il tuo primo preventivo è gratis.</p>
+    <a href="/sign-up" class="btn-gradient inline-flex h-12 items-center justify-center px-8 text-sm font-semibold">
+      Inizia Gratuitamente
+    </a>
+  </div>
+</section>`;
+
+  return `<div class="flex flex-col min-h-screen bg-white">
+  ${breadcrumb}
+  ${hero}
+  ${grid}
+  ${cta}
+</div>`;
+}
+
+// ─── Blog article page body HTML ──────────────────────────────────────────────
+
+function buildBlogArticleBodyHtml(article: BlogArticle): string {
+  const breadcrumb = `<nav aria-label="Percorso di navigazione" class="bg-white border-b border-gray-100">
+  <div class="container mx-auto px-4 sm:px-6 lg:px-8 py-3">
+    <ol class="flex items-center text-sm text-gray-500 flex-wrap">
+      <li><a href="/" class="hover:text-violet-600 transition-colors">Home</a></li>
+      <li aria-hidden="true" class="mx-1.5 text-gray-300 select-none">/</li>
+      <li><a href="/blog" class="hover:text-violet-600 transition-colors">Blog</a></li>
+      <li aria-hidden="true" class="mx-1.5 text-gray-300 select-none">/</li>
+      <li class="text-gray-900 font-medium truncate max-w-[200px]" aria-current="page">${esc(article.title)}</li>
+    </ol>
+  </div>
+</nav>`;
+
+  const catStyle = BLOG_CATEGORY_STYLE[article.category] ?? "background:#f3f4f6;color:#374151";
+  const dateStr = new Date(article.publishedAt).toLocaleDateString("it-IT", { day: "numeric", month: "long", year: "numeric" });
+
+  const header = `<header style="background:linear-gradient(135deg,rgba(124,58,237,0.04),rgba(6,182,212,0.04))" class="pt-14 pb-10 border-b border-gray-100">
+  <div class="container mx-auto px-4 sm:px-6 lg:px-8 max-w-3xl">
+    <div class="flex items-center gap-3 mb-5">
+      <span class="text-xs font-semibold px-2.5 py-1 rounded-full" style="${catStyle}">${esc(article.category)}</span>
+      <span class="text-xs text-gray-400">${article.readingTimeMin} min di lettura</span>
+      <time class="text-xs text-gray-400" datetime="${article.publishedAt}">${dateStr}</time>
+    </div>
+    <h1 class="text-3xl font-extrabold tracking-tight text-gray-900 sm:text-4xl leading-tight mb-4">${esc(article.title)}</h1>
+    <p class="text-base text-gray-500 leading-relaxed">${esc(article.metaDescription)}</p>
+  </div>
+</header>`;
+
+  const body = `<div class="container mx-auto px-4 sm:px-6 lg:px-8 max-w-3xl py-12">
+  <div class="prose prose-gray prose-headings:font-bold prose-h2:text-xl prose-h3:text-base prose-p:leading-relaxed prose-li:leading-relaxed prose-a:text-violet-600 max-w-none">
+    ${article.contentHtml}
+  </div>
+</div>`;
+
+  const relatedSectorLinks = article.relatedSectors.map((sectorSlug) => {
+    const sector = SECTORS[sectorSlug];
+    if (!sector) return "";
+    return `<a href="/seo/${esc(sectorSlug)}" class="inline-flex items-center gap-1.5 rounded-full border border-gray-200 bg-white px-4 py-2 text-xs font-medium text-gray-700 hover:border-violet-300 hover:text-violet-700 transition-colors">
+      <span class="text-violet-400 font-bold">→</span> Preventivi ${esc(sector.label)}
+    </a>`;
+  }).filter(Boolean).join("\n    ");
+
+  const relatedSectorsSection = relatedSectorLinks ? `<section class="border-t border-gray-100 bg-gray-50 py-10">
+  <div class="container mx-auto px-4 sm:px-6 lg:px-8 max-w-3xl">
+    <h2 class="text-sm font-semibold text-gray-500 mb-4 uppercase tracking-wider">Preventivi per settore</h2>
+    <div class="flex flex-wrap gap-3">
+      ${relatedSectorLinks}
+    </div>
+  </div>
+</section>` : "";
+
+  const relatedArticles = BLOG_ARTICLES.filter(
+    (a) => a.slug !== article.slug &&
+      (a.relatedSectors.some((s) => article.relatedSectors.includes(s)) ||
+        a.category === article.category)
+  ).slice(0, 3);
+
+  const relatedCards = relatedArticles.map((a) => {
+    const cs = BLOG_CATEGORY_STYLE[a.category] ?? "background:#f3f4f6;color:#374151";
+    return `<a href="/blog/${esc(a.slug)}" class="group flex flex-col bg-white rounded-xl border border-gray-100 hover:border-violet-200 hover:shadow-sm transition-all p-4">
+      <span class="text-xs font-semibold px-2 py-0.5 rounded-full self-start mb-2" style="${cs}">${esc(a.category)}</span>
+      <span class="text-xs font-semibold text-gray-800 group-hover:text-violet-700 transition-colors leading-snug">${esc(a.title)}</span>
+    </a>`;
+  }).join("\n    ");
+
+  const relatedArticlesSection = relatedCards ? `<section class="py-12 border-t border-gray-100">
+  <div class="container mx-auto px-4 sm:px-6 lg:px-8 max-w-3xl">
+    <h2 class="text-lg font-bold text-gray-900 mb-6">Articoli correlati</h2>
+    <div class="grid sm:grid-cols-3 gap-4">
+      ${relatedCards}
+    </div>
+  </div>
+</section>` : "";
+
+  const cta = `<section class="py-16 border-t border-violet-100/60" style="background:linear-gradient(135deg,rgba(124,58,237,0.04),rgba(6,182,212,0.04))">
+  <div class="container mx-auto px-4 sm:px-6 lg:px-8 text-center max-w-2xl">
+    <h2 class="text-2xl font-bold text-gray-900 mb-3">
+      Pronto a creare preventivi in <span class="gradient-text">30 secondi</span>?
+    </h2>
+    <p class="text-gray-500 mb-8 text-sm">Nessuna carta di credito. Nessun impegno. Il tuo primo preventivo è gratis.</p>
+    <a href="/sign-up" class="btn-gradient inline-flex h-12 items-center justify-center px-8 text-sm font-semibold">
+      Inizia Gratuitamente
+      <svg xmlns="http://www.w3.org/2000/svg" class="ml-2 h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+    </a>
+  </div>
+</section>`;
+
+  return `<div class="flex flex-col min-h-screen bg-white">
+  ${breadcrumb}
+  <article class="flex-1">
+    ${header}
+    ${body}
+    ${relatedSectorsSection}
+    ${relatedArticlesSection}
+  </article>
+  ${cta}
+</div>`;
+}
+
+// ─── Blog prerendering ────────────────────────────────────────────────────────
+
+// Blog list page
+const blogListHeadBlock = buildHeadBlock({
+  title: BLOG_LIST_TITLE,
+  description: BLOG_LIST_DESCRIPTION,
+  canonical: `${BASE_URL}/blog`,
+  ogImagePath: "/opengraph.jpg",
+  jsonLd: buildBlogListJsonLd(),
+});
+const blogListHtml = injectBody(injectHead(template, blogListHeadBlock), buildBlogListBodyHtml());
+writeRoute("blog", blogListHtml);
+count++;
+console.log("  ✓ Blog list page prerendered");
+
+// Individual blog articles
+for (const article of BLOG_ARTICLES) {
+  const articleCanonical = `${BASE_URL}/blog/${article.slug}`;
+  const articleHeadBlock = buildHeadBlock({
+    title: `${article.title} | prevai Blog`,
+    description: article.metaDescription,
+    canonical: articleCanonical,
+    ogImagePath: "/opengraph.jpg",
+    jsonLd: buildArticleJsonLd(article),
+  });
+  const articleHtml = injectBody(injectHead(template, articleHeadBlock), buildBlogArticleBodyHtml(article));
+  writeRoute(`blog/${article.slug}`, articleHtml);
+  count++;
+}
+console.log(`  ✓ ${BLOG_ARTICLES.length} blog articles prerendered`);
 
 console.log(`Prerendered ${count} pages total (1 homepage + ${count - 1} SEO pages).`);

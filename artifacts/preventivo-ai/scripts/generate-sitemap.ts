@@ -5,6 +5,7 @@ import { fileURLToPath } from "node:url";
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
 import { SECTORS, CITIES, CITY_SECTORS } from "../src/data/seo-data.js";
+import { BLOG_ARTICLES } from "../src/data/blog-data.js";
 
 const BASE_URL = "https://www.prevai.it";
 const TODAY = new Date().toISOString().split("T")[0];
@@ -41,6 +42,11 @@ for (const sectorSlug of CITY_SECTORS) {
     const priority = TIER1_CITY_SLUGS.has(city.slug) ? "0.7" : "0.6";
     entries.push(url(`${BASE_URL}/seo/${sectorSlug}/${city.slug}`, priority, "monthly"));
   }
+}
+
+entries.push(url(`${BASE_URL}/blog`, "0.8", "weekly"));
+for (const article of BLOG_ARTICLES) {
+  entries.push(url(`${BASE_URL}/blog/${article.slug}`, "0.7", "monthly"));
 }
 
 const sitemap = `<?xml version="1.0" encoding="UTF-8"?>

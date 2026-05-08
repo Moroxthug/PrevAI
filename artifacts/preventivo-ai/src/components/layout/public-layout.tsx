@@ -101,6 +101,7 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
             <div>
               <h4 className="font-semibold mb-4 text-sm uppercase tracking-wider text-foreground">Guide</h4>
               <ul className="space-y-2 text-sm text-muted-foreground">
+                <li><Link href="/blog" className="hover:text-foreground transition-colors font-medium text-foreground/80">Blog &amp; Approfondimenti</Link></li>
                 <li><Link href="/seo/modello-excel" className="hover:text-foreground transition-colors">Modello Excel</Link></li>
                 <li><Link href="/seo/modello-word" className="hover:text-foreground transition-colors">Modello Word</Link></li>
                 <li><Link href="/seo/come-fare-preventivo" className="hover:text-foreground transition-colors">Come Fare un Preventivo</Link></li>
