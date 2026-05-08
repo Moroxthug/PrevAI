@@ -1,7 +1,8 @@
 import { useParams, Link } from "wouter";
-import { ArrowRight, CheckCircle2, Clock, FileText, Shield, TrendingUp, Star, Building2 } from "lucide-react";
+import { ArrowRight, CheckCircle2, Clock, FileText, Shield, TrendingUp, Star, Building2, BookOpen } from "lucide-react";
 import { SeoHead } from "@/components/seo-head";
 import { SECTORS, DEFAULT_SECTOR, RELATED_SECTORS } from "@/data/seo-data";
+import { BLOG_ARTICLES, SECTOR_ARTICLES } from "@/data/blog-data";
 
 export default function SeoLanding() {
   const params = useParams();
@@ -233,6 +234,50 @@ export default function SeoLanding() {
           </div>
         </section>
       )}
+
+      {/* ── Approfondimenti ──────────────────────────────── */}
+      {SECTOR_ARTICLES[slug] && SECTOR_ARTICLES[slug].length > 0 && (() => {
+        const articles = SECTOR_ARTICLES[slug]
+          .map((articleSlug) => BLOG_ARTICLES.find((a) => a.slug === articleSlug))
+          .filter(Boolean) as typeof BLOG_ARTICLES;
+        if (articles.length === 0) return null;
+        return (
+          <section className="py-16 bg-gray-50/60">
+            <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-4xl">
+              <div className="flex items-center gap-3 mb-8">
+                <div className="h-9 w-9 rounded-xl flex items-center justify-center text-white shrink-0"
+                  style={{ background: "linear-gradient(135deg, #7C3AED, #06B6D4)" }}>
+                  <BookOpen className="h-4.5 w-4.5" />
+                </div>
+                <div>
+                  <h2 className="text-2xl font-bold text-gray-900">Approfondimenti</h2>
+                  <p className="text-sm text-gray-500 mt-0.5">Guide e consigli pratici per {s.h1Highlight.toLowerCase()}</p>
+                </div>
+              </div>
+              <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {articles.map((a) => (
+                  <Link
+                    key={a.slug}
+                    href={`/blog/${a.slug}`}
+                    className="group flex flex-col bg-white rounded-xl border border-gray-100 hover:border-violet-200 hover:shadow-sm transition-all p-5"
+                  >
+                    <span className="text-xs font-semibold text-violet-600 mb-2">{a.category}</span>
+                    <span className="text-sm font-semibold text-gray-800 group-hover:text-violet-700 transition-colors leading-snug mb-2">
+                      {a.title}
+                    </span>
+                    <span className="text-xs text-gray-400 mt-auto">{a.readingTimeMin} min di lettura</span>
+                  </Link>
+                ))}
+              </div>
+              <div className="mt-6 text-center">
+                <Link href="/blog" className="text-sm font-medium text-violet-600 hover:text-violet-800 transition-colors">
+                  Vedi tutte le guide →
+                </Link>
+              </div>
+            </div>
+          </section>
+        );
+      })()}
 
       {/* ── CTA finale ───────────────────────────────────── */}
       <section className="py-24 bg-white">
