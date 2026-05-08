@@ -820,6 +820,48 @@ function buildHomepageBodyHtml(): string {
     </div>
   </section>
 
+  <section class="fade-in-section py-14 bg-white">
+    <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="text-center mb-8">
+        <span class="inline-block bg-amber-50 text-amber-600 text-xs font-bold px-3 py-0.5 rounded-full uppercase tracking-wider mb-3">Recensioni verificate</span>
+        <h2 class="text-2xl font-bold tracking-tight text-gray-900 sm:text-3xl">Cosa dicono <span class="gradient-text">di noi</span></h2>
+        <div class="flex items-center justify-center gap-2 mt-3" aria-label="Valutazione media 4.9 su 5">
+          <div class="flex gap-0.5" aria-hidden="true">
+            ${Array.from({ length: 5 }).map(() => `<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-amber-400 fill-amber-400" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>`).join("")}
+          </div>
+          <span class="text-sm font-bold text-gray-800">4.9</span>
+          <span class="text-sm text-gray-400">/5 &middot; 127 recensioni</span>
+        </div>
+      </div>
+      <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 max-w-5xl mx-auto">
+        ${[
+          { name: "Marco R.", role: "Imbianchino", city: "Milano", rating: 5, text: "Faccio il doppio dei preventivi in metà tempo. Prima ci mettevo un&apos;ora, adesso 2 minuti. I clienti sono sorpresi dalla qualità del documento." },
+          { name: "Giulia T.", role: "Titolare, Termoidraulica srl", city: "Torino", rating: 5, text: "Ho vinto 2 lavori nel primo giorno solo perché ho risposto prima dei concorrenti. prevai mi ha dato un vantaggio enorme sulla concorrenza." },
+          { name: "Luca S.", role: "Elettricista", city: "Roma", rating: 5, text: "Il PDF è professionale come quello di una grande azienda. I clienti non chiedono più sconti &mdash; si fidano subito di più." },
+          { name: "Antonio B.", role: "Muratore", city: "Napoli", rating: 4, text: "Uso prevai dal telefono direttamente in cantiere. In 3 minuti ho il preventivo pronto da mandare su WhatsApp. Prima me lo dimenticavo." },
+          { name: "Sara M.", role: "Gestione Immobiliare", city: "Bologna", rating: 5, text: "Non sono artigiana ma coordino molti interventi. prevai mi ha tolto ore di burocrazia ogni settimana &mdash; l&apos;adozione è stata immediata." },
+          { name: "Roberto C.", role: "Falegname", city: "Brescia", rating: 5, text: "Ho alzato i prezzi del 15% senza perdere lavori. Quando il cliente vede un preventivo ben strutturato, la fiducia aumenta automaticamente." },
+        ].map((t) => {
+          const initials = t.name.split(" ").map((n: string) => n[0]).join("").slice(0, 2).toUpperCase();
+          const stars = Array.from({ length: 5 }).map((_, i) =>
+            `<svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 ${i < t.rating ? "text-amber-400 fill-amber-400" : "text-gray-100 fill-gray-100"}" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>`
+          ).join("");
+          return `<div class="bg-white rounded-xl border border-gray-100 p-5 card-soft flex flex-col gap-3">
+            <div class="flex gap-0.5" aria-label="${t.rating} stelle su 5">${stars}</div>
+            <p class="text-sm text-gray-700 leading-relaxed flex-1">&ldquo;${t.text}&rdquo;</p>
+            <div class="flex items-center gap-3 pt-2 border-t border-gray-50">
+              <div class="h-9 w-9 rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0" style="background:linear-gradient(135deg,#7C3AED,#06B6D4)" aria-hidden="true">${initials}</div>
+              <div>
+                <div class="text-sm font-semibold text-gray-900">${esc(t.name)}</div>
+                <div class="text-xs text-gray-400">${esc(t.role)} &middot; ${esc(t.city)}</div>
+              </div>
+            </div>
+          </div>`;
+        }).join("\n        ")}
+      </div>
+    </div>
+  </section>
+
   <section class="fade-in-section py-28 bg-white">
     <div class="container mx-auto px-4 sm:px-6 lg:px-8 text-center max-w-2xl">
       <h2 class="text-3xl font-bold text-gray-900 sm:text-4xl mb-4">

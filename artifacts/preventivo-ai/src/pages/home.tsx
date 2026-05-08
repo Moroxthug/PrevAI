@@ -1,6 +1,7 @@
 import { Link, useLocation } from "wouter";
 import { ArrowRight, CheckCircle2, FileText, Zap, Lock, Star, Sparkles, Mic, ImagePlus, Check, X } from "lucide-react";
 import { SeoHead } from "@/components/seo-head";
+import { TestimonialsSection, TESTIMONIALS, AGGREGATE_RATING } from "@/components/testimonials-section";
 import { useGetPlans } from "@workspace/api-client-react";
 import { useScrollFade } from "@/hooks/use-scroll-fade";
 import { useAuth } from "@/hooks/use-auth";
@@ -66,13 +67,37 @@ export default function Home() {
     },
   };
 
+  const aggregateRatingJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    name: "prevai",
+    url: "https://www.prevai.it",
+    aggregateRating: {
+      "@type": "AggregateRating",
+      ratingValue: AGGREGATE_RATING.ratingValue,
+      reviewCount: String(AGGREGATE_RATING.reviewCount),
+      bestRating: "5",
+      worstRating: "1",
+    },
+    review: TESTIMONIALS.map((t) => ({
+      "@type": "Review",
+      author: { "@type": "Person", name: t.name },
+      reviewRating: {
+        "@type": "Rating",
+        ratingValue: String(t.rating),
+        bestRating: "5",
+      },
+      reviewBody: t.text,
+    })),
+  };
+
   return (
     <div className="flex flex-col min-h-screen bg-white">
       <SeoHead
         title="prevai – Preventivi Online per Artigiani e Aziende | AI in 30 Secondi"
         description="Dimentica Excel e i documenti scritti a mano. Descrivi il lavoro a parole tue e prevai genera un preventivo professionale con IVA, voci di costo e totali in 30 secondi."
         canonical="https://www.prevai.it"
-        jsonLd={[websiteJsonLd]}
+        jsonLd={[websiteJsonLd, aggregateRatingJsonLd]}
       />
 
       {/* ── Hero ─────────────────────────────────────────────── */}
@@ -583,6 +608,9 @@ export default function Home() {
           </div>
         </div>
       </ScrollSection>
+
+      {/* ── Testimonianze ────────────────────────────────────── */}
+      <TestimonialsSection />
 
       {/* ── Alternativa Excel/Word ───────────────────────────── */}
       <ScrollSection className="py-14 bg-gray-50/60">
