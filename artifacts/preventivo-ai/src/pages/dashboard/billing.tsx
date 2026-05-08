@@ -53,7 +53,7 @@ export default function BillingPage() {
   const handleManage = () => {
     createPortal.mutate(undefined, {
       onSuccess: (r) => {
-        window.location.href = r.url;
+        window.open(r.url, "_blank");
       },
       onError: () =>
         toast({

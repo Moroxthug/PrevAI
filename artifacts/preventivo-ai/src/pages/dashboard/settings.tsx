@@ -132,7 +132,7 @@ function AccountTab() {
                   <div key={f} className="flex items-center gap-2 text-sm"><span className="text-violet-500 font-bold">✓</span> {f}</div>
                 ))}
               </div>
-              <Button onClick={() => createPortal.mutate(undefined, { onSuccess: (r) => { window.location.href = r.url; } })} disabled={createPortal.isPending}>
+              <Button onClick={() => createPortal.mutate(undefined, { onSuccess: (r) => { window.open(r.url, "_blank"); } })} disabled={createPortal.isPending}>
                 {createPortal.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Crown className="h-4 w-4 mr-2" />}
                 Passa a Pro
               </Button>
@@ -263,7 +263,7 @@ function BillingTab() {
   const { toast } = useToast();
   const handleManage = () => {
     createPortal.mutate(undefined, {
-      onSuccess: (r) => { window.location.href = r.url; },
+      onSuccess: (r) => { window.open(r.url, "_blank"); },
       onError: () => toast({ title: "Errore apertura portale", variant: "destructive" }),
     });
   };

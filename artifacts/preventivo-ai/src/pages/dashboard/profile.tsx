@@ -38,7 +38,7 @@ export default function ProfileSettings() {
 
   const handleUpgrade = () => {
     createPortal.mutate(undefined, {
-      onSuccess: (result) => { window.location.href = result.url; },
+      onSuccess: (result) => { window.open(result.url, "_blank"); },
       onError: () => toast({ title: "Errore apertura portale", variant: "destructive" }),
     });
   };

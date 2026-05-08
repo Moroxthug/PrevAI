@@ -118,7 +118,7 @@ function StarterUpgradeCard() {
         </div>
       </div>
       <button
-        onClick={() => createPortal.mutate(undefined, { onSuccess: (r) => { window.location.href = r.url; } })}
+        onClick={() => createPortal.mutate(undefined, { onSuccess: (r) => { window.open(r.url, "_blank"); } })}
         disabled={createPortal.isPending}
         className="shrink-0 btn-gradient inline-flex h-8 items-center justify-center px-3 text-xs font-semibold disabled:opacity-60"
       >

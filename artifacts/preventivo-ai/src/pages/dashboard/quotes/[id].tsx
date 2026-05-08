@@ -63,7 +63,7 @@ export default function QuoteDetail() {
 
   const handleUpgrade = () => {
     createPortal.mutate(undefined, {
-      onSuccess: (result) => { window.location.href = result.url; },
+      onSuccess: (result) => { window.open(result.url, "_blank"); },
       onError: () => {
         toast({ title: "Errore", description: "Impossibile aprire il portale di gestione", variant: "destructive" });
       }
@@ -270,7 +270,7 @@ export default function QuoteDetail() {
     createCheckout.mutate({
       data: { quoteId: id, planType: planType as Parameters<typeof createCheckout.mutate>[0]["data"]["planType"] }
     }, {
-      onSuccess: (result) => { window.location.href = result.url; }
+      onSuccess: (result) => { window.open(result.url, "_blank"); }
     });
   };
 
