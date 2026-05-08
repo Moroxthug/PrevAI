@@ -4,6 +4,13 @@ import { auth } from "../lib/auth";
 import { db, quotesTable, businessProfilesTable, settingsTable, authUsersTable } from "@workspace/db";
 import { eq, sql, desc, count, inArray } from "drizzle-orm";
 import { logger } from "../lib/logger";
+import { getUncachableStripeClient } from "../stripeClient";
+
+const PRICE_TO_PLAN: Record<string, string> = {
+  "price_1TUdJjCaDBaDETvnCGbjTgIq": "monthly_starter",
+  "price_1TUdJjCaDBaDETvnfBv37ryF": "monthly_pro",
+  "price_1TUdJjCaDBaDETvnCo3JKGJ7": "monthly_elite",
+};
 
 const router = Router();
 
@@ -92,7 +99,7 @@ router.get("/admin/metrics", async (_req, res) => {
         if (row.plan === "monthly_pro") proCount += Number(row.cnt);
       }
     }
-    const mrr = starterCount * 29 + proCount * 79;
+    const mrr = starterCount * 19 + proCount * 49;
 
     res.json({
       totalUsers,
@@ -181,6 +188,81 @@ router.post("/admin/settings", async (req, res) => {
     res.json({ ok: true });
   } catch (err) {
     logger.error({ err }, "Admin settings post error");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+router.post("/admin/sync-subscription", async (req, res) => {
+  try {
+    const { email } = req.body as { email?: string };
+    if (!email) {
+      res.status(400).json({ error: "email required" });
+      return;
+    }
+
+    const stripe = await getUncachableStripeClient();
+
+    // Search Stripe for customers with this email
+    const customers = await stripe.customers.list({ email, limit: 5 });
+    if (customers.data.length === 0) {
+      res.status(404).json({ error: `No Stripe customer found for email: ${email}` });
+      return;
+    }
+
+    // Find our user by email
+    const [authUser] = await db
+      .select({ id: authUsersTable.id })
+      .from(authUsersTable)
+      .where(eq(authUsersTable.email, email));
+
+    if (!authUser) {
+      res.status(404).json({ error: `No app user found for email: ${email}` });
+      return;
+    }
+
+    // Try each Stripe customer (might have multiple), look for active subscription
+    let synced: { customerId: string; planType: string; status: string } | null = null;
+
+    for (const customer of customers.data) {
+      const subs = await stripe.subscriptions.list({ customer: customer.id, status: "all", limit: 5 });
+      for (const sub of subs.data) {
+        const priceId = sub.items.data[0]?.price?.id;
+        const planType = priceId ? PRICE_TO_PLAN[priceId] : undefined;
+        if (!planType) continue;
+
+        const isActive = sub.status === "active" || sub.status === "trialing";
+        await db
+          .insert(businessProfilesTable)
+          .values({
+            userId: authUser.id,
+            stripeCustomerId: customer.id,
+            subscriptionPlan: isActive ? planType : null,
+            subscriptionStatus: isActive ? "active" : sub.status,
+          })
+          .onConflictDoUpdate({
+            target: businessProfilesTable.userId,
+            set: {
+              stripeCustomerId: customer.id,
+              subscriptionPlan: isActive ? planType : null,
+              subscriptionStatus: isActive ? "active" : sub.status,
+            },
+          });
+
+        logger.info({ userId: authUser.id, customerId: customer.id, planType, status: sub.status }, "Admin manual subscription sync");
+        synced = { customerId: customer.id, planType, status: sub.status };
+        if (isActive) break; // prefer active sub
+      }
+      if (synced?.status === "active") break;
+    }
+
+    if (!synced) {
+      res.status(404).json({ error: "No matching subscription found for this customer's price IDs" });
+      return;
+    }
+
+    res.json({ ok: true, synced });
+  } catch (err) {
+    logger.error({ err }, "Admin sync-subscription error");
     res.status(500).json({ error: "Internal server error" });
   }
 });

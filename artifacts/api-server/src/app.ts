@@ -88,6 +88,74 @@ app.post(
       return;
     }
 
+    // ── Map Stripe price IDs → internal plan IDs ─────────────────────────────
+    const PRICE_TO_PLAN: Record<string, string> = {
+      "price_1TUdJjCaDBaDETvnCGbjTgIq": "monthly_starter",
+      "price_1TUdJjCaDBaDETvnfBv37ryF": "monthly_pro",
+      "price_1TUdJjCaDBaDETvnCo3JKGJ7": "monthly_elite",
+    };
+
+    // Shared helper: upsert subscription in DB, resolving user by customerId or email
+    async function syncSubscription(customerId: string, priceId: string | undefined, status: string) {
+      const planType = priceId ? PRICE_TO_PLAN[priceId] : undefined;
+      if (!planType) {
+        logger.warn({ customerId, priceId }, "Unknown price ID in subscription sync — skipping");
+        return null;
+      }
+      const isActive = status === "active" || status === "trialing";
+
+      // 1. Look up by stripeCustomerId already in DB
+      let [existing] = await db
+        .select({ userId: businessProfilesTable.userId })
+        .from(businessProfilesTable)
+        .where(eq(businessProfilesTable.stripeCustomerId, customerId));
+
+      let userId = existing?.userId;
+
+      // 2. Fallback: fetch customer from Stripe and look up by email
+      if (!userId) {
+        try {
+          const { getUncachableStripeClient } = await import("./stripeClient");
+          const stripe = await getUncachableStripeClient();
+          const customer = await stripe.customers.retrieve(customerId);
+          if (!customer.deleted && customer.email) {
+            const [authUser] = await db
+              .select({ id: authUsersTable.id })
+              .from(authUsersTable)
+              .where(eq(authUsersTable.email, customer.email));
+            userId = authUser?.id;
+          }
+        } catch (fetchErr) {
+          logger.error({ err: fetchErr }, "Failed to fetch Stripe customer for email lookup");
+        }
+      }
+
+      if (!userId) {
+        logger.warn({ customerId }, "Cannot resolve user for Stripe customer — skipping");
+        return null;
+      }
+
+      await db
+        .insert(businessProfilesTable)
+        .values({
+          userId,
+          stripeCustomerId: customerId,
+          subscriptionPlan: isActive ? planType : null,
+          subscriptionStatus: isActive ? "active" : "cancelled",
+        })
+        .onConflictDoUpdate({
+          target: businessProfilesTable.userId,
+          set: {
+            stripeCustomerId: customerId,
+            subscriptionPlan: isActive ? planType : null,
+            subscriptionStatus: isActive ? "active" : "cancelled",
+          },
+        });
+
+      logger.info({ userId, customerId, planType, status }, "Subscription synced to DB");
+      return { userId, planType, isActive };
+    }
+
     try {
       if (event.type === "checkout.session.completed") {
         const session = event.data.object;
@@ -121,7 +189,7 @@ app.post(
                 subscriptionStatus: "active",
               },
             });
-          logger.info({ userId, planType }, "Subscription activated via webhook");
+          logger.info({ userId, planType }, "Subscription activated via checkout webhook");
 
           try {
             const [authUser] = await db
@@ -155,14 +223,14 @@ app.post(
         }
       }
 
-      if (event.type === "customer.subscription.updated") {
+      // ── Handle subscription created/updated (e.g. Stripe dashboard, portal) ──
+      if (event.type === "customer.subscription.created" || event.type === "customer.subscription.updated") {
         const sub = event.data.object;
-        if (sub.customer && sub.status === "active") {
-          await db
-            .update(businessProfilesTable)
-            .set({ subscriptionStatus: "active" })
-            .where(eq(businessProfilesTable.stripeCustomerId, sub.customer as string));
-          logger.info({ customer: sub.customer }, "Subscription updated via webhook");
+        const customerId = sub.customer as string;
+        const priceId = sub.items?.data?.[0]?.price?.id;
+        const status = sub.status ?? "";
+        if (customerId) {
+          await syncSubscription(customerId, priceId, status);
         }
       }
 
