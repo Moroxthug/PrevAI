@@ -84,6 +84,24 @@ A SaaS web app for Italian freelancers/craftsmen to describe a job in natural la
 - Admin email: `bchysfmel@gmail.com` — access `/admin` while logged in with this account
 - Stripe account: `acct_1TTwBIEKcNcM20o5` (bchysf@gmail.com) — env vars take priority over Replit integration connector
 
+## Google Search Console — come completare la verifica
+
+Il meta tag di verifica è già in `artifacts/preventivo-ai/index.html` come placeholder.
+Per completare la verifica e indicizzare la sitemap, segui questi passi:
+
+1. Vai su [Google Search Console](https://search.google.com/search-console) e accedi con l'account Google del sito.
+2. Clicca "Aggiungi proprietà" → scegli "Prefisso URL" → inserisci `https://www.prevai.it`.
+3. Scegli il metodo **"Tag HTML"**. Google ti mostrerà un tag del tipo:
+   `<meta name="google-site-verification" content="CODICE_UNIVOCO" />`
+4. Copia il valore del campo `content` e comunicalo all'agente, che sostituirà `PLACEHOLDER` nel file `index.html` e rigenererà i prerendered con `pnpm --filter @workspace/preventivo-ai run build`.
+5. Torna su Search Console, clicca "Verifica" — il tag sarà presente nel sito live.
+6. Nella sezione **"Sitemap"**, inserisci `https://www.prevai.it/sitemap.xml` e clicca "Invia".
+
+**File rilevanti:**
+- `artifacts/preventivo-ai/index.html` — contiene il meta tag (riga `google-site-verification`)
+- `artifacts/preventivo-ai/public/robots.txt` — già include `Sitemap: https://www.prevai.it/sitemap.xml`
+- `artifacts/preventivo-ai/public/sitemap.xml` — generato automaticamente al build (1105 URL)
+
 ## Gotchas
 
 - `pnpm --filter @workspace/api-spec run codegen` must be re-run after any OpenAPI spec change
