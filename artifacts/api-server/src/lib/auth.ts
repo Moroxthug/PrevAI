@@ -1,5 +1,6 @@
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
+import { bearer } from "better-auth/plugins";
 import { db, authUsersTable, authSessionsTable, authAccountsTable, authVerificationsTable } from "@workspace/db";
 import { Resend } from "resend";
 import { logger } from "./logger";
@@ -50,6 +51,7 @@ export const auth = betterAuth({
       verification: authVerificationsTable,
     },
   }),
+  plugins: [bearer()],
   emailAndPassword: {
     enabled: true,
     requireEmailVerification: false,
