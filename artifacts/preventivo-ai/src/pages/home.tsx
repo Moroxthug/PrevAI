@@ -467,6 +467,7 @@ export default function Home() {
           <div className="grid md:grid-cols-3 gap-4 max-w-4xl mx-auto mb-8">
             {subscriptionPlans.map((plan) => {
               const isPro = plan.id === "monthly_pro";
+              const isElite = plan.id === "monthly_elite";
               const isStarter = plan.id === "monthly_starter";
               return (
                 <div
@@ -474,7 +475,9 @@ export default function Home() {
                   className={`bg-white rounded-xl p-5 flex flex-col relative transition-all duration-300 ${
                     isPro
                       ? "border-2 border-violet-300 shadow-xl shadow-violet-100/60 pro-pulse"
-                      : "card-soft"
+                      : isElite
+                        ? "border-2 border-amber-300 shadow-lg shadow-amber-100/40"
+                        : "card-soft"
                   }`}
                 >
                   {isPro && (
@@ -487,10 +490,17 @@ export default function Home() {
                       </span>
                     </div>
                   )}
+                  {isElite && (
+                    <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+                      <span className="bg-amber-500 text-white text-[10px] font-bold px-2.5 py-0.5 rounded-full uppercase tracking-widest whitespace-nowrap">
+                        👑 Illimitato
+                      </span>
+                    </div>
+                  )}
 
                   <div className="mb-3">
                     <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full mb-1.5 inline-block ${
-                      isPro ? "bg-violet-100 text-violet-700" : "bg-gray-100 text-gray-500"
+                      isPro ? "bg-violet-100 text-violet-700" : isElite ? "bg-amber-100 text-amber-700" : "bg-gray-100 text-gray-500"
                     }`}>
                       {plan.name}
                     </span>
@@ -504,7 +514,7 @@ export default function Home() {
                     {plan.features.map((feature, i) => (
                       <li key={i} className="flex items-start gap-1.5">
                         <CheckCircle2 className={`h-3 w-3 shrink-0 mt-0.5 ${
-                          isPro ? "text-violet-500" : "text-gray-400"
+                          isPro ? "text-violet-500" : isElite ? "text-amber-500" : "text-gray-400"
                         }`} />
                         <span className="text-xs text-gray-600 leading-snug">{feature}</span>
                       </li>
@@ -514,10 +524,14 @@ export default function Home() {
                   <button
                     onClick={handlePlanClick}
                     className={`inline-flex h-9 items-center justify-center w-full text-xs font-semibold rounded-lg transition-all ${
-                      isPro ? "btn-gradient" : "btn-gradient-outline"
+                      isPro
+                        ? "btn-gradient"
+                        : isElite
+                          ? "bg-amber-500 hover:bg-amber-600 text-white"
+                          : "btn-gradient-outline"
                     }`}
                   >
-                    {isStarter ? "Inizia con Starter" : "Inizia con Pro"}
+                    {isStarter ? "Inizia con Starter" : isPro ? "Inizia con Pro" : "Inizia con Elite"}
                   </button>
                 </div>
               );

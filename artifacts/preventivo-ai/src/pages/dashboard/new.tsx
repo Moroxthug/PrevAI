@@ -27,6 +27,7 @@ const EXAMPLES = [
 
 function getMaxPhotos(plan: string | null | undefined, isActive: boolean): number {
   if (!isActive) return 0;
+  if (plan === "monthly_elite") return 5;
   if (plan === "monthly_pro") return 3;
   if (plan === "monthly_starter") return 1;
   return 0;

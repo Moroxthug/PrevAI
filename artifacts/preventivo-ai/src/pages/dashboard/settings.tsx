@@ -270,28 +270,29 @@ function BillingTab() {
   if (isLoading) return <Skeleton className="h-48 w-full rounded-2xl" />;
   const isStarter = sub?.plan === "monthly_starter";
   const isPro = sub?.plan === "monthly_pro";
+  const isElite = sub?.plan === "monthly_elite";
   const isActive = sub?.isActive ?? false;
-  const planLabel = isPro ? "Pro" : isStarter ? "Starter" : null;
-  const planPrice = isPro ? "€79/mese" : isStarter ? "€29/mese" : null;
+  const planLabel = isElite ? "Elite" : isPro ? "Pro" : isStarter ? "Starter" : null;
+  const planPrice = isElite ? "€59/mese" : isPro ? "€49/mese" : isStarter ? "€19/mese" : null;
   const renewalDate = sub?.periodEnd ? new Date(sub.periodEnd).toLocaleDateString("it-IT", { day: "2-digit", month: "long", year: "numeric" }) : null;
   const resetDate = sub?.quotaResetDate ? new Date(sub.quotaResetDate).toLocaleDateString("it-IT", { day: "2-digit", month: "long" }) : null;
 
   return (
     <div className="space-y-6">
       {isActive ? (
-        <Card className={`border-2 ${isPro ? "border-amber-300 bg-gradient-to-br from-amber-50 to-violet-50" : "border-violet-200 bg-gradient-to-br from-violet-50 to-cyan-50"}`}>
+        <Card className={`border-2 ${isElite ? "border-amber-400 bg-gradient-to-br from-amber-50 to-orange-50" : isPro ? "border-amber-300 bg-gradient-to-br from-amber-50 to-violet-50" : "border-violet-200 bg-gradient-to-br from-violet-50 to-cyan-50"}`}>
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between gap-3 flex-wrap">
               <div className="flex items-center gap-3">
-                <div className={`h-11 w-11 rounded-xl flex items-center justify-center ${isPro ? "bg-amber-100" : "bg-violet-100"}`}>
-                  {isPro ? <Crown className="h-6 w-6 text-amber-600" /> : <Zap className="h-6 w-6 text-violet-500" />}
+                <div className={`h-11 w-11 rounded-xl flex items-center justify-center ${isElite ? "bg-amber-200" : isPro ? "bg-amber-100" : "bg-violet-100"}`}>
+                  {isElite ? <Crown className="h-6 w-6 text-amber-700" /> : isPro ? <Crown className="h-6 w-6 text-amber-600" /> : <Zap className="h-6 w-6 text-violet-500" />}
                 </div>
                 <div>
                   <CardTitle className="text-xl">PrevAI {planLabel}</CardTitle>
                   <p className="text-sm text-muted-foreground mt-0.5">{planPrice}</p>
                 </div>
               </div>
-              <Badge className={`text-xs ${isPro ? "bg-amber-100 text-amber-700 border-amber-200" : "bg-violet-100 text-violet-700 border-violet-200"}`} variant="outline">
+              <Badge className={`text-xs ${isElite ? "bg-amber-100 text-amber-800 border-amber-300" : isPro ? "bg-amber-100 text-amber-700 border-amber-200" : "bg-violet-100 text-violet-700 border-violet-200"}`} variant="outline">
                 <CheckCircle2 className="h-3 w-3 mr-1" /> Attivo
               </Badge>
             </div>
@@ -312,7 +313,9 @@ function BillingTab() {
             <div className="bg-white/70 rounded-xl p-4 border border-violet-100">
               <div className="text-sm font-semibold mb-3">Incluso nel tuo piano</div>
               <ul className="space-y-2">
-                {isPro ? (
+                {isElite ? (
+                  <><PlanFeature text="Preventivi illimitati" ok /><PlanFeature text="PDF senza filigrana" ok /><PlanFeature text="Tuo logo aziendale sui PDF" ok /><PlanFeature text="Tutti i template PDF" ok /><PlanFeature text="Upload appunti illimitato" ok /><PlanFeature text="Voce illimitata" ok /></>
+                ) : isPro ? (
                   <><PlanFeature text="60 preventivi al mese" ok /><PlanFeature text="PDF senza filigrana" ok /><PlanFeature text="Tuo logo aziendale sui PDF" ok /><PlanFeature text="Tutti i template PDF" ok /><PlanFeature text="Upload appunti (30/mese)" ok /><PlanFeature text="Registrazione vocale (30/mese)" ok /></>
                 ) : (
                   <><PlanFeature text={`${sub?.quotaLimit ?? 10} preventivi al mese`} ok /><PlanFeature text="PDF con logo aziendale" ok /><PlanFeature text="Template Standard" ok /><PlanFeature text="PDF senza watermark" ok={false} /><PlanFeature text="Template Pro e Premium" ok={false} /></>
@@ -325,9 +328,9 @@ function BillingTab() {
               </div>
             )}
             <div className="flex flex-wrap gap-3 pt-1">
-              {isStarter && (
+              {(isStarter || isPro) && (
                 <Button onClick={handleManage} disabled={createPortal.isPending} className="gap-2">
-                  {createPortal.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Crown className="h-4 w-4" />}Passa a Pro
+                  {createPortal.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Crown className="h-4 w-4" />}{isStarter ? "Passa a Pro" : "Passa a Elite"}
                 </Button>
               )}
               <Button variant="outline" onClick={handleManage} disabled={createPortal.isPending} className="gap-2">

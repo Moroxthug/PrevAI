@@ -1705,7 +1705,8 @@ export default function QuoteDetail() {
               <div className="space-y-4">
                 <div className="grid grid-cols-2 gap-3">
                   {[
-                    { id: "monthly_pro", label: "Pro", price: "€79/mese", badge: "⭐ Più Popolare", features: ["60 preventivi/mese", "PDF senza filigrana", "Tutti i template", "Upload foto + voce"], highlight: true },
+                    { id: "monthly_pro", label: "Pro", price: "€49/mese", badge: "⭐ Più Popolare", features: ["60 preventivi/mese", "PDF senza filigrana", "Tutti i template", "Upload foto + voce"], highlight: true },
+                    { id: "monthly_elite", label: "Elite", price: "€59/mese", badge: "👑 Illimitato", features: ["Preventivi illimitati", "PDF senza filigrana", "Tutti i template", "Supporto dedicato"], highlight: false },
                   ].map((opt) => (
                     <div key={opt.id} className={`relative rounded-xl border p-4 flex flex-col ${opt.highlight ? "border-primary ring-1 ring-primary shadow-sm bg-gradient-to-br from-violet-50 to-cyan-50" : "border-amber-300 bg-amber-50/30"}`}>
                       <div className={`absolute -top-2.5 left-1/2 -translate-x-1/2 text-[10px] font-bold px-2 py-0.5 rounded-full text-white whitespace-nowrap ${opt.highlight ? "bg-primary" : "bg-amber-500"}`}>
@@ -1759,21 +1760,27 @@ export default function QuoteDetail() {
               </div>
             ) : (
               <>
-                {/* Subscription plans — 2 columns */}
-                <div className="grid grid-cols-2 gap-3">
+                {/* Subscription plans — 3 columns */}
+                <div className="grid grid-cols-3 gap-2">
                   {plans?.filter(p => p.interval).map((plan, idx) => {
                     const isPro = plan.id === "monthly_pro";
+                    const isElite = plan.id === "monthly_elite";
                     return (
                       <div
                         key={plan.id}
                         className={`plan-card-enter relative rounded-lg border p-3 flex flex-col ${
-                          isPro ? "border-primary ring-1 ring-primary shadow-sm" : ""
+                          isPro ? "border-primary ring-1 ring-primary shadow-sm" : isElite ? "border-amber-300" : ""
                         }`}
                         style={{ animationDelay: `${idx * 0.05}s` }}
                       >
                         {isPro && (
                           <div className="absolute -top-2.5 left-1/2 -translate-x-1/2">
                             <span className="bg-primary text-primary-foreground text-[10px] font-bold px-2 py-0.5 rounded-full">⭐ Pop</span>
+                          </div>
+                        )}
+                        {isElite && (
+                          <div className="absolute -top-2.5 left-1/2 -translate-x-1/2">
+                            <span className="bg-amber-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">👑 ∞</span>
                           </div>
                         )}
                         <div className="font-semibold text-xs mt-1 mb-0.5">{plan.name}</div>
@@ -1784,13 +1791,13 @@ export default function QuoteDetail() {
                         <ul className="space-y-0.5 mb-2.5 flex-1">
                           {plan.features.slice(0, 3).map((feature, i) => (
                             <li key={i} className="flex items-start gap-1 text-muted-foreground">
-                              <CheckCircle2 className={`h-2.5 w-2.5 shrink-0 mt-0.5 ${isPro ? "text-primary" : "text-muted-foreground/60"}`} />
+                              <CheckCircle2 className={`h-2.5 w-2.5 shrink-0 mt-0.5 ${isPro ? "text-primary" : isElite ? "text-amber-500" : "text-muted-foreground/60"}`} />
                               <span className="text-[10px] leading-snug">{feature}</span>
                             </li>
                           ))}
                         </ul>
-                        <Button size="sm" className="w-full text-[10px] h-7"
-                          variant={isPro ? "default" : "outline"}
+                        <Button size="sm" className={`w-full text-[10px] h-7 ${isElite ? "bg-amber-500 hover:bg-amber-600 border-0" : ""}`}
+                          variant={isPro ? "default" : isElite ? "default" : "outline"}
                           onClick={() => handleCheckout(plan.id)} disabled={createCheckout.isPending}>
                           {createCheckout.isPending ? "..." : `Scegli ${plan.name}`}
                         </Button>
