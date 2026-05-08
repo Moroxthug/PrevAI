@@ -239,7 +239,7 @@ export default function SeoLanding() {
       {SECTOR_ARTICLES[slug] && SECTOR_ARTICLES[slug].length > 0 && (() => {
         const articles = SECTOR_ARTICLES[slug]
           .map((articleSlug) => BLOG_ARTICLES.find((a) => a.slug === articleSlug))
-          .filter(Boolean) as typeof BLOG_ARTICLES;
+          .filter((a): a is (typeof BLOG_ARTICLES)[number] => a !== undefined);
         if (articles.length === 0) return null;
         return (
           <section className="py-16 bg-gray-50/60">

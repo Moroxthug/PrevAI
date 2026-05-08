@@ -1189,4 +1189,4 @@ for (const article of BLOG_ARTICLES) {
 }
 console.log(`  ✓ ${BLOG_ARTICLES.length} blog articles prerendered`);
 
-console.log(`Prerendered ${count} pages total (1 homepage + ${count - 1} SEO pages).`);
+console.log(`Prerendered ${count} pages total (1 homepage + SEO sector pages + ${BLOG_ARTICLES.length + 1} blog pages).`);
