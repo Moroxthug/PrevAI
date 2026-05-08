@@ -91,11 +91,7 @@ export const auth = betterAuth({
     user: {
       create: {
         after: async (user) => {
-          try {
-            await sendWelcomeEmail({ toEmail: user.email, toName: user.name });
-          } catch (err) {
-            logger.error({ err }, "Failed to send welcome email in databaseHook (non-fatal)");
-          }
+          await sendWelcomeEmail({ toEmail: user.email, toName: user.name });
         },
       },
     },
