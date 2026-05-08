@@ -1,7 +1,8 @@
 import { useParams, Link } from "wouter";
-import { useEffect } from "react";
-import { BLOG_ARTICLES, SECTOR_ARTICLES } from "@/data/blog-data";
+import { BLOG_ARTICLES } from "@/data/blog-data";
 import { SECTORS } from "@/data/seo-data";
+import { extractToc, injectHeadingIds } from "@/data/blog-toc";
+import { SeoHead } from "@/components/seo-head";
 
 function formatDate(iso: string): string {
   const d = new Date(iso);
@@ -17,16 +18,12 @@ const CATEGORY_COLORS: Record<string, string> = {
   Business: "bg-rose-50 text-rose-700",
 };
 
+const BASE_URL = "https://www.prevai.it";
+
 export default function BlogArticlePage() {
   const params = useParams<{ slug: string }>();
   const slug = params.slug;
   const article = BLOG_ARTICLES.find((a) => a.slug === slug);
-
-  useEffect(() => {
-    if (article) {
-      document.title = article.title + " | prevai Blog";
-    }
-  }, [article]);
 
   if (!article) {
     return (
@@ -40,6 +37,10 @@ export default function BlogArticlePage() {
     );
   }
 
+  const canonical = `${BASE_URL}/blog/${article.slug}`;
+  const toc = extractToc(article.contentHtml);
+  const bodyHtml = injectHeadingIds(article.contentHtml);
+
   const relatedArticles = BLOG_ARTICLES.filter(
     (a) => a.slug !== article.slug &&
       (a.relatedSectors.some((s) => article.relatedSectors.includes(s)) ||
@@ -47,14 +48,48 @@ export default function BlogArticlePage() {
   ).slice(0, 3);
 
   const relatedSectorObjects = article.relatedSectors
-    .map((slug) => SECTORS[slug])
+    .map((s) => SECTORS[s])
     .filter(Boolean);
 
-  const articleSlugs = SECTOR_ARTICLES;
-  void articleSlugs;
+  const jsonLd = [
+    {
+      "@context": "https://schema.org" as const,
+      "@type": "Article" as const,
+      headline: article.title,
+      description: article.metaDescription,
+      url: canonical,
+      datePublished: article.publishedAt,
+      dateModified: article.publishedAt,
+      inLanguage: "it",
+      author: { "@type": "Organization" as const, name: "prevai", url: BASE_URL },
+      publisher: {
+        "@type": "Organization" as const,
+        name: "prevai",
+        url: BASE_URL,
+        logo: { "@type": "ImageObject" as const, url: `${BASE_URL}/favicon.svg` },
+      },
+    },
+    {
+      "@context": "https://schema.org" as const,
+      "@type": "BreadcrumbList" as const,
+      itemListElement: [
+        { "@type": "ListItem" as const, position: 1, name: "Home", item: BASE_URL },
+        { "@type": "ListItem" as const, position: 2, name: "Blog", item: `${BASE_URL}/blog` },
+        { "@type": "ListItem" as const, position: 3, name: article.title, item: canonical },
+      ],
+    },
+  ];
 
   return (
     <div className="flex flex-col min-h-screen bg-white">
+      <SeoHead
+        title={`${article.title} | prevai Blog`}
+        description={article.metaDescription}
+        canonical={canonical}
+        ogType="article"
+        jsonLd={jsonLd}
+      />
+
       <nav aria-label="Percorso di navigazione" className="bg-white border-b border-gray-100">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-3">
           <ol className="flex items-center text-sm text-gray-500 flex-wrap gap-1">
@@ -88,10 +123,32 @@ export default function BlogArticlePage() {
           </div>
         </header>
 
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-3xl py-12">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-3xl py-10">
+          {toc.length >= 2 && (
+            <nav
+              aria-label="Sommario"
+              className="mb-10 rounded-xl border border-violet-100 bg-violet-50/40 px-6 py-5"
+            >
+              <p className="text-xs font-bold text-violet-700 uppercase tracking-wider mb-3">Sommario</p>
+              <ol className="space-y-1.5">
+                {toc.map((item) => (
+                  <li key={item.id} className={item.level === 3 ? "pl-4" : ""}>
+                    <a
+                      href={`#${item.id}`}
+                      className="text-sm text-gray-700 hover:text-violet-700 transition-colors leading-snug"
+                    >
+                      {item.level === 3 && <span className="mr-1 text-gray-400">–</span>}
+                      {item.text}
+                    </a>
+                  </li>
+                ))}
+              </ol>
+            </nav>
+          )}
+
           <div
             className="prose prose-gray prose-headings:font-bold prose-h2:text-xl prose-h3:text-base prose-p:leading-relaxed prose-li:leading-relaxed prose-a:text-violet-600 max-w-none"
-            dangerouslySetInnerHTML={{ __html: article.contentHtml }}
+            dangerouslySetInnerHTML={{ __html: bodyHtml }}
           />
         </div>
 

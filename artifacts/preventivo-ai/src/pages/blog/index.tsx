@@ -1,5 +1,6 @@
 import { Link } from "wouter";
 import { BLOG_ARTICLES, BLOG_LIST_TITLE, BLOG_LIST_DESCRIPTION } from "@/data/blog-data";
+import { SeoHead } from "@/components/seo-head";
 
 function formatDate(iso: string): string {
   const d = new Date(iso);
@@ -15,9 +16,16 @@ const CATEGORY_COLORS: Record<string, string> = {
   Business: "bg-rose-50 text-rose-700",
 };
 
+const BASE_URL = "https://www.prevai.it";
+
 export default function BlogPage() {
   return (
     <div className="flex flex-col min-h-screen bg-white">
+      <SeoHead
+        title={BLOG_LIST_TITLE}
+        description={BLOG_LIST_DESCRIPTION}
+        canonical={`${BASE_URL}/blog`}
+      />
       <nav aria-label="Percorso di navigazione" className="bg-white border-b border-gray-100">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-3">
           <ol className="flex items-center text-sm text-gray-500 flex-wrap gap-1">

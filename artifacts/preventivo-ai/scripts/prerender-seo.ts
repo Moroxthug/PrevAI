@@ -33,6 +33,7 @@ import {
   SECTOR_ARTICLES,
 } from "../src/data/blog-data.js";
 import type { BlogArticle } from "../src/data/blog-data.js";
+import { extractToc, injectHeadingIds } from "../src/data/blog-toc.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const distDir = join(__dirname, "../dist/public");
@@ -1071,9 +1072,24 @@ function buildBlogArticleBodyHtml(article: BlogArticle): string {
   </div>
 </header>`;
 
-  const body = `<div class="container mx-auto px-4 sm:px-6 lg:px-8 max-w-3xl py-12">
+  const toc = extractToc(article.contentHtml);
+  const bodyHtml = injectHeadingIds(article.contentHtml);
+
+  const tocHtml = toc.length >= 2
+    ? `<nav aria-label="Sommario" class="mb-10 rounded-xl border border-violet-100 px-6 py-5" style="background:rgba(124,58,237,0.04)">
+  <p class="text-xs font-bold uppercase tracking-wider mb-3" style="color:#7c3aed">Sommario</p>
+  <ol class="space-y-1.5">
+    ${toc.map((item) => `<li${item.level === 3 ? ' class="pl-4"' : ""}>
+      <a href="#${item.id}" class="text-sm text-gray-700 hover:text-violet-700 transition-colors leading-snug">${item.level === 3 ? '<span class="mr-1 text-gray-400">–</span>' : ""}${esc(item.text)}</a>
+    </li>`).join("\n    ")}
+  </ol>
+</nav>`
+    : "";
+
+  const body = `<div class="container mx-auto px-4 sm:px-6 lg:px-8 max-w-3xl py-10">
+  ${tocHtml}
   <div class="prose prose-gray prose-headings:font-bold prose-h2:text-xl prose-h3:text-base prose-p:leading-relaxed prose-li:leading-relaxed prose-a:text-violet-600 max-w-none">
-    ${article.contentHtml}
+    ${bodyHtml}
   </div>
 </div>`;
 
