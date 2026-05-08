@@ -77,8 +77,9 @@ export default function BillingPage() {
   const isPro = sub?.plan === "monthly_pro";
   const isActive = sub?.isActive ?? false;
 
-  const planLabel = isPro ? "Pro" : isStarter ? "Starter" : null;
-  const planPrice = isPro ? "€79/mese" : isStarter ? "€29/mese" : null;
+  const isElite = sub?.plan === "monthly_elite";
+  const planLabel = isPro ? "Pro" : isStarter ? "Starter" : isElite ? "Elite" : null;
+  const planPrice = isPro ? "€79/mese" : isStarter ? "€29/mese" : isElite ? "€59/mese" : null;
 
   const renewalDate = sub?.periodEnd
     ? new Date(sub.periodEnd).toLocaleDateString("it-IT", {
@@ -278,7 +279,7 @@ export default function BillingPage() {
                 <ul className="space-y-1.5 text-sm">
                   <li className="flex items-center gap-2 text-muted-foreground">
                     <CheckCircle2 className="h-3.5 w-3.5 text-violet-400 shrink-0" />
-                    20 preventivi/mese
+                    10 preventivi/mese
                   </li>
                   <li className="flex items-center gap-2 text-muted-foreground">
                     <CheckCircle2 className="h-3.5 w-3.5 text-violet-400 shrink-0" />

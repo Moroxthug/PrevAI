@@ -1705,7 +1705,7 @@ export default function QuoteDetail() {
               <div className="space-y-4">
                 <div className="grid grid-cols-2 gap-3">
                   {[
-                    { id: "monthly_pro", label: "Pro", price: "€49/mese", badge: "⭐ Più Popolare", features: ["60 preventivi/mese", "PDF senza filigrana", "Tutti i template", "Upload foto + voce"], highlight: true },
+                    { id: "monthly_pro", label: "Pro", price: "€79/mese", badge: "⭐ Più Popolare", features: ["60 preventivi/mese", "PDF senza filigrana", "Tutti i template", "Upload foto + voce"], highlight: true },
                     { id: "monthly_elite", label: "Elite", price: "€59/mese", badge: "👑 Illimitato", features: ["Preventivi illimitati", "PDF senza filigrana", "Tutti i template", "Supporto dedicato"], highlight: false },
                   ].map((opt) => (
                     <div key={opt.id} className={`relative rounded-xl border p-4 flex flex-col ${opt.highlight ? "border-primary ring-1 ring-primary shadow-sm bg-gradient-to-br from-violet-50 to-cyan-50" : "border-amber-300 bg-amber-50/30"}`}>
