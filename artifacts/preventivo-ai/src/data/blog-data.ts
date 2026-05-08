@@ -133,6 +133,19 @@ export const BLOG_ARTICLES: BlogArticle[] = [
 
 <h2>Come verificare se il preventivo è congruo</h2>
 <p>Ricevuto il preventivo, verificate che includa: descrizione delle lavorazioni per stanza, mq, prezzi unitari, IVA separata e condizioni di pagamento. Un preventivo troppo generico (solo un importo globale) è spesso un segnale di scarsa professionalità o di possibili sorprese sui costi finali.</p>
+
+<h2>Come risparmiare sulla tinteggiatura senza perdere qualità</h2>
+<p>Ci sono modi concreti per ridurre il costo della tinteggiatura senza compromettere il risultato finale:</p>
+<ul>
+  <li><strong>Preparate le superfici autonomamente</strong>: rimuovere vecchie tappezzerie, spostare i mobili e proteggere pavimenti e infissi riduce le ore di manodopera dell'imbianchino</li>
+  <li><strong>Scegliete i colori con attenzione</strong>: i colori scuri richiedono più mani di pittura (anche 3–4 per coprire bene) e aumentano il costo del 20–30% rispetto al bianco o ai colori chiari</li>
+  <li><strong>Fate tutto insieme</strong>: tinteggiare più stanze in un unico cantiere è sempre più conveniente che chiamare l'imbianchino per stanze singole; i costi di spostamento e attrezzatura si ripartiscono su più superfici</li>
+  <li><strong>Evitate le urgenze</strong>: i lavori urgenti (da fare "entro sabato") costano in genere il 15–25% in più per il costo del reperimento a breve termine</li>
+</ul>
+<p>In ogni caso, confrontate sempre almeno due o tre preventivi per lo stesso lavoro. Non scegliete necessariamente il meno caro: confrontate il dettaglio delle voci, i materiali specificati e la professionalità del documento. Un preventivo dettagliato è spesso la migliore garanzia di un lavoro senza sorprese.</p>
+
+<h2>Tinteggiatura fai-da-te vs. professionista: quando conviene</h2>
+<p>Per i lavori semplici (una stanza, colore bianco su pareti già in buone condizioni), il fai-da-te può ridurre i costi del 50–60%. Il materiale per tinteggiare una camera da letto da 14mq costa 30–50€; la manodopera professionale ne costa 150–250€. Tuttavia, per lavorazioni che richiedono rasatura, stucco, trattamento di macchie o altezze elevate, il professionista ammortizza il costo con la qualità e la velocità del risultato.</p>
 `,
   },
   {
@@ -193,6 +206,15 @@ export const BLOG_ARTICLES: BlogArticle[] = [
 
 <h2>Strumenti per velocizzare la preventivazione</h2>
 <p>Molti elettricisti oggi usano software di preventivazione con intelligenza artificiale: descrivono l'impianto a parole e il software genera automaticamente il documento con voci, quantità e prezzi. Questo riduce il tempo di preventivazione da 60–90 minuti a meno di 2 minuti, permettendo di rispondere più preventivi e vincere più lavori.</p>
+
+<h2>Errori comuni nei preventivi per impianti elettrici</h2>
+<p>Anche tra gli elettricisti più esperti ci sono abitudini che penalizzano la conversione dei preventivi:</p>
+<ul>
+  <li><strong>Non specificare la marca dei materiali</strong>: scrivere solo "interruttore" invece di "interruttore Bticino Matix" lascia al cliente l'impressione che si stia usando materiale di qualità sconosciuta. La marca giustifica il prezzo.</li>
+  <li><strong>Dimenticare la Dichiarazione di Conformità</strong>: la DDC è un obbligo di legge e un valore commerciale. Includerla esplicitamente nel preventivo — anche con il costo separato — trasmette serietà e correttezza.</li>
+  <li><strong>Non separare impianto e quadro</strong>: molti clienti non capiscono perché il quadro elettrico costi quanto l'intero impianto. Dettagliando le voci del quadro (interruttore generale, differenziali, magnetotermici per circuito) si rende il costo comprensibile e difendibile.</li>
+  <li><strong>Non indicare i tempi di esecuzione</strong>: un cliente che deve essere in casa durante i lavori deve poter pianificare. Indicare "3 giorni lavorativi, accesso h 8–17" fa la differenza.</li>
+</ul>
 `,
   },
   {
@@ -236,6 +258,10 @@ export const BLOG_ARTICLES: BlogArticle[] = [
 <h2>Il costo reale degli errori</h2>
 <p>Un artigiano che fa 12 preventivi al mese con un tasso di conversione del 40% chiude 5 lavori. Migliorare il preventivo aumentando la conversione anche solo al 55% significa un lavoro in più ogni mese — con investimento zero, solo migliorando il documento.</p>
 <p>I software moderni di preventivazione con AI aiutano a eliminare questi errori automaticamente: generano documenti completi, con tutte le voci dettagliate, IVA inclusa, scadenza e intestazione professionale — in meno di un minuto.</p>
+
+<h2>Come usare questi consigli nella pratica quotidiana</h2>
+<p>Non è necessario rivoluzionare il proprio metodo di lavoro tutto in una volta. Il consiglio è di partire dal miglioramento più impattante — nella maggior parte dei casi è il punto 1 (voci dettagliate) o il punto 5 (intestazione professionale) — e integrarlo nei prossimi 5 preventivi come test. Misurare il tasso di risposta e continuare con il miglioramento successivo.</p>
+<p>La preventivazione è una competenza commerciale che si affina nel tempo. Gli artigiani che la trattano come tale — invece di considerarla solo burocrazia — ottengono risultati concreti in termini di lavori vinti e clienti soddisfatti già nel primo mese di applicazione sistematica.</p>
 `,
   },
   {
@@ -288,6 +314,10 @@ export const BLOG_ARTICLES: BlogArticle[] = [
 
 <h2>Come gestire le varianti in corso d'opera</h2>
 <p>Una ristrutturazione genera quasi sempre varianti rispetto al preventivo iniziale. La prassi professionale è emettere <strong>preventivi integrativi</strong> per ogni variante approvata dal committente, da allegare al contratto originale. Questo protegge entrambe le parti ed evita contenziosi al momento della fatturazione finale.</p>
+
+<h2>Il preventivo e il contratto d'appalto</h2>
+<p>Per lavori di ristrutturazione superiori a 10.000–15.000€ è fortemente consigliabile integrare il preventivo con un contratto d'appalto scritto. Il contratto specifica le modalità di pagamento (es. 30% all'inizio lavori, 40% a metà, 30% a lavori ultimati), le penali per ritardi, le modalità di risoluzione delle controversie e la gestione delle varianti. Un preventivo senza contratto è un documento commerciale; con il contratto diventa la base di un rapporto professionale tutelato.</p>
+<p>Per i lavori con bonus fiscali (Bonus Ristrutturazioni, Superbonus), il preventivo deve essere emesso prima dell'inizio dei lavori e firmato dal committente: è uno dei documenti richiesti per la detraibilità delle spese.</p>
 
 <h2>Strumenti per preventivi di ristrutturazione</h2>
 <p>I preventivi multi-capitolo richiedevano in passato ore di lavoro su Excel o software costosi. Oggi i software di preventivazione con AI permettono di descrivere il cantiere in italiano e ottenere un preventivo strutturato in capitoli in meno di due minuti, modificabile voce per voce prima dell'invio al committente.</p>
@@ -343,6 +373,19 @@ export const BLOG_ARTICLES: BlogArticle[] = [
 <h2>Bonus fiscali per la ristrutturazione del bagno</h2>
 <p>Nel 2025, i lavori di ristrutturazione bagno possono rientrare nel <strong>Bonus Ristrutturazioni al 50%</strong> (detrazione IRPEF in 10 anni su un massimale di 96.000€ per unità immobiliare). La sostituzione di sanitari con modelli a basso consumo idrico può rientrare nel <strong>Bonus Idrico</strong> se ancora attivo. Verificate sempre con il vostro commercialista la situazione aggiornata dei bonus edilizi.</p>
 
+<h2>Tempistiche realistiche per la ristrutturazione del bagno</h2>
+<p>Oltre ai costi, le tempistiche sono un elemento critico che molti preventivi ignorano. Un bagno medio (6–8mq) richiede in media:</p>
+<ul>
+  <li><strong>Giorno 1–2</strong>: demolizione e rimozione dei vecchi elementi</li>
+  <li><strong>Giorno 3–5</strong>: lavori idraulici (nuove tubazioni, scarichi)</li>
+  <li><strong>Giorno 6–7</strong>: lavori elettrici (prese, luci, termoventilatore)</li>
+  <li><strong>Giorno 8–12</strong>: piastrellatura pareti e pavimento (include i tempi di asciugatura della colla)</li>
+  <li><strong>Giorno 13–14</strong>: installazione sanitari e rubinetteria</li>
+  <li><strong>Giorno 15</strong>: installazione box doccia, specchi, accessori, collaudo finale</li>
+</ul>
+<p>Il bagno rimarrà inutilizzabile per tutto il periodo. In case con un solo bagno, questo è un elemento da gestire con attenzione — molti professionisti propongono soluzioni come bagno di cortesia in un locale secondario o accordi con vicini di casa.</p>
+<p>Un preventivo che include anche le tempistiche stimate (con data di inizio e fine lavori indicativa) è percepito come molto più professionale e aumenta significativamente il tasso di accettazione.</p>
+
 <h2>Come ottenere preventivi affidabili</h2>
 <p>Per ricevere preventivi accurati dalla ristrutturazione del bagno, prima di chiamare i professionisti preparate:</p>
 <ul>
@@ -352,6 +395,9 @@ export const BLOG_ARTICLES: BlogArticle[] = [
   <li>Se volete spostare sanitari o modificare la distribuzione dell'acqua</li>
 </ul>
 <p>I professionisti più organizzati oggi usano software di preventivazione con AI che permettono di generare un documento dettagliato per capitoli (idraulico, piastrellista, elettricista) direttamente durante il sopralluogo, inviandolo in PDF mentre sono ancora nell'appartamento.</p>
+
+<h2>Bagno accessibile: i costi dell'adattamento</h2>
+<p>Per gli interventi di adattamento del bagno a persone anziane o con mobilità ridotta — installazione di maniglioni, doccia a pavimento senza soglia, wc rialzato — i costi variano tra 2.000 e 6.000€ a seconda degli interventi richiesti. Questi lavori possono rientrare nelle detrazioni per eliminazione delle barriere architettoniche (aliquota 75% nella versione attuale del Bonus Edilizi). È consigliabile che il preventivo faccia riferimento esplicito alla normativa applicabile (L. 13/1989) se si intende accedere alle detrazioni.</p>
 `,
   },
   {
@@ -400,6 +446,16 @@ export const BLOG_ARTICLES: BlogArticle[] = [
 
 <h2>Il costo dell'improvvisazione</h2>
 <p>Un preventivo scritto a mano, su carta senza intestazione, o su un foglio Excel non formattato non comunica professionalità. In un mercato dove il cliente spesso sceglie tra tre preventivi simili, la presentazione fa la differenza. Uno strumento professionale si ripaga con il primo lavoro aggiuntivo conquistato grazie a un documento più convincente.</p>
+
+<h2>Come scegliere il software giusto per il tuo settore</h2>
+<p>Non tutti i software di preventivazione sono uguali. Un imbianchino che lavora principalmente con mq e tipi di pittura ha esigenze diverse da un idraulico che preventiva per ore di manodopera e pezzi specifici. Prima di scegliere, verificate che il software supporti:</p>
+<ul>
+  <li><strong>Le unità di misura del vostro mestiere</strong>: mq, ml, kg, ore, pezzi, corpo unico</li>
+  <li><strong>La vostra struttura fiscale</strong>: regime ordinario, forfettario, IVA al 4%/10%/22%</li>
+  <li><strong>Il vostro flusso di lavoro</strong>: direttamente in cantiere da smartphone, o da scrivania dopo il sopralluogo</li>
+  <li><strong>La possibilità di salvare i propri prezzi</strong>: non dover reinserire ogni volta il costo della manodopera oraria o dei materiali più usati</li>
+</ul>
+<p>I software più avanzati con AI permettono di descrivere il lavoro in linguaggio naturale ("rifacimento bagno 7mq con piastrelle di fascia media") e ricevere automaticamente una bozza strutturata con le voci tipiche del settore, che il professionista può poi modificare rapidamente prima dell'invio.</p>
 `,
   },
   {
@@ -458,6 +514,18 @@ export const BLOG_ARTICLES: BlogArticle[] = [
 <p>Specifica marca e modello dei principali materiali: raccordi in ottone vs plastica, marca della caldaia, qualità dei sanitari. Il cliente capisce per cosa paga e si fida di più.</p>
 <h3>Garanzia post-lavoro</h3>
 <p>Includi sempre una sezione sulla garanzia: "Garanzia 2 anni su tutti i lavori eseguiti. Intervento entro 48 ore per guasti post-installazione." Questo rimuove una delle obiezioni più frequenti.</p>
+
+<h2>Come gestire le varianti e i lavori extra</h2>
+<p>Durante un intervento idraulico è molto comune scoprire problemi non visibili al momento del sopralluogo: tubazioni corrose da sostituire, scarichi ostruiti in profondità, danni da umidità nascosti. La gestione professionale di questi imprevisti richiede un preventivo integrativo scritto e firmato prima di procedere ai lavori aggiuntivi — mai accordi verbali.</p>
+<p>La prassi corretta è:</p>
+<ul>
+  <li>Fermare i lavori (o continuare solo la parte preventivata)</li>
+  <li>Documentare il problema con foto</li>
+  <li>Emettere un preventivo integrativo con la voce aggiuntiva e il costo</li>
+  <li>Ottenere l'approvazione scritta dal cliente (anche via WhatsApp con risposta esplicita)</li>
+  <li>Solo allora procedere con i lavori aggiuntivi</li>
+</ul>
+<p>Questo processo protegge il professionista in caso di contestazioni e trasmette al cliente un senso di controllo e trasparenza che aumenta la fiducia e le probabilità di chiamate future.</p>
 `,
   },
   {
@@ -495,6 +563,15 @@ export const BLOG_ARTICLES: BlogArticle[] = [
 
 <h2>Quanto vale migliorare il tasso di accettazione</h2>
 <p>Facciamo il conto. Un artigiano con 15 preventivi mensili e un tasso di accettazione del 35% chiude 5 lavori. Portando il tasso al 45% — un miglioramento del 10%, assolutamente realistico con questi accorgimenti — si passa a 7 lavori mensili: due in più, ogni mese, senza spendere un euro in pubblicità.</p>
+
+<h2>Come misurare il successo del tuo preventivo</h2>
+<p>Per migliorare sistematicamente il tasso di conversione, è utile tenere traccia di alcune metriche semplici:</p>
+<ul>
+  <li><strong>Tempo di risposta medio</strong>: dal primo contatto del cliente all'invio del preventivo. Target: meno di 4 ore per lavori standard.</li>
+  <li><strong>Tasso di apertura del PDF</strong>: i software moderni mostrano se e quando il cliente ha aperto il documento — una metrica utile per capire il momento giusto per il follow-up.</li>
+  <li><strong>Tasso di conversione per tipologia di lavoro</strong>: alcuni tipi di lavoro (es. emergenze) hanno tassi di conversione naturalmente più alti di altri (es. grandi ristrutturazioni). Tenere questa distinzione aiuta a interpretare i dati correttamente.</li>
+</ul>
+<p>Anche solo annotarsi su un foglio il numero di preventivi inviati e quanti vengono accettati ogni mese, suddivisi per tipo di lavoro, è un esercizio che cambia la prospettiva sulla propria attività commerciale. La preventivazione diventa una leva di crescita, non solo burocrazia.</p>
 `,
   },
   {
@@ -566,6 +643,18 @@ export const BLOG_ARTICLES: BlogArticle[] = [
 
 <h2>Software per preventivi di muratura</h2>
 <p>Descrivere un cantiere a parole e ricevere un preventivo strutturato con voci, quantità e prezzi è oggi possibile con i software di preventivazione AI pensati per artigiani ed imprese edili italiane. Il documento viene generato in meno di due minuti e può essere immediatamente inviato al committente in formato PDF professionale.</p>
+
+<h2>Come preventivare i lavori di risanamento da umidità</h2>
+<p>Il risanamento dall'umidità di risalita è uno dei lavori murari più richiesti e al tempo stesso più difficili da preventivare, perché i risultati dipendono dall'entità del problema invisibile. Un preventivo professionale per questo tipo di intervento deve includere:</p>
+<ul>
+  <li><strong>Diagnosi preliminare</strong>: misurazione del tasso di umidità con igrometro, fotodocumentazione delle zone interessate</li>
+  <li><strong>Tecnica di intervento scelta</strong>: iniezione di resine idrorepellenti, barriera chimica o fisica, intonaco deumidificante</li>
+  <li><strong>Rimozione intonaco deteriorato</strong>: altezza e superficie interessata in mq</li>
+  <li><strong>Applicazione del nuovo intonaco deumidificante</strong>: spessore, tipo di prodotto (indicare la linea di prodotti)</li>
+  <li><strong>Tinteggiatura finale</strong>: pittura traspirante, eventuali trattamenti antialghe</li>
+  <li><strong>Garanzia sul trattamento</strong>: solitamente 5–10 anni; un elemento commerciale decisivo</li>
+</ul>
+<p>I prezzi per il risanamento da umidità variano tra 50 e 150 €/mq a seconda della tecnica, ed è fondamentale che il preventivo sia chiaro su cosa è compreso e cosa potrebbe aggiungere costi in corso d'opera se il problema fosse più esteso del previsto.</p>
 `,
   },
   {
@@ -622,6 +711,10 @@ export const BLOG_ARTICLES: BlogArticle[] = [
 
 <h2>Il futuro della preventivazione per gli artigiani</h2>
 <p>Nei prossimi anni, i software di preventivazione diventeranno ancora più intelligenti: riconosceranno automaticamente le foto del cantiere, integreranno i prezzi aggiornati dei materiali in tempo reale e permetteranno la firma digitale del preventivo direttamente dall'app. Gli artigiani che adotteranno questi strumenti oggi avranno un vantaggio competitivo significativo rispetto a chi continuerà con i metodi tradizionali.</p>
+
+<h2>Chi sta già usando l'AI per i preventivi in Italia</h2>
+<p>L'adozione degli strumenti AI per la preventivazione è già in corso tra le categorie più dinamiche degli artigiani italiani: gli elettricisti, che hanno spesso cantieri complessi con molte voci, sono stati tra i primi ad adottare questi strumenti per ridurre il tempo di preventivazione e rispondere prima della concorrenza. Seguono gli imbianchini, che lavorano con molte stanze e molte voci simili (ideali per la generazione automatica), e gli idraulici, che spesso lavorano in emergenza e non possono permettersi di perdere tempo davanti a un foglio Excel.</p>
+<p>La resistenza maggiore viene da chi ha già un sistema funzionante (Excel con template consolidato) e non vede il valore dello spostamento. Ma nel momento in cui un concorrente inizia a inviare preventivi mentre è ancora in sopralluogo, il vantaggio competitivo diventa evidente anche per i più scettici.</p>
 `,
   },
   {
@@ -679,6 +772,15 @@ export const BLOG_ARTICLES: BlogArticle[] = [
 <p>Il prezzo del ferro e dell'acciaio varia significativamente nel tempo. Per i lavori con consegna a distanza superiore a 30 giorni dall'accettazione del preventivo, è buona pratica includere una clausola di adeguamento prezzi materiali, specificando il riferimento all'indice ISTAT o alle quotazioni LME.</p>
 <h3>Preventivi con campioni</h3>
 <p>Per gli arredamenti su misura, allegare un campionario o specifiche precise delle finiture evita malintesi costosi. Un preventivo che riporta "finitura noce" può generare aspettative diverse tra il professionista e il cliente.</p>
+
+<h2>Come gestire gli acconti e i pagamenti nel preventivo</h2>
+<p>Per i lavori su misura di falegnameria e carpenteria — che richiedono l'acquisto di materiali prima di iniziare la lavorazione — la gestione degli acconti è parte integrante del preventivo. La struttura tipica è:</p>
+<ul>
+  <li><strong>Acconto alla firma</strong> (30–40% del totale): copre il costo dei materiali e blocca l'agenda. Per ordini di materiali costosi (noce massello, acciaio inox) o pezzi su ordinazione, l'acconto può arrivare al 50%.</li>
+  <li><strong>Saldo alla consegna o al montaggio</strong> (60–70%): da pagare prima del montaggio finale o al momento della consegna del pezzo finito.</li>
+</ul>
+<p>Questo schema protegge il professionista dal rischio di acquistare materiali per un lavoro che poi non parte, e il cliente dal rischio di pagare interamente in anticipo. Entrambe le condizioni vanno esplicitate nel preventivo insieme alle modalità di pagamento accettate.</p>
+<p>Per i lavori con tempistiche lunghe (cucine su misura, arredi d'interni con 4–8 settimane di produzione), includere nel preventivo un riferimento alla data di consegna stimata con la nota "subordinata alla disponibilità dei materiali" è una buona prassi che evita aspettative errate.</p>
 
 <h2>Software per preventivi di artigianato su misura</h2>
 <p>I software di preventivazione con AI permettono di descrivere il lavoro in linguaggio naturale e ricevere una bozza strutturata in pochi secondi, anche per lavori complessi su misura. Il falegname o il carpentiere può poi modificare voce per voce i materiali, i prezzi e i dettagli tecnici prima di inviare il documento al cliente.</p>
@@ -751,6 +853,15 @@ export const BLOG_ARTICLES: BlogArticle[] = [
   <li><strong>CRM leggero</strong>: per aziende con più di 5 commerciali, strumenti come HubSpot Free o Zoho CRM permettono di tracciare l'intero ciclo preventivo-ordine</li>
 </ul>
 <p>L'importante è scegliere uno strumento che venga effettivamente usato da tutto il team — il miglior software è quello che tutti adottano, non quello con più funzionalità.</p>
+
+<h2>Come impostare obiettivi commerciali per i preventivi</h2>
+<p>Molte PMI gestiscono la preventivazione in modo reattivo: si risponde alle richieste quando arrivano, senza obiettivi precisi. Un approccio più strutturato prevede di definire mensilmente:</p>
+<ul>
+  <li><strong>Numero minimo di preventivi da inviare</strong>: per mantenere un flusso di lavoro costante, ogni PMI dovrebbe avere un target basato sul volume necessario a raggiungere il fatturato mensile</li>
+  <li><strong>Importo medio del preventivo</strong>: tenere traccia se l'importo medio sta salendo o scendendo aiuta a capire se si sta posizionando su lavori di valore crescente o calante</li>
+  <li><strong>Tasso di conversione target</strong>: un obiettivo realistico per una PMI ben organizzata è il 40–55% di preventivi accettati; sotto il 30% è un segnale di allarme</li>
+</ul>
+<p>Questi tre numeri, aggiornati ogni mese, permettono di avere una visione chiara dell'andamento commerciale dell'impresa e di intervenire tempestivamente quando qualcosa non funziona.</p>
 `,
   },
 ];
@@ -773,4 +884,12 @@ export const SECTOR_ARTICLES: Record<string, string[]> = {
   giardiniere: ["errori-preventivi-artigiani", "come-vincere-piu-lavori", "software-preventivi-artigiani"],
   freelance: ["software-preventivi-artigiani", "come-vincere-piu-lavori", "gestione-preventivi-pmi"],
   geometra: ["gestione-preventivi-pmi", "preventivo-ristrutturazione-guida", "software-preventivi-artigiani"],
+  serramentista: ["preventivo-falegname-carpentiere", "errori-preventivi-artigiani", "come-vincere-piu-lavori"],
+  tetto: ["preventivo-muratore", "preventivo-ristrutturazione-guida", "errori-preventivi-artigiani"],
+  condizionatori: ["preventivo-idraulico", "errori-preventivi-artigiani", "ai-preventivi-artigiani"],
+  pavimentista: ["quanto-costa-ristrutturare-bagno", "preventivo-ristrutturazione-guida", "errori-preventivi-artigiani"],
+  "modello-excel": ["software-preventivi-artigiani", "errori-preventivi-artigiani", "come-vincere-piu-lavori"],
+  "modello-word": ["software-preventivi-artigiani", "errori-preventivi-artigiani", "gestione-preventivi-pmi"],
+  "come-fare-preventivo": ["errori-preventivi-artigiani", "software-preventivi-artigiani", "come-vincere-piu-lavori"],
+  "preventivi-gratis": ["software-preventivi-artigiani", "ai-preventivi-artigiani", "errori-preventivi-artigiani"],
 };
