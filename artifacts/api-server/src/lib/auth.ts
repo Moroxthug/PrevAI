@@ -3,6 +3,7 @@ import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { db, authUsersTable, authSessionsTable, authAccountsTable, authVerificationsTable } from "@workspace/db";
 import { Resend } from "resend";
 import { logger } from "./logger";
+import { sendWelcomeEmail } from "./email";
 
 const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
 
@@ -84,6 +85,19 @@ export const auth = betterAuth({
       } catch (err) {
         logger.error({ err }, "Failed to send verification email");
       }
+    },
+  },
+  databaseHooks: {
+    user: {
+      create: {
+        after: async (user) => {
+          try {
+            await sendWelcomeEmail({ toEmail: user.email, toName: user.name });
+          } catch (err) {
+            logger.error({ err }, "Failed to send welcome email in databaseHook (non-fatal)");
+          }
+        },
+      },
     },
   },
 });
