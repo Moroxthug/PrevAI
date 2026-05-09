@@ -246,7 +246,7 @@ function WhatsAppChatDemo() {
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (phase >= PHASES.length) return;
+    if (phase < 0 || phase >= PHASES.length) return;
     const p = PHASES[phase]!;
 
     const timer = setTimeout(() => {
