@@ -70,66 +70,32 @@ CALCOLI:
 
 IMPORTANTISSIMO: output SOLO JSON puro, nessuna spiegazione, nessun markdown.`;
 
-export async function generateQuoteFromText({
-  userId,
-  rawInput,
-  log,
-  source = "web",
-}: {
-  userId: string;
+// ── Public types ────────────────────────────────────────────────────────────────
+
+export type PendingQuoteData = {
   rawInput: string;
-  log: Logger;
-  source?: string;
-}): Promise<typeof quotesTable.$inferSelect> {
-  const [profileRows, recentQuotes, catalogItems] = await Promise.all([
-    db.select().from(businessProfilesTable).where(eq(businessProfilesTable.userId, userId)),
-    db.select({ rawInput: quotesTable.rawInput, capitoli: quotesTable.capitoli, totale: quotesTable.totale })
-      .from(quotesTable)
-      .where(eq(quotesTable.userId, userId))
-      .orderBy(desc(quotesTable.createdAt))
-      .limit(5),
-    db.select()
-      .from(priceCatalogItemsTable)
-      .where(eq(priceCatalogItemsTable.userId, userId))
-      .orderBy(priceCatalogItemsTable.categoria, priceCatalogItemsTable.nome),
-  ]);
-  const [profile] = profileRows;
+  titoloPreventivoRiga1: string;
+  titoloPreventivoRiga2: string;
+  numeroPreventivoData: string;
+  clientData: QuoteClientData;
+  companySnapshot: QuoteCompanySnapshot | null;
+  descrizioneGenerale: string;
+  capitoli: QuoteChapter[];
+  sconto: QuoteDiscount | null;
+  condizioniPagamento: string[];
+  subtotale: string;
+  ivaPercentuale: string;
+  ivaValore: string;
+  totale: string;
+  note: string;
+  capitolatoPro: boolean;
+};
 
-  const resolvedSnapshot: QuoteCompanySnapshot | null = profile
-    ? {
-        companyName: profile.companyName,
-        vatNumber: profile.vatNumber ?? undefined,
-        address: profile.address ?? undefined,
-        phone: profile.phone ?? undefined,
-        email: profile.email ?? undefined,
-        logoUrl: profile.logoUrl ?? undefined,
-      }
-    : null;
+// ── Internal helpers ────────────────────────────────────────────────────────────
 
-  const pastContext = buildPastContext(recentQuotes as { rawInput: string; capitoli: unknown; totale: string }[]);
-  const catalogContext = buildCatalogContext(catalogItems);
-  const isProUser = profile?.subscriptionStatus === "active" && profile?.subscriptionPlan === "monthly_pro";
-
-  const completion = await openai.chat.completions.create({
-    model: "gpt-4o-mini",
-    max_completion_tokens: 8192,
-    messages: [
-      { role: "system", content: AI_PROMPT },
-      ...(catalogContext ? [{ role: "system" as const, content: catalogContext }] : []),
-      ...(pastContext ? [{ role: "system" as const, content: pastContext }] : []),
-      { role: "user", content: rawInput },
-    ],
-  });
-
-  const content = completion.choices[0]?.message?.content ?? "{}";
-  let aiData: AiQuoteData;
-  try {
-    const cleaned = content.trim().replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/i, "");
-    aiData = JSON.parse(cleaned) as AiQuoteData;
-  } catch {
-    log.error({ content }, "WhatsApp: Failed to parse AI JSON");
-    throw new Error("AI returned invalid JSON");
-  }
+function parseAiResponse(content: string, rawInput: string, profile: typeof businessProfilesTable.$inferSelect | undefined): PendingQuoteData {
+  const cleaned = content.trim().replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/i, "");
+  const aiData = JSON.parse(cleaned) as AiQuoteData;
 
   const capitoli: QuoteChapter[] = (aiData.capitoli ?? []).map((cap) => ({
     lettera: cap.lettera ?? "A",
@@ -151,54 +117,237 @@ export async function generateQuoteFromText({
       ? { percentuale: Number(scontoRaw.percentuale), importoScontato: Number(scontoRaw.importo_scontato ?? 0) }
       : null;
 
-  const condizioniPagamento = aiData.condizioni_pagamento ?? [
-    "30% acconto alla firma del contratto",
-    "30% a completamento prima fase lavori",
-    "30% a completamento seconda fase lavori",
-    "10% saldo a fine lavori",
-  ];
+  const resolvedSnapshot: QuoteCompanySnapshot | null = profile
+    ? {
+        companyName: profile.companyName,
+        vatNumber: profile.vatNumber ?? undefined,
+        address: profile.address ?? undefined,
+        phone: profile.phone ?? undefined,
+        email: profile.email ?? undefined,
+        logoUrl: profile.logoUrl ?? undefined,
+      }
+    : null;
 
-  const resolvedClientData: QuoteClientData = {
-    nome: aiData.cliente?.nome ?? "",
-    indirizzo: aiData.cliente?.indirizzo ?? "",
-  };
-
-  const subtotale = Number(aiData.subtotale ?? 0);
-  const ivaPercentuale = Number(aiData.iva_percentuale ?? 22);
-  const ivaValore = Number(aiData.iva_valore ?? 0);
-  const totale = Number(aiData.totale ?? 0);
-
-  const [quote] = await db.insert(quotesTable).values({
-    userId,
+  return {
     rawInput,
-    clientData: resolvedClientData,
-    companySnapshot: resolvedSnapshot,
-    descrizioneGenerale: aiData.descrizione_generale ?? "",
-    items: [],
-    capitoli,
-    sconto,
-    condizioniPagamento,
-    capitolatoPro: isProUser,
     titoloPreventivoRiga1: aiData.titolo_riga1 ?? "Analisi Economica e Computo Metrico Prezzato",
     titoloPreventivoRiga2: aiData.titolo_riga2 ?? "",
     numeroPreventivoData: aiData.numero_preventivo_data ?? "",
-    subtotale: subtotale.toFixed(2),
-    ivaPercentuale: ivaPercentuale.toFixed(2),
-    ivaValore: ivaValore.toFixed(2),
-    totale: totale.toFixed(2),
+    clientData: { nome: aiData.cliente?.nome ?? "", indirizzo: aiData.cliente?.indirizzo ?? "" },
+    companySnapshot: resolvedSnapshot,
+    descrizioneGenerale: aiData.descrizione_generale ?? "",
+    capitoli,
+    sconto,
+    condizioniPagamento: aiData.condizioni_pagamento ?? [
+      "30% acconto alla firma del contratto",
+      "30% a completamento prima fase lavori",
+      "30% a completamento seconda fase lavori",
+      "10% saldo a fine lavori",
+    ],
+    subtotale: Number(aiData.subtotale ?? 0).toFixed(2),
+    ivaPercentuale: Number(aiData.iva_percentuale ?? 22).toFixed(2),
+    ivaValore: Number(aiData.iva_valore ?? 0).toFixed(2),
+    totale: Number(aiData.totale ?? 0).toFixed(2),
     note: aiData.note ?? "Preventivo valido 30 giorni",
+    capitolatoPro: !!(profile?.subscriptionStatus === "active" && profile?.subscriptionPlan === "monthly_pro"),
+  };
+}
+
+// ── Exported API ────────────────────────────────────────────────────────────────
+
+/**
+ * Calls the AI and returns quote data WITHOUT saving to the DB.
+ * Use this for the WhatsApp preview-first flow.
+ */
+export async function buildQuoteFromAI({
+  userId,
+  rawInput,
+  log,
+}: {
+  userId: string;
+  rawInput: string;
+  log: Logger;
+}): Promise<PendingQuoteData> {
+  const [profileRows, recentQuotes, catalogItems] = await Promise.all([
+    db.select().from(businessProfilesTable).where(eq(businessProfilesTable.userId, userId)),
+    db.select({ rawInput: quotesTable.rawInput, capitoli: quotesTable.capitoli, totale: quotesTable.totale })
+      .from(quotesTable)
+      .where(eq(quotesTable.userId, userId))
+      .orderBy(desc(quotesTable.createdAt))
+      .limit(5),
+    db.select()
+      .from(priceCatalogItemsTable)
+      .where(eq(priceCatalogItemsTable.userId, userId))
+      .orderBy(priceCatalogItemsTable.categoria, priceCatalogItemsTable.nome),
+  ]);
+  const [profile] = profileRows;
+
+  const pastContext = buildPastContext(recentQuotes as { rawInput: string; capitoli: unknown; totale: string }[]);
+  const catalogContext = buildCatalogContext(catalogItems);
+
+  const completion = await openai.chat.completions.create({
+    model: "gpt-4o-mini",
+    max_completion_tokens: 8192,
+    messages: [
+      { role: "system", content: AI_PROMPT },
+      ...(catalogContext ? [{ role: "system" as const, content: catalogContext }] : []),
+      ...(pastContext ? [{ role: "system" as const, content: pastContext }] : []),
+      { role: "user", content: rawInput },
+    ],
+  });
+
+  const content = completion.choices[0]?.message?.content ?? "{}";
+  try {
+    return parseAiResponse(content, rawInput, profile);
+  } catch {
+    log.error({ content }, "Failed to parse AI JSON in buildQuoteFromAI");
+    throw new Error("AI returned invalid JSON");
+  }
+}
+
+/**
+ * Regenerates a quote by applying a natural-language correction to the current pending data.
+ * Returns updated PendingQuoteData WITHOUT saving to DB.
+ */
+export async function regenerateWithCorrection({
+  userId,
+  current,
+  correction,
+  log,
+}: {
+  userId: string;
+  current: PendingQuoteData;
+  correction: string;
+  log: Logger;
+}): Promise<PendingQuoteData> {
+  const [profileRows, catalogItems] = await Promise.all([
+    db.select().from(businessProfilesTable).where(eq(businessProfilesTable.userId, userId)),
+    db.select()
+      .from(priceCatalogItemsTable)
+      .where(eq(priceCatalogItemsTable.userId, userId))
+      .orderBy(priceCatalogItemsTable.categoria, priceCatalogItemsTable.nome),
+  ]);
+  const [profile] = profileRows;
+  const catalogContext = buildCatalogContext(catalogItems);
+
+  const currentJson = JSON.stringify({
+    titolo_riga1: current.titoloPreventivoRiga1,
+    titolo_riga2: current.titoloPreventivoRiga2,
+    numero_preventivo_data: current.numeroPreventivoData,
+    cliente: current.clientData,
+    descrizione_generale: current.descrizioneGenerale,
+    capitoli: current.capitoli.map(cap => ({
+      lettera: cap.lettera,
+      titolo: cap.titolo,
+      osservazione: cap.osservazione,
+      voci: cap.voci.map(v => ({
+        descrizione: v.descrizione,
+        um: v.um,
+        quantita: v.quantita,
+        prezzo_unitario: v.prezzoUnitario,
+        totale: v.totale,
+      })),
+      subtotale: cap.subtotale,
+    })),
+    sconto: current.sconto
+      ? { percentuale: current.sconto.percentuale, importo_scontato: current.sconto.importoScontato }
+      : { percentuale: 0, importo_scontato: 0 },
+    condizioni_pagamento: current.condizioniPagamento,
+    subtotale: Number(current.subtotale),
+    iva_percentuale: Number(current.ivaPercentuale),
+    iva_valore: Number(current.ivaValore),
+    totale: Number(current.totale),
+    note: current.note,
+  });
+
+  const correctionPrompt = `Modifica il seguente preventivo applicando questa istruzione: "${correction}"
+
+PREVENTIVO CORRENTE (JSON):
+${currentJson}
+
+Restituisci il preventivo aggiornato COMPLETO in JSON valido con la stessa struttura. Ricalcola tutti i subtotali, l'IVA e il totale. SOLO JSON puro, nessun testo extra.`;
+
+  const completion = await openai.chat.completions.create({
+    model: "gpt-4o-mini",
+    max_completion_tokens: 8192,
+    messages: [
+      { role: "system", content: AI_PROMPT },
+      ...(catalogContext ? [{ role: "system" as const, content: catalogContext }] : []),
+      { role: "user", content: correctionPrompt },
+    ],
+  });
+
+  const content = completion.choices[0]?.message?.content ?? "{}";
+  try {
+    return parseAiResponse(content, current.rawInput, profile);
+  } catch {
+    log.error({ content }, "Failed to parse AI JSON in regenerateWithCorrection");
+    throw new Error("AI returned invalid JSON during correction");
+  }
+}
+
+/**
+ * Saves a PendingQuoteData to the database and returns the saved row.
+ */
+export async function saveQuoteToDb({
+  userId,
+  data,
+  source,
+}: {
+  userId: string;
+  data: PendingQuoteData;
+  source: string;
+}): Promise<typeof quotesTable.$inferSelect> {
+  const [quote] = await db.insert(quotesTable).values({
+    userId,
+    rawInput: data.rawInput,
+    clientData: data.clientData,
+    companySnapshot: data.companySnapshot,
+    descrizioneGenerale: data.descrizioneGenerale,
+    items: [],
+    capitoli: data.capitoli,
+    sconto: data.sconto,
+    condizioniPagamento: data.condizioniPagamento,
+    capitolatoPro: data.capitolatoPro,
+    titoloPreventivoRiga1: data.titoloPreventivoRiga1,
+    titoloPreventivoRiga2: data.titoloPreventivoRiga2,
+    numeroPreventivoData: data.numeroPreventivoData,
+    subtotale: data.subtotale,
+    ivaPercentuale: data.ivaPercentuale,
+    ivaValore: data.ivaValore,
+    totale: data.totale,
+    note: data.note,
     status: "draft",
     source,
   }).returning();
 
-  if (!profile?.trialStartedAt) {
-    await db.update(businessProfilesTable)
-      .set({ trialStartedAt: new Date() })
-      .where(eq(businessProfilesTable.userId, userId));
-  }
+  await db.update(businessProfilesTable)
+    .set({ trialStartedAt: new Date() })
+    .where(eq(businessProfilesTable.userId, userId));
 
   return quote!;
 }
+
+/**
+ * Legacy interface: generates a quote AND saves it to DB in one step.
+ * Used by the web flow and existing callers.
+ */
+export async function generateQuoteFromText({
+  userId,
+  rawInput,
+  log,
+  source = "web",
+}: {
+  userId: string;
+  rawInput: string;
+  log: Logger;
+  source?: string;
+}): Promise<typeof quotesTable.$inferSelect> {
+  const data = await buildQuoteFromAI({ userId, rawInput, log });
+  return saveQuoteToDb({ userId, data, source });
+}
+
+// ── Context builders ────────────────────────────────────────────────────────────
 
 function buildPastContext(quotes: { rawInput: string; capitoli: unknown; totale: string }[]): string {
   const examples = quotes

@@ -1,8 +1,11 @@
 import {
   pgTable,
+  pgEnum,
   text,
   boolean,
   timestamp,
+  integer,
+  jsonb,
 } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
@@ -23,6 +26,22 @@ export const whatsappOtpTable = pgTable("whatsapp_otp", {
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
+export const whatsappSessionStateEnum = pgEnum("whatsapp_session_state", [
+  "awaiting_confirmation",
+  "awaiting_client_data",
+]);
+
+export const whatsappSessionsTable = pgTable("whatsapp_sessions", {
+  phoneNumber: text("phone_number").primaryKey(),
+  userId: text("user_id").notNull(),
+  state: whatsappSessionStateEnum("state").notNull(),
+  pendingQuoteData: jsonb("pending_quote_data").notNull(),
+  iterationCount: integer("iteration_count").notNull().default(0),
+  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
+});
+
 export const insertWhatsappConnectionSchema = createInsertSchema(whatsappConnectionsTable).omit({
   connectedAt: true,
 });
@@ -32,4 +51,5 @@ export const insertWhatsappOtpSchema = createInsertSchema(whatsappOtpTable).omit
 
 export type WhatsappConnection = typeof whatsappConnectionsTable.$inferSelect;
 export type WhatsappOtp = typeof whatsappOtpTable.$inferSelect;
+export type WhatsappSession = typeof whatsappSessionsTable.$inferSelect;
 export type InsertWhatsappConnection = z.infer<typeof insertWhatsappConnectionSchema>;

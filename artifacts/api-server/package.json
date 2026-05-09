@@ -30,6 +30,7 @@
     "pdfmake": "^0.3.7",
     "pino": "^9",
     "pino-http": "^10",
+    "puppeteer": "^24.43.0",
     "resend": "^6.12.2",
     "stripe": "^22.1.0",
     "stripe-replit-sync": "^1.0.0"
