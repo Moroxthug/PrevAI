@@ -1174,6 +1174,60 @@ export const BLOG_ARTICLES: BlogArticle[] = [
 <p>Questi tre numeri, aggiornati ogni mese, permettono di avere una visione chiara dell'andamento commerciale dell'impresa e di intervenire tempestivamente quando qualcosa non funziona.</p>
 `,
   },
+  {
+    slug: "preventivo-freelance-professionisti",
+    title: "Come fare un preventivo professionale da freelance: guida per consulenti, geometri e tecnici",
+    metaDescription: "Guida pratica per freelance, geometri e consulenti: come strutturare un preventivo professionale, definire il prezzo delle prestazioni e aumentare il tasso di accettazione.",
+    category: "Consigli",
+    publishedAt: "2025-05-08",
+    readingTimeMin: 5,
+    relatedSectors: ["freelance", "geometra"],
+    contentHtml: `
+<p>Per un freelance, un consulente o un geometra, il preventivo è molto più di un semplice documento con un prezzo. È la prima impressione professionale che il cliente riceve, il punto in cui si decide se il rapporto di lavoro nasce o muore. Eppure la maggior parte dei professionisti italiani lo tratta come una formalità — e perde commesse che avrebbe potuto vincere.</p>
+
+<h2>Perché il preventivo del freelance è diverso da quello dell'artigiano</h2>
+<p>Un imbianchino vende ore e materiali. Un freelance o un consulente vende competenza, tempo e valore intellettuale — qualcosa di molto più difficile da quantificare e giustificare al cliente. Questo rende il preventivo ancora più importante: deve spiegare non solo quanto costa, ma <strong>perché vale</strong>.</p>
+<p>I clienti che commissionano servizi professionali — una perizia, un progetto di ristrutturazione, un lavoro di consulenza fiscale o marketing — di solito non sanno valutare la qualità tecnica a priori. Valutano la qualità percepita del documento che ricevono. Un preventivo ben costruito trasmette competenza ancora prima che il lavoro inizi.</p>
+
+<h2>La struttura corretta di un preventivo per professionisti</h2>
+<p>A differenza dei preventivi a corpo tipici degli artigiani, i preventivi dei professionisti si articolano solitamente su tre modelli:</p>
+<h3>1. Preventivo a tariffa oraria</h3>
+<p>Indica la tariffa oraria, la stima delle ore per ogni fase del progetto e il totale preventivato. Adatto a consulenze aperte o progetti ancora in fase di definizione. Attenzione: il cliente vede solo il numero delle ore — devi essere preciso nella stima per non sorprenderlo con una fattura molto più alta del preventivo.</p>
+<h3>2. Preventivo a corpo (fixed price)</h3>
+<p>Un prezzo fisso per una deliverable precisa. Rassicura il cliente perché sa esattamente quanto spende. Richiede però che tu abbia ben chiaro lo scope del lavoro — qualsiasi richiesta aggiuntiva deve essere considerata una variante a pagamento separato.</p>
+<h3>3. Preventivo a fasi (milestone)</h3>
+<p>Il progetto viene suddiviso in fasi, ognuna con un costo e un output specifico. È il modello migliore per lavori complessi o pluriannuali: il cliente vede dove va il denaro e hai la possibilità di rinegoziare se cambiano le esigenze.</p>
+
+<h2>Come definire il prezzo delle tue prestazioni</h2>
+<p>Il problema più comune tra i professionisti italiani non è saper fare il lavoro — è prezzarlo correttamente. Ecco un metodo in quattro passi:</p>
+<ul>
+  <li><strong>Calcola il tuo costo orario reale</strong>: prendi il fatturato annuo che vuoi raggiungere, dividi per le ore effettivamente fatturabili (di solito 1.000–1.200 l'anno, non 1.800). Il risultato è il tuo floor price — sotto questo valore stai perdendo denaro.</li>
+  <li><strong>Aggiungi il valore percepito</strong>: se risolvi un problema urgente, risparmio significativo di tempo o hai una specializzazione rara, puoi applicare una maggiorazione rispetto al costo orario.</li>
+  <li><strong>Ricerca il mercato</strong>: associazioni di categoria, forum professionali e tariffari di riferimento (per i geometri, ad esempio, esistono tariffe orientative degli ordini provinciali) danno un benchmark utile.</li>
+  <li><strong>Non competere solo sul prezzo</strong>: un freelance che abbassa il prezzo per vincere una gara spesso finisce per lavorare per meno del valore che produce. Meglio differenziarsi su velocità, qualità del documento e reputazione.</li>
+</ul>
+
+<h2>Cosa includere sempre nel preventivo</h2>
+<p>Qualunque sia il modello scelto, ci sono elementi che non possono mancare:</p>
+<ul>
+  <li><strong>Scope chiaro</strong>: cosa è incluso nel prezzo e, soprattutto, cosa <em>non</em> è incluso. Ambiguità sullo scope è la fonte numero uno di controversie tra cliente e professionista.</li>
+  <li><strong>Tempi di consegna</strong>: una stima realistica, con buffer per le revisioni. Mai promettere tempi impossibili solo per vincere la commessa.</li>
+  <li><strong>Numero di revisioni incluse</strong>: specifica quante revisioni sono comprese nel prezzo. Oltre quel numero si fattura a tariffa oraria.</li>
+  <li><strong>Condizioni di pagamento</strong>: per lavori importanti, è normale chiedere un acconto (30–50%) alla firma e il saldo alla consegna. Non lavorare mai senza acconto per nuovi clienti.</li>
+  <li><strong>Validità dell'offerta</strong>: 15–30 giorni. Crea urgenza e ti protegge da variazioni di costo o disponibilità.</li>
+  <li><strong>Dati fiscali completi</strong>: Partita IVA, regime fiscale, aliquota IVA applicabile o esenzione, eventuale contributo previdenziale (es. 4% per i professionisti senza cassa).</li>
+</ul>
+
+<h2>Il follow-up: la parte che quasi nessuno fa</h2>
+<p>Il tasso di accettazione medio dei preventivi per i freelance italiani è inferiore al 40%. La buona notizia è che molti rifiuti non sono definitivi — il cliente ha rimandato, ha avuto dubbi, stava aspettando un altro preventivo. Un semplice follow-up a 5–7 giorni dall'invio ("Volevo accertarmi che il preventivo sia arrivato correttamente e se hai domande") recupera in media il 15–20% delle trattative che sembravano chiuse.</p>
+<p>Pochissimi professionisti lo fanno. Chi lo fa vince più lavori a parità di prezzi e qualità.</p>
+
+<h2>Come un software AI può cambiare il modo in cui lavori</h2>
+<p>Preparare un preventivo professionale richiede tempo: strutturare le voci, calcolare i costi, formattare il documento, adattarlo al cliente specifico. Per un freelance che lavora da solo, queste ore di back-office sottraggono tempo al lavoro fatturabile.</p>
+<p>I software di preventivazione con intelligenza artificiale permettono di descrivere il progetto a parole — "perizia tecnica per immobile di 120mq in zona B, due sopralluoghi, relazione completa per banca" — e ottenere in pochi secondi un documento già strutturato, con voci, costi stimati e condizioni standard. Il professionista rivede, adatta e invia. Ore di lavoro si riducono a minuti, con una qualità del documento spesso superiore.</p>
+<p>Per un geometra, un consulente o qualsiasi professionista che invia più di 3–4 preventivi al mese, il ritorno sull'investimento è immediato.</p>
+`,
+  },
 ];
 
 export interface GuideCard {
@@ -1285,8 +1339,8 @@ export const SECTOR_ARTICLES: Record<string, string[]> = {
   carpentiere: ["preventivo-falegname-carpentiere", "errori-preventivi-artigiani", "come-vincere-piu-lavori"],
   piastrellista: ["quanto-costa-ristrutturare-bagno", "preventivo-ristrutturazione-guida", "errori-preventivi-artigiani"],
   giardiniere: ["errori-preventivi-artigiani", "come-vincere-piu-lavori", "trovare-clienti-artigiano"],
-  freelance: ["software-preventivi-artigiani", "come-vincere-piu-lavori", "gestione-preventivi-pmi", "come-fare-prezzo-lavori"],
-  geometra: ["gestione-preventivi-pmi", "preventivo-ristrutturazione-guida", "software-preventivi-artigiani"],
+  freelance: ["preventivo-freelance-professionisti", "software-preventivi-artigiani", "come-vincere-piu-lavori", "gestione-preventivi-pmi", "come-fare-prezzo-lavori"],
+  geometra: ["preventivo-freelance-professionisti", "gestione-preventivi-pmi", "preventivo-ristrutturazione-guida", "software-preventivi-artigiani"],
   serramentista: ["preventivo-falegname-carpentiere", "errori-preventivi-artigiani", "come-vincere-piu-lavori"],
   tetto: ["preventivo-muratore", "preventivo-ristrutturazione-guida", "errori-preventivi-artigiani"],
   condizionatori: ["preventivo-idraulico", "errori-preventivi-artigiani", "ai-preventivi-artigiani"],
