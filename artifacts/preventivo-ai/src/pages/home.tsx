@@ -108,18 +108,34 @@ export default function Home() {
         <div className="mesh-blob mesh-blob-3" />
 
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+
+          {/* ── Top row: H1 left · Video right ── */}
           <div className="grid lg:grid-cols-2 gap-10 lg:gap-14 items-center">
 
-            {/* ── Left: demo video in loop ── */}
-            <div className="order-2 lg:order-1">
+            {/* Left: H1 title */}
+            <div className="text-left">
+              <h1 className="text-4xl font-extrabold tracking-tight text-gray-900 sm:text-5xl lg:text-6xl leading-[1.08]">
+                Crea preventivi professionali in{" "}
+                <span className="gradient-text">30 secondi</span> con l'AI
+              </h1>
+              <p className="mt-5 text-base text-gray-500 leading-relaxed max-w-lg">
+                Dimentica Excel e i documenti scritti a mano. Descrivi il lavoro a
+                parole tue e prevai genererà un documento impeccabile, pronto da
+                inviare al cliente.
+              </p>
+            </div>
+
+            {/* Right: demo video */}
+            <div>
               <div className="relative">
                 <div
                   className="absolute -inset-3 rounded-2xl blur-2xl opacity-40 pointer-events-none"
-                  style={{ background: "linear-gradient(135deg, rgba(124,58,237,0.2), rgba(6,182,212,0.2))" }}
+                  style={{ background: "linear-gradient(135deg, rgba(124,58,237,0.22), rgba(6,182,212,0.22))" }}
                 />
-                <div className="relative rounded-2xl overflow-hidden shadow-2xl border border-gray-100" style={{ aspectRatio: "16/9" }}>
-                  {/* Fake browser chrome */}
-                  <div className="absolute top-0 left-0 right-0 z-10 bg-gray-900/80 backdrop-blur-sm px-3 py-2 flex items-center gap-2">
+                {/* Browser chrome + iframe in normal flow (no overlap) */}
+                <div className="relative rounded-2xl overflow-hidden shadow-2xl border border-gray-100 flex flex-col">
+                  {/* Chrome bar — sits above iframe, not on top of it */}
+                  <div className="bg-gray-900 px-3 py-2 flex items-center gap-2 shrink-0">
                     <div className="flex gap-1.5">
                       <div className="w-2.5 h-2.5 rounded-full bg-red-400" />
                       <div className="w-2.5 h-2.5 rounded-full bg-amber-400" />
@@ -127,104 +143,86 @@ export default function Home() {
                     </div>
                     <div className="text-[11px] font-medium text-gray-400 ml-2">prevai.it — demo</div>
                   </div>
-                  <iframe
-                    src="/prevai-demo-video/?embed"
-                    className="w-full h-full border-0"
-                    allow="autoplay"
-                    title="prevai demo"
-                    style={{ display: "block" }}
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* ── Right: H1 + AI bar ── */}
-            <div className="order-1 lg:order-2 text-center">
-              <h1 className="text-4xl font-extrabold tracking-tight text-gray-900 sm:text-5xl lg:text-5xl leading-[1.1]">
-                Crea preventivi professionali in{" "}
-                <span className="gradient-text">30 secondi</span> con l'AI
-              </h1>
-
-              {/* ── AI Input Bar ── */}
-              <div className="mt-8">
-                <div className="flex items-center gap-2 bg-white border border-gray-200 rounded-2xl px-4 py-3 shadow-lg focus-within:border-violet-400 focus-within:ring-2 focus-within:ring-violet-100 transition-all">
-                  {/* Upload foto */}
-                  <div className="group relative shrink-0">
-                    <button
-                      disabled
-                      className="h-8 w-8 flex items-center justify-center rounded-xl text-gray-400 cursor-not-allowed hover:bg-gray-100 transition-colors"
-                    >
-                      <ImagePlus className="h-4 w-4" />
-                    </button>
-                    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2.5 py-1 bg-gray-900 text-white text-[11px] font-medium rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none shadow-lg">
-                      Funzione in arrivo
-                      <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-gray-900" />
-                    </div>
+                  {/* iframe below chrome — full 16/9 unobstructed */}
+                  <div style={{ aspectRatio: "16/9" }}>
+                    <iframe
+                      src="/prevai-demo-video/?embed"
+                      className="w-full h-full border-0 block"
+                      allow="autoplay"
+                      title="prevai demo"
+                    />
                   </div>
-
-                  {/* Input */}
-                  <Sparkles className="h-4 w-4 text-violet-400 shrink-0" />
-                  <input
-                    ref={homepageInputRef}
-                    value={homepageInput}
-                    onChange={(e) => setHomepageInput(e.target.value)}
-                    onKeyDown={(e) => { if (e.key === "Enter" && homepageInput.trim()) handleHomepageSubmit(); }}
-                    placeholder="Descrivi il lavoro e ottieni un preventivo in 30 secondi..."
-                    className="flex-1 text-sm outline-none placeholder:text-gray-400 text-gray-800 bg-transparent min-w-0"
-                  />
-
-                  {/* Microfono */}
-                  <div className="group relative shrink-0">
-                    <button
-                      disabled
-                      className="h-8 w-8 flex items-center justify-center rounded-xl text-gray-400 cursor-not-allowed hover:bg-gray-100 transition-colors"
-                    >
-                      <Mic className="h-4 w-4" />
-                    </button>
-                    <div className="absolute bottom-full right-0 mb-2 px-2.5 py-1 bg-gray-900 text-white text-[11px] font-medium rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none shadow-lg">
-                      Funzione in arrivo
-                      <div className="absolute top-full right-3 border-4 border-transparent border-t-gray-900" />
-                    </div>
-                  </div>
-
-                  {/* Send */}
-                  <button
-                    onClick={handleHomepageSubmit}
-                    disabled={!homepageInput.trim()}
-                    className="shrink-0 btn-gradient inline-flex h-8 w-8 items-center justify-center rounded-xl disabled:opacity-40 transition-all"
-                  >
-                    <ArrowRight className="h-4 w-4" />
-                  </button>
                 </div>
-                <p className="mt-2.5 text-xs text-gray-400">
-                  7 giorni gratis · Nessuna carta richiesta
-                </p>
-              </div>
-
-              <p className="mt-5 text-sm text-gray-500 leading-relaxed">
-                Dimentica Excel e i documenti scritti a mano. Descrivi il lavoro a
-                parole tue e prevai genererà un documento impeccabile, pronto da
-                inviare al cliente.
-              </p>
-
-              <div className="mt-6 flex flex-col sm:flex-row justify-center gap-3">
-                <button
-                  onClick={() => navigate(isSignedIn ? "/dashboard/new" : "/sign-up")}
-                  className="btn-gradient inline-flex h-10 items-center justify-center px-6 text-sm font-semibold"
-                >
-                  Inizia Gratuitamente
-                  <ArrowRight className="ml-2 h-4 w-4" />
-                </button>
-                <Link
-                  href="#prezzi"
-                  className="btn-gradient-outline inline-flex h-10 items-center justify-center px-6 text-sm font-semibold"
-                >
-                  Vedi i piani
-                </Link>
               </div>
             </div>
 
           </div>
+
+          {/* ── Bottom: AI bar centered below both columns ── */}
+          <div className="mt-10 mx-auto max-w-2xl">
+            <div className="flex items-center gap-2 bg-white border border-gray-200 rounded-2xl px-4 py-3 shadow-lg focus-within:border-violet-400 focus-within:ring-2 focus-within:ring-violet-100 transition-all">
+              {/* Upload foto */}
+              <div className="group relative shrink-0">
+                <button
+                  disabled
+                  className="h-8 w-8 flex items-center justify-center rounded-xl text-gray-400 cursor-not-allowed hover:bg-gray-100 transition-colors"
+                >
+                  <ImagePlus className="h-4 w-4" />
+                </button>
+                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2.5 py-1 bg-gray-900 text-white text-[11px] font-medium rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none shadow-lg">
+                  Funzione in arrivo
+                  <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-gray-900" />
+                </div>
+              </div>
+              <Sparkles className="h-4 w-4 text-violet-400 shrink-0" />
+              <input
+                ref={homepageInputRef}
+                value={homepageInput}
+                onChange={(e) => setHomepageInput(e.target.value)}
+                onKeyDown={(e) => { if (e.key === "Enter" && homepageInput.trim()) handleHomepageSubmit(); }}
+                placeholder="Descrivi il lavoro e ottieni un preventivo in 30 secondi..."
+                className="flex-1 text-sm outline-none placeholder:text-gray-400 text-gray-800 bg-transparent min-w-0"
+              />
+              <div className="group relative shrink-0">
+                <button
+                  disabled
+                  className="h-8 w-8 flex items-center justify-center rounded-xl text-gray-400 cursor-not-allowed hover:bg-gray-100 transition-colors"
+                >
+                  <Mic className="h-4 w-4" />
+                </button>
+                <div className="absolute bottom-full right-0 mb-2 px-2.5 py-1 bg-gray-900 text-white text-[11px] font-medium rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none shadow-lg">
+                  Funzione in arrivo
+                  <div className="absolute top-full right-3 border-4 border-transparent border-t-gray-900" />
+                </div>
+              </div>
+              <button
+                onClick={handleHomepageSubmit}
+                disabled={!homepageInput.trim()}
+                className="shrink-0 btn-gradient inline-flex h-8 w-8 items-center justify-center rounded-xl disabled:opacity-40 transition-all"
+              >
+                <ArrowRight className="h-4 w-4" />
+              </button>
+            </div>
+            <p className="mt-2.5 text-xs text-gray-400 text-center">
+              7 giorni gratis · Nessuna carta richiesta
+            </p>
+            <div className="mt-5 flex flex-col sm:flex-row justify-center gap-3">
+              <button
+                onClick={() => navigate(isSignedIn ? "/dashboard/new" : "/sign-up")}
+                className="btn-gradient inline-flex h-10 items-center justify-center px-6 text-sm font-semibold"
+              >
+                Inizia Gratuitamente
+                <ArrowRight className="ml-2 h-4 w-4" />
+              </button>
+              <Link
+                href="#prezzi"
+                className="btn-gradient-outline inline-flex h-10 items-center justify-center px-6 text-sm font-semibold"
+              >
+                Vedi i piani
+              </Link>
+            </div>
+          </div>
+
         </div>
       </section>
 
