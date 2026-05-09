@@ -276,20 +276,60 @@ async function deleteSession(phoneNumber: string) {
 
 // ── Intent classification ───────────────────────────────────────────────────────
 
-type ConfirmIntent = "confirm" | "abandon" | "correction";
+/**
+ * Session state machine:
+ *   idle (no row in DB)
+ *     └─ new work request → awaiting_confirmation
+ *   awaiting_confirmation
+ *     ├─ confirm keyword   → awaiting_client_data
+ *     ├─ abandon keyword   → idle (delete session)
+ *     ├─ new work hint     → warn user; remain in awaiting_confirmation
+ *     └─ correction        → awaiting_confirmation (regenerate, iterationCount++)
+ *   awaiting_client_data
+ *     ├─ client data / skip → idle (save quote, send PDF, delete session)
+ *     ├─ abandon keyword    → idle (delete session)
+ *     └─ new work hint      → warn user; remain in awaiting_client_data
+ */
+
+type ConfirmIntent = "confirm" | "abandon" | "new_work_hint" | "correction";
 
 function classifyConfirmationIntent(text: string): ConfirmIntent {
   const t = text.toLowerCase().trim();
   const confirmKeywords = ["ok", "va bene", "va benissimo", "perfetto", "procedi", "ottimo", "bene", "confermo", "conferma", "approvato", "giusto", "corretto", "andiamo", "yes", "go"];
   const abandonKeywords = ["abbandona", "ricomincia", "nuovo preventivo", "lascia stare", "annulla", "cancella", "reset", "no grazie", "ricomincia da capo"];
 
-  if (confirmKeywords.some(kw => t === kw || t === `sì ${kw}` || t === `si ${kw}` || t.startsWith(`${kw} `) || t.endsWith(` ${kw}`) || t === `sì` || t === `si`)) {
+  if (t === "sì" || t === "si" || confirmKeywords.some(kw => t === kw || t.startsWith(`${kw} `) || t.endsWith(` ${kw}`))) {
     return "confirm";
   }
   if (abandonKeywords.some(kw => t.includes(kw))) {
     return "abandon";
   }
+  // Detect a probable NEW work description (not a correction to the existing quote).
+  // Criteria: message is long, lacks correction-verb starters, contains new-work language.
+  if (looksLikeNewWorkRequest(t)) {
+    return "new_work_hint";
+  }
   return "correction";
+}
+
+/**
+ * Returns true when `text` looks like a brand-new work description rather than
+ * a correction to an already-generated quote.
+ * Heuristic: message must be ≥ 70 chars, not start with a known correction verb,
+ * and contain at least one new-work trigger phrase.
+ */
+function looksLikeNewWorkRequest(text: string): boolean {
+  const t = text.toLowerCase().trim();
+  if (t.length < 70) return false;
+  const correctionStarters = ["cambia", "modifica", "aggiungi", "togli", "elimina", "riduci", "aumenta", "metti", "sostituisci", "correggi", "calcola", "ricalcola", "sposta", "rinomina"];
+  if (correctionStarters.some(v => t.startsWith(v + " ") || t.startsWith(v + "i ") || t.startsWith(v + "re "))) return false;
+  const newWorkPatterns = [
+    /(?:voglio|devo|dobbiamo|bisogna)\s+(?:fare|rifare|installare|ristrutturare|tinteggiare|riparare|costruire)/,
+    /preventivo\s+(?:per|di)\s+(?:un|una|il|la)/,
+    /(?:nuovo\s+)?(?:cantiere|progetto|lavoro)\s+(?:a|in|da|di)/,
+    /lavori\s+di\s+\w+/,
+  ];
+  return newWorkPatterns.some(p => p.test(t));
 }
 
 function parseClientData(text: string): { nome: string; indirizzo: string } {
@@ -387,6 +427,17 @@ async function handleConfirmationReply(
     return;
   }
 
+  // Looks like a brand-new work request while a quote is already in progress
+  if (intent === "new_work_hint") {
+    await sendWhatsappText(
+      from,
+      `ℹ️ Hai già un preventivo in corso per:\n*${pendingData.titoloPreventivoRiga2 || "preventivo attuale"}*\n\n` +
+      `Se vuoi *annullarlo* e iniziare una nuova richiesta, scrivi *abbandona*.\n` +
+      `Oppure invia le tue *correzioni* al preventivo in corso (es. "cambia il prezzo delle piastrelle a 35€/mq").`
+    );
+    return;
+  }
+
   // Correction
   await sendWhatsappText(from, "✏️ Sto aggiornando il preventivo...");
   try {
@@ -408,6 +459,27 @@ async function handleClientDataReply(
   profile: typeof businessProfilesTable.$inferSelect,
 ) {
   const pendingData = session.pendingQuoteData as unknown as PendingQuoteData;
+
+  // Explicit abandon while collecting client data
+  const t = text.toLowerCase().trim();
+  const abandonKeywords = ["abbandona", "ricomincia", "annulla", "cancella", "reset", "ricomincia da capo"];
+  if (abandonKeywords.some(kw => t.includes(kw))) {
+    await deleteSession(from);
+    await sendWhatsappText(from, "🗑️ Preventivo annullato.\n\nInviami una nuova descrizione del lavoro quando vuoi.");
+    return;
+  }
+
+  // Looks like a brand-new work request instead of client data
+  if (looksLikeNewWorkRequest(t)) {
+    await sendWhatsappText(
+      from,
+      `ℹ️ Stavo aspettando i dati del cliente per il preventivo:\n*${pendingData.titoloPreventivoRiga2 || "preventivo in corso"}*\n\n` +
+      `Inserisci il *nome e indirizzo del cliente* (es. "Mario Rossi, Via Roma 1, Milano") oppure scrivi *salta*.\n` +
+      `Se vuoi *annullare* questo preventivo e iniziarne uno nuovo, scrivi *abbandona*.`
+    );
+    return;
+  }
+
   const clientData = parseClientData(text);
 
   const finalData: PendingQuoteData = {

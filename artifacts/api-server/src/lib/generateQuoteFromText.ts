@@ -321,9 +321,17 @@ export async function saveQuoteToDb({
     source,
   }).returning();
 
-  await db.update(businessProfilesTable)
-    .set({ trialStartedAt: new Date() })
+  // Set trialStartedAt only if not already set — do NOT overwrite an existing value
+  const [existingProfile] = await db
+    .select({ trialStartedAt: businessProfilesTable.trialStartedAt })
+    .from(businessProfilesTable)
     .where(eq(businessProfilesTable.userId, userId));
+  if (!existingProfile?.trialStartedAt) {
+    await db
+      .update(businessProfilesTable)
+      .set({ trialStartedAt: new Date() })
+      .where(eq(businessProfilesTable.userId, userId));
+  }
 
   return quote!;
 }
