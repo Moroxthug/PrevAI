@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger, SheetTitle } from "@/components/ui/sheet";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { cn } from "@/lib/utils";
 import { Logo } from "@/components/logo";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
@@ -23,6 +23,48 @@ const BASE_NAV_ITEMS = [
   { href: "/dashboard/documents", label: "Archivio", icon: FolderOpen, exact: false, proOnly: false, comingSoon: false },
   { href: "/dashboard/settings", label: "Impostazioni", icon: Settings, exact: false, proOnly: false, comingSoon: false },
 ];
+
+/**
+ * Attaches touch listeners to a div ref and calls `onClose` when the user
+ * swipes left. Only fires when horizontal movement dominates (|dx| > |dy| * 1.5)
+ * so vertical scrolling inside the drawer is never blocked.
+ */
+function useSwipeToClose(enabled: boolean, onClose: () => void) {
+  const ref = useRef<HTMLDivElement>(null);
+  const startX = useRef(0);
+  const startY = useRef(0);
+
+  const handleClose = useCallback(onClose, [onClose]);
+
+  useEffect(() => {
+    if (!enabled) return;
+    const el = ref.current;
+    if (!el) return;
+
+    function onTouchStart(e: TouchEvent) {
+      startX.current = e.touches[0]!.clientX;
+      startY.current = e.touches[0]!.clientY;
+    }
+
+    function onTouchEnd(e: TouchEvent) {
+      const dx = e.changedTouches[0]!.clientX - startX.current;
+      const dy = e.changedTouches[0]!.clientY - startY.current;
+      // Swipe left: at least 50px, and clearly more horizontal than vertical
+      if (dx < -50 && Math.abs(dx) > Math.abs(dy) * 1.5) {
+        handleClose();
+      }
+    }
+
+    el.addEventListener("touchstart", onTouchStart, { passive: true });
+    el.addEventListener("touchend", onTouchEnd, { passive: true });
+    return () => {
+      el.removeEventListener("touchstart", onTouchStart);
+      el.removeEventListener("touchend", onTouchEnd);
+    };
+  }, [enabled, handleClose]);
+
+  return ref;
+}
 
 function isActive(navHref: string, location: string, exact: boolean) {
   if (exact) return location === navHref;
@@ -104,6 +146,8 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
   const { isLoaded, isSignedIn } = useAuth();
   const [location] = useLocation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const closeMenu = useCallback(() => setIsMobileMenuOpen(false), []);
+  const swipeRef = useSwipeToClose(isMobileMenuOpen, closeMenu);
   const [isCollapsed, setIsCollapsed] = useState(() => {
     try { return localStorage.getItem("sidebar-collapsed") === "true"; } catch { return false; }
   });
@@ -243,7 +287,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
                   <span className="sr-only">Toggle menu</span>
                 </Button>
               </SheetTrigger>
-              <SheetContent side="left" className="w-64 p-0 bg-white flex flex-col">
+              <SheetContent ref={swipeRef} side="left" className="w-64 p-0 bg-white flex flex-col">
                 <SheetTitle className="sr-only">Menu di navigazione</SheetTitle>
                 <div className="h-14 flex items-center px-5 border-b border-gray-100">
                   <Link href="/dashboard" className="flex items-center" onClick={() => setIsMobileMenuOpen(false)}>
