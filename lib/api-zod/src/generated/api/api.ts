@@ -942,6 +942,15 @@ export const DisconnectWhatsappResponse = zod.object({
 });
 
 /**
+ * @summary Get WhatsApp quote usage for the current month
+ */
+export const GetWhatsappUsageResponse = zod.object({
+  used: zod.number(),
+  limit: zod.number().nullish(),
+  plan: zod.string().nullish(),
+});
+
+/**
  * @summary Enable or disable the WhatsApp integration
  */
 export const ToggleWhatsappBody = zod.object({

@@ -370,6 +370,12 @@ export interface WhatsappVerifyBody {
   otp: string;
 }
 
+export interface WhatsappUsage {
+  used: number;
+  limit?: number | null;
+  plan?: string | null;
+}
+
 export interface WhatsappToggleBody {
   isEnabled: boolean;
 }

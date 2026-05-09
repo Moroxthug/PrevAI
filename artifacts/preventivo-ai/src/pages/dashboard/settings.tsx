@@ -6,7 +6,7 @@ import {
   useGetBusinessProfile, useUpdateBusinessProfile, useGetSubscription,
   useCreateCustomerPortalSession, getGetBusinessProfileQueryKey,
   useGetWhatsappStatus, useConnectWhatsapp, useVerifyWhatsapp, useDisconnectWhatsapp,
-  useToggleWhatsapp, getGetWhatsappStatusQueryKey,
+  useToggleWhatsapp, getGetWhatsappStatusQueryKey, useGetWhatsappUsage,
 } from "@workspace/api-client-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -391,6 +391,7 @@ function BillingTab() {
 
 function WhatsappTab() {
   const { data: status, isLoading } = useGetWhatsappStatus();
+  const { data: usage } = useGetWhatsappUsage();
   const connectWa = useConnectWhatsapp();
   const verifyWa = useVerifyWhatsapp();
   const disconnectWa = useDisconnectWhatsapp();
@@ -498,6 +499,44 @@ function WhatsappTab() {
             </div>
           </CardHeader>
           <CardContent className="space-y-4">
+            {usage != null && usage.limit != null && (
+              <div className="bg-white/70 rounded-xl p-4 border border-emerald-100">
+                <div className="flex items-center gap-2 mb-3">
+                  <BarChart3 className="h-4 w-4 text-emerald-600" />
+                  <span className="text-sm font-semibold">Preventivi WhatsApp questo mese</span>
+                </div>
+                <div className="space-y-1.5">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Usati</span>
+                    <span className="font-semibold">{usage.used} / {usage.limit}</span>
+                  </div>
+                  <div className="w-full h-2.5 rounded-full bg-muted overflow-hidden">
+                    <div
+                      className={`h-full rounded-full transition-all duration-500 ${
+                        usage.used >= usage.limit ? "bg-red-500" : usage.used >= usage.limit * 0.8 ? "bg-amber-500" : "bg-emerald-500"
+                      }`}
+                      style={{ width: `${Math.min(100, Math.round((usage.used / usage.limit) * 100))}%` }}
+                    />
+                  </div>
+                  <div className="flex justify-between text-xs text-muted-foreground">
+                    <span>{Math.max(0, usage.limit - usage.used)} rimanenti</span>
+                    <span>{Math.min(100, Math.round((usage.used / usage.limit) * 100))}% usato</span>
+                  </div>
+                </div>
+                {usage.used >= usage.limit && (
+                  <div className="mt-3 flex items-start gap-2 text-xs text-red-700 bg-red-50 border border-red-200 rounded-lg p-2.5">
+                    <AlertCircle className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+                    Limite mensile raggiunto. Si azzera il 1° del mese prossimo. Passa a Elite per preventivi WhatsApp illimitati.
+                  </div>
+                )}
+                {usage.used < usage.limit && usage.limit - usage.used <= 5 && (
+                  <div className="mt-3 flex items-start gap-2 text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg p-2.5">
+                    <AlertCircle className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+                    Stai per esaurire i preventivi WhatsApp del mese.
+                  </div>
+                )}
+              </div>
+            )}
             <div className="bg-white/70 rounded-xl p-4 border border-emerald-100 text-sm text-muted-foreground space-y-1.5">
               <p className="font-semibold text-foreground mb-2">Come usare l'integrazione:</p>
               <p>📝 Invia una <strong>descrizione del lavoro</strong> in testo al numero prevai</p>

@@ -51,6 +51,7 @@ import type {
   WhatsappConnectResult,
   WhatsappStatus,
   WhatsappToggleBody,
+  WhatsappUsage,
   WhatsappVerifyBody,
 } from "./api.schemas";
 
@@ -2700,6 +2701,81 @@ export const useDisconnectWhatsapp = <
 > => {
   return useMutation(getDisconnectWhatsappMutationOptions(options));
 };
+
+/**
+ * @summary Get WhatsApp quote usage for the current month
+ */
+export const getGetWhatsappUsageUrl = () => {
+  return `/api/whatsapp/usage`;
+};
+
+export const getWhatsappUsage = async (
+  options?: RequestInit,
+): Promise<WhatsappUsage> => {
+  return customFetch<WhatsappUsage>(getGetWhatsappUsageUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetWhatsappUsageQueryKey = () => {
+  return [`/api/whatsapp/usage`] as const;
+};
+
+export const getGetWhatsappUsageQueryOptions = <
+  TData = Awaited<ReturnType<typeof getWhatsappUsage>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getWhatsappUsage>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetWhatsappUsageQueryKey();
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof getWhatsappUsage>>
+  > = ({ signal }) => getWhatsappUsage({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getWhatsappUsage>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetWhatsappUsageQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getWhatsappUsage>>
+>;
+export type GetWhatsappUsageQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Get WhatsApp quote usage for the current month
+ */
+
+export function useGetWhatsappUsage<
+  TData = Awaited<ReturnType<typeof getWhatsappUsage>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getWhatsappUsage>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetWhatsappUsageQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
 
 /**
  * @summary Enable or disable the WhatsApp integration

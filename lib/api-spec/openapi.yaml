@@ -567,6 +567,19 @@ paths:
               schema:
                 $ref: "#/components/schemas/SuccessResult"
 
+  /whatsapp/usage:
+    get:
+      operationId: getWhatsappUsage
+      tags: [whatsapp]
+      summary: Get WhatsApp quote usage for the current month
+      responses:
+        "200":
+          description: Usage stats
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WhatsappUsage"
+
   /whatsapp/toggle:
     patch:
       operationId: toggleWhatsapp
@@ -1334,6 +1347,20 @@ components:
       required:
         - phoneNumber
         - otp
+
+    WhatsappUsage:
+      type: object
+      properties:
+        used:
+          type: number
+        limit:
+          type: number
+          nullable: true
+        plan:
+          type: string
+          nullable: true
+      required:
+        - used
 
     WhatsappToggleBody:
       type: object

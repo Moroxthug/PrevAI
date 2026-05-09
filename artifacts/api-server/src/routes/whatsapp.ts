@@ -319,6 +319,45 @@ router.get("/whatsapp/status", requireAuth, async (req, res) => {
   }
 });
 
+// ── GET /api/whatsapp/usage — WhatsApp quote usage for the current month ───────
+router.get("/whatsapp/usage", requireAuth, async (req, res) => {
+  try {
+    const userId = getUserId(res);
+
+    const startOfMonth = new Date();
+    startOfMonth.setDate(1);
+    startOfMonth.setHours(0, 0, 0, 0);
+
+    const [countResult] = await db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(quotesTable)
+      .where(
+        and(
+          eq(quotesTable.userId, userId),
+          eq(quotesTable.source, "whatsapp"),
+          gte(quotesTable.createdAt, startOfMonth)
+        )
+      );
+    const used = countResult?.count ?? 0;
+
+    const [profile] = await db
+      .select({ subscriptionPlan: businessProfilesTable.subscriptionPlan, subscriptionStatus: businessProfilesTable.subscriptionStatus })
+      .from(businessProfilesTable)
+      .where(eq(businessProfilesTable.userId, userId));
+
+    const plan = profile?.subscriptionPlan ?? null;
+    const isActive = profile?.subscriptionStatus === "active";
+
+    // Pro: limit 20 WhatsApp quotes/month; Elite: unlimited (null)
+    const limit = isActive && plan === "monthly_pro" ? 20 : null;
+
+    res.json({ used, limit, plan });
+  } catch (err) {
+    req.log.error({ err }, "WhatsApp usage error");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
 // ── POST /api/whatsapp/connect — generate OTP and send via WhatsApp ───────────
 router.post("/whatsapp/connect", requireAuth, async (req, res) => {
   try {
