@@ -16,6 +16,8 @@ export const whatsappConnectionsTable = pgTable("whatsapp_connections", {
   phoneNumber: text("phone_number").notNull().unique(),
   isEnabled: boolean("is_enabled").notNull().default(true),
   connectedAt: timestamp("connected_at", { withTimezone: true }).notNull().defaultNow(),
+  /** Persistent user preferences (default template, client, IVA, …) */
+  preferences: jsonb("preferences").default({}),
 });
 
 export const whatsappOtpTable = pgTable("whatsapp_otp", {
@@ -32,6 +34,10 @@ export const whatsappSessionStateEnum = pgEnum("whatsapp_session_state", [
   "awaiting_job_input",
   "awaiting_confirmation",
   "awaiting_client_data",
+  "menu_main",
+  "menu_clients",
+  "menu_template",
+  "menu_iva",
 ]);
 
 export const whatsappSessionsTable = pgTable("whatsapp_sessions", {
@@ -56,3 +62,9 @@ export type WhatsappConnection = typeof whatsappConnectionsTable.$inferSelect;
 export type WhatsappOtp = typeof whatsappOtpTable.$inferSelect;
 export type WhatsappSession = typeof whatsappSessionsTable.$inferSelect;
 export type InsertWhatsappConnection = z.infer<typeof insertWhatsappConnectionSchema>;
+
+export type WhatsappPreferences = {
+  defaultTemplate?: string;   // "standard" | "mariagrazia" | "arosio"
+  defaultClient?: { nome: string; indirizzo: string } | null;
+  defaultIva?: number;        // 4 | 5 | 10 | 22
+};

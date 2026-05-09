@@ -8,7 +8,8 @@ import {
   businessProfilesTable,
   quotesTable,
 } from "@workspace/db";
-import { eq, and, gt, gte, sql, desc } from "drizzle-orm";
+import { eq, and, gt, gte, sql, desc, sum } from "drizzle-orm";
+import type { WhatsappPreferences } from "@workspace/db";
 import { logger } from "../lib/logger.js";
 import {
   buildQuoteFromAI,
@@ -246,7 +247,11 @@ type SessionState =
   | "awaiting_client_choice"
   | "awaiting_job_input"
   | "awaiting_confirmation"
-  | "awaiting_client_data"; // legacy state — kept for in-flight sessions
+  | "awaiting_client_data"  // legacy — kept for in-flight sessions
+  | "menu_main"
+  | "menu_clients"
+  | "menu_template"
+  | "menu_iva";
 
 async function loadValidSession(phoneNumber: string) {
   const [session] = await db
@@ -283,6 +288,31 @@ async function upsertSession(
 
 async function deleteSession(phoneNumber: string) {
   await db.delete(whatsappSessionsTable).where(eq(whatsappSessionsTable.phoneNumber, phoneNumber));
+}
+
+// ── Preferences helpers ─────────────────────────────────────────────────────────
+
+async function getPreferences(userId: string): Promise<WhatsappPreferences> {
+  const [conn] = await db
+    .select({ preferences: whatsappConnectionsTable.preferences })
+    .from(whatsappConnectionsTable)
+    .where(eq(whatsappConnectionsTable.userId, userId));
+  return (conn?.preferences as WhatsappPreferences | null) ?? {};
+}
+
+async function setPreferences(userId: string, prefs: Partial<WhatsappPreferences>): Promise<void> {
+  const current = await getPreferences(userId);
+  await db
+    .update(whatsappConnectionsTable)
+    .set({ preferences: { ...current, ...prefs } as Record<string, unknown> })
+    .where(eq(whatsappConnectionsTable.userId, userId));
+}
+
+// ── Menu trigger detection ──────────────────────────────────────────────────────
+
+function isMenuTrigger(text: string): boolean {
+  const t = text.toLowerCase().trim();
+  return ["/menu", "menu", "aiuto", "help", "opzioni", "impostazioni", "m", "?"].includes(t);
 }
 
 // ── Client list helper ──────────────────────────────────────────────────────────
@@ -397,12 +427,70 @@ async function sendQuotePreview(from: string, data: PendingQuoteData, iterationC
   await sendWhatsappText(from, confirmMsg);
 }
 
-// ── Flow: greeting → template selection ────────────────────────────────────────
+// ── Flow: greeting → template selection (or fast-track with defaults) ──────────
 
 async function handleGreeting(from: string, userId: string, profile: typeof businessProfilesTable.$inferSelect) {
   const isPro = profile.subscriptionStatus === "active" &&
     (profile.subscriptionPlan === "monthly_pro" || profile.subscriptionPlan === "monthly_elite");
 
+  const prefs = await getPreferences(userId);
+
+  // Resolve effective template (if default Pro template but user downgraded → fallback to standard)
+  const effectiveTemplate = prefs.defaultTemplate
+    ? ((isPro || prefs.defaultTemplate === "standard") ? prefs.defaultTemplate : "standard")
+    : null;
+
+  // Fast-track: both template AND client are pre-set → skip straight to job input
+  if (effectiveTemplate && prefs.defaultClient?.nome) {
+    await sendWhatsappText(from, [
+      `✅ Template: *${templateLabel(effectiveTemplate)}* | Cliente: *${prefs.defaultClient.nome}*`,
+      `_(predefiniti — scrivi *menu* per cambiarli)_`,
+      ``,
+      `📝 Descrivi il lavoro da preventivare (testo, vocale o foto):`,
+    ].join("\n"));
+    await upsertSession(from, userId, "awaiting_job_input", {
+      templateId: effectiveTemplate,
+      clientData: prefs.defaultClient,
+    }, 0);
+    return;
+  }
+
+  // Fast-track: only template is pre-set → skip template selection
+  if (effectiveTemplate) {
+    const existingClients = await getExistingClients(userId);
+    if (existingClients.length > 0) {
+      const clientList = existingClients
+        .map((c, i) => `*${i + 1}* — ${c.nome}${c.indirizzo ? ` – ${c.indirizzo}` : ""}`)
+        .join("\n");
+      await sendWhatsappText(from, [
+        `✅ Template: *${templateLabel(effectiveTemplate)}* _(predefinito)_`,
+        ``,
+        `👤 Scegli il cliente:`,
+        ``,
+        `*0* — Nuovo cliente`,
+        clientList,
+        ``,
+        `Rispondi con il *numero* oppure inserisci direttamente *nome e indirizzo*.`,
+      ].join("\n"));
+      await upsertSession(from, userId, "awaiting_client_choice", {
+        templateId: effectiveTemplate,
+        existingClients,
+      }, 0);
+    } else {
+      await sendWhatsappText(from, [
+        `✅ Template: *${templateLabel(effectiveTemplate)}* _(predefinito)_`,
+        ``,
+        `👤 Inserisci *nome e indirizzo* del cliente (es. "Mario Rossi, Via Roma 1, Milano"), oppure scrivi *salta*.`,
+      ].join("\n"));
+      await upsertSession(from, userId, "awaiting_client_choice", {
+        templateId: effectiveTemplate,
+        existingClients: [],
+      }, 0);
+    }
+    return;
+  }
+
+  // Full greeting → ask template
   const templateLines = TEMPLATES.map((t, i) =>
     isPro || t.id === "standard"
       ? `*${i + 1}* — ${t.emoji} ${t.label}: ${t.desc}`
@@ -417,9 +505,334 @@ async function handleGreeting(from: string, userId: string, profile: typeof busi
     templateLines,
     ``,
     `Rispondi con *1*, *2* o *3*`,
+    `_(scrivi *menu* per le impostazioni)_`,
   ].join("\n"));
 
   await upsertSession(from, userId, "awaiting_template_selection", {}, 0);
+}
+
+// ── Menu: main menu ─────────────────────────────────────────────────────────────
+
+async function sendMainMenu(from: string, userId: string, prefs: WhatsappPreferences) {
+  const defaultTmpl = templateLabel(prefs.defaultTemplate ?? "standard");
+  const defaultClient = prefs.defaultClient?.nome || "nessuno";
+  const defaultIva = prefs.defaultIva ?? 22;
+
+  await sendWhatsappText(from, [
+    `📋 *MENU PREVAI*`,
+    ``,
+    `📊 *Statistiche:*`,
+    `*1* — 📊 Analitiche del mese`,
+    `*2* — 📋 Storico ultimi 5 preventivi`,
+    ``,
+    `⚙️ *Impostazioni rapide:*`,
+    `*3* — 👥 Cliente predefinito  _(ora: ${defaultClient})_`,
+    `*4* — 📄 Template PDF  _(ora: ${defaultTmpl})_`,
+    `*5* — 💶 Aliquota IVA  _(ora: ${defaultIva}%)_`,
+    ``,
+    `🆘 *Supporto:*`,
+    `*6* — Assistenza & supporto`,
+    ``,
+    `✏️ *P* — Nuovo preventivo`,
+    ``,
+    `Rispondi con un numero o *P*.`,
+  ].join("\n"));
+
+  await upsertSession(from, userId, "menu_main", { prefs: prefs as unknown as Record<string, unknown> }, 0);
+}
+
+async function handleMenuMainReply(
+  from: string,
+  userId: string,
+  text: string,
+  profile: typeof businessProfilesTable.$inferSelect,
+) {
+  const t = text.trim().toLowerCase();
+
+  if (t === "p" || t === "preventivo" || t === "nuovo preventivo") {
+    await deleteSession(from);
+    await handleGreeting(from, userId, profile);
+    return;
+  }
+
+  const choice = parseInt(t, 10);
+  const prefs = await getPreferences(userId);
+
+  switch (choice) {
+    case 1: await handleAnalytics(from, userId, profile); await deleteSession(from); break;
+    case 2: await handleQuoteHistory(from, userId); await deleteSession(from); break;
+    case 3: await handleClientsMenu(from, userId, prefs); break;
+    case 4: await handleTemplateMenu(from, userId, prefs, profile); break;
+    case 5: await handleIvaMenu(from, userId, prefs); break;
+    case 6: await handleSupport(from); await deleteSession(from); break;
+    default:
+      await sendWhatsappText(from, "🤔 Rispondi con *1-6* o *P* per un nuovo preventivo.\nScrivi *menu* per rivedere le opzioni.");
+  }
+}
+
+// ── Menu: analytics ─────────────────────────────────────────────────────────────
+
+async function handleAnalytics(
+  from: string,
+  userId: string,
+  profile: typeof businessProfilesTable.$inferSelect,
+) {
+  const startOfMonth = new Date();
+  startOfMonth.setDate(1);
+  startOfMonth.setHours(0, 0, 0, 0);
+
+  const [monthData] = await db
+    .select({
+      count: sql<number>`count(*)::int`,
+      waCount: sql<number>`sum(case when source = 'whatsapp' then 1 else 0 end)::int`,
+      webCount: sql<number>`sum(case when source = 'web' then 1 else 0 end)::int`,
+      totalValue: sum(quotesTable.totale),
+    })
+    .from(quotesTable)
+    .where(and(eq(quotesTable.userId, userId), gte(quotesTable.createdAt, startOfMonth)));
+
+  const [allData] = await db
+    .select({
+      count: sql<number>`count(*)::int`,
+      totalValue: sum(quotesTable.totale),
+    })
+    .from(quotesTable)
+    .where(eq(quotesTable.userId, userId));
+
+  const eur = (v: string | null) =>
+    new Intl.NumberFormat("it-IT", { style: "currency", currency: "EUR" }).format(Number(v ?? 0));
+
+  const now = new Date();
+  const monthName = now.toLocaleDateString("it-IT", { month: "long", year: "numeric" });
+
+  const isPro = profile.subscriptionStatus === "active" && profile.subscriptionPlan === "monthly_pro";
+  const waUsed = monthData?.waCount ?? 0;
+  const waLimit = isPro ? 20 : null;
+  const usageStr = waLimit != null
+    ? `WhatsApp questo mese: *${waUsed}/${waLimit}* utilizzati`
+    : `WhatsApp questo mese: *${waUsed}*`;
+
+  await sendWhatsappText(from, [
+    `📊 *Analitiche — ${monthName}*`,
+    ``,
+    `📋 Preventivi creati: *${monthData?.count ?? 0}*`,
+    `  • Via WhatsApp: ${waUsed}`,
+    `  • Via sito web: ${monthData?.webCount ?? 0}`,
+    `💶 Valore totale mese: *${eur(monthData?.totalValue ?? null)}*`,
+    ``,
+    `📈 *Storico totale:*`,
+    `📋 Preventivi: *${allData?.count ?? 0}*`,
+    `💶 Valore cumulativo: *${eur(allData?.totalValue ?? null)}*`,
+    ``,
+    usageStr,
+    ``,
+    `_Scrivi *menu* per tornare al menu._`,
+  ].join("\n"));
+}
+
+// ── Menu: quote history ─────────────────────────────────────────────────────────
+
+async function handleQuoteHistory(from: string, userId: string) {
+  const quotes = await db
+    .select({
+      id: quotesTable.id,
+      titoloPreventivoRiga2: quotesTable.titoloPreventivoRiga2,
+      clientData: quotesTable.clientData,
+      totale: quotesTable.totale,
+      createdAt: quotesTable.createdAt,
+    })
+    .from(quotesTable)
+    .where(eq(quotesTable.userId, userId))
+    .orderBy(desc(quotesTable.createdAt))
+    .limit(5);
+
+  if (quotes.length === 0) {
+    await sendWhatsappText(from, "📋 Non hai ancora creato preventivi.\n\nScrivi *P* per creare il tuo primo preventivo!");
+    return;
+  }
+
+  const eur = (v: string | null) =>
+    new Intl.NumberFormat("it-IT", { style: "currency", currency: "EUR" }).format(Number(v ?? 0));
+
+  const lines = quotes.map((q, i) => {
+    const cd = q.clientData as { nome?: string } | null;
+    const clientStr = cd?.nome ? ` — ${cd.nome}` : "";
+    const dateStr = q.createdAt.toLocaleDateString("it-IT", { day: "2-digit", month: "2-digit" });
+    const total = eur(q.totale);
+    return `*${i + 1}.* ${q.titoloPreventivoRiga2 ?? "Preventivo"}${clientStr}\n    ${total} — ${dateStr}`;
+  });
+
+  await sendWhatsappText(from, [
+    `📋 *Ultimi ${quotes.length} preventivi:*`,
+    ``,
+    lines.join("\n"),
+    ``,
+    `_Visualizzali su: ${PREVAI_BASE_URL}/dashboard_`,
+    `_Scrivi *menu* per tornare al menu._`,
+  ].join("\n"));
+}
+
+// ── Menu: clients ───────────────────────────────────────────────────────────────
+
+async function handleClientsMenu(from: string, userId: string, prefs: WhatsappPreferences) {
+  const clients = await getExistingClients(userId);
+
+  if (clients.length === 0) {
+    await sendWhatsappText(from, "👥 Non hai ancora clienti nei tuoi preventivi.\n\nCrea il tuo primo preventivo e il cliente verrà salvato automaticamente.");
+    await deleteSession(from);
+    return;
+  }
+
+  const currentDefaultName = prefs.defaultClient?.nome?.toLowerCase();
+  const lines = clients.map((c, i) => {
+    const isDefault = currentDefaultName && c.nome.toLowerCase() === currentDefaultName;
+    return `*${i + 1}* — ${c.nome}${c.indirizzo ? ` – ${c.indirizzo}` : ""}${isDefault ? " ✓" : ""}`;
+  });
+
+  const currentStr = prefs.defaultClient?.nome
+    ? `Cliente predefinito: *${prefs.defaultClient.nome}*`
+    : "Nessun cliente predefinito impostato.";
+
+  await sendWhatsappText(from, [
+    `👥 *Clienti recenti:*`,
+    ``,
+    ...lines,
+    ``,
+    `*0* — Rimuovi cliente predefinito`,
+    ``,
+    currentStr,
+    ``,
+    `Scegli un numero per impostarlo come predefinito per i prossimi preventivi.`,
+  ].join("\n"));
+
+  await upsertSession(from, userId, "menu_clients", { existingClients: clients }, 0);
+}
+
+async function handleClientsMenuReply(from: string, userId: string, text: string, session: typeof whatsappSessionsTable.$inferSelect) {
+  const payload = session.pendingQuoteData as Record<string, unknown>;
+  const existingClients = (payload.existingClients as { nome: string; indirizzo: string }[] | undefined) ?? [];
+  const choice = parseInt(text.trim(), 10);
+
+  if (choice === 0) {
+    await setPreferences(userId, { defaultClient: null });
+    await sendWhatsappText(from, "✅ Cliente predefinito rimosso.\n\n_Scrivi *menu* per le impostazioni o *P* per un nuovo preventivo._");
+    await deleteSession(from);
+  } else if (choice >= 1 && choice <= existingClients.length) {
+    const client = existingClients[choice - 1]!;
+    await setPreferences(userId, { defaultClient: client });
+    await sendWhatsappText(from, `✅ *${client.nome}* impostato come cliente predefinito.\n\n_Scrivi *menu* per le impostazioni o *P* per un nuovo preventivo._`);
+    await deleteSession(from);
+  } else {
+    await sendWhatsappText(from, "🤔 Scegli un numero dalla lista o *0* per rimuovere il predefinito.");
+  }
+}
+
+// ── Menu: template ──────────────────────────────────────────────────────────────
+
+async function handleTemplateMenu(
+  from: string,
+  userId: string,
+  prefs: WhatsappPreferences,
+  profile: typeof businessProfilesTable.$inferSelect,
+) {
+  const isPro = profile.subscriptionStatus === "active" &&
+    (profile.subscriptionPlan === "monthly_pro" || profile.subscriptionPlan === "monthly_elite");
+
+  const currentDefault = prefs.defaultTemplate ?? "standard";
+  const lines = TEMPLATES.map((t, i) => {
+    const isDefault = t.id === currentDefault;
+    const available = isPro || t.id === "standard";
+    return `*${i + 1}* — ${t.emoji} ${t.label}${isDefault ? " ✓" : ""}${!available ? " _(Pro/Elite)_" : ""}`;
+  });
+
+  await sendWhatsappText(from, [
+    `📄 *Template PDF predefinito:*`,
+    ``,
+    ...lines,
+    ``,
+    `Scegli un numero per impostare il template predefinito.`,
+    `Il template influenza il layout del PDF e la lunghezza delle descrizioni.`,
+  ].join("\n"));
+
+  await upsertSession(from, userId, "menu_template", { isPro }, 0);
+}
+
+async function handleTemplateMenuReply(
+  from: string,
+  userId: string,
+  text: string,
+  profile: typeof businessProfilesTable.$inferSelect,
+) {
+  const isPro = profile.subscriptionStatus === "active" &&
+    (profile.subscriptionPlan === "monthly_pro" || profile.subscriptionPlan === "monthly_elite");
+
+  const templateId = templateFromChoice(text);
+  if (!templateId) {
+    await sendWhatsappText(from, "🤔 Rispondi con *1* (Starter), *2* (Elegante) o *3* (Professionale).");
+    return;
+  }
+
+  if ((templateId === "mariagrazia" || templateId === "arosio") && !isPro) {
+    await sendWhatsappText(from, `⚠️ Il template *${templateLabel(templateId)}* richiede Piano Pro/Elite.\n\nAggiorna su: ${PREVAI_BASE_URL}/dashboard/settings`);
+    return;
+  }
+
+  await setPreferences(userId, { defaultTemplate: templateId });
+  await sendWhatsappText(from, `✅ Template *${templateLabel(templateId)}* impostato come predefinito.\n\n_Scrivi *menu* per le impostazioni o *P* per un nuovo preventivo._`);
+  await deleteSession(from);
+}
+
+// ── Menu: IVA ───────────────────────────────────────────────────────────────────
+
+const IVA_OPTIONS = [4, 5, 10, 22];
+
+async function handleIvaMenu(from: string, userId: string, prefs: WhatsappPreferences) {
+  const currentIva = prefs.defaultIva ?? 22;
+  const lines = IVA_OPTIONS.map((iva, i) =>
+    `*${i + 1}* — ${iva}%${iva === currentIva ? " ✓" : ""}`
+  );
+
+  await sendWhatsappText(from, [
+    `💶 *Aliquota IVA predefinita:*`,
+    ``,
+    ...lines,
+    ``,
+    `Scegli l'aliquota IVA da applicare automaticamente nei prossimi preventivi.`,
+    `_(standard lavori edili: 10% — standard generico: 22%)_`,
+  ].join("\n"));
+
+  await upsertSession(from, userId, "menu_iva", {}, 0);
+}
+
+async function handleIvaMenuReply(from: string, userId: string, text: string) {
+  const choice = parseInt(text.trim(), 10);
+
+  if (choice >= 1 && choice <= IVA_OPTIONS.length) {
+    const iva = IVA_OPTIONS[choice - 1]!;
+    await setPreferences(userId, { defaultIva: iva });
+    await sendWhatsappText(from, `✅ Aliquota IVA predefinita impostata a *${iva}%*.\n\n_Scrivi *menu* per le impostazioni o *P* per un nuovo preventivo._`);
+    await deleteSession(from);
+  } else {
+    await sendWhatsappText(from, `🤔 Rispondi con *1* (4%), *2* (5%), *3* (10%) o *4* (22%).`);
+  }
+}
+
+// ── Menu: support ───────────────────────────────────────────────────────────────
+
+async function handleSupport(from: string) {
+  await sendWhatsappText(from, [
+    `🆘 *Assistenza PrevAI*`,
+    ``,
+    `📖 Guida e FAQ:`,
+    `${PREVAI_BASE_URL}/whatsapp`,
+    ``,
+    `🌐 Dashboard e impostazioni:`,
+    `${PREVAI_BASE_URL}/dashboard/settings`,
+    ``,
+    `✉️ Scrivi a: supporto@prevai.it`,
+    ``,
+    `_Per tornare al menu scrivi *menu*._`,
+  ].join("\n"));
 }
 
 // ── Flow: template selected → ask client ───────────────────────────────────────
@@ -580,7 +993,14 @@ async function handleJobInputReply(
 
   await sendWhatsappText(from, "⏳ Sto generando il tuo preventivo, attendi qualche secondo...");
 
-  const data = await buildQuoteFromAI({ userId, rawInput, log: logger, templateId, clientData: clientData.nome ? clientData : undefined });
+  // Prepend default IVA hint to rawInput if user has set a non-default rate
+  const prefs = await getPreferences(userId);
+  const ivaHint = prefs.defaultIva && prefs.defaultIva !== 22
+    ? `[Usa aliquota IVA ${prefs.defaultIva}%]\n`
+    : "";
+  const augmentedInput = `${ivaHint}${rawInput}`;
+
+  const data = await buildQuoteFromAI({ userId, rawInput: augmentedInput, log: logger, templateId, clientData: clientData.nome ? clientData : undefined });
   await upsertSession(from, userId, "awaiting_confirmation", data as unknown as Record<string, unknown>, 0);
   await sendQuotePreview(from, data, 0);
 }
@@ -786,6 +1206,35 @@ router.post("/whatsapp/webhook", async (req, res) => {
     // ── Load session ────────────────────────────────────────────────────────────
     const session = await loadValidSession(from);
 
+    // ── Menu trigger — intercepts any state (except OTP, handled above) ─────────
+    if (isMenuTrigger(rawInput)) {
+      const prefs = await getPreferences(connection.userId);
+      await sendMainMenu(from, connection.userId, prefs);
+      return;
+    }
+
+    // ── Menu state routing ───────────────────────────────────────────────────────
+    if (session?.state === "menu_main") {
+      await handleMenuMainReply(from, connection.userId, rawInput, profile);
+      return;
+    }
+
+    if (session?.state === "menu_clients") {
+      await handleClientsMenuReply(from, connection.userId, rawInput, session);
+      return;
+    }
+
+    if (session?.state === "menu_template") {
+      await handleTemplateMenuReply(from, connection.userId, rawInput, profile);
+      return;
+    }
+
+    if (session?.state === "menu_iva") {
+      await handleIvaMenuReply(from, connection.userId, rawInput);
+      return;
+    }
+
+    // ── Quote flow state routing ─────────────────────────────────────────────────
     if (session?.state === "awaiting_template_selection") {
       await handleTemplateSelectionReply(from, connection.userId, rawInput, profile);
       return;
