@@ -978,6 +978,110 @@ export const ToggleWhatsappResponse = zod.object({
 });
 
 /**
+ * @summary List uploaded documents for the authenticated user
+ */
+export const ListDocumentsResponseItem = zod.object({
+  id: zod.string(),
+  userId: zod.string(),
+  fileName: zod.string(),
+  fileSize: zod.number().nullish(),
+  mimeType: zod.string(),
+  fileUrl: zod.string(),
+  status: zod.enum(["pending", "processing", "done", "error"]),
+  extractedData: zod
+    .object({
+      lavorazioni: zod
+        .array(
+          zod.object({
+            tipo: zod.string(),
+            prezzoUnitario: zod.number(),
+            um: zod.string().nullish(),
+            zona: zod.string().nullish(),
+          }),
+        )
+        .nullish(),
+      totale: zod.number().nullish(),
+      zona: zod.string().nullish(),
+      note: zod.string().nullish(),
+    })
+    .nullish(),
+  errorMessage: zod.string().nullish(),
+  createdAt: zod.string(),
+  updatedAt: zod.string(),
+});
+export const ListDocumentsResponse = zod.array(ListDocumentsResponseItem);
+
+/**
+ * @summary Upload a PDF or image document for price intelligence extraction
+ */
+export const UploadDocumentBody = zod.object({
+  file: zod.instanceof(File),
+});
+
+/**
+ * @summary Get aggregated price intelligence summary from all processed documents
+ */
+export const GetPriceSummaryResponse = zod.object({
+  totalDocuments: zod.number(),
+  processedDocuments: zod.number(),
+  items: zod.array(
+    zod.object({
+      workType: zod.string(),
+      avgUnitPrice: zod.number(),
+      minPrice: zod.number(),
+      maxPrice: zod.number(),
+      count: zod.number(),
+      unit: zod.string().nullish(),
+      zones: zod.array(zod.string()).optional(),
+    }),
+  ),
+});
+
+/**
+ * @summary Trigger AI extraction on an uploaded document
+ */
+export const ExtractDocumentParams = zod.object({
+  id: zod.coerce.string(),
+});
+
+export const ExtractDocumentResponse = zod.object({
+  id: zod.string(),
+  userId: zod.string(),
+  fileName: zod.string(),
+  fileSize: zod.number().nullish(),
+  mimeType: zod.string(),
+  fileUrl: zod.string(),
+  status: zod.enum(["pending", "processing", "done", "error"]),
+  extractedData: zod
+    .object({
+      lavorazioni: zod
+        .array(
+          zod.object({
+            tipo: zod.string(),
+            prezzoUnitario: zod.number(),
+            um: zod.string().nullish(),
+            zona: zod.string().nullish(),
+          }),
+        )
+        .nullish(),
+      totale: zod.number().nullish(),
+      zona: zod.string().nullish(),
+      note: zod.string().nullish(),
+    })
+    .nullish(),
+  errorMessage: zod.string().nullish(),
+  createdAt: zod.string(),
+  updatedAt: zod.string(),
+});
+
+/**
+ * @summary Delete an uploaded document and its price intelligence data
+ */
+export const DeleteDocumentParams = zod.object({
+  id: zod.coerce.string(),
+});
+
+/**
  * @summary List clients aggregated from quotes
  */
 export const ListClientsResponseItem = zod.object({

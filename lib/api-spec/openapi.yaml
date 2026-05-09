@@ -23,6 +23,8 @@ tags:
     description: WhatsApp integration
   - name: clients
     description: Client aggregation from quotes
+  - name: documents
+    description: Document upload and price intelligence extraction
 paths:
   /healthz:
     get:
@@ -600,6 +602,93 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/SuccessResult"
+
+  /documents:
+    get:
+      operationId: listDocuments
+      tags: [documents]
+      summary: List uploaded documents for the authenticated user
+      responses:
+        "200":
+          description: List of uploaded documents
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/UploadedDocument"
+
+  /documents/upload:
+    post:
+      operationId: uploadDocument
+      tags: [documents]
+      summary: Upload a PDF or image document for price intelligence extraction
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+              required:
+                - file
+      responses:
+        "201":
+          description: Document uploaded
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UploadedDocument"
+
+  /documents/price-summary:
+    get:
+      operationId: getPriceSummary
+      tags: [documents]
+      summary: Get aggregated price intelligence summary from all processed documents
+      responses:
+        "200":
+          description: Price intelligence summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PriceSummary"
+
+  /documents/{id}/extract:
+    post:
+      operationId: extractDocument
+      tags: [documents]
+      summary: Trigger AI extraction on an uploaded document
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Extraction complete
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UploadedDocument"
+
+  /documents/{id}:
+    delete:
+      operationId: deleteDocument
+      tags: [documents]
+      summary: Delete an uploaded document and its price intelligence data
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: Deleted
 
   /clients:
     get:
@@ -1442,6 +1531,123 @@ components:
         - isTrialActive
         - trialDownloadsUsed
         - trialDownloadsLimit
+
+    UploadedDocument:
+      type: object
+      properties:
+        id:
+          type: string
+        userId:
+          type: string
+        fileName:
+          type: string
+        fileSize:
+          type: integer
+          nullable: true
+        mimeType:
+          type: string
+        fileUrl:
+          type: string
+        status:
+          type: string
+          enum: [pending, processing, done, error]
+        extractedData:
+          $ref: "#/components/schemas/ExtractedDocumentData"
+          nullable: true
+        errorMessage:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+      required:
+        - id
+        - userId
+        - fileName
+        - mimeType
+        - fileUrl
+        - status
+        - createdAt
+        - updatedAt
+
+    ExtractedDocumentData:
+      type: object
+      properties:
+        lavorazioni:
+          type: array
+          items:
+            $ref: "#/components/schemas/ExtractedLavorazione"
+          nullable: true
+        totale:
+          type: number
+          nullable: true
+        zona:
+          type: string
+          nullable: true
+        note:
+          type: string
+          nullable: true
+
+    ExtractedLavorazione:
+      type: object
+      properties:
+        tipo:
+          type: string
+        prezzoUnitario:
+          type: number
+        um:
+          type: string
+          nullable: true
+        zona:
+          type: string
+          nullable: true
+      required:
+        - tipo
+        - prezzoUnitario
+
+    PriceSummary:
+      type: object
+      properties:
+        totalDocuments:
+          type: number
+        processedDocuments:
+          type: number
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/PriceSummaryItem"
+      required:
+        - totalDocuments
+        - processedDocuments
+        - items
+
+    PriceSummaryItem:
+      type: object
+      properties:
+        workType:
+          type: string
+        avgUnitPrice:
+          type: number
+        minPrice:
+          type: number
+        maxPrice:
+          type: number
+        count:
+          type: number
+        unit:
+          type: string
+          nullable: true
+        zones:
+          type: array
+          items:
+            type: string
+      required:
+        - workType
+        - avgUnitPrice
+        - minPrice
+        - maxPrice
+        - count
 
     Client:
       type: object

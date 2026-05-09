@@ -395,6 +395,60 @@ export interface TrialStatus {
   trialExpiresAt?: string | null;
 }
 
+export type UploadedDocumentStatus =
+  (typeof UploadedDocumentStatus)[keyof typeof UploadedDocumentStatus];
+
+export const UploadedDocumentStatus = {
+  pending: "pending",
+  processing: "processing",
+  done: "done",
+  error: "error",
+} as const;
+
+export interface ExtractedLavorazione {
+  tipo: string;
+  prezzoUnitario: number;
+  um?: string | null;
+  zona?: string | null;
+}
+
+export interface ExtractedDocumentData {
+  lavorazioni?: ExtractedLavorazione[] | null;
+  totale?: number | null;
+  zona?: string | null;
+  note?: string | null;
+}
+
+export interface UploadedDocument {
+  id: string;
+  userId: string;
+  fileName: string;
+  fileSize?: number | null;
+  mimeType: string;
+  fileUrl: string;
+  status: UploadedDocumentStatus;
+  extractedData?: ExtractedDocumentData | null;
+  errorMessage?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface PriceSummaryItem {
+  workType: string;
+  avgUnitPrice: number;
+  minPrice: number;
+  maxPrice: number;
+  count: number;
+  unit?: string | null;
+  zones?: string[];
+}
+
+export interface PriceSummary {
+  totalDocuments: number;
+  processedDocuments: number;
+  items: PriceSummaryItem[];
+}
+
 export interface Client {
   id: string;
   clientName: string;
@@ -414,4 +468,8 @@ export interface Client {
 
 export type UploadBusinessProfileLogoBody = {
   logo: Blob;
+};
+
+export type UploadDocumentBody = {
+  file: Blob;
 };

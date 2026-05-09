@@ -1,8 +1,8 @@
 import { Router } from "express";
 import { requireAuth, getUserId } from "../middlewares/authMiddleware";
 import multer from "multer";
-import { db, quotesTable, businessProfilesTable, priceCatalogItemsTable, quoteClientDataSchema, quoteCompanySnapshotSchema, quoteChapterSchema } from "@workspace/db";
-import { eq, desc, count, sum, sql } from "drizzle-orm";
+import { db, quotesTable, businessProfilesTable, priceCatalogItemsTable, priceIntelligenceTable, uploadedDocumentsTable, quoteClientDataSchema, quoteCompanySnapshotSchema, quoteChapterSchema } from "@workspace/db";
+import { eq, desc, count, sum, sql, and, avg } from "drizzle-orm";
 import { getTrialStatus, PLANS } from "./payments.js";
 import {
   UpdateQuoteBody,
@@ -346,8 +346,8 @@ router.post("/quotes", requireAuth, imageUpload.array("images", 3), async (req, 
 Descrizione lavori: ${rawInput}`;
     }
 
-    // Fetch business profile, recent quotes, and catalog items in parallel
-    const [fetchedProfileResult, recentQuotes, catalogItems] = await Promise.all([
+    // Fetch business profile, recent quotes, catalog items, and price intelligence in parallel
+    const [fetchedProfileResult, recentQuotes, catalogItems, processedDocCount, priceIntelligenceItems] = await Promise.all([
       companySnapshotInput
         ? Promise.resolve([])
         : db.select().from(businessProfilesTable).where(eq(businessProfilesTable.userId, userId)),
@@ -364,6 +364,18 @@ Descrizione lavori: ${rawInput}`;
         .from(priceCatalogItemsTable)
         .where(eq(priceCatalogItemsTable.userId, userId))
         .orderBy(priceCatalogItemsTable.categoria, priceCatalogItemsTable.nome),
+      db.select({ cnt: count() })
+        .from(uploadedDocumentsTable)
+        .where(and(eq(uploadedDocumentsTable.userId, userId), eq(uploadedDocumentsTable.status, "done"))),
+      db.select({
+        workType: priceIntelligenceTable.workType,
+        avgPrice: avg(sql`${priceIntelligenceTable.unitPrice}::numeric`),
+        unit: sql<string | null>`max(${priceIntelligenceTable.unit})`,
+      })
+        .from(priceIntelligenceTable)
+        .where(eq(priceIntelligenceTable.userId, userId))
+        .groupBy(priceIntelligenceTable.workType)
+        .orderBy(priceIntelligenceTable.workType),
     ]);
     const [fetchedProfile] = fetchedProfileResult as (typeof businessProfilesTable.$inferSelect)[];
 
@@ -400,6 +412,18 @@ ${catalogItems
 Quando usi una voce del listino, applica il prezzo unitario esatto o molto simile. Per lavorazioni non presenti nel listino, usa i prezzi di mercato standard.`
       : "";
 
+    // Build price intelligence context from user's uploaded documents (activated when ≥3 docs processed)
+    const docCount = Number(processedDocCount[0]?.cnt ?? 0);
+    const priceIntelContext = docCount >= 3 && priceIntelligenceItems.length > 0
+      ? `PRICE INTELLIGENCE PERSONALIZZATA (estratta da ${docCount} preventivi reali dell'utente — usa questi prezzi come guida per la zona e le tipologie di lavoro dell'utente):
+${priceIntelligenceItems
+  .slice(0, 25)
+  .map(item => `  - ${item.workType}: ${Number(item.avgPrice ?? 0).toFixed(2)}€${item.unit ? `/${item.unit}` : ""}`)
+  .join("\n")}
+
+Questi prezzi riflettono i valori reali applicati dall'utente nel suo mercato locale. Usali come riferimento quando le lavorazioni richieste corrispondono.`
+      : "";
+
     const hasImages = imageDataUrls.length > 0;
     const isProUser = profile?.subscriptionStatus === "active" && (profile?.subscriptionPlan === "monthly_pro" || profile?.subscriptionPlan === "monthly_elite");
 
@@ -421,6 +445,7 @@ Esempio: "Demolizione e rimozione di pavimentazione esistente in piastrelle cera
       messages: [
         { role: "system", content: AI_PROMPT },
         ...(catalogContext ? [{ role: "system" as const, content: catalogContext }] : []),
+        ...(priceIntelContext ? [{ role: "system" as const, content: priceIntelContext }] : []),
         ...(pastContext ? [{ role: "system" as const, content: pastContext }] : []),
         ...(capitolatoProContext ? [{ role: "system" as const, content: capitolatoProContext }] : []),
         {

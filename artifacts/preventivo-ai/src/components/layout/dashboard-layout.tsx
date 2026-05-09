@@ -20,7 +20,7 @@ const BASE_NAV_ITEMS = [
   { href: "/dashboard/catalog", label: "Listino", icon: BookOpen, exact: false, proOnly: true, comingSoon: false },
   { href: "/dashboard/invoices", label: "Fatture", icon: Receipt, exact: false, proOnly: false, comingSoon: true },
   { href: "/dashboard/crm", label: "CRM", icon: Briefcase, exact: false, proOnly: false, comingSoon: true },
-  { href: "/dashboard/documents", label: "Documenti Caricati", icon: FolderOpen, exact: false, proOnly: false, comingSoon: true },
+  { href: "/dashboard/documents", label: "Archivio", icon: FolderOpen, exact: false, proOnly: false, comingSoon: false },
   { href: "/dashboard/settings", label: "Impostazioni", icon: Settings, exact: false, proOnly: false, comingSoon: false },
 ];
 

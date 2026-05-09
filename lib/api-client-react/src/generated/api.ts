@@ -33,6 +33,7 @@ import type {
   PdfResult,
   Plan,
   PortalSessionResult,
+  PriceSummary,
   Quote,
   QuoteStats,
   RegenerateQuoteBody,
@@ -46,8 +47,10 @@ import type {
   UpdateCatalogItemBody,
   UpdateQuoteBody,
   UploadBusinessProfileLogoBody,
+  UploadDocumentBody,
   UploadUrlRequest,
   UploadUrlResponse,
+  UploadedDocument,
   WhatsappConnectBody,
   WhatsappConnectResult,
   WhatsappStatus,
@@ -2862,6 +2865,412 @@ export const useToggleWhatsapp = <
   TContext
 > => {
   return useMutation(getToggleWhatsappMutationOptions(options));
+};
+
+/**
+ * @summary List uploaded documents for the authenticated user
+ */
+export const getListDocumentsUrl = () => {
+  return `/api/documents`;
+};
+
+export const listDocuments = async (
+  options?: RequestInit,
+): Promise<UploadedDocument[]> => {
+  return customFetch<UploadedDocument[]>(getListDocumentsUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getListDocumentsQueryKey = () => {
+  return [`/api/documents`] as const;
+};
+
+export const getListDocumentsQueryOptions = <
+  TData = Awaited<ReturnType<typeof listDocuments>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof listDocuments>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getListDocumentsQueryKey();
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof listDocuments>>> = ({
+    signal,
+  }) => listDocuments({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof listDocuments>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type ListDocumentsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof listDocuments>>
+>;
+export type ListDocumentsQueryError = ErrorType<unknown>;
+
+/**
+ * @summary List uploaded documents for the authenticated user
+ */
+
+export function useListDocuments<
+  TData = Awaited<ReturnType<typeof listDocuments>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof listDocuments>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getListDocumentsQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Upload a PDF or image document for price intelligence extraction
+ */
+export const getUploadDocumentUrl = () => {
+  return `/api/documents/upload`;
+};
+
+export const uploadDocument = async (
+  uploadDocumentBody: UploadDocumentBody,
+  options?: RequestInit,
+): Promise<UploadedDocument> => {
+  const formData = new FormData();
+  formData.append(`file`, uploadDocumentBody.file);
+
+  return customFetch<UploadedDocument>(getUploadDocumentUrl(), {
+    ...options,
+    method: "POST",
+    body: formData,
+  });
+};
+
+export const getUploadDocumentMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof uploadDocument>>,
+    TError,
+    { data: BodyType<UploadDocumentBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof uploadDocument>>,
+  TError,
+  { data: BodyType<UploadDocumentBody> },
+  TContext
+> => {
+  const mutationKey = ["uploadDocument"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof uploadDocument>>,
+    { data: BodyType<UploadDocumentBody> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return uploadDocument(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type UploadDocumentMutationResult = NonNullable<
+  Awaited<ReturnType<typeof uploadDocument>>
+>;
+export type UploadDocumentMutationBody = BodyType<UploadDocumentBody>;
+export type UploadDocumentMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Upload a PDF or image document for price intelligence extraction
+ */
+export const useUploadDocument = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof uploadDocument>>,
+    TError,
+    { data: BodyType<UploadDocumentBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof uploadDocument>>,
+  TError,
+  { data: BodyType<UploadDocumentBody> },
+  TContext
+> => {
+  return useMutation(getUploadDocumentMutationOptions(options));
+};
+
+/**
+ * @summary Get aggregated price intelligence summary from all processed documents
+ */
+export const getGetPriceSummaryUrl = () => {
+  return `/api/documents/price-summary`;
+};
+
+export const getPriceSummary = async (
+  options?: RequestInit,
+): Promise<PriceSummary> => {
+  return customFetch<PriceSummary>(getGetPriceSummaryUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetPriceSummaryQueryKey = () => {
+  return [`/api/documents/price-summary`] as const;
+};
+
+export const getGetPriceSummaryQueryOptions = <
+  TData = Awaited<ReturnType<typeof getPriceSummary>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getPriceSummary>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetPriceSummaryQueryKey();
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getPriceSummary>>> = ({
+    signal,
+  }) => getPriceSummary({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getPriceSummary>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetPriceSummaryQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getPriceSummary>>
+>;
+export type GetPriceSummaryQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Get aggregated price intelligence summary from all processed documents
+ */
+
+export function useGetPriceSummary<
+  TData = Awaited<ReturnType<typeof getPriceSummary>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getPriceSummary>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetPriceSummaryQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Trigger AI extraction on an uploaded document
+ */
+export const getExtractDocumentUrl = (id: string) => {
+  return `/api/documents/${id}/extract`;
+};
+
+export const extractDocument = async (
+  id: string,
+  options?: RequestInit,
+): Promise<UploadedDocument> => {
+  return customFetch<UploadedDocument>(getExtractDocumentUrl(id), {
+    ...options,
+    method: "POST",
+  });
+};
+
+export const getExtractDocumentMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof extractDocument>>,
+    TError,
+    { id: string },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof extractDocument>>,
+  TError,
+  { id: string },
+  TContext
+> => {
+  const mutationKey = ["extractDocument"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof extractDocument>>,
+    { id: string }
+  > = (props) => {
+    const { id } = props ?? {};
+
+    return extractDocument(id, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type ExtractDocumentMutationResult = NonNullable<
+  Awaited<ReturnType<typeof extractDocument>>
+>;
+
+export type ExtractDocumentMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Trigger AI extraction on an uploaded document
+ */
+export const useExtractDocument = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof extractDocument>>,
+    TError,
+    { id: string },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof extractDocument>>,
+  TError,
+  { id: string },
+  TContext
+> => {
+  return useMutation(getExtractDocumentMutationOptions(options));
+};
+
+/**
+ * @summary Delete an uploaded document and its price intelligence data
+ */
+export const getDeleteDocumentUrl = (id: string) => {
+  return `/api/documents/${id}`;
+};
+
+export const deleteDocument = async (
+  id: string,
+  options?: RequestInit,
+): Promise<void> => {
+  return customFetch<void>(getDeleteDocumentUrl(id), {
+    ...options,
+    method: "DELETE",
+  });
+};
+
+export const getDeleteDocumentMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deleteDocument>>,
+    TError,
+    { id: string },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof deleteDocument>>,
+  TError,
+  { id: string },
+  TContext
+> => {
+  const mutationKey = ["deleteDocument"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof deleteDocument>>,
+    { id: string }
+  > = (props) => {
+    const { id } = props ?? {};
+
+    return deleteDocument(id, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type DeleteDocumentMutationResult = NonNullable<
+  Awaited<ReturnType<typeof deleteDocument>>
+>;
+
+export type DeleteDocumentMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Delete an uploaded document and its price intelligence data
+ */
+export const useDeleteDocument = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deleteDocument>>,
+    TError,
+    { id: string },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof deleteDocument>>,
+  TError,
+  { id: string },
+  TContext
+> => {
+  return useMutation(getDeleteDocumentMutationOptions(options));
 };
 
 /**
