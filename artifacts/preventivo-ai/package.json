@@ -11,7 +11,8 @@
     "build": "vite build --config vite.config.ts && tsx ./scripts/generate-blog-og-images.ts && tsx ./scripts/prerender-seo.ts",
     "serve": "vite preview --config vite.config.ts --host 0.0.0.0",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "validate-prerender": "tsx ./scripts/validate-prerender.ts"
+    "validate-prerender": "tsx ./scripts/validate-prerender.ts",
+    "validate-sitemap": "tsx ./scripts/validate-sitemap.ts"
   },
   "devDependencies": {
     "@hookform/resolvers": "^3.10.0",
