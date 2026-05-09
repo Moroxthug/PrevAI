@@ -6,6 +6,7 @@ import { useGetPlans, useCreateCheckoutSession } from "@workspace/api-client-rea
 import { useScrollFade } from "@/hooks/use-scroll-fade";
 import { useAuth } from "@/hooks/use-auth";
 import { useState, useRef } from "react";
+import { WhatsAppChatDemo } from "@/components/whatsapp-chat-demo";
 
 function ScrollSection({
   children,
@@ -289,6 +290,60 @@ export default function Home() {
             </div>
           </div>
         </Link>
+      </ScrollSection>
+
+      {/* ── WhatsApp demo ────────────────────────────────────── */}
+      <ScrollSection className="py-16 bg-white">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="max-w-5xl mx-auto">
+            <div className="grid lg:grid-cols-2 gap-14 items-center">
+
+              {/* Left: phone mockup */}
+              <div className="flex justify-center">
+                <WhatsAppChatDemo />
+              </div>
+
+              {/* Right: how it works */}
+              <div>
+                <span className="inline-block text-violet-600 text-xs font-bold uppercase tracking-wider mb-3">Come funziona</span>
+                <h2 className="text-3xl font-bold tracking-tight text-gray-900 mb-6 leading-snug">
+                  Dal vocale al PDF<br />
+                  <span className="text-violet-600">senza toccare il computer</span>
+                </h2>
+
+                <div className="space-y-5 mb-8">
+                  {[
+                    { num: "1", title: "Manda un vocale, testo o foto", desc: "Direttamente su WhatsApp. Descrivi il lavoro come parli con un cliente." },
+                    { num: "2", title: "L'AI genera l'anteprima", desc: "Capitoli, prezzi e IVA in 60 secondi. Puoi correggere o approvare subito." },
+                    { num: "3", title: "Ricevi il PDF in chat", desc: "Lo invii al cliente con un tap. Il preventivo viene salvato anche su prevai.it." },
+                  ].map((s) => (
+                    <div key={s.num} className="flex gap-4">
+                      <div
+                        className="w-8 h-8 rounded-xl text-sm font-bold shrink-0 flex items-center justify-center text-white"
+                        style={{ background: "linear-gradient(135deg, #7c3aed, #2563eb)" }}
+                      >
+                        {s.num}
+                      </div>
+                      <div>
+                        <p className="font-semibold text-gray-900 text-sm mb-0.5">{s.title}</p>
+                        <p className="text-sm text-gray-500 leading-relaxed">{s.desc}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                <Link
+                  href="/whatsapp"
+                  className="inline-flex items-center gap-2 text-sm font-semibold text-violet-600 hover:text-violet-700 transition-colors group"
+                >
+                  Scopri tutta la funzionalità
+                  <ArrowRight className="h-4 w-4 group-hover:translate-x-0.5 transition-transform" />
+                </Link>
+              </div>
+
+            </div>
+          </div>
+        </div>
       </ScrollSection>
 
       {/* ── Comparison table ─────────────────────────────────── */}
