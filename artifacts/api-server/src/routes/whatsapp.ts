@@ -228,12 +228,12 @@ async function extractRawInput(
   }
 
   if (msgType === "document") {
-    if (!message.document?.id) return null;
-    // Documents handled as import intent - return special marker
-    const { mimeType } = await downloadMetaMedia(message.document.id).catch(() => ({ buffer: Buffer.alloc(0), mimeType: "application/octet-stream" }));
-    if (mimeType === "application/pdf") {
-      return "__PDF_IMPORT__";
-    }
+    // Documents (PDF, Word, etc.) are not supported as quote input via WhatsApp.
+    // Inform the user and return null so no quote generation is triggered.
+    await sendWhatsappText(
+      from,
+      "ℹ️ I file allegati non sono supportati.\n\nInviami la descrizione del lavoro in *testo*, un *messaggio vocale* o una *foto* degli appunti per generare un preventivo."
+    );
     return null;
   }
 
