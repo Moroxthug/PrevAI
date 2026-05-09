@@ -319,6 +319,12 @@ router.post("/whatsapp/connect", requireAuth, async (req, res) => {
         set: { otp, userId, expiresAt },
       });
 
+    // Require WhatsApp to be configured before claiming we sent anything
+    if (!WA_TOKEN || !WA_PHONE_ID) {
+      res.status(503).json({ error: "L'integrazione WhatsApp non è ancora configurata. Riprova più tardi." });
+      return;
+    }
+
     // Send OTP to the user's WhatsApp number
     await sendWhatsappText(
       normalized,

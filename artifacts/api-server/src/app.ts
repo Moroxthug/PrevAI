@@ -259,7 +259,12 @@ app.post(
   express.raw({ type: "application/json" }),
   async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     const appSecret = process.env.WHATSAPP_APP_SECRET;
-    if (appSecret) {
+    if (!appSecret) {
+      logger.error("WHATSAPP_APP_SECRET not set — rejecting WhatsApp webhook POST to prevent spoofing");
+      res.status(500).json({ error: "Webhook secret not configured" });
+      return;
+    }
+    {
       const sigHeader = req.headers["x-hub-signature-256"];
       const sigStr = Array.isArray(sigHeader) ? sigHeader[0] : sigHeader;
       if (!sigStr) {
@@ -275,8 +280,6 @@ app.post(
         res.status(403).json({ error: "Forbidden" });
         return;
       }
-    } else {
-      logger.warn("WHATSAPP_APP_SECRET not set — webhook signature verification skipped");
     }
     try {
       req.body = JSON.parse((req.body as Buffer).toString("utf-8")) as unknown;
