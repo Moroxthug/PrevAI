@@ -1,15 +1,22 @@
 import { useState } from "react";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import { Logo } from "@/components/logo";
 import { useScrolled } from "@/hooks/use-scrolled";
 import { cn } from "@/lib/utils";
-import { X, Send, CheckCircle2 } from "lucide-react";
+import { X, Send, CheckCircle2, Menu } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 
 export function PublicLayout({ children }: { children: React.ReactNode }) {
   const { isSignedIn } = useAuth();
   const scrolled = useScrolled(20);
   const [supportOpen, setSupportOpen] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [, navigate] = useLocation();
+
+  function handleMobileNav(href: string) {
+    setMobileMenuOpen(false);
+    navigate(href);
+  }
 
   return (
     <div className="min-h-[100dvh] flex flex-col bg-background text-foreground">
@@ -39,13 +46,13 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
               <>
                 <Link
                   href="/sign-in"
-                  className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors px-3 py-1.5 rounded-full"
+                  className="hidden sm:inline-flex text-sm font-medium text-muted-foreground hover:text-foreground transition-colors px-3 py-1.5 rounded-full"
                 >
                   Accedi
                 </Link>
                 <Link
                   href="/sign-up"
-                  className="btn-gradient inline-flex h-9 items-center justify-center px-5 text-sm font-semibold"
+                  className="hidden sm:inline-flex btn-gradient h-9 items-center justify-center px-5 text-sm font-semibold"
                 >
                   Registrati
                 </Link>
@@ -54,21 +61,92 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
               <>
                 <Link
                   href="/dashboard"
-                  className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors px-3 py-1.5 rounded-full"
+                  className="hidden sm:inline-flex text-sm font-medium text-muted-foreground hover:text-foreground transition-colors px-3 py-1.5 rounded-full"
                 >
                   Dashboard
                 </Link>
                 <Link
                   href="/dashboard"
-                  className="btn-gradient inline-flex h-9 items-center justify-center px-5 text-sm font-semibold"
+                  className="hidden sm:inline-flex btn-gradient h-9 items-center justify-center px-5 text-sm font-semibold"
                 >
                   Vai alla Dashboard →
                 </Link>
               </>
             )}
+            <button
+              className="sm:hidden inline-flex items-center justify-center h-9 w-9 rounded-full text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
+              onClick={() => setMobileMenuOpen(true)}
+              aria-label="Apri menu"
+            >
+              <Menu className="h-5 w-5" />
+            </button>
           </nav>
         </div>
       </header>
+
+      {/* ── Mobile drawer ─────────────────────────────────── */}
+      {mobileMenuOpen && (
+        <div className="fixed inset-0 z-[60]" onClick={() => setMobileMenuOpen(false)}>
+          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
+          <div
+            className="absolute top-0 right-0 h-full w-72 bg-white shadow-2xl flex flex-col"
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between px-5 py-4 border-b">
+              <Logo />
+              <button
+                onClick={() => setMobileMenuOpen(false)}
+                className="h-8 w-8 rounded-full flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
+                aria-label="Chiudi menu"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+            <nav className="flex flex-col gap-1 px-3 py-4 flex-1">
+              <button
+                onClick={() => handleMobileNav("/whatsapp")}
+                className="flex items-center gap-2 w-full text-left px-4 py-3 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+              >
+                WhatsApp
+                <span className="inline-flex items-center rounded-full bg-green-100 px-1.5 py-0.5 text-[10px] font-semibold text-green-700 leading-none">
+                  Nuovo
+                </span>
+              </button>
+              {!isSignedIn ? (
+                <>
+                  <button
+                    onClick={() => handleMobileNav("/sign-in")}
+                    className="flex items-center w-full text-left px-4 py-3 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+                  >
+                    Accedi
+                  </button>
+                  <button
+                    onClick={() => handleMobileNav("/sign-up")}
+                    className="mt-2 btn-gradient inline-flex h-11 w-full items-center justify-center px-5 text-sm font-semibold"
+                  >
+                    Registrati
+                  </button>
+                </>
+              ) : (
+                <>
+                  <button
+                    onClick={() => handleMobileNav("/dashboard")}
+                    className="flex items-center w-full text-left px-4 py-3 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+                  >
+                    Dashboard
+                  </button>
+                  <button
+                    onClick={() => handleMobileNav("/dashboard")}
+                    className="mt-2 btn-gradient inline-flex h-11 w-full items-center justify-center px-5 text-sm font-semibold"
+                  >
+                    Vai alla Dashboard →
+                  </button>
+                </>
+              )}
+            </nav>
+          </div>
+        </div>
+      )}
 
       <main className="flex-1 flex flex-col">{children}</main>
 
