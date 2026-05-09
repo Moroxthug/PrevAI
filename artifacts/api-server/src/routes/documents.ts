@@ -108,11 +108,16 @@ async function extractFromImage(buffer: Buffer, mimeType: string) {
 async function extractFromPdf(buffer: Buffer) {
   let pdfText = "";
   try {
-    const pdfParse = _require("pdf-parse") as (
-      data: Buffer
-    ) => Promise<{ text: string }>;
-    const data = await pdfParse(buffer);
-    pdfText = data.text.slice(0, 12000);
+    const { PDFParse } = _require("pdf-parse") as {
+      PDFParse: new (opts: { data: Buffer }) => {
+        getText(): Promise<{ text: string }>;
+        destroy(): Promise<void>;
+      };
+    };
+    const parser = new PDFParse({ data: buffer });
+    const result = await parser.getText();
+    await parser.destroy().catch(() => {});
+    pdfText = result.text.slice(0, 12000);
   } catch (err) {
     logger.warn({ err }, "pdf-parse failed, falling back to empty text");
   }
