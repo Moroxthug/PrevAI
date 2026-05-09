@@ -38,6 +38,7 @@ export default defineConfig({
   build: {
     outDir: path.resolve(import.meta.dirname, "dist/public"),
     emptyOutDir: true,
+    chunkSizeWarningLimit: 500,
     rollupOptions: {
       output: {
         manualChunks(id) {
@@ -51,15 +52,28 @@ export default defineConfig({
           ) {
             return "dashboard";
           }
-          if (id.includes("/pages/seo/") || id.includes("seo-data")) {
+          if (id.includes("/pages/seo/") || id.includes("seo-data") || id.includes("seo-render-engine")) {
             return "seo";
+          }
+          if (id.includes("node_modules/lucide-react")) {
+            return "vendor-icons";
+          }
+          if (id.includes("node_modules/@radix-ui")) {
+            return "vendor-radix";
           }
           if (
             id.includes("node_modules/react-helmet-async") ||
             id.includes("node_modules/react-dom") ||
-            id.includes("node_modules/react/")
+            id.includes("node_modules/react/") ||
+            id.includes("node_modules/wouter")
           ) {
             return "vendor-react";
+          }
+          if (
+            id.includes("node_modules/@tanstack/react-query") ||
+            id.includes("node_modules/@tanstack/query-core")
+          ) {
+            return "vendor-query";
           }
         },
       },

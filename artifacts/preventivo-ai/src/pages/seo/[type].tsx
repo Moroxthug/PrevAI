@@ -54,9 +54,10 @@ export default function SeoLanding() {
         jsonLd={jsonLd}
       />
       {/* ── Hero ─────────────────────────────────────────── */}
-      <section className="relative overflow-hidden bg-white pt-24 pb-20">
+      <section className="relative overflow-hidden bg-white pt-24 pb-20" aria-label="Hero">
         <div
           className="absolute inset-0 opacity-30 pointer-events-none"
+          aria-hidden="true"
           style={{
             background:
               "radial-gradient(ellipse 80% 60% at 50% -10%, rgba(124,58,237,0.12) 0%, transparent 70%)",

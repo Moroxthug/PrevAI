@@ -5,6 +5,8 @@ export function Logo({ className = "", style }: { className?: string; style?: Re
     <img
       src="/prevai-logo.png"
       alt="prevai"
+      width={144}
+      height={72}
       className={className}
       style={{ height: 72, width: "auto", objectFit: "contain", ...style }}
     />
