@@ -13,6 +13,8 @@ import OnboardingPage from "@/pages/onboarding";
 import PrivacyPage from "@/pages/privacy";
 import TerminiPage from "@/pages/termini";
 
+import { PATHS } from "@/data/sitemap-routes";
+
 const DashboardHome = lazy(() => import("@/pages/dashboard/index"));
 const NewQuote = lazy(() => import("@/pages/dashboard/new"));
 const QuotesList = lazy(() => import("@/pages/dashboard/quotes/index"));
@@ -78,8 +80,13 @@ function DashSuspense({ children }: { children: React.ReactNode }) {
 function Router() {
   return (
     <Switch>
-      <Route path="/" component={() => <PublicLayout><Home /></PublicLayout>} />
-      <Route path="/whatsapp" component={() => <PublicLayout><WhatsappPage /></PublicLayout>} />
+      {/* Public pages — paths from sitemap-routes.ts (shared with generate-sitemap.ts) */}
+      <Route path={PATHS.HOME} component={() => <PublicLayout><Home /></PublicLayout>} />
+      <Route path={PATHS.WHATSAPP} component={() => <PublicLayout><WhatsappPage /></PublicLayout>} />
+      <Route path={PATHS.PRIVACY} component={PrivacyPage} />
+      <Route path={PATHS.TERMINI} component={TerminiPage} />
+
+      {/* Auth routes (not indexed) */}
       <Route path="/sign-in" component={() => <PublicLayout><SignInPage /></PublicLayout>} />
       <Route path="/sign-in/:rest*" component={() => <PublicLayout><SignInPage /></PublicLayout>} />
       <Route path="/sign-up" component={() => <PublicLayout><SignUpPage /></PublicLayout>} />
@@ -87,6 +94,7 @@ function Router() {
 
       <Route path="/onboarding" component={OnboardingPage} />
 
+      {/* Dashboard (private, not indexed) */}
       <Route path="/dashboard" component={() => (
         <OnboardingGuard><DashboardLayout><DashSuspense><DashboardHome /></DashSuspense></DashboardLayout></OnboardingGuard>
       )} />
@@ -133,15 +141,15 @@ function Router() {
         <OnboardingGuard><DashboardLayout><DashSuspense><DocumentsPage /></DashSuspense></DashboardLayout></OnboardingGuard>
       )} />
 
+      {/* SEO landing pages — dynamic, driven by SECTORS / CITIES data */}
       <Route path="/seo/:type/:city" component={() => <PublicLayout><Suspense fallback={null}><SeoCityLanding /></Suspense></PublicLayout>} />
       <Route path="/seo/:type" component={() => <PublicLayout><Suspense fallback={null}><SeoLanding /></Suspense></PublicLayout>} />
 
+      {/* Blog — dynamic, driven by BLOG_ARTICLES / BLOG_CATEGORIES data */}
       <Route path="/blog/categoria/:slug" component={() => <PublicLayout><Suspense fallback={null}><BlogCategoryPage /></Suspense></PublicLayout>} />
       <Route path="/blog/:slug" component={() => <PublicLayout><Suspense fallback={null}><BlogArticlePage /></Suspense></PublicLayout>} />
-      <Route path="/blog" component={() => <PublicLayout><Suspense fallback={null}><BlogPage /></Suspense></PublicLayout>} />
+      <Route path={PATHS.BLOG} component={() => <PublicLayout><Suspense fallback={null}><BlogPage /></Suspense></PublicLayout>} />
 
-      <Route path="/privacy" component={PrivacyPage} />
-      <Route path="/termini" component={TerminiPage} />
       <Route path="/admin" component={() => <DashSuspense><AdminPage /></DashSuspense>} />
 
       <Route component={NotFound} />

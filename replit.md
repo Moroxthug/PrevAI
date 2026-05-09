@@ -109,7 +109,7 @@ Per completare la verifica e indicizzare la sitemap, segui questi passi:
 **File rilevanti:**
 - `artifacts/preventivo-ai/index.html` — contiene il meta tag (riga `google-site-verification`)
 - `artifacts/preventivo-ai/public/robots.txt` — già include `Sitemap: https://www.prevai.it/sitemap.xml`
-- `artifacts/preventivo-ai/public/sitemap.xml` — generato automaticamente al build (1105 URL)
+- `artifacts/preventivo-ai/public/sitemap.xml` — generato automaticamente al build (1135 URL)
 
 ## Gotchas
 
@@ -120,6 +120,7 @@ Per completare la verifica e indicizzare la sitemap, segui questi passi:
 - Do NOT run `pnpm dev` at workspace root — use workflow restart instead
 - Object Storage serving URL format: `/api/storage/objects/<uuid>` (objectPath from presigned URL response)
 - Legacy routes `/dashboard/profile` and `/dashboard/billing` still accessible but not in sidebar; use `/dashboard/settings` instead
+- **Adding a new public page**: add an entry to `artifacts/preventivo-ai/src/data/sitemap-routes.ts` (name, path, priority, changefreq), then use `PATHS.YOUR_NAME` in `App.tsx` for the `<Route>`. The sitemap auto-regenerates at build time via the `prebuild` hook. Never hardcode public route paths in `App.tsx` — always derive them from `PATHS`.
 
 ## Pointers
 

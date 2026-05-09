@@ -6,6 +6,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 
 import { SECTORS, CITIES, CITY_SECTORS } from "../src/data/seo-data.js";
 import { BLOG_ARTICLES, BLOG_CATEGORIES } from "../src/data/blog-data.js";
+import { PUBLIC_ROUTES } from "../src/data/sitemap-routes.js";
 
 const BASE_URL = "https://www.prevai.it";
 const TODAY = new Date().toISOString().split("T")[0];
@@ -27,17 +28,19 @@ function url(loc: string, priority: string, changefreq: string): string {
 
 const entries: string[] = [];
 
-entries.push(url(`${BASE_URL}/`, "1.0", "weekly"));
-entries.push(url(`${BASE_URL}/privacy`, "0.4", "yearly"));
-entries.push(url(`${BASE_URL}/termini`, "0.4", "yearly"));
-entries.push(url(`${BASE_URL}/whatsapp`, "0.8", "weekly"));
+// Static public routes — sourced from src/data/sitemap-routes.ts (same file App.tsx uses)
+for (const route of PUBLIC_ROUTES) {
+  entries.push(url(`${BASE_URL}${route.path}`, route.priority, route.changefreq));
+}
 
+// SEO sector landing pages — driven by SECTORS data
 const citySectorSet = new Set(CITY_SECTORS);
 for (const sectorSlug of Object.keys(SECTORS)) {
   const priority = citySectorSet.has(sectorSlug) ? "0.8" : "0.7";
   entries.push(url(`${BASE_URL}/seo/${sectorSlug}`, priority, "monthly"));
 }
 
+// SEO city×sector pages — driven by CITY_SECTORS × CITIES data
 for (const sectorSlug of CITY_SECTORS) {
   for (const city of CITIES) {
     const priority = TIER1_CITY_SLUGS.has(city.slug) ? "0.7" : "0.6";
@@ -45,7 +48,7 @@ for (const sectorSlug of CITY_SECTORS) {
   }
 }
 
-entries.push(url(`${BASE_URL}/blog`, "0.8", "weekly"));
+// Blog — driven by BLOG_CATEGORIES and BLOG_ARTICLES data
 for (const cat of BLOG_CATEGORIES) {
   entries.push(url(`${BASE_URL}/blog/categoria/${cat.slug}`, "0.7", "weekly"));
 }
