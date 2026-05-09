@@ -562,7 +562,7 @@ Esempio: "Demolizione e rimozione di pavimentazione esistente in piastrelle cera
         capitoli,
         sconto,
         condizioniPagamento,
-        capitolatoPro: !!(profile?.subscriptionStatus === "active" && profile?.subscriptionPlan === "monthly_pro"),
+        capitolatoPro: !!(profile?.subscriptionStatus === "active" && (profile?.subscriptionPlan === "monthly_pro" || profile?.subscriptionPlan === "monthly_elite")),
         titoloPreventivoRiga1: aiData.titolo_riga1 ?? "Analisi Economica e Computo Metrico Prezzato",
         titoloPreventivoRiga2: aiData.titolo_riga2 ?? "",
         numeroPreventivoData: aiData.numero_preventivo_data ?? "",

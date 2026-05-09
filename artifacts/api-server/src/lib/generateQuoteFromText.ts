@@ -160,7 +160,7 @@ function parseAiResponse(content: string, rawInput: string, profile: typeof busi
     ivaValore: Number(aiData.iva_valore ?? 0).toFixed(2),
     totale: Number(aiData.totale ?? 0).toFixed(2),
     note: aiData.note ?? "Preventivo valido 30 giorni",
-    capitolatoPro: !!(profile?.subscriptionStatus === "active" && profile?.subscriptionPlan === "monthly_pro"),
+    capitolatoPro: !!(profile?.subscriptionStatus === "active" && (profile?.subscriptionPlan === "monthly_pro" || profile?.subscriptionPlan === "monthly_elite")),
     templateId,
   };
 }
