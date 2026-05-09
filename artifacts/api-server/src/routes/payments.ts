@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { requireAuth, getUserId } from "../middlewares/authMiddleware";
 import { getBaseUrl } from "../lib/baseUrl";
-import { db, quotesTable, businessProfilesTable } from "@workspace/db";
+import { db, quotesTable, businessProfilesTable, authUsersTable } from "@workspace/db";
 import { eq, sql } from "drizzle-orm";
 import { CreateCheckoutSessionBody } from "@workspace/api-zod";
 import { getUncachableStripeClient } from "../stripeClient";
@@ -174,7 +174,17 @@ router.post("/payments/checkout", requireAuth, async (req, res) => {
       ? `${baseUrl}/dashboard/quotes/${quoteId}?payment=cancelled`
       : `${baseUrl}/dashboard?payment=cancelled`;
 
-    const session = await stripe.checkout.sessions.create({
+    // Look up user email and existing stripeCustomerId to pre-fill checkout and avoid duplicate customers
+    const [profile] = await db
+      .select({ stripeCustomerId: businessProfilesTable.stripeCustomerId })
+      .from(businessProfilesTable)
+      .where(eq(businessProfilesTable.userId, userId));
+    const [authUser] = await db
+      .select({ email: authUsersTable.email })
+      .from(authUsersTable)
+      .where(eq(authUsersTable.id, userId));
+
+    const sessionParams: Parameters<typeof stripe.checkout.sessions.create>[0] = {
       payment_method_types: ["card"],
       line_items: [{ price: plan.stripePriceId, quantity: 1 }],
       mode: plan.interval ? "subscription" : "payment",
@@ -187,7 +197,17 @@ router.post("/payments/checkout", requireAuth, async (req, res) => {
         planType,
         hasWatermark: String(plan.hasWatermark),
       },
-    });
+    };
+
+    // Reuse existing Stripe customer (prevents duplicate customers and ensures email match)
+    if (profile?.stripeCustomerId) {
+      sessionParams.customer = profile.stripeCustomerId;
+    } else if (authUser?.email) {
+      // Pre-fill email so the Stripe customer is created with the correct prevai email
+      sessionParams.customer_email = authUser.email;
+    }
+
+    const session = await stripe.checkout.sessions.create(sessionParams);
 
     if (quoteId) {
       await db

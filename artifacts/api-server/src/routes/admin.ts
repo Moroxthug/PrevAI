@@ -267,6 +267,70 @@ router.post("/admin/sync-subscription", async (req, res) => {
   }
 });
 
+// Force-link a Stripe customer to a prevai user (useful when emails don't match)
+router.post("/admin/sync-by-customer", requireAdmin, async (req, res) => {
+  try {
+    const { stripeCustomerId, userEmail } = req.body as { stripeCustomerId?: string; userEmail?: string };
+    if (!stripeCustomerId || !userEmail) {
+      res.status(400).json({ error: "stripeCustomerId and userEmail required" });
+      return;
+    }
+
+    // Find prevai user by email
+    const [authUser] = await db
+      .select({ id: authUsersTable.id })
+      .from(authUsersTable)
+      .where(eq(authUsersTable.email, userEmail));
+    if (!authUser) {
+      res.status(404).json({ error: `No app user found for email: ${userEmail}` });
+      return;
+    }
+
+    const stripe = await getUncachableStripeClient();
+
+    // Fetch subscriptions for this customer from Stripe
+    const subs = await stripe.subscriptions.list({ customer: stripeCustomerId, status: "all", limit: 10 });
+    const activeSub = subs.data.find(s => s.status === "active" || s.status === "trialing") ?? subs.data[0];
+
+    if (!activeSub) {
+      res.status(404).json({ error: `No subscriptions found for customer: ${stripeCustomerId}` });
+      return;
+    }
+
+    const priceId = activeSub.items.data[0]?.price?.id;
+    const planType = priceId ? PRICE_TO_PLAN[priceId] : undefined;
+    const isActive = activeSub.status === "active" || activeSub.status === "trialing";
+
+    if (!planType) {
+      res.status(400).json({ error: `Unknown price ID: ${priceId} — add to PRICE_TO_PLAN map` });
+      return;
+    }
+
+    await db
+      .insert(businessProfilesTable)
+      .values({
+        userId: authUser.id,
+        stripeCustomerId,
+        subscriptionPlan: isActive ? planType : null,
+        subscriptionStatus: isActive ? "active" : activeSub.status,
+      })
+      .onConflictDoUpdate({
+        target: businessProfilesTable.userId,
+        set: {
+          stripeCustomerId,
+          subscriptionPlan: isActive ? planType : null,
+          subscriptionStatus: isActive ? "active" : activeSub.status,
+        },
+      });
+
+    logger.info({ userId: authUser.id, stripeCustomerId, planType, status: activeSub.status }, "Admin force-linked customer to user");
+    res.json({ ok: true, userId: authUser.id, stripeCustomerId, planType, status: activeSub.status });
+  } catch (err) {
+    logger.error({ err }, "Admin sync-by-customer error");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
 router.get("/admin/quote-stats", async (_req, res) => {
   try {
     const last30 = new Date();

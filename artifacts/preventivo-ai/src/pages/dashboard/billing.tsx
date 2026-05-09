@@ -16,7 +16,7 @@ import {
   XCircle,
   Loader2,
 } from "lucide-react";
-import { Link } from "wouter";
+
 
 function QuotaBar({ used, limit }: { used: number; limit: number }) {
   const pct = Math.min(100, Math.round((used / limit) * 100));
@@ -95,6 +95,13 @@ export default function BillingPage() {
         month: "long",
       })
     : null;
+
+  const handleChoosePlan = () => {
+    createPortal.mutate(undefined, {
+      onSuccess: (r) => { window.open(r.url, "_blank"); },
+      onError: () => { window.location.href = "/#prezzi"; },
+    });
+  };
 
   return (
     <div className="max-w-2xl mx-auto space-y-6 animate-in fade-in duration-500">
@@ -251,13 +258,14 @@ export default function BillingPage() {
             </div>
           </CardHeader>
           <CardContent>
-            <Link
-              href="/dashboard/quotes"
-              className="btn-gradient inline-flex h-10 items-center justify-center px-5 text-sm font-semibold gap-2"
+            <button
+              onClick={handleChoosePlan}
+              disabled={createPortal.isPending}
+              className="btn-gradient inline-flex h-10 items-center justify-center px-5 text-sm font-semibold gap-2 disabled:opacity-60"
             >
-              <Crown className="h-4 w-4" />
+              {createPortal.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Crown className="h-4 w-4" />}
               Scegli un piano
-            </Link>
+            </button>
           </CardContent>
         </Card>
       )}

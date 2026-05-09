@@ -269,7 +269,7 @@ function BillingTab() {
   const handleManage = () => {
     createPortal.mutate(undefined, {
       onSuccess: (r) => { window.open(r.url, "_blank"); },
-      onError: () => toast({ title: "Errore apertura portale", variant: "destructive" }),
+      onError: () => { window.location.href = "/#prezzi"; },
     });
   };
   if (isLoading) return <Skeleton className="h-48 w-full rounded-2xl" />;
