@@ -74,10 +74,12 @@ export async function generateQuoteFromText({
   userId,
   rawInput,
   log,
+  source = "web",
 }: {
   userId: string;
   rawInput: string;
   log: Logger;
+  source?: string;
 }): Promise<typeof quotesTable.$inferSelect> {
   const [profileRows, recentQuotes, catalogItems] = await Promise.all([
     db.select().from(businessProfilesTable).where(eq(businessProfilesTable.userId, userId)),
@@ -186,6 +188,7 @@ export async function generateQuoteFromText({
     totale: totale.toFixed(2),
     note: aiData.note ?? "Preventivo valido 30 giorni",
     status: "draft",
+    source,
   }).returning();
 
   if (!profile?.trialStartedAt) {

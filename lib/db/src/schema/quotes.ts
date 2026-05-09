@@ -92,6 +92,7 @@ export const quotesTable = pgTable("quotes", {
   capitolatoPdfUrl: text("capitolato_pdf_url"),
   templateId: text("template_id").default("standard"),
   pdfDownloadedAt: timestamp("pdf_downloaded_at", { withTimezone: true }),
+  source: text("source").default("web"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
 });

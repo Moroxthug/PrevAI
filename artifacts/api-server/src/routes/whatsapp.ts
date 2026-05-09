@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { requireAuth, getUserId } from "../middlewares/authMiddleware";
-import { db, whatsappConnectionsTable, whatsappOtpTable, businessProfilesTable } from "@workspace/db";
-import { eq, and, gt } from "drizzle-orm";
+import { db, whatsappConnectionsTable, whatsappOtpTable, businessProfilesTable, quotesTable } from "@workspace/db";
+import { eq, and, gt, gte, sql } from "drizzle-orm";
 import { logger } from "../lib/logger.js";
 import { generateQuoteFromText } from "../lib/generateQuoteFromText.js";
 import { openai } from "@workspace/integrations-openai-ai-server";
@@ -58,7 +58,7 @@ async function transcribeAudio(buffer: Buffer, mimeType: string): Promise<string
   const ext = mimeType.includes("ogg") ? "ogg" : mimeType.includes("mp4") ? "mp4" : mimeType.includes("mpeg") ? "mp3" : "ogg";
   const file = new File([new Uint8Array(buffer)], `audio.${ext}`, { type: mimeType });
   const transcription = await openai.audio.transcriptions.create({
-    model: "whisper-1",
+    model: "gpt-4o-transcribe",
     file,
     language: "it",
   });
@@ -198,12 +198,49 @@ router.post("/whatsapp/webhook", async (req, res) => {
       return;
     }
 
+    // Check that the user has an active Pro or Elite plan
+    const [profile] = await db.select().from(businessProfilesTable).where(eq(businessProfilesTable.userId, connection.userId));
+    const allowedPlans = ["monthly_pro", "monthly_elite"];
+    if (profile?.subscriptionStatus !== "active" || !allowedPlans.includes(profile?.subscriptionPlan ?? "")) {
+      await sendWhatsappText(
+        from,
+        `⚠️ Il tuo account non ha un piano attivo che include WhatsApp. Aggiorna il tuo piano su ${PREVAI_BASE_URL}/dashboard/settings`
+      );
+      return;
+    }
+
+    // For Pro: enforce 20 WhatsApp quotes per calendar month
+    if (profile.subscriptionPlan === "monthly_pro") {
+      const startOfMonth = new Date();
+      startOfMonth.setDate(1);
+      startOfMonth.setHours(0, 0, 0, 0);
+      const [countResult] = await db
+        .select({ count: sql<number>`count(*)::int` })
+        .from(quotesTable)
+        .where(
+          and(
+            eq(quotesTable.userId, connection.userId),
+            eq(quotesTable.source, "whatsapp"),
+            gte(quotesTable.createdAt, startOfMonth)
+          )
+        );
+      const used = countResult?.count ?? 0;
+      if (used >= 20) {
+        await sendWhatsappText(
+          from,
+          `⚠️ Hai raggiunto il limite di *20 preventivi WhatsApp* per questo mese (Piano Pro).\n\nIl contatore si azzera il 1° del mese prossimo.\nPer preventivi WhatsApp illimitati, passa al piano Elite: ${PREVAI_BASE_URL}/dashboard/settings`
+        );
+        return;
+      }
+    }
+
     await sendWhatsappText(from, "⏳ Sto generando il tuo preventivo, attendi qualche secondo...");
 
     const quote = await generateQuoteFromText({
       userId: connection.userId,
       rawInput: rawInput.trim(),
       log: logger,
+      source: "whatsapp",
     });
 
     const totale = new Intl.NumberFormat("it-IT", { style: "currency", currency: "EUR" }).format(Number(quote.totale));
@@ -295,6 +332,14 @@ router.post("/whatsapp/connect", requireAuth, async (req, res) => {
     const normalized = normalizePhone(phoneNumber.trim());
     if (!normalized) {
       res.status(400).json({ error: "Numero di telefono non valido. Usa il formato internazionale, es: +39 333 1234567" });
+      return;
+    }
+
+    // Only Pro and Elite plans can use WhatsApp integration
+    const [profile] = await db.select().from(businessProfilesTable).where(eq(businessProfilesTable.userId, userId));
+    const allowedPlans = ["monthly_pro", "monthly_elite"];
+    if (profile?.subscriptionStatus !== "active" || !allowedPlans.includes(profile?.subscriptionPlan ?? "")) {
+      res.status(403).json({ error: "L'integrazione WhatsApp è disponibile solo per i piani Pro ed Elite. Aggiorna il tuo piano nelle impostazioni." });
       return;
     }
 
