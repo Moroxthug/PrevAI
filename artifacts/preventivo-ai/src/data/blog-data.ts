@@ -179,7 +179,7 @@ export const BLOG_ARTICLES: BlogArticle[] = [
   <li><strong>Rifacimento completo</strong> in opera su muri: 200–350€ per punto tutto incluso</li>
   <li><strong>Impianto in costruzione nuova</strong>: 120–200€ per punto</li>
 </ul>
-<p>Per un appartamento di 80mq con rifacimento completo dell'impianto, quadro incluso, si stimano mediamente 4.000–8.000€ IVA esclusa.</p>
+<p>Per un appartamento di 80mq con rifacimento completo dell'impianto (tracce a muro, quadro incluso, Dichiarazione di Conformità), si stimano mediamente 8.000–16.000€ IVA esclusa. Interventi parziali o su impianti in costruzione si collocano nella fascia bassa di 4.000–8.000€.</p>
 
 <h2>Quadro elettrico: come preventivare correttamente</h2>
 <p>Il quadro è spesso la voce più critica del preventivo. Specifica sempre:</p>
@@ -398,6 +398,161 @@ export const BLOG_ARTICLES: BlogArticle[] = [
 
 <h2>Bagno accessibile: i costi dell'adattamento</h2>
 <p>Per gli interventi di adattamento del bagno a persone anziane o con mobilità ridotta — installazione di maniglioni, doccia a pavimento senza soglia, wc rialzato — i costi variano tra 2.000 e 6.000€ a seconda degli interventi richiesti. Questi lavori possono rientrare nelle detrazioni per eliminazione delle barriere architettoniche (aliquota 75% nella versione attuale del Bonus Edilizi). È consigliabile che il preventivo faccia riferimento esplicito alla normativa applicabile (L. 13/1989) se si intende accedere alle detrazioni.</p>
+`,
+  },
+  {
+    slug: "quanto-costa-impianto-elettrico",
+    title: "Quanto costa un impianto elettrico nel 2025: prezzi per appartamento e ristrutturazione",
+    metaDescription: "Prezzi aggiornati per impianti elettrici civili nel 2025: costo per appartamento, per punto luce, quadro elettrico, rifacimento completo. Guida per proprietari e committenti.",
+    category: "Prezzi",
+    publishedAt: "2025-05-05",
+    readingTimeMin: 5,
+    relatedSectors: ["elettricista"],
+    contentHtml: `
+<p>Quanto costa rifare l'impianto elettrico di casa? È una delle domande più frequenti per chi affronta una ristrutturazione o acquista un appartamento datato. I prezzi variano molto in base alla dimensione dell'immobile, allo stato dell'impianto esistente e alla tipologia d'intervento. Questa guida riporta i riferimenti di mercato aggiornati al 2025.</p>
+
+<h2>Prezzi indicativi per impianti elettrici civili nel 2025</h2>
+<p>Il costo di un impianto elettrico si misura solitamente <strong>per punto luce</strong> (presa, interruttore, punto luce a soffitto, presa dati, ecc.). Ecco le fasce di prezzo per intervento:</p>
+<ul>
+  <li><strong>Piccolo intervento</strong> (aggiunta di 1–3 punti in impianto esistente): 80–150 € per punto</li>
+  <li><strong>Rifacimento parziale</strong> (un locale o un'area dell'appartamento): 150–250 € per punto</li>
+  <li><strong>Rifacimento completo con tracce a muro</strong>: 200–350 € per punto, tutto incluso</li>
+  <li><strong>Impianto in costruzione nuova</strong> (predisposizione + posa): 120–200 € per punto</li>
+</ul>
+<p>Un appartamento di 80mq con rifacimento completo dell'impianto richiede mediamente 40–60 punti luce. Il costo totale si colloca tra <strong>8.000 e 18.000€ IVA esclusa</strong>, includendo quadro elettrico, cavi, punti luce, prese, impianto di terra e Dichiarazione di Conformità.</p>
+
+<h2>Costo del quadro elettrico</h2>
+<p>Il quadro è spesso la voce più costosa e la meno compresa dai committenti. Il prezzo dipende dalla marca e dal numero di moduli:</p>
+<ul>
+  <li><strong>Quadro base</strong> (12 moduli, materiale economico): 150–300€ di materiale</li>
+  <li><strong>Quadro standard</strong> (18–24 moduli, ABB, Schneider, Bticino): 350–700€</li>
+  <li><strong>Quadro completo con differenziali separati per zone umide</strong>: 600–1.200€</li>
+</ul>
+<p>A questi importi va aggiunta la manodopera di installazione e cablaggio, che può incidere per 200–600€ a seconda della complessità.</p>
+
+<h2>Costo per tipologia di abitazione</h2>
+<h3>Monolocale o bilocale (30–50 mq)</h3>
+<p>Rifacimento completo con 20–30 punti: 4.000–8.000€ — quadro incluso, tracce e ripristini compresi nella fascia alta.</p>
+<h3>Appartamento medio (60–90 mq)</h3>
+<p>Rifacimento completo con 35–55 punti: 7.000–16.000€ — valore medio di mercato intorno a 10.000–12.000€ per un impianto di qualità con materiali di marca.</p>
+<h3>Villa o appartamento grande (oltre 120 mq)</h3>
+<p>Rifacimento completo con 70+ punti, eventuale impianto di allarme, domotica leggera, citofono IP: 18.000–35.000€ e oltre.</p>
+
+<h2>Cosa influenza il prezzo</h2>
+<h3>Tracce a muro o impianto a vista</h3>
+<p>Le tracce a muro (necessarie per nascondere i cavi) richiedono demolizione, posa dei tubi corrugati, cavi e successivo ripristino con intonaco. Questo aggiunge 800–2.500€ di costo rispetto a un impianto in appartamento già predisposto. Un impianto a vista con canaline (tipico dei locali industriali o dei sottotetti) è invece più economico da eseguire ma meno estetico.</p>
+<h3>Marca dei materiali</h3>
+<p>La differenza tra materiale di primo prezzo e brand affermati (ABB, Schneider, Bticino, BTicino Matix o Living) può variare del 30–60% sul solo costo del materiale. La marca influisce sulla durata, sulla disponibilità dei pezzi di ricambio e sulla garanzia.</p>
+<h3>Complessità dell'impianto</h3>
+<p>Impianti con zone umide separate (bagni, cucine), circuiti dedicati per elettrodomestici ad alta potenza (forno, lavastoviglie, piano cottura a induzione), predisposizioni per colonnine EV o fotovoltaico richiedono più protezioni nel quadro e più circuiti dedicati.</p>
+<h3>Posizione geografica</h3>
+<p>Il costo della manodopera degli elettricisti è mediamente del 15–30% superiore nelle grandi città del Nord (Milano, Torino, Genova) rispetto alle regioni del Centro-Sud.</p>
+
+<h2>Dichiarazione di Conformità: obbligatoria e inclusa?</h2>
+<p>La <strong>Dichiarazione di Conformità (DDC)</strong> ai sensi del D.M. 37/2008 è obbligatoria per legge per qualsiasi impianto elettrico nuovo o rifatto. Quando chiedete un preventivo, verificate sempre che sia inclusa esplicitamente: alcuni preventivi la escludono per abbassare il prezzo apparente e la aggiungono dopo. La DDC ha un costo di 100–300€ e protegge sia il committente sia il professionista in caso di sinistro.</p>
+
+<h2>Bonus fiscali per impianti elettrici</h2>
+<p>Il rifacimento dell'impianto elettrico nell'ambito di una ristrutturazione rientra nel <strong>Bonus Ristrutturazioni 50%</strong> (art. 16-bis TUIR), con un massimale di spesa di 96.000€ per unità immobiliare. La detrazione si recupera in 10 anni nelle dichiarazioni dei redditi. Per accedere alla detrazione è necessario che il pagamento avvenga tramite bonifico bancario/postale dedicato e che il preventivo sia emesso prima dell'inizio dei lavori. Verificate sempre la situazione aggiornata con il vostro commercialista.</p>
+
+<h2>Come confrontare i preventivi degli elettricisti</h2>
+<p>Per confrontare in modo corretto preventivi diversi per lo stesso impianto, verificate che ogni documento riporti:</p>
+<ul>
+  <li>Numero di punti luce e prese per locale</li>
+  <li>Marca e tipo del quadro elettrico e delle protezioni</li>
+  <li>Marca dei materiali (interruttori, prese, cavi)</li>
+  <li>Dichiarazione di Conformità inclusa o esclusa</li>
+  <li>IVA separata e regime fiscale applicato</li>
+  <li>Tempistiche stimate di esecuzione</li>
+</ul>
+<p>Un preventivo che riporta solo un importo globale senza dettaglio non permette un confronto reale. Privilegiate elettricisti che presentano un documento dettagliato per voci: è il segnale più affidabile di professionalità.</p>
+
+<h2>Quanto dura un impianto elettrico?</h2>
+<p>Un impianto elettrico realizzato a regola d'arte con materiali di qualità ha una vita utile di <strong>25–40 anni</strong>. Gli impianti più vecchi (precedenti agli anni '90) sono spesso privi di messa a terra adeguata e non conformi alle normative attuali — questo è un elemento di rischio che giustifica pienamente il costo di un rifacimento completo, anche in assenza di problemi evidenti.</p>
+`,
+  },
+  {
+    slug: "quanto-costa-idraulico",
+    title: "Quanto costa un idraulico nel 2025: prezzi per interventi e impianti",
+    metaDescription: "Prezzi aggiornati per lavori idraulici nel 2025: costo per intervento urgente, sostituzione boiler, nuovo impianto, perdita d'acqua. Guida completa per proprietari di casa.",
+    category: "Prezzi",
+    publishedAt: "2025-05-07",
+    readingTimeMin: 5,
+    relatedSectors: ["idraulico", "termoidraulico"],
+    contentHtml: `
+<p>Il costo di un idraulico è tra i meno trasparenti nel settore dell'edilizia residenziale: i prezzi variano molto in base alla tipologia di intervento, all'urgenza, alla zona geografica e al professionista. Questa guida raccoglie i valori di mercato aggiornati al 2025 per i lavori idraulici più comuni.</p>
+
+<h2>Costi per interventi idraulici comuni nel 2025</h2>
+
+<h3>Intervento di pronto soccorso (perdita, guasto urgente)</h3>
+<ul>
+  <li><strong>Chiamata urgente in orario lavorativo</strong>: 80–180€ (diritto di chiamata + prima ora)</li>
+  <li><strong>Chiamata urgente notturna o nel fine settimana</strong>: 150–300€ per il solo intervento</li>
+  <li><strong>Riparazione perdita semplice</strong> (sostituzione raccordo o guarnizione): 80–200€ tutto compreso</li>
+  <li><strong>Sblocco intasamento lavandino o WC</strong>: 80–180€</li>
+</ul>
+
+<h3>Sostituzione di sanitari e componenti</h3>
+<ul>
+  <li><strong>Sostituzione rubinetto lavandino</strong>: 80–200€ (solo manodopera, escluso rubinetto)</li>
+  <li><strong>Sostituzione miscelatore doccia o vasca</strong>: 100–250€ manodopera</li>
+  <li><strong>Sostituzione WC completo</strong>: 150–350€ di manodopera (escluso sanitario)</li>
+  <li><strong>Sostituzione cassetta WC</strong>: 80–180€</li>
+  <li><strong>Installazione WC sospeso con cassetta incasso</strong>: 300–600€ di sola manodopera</li>
+</ul>
+
+<h3>Sostituzione scaldabagno e caldaia</h3>
+<ul>
+  <li><strong>Sostituzione scaldabagno elettrico</strong> (bollitore, stesso punto): 100–250€ manodopera + smaltimento</li>
+  <li><strong>Sostituzione scaldabagno a gas</strong>: 150–350€ di manodopera</li>
+  <li><strong>Sostituzione caldaia murale</strong> (stesso punto): 300–600€ di sola installazione, esclusa caldaia</li>
+  <li><strong>Sostituzione caldaia con spostamento o nuovi attacchi</strong>: 500–1.200€</li>
+</ul>
+<p>Il costo della caldaia è separato: un boiler a condensazione di qualità (Ariston, Baxi, Vaillant, Ferroli) costa tra 800 e 2.500€. La scelta del modello incide molto sul consumo annuo del gas.</p>
+
+<h2>Costo di un impianto idraulico completo</h2>
+<p>Per la realizzazione o il rifacimento completo dell'impianto idrico in un appartamento, i costi dipendono da superficie e complessità:</p>
+<ul>
+  <li><strong>Appartamento 50–70mq</strong> (1 bagno, cucina): 3.000–6.000€</li>
+  <li><strong>Appartamento 80–100mq</strong> (2 bagni, cucina): 5.000–10.000€</li>
+  <li><strong>Villa o appartamento grande</strong> (oltre 120mq, 3+ bagni): 10.000–20.000€+</li>
+</ul>
+<p>Questi prezzi includono tubazioni di adduzione (rame o multistrato), scarichi, raccorderia, collaudo e allaccio ai sanitari. Escludono i sanitari stessi, le piastrelle e la manodopera edile per le tracce.</p>
+
+<h2>Fattori che fanno variare il prezzo</h2>
+<h3>Urgenza dell'intervento</h3>
+<p>Un intervento urgente (perdita attiva, rottura tubazione) costa il 50–100% in più rispetto a un lavoro programmato. La reperibilità notturna o festiva ha tariffe ancora superiori. Pianificare i lavori con anticipo è il modo più efficace per contenere i costi idraulici.</p>
+<h3>Tipo di tubazioni</h3>
+<p>Il rame è il materiale tradizionale e più durevole (vita utile 50+ anni), ma anche il più costoso. Il multistrato (PPR o PERT/AL/PERT) è più economico da posare grazie alla flessibilità ma richiede raccordi a compressione. L'acciaio inox è usato in ambiti professionali o per tubazioni a vista di pregio.</p>
+<h3>Spostamento dei punti di adduzione</h3>
+<p>Se il progetto richiede di spostare sanitari (es. cambio layout bagno) o di portare l'adduzione dell'acqua in nuovi punti, il costo cresce significativamente: ogni spostamento di scarico o adduzione aggiunge 300–800€ per punto, includendo traccia, nuova tubazione e ripristino murario.</p>
+<h3>Zona geografica</h3>
+<p>Il differenziale geografico nella manodopera idraulica è tra i più alti nel settore: a Milano o Roma un idraulico può avere tariffe orarie del 30–50% superiori rispetto a un professionista equivalente nel Sud Italia. A questo si aggiunge la differenza nella disponibilità: in alcune aree i professionisti qualificati hanno liste d'attesa di 3–6 settimane per lavori non urgenti.</p>
+
+<h2>Come risparmiare sui lavori idraulici</h2>
+<ul>
+  <li><strong>Pianificate in anticipo</strong>: evitare interventi urgenti elimina il sovrapprezzo da emergenza, spesso del 50–80% sul costo base</li>
+  <li><strong>Raggruppate gli interventi</strong>: fare in un'unica visita la sostituzione di rubinetto, guarnizioni e controllo della caldaia è molto più economico di tre interventi separati</li>
+  <li><strong>Preventivate sempre in anticipo</strong>: chiedere un preventivo scritto prima dell'inizio dei lavori evita sorprese e permette di confrontare più offerte</li>
+  <li><strong>Verificate le garanzie</strong>: un idraulico che offre garanzia scritta sul lavoro eseguito (tipicamente 2 anni) spesso costa leggermente di più ma vi protegge da costi ripetuti per lo stesso problema</li>
+</ul>
+
+<h2>Bonus fiscali per lavori idraulici</h2>
+<p>Gli interventi idraulici nell'ambito di una ristrutturazione residenziale rientrano nel <strong>Bonus Ristrutturazioni 50%</strong> (art. 16-bis TUIR), con massimale di 96.000€ per unità immobiliare. La sostituzione di sanitari con modelli a risparmio idrico può rientrare in agevolazioni specifiche, come il <strong>Bonus Idrico</strong> se attivo nella finestra temporale del vostro intervento. Il pagamento deve avvenire tramite bonifico dedicato e il preventivo deve precedere l'inizio dei lavori.</p>
+
+<h2>Come leggere un preventivo di un idraulico</h2>
+<p>Un preventivo professionale per lavori idraulici deve includere:</p>
+<ul>
+  <li>Descrizione dettagliata di ogni lavorazione (non solo "lavori idraulici — 1.500€")</li>
+  <li>Marca e tipo dei materiali (tipo di tubazione, raccordi, marca dei rubinetti se forniti dall'idraulico)</li>
+  <li>Separazione tra manodopera e materiali</li>
+  <li>IVA separata e regime fiscale applicato</li>
+  <li>Tempistiche stimate (data inizio, giorni lavorativi)</li>
+  <li>Condizioni di garanzia sull'impianto</li>
+</ul>
+<p>Un preventivo con solo il totale finale, senza dettaglio delle voci, rende impossibile il confronto reale tra offerte diverse e lascia spazio a contestazioni al momento della fattura. Privilegiate sempre professionisti che forniscono un documento trasparente e dettagliato.</p>
+
+<h2>Quanto dura un impianto idraulico?</h2>
+<p>Le tubazioni in rame ben posate durano 50–70 anni. Gli impianti in ferro nero, comuni nelle case costruite fino agli anni '80, tendono a presentare problemi di corrosione e calcificazione dopo 30–40 anni. Se la vostra abitazione ha tubazioni in ferro e pressione dell'acqua irregolare o colorazione ruggine, una valutazione dell'impianto da parte di un idraulico qualificato è consigliabile prima di manifestarsi guasti importanti.</p>
 `,
   },
   {
@@ -1329,9 +1484,9 @@ export function getArticlesByCategory(categoryName: string): BlogArticle[] {
 export const SECTOR_ARTICLES: Record<string, string[]> = {
   imbianchino: ["come-fare-preventivo-imbianchino", "quanto-costa-tinteggiatura-appartamento", "errori-preventivi-artigiani", "preventivi-foto-cantiere"],
   pittore: ["come-fare-preventivo-imbianchino", "quanto-costa-tinteggiatura-appartamento", "come-vincere-piu-lavori"],
-  elettricista: ["preventivo-impianto-elettrico", "errori-preventivi-artigiani", "come-vincere-piu-lavori", "preventivi-foto-cantiere"],
-  idraulico: ["preventivo-idraulico", "quanto-costa-ristrutturare-bagno", "errori-preventivi-artigiani", "preventivi-foto-cantiere"],
-  termoidraulico: ["preventivo-idraulico", "come-vincere-piu-lavori", "gestione-preventivi-pmi"],
+  elettricista: ["preventivo-impianto-elettrico", "quanto-costa-impianto-elettrico", "errori-preventivi-artigiani", "come-vincere-piu-lavori", "preventivi-foto-cantiere"],
+  idraulico: ["preventivo-idraulico", "quanto-costa-idraulico", "quanto-costa-ristrutturare-bagno", "errori-preventivi-artigiani", "preventivi-foto-cantiere"],
+  termoidraulico: ["preventivo-idraulico", "quanto-costa-idraulico", "come-vincere-piu-lavori", "gestione-preventivi-pmi"],
   muratore: ["preventivo-muratore", "preventivo-ristrutturazione-guida", "errori-preventivi-artigiani", "preventivi-foto-cantiere"],
   edilizia: ["preventivo-ristrutturazione-guida", "gestione-preventivi-pmi", "software-preventivi-artigiani", "trovare-clienti-artigiano"],
   ristrutturazione: ["preventivo-ristrutturazione-guida", "quanto-costa-ristrutturare-bagno", "gestione-preventivi-pmi"],
