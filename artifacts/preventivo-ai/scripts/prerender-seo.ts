@@ -28,11 +28,13 @@ import {
 } from "../src/data/seo-render-engine.js";
 import {
   BLOG_ARTICLES,
+  BLOG_CATEGORIES,
   BLOG_LIST_TITLE,
   BLOG_LIST_DESCRIPTION,
   SECTOR_ARTICLES,
+  getArticlesByCategory,
 } from "../src/data/blog-data.js";
-import type { BlogArticle } from "../src/data/blog-data.js";
+import type { BlogArticle, BlogCategory } from "../src/data/blog-data.js";
 import { extractToc, injectHeadingIds } from "../src/data/blog-toc.js";
 import {
   TESTIMONIALS,
@@ -1171,6 +1173,20 @@ function buildBlogListBodyHtml(): string {
   </div>
 </section>`;
 
+  const categoryLinks = BLOG_CATEGORIES.map((cat) => {
+    const cs = BLOG_CATEGORY_STYLE[cat.name] ?? "background:#f3f4f6;color:#374151";
+    return `<a href="/blog/categoria/${esc(cat.slug)}" class="inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold transition-colors" style="${cs}">${esc(cat.name)}</a>`;
+  }).join("\n      ");
+
+  const categoryStrip = `<section class="border-b border-gray-100 bg-white py-4">
+  <div class="container mx-auto px-4 sm:px-6 lg:px-8 max-w-5xl">
+    <div class="flex flex-wrap gap-2 items-center">
+      <span class="text-xs font-semibold uppercase tracking-wider mr-1" style="color:#9ca3af">Categorie:</span>
+      ${categoryLinks}
+    </div>
+  </div>
+</section>`;
+
   const cards = BLOG_ARTICLES.map((a) => {
     const catStyle = BLOG_CATEGORY_STYLE[a.category] ?? "background:#f3f4f6;color:#374151";
     const dateStr = new Date(a.publishedAt).toLocaleDateString("it-IT", { day: "numeric", month: "long", year: "numeric" });
@@ -1213,6 +1229,7 @@ function buildBlogListBodyHtml(): string {
   return `<div class="flex flex-col min-h-screen bg-white">
   ${breadcrumb}
   ${hero}
+  ${categoryStrip}
   ${grid}
   ${cta}
 </div>`;
@@ -1334,6 +1351,137 @@ function buildBlogArticleBodyHtml(article: BlogArticle): string {
 </div>`;
 }
 
+// ─── Blog JSON-LD builder for category pages ──────────────────────────────────
+
+function buildBlogCategoryJsonLd(category: BlogCategory): object[] {
+  const canonical = `${BASE_URL}/blog/categoria/${category.slug}`;
+  return [
+    {
+      "@context": "https://schema.org",
+      "@type": "CollectionPage",
+      name: `${category.name} — Blog prevai`,
+      description: category.description,
+      url: canonical,
+      inLanguage: "it",
+    },
+    {
+      "@context": "https://schema.org",
+      "@type": "BreadcrumbList",
+      itemListElement: [
+        { "@type": "ListItem", position: 1, name: "Home", item: BASE_URL },
+        { "@type": "ListItem", position: 2, name: "Blog", item: `${BASE_URL}/blog` },
+        { "@type": "ListItem", position: 3, name: category.name, item: canonical },
+      ],
+    },
+  ];
+}
+
+// ─── Blog category page body HTML ─────────────────────────────────────────────
+
+const BLOG_CATEGORY_COLOR_STYLE: Record<string, string> = {
+  Professioni: "background:#f5f3ff;color:#6d28d9",
+  Prezzi: "background:#ecfeff;color:#0e7490",
+  Consigli: "background:#fffbeb;color:#d97706",
+  Tool: "background:#f0fdf4;color:#15803d",
+  Innovazione: "background:#eff6ff;color:#1d4ed8",
+  Business: "background:#fff1f2;color:#be123c",
+};
+
+function buildBlogCategoryBodyHtml(category: BlogCategory): string {
+  const articles = getArticlesByCategory(category.name);
+  const catStyle = BLOG_CATEGORY_COLOR_STYLE[category.name] ?? "background:#f3f4f6;color:#374151";
+
+  const breadcrumb = `<nav aria-label="Percorso di navigazione" class="bg-white border-b border-gray-100">
+  <div class="container mx-auto px-4 sm:px-6 lg:px-8 py-3">
+    <ol class="flex items-center text-sm text-gray-500 flex-wrap">
+      <li><a href="/" class="hover:text-violet-600 transition-colors">Home</a></li>
+      <li aria-hidden="true" class="mx-1.5 text-gray-300 select-none">/</li>
+      <li><a href="/blog" class="hover:text-violet-600 transition-colors">Blog</a></li>
+      <li aria-hidden="true" class="mx-1.5 text-gray-300 select-none">/</li>
+      <li class="text-gray-900 font-medium" aria-current="page">${esc(category.name)}</li>
+    </ol>
+  </div>
+</nav>`;
+
+  const hero = `<section style="background:linear-gradient(135deg,rgba(124,58,237,0.06),rgba(6,182,212,0.04))" class="pt-14 pb-10">
+  <div class="container mx-auto px-4 sm:px-6 lg:px-8 max-w-3xl text-center">
+    <span class="inline-flex items-center rounded-full px-4 py-1.5 text-sm font-semibold mb-5" style="${catStyle}">${esc(category.name)}</span>
+    <h1 class="text-3xl font-extrabold tracking-tight text-gray-900 sm:text-4xl mb-3 leading-tight">
+      Articoli su <span class="gradient-text">${esc(category.name)}</span>
+    </h1>
+    <p class="text-base text-gray-500 leading-relaxed max-w-2xl mx-auto">${esc(category.description)}</p>
+    <p class="text-xs text-gray-400 mt-3">${articles.length} ${articles.length === 1 ? "articolo" : "articoli"}</p>
+  </div>
+</section>`;
+
+  const cards = articles.map((a) => {
+    const cs = BLOG_CATEGORY_COLOR_STYLE[a.category] ?? "background:#f3f4f6;color:#374151";
+    const dateStr = new Date(a.publishedAt).toLocaleDateString("it-IT", { day: "numeric", month: "long", year: "numeric" });
+    return `<a href="/blog/${esc(a.slug)}" class="group flex flex-col bg-white rounded-2xl border border-gray-100 hover:border-violet-200 hover:shadow-md transition-all duration-200 overflow-hidden">
+      <div class="p-6 flex flex-col flex-1">
+        <div class="flex items-center justify-between mb-4">
+          <span class="text-xs font-semibold px-2.5 py-1 rounded-full" style="${cs}">${esc(a.category)}</span>
+          <span class="text-xs text-gray-400">${a.readingTimeMin} min</span>
+        </div>
+        <h2 class="text-sm font-bold text-gray-900 leading-snug mb-2 group-hover:text-violet-700 transition-colors flex-1">${esc(a.title)}</h2>
+        <p class="text-xs text-gray-500 leading-relaxed mb-4">${esc(a.metaDescription.slice(0, 130))}...</p>
+        <div class="flex items-center justify-between mt-auto pt-3 border-t border-gray-50">
+          <time class="text-xs text-gray-400" datetime="${a.publishedAt}">${dateStr}</time>
+          <span class="text-xs font-semibold text-violet-600">Leggi →</span>
+        </div>
+      </div>
+    </a>`;
+  }).join("\n    ");
+
+  const grid = articles.length > 0
+    ? `<section class="py-12">
+  <div class="container mx-auto px-4 sm:px-6 lg:px-8 max-w-5xl">
+    <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+      ${cards}
+    </div>
+  </div>
+</section>`
+    : `<section class="py-20 text-center text-gray-400">
+  <p class="text-lg font-medium">Nessun articolo in questa categoria.</p>
+  <a href="/blog" class="mt-6 inline-block text-violet-600 text-sm font-semibold">Torna al Blog →</a>
+</section>`;
+
+  const otherCats = BLOG_CATEGORIES.filter((c) => c.slug !== category.slug);
+  const catLinks = otherCats.map((c) => {
+    const cs = BLOG_CATEGORY_COLOR_STYLE[c.name] ?? "background:#f3f4f6;color:#374151";
+    return `<a href="/blog/categoria/${esc(c.slug)}" class="inline-flex items-center rounded-full px-4 py-2 text-xs font-semibold transition-colors" style="${cs}">${esc(c.name)}</a>`;
+  }).join("\n      ");
+
+  const otherCatsSection = `<section class="py-10 bg-gray-50 border-t border-gray-100">
+  <div class="container mx-auto px-4 sm:px-6 lg:px-8 max-w-5xl">
+    <h2 class="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-5">Altre categorie</h2>
+    <div class="flex flex-wrap gap-3">
+      ${catLinks}
+    </div>
+  </div>
+</section>`;
+
+  const cta = `<section class="py-16 bg-white border-t border-gray-100">
+  <div class="container mx-auto px-4 sm:px-6 lg:px-8 text-center max-w-2xl">
+    <h2 class="text-2xl font-bold text-gray-900 mb-3">
+      Pronto a creare preventivi in <span class="gradient-text">30 secondi</span>?
+    </h2>
+    <p class="text-gray-500 mb-8 text-sm">Nessuna carta di credito. Nessun impegno. Il tuo primo preventivo è gratis.</p>
+    <a href="/sign-up" class="btn-gradient inline-flex h-12 items-center justify-center px-8 text-sm font-semibold">
+      Inizia Gratuitamente
+    </a>
+  </div>
+</section>`;
+
+  return `<div class="flex flex-col min-h-screen bg-white">
+  ${breadcrumb}
+  ${hero}
+  ${grid}
+  ${otherCatsSection}
+  ${cta}
+</div>`;
+}
+
 // ─── Blog prerendering ────────────────────────────────────────────────────────
 
 // Blog list page
@@ -1348,6 +1496,22 @@ const blogListHtml = injectBody(injectHead(template, blogListHeadBlock), buildBl
 writeRoute("blog", blogListHtml);
 count++;
 console.log("  ✓ Blog list page prerendered");
+
+// Blog category pages
+for (const category of BLOG_CATEGORIES) {
+  const categoryCanonical = `${BASE_URL}/blog/categoria/${category.slug}`;
+  const categoryHeadBlock = buildHeadBlock({
+    title: `${category.name} — Blog prevai`,
+    description: category.description,
+    canonical: categoryCanonical,
+    ogImagePath: "/opengraph.jpg",
+    jsonLd: buildBlogCategoryJsonLd(category),
+  });
+  const categoryHtml = injectBody(injectHead(template, categoryHeadBlock), buildBlogCategoryBodyHtml(category));
+  writeRoute(`blog/categoria/${category.slug}`, categoryHtml);
+  count++;
+}
+console.log(`  ✓ ${BLOG_CATEGORIES.length} blog category pages prerendered`);
 
 // Individual blog articles
 for (const article of BLOG_ARTICLES) {
@@ -1365,4 +1529,4 @@ for (const article of BLOG_ARTICLES) {
 }
 console.log(`  ✓ ${BLOG_ARTICLES.length} blog articles prerendered`);
 
-console.log(`Prerendered ${count} pages total (1 homepage + SEO sector pages + ${BLOG_ARTICLES.length + 1} blog pages).`);
+console.log(`Prerendered ${count} pages total (1 homepage + SEO sector pages + ${BLOG_CATEGORIES.length} category pages + ${BLOG_ARTICLES.length + 1} blog pages).`);

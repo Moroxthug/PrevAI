@@ -869,6 +869,60 @@ export const BLOG_ARTICLES: BlogArticle[] = [
 export const BLOG_LIST_TITLE = "Blog prevai — Guide e Consigli per Artigiani e PMI";
 export const BLOG_LIST_DESCRIPTION = "Guide pratiche, prezzi di mercato e consigli professionali per artigiani e PMI italiane: come fare preventivi, vincere più lavori e crescere.";
 
+export interface BlogCategory {
+  slug: string;
+  name: string;
+  description: string;
+  color: string;
+}
+
+export const BLOG_CATEGORIES: BlogCategory[] = [
+  {
+    slug: "professioni",
+    name: "Professioni",
+    description: "Guide pratiche su come fare preventivi professionali per imbianchini, elettricisti, idraulici e altri mestieri.",
+    color: "bg-violet-50 text-violet-700 border-violet-200 hover:border-violet-400",
+  },
+  {
+    slug: "prezzi",
+    name: "Prezzi",
+    description: "Prezzi aggiornati e fasce di mercato per i lavori più comuni: costi al mq, per opera, per tipologia di intervento.",
+    color: "bg-cyan-50 text-cyan-700 border-cyan-200 hover:border-cyan-400",
+  },
+  {
+    slug: "consigli",
+    name: "Consigli",
+    description: "Consigli pratici per vincere più lavori, migliorare i propri preventivi e crescere come professionista.",
+    color: "bg-amber-50 text-amber-700 border-amber-200 hover:border-amber-400",
+  },
+  {
+    slug: "tool",
+    name: "Tool",
+    description: "Confronto e recensioni dei migliori strumenti digitali per artigiani: software, app e soluzioni AI.",
+    color: "bg-green-50 text-green-700 border-green-200 hover:border-green-400",
+  },
+  {
+    slug: "innovazione",
+    name: "Innovazione",
+    description: "Come l'intelligenza artificiale e le nuove tecnologie stanno trasformando il lavoro degli artigiani.",
+    color: "bg-blue-50 text-blue-700 border-blue-200 hover:border-blue-400",
+  },
+  {
+    slug: "business",
+    name: "Business",
+    description: "Strategie di gestione aziendale, crescita commerciale e organizzazione per PMI e artigiani italiani.",
+    color: "bg-rose-50 text-rose-700 border-rose-200 hover:border-rose-400",
+  },
+];
+
+export function getCategoryBySlug(slug: string): BlogCategory | undefined {
+  return BLOG_CATEGORIES.find((c) => c.slug === slug);
+}
+
+export function getArticlesByCategory(categoryName: string): BlogArticle[] {
+  return BLOG_ARTICLES.filter((a) => a.category.toLowerCase() === categoryName.toLowerCase());
+}
+
 export const SECTOR_ARTICLES: Record<string, string[]> = {
   imbianchino: ["come-fare-preventivo-imbianchino", "quanto-costa-tinteggiatura-appartamento", "errori-preventivi-artigiani"],
   pittore: ["come-fare-preventivo-imbianchino", "quanto-costa-tinteggiatura-appartamento", "come-vincere-piu-lavori"],

@@ -27,6 +27,7 @@ const SeoLanding = lazy(() => import("@/pages/seo/[type]"));
 const SeoCityLanding = lazy(() => import("@/pages/seo/city-landing"));
 const BlogPage = lazy(() => import("@/pages/blog/index"));
 const BlogArticlePage = lazy(() => import("@/pages/blog/[slug]"));
+const BlogCategoryPage = lazy(() => import("@/pages/blog/categoria/[slug]"));
 
 import { PublicLayout } from "@/components/layout/public-layout";
 import { DashboardLayout } from "@/components/layout/dashboard-layout";
@@ -109,6 +110,7 @@ function Router() {
       <Route path="/seo/:type/:city" component={() => <PublicLayout><Suspense fallback={null}><SeoCityLanding /></Suspense></PublicLayout>} />
       <Route path="/seo/:type" component={() => <PublicLayout><Suspense fallback={null}><SeoLanding /></Suspense></PublicLayout>} />
 
+      <Route path="/blog/categoria/:slug" component={() => <PublicLayout><Suspense fallback={null}><BlogCategoryPage /></Suspense></PublicLayout>} />
       <Route path="/blog/:slug" component={() => <PublicLayout><Suspense fallback={null}><BlogArticlePage /></Suspense></PublicLayout>} />
       <Route path="/blog" component={() => <PublicLayout><Suspense fallback={null}><BlogPage /></Suspense></PublicLayout>} />
 

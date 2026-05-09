@@ -1,5 +1,5 @@
 import { Link } from "wouter";
-import { BLOG_ARTICLES, BLOG_LIST_TITLE, BLOG_LIST_DESCRIPTION } from "@/data/blog-data";
+import { BLOG_ARTICLES, BLOG_CATEGORIES, BLOG_LIST_TITLE, BLOG_LIST_DESCRIPTION } from "@/data/blog-data";
 import { SeoHead } from "@/components/seo-head";
 
 function formatDate(iso: string): string {
@@ -47,6 +47,23 @@ export default function BlogPage() {
           <p className="text-lg text-gray-500 max-w-2xl mx-auto">
             {BLOG_LIST_DESCRIPTION}
           </p>
+        </div>
+      </section>
+
+      <section className="border-b border-gray-100 bg-white py-4">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-5xl">
+          <div className="flex flex-wrap gap-2 items-center">
+            <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider mr-1">Categorie:</span>
+            {BLOG_CATEGORIES.map((cat) => (
+              <Link
+                key={cat.slug}
+                href={`/blog/categoria/${cat.slug}`}
+                className={`inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold transition-colors ${CATEGORY_COLORS[cat.name] ?? "bg-gray-100 text-gray-600"} border-transparent hover:opacity-80`}
+              >
+                {cat.name}
+              </Link>
+            ))}
+          </div>
         </div>
       </section>
 
