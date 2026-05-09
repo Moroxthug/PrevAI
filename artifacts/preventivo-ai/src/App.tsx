@@ -6,6 +6,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/not-found";
 
 import Home from "@/pages/home";
+import WhatsappPage from "@/pages/whatsapp";
 import SignInPage from "@/pages/sign-in";
 import SignUpPage from "@/pages/sign-up";
 import OnboardingPage from "@/pages/onboarding";
@@ -78,6 +79,7 @@ function Router() {
   return (
     <Switch>
       <Route path="/" component={() => <PublicLayout><Home /></PublicLayout>} />
+      <Route path="/whatsapp" component={() => <PublicLayout><WhatsappPage /></PublicLayout>} />
       <Route path="/sign-in" component={() => <PublicLayout><SignInPage /></PublicLayout>} />
       <Route path="/sign-in/:rest*" component={() => <PublicLayout><SignInPage /></PublicLayout>} />
       <Route path="/sign-up" component={() => <PublicLayout><SignUpPage /></PublicLayout>} />
