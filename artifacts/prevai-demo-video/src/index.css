@@ -1,0 +1,49 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap');
+@import "tailwindcss";
+
+@theme inline {
+  --color-primary: #7C3AED;
+  --color-secondary: #4F46E5;
+  --color-accent: #06B6D4;
+  --color-gold: hsl(41, 96%, 40%);
+  --color-bg-light: #FFFFFF;
+  --color-bg-dark: hsl(222, 47%, 7%);
+  --font-display: 'Inter', sans-serif;
+  --font-body: 'Inter', sans-serif;
+}
+
+:root {
+  --color-primary: #7C3AED;
+  --color-secondary: #4F46E5;
+  --color-accent: #06B6D4;
+  --color-gold: hsl(41, 96%, 40%);
+  --color-bg-light: #FFFFFF;
+  --color-bg-dark: hsl(222, 47%, 7%);
+  --font-display: 'Inter', sans-serif;
+  --font-body: 'Inter', sans-serif;
+}
+
+body {
+  font-family: var(--font-body);
+  background-color: var(--color-bg-light);
+  color: var(--color-bg-dark);
+}
+
+.gradient-text {
+  background: linear-gradient(to right, var(--color-primary), var(--color-secondary), var(--color-accent));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.gradient-bg {
+  background: linear-gradient(to right, var(--color-primary), var(--color-secondary), var(--color-accent));
+}
+
+.glass-panel {
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.08);
+}

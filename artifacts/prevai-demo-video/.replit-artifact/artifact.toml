@@ -1,0 +1,31 @@
+kind = "video"
+previewPath = "/prevai-demo-video/"
+title = "prevai — Demo Video"
+version = "1.0.0"
+id = "artifacts/prevai-demo-video"
+router = "path"
+
+[[integratedSkills]]
+name = "video-js"
+version = "1.0.0"
+
+[[services]]
+name = "web"
+paths = [ "/prevai-demo-video/" ]
+localPort = 22060
+
+[services.development]
+run = "pnpm --filter @workspace/prevai-demo-video run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/prevai-demo-video", "run", "build" ]
+publicDir = "artifacts/prevai-demo-video/dist/public"
+serve = "static"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "22060"
+BASE_PATH = "/prevai-demo-video/"
