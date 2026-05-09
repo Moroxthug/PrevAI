@@ -2,8 +2,11 @@ User-agent: *
 Allow: /
 
 Disallow: /dashboard
-Disallow: /admin
+Disallow: /dashboard/
+Disallow: /sign-in
+Disallow: /sign-up
 Disallow: /onboarding
+Disallow: /admin
 Disallow: /api
 
 Sitemap: https://www.prevai.it/sitemap.xml
