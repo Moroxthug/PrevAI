@@ -33,8 +33,8 @@ function useSwipeToClose(enabled: boolean, onClose: () => void) {
   const ref = useRef<HTMLDivElement>(null);
   const startX = useRef(0);
   const startY = useRef(0);
-
-  const handleClose = useCallback(onClose, [onClose]);
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
 
   useEffect(() => {
     if (!enabled) return;
@@ -51,17 +51,25 @@ function useSwipeToClose(enabled: boolean, onClose: () => void) {
       const dy = e.changedTouches[0]!.clientY - startY.current;
       // Swipe left: at least 50px, and clearly more horizontal than vertical
       if (dx < -50 && Math.abs(dx) > Math.abs(dy) * 1.5) {
-        handleClose();
+        onCloseRef.current();
       }
+    }
+
+    function onTouchCancel() {
+      // Reset gesture state if the OS interrupts the touch (e.g. incoming call on iOS)
+      startX.current = 0;
+      startY.current = 0;
     }
 
     el.addEventListener("touchstart", onTouchStart, { passive: true });
     el.addEventListener("touchend", onTouchEnd, { passive: true });
+    el.addEventListener("touchcancel", onTouchCancel, { passive: true });
     return () => {
       el.removeEventListener("touchstart", onTouchStart);
       el.removeEventListener("touchend", onTouchEnd);
+      el.removeEventListener("touchcancel", onTouchCancel);
     };
-  }, [enabled, handleClose]);
+  }, [enabled]);
 
   return ref;
 }
