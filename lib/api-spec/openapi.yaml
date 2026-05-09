@@ -19,6 +19,8 @@ tags:
     description: Object storage upload and serving endpoints
   - name: catalog
     description: Price catalog management
+  - name: whatsapp
+    description: WhatsApp integration
 paths:
   /healthz:
     get:
@@ -500,6 +502,70 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/CatalogItem"
+
+  /whatsapp/status:
+    get:
+      operationId: getWhatsappStatus
+      tags: [whatsapp]
+      summary: Get WhatsApp connection status for the authenticated user
+      responses:
+        "200":
+          description: Connection status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WhatsappStatus"
+
+  /whatsapp/connect:
+    post:
+      operationId: connectWhatsapp
+      tags: [whatsapp]
+      summary: Generate an OTP to link a WhatsApp number to the user account
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/WhatsappConnectBody"
+      responses:
+        "200":
+          description: OTP generated and stored
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WhatsappConnectResult"
+
+  /whatsapp/disconnect:
+    delete:
+      operationId: disconnectWhatsapp
+      tags: [whatsapp]
+      summary: Unlink WhatsApp from the user account
+      responses:
+        "200":
+          description: Disconnected
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResult"
+
+  /whatsapp/toggle:
+    patch:
+      operationId: toggleWhatsapp
+      tags: [whatsapp]
+      summary: Enable or disable the WhatsApp integration
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/WhatsappToggleBody"
+      responses:
+        "200":
+          description: Toggled
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResult"
 
   /catalog/import-from-quotes:
     post:
@@ -1203,6 +1269,59 @@ components:
       required:
         - imported
         - skipped
+
+    WhatsappStatus:
+      type: object
+      properties:
+        connected:
+          type: boolean
+        phoneNumber:
+          type: string
+          nullable: true
+        isEnabled:
+          type: boolean
+          nullable: true
+        businessNumber:
+          type: string
+      required:
+        - connected
+
+    WhatsappConnectBody:
+      type: object
+      properties:
+        phoneNumber:
+          type: string
+      required:
+        - phoneNumber
+
+    WhatsappConnectResult:
+      type: object
+      properties:
+        otp:
+          type: string
+        phoneNumber:
+          type: string
+        businessNumber:
+          type: string
+      required:
+        - otp
+        - phoneNumber
+
+    WhatsappToggleBody:
+      type: object
+      properties:
+        isEnabled:
+          type: boolean
+      required:
+        - isEnabled
+
+    SuccessResult:
+      type: object
+      properties:
+        success:
+          type: boolean
+      required:
+        - success
 
     TrialStatus:
       type: object

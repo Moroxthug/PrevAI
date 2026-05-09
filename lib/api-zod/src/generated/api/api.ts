@@ -901,6 +901,47 @@ export const CreateCatalogItemBody = zod.object({
 });
 
 /**
+ * @summary Get WhatsApp connection status for the authenticated user
+ */
+export const GetWhatsappStatusResponse = zod.object({
+  connected: zod.boolean(),
+  phoneNumber: zod.string().nullish(),
+  isEnabled: zod.boolean().nullish(),
+  businessNumber: zod.string().optional(),
+});
+
+/**
+ * @summary Generate an OTP to link a WhatsApp number to the user account
+ */
+export const ConnectWhatsappBody = zod.object({
+  phoneNumber: zod.string(),
+});
+
+export const ConnectWhatsappResponse = zod.object({
+  otp: zod.string(),
+  phoneNumber: zod.string(),
+  businessNumber: zod.string().optional(),
+});
+
+/**
+ * @summary Unlink WhatsApp from the user account
+ */
+export const DisconnectWhatsappResponse = zod.object({
+  success: zod.boolean(),
+});
+
+/**
+ * @summary Enable or disable the WhatsApp integration
+ */
+export const ToggleWhatsappBody = zod.object({
+  isEnabled: zod.boolean(),
+});
+
+export const ToggleWhatsappResponse = zod.object({
+  success: zod.boolean(),
+});
+
+/**
  * @summary Import unique price items from existing quotes into the catalog
  */
 export const ImportCatalogFromQuotesResponse = zod.object({

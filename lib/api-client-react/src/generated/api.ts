@@ -36,6 +36,7 @@ import type {
   QuoteStats,
   RegenerateQuoteBody,
   SubscriptionInfo,
+  SuccessResult,
   SuggestItemDescriptionBody,
   SuggestItemDescriptionResult,
   TrialStatus,
@@ -46,6 +47,10 @@ import type {
   UploadBusinessProfileLogoBody,
   UploadUrlRequest,
   UploadUrlResponse,
+  WhatsappConnectBody,
+  WhatsappConnectResult,
+  WhatsappStatus,
+  WhatsappToggleBody,
 } from "./api.schemas";
 
 import { customFetch } from "../custom-fetch";
@@ -2365,6 +2370,334 @@ export const useCreateCatalogItem = <
   TContext
 > => {
   return useMutation(getCreateCatalogItemMutationOptions(options));
+};
+
+/**
+ * @summary Get WhatsApp connection status for the authenticated user
+ */
+export const getGetWhatsappStatusUrl = () => {
+  return `/api/whatsapp/status`;
+};
+
+export const getWhatsappStatus = async (
+  options?: RequestInit,
+): Promise<WhatsappStatus> => {
+  return customFetch<WhatsappStatus>(getGetWhatsappStatusUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetWhatsappStatusQueryKey = () => {
+  return [`/api/whatsapp/status`] as const;
+};
+
+export const getGetWhatsappStatusQueryOptions = <
+  TData = Awaited<ReturnType<typeof getWhatsappStatus>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getWhatsappStatus>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetWhatsappStatusQueryKey();
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof getWhatsappStatus>>
+  > = ({ signal }) => getWhatsappStatus({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getWhatsappStatus>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetWhatsappStatusQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getWhatsappStatus>>
+>;
+export type GetWhatsappStatusQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Get WhatsApp connection status for the authenticated user
+ */
+
+export function useGetWhatsappStatus<
+  TData = Awaited<ReturnType<typeof getWhatsappStatus>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getWhatsappStatus>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetWhatsappStatusQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Generate an OTP to link a WhatsApp number to the user account
+ */
+export const getConnectWhatsappUrl = () => {
+  return `/api/whatsapp/connect`;
+};
+
+export const connectWhatsapp = async (
+  whatsappConnectBody: WhatsappConnectBody,
+  options?: RequestInit,
+): Promise<WhatsappConnectResult> => {
+  return customFetch<WhatsappConnectResult>(getConnectWhatsappUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(whatsappConnectBody),
+  });
+};
+
+export const getConnectWhatsappMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof connectWhatsapp>>,
+    TError,
+    { data: BodyType<WhatsappConnectBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof connectWhatsapp>>,
+  TError,
+  { data: BodyType<WhatsappConnectBody> },
+  TContext
+> => {
+  const mutationKey = ["connectWhatsapp"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof connectWhatsapp>>,
+    { data: BodyType<WhatsappConnectBody> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return connectWhatsapp(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type ConnectWhatsappMutationResult = NonNullable<
+  Awaited<ReturnType<typeof connectWhatsapp>>
+>;
+export type ConnectWhatsappMutationBody = BodyType<WhatsappConnectBody>;
+export type ConnectWhatsappMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Generate an OTP to link a WhatsApp number to the user account
+ */
+export const useConnectWhatsapp = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof connectWhatsapp>>,
+    TError,
+    { data: BodyType<WhatsappConnectBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof connectWhatsapp>>,
+  TError,
+  { data: BodyType<WhatsappConnectBody> },
+  TContext
+> => {
+  return useMutation(getConnectWhatsappMutationOptions(options));
+};
+
+/**
+ * @summary Unlink WhatsApp from the user account
+ */
+export const getDisconnectWhatsappUrl = () => {
+  return `/api/whatsapp/disconnect`;
+};
+
+export const disconnectWhatsapp = async (
+  options?: RequestInit,
+): Promise<SuccessResult> => {
+  return customFetch<SuccessResult>(getDisconnectWhatsappUrl(), {
+    ...options,
+    method: "DELETE",
+  });
+};
+
+export const getDisconnectWhatsappMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof disconnectWhatsapp>>,
+    TError,
+    void,
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof disconnectWhatsapp>>,
+  TError,
+  void,
+  TContext
+> => {
+  const mutationKey = ["disconnectWhatsapp"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof disconnectWhatsapp>>,
+    void
+  > = () => {
+    return disconnectWhatsapp(requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type DisconnectWhatsappMutationResult = NonNullable<
+  Awaited<ReturnType<typeof disconnectWhatsapp>>
+>;
+
+export type DisconnectWhatsappMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Unlink WhatsApp from the user account
+ */
+export const useDisconnectWhatsapp = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof disconnectWhatsapp>>,
+    TError,
+    void,
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof disconnectWhatsapp>>,
+  TError,
+  void,
+  TContext
+> => {
+  return useMutation(getDisconnectWhatsappMutationOptions(options));
+};
+
+/**
+ * @summary Enable or disable the WhatsApp integration
+ */
+export const getToggleWhatsappUrl = () => {
+  return `/api/whatsapp/toggle`;
+};
+
+export const toggleWhatsapp = async (
+  whatsappToggleBody: WhatsappToggleBody,
+  options?: RequestInit,
+): Promise<SuccessResult> => {
+  return customFetch<SuccessResult>(getToggleWhatsappUrl(), {
+    ...options,
+    method: "PATCH",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(whatsappToggleBody),
+  });
+};
+
+export const getToggleWhatsappMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof toggleWhatsapp>>,
+    TError,
+    { data: BodyType<WhatsappToggleBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof toggleWhatsapp>>,
+  TError,
+  { data: BodyType<WhatsappToggleBody> },
+  TContext
+> => {
+  const mutationKey = ["toggleWhatsapp"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof toggleWhatsapp>>,
+    { data: BodyType<WhatsappToggleBody> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return toggleWhatsapp(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type ToggleWhatsappMutationResult = NonNullable<
+  Awaited<ReturnType<typeof toggleWhatsapp>>
+>;
+export type ToggleWhatsappMutationBody = BodyType<WhatsappToggleBody>;
+export type ToggleWhatsappMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Enable or disable the WhatsApp integration
+ */
+export const useToggleWhatsapp = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof toggleWhatsapp>>,
+    TError,
+    { data: BodyType<WhatsappToggleBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof toggleWhatsapp>>,
+  TError,
+  { data: BodyType<WhatsappToggleBody> },
+  TContext
+> => {
+  return useMutation(getToggleWhatsappMutationOptions(options));
 };
 
 /**

@@ -349,6 +349,31 @@ export interface ImportCatalogResult {
   skipped: number;
 }
 
+export interface WhatsappStatus {
+  connected: boolean;
+  phoneNumber?: string | null;
+  isEnabled?: boolean | null;
+  businessNumber?: string;
+}
+
+export interface WhatsappConnectBody {
+  phoneNumber: string;
+}
+
+export interface WhatsappConnectResult {
+  otp: string;
+  phoneNumber: string;
+  businessNumber?: string;
+}
+
+export interface WhatsappToggleBody {
+  isEnabled: boolean;
+}
+
+export interface SuccessResult {
+  success: boolean;
+}
+
 export interface TrialStatus {
   isTrialActive: boolean;
   trialStartedAt?: string | null;

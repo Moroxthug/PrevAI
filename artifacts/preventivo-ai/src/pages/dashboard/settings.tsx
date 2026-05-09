@@ -1,14 +1,19 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { useGetBusinessProfile, useUpdateBusinessProfile, useGetSubscription, useCreateCustomerPortalSession, getGetBusinessProfileQueryKey } from "@workspace/api-client-react";
+import {
+  useGetBusinessProfile, useUpdateBusinessProfile, useGetSubscription,
+  useCreateCustomerPortalSession, getGetBusinessProfileQueryKey,
+  useGetWhatsappStatus, useConnectWhatsapp, useDisconnectWhatsapp,
+  useToggleWhatsapp, getGetWhatsappStatusQueryKey,
+} from "@workspace/api-client-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Save, Upload, X, ImageIcon, Crown, Zap, CheckCircle2, XCircle, CalendarDays, BarChart3, AlertCircle, RefreshCw, ArrowUpRight } from "lucide-react";
+import { Loader2, Save, Upload, X, ImageIcon, Crown, Zap, CheckCircle2, XCircle, CalendarDays, BarChart3, AlertCircle, RefreshCw, ArrowUpRight, MessageCircle, Phone, Copy, Link2Off } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useQueryClient } from "@tanstack/react-query";
 import { Badge } from "@/components/ui/badge";
@@ -384,17 +389,293 @@ function BillingTab() {
   );
 }
 
+function WhatsappTab() {
+  const { data: status, isLoading, refetch } = useGetWhatsappStatus();
+  const connectWa = useConnectWhatsapp();
+  const disconnectWa = useDisconnectWhatsapp();
+  const toggleWa = useToggleWhatsapp();
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  const [phoneInput, setPhoneInput] = useState("");
+  const [otpState, setOtpState] = useState<{ otp: string; phoneNumber: string; businessNumber: string } | null>(null);
+  const [copied, setCopied] = useState(false);
+
+  const isConnected = status?.connected ?? false;
+  const isEnabled = status?.isEnabled ?? true;
+
+  useEffect(() => {
+    if (!otpState) return;
+    const interval = setInterval(async () => {
+      const result = await refetch();
+      if (result.data?.connected) {
+        setOtpState(null);
+        queryClient.invalidateQueries({ queryKey: getGetWhatsappStatusQueryKey() });
+      }
+    }, 3000);
+    return () => clearInterval(interval);
+  }, [otpState, refetch, queryClient]);
+
+  const handleConnect = () => {
+    if (!phoneInput.trim()) return;
+    connectWa.mutate(
+      { data: { phoneNumber: phoneInput.trim() } },
+      {
+        onSuccess: (result) => {
+          setOtpState({ otp: result.otp, phoneNumber: result.phoneNumber, businessNumber: result.businessNumber ?? "" });
+        },
+        onError: (err) => {
+          const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error ?? "Errore durante la connessione";
+          toast({ title: msg, variant: "destructive" });
+        },
+      }
+    );
+  };
+
+  const handleDisconnect = () => {
+    disconnectWa.mutate(undefined, {
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: getGetWhatsappStatusQueryKey() });
+        toast({ title: "WhatsApp scollegato" });
+      },
+      onError: () => toast({ title: "Errore durante la disconnessione", variant: "destructive" }),
+    });
+  };
+
+  const handleToggle = () => {
+    toggleWa.mutate(
+      { data: { isEnabled: !isEnabled } },
+      {
+        onSuccess: () => {
+          queryClient.invalidateQueries({ queryKey: getGetWhatsappStatusQueryKey() });
+          toast({ title: isEnabled ? "Integrazione disabilitata" : "Integrazione abilitata" });
+        },
+        onError: () => toast({ title: "Errore", variant: "destructive" }),
+      }
+    );
+  };
+
+  const handleCopy = async (text: string) => {
+    await navigator.clipboard.writeText(text);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  if (isLoading) return <Skeleton className="h-48 w-full rounded-2xl" />;
+
+  if (isConnected) {
+    return (
+      <div className="space-y-4">
+        <Card className="border-emerald-200 bg-gradient-to-br from-emerald-50 to-green-50">
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between gap-3 flex-wrap">
+              <div className="flex items-center gap-3">
+                <div className="h-11 w-11 rounded-xl bg-emerald-100 flex items-center justify-center">
+                  <MessageCircle className="h-6 w-6 text-emerald-600" />
+                </div>
+                <div>
+                  <CardTitle className="text-lg">WhatsApp Collegato</CardTitle>
+                  <p className="text-sm text-muted-foreground mt-0.5 flex items-center gap-1.5">
+                    <Phone className="h-3.5 w-3.5" />
+                    +{status?.phoneNumber}
+                  </p>
+                </div>
+              </div>
+              <Badge
+                className={cn(
+                  "text-xs",
+                  isEnabled
+                    ? "bg-emerald-100 text-emerald-700 border-emerald-200"
+                    : "bg-gray-100 text-gray-500 border-gray-200"
+                )}
+                variant="outline"
+              >
+                {isEnabled ? <><CheckCircle2 className="h-3 w-3 mr-1" /> Attivo</> : <><XCircle className="h-3 w-3 mr-1" /> Disabilitato</>}
+              </Badge>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="bg-white/70 rounded-xl p-4 border border-emerald-100 text-sm text-muted-foreground space-y-1.5">
+              <p className="font-semibold text-foreground mb-2">Come usare l'integrazione:</p>
+              <p>📝 Invia una <strong>descrizione del lavoro</strong> in testo al numero prevai</p>
+              <p>🎙️ Invia un <strong>messaggio vocale</strong> — viene trascritto automaticamente</p>
+              <p>📷 Invia una <strong>foto degli appunti</strong> — prevai la legge e genera il preventivo</p>
+              <p>🔗 Ricevi il link diretto al preventivo su prevai.it</p>
+            </div>
+            <div className="flex flex-wrap gap-3 pt-1">
+              <Button
+                variant={isEnabled ? "outline" : "default"}
+                size="sm"
+                onClick={handleToggle}
+                disabled={toggleWa.isPending}
+                className="gap-2"
+              >
+                {toggleWa.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+                {isEnabled ? "Disabilita" : "Abilita"} integrazione
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleDisconnect}
+                disabled={disconnectWa.isPending}
+                className="gap-2 text-destructive hover:text-destructive border-destructive/30 hover:bg-destructive/5"
+              >
+                {disconnectWa.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Link2Off className="h-4 w-4" />}
+                Scollega WhatsApp
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  if (otpState) {
+    const waLink = `https://wa.me/${otpState.businessNumber}?text=${encodeURIComponent(otpState.otp)}`;
+    return (
+      <Card className="border-violet-200">
+        <CardHeader>
+          <div className="flex items-center gap-3">
+            <div className="h-11 w-11 rounded-xl bg-violet-100 flex items-center justify-center">
+              <MessageCircle className="h-6 w-6 text-violet-600" />
+            </div>
+            <div>
+              <CardTitle>Invia il codice su WhatsApp</CardTitle>
+              <CardDescription className="mt-0.5">Apri WhatsApp e invia questo codice al numero prevai</CardDescription>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-5">
+          <div className="bg-violet-50 border border-violet-200 rounded-xl p-5 text-center space-y-2">
+            <p className="text-xs font-medium text-violet-500 uppercase tracking-wider">Il tuo codice di collegamento</p>
+            <div className="flex items-center justify-center gap-3">
+              <span className="text-4xl font-bold tracking-[0.2em] text-violet-700 font-mono">{otpState.otp}</span>
+              <button
+                onClick={() => handleCopy(otpState.otp)}
+                className="p-2 rounded-lg hover:bg-violet-100 text-violet-500 transition-colors"
+                title="Copia codice"
+              >
+                {copied ? <CheckCircle2 className="h-5 w-5 text-emerald-500" /> : <Copy className="h-5 w-5" />}
+              </button>
+            </div>
+            <p className="text-xs text-violet-400">Valido 15 minuti</p>
+          </div>
+
+          <div className="space-y-2.5">
+            <p className="text-sm font-medium">Come collegare il tuo account:</p>
+            <ol className="space-y-2 text-sm text-muted-foreground">
+              <li className="flex gap-2.5">
+                <span className="flex-shrink-0 w-5 h-5 rounded-full bg-violet-100 text-violet-600 text-xs font-bold flex items-center justify-center">1</span>
+                Salva il numero prevai in rubrica
+              </li>
+              <li className="flex gap-2.5">
+                <span className="flex-shrink-0 w-5 h-5 rounded-full bg-violet-100 text-violet-600 text-xs font-bold flex items-center justify-center">2</span>
+                Aprilo su WhatsApp e invia <strong className="font-mono text-gray-900">{otpState.otp}</strong>
+              </li>
+              <li className="flex gap-2.5">
+                <span className="flex-shrink-0 w-5 h-5 rounded-full bg-violet-100 text-violet-600 text-xs font-bold flex items-center justify-center">3</span>
+                Ricevi conferma e inizia a generare preventivi direttamente da WhatsApp!
+              </li>
+            </ol>
+          </div>
+
+          <div className="flex flex-col sm:flex-row gap-3">
+            <a
+              href={waLink}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="btn-gradient inline-flex h-10 items-center justify-center px-5 text-sm font-semibold gap-2 rounded-lg"
+            >
+              <MessageCircle className="h-4 w-4" />
+              Apri WhatsApp
+            </a>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setOtpState(null)}
+              className="text-muted-foreground"
+            >
+              Annulla
+            </Button>
+          </div>
+
+          <div className="flex items-center gap-2 text-xs text-muted-foreground bg-gray-50 rounded-lg px-3 py-2">
+            <Loader2 className="h-3.5 w-3.5 animate-spin text-violet-500" />
+            In attesa del codice su WhatsApp...
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      <Card>
+        <CardHeader>
+          <div className="flex items-center gap-3">
+            <div className="h-11 w-11 rounded-xl bg-gray-100 flex items-center justify-center">
+              <MessageCircle className="h-6 w-6 text-gray-500" />
+            </div>
+            <div>
+              <CardTitle>Collega WhatsApp</CardTitle>
+              <CardDescription className="mt-0.5">Genera preventivi direttamente da WhatsApp — testo, vocale o foto</CardDescription>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-5">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            {[
+              { icon: "📝", label: "Testo", desc: "Scrivi la descrizione del lavoro" },
+              { icon: "🎙️", label: "Vocale", desc: "Registra un messaggio vocale" },
+              { icon: "📷", label: "Foto", desc: "Fotografa i tuoi appunti" },
+            ].map(item => (
+              <div key={item.label} className="bg-gray-50 rounded-xl p-3 text-center">
+                <div className="text-2xl mb-1">{item.icon}</div>
+                <div className="text-sm font-medium">{item.label}</div>
+                <div className="text-xs text-muted-foreground mt-0.5">{item.desc}</div>
+              </div>
+            ))}
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Il tuo numero WhatsApp</label>
+            <div className="flex gap-2">
+              <Input
+                placeholder="+39 333 1234567"
+                value={phoneInput}
+                onChange={(e) => setPhoneInput(e.target.value)}
+                onKeyDown={(e) => { if (e.key === "Enter" && phoneInput.trim()) handleConnect(); }}
+                className="flex-1"
+              />
+              <Button
+                onClick={handleConnect}
+                disabled={!phoneInput.trim() || connectWa.isPending}
+                className="gap-2 btn-gradient"
+              >
+                {connectWa.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+                Collega
+              </Button>
+            </div>
+            <p className="text-xs text-muted-foreground">Usa il formato internazionale, es: +39 333 1234567</p>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
 export default function SettingsPage() {
   const search = useSearch();
   const params = new URLSearchParams(search);
   const isAccountPath = typeof window !== "undefined" && window.location.pathname.includes("/account");
   const tabFromParam = params.get("tab");
-  const defaultTab = (isAccountPath || tabFromParam === "account") ? "account" : "billing";
-  const [activeTab, setActiveTab] = useState<"account" | "billing">(defaultTab as "account" | "billing");
+  const defaultTab = (isAccountPath || tabFromParam === "account") ? "account" : tabFromParam === "whatsapp" ? "whatsapp" : "billing";
+  const [activeTab, setActiveTab] = useState<"account" | "billing" | "whatsapp">(defaultTab as "account" | "billing" | "whatsapp");
 
   const TABS = [
     { id: "account" as const, label: "Account Aziendale" },
     { id: "billing" as const, label: "Piano & Fatturazione" },
+    { id: "whatsapp" as const, label: "WhatsApp" },
   ];
 
   return (
@@ -422,7 +703,7 @@ export default function SettingsPage() {
         ))}
       </div>
 
-      {activeTab === "account" ? <AccountTab /> : <BillingTab />}
+      {activeTab === "account" ? <AccountTab /> : activeTab === "whatsapp" ? <WhatsappTab /> : <BillingTab />}
     </div>
   );
 }
