@@ -682,6 +682,7 @@ function buildCityBodyHtml(s: SectorData, city: CityData): string {
 
   const sContext = buildCityContextBlock(city, s);
   const sRelated = buildRelatedSectorsSection(s, `Scopri anche: preventivi per`);
+  const sApprofondimenti = buildApprofondimentiSection(s.slug);
 
   const ctaTexts = getCityCtaTexts(getCityCtaVariant(s, city), cityName);
   const ctaHeading =
@@ -716,6 +717,7 @@ function buildCityBodyHtml(s: SectorData, city: CityData): string {
   ${sContext}
   ${sNearby}
   ${sRelated}
+  ${sApprofondimenti}
   ${sCta}
 </div>`;
 }

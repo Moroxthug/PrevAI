@@ -1,7 +1,8 @@
 import { useEffect } from "react";
 import { useParams } from "wouter";
-import { ArrowRight, CheckCircle2, MapPin, BarChart2 } from "lucide-react";
+import { ArrowRight, CheckCircle2, MapPin, BarChart2, BookOpen } from "lucide-react";
 import { SECTORS, DEFAULT_SECTOR, CITIES_BY_SLUG, getCityTitle, getCityDesc } from "@/data/seo-data";
+import { BLOG_ARTICLES, SECTOR_ARTICLES } from "@/data/blog-data";
 import {
   getCityIntro,
   getCityFaqItems,
@@ -326,6 +327,52 @@ export default function SeoCityLanding() {
           </div>
         </section>
       )}
+
+      {/* ── Approfondimenti ──────────────────────────────────── */}
+      {(() => {
+        const slugs = SECTOR_ARTICLES[s.slug];
+        if (!slugs || slugs.length === 0) return null;
+        const articles = slugs
+          .map((slug) => BLOG_ARTICLES.find((a) => a.slug === slug))
+          .filter((a): a is (typeof BLOG_ARTICLES)[number] => a !== undefined)
+          .slice(0, 3);
+        if (articles.length === 0) return null;
+        return (
+          <section className="py-14 bg-gray-50 border-t border-gray-100">
+            <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-4xl">
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center gap-3">
+                  <div
+                    className="h-9 w-9 rounded-xl flex items-center justify-center text-white shrink-0"
+                    style={{ background: "linear-gradient(135deg, #7C3AED, #06B6D4)" }}
+                  >
+                    <BookOpen className="h-4 w-4" />
+                  </div>
+                  <h2 className="text-base font-semibold text-gray-900">Approfondimenti</h2>
+                </div>
+                <a href="/blog" className="text-xs font-semibold text-violet-600 hover:text-violet-700 transition-colors">
+                  Tutti gli articoli →
+                </a>
+              </div>
+              <div className="grid sm:grid-cols-3 gap-4">
+                {articles.map((a) => (
+                  <a
+                    key={a.slug}
+                    href={`/blog/${a.slug}`}
+                    className="group flex flex-col bg-white rounded-xl border border-gray-100 hover:border-violet-200 hover:shadow-sm transition-all duration-200 p-5"
+                  >
+                    <span className="text-xs font-semibold text-violet-700 mb-2">{a.category}</span>
+                    <span className="text-sm font-semibold text-gray-900 group-hover:text-violet-700 transition-colors leading-snug mb-3">
+                      {a.title}
+                    </span>
+                    <span className="text-xs text-gray-400 mt-auto">{a.readingTimeMin} min di lettura</span>
+                  </a>
+                ))}
+              </div>
+            </div>
+          </section>
+        );
+      })()}
 
       {/* ── CTA finale ───────────────────────────────────────── */}
       <section className="py-24 bg-gray-50">
