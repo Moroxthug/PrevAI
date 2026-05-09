@@ -158,6 +158,30 @@ export class ObjectStorageService {
   }
 
   /**
+   * Delete a private object by its subPath (e.g. "whatsapp-pdfs/uuid.pdf").
+   * Best-effort: does not throw if the object is already gone.
+   */
+  async deleteObjectBuffer(subPath: string): Promise<void> {
+    const privateObjectDir = this.getPrivateObjectDir();
+    const fullPath = `${privateObjectDir}/${subPath}`;
+    const { bucketName, objectName } = parseObjectPath(fullPath);
+    const bucket = objectStorageClient.bucket(bucketName);
+    const file = bucket.file(objectName);
+    await file.delete({ ignoreNotFound: true });
+  }
+
+  /**
+   * Generate a presigned GET URL for a private object (valid for ttlSec seconds).
+   * subPath should NOT include the private object dir prefix — just e.g. "uploads/<uuid>".
+   */
+  async getPresignedGetURL(subPath: string, ttlSec: number): Promise<string> {
+    const privateObjectDir = this.getPrivateObjectDir();
+    const fullPath = `${privateObjectDir}/${subPath}`;
+    const { bucketName, objectName } = parseObjectPath(fullPath);
+    return signObjectURL({ bucketName, objectName, method: "GET", ttlSec });
+  }
+
+  /**
    * Upload a buffer to the first PUBLIC_OBJECT_SEARCH_PATHS entry.
    * Returns the subPath used to serve via /storage/public-objects/{subPath}.
    */

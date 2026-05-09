@@ -4,8 +4,13 @@ import { db, whatsappConnectionsTable, whatsappOtpTable, businessProfilesTable, 
 import { eq, and, gt, gte, sql } from "drizzle-orm";
 import { logger } from "../lib/logger.js";
 import { generateQuoteFromText } from "../lib/generateQuoteFromText.js";
+import { generateQuoteWhatsappPdfBuffer } from "../lib/generateQuoteWhatsappPdfBuffer.js";
+import { ObjectStorageService } from "../lib/objectStorage.js";
 import { openai } from "@workspace/integrations-openai-ai-server";
 import { getBaseUrl } from "../lib/baseUrl.js";
+import { randomUUID } from "crypto";
+
+const objectStorage = new ObjectStorageService();
 
 const router = Router();
 
@@ -37,6 +42,99 @@ async function sendWhatsappText(to: string, text: string): Promise<void> {
   if (!res.ok) {
     const err = await res.text();
     logger.error({ err, to }, "WhatsApp send failed");
+  }
+}
+
+async function uploadMetaMedia(pdfBuffer: Buffer): Promise<string | null> {
+  if (!WA_TOKEN || !WA_PHONE_ID) return null;
+  try {
+    const formData = new FormData();
+    formData.append("messaging_product", "whatsapp");
+    formData.append("type", "application/pdf");
+    const pdfArrayBuffer = pdfBuffer.buffer.slice(pdfBuffer.byteOffset, pdfBuffer.byteOffset + pdfBuffer.byteLength) as ArrayBuffer;
+    formData.append(
+      "file",
+      new Blob([pdfArrayBuffer], { type: "application/pdf" }),
+      "preventivo.pdf"
+    );
+    const res = await fetch(`https://graph.facebook.com/v20.0/${WA_PHONE_ID}/media`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${WA_TOKEN}` },
+      body: formData,
+    });
+    if (!res.ok) {
+      const err = await res.text();
+      logger.error({ err }, "WhatsApp media upload failed");
+      return null;
+    }
+    const json = await res.json() as { id?: string };
+    return json.id ?? null;
+  } catch (err) {
+    logger.error({ err }, "WhatsApp media upload error");
+    return null;
+  }
+}
+
+async function sendWhatsappDocument(to: string, pdfBuffer: Buffer, filename: string, caption: string): Promise<void> {
+  if (!WA_TOKEN || !WA_PHONE_ID) {
+    logger.warn("WhatsApp env vars not configured — skipping document send");
+    return;
+  }
+
+  const mediaId = await uploadMetaMedia(pdfBuffer);
+
+  if (mediaId) {
+    const res = await fetch(`https://graph.facebook.com/v20.0/${WA_PHONE_ID}/messages`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${WA_TOKEN}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        messaging_product: "whatsapp",
+        to,
+        type: "document",
+        document: { id: mediaId, filename, caption },
+      }),
+    });
+    if (res.ok) return;
+    const sendErr = await res.text();
+    logger.error({ sendErr, to }, "WhatsApp document send (media-id) failed — trying presigned-link fallback");
+    // Fall through to the presigned-link fallback below
+  }
+
+  // Fallback: upload to Object Storage and use a presigned GET link (TTL 1 h).
+  // The object is deleted immediately after the message is accepted by Meta so
+  // it doesn't accumulate in storage.
+  let subPath: string | null = null;
+  try {
+    subPath = `whatsapp-pdfs/${randomUUID()}.pdf`;
+    await objectStorage.uploadObjectBuffer({ subPath, buffer: pdfBuffer, contentType: "application/pdf" });
+    const presignedUrl = await objectStorage.getPresignedGetURL(subPath, 3600);
+    const res = await fetch(`https://graph.facebook.com/v20.0/${WA_PHONE_ID}/messages`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${WA_TOKEN}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        messaging_product: "whatsapp",
+        to,
+        type: "document",
+        document: { link: presignedUrl, filename, caption },
+      }),
+    });
+    if (!res.ok) {
+      const err = await res.text();
+      logger.error({ err, to }, "WhatsApp document send (link fallback) failed");
+    } else {
+      // Async best-effort cleanup of the temporary object (fire-and-forget)
+      void objectStorage.deleteObjectBuffer(subPath).catch(delErr =>
+        logger.warn({ delErr, subPath }, "WhatsApp PDF cleanup failed")
+      );
+    }
+  } catch (storageErr) {
+    logger.error({ storageErr }, "WhatsApp PDF storage fallback failed — skipping document");
   }
 }
 
@@ -255,11 +353,31 @@ router.post("/whatsapp/webhook", async (req, res) => {
       `📁 Capitoli: ${capitoli.length}`,
       `💶 Totale: *${totale}* (IVA ${quote.ivaPercentuale}% inclusa)`,
       ``,
-      `👉 Visualizza e scarica il PDF su:`,
+      `👉 Visualizza e modifica su:`,
       quoteUrl,
     ].join("\n");
 
     await sendWhatsappText(from, replyText);
+
+    // Generate PDF and send as document attachment
+    try {
+      const [profileRow] = await db
+        .select()
+        .from(businessProfilesTable)
+        .where(eq(businessProfilesTable.userId, connection.userId));
+
+      const pdfBuffer = await generateQuoteWhatsappPdfBuffer(quote, profileRow ?? null);
+      const safeTitle = (quote.titoloPreventivoRiga2 ?? "preventivo")
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, "-")
+        .slice(0, 60);
+      const filename = `${safeTitle}.pdf`;
+      const caption = `📄 PDF del preventivo — ${quote.titoloPreventivoRiga2 ?? ""}`.trim();
+
+      await sendWhatsappDocument(from, pdfBuffer, filename, caption);
+    } catch (pdfErr) {
+      logger.error({ pdfErr }, "WhatsApp PDF generation/send failed — falling back to link only");
+    }
   } catch (err) {
     logger.error({ err }, "WhatsApp webhook handler error");
   }
