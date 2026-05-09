@@ -520,7 +520,7 @@ paths:
     post:
       operationId: connectWhatsapp
       tags: [whatsapp]
-      summary: Generate an OTP to link a WhatsApp number to the user account
+      summary: Generate an OTP and send it to the user's WhatsApp number
       requestBody:
         required: true
         content:
@@ -529,11 +529,30 @@ paths:
               $ref: "#/components/schemas/WhatsappConnectBody"
       responses:
         "200":
-          description: OTP generated and stored
+          description: OTP sent via WhatsApp
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/WhatsappConnectResult"
+
+  /whatsapp/verify:
+    post:
+      operationId: verifyWhatsapp
+      tags: [whatsapp]
+      summary: Verify the OTP entered in the UI and link the WhatsApp number
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/WhatsappVerifyBody"
+      responses:
+        "200":
+          description: Account linked
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResult"
 
   /whatsapp/disconnect:
     delete:
@@ -1297,15 +1316,24 @@ components:
     WhatsappConnectResult:
       type: object
       properties:
-        otp:
-          type: string
+        sent:
+          type: boolean
         phoneNumber:
           type: string
-        businessNumber:
+      required:
+        - sent
+        - phoneNumber
+
+    WhatsappVerifyBody:
+      type: object
+      properties:
+        phoneNumber:
+          type: string
+        otp:
           type: string
       required:
-        - otp
         - phoneNumber
+        - otp
 
     WhatsappToggleBody:
       type: object

@@ -6,9 +6,10 @@ import {
 } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
+import { authUsersTable } from "./auth";
 
 export const whatsappConnectionsTable = pgTable("whatsapp_connections", {
-  userId: text("user_id").primaryKey(),
+  userId: text("user_id").primaryKey().references(() => authUsersTable.id, { onDelete: "cascade" }),
   phoneNumber: text("phone_number").notNull().unique(),
   isEnabled: boolean("is_enabled").notNull().default(true),
   connectedAt: timestamp("connected_at", { withTimezone: true }).notNull().defaultNow(),
@@ -17,7 +18,7 @@ export const whatsappConnectionsTable = pgTable("whatsapp_connections", {
 export const whatsappOtpTable = pgTable("whatsapp_otp", {
   phoneNumber: text("phone_number").primaryKey(),
   otp: text("otp").notNull(),
-  userId: text("user_id").notNull(),
+  userId: text("user_id").notNull().references(() => authUsersTable.id, { onDelete: "cascade" }),
   expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });

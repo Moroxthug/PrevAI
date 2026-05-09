@@ -911,16 +911,27 @@ export const GetWhatsappStatusResponse = zod.object({
 });
 
 /**
- * @summary Generate an OTP to link a WhatsApp number to the user account
+ * @summary Generate an OTP and send it to the user's WhatsApp number
  */
 export const ConnectWhatsappBody = zod.object({
   phoneNumber: zod.string(),
 });
 
 export const ConnectWhatsappResponse = zod.object({
-  otp: zod.string(),
+  sent: zod.boolean(),
   phoneNumber: zod.string(),
-  businessNumber: zod.string().optional(),
+});
+
+/**
+ * @summary Verify the OTP entered in the UI and link the WhatsApp number
+ */
+export const VerifyWhatsappBody = zod.object({
+  phoneNumber: zod.string(),
+  otp: zod.string(),
+});
+
+export const VerifyWhatsappResponse = zod.object({
+  success: zod.boolean(),
 });
 
 /**

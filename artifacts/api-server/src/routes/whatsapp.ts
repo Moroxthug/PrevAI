@@ -13,9 +13,7 @@ const WA_PHONE_ID = process.env.WHATSAPP_PHONE_NUMBER_ID ?? "";
 const WA_VERIFY_TOKEN = process.env.WHATSAPP_VERIFY_TOKEN ?? "prevai_webhook_secret";
 const PREVAI_BASE_URL = "https://www.prevai.it";
 
-function getBusinessNumber(): string {
-  return process.env.WHATSAPP_BUSINESS_NUMBER ?? WA_PHONE_ID;
-}
+// ── Helpers ────────────────────────────────────────────────────────────────────
 
 async function sendWhatsappText(to: string, text: string): Promise<void> {
   if (!WA_TOKEN || !WA_PHONE_ID) {
@@ -94,7 +92,14 @@ function generateOtp(): string {
   return Math.floor(100000 + Math.random() * 900000).toString();
 }
 
-// ── GET /api/whatsapp/webhook — Meta verification ─────────────────────────────
+function normalizePhone(input: string): string | null {
+  const digits = input.replace(/[\s\-().]/g, "");
+  if (/^\+\d{7,15}$/.test(digits)) return digits.replace("+", "");
+  if (/^\d{7,15}$/.test(digits)) return digits;
+  return null;
+}
+
+// ── GET /api/whatsapp/webhook — Meta webhook verification ──────────────────────
 router.get("/whatsapp/webhook", (req, res) => {
   const mode = req.query["hub.mode"];
   const token = req.query["hub.verify_token"];
@@ -108,6 +113,7 @@ router.get("/whatsapp/webhook", (req, res) => {
 });
 
 // ── POST /api/whatsapp/webhook — Incoming messages ────────────────────────────
+// Note: signature verification is handled upstream in app.ts via raw body middleware
 router.post("/whatsapp/webhook", async (req, res) => {
   res.status(200).json({ status: "ok" });
 
@@ -130,8 +136,9 @@ router.post("/whatsapp/webhook", async (req, res) => {
     if (msgType === "text") {
       const text = message.text?.body?.trim() ?? "";
 
+      // Fallback OTP path: user sends OTP directly to the business number
       if (/^\d{6}$/.test(text)) {
-        await handleOtpVerification(from, text);
+        await handleInboundOtpVerification(from, text);
         return;
       }
 
@@ -220,20 +227,16 @@ router.post("/whatsapp/webhook", async (req, res) => {
   }
 });
 
-async function handleOtpVerification(phoneNumber: string, otp: string): Promise<void> {
+/** Fallback: user sent the OTP directly to the business WhatsApp number */
+async function handleInboundOtpVerification(phoneNumber: string, otp: string): Promise<void> {
   const now = new Date();
   const [otpRow] = await db
     .select()
     .from(whatsappOtpTable)
     .where(and(eq(whatsappOtpTable.phoneNumber, phoneNumber), gt(whatsappOtpTable.expiresAt, now)));
 
-  if (!otpRow) {
+  if (!otpRow || otpRow.otp !== otp) {
     await sendWhatsappText(phoneNumber, "❌ Codice non valido o scaduto. Riprova dalla pagina impostazioni su prevai.it");
-    return;
-  }
-
-  if (otpRow.otp !== otp) {
-    await sendWhatsappText(phoneNumber, "❌ Codice errato. Riprova.");
     return;
   }
 
@@ -271,7 +274,6 @@ router.get("/whatsapp/status", requireAuth, async (req, res) => {
       connected: !!connection,
       phoneNumber: connection?.phoneNumber ?? null,
       isEnabled: connection?.isEnabled ?? null,
-      businessNumber: getBusinessNumber(),
     });
   } catch (err) {
     req.log.error({ err }, "WhatsApp status error");
@@ -279,7 +281,7 @@ router.get("/whatsapp/status", requireAuth, async (req, res) => {
   }
 });
 
-// ── POST /api/whatsapp/connect — generate OTP ────────────────────────────────
+// ── POST /api/whatsapp/connect — generate OTP and send via WhatsApp ───────────
 router.post("/whatsapp/connect", requireAuth, async (req, res) => {
   try {
     const userId = getUserId(res);
@@ -317,9 +319,80 @@ router.post("/whatsapp/connect", requireAuth, async (req, res) => {
         set: { otp, userId, expiresAt },
       });
 
-    res.json({ otp, phoneNumber: normalized, businessNumber: getBusinessNumber() });
+    // Send OTP to the user's WhatsApp number
+    await sendWhatsappText(
+      normalized,
+      `🔐 *Codice di verifica PrevAI*\n\nIl tuo codice è: *${otp}*\n\nInseriscilo nella pagina Impostazioni per collegare il tuo account. Valido 15 minuti.`
+    );
+
+    res.json({ sent: true, phoneNumber: normalized });
   } catch (err) {
     req.log.error({ err }, "WhatsApp connect error");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// ── POST /api/whatsapp/verify — verify OTP entered in UI ──────────────────────
+router.post("/whatsapp/verify", requireAuth, async (req, res) => {
+  try {
+    const userId = getUserId(res);
+    const { phoneNumber, otp } = req.body as { phoneNumber?: string; otp?: string };
+
+    if (!phoneNumber?.trim() || !otp?.trim()) {
+      res.status(400).json({ error: "phoneNumber and otp are required" });
+      return;
+    }
+
+    const normalized = normalizePhone(phoneNumber.trim());
+    if (!normalized) {
+      res.status(400).json({ error: "Numero di telefono non valido" });
+      return;
+    }
+
+    const now = new Date();
+    const [otpRow] = await db
+      .select()
+      .from(whatsappOtpTable)
+      .where(and(eq(whatsappOtpTable.phoneNumber, normalized), gt(whatsappOtpTable.expiresAt, now)));
+
+    if (!otpRow) {
+      res.status(400).json({ error: "Codice scaduto. Richiedi un nuovo codice." });
+      return;
+    }
+
+    if (otpRow.userId !== userId) {
+      res.status(403).json({ error: "Questo codice non appartiene al tuo account." });
+      return;
+    }
+
+    if (otpRow.otp !== otp.trim()) {
+      res.status(400).json({ error: "Codice errato. Ricontrolla il messaggio WhatsApp e riprova." });
+      return;
+    }
+
+    await db.delete(whatsappOtpTable).where(eq(whatsappOtpTable.phoneNumber, normalized));
+
+    await db
+      .insert(whatsappConnectionsTable)
+      .values({ userId, phoneNumber: normalized, isEnabled: true })
+      .onConflictDoUpdate({
+        target: whatsappConnectionsTable.userId,
+        set: { phoneNumber: normalized, isEnabled: true, connectedAt: new Date() },
+      });
+
+    const [profile] = await db
+      .select({ companyName: businessProfilesTable.companyName })
+      .from(businessProfilesTable)
+      .where(eq(businessProfilesTable.userId, userId));
+
+    await sendWhatsappText(
+      normalized,
+      `✅ *Account collegato con successo!*\n\nCiao ${profile?.companyName ?? ""}! 👋\n\nOra puoi inviarmi la descrizione di qualsiasi lavoro (testo, vocale o foto degli appunti) e genererò un preventivo professionale in pochi secondi.\n\nProva subito!`
+    );
+
+    res.json({ success: true });
+  } catch (err) {
+    req.log.error({ err }, "WhatsApp verify error");
     res.status(500).json({ error: "Internal server error" });
   }
 });
@@ -355,13 +428,6 @@ router.patch("/whatsapp/toggle", requireAuth, async (req, res) => {
     res.status(500).json({ error: "Internal server error" });
   }
 });
-
-function normalizePhone(input: string): string | null {
-  const digits = input.replace(/[\s\-().]/g, "");
-  if (/^\+\d{7,15}$/.test(digits)) return digits.replace("+", "");
-  if (/^\d{7,15}$/.test(digits)) return digits;
-  return null;
-}
 
 type WhatsappWebhookBody = {
   entry?: Array<{

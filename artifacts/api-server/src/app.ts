@@ -253,6 +253,42 @@ app.post(
 );
 // ─────────────────────────────────────────────────────────────────────────────
 
+// ── WhatsApp webhook — verify Meta HMAC signature before express.json() ───────
+app.post(
+  "/api/whatsapp/webhook",
+  express.raw({ type: "application/json" }),
+  async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    const appSecret = process.env.WHATSAPP_APP_SECRET;
+    if (appSecret) {
+      const sigHeader = req.headers["x-hub-signature-256"];
+      const sigStr = Array.isArray(sigHeader) ? sigHeader[0] : sigHeader;
+      if (!sigStr) {
+        res.status(400).json({ error: "Missing x-hub-signature-256 header" });
+        return;
+      }
+      const { createHmac, timingSafeEqual } = await import("node:crypto");
+      const hmac = createHmac("sha256", appSecret).update(req.body as Buffer).digest("hex");
+      const expected = Buffer.from(`sha256=${hmac}`);
+      const actual = Buffer.from(sigStr);
+      if (expected.length !== actual.length || !timingSafeEqual(expected, actual)) {
+        logger.error("WhatsApp webhook signature mismatch — request rejected");
+        res.status(403).json({ error: "Forbidden" });
+        return;
+      }
+    } else {
+      logger.warn("WHATSAPP_APP_SECRET not set — webhook signature verification skipped");
+    }
+    try {
+      req.body = JSON.parse((req.body as Buffer).toString("utf-8")) as unknown;
+    } catch {
+      res.status(400).json({ error: "Invalid JSON" });
+      return;
+    }
+    next();
+  }
+);
+// ─────────────────────────────────────────────────────────────────────────────
+
 app.use(cors({ credentials: true, origin: true }));
 app.use(express.json({ limit: "25mb" }));
 app.use(express.urlencoded({ extended: true }));

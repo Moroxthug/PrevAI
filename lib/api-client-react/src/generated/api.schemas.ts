@@ -361,9 +361,13 @@ export interface WhatsappConnectBody {
 }
 
 export interface WhatsappConnectResult {
-  otp: string;
+  sent: boolean;
   phoneNumber: string;
-  businessNumber?: string;
+}
+
+export interface WhatsappVerifyBody {
+  phoneNumber: string;
+  otp: string;
 }
 
 export interface WhatsappToggleBody {

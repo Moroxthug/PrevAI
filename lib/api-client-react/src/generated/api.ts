@@ -51,6 +51,7 @@ import type {
   WhatsappConnectResult,
   WhatsappStatus,
   WhatsappToggleBody,
+  WhatsappVerifyBody,
 } from "./api.schemas";
 
 import { customFetch } from "../custom-fetch";
@@ -2448,7 +2449,7 @@ export function useGetWhatsappStatus<
 }
 
 /**
- * @summary Generate an OTP to link a WhatsApp number to the user account
+ * @summary Generate an OTP and send it to the user's WhatsApp number
  */
 export const getConnectWhatsappUrl = () => {
   return `/api/whatsapp/connect`;
@@ -2511,7 +2512,7 @@ export type ConnectWhatsappMutationBody = BodyType<WhatsappConnectBody>;
 export type ConnectWhatsappMutationError = ErrorType<unknown>;
 
 /**
- * @summary Generate an OTP to link a WhatsApp number to the user account
+ * @summary Generate an OTP and send it to the user's WhatsApp number
  */
 export const useConnectWhatsapp = <
   TError = ErrorType<unknown>,
@@ -2531,6 +2532,92 @@ export const useConnectWhatsapp = <
   TContext
 > => {
   return useMutation(getConnectWhatsappMutationOptions(options));
+};
+
+/**
+ * @summary Verify the OTP entered in the UI and link the WhatsApp number
+ */
+export const getVerifyWhatsappUrl = () => {
+  return `/api/whatsapp/verify`;
+};
+
+export const verifyWhatsapp = async (
+  whatsappVerifyBody: WhatsappVerifyBody,
+  options?: RequestInit,
+): Promise<SuccessResult> => {
+  return customFetch<SuccessResult>(getVerifyWhatsappUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(whatsappVerifyBody),
+  });
+};
+
+export const getVerifyWhatsappMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof verifyWhatsapp>>,
+    TError,
+    { data: BodyType<WhatsappVerifyBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof verifyWhatsapp>>,
+  TError,
+  { data: BodyType<WhatsappVerifyBody> },
+  TContext
+> => {
+  const mutationKey = ["verifyWhatsapp"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof verifyWhatsapp>>,
+    { data: BodyType<WhatsappVerifyBody> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return verifyWhatsapp(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type VerifyWhatsappMutationResult = NonNullable<
+  Awaited<ReturnType<typeof verifyWhatsapp>>
+>;
+export type VerifyWhatsappMutationBody = BodyType<WhatsappVerifyBody>;
+export type VerifyWhatsappMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Verify the OTP entered in the UI and link the WhatsApp number
+ */
+export const useVerifyWhatsapp = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof verifyWhatsapp>>,
+    TError,
+    { data: BodyType<WhatsappVerifyBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof verifyWhatsapp>>,
+  TError,
+  { data: BodyType<WhatsappVerifyBody> },
+  TContext
+> => {
+  return useMutation(getVerifyWhatsappMutationOptions(options));
 };
 
 /**

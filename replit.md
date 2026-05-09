@@ -18,7 +18,8 @@ A SaaS web app for Italian freelancers/craftsmen to describe a job in natural la
 - `WHATSAPP_ACCESS_TOKEN` — Meta permanent system-user token (from Meta Business Manager)
 - `WHATSAPP_PHONE_NUMBER_ID` — WhatsApp Business phone number ID (from Meta developer console)
 - `WHATSAPP_VERIFY_TOKEN` — arbitrary secret string used to verify the Meta webhook registration
-- `WHATSAPP_BUSINESS_NUMBER` — the E.164 phone number string shown to users (e.g. `39xxxxxxxxxx`), used to generate the `wa.me` deep-link for OTP sending
+- `WHATSAPP_BUSINESS_NUMBER` — the E.164 phone number string shown to users (e.g. `39xxxxxxxxxx`)
+- `WHATSAPP_APP_SECRET` — Meta app secret (from App Settings → Basic) used to verify `X-Hub-Signature-256` on inbound webhook POSTs
 
 WhatsApp features are silently disabled when these vars are absent; the `/api/whatsapp/*` routes still mount and the webhook verification will simply return 403.
 

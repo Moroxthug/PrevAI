@@ -1,11 +1,11 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import {
   useGetBusinessProfile, useUpdateBusinessProfile, useGetSubscription,
   useCreateCustomerPortalSession, getGetBusinessProfileQueryKey,
-  useGetWhatsappStatus, useConnectWhatsapp, useDisconnectWhatsapp,
+  useGetWhatsappStatus, useConnectWhatsapp, useVerifyWhatsapp, useDisconnectWhatsapp,
   useToggleWhatsapp, getGetWhatsappStatusQueryKey,
 } from "@workspace/api-client-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
@@ -13,7 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Save, Upload, X, ImageIcon, Crown, Zap, CheckCircle2, XCircle, CalendarDays, BarChart3, AlertCircle, RefreshCw, ArrowUpRight, MessageCircle, Phone, Copy, Link2Off } from "lucide-react";
+import { Loader2, Save, Upload, X, ImageIcon, Crown, Zap, CheckCircle2, XCircle, CalendarDays, BarChart3, AlertCircle, RefreshCw, ArrowUpRight, MessageCircle, Phone, Link2Off } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useQueryClient } from "@tanstack/react-query";
 import { Badge } from "@/components/ui/badge";
@@ -390,31 +390,20 @@ function BillingTab() {
 }
 
 function WhatsappTab() {
-  const { data: status, isLoading, refetch } = useGetWhatsappStatus();
+  const { data: status, isLoading } = useGetWhatsappStatus();
   const connectWa = useConnectWhatsapp();
+  const verifyWa = useVerifyWhatsapp();
   const disconnectWa = useDisconnectWhatsapp();
   const toggleWa = useToggleWhatsapp();
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
   const [phoneInput, setPhoneInput] = useState("");
-  const [otpState, setOtpState] = useState<{ otp: string; phoneNumber: string; businessNumber: string } | null>(null);
-  const [copied, setCopied] = useState(false);
+  const [otpState, setOtpState] = useState<{ phoneNumber: string } | null>(null);
+  const [otpInput, setOtpInput] = useState("");
 
   const isConnected = status?.connected ?? false;
   const isEnabled = status?.isEnabled ?? true;
-
-  useEffect(() => {
-    if (!otpState) return;
-    const interval = setInterval(async () => {
-      const result = await refetch();
-      if (result.data?.connected) {
-        setOtpState(null);
-        queryClient.invalidateQueries({ queryKey: getGetWhatsappStatusQueryKey() });
-      }
-    }, 3000);
-    return () => clearInterval(interval);
-  }, [otpState, refetch, queryClient]);
 
   const handleConnect = () => {
     if (!phoneInput.trim()) return;
@@ -422,10 +411,30 @@ function WhatsappTab() {
       { data: { phoneNumber: phoneInput.trim() } },
       {
         onSuccess: (result) => {
-          setOtpState({ otp: result.otp, phoneNumber: result.phoneNumber, businessNumber: result.businessNumber ?? "" });
+          setOtpState({ phoneNumber: result.phoneNumber });
+          setOtpInput("");
         },
         onError: (err) => {
           const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error ?? "Errore durante la connessione";
+          toast({ title: msg, variant: "destructive" });
+        },
+      }
+    );
+  };
+
+  const handleVerify = () => {
+    if (!otpState || !otpInput.trim()) return;
+    verifyWa.mutate(
+      { data: { phoneNumber: otpState.phoneNumber, otp: otpInput.trim() } },
+      {
+        onSuccess: () => {
+          setOtpState(null);
+          setOtpInput("");
+          queryClient.invalidateQueries({ queryKey: getGetWhatsappStatusQueryKey() });
+          toast({ title: "WhatsApp collegato con successo! 🎉" });
+        },
+        onError: (err) => {
+          const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error ?? "Codice errato o scaduto";
           toast({ title: msg, variant: "destructive" });
         },
       }
@@ -453,12 +462,6 @@ function WhatsappTab() {
         onError: () => toast({ title: "Errore", variant: "destructive" }),
       }
     );
-  };
-
-  const handleCopy = async (text: string) => {
-    await navigator.clipboard.writeText(text);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
   };
 
   if (isLoading) return <Skeleton className="h-48 w-full rounded-2xl" />;
@@ -531,7 +534,6 @@ function WhatsappTab() {
   }
 
   if (otpState) {
-    const waLink = `https://wa.me/${otpState.businessNumber}?text=${encodeURIComponent(otpState.otp)}`;
     return (
       <Card className="border-violet-200">
         <CardHeader>
@@ -540,68 +542,57 @@ function WhatsappTab() {
               <MessageCircle className="h-6 w-6 text-violet-600" />
             </div>
             <div>
-              <CardTitle>Invia il codice su WhatsApp</CardTitle>
-              <CardDescription className="mt-0.5">Apri WhatsApp e invia questo codice al numero prevai</CardDescription>
+              <CardTitle>Inserisci il codice ricevuto</CardTitle>
+              <CardDescription className="mt-0.5">
+                Abbiamo inviato un codice al numero <strong>+{otpState.phoneNumber}</strong> su WhatsApp
+              </CardDescription>
             </div>
           </div>
         </CardHeader>
         <CardContent className="space-y-5">
-          <div className="bg-violet-50 border border-violet-200 rounded-xl p-5 text-center space-y-2">
-            <p className="text-xs font-medium text-violet-500 uppercase tracking-wider">Il tuo codice di collegamento</p>
-            <div className="flex items-center justify-center gap-3">
-              <span className="text-4xl font-bold tracking-[0.2em] text-violet-700 font-mono">{otpState.otp}</span>
-              <button
-                onClick={() => handleCopy(otpState.otp)}
-                className="p-2 rounded-lg hover:bg-violet-100 text-violet-500 transition-colors"
-                title="Copia codice"
-              >
-                {copied ? <CheckCircle2 className="h-5 w-5 text-emerald-500" /> : <Copy className="h-5 w-5" />}
-              </button>
-            </div>
-            <p className="text-xs text-violet-400">Valido 15 minuti</p>
+          <div className="bg-violet-50 border border-violet-200 rounded-xl p-4 text-sm text-violet-700 space-y-1">
+            <p className="font-semibold">Controlla WhatsApp sul tuo telefono.</p>
+            <p className="text-violet-500">Hai ricevuto un messaggio da prevai con un codice a 6 cifre. Inseriscilo qui sotto.</p>
           </div>
 
-          <div className="space-y-2.5">
-            <p className="text-sm font-medium">Come collegare il tuo account:</p>
-            <ol className="space-y-2 text-sm text-muted-foreground">
-              <li className="flex gap-2.5">
-                <span className="flex-shrink-0 w-5 h-5 rounded-full bg-violet-100 text-violet-600 text-xs font-bold flex items-center justify-center">1</span>
-                Salva il numero prevai in rubrica
-              </li>
-              <li className="flex gap-2.5">
-                <span className="flex-shrink-0 w-5 h-5 rounded-full bg-violet-100 text-violet-600 text-xs font-bold flex items-center justify-center">2</span>
-                Aprilo su WhatsApp e invia <strong className="font-mono text-gray-900">{otpState.otp}</strong>
-              </li>
-              <li className="flex gap-2.5">
-                <span className="flex-shrink-0 w-5 h-5 rounded-full bg-violet-100 text-violet-600 text-xs font-bold flex items-center justify-center">3</span>
-                Ricevi conferma e inizia a generare preventivi direttamente da WhatsApp!
-              </li>
-            </ol>
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Codice di verifica</label>
+            <div className="flex gap-2">
+              <Input
+                placeholder="123456"
+                value={otpInput}
+                onChange={(e) => setOtpInput(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                onKeyDown={(e) => { if (e.key === "Enter" && otpInput.length === 6) handleVerify(); }}
+                className="flex-1 text-center text-xl tracking-widest font-mono"
+                maxLength={6}
+                inputMode="numeric"
+              />
+              <Button
+                onClick={handleVerify}
+                disabled={otpInput.length !== 6 || verifyWa.isPending}
+                className="gap-2 btn-gradient"
+              >
+                {verifyWa.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
+                Verifica
+              </Button>
+            </div>
+            <p className="text-xs text-muted-foreground">Il codice è valido per 15 minuti</p>
           </div>
 
           <div className="flex flex-col sm:flex-row gap-3">
-            <a
-              href={waLink}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="btn-gradient inline-flex h-10 items-center justify-center px-5 text-sm font-semibold gap-2 rounded-lg"
-            >
-              <MessageCircle className="h-4 w-4" />
-              Apri WhatsApp
-            </a>
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => setOtpState(null)}
-              className="text-muted-foreground"
+              onClick={() => { connectWa.mutate({ data: { phoneNumber: otpState.phoneNumber } }); }}
+              disabled={connectWa.isPending}
+              className="text-muted-foreground gap-2"
             >
+              {connectWa.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : null}
+              Reinvia il codice
+            </Button>
+            <Button variant="ghost" size="sm" onClick={() => { setOtpState(null); setOtpInput(""); }} className="text-muted-foreground">
               Annulla
             </Button>
-          </div>
-
-          <div className="flex items-center gap-2 text-xs text-muted-foreground bg-gray-50 rounded-lg px-3 py-2">
-            <Loader2 className="h-3.5 w-3.5 animate-spin text-violet-500" />
-            In attesa del codice su WhatsApp...
           </div>
         </CardContent>
       </Card>
