@@ -10,8 +10,8 @@ const formatCurrency = (v: number) =>
   new Intl.NumberFormat("it-IT", { style: "currency", currency: "EUR", maximumFractionDigits: 0 }).format(v);
 
 export default function ClientDetailPage() {
-  const params = useParams<{ name: string }>();
-  const clientId = params.name ?? "";
+  const params = useParams<{ id: string }>();
+  const clientId = params.id ?? "";
 
   const { data: quotes, isLoading } = useListClientQuotes(
     clientId,

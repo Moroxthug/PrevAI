@@ -115,7 +115,7 @@ function Router() {
       <Route path="/dashboard/catalog" component={() => (
         <OnboardingGuard><DashboardLayout><DashSuspense><CatalogPage /></DashSuspense></DashboardLayout></OnboardingGuard>
       )} />
-      <Route path="/dashboard/clients/:name" component={() => (
+      <Route path="/dashboard/clients/:id" component={() => (
         <OnboardingGuard><DashboardLayout><DashSuspense><ClientDetailPage /></DashSuspense></DashboardLayout></OnboardingGuard>
       )} />
       <Route path="/dashboard/clients" component={() => (
