@@ -30,6 +30,7 @@ const entries: string[] = [];
 entries.push(url(`${BASE_URL}/`, "1.0", "weekly"));
 entries.push(url(`${BASE_URL}/privacy`, "0.4", "yearly"));
 entries.push(url(`${BASE_URL}/termini`, "0.4", "yearly"));
+entries.push(url(`${BASE_URL}/whatsapp`, "0.8", "weekly"));
 
 const citySectorSet = new Set(CITY_SECTORS);
 for (const sectorSlug of Object.keys(SECTORS)) {
