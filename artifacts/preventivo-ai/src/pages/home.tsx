@@ -1,8 +1,8 @@
 import { Link, useLocation } from "wouter";
-import { ArrowRight, CheckCircle2, FileText, Zap, Lock, Star, Sparkles, Mic, ImagePlus, Check, X } from "lucide-react";
+import { ArrowRight, CheckCircle2, FileText, Zap, Lock, Star, Sparkles, Mic, ImagePlus, Check, X, Loader2 } from "lucide-react";
 import { SeoHead } from "@/components/seo-head";
 import { TestimonialsSection, TESTIMONIALS, AGGREGATE_RATING } from "@/components/testimonials-section";
-import { useGetPlans } from "@workspace/api-client-react";
+import { useGetPlans, useCreateCheckoutSession } from "@workspace/api-client-react";
 import { useScrollFade } from "@/hooks/use-scroll-fade";
 import { useAuth } from "@/hooks/use-auth";
 import { useState, useRef } from "react";
@@ -38,9 +38,26 @@ export default function Home() {
   const plansArray = Array.isArray(plans) ? plans : [];
   const subscriptionPlans = plansArray.filter((p) => p.interval);
   const oneshotPlans = plansArray.filter((p) => !p.interval);
+  const createCheckout = useCreateCheckoutSession();
+  const [loadingPlanId, setLoadingPlanId] = useState<string | null>(null);
 
-  const handlePlanClick = () => {
-    navigate(isSignedIn ? "/dashboard" : "/sign-up");
+  const handlePlanClick = (planId: string) => {
+    if (!isSignedIn) {
+      navigate(`/sign-up?plan=${planId}`);
+      return;
+    }
+    setLoadingPlanId(planId);
+    createCheckout.mutate(
+      { data: { planType: planId as "monthly_starter" | "monthly_pro" | "monthly_elite" | "oneshot_watermark" | "oneshot_clean" } },
+      {
+        onSuccess: (r) => {
+          window.location.href = r.url;
+        },
+        onError: () => {
+          setLoadingPlanId(null);
+        },
+      }
+    );
   };
 
   const handleHomepageSubmit = () => {
@@ -513,7 +530,7 @@ export default function Home() {
                   BETAPREVAI
                 </code>
                 <button
-                  onClick={handlePlanClick}
+                  onClick={() => handlePlanClick("monthly_pro")}
                   className="bg-white text-violet-700 font-bold text-xs px-3 py-1.5 rounded-lg hover:bg-violet-50 transition-colors"
                 >
                   Usa →
@@ -581,8 +598,9 @@ export default function Home() {
                   </ul>
 
                   <button
-                    onClick={handlePlanClick}
-                    className={`inline-flex h-9 items-center justify-center w-full text-xs font-semibold rounded-lg transition-all ${
+                    onClick={() => handlePlanClick(plan.id)}
+                    disabled={loadingPlanId === plan.id}
+                    className={`inline-flex h-9 items-center justify-center w-full text-xs font-semibold rounded-lg transition-all gap-1.5 ${
                       isPro
                         ? "btn-gradient"
                         : isElite
@@ -590,7 +608,11 @@ export default function Home() {
                           : "btn-gradient-outline"
                     }`}
                   >
-                    {isStarter ? "Inizia con Starter" : isPro ? "Inizia con Pro" : "Inizia con Elite"}
+                    {loadingPlanId === plan.id ? (
+                      <><Loader2 className="h-3.5 w-3.5 animate-spin" />Attendere...</>
+                    ) : (
+                      isStarter ? "Inizia con Starter" : isPro ? "Inizia con Pro" : "Inizia con Elite"
+                    )}
                   </button>
                 </div>
               );
@@ -629,8 +651,9 @@ export default function Home() {
                     ))}
                   </ul>
                   <button
-                    onClick={handlePlanClick}
-                    className={`inline-flex h-8 items-center justify-center w-full text-xs font-semibold rounded-lg transition-all ${
+                    onClick={() => handlePlanClick(plan.id)}
+                    disabled={loadingPlanId === plan.id}
+                    className={`inline-flex h-8 items-center justify-center w-full text-xs font-semibold rounded-lg transition-all gap-1.5 ${
                       isClean ? "btn-gradient" : "btn-gradient-outline"
                     }`}
                   >

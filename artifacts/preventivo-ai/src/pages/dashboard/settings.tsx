@@ -7,6 +7,7 @@ import {
   useCreateCustomerPortalSession, getGetBusinessProfileQueryKey,
   useGetWhatsappStatus, useConnectWhatsapp, useVerifyWhatsapp, useDisconnectWhatsapp,
   useToggleWhatsapp, getGetWhatsappStatusQueryKey, useGetWhatsappUsage,
+  useCreateCheckoutSession, useGetPlans, getGetSubscriptionQueryKey,
 } from "@workspace/api-client-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -264,14 +265,58 @@ function PlanFeature({ text, ok }: { text: string; ok: boolean }) {
 
 function BillingTab() {
   const { data: sub, isLoading } = useGetSubscription();
+  const { data: plans } = useGetPlans();
   const createPortal = useCreateCustomerPortalSession();
+  const createCheckout = useCreateCheckoutSession();
+  const queryClient = useQueryClient();
   const { toast } = useToast();
+  const [loadingPlanId, setLoadingPlanId] = useState<string | null>(null);
+  const [isSyncing, setIsSyncing] = useState(false);
+
   const handleManage = () => {
     createPortal.mutate(undefined, {
       onSuccess: (r) => { window.open(r.url, "_blank"); },
-      onError: () => { window.location.href = "/#prezzi"; },
+      onError: () => {
+        toast({ title: "Portale non disponibile", description: "Usa i bottoni sottostanti per scegliere un piano.", variant: "destructive" });
+      },
     });
   };
+
+  const handleCheckout = (planId: string) => {
+    setLoadingPlanId(planId);
+    createCheckout.mutate(
+      { data: { planType: planId as "monthly_starter" | "monthly_pro" | "monthly_elite" | "oneshot_watermark" | "oneshot_clean" } },
+      {
+        onSuccess: (r) => { window.location.href = r.url; },
+        onError: () => {
+          setLoadingPlanId(null);
+          toast({ title: "Errore avvio pagamento", variant: "destructive" });
+        },
+      }
+    );
+  };
+
+  const handleSync = async () => {
+    setIsSyncing(true);
+    try {
+      const res = await fetch("/api/payments/sync-subscription", {
+        method: "POST",
+        credentials: "include",
+      });
+      const data = await res.json() as { synced: boolean; active?: boolean; plan?: string; message?: string };
+      if (data.synced && data.active) {
+        await queryClient.invalidateQueries({ queryKey: getGetSubscriptionQueryKey() });
+        toast({ title: "Abbonamento sincronizzato", description: `Piano ${data.plan ?? ""} attivato.` });
+      } else {
+        toast({ title: "Nessun abbonamento trovato", description: data.message ?? "Controlla il tuo account Stripe.", variant: "destructive" });
+      }
+    } catch {
+      toast({ title: "Errore sincronizzazione", variant: "destructive" });
+    } finally {
+      setIsSyncing(false);
+    }
+  };
+
   if (isLoading) return <Skeleton className="h-48 w-full rounded-2xl" />;
   const isStarter = sub?.plan === "monthly_starter";
   const isPro = sub?.plan === "monthly_pro";
@@ -281,6 +326,7 @@ function BillingTab() {
   const planPrice = isElite ? "€59/mese" : isPro ? "€49/mese" : isStarter ? "€19/mese" : null;
   const renewalDate = sub?.periodEnd ? new Date(sub.periodEnd).toLocaleDateString("it-IT", { day: "2-digit", month: "long", year: "numeric" }) : null;
   const resetDate = sub?.quotaResetDate ? new Date(sub.quotaResetDate).toLocaleDateString("it-IT", { day: "2-digit", month: "long" }) : null;
+  const subscriptionPlans = Array.isArray(plans) ? plans.filter((p) => !!p.interval) : [];
 
   return (
     <div className="space-y-6">
@@ -346,41 +392,76 @@ function BillingTab() {
           </CardContent>
         </Card>
       ) : (
-        <Card className="border-dashed">
-          <CardHeader>
-            <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-xl bg-muted flex items-center justify-center"><XCircle className="h-5 w-5 text-muted-foreground" /></div>
-              <div><CardTitle>Nessun abbonamento attivo</CardTitle><CardDescription className="mt-0.5">Scegli un piano per sbloccare i preventivi.</CardDescription></div>
+        <>
+          <Card className="border-dashed">
+            <CardHeader>
+              <div className="flex items-center justify-between gap-3 flex-wrap">
+                <div className="flex items-center gap-3">
+                  <div className="h-10 w-10 rounded-xl bg-muted flex items-center justify-center"><XCircle className="h-5 w-5 text-muted-foreground" /></div>
+                  <div><CardTitle>Nessun abbonamento attivo</CardTitle><CardDescription className="mt-0.5">Scegli un piano qui sotto per sbloccare i preventivi.</CardDescription></div>
+                </div>
+                <Button variant="outline" size="sm" onClick={handleSync} disabled={isSyncing} className="gap-2 shrink-0">
+                  {isSyncing ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+                  Verifica abbonamento
+                </Button>
+              </div>
+            </CardHeader>
+          </Card>
+
+          {subscriptionPlans.length > 0 && (
+            <div className="grid sm:grid-cols-3 gap-4">
+              {subscriptionPlans.map((plan) => {
+                const isPlanPro = plan.id === "monthly_pro";
+                const isPlanElite = plan.id === "monthly_elite";
+                return (
+                  <Card key={plan.id} className={`flex flex-col ${isPlanPro ? "border-2 border-violet-300 shadow-lg" : isPlanElite ? "border-2 border-amber-300" : ""}`}>
+                    <CardHeader className="pb-2">
+                      {isPlanPro && <span className="text-[10px] font-bold text-violet-600 uppercase tracking-wider">⭐ Più Popolare</span>}
+                      {isPlanElite && <span className="text-[10px] font-bold text-amber-600 uppercase tracking-wider">👑 Illimitato</span>}
+                      <CardTitle className="text-lg">{plan.name}</CardTitle>
+                      <p className="text-2xl font-extrabold">€{plan.price}<span className="text-sm font-normal text-muted-foreground">/mese</span></p>
+                    </CardHeader>
+                    <CardContent className="flex-1 pb-0">
+                      <ul className="space-y-1.5 mb-4">
+                        {plan.features.map((f: string, i: number) => (
+                          <li key={i} className="flex items-start gap-1.5 text-xs text-muted-foreground">
+                            <CheckCircle2 className={`h-3.5 w-3.5 shrink-0 mt-0.5 ${isPlanPro ? "text-violet-500" : isPlanElite ? "text-amber-500" : "text-gray-400"}`} />
+                            {f}
+                          </li>
+                        ))}
+                      </ul>
+                    </CardContent>
+                    <CardFooter className="pt-3">
+                      <Button
+                        className={`w-full gap-2 ${isPlanPro ? "btn-gradient" : isPlanElite ? "bg-amber-500 hover:bg-amber-600 text-white border-0" : ""}`}
+                        variant={isPlanPro || isPlanElite ? "default" : "outline"}
+                        onClick={() => handleCheckout(plan.id)}
+                        disabled={loadingPlanId === plan.id}
+                      >
+                        {loadingPlanId === plan.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Crown className="h-4 w-4" />}
+                        {loadingPlanId === plan.id ? "Attendere..." : `Scegli ${plan.name}`}
+                      </Button>
+                    </CardFooter>
+                  </Card>
+                );
+              })}
             </div>
-          </CardHeader>
-          <CardContent>
-            <button onClick={handleManage} disabled={createPortal.isPending} className="btn-gradient inline-flex h-10 items-center justify-center px-5 text-sm font-semibold gap-2">
-              <Crown className="h-4 w-4" />Scegli un piano
-            </button>
-          </CardContent>
-        </Card>
+          )}
+        </>
       )}
-      {!isPro && (
+
+      {isActive && (isStarter || isPro) && (
         <Card>
-          <CardHeader><CardTitle className="text-base">Confronto Piani</CardTitle><CardDescription>Cosa ottieni passando a Pro.</CardDescription></CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <div className="flex items-center gap-2 font-semibold text-sm"><Zap className="h-4 w-4 text-violet-500" />Starter — €29/mese</div>
-                <ul className="space-y-1.5 text-sm">
-                  <li className="flex items-center gap-2 text-muted-foreground"><CheckCircle2 className="h-3.5 w-3.5 text-violet-400 shrink-0" />20 preventivi/mese</li>
-                  <li className="flex items-center gap-2 text-muted-foreground line-through opacity-50"><XCircle className="h-3.5 w-3.5 shrink-0" />Logo personalizzato</li>
-                  <li className="flex items-center gap-2 text-muted-foreground line-through opacity-50"><XCircle className="h-3.5 w-3.5 shrink-0" />PDF senza filigrana</li>
-                </ul>
+          <CardContent className="pt-4">
+            <div className="flex items-center justify-between gap-3 flex-wrap">
+              <div>
+                <p className="text-sm font-medium">Hai già un abbonamento non rilevato?</p>
+                <p className="text-xs text-muted-foreground">Clicca per sincronizzare da Stripe.</p>
               </div>
-              <div className="space-y-2 border-l pl-4">
-                <div className="flex items-center gap-2 font-semibold text-sm"><Crown className="h-4 w-4 text-amber-500" />Pro — €79/mese</div>
-                <ul className="space-y-1.5 text-sm">
-                  <li className="flex items-center gap-2 text-foreground"><CheckCircle2 className="h-3.5 w-3.5 text-emerald-500 shrink-0" />Preventivi illimitati</li>
-                  <li className="flex items-center gap-2 text-foreground"><CheckCircle2 className="h-3.5 w-3.5 text-emerald-500 shrink-0" />Tuo logo aziendale</li>
-                  <li className="flex items-center gap-2 text-foreground"><CheckCircle2 className="h-3.5 w-3.5 text-emerald-500 shrink-0" />Nessuna filigrana</li>
-                </ul>
-              </div>
+              <Button variant="outline" size="sm" onClick={handleSync} disabled={isSyncing} className="gap-2 shrink-0">
+                {isSyncing ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+                Verifica abbonamento
+              </Button>
             </div>
           </CardContent>
         </Card>

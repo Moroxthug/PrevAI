@@ -348,6 +348,107 @@ router.post("/payments/portal", requireAuth, async (req, res) => {
   }
 });
 
+router.post("/payments/sync-subscription", requireAuth, async (req, res) => {
+  try {
+    const userId = getUserId(res);
+    const stripe = await getUncachableStripeClient();
+
+    const [profile] = await db
+      .select()
+      .from(businessProfilesTable)
+      .where(eq(businessProfilesTable.userId, userId));
+
+    let customerId = profile?.stripeCustomerId ?? null;
+
+    if (!customerId) {
+      const [authUser] = await db
+        .select({ email: authUsersTable.email })
+        .from(authUsersTable)
+        .where(eq(authUsersTable.id, userId));
+      if (authUser?.email) {
+        const customers = await stripe.customers.list({ email: authUser.email, limit: 5 });
+        if (customers.data.length > 0) {
+          customerId = customers.data[0].id;
+        }
+      }
+    }
+
+    if (!customerId) {
+      res.json({ synced: false, message: "Nessun customer Stripe trovato per questo account" });
+      return;
+    }
+
+    const PRICE_TO_PLAN: Record<string, string> = {
+      "price_1TUdJjCaDBaDETvnCGbjTgIq": "monthly_starter",
+      "price_1TUdJjCaDBaDETvnfBv37ryF": "monthly_pro",
+      "price_1TUdJjCaDBaDETvnCo3JKGJ7": "monthly_elite",
+    };
+
+    const subscriptions = await stripe.subscriptions.list({
+      customer: customerId,
+      status: "active",
+      limit: 5,
+    });
+
+    if (subscriptions.data.length === 0) {
+      const cancelledSubs = await stripe.subscriptions.list({
+        customer: customerId,
+        status: "canceled",
+        limit: 1,
+      });
+
+      await db
+        .insert(businessProfilesTable)
+        .values({ userId, stripeCustomerId: customerId, subscriptionStatus: "cancelled", subscriptionPlan: null })
+        .onConflictDoUpdate({
+          target: businessProfilesTable.userId,
+          set: { stripeCustomerId: customerId, subscriptionStatus: cancelledSubs.data.length > 0 ? "cancelled" : null, subscriptionPlan: null },
+        });
+
+      res.json({ synced: true, active: false, message: "Nessun abbonamento attivo trovato" });
+      return;
+    }
+
+    const sub = subscriptions.data[0];
+    const priceId = sub.items.data[0]?.price?.id;
+    const planType = priceId ? PRICE_TO_PLAN[priceId] : null;
+
+    if (!planType) {
+      res.json({ synced: false, message: `Price ID sconosciuto: ${priceId ?? "N/A"}` });
+      return;
+    }
+
+    const periodEnd = sub.current_period_end
+      ? new Date(sub.current_period_end * 1000)
+      : null;
+
+    await db
+      .insert(businessProfilesTable)
+      .values({
+        userId,
+        stripeCustomerId: customerId,
+        subscriptionPlan: planType,
+        subscriptionStatus: "active",
+        subscriptionPeriodEnd: periodEnd,
+      })
+      .onConflictDoUpdate({
+        target: businessProfilesTable.userId,
+        set: {
+          stripeCustomerId: customerId,
+          subscriptionPlan: planType,
+          subscriptionStatus: "active",
+          subscriptionPeriodEnd: periodEnd,
+        },
+      });
+
+    logger.info({ userId, planType, customerId }, "Subscription synced manually");
+    res.json({ synced: true, active: true, plan: planType });
+  } catch (err) {
+    logger.error({ err }, "Error syncing subscription");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
 router.get("/payments/verify/:quoteId", requireAuth, async (req, res) => {
   try {
     const userId = getUserId(res);
