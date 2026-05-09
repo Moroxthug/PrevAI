@@ -76,7 +76,7 @@ export default function OnboardingPage() {
     if (!companyName.trim()) return;
     setIsSaving(true);
     try {
-      await updateProfile.mutateAsync({
+      const saved = await updateProfile.mutateAsync({
         data: {
           companyName: companyName.trim(),
           vatNumber: vatNumber.trim() || undefined,
@@ -85,8 +85,12 @@ export default function OnboardingPage() {
           email: email.trim() || undefined,
         }
       });
+      queryClient.setQueryData(getGetBusinessProfileQueryKey(), (old: unknown) => ({
+        ...(old && typeof old === "object" ? old : {}),
+        ...(saved && typeof saved === "object" ? saved : {}),
+        companyName: companyName.trim(),
+      }));
       if (userId) markOnboardingDone(userId);
-      await queryClient.invalidateQueries({ queryKey: getGetBusinessProfileQueryKey() });
       setLocation("/dashboard/new");
     } catch {
       toast({ title: "Errore durante il salvataggio", variant: "destructive" });
