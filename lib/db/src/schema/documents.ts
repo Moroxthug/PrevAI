@@ -50,14 +50,15 @@ export const extractedDocumentDataSchema = z.object({
       z.object({
         tipo: z.string(),
         prezzoUnitario: z.number(),
-        um: z.string().optional(),
-        zona: z.string().optional(),
+        um: z.string().nullable().optional(),
+        zona: z.string().nullable().optional(),
       })
     )
+    .nullable()
     .optional(),
-  totale: z.number().optional(),
-  zona: z.string().optional(),
-  note: z.string().optional(),
+  totale: z.number().nullable().optional(),
+  zona: z.string().nullable().optional(),
+  note: z.string().nullable().optional(),
 });
 
 export type UploadedDocument = typeof uploadedDocumentsTable.$inferSelect;
