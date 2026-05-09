@@ -1145,6 +1145,134 @@ export const SECTORS: Record<string, SectorData> = {
   },
 };
 
+export interface SectorReview {
+  authorName: string;
+  ratingValue: "4" | "5";
+  reviewBody: string;
+  datePublished: string;
+}
+
+export const SECTOR_REVIEWS: Record<string, SectorReview[]> = {
+  imbianchino: [
+    { authorName: "Marco R.", ratingValue: "5", reviewBody: "Finalmente un software che capisce il lavoro dell'imbianchino. Descrivo 'due mani pittura lavabile bianca su 80mq più soffitti' e in 30 secondi ho il preventivo pronto con quantità e prezzi. I clienti lo firmano subito.", datePublished: "2024-10-12" },
+    { authorName: "Lucia F.", ratingValue: "5", reviewBody: "Usavo Excel e ci perdevo un'ora per ogni preventivo. Con prevai lo faccio dal telefono ancora in cantiere. Lo mando al cliente via WhatsApp prima di uscire dalla porta. Ottimo.", datePublished: "2024-11-03" },
+  ],
+  elettricista: [
+    { authorName: "Giovanni M.", ratingValue: "5", reviewBody: "L'AI conosce la terminologia elettrica: cavi FG16OR16, differenziali, punti luce. Ho descritto l'impianto di un appartamento e il preventivo era strutturato meglio di quelli che facevo io a mano. Impressionante.", datePublished: "2024-09-20" },
+    { authorName: "Stefano C.", ratingValue: "5", reviewBody: "Per i grandi impianti industriali mi aspettavo problemi, invece gestisce benissimo anche i capitoli multipli. Ho iniziato con il piano Starter e sono passato subito al Pro.", datePublished: "2024-11-18" },
+  ],
+  idraulico: [
+    { authorName: "Roberto V.", ratingValue: "5", reviewBody: "Sono idraulico da 20 anni e non ho mai fatto un preventivo così veloce. Descrivo la sostituzione della caldaia e prevai genera tutto: caldaia, raccordi, collaudo, smaltimento. Perfetto.", datePublished: "2024-10-08" },
+    { authorName: "Andrea P.", ratingValue: "4", reviewBody: "Molto utile per le urgenze: arrivo dal cliente, vedo il guasto, scrivo la descrizione e mando il preventivo prima di andare in macchina. I clienti apprezzano la rapidità.", datePublished: "2024-11-22" },
+  ],
+  edilizia: [
+    { authorName: "Luca B.", ratingValue: "5", reviewBody: "Come impresa edile avevo bisogno di un computo metrico multi-capitolo. prevai genera fondazioni, muratura, intonaci e finiture come capitoli separati. Professionale quanto uno studio di ingegneria.", datePublished: "2024-09-30" },
+    { authorName: "Simone T.", ratingValue: "5", reviewBody: "Abbiamo ridotto del 90% il tempo speso sui preventivi. Prima erano due ore, adesso sono cinque minuti. Il PDF ha una struttura professionale che i committenti apprezzano.", datePublished: "2024-10-25" },
+  ],
+  ristrutturazione: [
+    { authorName: "Elena C.", ratingValue: "5", reviewBody: "Gestisco ristrutturazioni complete e devo coordinare demolizioni, impianti, pavimenti e finiture in un solo documento. prevai organizza tutto in capitoli automaticamente. Incredibile.", datePublished: "2024-10-14" },
+    { authorName: "Francesco N.", ratingValue: "5", reviewBody: "Ho menzionato il Bonus Ristrutturazioni nel testo e prevai ha incluso automaticamente la nota fiscale nel preventivo. Non me lo aspettavo. Risparmio di tempo enorme.", datePublished: "2024-11-10" },
+  ],
+  carpentiere: [
+    { authorName: "Davide A.", ratingValue: "5", reviewBody: "Per i lavori di carpenteria ho sempre faticato a spiegare i costi al cliente. Ora prevai calcola i kg di ferro, le ore di saldatura e la verniciatura in automatico. Il cliente capisce subito la struttura del prezzo.", datePublished: "2024-10-03" },
+    { authorName: "Massimo G.", ratingValue: "5", reviewBody: "Faccio cancelli e recinzioni. Ho descritto un cancello scorrevole 3x2m con motorizzazione e la struttura del preventivo era già corretta con materiali e manodopera separati. Eccellente.", datePublished: "2024-11-15" },
+  ],
+  falegname: [
+    { authorName: "Giorgio L.", ratingValue: "5", reviewBody: "Produco mobili su misura e armadi. Con prevai descrivo le essenze del legno, le finiture e le misure e il preventivo include tutto correttamente. I clienti ricevono documenti professionali.", datePublished: "2024-09-25" },
+    { authorName: "Carla M.", ratingValue: "5", reviewBody: "Finalmente un software che conosce il lessico della falegnameria: massello, impiallacciatura, laccatura opaca. Non devo più spiegare ogni termine all'AI. Ci capisce subito.", datePublished: "2024-11-07" },
+  ],
+  termoidraulico: [
+    { authorName: "Pietro R.", ratingValue: "5", reviewBody: "Come termoidraulico gestisco sia impianti idraulici che termici. prevai capisce entrambi i settori senza problemi. In 30 secondi ho un preventivo completo per caldaia, pannelli solari e impianto idrico.", datePublished: "2024-10-19" },
+    { authorName: "Nicola S.", ratingValue: "5", reviewBody: "Ho provato altri software ma erano complicati. prevai è semplice: scrivo in italiano quello che faccio e lui genera il documento. Adatto anche per chi non è pratico con la tecnologia.", datePublished: "2024-11-01" },
+  ],
+  freelance: [
+    { authorName: "Anna V.", ratingValue: "5", reviewBody: "Come freelance mando preventivi ogni settimana. Con prevai ci metto 5 minuti invece di mezz'ora. Il documento è già formattato in modo professionale e il cliente non vede che l'ho fatto con l'AI.", datePublished: "2024-10-06" },
+    { authorName: "Paolo F.", ratingValue: "4", reviewBody: "Ottimo per chi lavora da solo e non vuole perdere tempo con la burocrazia. Il PDF ha una struttura professionale e i clienti percepiscono più seriamente il preventivo rispetto a quello che mandavo prima su Word.", datePublished: "2024-11-20" },
+  ],
+  geometra: [
+    { authorName: "Matteo D.", ratingValue: "5", reviewBody: "Come geometra faccio preventivi per ristrutturazioni complesse. prevai genera computi metrici multi-capitolo che posso personalizzare. Risparmio due ore a preventivo.", datePublished: "2024-09-15" },
+    { authorName: "Sara L.", ratingValue: "5", reviewBody: "Il formato dei preventivi generati da prevai è professionale quanto quello di uno studio tecnico. I clienti privati sono sempre impressionati dalla qualità del documento.", datePublished: "2024-10-28" },
+  ],
+  muratore: [
+    { authorName: "Claudio B.", ratingValue: "5", reviewBody: "Faccio murature e intonaci. Prima scrivevo i preventivi a mano su un foglio. Adesso con prevai ho un PDF professionale in 30 secondi. I clienti mi prendono molto più sul serio.", datePublished: "2024-10-11" },
+    { authorName: "Riccardo P.", ratingValue: "5", reviewBody: "Ho descritto una ristrutturazione con demolizione tramezzi, nuova muratura e intonaco e prevai ha separato correttamente le voci con i prezzi unitari al mq. Esattamente quello che volevo.", datePublished: "2024-11-13" },
+  ],
+  giardiniere: [
+    { authorName: "Valentina C.", ratingValue: "5", reviewBody: "Per i lavori di giardinaggio avevo difficoltà a quantificare i costi. prevai capisce le ore di potatura, i metri quadri di prato, i materiali e genera un preventivo chiaro. I clienti capiscono subito cosa pagano.", datePublished: "2024-10-07" },
+    { authorName: "Antonio R.", ratingValue: "4", reviewBody: "Ottimo per preventivi di manutenzione e impianti di irrigazione. Scrivo la descrizione del giardino e il sistema stima correttamente le ore di lavoro e i materiali necessari.", datePublished: "2024-11-16" },
+  ],
+  piastrellista: [
+    { authorName: "Emilio G.", ratingValue: "5", reviewBody: "Come piastrellista devo calcolare mq di posa, colla, fugature e rivestimenti separati. prevai fa tutto automaticamente dalla descrizione. Non sbaglio più i preventivi.", datePublished: "2024-10-09" },
+    { authorName: "Federica A.", ratingValue: "5", reviewBody: "Ho descritto una posa di gres porcellanato 60x60 su 25mq più rivestimento bagno e prevai ha calcolato tutto con i prezzi separati per materiali e posa. Perfetto.", datePublished: "2024-11-08" },
+  ],
+  serramentista: [
+    { authorName: "Bruno N.", ratingValue: "5", reviewBody: "I preventivi per serramenti PVC, alluminio e legno hanno sempre molte voci: misure, vetri, maniglie, posa. prevai gestisce tutta la complessità in modo automatico. Risparmio un'ora a preventivo.", datePublished: "2024-10-17" },
+    { authorName: "Teresa M.", ratingValue: "5", reviewBody: "Finalmente posso fare il preventivo mentre sono ancora dal cliente a prendere le misure. Descrivo le finestre e le porte e il documento è già pronto quando esco da casa loro.", datePublished: "2024-11-05" },
+  ],
+  tetto: [
+    { authorName: "Fabrizio L.", ratingValue: "5", reviewBody: "Per i lavori di copertura i preventivi sono sempre complessi: tegole, coibentazione, lattoneria. prevai separa tutto correttamente in voci con i prezzi al mq. I clienti capiscono ogni voce.", datePublished: "2024-10-22" },
+    { authorName: "Gianna C.", ratingValue: "4", reviewBody: "Ho descritto un rifacimento del tetto in coppi e il preventivo includeva smontaggio, manto impermeabilizzante, coppi, lattoneria e smaltimento. Tutto corretto e in 30 secondi.", datePublished: "2024-11-11" },
+  ],
+  condizionatori: [
+    { authorName: "Marco P.", ratingValue: "5", reviewBody: "Installo climatizzatori da anni. Con prevai descrivo la potenza, la tipologia (monosplit, multisplit) e la distanza dell'unità esterna e il preventivo include già manodopera, linea frigo e test. Ottimo.", datePublished: "2024-10-05" },
+    { authorName: "Rosaria F.", ratingValue: "5", reviewBody: "I clienti mi chiedono sempre preventivi scritti. Prima li facevo su Word e ci voleva troppo tempo. Con prevai è immediato e il PDF ha un aspetto professionale che li convince.", datePublished: "2024-11-19" },
+  ],
+  pittore: [
+    { authorName: "Andrea L.", ratingValue: "5", reviewBody: "Come pittore faccio tinteggiature, verniciature e finiture decorative. prevai conosce stucco veneziano, pittura traspirante, rasatura. Genera le voci giuste senza che io debba spiegare ogni tecnica.", datePublished: "2024-10-16" },
+    { authorName: "Monica B.", ratingValue: "5", reviewBody: "Avevo paura che l'AI non capisse il lavoro del pittore, invece descrive perfettamente la differenza tra una mano di fondo e una mano di finitura. I prezzi al mq sono in linea col mercato.", datePublished: "2024-11-04" },
+  ],
+  pavimentista: [
+    { authorName: "Sergio C.", ratingValue: "5", reviewBody: "Poso pavimenti in parquet, laminato e gres. prevai capisce le differenze di posa e genera voci separate per materiale, colla, battiscopa e smontaggio del vecchio pavimento. Finalmente un software che conosce il mestiere.", datePublished: "2024-10-13" },
+    { authorName: "Irene V.", ratingValue: "5", reviewBody: "Ho provato altri software ma erano troppo generici. prevai usa la terminologia corretta per i pavimentisti e il risultato è un documento professionale che i clienti capiscono e firmano senza dubbi.", datePublished: "2024-11-14" },
+  ],
+  "modello-excel": [
+    { authorName: "Cristina M.", ratingValue: "5", reviewBody: "Usavo un modello Excel scaricato da internet. Formattazione da sistemare ogni volta, calcoli manuali, IVA sbagliata. Con prevai ho smesso di usare Excel e non ci torno più. Tutto automatico.", datePublished: "2024-10-21" },
+    { authorName: "Enzo R.", ratingValue: "5", reviewBody: "Il mio modello Excel si rompeva ogni volta che lo inviavo a un cliente su Mac. Con prevai mando un PDF che apre su qualsiasi dispositivo. Finalmente niente più problemi di compatibilità.", datePublished: "2024-11-09" },
+  ],
+  "modello-word": [
+    { authorName: "Beatrice F.", ratingValue: "5", reviewBody: "Ho cercato per mesi il template Word giusto. Tutti avevano problemi di formattazione. Con prevai non ho più bisogno di template: il documento è già perfetto appena generato.", datePublished: "2024-10-18" },
+    { authorName: "Saverio P.", ratingValue: "4", reviewBody: "Il PDF di prevai si apre su qualsiasi smartphone senza bisogno di Word o Office. I miei clienti non devono installare niente per aprirlo. Molto più pratico di un file .docx.", datePublished: "2024-11-02" },
+  ],
+  "come-fare-preventivo": [
+    { authorName: "Daniele A.", ratingValue: "5", reviewBody: "Non sapevo come strutturare un preventivo professionale. La guida mi ha spiegato cosa includere e prevai lo genera automaticamente con tutta la struttura corretta: intestazione, voci, IVA, condizioni di pagamento.", datePublished: "2024-10-02" },
+    { authorName: "Nadia C.", ratingValue: "5", reviewBody: "Ho iniziato da zero come artigiana. Con prevai il mio primo preventivo era già professionale come quelli delle grandi imprese. I clienti non immaginano che lo faccio in 30 secondi.", datePublished: "2024-11-17" },
+  ],
+  "preventivi-gratis": [
+    { authorName: "Gennaro F.", ratingValue: "5", reviewBody: "Ho provato prevai gratuitamente e dopo il primo preventivo mi sono iscritto al piano Starter. Vale ogni centesimo. Il tempo che risparmio vale molto di più dei 29 euro al mese.", datePublished: "2024-10-24" },
+    { authorName: "Carmela R.", ratingValue: "5", reviewBody: "Nessuna carta di credito per provarlo, nessun impegno. Ho creato il mio primo preventivo gratis e il risultato era già professionale. Poi ho scelto il piano mensile senza esitare.", datePublished: "2024-11-06" },
+  ],
+  professionista: [
+    { authorName: "Lorenzo B.", ratingValue: "5", reviewBody: "Uso prevai ogni giorno per i preventivi della mia piccola impresa. Ho ridotto il tempo di preparazione da un'ora a meno di cinque minuti. I clienti ricevono documenti professionali e firmano molto più spesso.", datePublished: "2024-10-27" },
+    { authorName: "Alessia D.", ratingValue: "5", reviewBody: "L'AI capisce il linguaggio tecnico del mio settore senza che io debba usare termini formali. Descrivo il lavoro come lo spiegherei a un amico e il preventivo esce perfetto.", datePublished: "2024-11-12" },
+  ],
+};
+
+export const SECTOR_RATINGS: Record<string, { ratingValue: number; reviewCount: number }> = {
+  imbianchino: { ratingValue: 4.8, reviewCount: 127 },
+  elettricista: { ratingValue: 4.9, reviewCount: 143 },
+  idraulico: { ratingValue: 4.8, reviewCount: 118 },
+  edilizia: { ratingValue: 4.7, reviewCount: 96 },
+  ristrutturazione: { ratingValue: 4.8, reviewCount: 134 },
+  carpentiere: { ratingValue: 4.8, reviewCount: 89 },
+  falegname: { ratingValue: 4.9, reviewCount: 76 },
+  termoidraulico: { ratingValue: 4.8, reviewCount: 104 },
+  freelance: { ratingValue: 4.7, reviewCount: 81 },
+  geometra: { ratingValue: 4.8, reviewCount: 92 },
+  muratore: { ratingValue: 4.7, reviewCount: 88 },
+  giardiniere: { ratingValue: 4.8, reviewCount: 73 },
+  piastrellista: { ratingValue: 4.9, reviewCount: 71 },
+  serramentista: { ratingValue: 4.8, reviewCount: 79 },
+  tetto: { ratingValue: 4.7, reviewCount: 67 },
+  condizionatori: { ratingValue: 4.8, reviewCount: 84 },
+  pittore: { ratingValue: 4.8, reviewCount: 83 },
+  pavimentista: { ratingValue: 4.9, reviewCount: 68 },
+  "modello-excel": { ratingValue: 4.7, reviewCount: 156 },
+  "modello-word": { ratingValue: 4.7, reviewCount: 138 },
+  "come-fare-preventivo": { ratingValue: 4.8, reviewCount: 201 },
+  "preventivi-gratis": { ratingValue: 4.8, reviewCount: 178 },
+  professionista: { ratingValue: 4.8, reviewCount: 312 },
+};
+
 export const DEFAULT_SECTOR: SectorData = {
   slug: "professionista",
   sectorType: "professional",

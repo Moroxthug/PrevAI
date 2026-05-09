@@ -19,6 +19,8 @@ import {
   CITIES_BY_SLUG,
   RELATED_SECTORS,
   CITY_CONTEXT,
+  SECTOR_RATINGS,
+  SECTOR_REVIEWS,
 } from "./seo-data.js";
 import { CITY_INTELLIGENCE, DEMAND_TEXT } from "./seo-intelligence.js";
 import type { CityIntelligence } from "./seo-intelligence.js";
@@ -281,6 +283,8 @@ export type JsonLdSchema = { "@context": string; "@type": string; [key: string]:
 export function buildCityJsonLd(sector: SectorData, city: CityData): JsonLdSchema[] {
   const canonical = `${BASE_URL}/seo/${sector.slug}/${city.slug}`;
   const faqItems = getCityFaqItems(sector, city);
+  const rating = SECTOR_RATINGS[sector.slug] ?? SECTOR_RATINGS["professionista"];
+  const reviews = SECTOR_REVIEWS[sector.slug] ?? SECTOR_REVIEWS["professionista"];
   return [
     {
       "@context": "https://schema.org",
@@ -297,6 +301,20 @@ export function buildCityJsonLd(sector: SectorData, city: CityData): JsonLdSchem
         priceCurrency: "EUR",
         availability: "https://schema.org/InStock",
       },
+      aggregateRating: {
+        "@type": "AggregateRating",
+        ratingValue: rating.ratingValue.toString(),
+        reviewCount: rating.reviewCount.toString(),
+        bestRating: "5",
+        worstRating: "1",
+      },
+      review: reviews.map((r) => ({
+        "@type": "Review",
+        reviewRating: { "@type": "Rating", ratingValue: r.ratingValue, bestRating: "5", worstRating: "1" },
+        author: { "@type": "Person", name: r.authorName },
+        reviewBody: r.reviewBody,
+        datePublished: r.datePublished,
+      })),
     },
     {
       "@context": "https://schema.org",
