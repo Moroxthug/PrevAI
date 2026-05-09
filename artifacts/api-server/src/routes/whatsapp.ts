@@ -500,10 +500,28 @@ async function handleClientChoiceReply(
 
   const t = text.trim();
   const numChoice = parseInt(t, 10);
+  const awaitingNewClientText = !!(payload._awaitingNewClientText as boolean | undefined);
 
-  if (!isNaN(numChoice) && numChoice === 0) {
-    // New client — will ask for name + address inline
-    clientData = { nome: "", indirizzo: "" };
+  // If we're waiting for the user to type their new client's name/address
+  if (awaitingNewClientText) {
+    if (/^(salta|skip|nessun cliente|-)$/i.test(t)) {
+      clientData = { nome: "", indirizzo: "" };
+    } else {
+      const parts = t.split(/[,\n]+/).map(p => p.trim()).filter(Boolean);
+      clientData = { nome: parts[0] ?? "", indirizzo: parts.slice(1).join(", ") };
+    }
+    // Fall through to send job input prompt below
+  } else if (!isNaN(numChoice) && numChoice === 0) {
+    // User chose "Nuovo cliente" — ask for name+address before proceeding
+    await sendWhatsappText(from, [
+      `👤 Inserisci *nome e indirizzo* del nuovo cliente (es. "Mario Rossi, Via Roma 1, Milano"),`,
+      `oppure scrivi *salta* per lasciare vuoto.`,
+    ].join("\n"));
+    await upsertSession(from, userId, "awaiting_client_choice", {
+      ...payload,
+      _awaitingNewClientText: true,
+    }, 0);
+    return;
   } else if (!isNaN(numChoice) && numChoice >= 1 && numChoice <= existingClients.length) {
     clientData = existingClients[numChoice - 1]!;
   } else if (/^(salta|skip|nessun cliente|-)$/i.test(t)) {
