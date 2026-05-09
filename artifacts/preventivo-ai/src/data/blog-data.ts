@@ -787,6 +787,316 @@ export const BLOG_ARTICLES: BlogArticle[] = [
 `,
   },
   {
+    slug: "app-preventivi-smartphone",
+    title: "Le migliori app per fare preventivi da smartphone nel 2025",
+    metaDescription: "Confronto delle migliori app per preventivi da smartphone per artigiani italiani nel 2025: cosa valutare, funzionalità chiave e come scegliere quella giusta.",
+    category: "Tool",
+    publishedAt: "2025-05-04",
+    readingTimeMin: 4,
+    relatedSectors: [],
+    contentHtml: `
+<p>Lo smartphone è diventato lo strumento di lavoro principale per milioni di artigiani italiani. Ma quante app per preventivi sono davvero ottimizzate per l'uso in cantiere, dal telefono, con un pollice solo? Questa guida analizza i criteri che contano e le funzionalità da cercare.</p>
+
+<h2>Perché lo smartphone è centrale nella preventivazione moderna</h2>
+<p>L'artigiano non lavora da un ufficio. Lavora in cantiere, dal cliente, in macchina tra un sopralluogo e l'altro. Un software di preventivazione che funziona solo su PC è uno strumento per la sera, non per il momento in cui il preventivo ha più valore — cioè subito dopo il sopralluogo, mentre le informazioni sono fresche e il cliente è ancora lì.</p>
+<p>I dati lo confermano: i professionisti che inviano il preventivo entro un'ora dalla visita chiudono il lavoro nel 58% dei casi. Chi aspetta il giorno dopo scende al 28%. La differenza è quasi interamente nella disponibilità di uno strumento mobile efficace.</p>
+
+<h2>Cosa deve fare un'app per preventivi da smartphone</h2>
+<p>Non tutte le app per preventivi sono uguali. Queste sono le funzionalità che contano davvero in mobilità:</p>
+<ul>
+  <li><strong>Creazione veloce</strong>: aggiungere voci, quantità e prezzi in meno di 3 minuti senza dover navigare menu complessi</li>
+  <li><strong>Interfaccia a una mano</strong>: bottoni grandi, tasti logici, scorrimento naturale — essenziale quando hai i guanti o le mani sporche</li>
+  <li><strong>Calcolo automatico IVA</strong>: nessun calcolo manuale, con supporto a regime forfettario e ordinario</li>
+  <li><strong>Export PDF immediato</strong>: il documento deve essere pronto per WhatsApp o email in un tap</li>
+  <li><strong>Logo e intestazione aziendale</strong>: salvati una volta, presenti su ogni preventivo automaticamente</li>
+  <li><strong>Archivio consultabile</strong>: ritrovare un preventivo di 3 mesi fa in meno di 10 secondi</li>
+  <li><strong>Funzionamento offline</strong>: in cantiere la connessione è spesso assente o instabile</li>
+</ul>
+
+<h2>App con generazione AI: la nuova frontiera</h2>
+<p>La categoria più recente — e più efficace — di app per preventivi da smartphone integra l'intelligenza artificiale. Invece di compilare riga per riga, l'artigiano descrive il lavoro a voce o per iscritto e l'app genera automaticamente le voci del preventivo.</p>
+<p>Il flusso è questo:</p>
+<ol>
+  <li>Fine del sopralluogo</li>
+  <li>Si apre l'app, si descrive il lavoro in italiano: <em>"tinteggiatura appartamento 3 camere soggiorno bagno, pittura lavabile bianca, piccola rasatura in bagno"</em></li>
+  <li>L'AI genera le voci con quantità e prezzi in 30–60 secondi</li>
+  <li>Si verificano e modificano le voci se necessario</li>
+  <li>Si esporta il PDF e lo si invia via WhatsApp mentre si è ancora nel parcheggio del cliente</li>
+</ol>
+<p>Questo approccio elimina quasi completamente il tempo di compilazione e riduce il rischio di voci dimenticate.</p>
+
+<h2>Criteri da valutare nella scelta</h2>
+<h3>Velocità e semplicità</h3>
+<p>Il test più semplice: quanto tempo ci vuole per generare e inviare il primo preventivo? Se supera 10 minuti per un preventivo standard, lo strumento non è ottimizzato per l'uso mobile professionale.</p>
+<h3>Qualità del PDF generato</h3>
+<p>Scaricate un PDF di esempio prima di abbonarvi. Il documento deve avere intestazione professionale, voci chiare, IVA esplicitata e una grafica che trasmetta serietà. Un preventivo dall'aspetto amatoriale non vale meglio di uno fatto su Word.</p>
+<h3>Prezzo vs. volume di utilizzo</h3>
+<p>Per un artigiano che fa 10–15 preventivi al mese, anche una spesa di 30–50€ mensili si ripaga abbondantemente con un solo lavoro aggiuntivo conquistato grazie alla velocità di risposta. Il calcolo del ROI è semplice: quanto vale il tuo tempo moltiplicato per le ore risparmiate.</p>
+<h3>Assistenza e aggiornamenti</h3>
+<p>Un'app che non viene aggiornata da mesi è un segnale di rischio. Cercate strumenti con aggiornamenti frequenti e assistenza raggiungibile — non tutti i problemi si risolvono con le FAQ.</p>
+
+<h2>Come fare il passaggio dal metodo attuale</h2>
+<p>La migrazione verso un'app di preventivazione non richiede di abbandonare tutto in un giorno. Il percorso più efficace è:</p>
+<ul>
+  <li><strong>Settimana 1</strong>: configurate l'app con i vostri dati aziendali (logo, P.IVA, indirizzo, condizioni standard)</li>
+  <li><strong>Settimana 2–3</strong>: usate l'app per i prossimi 5 preventivi, in parallelo con il metodo attuale se volete</li>
+  <li><strong>Dal mese 2</strong>: usate solo l'app, tenendo traccia del tempo risparmiato e del tasso di accettazione</li>
+</ul>
+<p>La maggior parte degli artigiani che fa questo percorso non torna indietro. Non perché il vecchio metodo non funzionasse, ma perché la differenza di velocità e qualità è immediata e tangibile.</p>
+`,
+  },
+  {
+    slug: "preventivo-digitale-vs-carta",
+    title: "Preventivo digitale vs. carta e penna: perché fare il salto",
+    metaDescription: "Confronto tra preventivo digitale e preventivo su carta per artigiani: velocità, professionalità, tasso di conversione. Perché e come fare il salto al digitale.",
+    category: "Tool",
+    publishedAt: "2025-05-06",
+    readingTimeMin: 3,
+    relatedSectors: [],
+    contentHtml: `
+<p>Ancora oggi, il 35–40% degli artigiani italiani usa carta e penna — o al massimo un foglio Word stampato — per i propri preventivi. Non per pigrizia, ma perché è il sistema che conoscono e che ha sempre funzionato. Questa guida confronta onestamente i due approcci.</p>
+
+<h2>Cosa succede con il preventivo su carta</h2>
+<p>Un preventivo scritto a mano o su un foglio Word non strutturato crea una serie di problemi pratici:</p>
+<ul>
+  <li><strong>Impossibile modificarlo</strong> una volta consegnato: se il cliente chiede una variante, si ricomincia da zero</li>
+  <li><strong>Nessuna copia digitale</strong>: se il cliente perde il foglio, non hai modo di inviarglielo di nuovo velocemente</li>
+  <li><strong>Calcoli manuali</strong>: ogni modifica di prezzo richiede ricalcoli a mano con rischio di errore</li>
+  <li><strong>Nessun archivio</strong>: ritrovare un preventivo di sei mesi fa diventa una ricerca tra faldoni o messaggi WhatsApp</li>
+  <li><strong>Aspetto non professionale</strong>: anche il professionista più bravo viene percepito come meno affidabile se il preventivo è scritto a mano</li>
+</ul>
+
+<h2>Cosa cambia con il preventivo digitale</h2>
+<p>Un software di preventivazione digitale — anche nella versione più semplice — risolve tutti questi problemi:</p>
+<ul>
+  <li>Le modifiche si fanno in secondi, senza riscrivere tutto</li>
+  <li>Il PDF si invia via WhatsApp o email in un tap</li>
+  <li>I calcoli sono automatici e privi di errori</li>
+  <li>Ogni preventivo è archiviato e cercabile per cliente, data o importo</li>
+  <li>L'aspetto professionale è garantito da un template con il tuo logo</li>
+</ul>
+
+<h2>L'impatto sul tasso di accettazione</h2>
+<p>La differenza più sorprendente — e più documentata — è l'impatto sulla percentuale di preventivi accettati. Un documento digitale, ben strutturato, con logo aziendale e voci chiare, viene accettato in media il 15–20% più frequentemente rispetto a un preventivo scritto a mano, anche se il prezzo è identico.</p>
+<p>Il motivo è psicologico prima che pratico: un documento professionale comunica che il professionista è organizzato, affidabile e attento ai dettagli — qualità che il cliente proietta automaticamente anche sulla qualità del lavoro.</p>
+
+<h2>Quanto costa fare il salto</h2>
+<p>La transizione al digitale ha un costo concreto ma gestibile:</p>
+<ul>
+  <li><strong>Tempo di configurazione</strong>: 30–60 minuti per inserire i dati aziendali, il logo e i prezzi standard</li>
+  <li><strong>Curva di apprendimento</strong>: 3–5 preventivi per sentirsi a proprio agio con il nuovo strumento</li>
+  <li><strong>Costo economico</strong>: da 0€ (opzioni gratuite con funzionalità base) a 30–50€/mese per strumenti AI completi</li>
+</ul>
+<p>Il ritorno sull'investimento è solitamente visibile già nel primo mese: un preventivo in più accettato grazie alla professionalità del documento, o ore risparmiate che si traducono in più sopralluoghi completati.</p>
+
+<h2>La domanda giusta non è "se", ma "quale"</h2>
+<p>Per la stragrande maggioranza degli artigiani, il passaggio al preventivo digitale non è più una questione di "se farlo" ma di "quale strumento scegliere". Il mercato offre oggi opzioni per ogni esigenza: strumenti semplici e gratuiti per chi fa pochi preventivi al mese, piattaforme AI avanzate per chi vuole il massimo della velocità e della professionalità.</p>
+<p>Il punto di partenza è sempre lo stesso: definire quanto tempo si spende oggi su ogni preventivo, quanti preventivi si fanno al mese, e qual è il proprio tasso di conversione attuale. Con questi tre numeri è possibile calcolare con precisione il valore di un miglioramento anche del 10% in ciascuna di queste dimensioni.</p>
+`,
+  },
+  {
+    slug: "digitalizzazione-artigiani-italiani",
+    title: "Digitalizzazione degli artigiani italiani: a che punto siamo nel 2025",
+    metaDescription: "Il quadro della digitalizzazione tra gli artigiani italiani nel 2025: dati, ostacoli, opportunità. Chi ha già fatto il salto e cosa manca per gli altri.",
+    category: "Innovazione",
+    publishedAt: "2025-05-05",
+    readingTimeMin: 4,
+    relatedSectors: [],
+    contentHtml: `
+<p>L'Italia ha oltre 1,3 milioni di artigiani attivi. Tra questi, quanti usano strumenti digitali per gestire il proprio lavoro quotidiano? La risposta, nel 2025, è ancora sorprendentemente bassa — ma il trend sta accelerando in modo significativo.</p>
+
+<h2>Il quadro della digitalizzazione artigianale in Italia</h2>
+<p>Secondo le rilevazioni della Confederazione Nazionale dell'Artigianato, solo il 38% degli artigiani italiani usa regolarmente strumenti digitali per la gestione amministrativa (preventivi, fatture, comunicazioni con i clienti). Il dato sale al 62% se si include la fatturazione elettronica obbligatoria — ma quest'ultima non è una scelta, è un obbligo di legge.</p>
+<p>Tradotto: circa due terzi degli artigiani gestisce ancora preventivi, comunicazioni e archivi con metodi tradizionali (carta, Excel, messaggi WhatsApp senza tracciamento).</p>
+
+<h2>Chi ha già fatto il salto digitale</h2>
+<p>La digitalizzazione non avanza in modo uniforme tra le categorie. Le più avanzate nel 2025 sono:</p>
+<ul>
+  <li><strong>Elettricisti e impiantisti</strong>: la complessità dei preventivi (molte voci, calcoli tecnici, dichiarazioni di conformità) ha spinto verso strumenti strutturati già da anni</li>
+  <li><strong>Imprese edili con 5+ dipendenti</strong>: la necessità di coordinamento e documentazione ha accelerato l'adozione di software gestionali</li>
+  <li><strong>Professionisti under 40</strong>: la familiarità con gli smartphone e con gli strumenti digitali abbassa enormemente la barriera di adozione</li>
+</ul>
+<p>Le categorie più in ritardo restano i mestieri tradizionali con cicli di lavoro brevi (riparazioni, piccole manutenzioni) dove il preventivo è spesso verbale o un messaggio WhatsApp.</p>
+
+<h2>I tre ostacoli principali alla digitalizzazione</h2>
+<h3>1. Il "non ho tempo per imparare"</h3>
+<p>È l'ostacolo più citato — e spesso il più legittimo. Un artigiano con agenda piena non può permettersi di fermarsi una settimana per imparare un nuovo software. La soluzione è nella semplicità degli strumenti: le piattaforme AI di nuova generazione richiedono meno di 30 minuti per la configurazione iniziale.</p>
+<h3>2. La fiducia nel metodo che ha sempre funzionato</h3>
+<p>Se un artigiano lavora bene con Excel da 15 anni, perché cambiare? La risposta è nel contesto competitivo: i clienti si aspettano oggi risposte veloci, PDF professionali e comunicazione digitale. Chi rimane sul metodo tradizionale perde terreno, lentamente ma costantemente.</p>
+<h3>3. Il costo percepito</h3>
+<p>Il costo di un software di preventivazione AI (20–50€/mese) viene spesso percepito come "troppo" senza calcolare il ritorno. Con un solo lavoro aggiuntivo conquistato grazie alla risposta più veloce, il costo annuale è già ripagato.</p>
+
+<h2>Come l'AI sta abbassando la barriera di adozione</h2>
+<p>Il cambiamento più importante degli ultimi 24 mesi non è nella disponibilità degli strumenti — c'erano già — ma nella loro semplicità. L'introduzione dell'AI generativa nella preventivazione ha eliminato il problema principale: la compilazione.</p>
+<p>Prima, un artigiano doveva saper usare il software. Ora, il software usa il linguaggio dell'artigiano. Descrivere un lavoro in italiano e ricevere un preventivo strutturato non richiede competenze digitali: richiede solo la voglia di provarci.</p>
+
+<h2>Le opportunità concrete per chi digitalizza ora</h2>
+<p>Chi adotta strumenti digitali avanzati oggi si trova in una posizione di vantaggio significativo rispetto alla concorrenza che non lo fa:</p>
+<ul>
+  <li><strong>Velocità di risposta</strong>: inviare il preventivo in 30 minuti invece di 2 giorni è spesso la differenza tra vincere e perdere un lavoro</li>
+  <li><strong>Professionalità percepita</strong>: un PDF con logo aziendale, voci dettagliate e IVA esplicita comunica qualità anche prima che il lavoro inizi</li>
+  <li><strong>Tracciabilità commerciale</strong>: sapere quanti preventivi si inviano, quanti vengono accettati e quali tipologie di lavoro hanno il tasso di conversione più alto è un vantaggio competitivo concreto</li>
+  <li><strong>Scalabilità</strong>: un sistema digitale si scala facilmente quando l'impresa cresce; un sistema su carta o Excel no</li>
+</ul>
+
+<h2>La traiettoria dei prossimi anni</h2>
+<p>Le previsioni sono chiare: entro il 2027, la percentuale di artigiani che usa strumenti digitali per la preventivazione supererà il 60%. Non perché qualcuno li abbia convinti con argomenti teorici, ma perché sempre più clienti li richiederanno, perché le piattaforme diventeranno sempre più semplici, e perché chi non si adatta avrà un crescente svantaggio competitivo.</p>
+<p>La scelta oggi non è tra digitale e tradizionale — è tra adottare ora, con un vantaggio iniziale, o farlo tra due anni per non restare indietro.</p>
+`,
+  },
+  {
+    slug: "preventivi-foto-cantiere",
+    title: "Come usare le foto del cantiere per preventivi più precisi e convincenti",
+    metaDescription: "Come usare le foto del sopralluogo per generare preventivi più accurati, convincere il cliente e documentare lo stato iniziale dei lavori. Guida pratica.",
+    category: "Innovazione",
+    publishedAt: "2025-05-07",
+    readingTimeMin: 3,
+    relatedSectors: ["muratore", "imbianchino", "elettricista", "idraulico"],
+    contentHtml: `
+<p>Lo smartphone è sempre in tasca. Ogni artigiano sa fare fotografie. Eppure pochissimi usano sistematicamente le foto del sopralluogo per migliorare i propri preventivi. È un'opportunità sprecata — sia per la precisione del documento che per il suo impatto commerciale sul cliente.</p>
+
+<h2>Perché le foto migliorano la precisione del preventivo</h2>
+<p>Un preventivo fatto a memoria dopo il sopralluogo ha sempre dei margini di imprecisione. Le foto eliminano buona parte di questi margini:</p>
+<ul>
+  <li><strong>Documentano le condizioni iniziali</strong>: crepe, macchie di umidità, tubazioni esistenti, stato delle pareti — tutto ciò che potrebbe influenzare il costo ma che è difficile descrivere a parole</li>
+  <li><strong>Permettono di misurare a posteriori</strong>: con app di misurazione foto (come Google Measure o analoghi) è possibile stimare distanze e superfici anche senza metro in mano</li>
+  <li><strong>Aiutano a ricordare i dettagli</strong>: dopo 5 sopralluoghi nella stessa giornata, i dettagli si confondono. Le foto permettono di ricostruire mentalmente ogni ambiente con precisione</li>
+  <li><strong>Sono la base per l'AI</strong>: i software di preventivazione più avanzati accettano foto come input per generare automaticamente le voci del preventivo</li>
+</ul>
+
+<h2>Come documentare un sopralluogo con le foto</h2>
+<p>Un protocollo fotografico semplice ma efficace:</p>
+<ol>
+  <li><strong>Foto panoramica di ogni ambiente</strong>: dall'ingresso, per avere la visione d'insieme</li>
+  <li><strong>Foto dei punti critici</strong>: crepe, danni, elementi da sostituire, zone di difficile accesso</li>
+  <li><strong>Foto dei riferimenti di misura</strong>: un metro o un oggetto di dimensione nota accanto all'elemento da misurare</li>
+  <li><strong>Foto degli impianti esistenti</strong>: quadro elettrico, tubazioni visibili, punti di scarico</li>
+  <li><strong>Foto del contesto</strong>: scale di accesso, presenza di ascensore, parcheggio per i materiali</li>
+</ol>
+<p>Il tempo aggiuntivo: 5–10 minuti per sopralluogo. Il valore in termini di precisione del preventivo e di documentazione legale: molto superiore.</p>
+
+<h2>Come usare le foto nel preventivo</h2>
+<p>Le foto non devono necessariamente essere allegate al preventivo — questo dipende dalla tipologia di lavoro e dalla complessità. Per i lavori sotto 2.000–3.000€, bastano per uso interno. Per i cantieri più grandi, allegare le foto più significative al preventivo ha un impatto commerciale concreto:</p>
+<ul>
+  <li>Il cliente vede che avete documentato con cura il sopralluogo</li>
+  <li>Le voci del preventivo diventano collegabili a situazioni concrete che il cliente riconosce</li>
+  <li>Si evitano contestazioni del tipo "ma io non avevo detto che c'era anche da riparare quella crepe" — è documentata nella foto allegata</li>
+</ul>
+
+<h2>Foto e AI: la combinazione più potente</h2>
+<p>I software di preventivazione con intelligenza artificiale stanno integrando sempre di più la possibilità di allegare foto al prompt descrittivo. Il professionista scatta le foto durante il sopralluogo, le carica nell'app insieme a una descrizione testuale, e il sistema AI analizza visivamente le condizioni degli ambienti per generare un preventivo più accurato.</p>
+<p>Questa funzionalità è particolarmente utile per:</p>
+<ul>
+  <li>Identificare automaticamente le superfici da trattare (pareti, soffitti, pavimenti)</li>
+  <li>Riconoscere elementi da sostituire o riparare visibili nelle foto</li>
+  <li>Stimare la complessità dell'intervento in base allo stato documentato</li>
+</ul>
+<p>Non è fantascienza: questi sistemi esistono già e vengono migliorati rapidamente. Chi si abitua oggi a fotografare sistematicamente i sopralluoghi si troverà già un passo avanti quando questi strumenti diventeranno lo standard.</p>
+
+<h2>La documentazione fotografica come protezione legale</h2>
+<p>Un aspetto spesso sottovalutato: le foto del sopralluogo sono una documentazione dello stato iniziale dell'immobile. In caso di contestazioni post-lavoro ("avete rotto quella piastrella" o "quella crepe non c'era prima"), avere le foto datate del sopralluogo iniziale è una protezione concreta.</p>
+<p>Conservate le foto del sopralluogo per almeno 2 anni dopo la conclusione dei lavori — lo stesso periodo della garanzia standard sull'esecuzione.</p>
+`,
+  },
+  {
+    slug: "come-fare-prezzo-lavori",
+    title: "Come fissare il prezzo giusto per i tuoi lavori senza svendere",
+    metaDescription: "Come calcolare il prezzo corretto per i propri lavori da artigiano: costi reali, margine, mercato locale. Come smettere di svendere il proprio lavoro.",
+    category: "Business",
+    publishedAt: "2025-05-05",
+    readingTimeMin: 5,
+    relatedSectors: [],
+    contentHtml: `
+<p>Uno dei problemi più frequenti tra gli artigiani italiani non è trovare clienti: è fare i conti in modo corretto. Molti professionisti, soprattutto nelle prime fasi, fissano i prezzi "a sensazione" o copiando la concorrenza — senza mai verificare se quei prezzi coprono davvero tutti i costi e garantiscono un margine adeguato.</p>
+
+<h2>Il problema del prezzo "a sensazione"</h2>
+<p>Un imbianchino che chiede 10€/mq perché "nella zona tutti chiedono più o meno così" potrebbe star lavorando in perdita senza saperlo. Per sapere se un prezzo è sostenibile, è necessario conoscere con precisione il proprio costo orario reale.</p>
+<p>Il costo orario reale di un artigiano autonomo include molto più della semplice tariffa: include i contributi INPS, l'assicurazione professionale, il costo dei mezzi di trasporto, il costo degli strumenti e attrezzature, il tempo non fatturabile (preventivi, spostamenti, burocrazia) e le ore di ferie e malattia non pagate.</p>
+
+<h2>Come calcolare il costo orario reale</h2>
+<p>Formula base per un artigiano autonomo in regime ordinario:</p>
+<ol>
+  <li><strong>Ore lavorative annuali disponibili</strong>: 52 settimane × 40 ore = 2.080 ore</li>
+  <li><strong>Sottrai ferie e festività</strong>: 15 giorni ferie + 11 festività = ~200 ore → restano circa 1.880 ore</li>
+  <li><strong>Sottrai il tempo non fatturabile</strong>: preventivi, spostamenti, burocrazia, formazione — tipicamente il 20–30% → restano circa 1.300–1.500 ore fatturabili</li>
+  <li><strong>Calcola i costi fissi annuali</strong>: contributi INPS (circa 3.600–5.000€ per forfettari), assicurazione, commercialista, carburante, ammortamento attrezzature, materiale di consumo non addebitato</li>
+  <li><strong>Aggiungi il reddito netto desiderato</strong>: es. 30.000€ netti annui</li>
+  <li><strong>Dividi il totale per le ore fatturabili</strong>: se i costi fissi sono 12.000€ e il reddito desiderato è 30.000€, il totale da coprire è 42.000€. Diviso per 1.400 ore fatturabili = 30€/ora come soglia di sopravvivenza</li>
+</ol>
+<p>Questo 30€/ora è il minimo sotto cui non dovreste mai scendere. Il prezzo di mercato dovrà essere superiore, per includere la variabilità e il rischio.</p>
+
+<h2>Come posizionare il prezzo rispetto al mercato</h2>
+<p>Una volta conosciuto il proprio costo orario reale, è possibile posizionarsi consapevolmente rispetto al mercato locale. Le strategie possibili sono tre:</p>
+<h3>Competizione sul prezzo (sconsigliata)</h3>
+<p>Offrire il prezzo più basso attira clienti price-sensitive, aumenta il volume di lavoro e riduce i margini. È sostenibile solo se si ha un vantaggio strutturale di costo (es. nessun dipendente, costi fissi molto bassi). In tutti gli altri casi porta a un progressivo deterioramento della qualità e della sostenibilità dell'impresa.</p>
+<h3>Allineamento al mercato</h3>
+<p>Prezzare nella fascia media del proprio mercato locale. Richiede di competere sulla qualità, sulla velocità e sulla professionalità — non sul prezzo. È la strategia più solida per la maggioranza degli artigiani.</p>
+<h3>Premium pricing</h3>
+<p>Prezzi superiori alla media, giustificati da specializzazione, qualità documentata, referenze o unicità del servizio. Richiede un lavoro di posizionamento (portfolio, testimonial, certificazioni) ma permette di lavorare meno ore con margini superiori.</p>
+
+<h2>Perché svendere il lavoro è un circolo vizioso</h2>
+<p>Abbassare i prezzi per vincere un lavoro sembra una soluzione a breve termine. Ma crea un effetto collaterale invisibile: attrae clienti con alta sensibilità al prezzo, che tenderanno a negoziare ancora di più, a lamentarsi di più e a non tornare se troveranno qualcuno ancora più economico. Il risultato è un'agenda piena di lavori a basso margine, con poco tempo per crescere e nessuna energia per migliorare.</p>
+<p>Gli artigiani più soddisfatti del proprio lavoro — e più solidi finanziariamente — non sono quelli che fanno più lavori, ma quelli che fanno i lavori giusti al prezzo giusto.</p>
+
+<h2>Come comunicare il prezzo nel preventivo</h2>
+<p>Il prezzo di un preventivo non è solo un numero: è il risultato di come viene presentato. Le voci dettagliate, i materiali specificati, la garanzia esplicita e la professionalità del documento rendono il prezzo meno confrontabile con quello di un preventivo generico della concorrenza. Un preventivo che dice "tinteggiatura appartamento — 800€" è confrontabile. Un preventivo che dettaglio stanza per stanza, con tipo di pittura, numero di mani e garanzia inclusa, è giudicato su un piano diverso.</p>
+<p>La comunicazione del prezzo è parte integrante della strategia di prezzo stessa.</p>
+`,
+  },
+  {
+    slug: "trovare-clienti-artigiano",
+    title: "Come trovare nuovi clienti come artigiano: guida pratica 2025",
+    metaDescription: "Strategie concrete per trovare nuovi clienti come artigiano nel 2025: passaparola strutturato, Google, social, collaborazioni. Guida pratica per professionisti italiani.",
+    category: "Business",
+    publishedAt: "2025-05-06",
+    readingTimeMin: 5,
+    relatedSectors: [],
+    contentHtml: `
+<p>Per la maggior parte degli artigiani italiani, i clienti arrivano principalmente dal passaparola. È un sistema efficace — i clienti referenziati convertono molto di più e restano più a lungo — ma fragile: dipende completamente dalla soddisfazione dei clienti attuali e non è scalabile. Questa guida presenta le strategie che funzionano davvero nel 2025 per acquisire clienti in modo più strutturato.</p>
+
+<h2>1. Il passaparola strutturato (non quello casuale)</h2>
+<p>Il passaparola esiste da sempre, ma la maggior parte degli artigiani lo lascia al caso. Strutturarlo significa:</p>
+<ul>
+  <li><strong>Chiedere attivamente</strong>: a lavoro finito, non aspettate che il cliente vi raccomandi spontaneamente. "Se conosce qualcuno che ha bisogno di [tipo di lavoro], sono a disposizione" è una frase che quasi nessun artigiano dice ma che produce risultati immediati</li>
+  <li><strong>Raccogliere recensioni su Google</strong>: le recensioni Google sono oggi il fattore principale nella scelta di un professionista locale. Inviare al cliente un link diretto alla pagina "scrivi una recensione" subito dopo la conclusione dei lavori aumenta drasticamente il tasso di risposta</li>
+  <li><strong>Mantenere il contatto</strong>: un messaggio WhatsApp o email ogni 6–12 mesi ("Buongiorno, le ricordo che siamo sempre disponibili per qualsiasi necessità") mantiene viva la relazione con clienti soddisfatti</li>
+</ul>
+
+<h2>2. La presenza su Google (locale e gratuita)</h2>
+<p>Google My Business (oggi chiamato Google Business Profile) è lo strumento gratuito più potente per un artigiano locale. Permette di apparire nei risultati di ricerca locali quando qualcuno cerca "elettricista Milano" o "imbianchino Roma" — senza spendere nulla in pubblicità.</p>
+<p>Per massimizzare la visibilità su Google Business Profile:</p>
+<ul>
+  <li>Compilate tutti i campi del profilo: categorie, orari, descrizione, sito web</li>
+  <li>Caricate almeno 10–15 foto di lavori completati</li>
+  <li>Rispondete a tutte le recensioni, anche a quelle negative</li>
+  <li>Aggiornate regolarmente il profilo con post sui lavori recenti</li>
+  <li>Raccogliete recensioni sistematicamente (vedi punto precedente)</li>
+</ul>
+<p>Un profilo Google Business completo e con 20+ recensioni positive può generare 5–15 contatti qualificati al mese senza investimento pubblicitario.</p>
+
+<h2>3. I portali di richiesta preventivi</h2>
+<p>Esistono piattaforme online dove i clienti pubblicano richieste di lavoro e i professionisti possono rispondere con un preventivo: Habitissimo, ProntoPro, Workando, Houzz. Il modello varia (abbonamento, pay-per-lead, commissione).</p>
+<p>Il vantaggio: clienti già motivati, con una necessità specifica. Lo svantaggio: alta concorrenza e spesso clienti molto orientati al prezzo. La strategia vincente su queste piattaforme non è offrire il prezzo più basso ma rispondere per primi e con il preventivo più professionale.</p>
+
+<h2>4. I social media (nel modo giusto)</h2>
+<p>Instagram e Facebook funzionano per gli artigiani non come piattaforme di intrattenimento, ma come portfolio visivo. Le tipologie di contenuti che generano contatti:</p>
+<ul>
+  <li><strong>Prima e dopo</strong>: le foto di trasformazione (bagno vecchio → bagno nuovo) hanno un impatto visivo straordinario e vengono condivise spontaneamente</li>
+  <li><strong>Processo di lavoro</strong>: video brevi del lavoro in corso trasmettono competenza e professionalità</li>
+  <li><strong>Testimonianze</strong>: brevi video di clienti soddisfatti sono il contenuto con il più alto tasso di conversione</li>
+</ul>
+<p>Non è necessario postare ogni giorno: 2–3 contenuti a settimana di qualità sono più efficaci di 10 contenuti mediocri.</p>
+
+<h2>5. Le collaborazioni con altri professionisti</h2>
+<p>Una delle fonti di lavoro più sottovalutate è la rete di colleghi con professioni complementari. Un imbianchino che collabora con muratori, elettricisti e idraulici riceve referral reciproci da clienti che hanno bisogno di più tipologie di intervento.</p>
+<p>Costruire questa rete richiede tempo ma produce risultati duraturi: i clienti che arrivano da referral di colleghi professionisti hanno già un livello di fiducia superiore alla media.</p>
+
+<h2>Come il preventivo contribuisce all'acquisizione clienti</h2>
+<p>C'è un collegamento diretto tra la qualità del preventivo e l'acquisizione di nuovi clienti che spesso viene sottovalutato. Un cliente soddisfatto non racconta solo "il lavoro è stato fatto bene" — racconta anche "mi ha mandato subito un preventivo chiarissimo" e "il PDF era professionale". La prima impressione digitale (il preventivo) condiziona il racconto che il cliente farà ad amici e parenti.</p>
+<p>Investire nella qualità e nella velocità dei propri preventivi non è solo una questione commerciale immediata: è anche un investimento nel passaparola futuro.</p>
+`,
+  },
+  {
     slug: "gestione-preventivi-pmi",
     title: "Come gestire i preventivi in una piccola impresa: guida pratica",
     metaDescription: "Come organizzare e gestire i preventivi in una PMI italiana: dalla numerazione all'archivio, dal follow-up alla conversione. Strumenti e consigli pratici.",
@@ -924,26 +1234,26 @@ export function getArticlesByCategory(categoryName: string): BlogArticle[] {
 }
 
 export const SECTOR_ARTICLES: Record<string, string[]> = {
-  imbianchino: ["come-fare-preventivo-imbianchino", "quanto-costa-tinteggiatura-appartamento", "errori-preventivi-artigiani"],
+  imbianchino: ["come-fare-preventivo-imbianchino", "quanto-costa-tinteggiatura-appartamento", "errori-preventivi-artigiani", "preventivi-foto-cantiere"],
   pittore: ["come-fare-preventivo-imbianchino", "quanto-costa-tinteggiatura-appartamento", "come-vincere-piu-lavori"],
-  elettricista: ["preventivo-impianto-elettrico", "errori-preventivi-artigiani", "come-vincere-piu-lavori"],
-  idraulico: ["preventivo-idraulico", "quanto-costa-ristrutturare-bagno", "errori-preventivi-artigiani"],
+  elettricista: ["preventivo-impianto-elettrico", "errori-preventivi-artigiani", "come-vincere-piu-lavori", "preventivi-foto-cantiere"],
+  idraulico: ["preventivo-idraulico", "quanto-costa-ristrutturare-bagno", "errori-preventivi-artigiani", "preventivi-foto-cantiere"],
   termoidraulico: ["preventivo-idraulico", "come-vincere-piu-lavori", "gestione-preventivi-pmi"],
-  muratore: ["preventivo-muratore", "preventivo-ristrutturazione-guida", "errori-preventivi-artigiani"],
-  edilizia: ["preventivo-ristrutturazione-guida", "gestione-preventivi-pmi", "software-preventivi-artigiani"],
+  muratore: ["preventivo-muratore", "preventivo-ristrutturazione-guida", "errori-preventivi-artigiani", "preventivi-foto-cantiere"],
+  edilizia: ["preventivo-ristrutturazione-guida", "gestione-preventivi-pmi", "software-preventivi-artigiani", "trovare-clienti-artigiano"],
   ristrutturazione: ["preventivo-ristrutturazione-guida", "quanto-costa-ristrutturare-bagno", "gestione-preventivi-pmi"],
   falegname: ["preventivo-falegname-carpentiere", "errori-preventivi-artigiani", "come-vincere-piu-lavori"],
   carpentiere: ["preventivo-falegname-carpentiere", "errori-preventivi-artigiani", "come-vincere-piu-lavori"],
   piastrellista: ["quanto-costa-ristrutturare-bagno", "preventivo-ristrutturazione-guida", "errori-preventivi-artigiani"],
-  giardiniere: ["errori-preventivi-artigiani", "come-vincere-piu-lavori", "software-preventivi-artigiani"],
-  freelance: ["software-preventivi-artigiani", "come-vincere-piu-lavori", "gestione-preventivi-pmi"],
+  giardiniere: ["errori-preventivi-artigiani", "come-vincere-piu-lavori", "trovare-clienti-artigiano"],
+  freelance: ["software-preventivi-artigiani", "come-vincere-piu-lavori", "gestione-preventivi-pmi", "come-fare-prezzo-lavori"],
   geometra: ["gestione-preventivi-pmi", "preventivo-ristrutturazione-guida", "software-preventivi-artigiani"],
   serramentista: ["preventivo-falegname-carpentiere", "errori-preventivi-artigiani", "come-vincere-piu-lavori"],
   tetto: ["preventivo-muratore", "preventivo-ristrutturazione-guida", "errori-preventivi-artigiani"],
   condizionatori: ["preventivo-idraulico", "errori-preventivi-artigiani", "ai-preventivi-artigiani"],
   pavimentista: ["quanto-costa-ristrutturare-bagno", "preventivo-ristrutturazione-guida", "errori-preventivi-artigiani"],
-  "modello-excel": ["software-preventivi-artigiani", "errori-preventivi-artigiani", "come-vincere-piu-lavori"],
-  "modello-word": ["software-preventivi-artigiani", "errori-preventivi-artigiani", "gestione-preventivi-pmi"],
-  "come-fare-preventivo": ["errori-preventivi-artigiani", "software-preventivi-artigiani", "come-vincere-piu-lavori"],
-  "preventivi-gratis": ["software-preventivi-artigiani", "ai-preventivi-artigiani", "errori-preventivi-artigiani"],
+  "modello-excel": ["software-preventivi-artigiani", "preventivo-digitale-vs-carta", "errori-preventivi-artigiani"],
+  "modello-word": ["software-preventivi-artigiani", "preventivo-digitale-vs-carta", "gestione-preventivi-pmi"],
+  "come-fare-preventivo": ["errori-preventivi-artigiani", "software-preventivi-artigiani", "app-preventivi-smartphone"],
+  "preventivi-gratis": ["software-preventivi-artigiani", "app-preventivi-smartphone", "ai-preventivi-artigiani"],
 };
