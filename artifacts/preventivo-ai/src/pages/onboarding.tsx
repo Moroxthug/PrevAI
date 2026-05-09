@@ -9,7 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Loader2, Building2, Upload, X, ImageIcon, ArrowRight, Sparkles } from "lucide-react";
 import { Logo } from "@/components/logo";
 import { useAuth } from "@/hooks/use-auth";
-import { markOnboardingSkipped, markOnboardingDone } from "@/App";
+import { markOnboardingSkipped, markOnboardingDone } from "@/lib/onboarding-state";
 
 const ALLOWED_TYPES = ["image/svg+xml", "image/png", "image/jpeg", "image/jpg"];
 const MAX_SIZE_MB = 2;

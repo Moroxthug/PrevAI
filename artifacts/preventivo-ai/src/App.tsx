@@ -33,22 +33,9 @@ import { PublicLayout } from "@/components/layout/public-layout";
 import { DashboardLayout } from "@/components/layout/dashboard-layout";
 import { useGetBusinessProfile, getGetBusinessProfileQueryKey } from "@workspace/api-client-react";
 import { useAuth } from "@/hooks/use-auth";
+import { isOnboardingSkipped } from "@/lib/onboarding-state";
 
 const queryClient = new QueryClient();
-
-const ONBOARDING_SKIP_KEY = (userId: string) => `prevai_onboarding_skipped_${userId}`;
-
-export function markOnboardingSkipped(userId: string) {
-  try { localStorage.setItem(ONBOARDING_SKIP_KEY(userId), "1"); } catch {}
-}
-
-export function markOnboardingDone(userId: string) {
-  try { localStorage.removeItem(ONBOARDING_SKIP_KEY(userId)); } catch {}
-}
-
-function isOnboardingSkipped(userId: string): boolean {
-  try { return localStorage.getItem(ONBOARDING_SKIP_KEY(userId)) === "1"; } catch { return false; }
-}
 
 function OnboardingGuard({ children }: { children: React.ReactNode }) {
   const { userId, isLoaded } = useAuth();
