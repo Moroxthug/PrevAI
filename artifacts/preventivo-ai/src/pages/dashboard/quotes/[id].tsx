@@ -422,9 +422,9 @@ export default function QuoteDetail() {
 
   if (!quote) return <div>Preventivo non trovato</div>;
 
-  const isPro = subscription?.isActive && subscription?.plan === "monthly_pro";
+  const isPro = subscription?.isActive && (subscription?.plan === "monthly_pro" || subscription?.plan === "monthly_elite");
   const isTrialActive = trialStatus?.isTrialActive ?? false;
-  // Pro subscribers and active trial users can always download
+  // Pro/Elite subscribers and active trial users can always download
   const isLocked = quote.status !== "unlocked" && !isPro && !isTrialActive;
   // Editing is permanently locked once the PDF has been downloaded
   const isEditLocked = !!quote.pdfDownloadedAt;

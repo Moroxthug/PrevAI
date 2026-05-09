@@ -401,7 +401,7 @@ Quando usi una voce del listino, applica il prezzo unitario esatto o molto simil
       : "";
 
     const hasImages = imageDataUrls.length > 0;
-    const isProUser = profile?.subscriptionStatus === "active" && profile?.subscriptionPlan === "monthly_pro";
+    const isProUser = profile?.subscriptionStatus === "active" && (profile?.subscriptionPlan === "monthly_pro" || profile?.subscriptionPlan === "monthly_elite");
 
     const capitolatoProContext = isProUser
       ? `MODALITÀ CAPITOLATO PROFESSIONALE (attiva per utente Pro):
@@ -633,9 +633,9 @@ router.put("/quotes/:id", requireAuth, async (req, res) => {
           .select({ subscriptionStatus: businessProfilesTable.subscriptionStatus, subscriptionPlan: businessProfilesTable.subscriptionPlan })
           .from(businessProfilesTable)
           .where(eq(businessProfilesTable.userId, userId));
-        const isProUser = profileData?.subscriptionStatus === "active" && profileData?.subscriptionPlan === "monthly_pro";
+        const isProUser = profileData?.subscriptionStatus === "active" && (profileData?.subscriptionPlan === "monthly_pro" || profileData?.subscriptionPlan === "monthly_elite");
         if (!isProUser) {
-          res.status(403).json({ error: "PRO_REQUIRED", message: "This template requires an active Pro subscription" });
+          res.status(403).json({ error: "PRO_REQUIRED", message: "This template requires an active Pro or Elite subscription" });
           return;
         }
       }
@@ -1019,9 +1019,9 @@ router.post("/quotes/:id/upgrade-to-capitolato", requireAuth, async (req, res) =
       .from(businessProfilesTable)
       .where(eq(businessProfilesTable.userId, userId));
 
-    const isProUser = profile?.subscriptionStatus === "active" && profile?.subscriptionPlan === "monthly_pro";
+    const isProUser = profile?.subscriptionStatus === "active" && (profile?.subscriptionPlan === "monthly_pro" || profile?.subscriptionPlan === "monthly_elite");
     if (!isProUser) {
-      res.status(403).json({ error: "Piano Pro richiesto", code: "PRO_REQUIRED" });
+      res.status(403).json({ error: "Piano Pro o Elite richiesto", code: "PRO_REQUIRED" });
       return;
     }
 
@@ -1165,9 +1165,9 @@ router.post("/quotes/:id/generate-pdf-pro", requireAuth, async (req, res) => {
       .from(businessProfilesTable)
       .where(eq(businessProfilesTable.userId, userId));
 
-    const isProUser = profile?.subscriptionStatus === "active" && profile?.subscriptionPlan === "monthly_pro";
+    const isProUser = profile?.subscriptionStatus === "active" && (profile?.subscriptionPlan === "monthly_pro" || profile?.subscriptionPlan === "monthly_elite");
     if (!isProUser) {
-      res.status(403).json({ error: "Piano Pro richiesto", code: "PRO_REQUIRED" });
+      res.status(403).json({ error: "Piano Pro o Elite richiesto", code: "PRO_REQUIRED" });
       return;
     }
 
