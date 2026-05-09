@@ -1,0 +1,247 @@
+# ANALISI SEO COMPLETA — PREVAI.IT (POST-OPTIMIZATION)
+
+Voglio una revisione SEO professionale e ultra approfondita del sito SaaS https://www.prevai.it dopo una massiccia fase di ottimizzazione tecnica, programmatic SEO e performance engineering.
+
+Non voglio una review superficiale tipo “manca una meta description”.
+Voglio un audit reale da livello senior technical SEO / SaaS SEO strategist.
+
+## CONTESTO DEL PROGETTO
+
+PrevAI è un SaaS AI-first che genera preventivi professionali tramite AI per:
+
+* artigiani
+* imprese
+* professionisti
+* edilizia
+* impiantistica
+* freelance
+
+Il sito usa:
+
+* React SPA
+* prerender statico custom (SSG)
+* hydration bypass per le pagine SEO
+* HTML completamente indicizzabile senza JavaScript
+* oltre 1000 pagine SEO programmatiche
+
+Architettura:
+
+* /seo/:type
+* /seo/:type/:city
+
+Con:
+
+* internal linking hub/spoke
+* nearby city cross-linking
+* FAQ dinamiche
+* metadata dinamici
+* JSON-LD multipli
+* OG dinamici
+* title/meta rotating formulas
+* city intelligence system
+* parity engine shared tra prerender e runtime
+
+Performance attuali Lighthouse mobile:
+
+* Performance: 95
+* SEO: 100
+* FCP: 1.5s
+* LCP: 2.6s
+* TBT: 150ms
+* CLS: 0
+
+Sitemap:
+
+* completa
+* oltre 6000 righe
+* include tutte le pagine settore + città
+
+## COSA VOGLIO DALL'ANALISI
+
+NON limitarti ai basics.
+
+Voglio una valutazione reale su:
+
+# 1. Technical SEO
+
+Analizza:
+
+* rendering
+* crawlability
+* indexability
+* hydration
+* HTML delivery
+* JS impact
+* CWV
+* structured data
+* canonicalization
+* duplicate risk
+* template footprint
+* internal linking
+* crawl depth
+* sitemap structure
+* robots
+* mobile SEO
+* image optimization
+* Open Graph
+* semantic HTML
+
+Dimmi:
+
+* cosa è fatto molto bene
+* cosa è fragile
+* cosa potrebbe causare problemi in futuro
+* cosa Google potrebbe interpretare negativamente
+
+---
+
+# 2. Programmatic SEO Quality
+
+Analizza se:
+
+* le pagine sembrano “mass generated”
+* esiste rischio thin content
+* esiste rischio scaled content classifier
+* le variazioni sono abbastanza forti semanticamente
+* il linking è naturale
+* i cluster sono ben organizzati
+* le FAQ sono realmente differenziate
+* la struttura sembra credibile agli occhi di Google
+
+Valuta:
+
+* rischio spam
+* rischio Helpful Content downgrade
+* rischio doorway pages
+* rischio cannibalizzazione
+
+---
+
+# 3. E-E-A-T / Trust / Authority
+
+Analizza:
+
+* trust percepito
+* authoritativeness
+* credibility
+* human signals
+* proof layer
+* business legitimacy
+* conversion trust
+
+Dimmi:
+
+* cosa manca per sembrare un vero SaaS dominante
+* cosa rende ancora il sito “freddo” o impersonale
+* quali segnali di fiducia mancano
+
+---
+
+# 4. SEO Growth Potential
+
+Valuta:
+
+* potenziale traffico reale
+* keyword opportunity
+* topical authority potential
+* possibilità di dominare nicchie verticali
+* competitività reale nel mercato italiano
+
+Dimmi:
+
+* dove ci sono opportunità enormi
+* quali cluster potrebbero esplodere
+* quali pagine probabilmente porteranno il maggior traffico
+* quali intent stanno ancora mancando
+
+---
+
+# 5. GEO / LLM Optimization
+
+Analizza:
+
+* readiness per AI search
+* struttura per retrieval
+* chunking
+* FAQ usefulness
+* semantic clarity
+* AI extractability
+* suitability per ChatGPT / Gemini / Perplexity retrieval
+
+Dimmi:
+
+* se il sito è ottimizzato per il futuro della ricerca AI
+* cosa manca per diventare una fonte autorevole per LLMs
+
+---
+
+# 6. Conversion + UX SEO
+
+Valuta:
+
+* UX delle pagine SEO
+* CTA
+* engagement
+* visual trust
+* media usage
+* dwell-time potential
+* bounce risk
+
+Dimmi:
+
+* cosa impedisce conversion forti
+* cosa manca a livello visuale
+* come migliorare la percezione premium
+
+---
+
+# 7. Competitive Positioning
+
+Confronta mentalmente PrevAI con:
+
+* Fatture in Cloud
+* Canva templates
+* tool preventivi tradizionali
+* altri SaaS italiani
+* tool AI emergenti
+
+Dimmi:
+
+* dove PrevAI ha vantaggio
+* dove è vulnerabile
+* cosa potrebbe distruggere il vantaggio competitivo
+* quale moat reale sta costruendo
+
+---
+
+# OUTPUT DESIDERATO
+
+Voglio:
+
+* un'analisi brutalmente onesta
+* niente complimenti inutili
+* priorità operative vere
+* punti critici reali
+* quick wins
+* strategic risks
+* roadmap SEO successiva
+
+Struttura la risposta come:
+
+1. Executive summary
+2. Strengths
+3. Critical weaknesses
+4. Hidden risks
+5. Biggest opportunities
+6. Immediate priorities
+7. 90-day roadmap
+8. Long-term moat analysis
+
+Assumi di stare parlando con un founder tecnico che conosce:
+
+* rendering
+* crawling
+* indexing
+* frontend architecture
+* SEO engineering
+* SaaS growth
