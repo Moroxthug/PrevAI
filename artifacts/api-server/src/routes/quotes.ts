@@ -369,13 +369,14 @@ Descrizione lavori: ${rawInput}`;
         .where(and(eq(uploadedDocumentsTable.userId, userId), eq(uploadedDocumentsTable.status, "done"))),
       db.select({
         workType: priceIntelligenceTable.workType,
+        zone: priceIntelligenceTable.zone,
         avgPrice: avg(sql`${priceIntelligenceTable.unitPrice}::numeric`),
         unit: sql<string | null>`max(${priceIntelligenceTable.unit})`,
       })
         .from(priceIntelligenceTable)
         .where(eq(priceIntelligenceTable.userId, userId))
-        .groupBy(priceIntelligenceTable.workType)
-        .orderBy(priceIntelligenceTable.workType),
+        .groupBy(priceIntelligenceTable.workType, priceIntelligenceTable.zone)
+        .orderBy(priceIntelligenceTable.workType, priceIntelligenceTable.zone),
     ]);
     const [fetchedProfile] = fetchedProfileResult as (typeof businessProfilesTable.$inferSelect)[];
 
@@ -417,11 +418,11 @@ Quando usi una voce del listino, applica il prezzo unitario esatto o molto simil
     const priceIntelContext = docCount >= 3 && priceIntelligenceItems.length > 0
       ? `PRICE INTELLIGENCE PERSONALIZZATA (estratta da ${docCount} preventivi reali dell'utente — usa questi prezzi come guida per la zona e le tipologie di lavoro dell'utente):
 ${priceIntelligenceItems
-  .slice(0, 25)
-  .map(item => `  - ${item.workType}: ${Number(item.avgPrice ?? 0).toFixed(2)}€${item.unit ? `/${item.unit}` : ""}`)
+  .slice(0, 30)
+  .map(item => `  - ${item.workType}${item.zone ? ` [${item.zone}]` : ""}: ${Number(item.avgPrice ?? 0).toFixed(2)}€${item.unit ? `/${item.unit}` : ""}`)
   .join("\n")}
 
-Questi prezzi riflettono i valori reali applicati dall'utente nel suo mercato locale. Usali come riferimento quando le lavorazioni richieste corrispondono.`
+Questi prezzi riflettono i valori reali applicati dall'utente nel suo mercato locale. Dove disponibile, la zona geografica è indicata tra parentesi quadre. Usali come riferimento prioritario quando le lavorazioni e la zona richieste corrispondono.`
       : "";
 
     const hasImages = imageDataUrls.length > 0;

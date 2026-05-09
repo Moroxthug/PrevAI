@@ -161,7 +161,15 @@ router.get("/documents", requireAuth, async (req, res) => {
 router.post(
   "/documents/upload",
   requireAuth,
-  documentUpload.single("file"),
+  (req, res, next) => {
+    documentUpload.single("file")(req, res, (err) => {
+      if (err instanceof multer.MulterError || err instanceof Error) {
+        res.status(400).json({ error: err.message });
+        return;
+      }
+      next(err);
+    });
+  },
   async (req, res) => {
     try {
       const userId = getUserId(res);
@@ -321,14 +329,14 @@ router.post("/documents/:id/extract", requireAuth, async (req, res) => {
         .set({ status: "done", extractedData, errorMessage: null })
         .where(eq(uploadedDocumentsTable.id, docId));
 
-      if (extractedData.lavorazioni && extractedData.lavorazioni.length > 0) {
-        await db.delete(priceIntelligenceTable).where(
-          and(
-            eq(priceIntelligenceTable.userId, userId),
-            eq(priceIntelligenceTable.sourceDocumentId, docId)
-          )
-        );
+      await db.delete(priceIntelligenceTable).where(
+        and(
+          eq(priceIntelligenceTable.userId, userId),
+          eq(priceIntelligenceTable.sourceDocumentId, docId)
+        )
+      );
 
+      if (extractedData.lavorazioni && extractedData.lavorazioni.length > 0) {
         const piRows = extractedData.lavorazioni.map((l) => ({
           userId,
           workType: l.tipo,
