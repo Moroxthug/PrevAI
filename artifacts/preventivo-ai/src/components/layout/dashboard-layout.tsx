@@ -1,5 +1,5 @@
 import { Link, useLocation } from "wouter";
-import { LayoutDashboard, FileText, Menu, BarChart3, Settings, ChevronLeft, ChevronRight, Plus, LogOut, User, CreditCard, Building2, ChevronDown, BookOpen } from "lucide-react";
+import { LayoutDashboard, FileText, Menu, BarChart3, Settings, ChevronLeft, ChevronRight, Plus, LogOut, User, CreditCard, Building2, ChevronDown, BookOpen, Users, Receipt, Briefcase } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger, SheetTitle } from "@/components/ui/sheet";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
@@ -13,11 +13,14 @@ import { useAuth } from "@/hooks/use-auth";
 import { authClient } from "@/lib/auth-client";
 
 const BASE_NAV_ITEMS = [
-  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard, exact: true, proOnly: false },
-  { href: "/dashboard/quotes", label: "Preventivi", icon: FileText, exact: false, proOnly: false },
-  { href: "/dashboard/analytics", label: "Analytics", icon: BarChart3, exact: false, proOnly: false },
-  { href: "/dashboard/catalog", label: "Listino", icon: BookOpen, exact: false, proOnly: true },
-  { href: "/dashboard/settings", label: "Impostazioni", icon: Settings, exact: false, proOnly: false },
+  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard, exact: true, proOnly: false, comingSoon: false },
+  { href: "/dashboard/quotes", label: "Preventivi", icon: FileText, exact: false, proOnly: false, comingSoon: false },
+  { href: "/dashboard/clients", label: "Clienti", icon: Users, exact: false, proOnly: false, comingSoon: false },
+  { href: "/dashboard/analytics", label: "Analytics", icon: BarChart3, exact: false, proOnly: false, comingSoon: false },
+  { href: "/dashboard/catalog", label: "Listino", icon: BookOpen, exact: false, proOnly: true, comingSoon: false },
+  { href: "/dashboard/invoices", label: "Fatture", icon: Receipt, exact: false, proOnly: false, comingSoon: true },
+  { href: "/dashboard/crm", label: "CRM", icon: Briefcase, exact: false, proOnly: false, comingSoon: true },
+  { href: "/dashboard/settings", label: "Impostazioni", icon: Settings, exact: false, proOnly: false, comingSoon: false },
 ];
 
 function isActive(navHref: string, location: string, exact: boolean) {
@@ -150,6 +153,9 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
             )}
             {!collapsed && item.proOnly && (
               <Badge className="text-[10px] px-1 py-0 h-4 bg-violet-100 text-violet-700 border-0 font-semibold">Pro</Badge>
+            )}
+            {!collapsed && item.comingSoon && (
+              <Badge className="text-[10px] px-1 py-0 h-4 bg-amber-100 text-amber-600 border-0 font-semibold">Presto</Badge>
             )}
           </Link>
         );

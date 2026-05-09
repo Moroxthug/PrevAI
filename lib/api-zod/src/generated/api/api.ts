@@ -962,6 +962,100 @@ export const ToggleWhatsappResponse = zod.object({
 });
 
 /**
+ * @summary List clients aggregated from quotes
+ */
+export const ListClientsResponseItem = zod.object({
+  clientName: zod.string(),
+  quoteCount: zod.number(),
+  totalValue: zod.number(),
+  lastQuoteDate: zod.string(),
+});
+export const ListClientsResponse = zod.array(ListClientsResponseItem);
+
+/**
+ * @summary List quotes for a specific client
+ */
+export const ListClientQuotesParams = zod.object({
+  clientName: zod.coerce.string(),
+});
+
+export const ListClientQuotesResponseItem = zod.object({
+  id: zod.string(),
+  userId: zod.string(),
+  clientData: zod.object({
+    nome: zod.string(),
+    indirizzo: zod.string(),
+    codiceFiscale: zod.string().optional(),
+    partitaIva: zod.string().optional(),
+    citta: zod.string().optional(),
+    cap: zod.string().optional(),
+    provincia: zod.string().optional(),
+  }),
+  descrizioneGenerale: zod.string(),
+  items: zod.array(
+    zod.object({
+      descrizione: zod.string(),
+      quantita: zod.number(),
+      unita: zod.string(),
+      prezzoUnitario: zod.number(),
+      totale: zod.number(),
+    }),
+  ),
+  capitoli: zod.array(
+    zod.object({
+      lettera: zod.string(),
+      titolo: zod.string(),
+      voci: zod.array(
+        zod.object({
+          descrizione: zod.string(),
+          um: zod.string(),
+          quantita: zod.number(),
+          prezzoUnitario: zod.number(),
+          totale: zod.number(),
+        }),
+      ),
+      subtotale: zod.number(),
+      osservazione: zod.string().optional(),
+    }),
+  ),
+  sconto: zod
+    .object({
+      percentuale: zod.number(),
+      importoScontato: zod.number(),
+    })
+    .nullish(),
+  condizioniPagamento: zod.array(zod.string()),
+  titoloPreventivoRiga1: zod.string().nullish(),
+  titoloPreventivoRiga2: zod.string().nullish(),
+  numeroPreventivoData: zod.string().nullish(),
+  companySnapshot: zod
+    .object({
+      companyName: zod.string(),
+      vatNumber: zod.string().optional(),
+      address: zod.string().optional(),
+      phone: zod.string().optional(),
+      email: zod.string().optional(),
+      logoUrl: zod.string().optional(),
+    })
+    .nullish(),
+  subtotale: zod.number(),
+  ivaPercentuale: zod.number(),
+  ivaValore: zod.number(),
+  totale: zod.number(),
+  note: zod.string(),
+  status: zod.enum(["draft", "unlocked", "pending_payment"]),
+  pdfUrl: zod.string().nullish(),
+  rawInput: zod.string(),
+  pdfDownloadedAt: zod.string().nullish(),
+  capitolatoPro: zod.boolean(),
+  capitolatoPdfUrl: zod.string().nullish(),
+  templateId: zod.enum(["standard", "arosio", "mariagrazia"]).nullish(),
+  createdAt: zod.string(),
+  updatedAt: zod.string(),
+});
+export const ListClientQuotesResponse = zod.array(ListClientQuotesResponseItem);
+
+/**
  * @summary Import unique price items from existing quotes into the catalog
  */
 export const ImportCatalogFromQuotesResponse = zod.object({

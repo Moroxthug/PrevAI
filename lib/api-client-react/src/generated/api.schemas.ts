@@ -393,6 +393,13 @@ export interface TrialStatus {
   trialExpiresAt?: string | null;
 }
 
+export interface Client {
+  clientName: string;
+  quoteCount: number;
+  totalValue: number;
+  lastQuoteDate: string;
+}
+
 export type UploadBusinessProfileLogoBody = {
   logo: Blob;
 };

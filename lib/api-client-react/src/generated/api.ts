@@ -21,6 +21,7 @@ import type {
   CapitolatoPdfResult,
   CatalogItem,
   CheckoutResult,
+  Client,
   CreateCatalogItemBody,
   CreateCheckoutBody,
   CreateManualQuoteBody,
@@ -2862,6 +2863,168 @@ export const useToggleWhatsapp = <
 > => {
   return useMutation(getToggleWhatsappMutationOptions(options));
 };
+
+/**
+ * @summary List clients aggregated from quotes
+ */
+export const getListClientsUrl = () => {
+  return `/api/clients`;
+};
+
+export const listClients = async (options?: RequestInit): Promise<Client[]> => {
+  return customFetch<Client[]>(getListClientsUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getListClientsQueryKey = () => {
+  return [`/api/clients`] as const;
+};
+
+export const getListClientsQueryOptions = <
+  TData = Awaited<ReturnType<typeof listClients>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof listClients>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getListClientsQueryKey();
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof listClients>>> = ({
+    signal,
+  }) => listClients({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof listClients>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type ListClientsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof listClients>>
+>;
+export type ListClientsQueryError = ErrorType<unknown>;
+
+/**
+ * @summary List clients aggregated from quotes
+ */
+
+export function useListClients<
+  TData = Awaited<ReturnType<typeof listClients>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof listClients>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getListClientsQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary List quotes for a specific client
+ */
+export const getListClientQuotesUrl = (clientName: string) => {
+  return `/api/clients/${clientName}/quotes`;
+};
+
+export const listClientQuotes = async (
+  clientName: string,
+  options?: RequestInit,
+): Promise<Quote[]> => {
+  return customFetch<Quote[]>(getListClientQuotesUrl(clientName), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getListClientQuotesQueryKey = (clientName: string) => {
+  return [`/api/clients/${clientName}/quotes`] as const;
+};
+
+export const getListClientQuotesQueryOptions = <
+  TData = Awaited<ReturnType<typeof listClientQuotes>>,
+  TError = ErrorType<unknown>,
+>(
+  clientName: string,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof listClientQuotes>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getListClientQuotesQueryKey(clientName);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof listClientQuotes>>
+  > = ({ signal }) =>
+    listClientQuotes(clientName, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!clientName,
+    ...queryOptions,
+  } as UseQueryOptions<
+    Awaited<ReturnType<typeof listClientQuotes>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type ListClientQuotesQueryResult = NonNullable<
+  Awaited<ReturnType<typeof listClientQuotes>>
+>;
+export type ListClientQuotesQueryError = ErrorType<unknown>;
+
+/**
+ * @summary List quotes for a specific client
+ */
+
+export function useListClientQuotes<
+  TData = Awaited<ReturnType<typeof listClientQuotes>>,
+  TError = ErrorType<unknown>,
+>(
+  clientName: string,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof listClientQuotes>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getListClientQuotesQueryOptions(clientName, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
 
 /**
  * @summary Import unique price items from existing quotes into the catalog

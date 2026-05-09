@@ -21,6 +21,8 @@ tags:
     description: Price catalog management
   - name: whatsapp
     description: WhatsApp integration
+  - name: clients
+    description: Client aggregation from quotes
 paths:
   /healthz:
     get:
@@ -598,6 +600,42 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/SuccessResult"
+
+  /clients:
+    get:
+      operationId: listClients
+      tags: [clients]
+      summary: List clients aggregated from quotes
+      responses:
+        "200":
+          description: List of clients
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Client"
+
+  /clients/{clientName}/quotes:
+    get:
+      operationId: listClientQuotes
+      tags: [clients]
+      summary: List quotes for a specific client
+      parameters:
+        - name: clientName
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: List of quotes for the client
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Quote"
 
   /catalog/import-from-quotes:
     post:
@@ -1400,3 +1438,20 @@ components:
         - isTrialActive
         - trialDownloadsUsed
         - trialDownloadsLimit
+
+    Client:
+      type: object
+      properties:
+        clientName:
+          type: string
+        quoteCount:
+          type: number
+        totalValue:
+          type: number
+        lastQuoteDate:
+          type: string
+      required:
+        - clientName
+        - quoteCount
+        - totalValue
+        - lastQuoteDate
