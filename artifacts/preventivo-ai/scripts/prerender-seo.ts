@@ -1516,11 +1516,12 @@ console.log(`  ✓ ${BLOG_CATEGORIES.length} blog category pages prerendered`);
 // Individual blog articles
 for (const article of BLOG_ARTICLES) {
   const articleCanonical = `${BASE_URL}/blog/${article.slug}`;
+  const articleOgImage = `/og/blog/${article.slug}.png`;
   const articleHeadBlock = buildHeadBlock({
     title: `${article.title} | prevai Blog`,
     description: article.metaDescription,
     canonical: articleCanonical,
-    ogImagePath: "/opengraph.jpg",
+    ogImagePath: articleOgImage,
     jsonLd: buildArticleJsonLd(article),
   });
   const articleHtml = injectBody(injectHead(template, articleHeadBlock), buildBlogArticleBodyHtml(article));
