@@ -1446,6 +1446,7 @@ components:
           nullable: true
         businessNumber:
           type: string
+          nullable: true
       required:
         - connected
 

@@ -355,7 +355,7 @@ export interface WhatsappStatus {
   connected: boolean;
   phoneNumber?: string | null;
   isEnabled?: boolean | null;
-  businessNumber?: string;
+  businessNumber?: string | null;
 }
 
 export interface WhatsappConnectBody {

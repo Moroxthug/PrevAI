@@ -923,7 +923,7 @@ export const GetWhatsappStatusResponse = zod.object({
   connected: zod.boolean(),
   phoneNumber: zod.string().nullish(),
   isEnabled: zod.boolean().nullish(),
-  businessNumber: zod.string().optional(),
+  businessNumber: zod.string().nullish(),
 });
 
 /**

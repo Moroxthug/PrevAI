@@ -641,7 +641,8 @@ router.get("/whatsapp/status", requireAuth, async (req, res) => {
   try {
     const userId = getUserId(res);
     const [connection] = await db.select().from(whatsappConnectionsTable).where(eq(whatsappConnectionsTable.userId, userId));
-    res.json({ connected: !!connection, phoneNumber: connection?.phoneNumber ?? null, isEnabled: connection?.isEnabled ?? null });
+    const businessNumber = process.env.WHATSAPP_BUSINESS_NUMBER ?? null;
+    res.json({ connected: !!connection, phoneNumber: connection?.phoneNumber ?? null, isEnabled: connection?.isEnabled ?? null, businessNumber });
   } catch (err) {
     req.log.error({ err }, "WhatsApp status error");
     res.status(500).json({ error: "Internal server error" });

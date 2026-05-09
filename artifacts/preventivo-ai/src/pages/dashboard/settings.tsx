@@ -470,9 +470,83 @@ function BillingTab() {
   );
 }
 
+function WhatsappUpsellCard() {
+  const createCheckout = useCreateCheckoutSession();
+  const [loadingPlanId, setLoadingPlanId] = useState<string | null>(null);
+  const { toast } = useToast();
+
+  const handleCheckout = (planId: string) => {
+    setLoadingPlanId(planId);
+    createCheckout.mutate(
+      { data: { planType: planId as "monthly_pro" | "monthly_elite" } },
+      {
+        onSuccess: (r) => { window.location.href = r.url; },
+        onError: () => {
+          setLoadingPlanId(null);
+          toast({ title: "Errore avvio pagamento", variant: "destructive" });
+        },
+      }
+    );
+  };
+
+  return (
+    <div className="space-y-4">
+      <Card className="border-violet-200 bg-gradient-to-br from-violet-50 to-cyan-50">
+        <CardHeader>
+          <div className="flex items-center gap-3">
+            <div className="h-11 w-11 rounded-xl bg-violet-100 flex items-center justify-center">
+              <MessageCircle className="h-6 w-6 text-violet-500" />
+            </div>
+            <div>
+              <CardTitle>Bot WhatsApp — Solo Piano Pro / Elite</CardTitle>
+              <CardDescription className="mt-0.5">
+                Genera preventivi direttamente da WhatsApp inviando testo, vocale o foto.
+              </CardDescription>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            {[
+              { icon: "📝", label: "Testo", desc: "Descrivi il lavoro in chat" },
+              { icon: "🎙️", label: "Vocale", desc: "Registra un memo vocale" },
+              { icon: "📷", label: "Foto", desc: "Fotografa i tuoi appunti" },
+            ].map(item => (
+              <div key={item.label} className="bg-white/70 rounded-xl p-3 text-center border border-violet-100">
+                <div className="text-2xl mb-1">{item.icon}</div>
+                <div className="text-sm font-medium">{item.label}</div>
+                <div className="text-xs text-muted-foreground mt-0.5">{item.desc}</div>
+              </div>
+            ))}
+          </div>
+          <div className="flex flex-wrap gap-3 pt-1">
+            <Button
+              className="btn-gradient gap-2"
+              onClick={() => handleCheckout("monthly_pro")}
+              disabled={loadingPlanId === "monthly_pro"}
+            >
+              {loadingPlanId === "monthly_pro" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Crown className="h-4 w-4" />}
+              Passa a Pro — €49/mese
+            </Button>
+            <Button
+              className="bg-amber-500 hover:bg-amber-600 text-white border-0 gap-2"
+              onClick={() => handleCheckout("monthly_elite")}
+              disabled={loadingPlanId === "monthly_elite"}
+            >
+              {loadingPlanId === "monthly_elite" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Crown className="h-4 w-4" />}
+              Passa a Elite — €59/mese
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
 function WhatsappTab() {
   const { data: status, isLoading } = useGetWhatsappStatus();
   const { data: usage } = useGetWhatsappUsage();
+  const { data: subscription } = useGetSubscription();
   const connectWa = useConnectWhatsapp();
   const verifyWa = useVerifyWhatsapp();
   const disconnectWa = useDisconnectWhatsapp();
@@ -546,7 +620,13 @@ function WhatsappTab() {
     );
   };
 
+  const isPro = subscription?.plan === "monthly_pro" && subscription?.isActive;
+  const isElite = subscription?.plan === "monthly_elite" && subscription?.isActive;
+  const hasWhatsappAccess = isPro || isElite;
+
   if (isLoading) return <Skeleton className="h-48 w-full rounded-2xl" />;
+
+  if (!hasWhatsappAccess) return <WhatsappUpsellCard />;
 
   if (isConnected) {
     return (
@@ -748,6 +828,29 @@ function WhatsappTab() {
             ))}
           </div>
 
+          {status?.businessNumber && (
+            <div className="flex items-center gap-3 bg-emerald-50 border border-emerald-200 rounded-xl p-4">
+              <div className="h-10 w-10 rounded-xl bg-emerald-100 flex items-center justify-center shrink-0">
+                <MessageCircle className="h-5 w-5 text-emerald-600" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-emerald-800">Numero WhatsApp del bot</p>
+                <p className="text-xs text-emerald-700 mt-0.5">Collega il tuo numero e poi scrivi al bot per generare preventivi</p>
+              </div>
+              <a
+                href={`https://wa.me/${status.businessNumber}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="shrink-0"
+              >
+                <Button variant="outline" size="sm" className="gap-2 border-emerald-300 text-emerald-700 hover:bg-emerald-50">
+                  <Phone className="h-3.5 w-3.5" />
+                  +{status.businessNumber}
+                </Button>
+              </a>
+            </div>
+          )}
+
           <div className="space-y-2">
             <label className="text-sm font-medium">Il tuo numero WhatsApp</label>
             <div className="flex gap-2">
@@ -780,13 +883,15 @@ export default function SettingsPage() {
   const params = new URLSearchParams(search);
   const isAccountPath = typeof window !== "undefined" && window.location.pathname.includes("/account");
   const tabFromParam = params.get("tab");
+  const { data: subscription } = useGetSubscription();
+  const isProOrElite = subscription?.isActive && (subscription?.plan === "monthly_pro" || subscription?.plan === "monthly_elite");
   const defaultTab = (isAccountPath || tabFromParam === "account") ? "account" : tabFromParam === "whatsapp" ? "whatsapp" : "billing";
   const [activeTab, setActiveTab] = useState<"account" | "billing" | "whatsapp">(defaultTab as "account" | "billing" | "whatsapp");
 
   const TABS = [
     { id: "account" as const, label: "Account Aziendale" },
     { id: "billing" as const, label: "Piano & Fatturazione" },
-    { id: "whatsapp" as const, label: "WhatsApp" },
+    ...(isProOrElite ? [{ id: "whatsapp" as const, label: "WhatsApp Bot" }] : []),
   ];
 
   return (
