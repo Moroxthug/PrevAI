@@ -1,5 +1,5 @@
 import { Link } from "wouter";
-import { BLOG_ARTICLES, BLOG_CATEGORIES, BLOG_LIST_TITLE, BLOG_LIST_DESCRIPTION } from "@/data/blog-data";
+import { BLOG_ARTICLES, BLOG_CATEGORIES, BLOG_LIST_TITLE, BLOG_LIST_DESCRIPTION, GUIDE_CARDS } from "@/data/blog-data";
 import { SeoHead } from "@/components/seo-head";
 
 function formatDate(iso: string): string {
@@ -61,6 +61,35 @@ export default function BlogPage() {
                 className={`inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold transition-colors ${CATEGORY_COLORS[cat.name] ?? "bg-gray-100 text-gray-600"} border-transparent hover:opacity-80`}
               >
                 {cat.name}
+              </Link>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="py-12 bg-violet-50/40 border-b border-violet-100">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-5xl">
+          <div className="mb-6">
+            <h2 className="text-xl font-bold text-gray-900">Guide pratiche</h2>
+            <p className="text-sm text-gray-500 mt-1">Le risorse essenziali per chi vuole creare preventivi professionali</p>
+          </div>
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {GUIDE_CARDS.map((guide) => (
+              <Link
+                key={guide.slug}
+                href={guide.href}
+                className="group flex flex-col bg-white rounded-2xl border border-violet-100 hover:border-violet-300 hover:shadow-md transition-all duration-200 p-5"
+              >
+                <span className="text-2xl mb-3">{guide.icon}</span>
+                <h3 className="text-sm font-bold text-gray-900 leading-snug mb-2 group-hover:text-violet-700 transition-colors">
+                  {guide.title}
+                </h3>
+                <p className="text-xs text-gray-500 leading-relaxed flex-1">
+                  {guide.description}
+                </p>
+                <span className="mt-3 text-xs font-semibold text-violet-600 group-hover:translate-x-0.5 transition-transform inline-block">
+                  Leggi la guida →
+                </span>
               </Link>
             ))}
           </div>

@@ -257,7 +257,7 @@ export const BLOG_ARTICLES: BlogArticle[] = [
 
 <h2>Il costo reale degli errori</h2>
 <p>Un artigiano che fa 12 preventivi al mese con un tasso di conversione del 40% chiude 5 lavori. Migliorare il preventivo aumentando la conversione anche solo al 55% significa un lavoro in più ogni mese — con investimento zero, solo migliorando il documento.</p>
-<p>I software moderni di preventivazione con AI aiutano a eliminare questi errori automaticamente: generano documenti completi, con tutte le voci dettagliate, IVA inclusa, scadenza e intestazione professionale — in meno di un minuto.</p>
+<p>I software moderni di preventivazione con AI aiutano a eliminare questi errori automaticamente: generano documenti completi, con tutte le voci dettagliate, IVA inclusa, scadenza e intestazione professionale — in meno di un minuto. Se parti da zero, consulta la nostra <a href="/seo/come-fare-preventivo">guida completa su come fare un preventivo professionale</a>.</p>
 
 <h2>Come usare questi consigli nella pratica quotidiana</h2>
 <p>Non è necessario rivoluzionare il proprio metodo di lavoro tutto in una volta. Il consiglio è di partire dal miglioramento più impattante — nella maggior parte dei casi è il punto 1 (voci dettagliate) o il punto 5 (intestazione professionale) — e integrarlo nei prossimi 5 preventivi come test. Misurare il tasso di risposta e continuare con il miglioramento successivo.</p>
@@ -559,7 +559,7 @@ export const BLOG_ARTICLES: BlogArticle[] = [
 <p>Il 40% dei preventivi non accettati è stato semplicemente dimenticato dal cliente, non rifiutato. Un messaggio breve ("Gentile Mario, le ricordo il preventivo inviato il 5 maggio — è rimasto qualche dubbio?") recupera una parte significativa di questi lavori potenziali. Sembra banale, ma pochi professionisti lo fanno.</p>
 
 <h2>7. Chiedi perché non hai vinto il lavoro</h2>
-<p>Quando perdi un preventivo, invia un breve messaggio: "Capisco che abbia scelto un altro professionista. Se posso chiederle, c'è qualcosa che avrei potuto fare meglio?" Otterrai informazioni preziose — spesso è il prezzo, ma spesso è anche la chiarezza del documento, i tempi comunicati, o la velocità di risposta. Ogni risposta è un'opportunità per migliorare il prossimo preventivo.</p>
+<p>Quando perdi un preventivo, invia un breve messaggio: "Capisco che abbia scelto un altro professionista. Se posso chiederle, c'è qualcosa che avrei potuto fare meglio?" Otterrai informazioni preziose — spesso è il prezzo, ma spesso è anche la chiarezza del documento, i tempi comunicati, o la velocità di risposta. Ogni risposta è un'opportunità per migliorare il prossimo preventivo. Per approfondire la struttura di un preventivo efficace, leggi la nostra <a href="/seo/come-fare-preventivo">guida passo-passo su come fare un preventivo</a>.</p>
 
 <h2>Quanto vale migliorare il tasso di accettazione</h2>
 <p>Facciamo il conto. Un artigiano con 15 preventivi mensili e un tasso di accettazione del 35% chiude 5 lavori. Portando il tasso al 45% — un miglioramento del 10%, assolutamente realistico con questi accorgimenti — si passa a 7 lavori mensili: due in più, ogni mese, senza spendere un euro in pubblicità.</p>
@@ -686,7 +686,7 @@ export const BLOG_ARTICLES: BlogArticle[] = [
   <li>Calcola subtotali, IVA e totale finale</li>
   <li>Produce un PDF professionale con intestazione aziendale e logo</li>
 </ul>
-<p>Il tempo medio: 30–60 secondi per un preventivo completo.</p>
+<p>Il tempo medio: 30–60 secondi per un preventivo completo. Se vuoi esplorare le opzioni disponibili, consulta la nostra pagina sui <a href="/seo/preventivi-gratis">preventivi gratis</a> per capire come iniziare senza costi.</p>
 
 <h2>Un esempio pratico: il preventivo di un imbianchino</h2>
 <p>Invece di aprire Excel e compilare riga per riga, l'imbianchino scrive (o detta): <em>"Tinteggiatura appartamento 85mq, soggiorno e cucina a vista con pittura lavabile grigio chiaro due mani, tre camere bianco standard, bagno con antimuffa, tutti i soffitti bianchi, piccola rasatura in camera grande."</em></p>
@@ -842,7 +842,7 @@ export const BLOG_ARTICLES: BlogArticle[] = [
   <li><strong>Settimana 2–3</strong>: usate l'app per i prossimi 5 preventivi, in parallelo con il metodo attuale se volete</li>
   <li><strong>Dal mese 2</strong>: usate solo l'app, tenendo traccia del tempo risparmiato e del tasso di accettazione</li>
 </ul>
-<p>La maggior parte degli artigiani che fa questo percorso non torna indietro. Non perché il vecchio metodo non funzionasse, ma perché la differenza di velocità e qualità è immediata e tangibile.</p>
+<p>La maggior parte degli artigiani che fa questo percorso non torna indietro. Non perché il vecchio metodo non funzionasse, ma perché la differenza di velocità e qualità è immediata e tangibile. Scopri di più sulle <a href="/seo/preventivi-gratis">opzioni gratuite per iniziare a fare preventivi digitali</a> senza rischi.</p>
 `,
   },
   {
@@ -1176,6 +1176,45 @@ export const BLOG_ARTICLES: BlogArticle[] = [
   },
 ];
 
+export interface GuideCard {
+  slug: string;
+  title: string;
+  description: string;
+  href: string;
+  icon: string;
+}
+
+export const GUIDE_CARDS: GuideCard[] = [
+  {
+    slug: "come-fare-preventivo",
+    title: "Come fare un preventivo professionale",
+    description: "Guida passo-passo: struttura, voci, IVA e come inviarlo al cliente. Tutto quello che serve per creare un preventivo che converte.",
+    href: "/seo/come-fare-preventivo",
+    icon: "📋",
+  },
+  {
+    slug: "preventivi-gratis",
+    title: "Preventivi gratis: inizia senza rischi",
+    description: "Strumenti e opzioni gratuite per generare preventivi professionali. Scopri come iniziare senza investire nulla.",
+    href: "/seo/preventivi-gratis",
+    icon: "🎁",
+  },
+  {
+    slug: "modello-excel",
+    title: "Alternativa al modello Excel",
+    description: "Perché il classico template Excel non basta più: confronto diretto con i software AI moderni per artigiani.",
+    href: "/seo/modello-excel",
+    icon: "📊",
+  },
+  {
+    slug: "modello-word",
+    title: "Alternativa al modello Word",
+    description: "Dal foglio Word al PDF professionale automatico: come fare il salto senza complicazioni.",
+    href: "/seo/modello-word",
+    icon: "📄",
+  },
+];
+
 export const BLOG_LIST_TITLE = "Blog prevai — Guide e Consigli per Artigiani e PMI";
 export const BLOG_LIST_DESCRIPTION = "Guide pratiche, prezzi di mercato e consigli professionali per artigiani e PMI italiane: come fare preventivi, vincere più lavori e crescere.";
 
@@ -1252,8 +1291,8 @@ export const SECTOR_ARTICLES: Record<string, string[]> = {
   tetto: ["preventivo-muratore", "preventivo-ristrutturazione-guida", "errori-preventivi-artigiani"],
   condizionatori: ["preventivo-idraulico", "errori-preventivi-artigiani", "ai-preventivi-artigiani"],
   pavimentista: ["quanto-costa-ristrutturare-bagno", "preventivo-ristrutturazione-guida", "errori-preventivi-artigiani"],
-  "modello-excel": ["software-preventivi-artigiani", "preventivo-digitale-vs-carta", "errori-preventivi-artigiani"],
-  "modello-word": ["software-preventivi-artigiani", "preventivo-digitale-vs-carta", "gestione-preventivi-pmi"],
-  "come-fare-preventivo": ["errori-preventivi-artigiani", "software-preventivi-artigiani", "app-preventivi-smartphone"],
-  "preventivi-gratis": ["software-preventivi-artigiani", "app-preventivi-smartphone", "ai-preventivi-artigiani"],
+  "modello-excel": ["preventivo-digitale-vs-carta", "errori-preventivi-artigiani", "app-preventivi-smartphone"],
+  "modello-word": ["preventivo-digitale-vs-carta", "gestione-preventivi-pmi", "errori-preventivi-artigiani"],
+  "come-fare-preventivo": ["errori-preventivi-artigiani", "app-preventivi-smartphone", "come-vincere-piu-lavori"],
+  "preventivi-gratis": ["app-preventivi-smartphone", "ai-preventivi-artigiani", "preventivo-digitale-vs-carta"],
 };
