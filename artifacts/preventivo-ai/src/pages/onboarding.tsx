@@ -9,12 +9,13 @@ import { useToast } from "@/hooks/use-toast";
 import { Loader2, Building2, Upload, X, ImageIcon, ArrowRight, Sparkles } from "lucide-react";
 import { Logo } from "@/components/logo";
 import { useAuth } from "@/hooks/use-auth";
+import { markOnboardingSkipped, markOnboardingDone } from "@/App";
 
 const ALLOWED_TYPES = ["image/svg+xml", "image/png", "image/jpeg", "image/jpg"];
 const MAX_SIZE_MB = 2;
 
 export default function OnboardingPage() {
-  const { isLoaded, isSignedIn } = useAuth();
+  const { isLoaded, isSignedIn, userId } = useAuth();
   const [, setLocation] = useLocation();
   const updateProfile = useUpdateBusinessProfile();
   const queryClient = useQueryClient();
@@ -84,6 +85,7 @@ export default function OnboardingPage() {
           email: email.trim() || undefined,
         }
       });
+      if (userId) markOnboardingDone(userId);
       await queryClient.invalidateQueries({ queryKey: getGetBusinessProfileQueryKey() });
       setLocation("/dashboard/new");
     } catch {
@@ -91,6 +93,11 @@ export default function OnboardingPage() {
     } finally {
       setIsSaving(false);
     }
+  };
+
+  const handleSkip = () => {
+    if (userId) markOnboardingSkipped(userId);
+    setLocation("/dashboard/new");
   };
 
   return (
@@ -195,7 +202,7 @@ export default function OnboardingPage() {
             </Button>
 
             <button
-              onClick={() => setLocation("/dashboard/new")}
+              onClick={handleSkip}
               className="w-full text-center text-xs text-gray-400 hover:text-gray-600 transition-colors py-1"
               disabled={isSaving}
             >

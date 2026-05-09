@@ -31,22 +31,39 @@ const BlogCategoryPage = lazy(() => import("@/pages/blog/categoria/[slug]"));
 
 import { PublicLayout } from "@/components/layout/public-layout";
 import { DashboardLayout } from "@/components/layout/dashboard-layout";
-import { useGetBusinessProfile } from "@workspace/api-client-react";
+import { useGetBusinessProfile, getGetBusinessProfileQueryKey } from "@workspace/api-client-react";
 import { useAuth } from "@/hooks/use-auth";
 
 const queryClient = new QueryClient();
+
+const ONBOARDING_SKIP_KEY = (userId: string) => `prevai_onboarding_skipped_${userId}`;
+
+export function markOnboardingSkipped(userId: string) {
+  try { localStorage.setItem(ONBOARDING_SKIP_KEY(userId), "1"); } catch {}
+}
+
+export function markOnboardingDone(userId: string) {
+  try { localStorage.removeItem(ONBOARDING_SKIP_KEY(userId)); } catch {}
+}
+
+function isOnboardingSkipped(userId: string): boolean {
+  try { return localStorage.getItem(ONBOARDING_SKIP_KEY(userId)) === "1"; } catch { return false; }
+}
 
 function OnboardingGuard({ children }: { children: React.ReactNode }) {
   const { userId, isLoaded } = useAuth();
   const [location, setLocation] = useLocation();
   const { data: profile, isLoading } = useGetBusinessProfile({
-    query: { queryKey: ["getBusinessProfile"], enabled: isLoaded && !!userId, retry: false }
+    query: { queryKey: getGetBusinessProfileQueryKey(), enabled: isLoaded && !!userId, retry: false }
   });
+
+  const skipped = isLoaded && !!userId && isOnboardingSkipped(userId);
 
   const shouldRedirect =
     isLoaded &&
     !isLoading &&
     !!userId &&
+    !skipped &&
     location !== "/onboarding" &&
     profile !== undefined &&
     profile.companyName === "";
