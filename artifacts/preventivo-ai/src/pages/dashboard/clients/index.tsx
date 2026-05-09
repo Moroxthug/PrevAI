@@ -53,8 +53,8 @@ export default function ClientsPage() {
         <div className="space-y-2">
           {clients.map((client) => (
             <Link
-              key={client.clientName}
-              href={`/dashboard/clients/${encodeURIComponent(client.clientName)}`}
+              key={client.id}
+              href={`/dashboard/clients/${client.id}`}
               className="block"
             >
               <Card className="hover:shadow-sm hover:border-violet-200 transition-all cursor-pointer">

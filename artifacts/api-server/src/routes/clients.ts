@@ -12,6 +12,7 @@ router.get("/clients", requireAuth, async (req, res) => {
 
     const rows = await db
       .select({
+        id: sql<string>`md5(lower(trim(${quotesTable.clientData}->>'nome')))`,
         clientName: sql<string>`(${quotesTable.clientData}->>'nome')`,
         email: sql<string | null>`max(${quotesTable.clientData}->>'email')`,
         phone: sql<string | null>`max(${quotesTable.clientData}->>'phone')`,
@@ -30,14 +31,15 @@ router.get("/clients", requireAuth, async (req, res) => {
       .where(
         and(
           eq(quotesTable.userId, userId),
-          sql`(${quotesTable.clientData}->>'nome') != ''`
+          sql`trim(${quotesTable.clientData}->>'nome') != ''`
         )
       )
-      .groupBy(sql`(${quotesTable.clientData}->>'nome')`)
+      .groupBy(sql`lower(trim(${quotesTable.clientData}->>'nome'))`)
       .orderBy(desc(sql`max(${quotesTable.createdAt})`));
 
     res.json(
       rows.map((r) => ({
+        id: r.id,
         clientName: r.clientName,
         email: r.email || null,
         phone: r.phone || null,
@@ -59,10 +61,10 @@ router.get("/clients", requireAuth, async (req, res) => {
   }
 });
 
-router.get("/clients/:clientName/quotes", requireAuth, async (req, res) => {
+router.get("/clients/:id/quotes", requireAuth, async (req, res) => {
   try {
     const userId = getUserId(res);
-    const clientName = decodeURIComponent(req.params.clientName);
+    const clientId = req.params.id;
 
     const quotes = await db
       .select()
@@ -70,7 +72,7 @@ router.get("/clients/:clientName/quotes", requireAuth, async (req, res) => {
       .where(
         and(
           eq(quotesTable.userId, userId),
-          sql`(${quotesTable.clientData}->>'nome') = ${clientName}`
+          sql`md5(lower(trim(${quotesTable.clientData}->>'nome'))) = ${clientId}`
         )
       )
       .orderBy(desc(quotesTable.createdAt));

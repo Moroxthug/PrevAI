@@ -616,13 +616,13 @@ paths:
                 items:
                   $ref: "#/components/schemas/Client"
 
-  /clients/{clientName}/quotes:
+  /clients/{id}/quotes:
     get:
       operationId: listClientQuotes
       tags: [clients]
-      summary: List quotes for a specific client
+      summary: List quotes for a specific client by stable id (md5 of normalized name)
       parameters:
-        - name: clientName
+        - name: id
           in: path
           required: true
           schema:
@@ -1446,6 +1446,8 @@ components:
     Client:
       type: object
       properties:
+        id:
+          type: string
         clientName:
           type: string
         email:
@@ -1480,6 +1482,7 @@ components:
           type: string
           nullable: true
       required:
+        - id
         - clientName
         - quoteCount
         - unlockedCount

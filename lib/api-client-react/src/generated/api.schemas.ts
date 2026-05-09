@@ -396,6 +396,7 @@ export interface TrialStatus {
 }
 
 export interface Client {
+  id: string;
   clientName: string;
   email?: string | null;
   phone?: string | null;

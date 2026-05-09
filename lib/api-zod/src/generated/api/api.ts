@@ -981,6 +981,7 @@ export const ToggleWhatsappResponse = zod.object({
  * @summary List clients aggregated from quotes
  */
 export const ListClientsResponseItem = zod.object({
+  id: zod.string(),
   clientName: zod.string(),
   email: zod.string().nullish(),
   phone: zod.string().nullish(),
@@ -998,10 +999,10 @@ export const ListClientsResponseItem = zod.object({
 export const ListClientsResponse = zod.array(ListClientsResponseItem);
 
 /**
- * @summary List quotes for a specific client
+ * @summary List quotes for a specific client by stable id (md5 of normalized name)
  */
 export const ListClientQuotesParams = zod.object({
-  clientName: zod.coerce.string(),
+  id: zod.coerce.string(),
 });
 
 export const ListClientQuotesResponseItem = zod.object({

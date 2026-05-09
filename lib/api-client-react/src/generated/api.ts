@@ -2938,31 +2938,31 @@ export function useListClients<
 }
 
 /**
- * @summary List quotes for a specific client
+ * @summary List quotes for a specific client by stable id (md5 of normalized name)
  */
-export const getListClientQuotesUrl = (clientName: string) => {
-  return `/api/clients/${clientName}/quotes`;
+export const getListClientQuotesUrl = (id: string) => {
+  return `/api/clients/${id}/quotes`;
 };
 
 export const listClientQuotes = async (
-  clientName: string,
+  id: string,
   options?: RequestInit,
 ): Promise<Quote[]> => {
-  return customFetch<Quote[]>(getListClientQuotesUrl(clientName), {
+  return customFetch<Quote[]>(getListClientQuotesUrl(id), {
     ...options,
     method: "GET",
   });
 };
 
-export const getListClientQuotesQueryKey = (clientName: string) => {
-  return [`/api/clients/${clientName}/quotes`] as const;
+export const getListClientQuotesQueryKey = (id: string) => {
+  return [`/api/clients/${id}/quotes`] as const;
 };
 
 export const getListClientQuotesQueryOptions = <
   TData = Awaited<ReturnType<typeof listClientQuotes>>,
   TError = ErrorType<unknown>,
 >(
-  clientName: string,
+  id: string,
   options?: {
     query?: UseQueryOptions<
       Awaited<ReturnType<typeof listClientQuotes>>,
@@ -2974,18 +2974,16 @@ export const getListClientQuotesQueryOptions = <
 ) => {
   const { query: queryOptions, request: requestOptions } = options ?? {};
 
-  const queryKey =
-    queryOptions?.queryKey ?? getListClientQuotesQueryKey(clientName);
+  const queryKey = queryOptions?.queryKey ?? getListClientQuotesQueryKey(id);
 
   const queryFn: QueryFunction<
     Awaited<ReturnType<typeof listClientQuotes>>
-  > = ({ signal }) =>
-    listClientQuotes(clientName, { signal, ...requestOptions });
+  > = ({ signal }) => listClientQuotes(id, { signal, ...requestOptions });
 
   return {
     queryKey,
     queryFn,
-    enabled: !!clientName,
+    enabled: !!id,
     ...queryOptions,
   } as UseQueryOptions<
     Awaited<ReturnType<typeof listClientQuotes>>,
@@ -3000,14 +2998,14 @@ export type ListClientQuotesQueryResult = NonNullable<
 export type ListClientQuotesQueryError = ErrorType<unknown>;
 
 /**
- * @summary List quotes for a specific client
+ * @summary List quotes for a specific client by stable id (md5 of normalized name)
  */
 
 export function useListClientQuotes<
   TData = Awaited<ReturnType<typeof listClientQuotes>>,
   TError = ErrorType<unknown>,
 >(
-  clientName: string,
+  id: string,
   options?: {
     query?: UseQueryOptions<
       Awaited<ReturnType<typeof listClientQuotes>>,
@@ -3017,7 +3015,7 @@ export function useListClientQuotes<
     request?: SecondParameter<typeof customFetch>;
   },
 ): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
-  const queryOptions = getListClientQuotesQueryOptions(clientName, options);
+  const queryOptions = getListClientQuotesQueryOptions(id, options);
 
   const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
     queryKey: QueryKey;

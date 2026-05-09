@@ -11,11 +11,11 @@ const formatCurrency = (v: number) =>
 
 export default function ClientDetailPage() {
   const params = useParams<{ name: string }>();
-  const clientName = decodeURIComponent(params.name ?? "");
+  const clientId = params.name ?? "";
 
   const { data: quotes, isLoading } = useListClientQuotes(
-    encodeURIComponent(clientName),
-    { query: { queryKey: getListClientQuotesQueryKey(encodeURIComponent(clientName)), enabled: !!clientName } }
+    clientId,
+    { query: { queryKey: getListClientQuotesQueryKey(clientId), enabled: !!clientId } }
   );
 
   const totalValue = quotes?.reduce((sum, q) => sum + q.totale, 0) ?? 0;
@@ -23,6 +23,7 @@ export default function ClientDetailPage() {
   const unlockedValue = quotes?.filter(q => q.status === "unlocked").reduce((sum, q) => sum + q.totale, 0) ?? 0;
 
   const latestQuote = quotes?.[0];
+  const clientName = latestQuote?.clientData?.nome ?? "";
   const email = latestQuote?.clientData?.email;
   const phone = latestQuote?.clientData?.phone;
   const citta = latestQuote?.clientData?.citta;
@@ -37,37 +38,48 @@ export default function ClientDetailPage() {
         <Link href="/dashboard/clients" className="text-muted-foreground hover:text-gray-900 transition-colors">
           <ChevronLeft className="h-5 w-5" />
         </Link>
-        <div className="flex items-center gap-3">
-          <div className="h-9 w-9 rounded-full bg-violet-100 flex items-center justify-center shrink-0">
-            <span className="text-sm font-bold text-violet-700 uppercase">
-              {clientName.slice(0, 2)}
-            </span>
-          </div>
-          <div>
-            <h1 className="text-2xl font-bold tracking-tight leading-tight">{clientName}</h1>
-            {!isLoading && (email || phone || citta) && (
-              <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 mt-0.5">
-                {email && (
-                  <span className="flex items-center gap-1 text-xs text-muted-foreground">
-                    <Mail className="h-3 w-3" />{email}
-                  </span>
+        <div className="flex items-center gap-3 min-w-0">
+          {isLoading ? (
+            <Skeleton className="h-9 w-9 rounded-full" />
+          ) : (
+            <div className="h-9 w-9 rounded-full bg-violet-100 flex items-center justify-center shrink-0">
+              <span className="text-sm font-bold text-violet-700 uppercase">
+                {clientName.slice(0, 2) || "??"}
+              </span>
+            </div>
+          )}
+          <div className="min-w-0">
+            {isLoading ? (
+              <Skeleton className="h-7 w-48" />
+            ) : (
+              <>
+                <h1 className="text-2xl font-bold tracking-tight leading-tight truncate">
+                  {clientName || "Cliente"}
+                </h1>
+                {(email || phone || citta || indirizzo) && (
+                  <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 mt-0.5">
+                    {email && (
+                      <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                        <Mail className="h-3 w-3" />{email}
+                      </span>
+                    )}
+                    {phone && (
+                      <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                        <Phone className="h-3 w-3" />{phone}
+                      </span>
+                    )}
+                    {citta ? (
+                      <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                        <MapPin className="h-3 w-3" />{citta}{provincia ? ` (${provincia})` : ""}
+                      </span>
+                    ) : indirizzo ? (
+                      <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                        <MapPin className="h-3 w-3" />{indirizzo}
+                      </span>
+                    ) : null}
+                  </div>
                 )}
-                {phone && (
-                  <span className="flex items-center gap-1 text-xs text-muted-foreground">
-                    <Phone className="h-3 w-3" />{phone}
-                  </span>
-                )}
-                {citta && (
-                  <span className="flex items-center gap-1 text-xs text-muted-foreground">
-                    <MapPin className="h-3 w-3" />{citta}{provincia ? ` (${provincia})` : ""}
-                  </span>
-                )}
-                {!citta && indirizzo && (
-                  <span className="flex items-center gap-1 text-xs text-muted-foreground">
-                    <MapPin className="h-3 w-3" />{indirizzo}
-                  </span>
-                )}
-              </div>
+              </>
             )}
           </div>
         </div>
@@ -129,25 +141,25 @@ export default function ClientDetailPage() {
         </Card>
       </div>
 
-      {/* Client details strip */}
-      {!isLoading && (partitaIva || codiceFiscale) && (
+      {/* Fiscal details strip */}
+      {!isLoading && (partitaIva || codiceFiscale || (indirizzo && !citta)) && (
         <Card>
-          <CardContent className="p-4 flex flex-wrap gap-4">
+          <CardContent className="p-4 flex flex-wrap gap-6">
             {partitaIva && (
               <div className="text-sm">
-                <span className="text-muted-foreground text-xs">P.IVA</span>
+                <div className="text-xs text-muted-foreground mb-0.5">P.IVA</div>
                 <div className="font-medium">{partitaIva}</div>
               </div>
             )}
             {codiceFiscale && (
               <div className="text-sm">
-                <span className="text-muted-foreground text-xs">Codice Fiscale</span>
+                <div className="text-xs text-muted-foreground mb-0.5">Codice Fiscale</div>
                 <div className="font-medium">{codiceFiscale}</div>
               </div>
             )}
             {indirizzo && (
               <div className="text-sm">
-                <span className="text-muted-foreground text-xs">Indirizzo</span>
+                <div className="text-xs text-muted-foreground mb-0.5">Indirizzo</div>
                 <div className="font-medium">{indirizzo}{citta ? `, ${citta}` : ""}</div>
               </div>
             )}
