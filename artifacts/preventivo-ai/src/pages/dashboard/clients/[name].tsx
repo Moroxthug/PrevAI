@@ -2,7 +2,7 @@ import { useParams, Link } from "wouter";
 import { useListClientQuotes, getListClientQuotesQueryKey } from "@workspace/api-client-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ChevronLeft, ChevronRight, Euro, FileText } from "lucide-react";
+import { ChevronLeft, ChevronRight, Euro, FileText, Mail, Phone, MapPin, CheckCircle2 } from "lucide-react";
 import { format } from "date-fns";
 import { it } from "date-fns/locale";
 
@@ -19,6 +19,17 @@ export default function ClientDetailPage() {
   );
 
   const totalValue = quotes?.reduce((sum, q) => sum + q.totale, 0) ?? 0;
+  const unlockedCount = quotes?.filter(q => q.status === "unlocked").length ?? 0;
+  const unlockedValue = quotes?.filter(q => q.status === "unlocked").reduce((sum, q) => sum + q.totale, 0) ?? 0;
+
+  const latestQuote = quotes?.[0];
+  const email = latestQuote?.clientData?.email;
+  const phone = latestQuote?.clientData?.phone;
+  const citta = latestQuote?.clientData?.citta;
+  const provincia = latestQuote?.clientData?.provincia;
+  const indirizzo = latestQuote?.clientData?.indirizzo;
+  const partitaIva = latestQuote?.clientData?.partitaIva;
+  const codiceFiscale = latestQuote?.clientData?.codiceFiscale;
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
@@ -26,20 +37,44 @@ export default function ClientDetailPage() {
         <Link href="/dashboard/clients" className="text-muted-foreground hover:text-gray-900 transition-colors">
           <ChevronLeft className="h-5 w-5" />
         </Link>
-        <div>
-          <div className="flex items-center gap-3">
-            <div className="h-9 w-9 rounded-full bg-violet-100 flex items-center justify-center shrink-0">
-              <span className="text-sm font-bold text-violet-700 uppercase">
-                {clientName.slice(0, 2)}
-              </span>
-            </div>
-            <h1 className="text-2xl font-bold tracking-tight">{clientName}</h1>
+        <div className="flex items-center gap-3">
+          <div className="h-9 w-9 rounded-full bg-violet-100 flex items-center justify-center shrink-0">
+            <span className="text-sm font-bold text-violet-700 uppercase">
+              {clientName.slice(0, 2)}
+            </span>
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight leading-tight">{clientName}</h1>
+            {!isLoading && (email || phone || citta) && (
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 mt-0.5">
+                {email && (
+                  <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                    <Mail className="h-3 w-3" />{email}
+                  </span>
+                )}
+                {phone && (
+                  <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                    <Phone className="h-3 w-3" />{phone}
+                  </span>
+                )}
+                {citta && (
+                  <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                    <MapPin className="h-3 w-3" />{citta}{provincia ? ` (${provincia})` : ""}
+                  </span>
+                )}
+                {!citta && indirizzo && (
+                  <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                    <MapPin className="h-3 w-3" />{indirizzo}
+                  </span>
+                )}
+              </div>
+            )}
           </div>
         </div>
       </div>
 
       {/* Summary cards */}
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <Card>
           <CardContent className="p-5">
             <div className="flex items-center justify-between mb-2">
@@ -48,10 +83,21 @@ export default function ClientDetailPage() {
                 <FileText className="h-4 w-4 text-violet-500" />
               </div>
             </div>
-            {isLoading ? (
-              <Skeleton className="h-8 w-16" />
-            ) : (
+            {isLoading ? <Skeleton className="h-8 w-16" /> : (
               <div className="text-2xl font-bold">{quotes?.length ?? 0}</div>
+            )}
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-5">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Accettati</span>
+              <div className="h-8 w-8 rounded-lg bg-slate-50 flex items-center justify-center">
+                <CheckCircle2 className="h-4 w-4 text-emerald-500" />
+              </div>
+            </div>
+            {isLoading ? <Skeleton className="h-8 w-16" /> : (
+              <div className="text-2xl font-bold">{unlockedCount}</div>
             )}
           </CardContent>
         </Card>
@@ -60,17 +106,54 @@ export default function ClientDetailPage() {
             <div className="flex items-center justify-between mb-2">
               <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Valore totale</span>
               <div className="h-8 w-8 rounded-lg bg-slate-50 flex items-center justify-center">
-                <Euro className="h-4 w-4 text-emerald-500" />
+                <Euro className="h-4 w-4 text-blue-500" />
               </div>
             </div>
-            {isLoading ? (
-              <Skeleton className="h-8 w-24" />
-            ) : (
+            {isLoading ? <Skeleton className="h-8 w-24" /> : (
               <div className="text-2xl font-bold">{formatCurrency(totalValue)}</div>
             )}
           </CardContent>
         </Card>
+        <Card>
+          <CardContent className="p-5">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Sbloccato</span>
+              <div className="h-8 w-8 rounded-lg bg-slate-50 flex items-center justify-center">
+                <Euro className="h-4 w-4 text-amber-500" />
+              </div>
+            </div>
+            {isLoading ? <Skeleton className="h-8 w-24" /> : (
+              <div className="text-2xl font-bold">{formatCurrency(unlockedValue)}</div>
+            )}
+          </CardContent>
+        </Card>
       </div>
+
+      {/* Client details strip */}
+      {!isLoading && (partitaIva || codiceFiscale) && (
+        <Card>
+          <CardContent className="p-4 flex flex-wrap gap-4">
+            {partitaIva && (
+              <div className="text-sm">
+                <span className="text-muted-foreground text-xs">P.IVA</span>
+                <div className="font-medium">{partitaIva}</div>
+              </div>
+            )}
+            {codiceFiscale && (
+              <div className="text-sm">
+                <span className="text-muted-foreground text-xs">Codice Fiscale</span>
+                <div className="font-medium">{codiceFiscale}</div>
+              </div>
+            )}
+            {indirizzo && (
+              <div className="text-sm">
+                <span className="text-muted-foreground text-xs">Indirizzo</span>
+                <div className="font-medium">{indirizzo}{citta ? `, ${citta}` : ""}</div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       {/* Quotes list */}
       <Card>

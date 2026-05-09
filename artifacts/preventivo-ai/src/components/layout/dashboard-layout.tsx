@@ -156,7 +156,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
               <Badge className="text-[10px] px-1 py-0 h-4 bg-violet-100 text-violet-700 border-0 font-semibold">Pro</Badge>
             )}
             {!collapsed && item.comingSoon && (
-              <Badge className="text-[10px] px-1 py-0 h-4 bg-amber-100 text-amber-600 border-0 font-semibold">Presto</Badge>
+              <Badge className="text-[10px] px-1 py-0 h-4 bg-amber-100 text-amber-600 border-0 font-semibold">In arrivo</Badge>
             )}
           </Link>
         );

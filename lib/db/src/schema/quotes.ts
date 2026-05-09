@@ -21,6 +21,8 @@ export const quoteItemSchema = z.object({
 export const quoteClientDataSchema = z.object({
   nome: z.string(),
   indirizzo: z.string(),
+  email: z.string().optional(),
+  phone: z.string().optional(),
   codiceFiscale: z.string().optional(),
   partitaIva: z.string().optional(),
   citta: z.string().optional(),

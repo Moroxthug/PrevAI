@@ -23,6 +23,8 @@ export const ListQuotesResponseItem = zod.object({
   clientData: zod.object({
     nome: zod.string(),
     indirizzo: zod.string(),
+    email: zod.string().optional(),
+    phone: zod.string().optional(),
     codiceFiscale: zod.string().optional(),
     partitaIva: zod.string().optional(),
     citta: zod.string().optional(),
@@ -136,6 +138,8 @@ export const GetQuoteStatsResponse = zod.object({
       clientData: zod.object({
         nome: zod.string(),
         indirizzo: zod.string(),
+        email: zod.string().optional(),
+        phone: zod.string().optional(),
         codiceFiscale: zod.string().optional(),
         partitaIva: zod.string().optional(),
         citta: zod.string().optional(),
@@ -233,6 +237,8 @@ export const CreateManualQuoteBody = zod.object({
     .object({
       nome: zod.string(),
       indirizzo: zod.string(),
+      email: zod.string().optional(),
+      phone: zod.string().optional(),
       codiceFiscale: zod.string().optional(),
       partitaIva: zod.string().optional(),
       citta: zod.string().optional(),
@@ -286,6 +292,8 @@ export const GetQuoteResponse = zod.object({
   clientData: zod.object({
     nome: zod.string(),
     indirizzo: zod.string(),
+    email: zod.string().optional(),
+    phone: zod.string().optional(),
     codiceFiscale: zod.string().optional(),
     partitaIva: zod.string().optional(),
     citta: zod.string().optional(),
@@ -367,6 +375,8 @@ export const UpdateQuoteBody = zod.object({
     .object({
       nome: zod.string(),
       indirizzo: zod.string(),
+      email: zod.string().optional(),
+      phone: zod.string().optional(),
       codiceFiscale: zod.string().optional(),
       partitaIva: zod.string().optional(),
       citta: zod.string().optional(),
@@ -429,6 +439,8 @@ export const UpdateQuoteResponse = zod.object({
   clientData: zod.object({
     nome: zod.string(),
     indirizzo: zod.string(),
+    email: zod.string().optional(),
+    phone: zod.string().optional(),
     codiceFiscale: zod.string().optional(),
     partitaIva: zod.string().optional(),
     citta: zod.string().optional(),
@@ -551,6 +563,8 @@ export const RegenerateQuoteResponse = zod.object({
   clientData: zod.object({
     nome: zod.string(),
     indirizzo: zod.string(),
+    email: zod.string().optional(),
+    phone: zod.string().optional(),
     codiceFiscale: zod.string().optional(),
     partitaIva: zod.string().optional(),
     citta: zod.string().optional(),
@@ -633,6 +647,8 @@ export const UpgradeToCapitolatoProResponse = zod.object({
   clientData: zod.object({
     nome: zod.string(),
     indirizzo: zod.string(),
+    email: zod.string().optional(),
+    phone: zod.string().optional(),
     codiceFiscale: zod.string().optional(),
     partitaIva: zod.string().optional(),
     citta: zod.string().optional(),
@@ -966,8 +982,12 @@ export const ToggleWhatsappResponse = zod.object({
  */
 export const ListClientsResponseItem = zod.object({
   clientName: zod.string(),
+  email: zod.string().nullish(),
+  phone: zod.string().nullish(),
   quoteCount: zod.number(),
+  unlockedCount: zod.number(),
   totalValue: zod.number(),
+  unlockedValue: zod.number(),
   lastQuoteDate: zod.string(),
   indirizzo: zod.string().nullish(),
   citta: zod.string().nullish(),
@@ -990,6 +1010,8 @@ export const ListClientQuotesResponseItem = zod.object({
   clientData: zod.object({
     nome: zod.string(),
     indirizzo: zod.string(),
+    email: zod.string().optional(),
+    phone: zod.string().optional(),
     codiceFiscale: zod.string().optional(),
     partitaIva: zod.string().optional(),
     citta: zod.string().optional(),

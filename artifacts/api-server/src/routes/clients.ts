@@ -13,8 +13,12 @@ router.get("/clients", requireAuth, async (req, res) => {
     const rows = await db
       .select({
         clientName: sql<string>`(${quotesTable.clientData}->>'nome')`,
+        email: sql<string | null>`max(${quotesTable.clientData}->>'email')`,
+        phone: sql<string | null>`max(${quotesTable.clientData}->>'phone')`,
         quoteCount: sql<number>`count(*)::int`,
+        unlockedCount: sql<number>`count(*) filter (where ${quotesTable.status} = 'unlocked')::int`,
         totalValue: sql<number>`sum(${quotesTable.totale}::numeric)::float`,
+        unlockedValue: sql<number>`sum(${quotesTable.totale}::numeric) filter (where ${quotesTable.status} = 'unlocked')::float`,
         lastQuoteDate: sql<string>`max(${quotesTable.createdAt})`,
         indirizzo: sql<string | null>`max(${quotesTable.clientData}->>'indirizzo')`,
         citta: sql<string | null>`max(${quotesTable.clientData}->>'citta')`,
@@ -35,8 +39,12 @@ router.get("/clients", requireAuth, async (req, res) => {
     res.json(
       rows.map((r) => ({
         clientName: r.clientName,
+        email: r.email || null,
+        phone: r.phone || null,
         quoteCount: r.quoteCount,
+        unlockedCount: r.unlockedCount ?? 0,
         totalValue: r.totalValue ?? 0,
+        unlockedValue: r.unlockedValue ?? 0,
         lastQuoteDate: r.lastQuoteDate,
         indirizzo: r.indirizzo || null,
         citta: r.citta || null,

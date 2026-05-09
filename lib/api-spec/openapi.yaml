@@ -777,6 +777,10 @@ components:
           type: string
         indirizzo:
           type: string
+        email:
+          type: string
+        phone:
+          type: string
         codiceFiscale:
           type: string
         partitaIva:
@@ -1444,9 +1448,19 @@ components:
       properties:
         clientName:
           type: string
+        email:
+          type: string
+          nullable: true
+        phone:
+          type: string
+          nullable: true
         quoteCount:
           type: number
+        unlockedCount:
+          type: number
         totalValue:
+          type: number
+        unlockedValue:
           type: number
         lastQuoteDate:
           type: string
@@ -1468,5 +1482,7 @@ components:
       required:
         - clientName
         - quoteCount
+        - unlockedCount
         - totalValue
+        - unlockedValue
         - lastQuoteDate

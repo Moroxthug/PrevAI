@@ -41,6 +41,8 @@ export interface QuoteDiscount {
 export interface QuoteClientData {
   nome: string;
   indirizzo: string;
+  email?: string;
+  phone?: string;
   codiceFiscale?: string;
   partitaIva?: string;
   citta?: string;
@@ -395,8 +397,12 @@ export interface TrialStatus {
 
 export interface Client {
   clientName: string;
+  email?: string | null;
+  phone?: string | null;
   quoteCount: number;
+  unlockedCount: number;
   totalValue: number;
+  unlockedValue: number;
   lastQuoteDate: string;
   indirizzo?: string | null;
   citta?: string | null;
