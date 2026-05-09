@@ -1,8 +1,243 @@
 import { useParams, Link } from "wouter";
-import { ArrowRight, CheckCircle2, Clock, FileText, Shield, TrendingUp, Star, Building2, BookOpen } from "lucide-react";
+import { ArrowRight, CheckCircle2, Clock, FileText, Shield, TrendingUp, Star, Building2, BookOpen, X } from "lucide-react";
 import { SeoHead } from "@/components/seo-head";
 import { SECTORS, DEFAULT_SECTOR, RELATED_SECTORS } from "@/data/seo-data";
 import { BLOG_ARTICLES, SECTOR_ARTICLES } from "@/data/blog-data";
+
+function ExcelWordComparisonBlock({ tool }: { tool: "Excel" | "Word" }) {
+  const rows = tool === "Excel"
+    ? [
+        { label: "Calcola IVA e totali", old: false, new: true },
+        { label: "Nessuna formula da impostare", old: false, new: true },
+        { label: "Funziona da smartphone", old: false, new: true },
+        { label: "PDF professionale immediato", old: false, new: true },
+        { label: "Archivio preventivi sempre accessibile", old: false, new: true },
+        { label: "Logo aziendale automatico", old: false, new: true },
+        { label: "Prezzi di mercato suggeriti dall'AI", old: false, new: true },
+        { label: "Si può usare offline", old: true, new: false },
+      ]
+    : [
+        { label: "Formattazione automatica", old: false, new: true },
+        { label: "Calcola IVA e totali", old: false, new: true },
+        { label: "Funziona da smartphone", old: false, new: true },
+        { label: "PDF senza conversioni .docx", old: false, new: true },
+        { label: "Struttura professionale predefinita", old: false, new: true },
+        { label: "Logo aziendale automatico", old: false, new: true },
+        { label: "Genera testo in automatico", old: false, new: true },
+        { label: "Editing manuale libero", old: true, new: true },
+      ];
+
+  return (
+    <section className="py-20 bg-white">
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-3xl">
+        <div className="text-center mb-10">
+          <h2 className="text-3xl font-bold text-gray-900">
+            Modello {tool} vs <span className="gradient-text">prevai</span>: confronto diretto
+          </h2>
+          <p className="text-gray-500 mt-3 text-base">Cosa riesci a fare con un template {tool} e cosa con prevai</p>
+        </div>
+        <div className="rounded-2xl overflow-hidden border border-gray-100 shadow-sm">
+          <div className="grid grid-cols-3 bg-gray-50 border-b border-gray-100">
+            <div className="py-3 px-5 text-sm font-semibold text-gray-500">Funzionalità</div>
+            <div className="py-3 px-5 text-sm font-semibold text-gray-600 text-center border-l border-gray-100">Template {tool}</div>
+            <div className="py-3 px-5 text-sm font-semibold text-center border-l border-gray-100" style={{ color: "#7C3AED" }}>prevai AI</div>
+          </div>
+          {rows.map((r, i) => (
+            <div key={i} className={`grid grid-cols-3 border-b border-gray-50 ${i % 2 === 0 ? "bg-white" : "bg-gray-50/40"}`}>
+              <div className="py-3.5 px-5 text-sm text-gray-700 flex items-center">{r.label}</div>
+              <div className="py-3.5 px-5 flex items-center justify-center border-l border-gray-100">
+                {r.old
+                  ? <CheckCircle2 className="h-5 w-5 text-green-400" />
+                  : <X className="h-5 w-5 text-red-300" />}
+              </div>
+              <div className="py-3.5 px-5 flex items-center justify-center border-l border-gray-100">
+                {r.new
+                  ? <CheckCircle2 className="h-5 w-5 text-violet-500" />
+                  : <X className="h-5 w-5 text-red-300" />}
+              </div>
+            </div>
+          ))}
+        </div>
+        <div className="mt-8 text-center">
+          <Link
+            href="/sign-up"
+            className="btn-gradient inline-flex h-12 items-center justify-center px-8 text-base font-semibold"
+          >
+            Prova prevai gratis — niente carta di credito
+            <ArrowRight className="ml-2 h-4 w-4" />
+          </Link>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function ComeFareGuideBlock() {
+  const steps = [
+    {
+      n: "1",
+      h: "Raccogli le informazioni sul lavoro",
+      body: "Prima di iniziare, verifica di avere: il tipo di intervento, le dimensioni approssimative (mq, ml, pezzi), i materiali richiesti dal cliente, i dati del committente (nome, indirizzo, email). Con prevai puoi raccogliere tutto direttamente durante il sopralluogo dal telefono.",
+    },
+    {
+      n: "2",
+      h: "Definisci le voci di costo",
+      body: "Un preventivo professionale separa manodopera e materiali. Ogni voce deve avere: descrizione dettagliata, unità di misura (mq, ml, ore, corpo), quantità, prezzo unitario e importo. L'AI di prevai genera questa struttura automaticamente dalla tua descrizione in italiano.",
+    },
+    {
+      n: "3",
+      h: "Applica l'aliquota IVA corretta",
+      body: "In Italia l'IVA varia per categoria: 4% per lavori di edilizia agevolata, 10% per ristrutturazioni edilizie, 22% per la maggior parte degli altri lavori. Un errore sull'IVA può costare caro. prevai applica l'aliquota giusta in automatico in base al tipo di lavoro descritto.",
+    },
+    {
+      n: "4",
+      h: "Aggiungi le condizioni di pagamento",
+      body: "Scrivi sempre le condizioni: acconto richiesto (es. 30% all'accettazione), saldo a fine lavori, modalità di pagamento accettate (bonifico, contanti entro €2.000), tempi di esecuzione previsti e validità dell'offerta (tipicamente 30 giorni).",
+    },
+    {
+      n: "5",
+      h: "Invia il preventivo al cliente",
+      body: "Il formato migliore è il PDF: non può essere modificato accidentalmente e si apre su qualsiasi dispositivo. Invialo via email o WhatsApp. Con prevai scarichi il PDF con un clic, già formattato con la tua intestazione aziendale e logo.",
+    },
+  ];
+
+  return (
+    <section className="py-20 bg-gray-50/60">
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-3xl">
+        <div className="text-center mb-12">
+          <h2 className="text-3xl font-bold text-gray-900">
+            Guida completa: come fare un preventivo professionale
+          </h2>
+          <p className="text-gray-500 mt-3 text-base">Segui questi 5 passi per creare un preventivo che il cliente firmerà subito</p>
+        </div>
+        <div className="space-y-6">
+          {steps.map((s) => (
+            <div key={s.n} className="bg-white rounded-2xl p-6 card-soft">
+              <div className="flex items-start gap-4">
+                <div
+                  className="h-9 w-9 rounded-full flex items-center justify-center text-white font-bold text-sm shrink-0 mt-0.5"
+                  style={{ background: "linear-gradient(135deg, #7C3AED, #06B6D4)" }}
+                >
+                  {s.n}
+                </div>
+                <div>
+                  <h3 className="text-base font-semibold text-gray-900 mb-2">{s.h}</h3>
+                  <p className="text-sm text-gray-500 leading-relaxed">{s.body}</p>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function PreventiviGratisPlansBlock() {
+  const plans = [
+    {
+      name: "Piano Starter",
+      price: "29€",
+      period: "/mese",
+      highlight: false,
+      badge: null,
+      features: [
+        "20 preventivi al mese",
+        "PDF professionale scaricabile",
+        "Logo e intestazione aziendale",
+        "IVA calcolata automaticamente",
+        "Archivio preventivi digitale",
+      ],
+      cta: "Inizia con Starter",
+      href: "/sign-up",
+    },
+    {
+      name: "Piano Pro",
+      price: "79€",
+      period: "/mese",
+      highlight: true,
+      badge: "Più scelto",
+      features: [
+        "Preventivi illimitati",
+        "Tutto di Starter, incluso",
+        "Capitolato dettagliato AI",
+        "Listino prezzi personalizzato",
+        "Priorità nella generazione AI",
+      ],
+      cta: "Passa a Pro",
+      href: "/sign-up",
+    },
+    {
+      name: "Preventivo Singolo",
+      price: "29€",
+      period: " una tantum",
+      highlight: false,
+      badge: null,
+      features: [
+        "1 preventivo PDF",
+        "Nessun abbonamento",
+        "Stesso output del piano Starter",
+        "Ideale per chi ha raramente clienti",
+        "Pagamento sicuro via Stripe",
+      ],
+      cta: "Acquista singolo",
+      href: "/sign-up",
+    },
+  ];
+
+  return (
+    <section className="py-20 bg-gray-50/60">
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-4xl">
+        <div className="text-center mb-12">
+          <h2 className="text-3xl font-bold text-gray-900">
+            Quanto costa il software preventivi?
+          </h2>
+          <p className="text-gray-500 mt-3 text-base">Inizia gratis, poi scegli il piano più adatto alla tua attività</p>
+        </div>
+        <div className="grid md:grid-cols-3 gap-5">
+          {plans.map((p) => (
+            <div
+              key={p.name}
+              className={`relative rounded-2xl p-6 flex flex-col ${p.highlight ? "shadow-lg border-2 border-violet-400 bg-white" : "border border-gray-100 bg-white card-soft"}`}
+            >
+              {p.badge && (
+                <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+                  <span className="inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold text-white"
+                    style={{ background: "linear-gradient(135deg, #7C3AED, #06B6D4)" }}>
+                    {p.badge}
+                  </span>
+                </div>
+              )}
+              <div className="mb-5">
+                <h3 className="text-base font-semibold text-gray-900 mb-1">{p.name}</h3>
+                <div className="flex items-baseline gap-0.5">
+                  <span className="text-3xl font-extrabold text-gray-900">{p.price}</span>
+                  <span className="text-sm text-gray-500">{p.period}</span>
+                </div>
+              </div>
+              <ul className="space-y-2.5 mb-6 flex-1">
+                {p.features.map((f) => (
+                  <li key={f} className="flex items-center gap-2 text-sm text-gray-600">
+                    <CheckCircle2 className="h-4 w-4 text-violet-500 shrink-0" />
+                    {f}
+                  </li>
+                ))}
+              </ul>
+              <Link
+                href={p.href}
+                className={`inline-flex h-10 items-center justify-center px-5 rounded-lg text-sm font-semibold transition-colors ${p.highlight ? "btn-gradient" : "btn-gradient-outline"}`}
+              >
+                {p.cta}
+                <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
+              </Link>
+            </div>
+          ))}
+        </div>
+        <p className="text-center text-sm text-gray-400 mt-6">Registrazione gratuita · Nessuna carta di credito richiesta per iniziare</p>
+      </div>
+    </section>
+  );
+}
 
 export default function SeoLanding() {
   const params = useParams();
@@ -156,6 +391,12 @@ export default function SeoLanding() {
           </div>
         </div>
       </section>
+
+      {/* ── Guide-specific blocks ────────────────────────── */}
+      {slug === "modello-excel" && <ExcelWordComparisonBlock tool="Excel" />}
+      {slug === "modello-word" && <ExcelWordComparisonBlock tool="Word" />}
+      {slug === "come-fare-preventivo" && <ComeFareGuideBlock />}
+      {slug === "preventivi-gratis" && <PreventiviGratisPlansBlock />}
 
       {/* ── "Pensato per il mercato italiano" ────────────── */}
       <section className="py-20 bg-white">
