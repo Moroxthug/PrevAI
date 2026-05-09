@@ -12,8 +12,12 @@ router.get("/clients", requireAuth, async (req, res) => {
 
     const rows = await db
       .select({
-        id: sql<string>`md5(lower(trim(${quotesTable.clientData}->>'nome')))`,
-        clientName: sql<string>`(${quotesTable.clientData}->>'nome')`,
+        id: sql<string>`md5(concat_ws('|',
+          lower(trim(${quotesTable.clientData}->>'nome')),
+          coalesce(lower(trim(${quotesTable.clientData}->>'email')), ''),
+          coalesce(lower(trim(${quotesTable.clientData}->>'phone')), '')
+        ))`,
+        clientName: sql<string>`max(${quotesTable.clientData}->>'nome')`,
         email: sql<string | null>`max(${quotesTable.clientData}->>'email')`,
         phone: sql<string | null>`max(${quotesTable.clientData}->>'phone')`,
         quoteCount: sql<number>`count(*)::int`,
@@ -34,7 +38,11 @@ router.get("/clients", requireAuth, async (req, res) => {
           sql`trim(${quotesTable.clientData}->>'nome') != ''`
         )
       )
-      .groupBy(sql`lower(trim(${quotesTable.clientData}->>'nome'))`)
+      .groupBy(
+        sql`lower(trim(${quotesTable.clientData}->>'nome'))`,
+        sql`coalesce(lower(trim(${quotesTable.clientData}->>'email')), '')`,
+        sql`coalesce(lower(trim(${quotesTable.clientData}->>'phone')), '')`
+      )
       .orderBy(desc(sql`max(${quotesTable.createdAt})`));
 
     res.json(
@@ -72,7 +80,11 @@ router.get("/clients/:id/quotes", requireAuth, async (req, res) => {
       .where(
         and(
           eq(quotesTable.userId, userId),
-          sql`md5(lower(trim(${quotesTable.clientData}->>'nome'))) = ${clientId}`
+          sql`md5(concat_ws('|',
+            lower(trim(${quotesTable.clientData}->>'nome')),
+            coalesce(lower(trim(${quotesTable.clientData}->>'email')), ''),
+            coalesce(lower(trim(${quotesTable.clientData}->>'phone')), '')
+          )) = ${clientId}`
         )
       )
       .orderBy(desc(quotesTable.createdAt));
