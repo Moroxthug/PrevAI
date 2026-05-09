@@ -27,6 +27,9 @@ export const whatsappOtpTable = pgTable("whatsapp_otp", {
 });
 
 export const whatsappSessionStateEnum = pgEnum("whatsapp_session_state", [
+  "awaiting_template_selection",
+  "awaiting_client_choice",
+  "awaiting_job_input",
   "awaiting_confirmation",
   "awaiting_client_data",
 ]);

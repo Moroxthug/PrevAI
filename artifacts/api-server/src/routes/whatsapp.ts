@@ -8,7 +8,7 @@ import {
   businessProfilesTable,
   quotesTable,
 } from "@workspace/db";
-import { eq, and, gt, gte, sql } from "drizzle-orm";
+import { eq, and, gt, gte, sql, desc } from "drizzle-orm";
 import { logger } from "../lib/logger.js";
 import {
   buildQuoteFromAI,
@@ -31,7 +31,7 @@ const WA_PHONE_ID = process.env.WHATSAPP_PHONE_NUMBER_ID ?? "";
 const WA_VERIFY_TOKEN = process.env.WHATSAPP_VERIFY_TOKEN ?? "prevai_webhook_secret";
 const PREVAI_BASE_URL = getBaseUrl();
 const SESSION_TTL_MS = 30 * 60 * 1000; // 30 minutes
-const MAX_ITERATIONS = 5;
+const MAX_ITERATIONS = 3; // max correction rounds before forcing save-as-draft
 
 // ── Low-level send helpers ──────────────────────────────────────────────────────
 
@@ -228,8 +228,6 @@ async function extractRawInput(
   }
 
   if (msgType === "document") {
-    // Documents (PDF, Word, etc.) are not supported as quote input via WhatsApp.
-    // Inform the user and return null so no quote generation is triggered.
     await sendWhatsappText(
       from,
       "ℹ️ I file allegati non sono supportati.\n\nInviami la descrizione del lavoro in *testo*, un *messaggio vocale* o una *foto* degli appunti per generare un preventivo."
@@ -242,6 +240,13 @@ async function extractRawInput(
 }
 
 // ── Session helpers ─────────────────────────────────────────────────────────────
+
+type SessionState =
+  | "awaiting_template_selection"
+  | "awaiting_client_choice"
+  | "awaiting_job_input"
+  | "awaiting_confirmation"
+  | "awaiting_client_data"; // legacy state — kept for in-flight sessions
 
 async function loadValidSession(phoneNumber: string) {
   const [session] = await db
@@ -259,14 +264,20 @@ async function loadValidSession(phoneNumber: string) {
   return session;
 }
 
-async function upsertSession(phoneNumber: string, userId: string, state: "awaiting_confirmation" | "awaiting_client_data", pendingQuoteData: PendingQuoteData, iterationCount: number) {
+async function upsertSession(
+  phoneNumber: string,
+  userId: string,
+  state: SessionState,
+  payload: Record<string, unknown>,
+  iterationCount: number,
+) {
   const expiresAt = new Date(Date.now() + SESSION_TTL_MS);
   await db
     .insert(whatsappSessionsTable)
-    .values({ phoneNumber, userId, state, pendingQuoteData: pendingQuoteData as unknown as Record<string, unknown>, iterationCount, expiresAt })
+    .values({ phoneNumber, userId, state, pendingQuoteData: payload, iterationCount, expiresAt })
     .onConflictDoUpdate({
       target: whatsappSessionsTable.phoneNumber,
-      set: { state, pendingQuoteData: pendingQuoteData as unknown as Record<string, unknown>, iterationCount, expiresAt, updatedAt: new Date() },
+      set: { state, pendingQuoteData: payload, iterationCount, expiresAt, updatedAt: new Date() },
     });
 }
 
@@ -274,50 +285,72 @@ async function deleteSession(phoneNumber: string) {
   await db.delete(whatsappSessionsTable).where(eq(whatsappSessionsTable.phoneNumber, phoneNumber));
 }
 
-// ── Intent classification ───────────────────────────────────────────────────────
+// ── Client list helper ──────────────────────────────────────────────────────────
 
-/**
- * Session state machine:
- *   idle (no row in DB)
- *     └─ new work request → awaiting_confirmation
- *   awaiting_confirmation
- *     ├─ confirm keyword   → awaiting_client_data
- *     ├─ abandon keyword   → idle (delete session)
- *     ├─ new work hint     → warn user; remain in awaiting_confirmation
- *     └─ correction        → awaiting_confirmation (regenerate, iterationCount++)
- *   awaiting_client_data
- *     ├─ client data / skip → idle (save quote, send PDF, delete session)
- *     ├─ abandon keyword    → idle (delete session)
- *     └─ new work hint      → warn user; remain in awaiting_client_data
- */
+async function getExistingClients(userId: string): Promise<{ nome: string; indirizzo: string }[]> {
+  const quotes = await db
+    .select({ clientData: quotesTable.clientData })
+    .from(quotesTable)
+    .where(eq(quotesTable.userId, userId))
+    .orderBy(desc(quotesTable.createdAt))
+    .limit(20);
+
+  const seen = new Set<string>();
+  const clients: { nome: string; indirizzo: string }[] = [];
+
+  for (const q of quotes) {
+    const cd = q.clientData as { nome?: string; indirizzo?: string } | null;
+    const nome = cd?.nome?.trim() ?? "";
+    if (!nome || seen.has(nome.toLowerCase())) continue;
+    seen.add(nome.toLowerCase());
+    clients.push({ nome, indirizzo: cd?.indirizzo?.trim() ?? "" });
+    if (clients.length >= 5) break;
+  }
+
+  return clients;
+}
+
+// ── Template helpers ────────────────────────────────────────────────────────────
+
+const TEMPLATES = [
+  { id: "standard", label: "Starter", emoji: "📄", desc: "Layout base professionale" },
+  { id: "mariagrazia", label: "Elegante", emoji: "✨", desc: "Lista numerata con header OFFERTA aziendale" },
+  { id: "arosio", label: "Professionale", emoji: "🏗️", desc: "Capitolato con sezioni e subtotali per capitolo" },
+];
+
+function templateFromChoice(text: string): string | null {
+  const t = text.trim();
+  if (t === "1" || /starter/i.test(t)) return "standard";
+  if (t === "2" || /elegante/i.test(t)) return "mariagrazia";
+  if (t === "3" || /professionale/i.test(t)) return "arosio";
+  return null;
+}
+
+function templateLabel(id: string): string {
+  return TEMPLATES.find(t => t.id === id)?.label ?? "Starter";
+}
+
+// ── Intent classification ───────────────────────────────────────────────────────
 
 type ConfirmIntent = "confirm" | "abandon" | "new_work_hint" | "correction";
 
 function classifyConfirmationIntent(text: string): ConfirmIntent {
   const t = text.toLowerCase().trim();
-  const confirmKeywords = ["ok", "va bene", "va benissimo", "perfetto", "procedi", "ottimo", "bene", "confermo", "conferma", "approvato", "giusto", "corretto", "andiamo", "yes", "go"];
+  const confirmKeywords = ["ok", "va bene", "va benissimo", "perfetto", "procedi", "ottimo", "bene", "confermo", "conferma", "approvato", "giusto", "corretto", "andiamo", "yes", "go", "sì", "si"];
   const abandonKeywords = ["abbandona", "ricomincia", "nuovo preventivo", "lascia stare", "annulla", "cancella", "reset", "no grazie", "ricomincia da capo"];
 
-  if (t === "sì" || t === "si" || confirmKeywords.some(kw => t === kw || t.startsWith(`${kw} `) || t.endsWith(` ${kw}`))) {
+  if (confirmKeywords.some(kw => t === kw || t.startsWith(`${kw} `) || t.endsWith(` ${kw}`))) {
     return "confirm";
   }
   if (abandonKeywords.some(kw => t.includes(kw))) {
     return "abandon";
   }
-  // Detect a probable NEW work description (not a correction to the existing quote).
-  // Criteria: message is long, lacks correction-verb starters, contains new-work language.
   if (looksLikeNewWorkRequest(t)) {
     return "new_work_hint";
   }
   return "correction";
 }
 
-/**
- * Returns true when `text` looks like a brand-new work description rather than
- * a correction to an already-generated quote.
- * Heuristic: message must be ≥ 70 chars, not start with a known correction verb,
- * and contain at least one new-work trigger phrase.
- */
 function looksLikeNewWorkRequest(text: string): boolean {
   const t = text.toLowerCase().trim();
   if (t.length < 70) return false;
@@ -330,13 +363,6 @@ function looksLikeNewWorkRequest(text: string): boolean {
     /lavori\s+di\s+\w+/,
   ];
   return newWorkPatterns.some(p => p.test(t));
-}
-
-function parseClientData(text: string): { nome: string; indirizzo: string } {
-  const t = text.trim();
-  if (/^(salta|skip|nessun cliente|-)$/i.test(t)) return { nome: "", indirizzo: "" };
-  const parts = t.split(/[,\n]+/).map(p => p.trim()).filter(Boolean);
-  return { nome: parts[0] ?? "", indirizzo: parts.slice(1).join(", ") };
 }
 
 // ── Preview sending helper ──────────────────────────────────────────────────────
@@ -365,20 +391,160 @@ async function sendQuotePreview(from: string, data: PendingQuoteData, iterationC
 
   const remainingEdits = MAX_ITERATIONS - iterationCount;
   const confirmMsg = iterationCount === 0
-    ? `✅ Ecco la tua anteprima!\n\n📝 Rispondi con correzioni (es. "cambia il prezzo delle piastrelle a 35€/mq", "aggiungi una voce per la pulizia finale") oppure scrivi *OK* per procedere.`
-    : `✅ Preventivo aggiornato!\n\n📝 Rispondi con altre correzioni oppure scrivi *OK* per procedere. Modifiche rimanenti: ${remainingEdits}.`;
+    ? `✅ Ecco la tua anteprima!\n\n📝 Puoi chiedermi *correzioni* (es. "cambia il prezzo delle piastrelle", "aggiungi la pulizia finale") — hai *${remainingEdits} modifiche* disponibili.\n\nOppure scrivi *OK* per salvare e ricevere il PDF.`
+    : `✅ Preventivo aggiornato!\n\n📝 Altre correzioni oppure scrivi *OK* per procedere. Modifiche rimanenti: *${remainingEdits}*.`;
 
   await sendWhatsappText(from, confirmMsg);
 }
 
-// ── Flow handlers ───────────────────────────────────────────────────────────────
+// ── Flow: greeting → template selection ────────────────────────────────────────
 
-async function handleNewQuoteRequest(
+async function handleGreeting(from: string, userId: string, profile: typeof businessProfilesTable.$inferSelect) {
+  const isPro = profile.subscriptionStatus === "active" &&
+    (profile.subscriptionPlan === "monthly_pro" || profile.subscriptionPlan === "monthly_elite");
+
+  const templateLines = TEMPLATES.map((t, i) =>
+    isPro || t.id === "standard"
+      ? `*${i + 1}* — ${t.emoji} ${t.label}: ${t.desc}`
+      : `*${i + 1}* — ${t.emoji} ${t.label}: ${t.desc} _(richiede Piano Pro/Elite)_`
+  ).join("\n");
+
+  await sendWhatsappText(from, [
+    `👋 Ciao! Sono *PrevAI*, il tuo assistente per preventivi professionali.`,
+    ``,
+    `Che tipo di preventivo vuoi creare?`,
+    ``,
+    templateLines,
+    ``,
+    `Rispondi con *1*, *2* o *3*`,
+  ].join("\n"));
+
+  await upsertSession(from, userId, "awaiting_template_selection", {}, 0);
+}
+
+// ── Flow: template selected → ask client ───────────────────────────────────────
+
+async function handleTemplateSelectionReply(
+  from: string,
+  userId: string,
+  text: string,
+  profile: typeof businessProfilesTable.$inferSelect,
+) {
+  const templateId = templateFromChoice(text);
+
+  if (!templateId) {
+    await sendWhatsappText(from, "🤔 Non ho capito. Rispondi con *1* (Starter), *2* (Elegante) o *3* (Professionale).");
+    return;
+  }
+
+  const isPro = profile.subscriptionStatus === "active" &&
+    (profile.subscriptionPlan === "monthly_pro" || profile.subscriptionPlan === "monthly_elite");
+
+  if ((templateId === "mariagrazia" || templateId === "arosio") && !isPro) {
+    await sendWhatsappText(
+      from,
+      `⚠️ Il template *${templateLabel(templateId)}* è disponibile solo per i piani Pro ed Elite.\n\nAggiorna il tuo piano su ${PREVAI_BASE_URL}/dashboard/settings oppure scegli il template *Starter* (rispondi *1*).`
+    );
+    return;
+  }
+
+  const existingClients = await getExistingClients(userId);
+
+  if (existingClients.length > 0) {
+    const clientList = existingClients
+      .map((c, i) => `*${i + 1}* — ${c.nome}${c.indirizzo ? ` – ${c.indirizzo}` : ""}`)
+      .join("\n");
+
+    await sendWhatsappText(from, [
+      `✅ Template *${templateLabel(templateId)}* selezionato.`,
+      ``,
+      `👤 Scegli il cliente:`,
+      ``,
+      `*0* — Nuovo cliente`,
+      clientList,
+      ``,
+      `Rispondi con il *numero*, oppure inserisci direttamente *nome e indirizzo* del nuovo cliente (es. "Mario Rossi, Via Roma 1, Milano")`,
+    ].join("\n"));
+
+    await upsertSession(from, userId, "awaiting_client_choice", {
+      templateId,
+      existingClients,
+    }, 0);
+  } else {
+    await sendWhatsappText(from, [
+      `✅ Template *${templateLabel(templateId)}* selezionato.`,
+      ``,
+      `👤 Inserisci il *nome e indirizzo* del cliente (es. "Mario Rossi, Via Roma 1, Milano"), oppure scrivi *salta* per lasciare vuoto.`,
+    ].join("\n"));
+
+    await upsertSession(from, userId, "awaiting_client_choice", {
+      templateId,
+      existingClients: [],
+    }, 0);
+  }
+}
+
+// ── Flow: client chosen → ask job description ──────────────────────────────────
+
+async function handleClientChoiceReply(
+  from: string,
+  userId: string,
+  text: string,
+  session: typeof whatsappSessionsTable.$inferSelect,
+) {
+  const payload = session.pendingQuoteData as Record<string, unknown>;
+  const templateId = (payload.templateId as string | undefined) ?? "standard";
+  const existingClients = (payload.existingClients as { nome: string; indirizzo: string }[] | undefined) ?? [];
+
+  let clientData: { nome: string; indirizzo: string };
+
+  const t = text.trim();
+  const numChoice = parseInt(t, 10);
+
+  if (!isNaN(numChoice) && numChoice === 0) {
+    // New client — will ask for name + address inline
+    clientData = { nome: "", indirizzo: "" };
+  } else if (!isNaN(numChoice) && numChoice >= 1 && numChoice <= existingClients.length) {
+    clientData = existingClients[numChoice - 1]!;
+  } else if (/^(salta|skip|nessun cliente|-)$/i.test(t)) {
+    clientData = { nome: "", indirizzo: "" };
+  } else {
+    // Parse as "Nome, Indirizzo"
+    const parts = t.split(/[,\n]+/).map(p => p.trim()).filter(Boolean);
+    clientData = { nome: parts[0] ?? "", indirizzo: parts.slice(1).join(", ") };
+  }
+
+  const clientLabel = clientData.nome
+    ? `*${clientData.nome}*${clientData.indirizzo ? ` – ${clientData.indirizzo}` : ""}`
+    : "nessun cliente specificato";
+
+  await sendWhatsappText(from, [
+    `✅ Cliente: ${clientLabel}`,
+    ``,
+    `📝 Ora *descrivi il lavoro* da preventivare — puoi inviare testo, un vocale o una foto degli appunti.`,
+    ``,
+    `Es. "Tinteggiatura di un appartamento di 80mq con due mani di pittura lavabile bianca. Includere rasatura di una parete in soggiorno."`,
+  ].join("\n"));
+
+  await upsertSession(from, userId, "awaiting_job_input", {
+    templateId,
+    clientData,
+  }, 0);
+}
+
+// ── Flow: job description → generate quote → preview ──────────────────────────
+
+async function handleJobInputReply(
   from: string,
   userId: string,
   rawInput: string,
+  session: typeof whatsappSessionsTable.$inferSelect,
   profile: typeof businessProfilesTable.$inferSelect,
 ) {
+  const payload = session.pendingQuoteData as Record<string, unknown>;
+  const templateId = (payload.templateId as string | undefined) ?? "standard";
+  const clientData = (payload.clientData as { nome: string; indirizzo: string } | undefined) ?? { nome: "", indirizzo: "" };
+
   // Usage check for Pro (20 WhatsApp quotes/month)
   if (profile.subscriptionPlan === "monthly_pro") {
     const startOfMonth = new Date();
@@ -396,10 +562,12 @@ async function handleNewQuoteRequest(
 
   await sendWhatsappText(from, "⏳ Sto generando il tuo preventivo, attendi qualche secondo...");
 
-  const data = await buildQuoteFromAI({ userId, rawInput, log: logger });
-  await upsertSession(from, userId, "awaiting_confirmation", data, 0);
+  const data = await buildQuoteFromAI({ userId, rawInput, log: logger, templateId, clientData: clientData.nome ? clientData : undefined });
+  await upsertSession(from, userId, "awaiting_confirmation", data as unknown as Record<string, unknown>, 0);
   await sendQuotePreview(from, data, 0);
 }
+
+// ── Flow: confirmation/correction loop ─────────────────────────────────────────
 
 async function handleConfirmationReply(
   from: string,
@@ -414,42 +582,62 @@ async function handleConfirmationReply(
 
   if (intent === "abandon") {
     await deleteSession(from);
-    await sendWhatsappText(from, "🗑️ Preventivo annullato.\n\nInviami una nuova descrizione del lavoro quando vuoi.");
+    await sendWhatsappText(from, "🗑️ Preventivo annullato.\n\nInviami un nuovo messaggio quando vuoi creare un preventivo.");
     return;
   }
 
-  if (intent === "confirm" || iterationCount >= MAX_ITERATIONS) {
-    if (iterationCount >= MAX_ITERATIONS && intent !== "confirm") {
-      await sendWhatsappText(from, "ℹ️ Limite di modifiche raggiunto. Procedo con il preventivo attuale...");
+  if (intent === "confirm") {
+    await finalizeQuote(from, userId, pendingData, profile);
+    return;
+  }
+
+  // Corrections exhausted: save as draft and redirect
+  if (iterationCount >= MAX_ITERATIONS) {
+    await sendWhatsappText(from, "ℹ️ Hai utilizzato tutte le *3 modifiche* disponibili via WhatsApp. Salvo il preventivo come bozza...");
+    try {
+      const quote = await saveQuoteToDb({ userId, data: pendingData, source: "whatsapp", templateId: pendingData.templateId });
+      await deleteSession(from);
+      const quoteUrl = `${PREVAI_BASE_URL}/dashboard/quotes/${quote.id}`;
+      await sendWhatsappText(from, [
+        `📋 *Bozza salvata!*`,
+        ``,
+        `Puoi modificarla liberamente su prevai.it:`,
+        quoteUrl,
+        ``,
+        `_Il sito ti permette di cambiare qualsiasi voce, aggiungere capitoli e scaricare il PDF finale._`,
+      ].join("\n"));
+    } catch (err) {
+      logger.error({ err }, "WhatsApp draft save failed");
+      await sendWhatsappText(from, "❌ Errore nel salvataggio. Accedi a prevai.it per completare il preventivo.");
     }
-    await upsertSession(from, userId, "awaiting_client_data", pendingData, iterationCount);
-    await sendWhatsappText(from, "👤 Perfetto! Inserisci il *nome del cliente* e l'*indirizzo* (es. \"Mario Rossi, Via Roma 1, Milano\"), oppure scrivi *salta* per lasciare vuoto.");
     return;
   }
 
-  // Looks like a brand-new work request while a quote is already in progress
+  // Looks like a brand-new work request
   if (intent === "new_work_hint") {
     await sendWhatsappText(
       from,
       `ℹ️ Hai già un preventivo in corso per:\n*${pendingData.titoloPreventivoRiga2 || "preventivo attuale"}*\n\n` +
-      `Se vuoi *annullarlo* e iniziare una nuova richiesta, scrivi *abbandona*.\n` +
-      `Oppure invia le tue *correzioni* al preventivo in corso (es. "cambia il prezzo delle piastrelle a 35€/mq").`
+      `Se vuoi *annullarlo* e iniziarne uno nuovo, scrivi *abbandona*.\n` +
+      `Oppure invia le tue *correzioni* al preventivo in corso.`
     );
     return;
   }
 
-  // Correction
+  // Apply correction
   await sendWhatsappText(from, "✏️ Sto aggiornando il preventivo...");
   try {
     const updatedData = await regenerateWithCorrection({ userId, current: pendingData, correction: text, log: logger });
     const newCount = iterationCount + 1;
-    await upsertSession(from, userId, "awaiting_confirmation", updatedData, newCount);
+    await upsertSession(from, userId, "awaiting_confirmation", updatedData as unknown as Record<string, unknown>, newCount);
     await sendQuotePreview(from, updatedData, newCount);
   } catch (err) {
     logger.error({ err }, "WhatsApp correction regeneration failed");
-    await sendWhatsappText(from, "❌ Non riuscito ad aggiornare il preventivo. Riprova con una correzione diversa, oppure scrivi *OK* per procedere con il preventivo attuale.");
+    await sendWhatsappText(from, "❌ Non riuscito ad aggiornare il preventivo. Riprova con una correzione diversa, oppure scrivi *OK* per salvare il preventivo attuale.");
   }
 }
+
+// ── Flow: legacy awaiting_client_data (backward compat) ───────────────────────
 
 async function handleClientDataReply(
   from: string,
@@ -460,37 +648,35 @@ async function handleClientDataReply(
 ) {
   const pendingData = session.pendingQuoteData as unknown as PendingQuoteData;
 
-  // Explicit abandon while collecting client data
   const t = text.toLowerCase().trim();
   const abandonKeywords = ["abbandona", "ricomincia", "annulla", "cancella", "reset", "ricomincia da capo"];
   if (abandonKeywords.some(kw => t.includes(kw))) {
     await deleteSession(from);
-    await sendWhatsappText(from, "🗑️ Preventivo annullato.\n\nInviami una nuova descrizione del lavoro quando vuoi.");
+    await sendWhatsappText(from, "🗑️ Preventivo annullato.\n\nInviami un nuovo messaggio quando vuoi.");
     return;
   }
 
-  // Looks like a brand-new work request instead of client data
-  if (looksLikeNewWorkRequest(t)) {
-    await sendWhatsappText(
-      from,
-      `ℹ️ Stavo aspettando i dati del cliente per il preventivo:\n*${pendingData.titoloPreventivoRiga2 || "preventivo in corso"}*\n\n` +
-      `Inserisci il *nome e indirizzo del cliente* (es. "Mario Rossi, Via Roma 1, Milano") oppure scrivi *salta*.\n` +
-      `Se vuoi *annullare* questo preventivo e iniziarne uno nuovo, scrivi *abbandona*.`
-    );
-    return;
-  }
+  const parts = text.trim().split(/[,\n]+/).map(p => p.trim()).filter(Boolean);
+  const clientData = /^(salta|skip|nessun cliente|-)$/i.test(text.trim())
+    ? { nome: "", indirizzo: "" }
+    : { nome: parts[0] ?? "", indirizzo: parts.slice(1).join(", ") };
 
-  const clientData = parseClientData(text);
+  const finalData: PendingQuoteData = { ...pendingData, clientData };
+  await finalizeQuote(from, userId, finalData, profile);
+}
 
-  const finalData: PendingQuoteData = {
-    ...pendingData,
-    clientData,
-  };
+// ── Shared finalization: save quote + send PDF ─────────────────────────────────
 
+async function finalizeQuote(
+  from: string,
+  userId: string,
+  data: PendingQuoteData,
+  profile: typeof businessProfilesTable.$inferSelect,
+) {
   await sendWhatsappText(from, "⏳ Sto salvando il preventivo e generando il PDF...");
 
   try {
-    const quote = await saveQuoteToDb({ userId, data: finalData, source: "whatsapp" });
+    const quote = await saveQuoteToDb({ userId, data, source: "whatsapp", templateId: data.templateId });
     await deleteSession(from);
 
     const totale = new Intl.NumberFormat("it-IT", { style: "currency", currency: "EUR" }).format(Number(quote.totale));
@@ -506,7 +692,6 @@ async function handleClientDataReply(
       quoteUrl,
     ].join("\n"));
 
-    // Generate and send PDF
     const [profileRow] = await db.select().from(businessProfilesTable).where(eq(businessProfilesTable.userId, userId));
     const pdfBuffer = await generateQuoteWhatsappPdfBuffer(quote, profileRow ?? null);
     const safeTitle = (quote.titoloPreventivoRiga2 ?? "preventivo").toLowerCase().replace(/[^a-z0-9]+/g, "-").slice(0, 60);
@@ -583,18 +768,34 @@ router.post("/whatsapp/webhook", async (req, res) => {
     // ── Load session ────────────────────────────────────────────────────────────
     const session = await loadValidSession(from);
 
+    if (session?.state === "awaiting_template_selection") {
+      await handleTemplateSelectionReply(from, connection.userId, rawInput, profile);
+      return;
+    }
+
+    if (session?.state === "awaiting_client_choice") {
+      await handleClientChoiceReply(from, connection.userId, rawInput, session);
+      return;
+    }
+
+    if (session?.state === "awaiting_job_input") {
+      await handleJobInputReply(from, connection.userId, rawInput, session, profile);
+      return;
+    }
+
     if (session?.state === "awaiting_confirmation") {
       await handleConfirmationReply(from, connection.userId, rawInput, session, profile);
       return;
     }
 
     if (session?.state === "awaiting_client_data") {
+      // Legacy backward-compat handler
       await handleClientDataReply(from, connection.userId, rawInput, session, profile);
       return;
     }
 
-    // ── New quote request ───────────────────────────────────────────────────────
-    await handleNewQuoteRequest(from, connection.userId, rawInput, profile);
+    // ── No session: start greeting flow ─────────────────────────────────────────
+    await handleGreeting(from, connection.userId, profile);
 
   } catch (err) {
     logger.error({ err }, "WhatsApp webhook handler error");
@@ -631,11 +832,11 @@ async function handleInboundOtpVerification(phoneNumber: string, otp: string): P
 
   await sendWhatsappText(
     phoneNumber,
-    `✅ *Account collegato!*\n\nCiao ${profile?.companyName ?? ""}! 👋\n\nInviami la descrizione di qualsiasi lavoro (testo, vocale o foto) e genererò un preventivo professionale in pochi secondi.`
+    `✅ *Account collegato!*\n\nCiao ${profile?.companyName ?? ""}! 👋\n\nInviami qualsiasi messaggio per iniziare a creare un preventivo professionale.`
   );
 }
 
-// ── Management routes (unchanged) ─────────────────────────────────────────────
+// ── Management routes ─────────────────────────────────────────────────────────
 
 router.get("/whatsapp/status", requireAuth, async (req, res) => {
   try {
@@ -729,7 +930,7 @@ router.post("/whatsapp/verify", requireAuth, async (req, res) => {
       .onConflictDoUpdate({ target: whatsappConnectionsTable.userId, set: { phoneNumber: normalized, isEnabled: true, connectedAt: new Date() } });
 
     const [profile] = await db.select({ companyName: businessProfilesTable.companyName }).from(businessProfilesTable).where(eq(businessProfilesTable.userId, userId));
-    await sendWhatsappText(normalized, `✅ *Account collegato con successo!*\n\nCiao ${profile?.companyName ?? ""}! 👋\n\nOra puoi inviarmi la descrizione di qualsiasi lavoro e genererò un preventivo in pochi secondi.`);
+    await sendWhatsappText(normalized, `✅ *Account collegato con successo!*\n\nCiao ${profile?.companyName ?? ""}! 👋\n\nInviami qualsiasi messaggio per iniziare a creare un preventivo.`);
     res.json({ success: true });
   } catch (err) {
     req.log.error({ err }, "WhatsApp verify error");

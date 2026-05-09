@@ -70,6 +70,16 @@ CALCOLI:
 
 IMPORTANTISSIMO: output SOLO JSON puro, nessuna spiegazione, nessun markdown.`;
 
+export const CAPITOLATO_CONTEXT = `MODALITÀ CAPITOLATO TECNICO PROFESSIONALE:
+Per ogni voce di lavoro, scrivi la descrizione in stile CAPITOLATO SPECIALE D'APPALTO con ALMENO 4-6 linee tecniche in italiano formale:
+- Descrivi con precisione le operazioni eseguite e le modalità esecutive (ciclo lavorativo, tecniche, successione delle fasi)
+- Specifica materiali, prodotti e componenti con caratteristiche tecniche e standard normativi italiani/europei (UNI, CEI, UNI EN, D.Lgs., D.M.)
+- Indica le caratteristiche di qualità, resistenza, classe o certificazione richieste per i materiali
+- Indica esplicitamente cosa è COMPRESO nella voce (forniture, lavorazioni, carico, trasporto, smaltimento)
+- Indica eventuali ESCLUSIONI rilevanti e/o oneri a carico del committente
+- Usa terminologia professionale edilizia/impiantistica italiana
+Esempio: "Demolizione e rimozione di pavimentazione esistente in piastrelle ceramiche compreso il distacco mediante scalpellatura meccanica e la rimozione del massetto di allettamento per uno spessore medio di 5 cm. Compresi il carico, il trasporto e lo smaltimento del materiale di risulta presso discarica autorizzata secondo D.Lgs. 152/2006. Esclusi lavori di ripristino strutturale del sottofondo e impermeabilizzazioni."`;
+
 // ── Public types ────────────────────────────────────────────────────────────────
 
 export type PendingQuoteData = {
@@ -89,11 +99,12 @@ export type PendingQuoteData = {
   totale: string;
   note: string;
   capitolatoPro: boolean;
+  templateId?: string;
 };
 
 // ── Internal helpers ────────────────────────────────────────────────────────────
 
-function parseAiResponse(content: string, rawInput: string, profile: typeof businessProfilesTable.$inferSelect | undefined): PendingQuoteData {
+function parseAiResponse(content: string, rawInput: string, profile: typeof businessProfilesTable.$inferSelect | undefined, templateId?: string): PendingQuoteData {
   const cleaned = content.trim().replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/i, "");
   const aiData = JSON.parse(cleaned) as AiQuoteData;
 
@@ -150,6 +161,7 @@ function parseAiResponse(content: string, rawInput: string, profile: typeof busi
     totale: Number(aiData.totale ?? 0).toFixed(2),
     note: aiData.note ?? "Preventivo valido 30 giorni",
     capitolatoPro: !!(profile?.subscriptionStatus === "active" && profile?.subscriptionPlan === "monthly_pro"),
+    templateId,
   };
 }
 
@@ -163,10 +175,14 @@ export async function buildQuoteFromAI({
   userId,
   rawInput,
   log,
+  templateId,
+  clientData,
 }: {
   userId: string;
   rawInput: string;
   log: Logger;
+  templateId?: string;
+  clientData?: { nome: string; indirizzo: string };
 }): Promise<PendingQuoteData> {
   const [profileRows, recentQuotes, catalogItems] = await Promise.all([
     db.select().from(businessProfilesTable).where(eq(businessProfilesTable.userId, userId)),
@@ -185,6 +201,14 @@ export async function buildQuoteFromAI({
   const pastContext = buildPastContext(recentQuotes as { rawInput: string; capitoli: unknown; totale: string }[]);
   const catalogContext = buildCatalogContext(catalogItems);
 
+  // Capitolato context: include for Elegante/Professionale templates
+  const useCapitolato = templateId === "arosio" || templateId === "mariagrazia";
+
+  // If client data is pre-filled, prepend it to the user message
+  const clientPrefix = clientData?.nome
+    ? `Cliente: ${clientData.nome}${clientData.indirizzo ? `, ${clientData.indirizzo}` : ""}.\n\n`
+    : "";
+
   const completion = await openai.chat.completions.create({
     model: "gpt-4o-mini",
     max_completion_tokens: 8192,
@@ -192,13 +216,19 @@ export async function buildQuoteFromAI({
       { role: "system", content: AI_PROMPT },
       ...(catalogContext ? [{ role: "system" as const, content: catalogContext }] : []),
       ...(pastContext ? [{ role: "system" as const, content: pastContext }] : []),
-      { role: "user", content: rawInput },
+      ...(useCapitolato ? [{ role: "system" as const, content: CAPITOLATO_CONTEXT }] : []),
+      { role: "user", content: `${clientPrefix}${rawInput}` },
     ],
   });
 
   const content = completion.choices[0]?.message?.content ?? "{}";
   try {
-    return parseAiResponse(content, rawInput, profile);
+    const result = parseAiResponse(content, rawInput, profile, templateId);
+    // Override client data if pre-filled
+    if (clientData?.nome) {
+      result.clientData = clientData;
+    }
+    return result;
   } catch {
     log.error({ content }, "Failed to parse AI JSON in buildQuoteFromAI");
     throw new Error("AI returned invalid JSON");
@@ -229,6 +259,8 @@ export async function regenerateWithCorrection({
   ]);
   const [profile] = profileRows;
   const catalogContext = buildCatalogContext(catalogItems);
+
+  const useCapitolato = current.templateId === "arosio" || current.templateId === "mariagrazia";
 
   const currentJson = JSON.stringify({
     titolo_riga1: current.titoloPreventivoRiga1,
@@ -273,13 +305,15 @@ Restituisci il preventivo aggiornato COMPLETO in JSON valido con la stessa strut
     messages: [
       { role: "system", content: AI_PROMPT },
       ...(catalogContext ? [{ role: "system" as const, content: catalogContext }] : []),
+      ...(useCapitolato ? [{ role: "system" as const, content: CAPITOLATO_CONTEXT }] : []),
       { role: "user", content: correctionPrompt },
     ],
   });
 
   const content = completion.choices[0]?.message?.content ?? "{}";
   try {
-    return parseAiResponse(content, current.rawInput, profile);
+    const result = parseAiResponse(content, current.rawInput, profile, current.templateId);
+    return result;
   } catch {
     log.error({ content }, "Failed to parse AI JSON in regenerateWithCorrection");
     throw new Error("AI returned invalid JSON during correction");
@@ -293,11 +327,14 @@ export async function saveQuoteToDb({
   userId,
   data,
   source,
+  templateId,
 }: {
   userId: string;
   data: PendingQuoteData;
   source: string;
+  templateId?: string;
 }): Promise<typeof quotesTable.$inferSelect> {
+  const resolvedTemplateId = templateId ?? data.templateId ?? "standard";
   const [quote] = await db.insert(quotesTable).values({
     userId,
     rawInput: data.rawInput,
@@ -319,6 +356,7 @@ export async function saveQuoteToDb({
     note: data.note,
     status: "draft",
     source,
+    templateId: resolvedTemplateId,
   }).returning();
 
   // Set trialStartedAt only if not already set — do NOT overwrite an existing value

@@ -426,19 +426,16 @@ Questi prezzi riflettono i valori reali applicati dall'utente nel suo mercato lo
       : "";
 
     const hasImages = imageDataUrls.length > 0;
-    const isProUser = profile?.subscriptionStatus === "active" && (profile?.subscriptionPlan === "monthly_pro" || profile?.subscriptionPlan === "monthly_elite");
 
-    const capitolatoProContext = isProUser
-      ? `MODALITÀ CAPITOLATO PROFESSIONALE (attiva per utente Pro):
-Per ogni voce di lavoro, scrivi la descrizione in stile CAPITOLATO TECNICO PROFESSIONALE con ALMENO 4-6 linee tecniche in italiano formale:
+    const capitolatoProContext = `MODALITÀ CAPITOLATO TECNICO PROFESSIONALE:
+Per ogni voce di lavoro, scrivi la descrizione in stile CAPITOLATO SPECIALE D'APPALTO con ALMENO 4-6 linee tecniche in italiano formale:
 - Descrivi con precisione le operazioni eseguite e le modalità esecutive (ciclo lavorativo, tecniche, successione delle fasi)
 - Specifica materiali, prodotti e componenti con caratteristiche tecniche e standard normativi italiani/europei (UNI, CEI, UNI EN, D.Lgs., D.M.)
 - Indica le caratteristiche di qualità, resistenza, classe o certificazione richieste per i materiali
 - Indica esplicitamente cosa è COMPRESO nella voce (forniture, lavorazioni, carico, trasporto, smaltimento)
 - Indica eventuali ESCLUSIONI rilevanti e/o oneri a carico del committente
 - Usa terminologia professionale edilizia/impiantistica italiana
-Esempio: "Demolizione e rimozione di pavimentazione esistente in piastrelle ceramiche compreso il distacco mediante scalpellatura meccanica e la rimozione del massetto di allettamento per uno spessore medio di 5 cm. Compresi il carico, il trasporto e lo smaltimento del materiale di risulta presso discarica autorizzata secondo D.Lgs. 152/2006. Esclusi lavori di ripristino strutturale del sottofondo e impermeabilizzazioni."`
-      : "";
+Esempio: "Demolizione e rimozione di pavimentazione esistente in piastrelle ceramiche compreso il distacco mediante scalpellatura meccanica e la rimozione del massetto di allettamento per uno spessore medio di 5 cm. Compresi il carico, il trasporto e lo smaltimento del materiale di risulta presso discarica autorizzata secondo D.Lgs. 152/2006. Esclusi lavori di ripristino strutturale del sottofondo e impermeabilizzazioni."`;
 
     const completion = await openai.chat.completions.create({
       model: hasImages ? "gpt-4o" : "gpt-4o-mini",
@@ -565,7 +562,7 @@ Esempio: "Demolizione e rimozione di pavimentazione esistente in piastrelle cera
         capitoli,
         sconto,
         condizioniPagamento,
-        capitolatoPro: isProUser,
+        capitolatoPro: !!(profile?.subscriptionStatus === "active" && profile?.subscriptionPlan === "monthly_pro"),
         titoloPreventivoRiga1: aiData.titolo_riga1 ?? "Analisi Economica e Computo Metrico Prezzato",
         titoloPreventivoRiga2: aiData.titolo_riga2 ?? "",
         numeroPreventivoData: aiData.numero_preventivo_data ?? "",
