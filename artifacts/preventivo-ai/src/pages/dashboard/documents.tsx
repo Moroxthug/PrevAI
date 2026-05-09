@@ -202,9 +202,7 @@ export default function DocumentsPage() {
   async function handleFiles(files: FileList | null) {
     if (!files || files.length === 0) return;
     for (const file of Array.from(files)) {
-      const formData = new FormData();
-      formData.append("file", file);
-      uploadMut.mutate({ data: formData as unknown as { file: Blob } });
+      uploadMut.mutate({ data: { file } });
     }
   }
 
