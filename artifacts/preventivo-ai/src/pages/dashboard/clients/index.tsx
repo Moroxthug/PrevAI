@@ -2,12 +2,21 @@ import { useListClients } from "@workspace/api-client-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Link } from "wouter";
-import { Users, ChevronRight, Euro, FileText, Clock } from "lucide-react";
+import { Users, ChevronRight, Euro, FileText, Clock, MapPin } from "lucide-react";
 import { format } from "date-fns";
 import { it } from "date-fns/locale";
 
 const formatCurrency = (v: number) =>
   new Intl.NumberFormat("it-IT", { style: "currency", currency: "EUR", maximumFractionDigits: 0 }).format(v);
+
+function clientSubtitle(client: { indirizzo?: string | null; citta?: string | null; provincia?: string | null; partitaIva?: string | null; codiceFiscale?: string | null }) {
+  const parts: string[] = [];
+  if (client.citta) parts.push(client.citta + (client.provincia ? ` (${client.provincia})` : ""));
+  else if (client.indirizzo) parts.push(client.indirizzo);
+  if (client.partitaIva) parts.push(`P.IVA ${client.partitaIva}`);
+  else if (client.codiceFiscale) parts.push(`C.F. ${client.codiceFiscale}`);
+  return parts.join(" · ");
+}
 
 export default function ClientsPage() {
   const { data: clients, isLoading } = useListClients();
@@ -51,43 +60,52 @@ export default function ClientsPage() {
         </Card>
       ) : (
         <div className="space-y-2">
-          {clients.map((client) => (
-            <Link
-              key={client.clientName}
-              href={`/dashboard/clients/${encodeURIComponent(client.clientName)}`}
-              className="block"
-            >
-              <Card className="hover:shadow-sm hover:border-violet-200 transition-all cursor-pointer">
-                <CardContent className="p-4">
-                  <div className="flex items-center gap-4">
-                    <div className="h-10 w-10 rounded-full bg-violet-100 flex items-center justify-center shrink-0">
-                      <span className="text-sm font-bold text-violet-700 uppercase">
-                        {client.clientName.slice(0, 2)}
-                      </span>
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="font-semibold text-gray-900 truncate">{client.clientName}</div>
-                      <div className="flex items-center gap-4 mt-1">
-                        <span className="flex items-center gap-1 text-xs text-muted-foreground">
-                          <FileText className="h-3 w-3" />
-                          {client.quoteCount} {client.quoteCount === 1 ? "preventivo" : "preventivi"}
-                        </span>
-                        <span className="flex items-center gap-1 text-xs text-muted-foreground">
-                          <Euro className="h-3 w-3" />
-                          {formatCurrency(client.totalValue)} totale
-                        </span>
-                        <span className="flex items-center gap-1 text-xs text-muted-foreground">
-                          <Clock className="h-3 w-3" />
-                          {format(new Date(client.lastQuoteDate), "dd MMM yyyy", { locale: it })}
+          {clients.map((client) => {
+            const subtitle = clientSubtitle(client);
+            return (
+              <Link
+                key={client.clientName}
+                href={`/dashboard/clients/${encodeURIComponent(client.clientName)}`}
+                className="block"
+              >
+                <Card className="hover:shadow-sm hover:border-violet-200 transition-all cursor-pointer">
+                  <CardContent className="p-4">
+                    <div className="flex items-center gap-4">
+                      <div className="h-10 w-10 rounded-full bg-violet-100 flex items-center justify-center shrink-0">
+                        <span className="text-sm font-bold text-violet-700 uppercase">
+                          {client.clientName.slice(0, 2)}
                         </span>
                       </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="font-semibold text-gray-900 truncate">{client.clientName}</div>
+                        {subtitle && (
+                          <div className="flex items-center gap-1 text-xs text-muted-foreground mt-0.5 truncate">
+                            <MapPin className="h-3 w-3 shrink-0" />
+                            {subtitle}
+                          </div>
+                        )}
+                        <div className="flex items-center gap-4 mt-1.5">
+                          <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                            <FileText className="h-3 w-3" />
+                            {client.quoteCount} {client.quoteCount === 1 ? "preventivo" : "preventivi"}
+                          </span>
+                          <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                            <Euro className="h-3 w-3" />
+                            {formatCurrency(client.totalValue)} totale
+                          </span>
+                          <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                            <Clock className="h-3 w-3" />
+                            {format(new Date(client.lastQuoteDate), "dd MMM yyyy", { locale: it })}
+                          </span>
+                        </div>
+                      </div>
+                      <ChevronRight className="h-4 w-4 text-gray-300 shrink-0" />
                     </div>
-                    <ChevronRight className="h-4 w-4 text-gray-300 shrink-0" />
-                  </div>
-                </CardContent>
-              </Card>
-            </Link>
-          ))}
+                  </CardContent>
+                </Card>
+              </Link>
+            );
+          })}
         </div>
       )}
     </div>

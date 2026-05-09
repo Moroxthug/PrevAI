@@ -398,6 +398,11 @@ export interface Client {
   quoteCount: number;
   totalValue: number;
   lastQuoteDate: string;
+  indirizzo?: string | null;
+  citta?: string | null;
+  provincia?: string | null;
+  partitaIva?: string | null;
+  codiceFiscale?: string | null;
 }
 
 export type UploadBusinessProfileLogoBody = {

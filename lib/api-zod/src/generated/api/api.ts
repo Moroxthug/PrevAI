@@ -969,6 +969,11 @@ export const ListClientsResponseItem = zod.object({
   quoteCount: zod.number(),
   totalValue: zod.number(),
   lastQuoteDate: zod.string(),
+  indirizzo: zod.string().nullish(),
+  citta: zod.string().nullish(),
+  provincia: zod.string().nullish(),
+  partitaIva: zod.string().nullish(),
+  codiceFiscale: zod.string().nullish(),
 });
 export const ListClientsResponse = zod.array(ListClientsResponseItem);
 

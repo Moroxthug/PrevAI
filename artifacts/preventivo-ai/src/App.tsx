@@ -26,6 +26,7 @@ const ClientsPage = lazy(() => import("@/pages/dashboard/clients/index"));
 const ClientDetailPage = lazy(() => import("@/pages/dashboard/clients/[name]"));
 const InvoicesPage = lazy(() => import("@/pages/dashboard/invoices"));
 const CrmPage = lazy(() => import("@/pages/dashboard/crm"));
+const DocumentsPage = lazy(() => import("@/pages/dashboard/documents"));
 
 const SeoLanding = lazy(() => import("@/pages/seo/[type]"));
 const SeoCityLanding = lazy(() => import("@/pages/seo/city-landing"));
@@ -125,6 +126,9 @@ function Router() {
       )} />
       <Route path="/dashboard/crm" component={() => (
         <OnboardingGuard><DashboardLayout><DashSuspense><CrmPage /></DashSuspense></DashboardLayout></OnboardingGuard>
+      )} />
+      <Route path="/dashboard/documents" component={() => (
+        <OnboardingGuard><DashboardLayout><DashSuspense><DocumentsPage /></DashSuspense></DashboardLayout></OnboardingGuard>
       )} />
 
       <Route path="/seo/:type/:city" component={() => <PublicLayout><Suspense fallback={null}><SeoCityLanding /></Suspense></PublicLayout>} />

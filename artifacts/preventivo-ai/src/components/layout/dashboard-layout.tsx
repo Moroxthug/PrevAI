@@ -1,5 +1,5 @@
 import { Link, useLocation } from "wouter";
-import { LayoutDashboard, FileText, Menu, BarChart3, Settings, ChevronLeft, ChevronRight, Plus, LogOut, User, CreditCard, Building2, ChevronDown, BookOpen, Users, Receipt, Briefcase } from "lucide-react";
+import { LayoutDashboard, FileText, Menu, BarChart3, Settings, ChevronLeft, ChevronRight, Plus, LogOut, User, CreditCard, Building2, ChevronDown, BookOpen, Users, Receipt, Briefcase, FolderOpen } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger, SheetTitle } from "@/components/ui/sheet";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
@@ -20,6 +20,7 @@ const BASE_NAV_ITEMS = [
   { href: "/dashboard/catalog", label: "Listino", icon: BookOpen, exact: false, proOnly: true, comingSoon: false },
   { href: "/dashboard/invoices", label: "Fatture", icon: Receipt, exact: false, proOnly: false, comingSoon: true },
   { href: "/dashboard/crm", label: "CRM", icon: Briefcase, exact: false, proOnly: false, comingSoon: true },
+  { href: "/dashboard/documents", label: "Documenti Caricati", icon: FolderOpen, exact: false, proOnly: false, comingSoon: true },
   { href: "/dashboard/settings", label: "Impostazioni", icon: Settings, exact: false, proOnly: false, comingSoon: false },
 ];
 

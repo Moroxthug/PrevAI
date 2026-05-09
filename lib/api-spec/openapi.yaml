@@ -1450,6 +1450,21 @@ components:
           type: number
         lastQuoteDate:
           type: string
+        indirizzo:
+          type: string
+          nullable: true
+        citta:
+          type: string
+          nullable: true
+        provincia:
+          type: string
+          nullable: true
+        partitaIva:
+          type: string
+          nullable: true
+        codiceFiscale:
+          type: string
+          nullable: true
       required:
         - clientName
         - quoteCount

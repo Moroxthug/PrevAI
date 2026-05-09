@@ -16,6 +16,11 @@ router.get("/clients", requireAuth, async (req, res) => {
         quoteCount: sql<number>`count(*)::int`,
         totalValue: sql<number>`sum(${quotesTable.totale}::numeric)::float`,
         lastQuoteDate: sql<string>`max(${quotesTable.createdAt})`,
+        indirizzo: sql<string | null>`max(${quotesTable.clientData}->>'indirizzo')`,
+        citta: sql<string | null>`max(${quotesTable.clientData}->>'citta')`,
+        provincia: sql<string | null>`max(${quotesTable.clientData}->>'provincia')`,
+        partitaIva: sql<string | null>`max(${quotesTable.clientData}->>'partitaIva')`,
+        codiceFiscale: sql<string | null>`max(${quotesTable.clientData}->>'codiceFiscale')`,
       })
       .from(quotesTable)
       .where(
@@ -33,6 +38,11 @@ router.get("/clients", requireAuth, async (req, res) => {
         quoteCount: r.quoteCount,
         totalValue: r.totalValue ?? 0,
         lastQuoteDate: r.lastQuoteDate,
+        indirizzo: r.indirizzo || null,
+        citta: r.citta || null,
+        provincia: r.provincia || null,
+        partitaIva: r.partitaIva || null,
+        codiceFiscale: r.codiceFiscale || null,
       }))
     );
   } catch (err) {
