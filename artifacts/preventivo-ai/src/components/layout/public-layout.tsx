@@ -26,6 +26,15 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
             <Logo />
           </Link>
           <nav className="flex items-center gap-3">
+            <Link
+              href="/whatsapp"
+              className="hidden sm:inline-flex items-center gap-1.5 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors px-3 py-1.5 rounded-full"
+            >
+              WhatsApp
+              <span className="inline-flex items-center rounded-full bg-green-100 px-1.5 py-0.5 text-[10px] font-semibold text-green-700 leading-none">
+                Nuovo
+              </span>
+            </Link>
             {!isSignedIn ? (
               <>
                 <Link
@@ -99,7 +108,18 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
               </ul>
             </div>
             <div>
-              <h4 className="font-semibold mb-4 text-sm uppercase tracking-wider text-foreground">Guide</h4>
+              <h4 className="font-semibold mb-4 text-sm uppercase tracking-wider text-foreground">Funzionalità</h4>
+              <ul className="space-y-2 text-sm text-muted-foreground">
+                <li>
+                  <Link href="/whatsapp" className="hover:text-foreground transition-colors inline-flex items-center gap-1.5">
+                    WhatsApp
+                    <span className="inline-flex items-center rounded-full bg-green-100 px-1.5 py-0.5 text-[10px] font-semibold text-green-700 leading-none">
+                      Nuovo
+                    </span>
+                  </Link>
+                </li>
+              </ul>
+              <h4 className="font-semibold mt-8 mb-4 text-sm uppercase tracking-wider text-foreground">Guide</h4>
               <ul className="space-y-2 text-sm text-muted-foreground">
                 <li><Link href="/blog" className="hover:text-foreground transition-colors font-medium text-foreground/80">Blog &amp; Approfondimenti</Link></li>
                 <li><Link href="/seo/modello-excel" className="hover:text-foreground transition-colors">Modello Excel</Link></li>
