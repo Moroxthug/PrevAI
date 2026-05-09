@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { requireAuth, getUserId } from "../middlewares/authMiddleware";
+import { getBaseUrl } from "../lib/baseUrl";
 import { db, quotesTable, businessProfilesTable } from "@workspace/db";
 import { eq, sql } from "drizzle-orm";
 import { CreateCheckoutSessionBody } from "@workspace/api-zod";
@@ -164,9 +165,7 @@ router.post("/payments/checkout", requireAuth, async (req, res) => {
 
     const stripe = await getUncachableStripeClient();
 
-    const baseUrl = process.env.REPLIT_DOMAINS
-      ? `https://${process.env.REPLIT_DOMAINS.split(",")[0]}`
-      : "http://localhost:80";
+    const baseUrl = getBaseUrl();
 
     const successUrl = quoteId
       ? `${baseUrl}/dashboard/quotes/${quoteId}?payment=success`
@@ -315,9 +314,7 @@ router.post("/payments/portal", requireAuth, async (req, res) => {
     }
 
     const stripe = await getUncachableStripeClient();
-    const baseUrl = process.env.REPLIT_DOMAINS
-      ? `https://${process.env.REPLIT_DOMAINS.split(",")[0]}`
-      : "http://localhost:80";
+    const baseUrl = getBaseUrl();
 
     const portalSession = await stripe.billingPortal.sessions.create({
       customer: profile.stripeCustomerId,

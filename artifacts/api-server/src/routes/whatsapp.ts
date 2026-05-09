@@ -5,13 +5,14 @@ import { eq, and, gt, gte, sql } from "drizzle-orm";
 import { logger } from "../lib/logger.js";
 import { generateQuoteFromText } from "../lib/generateQuoteFromText.js";
 import { openai } from "@workspace/integrations-openai-ai-server";
+import { getBaseUrl } from "../lib/baseUrl.js";
 
 const router = Router();
 
 const WA_TOKEN = process.env.WHATSAPP_ACCESS_TOKEN ?? "";
 const WA_PHONE_ID = process.env.WHATSAPP_PHONE_NUMBER_ID ?? "";
 const WA_VERIFY_TOKEN = process.env.WHATSAPP_VERIFY_TOKEN ?? "prevai_webhook_secret";
-const PREVAI_BASE_URL = "https://www.prevai.it";
+const PREVAI_BASE_URL = getBaseUrl();
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 

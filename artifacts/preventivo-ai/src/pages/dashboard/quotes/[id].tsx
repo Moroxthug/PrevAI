@@ -1740,7 +1740,7 @@ export default function QuoteDetail() {
                 </div>
 
                 <div className="grid grid-cols-2 gap-3">
-                  {plans?.filter(p => !p.interval).map((plan) => {
+                  {(Array.isArray(plans) ? plans : []).filter(p => !p.interval).map((plan) => {
                     const isClean = plan.id === "oneshot_clean";
                     return (
                       <div key={plan.id} className={`rounded-lg border p-3 flex flex-col hover:bg-muted/40 transition-colors ${isClean ? "border-primary/30" : ""}`}>

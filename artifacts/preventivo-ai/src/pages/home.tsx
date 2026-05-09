@@ -35,8 +35,9 @@ export default function Home() {
   const [homepageInput, setHomepageInput] = useState("");
   const homepageInputRef = useRef<HTMLInputElement>(null);
 
-  const subscriptionPlans = plans?.filter((p) => p.interval) ?? [];
-  const oneshotPlans = plans?.filter((p) => !p.interval) ?? [];
+  const plansArray = Array.isArray(plans) ? plans : [];
+  const subscriptionPlans = plansArray.filter((p) => p.interval);
+  const oneshotPlans = plansArray.filter((p) => !p.interval);
 
   const handlePlanClick = () => {
     navigate(isSignedIn ? "/dashboard" : "/sign-up");
