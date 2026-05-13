@@ -17,10 +17,10 @@ const TIER1_CITY_SLUGS = new Set([
   "trieste", "brescia", "reggio-calabria", "modena", "parma", "prato",
 ]);
 
-function url(loc: string, priority: string, changefreq: string): string {
+function url(loc: string, priority: string, changefreq: string, lastmod = TODAY): string {
   return `  <url>
     <loc>${loc}</loc>
-    <lastmod>${TODAY}</lastmod>
+    <lastmod>${lastmod}</lastmod>
     <changefreq>${changefreq}</changefreq>
     <priority>${priority}</priority>
   </url>`;
@@ -28,32 +28,32 @@ function url(loc: string, priority: string, changefreq: string): string {
 
 const entries: string[] = [];
 
-// Static public routes — sourced from src/data/sitemap-routes.ts (same file App.tsx uses)
+// Static public routes — keep TODAY (home/blog/whatsapp change with new content)
 for (const route of PUBLIC_ROUTES) {
   entries.push(url(`${BASE_URL}${route.path}`, route.priority, route.changefreq));
 }
 
-// SEO sector landing pages — driven by SECTORS data
+// SEO sector landing pages — stable date (content rarely changes)
 const citySectorSet = new Set(CITY_SECTORS);
 for (const sectorSlug of Object.keys(SECTORS)) {
   const priority = citySectorSet.has(sectorSlug) ? "0.8" : "0.7";
-  entries.push(url(`${BASE_URL}/seo/${sectorSlug}`, priority, "monthly"));
+  entries.push(url(`${BASE_URL}/seo/${sectorSlug}`, priority, "monthly", "2025-01-15"));
 }
 
-// SEO city×sector pages — driven by CITY_SECTORS × CITIES data
+// SEO city×sector pages — stable date (content rarely changes)
 for (const sectorSlug of CITY_SECTORS) {
   for (const city of CITIES) {
     const priority = TIER1_CITY_SLUGS.has(city.slug) ? "0.7" : "0.6";
-    entries.push(url(`${BASE_URL}/seo/${sectorSlug}/${city.slug}`, priority, "monthly"));
+    entries.push(url(`${BASE_URL}/seo/${sectorSlug}/${city.slug}`, priority, "monthly", "2025-02-01"));
   }
 }
 
-// Blog — driven by BLOG_CATEGORIES and BLOG_ARTICLES data
+// Blog — categories get a stable aggregate date; articles use their real publishedAt
 for (const cat of BLOG_CATEGORIES) {
-  entries.push(url(`${BASE_URL}/blog/categoria/${cat.slug}`, "0.7", "weekly"));
+  entries.push(url(`${BASE_URL}/blog/categoria/${cat.slug}`, "0.7", "weekly", "2025-04-10"));
 }
 for (const article of BLOG_ARTICLES) {
-  entries.push(url(`${BASE_URL}/blog/${article.slug}`, "0.7", "monthly"));
+  entries.push(url(`${BASE_URL}/blog/${article.slug}`, "0.7", "monthly", article.publishedAt));
 }
 
 const sitemap = `<?xml version="1.0" encoding="UTF-8"?>

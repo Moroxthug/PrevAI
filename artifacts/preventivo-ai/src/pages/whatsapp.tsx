@@ -35,8 +35,8 @@ export default function WhatsappPage() {
   return (
     <div className="flex flex-col min-h-screen bg-white">
       <SeoHead
-        title="Preventivi su WhatsApp – PrevAI | Prima piattaforma italiana"
-        description="Descrivi il lavoro a voce, per testo o foto su WhatsApp. PrevAI genera un preventivo professionale con PDF in 60 secondi. Prima piattaforma in Italia."
+        title="Preventivi su WhatsApp – prevai | Prima piattaforma italiana"
+        description="Descrivi il lavoro a voce, per testo o foto su WhatsApp. prevai genera un preventivo professionale con PDF in 60 secondi. Prima piattaforma in Italia."
         canonical="https://www.prevai.it/whatsapp"
       />
 

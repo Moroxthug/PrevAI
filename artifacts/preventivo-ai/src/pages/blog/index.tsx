@@ -112,9 +112,9 @@ export default function BlogPage() {
                     </span>
                     <span className="text-xs text-gray-400">{article.readingTimeMin} min</span>
                   </div>
-                  <h2 className="text-sm font-bold text-gray-900 leading-snug mb-2 group-hover:text-violet-700 transition-colors flex-1">
+                  <h3 className="text-sm font-bold text-gray-900 leading-snug mb-2 group-hover:text-violet-700 transition-colors flex-1">
                     {article.title}
-                  </h2>
+                  </h3>
                   <p className="text-xs text-gray-500 leading-relaxed mb-4 line-clamp-3">
                     {article.metaDescription}
                   </p>

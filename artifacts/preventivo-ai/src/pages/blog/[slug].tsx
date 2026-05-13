@@ -66,7 +66,7 @@ export default function BlogArticlePage() {
         "@type": "Organization" as const,
         name: "prevai",
         url: BASE_URL,
-        logo: { "@type": "ImageObject" as const, url: `${BASE_URL}/favicon.svg` },
+        logo: { "@type": "ImageObject" as const, url: `${BASE_URL}/icon-192.png`, width: 192, height: 192 },
       },
     },
     {

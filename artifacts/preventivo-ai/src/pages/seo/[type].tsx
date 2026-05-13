@@ -1,8 +1,18 @@
 import { useParams, Link } from "wouter";
-import { ArrowRight, CheckCircle2, Clock, FileText, Shield, TrendingUp, Star, Building2, BookOpen, X } from "lucide-react";
+import { ArrowRight, CheckCircle2, Clock, FileText, Shield, TrendingUp, Star, Building2, BookOpen, X, MapPin } from "lucide-react";
 import { SeoHead } from "@/components/seo-head";
-import { SECTORS, DEFAULT_SECTOR, RELATED_SECTORS, SECTOR_RATINGS, SECTOR_REVIEWS } from "@/data/seo-data";
+import { SECTORS, DEFAULT_SECTOR, RELATED_SECTORS, SECTOR_RATINGS, SECTOR_REVIEWS, CITY_SECTORS, CITIES } from "@/data/seo-data";
 import { BLOG_ARTICLES, SECTOR_ARTICLES } from "@/data/blog-data";
+
+const TIER1_CITY_SLUGS_ORDERED = [
+  "roma", "milano", "napoli", "torino", "palermo", "genova", "bologna",
+  "firenze", "bari", "catania", "venezia", "verona", "messina", "padova",
+  "trieste", "brescia", "reggio-calabria", "modena", "parma", "prato",
+];
+const TIER1_SLUG_SET = new Set(TIER1_CITY_SLUGS_ORDERED);
+const TIER1_CITIES = CITIES
+  .filter((c) => TIER1_SLUG_SET.has(c.slug))
+  .sort((a, b) => TIER1_CITY_SLUGS_ORDERED.indexOf(a.slug) - TIER1_CITY_SLUGS_ORDERED.indexOf(b.slug));
 
 function ExcelWordComparisonBlock({ tool }: { tool: "Excel" | "Word" }) {
   const rows = tool === "Excel"
@@ -469,7 +479,36 @@ export default function SeoLanding() {
         </div>
       </section>
 
-      {/* ── Vedi anche ───────────────────────────────────── */}
+      {/* ── Preventivi nelle principali città ─────────────── */}
+      {CITY_SECTORS.includes(slug) && TIER1_CITIES.length > 0 && (
+        <section className="py-16 bg-gray-50/60">
+          <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-4xl">
+            <div className="text-center mb-10">
+              <h2 className="text-2xl font-bold text-gray-900">
+                Preventivi {s.labelPlural} nelle principali città
+              </h2>
+              <p className="text-sm text-gray-500 mt-2">
+                Seleziona la tua città per un preventivo personalizzato con tariffe locali
+              </p>
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+              {TIER1_CITIES.map((city) => (
+                <Link
+                  key={city.slug}
+                  href={`/seo/${slug}/${city.slug}`}
+                  className="flex items-center gap-2.5 bg-white hover:bg-violet-50 border border-gray-100 hover:border-violet-200 rounded-xl px-4 py-3 transition-colors group"
+                >
+                  <MapPin className="h-3.5 w-3.5 text-violet-400 group-hover:text-violet-600 shrink-0" />
+                  <span className="text-sm font-medium text-gray-700 group-hover:text-violet-700 truncate">
+                    {city.name}
+                  </span>
+                </Link>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
       {RELATED_SECTORS[slug] && (
         <section className="py-16 bg-white">
           <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-4xl">
