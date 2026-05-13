@@ -40,7 +40,7 @@ export default function BlogCategoryPage() {
   }
 
   const articles = getArticlesByCategory(category.name);
-  const canonical = `${BASE_URL}/blog/categoria/${category.slug}`;
+  const canonical = `${BASE_URL}/blog/categoria/${category.slug}/`;
 
   const jsonLd = [
     {

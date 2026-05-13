@@ -24,7 +24,7 @@ export default function BlogPage() {
       <SeoHead
         title={BLOG_LIST_TITLE}
         description={BLOG_LIST_DESCRIPTION}
-        canonical={`${BASE_URL}/blog`}
+        canonical={`${BASE_URL}/blog/`}
       />
       <nav aria-label="Percorso di navigazione" className="bg-white border-b border-gray-100">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-3">

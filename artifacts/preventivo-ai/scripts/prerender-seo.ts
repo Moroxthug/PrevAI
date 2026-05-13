@@ -378,7 +378,7 @@ function buildCityContextBlock(city: CityData, s: SectorData): string {
 // ─── JSON-LD schema builders ────────────────────────────────────────────────
 
 function buildSectorJsonLd(s: SectorData): object[] {
-  const canonical = `${BASE_URL}/seo/${s.slug}`;
+  const canonical = `${BASE_URL}/seo/${s.slug}/`;
   const schemas: object[] = [
     {
       "@context": "https://schema.org",
@@ -1042,7 +1042,7 @@ for (const [sectorSlug, sector] of Object.entries(SECTORS)) {
       ? sector.descriptionVariants[descHash % sector.descriptionVariants.length]
       : sector.metaDescription;
 
-  const canonical = `${BASE_URL}/seo/${sectorSlug}`;
+  const canonical = `${BASE_URL}/seo/${sectorSlug}/`;
   const jsonLd = buildSectorJsonLd(sector);
   const ogImagePath = ogImage(sectorSlug);
 
@@ -1055,7 +1055,7 @@ for (const [sectorSlug, sector] of Object.entries(SECTORS)) {
   if (!CITY_SECTORS.includes(sectorSlug)) continue;
 
   for (const city of CITIES) {
-    const cityCanonical = `${BASE_URL}/seo/${sectorSlug}/${city.slug}`;
+    const cityCanonical = `${BASE_URL}/seo/${sectorSlug}/${city.slug}/`;
     const cityTitle = getCityTitle(sector, city.name, city.slug);
     const cityDesc = getCityDesc(sector, city.name, city.slug, city.region);
     const cityJsonLd = buildCityJsonLd(sector, city);
@@ -1083,13 +1083,13 @@ function buildBlogListJsonLd(): object[] {
       "@type": "Blog",
       name: BLOG_LIST_TITLE,
       description: BLOG_LIST_DESCRIPTION,
-      url: `${BASE_URL}/blog`,
+      url: `${BASE_URL}/blog/`,
       inLanguage: "it",
       publisher: {
         "@type": "Organization",
         name: "prevai",
         url: BASE_URL,
-        logo: { "@type": "ImageObject", url: `${BASE_URL}/favicon.svg` },
+        logo: { "@type": "ImageObject", url: `${BASE_URL}/icon-192.png`, width: 192, height: 192 },
       },
     },
     {
@@ -1097,14 +1097,14 @@ function buildBlogListJsonLd(): object[] {
       "@type": "BreadcrumbList",
       itemListElement: [
         { "@type": "ListItem", position: 1, name: "Home", item: BASE_URL },
-        { "@type": "ListItem", position: 2, name: "Blog", item: `${BASE_URL}/blog` },
+        { "@type": "ListItem", position: 2, name: "Blog", item: `${BASE_URL}/blog/` },
       ],
     },
   ];
 }
 
 function buildArticleJsonLd(article: BlogArticle): object[] {
-  const canonical = `${BASE_URL}/blog/${article.slug}`;
+  const canonical = `${BASE_URL}/blog/${article.slug}/`;
   return [
     {
       "@context": "https://schema.org",
@@ -1124,7 +1124,7 @@ function buildArticleJsonLd(article: BlogArticle): object[] {
         "@type": "Organization",
         name: "prevai",
         url: BASE_URL,
-        logo: { "@type": "ImageObject", url: `${BASE_URL}/favicon.svg` },
+        logo: { "@type": "ImageObject", url: `${BASE_URL}/icon-192.png`, width: 192, height: 192 },
       },
     },
     {
@@ -1132,7 +1132,7 @@ function buildArticleJsonLd(article: BlogArticle): object[] {
       "@type": "BreadcrumbList",
       itemListElement: [
         { "@type": "ListItem", position: 1, name: "Home", item: BASE_URL },
-        { "@type": "ListItem", position: 2, name: "Blog", item: `${BASE_URL}/blog` },
+        { "@type": "ListItem", position: 2, name: "Blog", item: `${BASE_URL}/blog/` },
         { "@type": "ListItem", position: 3, name: article.title, item: canonical },
       ],
     },
@@ -1354,7 +1354,7 @@ function buildBlogArticleBodyHtml(article: BlogArticle): string {
 // ─── Blog JSON-LD builder for category pages ──────────────────────────────────
 
 function buildBlogCategoryJsonLd(category: BlogCategory): object[] {
-  const canonical = `${BASE_URL}/blog/categoria/${category.slug}`;
+  const canonical = `${BASE_URL}/blog/categoria/${category.slug}/`;
   return [
     {
       "@context": "https://schema.org",
@@ -1488,7 +1488,7 @@ function buildBlogCategoryBodyHtml(category: BlogCategory): string {
 const blogListHeadBlock = buildHeadBlock({
   title: BLOG_LIST_TITLE,
   description: BLOG_LIST_DESCRIPTION,
-  canonical: `${BASE_URL}/blog`,
+  canonical: `${BASE_URL}/blog/`,
   ogImagePath: "/opengraph.jpg",
   jsonLd: buildBlogListJsonLd(),
 });
@@ -1515,7 +1515,7 @@ console.log(`  ✓ ${BLOG_CATEGORIES.length} blog category pages prerendered`);
 
 // Individual blog articles
 for (const article of BLOG_ARTICLES) {
-  const articleCanonical = `${BASE_URL}/blog/${article.slug}`;
+  const articleCanonical = `${BASE_URL}/blog/${article.slug}/`;
   const articleOgImage = `/og/blog/${article.slug}.png`;
   const articleHeadBlock = buildHeadBlock({
     title: `${article.title} | prevai Blog`,

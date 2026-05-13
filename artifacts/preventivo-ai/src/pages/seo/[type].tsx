@@ -254,7 +254,7 @@ export default function SeoLanding() {
   const slug = (params as { type?: string }).type ?? "professionista";
   const s = SECTORS[slug] ?? DEFAULT_SECTOR;
 
-  const canonical = `https://www.prevai.it/seo/${s.slug}`;
+  const canonical = `https://www.prevai.it/seo/${s.slug}/`;
   const rating = SECTOR_RATINGS[s.slug] ?? SECTOR_RATINGS["professionista"];
   const reviews = SECTOR_REVIEWS[s.slug] ?? SECTOR_REVIEWS["professionista"];
   const jsonLd = [

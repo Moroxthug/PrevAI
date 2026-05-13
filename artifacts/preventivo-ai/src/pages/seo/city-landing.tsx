@@ -31,7 +31,7 @@ export default function SeoCityLanding() {
 
   const titleTag = getCityTitle(s, cityName, citySlug);
   const metaDesc = getCityDesc(s, cityName, citySlug, regionName);
-  const canonical = `https://www.prevai.it/seo/${s.slug}/${citySlug}`;
+  const canonical = `https://www.prevai.it/seo/${s.slug}/${citySlug}/`;
 
   const intro = city ? getCityIntro(s, city) : "";
   const faqItems = city ? getCityFaqItems(s, city) : [];

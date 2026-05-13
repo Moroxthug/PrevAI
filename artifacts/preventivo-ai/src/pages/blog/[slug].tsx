@@ -37,7 +37,7 @@ export default function BlogArticlePage() {
     );
   }
 
-  const canonical = `${BASE_URL}/blog/${article.slug}`;
+  const canonical = `${BASE_URL}/blog/${article.slug}/`;
   const toc = extractToc(article.contentHtml);
   const bodyHtml = injectHeadingIds(article.contentHtml);
 
