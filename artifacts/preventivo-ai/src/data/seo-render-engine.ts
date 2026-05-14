@@ -281,7 +281,7 @@ export function getCityRelatedSectors(sectorSlug: string): { slug: string; label
 export type JsonLdSchema = { "@context": string; "@type": string; [key: string]: unknown };
 
 export function buildCityJsonLd(sector: SectorData, city: CityData): JsonLdSchema[] {
-  const canonical = `${BASE_URL}/seo/${sector.slug}/${city.slug}`;
+  const canonical = `${BASE_URL}/seo/${sector.slug}/${city.slug}/`;
   const faqItems = getCityFaqItems(sector, city);
   const rating = SECTOR_RATINGS[sector.slug] ?? SECTOR_RATINGS["professionista"];
   const reviews = SECTOR_REVIEWS[sector.slug] ?? SECTOR_REVIEWS["professionista"];
@@ -334,8 +334,8 @@ export function buildCityJsonLd(sector: SectorData, city: CityData): JsonLdSchem
       "@context": "https://schema.org",
       "@type": "BreadcrumbList",
       itemListElement: [
-        { "@type": "ListItem", position: 1, name: "Home", item: BASE_URL },
-        { "@type": "ListItem", position: 2, name: sector.label, item: `${BASE_URL}/seo/${sector.slug}` },
+        { "@type": "ListItem", position: 1, name: "Home", item: `${BASE_URL}/` },
+        { "@type": "ListItem", position: 2, name: sector.label, item: `${BASE_URL}/seo/${sector.slug}/` },
         { "@type": "ListItem", position: 3, name: city.name, item: canonical },
       ],
     },

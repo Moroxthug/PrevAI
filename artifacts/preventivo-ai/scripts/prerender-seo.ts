@@ -180,34 +180,34 @@ const STATIC_FOOTER = `<footer class="border-t py-12 md:py-16 bg-white">
       <div class="md:col-span-2">
         <h4 class="font-semibold mb-4 text-sm uppercase tracking-wider text-foreground">Professioni</h4>
         <ul class="grid grid-cols-2 gap-x-6 gap-y-2 text-sm text-muted-foreground">
-          <li><a href="/seo/imbianchino" class="hover:text-foreground transition-colors">Imbianchino</a></li>
-          <li><a href="/seo/muratore" class="hover:text-foreground transition-colors">Muratore</a></li>
-          <li><a href="/seo/elettricista" class="hover:text-foreground transition-colors">Elettricista</a></li>
-          <li><a href="/seo/pittore" class="hover:text-foreground transition-colors">Pittore</a></li>
-          <li><a href="/seo/idraulico" class="hover:text-foreground transition-colors">Idraulico</a></li>
-          <li><a href="/seo/piastrellista" class="hover:text-foreground transition-colors">Piastrellista</a></li>
-          <li><a href="/seo/edilizia" class="hover:text-foreground transition-colors">Imprese Edili</a></li>
-          <li><a href="/seo/giardiniere" class="hover:text-foreground transition-colors">Giardiniere</a></li>
-          <li><a href="/seo/ristrutturazione" class="hover:text-foreground transition-colors">Ristrutturazioni</a></li>
-          <li><a href="/seo/serramentista" class="hover:text-foreground transition-colors">Serramentista</a></li>
-          <li><a href="/seo/carpentiere" class="hover:text-foreground transition-colors">Carpentieri</a></li>
-          <li><a href="/seo/tetto" class="hover:text-foreground transition-colors">Coperture e Tetti</a></li>
-          <li><a href="/seo/falegname" class="hover:text-foreground transition-colors">Falegnami</a></li>
-          <li><a href="/seo/condizionatori" class="hover:text-foreground transition-colors">Condizionatori</a></li>
-          <li><a href="/seo/freelance" class="hover:text-foreground transition-colors">Freelance</a></li>
-          <li><a href="/seo/pavimentista" class="hover:text-foreground transition-colors">Pavimentista</a></li>
-          <li><a href="/seo/geometra" class="hover:text-foreground transition-colors">Geometri</a></li>
-          <li><a href="/seo/termoidraulico" class="hover:text-foreground transition-colors">Termoidraulico</a></li>
+          <li><a href="/seo/imbianchino/" class="hover:text-foreground transition-colors">Imbianchino</a></li>
+          <li><a href="/seo/muratore/" class="hover:text-foreground transition-colors">Muratore</a></li>
+          <li><a href="/seo/elettricista/" class="hover:text-foreground transition-colors">Elettricista</a></li>
+          <li><a href="/seo/pittore/" class="hover:text-foreground transition-colors">Pittore</a></li>
+          <li><a href="/seo/idraulico/" class="hover:text-foreground transition-colors">Idraulico</a></li>
+          <li><a href="/seo/piastrellista/" class="hover:text-foreground transition-colors">Piastrellista</a></li>
+          <li><a href="/seo/edilizia/" class="hover:text-foreground transition-colors">Imprese Edili</a></li>
+          <li><a href="/seo/giardiniere/" class="hover:text-foreground transition-colors">Giardiniere</a></li>
+          <li><a href="/seo/ristrutturazione/" class="hover:text-foreground transition-colors">Ristrutturazioni</a></li>
+          <li><a href="/seo/serramentista/" class="hover:text-foreground transition-colors">Serramentista</a></li>
+          <li><a href="/seo/carpentiere/" class="hover:text-foreground transition-colors">Carpentieri</a></li>
+          <li><a href="/seo/tetto/" class="hover:text-foreground transition-colors">Coperture e Tetti</a></li>
+          <li><a href="/seo/falegname/" class="hover:text-foreground transition-colors">Falegnami</a></li>
+          <li><a href="/seo/condizionatori/" class="hover:text-foreground transition-colors">Condizionatori</a></li>
+          <li><a href="/seo/freelance/" class="hover:text-foreground transition-colors">Freelance</a></li>
+          <li><a href="/seo/pavimentista/" class="hover:text-foreground transition-colors">Pavimentista</a></li>
+          <li><a href="/seo/geometra/" class="hover:text-foreground transition-colors">Geometri</a></li>
+          <li><a href="/seo/termoidraulico/" class="hover:text-foreground transition-colors">Termoidraulico</a></li>
         </ul>
       </div>
       <div>
         <h4 class="font-semibold mb-4 text-sm uppercase tracking-wider text-foreground">Guide</h4>
         <ul class="space-y-2 text-sm text-muted-foreground">
-          <li><a href="/blog" class="hover:text-foreground transition-colors font-medium text-foreground/80">Blog &amp; Approfondimenti</a></li>
-          <li><a href="/seo/modello-excel" class="hover:text-foreground transition-colors">Modello Excel</a></li>
-          <li><a href="/seo/modello-word" class="hover:text-foreground transition-colors">Modello Word</a></li>
-          <li><a href="/seo/come-fare-preventivo" class="hover:text-foreground transition-colors">Come Fare un Preventivo</a></li>
-          <li><a href="/seo/preventivi-gratis" class="hover:text-foreground transition-colors">Preventivi Gratis</a></li>
+          <li><a href="/blog/" class="hover:text-foreground transition-colors font-medium text-foreground/80">Blog &amp; Approfondimenti</a></li>
+          <li><a href="/seo/modello-excel/" class="hover:text-foreground transition-colors">Modello Excel</a></li>
+          <li><a href="/seo/modello-word/" class="hover:text-foreground transition-colors">Modello Word</a></li>
+          <li><a href="/seo/come-fare-preventivo/" class="hover:text-foreground transition-colors">Come Fare un Preventivo</a></li>
+          <li><a href="/seo/preventivi-gratis/" class="hover:text-foreground transition-colors">Preventivi Gratis</a></li>
         </ul>
         <h4 class="font-semibold mt-8 mb-4 text-sm uppercase tracking-wider text-foreground">Azienda</h4>
         <ul class="space-y-2 text-sm text-muted-foreground">
@@ -272,7 +272,7 @@ function buildSectorCityGrid(s: SectorData): string {
       const cityLinks = cities
         .map(
           (c) =>
-            `<a href="/seo/${esc(s.slug)}/${esc(c.slug)}" class="inline-flex items-center rounded-full border border-gray-200 bg-white px-3 py-1.5 text-xs font-medium text-gray-600 hover:border-violet-300 hover:text-violet-600 transition-colors">${esc(c.name)}</a>`
+            `<a href="/seo/${esc(s.slug)}/${esc(c.slug)}/" class="inline-flex items-center rounded-full border border-gray-200 bg-white px-3 py-1.5 text-xs font-medium text-gray-600 hover:border-violet-300 hover:text-violet-600 transition-colors">${esc(c.name)}</a>`
         )
         .join("\n            ");
       return `<div>
@@ -305,7 +305,7 @@ function buildRelatedSectorsSection(s: SectorData, heading?: string): string {
   const links = related
     .map(
       (r) =>
-        `<a href="/seo/${esc(r.slug)}" class="flex items-center gap-2 bg-white border border-gray-100 hover:border-violet-200 rounded-xl px-4 py-3 text-sm font-medium text-gray-700 hover:text-violet-700 transition-colors">
+        `<a href="/seo/${esc(r.slug)}/" class="flex items-center gap-2 bg-white border border-gray-100 hover:border-violet-200 rounded-xl px-4 py-3 text-sm font-medium text-gray-700 hover:text-violet-700 transition-colors">
           <span class="text-violet-400 font-bold" aria-hidden="true">→</span> ${esc(r.label)}
         </a>`
     )
@@ -334,7 +334,7 @@ function buildApprofondimentiSection(sectorSlug: string): string {
   const cards = articles
     .map(
       (a) =>
-        `<a href="/blog/${esc(a.slug)}" class="group flex flex-col bg-white rounded-xl border border-gray-100 hover:border-violet-200 hover:shadow-sm transition-all duration-200 p-5">
+        `<a href="/blog/${esc(a.slug)}/" class="group flex flex-col bg-white rounded-xl border border-gray-100 hover:border-violet-200 hover:shadow-sm transition-all duration-200 p-5">
           <span class="text-xs font-semibold text-violet-700 mb-2">${esc(a.category)}</span>
           <span class="text-sm font-semibold text-gray-900 group-hover:text-violet-700 transition-colors leading-snug mb-3">${esc(a.title)}</span>
           <span class="text-xs text-gray-400 mt-auto">${a.readingTimeMin} min di lettura</span>
@@ -395,7 +395,7 @@ function buildSectorJsonLd(s: SectorData): object[] {
       "@context": "https://schema.org",
       "@type": "BreadcrumbList",
       itemListElement: [
-        { "@type": "ListItem", position: 1, name: "Home", item: BASE_URL },
+        { "@type": "ListItem", position: 1, name: "Home", item: `${BASE_URL}/` },
         { "@type": "ListItem", position: 2, name: s.label, item: canonical },
       ],
     },
@@ -655,7 +655,7 @@ function buildCityBodyHtml(s: SectorData, city: CityData): string {
 
   const breadcrumb = buildBreadcrumb([
     { name: "Home", href: "/" },
-    { name: s.label, href: `/seo/${s.slug}` },
+    { name: s.label, href: `/seo/${s.slug}/` },
     { name: cityName, href: null },
   ]);
 
@@ -674,7 +674,7 @@ function buildCityBodyHtml(s: SectorData, city: CityData): string {
         <a href="/sign-up" class="btn-gradient inline-flex h-14 items-center justify-center px-8 text-lg font-semibold">
           Crea il tuo preventivo gratis
         </a>
-        <a href="/seo/${esc(s.slug)}" class="btn-gradient-outline inline-flex h-14 items-center justify-center px-8 text-lg font-semibold">
+        <a href="/seo/${esc(s.slug)}/" class="btn-gradient-outline inline-flex h-14 items-center justify-center px-8 text-lg font-semibold">
           Scopri come funziona
         </a>
       </div>
@@ -747,7 +747,7 @@ function buildCityBodyHtml(s: SectorData, city: CityData): string {
 
   const nearbyLinks = getNearbyAnchors(s, city)
     .map(({ slug, anchorText }) =>
-      `<a href="/seo/${esc(s.slug)}/${esc(slug)}" class="inline-flex items-center gap-1.5 rounded-full border border-gray-200 px-3.5 py-1.5 text-sm text-gray-500 hover:border-violet-300 hover:text-violet-600 transition-colors">${esc(anchorText)}</a>`
+      `<a href="/seo/${esc(s.slug)}/${esc(slug)}/" class="inline-flex items-center gap-1.5 rounded-full border border-gray-200 px-3.5 py-1.5 text-sm text-gray-500 hover:border-violet-300 hover:text-violet-600 transition-colors">${esc(anchorText)}</a>`
     )
     .join("\n          ");
 
@@ -812,7 +812,7 @@ function buildHomepageBodyHtml(): string {
   const sectorLinks = Object.values(SECTORS)
     .map(
       (s) =>
-        `<a href="/seo/${esc(s.slug)}" class="group flex flex-col items-center gap-3 rounded-2xl border border-gray-100 bg-white p-5 text-center hover:border-violet-200 hover:shadow-sm transition-all">
+        `<a href="/seo/${esc(s.slug)}/" class="group flex flex-col items-center gap-3 rounded-2xl border border-gray-100 bg-white p-5 text-center hover:border-violet-200 hover:shadow-sm transition-all">
           <div class="h-10 w-10 rounded-xl flex items-center justify-center font-bold text-sm text-violet-600 bg-violet-50" aria-hidden="true">${esc(s.label.charAt(0))}</div>
           <span class="text-sm font-medium text-gray-700 group-hover:text-violet-700 transition-colors">${esc(s.label)}</span>
         </a>`
@@ -823,7 +823,7 @@ function buildHomepageBodyHtml(): string {
   const cityLinks = top20Cities
     .map(
       (city) =>
-        `<a href="/seo/ristrutturazione/${esc(city.slug)}" class="inline-flex items-center rounded-full border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-600 hover:border-violet-300 hover:text-violet-600 transition-colors">${esc(city.name)}</a>`
+        `<a href="/seo/ristrutturazione/${esc(city.slug)}/" class="inline-flex items-center rounded-full border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-600 hover:border-violet-300 hover:text-violet-600 transition-colors">${esc(city.name)}</a>`
     )
     .join("\n      ");
 
@@ -1096,7 +1096,7 @@ function buildBlogListJsonLd(): object[] {
       "@context": "https://schema.org",
       "@type": "BreadcrumbList",
       itemListElement: [
-        { "@type": "ListItem", position: 1, name: "Home", item: BASE_URL },
+        { "@type": "ListItem", position: 1, name: "Home", item: `${BASE_URL}/` },
         { "@type": "ListItem", position: 2, name: "Blog", item: `${BASE_URL}/blog/` },
       ],
     },
@@ -1131,7 +1131,7 @@ function buildArticleJsonLd(article: BlogArticle): object[] {
       "@context": "https://schema.org",
       "@type": "BreadcrumbList",
       itemListElement: [
-        { "@type": "ListItem", position: 1, name: "Home", item: BASE_URL },
+        { "@type": "ListItem", position: 1, name: "Home", item: `${BASE_URL}/` },
         { "@type": "ListItem", position: 2, name: "Blog", item: `${BASE_URL}/blog/` },
         { "@type": "ListItem", position: 3, name: article.title, item: canonical },
       ],
@@ -1175,7 +1175,7 @@ function buildBlogListBodyHtml(): string {
 
   const categoryLinks = BLOG_CATEGORIES.map((cat) => {
     const cs = BLOG_CATEGORY_STYLE[cat.name] ?? "background:#f3f4f6;color:#374151";
-    return `<a href="/blog/categoria/${esc(cat.slug)}" class="inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold transition-colors" style="${cs}">${esc(cat.name)}</a>`;
+    return `<a href="/blog/categoria/${esc(cat.slug)}/" class="inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold transition-colors" style="${cs}">${esc(cat.name)}</a>`;
   }).join("\n      ");
 
   const categoryStrip = `<section class="border-b border-gray-100 bg-white py-4">
@@ -1190,7 +1190,7 @@ function buildBlogListBodyHtml(): string {
   const cards = BLOG_ARTICLES.map((a) => {
     const catStyle = BLOG_CATEGORY_STYLE[a.category] ?? "background:#f3f4f6;color:#374151";
     const dateStr = new Date(a.publishedAt).toLocaleDateString("it-IT", { day: "numeric", month: "long", year: "numeric" });
-    return `<a href="/blog/${esc(a.slug)}" class="group flex flex-col bg-white rounded-2xl border border-gray-100 hover:border-violet-200 hover:shadow-md transition-all duration-200 overflow-hidden">
+    return `<a href="/blog/${esc(a.slug)}/" class="group flex flex-col bg-white rounded-2xl border border-gray-100 hover:border-violet-200 hover:shadow-md transition-all duration-200 overflow-hidden">
       <div class="p-6 flex flex-col flex-1">
         <div class="flex items-center justify-between mb-4">
           <span class="text-xs font-semibold px-2.5 py-1 rounded-full" style="${catStyle}">${esc(a.category)}</span>
@@ -1289,7 +1289,7 @@ function buildBlogArticleBodyHtml(article: BlogArticle): string {
   const relatedSectorLinks = article.relatedSectors.map((sectorSlug) => {
     const sector = SECTORS[sectorSlug];
     if (!sector) return "";
-    return `<a href="/seo/${esc(sectorSlug)}" class="inline-flex items-center gap-1.5 rounded-full border border-gray-200 bg-white px-4 py-2 text-xs font-medium text-gray-700 hover:border-violet-300 hover:text-violet-700 transition-colors">
+    return `<a href="/seo/${esc(sectorSlug)}/" class="inline-flex items-center gap-1.5 rounded-full border border-gray-200 bg-white px-4 py-2 text-xs font-medium text-gray-700 hover:border-violet-300 hover:text-violet-700 transition-colors">
       <span class="text-violet-400 font-bold">→</span> Preventivi ${esc(sector.label)}
     </a>`;
   }).filter(Boolean).join("\n    ");
@@ -1311,7 +1311,7 @@ function buildBlogArticleBodyHtml(article: BlogArticle): string {
 
   const relatedCards = relatedArticles.map((a) => {
     const cs = BLOG_CATEGORY_STYLE[a.category] ?? "background:#f3f4f6;color:#374151";
-    return `<a href="/blog/${esc(a.slug)}" class="group flex flex-col bg-white rounded-xl border border-gray-100 hover:border-violet-200 hover:shadow-sm transition-all p-4">
+    return `<a href="/blog/${esc(a.slug)}/" class="group flex flex-col bg-white rounded-xl border border-gray-100 hover:border-violet-200 hover:shadow-sm transition-all p-4">
       <span class="text-xs font-semibold px-2 py-0.5 rounded-full self-start mb-2" style="${cs}">${esc(a.category)}</span>
       <span class="text-xs font-semibold text-gray-800 group-hover:text-violet-700 transition-colors leading-snug">${esc(a.title)}</span>
     </a>`;
@@ -1368,8 +1368,8 @@ function buildBlogCategoryJsonLd(category: BlogCategory): object[] {
       "@context": "https://schema.org",
       "@type": "BreadcrumbList",
       itemListElement: [
-        { "@type": "ListItem", position: 1, name: "Home", item: BASE_URL },
-        { "@type": "ListItem", position: 2, name: "Blog", item: `${BASE_URL}/blog` },
+        { "@type": "ListItem", position: 1, name: "Home", item: `${BASE_URL}/` },
+        { "@type": "ListItem", position: 2, name: "Blog", item: `${BASE_URL}/blog/` },
         { "@type": "ListItem", position: 3, name: category.name, item: canonical },
       ],
     },
@@ -1417,7 +1417,7 @@ function buildBlogCategoryBodyHtml(category: BlogCategory): string {
   const cards = articles.map((a) => {
     const cs = BLOG_CATEGORY_COLOR_STYLE[a.category] ?? "background:#f3f4f6;color:#374151";
     const dateStr = new Date(a.publishedAt).toLocaleDateString("it-IT", { day: "numeric", month: "long", year: "numeric" });
-    return `<a href="/blog/${esc(a.slug)}" class="group flex flex-col bg-white rounded-2xl border border-gray-100 hover:border-violet-200 hover:shadow-md transition-all duration-200 overflow-hidden">
+    return `<a href="/blog/${esc(a.slug)}/" class="group flex flex-col bg-white rounded-2xl border border-gray-100 hover:border-violet-200 hover:shadow-md transition-all duration-200 overflow-hidden">
       <div class="p-6 flex flex-col flex-1">
         <div class="flex items-center justify-between mb-4">
           <span class="text-xs font-semibold px-2.5 py-1 rounded-full" style="${cs}">${esc(a.category)}</span>
@@ -1449,7 +1449,7 @@ function buildBlogCategoryBodyHtml(category: BlogCategory): string {
   const otherCats = BLOG_CATEGORIES.filter((c) => c.slug !== category.slug);
   const catLinks = otherCats.map((c) => {
     const cs = BLOG_CATEGORY_COLOR_STYLE[c.name] ?? "background:#f3f4f6;color:#374151";
-    return `<a href="/blog/categoria/${esc(c.slug)}" class="inline-flex items-center rounded-full px-4 py-2 text-xs font-semibold transition-colors" style="${cs}">${esc(c.name)}</a>`;
+    return `<a href="/blog/categoria/${esc(c.slug)}/" class="inline-flex items-center rounded-full px-4 py-2 text-xs font-semibold transition-colors" style="${cs}">${esc(c.name)}</a>`;
   }).join("\n      ");
 
   const otherCatsSection = `<section class="py-10 bg-gray-50 border-t border-gray-100">
