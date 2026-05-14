@@ -23,11 +23,13 @@ export interface PublicRoute {
  *     (those are generated from SECTORS, CITIES, BLOG_ARTICLES, BLOG_CATEGORIES data files)
  */
 const _PUBLIC_ROUTES = [
-  { name: "HOME",     path: "/",         priority: "1.0", changefreq: "weekly"  },
-  { name: "WHATSAPP", path: "/whatsapp", priority: "0.8", changefreq: "weekly"  },
-  { name: "BLOG",     path: "/blog",     priority: "0.8", changefreq: "weekly"  },
-  { name: "PRIVACY",  path: "/privacy",  priority: "0.4", changefreq: "yearly"  },
-  { name: "TERMINI",  path: "/termini",  priority: "0.4", changefreq: "yearly"  },
+  { name: "HOME",       path: "/",           priority: "1.0", changefreq: "weekly"  },
+  { name: "WHATSAPP",   path: "/whatsapp",   priority: "0.8", changefreq: "weekly"  },
+  { name: "BLOG",       path: "/blog",       priority: "0.8", changefreq: "weekly"  },
+  { name: "CHI_SIAMO",  path: "/chi-siamo",  priority: "0.7", changefreq: "yearly"  },
+  { name: "CONTATTI",   path: "/contatti",   priority: "0.7", changefreq: "yearly"  },
+  { name: "PRIVACY",    path: "/privacy",    priority: "0.4", changefreq: "yearly"  },
+  { name: "TERMINI",    path: "/termini",    priority: "0.4", changefreq: "yearly"  },
 ] as const satisfies ReadonlyArray<PublicRoute>;
 
 /** Full route objects used by generate-sitemap.ts */

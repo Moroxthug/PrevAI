@@ -12,6 +12,8 @@ import SignUpPage from "@/pages/sign-up";
 import OnboardingPage from "@/pages/onboarding";
 import PrivacyPage from "@/pages/privacy";
 import TerminiPage from "@/pages/termini";
+import ChiSiamoPage from "@/pages/chi-siamo";
+import ContattiPage from "@/pages/contatti";
 
 import { PATHS } from "@/data/sitemap-routes";
 
@@ -83,6 +85,8 @@ function Router() {
       {/* Public pages — paths from sitemap-routes.ts (shared with generate-sitemap.ts) */}
       <Route path={PATHS.HOME} component={() => <PublicLayout><Home /></PublicLayout>} />
       <Route path={PATHS.WHATSAPP} component={() => <PublicLayout><WhatsappPage /></PublicLayout>} />
+      <Route path={PATHS.CHI_SIAMO} component={ChiSiamoPage} />
+      <Route path={PATHS.CONTATTI} component={ContattiPage} />
       <Route path={PATHS.PRIVACY} component={PrivacyPage} />
       <Route path={PATHS.TERMINI} component={TerminiPage} />
 

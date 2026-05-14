@@ -211,11 +211,11 @@ const STATIC_FOOTER = `<footer class="border-t py-12 md:py-16 bg-white">
         </ul>
         <h4 class="font-semibold mt-8 mb-4 text-sm uppercase tracking-wider text-foreground">Azienda</h4>
         <ul class="space-y-2 text-sm text-muted-foreground">
-          <li><a href="/chi-siamo" class="hover:text-foreground transition-colors">Chi Siamo</a></li>
-          <li><a href="/contatti" class="hover:text-foreground transition-colors">Contatti</a></li>
+          <li><a href="/chi-siamo/" class="hover:text-foreground transition-colors">Chi Siamo</a></li>
+          <li><a href="/contatti/" class="hover:text-foreground transition-colors">Contatti</a></li>
           <li><button class="hover:text-foreground transition-colors text-left">Supporto</button></li>
-          <li><a href="/privacy" class="hover:text-foreground transition-colors">Privacy Policy</a></li>
-          <li><a href="/termini" class="hover:text-foreground transition-colors">Termini di Servizio</a></li>
+          <li><a href="/privacy/" class="hover:text-foreground transition-colors">Privacy Policy</a></li>
+          <li><a href="/termini/" class="hover:text-foreground transition-colors">Termini di Servizio</a></li>
         </ul>
       </div>
     </div>

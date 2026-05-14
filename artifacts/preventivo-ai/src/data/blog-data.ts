@@ -15,7 +15,7 @@ export const BLOG_ARTICLES: BlogArticle[] = [
     title: "Come fare un preventivo professionale per lavori di imbiancatura",
     metaDescription: "Guida completa per imbianchini: come strutturare un preventivo professionale, quali voci includere, come calcolare i prezzi al mq e convincere il cliente.",
     category: "Professioni",
-    publishedAt: "2025-04-10",
+    publishedAt: "2026-04-10",
     readingTimeMin: 4,
     relatedSectors: ["imbianchino", "pittore"],
     contentHtml: `
@@ -77,7 +77,7 @@ export const BLOG_ARTICLES: BlogArticle[] = [
     title: "Quanto costa tinteggiare un appartamento nel 2025: guida ai prezzi",
     metaDescription: "Prezzi aggiornati per tinteggiatura appartamento: costo al mq, manodopera vs materiali, differenze per tipo di pittura. Guida completa per proprietari e professionisti.",
     category: "Prezzi",
-    publishedAt: "2025-04-15",
+    publishedAt: "2026-04-15",
     readingTimeMin: 4,
     relatedSectors: ["imbianchino", "pittore"],
     contentHtml: `
@@ -153,7 +153,7 @@ export const BLOG_ARTICLES: BlogArticle[] = [
     title: "Come fare un preventivo per impianto elettrico: guida per elettricisti",
     metaDescription: "Guida pratica per elettricisti: come strutturare un preventivo professionale per impianti elettrici civili e industriali, voci da includere e prezzi di riferimento.",
     category: "Professioni",
-    publishedAt: "2025-04-18",
+    publishedAt: "2026-04-18",
     readingTimeMin: 4,
     relatedSectors: ["elettricista"],
     contentHtml: `
@@ -222,7 +222,7 @@ export const BLOG_ARTICLES: BlogArticle[] = [
     title: "I 5 errori più comuni nei preventivi degli artigiani (e come evitarli)",
     metaDescription: "Scopri i 5 errori che fanno perdere lavori agli artigiani nei preventivi: voci generiche, prezzi senza IVA, tempi sbagliati. Come correggerli subito.",
     category: "Consigli",
-    publishedAt: "2025-04-22",
+    publishedAt: "2026-04-22",
     readingTimeMin: 4,
     relatedSectors: [],
     contentHtml: `
@@ -269,7 +269,7 @@ export const BLOG_ARTICLES: BlogArticle[] = [
     title: "Come fare un preventivo per ristrutturazione casa: guida completa",
     metaDescription: "Guida completa per creare un preventivo professionale per ristrutturazione: capitoli, voci, calcolo costi, bonus edilizi. Per imprese e artigiani italiani.",
     category: "Professioni",
-    publishedAt: "2025-04-25",
+    publishedAt: "2026-04-25",
     readingTimeMin: 5,
     relatedSectors: ["ristrutturazione", "edilizia"],
     contentHtml: `
@@ -328,7 +328,7 @@ export const BLOG_ARTICLES: BlogArticle[] = [
     title: "Quanto costa ristrutturare un bagno in Italia nel 2025",
     metaDescription: "Prezzi aggiornati per ristrutturazione bagno: costi per idraulico, piastrellista, elettricista. Bagno piccolo, medio o grande: guida completa ai prezzi 2025.",
     category: "Prezzi",
-    publishedAt: "2025-04-28",
+    publishedAt: "2026-04-28",
     readingTimeMin: 4,
     relatedSectors: ["ristrutturazione", "idraulico", "piastrellista"],
     contentHtml: `
@@ -405,7 +405,7 @@ export const BLOG_ARTICLES: BlogArticle[] = [
     title: "Quanto costa un impianto elettrico nel 2025: prezzi per appartamento e ristrutturazione",
     metaDescription: "Prezzi aggiornati per impianti elettrici civili nel 2025: costo per appartamento, per punto luce, quadro elettrico, rifacimento completo. Guida per proprietari e committenti.",
     category: "Prezzi",
-    publishedAt: "2025-05-05",
+    publishedAt: "2026-05-05",
     readingTimeMin: 5,
     relatedSectors: ["elettricista"],
     contentHtml: `
@@ -475,7 +475,7 @@ export const BLOG_ARTICLES: BlogArticle[] = [
     title: "Quanto costa un idraulico nel 2025: prezzi per interventi e impianti",
     metaDescription: "Prezzi aggiornati per lavori idraulici nel 2025: costo per intervento urgente, sostituzione boiler, nuovo impianto, perdita d'acqua. Guida completa per proprietari di casa.",
     category: "Prezzi",
-    publishedAt: "2025-05-07",
+    publishedAt: "2026-05-07",
     readingTimeMin: 5,
     relatedSectors: ["idraulico", "termoidraulico"],
     contentHtml: `
@@ -560,7 +560,7 @@ export const BLOG_ARTICLES: BlogArticle[] = [
     title: "Il miglior software di preventivazione per artigiani nel 2025",
     metaDescription: "Confronto dei migliori software di preventivazione per artigiani e PMI italiane nel 2025: Excel vs software dedicati vs AI. Quale conviene davvero?",
     category: "Tool",
-    publishedAt: "2025-05-02",
+    publishedAt: "2026-05-02",
     readingTimeMin: 4,
     relatedSectors: [],
     contentHtml: `
@@ -618,7 +618,7 @@ export const BLOG_ARTICLES: BlogArticle[] = [
     title: "Come fare un preventivo per lavori idraulici: guida pratica",
     metaDescription: "Guida pratica per idraulici: come strutturare un preventivo professionale per impianti idraulici e termici, voci da includere, prezzi di riferimento e consigli.",
     category: "Professioni",
-    publishedAt: "2025-05-05",
+    publishedAt: "2026-05-05",
     readingTimeMin: 4,
     relatedSectors: ["idraulico", "termoidraulico"],
     contentHtml: `
@@ -688,7 +688,7 @@ export const BLOG_ARTICLES: BlogArticle[] = [
     title: "Come vincere più lavori con i tuoi preventivi: 7 consigli pratici",
     metaDescription: "7 consigli pratici per artigiani e PMI: come aumentare il tasso di accettazione dei preventivi, rispondere più velocemente e comunicare meglio il proprio valore.",
     category: "Consigli",
-    publishedAt: "2025-05-06",
+    publishedAt: "2026-05-06",
     readingTimeMin: 4,
     relatedSectors: [],
     contentHtml: `
@@ -734,7 +734,7 @@ export const BLOG_ARTICLES: BlogArticle[] = [
     title: "Guida al preventivo per muratori: voci, prezzi e struttura",
     metaDescription: "Come fare un preventivo professionale per lavori di muratura: voci da includere, prezzi al mq per fondazioni, tramezzi e intonaci. Guida pratica per muratori.",
     category: "Professioni",
-    publishedAt: "2025-05-07",
+    publishedAt: "2026-05-07",
     readingTimeMin: 4,
     relatedSectors: ["muratore", "edilizia"],
     contentHtml: `
@@ -817,7 +817,7 @@ export const BLOG_ARTICLES: BlogArticle[] = [
     title: "L'intelligenza artificiale per i preventivi: come cambia il lavoro degli artigiani",
     metaDescription: "Come l'AI sta trasformando la preventivazione per artigiani e PMI italiane: meno tempo, più lavori vinti, documenti professionali in 30 secondi. Guida pratica.",
     category: "Innovazione",
-    publishedAt: "2025-05-08",
+    publishedAt: "2026-05-08",
     readingTimeMin: 4,
     relatedSectors: [],
     contentHtml: `
@@ -877,7 +877,7 @@ export const BLOG_ARTICLES: BlogArticle[] = [
     title: "Come fare un preventivo per falegnameria e carpenteria metallica",
     metaDescription: "Guida pratica per falegnami e carpentieri: come strutturare un preventivo professionale con voci per materiali, lavorazione e posa. Prezzi di riferimento 2025.",
     category: "Professioni",
-    publishedAt: "2025-05-08",
+    publishedAt: "2026-05-08",
     readingTimeMin: 4,
     relatedSectors: ["falegname", "carpentiere"],
     contentHtml: `
@@ -946,7 +946,7 @@ export const BLOG_ARTICLES: BlogArticle[] = [
     title: "Le migliori app per fare preventivi da smartphone nel 2025",
     metaDescription: "Confronto delle migliori app per preventivi da smartphone per artigiani italiani nel 2025: cosa valutare, funzionalità chiave e come scegliere quella giusta.",
     category: "Tool",
-    publishedAt: "2025-05-04",
+    publishedAt: "2026-05-04",
     readingTimeMin: 4,
     relatedSectors: [],
     contentHtml: `
@@ -1005,7 +1005,7 @@ export const BLOG_ARTICLES: BlogArticle[] = [
     title: "Preventivo digitale vs. carta e penna: perché fare il salto",
     metaDescription: "Confronto tra preventivo digitale e preventivo su carta per artigiani: velocità, professionalità, tasso di conversione. Perché e come fare il salto al digitale.",
     category: "Tool",
-    publishedAt: "2025-05-06",
+    publishedAt: "2026-05-06",
     readingTimeMin: 3,
     relatedSectors: [],
     contentHtml: `
@@ -1054,7 +1054,7 @@ export const BLOG_ARTICLES: BlogArticle[] = [
     title: "Digitalizzazione degli artigiani italiani: a che punto siamo nel 2025",
     metaDescription: "Il quadro della digitalizzazione tra gli artigiani italiani nel 2025: dati, ostacoli, opportunità. Chi ha già fatto il salto e cosa manca per gli altri.",
     category: "Innovazione",
-    publishedAt: "2025-05-05",
+    publishedAt: "2026-05-05",
     readingTimeMin: 4,
     relatedSectors: [],
     contentHtml: `
@@ -1104,7 +1104,7 @@ export const BLOG_ARTICLES: BlogArticle[] = [
     title: "Come usare le foto del cantiere per preventivi più precisi e convincenti",
     metaDescription: "Come usare le foto del sopralluogo per generare preventivi più accurati, convincere il cliente e documentare lo stato iniziale dei lavori. Guida pratica.",
     category: "Innovazione",
-    publishedAt: "2025-05-07",
+    publishedAt: "2026-05-07",
     readingTimeMin: 3,
     relatedSectors: ["muratore", "imbianchino", "elettricista", "idraulico"],
     contentHtml: `
@@ -1158,7 +1158,7 @@ export const BLOG_ARTICLES: BlogArticle[] = [
     title: "Come fissare il prezzo giusto per i tuoi lavori senza svendere",
     metaDescription: "Come calcolare il prezzo corretto per i propri lavori da artigiano: costi reali, margine, mercato locale. Come smettere di svendere il proprio lavoro.",
     category: "Business",
-    publishedAt: "2025-05-05",
+    publishedAt: "2026-05-05",
     readingTimeMin: 5,
     relatedSectors: [],
     contentHtml: `
@@ -1203,7 +1203,7 @@ export const BLOG_ARTICLES: BlogArticle[] = [
     title: "Come trovare nuovi clienti come artigiano: guida pratica 2025",
     metaDescription: "Strategie concrete per trovare nuovi clienti come artigiano nel 2025: passaparola strutturato, Google, social, collaborazioni. Guida pratica per professionisti italiani.",
     category: "Business",
-    publishedAt: "2025-05-06",
+    publishedAt: "2026-05-06",
     readingTimeMin: 5,
     relatedSectors: [],
     contentHtml: `
@@ -1256,7 +1256,7 @@ export const BLOG_ARTICLES: BlogArticle[] = [
     title: "Come gestire i preventivi in una piccola impresa: guida pratica",
     metaDescription: "Come organizzare e gestire i preventivi in una PMI italiana: dalla numerazione all'archivio, dal follow-up alla conversione. Strumenti e consigli pratici.",
     category: "Business",
-    publishedAt: "2025-05-08",
+    publishedAt: "2026-05-08",
     readingTimeMin: 5,
     relatedSectors: ["edilizia", "ristrutturazione"],
     contentHtml: `
@@ -1334,7 +1334,7 @@ export const BLOG_ARTICLES: BlogArticle[] = [
     title: "Come fare un preventivo professionale da freelance: guida per consulenti, geometri e tecnici",
     metaDescription: "Guida pratica per freelance, geometri e consulenti: come strutturare un preventivo professionale, definire il prezzo delle prestazioni e aumentare il tasso di accettazione.",
     category: "Consigli",
-    publishedAt: "2025-05-08",
+    publishedAt: "2026-05-08",
     readingTimeMin: 5,
     relatedSectors: ["freelance", "geometra"],
     contentHtml: `
@@ -1381,6 +1381,288 @@ export const BLOG_ARTICLES: BlogArticle[] = [
 <p>Preparare un preventivo professionale richiede tempo: strutturare le voci, calcolare i costi, formattare il documento, adattarlo al cliente specifico. Per un freelance che lavora da solo, queste ore di back-office sottraggono tempo al lavoro fatturabile.</p>
 <p>I software di preventivazione con intelligenza artificiale permettono di descrivere il progetto a parole — "perizia tecnica per immobile di 120mq in zona B, due sopralluoghi, relazione completa per banca" — e ottenere in pochi secondi un documento già strutturato, con voci, costi stimati e condizioni standard. Il professionista rivede, adatta e invia. Ore di lavoro si riducono a minuti, con una qualità del documento spesso superiore.</p>
 <p>Per un geometra, un consulente o qualsiasi professionista che invia più di 3–4 preventivi al mese, il ritorno sull'investimento è immediato.</p>
+`,
+  },
+  {
+    slug: "preventivo-giardiniere",
+    title: "Come fare un preventivo professionale per lavori di giardinaggio",
+    metaDescription: "Guida completa per giardinieri e paesaggisti: come strutturare un preventivo professionale, quali voci includere, come calcolare il prezzo per potatura, manutenzione e progettazione del verde.",
+    category: "Professioni",
+    publishedAt: "2026-05-09",
+    readingTimeMin: 5,
+    relatedSectors: ["giardiniere"],
+    contentHtml: `
+<p>Un preventivo professionale è il primo documento che un potenziale cliente vede di te. Per un giardiniere o un paesaggista, è l'occasione per distinguersi dalla concorrenza e comunicare non solo i costi, ma anche la cura e la competenza con cui approcci ogni intervento.</p>
+
+<h2>Perché molti giardinieri perdono lavori a causa del preventivo</h2>
+<p>Il settore del verde è competitivo e spesso i clienti richiedono preventivi a più professionisti. Chi perde non sempre è chi ha il prezzo più alto: spesso è chi ha un preventivo poco chiaro, scritto a mano o su un foglio Word improvvisato. Un documento professionale comunica serietà e valore.</p>
+<p>I problemi più comuni nei preventivi del settore verde:</p>
+<ul>
+<li>Voci generiche come "potatura piante" senza specificare numero, tipo e dimensione</li>
+<li>Mancanza di distinzione tra manodopera, materiali e smaltimento</li>
+<li>Nessuna indicazione dei tempi di esecuzione</li>
+<li>Assenza di clausole su interventi straordinari (se durante la potatura emerge una malattia grave)</li>
+<li>IVA non indicata separatamente</li>
+</ul>
+
+<h2>Struttura di un preventivo per lavori di giardinaggio</h2>
+<p>Ecco come strutturare un preventivo professionale per il settore del verde:</p>
+
+<h3>1. Intestazione con dati aziendali</h3>
+<p>Nome della tua attività, P.IVA (se applicabile), indirizzo, telefono, email. In alto a destra: data, numero preventivo e dati del cliente committente.</p>
+
+<h3>2. Oggetto dell'intervento</h3>
+<p>Una riga chiara: "Preventivo per manutenzione ordinaria giardino privato — via Roma 12, Milano". Il cliente deve capire subito di cosa si tratta.</p>
+
+<h3>3. Descrizione dettagliata dei lavori</h3>
+<p>Questa è la sezione più importante. Ogni voce deve essere specifica:</p>
+<ul>
+<li><strong>Potatura siepe di bosso:</strong> circa 25 metri lineari, altezza 1,2 m — €X</li>
+<li><strong>Taglio erba prato:</strong> superficie stimata 300 mq, altezza attuale 15 cm — €X</li>
+<li><strong>Trattamento antiparassitario rose:</strong> 6 cespugli, prodotto biologico — €X</li>
+<li><strong>Concimazione prato primaverile:</strong> concime granulare a lenta cessione, 300 mq — €X</li>
+<li><strong>Smaltimento residui vegetali:</strong> trasporto a discarica autorizzata — €X</li>
+</ul>
+<p>Se stai realizzando un nuovo giardino, aggiungi voci per progettazione, fornitura piante, posa impianto di irrigazione e stesura terreno.</p>
+
+<h3>4. Materiali e forniture</h3>
+<p>Distingui sempre tra manodopera e materiali. Se fornisci tu le piante, i fertilizzanti o il terriccio, elencali separatamente con prezzi unitari. Questo protegge te in caso di variazioni di prezzo e aiuta il cliente a capire cosa paga.</p>
+
+<h3>5. Tempistica e modalità di intervento</h3>
+<p>Indica quando eseguirai i lavori (es. "nella settimana del 20-24 maggio") e quante giornate lavorative prevedi. Se il lavoro dipende dal meteo, specificalo.</p>
+
+<h3>6. Condizioni economiche</h3>
+<p>Totale imponibile, IVA (4% per imprese agricole con i requisiti, 10% per servizi di giardinaggio standard, 22% in altri casi — verifica la tua posizione), totale da pagare. Indica le modalità di pagamento: acconto richiesto, saldo a fine lavori, eventuali rate.</p>
+
+<h2>Prezzi di riferimento per servizi di giardinaggio (2026)</h2>
+<p>I prezzi variano in base alla zona geografica (il Nord Italia paga generalmente il 20-30% in più rispetto al Sud), alla complessità dell'intervento e all'esperienza del professionista:</p>
+<ul>
+<li><strong>Taglio erba:</strong> €15–25 ogni 100 mq (in base alle attrezzature e al tipo di erba)</li>
+<li><strong>Potatura siepi:</strong> €8–15 al metro lineare per siepi standard; fino a €30/ml per siepi alte o difficili</li>
+<li><strong>Potatura alberi da frutto:</strong> €50–150 per albero secondo dimensione e complessità</li>
+<li><strong>Abbattimento albero:</strong> €150–600+ secondo altezza e posizione; smaltimento separato</li>
+<li><strong>Progettazione giardino:</strong> €800–3.000+ per progetto completo con rendering</li>
+<li><strong>Manutenzione annuale (contratto):</strong> €800–2.500 all'anno per giardino privato medio</li>
+<li><strong>Impianto di irrigazione:</strong> €800–2.000 per giardino da 200–500 mq</li>
+</ul>
+<p>I contratti di manutenzione ricorrente sono la forma di reddito più stabile per un giardiniere. Includili nel preventivo come opzione.</p>
+
+<h2>Clausole importanti da inserire</h2>
+<p>Un preventivo professionale include anche clausole che proteggono entrambe le parti:</p>
+<ul>
+<li><strong>Validità dell'offerta:</strong> "Il presente preventivo è valido 30 giorni dalla data di emissione"</li>
+<li><strong>Varianti in corso d'opera:</strong> "Eventuali lavori aggiuntivi non previsti saranno oggetto di preventivo integrativo"</li>
+<li><strong>Condizioni climatiche:</strong> "I tempi di esecuzione possono variare in caso di condizioni meteo avverse"</li>
+<li><strong>Smaltimento:</strong> Specifica se lo smaltimento dei residui è incluso o a parte — molti clienti assumono che sia incluso</li>
+</ul>
+
+<h2>Come inviare il preventivo</h2>
+<p>PDF via email è ancora il metodo preferito dai clienti italiani per importi significativi. Assicurati che il PDF abbia: logo della tua attività, dati completi, firma digitale o spazio per firma del cliente, e numero di preventivo univoco per tracciabilità.</p>
+<p>Per lavori ricorrenti come la manutenzione settimanale del verde, un preventivo semplificato via WhatsApp può essere sufficiente — ma anche in quel caso, archivia sempre la conferma scritta del cliente.</p>
+
+<h2>Usa l'AI per velocizzare la creazione del preventivo</h2>
+<p>Descrivere a voce un lavoro di giardinaggio e ricevere subito un preventivo strutturato è ora possibile. Strumenti come prevai ti permettono di scrivere "manutenzione ordinaria giardino 400 mq, potatura 15 metri di siepe di lauro, taglio prato, smaltimento — Milano nord" e ottenere un documento professionale pronto in 30 secondi.</p>
+<p>Il preventivo generato include già le voci separate, i prezzi di riferimento per zona, i campi per il cliente e le condizioni standard. Tu lo rivedi, aggiungi il tuo logo e invii. Ore di lavoro ridotte a minuti, qualità del documento invariata.</p>
+`,
+  },
+  {
+    slug: "quanto-costa-muratore",
+    title: "Quanto costa un muratore nel 2026: prezzi per tipo di lavoro",
+    metaDescription: "Prezzi aggiornati per lavori di muratura nel 2026: costo al metro quadro per intonaco, demolizioni, costruzione muri, ristrutturazioni. Guida completa con tariffe Nord/Centro/Sud Italia.",
+    category: "Prezzi",
+    publishedAt: "2026-05-10",
+    readingTimeMin: 5,
+    relatedSectors: ["muratore", "edilizia", "ristrutturazione"],
+    contentHtml: `
+<p>Sapere quanto costa un muratore prima di iniziare i lavori è fondamentale per pianificare un cantiere senza brutte sorprese. I prezzi del settore edilizio variano significativamente in base alla zona geografica, alla complessità dell'intervento, alle dimensioni del cantiere e all'esperienza del professionista.</p>
+<p>In questa guida trovi i prezzi aggiornati al 2026 per le principali lavorazioni di muratura, con riferimenti distinti per Nord Italia, Centro Italia e Sud Italia.</p>
+
+<h2>Costo orario di un muratore nel 2026</h2>
+<p>Il prezzo orario è il punto di partenza per capire qualsiasi preventivo edilizio:</p>
+<ul>
+<li><strong>Nord Italia (Milano, Torino, Bologna):</strong> €28–45 all'ora</li>
+<li><strong>Centro Italia (Roma, Firenze, Napoli):</strong> €22–35 all'ora</li>
+<li><strong>Sud Italia e Isole:</strong> €18–28 all'ora</li>
+</ul>
+<p>Queste tariffe si intendono per un muratore qualificato con propria attrezzatura base. Per lavori specializzati (restauro, isolamento termico certificato, lavori in quota) la tariffa può salire del 30-50%. I lavori in subappalto o tramite impresa edile strutturata includono il costo del direttore lavori e dell'organizzazione cantiere: aspettati prezzi del 20-30% più alti rispetto al singolo artigiano.</p>
+
+<h2>Prezzi per tipo di lavorazione</h2>
+
+<h3>Demolizione e rimozione</h3>
+<ul>
+<li><strong>Demolizione muro in mattoni (non portante):</strong> €15–30 al mq (incluso smaltimento)</li>
+<li><strong>Demolizione muro portante:</strong> €80–150 al mq (richiede progetto strutturale)</li>
+<li><strong>Rimozione pavimento:</strong> €8–18 al mq</li>
+<li><strong>Rimozione rivestimento ceramico:</strong> €10–20 al mq</li>
+</ul>
+
+<h3>Costruzione nuovi muri</h3>
+<ul>
+<li><strong>Muro divisorio in laterizio (8-12 cm):</strong> €40–70 al mq (incluso intonaco grezzo)</li>
+<li><strong>Muro divisorio in cartongesso:</strong> €35–60 al mq (più veloce ma meno isolante)</li>
+<li><strong>Muro portante in cls armato:</strong> €120–200 al mq (richiede calcoli strutturali)</li>
+<li><strong>Tramezzi per bagno o cucina:</strong> €50–90 al mq (con predisposizione impianti)</li>
+</ul>
+
+<h3>Intonaco e rasatura</h3>
+<ul>
+<li><strong>Intonaco tradizionale a tre strati:</strong> €18–35 al mq</li>
+<li><strong>Intonaco premiscelato a macchina:</strong> €15–25 al mq (più uniforme e veloce)</li>
+<li><strong>Rasatura civile (strato finale liscio):</strong> €8–15 al mq</li>
+<li><strong>Intonaco esterno faccia a vista:</strong> €25–45 al mq</li>
+<li><strong>Intonaco isolante termico:</strong> €30–55 al mq (materiale incluso)</li>
+</ul>
+
+<h3>Massetti e sottofondi</h3>
+<ul>
+<li><strong>Massetto tradizionale (sabbia e cemento):</strong> €18–30 al mq (10 cm spessore)</li>
+<li><strong>Massetto autolivellante:</strong> €20–35 al mq</li>
+<li><strong>Massetto riscaldante (per riscaldamento a pavimento):</strong> €25–45 al mq</li>
+</ul>
+
+<h3>Aperture e modifiche strutturali</h3>
+<ul>
+<li><strong>Apertura vano porta in muro non portante:</strong> €400–900 (incluso architrave)</li>
+<li><strong>Apertura vano porta in muro portante:</strong> €1.200–3.000+ (richiede progetto)</li>
+<li><strong>Allargamento finestra:</strong> €500–1.500 secondo muro e dimensioni</li>
+<li><strong>Tamponamento di un vano porta:</strong> €300–700</li>
+</ul>
+
+<h3>Ristrutturazioni complete</h3>
+<ul>
+<li><strong>Ristrutturazione parziale (bagno/cucina):</strong> €400–900 al mq (solo opere murarie)</li>
+<li><strong>Ristrutturazione completa appartamento (opere murarie):</strong> €250–550 al mq</li>
+<li><strong>Consolidamento strutturale:</strong> €500–1.500 al mq (intervento altamente variabile)</li>
+</ul>
+
+<h2>Cosa influenza il prezzo finale</h2>
+<p>I prezzi sopra sono orientativi. Il preventivo definitivo dipende da:</p>
+<ul>
+<li><strong>Accessibilità del cantiere:</strong> piano alto senza ascensore, strette scale, centro storico — tutto aumenta i costi di movimentazione materiali</li>
+<li><strong>Stato del muro esistente:</strong> umidità, vecchi impianti da rimuovere, irregolarità strutturali</li>
+<li><strong>Periodo dell'anno:</strong> nei mesi estivi e invernali i tempi si allungano; i preventivi di fine anno spesso includono maggiorazioni</li>
+<li><strong>Smaltimento:</strong> il trasporto e lo smaltimento dei detriti può costare €150–400 per un piccolo cantiere</li>
+<li><strong>Materiali:</strong> un preventivo "chiavi in mano" include i materiali; uno "solo manodopera" li esclude. Verifica sempre cosa è incluso</li>
+</ul>
+
+<h2>Come interpretare un preventivo di un muratore</h2>
+<p>Quando ricevi un preventivo, verifica che includa:</p>
+<ul>
+<li>Lista dettagliata delle lavorazioni con prezzi unitari</li>
+<li>Distinzione tra manodopera e materiali</li>
+<li>IVA al 10% (per ristrutturazioni edilizie su immobili residenziali) o al 22%</li>
+<li>Eventuale Ecobonus o Bonus Casa applicabile</li>
+<li>Tempi di esecuzione stimati</li>
+<li>Clausole per varianti in corso d'opera</li>
+</ul>
+<p>Un preventivo eccessivamente basso rispetto alle medie di mercato è spesso un segnale di rischio: materiali scadenti, lavoro in nero (con rischi legali per te), o mancanza di assicurazioni.</p>
+
+<h2>Bonus Casa e detrazioni fiscali nel 2026</h2>
+<p>Per le ristrutturazioni edilizie su immobili residenziali esistenti, il Bonus Casa al 50% è prorogato nel 2026 (verificare l'aggiornamento normativo più recente). Questo significa che la metà delle spese sostenute è detraibile in 10 anni dall'IRPEF. Chiedi sempre al muratore di emettere regolare fattura con la causale corretta.</p>
+<p>Per interventi di efficienza energetica (isolamento termico a cappotto, ecc.), l'Ecobonus può prevedere aliquote diverse — consulta un tecnico abilitato prima di iniziare.</p>
+
+<h2>Ottieni un preventivo accurato in 30 secondi</h2>
+<p>Se sei un muratore o un'impresa edile, strumenti come prevai ti permettono di descrivere l'intervento e ricevere un preventivo strutturato in pochi secondi. Utile soprattutto per gli interventi standard (intonaci, tramezzi, massetti) dove la quotazione è prevedibile e ripetitiva. Meno tempo sui documenti, più tempo in cantiere.</p>
+`,
+  },
+  {
+    slug: "preventivo-piastrellista",
+    title: "Come fare un preventivo da piastrellista: guida completa con prezzi 2026",
+    metaDescription: "Guida per piastrellisti e posatori: come strutturare un preventivo professionale, prezzi per la posa di pavimenti e rivestimenti, voci da includere e consigli pratici.",
+    category: "Professioni",
+    publishedAt: "2026-05-11",
+    readingTimeMin: 5,
+    relatedSectors: ["piastrellista", "pavimentista", "ristrutturazione"],
+    contentHtml: `
+<p>Per un piastrellista, il preventivo è il documento che traduce un'idea del cliente — "voglio rifare il bagno" o "voglio cambiare i pavimenti del soggiorno" — in un piano di lavoro concreto con costi chiari. Un preventivo ben fatto non solo rassicura il cliente, ma protegge il professionista da incomprensioni e contenziosi.</p>
+
+<h2>Cosa deve contenere un preventivo per posa pavimenti e rivestimenti</h2>
+<p>La struttura di un buon preventivo da piastrellista comprende questi elementi essenziali:</p>
+
+<h3>1. Rilievo e sopralluogo</h3>
+<p>Prima di emettere qualsiasi preventivo, il sopralluogo è imprescindibile. Durante il rilievo misura:</p>
+<ul>
+<li>Superficie netta da rivestire (deducendo aperture, zone fisse)</li>
+<li>Stato del sottofondo (livellato, con avvallamenti, presenza di vecchio pavimento)</li>
+<li>Altezza delle pareti da rivestire (per bagni e cucine)</li>
+<li>Eventuali problemi di umidità o irregolarità strutturali</li>
+</ul>
+<p>Indica nel preventivo se il sopralluogo è gratuito o a pagamento (es. "€50 deducibili dal totale in caso di accettazione").</p>
+
+<h3>2. Descrizione dettagliata dei materiali</h3>
+<p>Questa è la voce che spesso crea più incomprensioni. Sii specifico:</p>
+<ul>
+<li>Tipo di piastrella: ceramica, porcellanato, marmo, gres fine porcellanato, ecc.</li>
+<li>Formato: 30x30, 60x60, 120x60, ecc. (i formati grandi richiedono più cura nella posa)</li>
+<li>Fornitore e nome del prodotto se già scelto dal cliente</li>
+<li>Percentuale di scarto prevista (generalmente 10-15%, inclusa nel calcolo)</li>
+</ul>
+<p>Distingui sempre se i materiali sono <strong>a carico tuo</strong> (fornisci tu e fatturi) o <strong>a carico del cliente</strong> (il cliente compra, tu posi soltanto).</p>
+
+<h3>3. Voci di lavorazione</h3>
+<p>Per ogni tipo di lavoro, elenca una riga separata con prezzo al mq:</p>
+<ul>
+<li><strong>Rimozione pavimento esistente:</strong> €10–20/mq (incluso carico macerie)</li>
+<li><strong>Livellamento sottofondo:</strong> €8–15/mq secondo irregolarità</li>
+<li><strong>Posa pavimento su collante:</strong> €18–35/mq secondo formato e disegno</li>
+<li><strong>Posa rivestimento pareti bagno:</strong> €22–40/mq</li>
+<li><strong>Stuccatura e finitura giunti:</strong> inclusa o €3–6/mq extra</li>
+<li><strong>Posizionamento battiscopa:</strong> €5–12 al metro lineare</li>
+<li><strong>Taglio a misura per zone difficili:</strong> supplemento €50–150</li>
+</ul>
+
+<h3>4. Smaltimento macerie</h3>
+<p>Indica separatamente il costo di smaltimento dei materiali rimossi. Per un bagno medio (8-10 mq), smaltire il vecchio rivestimento può costare €100–200 di trasporto a discarica autorizzata. Molti clienti non lo considerano e si trovano sorpresi.</p>
+
+<h3>5. Condizioni di pagamento e tempistica</h3>
+<p>Specifica: acconto richiesto all'accettazione (solitamente 30-40%), saldo alla fine. Indica anche i giorni lavorativi necessari e eventuali vincoli (es. "i lavori inizieranno X giorni dopo il versamento dell'acconto").</p>
+
+<h2>Prezzi di posa piastrelle nel 2026 — riferimento per zona</h2>
+<p>I prezzi della sola posa (manodopera, esclusi materiali) variano molto:</p>
+
+<h3>Nord Italia</h3>
+<ul>
+<li>Posa gres 60x60 cm: €22–32/mq</li>
+<li>Posa grande formato (120x120 cm): €35–55/mq</li>
+<li>Rivestimento bagno fino a 2 m: €28–42/mq</li>
+</ul>
+
+<h3>Centro Italia</h3>
+<ul>
+<li>Posa gres 60x60 cm: €18–28/mq</li>
+<li>Posa grande formato: €28–45/mq</li>
+<li>Rivestimento bagno: €22–36/mq</li>
+</ul>
+
+<h3>Sud Italia e Isole</h3>
+<ul>
+<li>Posa gres 60x60 cm: €14–22/mq</li>
+<li>Posa grande formato: €22–36/mq</li>
+<li>Rivestimento bagno: €18–30/mq</li>
+</ul>
+
+<h2>Supplementi da indicare in preventivo</h2>
+<p>Alcune lavorazioni giustificano un prezzo extra che va specificato:</p>
+<ul>
+<li><strong>Disegni a spina di pesce, diagonale, chevron:</strong> +20-40% sulla posa base</li>
+<li><strong>Formati molto grandi (120x240 cm o oltre):</strong> +30-50% per peso e difficoltà di posizionamento</li>
+<li><strong>Zone difficili (scale, angoli complessi, docce a filo):</strong> quotazione a forfait</li>
+<li><strong>Lavori in alta quota (terrazze, scale esterne):</strong> supplemento sicurezza</li>
+<li><strong>Posa di mosaici:</strong> €50–90/mq solo posa, tempi molto più lunghi</li>
+</ul>
+
+<h2>Errori da evitare nel preventivo</h2>
+<p>I piastrellisti esperti evitano questi errori tipici nei preventivi:</p>
+<ul>
+<li><strong>Non specificare chi fornisce i materiali:</strong> se il cliente porta piastrelle di qualità scadente e si rompe durante la posa, è un problema. Proteggi il tuo lavoro.</li>
+<li><strong>Non includere lo sfrido (scarto):</strong> calcola sempre il 10-15% in più sulla superficie netta. Se non lo menzioni e i materiali finiscono, il cliente pensa che sia colpa tua.</li>
+<li><strong>Prezzi "tutto compreso" senza dettaglio:</strong> se il cliente rifiuta il preventivo e chiede un secondo parere, non può capire perché i prezzi differiscono. Il dettaglio giustifica il tuo prezzo.</li>
+<li><strong>Nessuna clausola per lo stato del sottofondo:</strong> aggiunge sempre "Salvo verifiche alla consegna del cantiere: eventuali lavorazioni aggiuntive di livellamento saranno oggetto di preventivo integrativo".</li>
+</ul>
+
+<h2>Come accelerare la creazione dei preventivi</h2>
+<p>Un piastrellista che lavora su più cantieri contemporaneamente può passare ore ogni settimana a compilare preventivi. La soluzione più efficiente è descrivere il lavoro in italiano semplice — "rivestimento bagno 8 mq con gres 60x60, rimozione vecchio rivestimento, stuccatura inclusa, Milano" — e ricevere subito un preventivo strutturato con tutte le voci già separate.</p>
+<p>Con strumenti AI come prevai, il documento è pronto in 30 secondi. Aggiungi logo aziendale, P.IVA, le tue condizioni di pagamento e invia. Il cliente riceve un PDF professionale, tu risparmi ore di lavoro burocratico.</p>
 `,
   },
 ];
@@ -1487,13 +1769,13 @@ export const SECTOR_ARTICLES: Record<string, string[]> = {
   elettricista: ["preventivo-impianto-elettrico", "quanto-costa-impianto-elettrico", "errori-preventivi-artigiani", "come-vincere-piu-lavori", "preventivi-foto-cantiere"],
   idraulico: ["preventivo-idraulico", "quanto-costa-idraulico", "quanto-costa-ristrutturare-bagno", "errori-preventivi-artigiani", "preventivi-foto-cantiere"],
   termoidraulico: ["preventivo-idraulico", "quanto-costa-idraulico", "come-vincere-piu-lavori", "gestione-preventivi-pmi"],
-  muratore: ["preventivo-muratore", "preventivo-ristrutturazione-guida", "errori-preventivi-artigiani", "preventivi-foto-cantiere"],
+  muratore: ["preventivo-muratore", "quanto-costa-muratore", "preventivo-ristrutturazione-guida", "errori-preventivi-artigiani", "preventivi-foto-cantiere"],
   edilizia: ["preventivo-ristrutturazione-guida", "gestione-preventivi-pmi", "software-preventivi-artigiani", "trovare-clienti-artigiano"],
   ristrutturazione: ["preventivo-ristrutturazione-guida", "quanto-costa-ristrutturare-bagno", "gestione-preventivi-pmi"],
   falegname: ["preventivo-falegname-carpentiere", "errori-preventivi-artigiani", "come-vincere-piu-lavori"],
   carpentiere: ["preventivo-falegname-carpentiere", "errori-preventivi-artigiani", "come-vincere-piu-lavori"],
-  piastrellista: ["quanto-costa-ristrutturare-bagno", "preventivo-ristrutturazione-guida", "errori-preventivi-artigiani"],
-  giardiniere: ["errori-preventivi-artigiani", "come-vincere-piu-lavori", "trovare-clienti-artigiano"],
+  piastrellista: ["preventivo-piastrellista", "quanto-costa-ristrutturare-bagno", "preventivo-ristrutturazione-guida", "errori-preventivi-artigiani"],
+  giardiniere: ["preventivo-giardiniere", "errori-preventivi-artigiani", "come-vincere-piu-lavori", "trovare-clienti-artigiano"],
   freelance: ["preventivo-freelance-professionisti", "software-preventivi-artigiani", "come-vincere-piu-lavori", "gestione-preventivi-pmi", "come-fare-prezzo-lavori"],
   geometra: ["preventivo-freelance-professionisti", "gestione-preventivi-pmi", "preventivo-ristrutturazione-guida", "software-preventivi-artigiani"],
   serramentista: ["preventivo-falegname-carpentiere", "errori-preventivi-artigiani", "come-vincere-piu-lavori"],

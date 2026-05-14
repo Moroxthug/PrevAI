@@ -34,24 +34,24 @@ for (const route of PUBLIC_ROUTES) {
   entries.push(url(loc, route.priority, route.changefreq));
 }
 
-// SEO sector landing pages — stable date (content rarely changes)
+// SEO sector landing pages
 const citySectorSet = new Set(CITY_SECTORS);
 for (const sectorSlug of Object.keys(SECTORS)) {
   const priority = citySectorSet.has(sectorSlug) ? "0.8" : "0.7";
-  entries.push(url(`${BASE_URL}/seo/${sectorSlug}/`, priority, "monthly", "2025-01-15"));
+  entries.push(url(`${BASE_URL}/seo/${sectorSlug}/`, priority, "monthly", "2026-05-01"));
 }
 
-// SEO city×sector pages — stable date (content rarely changes)
+// SEO city×sector pages
 for (const sectorSlug of CITY_SECTORS) {
   for (const city of CITIES) {
     const priority = TIER1_CITY_SLUGS.has(city.slug) ? "0.7" : "0.6";
-    entries.push(url(`${BASE_URL}/seo/${sectorSlug}/${city.slug}/`, priority, "monthly", "2025-02-01"));
+    entries.push(url(`${BASE_URL}/seo/${sectorSlug}/${city.slug}/`, priority, "monthly", "2026-05-01"));
   }
 }
 
 // Blog — categories get a stable aggregate date; articles use their real publishedAt
 for (const cat of BLOG_CATEGORIES) {
-  entries.push(url(`${BASE_URL}/blog/categoria/${cat.slug}/`, "0.7", "weekly", "2025-04-10"));
+  entries.push(url(`${BASE_URL}/blog/categoria/${cat.slug}/`, "0.7", "weekly", "2026-05-01"));
 }
 for (const article of BLOG_ARTICLES) {
   entries.push(url(`${BASE_URL}/blog/${article.slug}/`, "0.7", "monthly", article.publishedAt));
