@@ -59,7 +59,7 @@ export default function BlogArticlePage() {
       description: article.metaDescription,
       url: canonical,
       datePublished: article.publishedAt,
-      dateModified: article.publishedAt,
+      dateModified: article.updatedAt ?? article.publishedAt,
       inLanguage: "it",
       author: { "@type": "Organization" as const, name: "prevai", url: BASE_URL },
       publisher: {

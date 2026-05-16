@@ -1,8 +1,14 @@
 import { PublicLayout } from "@/components/layout/public-layout";
+import { SeoHead } from "@/components/seo-head";
 
 export default function TerminiPage() {
   return (
     <PublicLayout>
+      <SeoHead
+        title="Termini di Servizio | prevai"
+        description="Termini e condizioni di utilizzo della piattaforma prevai per la generazione di preventivi AI."
+        canonical="https://www.prevai.it/termini/"
+      />
       <div className="container mx-auto px-4 py-16 max-w-3xl">
         <h1 className="text-3xl font-bold text-gray-900 mb-2">Termini di Servizio</h1>
         <p className="text-sm text-gray-500 mb-10">Ultimo aggiornamento: 6 maggio 2025</p>

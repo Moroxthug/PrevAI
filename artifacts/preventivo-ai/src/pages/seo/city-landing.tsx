@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { useParams } from "wouter";
+import { useParams, Link } from "wouter";
 import { ArrowRight, CheckCircle2, MapPin, BarChart2, BookOpen } from "lucide-react";
 import { SECTORS, DEFAULT_SECTOR, CITIES_BY_SLUG, getCityTitle, getCityDesc } from "@/data/seo-data";
 import { BLOG_ARTICLES, SECTOR_ARTICLES } from "@/data/blog-data";
@@ -160,9 +160,9 @@ export default function SeoCityLanding() {
       <nav aria-label="Percorso di navigazione" className="bg-white border-b border-gray-100">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-3">
           <ol className="flex items-center text-sm text-gray-500 flex-wrap">
-            <li><a href="/" className="hover:text-violet-600 transition-colors">Home</a></li>
+            <li><Link href="/" className="hover:text-violet-600 transition-colors">Home</Link></li>
             <li aria-hidden="true" className="mx-1.5 text-gray-300 select-none">/</li>
-            <li><a href={`/seo/${s.slug}`} className="hover:text-violet-600 transition-colors">{s.label}</a></li>
+            <li><Link href={`/seo/${s.slug}`} className="hover:text-violet-600 transition-colors">{s.label}</Link></li>
             <li aria-hidden="true" className="mx-1.5 text-gray-300 select-none">/</li>
             <li className="text-gray-900 font-medium truncate max-w-[200px]" aria-current="page">{cityName}</li>
           </ol>
@@ -351,9 +351,9 @@ export default function SeoCityLanding() {
                   </div>
                   <h2 className="text-base font-semibold text-gray-900">Approfondimenti</h2>
                 </div>
-                <a href="/blog" className="text-xs font-semibold text-violet-600 hover:text-violet-700 transition-colors">
+                <Link href="/blog" className="text-xs font-semibold text-violet-600 hover:text-violet-700 transition-colors">
                   Tutti gli articoli →
-                </a>
+                </Link>
               </div>
               <div className="grid sm:grid-cols-3 gap-4">
                 {articles.map((a) => (

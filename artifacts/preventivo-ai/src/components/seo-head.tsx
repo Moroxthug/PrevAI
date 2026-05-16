@@ -17,13 +17,15 @@ interface SeoHeadProps {
   ogType?: string;
   twitterCard?: "summary" | "summary_large_image" | "app" | "player";
   jsonLd?: JsonLdSchema[];
+  noIndex?: boolean;
 }
 
 export function SeoHead({
   title,
   description,
   canonical,
-  ogImage = "/opengraph.jpg",
+  ogImage = "https://www.prevai.it/opengraph.jpg",
+  noIndex = false,
   ogTitle,
   ogDescription,
   ogUrl,
@@ -40,7 +42,8 @@ export function SeoHead({
     <Helmet>
       <title>{title}</title>
       <meta name="description" content={description} />
-      <link rel="canonical" href={canonical} />
+      {canonical && <link rel="canonical" href={canonical} />}
+      {noIndex && <meta name="robots" content="noindex, nofollow" />}
 
       <meta property="og:title" content={resolvedOgTitle} />
       <meta property="og:description" content={resolvedOgDescription} />

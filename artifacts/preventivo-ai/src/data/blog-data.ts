@@ -4,6 +4,7 @@ export interface BlogArticle {
   metaDescription: string;
   category: string;
   publishedAt: string;
+  updatedAt?: string;
   readingTimeMin: number;
   relatedSectors: string[];
   contentHtml: string;

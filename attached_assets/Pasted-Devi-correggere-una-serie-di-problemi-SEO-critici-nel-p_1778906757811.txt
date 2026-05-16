@@ -1,0 +1,71 @@
+Devi correggere una serie di problemi SEO critici nel progetto. Segui queste istruzioni ESATTAMENTE come scritte, senza interpretare, senza semplificare, senza saltare passaggi, senza chiedere conferma. Implementa ogni punto per intero prima di passare al successivo.
+
+---
+
+## 1. GOOGLE SITE VERIFICATION — index.html
+In `artifacts/preventivo-ai/index.html`, rimuovi completamente questo tag:
+<meta name="google-site-verification" content="PLACEHOLDER" />
+Non sostituirlo con nulla. Eliminalo del tutto.
+
+---
+
+## 2. PAGINA 404 — src/pages/not-found.tsx
+Sostituisci tutto il contenuto del componente con questo, senza modificare nulla:
+- Aggiungi in cima: import { SeoHead } from "@/components/seo-head";
+- Nel return, prima di qualsiasi altro elemento, aggiungi:
+  <SeoHead title="Pagina non trovata | prevai" description="La pagina che cerchi non esiste." canonical="" noIndex={true} />
+- Sostituisci il testo "Did you forget to add the page to the router?" con: "La pagina che stai cercando non esiste o è stata spostata."
+- Sostituisci il titolo "404 Page Not Found" con: "404 — Pagina non trovata"
+Se il componente SeoHead non accetta una prop "noIndex", aggiungila come prop booleana e usala per renderizzare <meta name="robots" content="noindex, nofollow" /> nell'head.
+
+---
+
+## 3. PRIVACY E TERMINI — src/pages/privacy.tsx e src/pages/termini.tsx
+In entrambi i file:
+- Aggiungi in cima: import { SeoHead } from "@/components/seo-head";
+- In privacy.tsx, aggiungi come primo elemento nel return (dentro PublicLayout):
+  <SeoHead title="Privacy Policy | prevai" description="Informativa sulla privacy di prevai — come raccogliamo e trattiamo i tuoi dati personali." canonical="https://www.prevai.it/privacy/" />
+- In termini.tsx, aggiungi come primo elemento nel return (dentro PublicLayout):
+  <SeoHead title="Termini di Servizio | prevai" description="Termini e condizioni di utilizzo della piattaforma prevai per la generazione di preventivi AI." canonical="https://www.prevai.it/termini/" />
+
+---
+
+## 4. OG IMAGE DI DEFAULT — componente SeoHead
+Trova il file che definisce il componente SeoHead (probabilmente in src/components/seo-head.tsx).
+Se la prop ogImage non è passata, il tag <meta property="og:image"> deve usare come valore di default: "https://www.prevai.it/opengraph.jpg"
+Se il componente non ha già questo default, aggiungilo nei props con: ogImage = "https://www.prevai.it/opengraph.jpg"
+Non cambiare nient'altro in questo componente.
+
+---
+
+## 5. TWITTER SITE TAG — index.html
+In `artifacts/preventivo-ai/index.html`, nella sezione Twitter Card, aggiungi questo tag dopo gli altri twitter: meta esistenti:
+<meta name="twitter:site" content="@prevai_it" />
+
+---
+
+## 6. LINK INTERNI IN CITY-LANDING — src/pages/seo/city-landing.tsx
+In questo file, ogni tag <a href="..."> che punta a un URL interno del sito (che inizia con / e non con http) deve essere sostituito con il componente <Link href="..."> di wouter.
+Il tag <a> è già importato in wouter come Link. Verifica che l'import { Link } from "wouter" sia presente in cima al file.
+Non toccare i link esterni (quelli che iniziano con https:// o http://).
+
+---
+
+## 7. DATE MODIFIED NEL BLOG — src/pages/blog/[slug].tsx
+Nel JSON-LD dell'articolo, trova questa riga:
+dateModified: article.publishedAt,
+Sostituiscila con:
+dateModified: article.updatedAt ?? article.publishedAt,
+Se il tipo dell'articolo (nel file di dati del blog) non ha il campo updatedAt, aggiungilo come campo opzionale: updatedAt?: string;
+Non aggiungere questo campo agli articoli esistenti — lascialo undefined di default.
+
+---
+
+## 8. HREFLANG — index.html
+In `artifacts/preventivo-ai/index.html`, dentro il tag <head>, aggiungi questi due tag dopo il tag canonical esistente:
+<link rel="alternate" hreflang="it" href="https://www.prevai.it/" />
+<link rel="alternate" hreflang="x-default" href="https://www.prevai.it/" />
+
+---
+
+Dopo aver completato tutte le modifiche, dimmi esattamente quali file hai modificato e cosa hai cambiato in ciascuno. Non fare nessun'altra modifica al codice oltre a quelle elencate sopra.

@@ -1,8 +1,14 @@
 import { PublicLayout } from "@/components/layout/public-layout";
+import { SeoHead } from "@/components/seo-head";
 
 export default function PrivacyPage() {
   return (
     <PublicLayout>
+      <SeoHead
+        title="Privacy Policy | prevai"
+        description="Informativa sulla privacy di prevai — come raccogliamo e trattiamo i tuoi dati personali."
+        canonical="https://www.prevai.it/privacy/"
+      />
       <div className="container mx-auto px-4 py-16 max-w-3xl">
         <h1 className="text-3xl font-bold text-gray-900 mb-2">Privacy Policy</h1>
         <p className="text-sm text-gray-500 mb-10">Ultimo aggiornamento: 6 maggio 2025</p>
