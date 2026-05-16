@@ -1,0 +1,346 @@
+Devi aggiungere nuovi articoli al blog di prevai in `src/data/blog-data.ts`. Segui queste istruzioni ESATTAMENTE. Non modificare nulla al di fuori di blog-data.ts. Non toccare gli articoli esistenti.
+
+## REGOLE GENERALI PER OGNI ARTICOLO
+
+Ogni articolo deve rispettare queste specifiche SEO e di qualità:
+
+**Struttura HTML del contentHtml:**
+- Minimo 800 parole di testo effettivo (non contare i tag HTML)
+- Massimo 1 tag <h1> — NON usarlo mai (è già nel layout)
+- Almeno 4 tag <h2> con keyword principale + varianti naturali
+- Almeno 2 tag <h3> sotto gli h2 più lunghi
+- Paragrafi di 3-5 righe, mai muri di testo
+- Almeno 2 liste <ul> o <ol> con dati specifici (numeri, prezzi, misure)
+- Dati reali: prezzi in €, percentuali, tempi in ore/giorni, norme italiane
+- Nessuna frase generica come "è importante ricordare che" o "come sappiamo"
+- Ogni articolo deve essere COMPLETAMENTE DIVERSO dagli altri — niente paragrafi riciclati
+- Almeno 1 link interno con <a href="/seo/SETTORE/">testo anchor descrittivo</a>
+
+**Campi obbligatori:**
+- slug: kebab-case, descrittivo, 3-6 parole
+- title: 50-60 caratteri, include keyword principale
+- metaDescription: 140-155 caratteri esatti, include keyword + CTA implicita
+- category: uno tra "Professioni" | "Prezzi" | "Consigli" | "Tool" | "Innovazione" | "Business"
+- publishedAt: date distribuite tra 2026-04-01 e 2026-05-10, nessuna ripetuta
+- readingTimeMin: calcola realisticamente (200 parole/minuto)
+- relatedSectors: array con slug dei settori pertinenti tra: imbianchino, elettricista, idraulico, edilizia, ristrutturazione, carpentiere, falegname, termoidraulico, freelance, geometra, muratore, giardiniere, piastrellista, serramentista, tetto, condizionatori, pittore, pavimentista
+
+---
+
+## ARTICOLI DA SCRIVERE
+
+Aggiungi tutti i seguenti articoli all'array BLOG_ARTICLES, dopo gli articoli esistenti. Scrivili uno per uno, completi, senza placeholder.
+
+---
+
+### CLUSTER 1 — PREZZI E COSTI (category: "Prezzi")
+
+**Articolo 1**
+- slug: "costo-impianto-idraulico-appartamento"
+- title: "Costo impianto idraulico appartamento 2026: guida ai prezzi"
+- keyword principale: costo impianto idraulico
+- Contenuto: prezzi dettagliati per rifacimento completo impianto idrico (tubi in rame vs multistrato vs PEX), costo per mq, costo sostituzione sanitari (WC, lavabo, vasca/doccia), costo posa vs materiali, differenze Nord/Sud Italia, quando conviene il rifacimento completo vs riparazione puntuale. Includi tabella prezzi in <ul> per tipologia di intervento.
+- relatedSectors: ["idraulico", "termoidraulico", "ristrutturazione"]
+
+**Articolo 2**
+- slug: "prezzi-posa-pavimento-gres-parquet"
+- title: "Prezzi posa pavimento 2026: gres, parquet e laminato a confronto"
+- keyword principale: prezzi posa pavimento
+- Contenuto: costo posa gres porcellanato (€/mq), costo posa parquet (incollato vs flottante), costo laminato, costo rimozione vecchio pavimento, costo massetto di livellamento, differenza tra posa dritta e a spina di pesce, quando serve il primer. Tabelle prezzi dettagliate con fascia bassa/media/alta.
+- relatedSectors: ["pavimentista", "piastrellista", "ristrutturazione", "edilizia"]
+
+**Articolo 3**
+- slug: "costo-sostituzione-caldaia-condensazione"
+- title: "Costo sostituzione caldaia a condensazione 2026: prezzi e incentivi"
+- keyword principale: costo sostituzione caldaia
+- Contenuto: prezzi caldaie a condensazione per fascia (18kW, 24kW, 32kW), costo manodopera installazione, smaltimento vecchia caldaia (obblighi di legge), incentivi fiscali disponibili (detrazione 65% Ecobonus o 50% ristrutturazione), differenza modale/bimodale, manutenzione obbligatoria annuale e costo, marche principali (Vaillant, Baxi, Ferroli, Immergas) con fascia di prezzo.
+- relatedSectors: ["idraulico", "termoidraulico", "condizionatori"]
+
+**Articolo 4**
+- slug: "costo-rifacimento-tetto-materiali-prezzi"
+- title: "Costo rifacimento tetto 2026: materiali, manodopera e bonus"
+- keyword principale: costo rifacimento tetto
+- Contenuto: prezzi per tipo di copertura (tegole marsigliesi, coppi, lamiera, guaina), costo coibentazione tetto (cappotto dall'esterno), smaltimento eternit/amianto (normativa e costi), costo ponteggio, Superbonus e Ecobonus applicabili, durata media di un tetto per materiale, segnali che indicano rifacimento necessario.
+- relatedSectors: ["tetto", "edilizia", "ristrutturazione"]
+
+**Articolo 5**
+- slug: "prezzi-condizionatori-installazione-2026"
+- title: "Prezzi condizionatori 2026: acquisto e installazione completa"
+- keyword principale: prezzi condizionatori installazione
+- Contenuto: costo per fascia BTU (9000, 12000, 18000, 24000 BTU), differenza monosplit/multisplit/canalizzato, costo installazione (coppie frigorifere, fori muri, staffaggio), marche principali (Daikin, Mitsubishi, Samsung, LG) e fasce di prezzo, incentivi Conto Termico e detrazioni fiscali, errori da evitare nell'acquisto online senza installatore.
+- relatedSectors: ["condizionatori", "termoidraulico"]
+
+**Articolo 6**
+- slug: "costo-serramenti-infissi-sostituzione"
+- title: "Costo sostituzione infissi e serramenti 2026: prezzi per tipologia"
+- keyword principale: costo sostituzione infissi
+- Contenuto: prezzi per tipo (PVC, alluminio, legno, legno-alluminio), prezzi al mq vs a finestra, costo posa e smaltimento vecchi infissi, trasmittanza termica e classe energetica (requisiti legge 10/91 aggiornata), detrazioni fiscali al 50% e al 65% in base alle prestazioni, quanto si risparmia in bolletta con infissi nuovi (dati ENEA), errori comuni nella scelta del serramentista.
+- relatedSectors: ["serramentista", "ristrutturazione", "edilizia"]
+
+**Articolo 7**
+- slug: "costo-posa-piastrelle-bagno-cucina"
+- title: "Costo posa piastrelle bagno e cucina 2026: guida ai prezzi"
+- keyword principale: costo posa piastrelle
+- Contenuto: costo posa piastrelle per mq (pavimento vs parete), costo rimozione vecchie piastrelle, costo impermeabilizzazione sotto doccia, differenza tra rasante, colla e stucco (prezzi materiali), formati grandi (60x60, 120x60) vs piccoli e impatto sul costo di posa, costo fugatura, costo battiscopa, errori tipici che fanno lievitare il preventivo.
+- relatedSectors: ["piastrellista", "ristrutturazione", "pavimentista"]
+
+**Articolo 8**
+- slug: "quanto-costa-giardiniere-manutenzione"
+- title: "Quanto costa un giardiniere nel 2026: manutenzione e progettazione"
+- keyword principale: costo giardiniere
+- Contenuto: costo manutenzione ordinaria (taglio erba, siepi, potatura), prezzi orari vs forfait mensile, costo progettazione giardino ex novo, costo impianto irrigazione automatica, costo impianto illuminazione esterna, differenze tra Nord e Sud Italia, quando conviene il contratto annuale vs chiamata singola, cosa chiedere nel preventivo per non avere sorprese.
+- relatedSectors: ["giardiniere"]
+
+**Articolo 9**
+- slug: "costo-pavimento-in-legno-parquet"
+- title: "Costo pavimento in legno 2026: parquet massello, prefinito e laminato"
+- keyword principale: costo parquet
+- Contenuto: differenze tra parquet massello (prezzi €/mq), prefinito (multistrato), laminato e vinilico LVT, costo levigatura e lucidatura parquet esistente, costo posa incollata vs flottante, essenze più usate (rovere, ciliegio, bamboo) e fasce di prezzo, manutenzione annuale e costo, quando conviene il parquet vs gres.
+- relatedSectors: ["pavimentista", "falegname", "ristrutturazione"]
+
+**Articolo 10**
+- slug: "prezzi-muratore-lavori-edilizi"
+- title: "Prezzi muratore 2026: costi per i lavori edilizi più comuni"
+- keyword principale: prezzi muratore
+- Contenuto: costo orario muratore (dipendente vs autonomo), costo demolizione tramezzi al mq, costo costruzione nuovo tramezzo (mattoni forati vs cartongesso), costo intonaco civile vs rustico, costo massetto, costo rasatura pareti, costo soglie e davanzali, come verificare se il preventivo è congruo, differenze regionali di prezzo.
+- relatedSectors: ["muratore", "edilizia", "ristrutturazione"]
+
+---
+
+### CLUSTER 2 — COME NON FARSI FREGARE (category: "Consigli")
+
+**Articolo 11**
+- slug: "come-capire-preventivo-gonfiato"
+- title: "Come capire se un preventivo è gonfiato: 8 segnali da riconoscere"
+- keyword principale: preventivo gonfiato
+- Contenuto: 8 segnali concreti con esempi reali (voci vaghe, materiali non specificati, manodopera in ore non dichiarate, IVA assente, nessuna scadenza, nessun riferimento normativo), come confrontare preventivi diversi in modo corretto (confrontare le stesse voci), quanto dovrebbe incidere la manodopera sul totale per settore, il trucco dei "lavori in corso" per giustificare aumenti, cosa fare se il costo finale supera il preventivo.
+- relatedSectors: ["edilizia", "ristrutturazione", "idraulico", "elettricista"]
+
+**Articolo 12**
+- slug: "domande-da-fare-prima-firmare-preventivo"
+- title: "10 domande da fare prima di firmare un preventivo di ristrutturazione"
+- keyword principale: domande preventivo ristrutturazione
+- Contenuto: 10 domande specifiche con spiegazione del perché sono importanti (es: "I materiali sono inclusi nel prezzo?", "Chi smaltisce i rifiuti?", "Avete assicurazione RC professionale?", "Rilasciate Dichiarazione di Conformità?", "Il prezzo è fisso o a consuntivo?"), cosa significa ciascuna risposta, bandiere rosse nelle risposte, come documentare tutto per iscritto.
+- relatedSectors: ["ristrutturazione", "edilizia", "elettricista", "idraulico"]
+
+**Articolo 13**
+- slug: "differenza-preventivo-contratto-appalto"
+- title: "Differenza tra preventivo e contratto d'appalto: cosa firmare"
+- keyword principale: differenza preventivo contratto appalto
+- Contenuto: definizione legale di preventivo (vincolante vs non vincolante in Italia, art. 1709 c.c.), quando il preventivo diventa contratto, cosa deve contenere un contratto d'appalto valido, clausole essenziali da inserire (penali per ritardo, varianti in corso d'opera, modalità di pagamento, garanzia post-lavori), cosa fare in caso di controversia, quando serve un notaio.
+- relatedSectors: ["ristrutturazione", "edilizia", "geometra"]
+
+**Articolo 14**
+- slug: "red-flag-preventivi-idraulici-elettricisti"
+- title: "Red flag nei preventivi di idraulici ed elettricisti: come riconoscerli"
+- keyword principale: preventivo idraulico elettricista affidabile
+- Contenuto: segnali specifici per idraulici (materiali non certificati, assenza di collaudo nel preventivo, mancanza dell'attestazione di conformità impianti), segnali per elettricisti (nessuna Dichiarazione di Conformità D.M. 37/2008, materiali "equivalenti" non specificati, nessuna prova di carico), cosa controllare nella partita IVA e iscrizione alla Camera di Commercio, come verificare le certificazioni obbligatorie.
+- relatedSectors: ["idraulico", "elettricista", "termoidraulico"]
+
+**Articolo 15**
+- slug: "come-confrontare-preventivi-ristrutturazione"
+- title: "Come confrontare preventivi di ristrutturazione: metodo pratico"
+- keyword principale: confrontare preventivi ristrutturazione
+- Contenuto: perché il prezzo più basso spesso non conviene, metodo per rendere comparabili preventivi con voci diverse (tabella di normalizzazione), cosa includere sempre nella richiesta di preventivo per ricevere offerte comparabili, il ruolo del capitolato tecnico, come valutare l'esperienza dell'impresa oltre al prezzo, quanto tempo dedicare alla fase di selezione, il valore delle referenze verificabili.
+- relatedSectors: ["ristrutturazione", "edilizia", "geometra"]
+
+**Articolo 16**
+- slug: "lavori-casa-senza-permessi-rischi"
+- title: "Lavori in casa senza permessi: cosa rischi davvero nel 2026"
+- keyword principale: lavori casa senza permessi
+- Contenuto: differenza tra lavori in edilizia libera (CILA, SCIA, permesso di costruire), cosa si può fare senza comunicare al Comune, sanzioni amministrative per abusi edilizi (importi aggiornati 2026), impatto sulla vendita dell'immobile (abusi non sanati bloccano il rogito), sanatoria e condono: quando è possibile e costi, responsabilità dell'impresa edile e del committente, cosa verificare prima di commissionare lavori strutturali.
+- relatedSectors: ["ristrutturazione", "edilizia", "geometra", "muratore"]
+
+**Articolo 17**
+- slug: "acconti-pagamenti-lavori-casa-guida"
+- title: "Acconti e pagamenti per lavori in casa: come tutelarsi"
+- keyword principale: acconto lavori casa
+- Contenuto: percentuale di acconto normale per settore (10-30% per piccoli lavori, SAL per grandi cantieri), pagamenti a Stato Avanzamento Lavori (SAL) come funzionano, metodi di pagamento sicuri (bonifico tracciabile obbligatorio per detrazioni fiscali), cosa fare se l'impresa sparisce dopo l'acconto, quando è normale pagare prima e quando è una truffa, clausole da inserire nel contratto sui pagamenti, il ruolo del direttore lavori.
+- relatedSectors: ["ristrutturazione", "edilizia", "geometra"]
+
+**Articolo 18**
+- slug: "garanzia-lavori-artigiani-diritti"
+- title: "Garanzia sui lavori degli artigiani: i tuoi diritti nel 2026"
+- keyword principale: garanzia lavori artigiani
+- Contenuto: garanzia legale per difetti di costruzione (art. 1669 c.c. — 10 anni per vizi strutturali, 2 anni per vizi non strutturali), garanzia commerciale aggiuntiva dell'impresa, cosa copre la garanzia e cosa no, come denunciare un vizio nei termini corretti (raccomandata, diffida), differenza tra vizio e normale usura, il ruolo dell'assicurazione RC professionale dell'artigiano, cosa fare se l'artigiano non risponde dopo i lavori.
+- relatedSectors: ["ristrutturazione", "edilizia", "idraulico", "elettricista"]
+
+---
+
+### CLUSTER 3 — GUIDE MATERIALI E STRUMENTI (category: "Tool")
+
+**Articolo 19**
+- slug: "tipi-pittura-pareti-quale-scegliere"
+- title: "Tipi di pittura per pareti: quale scegliere per ogni ambiente"
+- keyword principale: tipi pittura pareti
+- Contenuto: differenza tra pittura lavabile, traspirante, antimuffa, al quarzo, silossanica, ai silicati, pittura per esterni vs interni, resa in mq per litro per tipo, range di prezzo €/litro, quale usare per bagno, cucina, camera, cantina, quali marche sono referenziate nel mercato italiano (Boero, Oikos, San Marco, Mapei), come leggere la scheda tecnica, consumo reale vs consumo dichiarato.
+- relatedSectors: ["imbianchino", "pittore", "ristrutturazione"]
+
+**Articolo 20**
+- slug: "tipi-cavi-elettrici-impianti-civili"
+- title: "Tipi di cavi elettrici per impianti civili: guida tecnica per capire il preventivo"
+- keyword principale: tipi cavi elettrici impianti
+- Contenuto: differenza tra FG16OR16, N07V-K, FG17, cavi per esterno vs interno, sezione minima per circuiti (illuminazione 1,5mm², prese 2,5mm², cucina 4mm², climatizzatore 4-6mm²), normativa CEI 64-8, costi €/metro per tipo, perché alcuni preventivi sembrano più cari ma usano materiali migliori, come leggere la marcatura del cavo, vita utile e quando cambiare i cavi.
+- relatedSectors: ["elettricista"]
+
+**Articolo 21**
+- slug: "tipi-tubazioni-impianti-idraulici"
+- title: "Tipi di tubazioni per impianti idraulici: rame, multistrato e PEX a confronto"
+- keyword principale: tubazioni impianti idraulici
+- Contenuto: caratteristiche tecniche rame (pro/contro, durabilità, costo €/metro), multistrato (composito alluminio-polietilene, flessibile, costo), PEX (reticolato, uso riscaldamento a pavimento), acciaio inox per uso alimentare, norme UNI e certificazioni obbligatorie, quando usare ogni tipo, impatto sul prezzo del preventivo, vita utile per materiale.
+- relatedSectors: ["idraulico", "termoidraulico", "ristrutturazione"]
+
+**Articolo 22**
+- slug: "materiali-ristrutturazione-bagno-guida"
+- title: "Materiali per la ristrutturazione del bagno: guida completa ai costi"
+- keyword principale: materiali ristrutturazione bagno
+- Contenuto: lista completa di tutti i materiali necessari per un rifacimento bagno completo (impermeabilizzante, colla, piastrelle, sanitari, rubinetteria, box doccia, specchio, mobile lavabo) con range di prezzo per fascia economica/media/alta, peso delle piastrelle e portata strutturale del solaio, differenza tra ceramica e grès porcellanato, normativa UNI EN per ambienti bagnati, come leggere il preventivo dell'idraulico alla voce "fornitura e posa sanitari".
+- relatedSectors: ["idraulico", "piastrellista", "ristrutturazione"]
+
+**Articolo 23**
+- slug: "tipologie-legno-falegnameria-prezzi"
+- title: "Tipologie di legno per falegnameria: guida ai prezzi e agli utilizzi"
+- keyword principale: tipi legno falegnameria
+- Contenuto: legni masselli più usati in Italia (rovere, noce, ciliegio, pino, abete) con prezzi €/mq, differenza tra legno massello e multistrato impiallacciato, MDF e compensato (utilizzi e limiti), legno lamellare per strutture, trattamenti e verniciature (impregnante, vernice, cera, olio) e costi, classi di resistenza all'umidità, come leggere un preventivo del falegname alla voce "fornitura materiale".
+- relatedSectors: ["falegname", "carpentiere", "ristrutturazione"]
+
+**Articolo 24**
+- slug: "gres-porcellanato-quale-scegliere"
+- title: "Gres porcellanato: come scegliere il formato giusto e leggere il preventivo"
+- keyword principale: gres porcellanato scegliere
+- Contenuto: classi di resistenza all'abrasione (PEI 1-5), coefficiente di scivolosità (R9-R13), rettificato vs non rettificato e impatto sulla fugatura, formati standard e grande formato (120x120, 160x80), spessore e peso (6mm slim vs 20mm outdoor), differenza tra gres smaltato e non smaltato, consumo per mq inclusi scarti, marchi italiani di riferimento (Florim, Panaria, Marazzi), come leggere la voce "fornitura gres" in un preventivo.
+- relatedSectors: ["piastrellista", "pavimentista", "ristrutturazione"]
+
+**Articolo 25**
+- slug: "strumenti-imbianchino-professionista"
+- title: "Strumenti da imbianchino professionista: quali servono e quanto costano"
+- keyword principale: strumenti imbianchino
+- Contenuto: lista completa attrezzatura (rulli per tipologia di superficie, pennelli, pistola airless, compressore, spatole, raschietti, scala e trabattello), costi di acquisto vs noleggio per ogni strumento, quando conviene il noleggio, manutenzione dell'attrezzatura, differenza tra materiali professionali e da grande distribuzione (impatto sulla qualità), DPI obbligatori per legge (mascherine, occhiali, guanti — D.Lgs. 81/2008).
+- relatedSectors: ["imbianchino", "pittore"]
+
+**Articolo 26**
+- slug: "software-preventivi-artigiani-confronto"
+- title: "Software preventivi per artigiani 2026: confronto tra le opzioni disponibili"
+- keyword principale: software preventivi artigiani
+- Contenuto: categorie di software (Excel personalizzato, software gestionale completo, app mobile, AI-based), cosa valutare nella scelta (semplicità, velocità, integrazione PDF, prezzo), limiti di Excel per la preventivazione professionale, cosa cambia con l'AI (velocità da ore a secondi, eliminazione errori di calcolo), funzionalità essenziali vs superflue, impatto sulla conversione dei preventivi con dati reali, integrazione con WhatsApp e email.
+- relatedSectors: ["imbianchino", "elettricista", "idraulico", "edilizia", "ristrutturazione"]
+
+---
+
+### CLUSTER 4 — GUIDE PROFESSIONALI E SETTORE (category: "Professioni")
+
+**Articolo 27**
+- slug: "come-diventare-imbianchino-professionista"
+- title: "Come diventare imbianchino professionista in Italia: guida completa"
+- keyword principale: diventare imbianchino professionista
+- Contenuto: percorso formativo (istituti professionali, apprendistato, corsi CNA/Confartigianato), abilitazioni obbligatorie (iscrizione albo artigiani, apertura partita IVA, CCIAA), corsi obbligatori sicurezza (D.Lgs. 81/2008 — 16 ore per artigiani edili), quanto guadagna un imbianchino autonomo (media italiana 25.000-45.000€/anno), come trovare i primi clienti, strumenti indispensabili per iniziare, errori comuni nei primi anni di attività.
+- relatedSectors: ["imbianchino", "pittore"]
+
+**Articolo 28**
+- slug: "quanto-guadagna-elettricista-italia"
+- title: "Quanto guadagna un elettricista in Italia nel 2026: dati e prospettive"
+- keyword principale: quanto guadagna elettricista
+- Contenuto: stipendio medio elettricista dipendente (CCNL Metalmeccanico/Edilizia — dati aggiornati), reddito medio elettricista autonomo per zona geografica, differenza tra lavorare come dipendente vs aprire partita IVA, costo orario di mercato (45-80€/ora), specializzazioni più redditizie (fotovoltaico, domotica, impianti industriali), certificazioni che aumentano il valore (CEI, ANIE), trend di domanda nel mercato italiano.
+- relatedSectors: ["elettricista"]
+
+**Articolo 29**
+- slug: "aprire-partita-iva-artigiano-guida"
+- title: "Aprire partita IVA come artigiano: guida pratica 2026"
+- keyword principale: aprire partita IVA artigiano
+- Contenuto: iter completo (iscrizione albo artigiani, apertura partita IVA Agenzia delle Entrate, iscrizione INPS artigiani, iscrizione CCIAA), regime forfettario vs ordinario (soglie, vantaggi, limiti — aggiornati 2026), costo annuale (contributi INPS minimi ~3.900€/anno per artigiani), deducibilità spese attrezzatura, obbligo fatturazione elettronica, assicurazione RC obbligatoria, errori fiscali più comuni nel primo anno.
+- relatedSectors: ["imbianchino", "elettricista", "idraulico", "muratore", "falegname"]
+
+**Articolo 30**
+- slug: "preventivo-lavori-giardino-guida"
+- title: "Come fare un preventivo per lavori di giardinaggio: guida professionale"
+- keyword principale: preventivo lavori giardino
+- Contenuto: voci da includere (progettazione, scavo, impianto irrigazione, piantumazione, manto erboso, illuminazione, manutenzione), come misurare un giardino per il preventivo, prezzi di riferimento per lavorazione, differenza tra giardino privato e condominio (polizza assicurativa, contratti pluriennali), stagionalità dei lavori e impatto sui prezzi, come distinguersi con un preventivo fotografico post-sopralluogo.
+- relatedSectors: ["giardiniere"]
+
+**Articolo 31**
+- slug: "preventivo-falegnameria-su-misura"
+- title: "Come fare un preventivo per lavori di falegnameria su misura"
+- keyword principale: preventivo falegnameria su misura
+- Contenuto: voci specifiche per falegnameria (progettazione, fornitura legno, lavorazione, finitura, posa in opera, trasferta), come quantificare il legno necessario (calcolo mq + sprechi), differenza tra preventivo a corpo vs a misura, tempi di realizzazione e impatto sul prezzo, come comunicare le personalizzazioni nel preventivo senza impegnarsi su varianti non quantificate, importanza del disegno tecnico allegato.
+- relatedSectors: ["falegname", "carpentiere"]
+
+**Articolo 32**
+- slug: "normativa-impianti-termici-obblighi"
+- title: "Normativa impianti termici 2026: obblighi per artigiani e committenti"
+- keyword principale: normativa impianti termici
+- Contenuto: D.P.R. 74/2013 (manutenzione obbligatoria impianti termici), libretto d'impianto obbligatorio, controllo di efficienza energetica e scadenze, chi è responsabile (proprietario, amministratore, manutentore), sanzioni per mancata manutenzione (fino a 3.000€), rapporto di controllo tecnico obbligatorio, differenze regionali nella normativa, cosa deve includere un preventivo per manutenzione caldaia per essere compliant.
+- relatedSectors: ["termoidraulico", "idraulico", "condizionatori"]
+
+**Articolo 33**
+- slug: "bonus-edilizi-2026-guida-artigiani"
+- title: "Bonus edilizi 2026: guida per artigiani e clienti su detrazioni e incentivi"
+- keyword principale: bonus edilizi 2026
+- Contenuto: panoramica aggiornata dei bonus disponibili nel 2026 (Bonus Ristrutturazione 50%, Ecobonus 65%, Bonus Mobili, Bonus Verde, Conto Termico), quali lavori danno diritto a ciascuno, requisiti del pagamento (bonifico parlante obbligatorio), obbligo di visto di conformità sopra 10.000€, ruolo del tecnico abilitato (geometra, ingegnere), come inserire la voce detrazione nel preventivo per il cliente, scadenze previste.
+- relatedSectors: ["ristrutturazione", "edilizia", "geometra", "termoidraulico", "serramentista"]
+
+**Articolo 34**
+- slug: "geometra-quando-serve-lavori-casa"
+- title: "Quando serve un geometra per i lavori in casa: guida pratica"
+- keyword principale: geometra lavori casa quando serve
+- Contenuto: lavori che richiedono obbligatoriamente un tecnico abilitato (CILA, SCIA, permesso di costruire), differenza tra CILA e SCIA (costi e tempi), ruolo del direttore lavori, costo medio di una pratica edilizia, cosa succede senza il geometra (sanzioni, impossibilità di vendere), il geometra come figure di tutela del committente nei grandi cantieri, come scegliere un geometra e cosa chiedere nel preventivo.
+- relatedSectors: ["geometra", "ristrutturazione", "edilizia"]
+
+**Articolo 35**
+- slug: "preventivo-ristrutturazione-bagno-completo"
+- title: "Preventivo ristrutturazione bagno completo 2026: voci e prezzi"
+- keyword principale: preventivo ristrutturazione bagno
+- Contenuto: tutte le voci di un preventivo bagno completo con prezzi indicativi (demolizione, impermeabilizzazione, posa piastrelle, impianto idraulico, sanitari, rubinetteria, box doccia, elettrico, tinteggiatura, porte), range di costo totale per bagno piccolo (4mq), medio (6mq) e grande (9mq), quanto incide ogni voce sul totale, errori che fanno lievitare i costi, ordine corretto delle lavorazioni, tempi di cantiere.
+- relatedSectors: ["idraulico", "piastrellista", "ristrutturazione", "elettricista"]
+
+---
+
+### CLUSTER 5 — INNOVAZIONE E BUSINESS (category: "Innovazione" e "Business")
+
+**Articolo 36**
+- slug: "ai-preventivi-artigiani-come-funziona"
+- title: "AI per preventivi degli artigiani: come funziona e cosa cambia"
+- keyword principale: AI preventivi artigiani
+- Contenuto: come funziona l'AI applicata alla preventivazione (NLP, comprensione testo italiano settoriale), differenza tra AI generica (ChatGPT) e AI specializzata per artigiani, cosa l'AI fa meglio dell'uomo (velocità, coerenza, calcolo IVA), cosa non può fare (sopralluogo, valutazione stato superfici), dati su aumento tasso conversione con preventivi rapidi, integrazione con WhatsApp, impatto sulla gestione del tempo (dati: 20+ ore/mese risparmiate), futuro della preventivazione automatica.
+- relatedSectors: ["imbianchino", "elettricista", "idraulico", "ristrutturazione"]
+
+**Articolo 37**
+- slug: "gestione-clienti-artigiano-crm"
+- title: "Come gestire i clienti da artigiano: dalla prima richiesta al saldo"
+- keyword principale: gestione clienti artigiano
+- Contenuto: ciclo di vita del cliente artigiano (primo contatto → sopralluogo → preventivo → accettazione → lavoro → saldo → fidelizzazione), importanza del follow-up sui preventivi non accettati (60% decide entro 7 giorni), strumenti per organizzare i contatti (dal foglio Excel al CRM), come raccogliere recensioni dopo i lavori e usarle per acquisire nuovi clienti, passaparola digitale (Google My Business, Facebook), valore del cliente ripetuto vs nuovo cliente.
+- relatedSectors: ["imbianchino", "elettricista", "idraulico", "edilizia"]
+
+**Articolo 38**
+- slug: "fatturazione-elettronica-artigiani-guida"
+- title: "Fatturazione elettronica per artigiani 2026: guida pratica"
+- keyword principale: fatturazione elettronica artigiani
+- Contenuto: obbligo fatturazione elettronica per tutti i titolari di P.IVA (dal 2024 anche forfettari), come funziona il Sistema di Interscambio (SDI), codice destinatario e PEC, software gratuiti e a pagamento per emettere fatture (Fatture in Cloud, Fiscozen, Aruba), differenza tra fattura immediata e differita, nota credito quando emetterla, conservazione digitale obbligatoria 10 anni, sanzioni per ritardo o omissione, integrazione fattura + preventivo nel flusso di lavoro.
+- relatedSectors: ["imbianchino", "elettricista", "idraulico", "falegname", "giardiniere"]
+
+**Articolo 39**
+- slug: "google-my-business-artigiani-guida"
+- title: "Google My Business per artigiani: come ottimizzare il profilo e trovare clienti"
+- keyword principale: Google My Business artigiani
+- Contenuto: perché GMB è lo strumento più potente per artigiani locali (ricerche "idraulico vicino a me"), come creare e verificare il profilo passo per passo, categorie da scegliere, importanza delle foto (prima/dopo i lavori), come raccogliere recensioni sistematicamente, risposta alle recensioni negative, Google Posts per promozioni stagionali, come monitorare le statistiche, differenza tra profilo ottimizzato e non (impatto sulla visibilità locale), errori più comuni.
+- relatedSectors: ["imbianchino", "elettricista", "idraulico", "edilizia", "giardiniere"]
+
+**Articolo 40**
+- slug: "preventivo-whatsapp-artigiani-vantaggi"
+- title: "Preventivi su WhatsApp: perché gli artigiani stanno abbandonando l'email"
+- keyword principale: preventivo WhatsApp artigiani
+- Contenuto: tasso di apertura WhatsApp vs email (98% vs 20%), velocità di risposta media (90 secondi vs 90 minuti), come inviare un PDF professionale su WhatsApp senza perdere qualità, etichette e liste broadcast per organizzare i clienti, quando usare WhatsApp Business vs account personale, funzione catalogo per il listino servizi, integrazione preventivo AI → PDF → invio WhatsApp in meno di 2 minuti, casi d'uso reali con dati, limiti di WhatsApp per la preventivazione (tracciabilità, firma digitale).
+- relatedSectors: ["imbianchino", "elettricista", "idraulico", "giardiniere", "ristrutturazione"]
+
+---
+
+## ISTRUZIONI FINALI
+
+1. Scrivi TUTTI e 40 gli articoli completi nell'array BLOG_ARTICLES di `src/data/blog-data.ts`
+2. Ogni articolo deve avere contentHtml con minimo 800 parole di testo effettivo
+3. Distribuisci le date publishedAt in modo uniforme tra 2026-04-01 e 2026-05-10
+4. Aggiorna l'array SECTOR_ARTICLES in fondo al file collegando ogni nuovo slug all'array del settore pertinente (es: SECTOR_ARTICLES["idraulico"] deve includere i nuovi slug degli articoli sull'idraulica)
+5. Esegui il typecheck dopo aver scritto tutti gli articoli: `pnpm run typecheck`
+6. Non modificare nessun altro file
+7. Dopo il completamento dimmi: quanti articoli totali ci sono nel file, quanti hai aggiunto, e l'output del typecheck
+
+Inizia dall'Articolo 1 e prosegui in ordine fino al 40 senza fermarti.
