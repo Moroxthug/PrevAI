@@ -1,0 +1,190 @@
+Devi ridisegnare completamente `src/pages/home.tsx` con un design ispirato a ChatGPT e Replit: minimalista, ampio, professionale. NON modificare nessun altro file. NON cambiare nessuna logica, hook, API call, o routing esistente — solo il JSX e le classi Tailwind.
+
+## PRINCIPI DI DESIGN
+
+- Sfondo: bianco puro `bg-white` ovunque, zero gradients di sfondo sulle sezioni
+- Font size: scala ridotta — body text `text-sm`, label `text-xs`, titoli sezione `text-xl font-semibold` max `text-2xl`
+- Spacing: sezioni con `py-16` max, non `py-28`. Container `max-w-5xl mx-auto`
+- Border radius: `rounded-xl` come massimo, niente `rounded-3xl`
+- Colori: testo `text-gray-900` per titoli, `text-gray-500` per body, accenti solo viola `#7C3AED` — zero cyan/teal salvo nel logo
+- Ombre: solo `shadow-sm` o `shadow-md`, zero `shadow-2xl`
+- Niente mesh blob animati — rimuovi le div `mesh-blob-1/2/3` e il loro CSS inline
+- Niente badge colorati "Novità" "Confronto" ecc. — testo semplice come label di sezione
+- Cards: `border border-gray-100 rounded-xl bg-white` senza ombre pesanti
+
+---
+
+## STRUTTURA DELLA NUOVA HOMEPAGE (nell'ordine esatto)
+
+### SEZIONE 1 — HERO (sostituisce l'attuale hero)
+Layout: colonna centrata, max-w-2xl, testo centrato, molto spazio bianco
+
+```jsx
+<section className="pt-24 pb-12 bg-white">
+  <div className="container mx-auto px-4 max-w-2xl text-center">
+    {/* Titolo */}
+    <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-gray-900 leading-tight mb-4">
+      Crea preventivi professionali<br />
+      in <span className="gradient-text">30 secondi</span> con l'AI
+    </h1>
+    <p className="text-sm text-gray-500 leading-relaxed mb-8 max-w-lg mx-auto">
+      Descrivi il lavoro a parole tue — prevai genera un preventivo professionale con voci di costo, quantità e IVA. Pronto da inviare al cliente.
+    </p>
+
+    {/* AI bar — identica all'attuale ma con stile pulito */}
+    {/* Mantieni tutta la logica esistente: homepageInput, handleHomepageSubmit, ImagePlus, Mic, ArrowRight */}
+    <div className="flex items-center gap-2 bg-white border border-gray-200 rounded-xl px-4 py-3 shadow-sm focus-within:border-violet-400 focus-within:ring-2 focus-within:ring-violet-100 transition-all mb-3">
+      {/* ... stessa AI bar esistente, nessuna modifica alla logica ... */}
+    </div>
+    <p className="text-xs text-gray-400 mb-6">7 giorni gratis · Nessuna carta richiesta</p>
+
+    {/* Due CTA buttons */}
+    <div className="flex justify-center gap-3">
+      {/* Mantieni handlePlanClick e navigate esistenti */}
+      <button onClick={() => navigate(isSignedIn ? "/dashboard/new" : "/sign-up")} className="btn-gradient inline-flex h-9 items-center px-5 text-sm font-semibold rounded-lg">
+        Inizia gratis
+        <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
+      </button>
+      <Link href="#prezzi" className="btn-gradient-outline inline-flex h-9 items-center px-5 text-sm font-semibold rounded-lg">
+        Vedi i piani
+      </Link>
+    </div>
+  </div>
+</section>
+```
+
+---
+
+### SEZIONE 2 — DEMO VIDEO (sotto l'hero, full width contenuto)
+Layout: centrato, max-w-3xl, con il browser chrome esistente
+
+- Mantieni esattamente il codice iframe esistente (src="/prevai-demo-video/?embed")
+- Rimuovi il glow blob assoluto (-inset-3)
+- Aggiungi sotto il video: `<p className="text-xs text-gray-400 text-center mt-3">Demo dal vivo — nessun effetto, nessun montaggio</p>`
+- Padding sezione: `py-8`
+
+---
+
+### SEZIONE 3 — WHATSAPP TEASER (mantieni il codice esistente identico)
+Nessuna modifica al banner scuro WhatsApp — mantienilo esattamente com'è.
+
+---
+
+### SEZIONE 4 — COME FUNZIONA (sostituisce la sezione WhatsApp demo)
+Layout: 2 colonne lg, telefono a sinistra, steps a destra
+Mantieni `<WhatsAppChatDemo />` e la logica steps esistente, ma:
+- Titolo sezione: `text-xl font-semibold` non `text-3xl font-bold`
+- Rimuovi il badge "Come funziona" in uppercase
+- Padding: `py-14`
+
+---
+
+### SEZIONE 5 — DEMO PREVENTIVO (sostituisce la sezione "Da un semplice testo")
+Mantieni tutto il codice esistente della sezione demo (quote preview, testo input, freccia).
+Riduci solo:
+- Titolo: `text-xl font-semibold` invece di `text-2xl font-bold`
+- Padding: `py-14`
+- Altezza del box preventivo: `h-[420px]` invece di `h-[500px]`
+
+---
+
+### SEZIONE 6 — PREZZI (id="prezzi") — NUOVA STRUTTURA
+Questa è la modifica più importante. I prezzi devono apparire come su ChatGPT/Replit: card pulite, senza decorazioni eccessive.
+
+- Rimuovi il banner coupon BETAPREVAI (la logica `handlePlanClick` rimane ma il banner va eliminato)
+- Mantieni tutta la logica `subscriptionPlans`, `oneshotPlans`, `handlePlanClick`, `loadingPlanId`
+- Card subscription: `border border-gray-200 rounded-xl p-6 bg-white` — niente `shadow-xl`, niente `pro-pulse`
+- Per il piano Pro: solo `border-violet-300 border-2`, niente animazioni
+- Badge "Più Popolare": `text-[10px] font-semibold text-violet-600 bg-violet-50 px-2 py-0.5 rounded-full`
+- Font prezzo: `text-2xl font-bold` non `text-3xl`
+- Titolo sezione: `text-xl font-semibold text-gray-900` centrato
+- Padding: `py-16`
+- Mantieni la sezione oneshot con il divisore "oppure acquisto singolo" identica
+
+---
+
+### SEZIONE 7 — CONFRONTO prevai vs Word/Excel
+Mantieni il codice esistente identico ma:
+- Rimuovi il badge "Confronto" uppercase
+- Titolo: `text-xl font-semibold`
+- Padding: `py-14`
+
+---
+
+### SEZIONE 8 — TESTIMONIALS
+Mantieni `<TestimonialsSection />` identica, nessuna modifica.
+
+---
+
+### SEZIONE 9 — SETTORI (tendina collassabile — NOVITÀ)
+Questa è la modifica SEO più importante. I settori devono essere in una tendina collassabile per non appesantire il design.
+
+```jsx
+// Aggiungi in cima al componente Home():
+const [sectorsOpen, setSectorsOpen] = useState(false);
+```
+
+```jsx
+<section className="py-12 bg-white border-t border-gray-100">
+  <div className="container mx-auto px-4 max-w-3xl">
+    <button
+      onClick={() => setSectorsOpen(v => !v)}
+      className="w-full flex items-center justify-between py-3 text-sm font-semibold text-gray-700 hover:text-gray-900 transition-colors"
+    >
+      <span>Preventivi per ogni settore e città</span>
+      <ChevronDown className={`h-4 w-4 text-gray-400 transition-transform ${sectorsOpen ? "rotate-180" : ""}`} />
+    </button>
+    {sectorsOpen && (
+      <div className="pt-2 pb-4">
+        {/* Settori — mantieni gli stessi href e label esistenti ma stile minimal */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-1.5 mb-4">
+          {/* ... stessa lista settori esistente ... */}
+          {/* Stile: className="text-xs text-gray-500 hover:text-violet-600 py-1 px-2 rounded hover:bg-violet-50 transition-colors" */}
+        </div>
+        {/* Città — aggiungi una selezione delle città principali dalla homepage pre-renderizzata */}
+        <div className="pt-3 border-t border-gray-100">
+          <p className="text-xs text-gray-400 mb-2">Principali città</p>
+          <div className="flex flex-wrap gap-1.5">
+            {["Roma", "Milano", "Napoli", "Torino", "Bologna", "Firenze", "Palermo", "Bari", "Venezia", "Verona"].map(city => (
+              <Link
+                key={city}
+                href={`/seo/ristrutturazione/${city.toLowerCase()}/`}
+                className="text-xs text-gray-400 hover:text-violet-600 hover:bg-violet-50 px-2 py-0.5 rounded transition-colors"
+              >
+                {city}
+              </Link>
+            ))}
+          </div>
+        </div>
+      </div>
+    )}
+  </div>
+</section>
+```
+
+---
+
+### SEZIONE 10 — CTA FINALE
+Mantieni il codice esistente ma:
+- Titolo: `text-xl font-semibold`
+- Padding: `py-14`
+- Niente gradient-text sul "rivoluzionare" — testo semplice `text-gray-900`
+
+---
+
+### SEZIONE 11 — SEZIONE ALTERNATIVA EXCEL/WORD
+Mantieni il codice esistente identico, sposta questa sezione PRIMA della sezione settori (era già lì, assicurati che rimanga in questa posizione).
+
+---
+
+## COSA NON TOCCARE
+- Nessuna logica TypeScript (hook, API, navigate, handlePlanClick, handleHomepageSubmit)
+- Il componente SeoHead e i JSON-LD
+- WhatsAppChatDemo
+- TestimonialsSection
+- Tutti gli import esistenti (aggiungi solo ChevronDown a lucide-react se non presente)
+- Le classi CSS globali btn-gradient e btn-gradient-outline
+- Il file index.css
+
+## DOPO LA MODIFICA
+Esegui `pnpm run typecheck` nel workspace di preventivo-ai e dimmi l'output. Poi dimmi esattamente quali righe hai modificato.
