@@ -1,0 +1,66 @@
+Devi risolvere un problema di hydration mismatch che causa la pagina bianca sulle route /seo/ e /blog/. Non toccare nulla che non sia esplicitamente indicato qui sotto.
+
+## Problema
+Il file prerender-seo.ts genera HTML statico per ogni route. Quando React si avvia sul client, confronta il DOM pre-renderizzato con quello che genererebbe e trova differenze → svuota tutto → pagina bianca.
+
+La causa è che le pagine /seo/ e /blog/ vengono pre-renderizzate da prerender-seo.ts ma poi React tenta di fare hydration completa con i componenti React originali, che producono HTML diverso.
+
+## Soluzione
+In src/main.tsx, le route /seo/ e /blog/ devono fare `hydrateRoot` solo se c'è HTML pre-renderizzato, altrimenti `createRoot` normale. Attualmente il codice gestisce solo /seo/:type e /seo/:type/:city ma NON /blog/.
+
+### Modifica 1 — src/main.tsx
+
+Sostituisci le regex esistenti in cima al file con queste (più complete):
+
+```ts
+const SEO_CITY_RE = /^\/seo\/[^/]+\/[^/]+\/?$/;
+const SEO_SECTOR_RE = /^\/seo\/[^/]+\/?$/;
+const BLOG_RE = /^\/blog(\/.*)?$/;
+```
+
+Poi sostituisci tutta la logica di rendering con questa:
+
+```ts
+const isSeoCity = SEO_CITY_RE.test(pathname);
+const isSeoSector = !isSeoCity && SEO_SECTOR_RE.test(pathname);
+const isBlog = BLOG_RE.test(pathname);
+const hasPrerendered = rootEl.children.length > 0;
+
+if ((isSeoCity || isSeoSector || isBlog) && hasPrerendered) {
+  // Pagina pre-renderizzata: monta solo la navbar interattiva,
+  // NON fare hydration del contenuto (evita mismatch → pagina bianca)
+  const navMount = document.createElement("div");
+  navMount.id = "seo-nav-mount";
+  navMount.style.cssText = "position:sticky;top:0;z-index:50;width:100%;";
+  rootEl.parentElement!.insertBefore(navMount, rootEl);
+  createRoot(navMount).render(
+    <StrictMode>
+      <SeoNavShell />
+    </StrictMode>
+  );
+  // Non montare App su #root — il contenuto statico rimane intatto
+} else {
+  createRoot(rootEl).render(
+    <StrictMode>
+      <HelmetProvider>
+        <App />
+      </HelmetProvider>
+    </StrictMode>
+  );
+}
+```
+
+### Modifica 2 — src/components/seo-header.tsx (o dove è definito SeoNavShell)
+
+Verifica che SeoNavShell sia un componente React funzionante che renderizza solo la navbar (header sticky con logo e bottoni Accedi/Registrati). Non modificarlo se già funziona correttamente.
+
+### Modifica 3 — NON fare nulla su App.tsx, sulle pagine /seo/, /blog/, o su prerender-seo.ts
+
+Queste modifiche NON vanno fatte:
+- Non aggiungere `suppressHydrationWarning` ai componenti
+- Non cambiare prerender-seo.ts
+- Non cambiare le pagine React delle route seo/blog
+- Non cambiare App.tsx
+
+## Verifica finale
+Dopo la modifica, esegui il build completo:
