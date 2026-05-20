@@ -46,8 +46,15 @@ const BASE_URL = "https://www.prevai.it";
  */
 const SPA_ONLY_PATHS = new Set<string>([
   "/whatsapp",
+  "/whatsapp/",
   "/privacy",
+  "/privacy/",
   "/termini",
+  "/termini/",
+  "/chi-siamo",
+  "/chi-siamo/",
+  "/contatti",
+  "/contatti/",
 ]);
 
 // ─── Guards ──────────────────────────────────────────────────────────────────

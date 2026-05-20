@@ -100,6 +100,8 @@ function buildHeadBlock(opts: {
     `  <title>${esc(title)}</title>`,
     `  <meta name="description" content="${esc(description)}" />`,
     `  <link rel="canonical" href="${esc(canonical)}" />`,
+    `  <link rel="alternate" hreflang="it" href="${esc(canonical)}" />`,
+    `  <link rel="alternate" hreflang="x-default" href="${esc(canonical)}" />`,
     `  <meta property="og:title" content="${esc(title)}" />`,
     `  <meta property="og:description" content="${esc(description)}" />`,
     `  <meta property="og:url" content="${esc(canonical)}" />`,
@@ -133,9 +135,11 @@ function injectHead(template: string, headBlock: string): string {
   let html = template;
   html = html.replace(/<title>[^<]*<\/title>/, "");
   html = html.replace(/<meta\s+name="description"[^>]*\/?>/i, "");
-  html = html.replace(/<link\s+rel="canonical"[^>]*\/?>/i, "");
+  html = html.replace(/<link\s+rel="canonical"[^>]*\/?>/gi, "");
+  html = html.replace(/<link\s+rel="alternate"\s+hreflang="[^"]*"[^>]*\/?>/gi, "");
   html = html.replace(/<meta\s+property="og:[^"]*"[^>]*\/?>/gi, "");
   html = html.replace(/<meta\s+name="twitter:[^"]*"[^>]*\/?>/gi, "");
+  html = html.replace(/<meta\s+name="keywords"[^>]*\/?>/gi, "");
   html = html.replace(/<script\s+type="application\/ld\+json">[\s\S]*?<\/script>/gi, "");
   html = html.replace("<head>", `<head>\n${headBlock}`);
   return html;
@@ -164,8 +168,8 @@ const STATIC_HEADER = `<header class="sticky top-0 z-50 w-full transition-all du
   <div class="container mx-auto flex h-16 items-center justify-between px-4 sm:px-6 lg:px-8">
     <a href="/" class="flex items-center">${STATIC_LOGO}</a>
     <nav class="flex items-center gap-3">
-      <a href="/sign-in" class="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors px-3 py-1.5 rounded-full">Accedi</a>
-      <a href="/sign-up" class="btn-gradient inline-flex h-9 items-center justify-center px-5 text-sm font-semibold">Registrati</a>
+      <a href="/sign-in" rel="nofollow" class="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors px-3 py-1.5 rounded-full">Accedi</a>
+      <a href="/sign-up" rel="nofollow" class="btn-gradient inline-flex h-9 items-center justify-center px-5 text-sm font-semibold">Registrati</a>
     </nav>
   </div>
 </header>`;
@@ -970,25 +974,6 @@ let count = 0;
 console.log("Prerendering SEO pages...");
 
 // Phase 1: Prerender homepage
-const homepageAggregateRatingSchema = {
-  "@context": "https://schema.org",
-  "@type": "SoftwareApplication",
-  name: "prevai",
-  url: BASE_URL,
-  aggregateRating: {
-    "@type": "AggregateRating",
-    ratingValue: AGGREGATE_RATING.ratingValue,
-    reviewCount: String(AGGREGATE_RATING.reviewCount),
-    bestRating: "5",
-    worstRating: "1",
-  },
-  review: TESTIMONIALS.map((t) => ({
-    "@type": "Review",
-    author: { "@type": "Person", name: t.name },
-    reviewRating: { "@type": "Rating", ratingValue: String(t.rating), bestRating: "5" },
-    reviewBody: t.text,
-  })),
-};
 const homepageWebSiteSchema = {
   "@context": "https://schema.org",
   "@type": "WebSite",
@@ -1007,7 +992,7 @@ const homepageSoftwareSchema = {
   "@type": "SoftwareApplication",
   name: "prevai",
   description: "Software di preventivazione con intelligenza artificiale per artigiani, PMI e professionisti italiani.",
-  url: BASE_URL,
+  url: `${BASE_URL}/`,
   applicationCategory: "BusinessApplication",
   operatingSystem: "Web",
   offers: { "@type": "Offer", price: "0", priceCurrency: "EUR", description: "Prova gratuita disponibile" },
@@ -1015,13 +1000,26 @@ const homepageSoftwareSchema = {
   inLanguage: "it",
   availableLanguage: "Italian",
   provider: { "@type": "Organization", name: "prevai", url: BASE_URL },
+  aggregateRating: {
+    "@type": "AggregateRating",
+    ratingValue: AGGREGATE_RATING.ratingValue,
+    reviewCount: String(AGGREGATE_RATING.reviewCount),
+    bestRating: "5",
+    worstRating: "1",
+  },
+  review: TESTIMONIALS.map((t) => ({
+    "@type": "Review",
+    author: { "@type": "Person", name: t.name },
+    reviewRating: { "@type": "Rating", ratingValue: String(t.rating), bestRating: "5", worstRating: "1" },
+    reviewBody: t.text,
+  })),
 };
 const homepageHeadBlock = buildHeadBlock({
   title: "prevai – Preventivi Online per Artigiani e Aziende | AI in 30 Secondi",
   description: "Crea preventivi professionali in 30 secondi con l'AI. Software di preventivazione per artigiani, PMI e professionisti italiani. Niente Excel, niente errori. Provalo gratis.",
-  canonical: BASE_URL,
+  canonical: `${BASE_URL}/`,
   ogImagePath: "/opengraph.jpg",
-  jsonLd: [homepageWebSiteSchema, homepageSoftwareSchema, homepageAggregateRatingSchema],
+  jsonLd: [homepageWebSiteSchema, homepageSoftwareSchema],
 });
 const homepageHtml = injectBody(injectHead(template, homepageHeadBlock), buildHomepageBodyHtml());
 writeFileSync(templatePath, homepageHtml, "utf-8");

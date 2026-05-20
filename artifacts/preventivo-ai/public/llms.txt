@@ -1,0 +1,50 @@
+# prevai
+
+> prevai è un software italiano di preventivazione con intelligenza artificiale per artigiani, PMI e professionisti. Descrivi il lavoro in linguaggio naturale e ottieni in 30 secondi un preventivo professionale in PDF con voci di costo, quantità, prezzi unitari e IVA.
+
+prevai (https://www.prevai.it) è pensato per il mercato italiano: terminologia tecnica di settore, prezzi di riferimento per area geografica, fatturazione conforme alla normativa nazionale e integrazione con WhatsApp Business per l'invio dei preventivi ai clienti.
+
+## Prodotto
+
+- [Home](https://www.prevai.it/): panoramica del prodotto, benefici, prezzi e demo di un preventivo generato dall'AI.
+- [Blog & Approfondimenti](https://www.prevai.it/blog/): guide pratiche su preventivazione, prezzi di mercato e gestione cantieri.
+- [Chi siamo](https://www.prevai.it/chi-siamo/): missione, team e filosofia di prodotto.
+- [Contatti](https://www.prevai.it/contatti/): canali di supporto e collaborazioni.
+- [WhatsApp](https://www.prevai.it/whatsapp/): genera preventivi direttamente dalla chat WhatsApp Business.
+
+## Settori coperti
+
+- [Imbianchini](https://www.prevai.it/seo/imbianchino/): tinteggiature, rasature, finiture decorative.
+- [Pittori](https://www.prevai.it/seo/pittore/): verniciature interne ed esterne, smalti, decorazioni.
+- [Elettricisti](https://www.prevai.it/seo/elettricista/): impianti civili e industriali, quadri, cablaggi.
+- [Idraulici](https://www.prevai.it/seo/idraulico/): impianti idrici, sanitari, riparazioni.
+- [Termoidraulici](https://www.prevai.it/seo/termoidraulico/): caldaie, riscaldamento, impianti termici.
+- [Muratori](https://www.prevai.it/seo/muratore/): opere murarie, fondazioni, ripristini.
+- [Imprese edili](https://www.prevai.it/seo/edilizia/): cantieri completi, computi metrici, costruzioni.
+- [Ristrutturazioni](https://www.prevai.it/seo/ristrutturazione/): interventi multi-categoria, bonus edilizi.
+- [Carpentieri e fabbri](https://www.prevai.it/seo/carpentiere/): strutture metalliche, cancelli, recinzioni.
+- [Falegnami](https://www.prevai.it/seo/falegname/): mobili su misura, serramenti in legno, restauri.
+- [Geometri](https://www.prevai.it/seo/geometra/): rilievi, pratiche edilizie, computi.
+- [Freelance](https://www.prevai.it/seo/freelance/): preventivi per servizi professionali.
+- [Giardinieri](https://www.prevai.it/seo/giardiniere/): manutenzione del verde, potature, irrigazione.
+- [Piastrellisti](https://www.prevai.it/seo/piastrellista/): pavimenti e rivestimenti, posa gres e ceramica.
+- [Pavimentisti](https://www.prevai.it/seo/pavimentista/): parquet, resine, levigature.
+- [Serramentisti](https://www.prevai.it/seo/serramentista/): infissi, porte, vetrate.
+- [Coperture e tetti](https://www.prevai.it/seo/tetto/): rifacimento, manutenzione, lattoneria.
+- [Condizionatori](https://www.prevai.it/seo/condizionatori/): installazione e manutenzione climatizzatori.
+
+## Risorse pratiche
+
+- [Come fare un preventivo](https://www.prevai.it/seo/come-fare-preventivo/): guida passo-passo per creare un preventivo professionale.
+- [Modello Excel](https://www.prevai.it/seo/modello-excel/): template scaricabile in formato Excel.
+- [Modello Word](https://www.prevai.it/seo/modello-word/): template scaricabile in formato Word.
+- [Preventivi gratis](https://www.prevai.it/seo/preventivi-gratis/): come ottenere preventivi gratuiti.
+
+## Legale
+
+- [Privacy Policy](https://www.prevai.it/privacy/): trattamento dei dati personali.
+- [Termini di servizio](https://www.prevai.it/termini/): condizioni d'uso del servizio.
+
+## Indice completo
+
+- [Sitemap XML](https://www.prevai.it/sitemap.xml): elenco completo di tutte le pagine indicizzabili (oltre 1000 URL fra settori, città e articoli del blog).
