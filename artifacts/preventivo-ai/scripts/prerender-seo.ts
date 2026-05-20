@@ -1497,7 +1497,7 @@ console.log("  ✓ Blog list page prerendered");
 
 // Blog category pages
 for (const category of BLOG_CATEGORIES) {
-  const categoryCanonical = `${BASE_URL}/blog/categoria/${category.slug}`;
+  const categoryCanonical = `${BASE_URL}/blog/categoria/${category.slug}/`;
   const categoryHeadBlock = buildHeadBlock({
     title: `${category.name} — Blog prevai`,
     description: category.description,
