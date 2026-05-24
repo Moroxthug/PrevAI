@@ -31,7 +31,59 @@
     
     <meta name="robots" content="index, follow" />
     <meta name="author" content="prevai" />
+    <!--
+      Production: the prerender pipeline (`scripts/prerender-seo.ts`)
+      writes the correct per-route  directly into
+      every prerendered HTML file, so the snippet below is stripped/
+      replaced and never reaches a crawler in prod.
+
+      Dev/preview: the SPA shell is served for every route. The inline
+      script below sets a canonical that matches the current URL before
+      React mounts, so SEO audits (Lighthouse, Semrush) running against
+      the dev preview don't see every page canonicalizing to "/".
+      <SeoHead> (react-helmet-async) then refines it per-route after
+      hydration.
+    -->
     
+    <script>
+      (function () {
+        try {
+          var origin = "https://www.prevai.it";
+          var p = window.location.pathname || "/";
+          if (p.length > 1 && p.charAt(p.length - 1) !== "/" && p.lastIndexOf(".") <= p.lastIndexOf("/")) {
+            p = p + "/";
+          }
+          var links = document.head.querySelectorAll('link[rel="canonical"]');
+          var keep = document.getElementById("__canonical");
+          if (!keep && links.length > 0) keep = links[0];
+          if (!keep) {
+            keep = document.createElement("link");
+            keep.setAttribute("rel", "canonical");
+            document.head.appendChild(keep);
+          }
+          keep.setAttribute("id", "__canonical");
+          keep.setAttribute("href", origin + p);
+          for (var i = 0; i < links.length; i++) {
+            if (links[i] !== keep && links[i].parentNode) {
+              links[i].parentNode.removeChild(links[i]);
+            }
+          }
+          var noindexPrefixes = ["/dashboard", "/sign-in", "/sign-up", "/onboarding", "/admin", "/reset-password", "/forgot-password"];
+          for (var j = 0; j < noindexPrefixes.length; j++) {
+            if (p === noindexPrefixes[j] + "/" || p.indexOf(noindexPrefixes[j] + "/") === 0) {
+              var robots = document.head.querySelector('meta[name="robots"]');
+              if (!robots) {
+                robots = document.createElement("meta");
+                robots.setAttribute("name", "robots");
+                document.head.appendChild(robots);
+              }
+              robots.setAttribute("content", "noindex, nofollow");
+              break;
+            }
+          }
+        } catch (e) {}
+      })();
+    </script>
 
     <!-- Favicon -->
     <link rel="icon" type="image/x-icon" href="/favicon.ico" />
@@ -55,14 +107,14 @@
       crossorigin
       href="/fonts/inter-latin-wght-normal.woff2"
     />
-    <script type="module" crossorigin src="/assets/index-DRVOtsba.js"></script>
+    <script type="module" crossorigin src="/assets/index-BUjanEgT.js"></script>
     <link rel="modulepreload" crossorigin href="/assets/vendor-react-K2QafVrp.js">
     <link rel="modulepreload" crossorigin href="/assets/vendor-query-B6mqfnoA.js">
     <link rel="modulepreload" crossorigin href="/assets/vendor-radix-CxmcQLJU.js">
     <link rel="modulepreload" crossorigin href="/assets/vendor-icons-Ddq-xUeh.js">
     
     <link rel="modulepreload" crossorigin href="/assets/seo-C48K2n1w.js">
-    <link rel="stylesheet" crossorigin href="/assets/index-BgLfZCws.css">
+    <link rel="stylesheet" crossorigin href="/assets/index-EOZGaOEC.css">
   </head>
   <body>
     <div id="root"><div class="flex flex-col min-h-screen bg-white">

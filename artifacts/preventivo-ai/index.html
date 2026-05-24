@@ -28,9 +28,37 @@
         try {
           var origin = "https://www.prevai.it";
           var p = window.location.pathname || "/";
-          if (p.length > 1 && p.charAt(p.length - 1) !== "/") p = p + "/";
-          var el = document.getElementById("__canonical");
-          if (el) el.setAttribute("href", origin + p);
+          if (p.length > 1 && p.charAt(p.length - 1) !== "/" && p.lastIndexOf(".") <= p.lastIndexOf("/")) {
+            p = p + "/";
+          }
+          var links = document.head.querySelectorAll('link[rel="canonical"]');
+          var keep = document.getElementById("__canonical");
+          if (!keep && links.length > 0) keep = links[0];
+          if (!keep) {
+            keep = document.createElement("link");
+            keep.setAttribute("rel", "canonical");
+            document.head.appendChild(keep);
+          }
+          keep.setAttribute("id", "__canonical");
+          keep.setAttribute("href", origin + p);
+          for (var i = 0; i < links.length; i++) {
+            if (links[i] !== keep && links[i].parentNode) {
+              links[i].parentNode.removeChild(links[i]);
+            }
+          }
+          var noindexPrefixes = ["/dashboard", "/sign-in", "/sign-up", "/onboarding", "/admin", "/reset-password", "/forgot-password"];
+          for (var j = 0; j < noindexPrefixes.length; j++) {
+            if (p === noindexPrefixes[j] + "/" || p.indexOf(noindexPrefixes[j] + "/") === 0) {
+              var robots = document.head.querySelector('meta[name="robots"]');
+              if (!robots) {
+                robots = document.createElement("meta");
+                robots.setAttribute("name", "robots");
+                document.head.appendChild(robots);
+              }
+              robots.setAttribute("content", "noindex, nofollow");
+              break;
+            }
+          }
         } catch (e) {}
       })();
     </script>

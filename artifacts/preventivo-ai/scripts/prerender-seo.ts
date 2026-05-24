@@ -135,7 +135,7 @@ function injectHead(template: string, headBlock: string): string {
   let html = template;
   html = html.replace(/<title>[^<]*<\/title>/, "");
   html = html.replace(/<meta\s+name="description"[^>]*\/?>/i, "");
-  html = html.replace(/<link\s+rel="canonical"[^>]*\/?>/gi, "");
+  html = html.replace(/<link\b[^>]*\brel=["']canonical["'][^>]*\/?>/gi, "");
   html = html.replace(/<link\s+rel="alternate"\s+hreflang="[^"]*"[^>]*\/?>/gi, "");
   html = html.replace(/<meta\s+property="og:[^"]*"[^>]*\/?>/gi, "");
   html = html.replace(/<meta\s+name="twitter:[^"]*"[^>]*\/?>/gi, "");
