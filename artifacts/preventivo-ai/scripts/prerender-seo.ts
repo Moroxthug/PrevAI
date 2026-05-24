@@ -576,11 +576,12 @@ function buildSectorBodyHtml(s: SectorData): string {
   const sRelated = buildRelatedSectorsSection(s, "Servizi correlati — genera preventivi per");
   const sCityGrid = CITY_SECTORS.includes(s.slug) ? buildSectorCityGrid(s) : "";
   const sApprofondimenti = buildApprofondimentiSection(s.slug);
+  const sDeepDive = buildSectorDeepDive(s);
 
   const middleSections =
     layout === 0
-      ? [sBenefits, sHowItWorks, sUseCases, sItalianMarket, sFaq]
-      : [sHowItWorks, sUseCases, sBenefits, sFaq, sItalianMarket];
+      ? [sBenefits, sHowItWorks, sUseCases, sItalianMarket, sDeepDive, sFaq]
+      : [sHowItWorks, sUseCases, sBenefits, sFaq, sItalianMarket, sDeepDive];
 
   return wrapInPublicLayout(`<div class="flex flex-col min-h-screen bg-white">
   ${breadcrumb}
@@ -591,6 +592,35 @@ function buildSectorBodyHtml(s: SectorData): string {
   ${sApprofondimenti}
   ${sCta}
 </div>`);
+}
+
+// ─── Sector long-form text section — boosts text/HTML ratio ────────────────
+function buildSectorDeepDive(s: SectorData): string {
+  const labelL = s.label.toLowerCase();
+  const labelPL = s.labelPlural;
+  const useCasesText = s.useCases.slice(0, 6).map((u) => u.toLowerCase()).join(", ");
+  const benefitsP = s.benefits
+    .map((b) => `<strong>${esc(b.title)}.</strong> ${esc(b.desc)}`)
+    .join(" ");
+  return `<section class="py-20 bg-white" aria-label="Approfondimento ${esc(labelL)}">
+    <div class="container mx-auto px-4 sm:px-6 lg:px-8 max-w-3xl">
+      <div class="text-center mb-12">
+        <h2 class="text-3xl font-bold text-gray-900">Tutto quello che serve a un ${esc(labelL)} moderno</h2>
+      </div>
+      <div class="prose prose-lg max-w-none text-gray-600 leading-relaxed space-y-6">
+        <p>Per un <strong>${esc(labelL)}</strong> in Italia, fare un preventivo professionale è spesso un secondo lavoro: ore sottratte al cantiere, ricerche di prezzi su listini cartacei, calcoli ripetitivi su fogli Excel costruiti negli anni. Il risultato è quasi sempre un documento approssimativo, fuori formato, che fa perdere clienti rispetto a un concorrente con un&apos;offerta più chiara e leggibile. <strong>prevai</strong> nasce proprio per chiudere questa distanza: descrivi il lavoro in italiano, in una manciata di frasi, e in trenta secondi hai un preventivo completo, professionale, pronto da inviare via WhatsApp o email.</p>
+        <p>Il software è pensato per il modo concreto in cui lavorano i <strong>${esc(labelPL)}</strong> italiani. La maggior parte dei preventivi nasce in cantiere o al telefono con il cliente, raramente in ufficio. Per questo prevai funziona perfettamente da smartphone: niente installazioni, niente sincronizzazioni complicate, solo un browser. Apri la pagina, descrivi il lavoro mentre lo stai ancora ispezionando, e quando torni in macchina hai già un PDF da consegnare. La differenza tra inviare un preventivo entro un&apos;ora dal sopralluogo e farlo arrivare due giorni dopo è la differenza tra ottenere il lavoro o vederlo andare a un altro.</p>
+        <p>Tra i casi d&apos;uso più frequenti gestiti dai nostri utenti ci sono ${esc(useCasesText)}. Per ognuno di questi scenari, l&apos;intelligenza artificiale di prevai conosce le voci tipiche, le unità di misura ricorrenti — metri quadri, metri lineari, ore di manodopera, corpo — e i prezzi medi praticati sul mercato italiano. Tu puoi sempre modificare le voci, sostituire i prezzi con i tuoi listini personali, aggiungere o togliere capitoli, ma il punto di partenza non è mai un foglio bianco: è un preventivo già strutturato che ti fa risparmiare il 90% del tempo.</p>
+        <h3 class="text-xl font-semibold text-gray-900 mt-10 mb-3">I vantaggi concreti per chi lavora ogni giorno</h3>
+        <p>${benefitsP}</p>
+        <h3 class="text-xl font-semibold text-gray-900 mt-10 mb-3">Pensato per la fiscalità italiana</h3>
+        <p>A differenza dei software internazionali, prevai è progettato attorno alle regole concrete che un <strong>${esc(labelL)}</strong> italiano incontra ogni giorno. L&apos;IVA al 10% per le ristrutturazioni residenziali, l&apos;IVA al 22% per i nuovi impianti, il regime forfettario senza IVA: tutto è gestito automaticamente in base alla tipologia di intervento e al regime fiscale del professionista. I dati aziendali (partita IVA, codice fiscale, codice destinatario per la fatturazione elettronica) vengono memorizzati una volta e applicati ad ogni preventivo, e ogni documento rispetta il formato che i clienti italiani — privati, condomini, piccole imprese — si aspettano di ricevere.</p>
+        <h3 class="text-xl font-semibold text-gray-900 mt-10 mb-3">Da preventivo a lavoro acquisito</h3>
+        <p>Un preventivo ben fatto non è solo un documento contabile: è uno strumento di vendita. La cura grafica, la chiarezza delle voci, la presenza del logo aziendale e dei dati di contatto raccontano al cliente che ha davanti un professionista serio. Tutti i preventivi generati con prevai includono intestazione personalizzata, suddivisione per capitoli di lavoro, descrizione tecnica per ogni voce, prezzi unitari e subtotali, indicazione dell&apos;IVA e del totale finale, condizioni di pagamento e validità. Il cliente riceve un PDF ordinato, su una pagina sola quando possibile, che può confrontare con quello degli altri ${esc(labelPL)} consultati — e nella maggior parte dei casi la scelta cade su chi ha presentato l&apos;offerta più professionale, anche a parità di prezzo.</p>
+        <p>Iniziare è gratuito: non servono carte di credito né configurazioni complesse. Crei un account in trenta secondi, generi il tuo primo preventivo gratis e decidi solo dopo se attivare uno dei piani in abbonamento (per chi fa preventivi tutti i giorni) o se pagare un preventivo singolo all&apos;occorrenza. Migliaia di <strong>${esc(labelPL)}</strong>, artigiani e piccole imprese italiane usano già prevai ogni settimana. Provalo e scopri perché non si torna più indietro al vecchio modello Excel.</p>
+      </div>
+    </div>
+  </section>`;
 }
 
 // ─── Phase 3: City body — 3 layout variants ────────────────────────────────
