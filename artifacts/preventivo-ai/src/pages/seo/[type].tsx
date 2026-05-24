@@ -1,7 +1,7 @@
 import { useParams, Link } from "wouter";
 import { ArrowRight, CheckCircle2, Clock, FileText, Shield, TrendingUp, Star, Building2, BookOpen, X, MapPin } from "lucide-react";
 import { SeoHead } from "@/components/seo-head";
-import { SECTORS, DEFAULT_SECTOR, RELATED_SECTORS, SECTOR_RATINGS, SECTOR_REVIEWS, CITY_SECTORS, CITIES } from "@/data/seo-data";
+import { SECTORS, DEFAULT_SECTOR, RELATED_SECTORS, CITY_SECTORS, CITIES } from "@/data/seo-data";
 import { BLOG_ARTICLES, SECTOR_ARTICLES } from "@/data/blog-data";
 
 const TIER1_CITY_SLUGS_ORDERED = [
@@ -255,8 +255,6 @@ export default function SeoLanding() {
   const s = SECTORS[slug] ?? DEFAULT_SECTOR;
 
   const canonical = `https://www.prevai.it/seo/${s.slug}/`;
-  const rating = SECTOR_RATINGS[s.slug] ?? SECTOR_RATINGS["professionista"];
-  const reviews = SECTOR_REVIEWS[s.slug] ?? SECTOR_REVIEWS["professionista"];
   const jsonLd = [
     {
       "@context": "https://schema.org",
@@ -268,20 +266,6 @@ export default function SeoLanding() {
       operatingSystem: "Web",
       inLanguage: "it",
       offers: { "@type": "Offer", price: "0", priceCurrency: "EUR", availability: "https://schema.org/InStock" },
-      aggregateRating: {
-        "@type": "AggregateRating",
-        ratingValue: rating.ratingValue.toString(),
-        reviewCount: rating.reviewCount.toString(),
-        bestRating: "5",
-        worstRating: "1",
-      },
-      review: reviews.map((r) => ({
-        "@type": "Review",
-        reviewRating: { "@type": "Rating", ratingValue: r.ratingValue, bestRating: "5", worstRating: "1" },
-        author: { "@type": "Person", name: r.authorName },
-        reviewBody: r.reviewBody,
-        datePublished: r.datePublished,
-      })),
     },
     {
       "@context": "https://schema.org",

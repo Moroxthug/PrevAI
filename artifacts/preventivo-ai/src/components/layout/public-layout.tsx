@@ -232,7 +232,7 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
       <a
         href="https://wa.me/393791059492"
         target="_blank"
-        rel="noopener noreferrer"
+        rel="noopener noreferrer nofollow"
         aria-label="Chatta con noi su WhatsApp"
         className="fixed bottom-6 right-6 z-50 flex items-center gap-2.5 rounded-full shadow-lg shadow-green-200/60 transition-all duration-200 hover:scale-105 active:scale-95"
         style={{ background: "#25D366" }}

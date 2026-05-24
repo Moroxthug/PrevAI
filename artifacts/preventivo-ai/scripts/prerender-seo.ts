@@ -168,8 +168,8 @@ const STATIC_HEADER = `<header class="sticky top-0 z-50 w-full transition-all du
   <div class="container mx-auto flex h-16 items-center justify-between px-4 sm:px-6 lg:px-8">
     <a href="/" class="flex items-center">${STATIC_LOGO}</a>
     <nav class="flex items-center gap-3">
-      <a href="/sign-in" rel="nofollow" class="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors px-3 py-1.5 rounded-full">Accedi</a>
-      <a href="/sign-up" rel="nofollow" class="btn-gradient inline-flex h-9 items-center justify-center px-5 text-sm font-semibold">Registrati</a>
+      <a href="/sign-in" class="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors px-3 py-1.5 rounded-full">Accedi</a>
+      <a href="/sign-up" class="btn-gradient inline-flex h-9 items-center justify-center px-5 text-sm font-semibold">Registrati</a>
     </nav>
   </div>
 </header>`;
@@ -227,7 +227,7 @@ const STATIC_FOOTER = `<footer class="border-t py-12 md:py-16 bg-white">
   </div>
 </footer>`;
 
-const STATIC_WHATSAPP = `<a href="https://wa.me/393791059492" target="_blank" rel="noopener noreferrer" aria-label="Chatta con noi su WhatsApp" class="fixed bottom-6 right-6 z-50 flex items-center gap-2.5 rounded-full shadow-lg shadow-green-200/60 transition-all duration-200 hover:scale-105 active:scale-95" style="background:rgb(37,211,102)"><span class="flex h-14 w-14 items-center justify-center rounded-full" style="background:rgb(37,211,102)"><img src="/wa-icon.svg" alt="" width="28" height="28" loading="lazy" decoding="async"></span><span class="pr-5 text-white text-sm font-semibold whitespace-nowrap hidden sm:inline-block">Hai bisogno di aiuto?</span></a>`;
+const STATIC_WHATSAPP = `<a href="https://wa.me/393791059492" target="_blank" rel="noopener noreferrer nofollow" aria-label="Chatta con noi su WhatsApp" class="fixed bottom-6 right-6 z-50 flex items-center gap-2.5 rounded-full shadow-lg shadow-green-200/60 transition-all duration-200 hover:scale-105 active:scale-95" style="background:rgb(37,211,102)"><span class="flex h-14 w-14 items-center justify-center rounded-full" style="background:rgb(37,211,102)"><img src="/wa-icon.svg" alt="" width="28" height="28" loading="lazy" decoding="async"></span><span class="pr-5 text-white text-sm font-semibold whitespace-nowrap hidden sm:inline-block">Hai bisogno di aiuto?</span></a>`;
 
 function wrapInPublicLayout(contentHtml: string): string {
   return `<div class="min-h-[100dvh] flex flex-col bg-background text-foreground">
@@ -1060,7 +1060,6 @@ const homepageSoftwareSchema = {
   offers: { "@type": "Offer", price: "0", priceCurrency: "EUR", description: "Prova gratuita disponibile" },
   audience: { "@type": "BusinessAudience", audienceType: "Artigiani, PMI, Professionisti, Freelance" },
   inLanguage: "it",
-  availableLanguage: "it",
   provider: { "@type": "Organization", name: "prevai", url: BASE_URL },
   aggregateRating: {
     "@type": "AggregateRating",

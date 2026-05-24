@@ -26,6 +26,14 @@ const app = express();
 app.disable("x-powered-by");
 app.set("etag", "strong");
 
+app.use((_req, res, next) => {
+  res.setHeader(
+    "Strict-Transport-Security",
+    "max-age=63072000; includeSubDomains; preload",
+  );
+  next();
+});
+
 app.use(
   compression({
     threshold: 1024,
