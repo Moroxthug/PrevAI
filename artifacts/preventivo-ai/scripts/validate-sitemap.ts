@@ -44,18 +44,7 @@ const BASE_URL = "https://www.prevai.it";
  * This list is independent of sitemap-routes.ts so that typos in that file
  * are caught rather than silently accepted.
  */
-const SPA_ONLY_PATHS = new Set<string>([
-  "/whatsapp",
-  "/whatsapp/",
-  "/privacy",
-  "/privacy/",
-  "/termini",
-  "/termini/",
-  "/chi-siamo",
-  "/chi-siamo/",
-  "/contatti",
-  "/contatti/",
-]);
+const SPA_ONLY_PATHS = new Set<string>([]);
 
 // ─── Guards ──────────────────────────────────────────────────────────────────
 

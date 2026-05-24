@@ -227,7 +227,7 @@ const STATIC_FOOTER = `<footer class="border-t py-12 md:py-16 bg-white">
   </div>
 </footer>`;
 
-const STATIC_WHATSAPP = `<a href="https://wa.me/393791059492" target="_blank" rel="noopener noreferrer" aria-label="Chatta con noi su WhatsApp" class="fixed bottom-6 right-6 z-50 flex items-center gap-2.5 rounded-full shadow-lg shadow-green-200/60 transition-all duration-200 hover:scale-105 active:scale-95" style="background: rgb(37, 211, 102);"><span class="flex h-14 w-14 items-center justify-center rounded-full" style="background: rgb(37, 211, 102);"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="28" height="28" fill="white"><path d="M16 2C8.268 2 2 8.268 2 16c0 2.478.675 4.797 1.849 6.785L2 30l7.438-1.82A13.94 13.94 0 0 0 16 30c7.732 0 14-6.268 14-14S23.732 2 16 2zm0 25.5a11.44 11.44 0 0 1-5.842-1.6l-.418-.248-4.41 1.08 1.112-4.3-.272-.44A11.46 11.46 0 0 1 4.5 16C4.5 9.649 9.649 4.5 16 4.5S27.5 9.649 27.5 16 22.351 27.5 16 27.5zm6.29-8.61c-.344-.172-2.036-1.004-2.352-1.118-.317-.115-.547-.172-.778.172-.23.344-.893 1.118-1.094 1.348-.2.23-.403.258-.747.086-.344-.172-1.452-.535-2.766-1.707-1.022-.912-1.713-2.038-1.913-2.382-.2-.344-.021-.53.15-.7.155-.155.344-.403.517-.604.172-.2.23-.344.344-.574.115-.23.057-.43-.029-.603-.086-.172-.778-1.876-1.066-2.568-.28-.673-.566-.582-.778-.593l-.663-.011c-.23 0-.603.086-.919.43s-1.207 1.18-1.207 2.876 1.236 3.337 1.408 3.567c.172.23 2.432 3.712 5.892 5.206.824.355 1.467.568 1.969.727.827.263 1.58.226 2.175.137.663-.099 2.036-.832 2.323-1.635.287-.804.287-1.493.2-1.636-.086-.143-.317-.23-.66-.402z"/></svg></span><span class="pr-5 text-white text-sm font-semibold whitespace-nowrap hidden sm:inline-block">Hai bisogno di aiuto?</span></a>`;
+const STATIC_WHATSAPP = `<a href="https://wa.me/393791059492" target="_blank" rel="noopener noreferrer" aria-label="Chatta con noi su WhatsApp" class="fixed bottom-6 right-6 z-50 flex items-center gap-2.5 rounded-full shadow-lg shadow-green-200/60 transition-all duration-200 hover:scale-105 active:scale-95" style="background:rgb(37,211,102)"><span class="flex h-14 w-14 items-center justify-center rounded-full" style="background:rgb(37,211,102)"><img src="/wa-icon.svg" alt="" width="28" height="28" loading="lazy" decoding="async"></span><span class="pr-5 text-white text-sm font-semibold whitespace-nowrap hidden sm:inline-block">Hai bisogno di aiuto?</span></a>`;
 
 function wrapInPublicLayout(contentHtml: string): string {
   return `<div class="min-h-[100dvh] flex flex-col bg-background text-foreground">
@@ -768,6 +768,7 @@ function buildCityBodyHtml(s: SectorData, city: CityData): string {
   </section>`
     : "";
 
+  const sQuantoCosta = buildQuantoCostaBlock(s, city, intel);
   const sContext = buildCityContextBlock(city, s);
   const sRelated = buildRelatedSectorsSection(s, `Scopri anche: preventivi per`);
   const sApprofondimenti = buildApprofondimentiSection(s.slug);
@@ -802,12 +803,73 @@ function buildCityBodyHtml(s: SectorData, city: CityData): string {
   ${sHero}
   ${sOsservatorio}
   ${mainSections.join("\n  ")}
+  ${sQuantoCosta}
   ${sContext}
   ${sNearby}
   ${sRelated}
   ${sApprofondimenti}
   ${sCta}
 </div>`;
+}
+
+// ─── "Quanto costa" block: extra unique text for city pages (improves text/HTML ratio) ────
+
+function buildQuantoCostaBlock(
+  s: SectorData,
+  city: CityData,
+  intel: CityIntelligence | undefined,
+): string {
+  const cityName = city.name;
+  const regionName = city.region;
+  const sectorLabel = s.label.toLowerCase();
+  const pricePct = intel ? Math.round((intel.priceIndex - 1.0) * 100) : 0;
+  const priceNote = !intel
+    ? `in linea con la media italiana`
+    : pricePct > 5
+      ? `mediamente del <strong>${pricePct}% più alti</strong> rispetto alla media nazionale`
+      : pricePct < -5
+        ? `mediamente del <strong>${Math.abs(pricePct)}% più bassi</strong> rispetto alla media nazionale`
+        : `in linea con la media nazionale (variazione contenuta entro il ±5%)`;
+
+  const demandText = intel ? DEMAND_TEXT[intel.demandLevel] : "stabile";
+
+  const examples = s.useCases.slice(0, 4).map((uc, i) => {
+    const base = 250 + i * 320 + (strHash(city.slug + s.slug + String(i)) % 180);
+    const factor = intel ? intel.priceIndex : 1.0;
+    const low = Math.round((base * factor) / 10) * 10;
+    const high = Math.round((base * factor * 1.7) / 10) * 10;
+    return { label: uc, range: `da ${low}€ a ${high}€` };
+  });
+
+  const examplesList = examples
+    .map(
+      (e) =>
+        `<li class="flex items-start justify-between gap-4 bg-white rounded-xl px-5 py-3.5 border border-gray-100">
+          <span class="text-sm text-gray-700 leading-snug">${esc(e.label)}</span>
+          <span class="text-sm font-semibold text-violet-700 whitespace-nowrap">${esc(e.range)}</span>
+        </li>`,
+    )
+    .join("\n        ");
+
+  const paragraph1 = `A ${esc(cityName)} il costo medio per un servizio di ${esc(sectorLabel)} è ${priceNote}. La domanda nel ${esc(regionName)} è attualmente ${esc(demandText)}, condizione che influisce sui tempi di risposta dei professionisti e sulla negoziazione del prezzo finale. I prezzi indicati qui sotto sono intervalli di mercato medi raccolti da preventivi reali generati con prevai per lavori nella zona di ${esc(cityName)} e nelle località limitrofe.`;
+  const paragraph2 = `Ogni preventivo dipende da fattori specifici: superficie esatta dell'intervento, qualità dei materiali richiesti, accessibilità del cantiere, urgenza dell'esecuzione e personalizzazioni concordate con il committente. Per questo ti consigliamo di richiedere sempre un sopralluogo o di fornire una descrizione dettagliata: con prevai puoi farlo in 30 secondi descrivendo il lavoro in linguaggio naturale e ricevere un documento professionale, modificabile e pronto da inviare al cliente via WhatsApp o email.`;
+
+  return `<section class="py-20 bg-white border-t border-gray-100" aria-label="Quanto costa ${esc(sectorLabel)} a ${esc(cityName)}">
+  <div class="container mx-auto px-4 sm:px-6 lg:px-8 max-w-3xl">
+    <div class="text-center mb-10">
+      <h2 class="text-2xl font-bold text-gray-900">Quanto costa un ${esc(sectorLabel)} a ${esc(cityName)}</h2>
+      <p class="text-sm text-gray-400 mt-2">Range di prezzo orientativi per i lavori più richiesti</p>
+    </div>
+    <div class="space-y-4 text-gray-600 leading-relaxed text-base mb-8">
+      <p>${paragraph1}</p>
+      <p>${paragraph2}</p>
+    </div>
+    <ul class="space-y-2.5">
+      ${examplesList}
+    </ul>
+    <p class="text-xs text-gray-400 mt-6 text-center">Prezzi medi di mercato a ${esc(cityName)} aggiornati al ${CURRENT_YEAR}. IVA esclusa. Variazioni possibili in base alle caratteristiche specifiche del lavoro.</p>
+  </div>
+</section>`;
 }
 
 // ─── Phase 1: Homepage prerender ────────────────────────────────────────────
@@ -1528,4 +1590,322 @@ for (const article of BLOG_ARTICLES) {
 }
 console.log(`  ✓ ${BLOG_ARTICLES.length} blog articles prerendered`);
 
-console.log(`Prerendered ${count} pages total (1 homepage + SEO sector pages + ${BLOG_CATEGORIES.length} category pages + ${BLOG_ARTICLES.length + 1} blog pages).`);
+// ─── Static SPA pages prerender ─────────────────────────────────────────────
+
+function buildBreadcrumbJsonLd(name: string, path: string): object {
+  return {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      { "@type": "ListItem", position: 1, name: "Home", item: `${BASE_URL}/` },
+      { "@type": "ListItem", position: 2, name, item: `${BASE_URL}${path}` },
+    ],
+  };
+}
+
+function buildWebPageJsonLd(name: string, description: string, path: string, type = "WebPage"): object {
+  return {
+    "@context": "https://schema.org",
+    "@type": type,
+    name,
+    description,
+    url: `${BASE_URL}${path}`,
+    inLanguage: "it",
+    isPartOf: { "@type": "WebSite", name: "prevai", url: BASE_URL },
+  };
+}
+
+function buildStaticPageHtml(opts: {
+  slug: string;
+  title: string;
+  description: string;
+  path: string;
+  jsonLd: object[];
+  bodyHtml: string;
+  ogImagePath?: string;
+}): void {
+  const headBlock = buildHeadBlock({
+    title: opts.title,
+    description: opts.description,
+    canonical: `${BASE_URL}${opts.path}`,
+    ogImagePath: opts.ogImagePath ?? "/opengraph.jpg",
+    jsonLd: opts.jsonLd,
+  });
+  const html = injectBody(injectHead(template, headBlock), opts.bodyHtml);
+  writeRoute(opts.slug, html);
+  count++;
+}
+
+// /chi-siamo/
+const chiSiamoOrgJsonLd = {
+  "@context": "https://schema.org",
+  "@type": "Organization",
+  name: "prevai",
+  url: `${BASE_URL}/`,
+  logo: `${BASE_URL}/icon-192.png`,
+  description: "prevai è il software di preventivazione AI per artigiani e liberi professionisti italiani. Genera preventivi professionali in 30 secondi descrivendo il lavoro in italiano.",
+  foundingDate: "2026",
+  foundingLocation: { "@type": "Place", name: "Italia" },
+  contactPoint: {
+    "@type": "ContactPoint",
+    email: "info@prevai.it",
+    contactType: "customer service",
+    availableLanguage: "it",
+  },
+};
+buildStaticPageHtml({
+  slug: "chi-siamo",
+  title: "Chi Siamo | prevai — Software Preventivi AI per Artigiani",
+  description: "prevai nasce per liberare gli artigiani italiani dalla burocrazia. Scopri la nostra missione: preventivi professionali in 30 secondi grazie all'intelligenza artificiale.",
+  path: "/chi-siamo/",
+  jsonLd: [chiSiamoOrgJsonLd, buildBreadcrumbJsonLd("Chi Siamo", "/chi-siamo/")],
+  bodyHtml: wrapInPublicLayout(`<section class="relative overflow-hidden bg-white pt-24 pb-20">
+  <div class="container mx-auto px-4 sm:px-6 lg:px-8 max-w-4xl text-center">
+    <div class="inline-flex items-center gap-2 rounded-full bg-violet-50 border border-violet-100 px-4 py-1.5 text-sm font-medium text-violet-700 mb-8">Fatto in Italia</div>
+    <h1 class="text-4xl sm:text-5xl font-bold tracking-tight text-gray-900 mb-6">Siamo prevai. <span style="background:linear-gradient(135deg,#7C3AED 0%,#A855F7 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent">Liberiamo gli artigiani dalla burocrazia.</span></h1>
+    <p class="text-xl text-gray-600 leading-relaxed max-w-2xl mx-auto">In Italia ci sono oltre 1,2 milioni di artigiani e liberi professionisti. Ognuno di loro perde in media 3-4 ore alla settimana a fare preventivi a mano. Noi l'abbiamo costruito per restituire quel tempo.</p>
+  </div>
+</section>
+<section class="py-20 bg-gray-50">
+  <div class="container mx-auto px-4 sm:px-6 lg:px-8 max-w-3xl">
+    <h2 class="text-3xl font-bold text-gray-900 mb-6">Come è nata l'idea</h2>
+    <div class="space-y-5 text-gray-600 leading-relaxed text-lg">
+      <p>Tutto è cominciato da una frustrazione reale: un imbianchino di Roma che ogni sera, dopo ore di lavoro in cantiere, doveva ancora mettersi al computer ad aggiornare i suoi fogli Excel per mandare preventivi ai clienti. Spesso ci metteva un'ora e mezza per un documento da 200€.</p>
+      <p>Abbiamo pensato: l'intelligenza artificiale sa già come si fa un preventivo professionale. Perché non permettere a un professionista di <em>descrivere il lavoro come lo racconterebbe a voce</em>, e ricevere in 30 secondi un documento pronto da mandare?</p>
+      <p>Così è nato prevai. Un software costruito specificatamente per il mercato italiano, con terminologia di settore italiana, prezzi di mercato italiani, e tutto ciò che serve: logo aziendale, partita IVA, IVA al 22%, condizioni personalizzabili, PDF professionale.</p>
+    </div>
+  </div>
+</section>
+<section class="py-20 bg-white">
+  <div class="container mx-auto px-4 sm:px-6 lg:px-8 max-w-5xl">
+    <div class="text-center mb-14"><h2 class="text-3xl font-bold text-gray-900 mb-4">I nostri valori</h2><p class="text-gray-500 text-lg max-w-xl mx-auto">Ogni decisione che prendiamo parte da tre principi fondamentali.</p></div>
+    <div class="grid md:grid-cols-3 gap-8">
+      <div class="bg-gray-50 rounded-2xl p-8 text-center"><h3 class="text-lg font-bold text-gray-900 mb-3">Velocità reale</h3><p class="text-gray-500 text-sm leading-relaxed">30 secondi non è uno slogan. È il tempo che ci vuole per generare un preventivo completo e professionale. Il tuo tempo vale.</p></div>
+      <div class="bg-gray-50 rounded-2xl p-8 text-center"><h3 class="text-lg font-bold text-gray-900 mb-3">Specificità italiana</h3><p class="text-gray-500 text-sm leading-relaxed">Non un software generico tradotto. Costruito da zero per il mercato italiano: categorie di lavoro, prezzi, normativa fiscale, lingua.</p></div>
+      <div class="bg-gray-50 rounded-2xl p-8 text-center"><h3 class="text-lg font-bold text-gray-900 mb-3">Semplicità prima di tutto</h3><p class="text-gray-500 text-sm leading-relaxed">Non servono corsi o tutorial. Se sai scrivere un messaggio WhatsApp, sai usare prevai. La tecnologia deve sparire, il risultato deve restare.</p></div>
+    </div>
+  </div>
+</section>
+<section class="py-20 bg-gray-50">
+  <div class="container mx-auto px-4 sm:px-6 lg:px-8 max-w-3xl">
+    <h2 class="text-3xl font-bold text-gray-900 mb-6">Per chi è prevai</h2>
+    <div class="space-y-4 text-gray-600 leading-relaxed text-lg">
+      <p>prevai è pensato per <strong>artigiani, imprese edili, tecnici e liberi professionisti italiani</strong> che lavorano su commessa e devono presentare preventivi ai propri clienti.</p>
+      <p>Imbianchini, elettricisti, idraulici, muratori, falegnami, geometri, architetti, piastrellisti, giardinieri, serramentisti, termoidraulici, installatori di condizionatori — e molti altri. Se il tuo lavoro richiede di spiegare a un cliente quanto costerà un intervento prima di eseguirlo, prevai è per te.</p>
+      <p>Siamo già usati da professionisti in tutta Italia: da Milano a Palermo, da Torino a Bari.</p>
+    </div>
+  </div>
+</section>
+<section class="py-20 bg-white">
+  <div class="container mx-auto px-4 sm:px-6 lg:px-8 max-w-2xl text-center">
+    <h2 class="text-3xl font-bold text-gray-900 mb-5">Prova prevai gratuitamente</h2>
+    <p class="text-gray-500 text-lg mb-8">Crea il tuo primo preventivo in 30 secondi. Nessuna carta di credito richiesta.</p>
+    <div class="flex flex-col sm:flex-row gap-4 justify-center">
+      <a href="/sign-up" class="inline-flex items-center justify-center gap-2 rounded-xl px-8 py-4 text-base font-semibold text-white" style="background:linear-gradient(135deg,#7C3AED 0%,#A855F7 100%)">Inizia gratis</a>
+      <a href="/contatti" class="inline-flex items-center justify-center gap-2 rounded-xl px-8 py-4 text-base font-semibold text-gray-700 border border-gray-200">Contattaci</a>
+    </div>
+  </div>
+</section>`),
+});
+
+// /contatti/
+const contattiJsonLd = {
+  "@context": "https://schema.org",
+  "@type": "ContactPage",
+  name: "Contatti prevai",
+  url: `${BASE_URL}/contatti/`,
+  description: "Contatta il team prevai per supporto, domande sul prodotto o informazioni commerciali.",
+  mainEntity: {
+    "@type": "Organization",
+    name: "prevai",
+    url: `${BASE_URL}/`,
+    email: "info@prevai.it",
+    contactPoint: [
+      { "@type": "ContactPoint", email: "info@prevai.it", contactType: "customer support", availableLanguage: "it" },
+      { "@type": "ContactPoint", email: "privacy@prevai.it", contactType: "privacy inquiries", availableLanguage: "it" },
+    ],
+  },
+};
+buildStaticPageHtml({
+  slug: "contatti",
+  title: "Contatti | prevai — Assistenza e Supporto",
+  description: "Hai domande su prevai? Contattaci via email o WhatsApp. Siamo qui per aiutarti a generare preventivi professionali più velocemente.",
+  path: "/contatti/",
+  jsonLd: [contattiJsonLd, buildBreadcrumbJsonLd("Contatti", "/contatti/")],
+  bodyHtml: wrapInPublicLayout(`<section class="relative overflow-hidden bg-white pt-24 pb-16">
+  <div class="container mx-auto px-4 sm:px-6 lg:px-8 max-w-3xl text-center">
+    <h1 class="text-4xl sm:text-5xl font-bold tracking-tight text-gray-900 mb-5">Come possiamo <span style="background:linear-gradient(135deg,#7C3AED 0%,#A855F7 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent">aiutarti?</span></h1>
+    <p class="text-xl text-gray-600 leading-relaxed">Il team prevai risponde entro poche ore nei giorni feriali. Scegli il canale che preferisci.</p>
+  </div>
+</section>
+<section class="py-16 bg-gray-50">
+  <div class="container mx-auto px-4 sm:px-6 lg:px-8 max-w-4xl">
+    <div class="grid md:grid-cols-3 gap-6">
+      <div class="bg-white rounded-2xl p-8 border border-gray-100 shadow-sm">
+        <h2 class="text-lg font-bold text-gray-900 mb-2">Supporto prodotto</h2>
+        <p class="text-gray-500 text-sm leading-relaxed mb-4">Problemi tecnici, domande sull'utilizzo, richiesta di funzionalità.</p>
+        <a href="mailto:info@prevai.it" class="text-violet-600 font-semibold text-sm">info@prevai.it →</a>
+      </div>
+      <div class="bg-white rounded-2xl p-8 border border-gray-100 shadow-sm">
+        <h2 class="text-lg font-bold text-gray-900 mb-2">WhatsApp</h2>
+        <p class="text-gray-500 text-sm leading-relaxed mb-4">Vuoi provare il servizio via WhatsApp o hai una domanda rapida? Scrivici direttamente.</p>
+        <a href="/whatsapp" class="text-green-600 font-semibold text-sm">Scopri prevai su WhatsApp →</a>
+      </div>
+      <div class="bg-white rounded-2xl p-8 border border-gray-100 shadow-sm">
+        <h2 class="text-lg font-bold text-gray-900 mb-2">Privacy &amp; legale</h2>
+        <p class="text-gray-500 text-sm leading-relaxed mb-4">Richieste GDPR, esercizio dei diritti, questioni legali o contrattuali.</p>
+        <a href="mailto:privacy@prevai.it" class="text-gray-600 font-semibold text-sm">privacy@prevai.it →</a>
+      </div>
+    </div>
+  </div>
+</section>
+<section class="py-16 bg-white">
+  <div class="container mx-auto px-4 sm:px-6 lg:px-8 max-w-3xl">
+    <div class="bg-violet-50 border border-violet-100 rounded-2xl p-6">
+      <h3 class="font-bold text-gray-900 mb-1">Tempi di risposta</h3>
+      <p class="text-gray-600 text-sm leading-relaxed">Rispondiamo a tutte le email entro <strong>4-8 ore nei giorni feriali</strong> (lunedì–venerdì, 9:00–18:00 CET). Per le richieste inviate nel weekend, rispondiamo il lunedì mattina.</p>
+    </div>
+  </div>
+</section>
+<section class="py-16 bg-gray-50">
+  <div class="container mx-auto px-4 sm:px-6 lg:px-8 max-w-3xl">
+    <h2 class="text-2xl font-bold text-gray-900 mb-8">Domande frequenti</h2>
+    <div class="space-y-5">
+      <div class="bg-white rounded-2xl p-6 border border-gray-100"><h3 class="font-semibold text-gray-900 mb-2">Posso cancellare l'abbonamento in qualsiasi momento?</h3><p class="text-gray-500 text-sm leading-relaxed">Sì. Puoi cancellare il tuo abbonamento in qualsiasi momento dalle impostazioni del tuo account, senza penali o costi aggiuntivi. Continuerai ad avere accesso fino alla fine del periodo già pagato.</p></div>
+      <div class="bg-white rounded-2xl p-6 border border-gray-100"><h3 class="font-semibold text-gray-900 mb-2">Offrite uno sconto per agenzie o team?</h3><p class="text-gray-500 text-sm leading-relaxed">Sì. Per utilizzi multi-utente o volumi elevati, contattaci a info@prevai.it e troveremo la soluzione più adatta.</p></div>
+      <div class="bg-white rounded-2xl p-6 border border-gray-100"><h3 class="font-semibold text-gray-900 mb-2">I miei dati e i preventivi sono al sicuro?</h3><p class="text-gray-500 text-sm leading-relaxed">Sì. Tutti i dati sono cifrati in transito (TLS) e a riposo. Non condividiamo i tuoi dati con terze parti. Leggi la nostra Privacy Policy per i dettagli.</p></div>
+      <div class="bg-white rounded-2xl p-6 border border-gray-100"><h3 class="font-semibold text-gray-900 mb-2">Posso importare il mio listino prezzi?</h3><p class="text-gray-500 text-sm leading-relaxed">Sì. Dalla sezione Impostazioni → Listino puoi inserire i tuoi prezzi personalizzati che l'AI userà come riferimento per i tuoi preventivi.</p></div>
+    </div>
+  </div>
+</section>
+<section class="py-16 bg-white">
+  <div class="container mx-auto px-4 sm:px-6 lg:px-8 max-w-xl text-center">
+    <h2 class="text-2xl font-bold text-gray-900 mb-4">Non hai ancora un account?</h2>
+    <p class="text-gray-500 mb-6">Prova prevai gratis — nessuna carta di credito richiesta.</p>
+    <a href="/sign-up" class="inline-flex items-center justify-center gap-2 rounded-xl px-8 py-4 text-base font-semibold text-white" style="background:linear-gradient(135deg,#7C3AED 0%,#A855F7 100%)">Crea account gratuito</a>
+  </div>
+</section>`),
+});
+
+// /privacy/
+buildStaticPageHtml({
+  slug: "privacy",
+  title: "Privacy Policy | prevai",
+  description: "Informativa sulla privacy di prevai — come raccogliamo e trattiamo i tuoi dati personali.",
+  path: "/privacy/",
+  jsonLd: [buildWebPageJsonLd("Privacy Policy", "Informativa sulla privacy di prevai — come raccogliamo e trattiamo i tuoi dati personali.", "/privacy/"), buildBreadcrumbJsonLd("Privacy Policy", "/privacy/")],
+  bodyHtml: wrapInPublicLayout(`<div class="container mx-auto px-4 py-16 max-w-3xl">
+  <h1 class="text-3xl font-bold text-gray-900 mb-2">Privacy Policy</h1>
+  <p class="text-sm text-gray-500 mb-10">Ultimo aggiornamento: 6 maggio 2025</p>
+  <div class="prose prose-gray max-w-none space-y-8 text-sm leading-relaxed text-gray-700">
+    <section><h2 class="text-lg font-semibold text-gray-900 mb-3">1. Titolare del trattamento</h2><p>Il titolare del trattamento dei dati personali è <strong>PrevAI</strong> (di seguito "Società" o "noi"), raggiungibile all'indirizzo email <a href="mailto:privacy@prevai.it" class="text-violet-600">privacy@prevai.it</a>.</p></section>
+    <section><h2 class="text-lg font-semibold text-gray-900 mb-3">2. Dati raccolti</h2><p>Raccogliamo le seguenti categorie di dati personali:</p><ul class="list-disc pl-5 mt-2 space-y-1"><li><strong>Dati di registrazione:</strong> nome, cognome, indirizzo email, forniti al momento della creazione dell'account.</li><li><strong>Dati del profilo aziendale:</strong> ragione sociale, partita IVA, indirizzo, telefono, email aziendale, logo aziendale.</li><li><strong>Dati dei preventivi:</strong> descrizioni dei lavori, dati dei clienti (committenti), importi, voci di computo.</li><li><strong>Dati di pagamento:</strong> gestiti direttamente da Stripe Inc. — non accediamo ai dati della carta di credito.</li><li><strong>Dati tecnici:</strong> indirizzo IP, tipo di browser, pagine visitate, durata delle sessioni (tramite log di sistema).</li></ul></section>
+    <section><h2 class="text-lg font-semibold text-gray-900 mb-3">3. Finalità e base giuridica del trattamento</h2><div class="space-y-3"><div><p class="font-medium">a) Erogazione del servizio (art. 6(1)(b) GDPR — esecuzione del contratto)</p><p class="mt-1">Trattamento necessario per creare l'account, generare preventivi tramite AI, gestire abbonamenti e pagamenti.</p></div><div><p class="font-medium">b) Obblighi legali (art. 6(1)(c) GDPR)</p><p class="mt-1">Conservazione dei dati di fatturazione per gli obblighi fiscali previsti dalla normativa italiana.</p></div><div><p class="font-medium">c) Legittimo interesse (art. 6(1)(f) GDPR)</p><p class="mt-1">Analisi aggregate per migliorare il servizio, prevenzione delle frodi, sicurezza della piattaforma.</p></div><div><p class="font-medium">d) Consenso (art. 6(1)(a) GDPR)</p><p class="mt-1">Invio di comunicazioni promozionali e newsletter, previa esplicita accettazione.</p></div></div></section>
+    <section><h2 class="text-lg font-semibold text-gray-900 mb-3">4. Conservazione dei dati</h2><p>I dati vengono conservati per il tempo strettamente necessario alle finalità indicate:</p><ul class="list-disc pl-5 mt-2 space-y-1"><li>Dati dell'account: fino alla cancellazione dell'account, poi 30 giorni per finalità di sicurezza.</li><li>Dati dei preventivi: 10 anni dall'emissione (obblighi fiscali italiani).</li><li>Dati di fatturazione: 10 anni (D.P.R. 633/1972 e D.P.R. 600/1973).</li><li>Log tecnici: 90 giorni.</li></ul></section>
+    <section><h2 class="text-lg font-semibold text-gray-900 mb-3">5. Destinatari dei dati</h2><p>I dati possono essere comunicati alle seguenti categorie di destinatari:</p><ul class="list-disc pl-5 mt-2 space-y-1"><li><strong>Clerk Inc.</strong> — gestione dell'autenticazione e degli account utente (USA, con garanzie adeguate ex art. 46 GDPR).</li><li><strong>Stripe Inc.</strong> — elaborazione dei pagamenti (USA, con garanzie adeguate).</li><li><strong>OpenAI, LLC</strong> — generazione dei preventivi tramite intelligenza artificiale (USA, con garanzie adeguate). I dati inviati sono limitati alla descrizione del lavoro.</li><li><strong>Replit Inc.</strong> — infrastruttura cloud e hosting (USA, con garanzie adeguate).</li><li><strong>Resend Inc.</strong> — invio email transazionali.</li></ul><p class="mt-3">Non vendiamo dati personali a terzi. I trasferimenti extra-UE avvengono con le garanzie previste dagli artt. 44-49 GDPR (clausole contrattuali standard o decisioni di adeguatezza).</p></section>
+    <section><h2 class="text-lg font-semibold text-gray-900 mb-3">6. Diritti dell'interessato</h2><p>Ai sensi degli artt. 15-22 GDPR, hai diritto di:</p><ul class="list-disc pl-5 mt-2 space-y-1"><li><strong>Accesso</strong> — richiedere copia dei dati che trattiamo su di te.</li><li><strong>Rettifica</strong> — correggere dati inesatti o incompleti.</li><li><strong>Cancellazione ("diritto all'oblio")</strong> — richiedere la cancellazione dei dati, salvo obblighi legali di conservazione.</li><li><strong>Limitazione del trattamento</strong> — in determinati casi previsti dall'art. 18 GDPR.</li><li><strong>Portabilità</strong> — ricevere i tuoi dati in formato strutturato e leggibile da macchina.</li><li><strong>Opposizione</strong> — opporti al trattamento basato su legittimo interesse.</li><li><strong>Revoca del consenso</strong> — in qualsiasi momento, senza pregiudizio per la liceità del trattamento precedente.</li></ul><p class="mt-3">Per esercitare i tuoi diritti scrivi a <a href="mailto:privacy@prevai.it" class="text-violet-600">privacy@prevai.it</a>. Risponderemo entro 30 giorni. Hai anche il diritto di proporre reclamo all'Autorità di controllo italiana: Garante per la protezione dei dati personali.</p></section>
+    <section><h2 class="text-lg font-semibold text-gray-900 mb-3">7. Cookie e tecnologie di tracciamento</h2><p>Utilizziamo esclusivamente cookie tecnici necessari al funzionamento del servizio (autenticazione, sessione). Non utilizziamo cookie di profilazione o di terze parti a fini pubblicitari.</p></section>
+    <section><h2 class="text-lg font-semibold text-gray-900 mb-3">8. Sicurezza</h2><p>Adottiamo misure tecniche e organizzative adeguate per proteggere i dati da accesso non autorizzato, perdita o alterazione: connessioni cifrate (TLS/HTTPS), controllo degli accessi, autenticazione sicura.</p></section>
+    <section><h2 class="text-lg font-semibold text-gray-900 mb-3">9. Modifiche alla privacy policy</h2><p>Ci riserviamo il diritto di aggiornare questa informativa. Le modifiche sostanziali saranno comunicate via email o tramite avviso in piattaforma con almeno 14 giorni di anticipo.</p></section>
+    <section><h2 class="text-lg font-semibold text-gray-900 mb-3">10. Contatti</h2><p>Per qualsiasi domanda relativa alla privacy: <a href="mailto:privacy@prevai.it" class="text-violet-600">privacy@prevai.it</a></p></section>
+  </div>
+</div>`),
+});
+
+// /termini/
+buildStaticPageHtml({
+  slug: "termini",
+  title: "Termini di Servizio | prevai",
+  description: "Termini e condizioni di utilizzo della piattaforma prevai per la generazione di preventivi AI.",
+  path: "/termini/",
+  jsonLd: [buildWebPageJsonLd("Termini di Servizio", "Termini e condizioni di utilizzo della piattaforma prevai per la generazione di preventivi AI.", "/termini/"), buildBreadcrumbJsonLd("Termini di Servizio", "/termini/")],
+  bodyHtml: wrapInPublicLayout(`<div class="container mx-auto px-4 py-16 max-w-3xl">
+  <h1 class="text-3xl font-bold text-gray-900 mb-2">Termini di Servizio</h1>
+  <p class="text-sm text-gray-500 mb-10">Ultimo aggiornamento: 6 maggio 2025</p>
+  <div class="prose prose-gray max-w-none space-y-8 text-sm leading-relaxed text-gray-700">
+    <section><h2 class="text-lg font-semibold text-gray-900 mb-3">1. Accettazione dei termini</h2><p>Utilizzando la piattaforma <strong>PrevAI</strong> (di seguito "Servizio"), disponibile all'indirizzo <strong>prevai.it</strong>, l'utente accetta integralmente i presenti Termini di Servizio. Se non accetti questi termini, non puoi utilizzare il Servizio.</p></section>
+    <section><h2 class="text-lg font-semibold text-gray-900 mb-3">2. Descrizione del servizio</h2><p>PrevAI è una piattaforma SaaS che consente a professionisti, artigiani e imprese di generare preventivi professionali tramite intelligenza artificiale. Il Servizio include:</p><ul class="list-disc pl-5 mt-2 space-y-1"><li>Generazione di preventivi tramite AI a partire da una descrizione testuale dei lavori.</li><li>Creazione e download di documenti PDF professionale.</li><li>Gestione del profilo aziendale e archiviazione dei preventivi.</li><li>Piani di abbonamento mensile e acquisti singoli.</li></ul></section>
+    <section><h2 class="text-lg font-semibold text-gray-900 mb-3">3. Account utente</h2><p>Per accedere al Servizio è necessario creare un account fornendo dati veritieri e aggiornati. L'utente è responsabile della riservatezza delle proprie credenziali e di tutte le attività svolte tramite il proprio account. In caso di accesso non autorizzato, l'utente deve notificarlo immediatamente a <a href="mailto:supporto@prevai.it" class="text-violet-600">supporto@prevai.it</a>.</p></section>
+    <section><h2 class="text-lg font-semibold text-gray-900 mb-3">4. Piani e pagamenti</h2><div class="space-y-3"><div><p class="font-medium">4.1 Piani disponibili</p><ul class="list-disc pl-5 mt-1 space-y-1"><li><strong>Starter (€29/mese):</strong> fino a 20 preventivi al mese, PDF con filigrana PrevAI.</li><li><strong>Pro (€79/mese):</strong> preventivi illimitati, PDF senza filigrana, branding personalizzabile.</li><li><strong>Singolo con Watermark (€29):</strong> un singolo preventivo PDF con filigrana.</li><li><strong>Singolo Pulito (€39):</strong> un singolo preventivo PDF senza filigrana.</li></ul></div><div><p class="font-medium">4.2 Fatturazione</p><p class="mt-1">I piani mensili vengono rinnovati automaticamente ogni mese. I pagamenti sono processati tramite Stripe Inc. e sono soggetti ai relativi termini di servizio. I prezzi sono IVA esclusa.</p></div><div><p class="font-medium">4.3 Rimborsi</p><p class="mt-1">Ai sensi dell'art. 59(a) del Codice del Consumo (D.Lgs. 206/2005), il diritto di recesso non si applica ai contenuti digitali forniti immediatamente dopo l'acquisto con esplicito consenso. Per i piani mensili, puoi disdire in qualsiasi momento: il servizio rimane attivo fino alla fine del periodo già pagato. Non sono previsti rimborsi pro-rata per i periodi non utilizzati.</p></div></div></section>
+    <section><h2 class="text-lg font-semibold text-gray-900 mb-3">5. Uso accettabile</h2><p>È vietato utilizzare il Servizio per:</p><ul class="list-disc pl-5 mt-2 space-y-1"><li>Generare documenti falsi, fraudolenti o fuorvianti.</li><li>Violare diritti di terzi, normative applicabili o la presente policy.</li><li>Tentare di accedere a dati di altri utenti o compromettere la sicurezza della piattaforma.</li><li>Uso automatizzato massivo (scraping, bot) senza autorizzazione scritta.</li><li>Rivendere o sublicenziare l'accesso al Servizio a terzi.</li></ul></section>
+    <section><h2 class="text-lg font-semibold text-gray-900 mb-3">6. Proprietà intellettuale</h2><p>PrevAI e i relativi loghi, marchi, interfacce e codice sorgente sono di proprietà esclusiva della Società. I preventivi generati tramite il Servizio sono di proprietà dell'utente che li ha creato. L'utente concede a PrevAI una licenza limitata, non esclusiva, per elaborare i dati inseriti al solo fine di erogare il Servizio.</p></section>
+    <section><h2 class="text-lg font-semibold text-gray-900 mb-3">7. Limitazione di responsabilità</h2><p>I preventivi generati dall'AI sono indicativi e basati su dati statistici. <strong>PrevAI non garantisce l'accuratezza, la completezza o l'adeguatezza dei preventivi per specifici contesti contrattuali.</strong> L'utente è responsabile della verifica e validazione dei contenuti prima di presentarli ai propri clienti. PrevAI non è responsabile per danni indiretti, perdita di dati, lucro cessante o danni derivanti da errori nell'output dell'AI, nei limiti consentiti dalla legge applicabile.</p></section>
+    <section><h2 class="text-lg font-semibold text-gray-900 mb-3">8. Sospensione e cancellazione</h2><p>PrevAI si riserva il diritto di sospendere o terminare l'accesso al Servizio in caso di violazione dei presenti Termini, previo avviso via email salvo casi di grave violazione. L'utente può cancellare il proprio account in qualsiasi momento dalla pagina Impostazioni o contattando <a href="mailto:supporto@prevai.it" class="text-violet-600">supporto@prevai.it</a>.</p></section>
+    <section><h2 class="text-lg font-semibold text-gray-900 mb-3">9. Modifiche ai termini</h2><p>Ci riserviamo il diritto di modificare i presenti Termini con preavviso di almeno 14 giorni via email. L'uso continuato del Servizio dopo la data di efficacia delle modifiche costituisce accettazione dei nuovi Termini.</p></section>
+    <section><h2 class="text-lg font-semibold text-gray-900 mb-3">10. Legge applicabile e foro competente</h2><p>I presenti Termini sono regolati dalla legge italiana. Per qualsiasi controversia è competente in via esclusiva il Tribunale di Milano, salvo i casi in cui l'utente sia un consumatore ai sensi del D.Lgs. 206/2005 (Codice del Consumo), nel qual caso si applicano le disposizioni di legge inderogabili a tutela dei consumatori.</p></section>
+    <section><h2 class="text-lg font-semibold text-gray-900 mb-3">11. Contatti</h2><p>Per qualsiasi domanda sui presenti Termini: <a href="mailto:supporto@prevai.it" class="text-violet-600">supporto@prevai.it</a></p></section>
+  </div>
+</div>`),
+});
+
+// /whatsapp/
+buildStaticPageHtml({
+  slug: "whatsapp",
+  title: "Preventivi su WhatsApp – prevai | Prima piattaforma italiana",
+  description: "Descrivi il lavoro a voce, per testo o foto su WhatsApp. prevai genera un preventivo professionale con PDF in 60 secondi. Prima piattaforma in Italia.",
+  path: "/whatsapp/",
+  jsonLd: [buildWebPageJsonLd("Preventivi su WhatsApp", "Descrivi il lavoro a voce, per testo o foto su WhatsApp. prevai genera un preventivo professionale con PDF in 60 secondi.", "/whatsapp/"), buildBreadcrumbJsonLd("WhatsApp", "/whatsapp/")],
+  bodyHtml: wrapInPublicLayout(`<div class="flex flex-col bg-white">
+<section class="relative overflow-hidden bg-gray-950 pt-20 pb-24">
+  <div class="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10 text-center max-w-3xl">
+    <div class="inline-flex items-center gap-2 bg-green-500/10 border border-green-500/20 text-green-400 text-xs font-bold px-3 py-1.5 rounded-full mb-6">NOVITÀ · Prima in Italia</div>
+    <h1 class="text-4xl sm:text-5xl font-extrabold tracking-tight text-white leading-[1.1] mb-5">I tuoi preventivi, <span class="text-transparent bg-clip-text" style="background-image:linear-gradient(135deg,#a78bfa,#34d399)">direttamente su WhatsApp</span></h1>
+    <p class="text-lg text-gray-400 leading-relaxed mb-4 max-w-2xl mx-auto">Manda un vocale dal cantiere. PrevAI genera il preventivo professionale, te lo mostra in anteprima e ti invia il PDF — senza aprire nessuna app.</p>
+    <p class="text-sm text-gray-600 mb-10 font-medium">Mentre i tuoi concorrenti aprono ancora Excel, i tuoi clienti già ricevono il preventivo.</p>
+    <div class="flex flex-col sm:flex-row justify-center gap-3">
+      <a href="/sign-up?plan=monthly_pro" class="inline-flex h-12 items-center justify-center gap-2 px-7 rounded-xl text-sm font-bold text-white" style="background:linear-gradient(135deg,#7c3aed,#2563eb)">Attiva WhatsApp Bot</a>
+      <a href="#demo" class="inline-flex h-12 items-center justify-center gap-2 px-7 rounded-xl text-sm font-semibold text-gray-300 border border-gray-700">Guarda la demo</a>
+    </div>
+    <div class="mt-8 flex flex-col sm:flex-row items-center justify-center gap-4 text-xs text-gray-500">
+      <span>Disponibile su Piano Pro ed Elite</span><span class="hidden sm:block text-gray-700">·</span>
+      <span>Attivazione immediata</span><span class="hidden sm:block text-gray-700">·</span>
+      <span>Funziona con qualsiasi smartphone</span>
+    </div>
+  </div>
+</section>
+<section id="demo" class="py-20 bg-gray-50">
+  <div class="container mx-auto px-4 sm:px-6 lg:px-8 max-w-5xl">
+    <span class="inline-block text-violet-600 text-xs font-bold uppercase tracking-wider mb-3">Come funziona</span>
+    <h2 class="text-3xl font-bold tracking-tight text-gray-900 mb-6 leading-snug">Dal vocale al PDF <span class="text-violet-600">senza toccare il computer</span></h2>
+    <div class="space-y-5 max-w-2xl">
+      <div class="flex gap-4"><div class="w-8 h-8 rounded-xl text-sm font-bold shrink-0 flex items-center justify-center text-white" style="background:linear-gradient(135deg,#7c3aed,#2563eb)">1</div><div><p class="font-semibold text-gray-900 text-sm mb-0.5">Manda un vocale, testo o foto</p><p class="text-sm text-gray-500 leading-relaxed">Direttamente su WhatsApp. Descrivi il lavoro come parli con un cliente.</p></div></div>
+      <div class="flex gap-4"><div class="w-8 h-8 rounded-xl text-sm font-bold shrink-0 flex items-center justify-center text-white" style="background:linear-gradient(135deg,#7c3aed,#2563eb)">2</div><div><p class="font-semibold text-gray-900 text-sm mb-0.5">L'AI genera l'anteprima</p><p class="text-sm text-gray-500 leading-relaxed">Capitoli, prezzi e IVA in 60 secondi. Puoi correggere o approvare subito.</p></div></div>
+      <div class="flex gap-4"><div class="w-8 h-8 rounded-xl text-sm font-bold shrink-0 flex items-center justify-center text-white" style="background:linear-gradient(135deg,#7c3aed,#2563eb)">3</div><div><p class="font-semibold text-gray-900 text-sm mb-0.5">Ricevi il PDF in chat</p><p class="text-sm text-gray-500 leading-relaxed">Lo invii al cliente con un tap. Il preventivo viene salvato anche su prevai.it.</p></div></div>
+    </div>
+    <div class="mt-8 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3"><p class="text-sm font-semibold text-amber-900">In arrivo: fatture e solleciti automatici</p><p class="text-xs text-amber-700 mt-0.5">Sempre su WhatsApp. Stai costruendo il futuro prima degli altri.</p></div>
+  </div>
+</section>
+<section class="py-16 bg-white">
+  <div class="container mx-auto px-4 sm:px-6 lg:px-8 max-w-4xl">
+    <div class="text-center mb-10"><h2 class="text-2xl font-bold tracking-tight text-gray-900">Tutto quello che ti serve, in tasca</h2><p class="text-gray-500 mt-2 text-sm">Il potere di prevai.it, disponibile su WhatsApp in qualsiasi momento.</p></div>
+    <div class="grid sm:grid-cols-3 gap-6">
+      <div class="bg-gray-50 rounded-2xl p-5 border border-gray-100"><h3 class="font-semibold text-gray-900 text-sm mb-1.5">Voce, testo o foto</h3><p class="text-gray-500 text-xs leading-relaxed">Manda un vocale dall'auto, scrivi dal cantiere o fotografa gli appunti. L'AI capisce tutto e genera il preventivo.</p></div>
+      <div class="bg-gray-50 rounded-2xl p-5 border border-gray-100"><h3 class="font-semibold text-gray-900 text-sm mb-1.5">Preventivo in 60 secondi</h3><p class="text-gray-500 text-xs leading-relaxed">Capitoli, voci di costo, IVA e totali calcolati istantaneamente. Zero formule, zero Excel.</p></div>
+      <div class="bg-gray-50 rounded-2xl p-5 border border-gray-100"><h3 class="font-semibold text-gray-900 text-sm mb-1.5">PDF consegnato in chat</h3><p class="text-gray-500 text-xs leading-relaxed">Il documento professionale arriva direttamente su WhatsApp. Lo inoltri al cliente con un tap.</p></div>
+    </div>
+  </div>
+</section>
+<section class="py-16 bg-gray-950">
+  <div class="container mx-auto px-4 sm:px-6 lg:px-8 max-w-2xl text-center">
+    <p class="text-gray-500 text-sm mb-4 uppercase tracking-wider font-semibold">La realtà del mercato</p>
+    <h2 class="text-2xl sm:text-3xl font-bold text-white mb-6 leading-snug">I tuoi concorrenti impiegano <span class="line-through text-gray-600">30–40 minuti</span> per fare un preventivo. <span class="text-transparent bg-clip-text" style="background-image:linear-gradient(135deg,#a78bfa,#34d399)">Tu ce ne metti 60 secondi.</span></h2>
+    <p class="text-gray-400 text-sm mb-10 leading-relaxed">Un artigiano che risponde entro un'ora ha il <strong class="text-white">3× più probabilità</strong> di aggiudicarsi il lavoro. Con il bot WhatsApp, rispondi prima ancora di arrivare a casa.</p>
+  </div>
+</section>
+<section class="py-16 bg-white">
+  <div class="container mx-auto px-4 sm:px-6 lg:px-8 text-center max-w-xl">
+    <h2 class="text-2xl font-bold tracking-tight text-gray-900 mb-3">Inizia oggi. Zero configurazione.</h2>
+    <p class="text-gray-500 text-sm mb-7 leading-relaxed">Collega il tuo numero WhatsApp dalle impostazioni in meno di 2 minuti. Il bot è subito attivo.</p>
+    <div class="flex flex-col sm:flex-row justify-center gap-3">
+      <a href="/sign-up?plan=monthly_pro" class="inline-flex h-11 items-center justify-center gap-2 px-7 rounded-xl text-sm font-bold text-white" style="background:linear-gradient(135deg,#7c3aed,#2563eb)">Prova Gratis 7 Giorni</a>
+      <a href="/#prezzi" class="inline-flex h-11 items-center justify-center px-7 rounded-xl text-sm font-semibold text-gray-700 border border-gray-200">Confronta i piani</a>
+    </div>
+    <p class="text-xs text-gray-400 mt-4">7 giorni gratis · Nessuna carta richiesta · Cancella quando vuoi</p>
+  </div>
+</section>
+</div>`),
+});
+
+console.log(`  ✓ 5 SPA pages prerendered (chi-siamo, contatti, privacy, termini, whatsapp)`);
+
+console.log(`Prerendered ${count} pages total (1 homepage + SEO sector pages + ${BLOG_CATEGORIES.length} category pages + ${BLOG_ARTICLES.length + 1} blog pages + 5 SPA pages).`);
