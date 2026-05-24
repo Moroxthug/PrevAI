@@ -43,7 +43,7 @@ const ONE_YEAR_SECONDS = 60 * 60 * 24 * 365;
 
 app.use(
   express.static(PUBLIC_DIR, {
-    index: false,
+    index: "index.html",
     etag: true,
     lastModified: true,
     redirect: false,
@@ -110,8 +110,6 @@ function sendIndex(res) {
   res.setHeader("Cache-Control", "public, max-age=0, must-revalidate");
   res.sendFile(INDEX_HTML);
 }
-
-app.get("/", (_req, res) => sendIndex(res));
 
 app.use((req, res, next) => {
   if (req.method !== "GET" && req.method !== "HEAD") {
