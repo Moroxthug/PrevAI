@@ -998,7 +998,7 @@ const homepageSoftwareSchema = {
   offers: { "@type": "Offer", price: "0", priceCurrency: "EUR", description: "Prova gratuita disponibile" },
   audience: { "@type": "BusinessAudience", audienceType: "Artigiani, PMI, Professionisti, Freelance" },
   inLanguage: "it",
-  availableLanguage: "Italian",
+  availableLanguage: "it",
   provider: { "@type": "Organization", name: "prevai", url: BASE_URL },
   aggregateRating: {
     "@type": "AggregateRating",

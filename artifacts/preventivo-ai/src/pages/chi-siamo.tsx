@@ -19,7 +19,7 @@ export default function ChiSiamoPage() {
         "@type": "ContactPoint",
         email: "info@prevai.it",
         contactType: "customer service",
-        availableLanguage: "Italian",
+        availableLanguage: "it",
       },
     },
   ];
