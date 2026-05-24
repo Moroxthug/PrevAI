@@ -10,13 +10,30 @@
     <meta name="robots" content="index, follow" />
     <meta name="author" content="prevai" />
     <!--
-      No static <link rel="canonical"> here on purpose.
-      Every page sets its own canonical via <SeoHead> (react-helmet-async),
-      and the prerender pipeline injects the correct canonical into every
-      prerendered HTML file. A static canonical here would be inherited by
-      the SPA shell on dev/preview and confuse SEO audits (Lighthouse,
-      Semrush) because every route would appear to canonicalize to "/".
+      Production: the prerender pipeline (`scripts/prerender-seo.ts`)
+      writes the correct per-route <link rel="canonical"> directly into
+      every prerendered HTML file, so the snippet below is stripped/
+      replaced and never reaches a crawler in prod.
+
+      Dev/preview: the SPA shell is served for every route. The inline
+      script below sets a canonical that matches the current URL before
+      React mounts, so SEO audits (Lighthouse, Semrush) running against
+      the dev preview don't see every page canonicalizing to "/".
+      <SeoHead> (react-helmet-async) then refines it per-route after
+      hydration.
     -->
+    <link id="__canonical" rel="canonical" href="https://www.prevai.it/" />
+    <script>
+      (function () {
+        try {
+          var origin = "https://www.prevai.it";
+          var p = window.location.pathname || "/";
+          if (p.length > 1 && p.charAt(p.length - 1) !== "/") p = p + "/";
+          var el = document.getElementById("__canonical");
+          if (el) el.setAttribute("href", origin + p);
+        } catch (e) {}
+      })();
+    </script>
 
     <!-- Favicon -->
     <link rel="icon" type="image/x-icon" href="/favicon.ico" />
