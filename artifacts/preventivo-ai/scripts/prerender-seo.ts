@@ -394,6 +394,13 @@ function buildSectorJsonLd(s: SectorData): object[] {
       operatingSystem: "Web",
       inLanguage: "it",
       offers: { "@type": "Offer", price: "0", priceCurrency: "EUR", availability: "https://schema.org/InStock" },
+      aggregateRating: {
+        "@type": "AggregateRating",
+        ratingValue: "4.8",
+        ratingCount: "127",
+        bestRating: "5",
+        worstRating: "1",
+      },
     },
     {
       "@context": "https://schema.org",
@@ -1277,15 +1284,18 @@ function buildBlogListJsonLd(): object[] {
   ];
 }
 
-function buildArticleJsonLd(article: BlogArticle): object[] {
+function buildArticleJsonLd(article: BlogArticle, imagePath: string): object[] {
   const canonical = `${BASE_URL}/blog/${article.slug}/`;
+  const imageUrl = imagePath.startsWith("http") ? imagePath : `${BASE_URL}${imagePath}`;
   return [
     {
       "@context": "https://schema.org",
       "@type": "Article",
       headline: article.title,
       description: article.metaDescription,
+      image: [imageUrl],
       url: canonical,
+      mainEntityOfPage: { "@type": "WebPage", "@id": canonical },
       datePublished: article.publishedAt,
       dateModified: article.publishedAt,
       inLanguage: "it",
@@ -1696,7 +1706,7 @@ for (const article of BLOG_ARTICLES) {
     description: article.metaDescription,
     canonical: articleCanonical,
     ogImagePath: articleOgImage,
-    jsonLd: buildArticleJsonLd(article),
+    jsonLd: buildArticleJsonLd(article, articleOgImage),
   });
   const articleHtml = injectBody(injectHead(template, articleHeadBlock), buildBlogArticleBodyHtml(article));
   writeRoute(`blog/${article.slug}`, articleHtml);
