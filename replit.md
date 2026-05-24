@@ -121,6 +121,13 @@ Per completare la verifica e indicizzare la sitemap, segui questi passi:
 - Object Storage serving URL format: `/api/storage/objects/<uuid>` (objectPath from presigned URL response)
 - Legacy routes `/dashboard/profile` and `/dashboard/billing` still accessible but not in sidebar; use `/dashboard/settings` instead
 - **Adding a new public page**: add an entry to `artifacts/preventivo-ai/src/data/sitemap-routes.ts` (name, path, priority, changefreq), then use `PATHS.YOUR_NAME` in `App.tsx` for the `<Route>`. The sitemap auto-regenerates at build time via the `prebuild` hook. Never hardcode public route paths in `App.tsx` — always derive them from `PATHS`.
+- **Production static serving** (preventivo-ai): the deployment does NOT use Replit's built-in `serve = "static"` (it would emit `cache-control: private` and no gzip). Instead it runs a tiny Express server (`artifacts/preventivo-ai/server/serve.mjs`) wired in `[services.production].run` of the artifact's `artifact.toml`. The server:
+  - applies `compression()` (gzip/brotli) on every text response → HTML drops ~47 KB → ~6 KB
+  - sets `Cache-Control: public, max-age=31536000, immutable` on `/assets/*` and on any `.js`/`.css`/font files (Vite hashes the filename, so they are safe to long-cache)
+  - sets `Cache-Control: public, max-age=0, must-revalidate` on every `.html` and on the SPA fallback for unknown routes (so deploys are picked up immediately)
+  - sets short TTLs for `robots.txt` (1h) and images (1d)
+  - handles SPA fallback in-process — there are no `[[services.production.rewrites]]` anymore
+  - Deps: `express` + `compression` are runtime `dependencies` of `@workspace/preventivo-ai`. If you ever switch back to `serve = "static"`, the Semrush "uncompressed / no Cache-Control" warnings will come back.
 
 ## Pointers
 

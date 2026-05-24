@@ -19,12 +19,7 @@ run = "pnpm --filter @workspace/preventivo-ai run dev"
 
 [services.production]
 build = [ "pnpm", "--filter", "@workspace/preventivo-ai", "run", "build" ]
-publicDir = "artifacts/preventivo-ai/dist/public"
-serve = "static"
-
-[[services.production.rewrites]]
-from = "/*"
-to = "/index.html"
+run = [ "pnpm", "--filter", "@workspace/preventivo-ai", "run", "serve" ]
 
 [services.env]
 PORT = "19328"
