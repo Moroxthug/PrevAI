@@ -1041,6 +1041,91 @@ function buildHomepageBodyHtml(): string {
     </div>
   </section>
 
+  <section class="fade-in-section py-16 bg-white border-t border-gray-100">
+    <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="max-w-3xl mx-auto">
+        <div class="text-center mb-10">
+          <span class="inline-flex items-center gap-1.5 bg-violet-50 border border-violet-100 text-violet-700 text-xs font-semibold px-3 py-1 rounded-full mb-4">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.582a.5.5 0 0 1 0 .962L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z"/></svg>
+            Approfondimento
+          </span>
+          <h2 class="text-2xl font-bold tracking-tight text-gray-900 sm:text-3xl">
+            Cos&#39;è <span class="gradient-text">prevai</span> e a chi serve
+          </h2>
+        </div>
+
+        <div class="space-y-5 text-sm sm:text-[15px] text-gray-600 leading-relaxed">
+          <p>
+            <strong class="text-gray-900">prevai</strong> è il primo software italiano che usa l&#39;intelligenza
+            artificiale per trasformare una descrizione in linguaggio naturale in un preventivo professionale
+            completo. È pensato per artigiani, professionisti tecnici e piccole imprese che ogni settimana devono
+            inviare offerte ai clienti — imbianchini, elettricisti, idraulici, muratori, fabbri, falegnami, imprese
+            di ristrutturazione e tutti i mestieri del settore edile e impiantistico. L&#39;obiettivo è semplice:
+            ridurre il tempo per fare un preventivo da 30-60 minuti a 30 secondi, senza rinunciare alla qualità del
+            documento finale.
+          </p>
+
+          <div class="grid sm:grid-cols-3 gap-3 my-8">
+            <div class="rounded-xl bg-gray-50 border border-gray-100 p-4">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-violet-600 mb-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 10h12"/><path d="M4 14h9"/><path d="M19 6a7.7 7.7 0 0 0-5.2-2A7.9 7.9 0 0 0 6 12c0 4.4 3.5 8 7.8 8 2 0 3.8-.8 5.2-2"/></svg>
+              <div class="font-semibold text-gray-900 text-sm mb-1">IVA italiana integrata</div>
+              <p class="text-xs text-gray-500 leading-relaxed">Calcolo automatico IVA 10%, 22% e regime forfettario.</p>
+            </div>
+            <div class="rounded-xl bg-gray-50 border border-gray-100 p-4">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-violet-600 mb-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/></svg>
+              <div class="font-semibold text-gray-900 text-sm mb-1">Dati su server europei</div>
+              <p class="text-xs text-gray-500 leading-relaxed">Stripe per i pagamenti, cookie crittografati.</p>
+            </div>
+            <div class="rounded-xl bg-gray-50 border border-gray-100 p-4">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-violet-600 mb-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/><path d="M15 2v2"/><path d="M15 20v2"/><path d="M2 15h2"/><path d="M2 9h2"/><path d="M20 15h2"/><path d="M20 9h2"/><path d="M9 2v2"/><path d="M9 20v2"/></svg>
+              <div class="font-semibold text-gray-900 text-sm mb-1">AI addestrata in italiano</div>
+              <p class="text-xs text-gray-500 leading-relaxed">Lessico tecnico edile e impiantistico italiano.</p>
+            </div>
+          </div>
+
+          <h3 class="text-lg font-semibold text-gray-900 pt-3">Come funziona davvero</h3>
+          <p>
+            Apri prevai dal tuo smartphone direttamente in cantiere o da casa la sera. Descrivi il lavoro come lo
+            racconteresti a un collega: <em>«Tinteggiatura appartamento 80mq, due mani di lavabile bianca, rasatura
+            parete bagno»</em>. In trenta secondi il motore AI costruisce un preventivo strutturato in capitoli, con
+            voci di costo, unità di misura (metri quadri, ore, corpo), prezzi unitari di mercato italiano e calcolo
+            IVA automatico. Puoi modificare ogni voce, sostituire i prezzi con il tuo listino personale, aggiungere
+            o togliere capitoli. Quando sei pronto scarichi il PDF, lo invii via WhatsApp o email, e il documento
+            viene archiviato nella tua area personale per future modifiche.
+          </p>
+
+          <h3 class="text-lg font-semibold text-gray-900 pt-3">Perché funziona meglio di Excel o dei software tradizionali</h3>
+          <p>
+            I software di preventivazione tradizionali sono pensati per l&#39;ufficio: richiedono installazione,
+            configurazione iniziale di listini e codici, una formazione di ore. Excel è gratuito ma costringe a
+            partire ogni volta da un foglio bianco o da un template costruito anni fa. prevai elimina entrambi i
+            problemi: non c&#39;è nulla da installare (basta un browser), non serve configurare nulla all&#39;inizio
+            (l&#39;AI conosce già i prezzi medi) e ogni preventivo nasce già strutturato. In media i nostri utenti
+            dichiarano un risparmio di 4-6 ore a settimana, tempo che torna in cantiere o in famiglia.
+          </p>
+
+          <h3 class="text-lg font-semibold text-gray-900 pt-3">Sicurezza e fiscalità italiana</h3>
+          <p>
+            Tutti i dati sono ospitati su server europei, le sessioni sono protette da cookie crittografati e i
+            pagamenti passano da Stripe. La gestione fiscale segue le regole italiane: IVA al 10% per
+            ristrutturazioni residenziali, 22% per nuovi impianti, esenzione automatica per il regime forfettario.
+            I dati aziendali (P.IVA, codice fiscale, codice SDI per fatturazione elettronica) vengono memorizzati
+            una volta e applicati ad ogni preventivo.
+          </p>
+
+          <h3 class="text-lg font-semibold text-gray-900 pt-3">Quanto costa iniziare</h3>
+          <p>
+            La registrazione è gratuita e il primo preventivo si genera senza inserire la carta di credito. Da lì
+            puoi scegliere: pago un preventivo singolo (29€) quando serve, oppure attivo un abbonamento mensile
+            (Starter 19€ con 10 preventivi, Pro 49€ con 60 preventivi, Elite 59€ illimitati). Il piano si cambia
+            o si disdice in qualsiasi momento dall&#39;area cliente. Migliaia di professionisti italiani usano già
+            prevai ogni settimana.
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
   <section class="fade-in-section py-28 bg-white">
     <div class="container mx-auto px-4 sm:px-6 lg:px-8 text-center max-w-2xl">
       <h2 class="text-3xl font-bold text-gray-900 sm:text-4xl mb-4">
