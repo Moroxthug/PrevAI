@@ -1,5 +1,5 @@
 import { Link, useLocation } from "wouter";
-import { ArrowRight, CheckCircle2, FileText, Zap, Lock, Star, Sparkles, Mic, ImagePlus, Check, X, Loader2, ChevronDown } from "lucide-react";
+import { ArrowRight, CheckCircle2, FileText, Zap, Lock, Star, Sparkles, Mic, ImagePlus, Check, X, Loader2, ChevronDown, Shield, Cpu, Euro } from "lucide-react";
 import { SeoHead } from "@/components/seo-head";
 import { TestimonialsSection, TESTIMONIALS, AGGREGATE_RATING } from "@/components/testimonials-section";
 import { useGetPlans, useCreateCheckoutSession } from "@workspace/api-client-react";
@@ -790,6 +790,91 @@ export default function Home() {
           )}
         </div>
       </section>
+
+      {/* ── SEZIONE 10b: Cos'è prevai (approfondimento SEO) ──── */}
+      <ScrollSection className="py-16 bg-white border-t border-gray-100">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="max-w-3xl mx-auto">
+            <div className="text-center mb-10">
+              <span className="inline-flex items-center gap-1.5 bg-violet-50 border border-violet-100 text-violet-700 text-xs font-semibold px-3 py-1 rounded-full mb-4">
+                <Sparkles className="h-3 w-3" /> Approfondimento
+              </span>
+              <h2 className="text-2xl font-bold tracking-tight text-gray-900 sm:text-3xl">
+                Cos'è <span className="gradient-text">prevai</span> e a chi serve
+              </h2>
+            </div>
+
+            <div className="space-y-5 text-sm sm:text-[15px] text-gray-600 leading-relaxed">
+              <p>
+                <strong className="text-gray-900">prevai</strong> è il primo software italiano che usa l'intelligenza
+                artificiale per trasformare una descrizione in linguaggio naturale in un preventivo professionale
+                completo. È pensato per artigiani, professionisti tecnici e piccole imprese che ogni settimana devono
+                inviare offerte ai clienti — imbianchini, elettricisti, idraulici, muratori, fabbri, falegnami, imprese
+                di ristrutturazione e tutti i mestieri del settore edile e impiantistico. L'obiettivo è semplice:
+                ridurre il tempo per fare un preventivo da 30-60 minuti a 30 secondi, senza rinunciare alla qualità del
+                documento finale.
+              </p>
+
+              <div className="grid sm:grid-cols-3 gap-3 my-8">
+                <div className="rounded-xl bg-gray-50 border border-gray-100 p-4">
+                  <Euro className="h-5 w-5 text-violet-600 mb-2" />
+                  <div className="font-semibold text-gray-900 text-sm mb-1">IVA italiana integrata</div>
+                  <p className="text-xs text-gray-500 leading-relaxed">Calcolo automatico IVA 10%, 22% e regime forfettario.</p>
+                </div>
+                <div className="rounded-xl bg-gray-50 border border-gray-100 p-4">
+                  <Shield className="h-5 w-5 text-violet-600 mb-2" />
+                  <div className="font-semibold text-gray-900 text-sm mb-1">Dati su server europei</div>
+                  <p className="text-xs text-gray-500 leading-relaxed">Stripe per i pagamenti, cookie crittografati.</p>
+                </div>
+                <div className="rounded-xl bg-gray-50 border border-gray-100 p-4">
+                  <Cpu className="h-5 w-5 text-violet-600 mb-2" />
+                  <div className="font-semibold text-gray-900 text-sm mb-1">AI addestrata in italiano</div>
+                  <p className="text-xs text-gray-500 leading-relaxed">Lessico tecnico edile e impiantistico italiano.</p>
+                </div>
+              </div>
+
+              <h3 className="text-lg font-semibold text-gray-900 pt-3">Come funziona davvero</h3>
+              <p>
+                Apri prevai dal tuo smartphone direttamente in cantiere o da casa la sera. Descrivi il lavoro come lo
+                racconteresti a un collega: <em>«Tinteggiatura appartamento 80mq, due mani di lavabile bianca, rasatura
+                parete bagno»</em>. In trenta secondi il motore AI costruisce un preventivo strutturato in capitoli, con
+                voci di costo, unità di misura (metri quadri, ore, corpo), prezzi unitari di mercato italiano e calcolo
+                IVA automatico. Puoi modificare ogni voce, sostituire i prezzi con il tuo listino personale, aggiungere
+                o togliere capitoli. Quando sei pronto scarichi il PDF, lo invii via WhatsApp o email, e il documento
+                viene archiviato nella tua area personale per future modifiche.
+              </p>
+
+              <h3 className="text-lg font-semibold text-gray-900 pt-3">Perché funziona meglio di Excel o dei software tradizionali</h3>
+              <p>
+                I software di preventivazione tradizionali sono pensati per l'ufficio: richiedono installazione,
+                configurazione iniziale di listini e codici, una formazione di ore. Excel è gratuito ma costringe a
+                partire ogni volta da un foglio bianco o da un template costruito anni fa. prevai elimina entrambi i
+                problemi: non c'è nulla da installare (basta un browser), non serve configurare nulla all'inizio (l'AI
+                conosce già i prezzi medi) e ogni preventivo nasce già strutturato. In media i nostri utenti dichiarano
+                un risparmio di 4-6 ore a settimana, tempo che torna in cantiere o in famiglia.
+              </p>
+
+              <h3 className="text-lg font-semibold text-gray-900 pt-3">Sicurezza e fiscalità italiana</h3>
+              <p>
+                Tutti i dati sono ospitati su server europei, le sessioni sono protette da cookie crittografati e i
+                pagamenti passano da Stripe. La gestione fiscale segue le regole italiane: IVA al 10% per ristrutturazioni
+                residenziali, 22% per nuovi impianti, esenzione automatica per il regime forfettario. I dati aziendali
+                (P.IVA, codice fiscale, codice SDI per fatturazione elettronica) vengono memorizzati una volta e
+                applicati ad ogni preventivo.
+              </p>
+
+              <h3 className="text-lg font-semibold text-gray-900 pt-3">Quanto costa iniziare</h3>
+              <p>
+                La registrazione è gratuita e il primo preventivo si genera senza inserire la carta di credito. Da lì
+                puoi scegliere: pago un preventivo singolo (29€) quando serve, oppure attivo un abbonamento mensile
+                (Starter 19€ con 10 preventivi, Pro 49€ con 60 preventivi, Elite 59€ illimitati). Il piano si cambia
+                o si disdice in qualsiasi momento dall'area cliente. Migliaia di professionisti italiani usano già
+                prevai ogni settimana.
+              </p>
+            </div>
+          </div>
+        </div>
+      </ScrollSection>
 
       {/* ── SEZIONE 11 (posiz.): CTA finale ──────────────────── */}
       <ScrollSection className="py-14 bg-white">
