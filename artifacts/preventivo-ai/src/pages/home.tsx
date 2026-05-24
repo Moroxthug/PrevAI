@@ -116,7 +116,7 @@ export default function Home() {
       <SeoHead
         title="prevai – Preventivi Online per Artigiani e Aziende | AI in 30 Secondi"
         description="Dimentica Excel e i documenti scritti a mano. Descrivi il lavoro a parole tue e prevai genera un preventivo professionale con IVA, voci di costo e totali in 30 secondi."
-        canonical="https://www.prevai.it"
+        canonical="https://www.prevai.it/"
         jsonLd={[websiteJsonLd, aggregateRatingJsonLd]}
       />
 
