@@ -205,16 +205,16 @@ async function downloadMetaMedia(mediaId: string): Promise<{ buffer: Buffer; mim
 async function extractRawInput(
   message: WaMessage,
   from: string,
-): Promise<string | null> {
+): Promise<{ text: string | null; imageDataUrls?: string[] }> {
   const msgType = message.type;
 
   if (msgType === "text") {
-    return message.text?.body?.trim() ?? null;
+    return { text: message.text?.body?.trim() ?? null };
   }
 
   if (msgType === "audio" || msgType === "voice") {
     const mediaId = message.audio?.id ?? message.voice?.id;
-    if (!mediaId) return null;
+    if (!mediaId) return { text: null };
     try {
       const { buffer, mimeType } = await downloadMetaMedia(mediaId);
       const ext = mimeType.includes("ogg") ? "ogg" : mimeType.includes("mp4") ? "mp4" : "mp3";
@@ -225,16 +225,16 @@ async function extractRawInput(
         file,
         language: "it",
       });
-      return transcription.text;
+      return { text: transcription.text };
     } catch (err) {
       logger.error({ err }, "WhatsApp audio transcription failed");
       await sendWhatsappText(from, "❌ Non riuscito a trascrivere il messaggio vocale. Prova a scrivere in testo.");
-      return null;
+      return { text: null };
     }
   }
 
   if (msgType === "image") {
-    if (!message.image?.id) return null;
+    if (!message.image?.id) return { text: null };
     try {
       const { buffer, mimeType } = await downloadMetaMedia(message.image.id);
       const base64 = buffer.toString("base64");
@@ -242,17 +242,27 @@ async function extractRawInput(
       const { openai } = await import("@workspace/integrations-openai-ai-server");
       const completion = await openai.chat.completions.create({
         model: "gpt-4o",
-        max_completion_tokens: 1024,
+        max_completion_tokens: 2048,
         messages: [
-          { role: "system", content: "Sei un assistente che aiuta artigiani italiani. Analizza l'immagine: se è un preventivo già fatto da altro programma, rispondi con 'IMPORT:' seguito dal contenuto testuale estratto. Altrimenti descrivi il lavoro da fare. Scrivi in italiano." },
-          { role: "user", content: [{ type: "text", text: "Analizza questa immagine per generare un preventivo:" }, { type: "image_url", image_url: { url: dataUrl, detail: "high" } }] },
+          { role: "system", content: `Sei un esperto di estrazione dati da appunti di cantiere per artigiani edili italiani.
+
+Analizza l'immagine e trascrive TUTTO il contenuto visibile:
+- Testo scritto a mano: nomi, indirizzi, misure, materiali, prezzi, unità di misura
+- Numeri e quantità (mq, mc, ml, kg, ore, pezzi, ecc.)
+- Voci di lavoro con descrizioni complete
+- Prezzi unitari e totali
+- Qualsiasi altra informazione utile per un preventivo professionale
+
+Restituisci il contenuto in formato strutturato, voce per voce, mantenendo tutti i numeri, prezzi e misure ESATTI così come appaiono negli appunti. Scrivi in italiano.` },
+          { role: "user", content: [{ type: "text", text: "Trascrivi tutto il contenuto di questi appunti di cantiere per generare un preventivo professionale:" }, { type: "image_url", image_url: { url: dataUrl, detail: "high" } }] },
         ],
       });
-      return completion.choices[0]?.message?.content ?? null;
+      const text = completion.choices[0]?.message?.content ?? null;
+      return { text, imageDataUrls: text ? [dataUrl] : undefined };
     } catch (err) {
       logger.error({ err }, "WhatsApp image analysis failed");
       await sendWhatsappText(from, "❌ Non riuscito ad analizzare l'immagine. Prova a scrivere la descrizione in testo.");
-      return null;
+      return { text: null };
     }
   }
 
@@ -261,11 +271,11 @@ async function extractRawInput(
       from,
       "ℹ️ I file allegati non sono supportati.\n\nInviami la descrizione del lavoro in *testo*, un *messaggio vocale* o una *foto* degli appunti per generare un preventivo."
     );
-    return null;
+    return { text: null };
   }
 
   await sendWhatsappText(from, "ℹ️ Invia una *descrizione del lavoro* in testo, un *messaggio vocale* o una *foto* per generare un preventivo.");
-  return null;
+  return { text: null };
 }
 
 // ── Session helpers ─────────────────────────────────────────────────────────────
@@ -396,8 +406,12 @@ function classifyConfirmationIntent(text: string): ConfirmIntent {
   const t = text.toLowerCase().trim();
   const confirmKeywords = ["ok", "va bene", "va benissimo", "perfetto", "procedi", "ottimo", "bene", "confermo", "conferma", "approvato", "giusto", "corretto", "andiamo", "yes", "go", "sì", "si"];
   const abandonKeywords = ["abbandona", "ricomincia", "nuovo preventivo", "lascia stare", "annulla", "cancella", "reset", "no grazie", "ricomincia da capo"];
+  const socialBanal = ["ciao", "ciao!", "grazie", "grazie!", "grazie mille", "grazie mille!", "perfetto!", "ok!", "ottimo!", "bene!", "va bene!", "ok grazie", "ok grazie!"];
 
   if (confirmKeywords.some(kw => t === kw || t.startsWith(`${kw} `) || t.endsWith(` ${kw}`))) {
+    return "confirm";
+  }
+  if (socialBanal.some(kw => t === kw)) {
     return "confirm";
   }
   if (abandonKeywords.some(kw => t.includes(kw))) {
@@ -993,6 +1007,7 @@ async function handleJobInputReply(
   rawInput: string,
   session: typeof whatsappSessionsTable.$inferSelect,
   profile: typeof businessProfilesTable.$inferSelect,
+  imageDataUrls?: string[],
 ) {
   const payload = session.pendingQuoteData as Record<string, unknown>;
   const templateId = (payload.templateId as string | undefined) ?? "standard";
@@ -1022,7 +1037,7 @@ async function handleJobInputReply(
     : "";
   const augmentedInput = `${ivaHint}${rawInput}`;
 
-  const data = await buildQuoteFromAI({ userId, rawInput: augmentedInput, log: logger, templateId, clientData: clientData.nome ? clientData : undefined });
+  const data = await buildQuoteFromAI({ userId, rawInput: augmentedInput, log: logger, templateId, clientData: clientData.nome ? clientData : undefined, imageDataUrls });
   await upsertSession(from, userId, "awaiting_confirmation", data as unknown as Record<string, unknown>, 0);
   await sendQuotePreview(from, data, 0);
 }
@@ -1213,7 +1228,7 @@ router.post("/whatsapp/webhook", async (req, res) => {
       }
 
       // ── Extract input ───────────────────────────────────────────────────────────
-      const rawInput = await extractRawInput(message, from);
+      const { text: rawInput, imageDataUrls } = await extractRawInput(message, from);
       if (!rawInput?.trim()) return;
 
       // ── Connection check ────────────────────────────────────────────────────────
@@ -1283,7 +1298,7 @@ router.post("/whatsapp/webhook", async (req, res) => {
       }
 
       if (session?.state === "awaiting_job_input") {
-        await handleJobInputReply(from, connection.userId, rawInput, session, profile);
+        await handleJobInputReply(from, connection.userId, rawInput, session, profile, imageDataUrls);
         return;
       }
 

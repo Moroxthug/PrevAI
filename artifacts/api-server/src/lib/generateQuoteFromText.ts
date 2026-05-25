@@ -178,12 +178,14 @@ export async function buildQuoteFromAI({
   log,
   templateId,
   clientData,
+  imageDataUrls,
 }: {
   userId: string;
   rawInput: string;
   log: Logger;
   templateId?: string;
   clientData?: { nome: string; indirizzo: string };
+  imageDataUrls?: string[];
 }): Promise<PendingQuoteData> {
   const [profileRows, recentQuotes, catalogItems] = await Promise.all([
     db.select().from(businessProfilesTable).where(eq(businessProfilesTable.userId, userId)),
@@ -210,15 +212,27 @@ export async function buildQuoteFromAI({
     ? `Cliente: ${clientData.nome}${clientData.indirizzo ? `, ${clientData.indirizzo}` : ""}.\n\n`
     : "";
 
+  const hasImages = imageDataUrls && imageDataUrls.length > 0;
+
+  const userContent = hasImages
+    ? [
+        { type: "text" as const, text: `${clientPrefix}${rawInput}` },
+        ...imageDataUrls.map(img => ({
+          type: "image_url" as const,
+          image_url: { url: img, detail: "high" as const },
+        })),
+      ]
+    : `${clientPrefix}${rawInput}`;
+
   const completion = await openai.chat.completions.create({
-    model: "gpt-4o-mini",
+    model: hasImages ? "gpt-4o" : "gpt-4o-mini",
     max_completion_tokens: 8192,
     messages: [
       { role: "system", content: AI_PROMPT },
       ...(catalogContext ? [{ role: "system" as const, content: catalogContext }] : []),
       ...(pastContext ? [{ role: "system" as const, content: pastContext }] : []),
       ...(useCapitolato ? [{ role: "system" as const, content: CAPITOLATO_CONTEXT }] : []),
-      { role: "user", content: `${clientPrefix}${rawInput}` },
+      { role: "user", content: userContent },
     ],
   });
 
