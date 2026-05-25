@@ -1,6 +1,7 @@
 import { db, quotesTable, businessProfilesTable, priceCatalogItemsTable } from "@workspace/db";
 import { eq, desc } from "drizzle-orm";
 import { openai } from "@workspace/integrations-openai-ai-server";
+import { generateNumeroPreventivo } from "./quoteNumber.js";
 import type { QuoteChapter, QuoteDiscount, QuoteCompanySnapshot, QuoteClientData } from "@workspace/db";
 import type { Logger } from "pino";
 
@@ -24,13 +25,13 @@ REGOLE FONDAMENTALI:
 7. Condizioni di pagamento tipiche edilizia: 30% acconto firma, 30% SAL intermedio, 30% SAL finale, 10% saldo fine lavori
 8. Sempre IVA 22% salvo indicazione contraria
 9. Il titolo_riga2 deve descrivere l'intervento e il luogo del cantiere
-10. numero_preventivo_data: usa il formato "N° X.2026 del GG/MM/AAAA" con data odierna
+10. numero_preventivo_data: NON GENERARE — il server assegna il numero automaticamente. Restituisci una stringa vuota.
 
 OUTPUT — SOLO JSON VALIDO, nessun testo extra:
 {
   "titolo_riga1": "Analisi Economica e Computo Metrico Prezzato",
   "titolo_riga2": "Intervento di [descrizione breve] – [Comune] ([Prov])",
-  "numero_preventivo_data": "N° 1.2026 del GG/MM/AAAA",
+  "numero_preventivo_data": "",
   "cliente": { "nome": "", "indirizzo": "" },
   "descrizione_generale": "Descrizione sintetica dell'intervento",
   "capitoli": [
@@ -335,6 +336,9 @@ export async function saveQuoteToDb({
   templateId?: string;
 }): Promise<typeof quotesTable.$inferSelect> {
   const resolvedTemplateId = templateId ?? data.templateId ?? "standard";
+  const numeroPreventivoData = data.numeroPreventivoData
+    ? data.numeroPreventivoData
+    : await generateNumeroPreventivo(userId);
   const [quote] = await db.insert(quotesTable).values({
     userId,
     rawInput: data.rawInput,
@@ -348,7 +352,7 @@ export async function saveQuoteToDb({
     capitolatoPro: data.capitolatoPro,
     titoloPreventivoRiga1: data.titoloPreventivoRiga1,
     titoloPreventivoRiga2: data.titoloPreventivoRiga2,
-    numeroPreventivoData: data.numeroPreventivoData,
+    numeroPreventivoData,
     subtotale: data.subtotale,
     ivaPercentuale: data.ivaPercentuale,
     ivaValore: data.ivaValore,

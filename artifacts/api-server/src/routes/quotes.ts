@@ -34,6 +34,7 @@ _pdfmake.fonts = {
   },
 };
 import { ObjectStorageService } from "../lib/objectStorage.js";
+import { generateNumeroPreventivo } from "../lib/quoteNumber.js";
 import { randomUUID } from "crypto";
 
 const objectStorage = new ObjectStorageService();
@@ -74,13 +75,13 @@ REGOLE FONDAMENTALI:
 7. Condizioni di pagamento tipiche edilizia: 30% acconto firma, 30% SAL intermedio, 30% SAL finale, 10% saldo fine lavori
 8. Sempre IVA 22% salvo indicazione contraria
 9. Il titolo_riga2 deve descrivere l'intervento e il luogo del cantiere
-10. numero_preventivo_data: usa il formato "N° X.2026 del GG/MM/AAAA" con data odierna
+10. numero_preventivo_data: NON GENERARE — il server assegna il numero automaticamente. Restituisci una stringa vuota.
 
 OUTPUT — SOLO JSON VALIDO, nessun testo extra:
 {
   "titolo_riga1": "Analisi Economica e Computo Metrico Prezzato",
   "titolo_riga2": "Intervento di [descrizione breve] – [Comune] ([Prov])",
-  "numero_preventivo_data": "N° 1.2026 del GG/MM/AAAA",
+  "numero_preventivo_data": "",
   "cliente": { "nome": "", "indirizzo": "" },
   "descrizione_generale": "Descrizione sintetica dell'intervento",
   "capitoli": [
@@ -588,6 +589,8 @@ Esempio: "Demolizione e rimozione di pavimentazione esistente in piastrelle cera
           indirizzo: aiData.cliente?.indirizzo ?? "",
         };
 
+    const numeroPreventivoData = await generateNumeroPreventivo(userId);
+
     const [quote] = await db
       .insert(quotesTable)
       .values({
@@ -603,7 +606,7 @@ Esempio: "Demolizione e rimozione di pavimentazione esistente in piastrelle cera
         capitolatoPro: !!(profile?.subscriptionStatus === "active" && (profile?.subscriptionPlan === "monthly_pro" || profile?.subscriptionPlan === "monthly_elite")),
         titoloPreventivoRiga1: aiData.titolo_riga1 ?? "Analisi Economica e Computo Metrico Prezzato",
         titoloPreventivoRiga2: aiData.titolo_riga2 ?? "",
-        numeroPreventivoData: aiData.numero_preventivo_data ?? "",
+        numeroPreventivoData,
         subtotale: subtotale.toFixed(2),
         ivaPercentuale: ivaPercentuale.toFixed(2),
         ivaValore: ivaValore.toFixed(2),
@@ -858,6 +861,8 @@ router.post("/quotes/:id/duplicate", requireAuth, async (req, res) => {
       return;
     }
 
+    const newNumeroPreventivoData = await generateNumeroPreventivo(userId);
+
     const [newQuote] = await db
       .insert(quotesTable)
       .values({
@@ -871,7 +876,7 @@ router.post("/quotes/:id/duplicate", requireAuth, async (req, res) => {
         condizioniPagamento: Array.isArray(original.condizioniPagamento) ? original.condizioniPagamento : [],
         titoloPreventivoRiga1: original.titoloPreventivoRiga1,
         titoloPreventivoRiga2: original.titoloPreventivoRiga2,
-        numeroPreventivoData: null,
+        numeroPreventivoData: newNumeroPreventivoData,
         subtotale: original.subtotale,
         ivaPercentuale: original.ivaPercentuale,
         ivaValore: original.ivaValore,
@@ -1047,7 +1052,7 @@ Quando usi una voce del listino, applica il prezzo unitario esatto o molto simil
         condizioniPagamento,
         titoloPreventivoRiga1: aiData.titolo_riga1 ?? quote.titoloPreventivoRiga1,
         titoloPreventivoRiga2: aiData.titolo_riga2 ?? "",
-        numeroPreventivoData: aiData.numero_preventivo_data ?? quote.numeroPreventivoData,
+        numeroPreventivoData: quote.numeroPreventivoData,
         subtotale: subtotale.toFixed(2),
         ivaPercentuale: ivaPercentuale.toFixed(2),
         ivaValore: ivaValore.toFixed(2),
@@ -2617,12 +2622,7 @@ router.post("/quotes/manual", requireAuth, async (req, res) => {
     const ivaValore = Math.round(subtotale * (ivaPercentuale / 100) * 100) / 100;
     const totale = Math.round((subtotale + ivaValore) * 100) / 100;
 
-    // Auto-generate numero preventivo
-    const today = new Date();
-    const dd = String(today.getDate()).padStart(2, "0");
-    const mm = String(today.getMonth() + 1).padStart(2, "0");
-    const yyyy = today.getFullYear();
-    const numeroPreventivoData = `N° 1.${yyyy} del ${dd}/${mm}/${yyyy}`;
+    const numeroPreventivoData = await generateNumeroPreventivo(userId);
 
     const [quote] = await db
       .insert(quotesTable)
