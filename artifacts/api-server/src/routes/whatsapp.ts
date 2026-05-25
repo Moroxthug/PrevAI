@@ -428,24 +428,18 @@ function looksLikeNewWorkRequest(text: string): boolean {
 async function sendQuotePreview(from: string, data: PendingQuoteData, iterationCount: number) {
   const totale = new Intl.NumberFormat("it-IT", { style: "currency", currency: "EUR" }).format(Number(data.totale));
 
-  const imageBuffer = await generateQuotePreviewImage(data);
+  // Fast text-only preview (skip slow headless-browser image generation)
+  const chapSummary = data.capitoli.map(c =>
+    `  ${c.lettera}. ${c.titolo}: €${new Intl.NumberFormat("it-IT", { minimumFractionDigits: 2 }).format(c.subtotale)}`
+  ).join("\n");
 
-  if (imageBuffer) {
-    const caption = `📋 ${data.titoloPreventivoRiga2 || "Preventivo"} — ${totale}`;
-    await sendWhatsappImage(from, imageBuffer, caption);
-  } else {
-    // Text-only fallback preview
-    const chapSummary = data.capitoli.map(c =>
-      `  ${c.lettera}. ${c.titolo}: €${new Intl.NumberFormat("it-IT", { minimumFractionDigits: 2 }).format(c.subtotale)}`
-    ).join("\n");
-    await sendWhatsappText(from, [
-      `📋 *${data.titoloPreventivoRiga2 || "Preventivo generato"}*`,
-      ``,
-      chapSummary,
-      ``,
-      `💶 *Totale: ${totale}* (IVA ${data.ivaPercentuale}% inclusa)`,
-    ].join("\n"));
-  }
+  await sendWhatsappText(from, [
+    `📋 *${data.titoloPreventivoRiga2 || "Preventivo generato"}*`,
+    ``,
+    chapSummary,
+    ``,
+    `💶 *Totale: ${totale}* (IVA ${data.ivaPercentuale}% inclusa)`,
+  ].join("\n"));
 
   const remainingEdits = MAX_ITERATIONS - iterationCount;
   const confirmMsg = iterationCount === 0
