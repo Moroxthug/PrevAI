@@ -34,6 +34,33 @@ const PREVAI_BASE_URL = getBaseUrl();
 const SESSION_TTL_MS = 30 * 60 * 1000; // 30 minutes
 const MAX_ITERATIONS = 3; // max correction rounds before forcing save-as-draft
 
+// ── In-memory deduplication + per-number lock ──────────────────────────────────
+const processedMessageIds = new Set<string>();
+const processingLocks = new Map<string, boolean>();
+const MESSAGE_ID_WINDOW_MS = 5 * 60 * 1000; // 5 minutes
+
+function isDuplicateMessage(messageId: string): boolean {
+  if (processedMessageIds.has(messageId)) return true;
+  processedMessageIds.add(messageId);
+  // Keep window bounded (cleanup every ~1000 entries)
+  if (processedMessageIds.size > 2000) {
+    const ids = Array.from(processedMessageIds);
+    processedMessageIds.clear();
+    ids.slice(-1000).forEach(id => processedMessageIds.add(id));
+  }
+  return false;
+}
+
+async function acquireProcessingLock(phoneNumber: string): Promise<boolean> {
+  if (processingLocks.get(phoneNumber)) return false;
+  processingLocks.set(phoneNumber, true);
+  return true;
+}
+
+function releaseProcessingLock(phoneNumber: string): void {
+  processingLocks.delete(phoneNumber);
+}
+
 // ── Low-level send helpers ──────────────────────────────────────────────────────
 
 async function sendWhatsappText(to: string, text: string): Promise<void> {
@@ -185,10 +212,11 @@ async function extractRawInput(
     return message.text?.body?.trim() ?? null;
   }
 
-  if (msgType === "audio") {
-    if (!message.audio?.id) return null;
+  if (msgType === "audio" || msgType === "voice") {
+    const mediaId = message.audio?.id ?? message.voice?.id;
+    if (!mediaId) return null;
     try {
-      const { buffer, mimeType } = await downloadMetaMedia(message.audio.id);
+      const { buffer, mimeType } = await downloadMetaMedia(mediaId);
       const ext = mimeType.includes("ogg") ? "ogg" : mimeType.includes("mp4") ? "mp4" : "mp3";
       const file = new File([new Uint8Array(buffer)], `audio.${ext}`, { type: mimeType });
       const { openai } = await import("@workspace/integrations-openai-ai-server");
@@ -1166,104 +1194,121 @@ router.post("/whatsapp/webhook", async (req, res) => {
 
     const from = message.from;
     const msgType = message.type;
+    const messageId = message.id;
 
-    logger.info({ from, msgType }, "WhatsApp message received");
-
-    // ── OTP shortcut ────────────────────────────────────────────────────────────
-    if (msgType === "text" && /^\d{6}$/.test(message.text?.body?.trim() ?? "")) {
-      await handleInboundOtpVerification(from, message.text!.body.trim());
+    // Deduplicate by message id
+    if (isDuplicateMessage(messageId)) {
+      logger.info({ from, msgType, messageId }, "WhatsApp message deduplicated");
       return;
     }
 
-    // ── Extract input ───────────────────────────────────────────────────────────
-    const rawInput = await extractRawInput(message, from);
-    if (!rawInput?.trim()) return;
-
-    // ── Connection check ────────────────────────────────────────────────────────
-    const [connection] = await db
-      .select()
-      .from(whatsappConnectionsTable)
-      .where(eq(whatsappConnectionsTable.phoneNumber, from));
-
-    if (!connection) {
-      await sendWhatsappText(from, `ℹ️ Il tuo numero non è collegato a nessun account prevai.\n\nAccedi a ${PREVAI_BASE_URL}/dashboard/settings e collega il tuo numero WhatsApp.`);
+    // Acquire per-number lock to prevent parallel processing of multiple messages
+    const lockAcquired = await acquireProcessingLock(from);
+    if (!lockAcquired) {
+      logger.info({ from, msgType, messageId }, "WhatsApp message skipped: already processing");
       return;
     }
 
-    if (!connection.isEnabled) {
-      await sendWhatsappText(from, `ℹ️ L'integrazione WhatsApp è disabilitata. Riabilitala su ${PREVAI_BASE_URL}/dashboard/settings`);
-      return;
+    try {
+      logger.info({ from, msgType, messageId }, "WhatsApp message received");
+
+      // ── OTP shortcut ────────────────────────────────────────────────────────────
+      if (msgType === "text" && /^\d{6}$/.test(message.text?.body?.trim() ?? "")) {
+        await handleInboundOtpVerification(from, message.text!.body.trim());
+        return;
+      }
+
+      // ── Extract input ───────────────────────────────────────────────────────────
+      const rawInput = await extractRawInput(message, from);
+      if (!rawInput?.trim()) return;
+
+      // ── Connection check ────────────────────────────────────────────────────────
+      const [connection] = await db
+        .select()
+        .from(whatsappConnectionsTable)
+        .where(eq(whatsappConnectionsTable.phoneNumber, from));
+
+      if (!connection) {
+        await sendWhatsappText(from, `ℹ️ Il tuo numero non è collegato a nessun account prevai.\n\nAccedi a ${PREVAI_BASE_URL}/dashboard/settings e collega il tuo numero WhatsApp.`);
+        return;
+      }
+
+      if (!connection.isEnabled) {
+        await sendWhatsappText(from, `ℹ️ L'integrazione WhatsApp è disabilitata. Riabilitala su ${PREVAI_BASE_URL}/dashboard/settings`);
+        return;
+      }
+
+      // ── Plan check ──────────────────────────────────────────────────────────────
+      const [profile] = await db.select().from(businessProfilesTable).where(eq(businessProfilesTable.userId, connection.userId));
+      const allowedPlans = ["monthly_pro", "monthly_elite"];
+      if (profile?.subscriptionStatus !== "active" || !allowedPlans.includes(profile?.subscriptionPlan ?? "")) {
+        await sendWhatsappText(from, `⚠️ Il tuo account non ha un piano attivo che include WhatsApp. Aggiornalo su ${PREVAI_BASE_URL}/dashboard/settings`);
+        return;
+      }
+
+      // ── Load session ────────────────────────────────────────────────────────────
+      const session = await loadValidSession(from);
+
+      // ── Menu trigger — intercepts any state (except OTP, handled above) ─────────
+      if (isMenuTrigger(rawInput)) {
+        const prefs = await getPreferences(connection.userId);
+        await sendMainMenu(from, connection.userId, prefs);
+        return;
+      }
+
+      // ── Menu state routing ───────────────────────────────────────────────────────
+      if (session?.state === "menu_main") {
+        await handleMenuMainReply(from, connection.userId, rawInput, profile);
+        return;
+      }
+
+      if (session?.state === "menu_clients") {
+        await handleClientsMenuReply(from, connection.userId, rawInput, session);
+        return;
+      }
+
+      if (session?.state === "menu_template") {
+        await handleTemplateMenuReply(from, connection.userId, rawInput, profile);
+        return;
+      }
+
+      if (session?.state === "menu_iva") {
+        await handleIvaMenuReply(from, connection.userId, rawInput);
+        return;
+      }
+
+      // ── Quote flow state routing ─────────────────────────────────────────────────
+      if (session?.state === "awaiting_template_selection") {
+        await handleTemplateSelectionReply(from, connection.userId, rawInput, profile);
+        return;
+      }
+
+      if (session?.state === "awaiting_client_choice") {
+        await handleClientChoiceReply(from, connection.userId, rawInput, session);
+        return;
+      }
+
+      if (session?.state === "awaiting_job_input") {
+        await handleJobInputReply(from, connection.userId, rawInput, session, profile);
+        return;
+      }
+
+      if (session?.state === "awaiting_confirmation") {
+        await handleConfirmationReply(from, connection.userId, rawInput, session, profile);
+        return;
+      }
+
+      if (session?.state === "awaiting_client_data") {
+        // Legacy backward-compat handler
+        await handleClientDataReply(from, connection.userId, rawInput, session, profile);
+        return;
+      }
+
+      // ── No session: start greeting flow ─────────────────────────────────────────
+      await handleGreeting(from, connection.userId, profile);
+    } finally {
+      releaseProcessingLock(from);
     }
-
-    // ── Plan check ──────────────────────────────────────────────────────────────
-    const [profile] = await db.select().from(businessProfilesTable).where(eq(businessProfilesTable.userId, connection.userId));
-    const allowedPlans = ["monthly_pro", "monthly_elite"];
-    if (profile?.subscriptionStatus !== "active" || !allowedPlans.includes(profile?.subscriptionPlan ?? "")) {
-      await sendWhatsappText(from, `⚠️ Il tuo account non ha un piano attivo che include WhatsApp. Aggiornalo su ${PREVAI_BASE_URL}/dashboard/settings`);
-      return;
-    }
-
-    // ── Load session ────────────────────────────────────────────────────────────
-    const session = await loadValidSession(from);
-
-    // ── Menu trigger — intercepts any state (except OTP, handled above) ─────────
-    if (isMenuTrigger(rawInput)) {
-      const prefs = await getPreferences(connection.userId);
-      await sendMainMenu(from, connection.userId, prefs);
-      return;
-    }
-
-    // ── Menu state routing ───────────────────────────────────────────────────────
-    if (session?.state === "menu_main") {
-      await handleMenuMainReply(from, connection.userId, rawInput, profile);
-      return;
-    }
-
-    if (session?.state === "menu_clients") {
-      await handleClientsMenuReply(from, connection.userId, rawInput, session);
-      return;
-    }
-
-    if (session?.state === "menu_template") {
-      await handleTemplateMenuReply(from, connection.userId, rawInput, profile);
-      return;
-    }
-
-    if (session?.state === "menu_iva") {
-      await handleIvaMenuReply(from, connection.userId, rawInput);
-      return;
-    }
-
-    // ── Quote flow state routing ─────────────────────────────────────────────────
-    if (session?.state === "awaiting_template_selection") {
-      await handleTemplateSelectionReply(from, connection.userId, rawInput, profile);
-      return;
-    }
-
-    if (session?.state === "awaiting_client_choice") {
-      await handleClientChoiceReply(from, connection.userId, rawInput, session);
-      return;
-    }
-
-    if (session?.state === "awaiting_job_input") {
-      await handleJobInputReply(from, connection.userId, rawInput, session, profile);
-      return;
-    }
-
-    if (session?.state === "awaiting_confirmation") {
-      await handleConfirmationReply(from, connection.userId, rawInput, session, profile);
-      return;
-    }
-
-    if (session?.state === "awaiting_client_data") {
-      // Legacy backward-compat handler
-      await handleClientDataReply(from, connection.userId, rawInput, session, profile);
-      return;
-    }
-
-    // ── No session: start greeting flow ─────────────────────────────────────────
-    await handleGreeting(from, connection.userId, profile);
-
   } catch (err) {
     logger.error({ err }, "WhatsApp webhook handler error");
   }
@@ -1448,10 +1493,12 @@ export { generateQuoteFromText };
 // ── Types ──────────────────────────────────────────────────────────────────────
 
 type WaMessage = {
+  id: string;
   from: string;
   type: string;
   text?: { body: string };
   audio?: { id: string };
+  voice?: { id: string };
   image?: { id: string };
   document?: { id: string; mime_type?: string };
 };
