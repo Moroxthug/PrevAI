@@ -427,6 +427,19 @@ Questi prezzi riflettono i valori reali applicati dall'utente nel suo mercato lo
 
     const hasImages = imageDataUrls.length > 0;
 
+    const imagesContext = hasImages
+      ? `ISTRUZIONI PER LE IMMAGINI ALLEGATE:
+L'utente ha allegato ${imageDataUrls.length === 1 ? "una foto" : `${imageDataUrls.length} foto`} a supporto della richiesta. DEVI analizzarle attentamente ed estrarne ogni informazione utile per il preventivo:
+- Appunti scritti a mano (anche in corsivo): TRASCRIVI E INTERPRETA misure, quantità, descrizioni di lavori, materiali, marche, modelli, indirizzi, nomi clienti
+- Schizzi e disegni tecnici: deduci dimensioni, layout, tipologia di intervento
+- Foto di cantiere o di ambienti: identifica superfici, stato dei luoghi, lavorazioni necessarie, eventuali criticità
+- Etichette/foto di prodotti: estrai marca, modello, codici, caratteristiche tecniche
+- Documenti, planimetrie, computi: usa i numeri e le voci come base
+NON RIFIUTARE MAI di leggere o interpretare un'immagine: gli appunti dell'artigiano sono lo strumento principale di lavoro. Se un dato è illeggibile, fai un'assunzione ragionevole e procedi.
+Combina sempre le informazioni estratte dalle immagini con la descrizione testuale dell'utente per generare il preventivo più completo e accurato possibile.
+RICORDA: l'output deve essere SOLO JSON valido secondo lo schema indicato — MAI testo libero, MAI rifiuti, MAI spiegazioni.`
+      : "";
+
     const capitolatoProContext = `MODALITÀ CAPITOLATO TECNICO PROFESSIONALE:
 Per ogni voce di lavoro, scrivi la descrizione in stile CAPITOLATO SPECIALE D'APPALTO con ALMENO 4-6 linee tecniche in italiano formale:
 - Descrivi con precisione le operazioni eseguite e le modalità esecutive (ciclo lavorativo, tecniche, successione delle fasi)
@@ -446,6 +459,7 @@ Esempio: "Demolizione e rimozione di pavimentazione esistente in piastrelle cera
         ...(priceIntelContext ? [{ role: "system" as const, content: priceIntelContext }] : []),
         ...(pastContext ? [{ role: "system" as const, content: pastContext }] : []),
         ...(capitolatoProContext ? [{ role: "system" as const, content: capitolatoProContext }] : []),
+        ...(imagesContext ? [{ role: "system" as const, content: imagesContext }] : []),
         {
           role: "user",
           content: hasImages
@@ -494,8 +508,19 @@ Esempio: "Demolizione e rimozione di pavimentazione esistente in piastrelle cera
       const cleaned = content.trim().replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/i, "");
       aiData = JSON.parse(cleaned);
     } catch {
-      req.log.error({ content }, "Failed to parse AI JSON");
-      res.status(500).json({ error: "AI returned invalid JSON" });
+      req.log.error({ content, hasImages }, "Failed to parse AI JSON");
+      const isRefusal = /mi dispiace|mi spiace|non (posso|riesco)|sorry|i cannot|i can't/i.test(content);
+      if (isRefusal && hasImages) {
+        res.status(422).json({
+          error: "L'AI non è riuscita a interpretare le immagini allegate. Prova a riformulare la descrizione testuale aggiungendo i dettagli principali (misure, materiali, lavorazioni) oppure carica foto più chiare.",
+          code: "AI_IMAGE_REFUSAL",
+        });
+        return;
+      }
+      res.status(422).json({
+        error: "L'AI non ha restituito un preventivo valido. Riprova tra qualche istante o riformula la richiesta.",
+        code: "AI_INVALID_OUTPUT",
+      });
       return;
     }
 
@@ -533,6 +558,19 @@ Esempio: "Demolizione e rimozione di pavimentazione esistente in piastrelle cera
     const ivaPercentuale = Number(aiData.iva_percentuale ?? 22);
     const ivaValore = Number(aiData.iva_valore ?? 0);
     const totale = Number(aiData.totale ?? 0);
+
+    // Sanity check: reject empty/zero-value AI output before persisting a junk quote
+    const hasAnyVoci = capitoli.some(c => Array.isArray(c.voci) && c.voci.length > 0);
+    if (capitoli.length === 0 || !hasAnyVoci || totale <= 0) {
+      req.log.error({ aiData, hasImages }, "AI returned empty or invalid quote structure");
+      res.status(422).json({
+        error: hasImages
+          ? "L'AI non è riuscita a estrarre informazioni utili dalle immagini. Prova ad aggiungere più dettagli nella descrizione testuale (lavorazioni, misure, materiali)."
+          : "L'AI non è riuscita a generare un preventivo dalla descrizione fornita. Prova ad aggiungere più dettagli (lavorazioni, misure, materiali).",
+        code: "AI_EMPTY_QUOTE",
+      });
+      return;
+    }
 
     // Prefer structured clientData from request, fall back to AI-generated
     const resolvedClientData: QuoteClientData = clientDataInput?.nome

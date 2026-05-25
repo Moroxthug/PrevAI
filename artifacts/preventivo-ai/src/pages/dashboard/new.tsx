@@ -328,9 +328,11 @@ export default function NewQuote() {
       {
         onSuccess: (quote) => { setLocation(`/dashboard/quotes/${quote.id}`); },
         onError: (err: unknown) => {
-          const status = (err as { status?: number })?.status;
-          if (status === 429) {
+          const e = err as { status?: number; data?: { error?: string; code?: string } };
+          if (e.status === 429) {
             toast({ title: "Quota mensile raggiunta", description: "Hai raggiunto il limite del tuo piano. Passa a Pro per preventivi illimitati.", variant: "destructive" });
+          } else if (e.status === 422 && e.data?.error) {
+            toast({ title: "Impossibile generare il preventivo", description: e.data.error, variant: "destructive" });
           } else {
             toast({ title: "Errore nella generazione", description: "Si è verificato un errore. Riprova tra qualche istante.", variant: "destructive" });
           }
