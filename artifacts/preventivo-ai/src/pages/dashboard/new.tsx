@@ -291,7 +291,7 @@ export default function NewQuote() {
     if (!f.nome.trim()) return undefined;
     return {
       nome: f.nome.trim(),
-      ...(f.indirizzo.trim() && { indirizzo: f.indirizzo.trim() }),
+      indirizzo: f.indirizzo.trim(),
       ...(f.citta.trim() && { citta: f.citta.trim() }),
       ...(f.cap.trim() && { cap: f.cap.trim() }),
       ...(f.provincia.trim() && { provincia: f.provincia.trim() }),
@@ -331,7 +331,7 @@ export default function NewQuote() {
           const e = err as { status?: number; data?: { error?: string; code?: string } };
           if (e.status === 429) {
             toast({ title: "Quota mensile raggiunta", description: "Hai raggiunto il limite del tuo piano. Passa a Pro per preventivi illimitati.", variant: "destructive" });
-          } else if (e.status === 422 && e.data?.error) {
+          } else if ((e.status === 422 || e.status === 400) && e.data?.error) {
             toast({ title: "Impossibile generare il preventivo", description: e.data.error, variant: "destructive" });
           } else {
             toast({ title: "Errore nella generazione", description: "Si è verificato un errore. Riprova tra qualche istante.", variant: "destructive" });
