@@ -818,12 +818,15 @@ router.post("/quotes/:id/generate-pdf", requireAuth, async (req, res) => {
       }
     }
 
-    // Trial downloads get clean PDFs (no watermark)
+    // Determine watermark: Pro/Elite always clean; unlocked uses plan setting; draft gets watermark
+    const isProOrElite = profile?.subscriptionStatus === "active" &&
+      (profile?.subscriptionPlan === "monthly_pro" || profile?.subscriptionPlan === "monthly_elite");
     const unlockedPlan = effectiveStatus === "unlocked" && quote.status === "draft"
       ? "trial"
       : quote.unlockedWithPlan;
-    const withWatermark =
-      effectiveStatus !== "unlocked" || planHasWatermark(unlockedPlan);
+    const withWatermark = isProOrElite
+      ? false
+      : (effectiveStatus !== "unlocked" || planHasWatermark(unlockedPlan));
     const html = generateQuoteHtml(quote, withWatermark, profile ?? null);
 
     // Track first download time (lock editing after this point)

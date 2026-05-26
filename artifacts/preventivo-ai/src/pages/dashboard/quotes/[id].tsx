@@ -124,6 +124,7 @@ export default function QuoteDetail() {
   const [editTitolo1, setEditTitolo1] = useState("");
   const [editTitolo2, setEditTitolo2] = useState("");
   const [editNote, setEditNote] = useState("");
+  const [editDescrizioneGenerale, setEditDescrizioneGenerale] = useState("");
   const [editScontoPerc, setEditScontoPerc] = useState(0);
   const [editIvaPerc, setEditIvaPerc] = useState(22);
   const [editCapitoli, setEditCapitoli] = useState<EditCapitolo[]>([]);
@@ -172,12 +173,35 @@ export default function QuoteDetail() {
     });
   };
 
-  const openPdfWindow = (htmlContent: string) => {
-    const printWindow = window.open("", "_blank");
-    if (printWindow) {
-      printWindow.document.write(htmlContent);
-      printWindow.document.close();
-      setTimeout(() => { printWindow.print(); }, 500);
+  const downloadPdfDirect = async (htmlContent: string, filename: string) => {
+    try {
+      const html2pdf = (await import("html2pdf.js")).default;
+      const element = document.createElement("div");
+      element.innerHTML = htmlContent;
+      element.style.position = "fixed";
+      element.style.top = "-9999px";
+      element.style.left = "-9999px";
+      element.style.width = "210mm";
+      document.body.appendChild(element);
+
+      const opt = {
+        margin: [12, 16, 14, 16] as [number, number, number, number],
+        filename,
+        image: { type: "jpeg" as const, quality: 0.98 },
+        html2canvas: { scale: 2, useCORS: true, logging: false },
+        jsPDF: { unit: "mm" as const, format: "a4" as const, orientation: "portrait" as const },
+      };
+
+      await html2pdf().set(opt).from(element).save();
+      document.body.removeChild(element);
+    } catch {
+      // Fallback to print window if html2pdf fails
+      const printWindow = window.open("", "_blank");
+      if (printWindow) {
+        printWindow.document.write(htmlContent);
+        printWindow.document.close();
+        setTimeout(() => { printWindow.print(); }, 500);
+      }
     }
   };
 
@@ -185,7 +209,8 @@ export default function QuoteDetail() {
     if (!id || !quote) return;
     generatePdf.mutate({ id }, {
       onSuccess: (result) => {
-        openPdfWindow(result.htmlContent);
+        const filename = `Preventivo_${quote.id.slice(0, 4).toUpperCase()}.pdf`;
+        downloadPdfDirect(result.htmlContent, filename);
         // Refresh quote to pick up the new pdfDownloadedAt (editing lock)
         queryClient.invalidateQueries({ queryKey: getGetQuoteQueryKey(id) });
         // Also refresh trial status so the banner + button state updates
@@ -279,6 +304,7 @@ export default function QuoteDetail() {
     setEditTitolo1(quote.titoloPreventivoRiga1 || "");
     setEditTitolo2(quote.titoloPreventivoRiga2 || "");
     setEditNote(quote.note || "");
+    setEditDescrizioneGenerale(quote.descrizioneGenerale || "");
     setEditScontoPerc(quote.sconto?.percentuale ?? 0);
     setEditIvaPerc(quote.ivaPercentuale ?? 22);
     setEditCapitoli(
@@ -348,6 +374,7 @@ export default function QuoteDetail() {
         titoloPreventivoRiga1: editTitolo1 || null,
         titoloPreventivoRiga2: editTitolo2 || null,
         note: editNote,
+        descrizioneGenerale: editDescrizioneGenerale,
         sconto,
         subtotale,
         ivaPercentuale: editIvaPerc,
@@ -1392,6 +1419,25 @@ export default function QuoteDetail() {
                   </ul>
                 </div>
               ) : null}
+
+              {/* Descrizione Generale / Oggetto */}
+              {isEditMode ? (
+                <div className="pt-4 border-t border-violet-100">
+                  <div className="text-xs font-semibold text-slate-400 mb-1.5 uppercase tracking-wider">Descrizione generale / Oggetto</div>
+                  <textarea
+                    value={editDescrizioneGenerale}
+                    onChange={e => setEditDescrizioneGenerale(e.target.value)}
+                    className="w-full text-xs text-slate-500 bg-violet-50/50 border border-violet-200 rounded p-2 focus:outline-none focus:border-violet-400 resize-none min-h-[60px]"
+                    placeholder="Descrizione sintetica dell'intervento..."
+                  />
+                </div>
+              ) : (
+                quote.descrizioneGenerale && (
+                  <div className="pt-4 border-t border-slate-100 text-xs text-slate-500 italic">
+                    <strong>Oggetto: </strong>{quote.descrizioneGenerale}
+                  </div>
+                )
+              )}
 
               {/* Notes */}
               {isEditMode ? (
