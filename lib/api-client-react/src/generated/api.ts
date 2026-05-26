@@ -37,6 +37,8 @@ import type {
   Quote,
   QuoteStats,
   RegenerateQuoteBody,
+  SendQuotePdfEmail200,
+  SendQuotePdfEmailBody,
   SubscriptionInfo,
   SuccessResult,
   SuggestItemDescriptionBody,
@@ -902,6 +904,93 @@ export const useGenerateQuotePdf = <
   TContext
 > => {
   return useMutation(getGenerateQuotePdfMutationOptions(options));
+};
+
+/**
+ * @summary Send the quote PDF to the client via email
+ */
+export const getSendQuotePdfEmailUrl = (id: string) => {
+  return `/api/quotes/${id}/send-pdf-email`;
+};
+
+export const sendQuotePdfEmail = async (
+  id: string,
+  sendQuotePdfEmailBody: SendQuotePdfEmailBody,
+  options?: RequestInit,
+): Promise<SendQuotePdfEmail200> => {
+  return customFetch<SendQuotePdfEmail200>(getSendQuotePdfEmailUrl(id), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(sendQuotePdfEmailBody),
+  });
+};
+
+export const getSendQuotePdfEmailMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof sendQuotePdfEmail>>,
+    TError,
+    { id: string; data: BodyType<SendQuotePdfEmailBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof sendQuotePdfEmail>>,
+  TError,
+  { id: string; data: BodyType<SendQuotePdfEmailBody> },
+  TContext
+> => {
+  const mutationKey = ["sendQuotePdfEmail"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof sendQuotePdfEmail>>,
+    { id: string; data: BodyType<SendQuotePdfEmailBody> }
+  > = (props) => {
+    const { id, data } = props ?? {};
+
+    return sendQuotePdfEmail(id, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type SendQuotePdfEmailMutationResult = NonNullable<
+  Awaited<ReturnType<typeof sendQuotePdfEmail>>
+>;
+export type SendQuotePdfEmailMutationBody = BodyType<SendQuotePdfEmailBody>;
+export type SendQuotePdfEmailMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Send the quote PDF to the client via email
+ */
+export const useSendQuotePdfEmail = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof sendQuotePdfEmail>>,
+    TError,
+    { id: string; data: BodyType<SendQuotePdfEmailBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof sendQuotePdfEmail>>,
+  TError,
+  { id: string; data: BodyType<SendQuotePdfEmailBody> },
+  TContext
+> => {
+  return useMutation(getSendQuotePdfEmailMutationOptions(options));
 };
 
 /**

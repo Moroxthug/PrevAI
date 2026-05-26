@@ -304,3 +304,106 @@ export async function sendSubscriptionEmail(params: {
     logger.error({ err }, "Failed to send subscription email (non-fatal)");
   }
 }
+
+function buildQuoteEmailHtml(params: {
+  companyName: string;
+  clientName: string;
+  quoteNumber: string;
+  totale: string;
+}): string {
+  const { companyName, clientName, quoteNumber, totale } = params;
+  return `<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Preventivo da ${companyName}</title>
+<style>
+  body { margin:0; padding:0; background:#f5f3ff; font-family:system-ui,-apple-system,sans-serif; }
+  .wrapper { max-width:560px; margin:32px auto; background:#ffffff; border-radius:16px; overflow:hidden; box-shadow:0 4px 24px rgba(124,58,237,0.08); }
+  .header { background:linear-gradient(135deg,#7c3aed,#06b6d4); padding:32px 40px; text-align:center; }
+  .header img { height:36px; }
+  .header h1 { color:white; font-size:20px; font-weight:700; margin:16px 0 4px; }
+  .header p { color:rgba(255,255,255,0.85); font-size:14px; margin:0; }
+  .body { padding:32px 40px; }
+  .greeting { font-size:16px; color:#1a1a2e; margin-bottom:20px; line-height:1.6; }
+  .quote-box { background:#f5f3ff; border:1px solid #ede9fe; border-radius:12px; padding:20px 24px; margin:24px 0; }
+  .quote-row { display:flex; justify-content:space-between; align-items:center; padding:8px 0; border-bottom:1px solid #ede9fe; font-size:14px; }
+  .quote-row:last-child { border-bottom:none; font-weight:700; color:#7c3aed; font-size:16px; }
+  .quote-label { color:#6b7280; }
+  .cta { text-align:center; margin:28px 0; }
+  .btn { display:inline-block; background:linear-gradient(135deg,#7c3aed,#06b6d4); color:white; font-size:15px; font-weight:600; padding:13px 32px; border-radius:10px; text-decoration:none; }
+  .footer { background:#f9fafb; padding:20px 40px; text-align:center; font-size:12px; color:#9ca3af; border-top:1px solid #f3f4f6; }
+</style>
+</head>
+<body>
+<div class="wrapper">
+  <div class="header">
+    <img src="${LOGO_DATA_URI}" alt="Prevai" />
+    <h1>Il tuo preventivo è pronto</h1>
+    <p>${companyName} ti ha inviato un preventivo professionale</p>
+  </div>
+  <div class="body">
+    <p class="greeting">Ciao ${clientName || "Cliente"},<br/><br/>in allegato trovi il preventivo di <strong>${companyName}</strong>. Per qualsiasi domanda, non esitare a contattarci.</p>
+
+    <div class="quote-box">
+      <div class="quote-row">
+        <span class="quote-label">Preventivo</span>
+        <span><strong>${quoteNumber}</strong></span>
+      </div>
+      <div class="quote-row">
+        <span class="quote-label">Importo totale</span>
+        <span>\u20ac ${totale}</span>
+      </div>
+    </div>
+
+    <p style="font-size:13px;color:#6b7280;text-align:center;">Documento generato con <a href="https://prevai.it" style="color:#7c3aed;">Prevai</a></p>
+  </div>
+  <div class="footer">
+    ${companyName}<br/>
+    Hai ricevuto questa email perché sei stato indicato come destinatario del preventivo.
+  </div>
+</div>
+</body>
+</html>`;
+}
+
+export async function sendQuotePdfEmail(params: {
+  toEmail: string;
+  companyName: string;
+  clientName: string;
+  quoteNumber: string;
+  totale: string;
+  pdfBuffer: Buffer;
+  filename: string;
+}): Promise<void> {
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!apiKey) {
+    logger.warn("RESEND_API_KEY not set — skipping quote email");
+    throw new Error("Servizio email non configurato");
+  }
+  try {
+    const resend = new Resend(apiKey);
+    await resend.emails.send({
+      from: "Prevai <no-reply@prevai.it>",
+      to: [params.toEmail],
+      subject: `Preventivo ${params.quoteNumber} – ${params.companyName}`,
+      html: buildQuoteEmailHtml({
+        companyName: params.companyName,
+        clientName: params.clientName,
+        quoteNumber: params.quoteNumber,
+        totale: params.totale,
+      }),
+      attachments: [
+        {
+          filename: params.filename,
+          content: params.pdfBuffer.toString("base64"),
+        },
+      ],
+    });
+    logger.info({ to: params.toEmail, quoteNumber: params.quoteNumber }, "Quote PDF email sent");
+  } catch (err) {
+    logger.error({ err }, "Failed to send quote PDF email");
+    throw new Error("Impossibile inviare l'email con il preventivo");
+  }
+}

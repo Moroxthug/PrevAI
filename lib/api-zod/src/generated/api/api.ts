@@ -525,9 +525,24 @@ export const GenerateQuotePdfParams = zod.object({
 });
 
 export const GenerateQuotePdfResponse = zod.object({
-  pdfUrl: zod.string().optional(),
-  htmlContent: zod.string(),
+  pdfUrl: zod.string(),
   isDraft: zod.boolean().optional(),
+});
+
+/**
+ * @summary Send the quote PDF to the client via email
+ */
+export const SendQuotePdfEmailParams = zod.object({
+  id: zod.coerce.string(),
+});
+
+export const SendQuotePdfEmailBody = zod.object({
+  toEmail: zod.string().email(),
+  clientName: zod.string().optional(),
+});
+
+export const SendQuotePdfEmailResponse = zod.object({
+  success: zod.boolean().optional(),
 });
 
 /**

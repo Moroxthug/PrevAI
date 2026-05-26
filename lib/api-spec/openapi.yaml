@@ -196,6 +196,34 @@ paths:
               schema:
                 $ref: "#/components/schemas/PdfResult"
 
+  /quotes/{id}/send-pdf-email:
+    post:
+      operationId: sendQuotePdfEmail
+      tags: [quotes]
+      summary: Send the quote PDF to the client via email
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SendQuotePdfEmailBody"
+      responses:
+        "200":
+          description: Email sent
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+
   /quotes/{id}/duplicate:
     post:
       operationId: duplicateQuote
@@ -1107,12 +1135,10 @@ components:
       properties:
         pdfUrl:
           type: string
-        htmlContent:
-          type: string
         isDraft:
           type: boolean
       required:
-        - htmlContent
+        - pdfUrl
 
     BusinessProfile:
       type: object
@@ -1263,6 +1289,17 @@ components:
       required:
         - pdfUrl
         - quoteId
+
+    SendQuotePdfEmailBody:
+      type: object
+      properties:
+        toEmail:
+          type: string
+          format: email
+        clientName:
+          type: string
+      required:
+        - toEmail
 
     CreateManualQuoteBody:
       type: object

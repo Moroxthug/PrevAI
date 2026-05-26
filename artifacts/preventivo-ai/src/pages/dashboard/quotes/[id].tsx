@@ -1,12 +1,12 @@
 import { useParams, useSearch } from "wouter";
-import { useGetQuote, useGetBusinessProfile, useGenerateQuotePdf, useGetPlans, useUpdateQuote, useCreateCheckoutSession, useVerifyPayment, useGetSubscription, useUnlockQuoteWithSubscription, useCreateCustomerPortalSession, useRegenerateQuote, useDuplicateQuote, useUpgradeToCapitolatoPro, useGenerateQuotePdfPro, useGetTrialStatus, useListClients, getGetQuoteQueryKey, getVerifyPaymentQueryKey, getListQuotesQueryKey, getGetTrialStatusQueryKey } from "@workspace/api-client-react";
+import { useGetQuote, useGetBusinessProfile, useGenerateQuotePdf, useGetPlans, useUpdateQuote, useCreateCheckoutSession, useVerifyPayment, useGetSubscription, useUnlockQuoteWithSubscription, useCreateCustomerPortalSession, useRegenerateQuote, useDuplicateQuote, useUpgradeToCapitolatoPro, useGenerateQuotePdfPro, useGetTrialStatus, useListClients, useSendQuotePdfEmail, getGetQuoteQueryKey, getVerifyPaymentQueryKey, getListQuotesQueryKey, getGetTrialStatusQueryKey } from "@workspace/api-client-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
-import { Download, Lock, CheckCircle2, Edit2, Save, FileText, ChevronDown, ChevronRight, Plus, Trash2, X, Pencil, Sparkles, AlertTriangle, RefreshCw, Loader2, Copy, Star, FileDown, LayoutTemplate, Users } from "lucide-react";
+import { Download, Lock, CheckCircle2, Edit2, Save, FileText, ChevronDown, ChevronRight, Plus, Trash2, X, Pencil, Sparkles, AlertTriangle, RefreshCw, Loader2, Copy, Star, FileDown, LayoutTemplate, Users, Mail } from "lucide-react";
 import { useState, useRef, useEffect, Fragment } from "react";
 import { useLocation } from "wouter";
 import { format } from "date-fns";
@@ -116,6 +116,8 @@ export default function QuoteDetail() {
 
   const [isCapitolatoDialogOpen, setIsCapitolatoDialogOpen] = useState(false);
   const [isPaywallOpen, setIsPaywallOpen] = useState(false);
+  const [isEmailDialogOpen, setIsEmailDialogOpen] = useState(false);
+  const [emailTo, setEmailTo] = useState("");
   const [isEditingClient, setIsEditingClient] = useState(false);
   const [clientName, setClientName] = useState("");
   const [clientAddress, setClientAddress] = useState("");
@@ -174,35 +176,22 @@ export default function QuoteDetail() {
     });
   };
 
-  const downloadPdfDirect = async (htmlContent: string, filename: string) => {
+  const downloadPdfFromUrl = async (pdfUrl: string, filename: string) => {
     try {
-      const html2pdf = (await import("html2pdf.js")).default;
-      const element = document.createElement("div");
-      element.innerHTML = htmlContent;
-      element.style.position = "fixed";
-      element.style.top = "-9999px";
-      element.style.left = "-9999px";
-      element.style.width = "210mm";
-      document.body.appendChild(element);
-
-      const opt = {
-        margin: [12, 16, 14, 16] as [number, number, number, number],
-        filename,
-        image: { type: "jpeg" as const, quality: 0.98 },
-        html2canvas: { scale: 2, useCORS: true, logging: false },
-        jsPDF: { unit: "mm" as const, format: "a4" as const, orientation: "portrait" as const },
-      };
-
-      await html2pdf().set(opt).from(element).save();
-      document.body.removeChild(element);
+      const fullUrl = pdfUrl.startsWith("/api") ? pdfUrl : `/api/storage${pdfUrl}`;
+      const response = await fetch(fullUrl);
+      if (!response.ok) throw new Error("Download failed");
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
     } catch {
-      // Fallback to print window if html2pdf fails
-      const printWindow = window.open("", "_blank");
-      if (printWindow) {
-        printWindow.document.write(htmlContent);
-        printWindow.document.close();
-        setTimeout(() => { printWindow.print(); }, 500);
-      }
+      toast({ title: "Errore", description: "Impossibile scaricare il PDF", variant: "destructive" });
     }
   };
 
@@ -210,20 +199,50 @@ export default function QuoteDetail() {
     if (!id || !quote) return;
     generatePdf.mutate({ id }, {
       onSuccess: (result) => {
-        const filename = `Preventivo_${quote.id.slice(0, 4).toUpperCase()}.pdf`;
-        downloadPdfDirect(result.htmlContent, filename);
-        // Refresh quote to pick up the new pdfDownloadedAt (editing lock)
+        const numero = quote.numeroPreventivoData
+          ? quote.numeroPreventivoData.replace(/\//g, "_")
+          : `N\u00b0 ${quote.id.slice(0, 4).toUpperCase()} del ${new Date(quote.createdAt || Date.now()).toLocaleDateString("it-IT").replace(/\//g, "_")}`;
+        const filename = `Preventivo ${numero}.pdf`;
+        if (result.pdfUrl) {
+          downloadPdfFromUrl(result.pdfUrl, filename);
+        } else {
+          toast({ title: "Errore", description: "Impossibile scaricare il PDF", variant: "destructive" });
+        }
         queryClient.invalidateQueries({ queryKey: getGetQuoteQueryKey(id) });
-        // Also refresh trial status so the banner + button state updates
         queryClient.invalidateQueries({ queryKey: getGetTrialStatusQueryKey() });
       },
       onError: (err: unknown) => {
-        // 402 means trial expired or no entitlement — open paywall
         const status = (err as { status?: number })?.status;
         if (status === 402) {
           setIsPaywallOpen(true);
         } else {
           toast({ title: "Errore", description: "Impossibile generare il PDF", variant: "destructive" });
+        }
+      }
+    });
+  };
+
+  const sendPdfEmail = useSendQuotePdfEmail();
+
+  const handleSendEmail = () => {
+    if (!id || !quote || !emailTo.trim()) return;
+    sendPdfEmail.mutate({
+      id,
+      data: { toEmail: emailTo.trim(), clientName: (quote.clientData as { nome?: string })?.nome || "" }
+    }, {
+      onSuccess: () => {
+        setIsEmailDialogOpen(false);
+        setEmailTo("");
+        toast({ title: "Email inviata!", description: `Il preventivo \u00e8 stato inviato a ${emailTo.trim()}` });
+      },
+      onError: (err: unknown) => {
+        const status = (err as { status?: number })?.status;
+        const msg = (err as { data?: { error?: string } })?.data?.error;
+        if (status === 402) {
+          setIsEmailDialogOpen(false);
+          setIsPaywallOpen(true);
+        } else {
+          toast({ title: "Errore", description: msg || "Impossibile inviare l'email", variant: "destructive" });
         }
       }
     });
@@ -530,6 +549,19 @@ export default function QuoteDetail() {
               : isLocked ? <Lock className="h-4 w-4" /> : <Download className="h-4 w-4" />}
             Scarica PDF
           </Button>
+          {!isLocked && quote?.status === "unlocked" && (
+            <Button
+              variant="outline"
+              className="gap-2"
+              onClick={() => setIsEmailDialogOpen(true)}
+              disabled={sendPdfEmail.isPending}
+            >
+              {sendPdfEmail.isPending
+                ? <Loader2 className="h-4 w-4 animate-spin" />
+                : <Mail className="h-4 w-4" />}
+              Invia via email
+            </Button>
+          )}
           {!quote.capitolatoPro && (
             <Button
               variant="outline"
@@ -1507,6 +1539,19 @@ export default function QuoteDetail() {
                   : isLocked ? <Lock className="h-4 w-4" /> : <Download className="h-4 w-4" />}
                 Scarica PDF
               </Button>
+              {!isLocked && quote?.status === "unlocked" && (
+                <Button
+                  variant="outline"
+                  className="w-full justify-start gap-2"
+                  onClick={() => setIsEmailDialogOpen(true)}
+                  disabled={sendPdfEmail.isPending}
+                >
+                  {sendPdfEmail.isPending
+                    ? <Loader2 className="h-4 w-4 animate-spin" />
+                    : <Mail className="h-4 w-4" />}
+                  Invia via email
+                </Button>
+              )}
               {!isEditLocked && (
                 <>
                   <Button
@@ -1909,6 +1954,49 @@ export default function QuoteDetail() {
                 </div>
               </>
             )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Email send dialog */}
+      <Dialog open={isEmailDialogOpen} onOpenChange={setIsEmailDialogOpen}>
+        <DialogContent className="sm:max-w-[420px]">
+          <DialogHeader>
+            <DialogTitle className="text-lg">Invia preventivo via email</DialogTitle>
+            <DialogDescription className="text-sm">
+              Inserisci l'indirizzo email del committente. Il PDF verr\u00e0 allegato automaticamente.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-1.5">
+              <Label htmlFor="emailTo">Email del destinatario</Label>
+              <Input
+                id="emailTo"
+                type="email"
+                placeholder="cliente@esempio.it"
+                value={emailTo}
+                onChange={e => setEmailTo(e.target.value)}
+                onKeyDown={e => { if (e.key === "Enter") handleSendEmail(); }}
+              />
+            </div>
+            {quote?.clientData && (
+              <div className="text-xs text-muted-foreground">
+                Destinatario: <strong>{(quote.clientData as { nome?: string })?.nome || "Cliente"}</strong>
+              </div>
+            )}
+          </div>
+          <div className="flex justify-end gap-2 pt-2">
+            <Button variant="outline" onClick={() => setIsEmailDialogOpen(false)}>Annulla</Button>
+            <Button
+              onClick={handleSendEmail}
+              disabled={!emailTo.trim().includes("@") || sendPdfEmail.isPending}
+              className="gap-2"
+            >
+              {sendPdfEmail.isPending
+                ? <Loader2 className="h-4 w-4 animate-spin" />
+                : <Mail className="h-4 w-4" />}
+              Invia
+            </Button>
           </div>
         </DialogContent>
       </Dialog>

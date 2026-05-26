@@ -176,8 +176,7 @@ export interface RegenerateQuoteBody {
 }
 
 export interface PdfResult {
-  pdfUrl?: string;
-  htmlContent: string;
+  pdfUrl: string;
   isDraft?: boolean;
 }
 
@@ -263,6 +262,11 @@ export interface Plan {
 export interface CapitolatoPdfResult {
   pdfUrl: string;
   quoteId: string;
+}
+
+export interface SendQuotePdfEmailBody {
+  toEmail: string;
+  clientName?: string;
 }
 
 export type CreateManualQuoteBodyTemplateId =
@@ -465,6 +469,10 @@ export interface Client {
   partitaIva?: string | null;
   codiceFiscale?: string | null;
 }
+
+export type SendQuotePdfEmail200 = {
+  success?: boolean;
+};
 
 export type UploadBusinessProfileLogoBody = {
   logo: Blob;
