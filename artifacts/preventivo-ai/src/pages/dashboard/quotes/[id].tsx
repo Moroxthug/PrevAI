@@ -1,12 +1,12 @@
 import { useParams, useSearch } from "wouter";
-import { useGetQuote, useGetBusinessProfile, useGenerateQuotePdf, useGetPlans, useUpdateQuote, useCreateCheckoutSession, useVerifyPayment, useGetSubscription, useUnlockQuoteWithSubscription, useCreateCustomerPortalSession, useRegenerateQuote, useDuplicateQuote, useUpgradeToCapitolatoPro, useGenerateQuotePdfPro, useGetTrialStatus, getGetQuoteQueryKey, getVerifyPaymentQueryKey, getListQuotesQueryKey, getGetTrialStatusQueryKey } from "@workspace/api-client-react";
+import { useGetQuote, useGetBusinessProfile, useGenerateQuotePdf, useGetPlans, useUpdateQuote, useCreateCheckoutSession, useVerifyPayment, useGetSubscription, useUnlockQuoteWithSubscription, useCreateCustomerPortalSession, useRegenerateQuote, useDuplicateQuote, useUpgradeToCapitolatoPro, useGenerateQuotePdfPro, useGetTrialStatus, useListClients, getGetQuoteQueryKey, getVerifyPaymentQueryKey, getListQuotesQueryKey, getGetTrialStatusQueryKey } from "@workspace/api-client-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
-import { Download, Lock, CheckCircle2, Edit2, Save, FileText, ChevronDown, ChevronRight, Plus, Trash2, X, Pencil, Sparkles, AlertTriangle, RefreshCw, Loader2, Copy, Star, FileDown, LayoutTemplate } from "lucide-react";
+import { Download, Lock, CheckCircle2, Edit2, Save, FileText, ChevronDown, ChevronRight, Plus, Trash2, X, Pencil, Sparkles, AlertTriangle, RefreshCw, Loader2, Copy, Star, FileDown, LayoutTemplate, Users } from "lucide-react";
 import { useState, useRef, useEffect, Fragment } from "react";
 import { useLocation } from "wouter";
 import { format } from "date-fns";
@@ -40,6 +40,7 @@ export default function QuoteDetail() {
   const { data: quote, isLoading: isLoadingQuote } = useGetQuote(id || "");
   const { data: profile, isLoading: isLoadingProfile } = useGetBusinessProfile();
   const { data: plans } = useGetPlans();
+  const { data: savedClients } = useListClients();
   const generatePdf = useGenerateQuotePdf();
   const updateQuote = useUpdateQuote();
   const createCheckout = useCreateCheckoutSession();
@@ -660,6 +661,33 @@ export default function QuoteDetail() {
                 <div className="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Spett.le Committente</div>
                 {isEditMode ? (
                   <div className="space-y-2 bg-violet-50/60 border border-violet-200 rounded-lg p-3">
+                    {/* Saved client selector */}
+                    {savedClients && savedClients.length > 0 && (
+                      <div className="flex items-center gap-2 mb-1">
+                        <Users className="h-3.5 w-3.5 text-violet-500 shrink-0" />
+                        <select
+                          value=""
+                          onChange={e => {
+                            const client = savedClients.find(c => c.id === e.target.value);
+                            if (client) {
+                              setEditClientNome(client.clientName || "");
+                              setEditClientIndirizzo(client.indirizzo || "");
+                              setEditClientCitta(client.citta || "");
+                              setEditClientCap("");
+                              setEditClientProvincia(client.provincia || "");
+                              setEditClientCF(client.codiceFiscale || "");
+                              setEditClientPIVA(client.partitaIva || "");
+                            }
+                          }}
+                          className="flex-1 text-xs text-slate-700 bg-white border border-violet-200 rounded px-2 py-1.5 focus:outline-none focus:border-violet-400"
+                        >
+                          <option value="" disabled>Seleziona cliente salvato...</option>
+                          {savedClients.map(c => (
+                            <option key={c.id} value={c.id}>{c.clientName}{c.citta ? ` — ${c.citta}` : ""}</option>
+                          ))}
+                        </select>
+                      </div>
+                    )}
                     <div className="grid grid-cols-2 gap-2">
                       <input
                         value={editClientNome}
