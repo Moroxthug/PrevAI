@@ -90,6 +90,18 @@ export const ListQuotesResponseItem = zod.object({
   capitolatoPro: zod.boolean(),
   capitolatoPdfUrl: zod.string().nullish(),
   templateId: zod.enum(["standard", "arosio", "mariagrazia"]).nullish(),
+  attachments: zod
+    .array(
+      zod.object({
+        id: zod.string(),
+        fileName: zod.string(),
+        mimeType: zod.string(),
+        fileUrl: zod.string(),
+        fileSize: zod.number().nullish(),
+        createdAt: zod.string(),
+      }),
+    )
+    .optional(),
   createdAt: zod.string(),
   updatedAt: zod.string(),
 });
@@ -205,6 +217,18 @@ export const GetQuoteStatsResponse = zod.object({
       capitolatoPro: zod.boolean(),
       capitolatoPdfUrl: zod.string().nullish(),
       templateId: zod.enum(["standard", "arosio", "mariagrazia"]).nullish(),
+      attachments: zod
+        .array(
+          zod.object({
+            id: zod.string(),
+            fileName: zod.string(),
+            mimeType: zod.string(),
+            fileUrl: zod.string(),
+            fileSize: zod.number().nullish(),
+            createdAt: zod.string(),
+          }),
+        )
+        .optional(),
       createdAt: zod.string(),
       updatedAt: zod.string(),
     }),
@@ -359,6 +383,18 @@ export const GetQuoteResponse = zod.object({
   capitolatoPro: zod.boolean(),
   capitolatoPdfUrl: zod.string().nullish(),
   templateId: zod.enum(["standard", "arosio", "mariagrazia"]).nullish(),
+  attachments: zod
+    .array(
+      zod.object({
+        id: zod.string(),
+        fileName: zod.string(),
+        mimeType: zod.string(),
+        fileUrl: zod.string(),
+        fileSize: zod.number().nullish(),
+        createdAt: zod.string(),
+      }),
+    )
+    .optional(),
   createdAt: zod.string(),
   updatedAt: zod.string(),
 });
@@ -506,6 +542,18 @@ export const UpdateQuoteResponse = zod.object({
   capitolatoPro: zod.boolean(),
   capitolatoPdfUrl: zod.string().nullish(),
   templateId: zod.enum(["standard", "arosio", "mariagrazia"]).nullish(),
+  attachments: zod
+    .array(
+      zod.object({
+        id: zod.string(),
+        fileName: zod.string(),
+        mimeType: zod.string(),
+        fileUrl: zod.string(),
+        fileSize: zod.number().nullish(),
+        createdAt: zod.string(),
+      }),
+    )
+    .optional(),
   createdAt: zod.string(),
   updatedAt: zod.string(),
 });
@@ -645,6 +693,18 @@ export const RegenerateQuoteResponse = zod.object({
   capitolatoPro: zod.boolean(),
   capitolatoPdfUrl: zod.string().nullish(),
   templateId: zod.enum(["standard", "arosio", "mariagrazia"]).nullish(),
+  attachments: zod
+    .array(
+      zod.object({
+        id: zod.string(),
+        fileName: zod.string(),
+        mimeType: zod.string(),
+        fileUrl: zod.string(),
+        fileSize: zod.number().nullish(),
+        createdAt: zod.string(),
+      }),
+    )
+    .optional(),
   createdAt: zod.string(),
   updatedAt: zod.string(),
 });
@@ -729,6 +789,18 @@ export const UpgradeToCapitolatoProResponse = zod.object({
   capitolatoPro: zod.boolean(),
   capitolatoPdfUrl: zod.string().nullish(),
   templateId: zod.enum(["standard", "arosio", "mariagrazia"]).nullish(),
+  attachments: zod
+    .array(
+      zod.object({
+        id: zod.string(),
+        fileName: zod.string(),
+        mimeType: zod.string(),
+        fileUrl: zod.string(),
+        fileSize: zod.number().nullish(),
+        createdAt: zod.string(),
+      }),
+    )
+    .optional(),
   createdAt: zod.string(),
   updatedAt: zod.string(),
 });
@@ -1197,6 +1269,18 @@ export const ListClientQuotesResponseItem = zod.object({
   capitolatoPro: zod.boolean(),
   capitolatoPdfUrl: zod.string().nullish(),
   templateId: zod.enum(["standard", "arosio", "mariagrazia"]).nullish(),
+  attachments: zod
+    .array(
+      zod.object({
+        id: zod.string(),
+        fileName: zod.string(),
+        mimeType: zod.string(),
+        fileUrl: zod.string(),
+        fileSize: zod.number().nullish(),
+        createdAt: zod.string(),
+      }),
+    )
+    .optional(),
   createdAt: zod.string(),
   updatedAt: zod.string(),
 });

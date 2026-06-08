@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { requireAuth, getUserId } from "../middlewares/authMiddleware";
 import multer from "multer";
-import { db, quotesTable, businessProfilesTable, priceCatalogItemsTable, priceIntelligenceTable, uploadedDocumentsTable, quoteClientDataSchema, quoteCompanySnapshotSchema, quoteChapterSchema } from "@workspace/db";
+import { db, quotesTable, quoteAttachmentsTable, businessProfilesTable, priceCatalogItemsTable, priceIntelligenceTable, uploadedDocumentsTable, quoteClientDataSchema, quoteCompanySnapshotSchema, quoteChapterSchema } from "@workspace/db";
 import { eq, desc, count, sum, sql, and, avg } from "drizzle-orm";
 import { getTrialStatus, PLANS } from "./payments.js";
 import {
@@ -37,19 +37,27 @@ import { ObjectStorageService } from "../lib/objectStorage.js";
 import { generateNumeroPreventivo } from "../lib/quoteNumber.js";
 import { sendQuotePdfEmail } from "../lib/email.js";
 import { randomUUID } from "crypto";
+import { extractFromPdf, extractFromDocx, extractFromXlsx } from "../lib/extractDocument.js";
 
 const objectStorage = new ObjectStorageService();
 
 const ALLOWED_IMAGE_MIMES = ["image/jpeg", "image/png", "image/webp", "image/heic", "image/heif"];
+const ALLOWED_DOC_MIMES = [
+  "application/pdf",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+];
+
+const allAllowedMimes = [...ALLOWED_IMAGE_MIMES, ...ALLOWED_DOC_MIMES];
 
 const imageUpload = multer({
   storage: multer.memoryStorage(),
-  limits: { fileSize: 5 * 1024 * 1024, files: 3 },
+  limits: { fileSize: 10 * 1024 * 1024, files: 3 },
   fileFilter: (_req, file, cb) => {
-    if (ALLOWED_IMAGE_MIMES.includes(file.mimetype)) {
+    if (allAllowedMimes.includes(file.mimetype)) {
       cb(null, true);
     } else {
-      cb(new Error(`Unsupported image type: ${file.mimetype}. Use JPG, PNG, WEBP or HEIC.`));
+      cb(new Error(`Unsupported file type: ${file.mimetype}. Use JPG, PNG, WEBP, HEIC, PDF, DOCX or XLSX.`));
     }
   },
 });
@@ -126,7 +134,9 @@ IMPORTANTISSIMO: output SOLO JSON puro, nessuna spiegazione, nessun markdown.`;
 
 type QuoteRow = typeof quotesTable.$inferSelect;
 
-function serializeQuote(q: QuoteRow) {
+type AttachmentRow = typeof quoteAttachmentsTable.$inferSelect;
+
+function serializeQuote(q: QuoteRow, attachments?: AttachmentRow[]) {
   return {
     id: q.id,
     userId: q.userId,
@@ -154,6 +164,14 @@ function serializeQuote(q: QuoteRow) {
     templateId: q.templateId ?? "standard",
     createdAt: q.createdAt.toISOString(),
     updatedAt: q.updatedAt.toISOString(),
+    attachments: attachments?.map(a => ({
+      id: a.id,
+      fileName: a.fileName,
+      mimeType: a.mimeType,
+      fileUrl: a.fileUrl,
+      fileSize: a.fileSize ? Number(a.fileSize) : null,
+      createdAt: a.createdAt.toISOString(),
+    })) ?? [],
   };
 }
 
@@ -209,7 +227,7 @@ router.get("/quotes/stats", requireAuth, async (req, res) => {
       unlockedRevenue,
       thisMonth,
       avgValue,
-      recentQuotes: recentQuotes.map(serializeQuote),
+      recentQuotes: recentQuotes.map(q => serializeQuote(q)),
     });
   } catch (err) {
     req.log.error({ err }, "Error fetching stats");
@@ -226,7 +244,7 @@ router.get("/quotes", requireAuth, async (req, res) => {
       .from(quotesTable)
       .where(eq(quotesTable.userId, userId))
       .orderBy(desc(quotesTable.createdAt));
-    res.json(quotes.map(serializeQuote));
+    res.json(quotes.map(q => serializeQuote(q)));
   } catch (err) {
     req.log.error({ err }, "Error fetching quotes");
     res.status(500).json({ error: "Internal server error" });
@@ -334,11 +352,24 @@ router.post("/quotes", requireAuth, imageUpload.array("images", 3), async (req, 
     }
 
     const uploadedFiles = (req.files as Express.Multer.File[]) ?? [];
-    const imageDataUrls = uploadedFiles.map(
+    const imageFiles = uploadedFiles.filter(f => ALLOWED_IMAGE_MIMES.includes(f.mimetype));
+    const docFiles = uploadedFiles.filter(f => ALLOWED_DOC_MIMES.includes(f.mimetype));
+
+    const imageDataUrls = imageFiles.map(
       (f) => `data:${f.mimetype};base64,${f.buffer.toString("base64")}`
     );
 
-    // Build user message: inject client data as context so AI doesn't invent it
+    // Extract text from documents for AI context
+    const docTexts: string[] = [];
+    for (const f of docFiles) {
+      let text = "";
+      if (f.mimetype === "application/pdf") text = await extractFromPdf(f.buffer);
+      else if (f.mimetype === "application/vnd.openxmlformats-officedocument.wordprocessingml.document") text = await extractFromDocx(f.buffer);
+      else if (f.mimetype === "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet") text = await extractFromXlsx(f.buffer);
+      if (text) docTexts.push(`--- File: ${f.originalname} ---\n${text}`);
+    }
+
+    // Build user message: inject client data and document text as context
     let userMessage = rawInput;
     if (clientDataInput?.nome) {
       userMessage = `Dati committente (NON generare di nuovo, usa questi valori esatti):
@@ -346,6 +377,13 @@ router.post("/quotes", requireAuth, imageUpload.array("images", 3), async (req, 
 - Indirizzo: ${clientDataInput.indirizzo || ""}${clientDataInput.codiceFiscale ? `\n- Codice Fiscale: ${clientDataInput.codiceFiscale}` : ""}${clientDataInput.citta ? `\n- Comune: ${clientDataInput.citta}` : ""}${clientDataInput.cap ? ` CAP: ${clientDataInput.cap}` : ""}${clientDataInput.provincia ? ` (${clientDataInput.provincia})` : ""}
 
 Descrizione lavori: ${rawInput}`;
+    }
+
+    if (docTexts.length > 0) {
+      userMessage += `\n\n\nCONTENUTO ESTRATTO DAI DOCUMENTI ALLEGATI:
+${docTexts.join("\n\n---\n\n")}
+
+Usa questi dati come contesto per il preventivo: numeri, voci, quantità, e prezzi contenuti nei documenti sono informazioni da integrare nella stima.`;
     }
 
     // Fetch business profile, recent quotes, catalog items, and price intelligence in parallel
@@ -617,6 +655,37 @@ Esempio: "Demolizione e rimozione di pavimentazione esistente in piastrelle cera
       })
       .returning();
 
+    // Save attachments to object storage + quote_attachments table
+    const savedAttachments: typeof quoteAttachmentsTable.$inferInsert[] = [];
+    const extMap: Record<string, string> = {
+      "image/jpeg": "jpg", "image/png": "png", "image/webp": "webp",
+      "image/heic": "heic", "image/heif": "heif",
+      "application/pdf": "pdf",
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document": "docx",
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": "xlsx",
+    };
+    for (const f of uploadedFiles) {
+      const objectId = randomUUID();
+      const ext = extMap[f.mimetype] ?? "bin";
+      const subPath = `quote_attachments/${userId}/${quote.id}/${objectId}.${ext}`;
+      const fileUrl = await objectStorage.uploadObjectBuffer({
+        subPath,
+        buffer: f.buffer,
+        contentType: f.mimetype,
+      });
+      savedAttachments.push({
+        quoteId: quote.id,
+        userId,
+        fileName: f.originalname,
+        mimeType: f.mimetype,
+        fileUrl,
+        fileSize: String(f.size),
+      });
+    }
+    if (savedAttachments.length > 0) {
+      await db.insert(quoteAttachmentsTable).values(savedAttachments);
+    }
+
     // Start trial on first quote creation
     if (!profile?.trialStartedAt) {
       await db
@@ -625,7 +694,11 @@ Esempio: "Demolizione e rimozione di pavimentazione esistente in piastrelle cera
         .where(eq(businessProfilesTable.userId, userId));
     }
 
-    res.status(201).json(serializeQuote(quote!));
+    const attachments = savedAttachments.length > 0
+      ? savedAttachments.map(a => ({ ...a, id: "", createdAt: new Date(), fileSize: a.fileSize ? String(a.fileSize) : null }))
+      : undefined;
+
+    res.status(201).json(serializeQuote(quote!, attachments));
   } catch (err) {
     req.log.error({ err }, "Error creating quote");
     res.status(500).json({ error: "Internal server error" });
@@ -652,7 +725,12 @@ router.get("/quotes/:id", requireAuth, async (req, res) => {
       return;
     }
 
-    res.json(serializeQuote(quote));
+    const attachments = await db
+      .select()
+      .from(quoteAttachmentsTable)
+      .where(eq(quoteAttachmentsTable.quoteId, id));
+
+    res.json(serializeQuote(quote, attachments));
   } catch (err) {
     req.log.error({ err }, "Error fetching quote");
     res.status(500).json({ error: "Internal server error" });

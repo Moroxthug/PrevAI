@@ -6,7 +6,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
-import { Download, Lock, CheckCircle2, Edit2, Save, FileText, ChevronDown, ChevronRight, Plus, Trash2, X, Pencil, Sparkles, AlertTriangle, RefreshCw, Loader2, Copy, Star, FileDown, LayoutTemplate, Users, Mail } from "lucide-react";
+import { Download, Lock, CheckCircle2, Edit2, Save, FileText, FileSpreadsheet, ImageIcon, ChevronDown, ChevronRight, Plus, Trash2, X, Pencil, Sparkles, AlertTriangle, RefreshCw, Loader2, Copy, Star, FileDown, LayoutTemplate, Users, Mail } from "lucide-react";
 import { useState, useRef, useEffect, Fragment } from "react";
 import { useLocation } from "wouter";
 import { format } from "date-fns";
@@ -806,6 +806,45 @@ export default function QuoteDetail() {
                   </div>
                 )}
               </div>
+
+              {/* Attachments */}
+              {quote.attachments && quote.attachments.length > 0 && (
+                <div className="mb-6">
+                  <div className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">Allegati</div>
+                  <div className="flex flex-wrap gap-2">
+                    {quote.attachments.map(att => {
+                      const isImage = att.mimeType?.startsWith("image/");
+                      const isPdf = att.mimeType === "application/pdf";
+                      const isXlsx = att.mimeType === "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+                      const icon = isImage ? <ImageIcon className="h-3.5 w-3.5 text-blue-500" /> :
+                        isPdf ? <FileText className="h-3.5 w-3.5 text-red-500" /> :
+                        isXlsx ? <FileSpreadsheet className="h-3.5 w-3.5 text-green-600" /> :
+                        <FileText className="h-3.5 w-3.5 text-blue-600" />;
+                      const sizeLabel = att.fileSize
+                        ? att.fileSize < 1024
+                          ? `${att.fileSize} B`
+                          : att.fileSize < 1024 * 1024
+                            ? `${(att.fileSize / 1024).toFixed(1)} KB`
+                            : `${(att.fileSize / (1024 * 1024)).toFixed(1)} MB`
+                        : "";
+                      return (
+                        <a
+                          key={att.id}
+                          href={`/api/storage/objects/${att.fileUrl.replace(/^\/objects\//, "")}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-gray-200 bg-gray-50 text-xs text-gray-700 hover:border-violet-300 hover:text-violet-600 transition-colors shrink-0"
+                          title={att.fileName}
+                        >
+                          {icon}
+                          <span className="truncate max-w-[140px]">{att.fileName}</span>
+                          {sizeLabel && <span className="text-gray-400">{sizeLabel}</span>}
+                        </a>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
 
               {/* Quadro Sintetico — shown for Standard template in edit mode or view mode */}
               {localTemplateId === "standard" && (isEditMode ? editCapitoli.length > 0 : hasCapitoli) && (

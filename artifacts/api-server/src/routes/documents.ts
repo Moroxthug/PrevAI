@@ -20,6 +20,17 @@ const objectStorage = new ObjectStorageService();
 
 const ALLOWED_MIME_TYPES = [
   "application/pdf",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+];
+
+const EXTRACTION_MIME_TYPES = [
+  "application/pdf",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
   "image/jpeg",
   "image/png",
   "image/webp",
@@ -32,7 +43,7 @@ const documentUpload = multer({
     if (ALLOWED_MIME_TYPES.includes(file.mimetype)) {
       cb(null, true);
     } else {
-      cb(new Error(`Tipo file non supportato: ${file.mimetype}. Usa PDF, JPG, PNG o WEBP.`));
+      cb(new Error(`Tipo file non supportato: ${file.mimetype}. Usa PDF, DOCX, XLSX, JPG, PNG o WEBP.`));
     }
   },
 });
@@ -141,6 +152,81 @@ async function extractFromPdf(buffer: Buffer) {
   return completion.choices[0]?.message?.content ?? "{}";
 }
 
+async function extractFromDocx(buffer: Buffer) {
+  let docText = "";
+  try {
+    const mammoth = _require("mammoth") as {
+      extractRawText: (opts: { buffer: Buffer }) => Promise<{ value: string }>;
+    };
+    const result = await mammoth.extractRawText({ buffer });
+    docText = result.value.slice(0, 12000);
+  } catch (err) {
+    logger.warn({ err }, "mammoth failed, falling back to empty text");
+  }
+
+  if (!docText.trim()) {
+    return JSON.stringify({ lavorazioni: [], totale: null, zona: null, note: "Testo non estraibile dal DOCX" });
+  }
+
+  const completion = await openai.chat.completions.create({
+    model: "gpt-4o-mini",
+    max_completion_tokens: 4096,
+    messages: [
+      { role: "system", content: EXTRACTION_PROMPT },
+      {
+        role: "user",
+        content: `Testo estratto dal documento DOCX:\n\n${docText}`,
+      },
+    ],
+  });
+
+  return completion.choices[0]?.message?.content ?? "{}";
+}
+
+async function extractFromXlsx(buffer: Buffer) {
+  let sheetText = "";
+  try {
+    const XLSX = _require("xlsx") as {
+      read: (data: Buffer, opts: { type: "buffer" }) => {
+        SheetNames: string[];
+        Sheets: Record<string, unknown>;
+      };
+      utils: {
+        sheet_to_csv: (sheet: unknown) => string;
+      };
+    };
+    const workbook = XLSX.read(buffer, { type: "buffer" });
+    const csvParts: string[] = [];
+    for (const sheetName of workbook.SheetNames.slice(0, 3)) {
+      const sheet = workbook.Sheets[sheetName];
+      if (sheet) {
+        csvParts.push(`--- ${sheetName} ---\n${XLSX.utils.sheet_to_csv(sheet)}`);
+      }
+    }
+    sheetText = csvParts.join("\n\n").slice(0, 12000);
+  } catch (err) {
+    logger.warn({ err }, "xlsx failed, falling back to empty text");
+  }
+
+  if (!sheetText.trim()) {
+    return JSON.stringify({ lavorazioni: [], totale: null, zona: null, note: "Testo non estraibile dal XLSX" });
+  }
+
+  const completion = await openai.chat.completions.create({
+    model: "gpt-4o-mini",
+    max_completion_tokens: 4096,
+    messages: [
+      { role: "system", content: EXTRACTION_PROMPT },
+      {
+        role: "user",
+        content: `Dati estratti dal file Excel (formato CSV per foglio):\n\n${sheetText}`,
+      },
+    ],
+  });
+
+  return completion.choices[0]?.message?.content ?? "{}";
+}
+
 // GET /api/documents
 router.get("/documents", requireAuth, async (req, res) => {
   try {
@@ -179,9 +265,15 @@ router.post(
         return;
       }
 
-      const ext = file.mimetype === "application/pdf"
-        ? "pdf"
-        : file.mimetype.split("/")[1] ?? "bin";
+      const extMap: Record<string, string> = {
+        "application/pdf": "pdf",
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document": "docx",
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": "xlsx",
+        "image/jpeg": "jpg",
+        "image/png": "png",
+        "image/webp": "webp",
+      };
+      const ext = extMap[file.mimetype] ?? (file.mimetype.split("/")[1] || "bin");
       const objectId = randomUUID();
       const subPath = `documents/${userId}/${objectId}.${ext}`;
 
@@ -305,6 +397,10 @@ router.post("/documents/:id/extract", requireAuth, async (req, res) => {
       let rawContent: string;
       if (doc.mimeType === "application/pdf") {
         rawContent = await extractFromPdf(buffer);
+      } else if (doc.mimeType === "application/vnd.openxmlformats-officedocument.wordprocessingml.document") {
+        rawContent = await extractFromDocx(buffer);
+      } else if (doc.mimeType === "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet") {
+        rawContent = await extractFromXlsx(buffer);
       } else {
         rawContent = await extractFromImage(buffer, doc.mimeType);
       }

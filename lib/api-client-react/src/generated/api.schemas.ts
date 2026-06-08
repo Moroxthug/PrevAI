@@ -59,6 +59,15 @@ export interface QuoteCompanySnapshot {
   logoUrl?: string;
 }
 
+export interface QuoteAttachment {
+  id: string;
+  fileName: string;
+  mimeType: string;
+  fileUrl: string;
+  fileSize?: number | null;
+  createdAt: string;
+}
+
 export type QuoteStatus = (typeof QuoteStatus)[keyof typeof QuoteStatus];
 
 export const QuoteStatus = {
@@ -103,6 +112,7 @@ export interface Quote {
   /** @nullable */
   capitolatoPdfUrl?: string | null;
   templateId?: QuoteTemplateId;
+  attachments?: QuoteAttachment[];
   createdAt: string;
   updatedAt: string;
 }

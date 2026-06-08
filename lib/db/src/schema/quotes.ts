@@ -99,6 +99,17 @@ export const quotesTable = pgTable("quotes", {
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
 });
 
+export const quoteAttachmentsTable = pgTable("quote_attachments", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  quoteId: uuid("quote_id").notNull().references(() => quotesTable.id, { onDelete: "cascade" }),
+  userId: text("user_id").notNull(),
+  fileName: text("file_name").notNull(),
+  mimeType: text("mime_type").notNull(),
+  fileUrl: text("file_url").notNull(),
+  fileSize: numeric("file_size", { precision: 15, scale: 0 }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
 export const insertQuoteSchema = createInsertSchema(quotesTable).omit({
   id: true,
   createdAt: true,
@@ -107,3 +118,4 @@ export const insertQuoteSchema = createInsertSchema(quotesTable).omit({
 
 export type InsertQuote = z.infer<typeof insertQuoteSchema>;
 export type Quote = typeof quotesTable.$inferSelect;
+export type QuoteAttachment = typeof quoteAttachmentsTable.$inferSelect;

@@ -3,7 +3,7 @@ import { useLocation } from "wouter";
 import { useCreateQuote, useGetBusinessProfile, useGetSubscription } from "@workspace/api-client-react";
 import {
   Sparkles, Mic, ImagePlus, ArrowRight, Loader2,
-  X, User, Lock, Bot, PencilLine,
+  X, User, Lock, Bot, PencilLine, FileText, FileSpreadsheet,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Input } from "@/components/ui/input";
@@ -14,8 +14,16 @@ import type { SavedClient } from "@/hooks/use-client-memory";
 import ManualQuoteBuilder from "@/components/manual-quote-builder";
 
 const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp", "image/heic", "image/heif"];
+const ALLOWED_DOC_TYPES = [
+  "application/pdf",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+];
 const MAX_SIZE_MB = 5;
+const MAX_DOC_SIZE_MB = 10;
 const MAX_SIZE_BYTES = MAX_SIZE_MB * 1024 * 1024;
+const MAX_DOC_SIZE_BYTES = MAX_DOC_SIZE_MB * 1024 * 1024;
+const MAX_ATTACHMENTS = 3;
 
 const EXAMPLES = [
   { label: "Imbianchino", text: "Tinteggiatura completa appartamento 100mq, inclusa rasatura soffitti e due mani di pittura traspirante. Aggiungere smaltatura 5 infissi." },
@@ -219,6 +227,7 @@ export default function NewQuote() {
 
   const [photos, setPhotos] = useState<File[]>([]);
   const [photoPreviews, setPhotoPreviews] = useState<string[]>([]);
+  const [docs, setDocs] = useState<File[]>([]);
 
   const maxPhotos = getMaxPhotos(subscription?.plan, !!subscription?.isActive);
   const photoAllowed = maxPhotos > 0;
@@ -257,33 +266,46 @@ export default function NewQuote() {
 
   const addFiles = useCallback((files: FileList | File[]) => {
     const arr = Array.from(files);
-    const remaining = maxPhotos - photos.length;
+    const totalAttachments = photos.length + docs.length;
+    const remaining = MAX_ATTACHMENTS - totalAttachments;
     if (remaining <= 0) {
-      toast({ title: `Massimo ${maxPhotos} foto`, description: "Rimuovi una foto per aggiungerne un'altra.", variant: "destructive" });
+      toast({ title: `Massimo ${MAX_ATTACHMENTS} allegati`, description: "Rimuovi un file per aggiungerne un altro.", variant: "destructive" });
       return;
     }
-    const valid: File[] = [];
+    const validImages: File[] = [];
+    const validDocs: File[] = [];
     for (const file of arr.slice(0, remaining)) {
-      if (!ALLOWED_TYPES.includes(file.type) && !file.name.toLowerCase().match(/\.(heic|heif)$/)) {
-        toast({ title: "Formato non supportato", description: `${file.name}: usa JPG, PNG, WEBP o HEIC.`, variant: "destructive" });
+      const isImage = ALLOWED_TYPES.includes(file.type) || !!file.name.toLowerCase().match(/\.(heic|heif)$/);
+      const isDoc = ALLOWED_DOC_TYPES.includes(file.type);
+      if (!isImage && !isDoc) {
+        toast({ title: "Formato non supportato", description: `${file.name}: usa JPG, PNG, WEBP, HEIC, PDF, DOCX o XLSX.`, variant: "destructive" });
         continue;
       }
-      if (file.size > MAX_SIZE_BYTES) {
-        toast({ title: "File troppo grande", description: `${file.name}: massimo ${MAX_SIZE_MB}MB.`, variant: "destructive" });
+      if (isImage && file.size > MAX_SIZE_BYTES) {
+        toast({ title: "File troppo grande", description: `${file.name}: massimo ${MAX_SIZE_MB}MB per le foto.`, variant: "destructive" });
         continue;
       }
-      valid.push(file);
+      if (isDoc && file.size > MAX_DOC_SIZE_BYTES) {
+        toast({ title: "File troppo grande", description: `${file.name}: massimo ${MAX_DOC_SIZE_MB}MB per i documenti.`, variant: "destructive" });
+        continue;
+      }
+      if (isImage) validImages.push(file);
+      if (isDoc) validDocs.push(file);
     }
-    if (valid.length === 0) return;
-    const previews = valid.map(f => URL.createObjectURL(f));
-    setPhotos(prev => [...prev, ...valid]);
-    setPhotoPreviews(prev => [...prev, ...previews]);
-  }, [maxPhotos, photos.length, toast]);
+    const imagePreviews = validImages.map(f => URL.createObjectURL(f));
+    setPhotos(prev => [...prev, ...validImages]);
+    setPhotoPreviews(prev => [...prev, ...imagePreviews]);
+    setDocs(prev => [...prev, ...validDocs]);
+  }, [photos.length, docs.length, toast]);
 
   const removePhoto = (idx: number) => {
     URL.revokeObjectURL(photoPreviews[idx]);
     setPhotos(prev => prev.filter((_, i) => i !== idx));
     setPhotoPreviews(prev => prev.filter((_, i) => i !== idx));
+  };
+
+  const removeDoc = (idx: number) => {
+    setDocs(prev => prev.filter((_, i) => i !== idx));
   };
 
   const getClientData = () => {
@@ -316,13 +338,14 @@ export default function NewQuote() {
         }
       : undefined;
 
+    const allAttachments = [...photos, ...docs];
     createQuote.mutate(
       {
         data: {
           rawInput: input,
           clientData: clientData ? JSON.stringify(clientData) : undefined,
           companySnapshot: companySnapshot ? JSON.stringify(companySnapshot) : undefined,
-          images: photos.length > 0 ? photos : undefined,
+          images: allAttachments.length > 0 ? allAttachments : undefined,
         },
       },
       {
@@ -431,7 +454,7 @@ export default function NewQuote() {
                     </button>
                   </div>
                 ))}
-                {photos.length < maxPhotos && (
+                {photos.length < maxPhotos && photos.length + docs.length < MAX_ATTACHMENTS && (
                   <button
                     type="button"
                     onClick={() => fileInputRef.current?.click()}
@@ -439,6 +462,43 @@ export default function NewQuote() {
                     className="w-14 h-14 rounded-lg border-2 border-dashed border-gray-200 hover:border-violet-300 flex flex-col items-center justify-center gap-0.5 text-gray-400 hover:text-violet-500 transition-colors text-[10px]"
                   >
                     <ImagePlus className="h-3.5 w-3.5" />
+                    <span>Aggiungi</span>
+                  </button>
+                )}
+              </div>
+            )}
+
+            {/* Document strip */}
+            {docs.length > 0 && (
+              <div className="px-3 pt-3 flex gap-2 flex-wrap border-b border-gray-100 pb-3">
+                {docs.map((file, idx) => (
+                  <div key={idx} className="relative group flex items-center gap-1.5 px-2 py-1 rounded-lg border border-gray-200 bg-gray-50 text-xs text-gray-700 shrink-0">
+                    {file.type === "application/pdf" ? (
+                      <FileText className="h-3.5 w-3.5 text-red-500" />
+                    ) : file.type === "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" ? (
+                      <FileSpreadsheet className="h-3.5 w-3.5 text-green-600" />
+                    ) : (
+                      <FileText className="h-3.5 w-3.5 text-blue-600" />
+                    )}
+                    <span className="truncate max-w-[120px]">{file.name}</span>
+                    <button
+                      type="button"
+                      onClick={() => removeDoc(idx)}
+                      disabled={isAiSubmitting}
+                      className="ml-0.5 text-gray-400 hover:text-red-500 transition-colors"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </div>
+                ))}
+                {photos.length + docs.length < MAX_ATTACHMENTS && (
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={isAiSubmitting}
+                    className="w-auto px-2 h-7 rounded-lg border-2 border-dashed border-gray-200 hover:border-violet-300 flex items-center gap-0.5 text-gray-400 hover:text-violet-500 transition-colors text-[10px]"
+                  >
+                    <ImagePlus className="h-3 w-3" />
                     <span>Aggiungi</span>
                   </button>
                 )}
@@ -453,7 +513,7 @@ export default function NewQuote() {
                     type="button"
                     onClick={() => fileInputRef.current?.click()}
                     disabled={isAiSubmitting || photos.length >= maxPhotos}
-                    title={`Allega foto (max ${maxPhotos})`}
+                    title={`Allega foto o documenti (max ${maxPhotos} foto, max ${MAX_ATTACHMENTS} totali)`}
                     className={cn(
                       "h-8 w-8 flex items-center justify-center rounded-xl transition-colors",
                       photos.length > 0
@@ -524,9 +584,9 @@ export default function NewQuote() {
               </button>
             </div>
 
-            {photoAllowed && photos.length === 0 && (
+            {photoAllowed && photos.length === 0 && docs.length === 0 && (
               <div className="px-3 pb-1.5 -mt-1 text-[11px] text-violet-500 font-medium">
-                {planPhotoLabel} — clicca 📎 per allegare foto di cantiere o appunti
+                {planPhotoLabel} — clicca 📎 per foto o documenti PDF/Excel/Word
               </div>
             )}
 
@@ -551,7 +611,7 @@ export default function NewQuote() {
           <input
             ref={fileInputRef}
             type="file"
-            accept="image/jpeg,image/png,image/webp,image/heic,image/heif,.heic,.heif"
+            accept="image/jpeg,image/png,image/webp,image/heic,image/heif,.heic,.heif,application/pdf,.pdf,.docx,.xlsx,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
             multiple
             className="hidden"
             onChange={e => { if (e.target.files) { addFiles(e.target.files); e.target.value = ""; } }}

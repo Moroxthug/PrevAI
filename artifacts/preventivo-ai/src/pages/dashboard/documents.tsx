@@ -80,6 +80,8 @@ function DocumentRow({ doc }: { doc: UploadedDocument }) {
   });
 
   const isPdf = doc.mimeType === "application/pdf";
+  const isDocx = doc.mimeType === "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+  const isXlsx = doc.mimeType === "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
   const lavorazioni = (doc.extractedData as { lavorazioni?: Array<{ tipo: string; prezzoUnitario: number; um?: string | null; zona?: string | null }> } | null)?.lavorazioni ?? [];
 
   return (
@@ -88,6 +90,10 @@ function DocumentRow({ doc }: { doc: UploadedDocument }) {
         <div className="h-9 w-9 rounded-lg bg-gray-50 border border-gray-100 flex items-center justify-center shrink-0">
           {isPdf ? (
             <FileText className="h-4 w-4 text-red-500" />
+          ) : isDocx ? (
+            <FileText className="h-4 w-4 text-blue-600" />
+          ) : isXlsx ? (
+            <FileText className="h-4 w-4 text-green-600" />
           ) : (
             <ImageIcon className="h-4 w-4 text-blue-500" />
           )}
@@ -240,7 +246,7 @@ export default function DocumentsPage() {
           ref={fileInputRef}
           type="file"
           multiple
-          accept=".pdf,image/jpeg,image/png,image/webp"
+          accept=".pdf,.docx,.xlsx,image/jpeg,image/png,image/webp"
           className="hidden"
           onChange={(e) => handleFiles(e.target.files)}
         />
@@ -257,7 +263,7 @@ export default function DocumentsPage() {
               {uploadMut.isPending ? "Caricamento in corso..." : "Trascina i file qui o clicca per selezionare"}
             </p>
             <p className="text-xs text-muted-foreground mt-1">
-              PDF, JPG, PNG o WEBP — max 10 MB per file
+              PDF, DOCX, XLSX, JPG, PNG o WEBP — max 10 MB per file
             </p>
           </div>
         </div>

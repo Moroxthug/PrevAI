@@ -930,6 +930,29 @@ components:
       required:
         - companyName
 
+    QuoteAttachment:
+      type: object
+      properties:
+        id:
+          type: string
+        fileName:
+          type: string
+        mimeType:
+          type: string
+        fileUrl:
+          type: string
+        fileSize:
+          type: number
+          nullable: true
+        createdAt:
+          type: string
+      required:
+        - id
+        - fileName
+        - mimeType
+        - fileUrl
+        - createdAt
+
     Quote:
       type: object
       properties:
@@ -997,6 +1020,10 @@ components:
           type: string
           enum: [standard, arosio, mariagrazia]
           nullable: true
+        attachments:
+          type: array
+          items:
+            $ref: '#/components/schemas/QuoteAttachment'
         createdAt:
           type: string
         updatedAt:
