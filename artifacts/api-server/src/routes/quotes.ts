@@ -85,6 +85,8 @@ REGOLE FONDAMENTALI:
 8. Sempre IVA 22% salvo indicazione contraria
 9. Il titolo_riga2 deve descrivere l'intervento e il luogo del cantiere
 10. numero_preventivo_data: NON GENERARE — il server assegna il numero automaticamente. Restituisci una stringa vuota.
+11. REGOLA CRITICA — ZERO OMISSIONI: se l'utente fornisce una descrizione dettagliata con molte voci, NUMERATE o PUNTATE, ogni singola voce deve diventare una riga distinta nel preventivo. NON riassumere, NON accorpare più voci in una sola, NON saltare o omettere voci. Se necessario, crea PIÙ CAPITOLI per contenere tutto. Ogni elemento elencato dall'utente deve avere la sua descrizione, unità di misura, quantità, prezzo unitario e totale.
+12. SE l'utente allega un documento con computo metrico o lista voci: trasforma il documento 1:1. Ogni riga del documento diventa una voce. NON inventare nuove voci, NON accorpare voci simili. Mantieni le quantità e i prezzi unitari del documento.
 
 OUTPUT — SOLO JSON VALIDO, nessun testo extra:
 {
@@ -383,7 +385,8 @@ Descrizione lavori: ${rawInput}`;
       userMessage += `\n\n\nCONTENUTO ESTRATTO DAI DOCUMENTI ALLEGATI:
 ${docTexts.join("\n\n---\n\n")}
 
-Usa questi dati come contesto per il preventivo: numeri, voci, quantità, e prezzi contenuti nei documenti sono informazioni da integrare nella stima.`;
+ISTRUZIONE OBBLIGATORIA SUI DOCUMENTI ALLEGATI:
+L'utente ha allegato un documento con un computo metrico dettagliato. Ogni singola voce e ogni singolo elemento elencato nel documento deve diventare una riga distinta nel preventivo. NON riassumere, NON accorpare, NON omettere. Trasforma il documento 1:1 in voci di lavoro: prendi ogni elemento, mantieni descrizione, unità di misura, quantità e prezzo unitario, e inseriscilo come voce separata nel capitolo appropriato. Se necessario, crea PIÙ CAPITOLI per contenere tutte le voci. Non applicare sconti o modifiche ai prezzi unitari forniti nel documento.`;
     }
 
     // Fetch business profile, recent quotes, catalog items, and price intelligence in parallel
@@ -491,8 +494,8 @@ Per ogni voce di lavoro, scrivi la descrizione in stile CAPITOLATO SPECIALE D'AP
 Esempio: "Demolizione e rimozione di pavimentazione esistente in piastrelle ceramiche compreso il distacco mediante scalpellatura meccanica e la rimozione del massetto di allettamento per uno spessore medio di 5 cm. Compresi il carico, il trasporto e lo smaltimento del materiale di risulta presso discarica autorizzata secondo D.Lgs. 152/2006. Esclusi lavori di ripristino strutturale del sottofondo e impermeabilizzazioni."`;
 
     const completion = await openai.chat.completions.create({
-      model: hasImages ? "gpt-4o" : "gpt-4o-mini",
-      max_completion_tokens: 8192,
+      model: (hasImages || docTexts.length > 0) ? "gpt-4o" : "gpt-4o-mini",
+      max_completion_tokens: (hasImages || docTexts.length > 0) ? 16384 : 8192,
       messages: [
         { role: "system", content: AI_PROMPT },
         ...(catalogContext ? [{ role: "system" as const, content: catalogContext }] : []),
