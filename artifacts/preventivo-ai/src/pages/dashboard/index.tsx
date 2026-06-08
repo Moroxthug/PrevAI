@@ -10,6 +10,7 @@ import { Link, useLocation } from "wouter";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   FileText,
+  FileSpreadsheet,
   TrendingUp,
   CalendarDays,
   Sparkles,
@@ -52,7 +53,14 @@ function getMaxPhotos(plan: string | null | undefined, isActive: boolean): numbe
 }
 
 const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp", "image/heic", "image/heif"];
+const ALLOWED_DOC_TYPES = [
+  "application/pdf",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+];
 const MAX_SIZE_BYTES = 5 * 1024 * 1024;
+const MAX_DOC_SIZE_BYTES = 10 * 1024 * 1024;
+const MAX_ATTACHMENTS = 3;
 
 interface ClientForm {
   nome: string; indirizzo: string; citta: string;
@@ -237,6 +245,7 @@ function DashboardQuickBar() {
 
   const [photos, setPhotos] = useState<File[]>([]);
   const [photoPreviews, setPhotoPreviews] = useState<string[]>([]);
+  const [docs, setDocs] = useState<File[]>([]);
   const maxPhotos = getMaxPhotos(subscription?.plan, !!subscription?.isActive);
   const photoAllowed = maxPhotos > 0;
 
@@ -253,33 +262,46 @@ function DashboardQuickBar() {
 
   const addFiles = useCallback((files: FileList | File[]) => {
     const arr = Array.from(files);
-    const remaining = maxPhotos - photos.length;
+    const totalAttachments = photos.length + docs.length;
+    const remaining = MAX_ATTACHMENTS - totalAttachments;
     if (remaining <= 0) {
-      toast({ title: `Massimo ${maxPhotos} foto`, description: "Rimuovi una foto per aggiungerne un'altra.", variant: "destructive" });
+      toast({ title: `Massimo ${MAX_ATTACHMENTS} allegati`, description: "Rimuovi un file per aggiungerne un altro.", variant: "destructive" });
       return;
     }
-    const valid: File[] = [];
+    const validImages: File[] = [];
+    const validDocs: File[] = [];
     for (const file of arr.slice(0, remaining)) {
-      if (!ALLOWED_TYPES.includes(file.type) && !file.name.toLowerCase().match(/\.(heic|heif)$/)) {
-        toast({ title: "Formato non supportato", description: `${file.name}: usa JPG, PNG, WEBP o HEIC.`, variant: "destructive" });
+      const isImage = ALLOWED_TYPES.includes(file.type) || !!file.name.toLowerCase().match(/\.(heic|heif)$/);
+      const isDoc = ALLOWED_DOC_TYPES.includes(file.type);
+      if (!isImage && !isDoc) {
+        toast({ title: "Formato non supportato", description: `${file.name}: usa JPG, PNG, WEBP, HEIC, PDF, DOCX o XLSX.`, variant: "destructive" });
         continue;
       }
-      if (file.size > MAX_SIZE_BYTES) {
-        toast({ title: "File troppo grande", description: `${file.name}: massimo 5MB.`, variant: "destructive" });
+      if (isImage && file.size > MAX_SIZE_BYTES) {
+        toast({ title: "File troppo grande", description: `${file.name}: massimo 5MB per le foto.`, variant: "destructive" });
         continue;
       }
-      valid.push(file);
+      if (isDoc && file.size > MAX_DOC_SIZE_BYTES) {
+        toast({ title: "File troppo grande", description: `${file.name}: massimo 10MB per i documenti.`, variant: "destructive" });
+        continue;
+      }
+      if (isImage) validImages.push(file);
+      if (isDoc) validDocs.push(file);
     }
-    if (valid.length === 0) return;
-    const previews = valid.map(f => URL.createObjectURL(f));
-    setPhotos(prev => [...prev, ...valid]);
-    setPhotoPreviews(prev => [...prev, ...previews]);
-  }, [maxPhotos, photos.length, toast]);
+    const imagePreviews = validImages.map(f => URL.createObjectURL(f));
+    setPhotos(prev => [...prev, ...validImages]);
+    setPhotoPreviews(prev => [...prev, ...imagePreviews]);
+    setDocs(prev => [...prev, ...validDocs]);
+  }, [photos.length, docs.length, toast]);
 
   const removePhoto = (idx: number) => {
     URL.revokeObjectURL(photoPreviews[idx]);
     setPhotos(prev => prev.filter((_, i) => i !== idx));
     setPhotoPreviews(prev => prev.filter((_, i) => i !== idx));
+  };
+
+  const removeDoc = (idx: number) => {
+    setDocs(prev => prev.filter((_, i) => i !== idx));
   };
 
   const getClientData = () => {
@@ -312,21 +334,24 @@ function DashboardQuickBar() {
         }
       : undefined;
 
+    const allAttachments = [...photos, ...docs];
     createQuote.mutate(
       {
         data: {
           rawInput: input,
           clientData: clientData ? JSON.stringify(clientData) : undefined,
           companySnapshot: companySnapshot ? JSON.stringify(companySnapshot) : undefined,
-          images: photos.length > 0 ? photos : undefined,
+          images: allAttachments.length > 0 ? allAttachments : undefined,
         },
       },
       {
         onSuccess: (quote) => { setLocation(`/dashboard/quotes/${quote.id}`); },
         onError: (err: unknown) => {
-          const status = (err as { status?: number })?.status;
-          if (status === 429) {
+          const e = err as { status?: number; data?: { error?: string; code?: string } };
+          if (e.status === 429) {
             toast({ title: "Quota mensile raggiunta", description: "Hai raggiunto il limite del tuo piano. Passa a Pro per preventivi illimitati.", variant: "destructive" });
+          } else if ((e.status === 422 || e.status === 400) && e.data?.error) {
+            toast({ title: "Impossibile generare il preventivo", description: e.data.error, variant: "destructive" });
           } else {
             toast({ title: "Errore nella generazione", description: "Si è verificato un errore. Riprova tra qualche istante.", variant: "destructive" });
           }
@@ -381,17 +406,54 @@ function DashboardQuickBar() {
           </div>
         )}
 
+        {/* Document strip */}
+        {docs.length > 0 && (
+          <div className="px-3 pt-3 flex gap-2 flex-wrap border-b border-gray-100 pb-3">
+            {docs.map((file, idx) => (
+              <div key={idx} className="relative group flex items-center gap-1.5 px-2 py-1 rounded-lg border border-gray-200 bg-gray-50 text-xs text-gray-700 shrink-0">
+                {file.type === "application/pdf" ? (
+                  <FileText className="h-3.5 w-3.5 text-red-500" />
+                ) : file.type === "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" ? (
+                  <FileSpreadsheet className="h-3.5 w-3.5 text-green-600" />
+                ) : (
+                  <FileText className="h-3.5 w-3.5 text-blue-600" />
+                )}
+                <span className="truncate max-w-[120px]">{file.name}</span>
+                <button
+                  type="button"
+                  onClick={() => removeDoc(idx)}
+                  disabled={isSubmitting}
+                  className="ml-0.5 text-gray-400 hover:text-red-500 transition-colors"
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              </div>
+            ))}
+            {photos.length + docs.length < MAX_ATTACHMENTS && (
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={isSubmitting}
+                className="w-auto px-2 h-7 rounded-lg border-2 border-dashed border-gray-200 hover:border-violet-300 flex items-center gap-0.5 text-gray-400 hover:text-violet-500 transition-colors text-[10px]"
+              >
+                <ImagePlus className="h-3 w-3" />
+                <span>Aggiungi</span>
+              </button>
+            )}
+          </div>
+        )}
+
         {/* Bar row */}
         <div className="flex items-center gap-2 px-3 py-3">
           {/* Upload */}
           <div className="group relative shrink-0">
             {photoAllowed ? (
               <button type="button" onClick={() => fileInputRef.current?.click()}
-                disabled={isSubmitting || photos.length >= maxPhotos}
+                disabled={isSubmitting || photos.length + docs.length >= MAX_ATTACHMENTS}
                 className={cn(
                   "h-8 w-8 flex items-center justify-center rounded-xl transition-colors",
-                  photos.length > 0 ? "bg-violet-100 text-violet-600 hover:bg-violet-200" : "text-gray-400 hover:bg-gray-100",
-                  (isSubmitting || photos.length >= maxPhotos) && "opacity-40 cursor-not-allowed"
+                  (photos.length > 0 || docs.length > 0) ? "bg-violet-100 text-violet-600 hover:bg-violet-200" : "text-gray-400 hover:bg-gray-100",
+                  (isSubmitting || photos.length + docs.length >= MAX_ATTACHMENTS) && "opacity-40 cursor-not-allowed"
                 )}>
                 <ImagePlus className="h-4 w-4" />
               </button>
@@ -445,13 +507,13 @@ function DashboardQuickBar() {
         {isSubmitting && (
           <div className="px-3 pb-3 text-xs text-violet-600 font-medium flex items-center gap-1.5">
             <Loader2 className="h-3 w-3 animate-spin" />
-            {photos.length > 0 ? "Analisi foto e generazione in corso..." : "Generazione preventivo in corso..."}
+            {(photos.length > 0 || docs.length > 0) ? "Analisi allegati e generazione in corso..." : "Generazione preventivo in corso..."}
           </div>
         )}
       </div>
 
       <input ref={fileInputRef} type="file"
-        accept="image/jpeg,image/png,image/webp,image/heic,image/heif,.heic,.heif"
+        accept="image/jpeg,image/png,image/webp,image/heic,image/heif,.heic,.heif,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
         multiple className="hidden"
         onChange={e => { if (e.target.files) { addFiles(e.target.files); e.target.value = ""; } }}
         disabled={isSubmitting}
