@@ -17,6 +17,7 @@ import type { QuoteChapter, QuoteChapterItem, QuoteDiscount, QuoteCompanySnapsho
 import { logger } from "../lib/logger.js";
 import { createRequire as _pdfCrReq } from "node:module";
 import type { TDocumentDefinitions, Content } from "pdfmake/interfaces";
+import { parseComputoMetrico, isComputoMetrico } from "../lib/computeParser.js";
 
 // pdfmake 0.3.x exports a singleton instance (not a constructor).
 // Load via createRequire for ESM compatibility; set fonts on the instance once at module load.
@@ -381,7 +382,14 @@ router.post("/quotes", requireAuth, imageUpload.array("images", 3), async (req, 
 Descrizione lavori: ${rawInput}`;
     }
 
-    if (docTexts.length > 0) {
+    // Detect computo metrico in rawInput or document text to bypass AI entirely
+    const fullText = userMessage + "\n" + docTexts.join("\n");
+    const isStructured = isComputoMetrico(fullText);
+    if (isStructured) {
+      req.log.info({ userId }, "Structured computo metrico detected; bypassing AI.");
+    }
+
+    if (docTexts.length > 0 && !isStructured) {
       userMessage += `\n\n\nCONTENUTO ESTRATTO DAI DOCUMENTI ALLEGATI:
 ${docTexts.join("\n\n---\n\n")}
 
@@ -493,32 +501,6 @@ Per ogni voce di lavoro, scrivi la descrizione in stile CAPITOLATO SPECIALE D'AP
 - Usa terminologia professionale edilizia/impiantistica italiana
 Esempio: "Demolizione e rimozione di pavimentazione esistente in piastrelle ceramiche compreso il distacco mediante scalpellatura meccanica e la rimozione del massetto di allettamento per uno spessore medio di 5 cm. Compresi il carico, il trasporto e lo smaltimento del materiale di risulta presso discarica autorizzata secondo D.Lgs. 152/2006. Esclusi lavori di ripristino strutturale del sottofondo e impermeabilizzazioni."`;
 
-    const completion = await openai.chat.completions.create({
-      model: (hasImages || docTexts.length > 0) ? "gpt-4o" : "gpt-4o-mini",
-      max_completion_tokens: (hasImages || docTexts.length > 0) ? 16384 : 8192,
-      messages: [
-        { role: "system", content: AI_PROMPT },
-        ...(catalogContext ? [{ role: "system" as const, content: catalogContext }] : []),
-        ...(priceIntelContext ? [{ role: "system" as const, content: priceIntelContext }] : []),
-        ...(pastContext ? [{ role: "system" as const, content: pastContext }] : []),
-        ...(capitolatoProContext ? [{ role: "system" as const, content: capitolatoProContext }] : []),
-        ...(imagesContext ? [{ role: "system" as const, content: imagesContext }] : []),
-        {
-          role: "user",
-          content: hasImages
-            ? [
-                { type: "text" as const, text: userMessage },
-                ...imageDataUrls.map(img => ({
-                  type: "image_url" as const,
-                  image_url: { url: img, detail: "high" as const },
-                })),
-              ]
-            : userMessage,
-        },
-      ],
-    });
-
-    const content = completion.choices[0]?.message?.content ?? "{}";
     let aiData: {
       titolo_riga1?: string;
       titolo_riga2?: string;
@@ -545,26 +527,79 @@ Esempio: "Demolizione e rimozione di pavimentazione esistente in piastrelle cera
       iva_valore?: number;
       totale?: number;
       note?: string;
-    };
+    } = {};
 
-    try {
-      const cleaned = content.trim().replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/i, "");
-      aiData = JSON.parse(cleaned);
-    } catch {
-      req.log.error({ content, hasImages }, "Failed to parse AI JSON");
-      const isRefusal = /mi dispiace|mi spiace|non (posso|riesco)|sorry|i cannot|i can't/i.test(content);
-      if (isRefusal && hasImages) {
+    if (!isStructured) {
+      const completion = await openai.chat.completions.create({
+        model: (hasImages || docTexts.length > 0) ? "gpt-4o" : "gpt-4o-mini",
+        max_completion_tokens: (hasImages || docTexts.length > 0) ? 16384 : 8192,
+        messages: [
+          { role: "system", content: AI_PROMPT },
+          ...(catalogContext ? [{ role: "system" as const, content: catalogContext }] : []),
+          ...(priceIntelContext ? [{ role: "system" as const, content: priceIntelContext }] : []),
+          ...(pastContext ? [{ role: "system" as const, content: pastContext }] : []),
+          ...(capitolatoProContext ? [{ role: "system" as const, content: capitolatoProContext }] : []),
+          ...(imagesContext ? [{ role: "system" as const, content: imagesContext }] : []),
+          {
+            role: "user",
+            content: hasImages
+              ? [
+                  { type: "text" as const, text: userMessage },
+                  ...imageDataUrls.map(img => ({
+                    type: "image_url" as const,
+                    image_url: { url: img, detail: "high" as const },
+                  })),
+                ]
+              : userMessage,
+          },
+        ],
+      });
+
+      const content = completion.choices[0]?.message?.content ?? "{}";
+      try {
+        const cleaned = content.trim().replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/i, "");
+        aiData = JSON.parse(cleaned);
+      } catch {
+        req.log.error({ content, hasImages }, "Failed to parse AI JSON");
+        const isRefusal = /mi dispiace|mi spiace|non (posso|riesco)|sorry|i cannot|i can't/i.test(content);
+        if (isRefusal && hasImages) {
+          res.status(422).json({
+            error: "L'AI non è riuscita a interpretare le immagini allegate. Prova a riformulare la descrizione testuale aggiungendo i dettagli principali (misure, materiali, lavorazioni) oppure carica foto più chiare.",
+            code: "AI_IMAGE_REFUSAL",
+          });
+          return;
+        }
         res.status(422).json({
-          error: "L'AI non è riuscita a interpretare le immagini allegate. Prova a riformulare la descrizione testuale aggiungendo i dettagli principali (misure, materiali, lavorazioni) oppure carica foto più chiare.",
-          code: "AI_IMAGE_REFUSAL",
+          error: "L'AI non ha restituito un preventivo valido. Riprova tra qualche istante o riformula la richiesta.",
+          code: "AI_INVALID_OUTPUT",
         });
         return;
       }
-      res.status(422).json({
-        error: "L'AI non ha restituito un preventivo valido. Riprova tra qualche istante o riformula la richiesta.",
-        code: "AI_INVALID_OUTPUT",
-      });
-      return;
+    } else {
+      const parsedCapitoli = parseComputoMetrico(fullText);
+      const subTot = parsedCapitoli?.reduce((sum, c) => sum + c.subtotale, 0) ?? 0;
+      const iva = Math.round(subTot * 22) / 100;
+      aiData = {
+        capitoli: parsedCapitoli?.map(c => ({
+          lettera: c.lettera,
+          titolo: c.titolo,
+          osservazione: c.osservazione,
+          voci: c.voci.map(v => ({
+            descrizione: v.descrizione,
+            um: v.um,
+            quantita: v.quantita,
+            prezzo_unitario: v.prezzoUnitario,
+            totale: v.totale,
+          })),
+          subtotale: c.subtotale,
+        })) ?? [],
+        subtotale: subTot,
+        iva_percentuale: 22,
+        iva_valore: iva,
+        totale: subTot + iva,
+        descrizione_generale: "Analisi economica e computo metrico prezzato",
+        note: "Preventivo valido 30 giorni",
+      };
     }
 
     const capitoli: QuoteChapter[] = (aiData.capitoli ?? []).map((cap) => ({

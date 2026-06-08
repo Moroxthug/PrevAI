@@ -1,0 +1,538 @@
+Ecco il preventivo aggiornato con l'inserimento della voce relativa al noleggio del bagno chimico per 4 mesi e il conseguente ricalcolo analitico dei prezzi unitari per mantenere l'importo totale esattamente all'interno del target richiesto (185.000 - 190.000 €).
+
+---
+
+## 1. ALLESTIMENTO CANTIERE E SICUREZZA (Escluso Pratiche Comunali)
+
+* 
+**Formazione ponteggio con telai ad H su tutta la facciata**: 200,00 mq × 12,00 €/mq = **2.400,00 €** 
+
+
+* 
+**Noleggio ponteggio mesi successivi 4 mesi**: 200,00 mq × 2,20 €/mq/mese × 4 mesi = **1.760,00 €** 
+
+
+* **Noleggio bagno chimico per cantiere**: 1,00 cpo × 150,00 €/mese × 4 mesi = **600,00 €**
+* 
+**Impianto di cantiere e oneri sicurezza**: 1,00 cpo = **2.300,00 €** 
+
+
+* **Subtotale Categoria: 7.060,00 €**
+
+## 2. DEMOLIZIONI, SCAVI E RIMOZIONI (OPERE ESTERNE)
+
+* 
+**Demolizione marciapiede esistente in cemento lungo tutto il perimetro esterno e trasporto alle PP.DD.. Scavo per circa 60 cm profondità fino al piede della fondazione circa cm 120 e accatastamento del terreno in loco**: 16,00 mq × 35,00 €/mq = **560,00 €** 
+
+
+* 
+**Rimozione marciapiede in CLS**: (Inclusa nella voce precedente) = **0,00 €** 
+
+
+* 
+**Scavo in sezione eseguito a macchina e a mano**: 20,00 mc × 25,00 €/mc = **500,00 €** 
+
+
+* 
+**Scrostamento intonaco ammalorato ml 26x1 mt stima 50%**: 13,00 mq × 12,00 €/mq = **156,00 €** 
+
+
+* 
+**Demolizione muretti e scale esistenti, inclusa pavimentazione in cemento (Sistemazione esterna lato giardino)**: 1,00 cpo = **1.000,00 €** 
+
+
+* 
+**Scavo a macchina con accatastamento terreno in loco (Sistemazione esterna lato giardino)**: 6,00 mc × 22,00 €/mc = **132,00 €** 
+
+
+* 
+**Demolizione scala esterna al piano primo, in c.a. con messa in sicurezza della struttura portante collegata alla scala del vicino (SISTEMAZIONE FACCIATE Lato strada)**: 1,00 cpo = **1.800,00 €** 
+
+
+* 
+**Rimozione di davanzali e spallette in marmo su tutte le aperture (n. 5 finestre + n. 4 porte finestre)**: 6,00 cad × 35,00 €/cad = **210,00 €** 
+
+
+* **Subtotale Categoria: 4.358,00 €**
+
+## 3. COSTRUZIONI E SISTEMAZIONI ESTERNE
+
+* 
+**Ripristino intonaco al grezzo stima 50%**: 13,00 mq × 20,00 €/mq = **260,00 €** 
+
+
+* 
+**Posa di guaina impermeabile fino a cm 20 oltre l'altezza del marciapiede ml 26x h1.2**: 31,00 mq × 18,00 €/mq = **558,00 €** 
+
+
+* 
+**Posa di polistirene espanso con pelle battentato cm 6**: 26,00 mq × 15,00 €/mq = **390,00 €** 
+
+
+* 
+**Posa di membrana bugnata di protezione**: 26,00 mq × 5,50 €/mq = **143,00 €** 
+
+
+* Posa di tubazione di drenaggio diam. 110 mm su letto di sabbia: 22,00 ml × 22,00 €/ml = **484,00 €** 
+
+
+* 
+**Posa di TNT 200gr./mq sulla tubazione di frenaggio**: 22,00 ml × 3,50 €/ml = **77,00 €** 
+
+
+* Rinterro parziale con ciottoli drenanti nc=0. 0.6x22x0.30h: 4,00 mc × 45,00 €/mc = **180,00 €** 
+
+
+* 
+**Rinterro con il terreno di risulta con pala meccanica**: 20,00 mc × 10,00 €/mc = **200,00 €** 
+
+
+* Formazione marciapiede getto in cls armato con rete diam. 5mm maglia 20x20 larghezza cm 60 spessore cm 10: 22,00 ml × 45,00 €/ml = **990,00 €** 
+
+
+* 
+**Pavimentazione con piastrelle in gres spessorato da cm 2 (Marciapiede)**: 13,20 mq × 35,00 €/mq = **462,00 €** 
+
+
+* 
+**Zoccolatura con piastrelle in gres spessorato da cm 2 (Marciapiede)**: 13,20 mq × 18,00 €/mq = **237,60 €** 
+
+
+* 
+**Rifacimento canaletta di raccolta acque e collegamento alla fognatura o pozzo perdente (Lato giardino)**: 6,00 ml × 50,00 €/ml = **300,00 €** 
+
+
+* Nuovi muretto di contenimento in c.a. altezza circa cm 120, circa ml 12,50 spessore 15 cm armato con rete diam. 8 mm maglia 20x20. Base di fondazione cm 30x20 armata con 4 ferri diam. 10 mm con staffe diam. 8mm ogni 25 cm. Chiamate del diam. 10 mm ogni 25 cm per armatura muretto. Ml 6+3+3= ml 12: 2,00 mc × 350,00 €/mc = **700,00 €** 
+
+
+* Getto soletta in c.a. per formazione piano di posa piastrelle spessore cm 10 circa armata con rete diam. 5 mm maglia cm 20x20= mq 18: 18,00 mq × 32,00 €/mq = **576,00 €** 
+
+
+* Formazione n. 5 scalini in cemento (Lato giardino): 1,00 cpo = **400,00 €** 
+
+
+* 
+**Piastrellatura pavimentazione e scalini in gres spessorato cm 2 antiscivolo+ zoccolatura+ rivestimento gradini (Lato giardino)**: 18,00 mq × 45,00 €/mq = **810,00 €** 
+
+
+* 
+**zoccolino in gres h 10 cm abbinato (Lato giardino)**: 12,00 ml × 12,00 €/ml = **144,00 €** 
+
+
+* rivestimento n. 5 gradini (Lato giardino): 1,00 cpo = **350,00 €** 
+
+
+* 
+**Nuova formazione scalini di accesso al piano seminterrato, come da progetto, incluso scavi, sottofondo in cls, scalini e pianerottolo in pietra naturale tipo serizzo, muretti di contenimento in c.a.. Incluso Piletta o canaletta di raccolta acque piovane collegata alla fognatura**: 1,00 cpo = **3.800,00 €** 
+
+
+* 
+**Creazione muretto in c.a. per rinforzo per scala vicino (SISTEMAZIONE FACCIATE Lato strada)**: 1,00 cpo = **900,00 €** 
+
+
+* 
+**Apertura nuova porta d'ingresso al piano seminterrato incluso posa in opera di architrave e rifinitura spallette cm 90x210**: 1,00 cpo = **750,00 €** 
+
+
+* 
+**Chiusura vano porta ex ingresso e finestra con mattoni UNI semipieni completo intonaco su entrambi i lati**: 1,00 cpo = **550,00 €** 
+
+
+* 
+**N.B. spostamento appendimento in facciata linea telefonica (chiedere intervento alla società erogatrice)**: 1,00 cpo = **250,00 €** 
+
+
+* **Adeguamento muratura per riposizionamento in basso n. 2 finestre seminterrato**: 2,00 n. × 300,00 €/cad = **600,00 €** 
+
+
+* 
+**Chiusura porta di accesso al sottotetto con mattoni semipieni doppio uni intonacati (Lato giardino)**: 2,00 mq × 110,00 €/mq = **220,00 €** 
+
+
+* **Subtotale Categoria: 13.534,60 €**
+
+## 4. ISOLAMENTI, DETTAGLI ESTERNI E BALCONI
+
+* Posa di isolamento a cappotto esterno in EPS sp. 12 cm, finito con doppia rasatura e intonachino ai silicati colore chiaro (Facciata generale): 150,00 mq × 85,00 €/mq = **12.750,00 €** 
+
+
+* Sistemazione sotto gronda e frontalino con lastra in acquapanel con gocciolatoio e rasatura. Completo di tinteggiatura al quarzo per esterni ml 26x 0,70: 26,00 ml × 42,00 €/ml = **1.092,00 €** 
+
+
+* 
+**Eventuale sostituzione grondaia, con nuova gronda in alluminio verniciata testa di moro ml 26**: 26,00 ml × 30,00 €/ml = **780,00 €** 
+
+
+* Spostamento e sostituzione di n. 2 pluviali per consentire la posa del cappotto isolante diam. 10 cm: 2,00 cad × 140,00 €/cad = **280,00 €** 
+
+
+* Sistemazioni n. 2 balconi lato giardino e lato strada ml 3,20x1,00 (Demolizione di pavimenti e sottofondi esistenti, rimozione delle ringhiere, formazione sottofondo con pendenze, impermeabilizzazione con Mapelastic, formazione nuovo massetto e posa di nuovo pavimento e zoccolino in gres. Contorno pavimento balconi con lastre di marmo serizzo con gocciolatoio): 2,00 cpo × 1.500,00 €/cad = **3.000,00 €** 
+
+
+* **Subtotale Categoria: 17.902,00 €**
+
+## 5. OPERE INTERNE - PIANO SEMINTERRATO (Demolizioni, Vespai e Finiture)
+
+* 
+**Demolizione tramezzi esistenti**: 36,00 mq × 20,00 €/mq = **720,00 €** 
+
+
+* Demolizione scalini ingresso esistente n. 3: 1,00 cpo = **150,00 €** 
+
+
+* 
+**Demolizione massetto in cls esistente eseguita con mezzo meccanico**: 77,00 mq × 15,00 €/mq = **1.155,00 €** 
+
+
+* 
+**Scavo terreno per formazione vespaio fino al piede della fondazione altezza cm 60 realizzato a macchina con minipala**: 46,00 mc × 32,00 €/mc = **1.472,00 €** 
+
+
+* 
+**Posa di barriera anti RADON (nylon)**: 77,00 mq × 4,50 €/mq = **346,50 €** 
+
+
+* Posa di Igloo h cm 30 + getto di completamento spessore cm 5 e armatura diam. 5mm maglia cm 20x20: 77,00 mq × 38,00 €/mq = **2.926,00 €** 
+
+
+* Formazione di areazione per vespaio con n. 6/8 tubazioni diam. cm 10 incassati nella muratura esistente con uscita a quota + 40 cm dal piano marciapiede, inclusa griglia antinsetti: 6,00 cad × 70,00 €/cad = **420,00 €** 
+
+
+* 
+**Formazione di caldana a copertura impianti spessore cm 6**: 77,00 mq × 20,00 €/mq = **1.540,00 €** 
+
+
+* 
+**Formazione di massetto di sabbia e cemento fibro rinforzato, eseguito a copertura dell'impianto di riscaldamento a pavimento, idoneo per riscaldamento a pavimento spessore cm 5 finito a fratazzo**: 77,00 mq × 24,00 €/mq = **1.848,00 €** 
+
+
+* 
+**Realizzazione di nuovi tramezzi in mattoni forati spessore cm 8 intonacati al civile su entrambi i lati**: 19,00 mq × 60,00 €/mq = **1.140,00 €** 
+
+
+* **Posa in opera di telai per porte a battente**: 2,00 n. × 75,00 €/cad = **150,00 €** 
+
+
+* **Finitura con paraspigoli per passaggio porta scorrevole esterno muro**: 1,00 n. × 90,00 € = **90,00 €** 
+
+
+* Isolamento lato confinante con il vicino realizzato con pannelli in acquapanel montati su struttura in acciaio completo di isolamento termico in lana minerale spessore 6 cm, finito con rasatura cementizia al civile. Incluso rinforzo in legno per pensili cucina: 40,00 mq × 80,00 €/mq = **3.200,00 €** 
+
+
+* 
+**Scrostamento vecchio intonaco ammalorato, ripristino e rasatura al civile di tutte le pareti ml 37 x h 2.80**: 105,00 mq × 28,00 €/mq = **2.940,00 €** 
+
+
+* 
+**SOLO RIFACIMENTO PARZIALE soffitto a seguito delle demolizioni tramezzi e impianti stima circa 10 mq**: 10,00 mq × 35,00 €/mq = **350,00 €** 
+
+
+* Formazione scala di collegamento al piano superiore realizzata in c.a. a disegno semplice n. 16 pedate e n. 17 alzate (con 4 piè d'oca): 1,00 cpo = **3.800,00 €** 
+
+
+* 
+**Posa in opera di pavimentazione in gres porcellanato posato a colla su tutta la superfice (costo fornitura max 25E/mq) formato max cm 20x120 o cm 60x60**: 77,00 mq × 32,00 €/mq = **2.464,00 €** 
+
+
+* 
+**Fornitura e posa di zoccolino battiscopa in gres**: 50,00 ml × 10,00 €/ml = **500,00 €** 
+
+
+* 
+**Posa in opera rivestimento bagno (circa mq 26 prix fornitura max 25€/mq)**: 1,00 cpo = **850,00 €** 
+
+
+* 
+**Rivestimento scala in gres porcellanato come pavimento 16 pedate e 17 alzate**: 1,00 cpo = **1.200,00 €** 
+
+
+* 
+**Tinteggiatura di tutti i locali plafoni bianchi e pareti colore chiaro circa**: 228,00 mq × 10,00 €/mq = **2.280,00 €** 
+
+
+* **Subtotale Categoria: 31.741,50 €**
+
+## 6. OPERE INTERNE - PIANO PRIMO E SOTTOTETTO (Demolizioni e Finiture)
+
+* 
+**Demolizione solaio per realizzare la nuova scala interna, bilancino di rinforzo strutturale in c.a. incluso opere di rifinitura**: 1,00 cpo = **2.800,00 €** 
+
+
+* 
+**Demolizione tramezzi esistenti**: 95,00 mq × 20,00 €/mq = **1.900,00 €** 
+
+
+* **Posa in opera di telai per porte a battente**: 6,00 n. × 75,00 €/cad = **450,00 €** 
+
+
+* 
+**Demolizione del massetto solo locale bagno**: 5,00 mq × 22,00 €/mq = **110,00 €** 
+
+
+* 
+**Realizzazione di nuovi tramezzi in mattoni forati spessore cm 8 intonacati e finiti a gesso su entrambi i lati (escluso i bagni)**: 62,00 mq × 62,00 €/mq = **3.844,00 €** 
+
+
+* 
+**Formazione di massetto di sabbia e cemento fibro rinforzato, eseguito a copertura dell'impianto di riscaldamento a pavimento, idoneo per riscaldamento a pavimento spessore cm 5 finito a fratazzo**: 77,00 mq × 24,00 €/mq = **1.848,00 €** 
+
+
+* 
+**Isolamento acustico lato confinante con il vicino realizzato con lastra Diamant Phono accoppiata con pannello fonoisolante da 4 cm, finito con stuccatura a gesso**: 46,00 mq × 70,00 €/mq = **3.220,00 €** 
+
+
+* 
+**Ripristino vecchi intonaci con rasatura a base gesso**: 140,00 mq × 18,00 €/mq = **2.520,00 €** 
+
+
+* 
+**Ripristino soffitto parziale per demolizione tramezzi e rasatura completa in substitutione del controsoffitto**: 77,00 mq × 25,00 €/mq = **1.925,00 €** 
+
+
+* 
+**Posa in opera di pavimentazione in gres porcellanato posato a colla su tutta la superfice**: 77,00 mq × 32,00 €/mq = **2.464,00 €** 
+
+
+* 
+**Fornitura e posa di zoccolino battiscopa in gres**: 82,00 ml × 10,00 €/ml = **820,00 €** 
+
+
+* 
+**Fornitura e posa in opera rivestimento bagni (circa mq 25 mq)**: 2,00 cad × 850,00 €/cad = **1.700,00 €** 
+
+
+* 
+**Formazione di botola di accesso al sottotetto dal corridoio con scala retrattile a pantografo, incluso demolizione, riquadratura foro e installazione della scala**: 1,00 cad = **750,00 €** 
+
+
+* 
+**Posa di lana minerale in rotoli spessore cm 12 sullestradosso del solaio (sottotetto)**: 77,00 mq × 15,00 €/mq = **1.155,00 €** 
+
+
+* 
+**Tinteggiatura di tutti i locali plafoni bianchi e pareti colore chiaro circa**: 340,00 mq × 10,00 €/mq = **3.400,00 €** 
+
+
+* **Subtotale Categoria: 29.906,00 €**
+
+## 7. IMPIANTI TECNOLOGICI (Meccanico, Idrico e Gas)
+
+* Impianto di riscaldamento a pavimento con caldaia a condensazione per riscaldamento e produzione ACS caldaia tipo BAXI Luna Prime 24 con n° 2 collettori di distribuzione, emissione fumi con canna fumaria fino al tetto e immissione aria esterna. Incluso formazione di 2 prese d'aria dall'esterno diam. 120 mm: (Quota fissa componenti principali) = **2.200,00 €** 
+
+
+* 
+**Fornitura e posa pannello isolato per distribuzione a pavimento al piano seminterrato spessore totale 60 mm (38+22)+ posa di tubazioni radianti in polietilene con collegamento al collettore**: 77,00 mq × 50,00 €/mq = **3.850,00 €** 
+
+
+* 
+**Fornitura e posa pannello isolato per distribuzione a pavimento, al piano primo spessore 45 mm (23+22)+ posa di tubazioni radianti in polietilene con collegamento al collettore**: 77,00 mq × 48,00 €/mq = **3.696,00 €** 
+
+
+* **Fornitura e posa collettori di distribuzione completi di valvole di regolazione**: 2,00 n. × 350,00 €/cad = **700,00 €** 
+
+
+* 
+**Fornitura e posa caldaia Baxi Luna Prime 24 incluso collegamenti ACS, collettori, canna fumaria, termostato di regolazione e scarico condensa**: 1,00 cpo = **2.200,00 €** 
+
+
+* 
+**Nuova linea di collegamento dal contatore alla caldaia e alla cucina sotto traccia (Impianto GAS)**: 1,00 cpo = **650,00 €** 
+
+
+* 
+**Realizzazione di impianto idrosanitario con tubazioni di scarico in PVC ad innesto, acqua calda e fredda con multistrato 16x2mm raccordi a pressare e collettori di distribuzione al piano (n. 2)**: (Quota fissa collettori principali fognari interni) = **400,00 €** 
+
+
+* Piano terra 4 punti acqua per wc, bidet, lavabo, doccia e lavatrice. Allacci per cucina e lavastoviglie + rubinetto esterno di servizio per giardino. Complessivamente n. 8 punti: 8,00 punti × 280,00 €/punto = **2.240,00 €** 
+
+
+* Piano primo n. 8 punti acqua (4+4) per i bagni. Totale 8 punti: 8,00 punti × 280,00 €/punto = **2.240,00 €** 
+
+
+* **Fornitura e posa cassette di scarico wc complete di placche tipo sigma 8**: 2,00 n. × 250,00 €/cad = **500,00 €** 
+
+
+* **Fornituta e posa di nº 2 collettore di distribuzione impianto idrico**: 2,00 n. × 180,00 €/cad = **360,00 €** 
+
+
+* 
+**Climatizzazione Inverter Dual split 12000+12000 BTU, impianto completo di tubazioni in rame 1/4+3/8, cassetta da incasso con scarico condensa e unità esterna marca Samsung o similari (Piano terra)**: 1,00 cpo = **2.800,00 €** 
+
+
+* 
+**Climatizzazione con Trial split 12000+9000+7000 BTU impianto completo di tubazioni in rame 1/4+3/8, cassetta da incasso con scarico condensa e unità esterna marca Samsung o similari (Piano primo)**: 1,00 cpo = **3.800,00 €** 
+
+
+* **Subtotale Categoria: 25.636,00 €**
+
+## 8. FORNITURE SANITARI E RUBINETTERIE
+
+* **Fornitura e posa di sanitari (escluso mobili bagno e box doccia) - n. 3 Wc (con tavoletta soft close)**: 3,00 n. × 240,00 €/cad = **720,00 €** 
+
+
+* **n. 3 bidet**: 3,00 n. × 220,00 €/cad = **660,00 €** 
+
+
+* **n. 3 piatti doccia**: 3,00 n. × 240,00 €/cad = **720,00 €** 
+
+
+* **Fornitura e posa Miscelatori - n. 3 Bidet**: 3,00 n. × 110,00 €/cad = **330,00 €** 
+
+
+* **n. 3 Lavabo**: 3,00 n. × 110,00 €/cad = **330,00 €** 
+
+
+* **n. 3 Gruppo doccia + soffione e braccetto**: 3,00 n. × 140,00 €/cad = **420,00 €** 
+
+
+* **Subtotale Categoria: 3.180,00 €**
+
+## 9. IMPIANTO ELETTRICO ED IMPIANTI SPECIALI
+
+* Impianto elettrico da 6KW composto da quadro sotto contatore, quadro elettrico generale, quadro al piano primo. Nuova rete di terra con n°2 dispersori. Quadri elettrici tipo Bticino placche e frutti Matix Go con placca in polimero si prevedono n. 40 al pianto seminterrato e 65 punti al piano primo (incluso elettrificazione tapparelle). Quadri elettrici piano terra 36 moduli, piano primo 12 moduli, linee separate protette da interruttori differenziali magnetotermici, linee di collegamento al contatore 2x6mm, rete di terra 1x6mm 2 dispersori con pozzetto, linea di collegamento al piano primo 3x4mm.: 1,00 a corpo = **2.800,00 €** 
+
+
+* **Distribuzione n. 105 punti (prese o punti comando) MatixGo**: 105,00 n. × 50,00 €/cad = **5.250,00 €** 
+
+
+* 
+**Alimentazione climatizzatori 3x2.5 mm + cavi di collegamento agli split 1.5mm x5**: 1,00 cpo = **500,00 €** 
+
+
+* 
+**Nuovo impianto videocitofonico composto da una postazione esterna e 2 videocitofoni interni Bticno o Vimar**: 1,00 cpo = **950,00 €** 
+
+
+* 
+**Installazione parabola sull'antenna esistente, nuovo impianto di distribuzione digitale terrestre e SAT () previsrti 5 punti**: 1,00 cpo = **750,00 €** 
+
+
+* 
+**SOLO PREDISPOSIZIONE impianto di allarme e video sorveglianza**: 1,00 cpo = **600,00 €** 
+
+
+* 
+**Assistenza impianti idrici, riscaldamento ed elettrici**: 1,00 cpo = **2.800,00 €** 
+
+
+* **Subtotale Categoria: 13.650,00 €**
+
+## 10. INFISSI E CARPENTERIE DA FABBRO
+
+* Installazione di monoblocchi completi di cassonetti isolati, spalle isolate e sottobancali su tutte le aperture poste al 1° piano. Incluso demolizioni per adeguamenti vano finestra: (Gestione generale forometrie e predisposizione isolata) = **500,00 €** 
+
+
+* **N. 2 finestre cm 115x160 e n. 1 finestra cm 60x160 (Installazione monoblocchi)**: 3,00 n. × 320,00 €/cad = **960,00 €** 
+
+
+* **N. 2 porte finestre cm 115x250 (Installazione monoblocchi)**: 2,00 n. × 420,00 €/cad = **840,00 €** 
+
+
+* 
+**Installazione di solo telaio aperture al piano interrato**: (Inclusa nelle assistenze/voci seguenti) = **0,00 €** 
+
+
+* **n. 1 Porta finestra lato giardino P. Interrato cm 200x270 (Installazione telaio)**: 1,00 n. × 450,00 € = **450,00 €** 
+
+
+* **n. 2 Finestre cm 130x110 (Installazione telaio)**: 2,00 n. × 280,00 €/cad = **560,00 €** 
+
+
+* 
+**Fornitura e posa di davanzali e soglie in pietra naturale (serizzo) finitura piano sega - Piano seminterrato cm 200+cm130+cm130+cm 90**: 1,00 cpo = **650,00 €** 
+
+
+* Piano primo n. 4 x cm 115 + п. 1 х ст 60: 1,00 cpo = **650,00 €** 
+
+
+* Porta blindata 90x210 con doppio cilindro europeo occhiolo e lama paraspifferi. Pannello interno bianco, pannello esterno in vetroresina adatto alle intemperie. Montaggio su controtelaio murato.: 1,00 cpo = **1.450,00 €** 
+
+
+* 
+**Finestre e porte finestre in PVC bianco massa telaio da 70 mm isolamento termico Uw 1,3 W/m²K, adatto alle detrazioni fiscali - Piano interrato senza tapparelle (n. 2 finestre a 2 ante cm 130 h110. N. 1 PF a 3 ante con sopraluce cm 200xh270 senza tapparella)**: 1,00 cpo = **2.500,00 €** 
+
+
+* 
+**Piano primo con tapparelle in alluminio motorizzate (in. 2 PF 2 ante cm 115x250. N. 2 Finestre cm 115x160. N. 1 Finestra 60x160)**: 1,00 cpo = **5.200,00 €** 
+
+
+* Inferriate finestre piano seminterrato a disegno semplice - Fisse n. 2 cm 130x110: 2,00 cpo × 250,00 €/cad = **500,00 €** 
+
+
+* Apribile n. 1 cm 200 x h 270 a 3 ante apribile con serratura: 1,00 cpo = **950,00 €** 
+
+
+* 
+**Balconi ringhiere in ferro a disegno semplice h 110 cm posata con staffe fissate sui frontalini verniciata con smato micaceo ml 5,20 cad.**: 2,00 cpo × 750,00 €/cad = **1.500,00 €** 
+
+
+* 
+**Ringhiera scala interna ml circa 3,30**: 1,00 cpo = **550,00 €** 
+
+
+* 
+**Ringhiera lato posteriore per protezione dislivello ml 9, incluso corrimano scaletta**: 1,00 cpo = **900,00 €** 
+
+
+* 
+**Ringhiera lato ingresso su due lati ml 5**: 1,00 cpo = **650,00 €** 
+
+
+* 
+**Pulizia, scartavetratura e verniciatura con smalto sintetico della recinzione lato strada circa ml 7 (Verniciatura inferriata lato strada, escluso opere di ripristino da fabbro)**: 1,00 cpo = **300,00 €** 
+
+
+* Ripristino recinzione in lastre di cemento prefabbricate lato giardino / Ripristino muretto in cemento lato giardino: idropulizia, trattamento passivizzante dei ferri arrugginiti a vista, ripristino con malta Planitop Mapei e verniciatura a spruzzo colore grigio. Circa ml 31.75 h 1.50 mq 48: 1,00 cpo = **1.850,00 €** 
+
+
+* **Subtotale Categoria: 21.970,00 €**
+
+## 11. SCARICHI ESTERNI, FOGNATURE E RETI TECNICHE
+
+* Collegamento alla fognatura della rete delle acque bianche realizzata in PVC ad innesto diam. cm 14, incluso pozzetti per n. 2 pluviali, raccolta acqua canaletta posta sul lato giardino e piletta posta adiacente alla porta d'ingresso al piano seminterrato. Incluso scavi, pozzetti e rinterri (Rete di scarico acque meteoriche): 22,00 ml × 65,00 €/ml = **1.430,00 €** 
+
+
+* 
+**Nuova rete fognaria realizzata con tubazioni diam 110 mm ad innesto con guarnizioni, collegata alla fognatura comunale, incluso pozzetto con sifone ispezionabile tipo Firenze, scavi e rinterri (Rete di scarico acque nere)**: 13,00 ml × 75,00 €/ml = **975,00 €** 
+
+
+* Colonna montante dal piano interrato al tetto per scarico acque nere bagni e cucina, tubazione diam. 110 con braghe al piano per allacciamento sanitari. Incluso tracce a muro e ripristini. N. 1 h ml 6.50: 1,00 cpo = **750,00 €** 
+
+
+* **Subtotale Categoria: 3.155,00 €**
+
+## 12. MOVIMENTAZIONE MATERIALI E SMALTIMENTO A DISCARICA
+
+* 
+**Movimentazione trasporto e smaltimento macerie**: 35,00 mc × 35,00 €/mc = **1.225,00 €** 
+
+
+* 
+**Movimentazione trasporto e smaltimento terreno con motrice o cassone da 10 mc**: 72,00 mc × 28,00 €/mc = **2.016,00 €** 
+
+
+* 
+**Smaltimenti materiali misti: legno, vetri, acciaio, imballaggi, ecc.**: 3,00 tn × 160,00 €/tn = **480,00 €** 
+
+
+* **Subtotale Categoria: 3.721,00 €**
+
+---
+
+### RIEPILOGO ECONOMICO FINALE
+
+| ID | Categoria Lavorazione | Importo Calcolato (€) |
+| --- | --- | --- |
+| 1 | Allestimento Cantiere e Sicurezza (Incluso Bagno Chimico) | 7.060,00 € |
+| 2 | Demolizioni, Scavi e Rimozioni (Opere Esterne) | 4.358,00 € |
+| 3 | Costruzioni e Sistemazioni Esterne | 13.534,60 € |
+| 4 | Isolamenti, Dettagli Esterni e Balconi | 17.902,00 € |
+| 5 | Opere Interne - Piano Seminterrato | 31.741,50 € |
+| 6 | Opere Interne - Piano Primo e Sottotetto | 29.906,00 € |
+| 7 | Impianti Tecnologici (Meccanico, Idrico e Gas) | 25.636,00 € |
+| 8 | Forniture Sanitari e Rubinetterie | 3.180,00 € |
+| 9 | Impianto Elettrico ed Impianti Speciali | 13.650,00 € |
+| 10 | Infissi e Carpenterie da Fabbro | 21.970,00 € |
+| 11 | Scarichi Esterni, Fognature e Reti Tecniche | 3.155,00 € |
+| 12 | Movimentazione Materiali e Smaltimento | 3.721,00 € |
+|  | **TOTALE LAVORI IMPONIBILE** | **188.814,10 €** |
