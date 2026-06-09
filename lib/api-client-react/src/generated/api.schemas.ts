@@ -154,6 +154,8 @@ export interface CreateQuoteBody {
   images?: Blob[];
   /** Template ID for the quote layout (affects both AI generation style and PDF layout) */
   templateId?: CreateQuoteBodyTemplateId;
+  /** Optional target total (IVA inclusa) in euros. When provided, unit prices are scaled proportionally to hit this total. */
+  targetTotalEur?: number;
 }
 
 export type UpdateQuoteBodyStatus =

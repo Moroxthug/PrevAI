@@ -1103,6 +1103,9 @@ components:
           type: string
           enum: [standard, arosio, mariagrazia]
           description: Template ID for the quote layout (affects both AI generation style and PDF layout)
+        targetTotalEur:
+          type: number
+          description: Optional target total (IVA inclusa) in euros. When provided, unit prices are scaled proportionally to hit this total.
       required:
         - rawInput
 

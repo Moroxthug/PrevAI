@@ -324,6 +324,12 @@ router.post("/quotes", requireAuth, imageUpload.array("images", 3), async (req, 
     const validTemplateIds = ["standard", "arosio", "mariagrazia"];
     const templateId = validTemplateIds.includes(requestedTemplateId) ? requestedTemplateId : "standard";
 
+    const rawTargetTotal = req.body.targetTotalEur;
+    const targetTotalEur: number | null =
+      rawTargetTotal !== undefined && rawTargetTotal !== "" && !isNaN(Number(rawTargetTotal)) && Number(rawTargetTotal) > 0
+        ? Number(rawTargetTotal)
+        : null;
+
     let clientDataInput: QuoteClientData | undefined;
     if (req.body.clientData) {
       let parsed: unknown;
@@ -505,6 +511,14 @@ Combina sempre le informazioni estratte dalle immagini con la descrizione testua
 RICORDA: l'output deve essere SOLO JSON valido secondo lo schema indicato — MAI testo libero, MAI rifiuti, MAI spiegazioni.`
       : "";
 
+    const targetTotalContext = targetTotalEur
+      ? `IMPORTO TOTALE OBBLIGATORIO:
+Il preventivo DEVE avere un totale LORDO (IVA inclusa al 22%) di CIRCA €${targetTotalEur.toLocaleString("it-IT")}. Questo è un vincolo assoluto.
+Il subtotale imponibile deve essere circa €${Math.round(targetTotalEur / 1.22).toLocaleString("it-IT")}.
+Distribuisci i prezzi unitari di TUTTE le voci in modo che la somma rispetti questo importo. Non ignorare questo vincolo.
+Se il documento allegato ha molte voci, mantienile tutte e adegua i prezzi proporzionalmente per arrivare al totale richiesto.`
+      : "";
+
     const templateStyleContext =
       templateId === "arosio"
         ? `MODALITÀ CAPITOLATO TECNICO PROFESSIONALE:
@@ -568,6 +582,7 @@ Scrivi il preventivo in stile OFFERTA COMMERCIALE PROFESSIONALE e PERSUASIVA:
           ...(catalogContext ? [{ role: "system" as const, content: catalogContext }] : []),
           ...(priceIntelContext ? [{ role: "system" as const, content: priceIntelContext }] : []),
           ...(pastContext ? [{ role: "system" as const, content: pastContext }] : []),
+          ...(targetTotalContext ? [{ role: "system" as const, content: targetTotalContext }] : []),
           ...(templateStyleContext ? [{ role: "system" as const, content: templateStyleContext }] : []),
           ...(imagesContext ? [{ role: "system" as const, content: imagesContext }] : []),
           {
@@ -605,12 +620,12 @@ Scrivi il preventivo in stile OFFERTA COMMERCIALE PROFESSIONALE e PERSUASIVA:
         });
         return;
       }
-    } else if (isTabular && tabularData && tabularData.totalVoci >= 10) {
+    } else if (isTabular && tabularData && tabularData.totalVoci >= 5) {
       // Tabular computo metrico: BYPASS AI entirely — build quote deterministically
       // The AI truncates JSON when there are too many voci; deterministic pricing is reliable
-      req.log.info({ userId, totalVoci: tabularData.totalVoci }, "Tabular computo: bypassing AI, deterministic pricing");
+      req.log.info({ userId, totalVoci: tabularData.totalVoci, targetTotalEur }, "Tabular computo: bypassing AI, deterministic pricing");
 
-      const chapters = tabularData.sections.map((s, idx) => {
+      const chaptersRaw = tabularData.sections.map((s, idx) => {
         const voci = s.voci.map(v => {
           const estimatedPrice = estimatePriceForVoce(v.categoria, v.descrizione, v.um);
           const totale = Math.round(v.quantita * estimatedPrice * 100) / 100;
@@ -632,7 +647,27 @@ Scrivi il preventivo in stile OFFERTA COMMERCIALE PROFESSIONALE e PERSUASIVA:
         };
       });
 
-      const subTot = chapters.reduce((sum, c) => sum + c.subtotale, 0);
+      // Apply proportional scaling to hit the target total (IVA inclusa) if provided
+      let chapters = chaptersRaw;
+      let subTot = chaptersRaw.reduce((sum, c) => sum + c.subtotale, 0);
+
+      if (targetTotalEur && subTot > 0) {
+        const ivaRate = 0.22;
+        const targetSubtotale = targetTotalEur / (1 + ivaRate);
+        const scaleFactor = targetSubtotale / subTot;
+        req.log.info({ scaleFactor, rawSubtotale: subTot, targetSubtotale }, "Tabular computo: applying price scaling to hit target total");
+
+        chapters = chaptersRaw.map(c => {
+          const voci = c.voci.map(v => {
+            const newPu = Math.round(v.prezzo_unitario * scaleFactor * 100) / 100;
+            const newTotale = Math.round(v.quantita * newPu * 100) / 100;
+            return { ...v, prezzo_unitario: newPu, totale: newTotale };
+          });
+          return { ...c, voci, subtotale: voci.reduce((s, v) => s + v.totale, 0) };
+        });
+        subTot = chapters.reduce((sum, c) => sum + c.subtotale, 0);
+      }
+
       const iva = Math.round(subTot * 22) / 100;
       const totale = Math.round((subTot + iva) * 100) / 100;
 
@@ -3323,87 +3358,180 @@ La descrizione deve essere precisa, professionale e in italiano. Massimo 2 righe
   }
 });
 
-// Fallback price estimation for tabular computo metrico voci
+// Fallback price estimation for tabular computo metrico voci (Brianza/Milano market rates 2026)
+// Uses earliest-match strategy: the keyword appearing FIRST in the description wins,
+// preventing secondary words (e.g. "scalini" in a tiling description) from hijacking the price.
 function estimatePriceForVoce(categoria: string, descrizione: string, um: string): number {
   const desc = descrizione.toLowerCase();
   const cat = categoria.toLowerCase();
   const unit = um.toLowerCase();
 
-  // Scale-aware base prices for building/construction work
-  const basePrices: Record<string, number> = {
-    // Demolizioni
-    "demolizione": 45,
-    "scavo": 85,
-    "scrostamento": 28,
-    "rimozione": 40,
-    // Costruzioni / strutture
-    "ripristino": 45,
-    "intonaco": 42,
-    "guaina": 35,
-    "impermeabilizzazione": 40,
-    "polistirene": 32,
-    "membrana": 22,
-    "tubazione": 35,
-    "tnt": 20,
-    "rinterro": 30,
-    "formazione": 75,
-    "cls": 110,
-    "getto": 95,
-    "muretto": 280,
-    "soletta": 120,
-    "scalini": 1800,
-    "piastrellatura": 90,
-    "pavimentazione": 85,
-    "zoccolatura": 28,
-    "zoccolino": 22,
-    "rivestimento": 75,
-    // Ponteggio
-    "ponteggio": 28,
-    "noleggio": 22,
-    // Facciate / cappotto
-    "cappotto": 75,
-    "rasante": 35,
-    "intonachino": 30,
-    "grondaia": 22,
-    "pluviale": 180,
-    // Balconi
-    "balcone": 2800,
-    // Verniciature
-    "verniciatura": 450,
-    "pulizia": 380,
-    "idropulizia": 25,
-    "trattamento": 35,
-    // Serramenti
-    "telaio": 1400,
-    "monoblocco": 1800,
-    "finestra": 900,
-    "porta": 1200,
-    "porta finestra": 1600,
-    "davanzale": 320,
-    "soglia": 300,
-    // Impianti
-    "colonna": 450,
-    "fognaria": 55,
-    "scarico": 40,
-    "elettrico": 550,
-    "idraulico": 350,
-    "riscaldamento": 2800,
-    "caldaia": 2200,
-    "termosifoni": 85,
-    // Generico
-    "opere": 60,
-    "lavori": 55,
-    "servizi": 50,
-    "messa in sicurezza": 120,
-  };
+  // Priority-ordered keyword → price map (Brianza/Milano market rates 2026)
+  // Order matters: put more specific/primary terms before generic ones.
+  // The keyword that appears EARLIEST in the description wins (not first in this list).
+  const keywordPrices: Array<[string, number]> = [
+    // ── Demolizioni ─────────────────────────────────────────────────────────
+    ["scavo", 85],
+    ["scrostamento", 32],
+    ["rimozione marciapiede", 38],
+    ["rimozione", 38],
+    ["demolizione solaio", 350],
+    ["demolizione scala", 400],
+    ["demolizione massetto", 48],
+    ["demolizione tramezzi", 48],
+    ["demolizione", 48],
+    // ── Impermeabilizzazioni ─────────────────────────────────────────────────
+    ["guaina impermeabile", 42],
+    ["guaina", 40],
+    ["impermeabilizzazione mapelastic", 55],
+    ["impermeabilizzazione", 48],
+    ["membrana bugnata", 24],
+    ["membrana", 22],
+    // ── Isolamento ───────────────────────────────────────────────────────────
+    ["cappotto esterno", 80],
+    ["cappotto", 78],
+    ["polistirene espanso", 34],
+    ["polistirene", 32],
+    ["igloo", 65],
+    ["vespaio", 75],
+    ["barriera anti radon", 12],
+    ["barriera", 12],
+    // ── Intonaci e rasature ──────────────────────────────────────────────────
+    ["intonachino ai silicati", 28],
+    ["intonaco al grezzo", 40],
+    ["intonaco civile", 45],
+    ["intonaco", 42],
+    ["rasatura", 22],
+    ["ripristino intonaco", 48],
+    ["ripristino", 48],
+    // ── Pavimentazioni e rivestimenti ────────────────────────────────────────
+    ["piastrellatura", 95],
+    ["pavimentazione con piastrelle", 90],
+    ["pavimentazione", 85],
+    ["rivestimento gradini", 90],
+    ["rivestimento", 75],
+    ["zoccolatura", 32],
+    ["zoccolino", 25],
+    ["massetto", 38],
+    // ── Strutture in c.a. ────────────────────────────────────────────────────
+    ["soletta in c.a.", 140],
+    ["soletta", 130],
+    ["muretto di contenimento", 380],
+    ["muretto in c.a.", 380],
+    ["muretto", 320],
+    ["getto in cls", 110],
+    ["getto cls", 110],
+    ["getto", 100],
+    ["cls armato", 120],
+    ["cls", 110],
+    ["sottofondo", 38],
+    // ── Gradini e scale ──────────────────────────────────────────────────────
+    ["formazione n.", 1200],
+    ["formazione marciapiede", 85],
+    ["formazione scalini", 1800],
+    ["formazione scala", 2200],
+    ["formazione", 80],
+    ["scalini in cemento", 1800],
+    ["scalini in pietra", 2800],
+    ["scalini", 1800],
+    ["gradini", 1800],
+    ["gradino", 400],
+    // ── Ponteggi ─────────────────────────────────────────────────────────────
+    ["noleggio ponteggio", 8],
+    ["ponteggio", 18],
+    ["noleggio", 10],
+    // ── Facciate e gronde ─────────────────────────────────────────────────────
+    ["sotto gronda", 55],
+    ["grondaia in alluminio", 48],
+    ["grondaia", 45],
+    ["pluviale", 180],
+    ["gocciolatoio", 30],
+    // ── Serramenti e aperture ────────────────────────────────────────────────
+    ["monoblocco", 1600],
+    ["porta finestra", 1800],
+    ["porta d'ingresso", 2200],
+    ["apertura nuova porta", 900],
+    ["porta", 1400],
+    ["finestra", 900],
+    ["davanzali e soglie", 280],
+    ["davanzale", 260],
+    ["soglie", 260],
+    ["soglia", 260],
+    ["architrave", 350],
+    ["telaio", 600],
+    ["chiusura vano", 450],
+    ["chiusura porta", 450],
+    ["chiusura", 400],
+    ["adeguamento muratura", 350],
+    // ── Tubazioni e drenaggi ─────────────────────────────────────────────────
+    ["tubazione di drenaggio", 38],
+    ["tubazione fognaria", 55],
+    ["tubazione", 38],
+    ["tnt", 12],
+    ["colonna montante", 95],
+    ["colonna", 90],
+    ["rete fognaria", 60],
+    ["scarico acque nere", 60],
+    ["scarico acque meteoriche", 48],
+    ["scarico", 45],
+    ["canaletta", 65],
+    ["pozzetto", 280],
+    ["piletta", 180],
+    // ── Rinterri e trasporti ─────────────────────────────────────────────────
+    ["rinterro parziale", 28],
+    ["rinterro con ciottoli", 35],
+    ["rinterro", 28],
+    ["trasporto", 18],
+    // ── Balconi ──────────────────────────────────────────────────────────────
+    ["sistemazione balconi", 3200],
+    ["balcone", 3200],
+    ["balconi", 3200],
+    // ── Verniciature e trattamenti ───────────────────────────────────────────
+    ["idropulizia", 22],
+    ["trattamento passivizzante", 28],
+    ["verniciatura con smalto", 420],
+    ["verniciatura a spruzzo", 22],
+    ["verniciatura", 380],
+    ["pulizia e scartavetratura", 320],
+    ["pulizia", 320],
+    ["trattamento", 32],
+    // ── Impianti ─────────────────────────────────────────────────────────────
+    ["impianto elettrico", 65],
+    ["impianto idraulico", 75],
+    ["impianto riscaldamento", 3200],
+    ["riscaldamento", 3200],
+    ["caldaia", 2400],
+    ["termosifoni", 90],
+    ["elettrico", 65],
+    ["idraulico", 75],
+    // ── Muratura ─────────────────────────────────────────────────────────────
+    ["mattoni uni", 65],
+    ["mattoni semipieni", 65],
+    ["mattoni", 60],
+    ["muratura", 85],
+    ["messa in sicurezza", 120],
+    // ── Generico ─────────────────────────────────────────────────────────────
+    ["opere", 65],
+    ["lavori", 60],
+    ["servizi", 55],
+  ];
 
-  // Match keywords in description
-  for (const [key, price] of Object.entries(basePrices)) {
-    if (desc.includes(key)) return price;
+  // Find the keyword that appears EARLIEST in the description (earliest char position wins)
+  let bestPrice: number | null = null;
+  let bestPos = Infinity;
+
+  for (const [key, price] of keywordPrices) {
+    const pos = desc.indexOf(key);
+    if (pos !== -1 && pos < bestPos) {
+      bestPos = pos;
+      bestPrice = price;
+    }
   }
 
+  if (bestPrice !== null) return bestPrice;
+
   // Category-based fallback
-  if (cat.includes("demoliz")) return 40;
+  if (cat.includes("demoliz")) return 45;
   if (cat.includes("costruz")) return 70;
   if (cat.includes("impiant")) return 450;
   if (cat.includes("finitur")) return 55;
@@ -3414,11 +3542,11 @@ function estimatePriceForVoce(categoria: string, descrizione: string, um: string
   if (cat.includes("muratura")) return 250;
 
   // Unit-based fallback
-  if (unit === "mq" || unit === "m2") return 65;
-  if (unit === "ml" || unit === "m") return 35;
-  if (unit === "mc" || unit === "m3") return 55;
-  if (unit === "n." || unit === "n" || unit === "n." || unit === "nr") return 1200;
-  if (unit === "cpo" || unit === "corpo" || unit === "cad") return 1800;
+  if (unit === "mq" || unit === "m2") return 70;
+  if (unit === "ml" || unit === "m") return 38;
+  if (unit === "mc" || unit === "m3") return 65;
+  if (unit === "n." || unit === "n" || unit === "nr") return 900;
+  if (unit === "cpo" || unit === "corpo" || unit === "cad." || unit === "cad") return 1200;
   if (unit === "kg") return 5;
   if (unit === "ore" || unit === "h" || unit === "hh") return 55;
   if (unit === "a.c." || unit === "a.c" || unit === "ac") return 2500;

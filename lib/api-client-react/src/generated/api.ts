@@ -243,6 +243,12 @@ export const createQuote = async (
   if (createQuoteBody.templateId !== undefined) {
     formData.append(`templateId`, createQuoteBody.templateId);
   }
+  if (createQuoteBody.targetTotalEur !== undefined) {
+    formData.append(
+      `targetTotalEur`,
+      createQuoteBody.targetTotalEur.toString(),
+    );
+  }
 
   return customFetch<Quote>(getCreateQuoteUrl(), {
     ...options,

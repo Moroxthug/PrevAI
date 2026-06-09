@@ -218,6 +218,7 @@ export default function NewQuote() {
 
   const [input, setInput] = useState("");
   const [templateId, setTemplateId] = useState<"standard" | "arosio" | "mariagrazia">("standard");
+  const [targetTotalEur, setTargetTotalEur] = useState<string>("");
   const [, setLocation] = useLocation();
   const createQuote = useCreateQuote();
   const { data: profile } = useGetBusinessProfile();
@@ -341,6 +342,7 @@ export default function NewQuote() {
       : undefined;
 
     const allAttachments = [...photos, ...docs];
+    const parsedTarget = targetTotalEur.trim() !== "" ? Number(targetTotalEur.replace(/\./g, "").replace(",", ".")) : undefined;
     createQuote.mutate(
       {
         data: {
@@ -349,6 +351,7 @@ export default function NewQuote() {
           companySnapshot: companySnapshot ? JSON.stringify(companySnapshot) : undefined,
           images: allAttachments.length > 0 ? allAttachments : undefined,
           templateId,
+          targetTotalEur: parsedTarget && !isNaN(parsedTarget) && parsedTarget > 0 ? parsedTarget : undefined,
         },
       },
       {
@@ -484,6 +487,24 @@ export default function NewQuote() {
                 );
               })}
             </div>
+          </div>
+
+          {/* Target total input */}
+          <div className="flex items-center gap-2 bg-white rounded-xl border border-gray-200 px-3 py-2.5 shadow-sm">
+            <span className="text-xs font-medium text-gray-500 shrink-0">Importo target (€)</span>
+            <input
+              type="text"
+              inputMode="numeric"
+              value={targetTotalEur}
+              onChange={e => {
+                const v = e.target.value.replace(/[^0-9.,]/g, "");
+                setTargetTotalEur(v);
+              }}
+              placeholder="es. 180000"
+              className="flex-1 text-sm outline-none placeholder:text-gray-300 text-gray-800 bg-transparent min-w-0 text-right font-mono"
+              disabled={isAiSubmitting}
+            />
+            <span className="text-xs text-gray-400 shrink-0">IVA incl.</span>
           </div>
 
           {/* AI bar card */}
