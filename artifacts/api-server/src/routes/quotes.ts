@@ -17,7 +17,11 @@ import type { QuoteChapter, QuoteChapterItem, QuoteDiscount, QuoteCompanySnapsho
 import { logger } from "../lib/logger.js";
 import { createRequire as _pdfCrReq } from "node:module";
 import type { TDocumentDefinitions, Content } from "pdfmake/interfaces";
-import { parseComputoMetrico, isComputoMetrico, isTabularComputoMetrico, parseTabularComputoMetrico } from "../lib/computeParser.js";
+import {
+  parseComputoMetrico, isComputoMetrico,
+  isTabularComputoMetrico, parseTabularComputoMetrico,
+  isNumberedComputoMetrico, parseNumberedComputoMetrico,
+} from "../lib/computeParser.js";
 
 // pdfmake 0.3.x exports a singleton instance (not a constructor).
 // Load via createRequire for ESM compatibility; set fonts on the instance once at module load.
@@ -404,12 +408,23 @@ Descrizione lavori: ${rawInput}`;
     let tabularData: ReturnType<typeof parseTabularComputoMetrico> = null;
     if (isTabular) {
       tabularData = parseTabularComputoMetrico(docTexts.join("\n"));
-      if (tabularData && tabularData.totalVoci >= 10) {
+      if (tabularData && tabularData.totalVoci >= 5) {
         req.log.info({ userId, totalVoci: tabularData.totalVoci }, "Tabular computo metrico detected; extracting structured voci list.");
       }
     }
 
-    if (docTexts.length > 0 && !isStructured && !isTabular) {
+    // Detect numbered computo metrico (Italian "A. Demolizioni" + N° rows + Subtotale format)
+    // This is the most common format from Italian computo software.
+    // Check BEFORE isTabular to give it priority — it extracts actual prices from the document.
+    const docJoined = docTexts.join("\n");
+    const isNumbered = docTexts.length > 0 && isNumberedComputoMetrico(docJoined);
+    let numberedData: ReturnType<typeof parseNumberedComputoMetrico> = null;
+    if (isNumbered) {
+      numberedData = parseNumberedComputoMetrico(docJoined);
+      req.log.info({ userId, totalVoci: numberedData?.totalVoci ?? 0 }, "Numbered computo metrico detected; deterministic parse with actual prices.");
+    }
+
+    if (docTexts.length > 0 && !isStructured && !isTabular && !isNumbered) {
       userMessage += `\n\n\nCONTENUTO ESTRATTO DAI DOCUMENTI ALLEGATI:
 ${docTexts.join("\n\n---\n\n")}
 
@@ -573,7 +588,7 @@ Scrivi il preventivo in stile OFFERTA COMMERCIALE PROFESSIONALE e PERSUASIVA:
       note?: string;
     } = {};
 
-    if (!isStructured && !isTabular) {
+    if (!isStructured && !isTabular && !isNumbered) {
       const completion = await openai.chat.completions.create({
         model: (hasImages || docTexts.length > 0) ? "gpt-4o" : "gpt-4o-mini",
         max_completion_tokens: (hasImages || docTexts.length > 0) ? 16384 : 8192,
@@ -620,6 +635,83 @@ Scrivi il preventivo in stile OFFERTA COMMERCIALE PROFESSIONALE e PERSUASIVA:
         });
         return;
       }
+    } else if (isNumbered && numberedData && numberedData.totalVoci >= 3) {
+      // Numbered computo metrico: BYPASS AI entirely — use ACTUAL prices from document
+      // This format (A. Demolizioni + N° rows + Subtotale capitolo) is the most common
+      // from Italian computo software. The AI summarizes C/D/E chapters; we don't.
+      req.log.info({ userId, totalVoci: numberedData.totalVoci, targetTotalEur }, "Numbered computo: bypassing AI, using actual prices from document");
+
+      const chaptersRaw = numberedData.sections.map((s, idx) => {
+        const voci = s.voci.map(v => {
+          // Use actual price from the document; fall back to estimation only if missing
+          let pu = v.prezzoUnitario;
+          if (!pu || pu <= 0) {
+            pu = estimatePriceForVoce(s.titolo, v.descrizione, v.um);
+          }
+          const qty = v.quantita > 0 ? v.quantita : 1;
+          const totale = Math.round(qty * pu * 100) / 100;
+          return {
+            descrizione: v.descrizione,
+            um: v.um,
+            quantita: qty,
+            prezzo_unitario: pu,
+            totale,
+          };
+        });
+        const subtotale = voci.reduce((sum, v) => sum + v.totale, 0);
+        return {
+          lettera: s.lettera,
+          titolo: s.titolo,
+          osservazione: "Voce ordinaria",
+          voci,
+          subtotale,
+        };
+      });
+
+      // Apply proportional scaling to hit targetTotalEur (IVA inclusa) if provided
+      let chapters = chaptersRaw;
+      let subTot = chaptersRaw.reduce((sum, c) => sum + c.subtotale, 0);
+
+      if (targetTotalEur && subTot > 0) {
+        const ivaRate = 0.22;
+        const targetSubtotale = targetTotalEur / (1 + ivaRate);
+        const scaleFactor = targetSubtotale / subTot;
+        req.log.info({ scaleFactor, rawSubtotale: subTot, targetSubtotale }, "Numbered computo: applying price scaling to hit target total");
+
+        chapters = chaptersRaw.map(c => {
+          const voci = c.voci.map(v => {
+            const newPu = Math.round(v.prezzo_unitario * scaleFactor * 100) / 100;
+            const newTotale = Math.round(v.quantita * newPu * 100) / 100;
+            return { ...v, prezzo_unitario: newPu, totale: newTotale };
+          });
+          return { ...c, voci, subtotale: voci.reduce((s, v) => s + v.totale, 0) };
+        });
+        subTot = chapters.reduce((sum, c) => sum + c.subtotale, 0);
+      }
+
+      const iva = Math.round(subTot * 22) / 100;
+      const totale = Math.round((subTot + iva) * 100) / 100;
+
+      aiData = {
+        capitoli: chapters,
+        subtotale: subTot,
+        iva_percentuale: 22,
+        iva_valore: iva,
+        totale,
+        descrizione_generale: "Computo metrico prezzato con prezzi da documento",
+        note: "Preventivo valido 30 giorni",
+        sconto: { percentuale: 0, importo_scontato: 0 },
+        condizioni_pagamento: [
+          "30% acconto alla firma del contratto",
+          "30% a completamento prima fase lavori",
+          "30% a completamento seconda fase lavori",
+          "10% saldo a fine lavori",
+        ],
+        titolo_riga1: "Computo Metrico Prezzato",
+        titolo_riga2: "",
+        numero_preventivo_data: "",
+        cliente: { nome: "", indirizzo: "" },
+      };
     } else if (isTabular && tabularData && tabularData.totalVoci >= 5) {
       // Tabular computo metrico: BYPASS AI entirely — build quote deterministically
       // The AI truncates JSON when there are too many voci; deterministic pricing is reliable
