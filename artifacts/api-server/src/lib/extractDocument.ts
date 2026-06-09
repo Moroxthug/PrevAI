@@ -15,7 +15,7 @@ export async function extractFromPdf(buffer: Buffer): Promise<string> {
     const parser = new PDFParse({ data: buffer });
     const result = await parser.getText();
     await parser.destroy().catch(() => {});
-    pdfText = result.text.slice(0, 12000);
+    pdfText = result.text.slice(0, 50000);
   } catch (err) {
     logger.warn({ err }, "pdf-parse failed, falling back to empty text");
   }
@@ -29,7 +29,7 @@ export async function extractFromDocx(buffer: Buffer): Promise<string> {
       extractRawText: (opts: { buffer: Buffer }) => Promise<{ value: string }>;
     };
     const result = await mammoth.extractRawText({ buffer });
-    docText = result.value.slice(0, 12000);
+    docText = result.value.slice(0, 50000);
   } catch (err) {
     logger.warn({ err }, "mammoth failed, falling back to empty text");
   }
@@ -56,7 +56,7 @@ export async function extractFromXlsx(buffer: Buffer): Promise<string> {
         csvParts.push(`--- ${sheetName} ---\n${XLSX.utils.sheet_to_csv(sheet)}`);
       }
     }
-    sheetText = csvParts.join("\n\n").slice(0, 12000);
+    sheetText = csvParts.join("\n\n").slice(0, 50000);
   } catch (err) {
     logger.warn({ err }, "xlsx failed, falling back to empty text");
   }

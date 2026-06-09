@@ -586,85 +586,56 @@ Esempio: "Demolizione e rimozione di pavimentazione esistente in piastrelle cera
         return;
       }
     } else if (isTabular && tabularData && tabularData.totalVoci >= 10) {
-      // Tabular computo metrico: use AI to price the extracted voci, but with pre-loaded voci list
-      const vociList = tabularData.sections
-        .map(
-          s =>
-            `## ${s.titolo}\n` +
-            s.voci
-              .map(
-                v => `* ${v.descrizione}: ${v.quantita.toFixed(2)} ${v.um} × ??? €/${v.um} = **??? €**`
-              )
-              .join("\n")
-        )
-        .join("\n\n");
+      // Tabular computo metrico: BYPASS AI entirely — build quote deterministically
+      // The AI truncates JSON when there are too many voci; deterministic pricing is reliable
+      req.log.info({ userId, totalVoci: tabularData.totalVoci }, "Tabular computo: bypassing AI, deterministic pricing");
 
-      const tabularPrompt = `${AI_PROMPT}
-
-REGOLA CRITICA — FORMATO TABELLARE:
-L'utente ha fornito un computo metrico in formato tabellare con ${tabularData.totalVoci} voci di lavoro. Ho già estratto la descrizione, l'unità di misura e la quantità di ogni voce. Devi SOLO aggiungere il PREZZO UNITARIO e il TOTALE per ogni voce, basandoti sui prezzi di mercato 2026. NON modificare descrizioni, quantità o unità di misura. NON omettere NESSUNA voce. Tutte le ${tabularData.totalVoci} voci devono essere presenti nel JSON finale.
-
-LISTA VOCI ESTRATTE (completa):
-${vociList}
-
-OUTPUT: restituisci il JSON completo con tutti i capitoli e tutte le voci. Non troncare, non usare commenti. Devi includere tutte le ${tabularData.totalVoci} voci.`;
-
-      const completion = await openai.chat.completions.create({
-        model: "gpt-4o",
-        max_completion_tokens: 16384,
-        messages: [
-          { role: "system", content: tabularPrompt },
-          ...(catalogContext ? [{ role: "system" as const, content: catalogContext }] : []),
-          ...(priceIntelContext ? [{ role: "system" as const, content: priceIntelContext }] : []),
-          ...(pastContext ? [{ role: "system" as const, content: pastContext }] : []),
-          ...(capitolatoProContext ? [{ role: "system" as const, content: capitolatoProContext }] : []),
-          { role: "user", content: userMessage },
-        ],
-      });
-
-      const content = completion.choices[0]?.message?.content ?? "{}";
-      try {
-        const cleaned = content.trim().replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/i, "");
-        // Remove inline comments that break JSON parsing
-        const cleanedNoComments = cleaned
-          .replace(/\/\/.*/g, "")
-          .replace(/,(\s*[}\]])/g, "$1");
-        aiData = JSON.parse(cleanedNoComments);
-      } catch {
-        req.log.error({ content, isTabular: true }, "Failed to parse AI JSON for tabular computo");
-        // Fallback: build chapters from parsed voci with estimated prices
-        const fallbackCapitoli = tabularData.sections.map((s, idx) => ({
+      const chapters = tabularData.sections.map((s, idx) => {
+        const voci = s.voci.map(v => {
+          const estimatedPrice = estimatePriceForVoce(v.categoria, v.descrizione, v.um);
+          const totale = Math.round(v.quantita * estimatedPrice * 100) / 100;
+          return {
+            descrizione: v.descrizione,
+            um: v.um,
+            quantita: v.quantita,
+            prezzo_unitario: estimatedPrice,
+            totale,
+          };
+        });
+        const subtotale = voci.reduce((sum, v) => sum + v.totale, 0);
+        return {
           lettera: String.fromCharCode(65 + idx),
           titolo: s.titolo,
           osservazione: "Voce ordinaria",
-          voci: s.voci.map(v => {
-            const estimatedPrice = estimatePriceForVoce(v.categoria, v.descrizione, v.um);
-            const totale = Math.round(v.quantita * estimatedPrice * 100) / 100;
-            return {
-              descrizione: v.descrizione,
-              um: v.um,
-              quantita: v.quantita,
-              prezzo_unitario: estimatedPrice,
-              totale,
-            };
-          }),
-          subtotale: s.voci.reduce((sum, v) => {
-            const estimatedPrice = estimatePriceForVoce(v.categoria, v.descrizione, v.um);
-            return sum + Math.round(v.quantita * estimatedPrice * 100) / 100;
-          }, 0),
-        }));
-        const subTot = fallbackCapitoli.reduce((sum, c) => sum + c.subtotale, 0);
-        const iva = Math.round(subTot * 22) / 100;
-        aiData = {
-          capitoli: fallbackCapitoli,
-          subtotale: subTot,
-          iva_percentuale: 22,
-          iva_valore: iva,
-          totale: subTot + iva,
-          descrizione_generale: "Analisi economica e computo metrico prezzato",
-          note: "Preventivo valido 30 giorni",
+          voci,
+          subtotale,
         };
-      }
+      });
+
+      const subTot = chapters.reduce((sum, c) => sum + c.subtotale, 0);
+      const iva = Math.round(subTot * 22) / 100;
+      const totale = Math.round((subTot + iva) * 100) / 100;
+
+      aiData = {
+        capitoli: chapters,
+        subtotale: subTot,
+        iva_percentuale: 22,
+        iva_valore: iva,
+        totale,
+        descrizione_generale: "Analisi economica e computo metrico prezzato",
+        note: "Preventivo valido 30 giorni",
+        sconto: { percentuale: 0, importo_scontato: 0 },
+        condizioni_pagamento: [
+          "30% acconto alla firma del contratto",
+          "30% a completamento prima fase lavori",
+          "30% a completamento seconda fase lavori",
+          "10% saldo a fine lavori",
+        ],
+        titolo_riga1: "Analisi Economica e Computo Metrico Prezzato",
+        titolo_riga2: "",
+        numero_preventivo_data: "",
+        cliente: { nome: "", indirizzo: "" },
+      };
     } else {
       const parsedCapitoli = parseComputoMetrico(fullText);
       const subTot = parsedCapitoli?.reduce((sum, c) => sum + c.subtotale, 0) ?? 0;
