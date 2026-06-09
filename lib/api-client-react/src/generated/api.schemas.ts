@@ -129,6 +129,18 @@ export interface QuoteStats {
   recentQuotes: Quote[];
 }
 
+/**
+ * Template ID for the quote layout (affects both AI generation style and PDF layout)
+ */
+export type CreateQuoteBodyTemplateId =
+  (typeof CreateQuoteBodyTemplateId)[keyof typeof CreateQuoteBodyTemplateId];
+
+export const CreateQuoteBodyTemplateId = {
+  standard: "standard",
+  arosio: "arosio",
+  mariagrazia: "mariagrazia",
+} as const;
+
 export interface CreateQuoteBody {
   rawInput: string;
   /** JSON-encoded QuoteClientData object */
@@ -140,6 +152,8 @@ export interface CreateQuoteBody {
    * @maxItems 3
    */
   images?: Blob[];
+  /** Template ID for the quote layout (affects both AI generation style and PDF layout) */
+  templateId?: CreateQuoteBodyTemplateId;
 }
 
 export type UpdateQuoteBodyStatus =

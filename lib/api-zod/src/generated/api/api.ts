@@ -129,6 +129,12 @@ export const CreateQuoteBody = zod.object({
     .describe(
       "Up to 3 image files (JPG, PNG, WEBP, HEIC) passed to OpenAI vision",
     ),
+  templateId: zod
+    .enum(["standard", "arosio", "mariagrazia"])
+    .optional()
+    .describe(
+      "Template ID for the quote layout (affects both AI generation style and PDF layout)",
+    ),
 });
 
 /**

@@ -240,6 +240,9 @@ export const createQuote = async (
   if (createQuoteBody.images !== undefined) {
     createQuoteBody.images.forEach((value) => formData.append(`images`, value));
   }
+  if (createQuoteBody.templateId !== undefined) {
+    formData.append(`templateId`, createQuoteBody.templateId);
+  }
 
   return customFetch<Quote>(getCreateQuoteUrl(), {
     ...options,

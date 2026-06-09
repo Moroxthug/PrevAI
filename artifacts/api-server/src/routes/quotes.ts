@@ -320,6 +320,10 @@ router.post("/quotes", requireAuth, imageUpload.array("images", 3), async (req, 
       return;
     }
 
+    const requestedTemplateId = typeof req.body.templateId === "string" ? req.body.templateId : "standard";
+    const validTemplateIds = ["standard", "arosio", "mariagrazia"];
+    const templateId = validTemplateIds.includes(requestedTemplateId) ? requestedTemplateId : "standard";
+
     let clientDataInput: QuoteClientData | undefined;
     if (req.body.clientData) {
       let parsed: unknown;
@@ -501,7 +505,9 @@ Combina sempre le informazioni estratte dalle immagini con la descrizione testua
 RICORDA: l'output deve essere SOLO JSON valido secondo lo schema indicato — MAI testo libero, MAI rifiuti, MAI spiegazioni.`
       : "";
 
-    const capitolatoProContext = `MODALITÀ CAPITOLATO TECNICO PROFESSIONALE:
+    const templateStyleContext =
+      templateId === "arosio"
+        ? `MODALITÀ CAPITOLATO TECNICO PROFESSIONALE:
 Per ogni voce di lavoro, scrivi la descrizione in stile CAPITOLATO SPECIALE D'APPALTO con ALMENO 4-6 linee tecniche in italiano formale:
 - Descrivi con precisione le operazioni eseguite e le modalità esecutive (ciclo lavorativo, tecniche, successione delle fasi)
 - Specifica materiali, prodotti e componenti con caratteristiche tecniche e standard normativi italiani/europei (UNI, CEI, UNI EN, D.Lgs., D.M.)
@@ -509,7 +515,21 @@ Per ogni voce di lavoro, scrivi la descrizione in stile CAPITOLATO SPECIALE D'AP
 - Indica esplicitamente cosa è COMPRESO nella voce (forniture, lavorazioni, carico, trasporto, smaltimento)
 - Indica eventuali ESCLUSIONI rilevanti e/o oneri a carico del committente
 - Usa terminologia professionale edilizia/impiantistica italiana
-Esempio: "Demolizione e rimozione di pavimentazione esistente in piastrelle ceramiche compreso il distacco mediante scalpellatura meccanica e la rimozione del massetto di allettamento per uno spessore medio di 5 cm. Compresi il carico, il trasporto e lo smaltimento del materiale di risulta presso discarica autorizzata secondo D.Lgs. 152/2006. Esclusi lavori di ripristino strutturale del sottofondo e impermeabilizzazioni."`;
+Esempio: "Demolizione e rimozione di pavimentazione esistente in piastrelle ceramiche compreso il distacco mediante scalpellatura meccanica e la rimozione del massetto di allettamento per uno spessore medio di 5 cm. Compresi il carico, il trasporto e lo smaltimento del materiale di risulta presso discarica autorizzata secondo D.Lgs. 152/2006. Esclusi lavori di ripristino strutturale del sottofondo e impermeabilizzazioni."
+
+Imposta sempre titolo_riga1 = "Analisi Economica e Computo Metrico Prezzato".`
+        : templateId === "mariagrazia"
+        ? `MODALITÀ OFFERTA COMMERCIALE ELEGANTE:
+Scrivi il preventivo in stile OFFERTA COMMERCIALE PROFESSIONALE e PERSUASIVA:
+- Le descrizioni voci devono essere CHIARE, CONCISE e BEN FORMULATE (1-3 righe per voce, massimo 4)
+- Usa un tono professionale ma accattivante, adatto a presentare un'offerta commerciale a un cliente privato
+- Enfatizza la QUALITÀ del servizio, l'ESPERIENZA e l'ATTENZIONE AI DETTAGLI
+- Organizza i capitoli in modo logico e facilmente leggibile
+- Usa titoli di capitolo descrittivi e commerciali (es. "Preparazione e allestimento cantiere", "Opere principali", "Finiture di qualità", "Pulizia e consegna")
+- Imposta titolo_riga1 = "Offerta Commerciale"
+- Includi una nota finale che sottolinei la qualità del servizio, l'esperienza dell'impresa e la garanzia sui lavori
+- Condizioni di pagamento: proponi 2-3 rate semplici e chiare (es. 50% acconto alla firma, 50% saldo fine lavori)`
+        : null;
 
     let aiData: {
       titolo_riga1?: string;
@@ -548,7 +568,7 @@ Esempio: "Demolizione e rimozione di pavimentazione esistente in piastrelle cera
           ...(catalogContext ? [{ role: "system" as const, content: catalogContext }] : []),
           ...(priceIntelContext ? [{ role: "system" as const, content: priceIntelContext }] : []),
           ...(pastContext ? [{ role: "system" as const, content: pastContext }] : []),
-          ...(capitolatoProContext ? [{ role: "system" as const, content: capitolatoProContext }] : []),
+          ...(templateStyleContext ? [{ role: "system" as const, content: templateStyleContext }] : []),
           ...(imagesContext ? [{ role: "system" as const, content: imagesContext }] : []),
           {
             role: "user",
@@ -751,6 +771,7 @@ Esempio: "Demolizione e rimozione di pavimentazione esistente in piastrelle cera
         totale: totale.toFixed(2),
         note: aiData.note ?? "Preventivo valido 30 giorni",
         status: "draft",
+        templateId,
       })
       .returning();
 

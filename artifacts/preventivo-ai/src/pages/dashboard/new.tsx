@@ -4,6 +4,7 @@ import { useCreateQuote, useGetBusinessProfile, useGetSubscription } from "@work
 import {
   Sparkles, Mic, ImagePlus, ArrowRight, Loader2,
   X, User, Lock, Bot, PencilLine, FileText, FileSpreadsheet,
+  LayoutTemplate, CheckCircle2,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Input } from "@/components/ui/input";
@@ -216,6 +217,7 @@ export default function NewQuote() {
   const [activeTab, setActiveTab] = useState<"ai" | "manual">("ai");
 
   const [input, setInput] = useState("");
+  const [templateId, setTemplateId] = useState<"standard" | "arosio" | "mariagrazia">("standard");
   const [, setLocation] = useLocation();
   const createQuote = useCreateQuote();
   const { data: profile } = useGetBusinessProfile();
@@ -346,6 +348,7 @@ export default function NewQuote() {
           clientData: clientData ? JSON.stringify(clientData) : undefined,
           companySnapshot: companySnapshot ? JSON.stringify(companySnapshot) : undefined,
           images: allAttachments.length > 0 ? allAttachments : undefined,
+          templateId,
         },
       },
       {
@@ -436,6 +439,53 @@ export default function NewQuote() {
       {/* ══ AI TAB ══════════════════════════════════════════════════════════ */}
       {activeTab === "ai" && (
         <div className="space-y-3 animate-in fade-in duration-200">
+          {/* Template selector */}
+          <div className="space-y-1">
+            <div className="flex items-center gap-2 px-1">
+              <LayoutTemplate className="h-3.5 w-3.5 text-gray-400" />
+              <span className="text-xs font-medium text-gray-500">Layout del preventivo</span>
+            </div>
+            <div className="grid grid-cols-3 gap-2">
+              {([
+                { id: "standard" as const, label: "Standard", desc: "Computo classico", proOnly: false },
+                { id: "arosio" as const, label: "Professionale", desc: "Capitolato tecnico", proOnly: true },
+                { id: "mariagrazia" as const, label: "Elegante", desc: "Offerta commerciale", proOnly: true },
+              ]).map((tmpl) => {
+                const isActive = templateId === tmpl.id;
+                const isPro = subscription?.isActive && (subscription.plan === "monthly_pro" || subscription.plan === "monthly_elite");
+                const requiresPro = tmpl.proOnly && !isPro;
+                return (
+                  <button
+                    key={tmpl.id}
+                    type="button"
+                    onClick={() => {
+                      if (requiresPro) {
+                        toast({ title: "Piano Pro richiesto", description: "Passa a Pro per usare questo template.", variant: "destructive" });
+                        return;
+                      }
+                      setTemplateId(tmpl.id);
+                    }}
+                    className={cn(
+                      "text-left px-3 py-2 rounded-xl border text-xs transition-all",
+                      isActive
+                        ? "border-violet-400 bg-violet-50 text-violet-900 ring-1 ring-violet-300"
+                        : "border-gray-200 hover:border-violet-300 hover:bg-gray-50 text-gray-700"
+                    )}
+                  >
+                    <div className="font-semibold flex items-center gap-1">
+                      {isActive && <CheckCircle2 className="h-3 w-3 text-violet-600" />}
+                      {tmpl.label}
+                      {tmpl.proOnly && !isPro && (
+                        <span className="ml-auto text-[10px] font-bold text-amber-700 bg-amber-100 border border-amber-300 rounded px-1.5 py-0.5">PRO</span>
+                      )}
+                    </div>
+                    <div className="text-gray-500 mt-0.5 leading-snug">{tmpl.desc}</div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
           {/* AI bar card */}
           <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
             {/* Photo strip */}
