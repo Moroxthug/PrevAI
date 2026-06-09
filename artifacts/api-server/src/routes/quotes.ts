@@ -17,7 +17,7 @@ import type { QuoteChapter, QuoteChapterItem, QuoteDiscount, QuoteCompanySnapsho
 import { logger } from "../lib/logger.js";
 import { createRequire as _pdfCrReq } from "node:module";
 import type { TDocumentDefinitions, Content } from "pdfmake/interfaces";
-import { parseComputoMetrico, isComputoMetrico } from "../lib/computeParser.js";
+import { parseComputoMetrico, isComputoMetrico, isTabularComputoMetrico, parseTabularComputoMetrico } from "../lib/computeParser.js";
 
 // pdfmake 0.3.x exports a singleton instance (not a constructor).
 // Load via createRequire for ESM compatibility; set fonts on the instance once at module load.
@@ -389,7 +389,17 @@ Descrizione lavori: ${rawInput}`;
       req.log.info({ userId }, "Structured computo metrico detected; bypassing AI.");
     }
 
-    if (docTexts.length > 0 && !isStructured) {
+    // Detect tabular computo metrico format (PDF extracts with Category/Description/UM/QTA columns)
+    const isTabular = docTexts.length > 0 && isTabularComputoMetrico(docTexts.join("\n"));
+    let tabularData: ReturnType<typeof parseTabularComputoMetrico> = null;
+    if (isTabular) {
+      tabularData = parseTabularComputoMetrico(docTexts.join("\n"));
+      if (tabularData && tabularData.totalVoci >= 10) {
+        req.log.info({ userId, totalVoci: tabularData.totalVoci }, "Tabular computo metrico detected; extracting structured voci list.");
+      }
+    }
+
+    if (docTexts.length > 0 && !isStructured && !isTabular) {
       userMessage += `\n\n\nCONTENUTO ESTRATTO DAI DOCUMENTI ALLEGATI:
 ${docTexts.join("\n\n---\n\n")}
 
@@ -529,7 +539,7 @@ Esempio: "Demolizione e rimozione di pavimentazione esistente in piastrelle cera
       note?: string;
     } = {};
 
-    if (!isStructured) {
+    if (!isStructured && !isTabular) {
       const completion = await openai.chat.completions.create({
         model: (hasImages || docTexts.length > 0) ? "gpt-4o" : "gpt-4o-mini",
         max_completion_tokens: (hasImages || docTexts.length > 0) ? 16384 : 8192,
@@ -574,6 +584,86 @@ Esempio: "Demolizione e rimozione di pavimentazione esistente in piastrelle cera
           code: "AI_INVALID_OUTPUT",
         });
         return;
+      }
+    } else if (isTabular && tabularData && tabularData.totalVoci >= 10) {
+      // Tabular computo metrico: use AI to price the extracted voci, but with pre-loaded voci list
+      const vociList = tabularData.sections
+        .map(
+          s =>
+            `## ${s.titolo}\n` +
+            s.voci
+              .map(
+                v => `* ${v.descrizione}: ${v.quantita.toFixed(2)} ${v.um} × ??? €/${v.um} = **??? €**`
+              )
+              .join("\n")
+        )
+        .join("\n\n");
+
+      const tabularPrompt = `${AI_PROMPT}
+
+REGOLA CRITICA — FORMATO TABELLARE:
+L'utente ha fornito un computo metrico in formato tabellare con ${tabularData.totalVoci} voci di lavoro. Ho già estratto la descrizione, l'unità di misura e la quantità di ogni voce. Devi SOLO aggiungere il PREZZO UNITARIO e il TOTALE per ogni voce, basandoti sui prezzi di mercato 2026. NON modificare descrizioni, quantità o unità di misura. NON omettere NESSUNA voce. Tutte le ${tabularData.totalVoci} voci devono essere presenti nel JSON finale.
+
+LISTA VOCI ESTRATTE (completa):
+${vociList}
+
+OUTPUT: restituisci il JSON completo con tutti i capitoli e tutte le voci. Non troncare, non usare commenti. Devi includere tutte le ${tabularData.totalVoci} voci.`;
+
+      const completion = await openai.chat.completions.create({
+        model: "gpt-4o",
+        max_completion_tokens: 16384,
+        messages: [
+          { role: "system", content: tabularPrompt },
+          ...(catalogContext ? [{ role: "system" as const, content: catalogContext }] : []),
+          ...(priceIntelContext ? [{ role: "system" as const, content: priceIntelContext }] : []),
+          ...(pastContext ? [{ role: "system" as const, content: pastContext }] : []),
+          ...(capitolatoProContext ? [{ role: "system" as const, content: capitolatoProContext }] : []),
+          { role: "user", content: userMessage },
+        ],
+      });
+
+      const content = completion.choices[0]?.message?.content ?? "{}";
+      try {
+        const cleaned = content.trim().replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/i, "");
+        // Remove inline comments that break JSON parsing
+        const cleanedNoComments = cleaned
+          .replace(/\/\/.*/g, "")
+          .replace(/,(\s*[}\]])/g, "$1");
+        aiData = JSON.parse(cleanedNoComments);
+      } catch {
+        req.log.error({ content, isTabular: true }, "Failed to parse AI JSON for tabular computo");
+        // Fallback: build chapters from parsed voci with estimated prices
+        const fallbackCapitoli = tabularData.sections.map((s, idx) => ({
+          lettera: String.fromCharCode(65 + idx),
+          titolo: s.titolo,
+          osservazione: "Voce ordinaria",
+          voci: s.voci.map(v => {
+            const estimatedPrice = estimatePriceForVoce(v.categoria, v.descrizione, v.um);
+            const totale = Math.round(v.quantita * estimatedPrice * 100) / 100;
+            return {
+              descrizione: v.descrizione,
+              um: v.um,
+              quantita: v.quantita,
+              prezzo_unitario: estimatedPrice,
+              totale,
+            };
+          }),
+          subtotale: s.voci.reduce((sum, v) => {
+            const estimatedPrice = estimatePriceForVoce(v.categoria, v.descrizione, v.um);
+            return sum + Math.round(v.quantita * estimatedPrice * 100) / 100;
+          }, 0),
+        }));
+        const subTot = fallbackCapitoli.reduce((sum, c) => sum + c.subtotale, 0);
+        const iva = Math.round(subTot * 22) / 100;
+        aiData = {
+          capitoli: fallbackCapitoli,
+          subtotale: subTot,
+          iva_percentuale: 22,
+          iva_valore: iva,
+          totale: subTot + iva,
+          descrizione_generale: "Analisi economica e computo metrico prezzato",
+          note: "Preventivo valido 30 giorni",
+        };
       }
     } else {
       const parsedCapitoli = parseComputoMetrico(fullText);
@@ -3240,6 +3330,109 @@ La descrizione deve essere precisa, professionale e in italiano. Massimo 2 righe
     res.status(500).json({ error: "Internal server error" });
   }
 });
+
+// Fallback price estimation for tabular computo metrico voci
+function estimatePriceForVoce(categoria: string, descrizione: string, um: string): number {
+  const desc = descrizione.toLowerCase();
+  const cat = categoria.toLowerCase();
+  const unit = um.toLowerCase();
+
+  // Scale-aware base prices for building/construction work
+  const basePrices: Record<string, number> = {
+    // Demolizioni
+    "demolizione": 45,
+    "scavo": 85,
+    "scrostamento": 28,
+    "rimozione": 40,
+    // Costruzioni / strutture
+    "ripristino": 45,
+    "intonaco": 42,
+    "guaina": 35,
+    "impermeabilizzazione": 40,
+    "polistirene": 32,
+    "membrana": 22,
+    "tubazione": 35,
+    "tnt": 20,
+    "rinterro": 30,
+    "formazione": 75,
+    "cls": 110,
+    "getto": 95,
+    "muretto": 280,
+    "soletta": 120,
+    "scalini": 1800,
+    "piastrellatura": 90,
+    "pavimentazione": 85,
+    "zoccolatura": 28,
+    "zoccolino": 22,
+    "rivestimento": 75,
+    // Ponteggio
+    "ponteggio": 28,
+    "noleggio": 22,
+    // Facciate / cappotto
+    "cappotto": 75,
+    "rasante": 35,
+    "intonachino": 30,
+    "grondaia": 22,
+    "pluviale": 180,
+    // Balconi
+    "balcone": 2800,
+    // Verniciature
+    "verniciatura": 450,
+    "pulizia": 380,
+    "idropulizia": 25,
+    "trattamento": 35,
+    // Serramenti
+    "telaio": 1400,
+    "monoblocco": 1800,
+    "finestra": 900,
+    "porta": 1200,
+    "porta finestra": 1600,
+    "davanzale": 320,
+    "soglia": 300,
+    // Impianti
+    "colonna": 450,
+    "fognaria": 55,
+    "scarico": 40,
+    "elettrico": 550,
+    "idraulico": 350,
+    "riscaldamento": 2800,
+    "caldaia": 2200,
+    "termosifoni": 85,
+    // Generico
+    "opere": 60,
+    "lavori": 55,
+    "servizi": 50,
+    "messa in sicurezza": 120,
+  };
+
+  // Match keywords in description
+  for (const [key, price] of Object.entries(basePrices)) {
+    if (desc.includes(key)) return price;
+  }
+
+  // Category-based fallback
+  if (cat.includes("demoliz")) return 40;
+  if (cat.includes("costruz")) return 70;
+  if (cat.includes("impiant")) return 450;
+  if (cat.includes("finitur")) return 55;
+  if (cat.includes("vernic")) return 400;
+  if (cat.includes("falegn")) return 120;
+  if (cat.includes("infiss")) return 1300;
+  if (cat.includes("strutture")) return 150;
+  if (cat.includes("muratura")) return 250;
+
+  // Unit-based fallback
+  if (unit === "mq" || unit === "m2") return 65;
+  if (unit === "ml" || unit === "m") return 35;
+  if (unit === "mc" || unit === "m3") return 55;
+  if (unit === "n." || unit === "n" || unit === "n." || unit === "nr") return 1200;
+  if (unit === "cpo" || unit === "corpo" || unit === "cad") return 1800;
+  if (unit === "kg") return 5;
+  if (unit === "ore" || unit === "h" || unit === "hh") return 55;
+  if (unit === "a.c." || unit === "a.c" || unit === "ac") return 2500;
+
+  return 80;
+}
 
 export { generateQuoteHtml };
 export default router;
