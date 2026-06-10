@@ -689,6 +689,8 @@ Scrivi il preventivo in stile OFFERTA COMMERCIALE PROFESSIONALE e PERSUASIVA:
         subTot = chapters.reduce((sum, c) => sum + c.subtotale, 0);
       }
 
+      chapters = await enrichVociDescrizioni(chapters);
+
       const iva = Math.round(subTot * 22) / 100;
       const totale = Math.round((subTot + iva) * 100) / 100;
 
@@ -759,6 +761,8 @@ Scrivi il preventivo in stile OFFERTA COMMERCIALE PROFESSIONALE e PERSUASIVA:
         });
         subTot = chapters.reduce((sum, c) => sum + c.subtotale, 0);
       }
+
+      chapters = await enrichVociDescrizioni(chapters);
 
       const iva = Math.round(subTot * 22) / 100;
       const totale = Math.round((subTot + iva) * 100) / 100;
@@ -3449,6 +3453,61 @@ La descrizione deve essere precisa, professionale e in italiano. Massimo 2 righe
     res.status(500).json({ error: "Internal server error" });
   }
 });
+
+// Enriches voce descriptions in both deterministic paths with AI-generated capitolato-style text.
+// Prices, quantities, and UMs are NEVER touched — only `descrizione` is expanded.
+// Falls back to original descriptions silently if the AI call fails.
+async function enrichVociDescrizioni<T extends {
+  lettera: string;
+  titolo: string;
+  voci: Array<{ descrizione: string; um: string } & Record<string, unknown>>;
+}>(chapters: T[]): Promise<T[]> {
+  const flat: Array<{ ci: number; vi: number; i: number; cap: string; t: string; um: string }> = [];
+  for (let ci = 0; ci < chapters.length; ci++) {
+    for (let vi = 0; vi < chapters[ci].voci.length; vi++) {
+      flat.push({
+        ci, vi, i: flat.length,
+        cap: `${chapters[ci].lettera}. ${chapters[ci].titolo}`,
+        t: chapters[ci].voci[vi].descrizione,
+        um: chapters[ci].voci[vi].um,
+      });
+    }
+  }
+  if (flat.length === 0) return chapters;
+
+  const ENRICH_PROMPT = `Sei un tecnico edile italiano esperto in capitolati speciali d'appalto.
+Per ogni voce ricevi: indice (i), capitolo (cap), titolo breve (t), unità di misura (um).
+Genera una descrizione professionale in italiano stile CAPITOLATO SPECIALE D'APPALTO:
+- Prima riga: copia esatta del titolo breve (t)
+- Seconda riga: descrizione tecnica concisa (1-2 righe) delle operazioni, materiali, lavorazioni incluse, norme di riferimento
+Usa "\\n" come separatore tra titolo e descrizione.
+OUTPUT: solo JSON array nel formato [{"i":0,"d":"Titolo\\nDescrizione tecnica..."},...]
+IMPORTANTISSIMO: output SOLO JSON puro, nessuna spiegazione, nessun markdown.`;
+
+  try {
+    const completion = await openai.chat.completions.create({
+      model: "gpt-4o-mini",
+      max_completion_tokens: 8192,
+      messages: [
+        { role: "system", content: ENRICH_PROMPT },
+        { role: "user", content: JSON.stringify(flat.map(f => ({ i: f.i, cap: f.cap, t: f.t, um: f.um }))) },
+      ],
+    });
+    const raw = completion.choices[0]?.message?.content ?? "[]";
+    const cleaned = raw.trim().replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/i, "");
+    const enriched: Array<{ i: number; d: string }> = JSON.parse(cleaned);
+    const result: T[] = chapters.map(c => ({ ...c, voci: c.voci.map(v => ({ ...v })) }));
+    for (const { i, d } of enriched) {
+      const f = flat[i];
+      if (f && d) {
+        (result[f.ci].voci[f.vi] as { descrizione: string }).descrizione = d;
+      }
+    }
+    return result;
+  } catch {
+    return chapters;
+  }
+}
 
 // Returns a professional Italian description for a chapter (capitolo) based on its title.
 // Used in deterministic paths to populate osservazione instead of the generic "Voce ordinaria".

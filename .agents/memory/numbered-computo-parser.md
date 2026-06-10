@@ -15,6 +15,14 @@ The section header regex in `parseNumberedComputoMetrico` MUST end with `$` and 
 
 **How to apply:** Any time you touch the section-header detection in `parseNumberedComputoMetrico` (computeParser.ts), verify the regex has a strict `$` end anchor and does NOT contain `(?:€.*)?` or similar optional suffixes that would allow € amounts to pass through.
 
+## Voce descriptions must be enriched by AI
+
+The deterministic paths (numbered and tabular) extract SHORT descriptions from the PDF (e.g. "Rimozione marciapiede in CLS"). These are just titles — not the professional capitolato-style descriptions the user expects.
+
+Fix: after deterministic extraction (prices/quantities fixed), call `enrichVociDescrizioni(chapters)` which fires ONE `gpt-4o-mini` call to expand ALL voce descriptions into `"shortTitle\nTechnical capitolato description"` format. Prices/quantities/UMs are NEVER touched. Falls back to short descriptions silently if AI fails.
+
+Both numbered AND tabular paths must call this function before setting `aiData`.
+
 ## Secondary lesson
 
 Never add "don't re-open same letter section" logic to this parser. The quadro sintetico problem is solved at the regex level. Re-open guards only mask symptoms while causing actual data loss.
