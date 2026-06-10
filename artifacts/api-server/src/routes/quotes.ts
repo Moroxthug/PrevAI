@@ -662,7 +662,7 @@ Scrivi il preventivo in stile OFFERTA COMMERCIALE PROFESSIONALE e PERSUASIVA:
         return {
           lettera: s.lettera,
           titolo: s.titolo,
-          osservazione: "Voce ordinaria",
+          osservazione: getChapterDescription(s.titolo),
           voci,
           subtotale,
         };
@@ -733,7 +733,7 @@ Scrivi il preventivo in stile OFFERTA COMMERCIALE PROFESSIONALE e PERSUASIVA:
         return {
           lettera: String.fromCharCode(65 + idx),
           titolo: s.titolo,
-          osservazione: "Voce ordinaria",
+          osservazione: getChapterDescription(s.titolo),
           voci,
           subtotale,
         };
@@ -3449,6 +3449,50 @@ La descrizione deve essere precisa, professionale e in italiano. Massimo 2 righe
     res.status(500).json({ error: "Internal server error" });
   }
 });
+
+// Returns a professional Italian description for a chapter (capitolo) based on its title.
+// Used in deterministic paths to populate osservazione instead of the generic "Voce ordinaria".
+function getChapterDescription(titolo: string): string {
+  const t = titolo.toLowerCase().trim();
+  const MAP: Record<string, string> = {
+    demolizioni: "Comprende tutti i lavori di demolizione, rimozione di strutture esistenti e smaltimento del materiale di risulta",
+    costruzioni: "Comprende i lavori di costruzione, carpenteria strutturale, getti in calcestruzzo armato e opere murarie",
+    giardino: "Comprende i lavori di sistemazione delle aree esterne, giardino e pertinenze",
+    muratura: "Comprende i lavori di muratura, tamponature, chiusure e tramezzi",
+    generale: "Comprende le lavorazioni di carattere generale, noleggi, opere provvisionali e oneri accessori",
+    finiture: "Comprende i lavori di finitura superficiale, tinteggiatura e rifinitura",
+    pavimentazioni: "Comprende la posa in opera di pavimentazioni, rivestimenti e zoccolini",
+    rivestimenti: "Comprende la posa in opera di rivestimenti verticali e orizzontali",
+    impianti: "Comprende gli impianti tecnologici, idraulico-sanitari ed elettrici",
+    strutture: "Comprende le opere strutturali in calcestruzzo armato e acciaio",
+    impermeabilizzazioni: "Comprende le lavorazioni di impermeabilizzazione e protezione dall'acqua",
+    isolamenti: "Comprende i lavori di isolamento termico e acustico",
+    infissi: "Comprende la fornitura e posa in opera di infissi, serramenti e porte",
+    tinteggiature: "Comprende i lavori di tinteggiatura, verniciatura e trattamenti delle superfici",
+    verniciature: "Comprende i lavori di verniciatura, tinteggiatura e trattamenti protettivi delle superfici",
+    falegnameria: "Comprende i lavori di falegnameria, opere in legno e complementi d'arredo",
+    varie: "Comprende le lavorazioni varie e opere accessorie non diversamente classificate",
+    ponteggi: "Comprende l'installazione, il noleggio e lo smontaggio dei ponteggi e delle opere provvisionali",
+    scavi: "Comprende i lavori di scavo, sbancamento e movimentazione terra",
+    fondazioni: "Comprende le opere di fondazione e consolidamento del terreno",
+    intonaci: "Comprende i lavori di intonacatura e rasatura delle superfici interne ed esterne",
+    coperture: "Comprende i lavori di copertura, tetti e impermeabilizzazione",
+    serramenti: "Comprende la fornitura e posa in opera di serramenti e schermature solari",
+    controsoffitti: "Comprende la realizzazione di controsoffitti e contropareti",
+    ripristini: "Comprende i lavori di ripristino, riparazione e messa a norma",
+    noleggi: "Comprende il noleggio di macchine, attrezzature e mezzi d'opera",
+    cantiere: "Comprende le opere di predisposizione cantiere, recinzioni e sicurezza",
+    cappotto: "Comprende la posa di isolamento a cappotto esterno e relativa rasatura",
+    idraulico: "Comprende l'impianto idraulico, sanitario e di distribuzione acqua",
+    elettrico: "Comprende l'impianto elettrico, illuminazione e quadri di distribuzione",
+  };
+  if (MAP[t]) return MAP[t];
+  for (const [key, desc] of Object.entries(MAP)) {
+    if (t.includes(key)) return desc;
+  }
+  const cap = titolo.charAt(0).toUpperCase() + titolo.slice(1).toLowerCase();
+  return `Comprende i lavori di ${cap.toLowerCase()} come da computo metrico allegato`;
+}
 
 // Fallback price estimation for tabular computo metrico voci (Brianza/Milano market rates 2026)
 // Uses earliest-match strategy: the keyword appearing FIRST in the description wins,

@@ -1,0 +1,1 @@
+- [Numbered computo parser — quadro sintetico trap](numbered-computo-parser.md) — section header regex MUST use `$` anchor or it matches quadro sintetico rows with €, killing all voci
