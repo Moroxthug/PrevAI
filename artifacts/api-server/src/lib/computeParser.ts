@@ -541,22 +541,16 @@ export function parseNumberedComputoMetrico(text: string): {
     // Skip company header lines
     if (/^p\.?i\.?v\.?a|^tel:|^via\s+|^data:\s*\d/i.test(line)) continue;
 
-    // Section header? Must match "X. Title" at start of line
-    const secMatch = line.match(/^([A-Z])\.\s+([A-Za-zÀ-ÿ][A-Za-zÀ-ÿ\s\-/]*?)(?:\s*€.*)?$/i);
+    // Section header? Match ONLY standalone "X. Title" lines (no € amount, no trailing numbers).
+    // This deliberately EXCLUDES quadro-sintetico summary rows like "A. Demolizioni  € 18.442,00  Voce ordinaria"
+    // which also start with "A." but contain a € amount — the $ anchor makes them fail the match.
+    const secMatch = line.match(/^([A-Z])\.\s+([A-Za-zÀ-ÿ][A-Za-zÀ-ÿ\s]*)$/);
     if (secMatch) {
-      // Make sure the "title" isn't a number or pure whitespace (avoid false positives)
       const titleCandidate = secMatch[2].trim();
       if (titleCandidate && !/^\d/.test(titleCandidate)) {
         flushRow();
-        // Don't re-open the same letter section (avoid quadro sintetico rows being parsed as sections)
-        const existingIdx = sections.findIndex(s => s.lettera === secMatch[1]);
-        if (existingIdx >= 0) {
-          // Already have this section from the detail block — this must be the summary row, skip
-          currentSection = null;
-        } else {
-          currentSection = { lettera: secMatch[1], titolo: titleCandidate, voci: [] };
-          sections.push(currentSection);
-        }
+        currentSection = { lettera: secMatch[1], titolo: titleCandidate, voci: [] };
+        sections.push(currentSection);
         continue;
       }
     }
