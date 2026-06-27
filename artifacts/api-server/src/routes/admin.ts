@@ -192,6 +192,48 @@ router.post("/admin/settings", async (req, res) => {
   }
 });
 
+router.post("/admin/grant-plan", async (req, res) => {
+  try {
+    const { email, plan, days = 365 } = req.body as { email?: string; plan?: string; days?: number };
+    if (!email || !plan) {
+      res.status(400).json({ error: "email and plan required" });
+      return;
+    }
+    const validPlans = ["monthly_starter", "monthly_pro", "monthly_elite"];
+    if (!validPlans.includes(plan)) {
+      res.status(400).json({ error: `Invalid plan. Valid values: ${validPlans.join(", ")}` });
+      return;
+    }
+    const [authUser] = await db.select().from(authUsersTable).where(eq(authUsersTable.email, email));
+    if (!authUser) {
+      res.status(404).json({ error: `No user found with email: ${email}` });
+      return;
+    }
+    const periodEnd = new Date(Date.now() + days * 24 * 60 * 60 * 1000);
+    await db.insert(businessProfilesTable).values({
+      userId: authUser.id,
+      companyName: "",
+      subscriptionPlan: plan,
+      subscriptionStatus: "active",
+      subscriptionPeriodEnd: periodEnd,
+      updatedAt: new Date(),
+    }).onConflictDoUpdate({
+      target: businessProfilesTable.userId,
+      set: {
+        subscriptionPlan: plan,
+        subscriptionStatus: "active",
+        subscriptionPeriodEnd: periodEnd,
+        updatedAt: new Date(),
+      },
+    });
+    logger.info({ email, plan, days, userId: authUser.id }, "Admin manually granted plan");
+    res.json({ ok: true, email, plan, periodEnd, userId: authUser.id });
+  } catch (err) {
+    logger.error({ err }, "Admin grant-plan error");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
 router.post("/admin/sync-subscription", async (req, res) => {
   try {
     const { email } = req.body as { email?: string };
