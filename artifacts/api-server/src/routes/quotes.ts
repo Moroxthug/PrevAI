@@ -878,33 +878,38 @@ Scrivi il preventivo in stile OFFERTA COMMERCIALE PROFESSIONALE e PERSUASIVA:
           indirizzo: aiData.cliente?.indirizzo ?? "",
         };
 
-    const numeroPreventivoData = await generateNumeroPreventivo(userId);
+    const [quote] = await db.transaction(async (tx) => {
+      // Row lock the user's business profile record to prevent concurrent quote creation
+      await tx.execute(sql`SELECT id FROM ${businessProfilesTable} WHERE "userId" = ${userId} FOR UPDATE`);
 
-    const [quote] = await db
-      .insert(quotesTable)
-      .values({
-        userId,
-        rawInput,
-        clientData: resolvedClientData,
-        companySnapshot: resolvedSnapshot,
-        descrizioneGenerale: aiData.descrizione_generale ?? "",
-        items: [],
-        capitoli,
-        sconto,
-        condizioniPagamento,
-        capitolatoPro: !!(profile?.subscriptionStatus === "active" && (profile?.subscriptionPlan === "monthly_pro" || profile?.subscriptionPlan === "monthly_elite")),
-        titoloPreventivoRiga1: aiData.titolo_riga1 ?? "Analisi Economica e Computo Metrico Prezzato",
-        titoloPreventivoRiga2: aiData.titolo_riga2 ?? "",
-        numeroPreventivoData,
-        subtotale: subtotale.toFixed(2),
-        ivaPercentuale: ivaPercentuale.toFixed(2),
-        ivaValore: ivaValore.toFixed(2),
-        totale: totale.toFixed(2),
-        note: aiData.note ?? "Preventivo valido 30 giorni",
-        status: "draft",
-        templateId,
-      })
-      .returning();
+      const numeroPreventivoData = await generateNumeroPreventivo(userId);
+
+      return await tx
+        .insert(quotesTable)
+        .values({
+          userId,
+          rawInput,
+          clientData: resolvedClientData,
+          companySnapshot: resolvedSnapshot,
+          descrizioneGenerale: aiData.descrizione_generale ?? "",
+          items: [],
+          capitoli,
+          sconto,
+          condizioniPagamento,
+          capitolatoPro: !!(profile?.subscriptionStatus === "active" && (profile?.subscriptionPlan === "monthly_pro" || profile?.subscriptionPlan === "monthly_elite")),
+          titoloPreventivoRiga1: aiData.titolo_riga1 ?? "Analisi Economica e Computo Metrico Prezzato",
+          titoloPreventivoRiga2: aiData.titolo_riga2 ?? "",
+          numeroPreventivoData,
+          subtotale: subtotale.toFixed(2),
+          ivaPercentuale: ivaPercentuale.toFixed(2),
+          ivaValore: ivaValore.toFixed(2),
+          totale: totale.toFixed(2),
+          note: aiData.note ?? "Preventivo valido 30 giorni",
+          status: "draft",
+          templateId,
+        })
+        .returning();
+    });
 
     // Save attachments to object storage + quote_attachments table
     const savedAttachments: typeof quoteAttachmentsTable.$inferInsert[] = [];
@@ -1255,33 +1260,38 @@ router.post("/quotes/:id/duplicate", requireAuth, async (req, res) => {
       return;
     }
 
-    const newNumeroPreventivoData = await generateNumeroPreventivo(userId);
+    const [newQuote] = await db.transaction(async (tx) => {
+      // Row lock the user's business profile record to prevent concurrent quote creation
+      await tx.execute(sql`SELECT id FROM ${businessProfilesTable} WHERE "userId" = ${userId} FOR UPDATE`);
 
-    const [newQuote] = await db
-      .insert(quotesTable)
-      .values({
-        userId,
-        rawInput: original.rawInput,
-        descrizioneGenerale: original.descrizioneGenerale,
-        companySnapshot: (original.companySnapshot as QuoteCompanySnapshot | null) ?? null,
-        items: (Array.isArray(original.items) ? original.items : []) as QuoteItem[],
-        capitoli: (Array.isArray(original.capitoli) ? original.capitoli : []) as QuoteChapter[],
-        sconto: (original.sconto as QuoteDiscount | null) ?? null,
-        condizioniPagamento: Array.isArray(original.condizioniPagamento) ? original.condizioniPagamento : [],
-        titoloPreventivoRiga1: original.titoloPreventivoRiga1,
-        titoloPreventivoRiga2: original.titoloPreventivoRiga2,
-        numeroPreventivoData: newNumeroPreventivoData,
-        subtotale: original.subtotale,
-        ivaPercentuale: original.ivaPercentuale,
-        ivaValore: original.ivaValore,
-        totale: original.totale,
-        note: original.note,
-        status: "draft",
-        pdfUrl: null,
-        pdfDownloadedAt: null,
-        templateId: original.templateId ?? "standard",
-      })
-      .returning();
+      const newNumeroPreventivoData = await generateNumeroPreventivo(userId);
+
+      return await tx
+        .insert(quotesTable)
+        .values({
+          userId,
+          rawInput: original.rawInput,
+          descrizioneGenerale: original.descrizioneGenerale,
+          companySnapshot: (original.companySnapshot as QuoteCompanySnapshot | null) ?? null,
+          items: (Array.isArray(original.items) ? original.items : []) as QuoteItem[],
+          capitoli: (Array.isArray(original.capitoli) ? original.capitoli : []) as QuoteChapter[],
+          sconto: (original.sconto as QuoteDiscount | null) ?? null,
+          condizioniPagamento: Array.isArray(original.condizioniPagamento) ? original.condizioniPagamento : [],
+          titoloPreventivoRiga1: original.titoloPreventivoRiga1,
+          titoloPreventivoRiga2: original.titoloPreventivoRiga2,
+          numeroPreventivoData: newNumeroPreventivoData,
+          subtotale: original.subtotale,
+          ivaPercentuale: original.ivaPercentuale,
+          ivaValore: original.ivaValore,
+          totale: original.totale,
+          note: original.note,
+          status: "draft",
+          pdfUrl: null,
+          pdfDownloadedAt: null,
+          templateId: original.templateId ?? "standard",
+        })
+        .returning();
+    });
 
     res.status(201).json(serializeQuote(newQuote));
   } catch (err) {
@@ -3374,35 +3384,40 @@ router.post("/quotes/manual", requireAuth, async (req, res) => {
     const ivaValore = Math.round(subtotale * (ivaPercentuale / 100) * 100) / 100;
     const totale = Math.round((subtotale + ivaValore) * 100) / 100;
 
-    const numeroPreventivoData = await generateNumeroPreventivo(userId);
+    const [quote] = await db.transaction(async (tx) => {
+      // Row lock the user's business profile record to prevent concurrent quote creation
+      await tx.execute(sql`SELECT id FROM ${businessProfilesTable} WHERE "userId" = ${userId} FOR UPDATE`);
 
-    const [quote] = await db
-      .insert(quotesTable)
-      .values({
-        userId,
-        rawInput: `[Preventivo manuale] ${titoloPreventivoRiga2 ?? descrizioneGenerale ?? ""}`.trim(),
-        capitoli: recalcCapitoli,
-        clientData: clientDataInput ?? { nome: "", indirizzo: "" },
-        companySnapshot: resolvedSnapshot,
-        templateId: (["standard", "arosio", "mariagrazia"].includes(templateId ?? "") ? templateId : "standard") as "standard" | "arosio" | "mariagrazia",
-        titoloPreventivoRiga1: titoloPreventivoRiga1 ?? "Analisi Economica e Computo Metrico Prezzato",
-        titoloPreventivoRiga2: titoloPreventivoRiga2 ?? "",
-        descrizioneGenerale: descrizioneGenerale ?? "",
-        numeroPreventivoData,
-        subtotale: subtotale.toFixed(2),
-        ivaPercentuale: ivaPercentuale.toFixed(2),
-        ivaValore: ivaValore.toFixed(2),
-        totale: totale.toFixed(2),
-        condizioniPagamento: Array.isArray(condizioniPagamento) ? condizioniPagamento : [
-          "30% acconto alla firma",
-          "30% a SAL intermedio",
-          "30% a SAL finale",
-          "10% saldo fine lavori",
-        ],
-        note: note ?? "Preventivo valido 30 giorni",
-        status: "draft",
-      })
-      .returning();
+      const numeroPreventivoData = await generateNumeroPreventivo(userId);
+
+      return await tx
+        .insert(quotesTable)
+        .values({
+          userId,
+          rawInput: `[Preventivo manuale] ${titoloPreventivoRiga2 ?? descrizioneGenerale ?? ""}`.trim(),
+          capitoli: recalcCapitoli,
+          clientData: clientDataInput ?? { nome: "", indirizzo: "" },
+          companySnapshot: resolvedSnapshot,
+          templateId: (["standard", "arosio", "mariagrazia"].includes(templateId ?? "") ? templateId : "standard") as "standard" | "arosio" | "mariagrazia",
+          titoloPreventivoRiga1: titoloPreventivoRiga1 ?? "Analisi Economica e Computo Metrico Prezzato",
+          titoloPreventivoRiga2: titoloPreventivoRiga2 ?? "",
+          descrizioneGenerale: descrizioneGenerale ?? "",
+          numeroPreventivoData,
+          subtotale: subtotale.toFixed(2),
+          ivaPercentuale: ivaPercentuale.toFixed(2),
+          ivaValore: ivaValore.toFixed(2),
+          totale: totale.toFixed(2),
+          condizioniPagamento: Array.isArray(condizioniPagamento) ? condizioniPagamento : [
+            "30% acconto alla firma",
+            "30% a SAL intermedio",
+            "30% a SAL finale",
+            "10% saldo fine lavori",
+          ],
+          note: note ?? "Preventivo valido 30 giorni",
+          status: "draft",
+        })
+        .returning();
+    });
 
     // Start trial on first quote creation
     if (!profile?.trialStartedAt) {

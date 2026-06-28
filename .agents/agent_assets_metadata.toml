@@ -1,17 +1,6 @@
 uploads = []
 outputs = []
 
-[[generated]]
-id = "OADfrYbLjOygXanqFmf-C"
-uri = "file://artifacts/preventivo-mobile/assets/images/icon.png"
-type = "image"
-title = "generated_image"
-
-[[generated]]
-id = "8wixyJtXAFJYh3Im9_pkp"
-uri = "file://artifacts/preventivo-mobile/assets/images/splash.png"
-type = "image"
-title = "generated_image"
 
 [[generated]]
 id = "Fsl84cJsna2veTxNg6DqZ"

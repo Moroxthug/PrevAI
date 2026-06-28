@@ -6,11 +6,7 @@ import { eq, sql, desc, count, inArray } from "drizzle-orm";
 import { logger } from "../lib/logger";
 import { getUncachableStripeClient } from "../stripeClient";
 
-const PRICE_TO_PLAN: Record<string, string> = {
-  "price_1TUdJjCaDBaDETvnCGbjTgIq": "monthly_starter",
-  "price_1TUdJjCaDBaDETvnfBv37ryF": "monthly_pro",
-  "price_1TUdJjCaDBaDETvnCo3JKGJ7": "monthly_elite",
-};
+import { PRICE_TO_PLAN } from "./payments.js";
 
 const router = Router();
 

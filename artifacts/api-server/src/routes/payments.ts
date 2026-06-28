@@ -129,6 +129,13 @@ export const PLANS = [
   },
 ];
 
+export const PRICE_TO_PLAN = PLANS.reduce<Record<string, string>>((acc, plan) => {
+  if (plan.stripePriceId) {
+    acc[plan.stripePriceId] = plan.id;
+  }
+  return acc;
+}, {});
+
 router.get("/payments/plans", (_req, res) => {
   res.json(PLANS);
 });
@@ -378,11 +385,7 @@ router.post("/payments/sync-subscription", requireAuth, async (req, res) => {
       return;
     }
 
-    const PRICE_TO_PLAN: Record<string, string> = {
-      "price_1TUdJjCaDBaDETvnCGbjTgIq": "monthly_starter",
-      "price_1TUdJjCaDBaDETvnfBv37ryF": "monthly_pro",
-      "price_1TUdJjCaDBaDETvnCo3JKGJ7": "monthly_elite",
-    };
+
 
     const subscriptions = await stripe.subscriptions.list({
       customer: customerId,

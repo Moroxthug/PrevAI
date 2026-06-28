@@ -29,7 +29,10 @@ const router = Router();
 
 const WA_TOKEN = process.env.WHATSAPP_ACCESS_TOKEN ?? "";
 const WA_PHONE_ID = process.env.WHATSAPP_PHONE_NUMBER_ID ?? "";
-const WA_VERIFY_TOKEN = process.env.WHATSAPP_VERIFY_TOKEN ?? "prevai_webhook_secret";
+const WA_VERIFY_TOKEN = process.env.WHATSAPP_VERIFY_TOKEN;
+if (!WA_VERIFY_TOKEN) {
+  logger.error("WARNING: WHATSAPP_VERIFY_TOKEN is not set. WhatsApp webhook verification will fail.");
+}
 const PREVAI_BASE_URL = getBaseUrl();
 const SESSION_TTL_MS = 30 * 60 * 1000; // 30 minutes
 const MAX_ITERATIONS = 3; // max correction rounds before forcing save-as-draft

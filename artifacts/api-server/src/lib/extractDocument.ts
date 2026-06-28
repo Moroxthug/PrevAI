@@ -6,15 +6,8 @@ const _require = createRequire(import.meta.url);
 export async function extractFromPdf(buffer: Buffer): Promise<string> {
   let pdfText = "";
   try {
-    const { PDFParse } = _require("pdf-parse") as {
-      PDFParse: new (opts: { data: Buffer }) => {
-        getText(): Promise<{ text: string }>;
-        destroy(): Promise<void>;
-      };
-    };
-    const parser = new PDFParse({ data: buffer });
-    const result = await parser.getText();
-    await parser.destroy().catch(() => {});
+    const pdfParse = _require("pdf-parse") as (data: Buffer) => Promise<{ text: string }>;
+    const result = await pdfParse(buffer);
     pdfText = result.text.slice(0, 50000);
   } catch (err) {
     logger.warn({ err }, "pdf-parse failed, falling back to empty text");

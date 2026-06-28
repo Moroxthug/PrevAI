@@ -5,7 +5,8 @@ import { toNodeHandler } from "better-auth/node";
 import multer from "multer";
 import { db, quotesTable, businessProfilesTable, authUsersTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
-import { auth } from "./lib/auth";
+import { auth, getTrustedOrigins } from "./lib/auth";
+import { PRICE_TO_PLAN } from "./routes/payments.js";
 import { sendSubscriptionEmail } from "./lib/email";
 import router from "./routes";
 import { logger } from "./lib/logger";
@@ -88,12 +89,7 @@ app.post(
       return;
     }
 
-    // ── Map Stripe price IDs → internal plan IDs ─────────────────────────────
-    const PRICE_TO_PLAN: Record<string, string> = {
-      "price_1TUdJjCaDBaDETvnCGbjTgIq": "monthly_starter",
-      "price_1TUdJjCaDBaDETvnfBv37ryF": "monthly_pro",
-      "price_1TUdJjCaDBaDETvnCo3JKGJ7": "monthly_elite",
-    };
+
 
     // Shared helper: upsert subscription in DB, resolving user by customerId or email
     async function syncSubscription(customerId: string, priceId: string | undefined, status: string) {
@@ -292,7 +288,27 @@ app.post(
 );
 // ─────────────────────────────────────────────────────────────────────────────
 
-app.use(cors({ credentials: true, origin: true }));
+const trustedOrigins = new Set(getTrustedOrigins());
+app.use(
+  cors({
+    credentials: true,
+    origin: (origin, callback) => {
+      if (!origin) {
+        callback(null, true);
+        return;
+      }
+      if (trustedOrigins.has(origin)) {
+        callback(null, true);
+      } else {
+        if (/^https?:\/\/localhost(:\d+)?$/.test(origin)) {
+          callback(null, true);
+        } else {
+          callback(new Error("Not allowed by CORS"));
+        }
+      }
+    },
+  })
+);
 app.use(express.json({ limit: "25mb" }));
 app.use(express.urlencoded({ extended: true }));
 

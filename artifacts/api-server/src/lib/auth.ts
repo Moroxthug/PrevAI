@@ -14,25 +14,26 @@ if (!secret) {
 }
 
 function getBaseURL(): string {
-  const domains = process.env.REPLIT_DOMAINS;
-  if (domains) {
-    const first = domains.split(",")[0]?.trim();
-    if (first) return `https://${first}`;
-  }
-  return process.env.BETTER_AUTH_URL ?? "http://localhost:5000";
+  if (process.env.BETTER_AUTH_URL) return process.env.BETTER_AUTH_URL;
+  if (process.env.PREVAI_BASE_URL) return process.env.PREVAI_BASE_URL;
+  if (process.env.VERCEL_PROJECT_PRODUCTION_URL) return `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`;
+  if (process.env.VERCEL_URL) return `https://${process.env.VERCEL_URL}`;
+  return "http://localhost:5000";
 }
 
-function getTrustedOrigins(): string[] {
-  const origins: string[] = ["http://localhost:5000", "http://localhost:80"];
-  const domains = process.env.REPLIT_DOMAINS;
-  if (domains) {
-    for (const d of domains.split(",")) {
-      const trimmed = d.trim();
-      if (trimmed) origins.push(`https://${trimmed}`);
+export function getTrustedOrigins(): string[] {
+  const origins: string[] = ["http://localhost:5000", "http://localhost:3000"];
+  if (process.env.BETTER_AUTH_URL) origins.push(process.env.BETTER_AUTH_URL);
+  if (process.env.PREVAI_BASE_URL) origins.push(process.env.PREVAI_BASE_URL);
+  if (process.env.VERCEL_PROJECT_PRODUCTION_URL) origins.push(`https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`);
+  if (process.env.VERCEL_URL) origins.push(`https://${process.env.VERCEL_URL}`);
+  // Support additional trusted origins via env var (comma-separated)
+  const extra = process.env.TRUSTED_ORIGINS;
+  if (extra) {
+    for (const o of extra.split(",")) {
+      const trimmed = o.trim();
+      if (trimmed) origins.push(trimmed);
     }
-  }
-  if (process.env.BETTER_AUTH_URL) {
-    origins.push(process.env.BETTER_AUTH_URL);
   }
   return origins;
 }

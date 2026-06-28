@@ -1,5 +1,5 @@
 import { db, quotesTable, businessProfilesTable, priceCatalogItemsTable } from "@workspace/db";
-import { eq, desc } from "drizzle-orm";
+import { eq, desc, count, sql } from "drizzle-orm";
 import { openai } from "@workspace/integrations-openai-ai-server";
 import { generateNumeroPreventivo } from "./quoteNumber.js";
 import type { QuoteChapter, QuoteDiscount, QuoteCompanySnapshot, QuoteClientData } from "@workspace/db";
@@ -225,7 +225,7 @@ export async function buildQuoteFromAI({
     : `${clientPrefix}${rawInput}`;
 
   const completion = await openai.chat.completions.create({
-    model: hasImages ? "gpt-4o" : "gpt-4o-mini",
+    model: process.env.AI_MODEL ?? (hasImages ? "gemini-2.0-flash" : "gemini-2.0-flash"),
     max_completion_tokens: 8192,
     messages: [
       { role: "system", content: AI_PROMPT },
@@ -315,7 +315,7 @@ ${currentJson}
 Restituisci il preventivo aggiornato COMPLETO in JSON valido con la stessa struttura. Ricalcola tutti i subtotali, l'IVA e il totale. SOLO JSON puro, nessun testo extra.`;
 
   const completion = await openai.chat.completions.create({
-    model: "gpt-4o-mini",
+    model: process.env.AI_MODEL ?? "gemini-2.0-flash",
     max_completion_tokens: 8192,
     messages: [
       { role: "system", content: AI_PROMPT },
@@ -350,46 +350,70 @@ export async function saveQuoteToDb({
   templateId?: string;
 }): Promise<typeof quotesTable.$inferSelect> {
   const resolvedTemplateId = templateId ?? data.templateId ?? "standard";
-  const numeroPreventivoData = data.numeroPreventivoData
-    ? data.numeroPreventivoData
-    : await generateNumeroPreventivo(userId);
-  const [quote] = await db.insert(quotesTable).values({
-    userId,
-    rawInput: data.rawInput,
-    clientData: data.clientData,
-    companySnapshot: data.companySnapshot,
-    descrizioneGenerale: data.descrizioneGenerale,
-    items: [],
-    capitoli: data.capitoli,
-    sconto: data.sconto,
-    condizioniPagamento: data.condizioniPagamento,
-    capitolatoPro: data.capitolatoPro,
-    titoloPreventivoRiga1: data.titoloPreventivoRiga1,
-    titoloPreventivoRiga2: data.titoloPreventivoRiga2,
-    numeroPreventivoData,
-    subtotale: data.subtotale,
-    ivaPercentuale: data.ivaPercentuale,
-    ivaValore: data.ivaValore,
-    totale: data.totale,
-    note: data.note,
-    status: "draft",
-    source,
-    templateId: resolvedTemplateId,
-  }).returning();
 
-  // Set trialStartedAt only if not already set — do NOT overwrite an existing value
-  const [existingProfile] = await db
-    .select({ trialStartedAt: businessProfilesTable.trialStartedAt })
-    .from(businessProfilesTable)
-    .where(eq(businessProfilesTable.userId, userId));
-  if (!existingProfile?.trialStartedAt) {
-    await db
-      .update(businessProfilesTable)
-      .set({ trialStartedAt: new Date() })
+  const quote = await db.transaction(async (tx) => {
+    // Row lock the user's business profile record
+    await tx.execute(sql`SELECT id FROM ${businessProfilesTable} WHERE "userId" = ${userId} FOR UPDATE`);
+
+    let numeroPreventivoData = data.numeroPreventivoData;
+    if (!numeroPreventivoData) {
+      const year = new Date().getFullYear();
+      const [countResult] = await tx
+        .select({ count: count() })
+        .from(quotesTable)
+        .where(eq(quotesTable.userId, userId));
+      const quoteCount = Number(countResult?.count ?? 0);
+      const nextNumber = quoteCount + 1;
+      const today = new Date();
+      const dd = String(today.getDate()).padStart(2, "0");
+      const mm = String(today.getMonth() + 1).padStart(2, "0");
+      numeroPreventivoData = `N° ${nextNumber}.${year} del ${dd}/${mm}/${year}`;
+    }
+
+    const [q] = await tx.insert(quotesTable).values({
+      userId,
+      rawInput: data.rawInput,
+      clientData: data.clientData,
+      companySnapshot: data.companySnapshot,
+      descrizioneGenerale: data.descrizioneGenerale,
+      items: [],
+      capitoli: data.capitoli,
+      sconto: data.sconto,
+      condizioniPagamento: data.condizioniPagamento,
+      capitolatoPro: data.capitolatoPro,
+      titoloPreventivoRiga1: data.titoloPreventivoRiga1,
+      titoloPreventivoRiga2: data.titoloPreventivoRiga2,
+      numeroPreventivoData,
+      subtotale: data.subtotale,
+      ivaPercentuale: data.ivaPercentuale,
+      ivaValore: data.ivaValore,
+      totale: data.totale,
+      note: data.note,
+      status: "draft",
+      source,
+      templateId: resolvedTemplateId,
+    }).returning();
+
+    if (!q) {
+      throw new Error("Failed to insert quote");
+    }
+
+    // Set trialStartedAt only if not already set — do NOT overwrite an existing value
+    const [existingProfile] = await tx
+      .select({ trialStartedAt: businessProfilesTable.trialStartedAt })
+      .from(businessProfilesTable)
       .where(eq(businessProfilesTable.userId, userId));
-  }
+    if (!existingProfile?.trialStartedAt) {
+      await tx
+        .update(businessProfilesTable)
+        .set({ trialStartedAt: new Date() })
+        .where(eq(businessProfilesTable.userId, userId));
+    }
 
-  return quote!;
+    return q;
+  });
+
+  return quote;
 }
 
 /**
