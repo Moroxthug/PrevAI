@@ -1,5 +1,6 @@
 packages:
-  - artifacts/*
+  - artifacts/api-server
+  - artifacts/preventivo-ai
   - lib/*
   - lib/integrations/*
   - scripts
@@ -29,7 +30,6 @@ catalog:
   zod: ^3.25.76
 
 minimumReleaseAge: 1440
-
 
 onlyBuiltDependencies:
   - '@swc/core'
