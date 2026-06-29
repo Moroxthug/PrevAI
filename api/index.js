@@ -1,8 +1,3 @@
-// Ensure Vercel includes these packages that app.mjs loads via dynamic require()
-import { createRequire } from "node:module";
-const _require = createRequire(import.meta.url);
-_require("pdfmake");
-
 let app;
 try {
   const mod = await import("../artifacts/api-server/dist/app.mjs");
