@@ -4,6 +4,10 @@
 dist
 tmp
 
+# Un-ignore pre-built api-server dist (needed for Vercel deployment)
+!artifacts/api-server/dist/
+!artifacts/api-server/dist/**
+
 # Track prerendered SEO HTML (needed for static serving / crawlers)
 # Un-ignore only the seo subtree; re-ignore everything else in dist/
 !artifacts/preventivo-ai/dist/

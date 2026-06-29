@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "buildCommand": "pnpm --filter @workspace/api-zod build && pnpm --filter @workspace/integrations-openai-ai-server build && pnpm --filter @workspace/api-server build && pnpm --filter @workspace/preventivo-ai build",
+  "buildCommand": "pnpm --filter @workspace/preventivo-ai build",
   "outputDirectory": "artifacts/preventivo-ai/dist/public",
   "installCommand": "pnpm install",
   "framework": null,
