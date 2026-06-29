@@ -125,6 +125,32 @@ globalThis.__dirname = __bannerPath.dirname(globalThis.__filename);
     `,
     },
   });
+
+  // Copy externalized packages to dist/node_modules so they're found at runtime
+  // (pnpm uses symlinks which Vercel's includeFiles doesn't resolve)
+  const externalPkgs = ["pdfmake", "mammoth", "pdf-parse"];
+  const distNodeModules = path.resolve(distDir, "node_modules");
+  for (const pkg of externalPkgs) {
+    try {
+      const pkgMain = globalThis.require.resolve(pkg);
+      // Walk up to find the package root (directory containing package.json)
+      let pkgDir = path.dirname(pkgMain);
+      while (pkgDir !== path.dirname(pkgDir)) {
+        try {
+          const pkgJson = path.join(pkgDir, "package.json");
+          await import("node:fs").then(fs => fs.promises.access(pkgJson));
+          break;
+        } catch {
+          pkgDir = path.dirname(pkgDir);
+        }
+      }
+      const dest = path.resolve(distNodeModules, pkg);
+      await cp(pkgDir, dest, { recursive: true, force: true });
+      console.log(`Copied ${pkg} -> dist/node_modules/${pkg}`);
+    } catch (err) {
+      console.warn(`Could not copy ${pkg}: ${err.message}`);
+    }
+  }
 }
 
 buildAll().catch((err) => {

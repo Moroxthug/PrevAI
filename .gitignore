@@ -7,6 +7,10 @@ tmp
 # Un-ignore pre-built api-server dist (needed for Vercel deployment)
 !artifacts/api-server/dist/
 !artifacts/api-server/dist/**
+# But ignore nested node_modules inside dist except the ones we need
+artifacts/api-server/dist/node_modules/
+!artifacts/api-server/dist/node_modules/
+!artifacts/api-server/dist/node_modules/**
 
 # Track prerendered SEO HTML (needed for static serving / crawlers)
 # Un-ignore only the seo subtree; re-ignore everything else in dist/
