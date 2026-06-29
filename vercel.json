@@ -1,11 +1,11 @@
 {
   "version": 2,
-  "buildCommand": "pnpm --filter @workspace/db build && pnpm --filter @workspace/api-zod build && pnpm --filter @workspace/integrations-openai-ai-server build && pnpm --filter @workspace/preventivo-ai build",
+  "buildCommand": "pnpm --filter @workspace/db build && pnpm --filter @workspace/api-zod build && pnpm --filter @workspace/integrations-openai-ai-server build && pnpm --filter @workspace/api-server build && pnpm --filter @workspace/preventivo-ai build",
   "outputDirectory": "artifacts/preventivo-ai/dist/public",
   "installCommand": "pnpm install",
   "framework": null,
   "functions": {
-    "api/index.ts": {
+    "api/index.js": {
       "memory": 1024,
       "maxDuration": 60
     }
