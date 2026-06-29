@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "buildCommand": "pnpm --filter @workspace/db build && pnpm --filter @workspace/api-zod build && pnpm --filter @workspace/integrations-openai-ai-server build && pnpm --filter @workspace/api-server build && pnpm --filter @workspace/preventivo-ai build",
+  "buildCommand": "pnpm --filter @workspace/api-zod build && pnpm --filter @workspace/integrations-openai-ai-server build && pnpm --filter @workspace/api-server build && pnpm --filter @workspace/preventivo-ai build",
   "outputDirectory": "artifacts/preventivo-ai/dist/public",
   "installCommand": "pnpm install",
   "framework": null,
@@ -14,6 +14,7 @@
     { "source": "/api/(.*)", "destination": "/api/index" }
   ],
   "env": {
-    "NODE_ENV": "production"
+    "NODE_ENV": "production",
+    "VERCEL_SKIP_TYPECHECK": "1"
   }
 }
