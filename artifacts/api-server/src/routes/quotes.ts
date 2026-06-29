@@ -15,7 +15,8 @@ import {
 import { openai } from "@workspace/integrations-openai-ai-server";
 import type { QuoteChapter, QuoteChapterItem, QuoteDiscount, QuoteCompanySnapshot, QuoteClientData, QuoteItem } from "@workspace/db";
 import { logger } from "../lib/logger.js";
-import { createRequire as _pdfCrReq } from "node:module";
+import { createRequire } from "node:module";
+const _pdfRequire = createRequire(import.meta.url);
 import type { TDocumentDefinitions, Content } from "pdfmake/interfaces";
 import {
   parseComputoMetrico, isComputoMetrico,
@@ -29,7 +30,7 @@ type PdfMakeInstance = {
   fonts: Record<string, Record<string, string>>;
   createPdf(docDef: TDocumentDefinitions): { getBuffer(): Promise<Buffer> };
 };
-const _pdfmake = _pdfCrReq(import.meta.url)("pdfmake") as PdfMakeInstance;
+const _pdfmake = _pdfRequire("pdfmake") as PdfMakeInstance;
 _pdfmake.fonts = {
   Helvetica: {
     normal: "Helvetica",

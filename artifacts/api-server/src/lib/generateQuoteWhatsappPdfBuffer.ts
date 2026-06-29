@@ -1,4 +1,5 @@
-import { createRequire as _pdfCrReq } from "node:module";
+import { createRequire } from "node:module";
+const _pdfRequire = createRequire(import.meta.url);
 import type { TDocumentDefinitions, Content } from "pdfmake/interfaces";
 import type { QuoteChapter, QuoteDiscount, QuoteCompanySnapshot, QuoteClientData } from "@workspace/db";
 import { quotesTable, businessProfilesTable } from "@workspace/db";
@@ -12,7 +13,7 @@ type PdfMakeInstance = {
   createPdf(docDef: TDocumentDefinitions): { getBuffer(): Promise<Buffer> };
 };
 
-const _pdfmake = _pdfCrReq(import.meta.url)("pdfmake") as PdfMakeInstance;
+const _pdfmake = _pdfRequire("pdfmake") as PdfMakeInstance;
 _pdfmake.fonts = {
   Helvetica: {
     normal: "Helvetica",
