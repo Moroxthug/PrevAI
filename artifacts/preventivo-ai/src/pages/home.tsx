@@ -1,3 +1,4 @@
+import { lazy, Suspense, useState, useRef } from "react";
 import { Link, useLocation } from "wouter";
 import { ArrowRight, CheckCircle2, FileText, Zap, Lock, Star, Sparkles, Mic, ImagePlus, Check, X, Loader2, ChevronDown, Shield, Cpu, Euro } from "lucide-react";
 import { SeoHead } from "@/components/seo-head";
@@ -5,8 +6,8 @@ import { TestimonialsSection, TESTIMONIALS, AGGREGATE_RATING } from "@/component
 import { useGetPlans, useCreateCheckoutSession } from "@workspace/api-client-react";
 import { useScrollFade } from "@/hooks/use-scroll-fade";
 import { useAuth } from "@/hooks/use-auth";
-import { useState, useRef } from "react";
 import { WhatsAppChatDemo } from "@/components/whatsapp-chat-demo";
+const DemoPlayer = lazy(() => import("@/components/demo/DemoPlayer"));
 
 function ScrollSection({
   children,
@@ -206,13 +207,12 @@ export default function Home() {
               </div>
               <div className="text-[11px] font-medium text-gray-400 ml-2">prevai.it — demo</div>
             </div>
-            <div style={{ aspectRatio: "16/9" }}>
-              <iframe
-                src="/prevai-demo-video/?embed"
-                className="w-full h-full border-0 block"
-                allow="autoplay"
-                title="prevai demo"
-              />
+            <div style={{ aspectRatio: "16/9", position: "relative", overflow: "hidden" }}>
+              <Suspense fallback={<div className="w-full h-full bg-gray-950 flex items-center justify-center"><div className="w-8 h-8 border-2 border-violet-500 border-t-transparent rounded-full animate-spin" /></div>}>
+                <div className="absolute inset-0" style={{ transform: "scale(1)", transformOrigin: "top left", width: "100%", height: "100%" }}>
+                  <DemoPlayer loop={true} />
+                </div>
+              </Suspense>
             </div>
           </div>
           <p className="text-xs text-gray-400 text-center mt-3">Demo dal vivo — nessun effetto, nessun montaggio</p>
