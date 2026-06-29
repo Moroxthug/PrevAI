@@ -24,21 +24,25 @@ import {
   isNumberedComputoMetrico, parseNumberedComputoMetrico,
 } from "../lib/computeParser.js";
 
-// pdfmake 0.3.x exports a singleton instance (not a constructor).
-// Load via createRequire for ESM compatibility; set fonts on the instance once at module load.
 type PdfMakeInstance = {
   fonts: Record<string, Record<string, string>>;
   createPdf(docDef: TDocumentDefinitions): { getBuffer(): Promise<Buffer> };
 };
-const _pdfmake = _pdfRequire("pdfmake") as PdfMakeInstance;
-_pdfmake.fonts = {
-  Helvetica: {
-    normal: "Helvetica",
-    bold: "Helvetica-Bold",
-    italics: "Helvetica-Oblique",
-    bolditalics: "Helvetica-BoldOblique",
-  },
-};
+let _pdfmakeInstance: PdfMakeInstance | null = null;
+function getPdfmake(): PdfMakeInstance {
+  if (_pdfmakeInstance) return _pdfmakeInstance;
+  const lib = _pdfRequire("pdfmake") as PdfMakeInstance;
+  lib.fonts = {
+    Helvetica: {
+      normal: "Helvetica",
+      bold: "Helvetica-Bold",
+      italics: "Helvetica-Oblique",
+      bolditalics: "Helvetica-BoldOblique",
+    },
+  };
+  _pdfmakeInstance = lib;
+  return lib;
+}
 import { ObjectStorageService } from "../lib/objectStorage.js";
 import { generateNumeroPreventivo } from "../lib/quoteNumber.js";
 import { sendQuotePdfEmail } from "../lib/email.js";
@@ -2914,7 +2918,7 @@ async function generateCapitolatoPdfBuffer(quote: QuoteRow, profile: ProfileRow)
     }),
   };
 
-  return _pdfmake.createPdf(docDefinition).getBuffer();
+  return getPdfmake().createPdf(docDefinition).getBuffer();
 }
 
 /**
@@ -3272,7 +3276,7 @@ async function generateQuotePdfBuffer(quote: QuoteRow, profile: ProfileRow, with
     }),
   };
 
-  return _pdfmake.createPdf(docDefinition).getBuffer();
+  return getPdfmake().createPdf(docDefinition).getBuffer();
 }
 
 // POST /api/quotes/manual — create a manually-built quote (no AI)

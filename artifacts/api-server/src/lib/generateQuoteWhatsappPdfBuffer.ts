@@ -13,15 +13,21 @@ type PdfMakeInstance = {
   createPdf(docDef: TDocumentDefinitions): { getBuffer(): Promise<Buffer> };
 };
 
-const _pdfmake = _pdfRequire("pdfmake") as PdfMakeInstance;
-_pdfmake.fonts = {
-  Helvetica: {
-    normal: "Helvetica",
-    bold: "Helvetica-Bold",
-    italics: "Helvetica-Oblique",
-    bolditalics: "Helvetica-BoldOblique",
-  },
-};
+let _pdfmakeInstance: PdfMakeInstance | null = null;
+function getPdfmake(): PdfMakeInstance {
+  if (_pdfmakeInstance) return _pdfmakeInstance;
+  const lib = _pdfRequire("pdfmake") as PdfMakeInstance;
+  lib.fonts = {
+    Helvetica: {
+      normal: "Helvetica",
+      bold: "Helvetica-Bold",
+      italics: "Helvetica-Oblique",
+      bolditalics: "Helvetica-BoldOblique",
+    },
+  };
+  _pdfmakeInstance = lib;
+  return lib;
+}
 
 const objectStorage = new ObjectStorageService();
 
@@ -390,5 +396,5 @@ export async function generateQuoteWhatsappPdfBuffer(quote: QuoteRow, profile: P
     }),
   };
 
-  return _pdfmake.createPdf(docDefinition).getBuffer();
+  return getPdfmake().createPdf(docDefinition).getBuffer();
 }
