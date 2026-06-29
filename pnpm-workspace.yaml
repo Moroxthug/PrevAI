@@ -32,9 +32,11 @@ catalog:
 minimumReleaseAge: 1440
 
 onlyBuiltDependencies:
+  - '@google/genai'
   - '@swc/core'
   - esbuild
   - msw
+  - protobufjs
   - puppeteer
   - unrs-resolver
 
