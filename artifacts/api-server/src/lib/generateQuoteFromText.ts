@@ -225,7 +225,7 @@ export async function buildQuoteFromAI({
     : `${clientPrefix}${rawInput}`;
 
   const completion = await openai.chat.completions.create({
-    model: process.env.AI_MODEL ?? (hasImages ? "gemini-2.0-flash" : "gemini-2.0-flash"),
+    model: process.env.AI_MODEL ?? "llama-3.3-70b-versatile",
     max_completion_tokens: 8192,
     messages: [
       { role: "system", content: AI_PROMPT },
@@ -315,7 +315,7 @@ ${currentJson}
 Restituisci il preventivo aggiornato COMPLETO in JSON valido con la stessa struttura. Ricalcola tutti i subtotali, l'IVA e il totale. SOLO JSON puro, nessun testo extra.`;
 
   const completion = await openai.chat.completions.create({
-    model: process.env.AI_MODEL ?? "gemini-2.0-flash",
+    model: process.env.AI_MODEL ?? "llama-3.3-70b-versatile",
     max_completion_tokens: 8192,
     messages: [
       { role: "system", content: AI_PROMPT },
