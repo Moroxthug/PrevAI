@@ -11,12 +11,25 @@ Devi trasformare una descrizione libera in un'ANALISI ECONOMICA E COMPUTO METRIC
 
 REGOLE FONDAMENTALI:
 1. Prezzi realistici di mercato italiano 2026:
-   - imbianchino/pittore: 5–12€/mq per tinteggiatura, 15–25€/mq per lavori speciali
-   - elettricista: 40–70€/ora manodopera, prezzi materiali a mercato
-   - idraulico: 45–75€/ora manodopera
-   - edilizia generale: prezzi coerenti con listino DEI/Regione
-   - muratore: 35–55€/ora
-   - carpentiere/falegname: 40–65€/ora
+   - RISTRUTTURAZIONE COMPLETA "CHIAVI IN MANO" (Intera casa/appartamento):
+     La ristrutturazione completa comprende demolizioni, impianti nuovi, massetti, pavimentazione, tinteggiatura ed eventuali infissi/porte. I costi al mq totali reali sono:
+     * Fascia Economica/Base: 450 - 650 €/mq (es. per 145mq il totale deve essere tra i 65.000€ e i 95.000€)
+     * Fascia Media/Standard: 650 - 950 €/mq (es. per 145mq il totale deve essere tra i 95.000€ e i 138.000€)
+     * Fascia Alta/Lusso: 950 - 1500+ €/mq (es. per 145mq il totale supera i 140.000€)
+     Se l'utente richiede una "ristrutturazione completa" senza specificare la fascia, usa come riferimento la Fascia Media (circa 700-800 €/mq) e genera voci di capitolato dettagliate (demolizioni, opere murarie, impianti, finiture, assistenza muraria) che sommate raggiungano coerentemente questo importo complessivo.
+   - RIFACIMENTO BAGNO COMPLETO: 3.500 - 6.000 € (demolizione, rifacimento impianto idrico, sanitari, rubinetterie, posa piastrelle).
+   - RIFACIMENTO CUCINA COMPLETO: 3.000 - 5.500 € (opere edili ed idrauliche).
+   - IMPIANTO ELETTRICO COMPLETO: 50 - 75 € a punto luce a norma, o circa 4.000 - 8.000 € per una casa media (circa 50-60 €/mq).
+   - IMPIANTO DI RISCALDAMENTO/IDRICO: 5.000 - 10.000 € a seconda della dimensione (tubazioni, collettori, caldaia/pompa di calore).
+   - DEMOLIZIONI E RIMOZIONI: 20 - 45 €/mq (rimozione pavimenti, massetti, pareti divisorie, compreso trasporto a discarica).
+   - POSA PAVIMENTI E RIVESTIMENTI: 25 - 45 €/mq (esclusi materiali). MASSETTO DI SOTTOFONDO: 20 - 30 €/mq.
+   - IMBIANCHINO/PITTORE: 5–12€/mq per tinteggiatura ordinaria a due mani, 15–25€/mq per lavori speciali o rasatura/preparazione pareti.
+   - MANODOPERA IN ECONOMIA (oraria):
+     * muratore: 35–55€/ora
+     * elettricista: 40–70€/ora
+     * idraulico: 45–75€/ora
+     * carpentiere/falegname: 40–65€/ora
+     * imbianchino: 30–45€/ora
 2. Se mancano dati specifici: fai assunzioni realistiche, NON chiedere chiarimenti
 3. Organizza il lavoro in CAPITOLI logici (A, B, C, D, …) con titoli professionali
 4. Ogni capitolo contiene VOCI di lavoro dettagliate con unità di misura professionali (mq, ml, mc, kg, ore, a.c., pezzi, cadauno, kw, etc.)
@@ -109,25 +122,52 @@ function parseAiResponse(content: string, rawInput: string, profile: typeof busi
   const cleaned = content.trim().replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/i, "");
   const aiData = JSON.parse(cleaned) as AiQuoteData;
 
-  const capitoli: QuoteChapter[] = (aiData.capitoli ?? []).map((cap) => ({
-    lettera: cap.lettera ?? "A",
-    titolo: cap.titolo ?? "",
-    osservazione: cap.osservazione ?? "Voce ordinaria",
-    voci: (cap.voci ?? []).map((v) => ({
-      descrizione: v.descrizione ?? "",
-      um: v.um ?? "a.c.",
-      quantita: Number(v.quantita ?? 0),
-      prezzoUnitario: Number(v.prezzo_unitario ?? 0),
-      totale: Number(v.totale ?? 0),
-    })),
-    subtotale: Number(cap.subtotale ?? 0),
-  }));
+  let calculatedSubtotale = 0;
+
+  const capitoli: QuoteChapter[] = (aiData.capitoli ?? []).map((cap) => {
+    let capSubtotale = 0;
+    const voci = (cap.voci ?? []).map((v) => {
+      const quantita = Number(v.quantita ?? 0);
+      const prezzoUnitario = Number(v.prezzo_unitario ?? 0);
+      const totale = Number((quantita * prezzoUnitario).toFixed(2));
+      capSubtotale += totale;
+      return {
+        descrizione: v.descrizione ?? "",
+        um: v.um ?? "a.c.",
+        quantita,
+        prezzoUnitario,
+        totale,
+      };
+    });
+
+    calculatedSubtotale += Number(capSubtotale.toFixed(2));
+
+    return {
+      lettera: cap.lettera ?? "A",
+      titolo: cap.titolo ?? "",
+      osservazione: cap.osservazione ?? "Voce ordinaria",
+      voci,
+      subtotale: Number(capSubtotale.toFixed(2)),
+    };
+  });
 
   const scontoRaw = aiData.sconto;
-  const sconto: QuoteDiscount | null =
-    scontoRaw && Number(scontoRaw.percentuale ?? 0) > 0
-      ? { percentuale: Number(scontoRaw.percentuale), importoScontato: Number(scontoRaw.importo_scontato ?? 0) }
-      : null;
+  const scontoPercentuale = scontoRaw ? Number(scontoRaw.percentuale ?? 0) : 0;
+  
+  let importoScontato = 0;
+  let sconto: QuoteDiscount | null = null;
+  if (scontoPercentuale > 0) {
+    importoScontato = Number((calculatedSubtotale * scontoPercentuale / 100).toFixed(2));
+    sconto = {
+      percentuale: scontoPercentuale,
+      importoScontato,
+    };
+  }
+
+  const imponibile = Number((calculatedSubtotale - importoScontato).toFixed(2));
+  const ivaPercentualeVal = Number(aiData.iva_percentuale ?? 22);
+  const ivaValoreVal = Number((imponibile * ivaPercentualeVal / 100).toFixed(2));
+  const totaleVal = Number((imponibile + ivaValoreVal).toFixed(2));
 
   const resolvedSnapshot: QuoteCompanySnapshot | null = profile
     ? {
@@ -156,10 +196,10 @@ function parseAiResponse(content: string, rawInput: string, profile: typeof busi
       "30% a completamento seconda fase lavori",
       "10% saldo a fine lavori",
     ],
-    subtotale: Number(aiData.subtotale ?? 0).toFixed(2),
-    ivaPercentuale: Number(aiData.iva_percentuale ?? 22).toFixed(2),
-    ivaValore: Number(aiData.iva_valore ?? 0).toFixed(2),
-    totale: Number(aiData.totale ?? 0).toFixed(2),
+    subtotale: calculatedSubtotale.toFixed(2),
+    ivaPercentuale: ivaPercentualeVal.toFixed(2),
+    ivaValore: ivaValoreVal.toFixed(2),
+    totale: totaleVal.toFixed(2),
     note: aiData.note ?? "Preventivo valido 30 giorni",
     capitolatoPro: !!(profile?.subscriptionStatus === "active" && (profile?.subscriptionPlan === "monthly_pro" || profile?.subscriptionPlan === "monthly_elite")),
     templateId,
@@ -353,7 +393,7 @@ export async function saveQuoteToDb({
 
   const quote = await db.transaction(async (tx) => {
     // Row lock the user's business profile record
-    await tx.execute(sql`SELECT id FROM ${businessProfilesTable} WHERE "userId" = ${userId} FOR UPDATE`);
+    await tx.execute(sql`SELECT user_id FROM ${businessProfilesTable} WHERE user_id = ${userId} FOR UPDATE`);
 
     let numeroPreventivoData = data.numeroPreventivoData;
     if (!numeroPreventivoData) {

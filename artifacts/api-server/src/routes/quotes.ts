@@ -885,7 +885,7 @@ Scrivi il preventivo in stile OFFERTA COMMERCIALE PROFESSIONALE e PERSUASIVA:
 
     const [quote] = await db.transaction(async (tx) => {
       // Row lock the user's business profile record to prevent concurrent quote creation
-      await tx.execute(sql`SELECT id FROM ${businessProfilesTable} WHERE "userId" = ${userId} FOR UPDATE`);
+      await tx.execute(sql`SELECT user_id FROM ${businessProfilesTable} WHERE user_id = ${userId} FOR UPDATE`);
 
       const numeroPreventivoData = await generateNumeroPreventivo(userId);
 
@@ -1267,7 +1267,7 @@ router.post("/quotes/:id/duplicate", requireAuth, async (req, res) => {
 
     const [newQuote] = await db.transaction(async (tx) => {
       // Row lock the user's business profile record to prevent concurrent quote creation
-      await tx.execute(sql`SELECT id FROM ${businessProfilesTable} WHERE "userId" = ${userId} FOR UPDATE`);
+      await tx.execute(sql`SELECT user_id FROM ${businessProfilesTable} WHERE user_id = ${userId} FOR UPDATE`);
 
       const newNumeroPreventivoData = await generateNumeroPreventivo(userId);
 
@@ -3391,7 +3391,7 @@ router.post("/quotes/manual", requireAuth, async (req, res) => {
 
     const [quote] = await db.transaction(async (tx) => {
       // Row lock the user's business profile record to prevent concurrent quote creation
-      await tx.execute(sql`SELECT id FROM ${businessProfilesTable} WHERE "userId" = ${userId} FOR UPDATE`);
+      await tx.execute(sql`SELECT user_id FROM ${businessProfilesTable} WHERE user_id = ${userId} FOR UPDATE`);
 
       const numeroPreventivoData = await generateNumeroPreventivo(userId);
 

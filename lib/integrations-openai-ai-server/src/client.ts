@@ -3,10 +3,26 @@ import OpenAI from "openai";
 function buildClient(): OpenAI {
   // Option 1: Groq (fast, free, OpenAI-compatible)
   if (process.env.GROQ_API_KEY) {
-    return new OpenAI({
+    const client = new OpenAI({
       apiKey: process.env.GROQ_API_KEY,
       baseURL: "https://api.groq.com/openai/v1",
     });
+
+    // Intercept chat completions to rewrite model names for Groq compatibility
+    const originalCreate = client.chat.completions.create.bind(client.chat.completions);
+    (client.chat.completions as any).create = function (body: any, options: any) {
+      if (body.model === "gpt-4o-mini") {
+        body.model = "llama-3.3-70b-versatile";
+      } else if (body.model === "gpt-4o") {
+        const hasImages = body.messages.some((msg: any) =>
+          Array.isArray(msg.content) && msg.content.some((c: any) => c.type === "image_url")
+        );
+        body.model = hasImages ? "meta-llama/llama-4-scout-17b-16e-instruct" : "llama-3.3-70b-versatile";
+      }
+      return originalCreate(body, options);
+    };
+
+    return client;
   }
 
   // Option 2: Custom base URL (any OpenAI-compatible provider)

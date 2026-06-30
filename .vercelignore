@@ -1,0 +1,16 @@
+.git
+.local
+.agents
+node_modules
+attached_assets
+artifacts/prevai-demo-video
+**/node_modules
+**/.local
+**/.git
+**/.agents
+**/.config
+*.mp4
+*.webm
+*.pdf
+*.zip
+*.log

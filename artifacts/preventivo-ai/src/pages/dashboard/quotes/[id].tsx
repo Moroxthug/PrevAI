@@ -6,7 +6,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
-import { Download, Lock, CheckCircle2, Edit2, Save, FileText, FileSpreadsheet, ImageIcon, ChevronDown, ChevronRight, Plus, Trash2, X, Pencil, Sparkles, AlertTriangle, RefreshCw, Loader2, Copy, Star, FileDown, LayoutTemplate, Users, Mail } from "lucide-react";
+import { Download, Lock, CheckCircle2, Edit2, Save, FileText, FileSpreadsheet, ImageIcon, ChevronDown, ChevronRight, Plus, Trash2, X, Pencil, Sparkles, AlertTriangle, RefreshCw, Loader2, Copy, Star, FileDown, LayoutTemplate, Users, Mail, Hammer } from "lucide-react";
 import { useState, useRef, useEffect, Fragment } from "react";
 import { useLocation } from "wouter";
 import { format } from "date-fns";
@@ -246,6 +246,45 @@ export default function QuoteDetail() {
         }
       }
     });
+  };
+  
+  const handleAvviaCantiere = () => {
+    if (!quote) return;
+    const clientName = (quote.clientData as { nome?: string })?.nome || "Cliente Generico";
+    const budget = Number(quote.totale || 0);
+
+    const newProject = {
+      id: "p_" + Date.now(),
+      name: `Cantiere - Ristrutturazione per ${clientName}`,
+      status: "active",
+      budget: budget,
+      startDate: new Date().toISOString().split("T")[0],
+      endDate: "",
+      tasks: [
+        { id: "t_cila", title: "Verifica e deposito CILA/SCIA", dueDate: "2026-07-15", completed: false },
+        { id: "t_dep", title: "Registrazione acconto / deposito", dueDate: "2026-07-25", completed: false },
+        { id: "t_avv", title: "Allestimento cantiere e avvio lavori", dueDate: "2026-08-01", completed: false },
+      ],
+      workers: [
+        { name: "Marco Bianchi", role: "Capocantiere", hours: 0, rate: 25 },
+      ],
+      extraCosts: [],
+      invoiceStatus: "not_invoiced",
+    };
+
+    const saved = localStorage.getItem("prevai_crm_projects");
+    const list = saved ? JSON.parse(saved) : [];
+    
+    const exists = list.some((p: any) => p.name.includes(clientName));
+    if (exists) {
+      toast({ title: "Cantiere già avviato", description: "Esiste già un cantiere attivo per questo committente." });
+    } else {
+      list.unshift(newProject);
+      localStorage.setItem("prevai_crm_projects", JSON.stringify(list));
+      toast({ title: "Cantiere avviato!", description: "Il progetto è stato creato nel CRM." });
+    }
+
+    window.open("/crm", "_blank");
   };
 
   const handleRegenerate = () => {
@@ -560,6 +599,15 @@ export default function QuoteDetail() {
                 ? <Loader2 className="h-4 w-4 animate-spin" />
                 : <Mail className="h-4 w-4" />}
               Invia via email
+            </Button>
+          )}
+          {!isLocked && quote?.status === "unlocked" && (
+            <Button
+              className="gap-2 bg-gradient-to-r from-violet-600 to-indigo-600 text-white font-bold"
+              onClick={handleAvviaCantiere}
+            >
+              <Hammer className="h-4 w-4" />
+              Avvia Cantiere CRM
             </Button>
           )}
           {!quote.capitolatoPro && (

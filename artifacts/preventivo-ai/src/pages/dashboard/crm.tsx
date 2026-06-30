@@ -61,6 +61,8 @@ interface Project {
   extraCosts: { desc: string; amount: number; date: string }[];
   invoiceStatus: "not_invoiced" | "draft" | "sent";
   invoiceNum?: string;
+  materials?: { desc: string; cost: number; supplier: string; date: string }[];
+  documents?: { name: string; type: "computo" | "geometra" | "collaboratore" | "altro"; date: string }[];
 }
 
 const INITIAL_PROJECTS: Project[] = [
@@ -162,10 +164,38 @@ export default function CrmPage() {
     | "impostazioni"
   >("dashboard");
 
-  const [projects, setProjects] = useState<Project[]>(INITIAL_PROJECTS);
-  const [collaborators, setCollaborators] = useState(INITIAL_COLLABORATORS);
-  const [suppliers, setSuppliers] = useState(INITIAL_SUPPLIERS);
-  const [pratiche, setPratiche] = useState(INITIAL_PRATICHE);
+  const [projects, setProjects] = useState<Project[]>(() => {
+    const saved = typeof window !== "undefined" ? localStorage.getItem("prevai_crm_projects") : null;
+    return saved ? JSON.parse(saved) : INITIAL_PROJECTS;
+  });
+  const [collaborators, setCollaborators] = useState(() => {
+    const saved = typeof window !== "undefined" ? localStorage.getItem("prevai_crm_collaborators") : null;
+    return saved ? JSON.parse(saved) : INITIAL_COLLABORATORS;
+  });
+  const [suppliers, setSuppliers] = useState(() => {
+    const saved = typeof window !== "undefined" ? localStorage.getItem("prevai_crm_suppliers") : null;
+    return saved ? JSON.parse(saved) : INITIAL_SUPPLIERS;
+  });
+  const [pratiche, setPratiche] = useState(() => {
+    const saved = typeof window !== "undefined" ? localStorage.getItem("prevai_crm_pratiche") : null;
+    return saved ? JSON.parse(saved) : INITIAL_PRATICHE;
+  });
+
+  React.useEffect(() => {
+    localStorage.setItem("prevai_crm_projects", JSON.stringify(projects));
+  }, [projects]);
+
+  React.useEffect(() => {
+    localStorage.setItem("prevai_crm_collaborators", JSON.stringify(collaborators));
+  }, [collaborators]);
+
+  React.useEffect(() => {
+    localStorage.setItem("prevai_crm_suppliers", JSON.stringify(suppliers));
+  }, [suppliers]);
+
+  React.useEffect(() => {
+    localStorage.setItem("prevai_crm_pratiche", JSON.stringify(pratiche));
+  }, [pratiche]);
 
   // States for interactive panels
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
@@ -191,6 +221,11 @@ export default function CrmPage() {
   const [newExtraCostDesc, setNewExtraCostDesc] = useState("");
   const [newExtraCostAmount, setNewExtraCostAmount] = useState("");
   const [isInvoicing, setIsInvoicing] = useState(false);
+  const [newMaterialDesc, setNewMaterialDesc] = useState("");
+  const [newMaterialCost, setNewMaterialCost] = useState("");
+  const [newMaterialSupplier, setNewMaterialSupplier] = useState("");
+  const [newDocName, setNewDocName] = useState("");
+  const [newDocType, setNewDocType] = useState<"computo" | "geometra" | "collaboratore" | "altro">("computo");
 
   // API Config
   const [apiKey, setApiKey] = useState("fic_live_7c29a8fbc83d91ea82d3");
@@ -285,6 +320,43 @@ export default function CrmPage() {
     );
     setNewExtraCostDesc("");
     setNewExtraCostAmount("");
+  };
+
+  const handleAddMaterial = (projectId: string) => {
+    const costNum = parseFloat(newMaterialCost);
+    if (!newMaterialDesc.trim() || isNaN(costNum)) return;
+    setProjects(projects.map(p => {
+      if (p.id === projectId) {
+        return {
+          ...p,
+          materials: [
+            ...(p.materials || []),
+            { desc: newMaterialDesc, cost: costNum, supplier: newMaterialSupplier || "Generico", date: new Date().toISOString().split("T")[0] }
+          ]
+        };
+      }
+      return p;
+    }));
+    setNewMaterialDesc("");
+    setNewMaterialCost("");
+    setNewMaterialSupplier("");
+  };
+
+  const handleAddDocument = (projectId: string) => {
+    if (!newDocName.trim()) return;
+    setProjects(projects.map(p => {
+      if (p.id === projectId) {
+        return {
+          ...p,
+          documents: [
+            ...(p.documents || []),
+            { name: newDocName, type: newDocType, date: new Date().toISOString().split("T")[0] }
+          ]
+        };
+      }
+      return p;
+    }));
+    setNewDocName("");
   };
 
   const handleTriggerInvoice = (projectId: string) => {
@@ -637,6 +709,99 @@ export default function CrmPage() {
                               <span className="font-mono font-bold text-gray-600">{w.hours} h a €{w.rate}/h</span>
                             </div>
                           ))}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Materiali & Documenti Section */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-6 border-t border-gray-100">
+                      {/* Documenti Tecnici Upload */}
+                      <div className="space-y-4">
+                        <h4 className="text-xs font-black text-gray-500 uppercase tracking-widest">Documenti e Computo Metrico</h4>
+                        <div className="space-y-2">
+                          {(activeProject.documents || []).map((doc, idx) => (
+                            <div key={idx} className="flex justify-between items-center text-xs p-2.5 bg-gray-50 border border-gray-200 rounded-lg">
+                              <div>
+                                <p className="font-bold text-gray-800">{doc.name}</p>
+                                <p className="text-[10px] text-gray-400 mt-0.5">Tipo: {doc.type} | Data: {doc.date}</p>
+                              </div>
+                              <span className="text-[10px] font-bold text-violet-700 bg-violet-50 px-2 py-0.5 rounded">PDF</span>
+                            </div>
+                          ))}
+                        </div>
+
+                        {/* Upload Doc Form */}
+                        <div className="flex gap-2">
+                          <input
+                            type="text"
+                            placeholder="Nome doc (es. Computo Metrico)"
+                            value={newDocName}
+                            onChange={(e) => setNewDocName(e.target.value)}
+                            className="flex-1 bg-white border border-gray-200 rounded-lg p-2 text-xs focus:outline-none focus:ring-1 focus:ring-violet-500"
+                          />
+                          <select
+                            value={newDocType}
+                            onChange={(e) => setNewDocType(e.target.value as any)}
+                            className="bg-white border border-gray-200 rounded-lg p-2 text-xs focus:outline-none focus:ring-1 focus:ring-violet-500"
+                          >
+                            <option value="computo">Computo</option>
+                            <option value="geometra">Geometra</option>
+                            <option value="collaboratore">P. Esterno</option>
+                            <option value="altro">Altro</option>
+                          </select>
+                          <button
+                            onClick={() => handleAddDocument(activeProject.id)}
+                            className="px-3 bg-violet-600 text-white rounded-lg text-xs font-bold hover:bg-violet-750"
+                          >
+                            Carica
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Registro Materiali Comprati */}
+                      <div className="space-y-4">
+                        <h4 className="text-xs font-black text-gray-500 uppercase tracking-widest">Materiali Acquistati</h4>
+                        <div className="space-y-2">
+                          {(activeProject.materials || []).map((mat, idx) => (
+                            <div key={idx} className="flex justify-between items-center text-xs p-2.5 bg-gray-50 border border-gray-200 rounded-lg">
+                              <div>
+                                <p className="font-bold text-gray-800">{mat.desc}</p>
+                                <p className="text-[10px] text-gray-400 mt-0.5">Fornitore: {mat.supplier} | Data: {mat.date}</p>
+                              </div>
+                              <span className="font-bold text-rose-600">€{mat.cost.toLocaleString("it-IT")}</span>
+                            </div>
+                          ))}
+                        </div>
+
+                        {/* Add Material Form */}
+                        <div className="flex gap-2">
+                          <input
+                            type="text"
+                            placeholder="Materiale (es. Cemento, Tubi)"
+                            value={newMaterialDesc}
+                            onChange={(e) => setNewMaterialDesc(e.target.value)}
+                            className="flex-1 bg-white border border-gray-200 rounded-lg p-2 text-xs focus:outline-none focus:ring-1 focus:ring-violet-500"
+                          />
+                          <input
+                            type="number"
+                            placeholder="Costo €"
+                            value={newMaterialCost}
+                            onChange={(e) => setNewMaterialCost(e.target.value)}
+                            className="w-16 bg-white border border-gray-200 rounded-lg p-2 text-xs focus:outline-none focus:ring-1 focus:ring-violet-500"
+                          />
+                          <input
+                            type="text"
+                            placeholder="Fornitore"
+                            value={newMaterialSupplier}
+                            onChange={(e) => setNewMaterialSupplier(e.target.value)}
+                            className="w-20 bg-white border border-gray-200 rounded-lg p-2 text-xs focus:outline-none focus:ring-1 focus:ring-violet-500"
+                          />
+                          <button
+                            onClick={() => handleAddMaterial(activeProject.id)}
+                            className="px-3 bg-violet-600 text-white rounded-lg text-xs font-bold hover:bg-violet-750"
+                          >
+                            +
+                          </button>
                         </div>
                       </div>
                     </div>
