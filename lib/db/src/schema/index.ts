@@ -5,3 +5,5 @@ export * from "./catalog";
 export * from "./auth";
 export * from "./whatsapp";
 export * from "./documents";
+export * from "./crm";
+
