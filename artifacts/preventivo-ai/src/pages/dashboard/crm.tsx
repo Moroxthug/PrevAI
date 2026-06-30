@@ -30,10 +30,13 @@ import {
   ExternalLink,
   ChevronLeft,
   Mail,
-  Sparkles
+  Sparkles,
+  X,
+  ChevronRight
 } from "lucide-react";
 import { Logo } from "@/components/logo";
 import { Link } from "wouter";
+import { cn } from "@/lib/utils";
 
 
 // Mock Data Types
@@ -198,6 +201,15 @@ export default function CrmPage() {
   React.useEffect(() => {
     localStorage.setItem("prevai_crm_pratiche", JSON.stringify(pratiche));
   }, [pratiche]);
+
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(() => {
+    const saved = typeof window !== "undefined" ? localStorage.getItem("prevai_crm_sidebar_collapsed") : null;
+    return saved === "true";
+  });
+
+  React.useEffect(() => {
+    localStorage.setItem("prevai_crm_sidebar_collapsed", String(isSidebarCollapsed));
+  }, [isSidebarCollapsed]);
 
   // States for interactive panels
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
@@ -460,22 +472,43 @@ export default function CrmPage() {
     <div className="min-h-screen flex bg-gray-50/40 font-sans antialiased text-gray-900">
       
       {/* ── LEFT SIDEBAR (MATCHING PREVAI LAYOUT STYLE) ────────────────────── */}
-      <aside className="w-64 border-r border-gray-200 bg-white flex flex-col shrink-0 shadow-sm">
+      <aside className={cn(
+        "border-r border-gray-200 bg-white flex flex-col shrink-0 shadow-sm transition-all duration-200",
+        isSidebarCollapsed ? "w-14" : "w-64"
+      )}>
         {/* Logo Section */}
-        <div className="h-14 flex items-center px-6 border-b border-gray-150 justify-between">
-          <Link href="/dashboard" className="flex items-center">
-            <Logo />
-          </Link>
-          <span className="text-[10px] font-black bg-violet-100 text-violet-700 px-2 py-0.5 rounded uppercase tracking-wider">
-            CRM
-          </span>
+        <div className={cn("h-14 flex items-center border-b border-gray-150 justify-between", isSidebarCollapsed ? "px-2 justify-center" : "px-6")}>
+          {!isSidebarCollapsed ? (
+            <>
+              <Link href="/dashboard" className="flex items-center">
+                <Logo />
+              </Link>
+              <button
+                onClick={() => setIsSidebarCollapsed(true)}
+                className="p-1 rounded hover:bg-gray-100 text-gray-400 hover:text-gray-650 transition"
+                title="Comprimi sidebar"
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </button>
+            </>
+          ) : (
+            <button
+              onClick={() => setIsSidebarCollapsed(false)}
+              className="p-1 rounded hover:bg-gray-100 text-gray-400 hover:text-gray-650 transition"
+              title="Espandi sidebar"
+            >
+              <ChevronRight className="h-4 w-4" />
+            </button>
+          )}
         </div>
 
         {/* Sidebar Navigation Items - Individual, Clean Spacing */}
         <div className="flex-1 p-4 overflow-y-auto space-y-4">
           
           <div className="space-y-1">
-            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest px-2.5 pb-2">CRM CORE</p>
+            {!isSidebarCollapsed && (
+              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest px-2.5 pb-2">CRM CORE</p>
+            )}
             {[
               { id: "dashboard", label: "Dashboard Generale", icon: LayoutDashboard },
               { id: "cantieri", label: "Gestione Cantieri", icon: Briefcase },
@@ -490,21 +523,26 @@ export default function CrmPage() {
                 <button
                   key={item.id}
                   onClick={() => { setActiveSection(item.id as any); setSelectedProjectId(null); }}
-                  className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-semibold transition-all ${
+                  title={item.label}
+                  className={cn(
+                    "flex items-center rounded-lg text-sm font-semibold transition-all w-full",
+                    isSidebarCollapsed ? "justify-center h-9 w-9 mx-auto p-0" : "gap-3 px-3 py-2",
                     active
                       ? "text-violet-750 bg-violet-50 font-bold"
                       : "text-gray-500 hover:bg-gray-50 hover:text-gray-900"
-                  }`}
+                  )}
                 >
-                  <Icon className={`h-4 w-4 shrink-0 ${active ? "text-violet-600" : "text-gray-400"}`} />
-                  {item.label}
+                  <Icon className={cn("h-4 w-4 shrink-0", active ? "text-violet-600" : "text-gray-400")} />
+                  {!isSidebarCollapsed && <span>{item.label}</span>}
                 </button>
               );
             })}
           </div>
 
           <div className="space-y-1 pt-4 border-t border-gray-100">
-            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest px-2.5 pb-2">AMMINISTRAZIONE</p>
+            {!isSidebarCollapsed && (
+              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest px-2.5 pb-2">AMMINISTRAZIONE</p>
+            )}
             {[
               { id: "fatturazione", label: "Fatturazione Elettronica", icon: Receipt },
               { id: "pratiche", label: "Gestione Pratiche", icon: FolderOpen },
@@ -518,14 +556,17 @@ export default function CrmPage() {
                 <button
                   key={item.id}
                   onClick={() => { setActiveSection(item.id as any); setSelectedProjectId(null); }}
-                  className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-semibold transition-all ${
+                  title={item.label}
+                  className={cn(
+                    "flex items-center rounded-lg text-sm font-semibold transition-all w-full",
+                    isSidebarCollapsed ? "justify-center h-9 w-9 mx-auto p-0" : "gap-3 px-3 py-2",
                     active
                       ? "text-violet-750 bg-violet-50 font-bold"
                       : "text-gray-500 hover:bg-gray-50 hover:text-gray-900"
-                  }`}
+                  )}
                 >
-                  <Icon className={`h-4 w-4 shrink-0 ${active ? "text-violet-600" : "text-gray-400"}`} />
-                  {item.label}
+                  <Icon className={cn("h-4 w-4 shrink-0", active ? "text-violet-600" : "text-gray-400")} />
+                  {!isSidebarCollapsed && <span>{item.label}</span>}
                 </button>
               );
             })}
@@ -534,9 +575,11 @@ export default function CrmPage() {
         </div>
 
         {/* Footer info */}
-        <div className="p-4 border-t border-gray-100 text-[10px] text-gray-450 font-semibold text-center">
-          PrevAI CRM Module v1.2
-        </div>
+        {!isSidebarCollapsed && (
+          <div className="p-4 border-t border-gray-100 text-[10px] text-gray-450 font-semibold text-center">
+            PrevAI CRM Module v1.2
+          </div>
+        )}
       </aside>
 
       {/* ── MAIN WORKSPACE CONTENT AREA ────────────────────────────────────── */}
@@ -721,18 +764,20 @@ export default function CrmPage() {
                 })}
               </div>
 
-              {/* Detail view overlay/card */}
+              {/* Popup Detail Modal */}
               {activeProject && (
-                <Card className="border-gray-200 shadow-sm bg-white mt-6">
-                  <CardContent className="p-6 space-y-6">
-                    <div className="border-b border-gray-100 pb-4 flex justify-between items-start">
-                      <div>
-                        <h3 className="font-black text-gray-900 text-base">{activeProject.name}</h3>
-                        <p className="text-xs text-gray-450 mt-1">Budget allocato: €{activeProject.budget.toLocaleString("it-IT")}</p>
-                      </div>
-                      <button onClick={() => setSelectedProjectId(null)} className="text-xs text-red-500 font-bold hover:underline">
-                        Chiudi scheda
-                      </button>
+                <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-200">
+                  <div className="bg-white border border-gray-200 rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto shadow-2xl p-6 relative animate-in zoom-in-95 duration-200">
+                    <button 
+                      onClick={() => setSelectedProjectId(null)}
+                      className="absolute top-4 right-4 p-1.5 rounded-full hover:bg-gray-100 text-gray-400 hover:text-gray-700 transition"
+                      title="Chiudi"
+                    >
+                      <X className="h-5 w-5" />
+                    </button>
+                    <div className="border-b border-gray-100 pb-4 pr-8">
+                      <h3 className="font-black text-gray-900 text-base">{activeProject.name}</h3>
+                      <p className="text-xs text-gray-450 mt-1">Budget allocato: €{activeProject.budget.toLocaleString("it-IT")}</p>
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -935,8 +980,8 @@ export default function CrmPage() {
                         </div>
                       </div>
                     </div>
-                  </CardContent>
-                </Card>
+                  </div>
+                </div>
               )}
             </div>
           )}
