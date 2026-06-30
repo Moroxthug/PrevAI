@@ -28,7 +28,9 @@ import {
   Check,
   RefreshCw,
   ExternalLink,
-  ChevronLeft
+  ChevronLeft,
+  Mail,
+  Sparkles
 } from "lucide-react";
 import { Logo } from "@/components/logo";
 import { Link } from "wouter";
@@ -226,6 +228,9 @@ export default function CrmPage() {
   const [newMaterialSupplier, setNewMaterialSupplier] = useState("");
   const [newDocName, setNewDocName] = useState("");
   const [newDocType, setNewDocType] = useState<"computo" | "geometra" | "collaboratore" | "altro">("computo");
+  const [aiQuery, setAiQuery] = useState("");
+  const [aiResponse, setAiResponse] = useState("");
+  const [isAiThinking, setIsAiThinking] = useState(false);
 
   // API Config
   const [apiKey, setApiKey] = useState("fic_live_7c29a8fbc83d91ea82d3");
@@ -357,6 +362,62 @@ export default function CrmPage() {
       return p;
     }));
     setNewDocName("");
+  };
+
+  const handleAskAi = (projectId: string, type?: string) => {
+    const proj = projects.find(p => p.id === projectId);
+    if (!proj) return;
+    setIsAiThinking(true);
+    setAiResponse("");
+
+    const laborCost = proj.workers.reduce((acc, w) => acc + w.hours * w.rate, 0);
+    const extraCost = proj.extraCosts.reduce((acc, c) => acc + c.amount, 0);
+    const materialsCost = (proj.materials || []).reduce((acc, m) => acc + m.cost, 0);
+    const totalCost = laborCost + extraCost + materialsCost;
+    const margin = proj.budget - totalCost;
+    const marginPct = Math.max(0, Math.round((margin / Math.max(1, proj.budget)) * 100));
+
+    setTimeout(() => {
+      let resp = "";
+      const q = type || aiQuery.toLowerCase();
+
+      if (q.includes("margin") || q.includes("margine") || q.includes("analiz")) {
+        resp = `L'analisi finanziaria del cantiere "${proj.name}" mostra un budget totale di €${proj.budget.toLocaleString('it-IT')}.\n` +
+               `I costi ad oggi sono suddivisi in:\n` +
+               `- Manodopera: €${laborCost.toLocaleString('it-IT')}\n` +
+               `- Materiali acquistati: €${materialsCost.toLocaleString('it-IT')}\n` +
+               `- Spese extra/imprevisti: €${extraCost.toLocaleString('it-IT')}\n` +
+               `Il costo totale è di €${totalCost.toLocaleString('it-IT')}, con un margine residuo stimato di €${margin.toLocaleString('it-IT')} (${marginPct}% del budget).\n\n` +
+               `Consiglio: il margine è stabile. Cerca di monitorare gli extra costi nelle fasi finali per mantenere l'utile sopra il 30%.`;
+      } else if (q.includes("email") || q.includes("sollecito") || q.includes("letter")) {
+        resp = `Ecco una bozza di e-mail pronta per essere inviata al committente:\n\n` +
+               `--------------------------------------------------\n` +
+               `Oggetto: Stato avanzamento lavori e richiesta acconto - ${proj.name}\n\n` +
+               `Gentile Cliente,\n` +
+               `Le comunichiamo che le lavorazioni per il cantiere in oggetto stanno procedendo regolarmente.\n` +
+               `Siamo pronti ad avviare la prossima fase programmata. Come concordato nelle condizioni di pagamento del preventivo, Le chiediamo di disporre il pagamento del prossimo acconto del 30% (pari a €${(proj.budget * 0.3).toLocaleString('it-IT')}).\n\n` +
+               `Rimaniamo a disposizione per qualsiasi chiarimento.\n\n` +
+               `Cordiali saluti,\n` +
+               `PrevAI Team / Direzione Cantieri\n` +
+               `--------------------------------------------------`;
+      } else if (q.includes("opera") || q.includes("lavorat") || q.includes("ore") || q.includes("stipend")) {
+        resp = `Riepilogo ore e costi manodopera per "${proj.name}":\n` +
+               `Costo totale accumulato: €${laborCost.toLocaleString('it-IT')}.\n` +
+               `Risorse impegnate:\n` +
+               proj.workers.map(w => `- ${w.name} (${w.role}): ${w.hours} ore lavorate a €${w.rate}/ora (Totale dovuto: €${w.hours * w.rate})`).join('\n') +
+               `\n\nPuoi registrare ulteriori ore direttamente nella sezione "Gestione Lavoratori".`;
+      } else {
+        resp = `Ciao! Sono il tuo assistente PrevAI CRM. Ho analizzato i dati in tempo reale del cantiere "${proj.name}".\n\n` +
+               `Posso aiutarti a:\n` +
+               `- Analizzare la redditività e il margine (scrivi 'analizza margine')\n` +
+               `- Generare una mail di richiesta acconto (scrivi 'bozza email acconto')\n` +
+               `- Riepilogare le ore lavorate (scrivi 'riepilogo ore')\n\n` +
+               `Puoi usare anche i pulsanti rapidi qui sotto!`;
+      }
+
+      setAiResponse(resp);
+      setIsAiThinking(false);
+    }, 1200);
   };
 
   const handleTriggerInvoice = (projectId: string) => {
@@ -801,6 +862,75 @@ export default function CrmPage() {
                             className="px-3 bg-violet-600 text-white rounded-lg text-xs font-bold hover:bg-violet-750"
                           >
                             +
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* AI Project Assistant Widget */}
+                    <div className="pt-6 border-t border-gray-100 space-y-4">
+                      <div className="flex items-center gap-2">
+                        <span className="p-1 bg-violet-100 rounded-md">
+                          <Sparkles className="h-4 w-4 text-violet-600 animate-pulse" />
+                        </span>
+                        <h4 className="text-xs font-black text-violet-700 uppercase tracking-widest">
+                          Assistente Progetto PrevAI (AI)
+                        </h4>
+                      </div>
+
+                      <div className="bg-violet-50/30 border border-violet-100 rounded-xl p-4 space-y-3">
+                        {aiResponse ? (
+                          <div className="bg-white border border-gray-200 rounded-lg p-3 text-xs text-gray-800 font-medium whitespace-pre-line shadow-xs">
+                            {aiResponse}
+                          </div>
+                        ) : (
+                          <p className="text-xs text-gray-505">
+                            Chiedimi di analizzare il margine, riepilogare le ore o redigere una mail per questo cantiere.
+                          </p>
+                        )}
+
+                        <div className="flex flex-wrap gap-2">
+                          <button
+                            onClick={() => handleAskAi(activeProject.id, "margin")}
+                            disabled={isAiThinking}
+                            className="px-2.5 py-1.5 bg-white hover:bg-gray-50 text-gray-700 border border-gray-200 rounded-lg text-[10px] font-bold transition flex items-center gap-1 shadow-xs"
+                          >
+                            <TrendingUp className="h-3 w-3 text-emerald-500" />
+                            Analizza Margine
+                          </button>
+                          <button
+                            onClick={() => handleAskAi(activeProject.id, "email")}
+                            disabled={isAiThinking}
+                            className="px-2.5 py-1.5 bg-white hover:bg-gray-50 text-gray-700 border border-gray-200 rounded-lg text-[10px] font-bold transition flex items-center gap-1 shadow-xs"
+                          >
+                            <Mail className="h-3 w-3 text-blue-500" />
+                            Bozza Email Acconto
+                          </button>
+                          <button
+                            onClick={() => handleAskAi(activeProject.id, "opera")}
+                            disabled={isAiThinking}
+                            className="px-2.5 py-1.5 bg-white hover:bg-gray-50 text-gray-700 border border-gray-200 rounded-lg text-[10px] font-bold transition flex items-center gap-1 shadow-xs"
+                          >
+                            <Users className="h-3 w-3 text-amber-500" />
+                            Riepilogo Ore Lavorate
+                          </button>
+                        </div>
+
+                        <div className="flex gap-2">
+                          <input
+                            type="text"
+                            placeholder="Chiedi qualcosa all'AI su questo cantiere..."
+                            value={aiQuery}
+                            onChange={(e) => setAiQuery(e.target.value)}
+                            onKeyDown={(e) => e.key === "Enter" && handleAskAi(activeProject.id)}
+                            className="flex-1 bg-white border border-gray-200 rounded-lg p-2 text-xs focus:outline-none focus:ring-1 focus:ring-violet-500"
+                          />
+                          <button
+                            onClick={() => handleAskAi(activeProject.id)}
+                            disabled={isAiThinking}
+                            className="px-4 bg-violet-600 hover:bg-violet-700 text-white rounded-lg text-xs font-bold transition flex items-center justify-center min-w-[70px]"
+                          >
+                            {isAiThinking ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Chiedi"}
                           </button>
                         </div>
                       </div>
