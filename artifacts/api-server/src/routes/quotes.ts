@@ -819,7 +819,7 @@ Scrivi il preventivo in stile OFFERTA COMMERCIALE PROFESSIONALE e PERSUASIVA:
       };
     }
 
-    const capitoli: QuoteChapter[] = (aiData.capitoli ?? []).map((cap) => ({
+    let capitoli: QuoteChapter[] = (aiData.capitoli ?? []).map((cap) => ({
       lettera: cap.lettera ?? "A",
       titolo: cap.titolo ?? "",
       osservazione: cap.osservazione ?? "Voce ordinaria",
@@ -832,6 +832,10 @@ Scrivi il preventivo in stile OFFERTA COMMERCIALE PROFESSIONALE e PERSUASIVA:
       })),
       subtotale: Number(cap.subtotale ?? 0),
     }));
+
+    if (templateId === "arosio" || templateId === "mariagrazia") {
+      capitoli = await enrichVociDescrizioni(capitoli);
+    }
 
     const scontoRaw = aiData.sconto;
     const sconto: QuoteDiscount | null =
@@ -1419,7 +1423,7 @@ Quando usi una voce del listino, applica il prezzo unitario esatto o molto simil
       return;
     }
 
-    const capitoli: QuoteChapter[] = (aiData.capitoli ?? []).map((cap) => ({
+    let capitoli: QuoteChapter[] = (aiData.capitoli ?? []).map((cap) => ({
       lettera: cap.lettera ?? "A",
       titolo: cap.titolo ?? "",
       osservazione: cap.osservazione ?? "Voce ordinaria",
@@ -1432,6 +1436,10 @@ Quando usi una voce del listino, applica il prezzo unitario esatto o molto simil
       })),
       subtotale: Number(cap.subtotale ?? 0),
     }));
+
+    if (quote.templateId === "arosio" || quote.templateId === "mariagrazia") {
+      capitoli = await enrichVociDescrizioni(capitoli);
+    }
 
     const scontoRaw = aiData.sconto;
     const sconto: QuoteDiscount | null =

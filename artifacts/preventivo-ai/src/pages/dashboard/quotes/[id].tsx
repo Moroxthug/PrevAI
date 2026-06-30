@@ -247,6 +247,50 @@ export default function QuoteDetail() {
       }
     });
   };
+  const [regeneratingVoceKey, setRegeneratingVoceKey] = useState<string | null>(null);
+
+  const handleRegenerateSingleVoce = async (chapterIdx: number, voceIdx: number, briefTitle: string) => {
+    if (!id || !quote) return;
+    const key = `${chapterIdx}-${voceIdx}`;
+    setRegeneratingVoceKey(key);
+    try {
+      const res = await fetch("/api/quotes/suggest-item-description", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ brief: briefTitle }),
+      });
+      if (!res.ok) throw new Error();
+      const data = await res.json();
+      const newDesc = `${briefTitle}\n${data.description}`;
+
+      // Update local capitoli
+      const updatedCapitoli = (quote.capitoli ?? []).map((cap, cIdx) => {
+        if (cIdx !== chapterIdx) return cap;
+        return {
+          ...cap,
+          voci: cap.voci.map((v, vIdx) => {
+            if (vIdx !== voceIdx) return v;
+            return { ...v, descrizione: newDesc };
+          })
+        };
+      });
+
+      updateQuote.mutate({
+        id,
+        data: { capitoli: updatedCapitoli }
+      }, {
+        onSuccess: (updatedQuote) => {
+          queryClient.setQueryData(getGetQuoteQueryKey(id), updatedQuote);
+          toast({ title: "Descrizione aggiornata", description: "La descrizione professionale è stata rigenerata con successo." });
+        }
+      });
+    } catch (err) {
+      toast({ title: "Errore", description: "Impossibile rigenerare la descrizione", variant: "destructive" });
+    } finally {
+      setRegeneratingVoceKey(null);
+    }
+  };
+
   
   const handleAvviaCantiere = () => {
     if (!quote) return;
@@ -1315,7 +1359,47 @@ export default function QuoteDetail() {
                           {cap.voci.map((voce, vi) => (
                             <tr key={`${cap.lettera}-${vi}`} className={vi % 2 === 0 ? "bg-white" : "bg-slate-50"}>
                               <td className="py-2 px-3 text-center text-slate-500 font-medium">{ci + 1}.{vi + 1}</td>
-                              <td className="py-2 px-3 text-slate-700">{voce.descrizione}</td>
+                              <td className="py-3 px-3 text-slate-750 max-w-[400px]">
+                                {(() => {
+                                  const parts = voce.descrizione.split("\n");
+                                  const title = parts[0];
+                                  const professionalDesc = parts.slice(1).join("\n");
+                                  const isRegenerating = regeneratingVoceKey === `${ci}-${vi}`;
+
+                                  return (
+                                    <div className="space-y-1.5 group relative">
+                                      <div className="font-semibold text-slate-850 flex items-start justify-between gap-2">
+                                        <span>{title}</span>
+                                        <button
+                                          onClick={() => handleRegenerateSingleVoce(ci, vi, title)}
+                                          disabled={isRegenerating}
+                                          className="p-1 rounded bg-slate-100 hover:bg-violet-50 text-slate-400 hover:text-violet-650 transition opacity-0 group-hover:opacity-100 focus:opacity-100 shrink-0"
+                                          title="Rigenera descrizione professionale"
+                                        >
+                                          {isRegenerating ? (
+                                            <Loader2 className="h-3 w-3 animate-spin text-violet-600" />
+                                          ) : (
+                                            <RefreshCw className="h-3 w-3" />
+                                          )}
+                                        </button>
+                                      </div>
+                                      {professionalDesc ? (
+                                        <p className="text-[10px] text-slate-550 leading-relaxed font-normal italic bg-slate-50/50 p-2 rounded border border-slate-100/60">
+                                          {professionalDesc}
+                                        </p>
+                                      ) : (
+                                        <button
+                                          onClick={() => handleRegenerateSingleVoce(ci, vi, title)}
+                                          disabled={isRegenerating}
+                                          className="text-[9px] text-violet-600 hover:text-violet-850 font-semibold flex items-center gap-1 mt-0.5 hover:underline"
+                                        >
+                                          <Sparkles className="h-2.5 w-2.5" /> Aggiungi descrizione professionale AI
+                                        </button>
+                                      )}
+                                    </div>
+                                  );
+                                })()}
+                              </td>
                               <td className="py-2 px-2 text-center text-slate-500">{voce.um}</td>
                               <td className="py-2 px-2 text-right text-slate-600 whitespace-nowrap">{formatCurrency(voce.prezzoUnitario)}</td>
                               <td className="py-2 px-3 text-right font-medium text-slate-800 whitespace-nowrap">{formatCurrency(voce.totale)}</td>
@@ -1347,10 +1431,50 @@ export default function QuoteDetail() {
                       </tr>
                     </thead>
                     <tbody>
-                      {capitoli.flatMap((cap) => cap.voci.map(v => ({ ...v, chapter: cap.titolo }))).map((row, i) => (
+                      {capitoli.flatMap((cap, ci) => cap.voci.map((v, vi) => ({ ...v, chapter: cap.titolo, ci, vi }))).map((row, i) => (
                         <tr key={i} className={i % 2 === 0 ? "bg-white" : "bg-slate-50"}>
                           <td className="py-2 px-2 text-center font-semibold text-slate-500">{i + 1}</td>
-                          <td className="py-2 px-3 text-slate-700">{row.descrizione}</td>
+                          <td className="py-3 px-3 text-slate-750 max-w-[400px]">
+                            {(() => {
+                              const parts = row.descrizione.split("\n");
+                              const title = parts[0];
+                              const professionalDesc = parts.slice(1).join("\n");
+                              const isRegenerating = regeneratingVoceKey === `${row.ci}-${row.vi}`;
+
+                              return (
+                                <div className="space-y-1.5 group relative">
+                                  <div className="font-semibold text-slate-850 flex items-start justify-between gap-2">
+                                    <span>{title}</span>
+                                    <button
+                                      onClick={() => handleRegenerateSingleVoce(row.ci, row.vi, title)}
+                                      disabled={isRegenerating}
+                                      className="p-1 rounded bg-slate-100 hover:bg-violet-50 text-slate-400 hover:text-violet-650 transition opacity-0 group-hover:opacity-100 focus:opacity-100 shrink-0"
+                                      title="Rigenera descrizione professionale"
+                                    >
+                                      {isRegenerating ? (
+                                        <Loader2 className="h-3 w-3 animate-spin text-violet-600" />
+                                      ) : (
+                                        <RefreshCw className="h-3 w-3" />
+                                      )}
+                                    </button>
+                                  </div>
+                                  {professionalDesc ? (
+                                    <p className="text-[10px] text-slate-550 leading-relaxed font-normal italic bg-slate-50/50 p-2 rounded border border-slate-100/60">
+                                      {professionalDesc}
+                                    </p>
+                                  ) : (
+                                    <button
+                                      onClick={() => handleRegenerateSingleVoce(row.ci, row.vi, title)}
+                                      disabled={isRegenerating}
+                                      className="text-[9px] text-violet-600 hover:text-violet-850 font-semibold flex items-center gap-1 mt-0.5 hover:underline"
+                                    >
+                                      <Sparkles className="h-2.5 w-2.5" /> Aggiungi descrizione professionale AI
+                                    </button>
+                                  )}
+                                </div>
+                              );
+                            })()}
+                          </td>
                           <td className="py-2 px-2 text-center text-slate-500">{row.um}</td>
                           <td className="py-2 px-2 text-center text-slate-500">{row.quantita}</td>
                           <td className="py-2 px-2 text-right text-slate-600 whitespace-nowrap">{formatCurrency(row.prezzoUnitario)}</td>
