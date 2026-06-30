@@ -140,8 +140,8 @@ function Router() {
       <Route path="/dashboard/invoices" component={() => (
         <OnboardingGuard><DashboardLayout><DashSuspense><InvoicesPage /></DashSuspense></DashboardLayout></OnboardingGuard>
       )} />
-      <Route path="/dashboard/crm" component={() => (
-        <OnboardingGuard><DashboardLayout><DashSuspense><CrmPage /></DashSuspense></DashboardLayout></OnboardingGuard>
+      <Route path="/crm" component={() => (
+        <OnboardingGuard><DashSuspense><CrmPage /></DashSuspense></OnboardingGuard>
       )} />
       <Route path="/dashboard/documents" component={() => (
         <OnboardingGuard><DashboardLayout><DashSuspense><DocumentsPage /></DashSuspense></DashboardLayout></OnboardingGuard>

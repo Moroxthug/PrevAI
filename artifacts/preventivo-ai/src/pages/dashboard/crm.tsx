@@ -1,36 +1,38 @@
 import React, { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import {
+  LayoutDashboard,
   Briefcase,
-  Calendar,
   Users,
   TrendingUp,
+  AlertCircle,
+  Building2,
+  Receipt,
+  FolderOpen,
+  BarChart3,
+  Calendar,
+  Settings,
   Plus,
   CheckCircle2,
   DollarSign,
   Clock,
   ArrowUpRight,
-  Building2,
-  ExternalLink,
   FileText,
-  AlertCircle,
-  Trash2,
   Loader2,
   UserPlus,
   TrendingDown,
   Hammer,
-  ChevronRight,
-  Layers,
-  FileCheck,
-  Check,
-  Settings,
-  RefreshCw,
   Search,
-  SlidersHorizontal,
-  Info
+  ChevronRight,
+  Info,
+  Check,
+  RefreshCw,
+  ExternalLink,
+  ChevronLeft
 } from "lucide-react";
+import { Logo } from "@/components/logo";
 
-// Types
+// Mock Data Types
 interface Task {
   id: string;
   title: string;
@@ -57,7 +59,6 @@ interface Project {
   extraCosts: { desc: string; amount: number; date: string }[];
   invoiceStatus: "not_invoiced" | "draft" | "sent";
   invoiceNum?: string;
-  invoiceUrl?: string;
 }
 
 const INITIAL_PROJECTS: Project[] = [
@@ -71,11 +72,10 @@ const INITIAL_PROJECTS: Project[] = [
     tasks: [
       { id: "t1", title: "Approvazione Pratica Edilizia CILA", dueDate: "2026-05-02", completed: true },
       { id: "t2", title: "Posa del massetto autolivellante", dueDate: "2026-07-05", completed: false },
-      { id: "t3", title: "Finitura intonaci e tinteggiatura", dueDate: "2026-07-20", completed: false },
-      { id: "t3b", title: "Collaudo impianti tecnologici", dueDate: "2026-08-10", completed: false }
+      { id: "t3", title: "Finitura intonaci e tinteggiatura", dueDate: "2026-07-20", completed: false }
     ],
     workers: [
-      { name: "Marco Bianchi", role: "Capocantiere / Muratore", hours: 140, rate: 25 },
+      { name: "Marco Bianchi", role: "Capocantiere", hours: 140, rate: 25 },
       { name: "Alessandro Neri", role: "Elettricista", hours: 35, rate: 30 },
       { name: "Roberto Verdi", role: "Idraulico", hours: 45, rate: 30 },
     ],
@@ -123,58 +123,78 @@ const INITIAL_PROJECTS: Project[] = [
     ],
     invoiceStatus: "draft",
     invoiceNum: "FAT-2026-104",
-    invoiceUrl: "https://mock.fattureincloud.it/documenti/fatture/104"
   },
 ];
 
 const INITIAL_COLLABORATORS = [
-  { name: "Marco Bianchi", role: "Dipendente", category: "Muratore/Capocantiere", hourlyRate: 25, phone: "+39 333 445566", email: "m.bianchi@prevai.it" },
-  { name: "Alessandro Neri", role: "Collaboratore Esterno", category: "Elettricista", hourlyRate: 30, phone: "+39 347 112233", email: "a.neri@gmail.com" },
-  { name: "Roberto Verdi", role: "Collaboratore Esterno", category: "Idraulico", hourlyRate: 30, phone: "+39 349 998877", email: "r.verdi@idro.it" },
-  { name: "Luca Rossi", role: "Dipendente", category: "Cartongessista/Pintore", hourlyRate: 22, phone: "+39 328 554433", email: "l.rossi@prevai.it" },
+  { name: "Marco Bianchi", role: "Dipendente", category: "Muratore/Capocantiere", hourlyRate: 25, phone: "+39 333 445566" },
+  { name: "Alessandro Neri", role: "Collaboratore Esterno", category: "Elettricista", hourlyRate: 30, phone: "+39 347 112233" },
+  { name: "Roberto Verdi", role: "Collaboratore Esterno", category: "Idraulico", hourlyRate: 30, phone: "+39 349 998877" },
+  { name: "Luca Rossi", role: "Dipendente", category: "Cartongessista/Pintore", hourlyRate: 22, phone: "+39 328 554433" },
 ];
 
 const INITIAL_SUPPLIERS = [
-  { name: "Edilizia Moderna Spa", category: "Materiali Edili", contactInfo: "Milano - Via Dante 25", email: "ordini@edilizia.it", phone: "02 88776655" },
-  { name: "TermoIdraulica Srl", category: "Impiantistica e Tubature", contactInfo: "Torino - Corso Francia 104", email: "info@termo.it", phone: "011 4433221" },
-  { name: "ElettroForniture Nord", category: "Materiale Elettrico", contactInfo: "Bergamo - Via Roma 2", email: "sales@elettronord.it", phone: "035 998877" },
+  { name: "Edilizia Moderna Spa", category: "Materiali Edili", contactInfo: "Milano - ciao@edilizia.it", phone: "02 887766" },
+  { name: "TermoIdraulica Srl", category: "Impiantistica e Tubature", contactInfo: "Torino - info@termo.it", phone: "011 443322" },
+  { name: "ElettroForniture Nord", category: "Materiale Elettrico", contactInfo: "Bergamo - sales@elettronord.it", phone: "035 998877" },
+];
+
+const INITIAL_PRATICHE = [
+  { title: "CILA - Via Roma 45", status: "Approvata", date: "2026-05-02", prot: "CILA-2026/8892" },
+  { title: "SCIA - Ristrutturazione Condominio Aurora", status: "In Lavorazione", date: "2026-07-10", prot: "SCIA-2026/1029" },
+  { title: "Fine Lavori & APE - Residenza Verde", status: "Pronta", date: "2026-06-20", prot: "APE-251412" },
 ];
 
 export default function CrmPage() {
-  const [activeTab, setActiveTab] = useState<"panoramica" | "cantieri" | "collaboratori" | "finanze" | "fornitori">("panoramica");
+  const [activeSection, setActiveSection] = useState<
+    | "dashboard"
+    | "cantieri"
+    | "lavoratori"
+    | "finanze"
+    | "costi_extra"
+    | "fornitori"
+    | "fatturazione"
+    | "pratiche"
+    | "analytics"
+    | "calendario"
+    | "impostazioni"
+  >("dashboard");
+
   const [projects, setProjects] = useState<Project[]>(INITIAL_PROJECTS);
   const [collaborators, setCollaborators] = useState(INITIAL_COLLABORATORS);
   const [suppliers, setSuppliers] = useState(INITIAL_SUPPLIERS);
-  
-  // Selected item detail panels
+  const [pratiche, setPratiche] = useState(INITIAL_PRATICHE);
+
+  // States for interactive panels
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
   
-  // Modal / Add Form toggles
+  // Forms toggles
   const [isAddingProj, setIsAddingProj] = useState(false);
   const [isAddingCollab, setIsAddingCollab] = useState(false);
   const [isAddingSupplier, setIsAddingSupplier] = useState(false);
+  const [isAddingPratica, setIsAddingPratica] = useState(false);
 
-  // Form states
+  // New item States
   const [newProjName, setNewProjName] = useState("");
   const [newProjBudget, setNewProjBudget] = useState("");
-  
   const [newCollabName, setNewCollabName] = useState("");
-  const [newCollabRole, setNewCollabRole] = useState("Dipendente");
   const [newCollabRate, setNewCollabRate] = useState("");
   const [newCollabPhone, setNewCollabPhone] = useState("");
-
   const [newSupplierName, setNewSupplierName] = useState("");
   const [newSupplierCat, setNewSupplierCat] = useState("Materiali Edili");
-  const [newSupplierContact, setNewSupplierContact] = useState("");
+  const [newPraticaTitle, setNewPraticaTitle] = useState("");
+  const [newPraticaProt, setNewPraticaProt] = useState("");
 
-  // Sub-forms inside project hub
   const [newTaskTitle, setNewTaskTitle] = useState("");
-  const [newTaskDueDate, setNewTaskDueDate] = useState("");
   const [newExtraCostDesc, setNewExtraCostDesc] = useState("");
   const [newExtraCostAmount, setNewExtraCostAmount] = useState("");
   const [isInvoicing, setIsInvoicing] = useState(false);
 
-  // Financial aggregates
+  // API Config
+  const [apiKey, setApiKey] = useState("fic_live_7c29a8fbc83d91ea82d3");
+  const [apiSecret, setApiSecret] = useState("••••••••••••••••••••");
+
+  // Calculations
   const budgetTotale = projects.reduce((acc, p) => acc + p.budget, 0);
   const costiLavoratori = projects.reduce(
     (acc, p) => acc + p.workers.reduce((wAcc, w) => wAcc + w.hours * w.rate, 0),
@@ -184,13 +204,12 @@ export default function CrmPage() {
     (acc, p) => acc + p.extraCosts.reduce((eAcc, e) => eAcc + e.amount, 0),
     0
   );
-  const entrateCommesse = projects.filter(p => p.status === "completed" || p.status === "active").reduce((acc, p) => acc + p.budget, 0);
-  const margineNetto = entrateCommesse - costiLavoratori - costiExtraTotali;
+  const entrateTotali = projects.filter(p => p.status === "completed" || p.status === "active").reduce((acc, p) => acc + p.budget, 0);
+  const margineNetto = entrateTotali - costiLavoratori - costiExtraTotali;
 
-  // Selected project resolver
-  const activeProject = projects.find(p => p.id === selectedProjectId);
+  const activeProject = projects.find((p) => p.id === selectedProjectId);
 
-  // Add project handler
+  // Methods
   const handleCreateProject = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newProjName.trim()) return;
@@ -202,9 +221,7 @@ export default function CrmPage() {
       startDate: new Date().toISOString().split("T")[0],
       endDate: "",
       tasks: [],
-      workers: [
-        { name: "Marco Bianchi", role: "Capocantiere", hours: 0, rate: 25 },
-      ],
+      workers: [{ name: "Marco Bianchi", role: "Capocantiere", hours: 0, rate: 25 }],
       extraCosts: [],
       invoiceStatus: "not_invoiced",
     };
@@ -214,824 +231,929 @@ export default function CrmPage() {
     setIsAddingProj(false);
   };
 
-  // Add Task handler
   const handleAddTask = (projectId: string) => {
     if (!newTaskTitle.trim()) return;
-    const updated = projects.map(p => {
-      if (p.id === projectId) {
-        return {
-          ...p,
-          tasks: [
-            ...p.tasks,
-            {
-              id: "t_" + Date.now(),
-              title: newTaskTitle,
-              dueDate: newTaskDueDate || new Date().toISOString().split("T")[0],
-              completed: false,
-            }
-          ]
-        };
-      }
-      return p;
-    });
-    setProjects(updated);
+    setProjects(
+      projects.map((p) => {
+        if (p.id === projectId) {
+          return {
+            ...p,
+            tasks: [
+              ...p.tasks,
+              { id: "t_" + Date.now(), title: newTaskTitle, dueDate: "2026-07-30", completed: false },
+            ],
+          };
+        }
+        return p;
+      })
+    );
     setNewTaskTitle("");
-    setNewTaskDueDate("");
   };
 
-  // Toggle Task handler
   const handleToggleTask = (projectId: string, taskId: string) => {
-    setProjects(projects.map(p => {
-      if (p.id === projectId) {
-        return {
-          ...p,
-          tasks: p.tasks.map(t => t.id === taskId ? { ...t, completed: !t.completed } : t)
-        };
-      }
-      return p;
-    }));
+    setProjects(
+      projects.map((p) => {
+        if (p.id === projectId) {
+          return {
+            ...p,
+            tasks: p.tasks.map((t) => (t.id === taskId ? { ...t, completed: !t.completed } : t)),
+          };
+        }
+        return p;
+      })
+    );
   };
 
-  // Add Extra Cost handler
   const handleAddExtraCost = (projectId: string) => {
-    const amountNum = parseFloat(newExtraCostAmount);
-    if (!newExtraCostDesc.trim() || isNaN(amountNum)) return;
-    setProjects(projects.map(p => {
-      if (p.id === projectId) {
-        return {
-          ...p,
-          extraCosts: [
-            ...p.extraCosts,
-            { desc: newExtraCostDesc, amount: amountNum, date: new Date().toISOString().split("T")[0] }
-          ]
-        };
-      }
-      return p;
-    }));
+    const amt = parseFloat(newExtraCostAmount);
+    if (!newExtraCostDesc.trim() || isNaN(amt)) return;
+    setProjects(
+      projects.map((p) => {
+        if (p.id === projectId) {
+          return {
+            ...p,
+            extraCosts: [
+              ...p.extraCosts,
+              { desc: newExtraCostDesc, amount: amt, date: new Date().toISOString().split("T")[0] },
+            ],
+          };
+        }
+        return p;
+      })
+    );
     setNewExtraCostDesc("");
     setNewExtraCostAmount("");
   };
 
-  // Fatture in Cloud API Mock triggers
   const handleTriggerInvoice = (projectId: string) => {
     setIsInvoicing(true);
     setTimeout(() => {
-      setProjects(projects.map(p => {
-        if (p.id === projectId) {
-          return {
-            ...p,
-            invoiceStatus: "draft" as const,
-            invoiceNum: `FAT-2026-${Math.floor(100 + Math.random() * 900)}`,
-            invoiceUrl: `https://mock.fattureincloud.it/documenti/fatture`
-          };
-        }
-        return p;
-      }));
+      setProjects(
+        projects.map((p) => {
+          if (p.id === projectId) {
+            return {
+              ...p,
+              invoiceStatus: "draft" as const,
+              invoiceNum: `FAT-2026-${Math.floor(100 + Math.random() * 900)}`,
+            };
+          }
+          return p;
+        })
+      );
       setIsInvoicing(false);
     }, 1500);
   };
 
+  const handleAddPratica = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newPraticaTitle.trim()) return;
+    setPratiche([
+      ...pratiche,
+      {
+        title: newPraticaTitle,
+        status: "In Lavorazione",
+        date: new Date().toISOString().split("T")[0],
+        prot: newPraticaProt || "PROT-N/D",
+      },
+    ]);
+    setNewPraticaTitle("");
+    setNewPraticaProt("");
+    setIsAddingPratica(false);
+  };
+
   return (
-    <div className="min-h-screen bg-slate-900 text-slate-100 rounded-2xl overflow-hidden shadow-2xl border border-slate-800 animate-in fade-in duration-500">
+    <div className="min-h-screen flex bg-gray-50/40 font-sans antialiased text-gray-900">
       
-      {/* ── IMMERSIVE WORKSPACE CONTROL TOP HEADER ──────────────────────────── */}
-      <div className="bg-slate-950/80 backdrop-blur-md border-b border-slate-800 px-8 py-5 flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <div className="h-10 w-10 rounded-xl bg-gradient-to-tr from-violet-600 to-cyan-500 flex items-center justify-center shadow-lg shadow-violet-500/20">
-            <Hammer className="h-5 w-5 text-white" />
-          </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="text-[10px] font-black tracking-widest text-violet-400 uppercase bg-violet-950/50 px-2 py-0.5 rounded border border-violet-800/40">
-                PRO MODULE
-              </span>
-              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
-              <span className="text-xs text-slate-400 font-medium">Sincronizzato</span>
-            </div>
-            <h1 className="text-xl font-bold tracking-tight text-white mt-0.5">Control Panel CRM</h1>
-          </div>
+      {/* ── LEFT SIDEBAR (MATCHING PREVAI LAYOUT STYLE) ────────────────────── */}
+      <aside className="w-64 border-r border-gray-200 bg-white flex flex-col shrink-0 shadow-sm">
+        {/* Logo Section */}
+        <div className="h-14 flex items-center px-6 border-b border-gray-150 justify-between">
+          <Link href="/dashboard" className="flex items-center">
+            <Logo />
+          </Link>
+          <span className="text-[10px] font-black bg-violet-100 text-violet-700 px-2 py-0.5 rounded uppercase tracking-wider">
+            CRM
+          </span>
         </div>
 
-        {/* Integration Hub Widget */}
-        <div className="hidden lg:flex items-center gap-4 bg-slate-900 border border-slate-800 rounded-xl px-4 py-2 text-xs">
-          <div className="flex items-center gap-2">
-            <div className="h-2 w-2 rounded-full bg-emerald-500" />
-            <span className="text-slate-400 font-semibold">Fatture in Cloud:</span>
-            <span className="text-slate-200">API Connessa</span>
-          </div>
-          <button className="text-violet-400 hover:text-white transition flex items-center gap-1">
-            <RefreshCw className="h-3 w-3 animate-spin-hover" />
-            Sincronizza
-          </button>
-        </div>
-      </div>
-
-      {/* ── CRM DOCK NAVIGATION BAR ────────────────────────────────────────── */}
-      <div className="bg-slate-950/40 px-8 py-3.5 border-b border-slate-800/60 flex flex-wrap gap-2 items-center justify-between">
-        <div className="flex bg-slate-900/80 p-1 rounded-xl border border-slate-800">
-          {[
-            { id: "panoramica", label: "Dashboard", icon: Layers },
-            { id: "cantieri", label: "Gestione Cantieri", icon: Briefcase },
-            { id: "collaboratori", label: "Collaboratori & Ore", icon: Users },
-            { id: "finanze", label: "Finanze & Scadenze", icon: TrendingUp },
-            { id: "fornitori", label: "Rubrica Fornitori", icon: Building2 },
-          ].map((tab) => {
-            const Icon = tab.icon;
-            const active = activeTab === tab.id;
-            return (
-              <button
-                key={tab.id}
-                onClick={() => {
-                  setActiveTab(tab.id as any);
-                  setSelectedProjectId(null);
-                }}
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-all duration-300 ${
-                  active
-                    ? "bg-gradient-to-r from-violet-600 to-indigo-600 text-white shadow-md shadow-violet-600/10"
-                    : "text-slate-400 hover:text-white hover:bg-slate-800/40"
-                }`}
-              >
-                <Icon className="h-3.5 w-3.5" />
-                {tab.label}
-              </button>
-            );
-          })}
-        </div>
-
-        {/* Global CRM Quick Stats */}
-        <div className="flex gap-4 text-xs">
-          <div className="text-slate-400">
-            Margine Medio: <span className="font-bold text-emerald-400">€{(margineNetto / Math.max(1, projects.length)).toLocaleString("it-IT", { maximumFractionDigits: 0 })}</span>
-          </div>
-        </div>
-      </div>
-
-      {/* ── IMMERSIVE GRID LAYOUT ───────────────────────────────────────────── */}
-      <div className="p-8">
-        
-        {/* ── TAB 0: DASHBOARD PANORAMICA GENERALE ───────────────────────────── */}
-        {activeTab === "panoramica" && (
-          <div className="space-y-8 animate-in fade-in duration-300">
-            {/* Stat Cards - Immersive Glassmorphism */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              {[
-                { title: "Entrate Commesse", val: `€${entrateCommesse.toLocaleString("it-IT")}`, desc: "Cantieri in corso e conclusi", color: "from-blue-600 to-cyan-500", glow: "shadow-cyan-500/10" },
-                { title: "Margine Netto Stimato", val: `€${margineNetto.toLocaleString("it-IT")}`, desc: "Calcolato al netto dei costi", color: "from-emerald-600 to-teal-500", glow: "shadow-emerald-500/10" },
-                { title: "Costi Manodopera", val: `€${costiLavoratori.toLocaleString("it-IT")}`, desc: "Ore accumulate dipendenti", color: "from-amber-600 to-orange-500", glow: "shadow-amber-500/10" },
-                { title: "Imprevisti & Extra", val: `€${costiExtraTotali.toLocaleString("it-IT")}`, desc: "Costi fuori preventivo", color: "from-rose-600 to-red-500", glow: "shadow-rose-500/10" },
-              ].map((card, idx) => (
-                <div key={idx} className={`relative overflow-hidden rounded-2xl bg-slate-950 border border-slate-800 p-6 shadow-xl ${card.glow} hover:border-slate-700 transition duration-300`}>
-                  <div className="absolute top-0 left-0 h-1.5 w-full bg-gradient-to-r from-violet-600 to-cyan-500" />
-                  <p className="text-xs font-extrabold uppercase tracking-widest text-slate-500">{card.title}</p>
-                  <h3 className="text-3xl font-black text-white mt-2 tracking-tight">{card.val}</h3>
-                  <p className="text-xs text-slate-400 mt-2">{card.desc}</p>
-                </div>
-              ))}
-            </div>
-
-            {/* Main Interactive Workspace Grid */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-              
-              {/* Box 1: Cantieri in Corso (Progress Ring / Bars) */}
-              <div className="lg:col-span-2 bg-slate-950 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h3 className="text-base font-black text-white uppercase tracking-wider">Avanzamento Progetti</h3>
-                    <p className="text-xs text-slate-400 mt-0.5">Stato di completamento delle lavorazioni interne</p>
-                  </div>
-                  <Briefcase className="h-5 w-5 text-slate-500" />
-                </div>
-
-                <div className="space-y-6">
-                  {projects.map((p) => {
-                    const totalTasks = p.tasks.length;
-                    const doneTasks = p.tasks.filter(t => t.completed).length;
-                    const percent = totalTasks > 0 ? Math.round((doneTasks / totalTasks) * 100) : 0;
-                    
-                    return (
-                      <div key={p.id} className="space-y-2">
-                        <div className="flex justify-between items-center text-xs">
-                          <span className="font-bold text-slate-200">{p.name}</span>
-                          <span className="font-mono text-slate-400 font-bold">{percent}% ({doneTasks}/{totalTasks})</span>
-                        </div>
-                        <div className="h-2 w-full bg-slate-900 rounded-full overflow-hidden border border-slate-800">
-                          <div
-                            className="h-full bg-gradient-to-r from-violet-600 to-cyan-500 rounded-full transition-all duration-500"
-                            style={{ width: `${percent}%` }}
-                          />
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* Box 2: Scadenze critiche e Pratiche */}
-              <div className="bg-slate-950 border border-slate-800 rounded-2xl p-6 shadow-xl flex flex-col justify-between">
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h3 className="text-base font-black text-white uppercase tracking-wider">Pratiche urgenti</h3>
-                      <p className="text-xs text-slate-400 mt-0.5">Scadenze amministrative e fiscali</p>
-                    </div>
-                    <Calendar className="h-5 w-5 text-violet-500" />
-                  </div>
-
-                  <div className="space-y-3">
-                    {[
-                      { title: "Approvazione Pratica CILA", date: "02 Lug", urgent: false },
-                      { title: "Acconto 30% - Condominio Aurora", date: "10 Lug", urgent: true },
-                      { title: "F24 Ritenute d'acconto", date: "15 Lug", urgent: true },
-                      { title: "Saldo materiali Edilizia Moderna", date: "20 Lug", urgent: false }
-                    ].map((item, idx) => (
-                      <div key={idx} className="flex items-center justify-between p-3 bg-slate-900/60 rounded-xl border border-slate-850">
-                        <div className="flex items-center gap-2.5">
-                          <span className={`h-2 w-2 rounded-full ${item.urgent ? "bg-rose-500 animate-ping" : "bg-blue-500"}`} />
-                          <span className="text-xs font-semibold text-slate-200">{item.title}</span>
-                        </div>
-                        <span className="text-[10px] font-mono font-bold text-slate-500 bg-slate-950 px-2 py-0.5 rounded border border-slate-800">
-                          {item.date}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
+        {/* Sidebar Navigation Items - Individual, Clean Spacing */}
+        <div className="flex-1 p-4 overflow-y-auto space-y-4">
+          
+          <div className="space-y-1">
+            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest px-2.5 pb-2">CRM CORE</p>
+            {[
+              { id: "dashboard", label: "Dashboard Generale", icon: LayoutDashboard },
+              { id: "cantieri", label: "Gestione Cantieri", icon: Briefcase },
+              { id: "lavoratori", label: "Gestione Lavoratori", icon: Users },
+              { id: "finanze", label: "Gestione Finanze", icon: TrendingUp },
+              { id: "costi_extra", label: "Costi Extra", icon: AlertCircle },
+              { id: "fornitori", label: "Fornitori", icon: Building2 },
+            ].map((item) => {
+              const Icon = item.icon;
+              const active = activeSection === item.id;
+              return (
                 <button
-                  onClick={() => setActiveTab("finanze")}
-                  className="w-full mt-4 py-2.5 bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white rounded-xl text-xs font-bold transition flex items-center justify-center gap-1 border border-slate-800"
+                  key={item.id}
+                  onClick={() => { setActiveSection(item.id as any); setSelectedProjectId(null); }}
+                  className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-semibold transition-all ${
+                    active
+                      ? "text-violet-750 bg-violet-50 font-bold"
+                      : "text-gray-500 hover:bg-gray-50 hover:text-gray-900"
+                  }`}
                 >
-                  Vedi Scadenziario Completo
-                  <ChevronRight className="h-3.5 w-3.5" />
+                  <Icon className={`h-4 w-4 shrink-0 ${active ? "text-violet-600" : "text-gray-400"}`} />
+                  {item.label}
                 </button>
-              </div>
+              );
+            })}
+          </div>
 
+          <div className="space-y-1 pt-4 border-t border-gray-100">
+            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest px-2.5 pb-2">AMMINISTRAZIONE</p>
+            {[
+              { id: "fatturazione", label: "Fatturazione Elettronica", icon: Receipt },
+              { id: "pratiche", label: "Gestione Pratiche", icon: FolderOpen },
+              { id: "analytics", label: "KPI & Analytics", icon: BarChart3 },
+              { id: "calendario", label: "Calendario Scadenze", icon: Calendar },
+              { id: "impostazioni", label: "Impostazioni API", icon: Settings },
+            ].map((item) => {
+              const Icon = item.icon;
+              const active = activeSection === item.id;
+              return (
+                <button
+                  key={item.id}
+                  onClick={() => { setActiveSection(item.id as any); setSelectedProjectId(null); }}
+                  className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-semibold transition-all ${
+                    active
+                      ? "text-violet-750 bg-violet-50 font-bold"
+                      : "text-gray-500 hover:bg-gray-50 hover:text-gray-900"
+                  }`}
+                >
+                  <Icon className={`h-4 w-4 shrink-0 ${active ? "text-violet-600" : "text-gray-400"}`} />
+                  {item.label}
+                </button>
+              );
+            })}
+          </div>
+
+        </div>
+
+        {/* Footer info */}
+        <div className="p-4 border-t border-gray-100 text-[10px] text-gray-450 font-semibold text-center">
+          PrevAI CRM Module v1.2
+        </div>
+      </aside>
+
+      {/* ── MAIN WORKSPACE CONTENT AREA ────────────────────────────────────── */}
+      <div className="flex-1 flex flex-col overflow-y-auto">
+        
+        {/* Top Header */}
+        <header className="h-14 bg-white border-b border-gray-200 px-8 flex items-center justify-between shrink-0">
+          <div className="flex items-center gap-2">
+            <h2 className="text-base font-bold text-gray-900 uppercase tracking-wider capitalize">
+              {activeSection.replace("_", " ")}
+            </h2>
+          </div>
+          
+          <div className="flex items-center gap-4 text-xs font-semibold text-gray-500">
+            <div className="flex items-center gap-1.5 bg-green-50 text-green-700 px-2.5 py-1 rounded-full border border-green-200">
+              <span className="h-1.5 w-1.5 rounded-full bg-green-500" />
+              API Fatture in Cloud Attiva
             </div>
           </div>
-        )}
+        </header>
 
-        {/* ── TAB 1: CANTIERI (CON BANNELLI DI DETTAGLIO) ─────────────────────── */}
-        {activeTab === "cantieri" && (
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start animate-in fade-in duration-300">
-            
-            {/* Colonna di sinistra: Lista dei Cantieri e Schede */}
-            <div className="lg:col-span-2 space-y-6">
-              <div className="flex justify-between items-center bg-slate-950 p-4 rounded-xl border border-slate-800">
+        {/* Dynamic Section Contents */}
+        <main className="p-8 max-w-5xl mx-auto w-full flex-1">
+
+          {/* 1. SECTION: DASHBOARD */}
+          {activeSection === "dashboard" && (
+            <div className="space-y-6 animate-in fade-in duration-300">
+              {/* Stats Row */}
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                {[
+                  { label: "Entrate Totali", val: `€${entrateTotali.toLocaleString("it-IT")}`, icon: DollarSign, color: "text-blue-600 bg-blue-50" },
+                  { label: "Margine Operativo", val: `€${margineNetto.toLocaleString("it-IT")}`, icon: TrendingUp, color: "text-emerald-600 bg-emerald-50" },
+                  { label: "Costi Collaboratori", val: `€${costiLavoratori.toLocaleString("it-IT")}`, icon: Users, color: "text-amber-600 bg-amber-50" },
+                  { label: "Spese Impreviste", val: `€${costiExtraTotali.toLocaleString("it-IT")}`, icon: AlertCircle, color: "text-rose-600 bg-rose-50" },
+                ].map((stat, idx) => (
+                  <Card key={idx} className="border-gray-150 shadow-xs">
+                    <CardContent className="p-4 flex items-center justify-between">
+                      <div>
+                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">{stat.label}</p>
+                        <h4 className="text-xl font-extrabold text-gray-900 mt-1">{stat.val}</h4>
+                      </div>
+                      <div className={`h-8 w-8 rounded-lg flex items-center justify-center ${stat.color}`}>
+                        <stat.icon className="h-4 w-4" />
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+
+              {/* Progress and Deadlines Overview */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <Card className="border-gray-150 shadow-xs">
+                  <CardContent className="p-5 space-y-4">
+                    <h3 className="text-sm font-bold text-gray-800 uppercase tracking-wider">Avanzamento Lavori</h3>
+                    <div className="space-y-4">
+                      {projects.map((p) => {
+                        const total = p.tasks.length;
+                        const done = p.tasks.filter(t => t.completed).length;
+                        const pct = total > 0 ? Math.round((done / total) * 100) : 0;
+                        return (
+                          <div key={p.id} className="space-y-1">
+                            <div className="flex justify-between text-xs font-semibold text-gray-700">
+                              <span>{p.name}</span>
+                              <span>{pct}%</span>
+                            </div>
+                            <div className="h-2 w-full bg-gray-100 rounded-full overflow-hidden border border-gray-200">
+                              <div className="h-full bg-violet-600 rounded-full" style={{ width: `${pct}%` }} />
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card className="border-gray-150 shadow-xs">
+                  <CardContent className="p-5 space-y-4">
+                    <h3 className="text-sm font-bold text-gray-800 uppercase tracking-wider">Pratiche e CILA Attive</h3>
+                    <div className="divide-y divide-gray-150">
+                      {pratiche.map((pr, idx) => (
+                        <div key={idx} className="flex justify-between py-2.5 first:pt-0 last:pb-0 items-center text-xs">
+                          <div>
+                            <p className="font-bold text-gray-800">{pr.title}</p>
+                            <p className="text-[10px] text-gray-400 mt-0.5">{pr.prot}</p>
+                          </div>
+                          <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold ${
+                            pr.status === "Approvata" ? "bg-green-50 text-green-700 border border-green-200" :
+                            "bg-amber-50 text-amber-700 border border-amber-200"
+                          }`}>
+                            {pr.status}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            </div>
+          )}
+
+          {/* 2. SECTION: GESTIONE CANTIERI */}
+          {activeSection === "cantieri" && (
+            <div className="space-y-6 animate-in fade-in duration-300">
+              <div className="flex justify-between items-center bg-white p-4 rounded-xl border border-gray-150 shadow-xs">
                 <div>
-                  <h3 className="font-extrabold text-white">Commesse e Cantieri</h3>
-                  <p className="text-xs text-slate-500">Seleziona un cantiere per accedere al pannello operativo</p>
+                  <h3 className="font-extrabold text-gray-800">Elenco Cantieri Operativi</h3>
+                  <p className="text-xs text-gray-500">Gestisci lavorazioni, budget e assegnazioni workers</p>
                 </div>
                 <button
                   onClick={() => setIsAddingProj(true)}
-                  className="flex items-center gap-1.5 px-4 py-2 bg-gradient-to-r from-violet-600 to-indigo-600 text-white rounded-xl text-xs font-bold transition shadow-lg hover:shadow-violet-600/10"
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-violet-600 text-white rounded-lg text-xs font-bold hover:bg-violet-750 transition"
                 >
-                  <Plus className="h-4 w-4" />
-                  Nuovo Progetto
+                  <Plus className="h-4 w-4" /> Nuovo Cantiere
                 </button>
               </div>
 
-              {/* Add form */}
               {isAddingProj && (
-                <Card className="bg-slate-950 border-slate-800 text-slate-100">
-                  <CardContent className="p-5">
+                <Card className="border-violet-100 bg-violet-50/20">
+                  <CardContent className="p-4">
                     <form onSubmit={handleCreateProject} className="flex flex-col sm:flex-row gap-4 items-end">
-                      <div className="flex-1 space-y-1.5">
-                        <label className="text-xs font-bold text-slate-400 uppercase tracking-widest">Nome Cantiere / Progetto</label>
+                      <div className="flex-1 space-y-1">
+                        <label className="text-xs font-bold text-gray-600 uppercase">Nome Progetto</label>
                         <input
                           type="text"
-                          placeholder="es. Ristrutturazione Villa Bifamiliare - Cantiere Via Roma"
+                          placeholder="es. Rifacimento Facciata Condominio"
                           value={newProjName}
                           onChange={(e) => setNewProjName(e.target.value)}
-                          className="w-full bg-slate-900 border border-slate-800 text-slate-100 rounded-xl p-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-violet-500"
+                          className="w-full bg-white border border-gray-200 rounded-lg p-2 text-sm focus:outline-none focus:ring-1 focus:ring-violet-500"
                         />
                       </div>
-                      <div className="w-full sm:w-48 space-y-1.5">
-                        <label className="text-xs font-bold text-slate-400 uppercase tracking-widest">Budget Totale (€)</label>
+                      <div className="w-48 space-y-1">
+                        <label className="text-xs font-bold text-gray-600 uppercase">Budget Totale (€)</label>
                         <input
                           type="number"
-                          placeholder="es. 85000"
+                          placeholder="50000"
                           value={newProjBudget}
                           onChange={(e) => setNewProjBudget(e.target.value)}
-                          className="w-full bg-slate-900 border border-slate-800 text-slate-100 rounded-xl p-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-violet-500"
+                          className="w-full bg-white border border-gray-200 rounded-lg p-2 text-sm focus:outline-none focus:ring-1 focus:ring-violet-500"
                         />
                       </div>
-                      <div className="flex gap-2">
-                        <button
-                          type="submit"
-                          className="px-4 py-2.5 bg-violet-600 text-white rounded-xl text-sm font-bold hover:bg-violet-750 transition"
-                        >
-                          Salva
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setIsAddingProj(false)}
-                          className="px-4 py-2.5 bg-slate-900 border border-slate-800 text-slate-400 rounded-xl text-sm font-bold hover:bg-slate-800 transition"
-                        >
-                          Annulla
-                        </button>
-                      </div>
+                      <button type="submit" className="px-4 py-2 bg-violet-600 text-white rounded-lg text-sm font-bold hover:bg-violet-750">
+                        Aggiungi
+                      </button>
                     </form>
                   </CardContent>
                 </Card>
               )}
 
-              {/* Grid Cantieri */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {projects.map((p) => {
-                  const doneTasks = p.tasks.filter(t => t.completed).length;
-                  const totalTasks = p.tasks.length;
-                  const percent = totalTasks > 0 ? Math.round((doneTasks / totalTasks) * 100) : 0;
+                  const done = p.tasks.filter(t => t.completed).length;
+                  const total = p.tasks.length;
+                  const pct = total > 0 ? Math.round((done / total) * 100) : 0;
                   const isSelected = selectedProjectId === p.id;
                   
                   return (
-                    <div
+                    <Card
                       key={p.id}
-                      onClick={() => setSelectedProjectId(p.id)}
-                      className={`group relative overflow-hidden bg-slate-950 rounded-2xl p-5 border cursor-pointer transition duration-300 ${
-                        isSelected
-                          ? "border-violet-500 shadow-xl shadow-violet-500/5 bg-slate-950"
-                          : "border-slate-800 hover:border-slate-700 bg-slate-950/60"
+                      className={`border-gray-150 hover:shadow-sm transition cursor-pointer ${
+                        isSelected ? "ring-2 ring-violet-500" : ""
                       }`}
+                      onClick={() => setSelectedProjectId(p.id)}
                     >
-                      <div className="flex justify-between items-start">
-                        <span className={`px-2 py-0.5 rounded text-[10px] font-extrabold uppercase border ${
-                          p.status === "active" ? "bg-blue-950/40 text-blue-400 border-blue-900/60" :
-                          p.status === "completed" ? "bg-emerald-950/40 text-emerald-400 border-emerald-900/60" :
-                          p.status === "suspended" ? "bg-rose-950/40 text-rose-400 border-rose-900/60" :
-                          "bg-slate-900 text-slate-400 border-slate-800"
-                        }`}>
-                          {p.status === "active" ? "In Corso" : p.status === "completed" ? "Finito" : p.status === "suspended" ? "Sospeso" : "In Attesa"}
-                        </span>
-                        <span className="text-xs font-mono font-bold text-slate-200">€{p.budget.toLocaleString("it-IT")}</span>
+                      <CardContent className="p-5 space-y-4">
+                        <div className="flex justify-between items-center">
+                          <span className="text-xs font-bold text-slate-500">Stato: {p.status}</span>
+                          <span className="text-sm font-extrabold text-violet-700">€{p.budget.toLocaleString("it-IT")}</span>
+                        </div>
+                        <h4 className="font-extrabold text-gray-900 text-sm">{p.name}</h4>
+                        <div className="space-y-1 pt-2">
+                          <div className="flex justify-between text-[10px] font-bold text-gray-400 uppercase">
+                            <span>Pratiche</span>
+                            <span>{done}/{total} Complete</span>
+                          </div>
+                          <div className="h-2 w-full bg-gray-100 rounded-full overflow-hidden border border-gray-150">
+                            <div className="h-full bg-violet-600" style={{ width: `${pct}%` }} />
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  );
+                })}
+              </div>
+
+              {/* Detail view overlay/card */}
+              {activeProject && (
+                <Card className="border-gray-200 shadow-sm bg-white mt-6">
+                  <CardContent className="p-6 space-y-6">
+                    <div className="border-b border-gray-100 pb-4 flex justify-between items-start">
+                      <div>
+                        <h3 className="font-black text-gray-900 text-base">{activeProject.name}</h3>
+                        <p className="text-xs text-gray-450 mt-1">Budget allocato: €{activeProject.budget.toLocaleString("it-IT")}</p>
+                      </div>
+                      <button onClick={() => setSelectedProjectId(null)} className="text-xs text-red-500 font-bold hover:underline">
+                        Chiudi scheda
+                      </button>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      {/* Sub-tasks */}
+                      <div className="space-y-3">
+                        <h4 className="text-xs font-black text-gray-500 uppercase tracking-widest">Pratiche Cantiere</h4>
+                        <div className="space-y-2">
+                          {activeProject.tasks.map(t => (
+                            <div
+                              key={t.id}
+                              onClick={() => handleToggleTask(activeProject.id, t.id)}
+                              className="flex items-center gap-2.5 p-2.5 bg-gray-55/40 hover:bg-gray-50 rounded-lg border border-gray-200 cursor-pointer text-xs"
+                            >
+                              <div className={`h-4.5 w-4.5 rounded border flex items-center justify-center ${
+                                t.completed ? "bg-green-500 border-green-500 text-white" : "border-gray-300"
+                              }`}>
+                                {t.completed && <Check className="h-3 w-3" />}
+                              </div>
+                              <span className={t.completed ? "line-through text-gray-400" : "font-semibold text-gray-700"}>{t.title}</span>
+                            </div>
+                          ))}
+                        </div>
                       </div>
 
-                      <h4 className="text-sm font-black text-white mt-4 group-hover:text-violet-400 transition">
-                        {p.name}
-                      </h4>
-                      
-                      <div className="mt-6 space-y-2">
-                        <div className="flex justify-between text-[10px] font-bold text-slate-500 uppercase">
-                          <span>Avanzamento</span>
-                          <span>{percent}%</span>
-                        </div>
-                        <div className="h-1.5 w-full bg-slate-900 rounded-full overflow-hidden border border-slate-850">
-                          <div
-                            className="h-full bg-gradient-to-r from-violet-600 to-indigo-600 rounded-full transition-all duration-300"
-                            style={{ width: `${percent}%` }}
-                          />
+                      {/* Workers */}
+                      <div className="space-y-3">
+                        <h4 className="text-xs font-black text-gray-500 uppercase tracking-widest">Operai Assegnati</h4>
+                        <div className="space-y-2.5">
+                          {activeProject.workers.map((w, idx) => (
+                            <div key={idx} className="flex justify-between items-center text-xs p-2.5 bg-gray-50 border border-gray-200 rounded-lg">
+                              <div>
+                                <p className="font-bold text-gray-800">{w.name}</p>
+                                <p className="text-[10px] text-gray-400 mt-0.5">{w.role}</p>
+                              </div>
+                              <span className="font-mono font-bold text-gray-600">{w.hours} h a €{w.rate}/h</span>
+                            </div>
+                          ))}
                         </div>
                       </div>
                     </div>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
+          )}
+
+          {/* 3. SECTION: GESTIONE LAVORATORI */}
+          {activeSection === "lavoratori" && (
+            <div className="space-y-6 animate-in fade-in duration-300">
+              <div className="flex justify-between items-center bg-white p-4 rounded-xl border border-gray-150 shadow-xs">
+                <div>
+                  <h3 className="font-extrabold text-gray-800">Collaboratori e Ore</h3>
+                  <p className="text-xs text-slate-500">Gestisci i dipendenti dell'azienda e calcola le paghe mensili</p>
+                </div>
+                <button
+                  onClick={() => setIsAddingCollab(true)}
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-violet-600 text-white rounded-lg text-xs font-bold hover:bg-violet-750 transition"
+                >
+                  <UserPlus className="h-4 w-4" /> Aggiungi Collaboratore
+                </button>
+              </div>
+
+              {isAddingCollab && (
+                <Card className="border-violet-100 bg-violet-50/20">
+                  <CardContent className="p-4">
+                    <form
+                      onSubmit={(e) => {
+                        e.preventDefault();
+                        if (!newCollabName.trim()) return;
+                        setCollaborators([
+                          ...collaborators,
+                          {
+                            name: newCollabName,
+                            role: "Dipendente",
+                            category: "Dipendente",
+                            hourlyRate: parseFloat(newCollabRate) || 20,
+                            phone: newCollabPhone,
+                          }
+                        ]);
+                        setNewCollabName("");
+                        setNewCollabRate("");
+                        setNewCollabPhone("");
+                        setIsAddingCollab(false);
+                      }}
+                      className="grid grid-cols-1 sm:grid-cols-4 gap-4 items-end"
+                    >
+                      <div className="space-y-1">
+                        <label className="text-xs font-bold text-gray-600 uppercase">Nome e Cognome</label>
+                        <input
+                          type="text"
+                          placeholder="Marco Rossi"
+                          value={newCollabName}
+                          onChange={(e) => setNewCollabName(e.target.value)}
+                          className="w-full bg-white border border-gray-200 rounded-lg p-2 text-sm focus:outline-none focus:ring-1 focus:ring-violet-500"
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-xs font-bold text-gray-600 uppercase">Tariffa (€/ora)</label>
+                        <input
+                          type="number"
+                          placeholder="25"
+                          value={newCollabRate}
+                          onChange={(e) => setNewCollabRate(e.target.value)}
+                          className="w-full bg-white border border-gray-200 rounded-lg p-2 text-sm focus:outline-none focus:ring-1 focus:ring-violet-500"
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-xs font-bold text-gray-600 uppercase">Telefono</label>
+                        <input
+                          type="text"
+                          placeholder="+39 333..."
+                          value={newCollabPhone}
+                          onChange={(e) => setNewCollabPhone(e.target.value)}
+                          className="w-full bg-white border border-gray-200 rounded-lg p-2 text-sm focus:outline-none focus:ring-1 focus:ring-violet-500"
+                        />
+                      </div>
+                      <button type="submit" className="px-4 py-2 bg-violet-600 text-white rounded-lg text-sm font-bold hover:bg-violet-750">
+                        Salva
+                      </button>
+                    </form>
+                  </CardContent>
+                </Card>
+              )}
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                {collaborators.map((c, idx) => {
+                  const hours = projects.reduce((acc, p) => acc + (p.workers.find(w => w.name === c.name)?.hours || 0), 0);
+                  return (
+                    <Card key={idx} className="border-gray-150 shadow-xs">
+                      <CardContent className="p-5 space-y-4">
+                        <div>
+                          <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">{c.role}</span>
+                          <h4 className="font-extrabold text-gray-900 text-sm mt-1">{c.name}</h4>
+                          <p className="text-xs text-gray-500 mt-0.5">{c.phone}</p>
+                        </div>
+                        <div className="flex justify-between items-center pt-3 border-t border-gray-100 text-xs">
+                          <div>
+                            <p className="text-gray-400">Tariffa</p>
+                            <p className="font-extrabold text-gray-700 mt-0.5">€{c.hourlyRate}/h</p>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-gray-400">Ore totali</p>
+                            <p className="font-extrabold text-violet-700 mt-0.5">{hours} h</p>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
                   );
                 })}
               </div>
             </div>
+          )}
 
-            {/* Colonna di destra: Hub del Progetto (Selezionato) */}
-            <div className="lg:col-span-1">
-              {activeProject ? (
-                <div className="bg-slate-950 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-6 animate-in slide-in-from-right-4 duration-300">
-                  <div className="border-b border-slate-800 pb-4">
-                    <span className="text-[10px] font-extrabold uppercase text-violet-400 tracking-wider">Pannello Operativo</span>
-                    <h3 className="text-base font-black text-white mt-1 leading-snug">{activeProject.name}</h3>
-                    <p className="text-xs text-slate-500 mt-2">Avviato: {activeProject.startDate}</p>
-                  </div>
+          {/* 4. SECTION: GESTIONE FINANZE */}
+          {activeSection === "finanze" && (
+            <div className="space-y-6 animate-in fade-in duration-300">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <Card className="border-gray-150 bg-gradient-to-tr from-slate-900 to-slate-800 text-white shadow-sm">
+                  <CardContent className="p-5 space-y-2">
+                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Entrate Certificate</p>
+                    <h3 className="text-2xl font-black">€{entrateTotali.toLocaleString("it-IT")}</h3>
+                    <p className="text-[10px] text-slate-450">Commesse sbloccate o in corso</p>
+                  </CardContent>
+                </Card>
 
-                  {/* Tasks inside hub */}
-                  <div className="space-y-3">
-                    <h4 className="text-xs font-extrabold uppercase text-slate-400 tracking-wider flex items-center justify-between">
-                      <span>Pratiche e Scadenze</span>
-                      <span className="font-mono text-[10px]">{activeProject.tasks.filter(t => t.completed).length}/{activeProject.tasks.length}</span>
-                    </h4>
-                    
-                    <div className="space-y-2">
-                      {activeProject.tasks.map((t) => (
-                        <div
-                          key={t.id}
-                          onClick={() => handleToggleTask(activeProject.id, t.id)}
-                          className="flex items-center justify-between bg-slate-900/60 hover:bg-slate-900 border border-slate-850 hover:border-slate-800 p-3 rounded-xl cursor-pointer transition"
-                        >
-                          <div className="flex items-center gap-2.5">
-                            <div className={`h-4 w-4 rounded border flex items-center justify-center transition-all ${
-                              t.completed ? "bg-violet-600 border-violet-500 text-white" : "border-slate-700 bg-slate-950"
-                            }`}>
-                              {t.completed && <Check className="h-3 w-3" />}
-                            </div>
-                            <span className={`text-xs font-semibold ${t.completed ? "line-through text-slate-500" : "text-slate-200"}`}>
-                              {t.title}
-                            </span>
-                          </div>
-                        </div>
-                      ))}
+                <Card className="border-gray-150 shadow-xs bg-white">
+                  <CardContent className="p-5 space-y-2">
+                    <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">Margine di Cassa</p>
+                    <h3 className="text-2xl font-black text-emerald-600">€{margineNetto.toLocaleString("it-IT")}</h3>
+                    <p className="text-[10px] text-gray-500">Utile lordo stimato</p>
+                  </CardContent>
+                </Card>
 
-                      {/* Quick Add Task */}
-                      <div className="flex gap-2 pt-2">
-                        <input
-                          type="text"
-                          placeholder="Nuova pratica o lavoro..."
-                          value={newTaskTitle}
-                          onChange={(e) => setNewTaskTitle(e.target.value)}
-                          className="flex-1 bg-slate-900 border border-slate-800 rounded-lg p-2 text-xs text-white focus:outline-none focus:ring-1 focus:ring-violet-500"
-                        />
-                        <button
-                          onClick={() => handleAddTask(activeProject.id)}
-                          className="px-3 bg-violet-600 text-white rounded-lg text-xs font-bold hover:bg-violet-750"
-                        >
-                          +
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Extra Costs inside hub */}
-                  <div className="space-y-3 pt-4 border-t border-slate-900">
-                    <h4 className="text-xs font-extrabold uppercase text-slate-400 tracking-wider flex justify-between">
-                      <span>Imprevisti & Costi Extra</span>
-                      <span className="text-rose-400 font-bold">€{activeProject.extraCosts.reduce((acc, c) => acc + c.amount, 0).toLocaleString("it-IT")}</span>
-                    </h4>
-
-                    <div className="space-y-2">
-                      {activeProject.extraCosts.map((c, idx) => (
-                        <div key={idx} className="flex justify-between bg-slate-900/60 p-3 rounded-xl border border-slate-850 text-xs">
-                          <span className="font-semibold text-slate-350">{c.desc}</span>
-                          <span className="font-bold text-rose-400">- €{c.amount.toLocaleString("it-IT")}</span>
-                        </div>
-                      ))}
-
-                      {/* Quick Add Extra Cost */}
-                      <div className="flex gap-2 pt-2">
-                        <input
-                          type="text"
-                          placeholder="es. Ritiro macerie..."
-                          value={newExtraCostDesc}
-                          onChange={(e) => setNewExtraCostDesc(e.target.value)}
-                          className="flex-1 bg-slate-900 border border-slate-800 rounded-lg p-2 text-xs text-white focus:outline-none focus:ring-1 focus:ring-violet-500"
-                        />
-                        <input
-                          type="number"
-                          placeholder="Importo €"
-                          value={newExtraCostAmount}
-                          onChange={(e) => setNewExtraCostAmount(e.target.value)}
-                          className="w-20 bg-slate-900 border border-slate-800 rounded-lg p-2 text-xs text-white focus:outline-none focus:ring-1 focus:ring-violet-500"
-                        />
-                        <button
-                          onClick={() => handleAddExtraCost(activeProject.id)}
-                          className="px-3 bg-rose-600 text-white rounded-lg text-xs font-bold hover:bg-rose-750"
-                        >
-                          +
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Invoicing Integration section inside hub */}
-                  <div className="pt-4 border-t border-slate-900 space-y-3">
-                    <h4 className="text-xs font-extrabold uppercase text-slate-400 tracking-wider">
-                      Fatturazione Elettronica
-                    </h4>
-                    
-                    <div className="bg-slate-900/40 p-4 rounded-xl border border-slate-850 flex items-center justify-between gap-4">
-                      <div>
-                        {activeProject.invoiceStatus === "not_invoiced" ? (
-                          <>
-                            <h5 className="text-xs font-bold text-slate-200">Non Fatturato</h5>
-                            <p className="text-[10px] text-slate-500 mt-0.5">Bozza non registrata in contabilità.</p>
-                          </>
-                        ) : (
-                          <>
-                            <div className="flex items-center gap-1.5">
-                              <span className="px-1.5 py-0.5 bg-blue-950/80 text-blue-400 border border-blue-900/50 text-[8px] font-black rounded uppercase">BOZZA SDI</span>
-                              <h5 className="text-xs font-bold text-white">{activeProject.invoiceNum}</h5>
-                            </div>
-                            <p className="text-[10px] text-slate-500 mt-0.5">Pronta per invio SDI.</p>
-                          </>
-                        )}
-                      </div>
-
-                      {activeProject.invoiceStatus === "not_invoiced" ? (
-                        <button
-                          onClick={() => handleTriggerInvoice(activeProject.id)}
-                          disabled={isInvoicing}
-                          className="px-3 py-2 bg-gradient-to-r from-violet-600 to-indigo-600 text-white text-xs font-bold rounded-lg hover:shadow-violet-600/10 transition disabled:opacity-50 flex items-center gap-1"
-                        >
-                          {isInvoicing ? (
-                            <>
-                              <Loader2 className="h-3 w-3 animate-spin" />
-                              ...
-                            </>
-                          ) : (
-                            <>
-                              <FileText className="h-3 w-3" />
-                              Crea
-                            </>
-                          )}
-                        </button>
-                      ) : (
-                        <a
-                          href={activeProject.invoiceUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="px-3 py-2 bg-slate-900 hover:bg-slate-800 text-slate-300 text-xs font-bold rounded-lg border border-slate-800 flex items-center gap-1"
-                        >
-                          Fattura
-                          <ExternalLink className="h-2.5 w-2.5" />
-                        </a>
-                      )}
-                    </div>
-                  </div>
-
-                </div>
-              ) : (
-                <div className="bg-slate-950/40 border-2 border-dashed border-slate-800 rounded-2xl p-10 text-center text-slate-500">
-                  <Info className="h-7 w-7 text-slate-600 mx-auto mb-3" />
-                  <p className="text-xs font-medium">Seleziona un cantiere per accedere al pannello delle lavorazioni.</p>
-                </div>
-              )}
-            </div>
-
-          </div>
-        )}
-
-        {/* ── TAB 2: COLLABORATORI E STIPENDI ──────────────────────────────────── */}
-        {activeTab === "collaboratori" && (
-          <div className="space-y-6 animate-in fade-in duration-300">
-            <div className="flex justify-between items-center bg-slate-950 p-4 rounded-xl border border-slate-800">
-              <div>
-                <h3 className="font-extrabold text-white">Dipendenti e Artigiani</h3>
-                <p className="text-xs text-slate-500">Monitora i compensi in base alle ore cumulate</p>
+                <Card className="border-gray-150 shadow-xs bg-white">
+                  <CardContent className="p-5 space-y-2">
+                    <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">Totale Costi Commesse</p>
+                    <h3 className="text-2xl font-black text-rose-600">€{(costiLavoratori + costiExtraTotali).toLocaleString("it-IT")}</h3>
+                    <p className="text-[10px] text-gray-500">Paghe operaie e costi extra</p>
+                  </CardContent>
+                </Card>
               </div>
-              <button
-                onClick={() => setIsAddingCollab(true)}
-                className="flex items-center gap-1.5 px-4 py-2 bg-gradient-to-r from-violet-600 to-indigo-600 text-white rounded-xl text-xs font-bold transition shadow-lg"
-              >
-                <UserPlus className="h-4 w-4" />
-                Aggiungi Collaboratore
-              </button>
-            </div>
 
-            {/* Add Collaborator Form */}
-            {isAddingCollab && (
-              <Card className="bg-slate-950 border-slate-800 text-slate-100">
-                <CardContent className="p-5">
-                  <form
-                    onSubmit={(e) => {
-                      e.preventDefault();
-                      if (!newCollabName.trim()) return;
-                      setCollaborators([
-                        ...collaborators,
-                        {
-                          name: newCollabName,
-                          role: newCollabRole,
-                          category: "Specializzato",
-                          hourlyRate: parseFloat(newCollabRate) || 20,
-                          phone: newCollabPhone,
-                          email: "",
-                        }
-                      ]);
-                      setNewCollabName("");
-                      setNewCollabRate("");
-                      setNewCollabPhone("");
-                      setIsAddingCollab(false);
-                    }}
-                    className="grid grid-cols-1 sm:grid-cols-4 gap-4 items-end"
-                  >
-                    <div className="space-y-1.5">
-                      <label className="text-xs font-bold text-slate-400 uppercase tracking-widest">Nome e Cognome</label>
-                      <input
-                        type="text"
-                        placeholder="Giovanni Rossi"
-                        value={newCollabName}
-                        onChange={(e) => setNewCollabName(e.target.value)}
-                        className="w-full bg-slate-900 border border-slate-800 text-slate-100 rounded-xl p-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-violet-500"
-                      />
+              {/* Cashflow bar representation */}
+              <Card className="border-gray-150 shadow-xs bg-white">
+                <CardContent className="p-6 space-y-4">
+                  <h3 className="text-sm font-bold text-gray-800 uppercase tracking-wider">Flussi Finanziari Commesse</h3>
+                  <div className="space-y-4 pt-2">
+                    <div className="flex justify-between items-center text-xs">
+                      <span className="font-semibold text-gray-600">Margine Operativo ({Math.round((margineNetto / Math.max(1, entrateTotali)) * 100)}%)</span>
+                      <span className="font-bold text-emerald-600">€{margineNetto.toLocaleString("it-IT")}</span>
                     </div>
-                    <div className="space-y-1.5">
-                      <label className="text-xs font-bold text-slate-400 uppercase tracking-widest">Ruolo</label>
-                      <select
-                        value={newCollabRole}
-                        onChange={(e) => setNewCollabRole(e.target.value)}
-                        className="w-full bg-slate-900 border border-slate-800 text-slate-100 rounded-xl p-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-violet-500"
-                      >
-                        <option>Dipendente</option>
-                        <option>Collaboratore Esterno</option>
-                      </select>
+                    <div className="h-3 w-full bg-rose-100 rounded-full overflow-hidden border border-rose-200 flex">
+                      <div className="h-full bg-emerald-500" style={{ width: `${Math.max(0, (margineNetto / Math.max(1, entrateTotali)) * 100)}%` }} />
                     </div>
-                    <div className="space-y-1.5">
-                      <label className="text-xs font-bold text-slate-400 uppercase tracking-widest">Tariffa (€/ora)</label>
-                      <input
-                        type="number"
-                        placeholder="25"
-                        value={newCollabRate}
-                        onChange={(e) => setNewCollabRate(e.target.value)}
-                        className="w-full bg-slate-900 border border-slate-800 text-slate-100 rounded-xl p-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-violet-500"
-                      />
-                    </div>
-                    <div className="flex gap-2">
-                      <button
-                        type="submit"
-                        className="w-full px-4 py-2.5 bg-violet-600 text-white rounded-xl text-sm font-bold hover:bg-violet-750 transition"
-                      >
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          )}
+
+          {/* 5. SECTION: COSTI EXTRA */}
+          {activeSection === "costi_extra" && (
+            <div className="space-y-6 animate-in fade-in duration-300">
+              <div className="flex justify-between items-center bg-white p-4 rounded-xl border border-gray-150 shadow-xs">
+                <div>
+                  <h3 className="font-extrabold text-gray-800">Storico Costi Extra Cantieri</h3>
+                  <p className="text-xs text-gray-500">Visualizza tutte le spese impreviste sostenute al di fuori del preventivo iniziale</p>
+                </div>
+                <span className="text-xs font-extrabold text-rose-600 bg-rose-50 border border-rose-200 px-3 py-1 rounded-full">
+                  Speso Extra: €{costiExtraTotali.toLocaleString("it-IT")}
+                </span>
+              </div>
+
+              <div className="space-y-3">
+                {projects.map(p => 
+                  p.extraCosts.map((c, idx) => (
+                    <Card key={`${p.id}-${idx}`} className="border-gray-150 shadow-xs">
+                      <CardContent className="p-4 flex justify-between items-center text-xs font-semibold">
+                        <div>
+                          <p className="text-gray-900 font-bold">{c.desc}</p>
+                          <p className="text-[10px] text-gray-450 mt-1">Cantiere: {p.name} | Data: {c.date}</p>
+                        </div>
+                        <span className="font-bold text-rose-600">- €{c.amount.toLocaleString("it-IT")}</span>
+                      </CardContent>
+                    </Card>
+                  ))
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* 6. SECTION: FORNITORI */}
+          {activeSection === "fornitori" && (
+            <div className="space-y-6 animate-in fade-in duration-300">
+              <div className="flex justify-between items-center bg-white p-4 rounded-xl border border-gray-150 shadow-xs">
+                <div>
+                  <h3 className="font-extrabold text-gray-800">Rubrica Fornitori Partner</h3>
+                  <p className="text-xs text-gray-500">Fornitori di fiducia per materiali edili, noleggio e tecnologia</p>
+                </div>
+                <button
+                  onClick={() => setIsAddingSupplier(true)}
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-violet-600 text-white rounded-lg text-xs font-bold hover:bg-violet-750 transition"
+                >
+                  <Building2 className="h-4 w-4" /> Nuovo Fornitore
+                </button>
+              </div>
+
+              {isAddingSupplier && (
+                <Card className="border-violet-100 bg-violet-50/20">
+                  <CardContent className="p-4">
+                    <form
+                      onSubmit={(e) => {
+                        e.preventDefault();
+                        if (!newSupplierName.trim()) return;
+                        setSuppliers([
+                          ...suppliers,
+                          {
+                            name: newSupplierName,
+                            category: newSupplierCat,
+                            contactInfo: newSupplierContact,
+                            phone: "",
+                          }
+                        ]);
+                        setNewSupplierName("");
+                        setNewSupplierContact("");
+                        setIsAddingSupplier(false);
+                      }}
+                      className="flex flex-col sm:flex-row gap-4 items-end"
+                    >
+                      <div className="flex-1 space-y-1">
+                        <label className="text-xs font-bold text-gray-600 uppercase">Ragione Sociale</label>
+                        <input
+                          type="text"
+                          placeholder="es. Ferramenta Rossi S.a.s."
+                          value={newSupplierName}
+                          onChange={(e) => setNewSupplierName(e.target.value)}
+                          className="w-full bg-white border border-gray-200 rounded-lg p-2 text-sm focus:outline-none focus:ring-1 focus:ring-violet-500"
+                        />
+                      </div>
+                      <div className="w-64 space-y-1">
+                        <label className="text-xs font-bold text-gray-600 uppercase">Contatto Info</label>
+                        <input
+                          type="text"
+                          placeholder="E-mail o indirizzo..."
+                          value={newSupplierContact}
+                          onChange={(e) => setNewSupplierContact(e.target.value)}
+                          className="w-full bg-white border border-gray-200 rounded-lg p-2 text-sm focus:outline-none focus:ring-1 focus:ring-violet-500"
+                        />
+                      </div>
+                      <button type="submit" className="px-4 py-2 bg-violet-600 text-white rounded-lg text-sm font-bold hover:bg-violet-750">
                         Aggiungi
                       </button>
-                      <button
-                        type="button"
-                        onClick={() => setIsAddingCollab(false)}
-                        className="w-full px-4 py-2.5 bg-slate-900 border border-slate-800 text-slate-400 rounded-xl text-sm font-bold hover:bg-slate-800 transition"
-                      >
-                        Esci
-                      </button>
-                    </div>
-                  </form>
-                </CardContent>
-              </Card>
-            )}
+                    </form>
+                  </CardContent>
+                </Card>
+              )}
 
-            {/* List of collaborators */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              {collaborators.map((c) => {
-                const totalHours = projects.reduce(
-                  (acc, p) => acc + (p.workers.find(w => w.name === c.name)?.hours || 0),
-                  0
-                );
-                const totalPayout = totalHours * c.hourlyRate;
-                
-                return (
-                  <div key={c.name} className="bg-slate-950 border border-slate-800 rounded-2xl p-5 shadow-xl flex flex-col justify-between">
-                    <div>
-                      <div className="flex justify-between items-start">
-                        <span className="text-[10px] font-black tracking-widest text-slate-500 uppercase">{c.role}</span>
-                        <span className="font-mono text-xs font-bold text-slate-350">€{c.hourlyRate}/h</span>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                {suppliers.map((s, idx) => (
+                  <Card key={idx} className="border-gray-150 shadow-xs">
+                    <CardContent className="p-5 flex gap-3">
+                      <div className="h-9 w-9 bg-gray-100 rounded-lg flex items-center justify-center shrink-0">
+                        <Building2 className="h-4.5 w-4.5 text-gray-500" />
                       </div>
-                      <h4 className="text-sm font-black text-white mt-4">{c.name}</h4>
-                      <p className="text-xs text-slate-400 mt-1">{c.phone}</p>
-                    </div>
-
-                    <div className="mt-6 pt-4 border-t border-slate-900 flex justify-between items-center">
                       <div>
-                        <p className="text-[10px] uppercase text-slate-550 font-bold">Ore cumulate</p>
-                        <p className="text-sm font-bold text-white mt-0.5">{totalHours} h</p>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-[10px] uppercase text-slate-550 font-bold">Costo azienda</p>
-                        <p className="text-sm font-black text-violet-400 mt-0.5">€{totalPayout.toLocaleString("it-IT")}</p>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        )}
-
-        {/* ── TAB 3: FINANZE E TIMELINE DELLE SCADENZE ─────────────────────────── */}
-        {activeTab === "finanze" && (
-          <div className="space-y-6 animate-in fade-in duration-300">
-            <Card className="bg-slate-950 border-slate-800 text-slate-100">
-              <CardContent className="p-6">
-                <h3 className="text-base font-black text-white uppercase tracking-wider mb-6 flex items-center gap-2">
-                  <Calendar className="h-5 w-5 text-violet-500" />
-                  Timeline Scadenziario Fiscale & Commesse
-                </h3>
-
-                <div className="relative border-l border-slate-800 pl-6 ml-3 space-y-6">
-                  {[
-                    { date: "02 Luglio 2026", type: "Pratica", title: "Approvazione CILA - Villa Roma", completed: true },
-                    { date: "05 Luglio 2026", type: "Cantiere", title: "Posa del massetto autolivellante - Cantiere Via Roma", completed: false },
-                    { date: "10 Luglio 2026", type: "Entrata", title: "Acconto 30% - Condominio Aurora (€12.600)", completed: false },
-                    { date: "15 Luglio 2026", type: "Fiscale", title: "Versamento Ritenute d'acconto dipendenti", completed: false },
-                    { date: "20 Luglio 2026", type: "Fornitore", title: "Saldo materiali Edilizia Moderna Spa (€4.200)", completed: false },
-                  ].map((item, idx) => (
-                    <div key={idx} className="relative">
-                      {/* Timeline dot */}
-                      <div className={`absolute -left-[30px] top-1.5 h-3 w-3 rounded-full border-2 bg-slate-950 flex items-center justify-center ${
-                        item.completed ? "border-emerald-500" : "border-violet-500"
-                      }`} />
-
-                      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-1 sm:gap-6 bg-slate-900/40 p-4 rounded-xl border border-slate-850 hover:border-slate-800 transition">
-                        <div>
-                          <span className="text-[10px] font-bold text-slate-500 font-mono tracking-wider block">
-                            {item.date}
-                          </span>
-                          <h4 className="text-xs font-bold text-white mt-1">{item.title}</h4>
-                        </div>
-                        <span className={`self-start px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-widest ${
-                          item.type === "Entrata" ? "bg-emerald-950/40 text-emerald-400 border border-emerald-900/40" :
-                          item.type === "Fiscale" ? "bg-rose-950/40 text-rose-400 border border-rose-900/40" :
-                          "bg-slate-800 text-slate-400 border border-slate-700"
-                        }`}>
-                          {item.type}
+                        <h4 className="font-extrabold text-gray-900 text-sm">{s.name}</h4>
+                        <span className="inline-block text-[9px] font-bold text-violet-700 bg-violet-55/50 border border-violet-100 px-2 py-0.5 rounded-full mt-1.5 uppercase">
+                          {s.category}
                         </span>
+                        <p className="text-xs text-gray-500 mt-2">{s.contactInfo}</p>
                       </div>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        )}
-
-        {/* ── TAB 4: FORNITORI ────────────────────────────────────────────────── */}
-        {activeTab === "fornitori" && (
-          <div className="space-y-6 animate-in fade-in duration-300">
-            <div className="flex justify-between items-center bg-slate-950 p-4 rounded-xl border border-slate-800">
-              <div>
-                <h3 className="font-extrabold text-white">Anagrafica Fornitori</h3>
-                <p className="text-xs text-slate-500">Gestisci i contatti e i partner per gli acquisti di materiali</p>
+                    </CardContent>
+                  </Card>
+                ))}
               </div>
-              <button
-                onClick={() => setIsAddingSupplier(true)}
-                className="flex items-center gap-1.5 px-4 py-2 bg-gradient-to-r from-violet-600 to-indigo-600 text-white rounded-xl text-xs font-bold transition shadow-lg"
-              >
-                <Building2 className="h-4 w-4" />
-                Nuovo Fornitore
-              </button>
             </div>
+          )}
 
-            {/* Add Supplier Form */}
-            {isAddingSupplier && (
-              <Card className="bg-slate-950 border-slate-800 text-slate-100">
-                <CardContent className="p-5">
-                  <form
-                    onSubmit={(e) => {
-                      e.preventDefault();
-                      if (!newSupplierName.trim()) return;
-                      setSuppliers([
-                        ...suppliers,
-                        {
-                          name: newSupplierName,
-                          category: newSupplierCat,
-                          contactInfo: newSupplierContact,
-                          email: "",
-                          phone: "",
-                        }
-                      ]);
-                      setNewSupplierName("");
-                      setNewSupplierContact("");
-                      setIsAddingSupplier(false);
-                    }}
-                    className="grid grid-cols-1 sm:grid-cols-3 gap-4 items-end"
-                  >
-                    <div className="space-y-1.5">
-                      <label className="text-xs font-bold text-slate-400 uppercase tracking-widest">Ragione Sociale</label>
-                      <input
-                        type="text"
-                        placeholder="Edilizia Moderna S.r.l."
-                        value={newSupplierName}
-                        onChange={(e) => setNewSupplierName(e.target.value)}
-                        className="w-full bg-slate-900 border border-slate-800 text-slate-100 rounded-xl p-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-violet-500"
-                      />
-                    </div>
-                    <div className="space-y-1.5">
-                      <label className="text-xs font-bold text-slate-400 uppercase tracking-widest">Categoria</label>
-                      <input
-                        type="text"
-                        placeholder="Materiali Edili"
-                        value={newSupplierCat}
-                        onChange={(e) => setNewSupplierCat(e.target.value)}
-                        className="w-full bg-slate-900 border border-slate-800 text-slate-100 rounded-xl p-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-violet-500"
-                      />
-                    </div>
-                    <div className="flex gap-2">
-                      <button
-                        type="submit"
-                        className="w-full px-4 py-2.5 bg-violet-600 text-white rounded-xl text-sm font-bold hover:bg-violet-750 transition"
-                      >
-                        Salva
+          {/* 7. SECTION: FATTURAZIONE (Fatture in Cloud API Sync) */}
+          {activeSection === "fatturazione" && (
+            <div className="space-y-6 animate-in fade-in duration-300">
+              <div className="bg-white border border-gray-150 p-6 rounded-xl shadow-xs space-y-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="font-black text-gray-800 text-base">Integrazione API Fatture in Cloud</h3>
+                    <p className="text-xs text-gray-500 mt-0.5">Le fatture verranno inviate in bozza al tuo portale SDI</p>
+                  </div>
+                  <span className="px-2.5 py-1 bg-green-50 text-green-700 border border-green-200 text-xs font-bold rounded-full">
+                    Connesso
+                  </span>
+                </div>
+
+                {/* API Status panel */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-extrabold text-gray-400 uppercase tracking-wider">Chiave API (UID)</label>
+                    <input
+                      type="text"
+                      disabled
+                      value={apiKey}
+                      className="w-full bg-gray-50 border border-gray-150 rounded-lg p-2 text-xs font-mono text-gray-550"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-extrabold text-gray-400 uppercase tracking-wider">Secret Token</label>
+                    <input
+                      type="password"
+                      disabled
+                      value={apiSecret}
+                      className="w-full bg-gray-50 border border-gray-150 rounded-lg p-2 text-xs font-mono text-gray-550"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Invoices created list */}
+              <div className="space-y-3">
+                <h3 className="text-xs font-black text-gray-500 uppercase tracking-widest">Storico Documenti Emessi</h3>
+                {projects.filter(p => p.invoiceStatus !== "not_invoiced").map((p, idx) => (
+                  <Card key={idx} className="border-gray-150 shadow-xs">
+                    <CardContent className="p-4 flex justify-between items-center text-xs">
+                      <div>
+                        <div className="flex items-center gap-1.5">
+                          <span className="px-2 py-0.5 bg-blue-50 text-blue-700 border border-blue-150 text-[9px] font-black rounded uppercase">BOZZA</span>
+                          <span className="font-extrabold text-gray-800">{p.invoiceNum}</span>
+                        </div>
+                        <p className="text-[10px] text-gray-500 mt-1">Cantiere: {p.name}</p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="font-bold text-gray-800">€{p.budget.toLocaleString("it-IT")}</span>
+                        <a
+                          href="https://mock.fattureincloud.it/documenti/fatture"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="p-1 rounded hover:bg-gray-100 text-gray-400 hover:text-gray-700"
+                        >
+                          <ExternalLink className="h-4 w-4" />
+                        </a>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* 8. SECTION: GESTIONE PRATICHE */}
+          {activeSection === "pratiche" && (
+            <div className="space-y-6 animate-in fade-in duration-300">
+              <div className="flex justify-between items-center bg-white p-4 rounded-xl border border-gray-150 shadow-xs">
+                <div>
+                  <h3 className="font-extrabold text-gray-800">Pratiche Edilizie (CILA, SCIA, APE)</h3>
+                  <p className="text-xs text-gray-500">Archivio e scadenze dei permessi comunali</p>
+                </div>
+                <button
+                  onClick={() => setIsAddingPratica(true)}
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-violet-600 text-white rounded-lg text-xs font-bold hover:bg-violet-750 transition"
+                >
+                  <Plus className="h-4 w-4" /> Nuova Pratica
+                </button>
+              </div>
+
+              {isAddingPratica && (
+                <Card className="border-violet-100 bg-violet-50/20">
+                  <CardContent className="p-4">
+                    <form onSubmit={handleAddPratica} className="flex flex-col sm:flex-row gap-4 items-end">
+                      <div className="flex-1 space-y-1">
+                        <label className="text-xs font-bold text-gray-600 uppercase">Titolo Pratica / Immobile</label>
+                        <input
+                          type="text"
+                          placeholder="es. CILA - Via Manzoni 12"
+                          value={newPraticaTitle}
+                          onChange={(e) => setNewPraticaTitle(e.target.value)}
+                          className="w-full bg-white border border-gray-200 rounded-lg p-2 text-sm focus:outline-none focus:ring-1 focus:ring-violet-500"
+                        />
+                      </div>
+                      <div className="w-56 space-y-1">
+                        <label className="text-xs font-bold text-gray-600 uppercase">Protocollo Comune</label>
+                        <input
+                          type="text"
+                          placeholder="PROT-2026/..."
+                          value={newPraticaProt}
+                          onChange={(e) => setNewPraticaProt(e.target.value)}
+                          className="w-full bg-white border border-gray-200 rounded-lg p-2 text-sm focus:outline-none focus:ring-1 focus:ring-violet-500"
+                        />
+                      </div>
+                      <button type="submit" className="px-4 py-2 bg-violet-600 text-white rounded-lg text-sm font-bold hover:bg-violet-750">
+                        Aggiungi
                       </button>
-                      <button
-                        type="button"
-                        onClick={() => setIsAddingSupplier(false)}
-                        className="w-full px-4 py-2.5 bg-slate-900 border border-slate-800 text-slate-400 rounded-xl text-sm font-bold hover:bg-slate-800 transition"
-                      >
-                        Esci
-                      </button>
-                    </div>
-                  </form>
+                    </form>
+                  </CardContent>
+                </Card>
+              )}
+
+              <div className="space-y-3">
+                {pratiche.map((p, idx) => (
+                  <Card key={idx} className="border-gray-150 shadow-xs">
+                    <CardContent className="p-4 flex justify-between items-center text-xs font-semibold">
+                      <div>
+                        <p className="text-gray-900 font-bold">{p.title}</p>
+                        <p className="text-[10px] text-gray-450 mt-1">Prot: {p.prot} | Data: {p.date}</p>
+                      </div>
+                      <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold ${
+                        p.status === "Approvata" ? "bg-green-50 text-green-700 border border-green-200" :
+                        "bg-amber-50 text-amber-700 border border-amber-200"
+                      }`}>
+                        {p.status}
+                      </span>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* 9. SECTION: ANALYTICS & KPI */}
+          {activeSection === "analytics" && (
+            <div className="space-y-6 animate-in fade-in duration-300">
+              <Card className="border-gray-150 shadow-xs">
+                <CardContent className="p-6 space-y-6">
+                  <h3 className="text-sm font-bold text-gray-800 uppercase tracking-wider">Marginalità dei Cantieri</h3>
+                  
+                  <div className="space-y-4">
+                    {projects.map(p => {
+                      const cost = p.workers.reduce((acc, w) => acc + w.hours * w.rate, 0) + p.extraCosts.reduce((acc, c) => acc + c.amount, 0);
+                      const margin = p.budget - cost;
+                      const pct = Math.max(0, Math.round((margin / Math.max(1, p.budget)) * 100));
+                      
+                      return (
+                        <div key={p.id} className="space-y-2">
+                          <div className="flex justify-between items-center text-xs">
+                            <span className="font-bold text-gray-800">{p.name}</span>
+                            <span className="font-bold text-emerald-600">{pct}% Margine (Utile: €{margin.toLocaleString("it-IT")})</span>
+                          </div>
+                          <div className="h-3 w-full bg-gray-100 rounded-full border border-gray-150 overflow-hidden flex">
+                            <div className="h-full bg-emerald-500 rounded-full" style={{ width: `${pct}%` }} />
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
                 </CardContent>
               </Card>
-            )}
-
-            {/* List of suppliers */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {suppliers.map((s, idx) => (
-                <div key={idx} className="bg-slate-950 border border-slate-800 rounded-2xl p-5 shadow-xl flex items-start gap-4 hover:border-slate-700 transition">
-                  <div className="h-10 w-10 bg-slate-900 border border-slate-800 flex items-center justify-center rounded-xl shrink-0">
-                    <Building2 className="h-5 w-5 text-slate-400" />
-                  </div>
-                  <div className="space-y-1">
-                    <h4 className="font-extrabold text-white text-sm">{s.name}</h4>
-                    <span className="inline-block text-[9px] font-black tracking-widest text-violet-400 bg-violet-950/40 border border-violet-900/40 px-2.5 py-0.5 rounded-full uppercase">
-                      {s.category}
-                    </span>
-                    <p className="text-xs text-slate-400 pt-3">{s.contactInfo}</p>
-                  </div>
-                </div>
-              ))}
             </div>
-          </div>
-        )}
+          )}
 
+          {/* 10. SECTION: CALENDARIO SCADENZE */}
+          {activeSection === "calendario" && (
+            <div className="space-y-6 animate-in fade-in duration-300">
+              <Card className="border-gray-150 shadow-xs">
+                <CardContent className="p-6">
+                  <h3 className="text-sm font-bold text-gray-850 uppercase tracking-wider mb-5">Scadenze Cronologiche</h3>
+                  <div className="relative border-l border-gray-200 pl-6 ml-3 space-y-6">
+                    {[
+                      { date: "02 Luglio 2026", type: "Pratica", title: "Approvazione CILA - Villa Roma" },
+                      { date: "05 Luglio 2026", type: "Cantiere", title: "Posa del massetto autolivellante - Cantiere Via Roma" },
+                      { date: "10 Luglio 2026", type: "Fattura", title: "Acconto 30% - Condominio Aurora" },
+                      { date: "15 Luglio 2026", type: "Tasse", title: "F24 Ritenute d'acconto dipendenti" },
+                    ].map((item, idx) => (
+                      <div key={idx} className="relative">
+                        <div className="absolute -left-[30px] top-1.5 h-3 w-3 rounded-full border-2 border-violet-500 bg-white" />
+                        <div className="flex justify-between items-start bg-gray-50/50 p-4 rounded-xl border border-gray-150 hover:border-gray-200 transition">
+                          <div>
+                            <span className="text-[9px] font-bold text-gray-400 block">{item.date}</span>
+                            <h4 className="text-xs font-bold text-gray-800 mt-1">{item.title}</h4>
+                          </div>
+                          <span className="px-2 py-0.5 bg-slate-100 text-slate-600 rounded text-[9px] font-bold uppercase">{item.type}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          )}
+
+          {/* 11. SECTION: IMPOSTAZIONI API */}
+          {activeSection === "impostazioni" && (
+            <div className="space-y-6 animate-in fade-in duration-300">
+              <Card className="border-gray-150 shadow-xs bg-white">
+                <CardContent className="p-6 space-y-5">
+                  <div>
+                    <h3 className="font-bold text-gray-800 text-sm uppercase tracking-wider">Chiavi API Fatture in Cloud</h3>
+                    <p className="text-xs text-gray-500 mt-0.5">Configura le chiavi di integrazione ufficiale per la trasmissione dei documenti</p>
+                  </div>
+                  <div className="space-y-4">
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-bold text-gray-650 uppercase">UID API KEY</label>
+                      <input
+                        type="text"
+                        value={apiKey}
+                        onChange={(e) => setApiKey(e.target.value)}
+                        className="w-full bg-white border border-gray-200 rounded-lg p-2.5 text-xs font-mono focus:outline-none focus:ring-1 focus:ring-violet-500"
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-bold text-gray-650 uppercase">SECRET TOKEN</label>
+                      <input
+                        type="text"
+                        value={apiSecret}
+                        onChange={(e) => setApiSecret(e.target.value)}
+                        className="w-full bg-white border border-gray-200 rounded-lg p-2.5 text-xs font-mono focus:outline-none focus:ring-1 focus:ring-violet-500"
+                      />
+                    </div>
+                    <button className="px-4 py-2.5 bg-violet-600 text-white rounded-xl text-xs font-bold hover:bg-violet-750 transition shadow-sm">
+                      Salva Configurazione
+                    </button>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          )}
+
+        </main>
       </div>
+
     </div>
   );
 }

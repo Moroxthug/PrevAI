@@ -1,5 +1,5 @@
 import { Link, useLocation } from "wouter";
-import { LayoutDashboard, FileText, Menu, BarChart3, Settings, ChevronLeft, ChevronRight, Plus, LogOut, User, CreditCard, Building2, ChevronDown, BookOpen, Users, Receipt, Briefcase, FolderOpen } from "lucide-react";
+import { LayoutDashboard, FileText, Menu, BarChart3, Settings, ChevronLeft, ChevronRight, Plus, LogOut, User, CreditCard, Building2, ChevronDown, BookOpen, Users, Receipt, Briefcase, FolderOpen, ArrowUpRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger, SheetTitle } from "@/components/ui/sheet";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
@@ -19,7 +19,7 @@ const BASE_NAV_ITEMS = [
   { href: "/dashboard/analytics", label: "Analytics", icon: BarChart3, exact: false, proOnly: false, comingSoon: false },
   { href: "/dashboard/catalog", label: "Listino", icon: BookOpen, exact: false, proOnly: true, comingSoon: false },
   { href: "/dashboard/invoices", label: "Fatture", icon: Receipt, exact: false, proOnly: false, comingSoon: true },
-  { href: "/dashboard/crm", label: "CRM", icon: Briefcase, exact: false, proOnly: false, comingSoon: true },
+  { href: "/crm", label: "CRM", icon: Briefcase, exact: false, proOnly: false, comingSoon: false, external: true },
   { href: "/dashboard/documents", label: "Archivio", icon: FolderOpen, exact: false, proOnly: false, comingSoon: false },
   { href: "/dashboard/settings", label: "Impostazioni", icon: Settings, exact: false, proOnly: false, comingSoon: false },
 ];
@@ -186,7 +186,28 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
     <nav className="flex flex-col gap-0.5">
       {NAV_ITEMS.map((item) => {
         const active = isActive(item.href, location, item.exact);
-        const link = (
+        const link = item.external ? (
+          <a
+            key={item.href}
+            href={item.href}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={onClick}
+            className={cn(
+              "flex items-center rounded-lg transition-all",
+              collapsed ? "justify-center h-9 w-9 mx-auto" : "gap-2.5 px-2.5 py-2",
+              "text-sm font-medium text-gray-500 hover:bg-gray-50 hover:text-gray-900"
+            )}
+          >
+            <item.icon className="h-4 w-4 shrink-0 text-gray-400" />
+            {!collapsed && (
+              <span className="flex-1 text-sm">{item.label}</span>
+            )}
+            {!collapsed && (
+              <ArrowUpRight className="h-3.5 w-3.5 text-gray-400 shrink-0 ml-1 opacity-70" />
+            )}
+          </a>
+        ) : (
           <Link
             key={item.href}
             href={item.href}
