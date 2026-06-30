@@ -31,6 +31,8 @@ import {
   ChevronLeft
 } from "lucide-react";
 import { Logo } from "@/components/logo";
+import { Link } from "wouter";
+
 
 // Mock Data Types
 interface Task {
