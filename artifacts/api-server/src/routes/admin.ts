@@ -11,7 +11,7 @@ import { PRICE_TO_PLAN } from "./payments.js";
 const router = Router();
 
 async function isAdmin(req: Request): Promise<boolean> {
-  const adminEmail = process.env.ADMIN_EMAIL;
+  const adminEmail = process.env.ADMIN_EMAIL || process.env.admin_email;
   if (!adminEmail) return false;
   try {
     const session = await auth.api.getSession({ headers: fromNodeHeaders(req.headers) });
