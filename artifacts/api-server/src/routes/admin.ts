@@ -5,6 +5,9 @@ import { db, quotesTable, businessProfilesTable, settingsTable, authUsersTable }
 import { eq, sql, desc, count, inArray } from "drizzle-orm";
 import { logger } from "../lib/logger";
 import { getUncachableStripeClient } from "../stripeClient";
+import crypto from "crypto";
+import { readFileSync, existsSync } from "fs";
+import path from "path";
 
 import { PRICE_TO_PLAN } from "./payments.js";
 
@@ -392,66 +395,145 @@ router.get("/admin/quote-stats", async (_req, res) => {
   }
 });
 
-router.get("/admin/seo-audit", async (_req, res) => {
+// --- Real SEO Audit Engine Helpers ---
+async function getPageHtml(pageUrl: string, reqOrigin: string): Promise<string> {
+  const pathsToTry = [
+    path.join(process.cwd(), "artifacts/preventivo-ai/dist/public", pageUrl === "/" ? "index.html" : `${pageUrl.replace(/\/$/, "")}/index.html`),
+    path.join(process.cwd(), "../preventivo-ai/dist/public", pageUrl === "/" ? "index.html" : `${pageUrl.replace(/\/$/, "")}/index.html`),
+    path.join(process.cwd(), "dist/public", pageUrl === "/" ? "index.html" : `${pageUrl.replace(/\/$/, "")}/index.html`),
+    path.join(process.cwd(), "public", pageUrl === "/" ? "index.html" : `${pageUrl.replace(/\/$/, "")}/index.html`),
+  ];
+
+  for (const p of pathsToTry) {
+    if (existsSync(p)) {
+      try {
+        return readFileSync(p, "utf-8");
+      } catch (e) {
+        logger.error({ err: e, path: p }, "Failed to read local file");
+      }
+    }
+  }
+
+  // Fallback to HTTP fetch
+  const fullUrl = `${reqOrigin}${pageUrl}`;
   try {
-    // Perform a realistic SEO check on the main page types
+    const res = await fetch(fullUrl);
+    if (res.ok) {
+      return await res.text();
+    }
+  } catch (err) {
+    logger.warn({ err, fullUrl }, "Failed to fetch page HTML via HTTP fallback");
+  }
+
+  throw new Error(`Page HTML not found locally or via HTTP for path: ${pageUrl}`);
+}
+
+function parseHtmlSeo(html: string) {
+  const titleMatch = html.match(/<title>([\s\S]*?)<\/title>/i);
+  const title = titleMatch ? titleMatch[1].trim() : "";
+
+  const descMatch = html.match(/<meta\s+name=["']description["']\s+content=["']([\s\S]*?)["']/i) ||
+                    html.match(/<meta\s+content=["']([\s\S]*?)["']\s+name=["']description["']/i);
+  const description = descMatch ? descMatch[1].trim() : "";
+
+  const h1Matches = [...html.matchAll(/<h1[^>]*>([\s\S]*?)<\/h1>/gi)];
+  const h1 = h1Matches.length > 0 ? h1Matches[0][1].replace(/<[^>]*>/g, "").trim() : "";
+
+  const imgTags = [...html.matchAll(/<img\s+([\s\S]*?)>/gi)];
+  let missingAlt = 0;
+  for (const tag of imgTags) {
+    const attrs = tag[1];
+    if (!/alt=["']/i.test(attrs) || /alt=["']\s*["']/i.test(attrs)) {
+      missingAlt++;
+    }
+  }
+
+  const ogTitle = (html.match(/<meta\s+property=["']og:title["']\s+content=["']([\s\S]*?)["']/i) || [])[1] || "";
+  const ogImage = (html.match(/<meta\s+property=["']og:image["']\s+content=["']([\s\S]*?)["']/i) || [])[1] || "";
+
+  let score = 100;
+  const issues: string[] = [];
+
+  if (!title) {
+    score -= 20;
+    issues.push("Tag <title> mancante");
+  } else if (title.length < 30 || title.length > 65) {
+    score -= 10;
+    issues.push(`Lunghezza titolo non ottimale (${title.length} caratteri). Consigliato 30-65.`);
+  }
+
+  if (!description) {
+    score -= 20;
+    issues.push("Meta description mancante");
+  } else if (description.length < 120 || description.length > 160) {
+    score -= 10;
+    issues.push(`Lunghezza descrizione non ottimale (${description.length} caratteri). Consigliato 120-160.`);
+  }
+
+  if (h1Matches.length === 0) {
+    score -= 15;
+    issues.push("Tag <h1> mancante");
+  } else if (h1Matches.length > 1) {
+    score -= 10;
+    issues.push(`Rilevati multipli tag <h1> (${h1Matches.length}). Consigliato solo uno.`);
+  }
+
+  if (missingAlt > 0) {
+    score -= Math.min(15, missingAlt * 3);
+    issues.push(`${missingAlt} immagini senza attributo 'alt' compilato`);
+  }
+
+  if (!ogTitle || !ogImage) {
+    score -= 5;
+    issues.push("Tag OpenGraph per social media incompleti o mancanti");
+  }
+
+  return {
+    title,
+    description,
+    h1,
+    score: Math.max(0, score),
+    issues,
+  };
+}
+
+router.get("/admin/seo-audit", async (req, res) => {
+  try {
     const auditPages = [
-      { url: "/", name: "Homepage", type: "static" },
-      { url: "/blog", name: "Blog Index", type: "static" },
-      { url: "/preventivi/idraulico", name: "Land. Idraulico", type: "sector" },
-      { url: "/preventivi/elettricista", name: "Land. Elettricista", type: "sector" },
-      { url: "/preventivi/muratore", name: "Land. Muratore", type: "sector" },
-      { url: "/preventivi/pittore", name: "Land. Pittore", type: "sector" },
-      { url: "/preventivi/infissi", name: "Land. Infissi", type: "sector" },
-      { url: "/preventivi/roma", name: "Land. Roma", type: "city" },
-      { url: "/preventivi/milano", name: "Land. Milano", type: "city" },
+      { url: "/", name: "Homepage" },
+      { url: "/blog", name: "Blog Index" },
+      { url: "/preventivi/imbianchino", name: "Land. Imbianchini" },
+      { url: "/preventivi/elettricista", name: "Land. Elettricisti" },
+      { url: "/preventivi/idraulico", name: "Land. Idraulici" },
+      { url: "/preventivi/muratore", name: "Land. Muratori" },
+      { url: "/preventivi/ristrutturazione/roma", name: "Roma Ristrutturazioni" },
+      { url: "/preventivi/ristrutturazione/milano", name: "Milano Ristrutturazioni" },
     ];
 
-    const results = auditPages.map(page => {
-      // Simulate real SEO check analysis
-      let title = "";
-      let description = "";
-      let h1 = "";
-      let issues: string[] = [];
-      let score = 100;
-
-      if (page.url === "/") {
-        title = "PrevAI - Preventivi Professionali con Intelligenza Artificiale";
-        description = "Genera preventivi professionali per artigiani e piccole imprese in 60 secondi con l'AI.";
-        h1 = "Preventivi professionali in 60 secondi con l'AI";
-        // Check lengths
-        if (description.length > 160) { score -= 10; issues.push("Meta description leggermente lunga"); }
-      } else if (page.type === "sector") {
-        const sector = page.url.split("/").pop();
-        title = `Modello Preventivo ${sector?.charAt(0).toUpperCase()}${sector?.slice(1)} Excel e PDF`;
-        description = `Scarica il modello di preventivo per ${sector} pronto all'uso o digitalizzalo gratis con l'Intelligenza Artificiale di PrevAI.`;
-        h1 = `Modello Preventivo ${sector?.charAt(0).toUpperCase()}${sector?.slice(1)}`;
-      } else if (page.type === "city") {
-        const city = page.url.split("/").pop();
-        title = `Preventivi Artigiani a ${city?.charAt(0).toUpperCase()}${city?.slice(1)} | PrevAI`;
-        description = `Cerca e confronta preventivi o genera il tuo preventivo a ${city?.charAt(0).toUpperCase()}${city?.slice(1)} in pochi clic.`;
-        h1 = `Preventivi professionali a ${city?.charAt(0).toUpperCase()}${city?.slice(1)}`;
-        score -= 15;
-        issues.push("Meta description troppo breve (< 120 caratteri)");
-        issues.push("Mancano tag alt su alcune immagini della città");
-      } else {
-        title = "Blog di PrevAI - Consigli per Artigiani e PMI";
-        description = "Notizie, guide e aggiornamenti su come gestire la fatturazione, i preventivi e i clienti per la tua attività.";
-        h1 = "Il Blog di PrevAI";
-        score -= 5;
-        issues.push("Manca tag OpenGraph per l'immagine di copertina");
-      }
-
-      return {
-        url: page.url,
-        name: page.name,
-        score,
-        title,
-        description,
-        h1,
-        issues,
-      };
-    });
+    const origin = `${req.protocol}://${req.headers.host}`;
+    const results = await Promise.all(
+      auditPages.map(async (page) => {
+        try {
+          const html = await getPageHtml(page.url, origin);
+          const seo = parseHtmlSeo(html);
+          return {
+            url: page.url,
+            name: page.name,
+            ...seo,
+          };
+        } catch (e: any) {
+          return {
+            url: page.url,
+            name: page.name,
+            score: 0,
+            title: "Errore di lettura",
+            description: "",
+            h1: "",
+            issues: [`Impossibile leggere la pagina: ${e.message}`],
+          };
+        }
+      })
+    );
 
     res.json({
       overallScore: Math.round(results.reduce((acc, curr) => acc + curr.score, 0) / results.length),
@@ -464,45 +546,195 @@ router.get("/admin/seo-audit", async (_req, res) => {
   }
 });
 
+// --- Real Google Search Console Auth & Query helpers ---
+function signGoogleJwt(clientEmail: string, privateKey: string, keyId: string): string {
+  const payload = {
+    iss: clientEmail,
+    scope: "https://www.googleapis.com/auth/webmasters.readonly",
+    aud: "https://oauth2.googleapis.com/token",
+    exp: Math.floor(Date.now() / 1000) + 3600,
+    iat: Math.floor(Date.now() / 1000),
+  };
+  const header = {
+    alg: "RS256",
+    typ: "JWT",
+    kid: keyId,
+  };
+  const base64Header = Buffer.from(JSON.stringify(header)).toString("base64url");
+  const base64Payload = Buffer.from(JSON.stringify(payload)).toString("base64url");
+  const signatureInput = `${base64Header}.${base64Payload}`;
+
+  const signer = crypto.createSign("RSA-SHA256");
+  signer.update(signatureInput);
+  const signature = signer.sign(privateKey, "base64url");
+  return `${signatureInput}.${signature}`;
+}
+
+async function getGoogleAccessToken(serviceAccountJson: string): Promise<string> {
+  const sa = JSON.parse(serviceAccountJson);
+  const jwt = signGoogleJwt(sa.client_email, sa.private_key, sa.private_key_id);
+  const res = await fetch("https://oauth2.googleapis.com/token", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/x-www-form-urlencoded",
+    },
+    body: new URLSearchParams({
+      grant_type: "urn:ietf:params:oauth:grant-type:jwt-bearer",
+      assertion: jwt,
+    }),
+  });
+  if (!res.ok) {
+    const errText = await res.text();
+    throw new Error(`Google OAuth error: ${res.status} - ${errText}`);
+  }
+  const data = await res.json() as { access_token: string };
+  return data.access_token;
+}
+
 router.get("/admin/search-console", async (_req, res) => {
+  const gscKey = process.env.GSC_SERVICE_ACCOUNT_KEY;
+  const siteUrl = process.env.GSC_SITE_URL || "https://www.prevai.it/";
+
   try {
-    // Generate high quality simulated GSC data matching actual site contents
-    const keywords = [
-      { query: "preventivo idraulico roma", clicks: 342, impressions: 4500, ctr: 0.076, position: 2.1 },
-      { query: "modello preventivo excel", clicks: 289, impressions: 5800, ctr: 0.049, position: 3.4 },
-      { query: "creare preventivo pdf", clicks: 210, impressions: 3200, ctr: 0.065, position: 1.8 },
-      { query: "preventivo elettricista milano", clicks: 195, impressions: 2900, ctr: 0.067, position: 2.5 },
-      { query: "modello preventivo muratore", clicks: 140, impressions: 2100, ctr: 0.066, position: 3.0 },
-      { query: "prevai", clicks: 580, impressions: 1200, ctr: 0.483, position: 1.0 },
-      { query: "calcolo preventivo pittura", clicks: 92, impressions: 1800, ctr: 0.051, position: 4.2 },
-      { query: "preventivo ristrutturazione casa", clicks: 88, impressions: 3100, ctr: 0.028, position: 6.8 },
-      { query: "preventivi infissi online", clicks: 75, impressions: 2400, ctr: 0.031, position: 5.5 },
-    ];
+    if (!gscKey) {
+      // Fallback fallback simulated dashboard if variables are not yet configured on Vercel
+      const keywords = [
+        { query: "preventivo idraulico roma (Demo)", clicks: 342, impressions: 4500, ctr: 0.076, position: 2.1 },
+        { query: "modello preventivo excel (Demo)", clicks: 289, impressions: 5800, ctr: 0.049, position: 3.4 },
+        { query: "creare preventivo pdf (Demo)", clicks: 210, impressions: 3200, ctr: 0.065, position: 1.8 },
+        { query: "preventivo elettricista milano (Demo)", clicks: 195, impressions: 2900, ctr: 0.067, position: 2.5 },
+        { query: "modello preventivo muratore (Demo)", clicks: 140, impressions: 2100, ctr: 0.066, position: 3.0 },
+      ];
 
-    const clicks = keywords.reduce((sum, k) => sum + k.clicks, 0);
-    const impressions = keywords.reduce((sum, k) => sum + k.impressions, 0);
-    const ctr = clicks / impressions;
-    const position = keywords.reduce((sum, k) => sum + k.position * k.impressions, 0) / impressions;
+      const clicks = keywords.reduce((sum, k) => sum + k.clicks, 0);
+      const impressions = keywords.reduce((sum, k) => sum + k.impressions, 0);
+      const ctr = clicks / impressions;
+      const position = keywords.reduce((sum, k) => sum + k.position * k.impressions, 0) / impressions;
 
-    // Last 30 days trends
-    const trends = [];
-    const now = new Date();
-    for (let i = 29; i >= 0; i--) {
-      const d = new Date(now.getFullYear(), now.getMonth(), now.getDate() - i);
-      const dayStr = d.toISOString().slice(0, 10);
-      trends.push({
-        day: dayStr,
-        clicks: Math.round(15 + Math.random() * 25 + (i === 15 || i === 22 ? -10 : 0)), // weekends drop
-        impressions: Math.round(300 + Math.random() * 200),
+      const trends = [];
+      const now = new Date();
+      for (let i = 29; i >= 0; i--) {
+        const d = new Date(now.getFullYear(), now.getMonth(), now.getDate() - i);
+        trends.push({
+          day: d.toISOString().slice(0, 10),
+          clicks: Math.round(15 + Math.random() * 25),
+          impressions: Math.round(300 + Math.random() * 200),
+        });
+      }
+
+      res.json({
+        isDemo: true,
+        summary: {
+          totalClicks: clicks,
+          totalImpressions: impressions,
+          averageCtr: Number(ctr.toFixed(4)),
+          averagePosition: Number(position.toFixed(1)),
+        },
+        keywords,
+        trends,
       });
+      return;
     }
 
+    const token = await getGoogleAccessToken(gscKey);
+    const apiEndpoint = `https://www.googleapis.com/webmasters/v3/sites/${encodeURIComponent(siteUrl)}/searchAnalytics/query`;
+    
+    const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+    const yesterday = new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+
+    const apiResponse = await fetch(apiEndpoint, {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        startDate: thirtyDaysAgo,
+        endDate: yesterday,
+        dimensions: ["query", "date"],
+        rowLimit: 5000,
+      }),
+    });
+
+    if (!apiResponse.ok) {
+      const errText = await apiResponse.text();
+      throw new Error(`Google Search Console API responded with status ${apiResponse.status}: ${errText}`);
+    }
+
+    const data = await apiResponse.json() as { rows?: any[] };
+    const rows = data.rows || [];
+
+    if (rows.length === 0) {
+      res.json({
+        isDemo: false,
+        summary: { totalClicks: 0, totalImpressions: 0, averageCtr: 0, averagePosition: 0 },
+        keywords: [],
+        trends: [],
+      });
+      return;
+    }
+
+    // Process GSC response
+    const keywordMap = new Map<string, { clicks: number; impressions: number; posSum: number; count: number }>();
+    const trendMap = new Map<string, { clicks: number; impressions: number }>();
+
+    let totalClicks = 0;
+    let totalImpressions = 0;
+    let weightedPositionSum = 0;
+
+    for (const r of rows) {
+      const query = r.keys[0];
+      const date = r.keys[1];
+      const clicks = r.clicks || 0;
+      const impressions = r.impressions || 0;
+      const position = r.position || 0;
+
+      totalClicks += clicks;
+      totalImpressions += impressions;
+      weightedPositionSum += position * impressions;
+
+      // Group by query
+      const kw = keywordMap.get(query) || { clicks: 0, impressions: 0, posSum: 0, count: 0 };
+      kw.clicks += clicks;
+      kw.impressions += impressions;
+      kw.posSum += position;
+      kw.count += 1;
+      keywordMap.set(query, kw);
+
+      // Group by date
+      const tr = trendMap.get(date) || { clicks: 0, impressions: 0 };
+      tr.clicks += clicks;
+      tr.impressions += impressions;
+      trendMap.set(date, tr);
+    }
+
+    const keywords = Array.from(keywordMap.entries()).map(([query, d]) => {
+      const ctr = d.impressions > 0 ? d.clicks / d.impressions : 0;
+      return {
+        query,
+        clicks: d.clicks,
+        impressions: d.impressions,
+        ctr: Number(ctr.toFixed(4)),
+        position: Number((d.posSum / d.count).toFixed(1)),
+      };
+    }).sort((a, b) => b.clicks - a.clicks).slice(0, 100);
+
+    const trends = Array.from(trendMap.entries()).map(([day, d]) => ({
+      day,
+      clicks: d.clicks,
+      impressions: d.impressions,
+    })).sort((a, b) => a.day.localeCompare(b.day));
+
+    const averageCtr = totalImpressions > 0 ? totalClicks / totalImpressions : 0;
+    const averagePosition = totalImpressions > 0 ? weightedPositionSum / totalImpressions : 0;
+
     res.json({
+      isDemo: false,
       summary: {
-        totalClicks: clicks,
-        totalImpressions: impressions,
-        averageCtr: Number(ctr.toFixed(4)),
-        averagePosition: Number(position.toFixed(1)),
+        totalClicks,
+        totalImpressions,
+        averageCtr: Number(averageCtr.toFixed(4)),
+        averagePosition: Number(averagePosition.toFixed(1)),
       },
       keywords,
       trends,
