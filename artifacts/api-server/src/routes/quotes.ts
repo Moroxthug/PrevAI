@@ -1790,7 +1790,7 @@ function generateHtmlStandard(
             <tbody>
               ${cap.voci.map(v => `
                 <tr>
-                  <td class="col-desc">${v.descrizione}</td>
+                  <td class="col-desc">${formatDescriptionHtml(v.descrizione)}</td>
                   <td class="col-um">${v.um}</td>
                   <td class="col-qty">${v.quantita}</td>
                   <td class="col-pu">€&nbsp;${formatEur(v.prezzoUnitario)}</td>
@@ -1817,7 +1817,7 @@ function generateHtmlStandard(
           <tbody>
             ${legacyItems.map(item => `
               <tr>
-                <td class="col-desc">${item.descrizione}</td>
+                <td class="col-desc">${formatDescriptionHtml(item.descrizione)}</td>
                 <td class="col-um">${item.unita}</td>
                 <td class="col-qty">${item.quantita}</td>
                 <td class="col-pu">€&nbsp;${formatEur(Number(item.prezzoUnitario))}</td>
@@ -2159,6 +2159,30 @@ function generateHtmlStandard(
 </html>`;
 }
 
+function formatDescriptionHtml(descrizione: string): string {
+  const parts = descrizione.split("\n");
+  const title = parts[0];
+  const detail = parts.slice(1).join("\n");
+  if (!detail) return title;
+  return `<strong>${title}</strong><div style="font-size: 10px; color: #555; margin-top: 2px; font-weight: normal; line-height: 1.3;">${detail}</div>`;
+}
+
+function formatDescriptionPdf(descrizione: string, bg: string | null): any {
+  const parts = descrizione.split("\n");
+  const title = parts[0];
+  const detail = parts.slice(1).join("\n");
+  if (!detail) {
+    return { text: title, fontSize: 8, color: "#1a1a1a", fillColor: bg };
+  }
+  return {
+    stack: [
+      { text: title, bold: true, fontSize: 8, color: "#1a1a1a" },
+      { text: detail, fontSize: 7, color: "#555555", margin: [0, 2, 0, 0] }
+    ],
+    fillColor: bg
+  };
+}
+
 function generateHtmlProfessionale(
   quote: QuoteRow,
   withWatermark: boolean,
@@ -2204,7 +2228,7 @@ function generateHtmlProfessionale(
         const voceRows = cap.voci.map((v, vi) => `
           <tr class="item-row">
             <td class="col-nr">${ci + 1}.${vi + 1}</td>
-            <td class="col-desc">${v.descrizione}</td>
+            <td class="col-desc">${formatDescriptionHtml(v.descrizione)}</td>
             <td class="col-um">${v.um}</td>
             <td class="col-unit">€&nbsp;${formatEur(v.prezzoUnitario)}</td>
             <td class="col-tot">€&nbsp;${formatEur(v.totale)}</td>
@@ -2220,7 +2244,7 @@ function generateHtmlProfessionale(
     : legacyItems.map((item, i) => `
         <tr class="item-row">
           <td class="col-nr">${i + 1}</td>
-          <td class="col-desc">${item.descrizione}</td>
+          <td class="col-desc">${formatDescriptionHtml(item.descrizione)}</td>
           <td class="col-um">${item.unita}</td>
           <td class="col-unit">€&nbsp;${formatEur(Number(item.prezzoUnitario))}</td>
           <td class="col-tot">€&nbsp;${formatEur(Number(item.totale))}</td>
@@ -2389,7 +2413,7 @@ function generateHtmlElegante(
   const tableRows = allRows.map((row, i) => `
     <tr class="${i % 2 === 0 ? "row-even" : "row-odd"}">
       <td class="col-num">${i + 1}</td>
-      <td class="col-desc">${row.descrizione}</td>
+      <td class="col-desc">${formatDescriptionHtml(row.descrizione)}</td>
       <td class="col-um">${row.um}</td>
       <td class="col-qty">${row.quantita}</td>
       <td class="col-pu">€&nbsp;${formatEur(row.pu)}</td>
@@ -2634,7 +2658,7 @@ async function generateCapitolatoPdfBuffer(quote: QuoteRow, profile: ProfileRow)
         const bg = vi % 2 === 0 ? null : "#f8f9fb";
         return [
           { text: String(vi + 1), fontSize: 8, alignment: "center" as const, color: "#666", fillColor: bg } as Content,
-          { text: v.descrizione, fontSize: 8, color: "#1a1a1a", fillColor: bg } as Content,
+          formatDescriptionPdf(v.descrizione, bg) as Content,
           { text: v.um, fontSize: 8, alignment: "center" as const, fillColor: bg } as Content,
           { text: String(v.quantita), fontSize: 8, alignment: "center" as const, fillColor: bg } as Content,
           { text: formatEur(v.prezzoUnitario), fontSize: 8, alignment: "right" as const, fillColor: bg } as Content,
@@ -3007,7 +3031,7 @@ async function generateQuotePdfBuffer(quote: QuoteRow, profile: ProfileRow, with
         const bg = vi % 2 === 0 ? null : "#f8f9fb";
         return [
           { text: String(vi + 1), fontSize: 8, alignment: "center" as const, color: "#666", fillColor: bg } as Content,
-          { text: v.descrizione, fontSize: 8, color: "#1a1a1a", fillColor: bg } as Content,
+          formatDescriptionPdf(v.descrizione, bg) as Content,
           { text: v.um, fontSize: 8, alignment: "center" as const, fillColor: bg } as Content,
           { text: String(v.quantita), fontSize: 8, alignment: "center" as const, fillColor: bg } as Content,
           { text: formatEur(v.prezzoUnitario), fontSize: 8, alignment: "right" as const, fillColor: bg } as Content,
