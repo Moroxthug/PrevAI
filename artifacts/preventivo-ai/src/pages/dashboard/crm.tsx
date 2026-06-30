@@ -230,6 +230,9 @@ export default function CrmPage() {
   const [newSupplierCat, setNewSupplierCat] = useState("Materiali Edili");
   const [newPraticaTitle, setNewPraticaTitle] = useState("");
   const [newPraticaProt, setNewPraticaProt] = useState("");
+  const [selectedSalProjId, setSelectedSalProjId] = useState<string>("");
+  const [salNumber, setSalNumber] = useState("1");
+  const [garanziaRetention, setGaranziaRetention] = useState(0.5);
 
   const [newTaskTitle, setNewTaskTitle] = useState("");
   const [newExtraCostDesc, setNewExtraCostDesc] = useState("");
@@ -468,6 +471,135 @@ export default function CrmPage() {
     setIsAddingPratica(false);
   };
 
+  const handlePrintSal = (proj: Project) => {
+    const doneTasks = proj.tasks.filter(t => t.completed).length;
+    const pct = proj.tasks.length > 0 ? Math.round((doneTasks / proj.tasks.length) * 100) : 0;
+    const totalEseguito = (proj.budget * pct) / 100;
+    const retentionVal = totalEseguito * (garanziaRetention / 100);
+    const nettoDaPagare = totalEseguito - retentionVal;
+
+    const printWindow = window.open("", "_blank");
+    if (!printWindow) return;
+    printWindow.document.write(`
+      <html>
+        <head>
+          <title>SAL N. ${salNumber} - ${proj.name}</title>
+          <style>
+            body { font-family: sans-serif; color: #333; padding: 40px; line-height: 1.4; }
+            .header { display: flex; justify-content: space-between; border-bottom: 2px solid #7c3aed; padding-bottom: 20px; margin-bottom: 30px; }
+            .logo { font-size: 24px; font-weight: 900; color: #7c3aed; }
+            .company-info { text-align: right; font-size: 11px; color: #666; }
+            .doc-title { text-align: center; font-size: 20px; font-weight: 800; text-transform: uppercase; margin-bottom: 30px; color: #111; letter-spacing: 1px; }
+            .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 40px; font-size: 12px; }
+            .info-box { border: 1px solid #eee; padding: 15px; border-radius: 8px; background: #fafafa; }
+            .info-box h4 { margin: 0 0 8px 0; color: #7c3aed; text-transform: uppercase; font-size: 10px; letter-spacing: 0.5px; }
+            table { width: 100%; border-collapse: collapse; margin-bottom: 30px; font-size: 12px; }
+            th, td { border: 1px solid #ddd; padding: 10px; text-align: left; }
+            th { background-color: #f7f7f7; font-weight: bold; }
+            .totals { margin-left: auto; width: 300px; font-size: 12px; margin-bottom: 40px; }
+            .totals-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #eee; }
+            .totals-row.final { font-weight: bold; font-size: 14px; color: #7c3aed; border-bottom: 2px double #7c3aed; }
+            .signatures { display: flex; justify-content: space-between; margin-top: 60px; font-size: 11px; text-align: center; }
+            .sig-box { width: 200px; border-top: 1px solid #333; padding-top: 8px; }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <div>
+              <div class="logo">PrevAI</div>
+              <div style="font-size: 10px; color: #666; margin-top: 4px;">Smart Construction Solutions</div>
+            </div>
+            <div class="company-info">
+              <strong>PrevAI Costruzioni S.r.l.</strong><br>
+              P.IVA: 01234567890<br>
+              Via dell'Artigianato 12, Milano<br>
+              amministrazione@prevai.it
+            </div>
+          </div>
+
+          <div class="doc-title">Stato Avanzamento Lavori (S.A.L.) N. ${salNumber}</div>
+
+          <div class="info-grid">
+            <div class="info-box">
+              <h4>Dettagli Cantiere</h4>
+              <strong>${proj.name}</strong><br>
+              Budget Contrattuale: €${proj.budget.toLocaleString('it-IT')}<br>
+              Data inizio: ${proj.startDate}<br>
+              Stato Avanzamento Globale: ${pct}%
+            </div>
+            <div class="info-box">
+              <h4>Dati Committente</h4>
+              <strong>Impresa Committente S.p.A.</strong><br>
+              Codice Fiscale: IT889922110<br>
+              Contratto N. 104 del 2026<br>
+              Liquidazione: Bonifico Bancario
+            </div>
+          </div>
+
+          <table>
+            <thead>
+              <tr>
+                <th>Descrizione Lavorazione</th>
+                <th>Importo di Contratto</th>
+                <th>Avanzamento</th>
+                <th>Importo Maturato</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${proj.tasks.map((t, idx) => {
+                const taskPct = t.completed ? 100 : 0;
+                const taskBudget = proj.budget / proj.tasks.length;
+                const taskMaturato = t.completed ? taskBudget : 0;
+                return `
+                  <tr>
+                    <td>${t.title}</td>
+                    <td>€${taskBudget.toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                    <td>${taskPct}%</td>
+                    <td>€${taskMaturato.toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                  </tr>
+                `;
+              }).join('')}
+            </tbody>
+          </table>
+
+          <div class="totals">
+            <div class="totals-row">
+              <span>Totale Lavori Eseguiti:</span>
+              <span>€${totalEseguito.toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+            </div>
+            <div class="totals-row">
+              <span>Ritenuta Garanzia (${garanziaRetention}%):</span>
+              <span>€${retentionVal.toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+            </div>
+            <div class="totals-row final">
+              <span>Importo Netto SAL:</span>
+              <span>€${nettoDaPagare.toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+            </div>
+          </div>
+
+          <div class="signatures">
+            <div class="sig-box">
+              Il Direttore dei Lavori
+            </div>
+            <div class="sig-box">
+              L'Impresa Appaltatrice
+            </div>
+            <div class="sig-box">
+              Il Committente
+            </div>
+          </div>
+
+          <script>
+            window.onload = function() {
+              window.print();
+            }
+          </script>
+        </body>
+      </html>
+    `);
+    printWindow.document.close();
+  };
+
   return (
     <div className="min-h-screen flex bg-gray-50/40 font-sans antialiased text-gray-900">
       
@@ -544,6 +676,7 @@ export default function CrmPage() {
               <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest px-2.5 pb-2">AMMINISTRAZIONE</p>
             )}
             {[
+              { id: "sal", label: "Stato Avanzamento (SAL)", icon: FileText },
               { id: "fatturazione", label: "Fatturazione Elettronica", icon: Receipt },
               { id: "pratiche", label: "Gestione Pratiche", icon: FolderOpen },
               { id: "analytics", label: "KPI & Analytics", icon: BarChart3 },
@@ -1490,6 +1623,174 @@ export default function CrmPage() {
                   </div>
                 </CardContent>
               </Card>
+            </div>
+          )}
+
+          {/* 12. SECTION: STATO AVANZAMENTO LAVORI (SAL) */}
+          {activeSection === "sal" && (
+            <div className="space-y-6 animate-in fade-in duration-300">
+              <div className="bg-white border border-gray-150 p-6 rounded-xl shadow-xs space-y-4">
+                <h3 className="font-black text-gray-800 text-base">Generatore Stato Avanzamento Lavori (SAL)</h3>
+                <p className="text-xs text-gray-500">Seleziona un cantiere attivo e configura le ritenute per calcolare l'avanzamento dei lavori in formato PDF.</p>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2">
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Seleziona Cantiere</label>
+                    <select
+                      value={selectedSalProjId}
+                      onChange={(e) => setSelectedSalProjId(e.target.value)}
+                      className="w-full bg-white border border-gray-200 rounded-lg p-2 text-xs focus:outline-none focus:ring-1 focus:ring-violet-500"
+                    >
+                      <option value="">Scegli un cantiere...</option>
+                      {projects.map((p) => (
+                        <option key={p.id} value={p.id}>{p.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Numero SAL</label>
+                    <input
+                      type="text"
+                      value={salNumber}
+                      onChange={(e) => setSalNumber(e.target.value)}
+                      className="w-full bg-white border border-gray-200 rounded-lg p-2 text-xs focus:outline-none focus:ring-1 focus:ring-violet-500"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Ritenuta di Garanzia (%)</label>
+                    <input
+                      type="number"
+                      step="0.1"
+                      value={garanziaRetention}
+                      onChange={(e) => setGaranziaRetention(parseFloat(e.target.value) || 0)}
+                      className="w-full bg-white border border-gray-200 rounded-lg p-2 text-xs focus:outline-none focus:ring-1 focus:ring-violet-500"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Document Preview Card */}
+              {selectedSalProjId ? (
+                (() => {
+                  const proj = projects.find(p => p.id === selectedSalProjId);
+                  if (!proj) return null;
+                  const doneTasks = proj.tasks.filter(t => t.completed).length;
+                  const pct = proj.tasks.length > 0 ? Math.round((doneTasks / proj.tasks.length) * 100) : 0;
+                  const totalEseguito = (proj.budget * pct) / 100;
+                  const retentionVal = totalEseguito * (garanziaRetention / 100);
+                  const nettoDaPagare = totalEseguito - retentionVal;
+
+                  return (
+                    <div className="space-y-6">
+                      {/* Interactive Sheet Preview */}
+                      <div className="bg-white border border-gray-200 shadow-md rounded-2xl p-8 max-w-4xl mx-auto text-xs text-gray-800 space-y-6">
+                        {/* Doc Header */}
+                        <div className="flex justify-between border-b-2 border-violet-600 pb-4">
+                          <div>
+                            <div className="text-lg font-black text-violet-750 uppercase tracking-wide">PrevAI</div>
+                            <div className="text-[9px] text-gray-400 mt-0.5">Costruzioni & Ristrutturazioni</div>
+                          </div>
+                          <div className="text-right text-[10px] text-gray-500">
+                            <strong>PrevAI Costruzioni S.r.l.</strong><br />
+                            P.IVA 01234567890<br />
+                            Via dell'Artigianato 12, Milano
+                          </div>
+                        </div>
+
+                        <div className="text-center font-bold text-base text-gray-900 uppercase tracking-wider py-2">
+                          Stato Avanzamento Lavori (S.A.L.) N. {salNumber}
+                        </div>
+
+                        {/* Info details */}
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="bg-gray-50 border border-gray-150 p-4 rounded-xl space-y-1">
+                            <h4 className="text-[9px] font-bold text-violet-600 uppercase tracking-wider">Cantiere</h4>
+                            <p className="font-bold text-gray-900">{proj.name}</p>
+                            <p>Budget di Contratto: €{proj.budget.toLocaleString("it-IT")}</p>
+                            <p>Data inizio: {proj.startDate}</p>
+                          </div>
+                          <div className="bg-gray-50 border border-gray-150 p-4 rounded-xl space-y-1">
+                            <h4 className="text-[9px] font-bold text-violet-600 uppercase tracking-wider">Committente</h4>
+                            <p className="font-bold text-gray-900">Impresa Committente S.p.A.</p>
+                            <p>CF / P.IVA: IT889922110</p>
+                            <p>Stato Lavori Globale: {pct}%</p>
+                          </div>
+                        </div>
+
+                        {/* Tasks Table */}
+                        <table className="w-full border-collapse border border-gray-200">
+                          <thead>
+                            <tr className="bg-gray-50 text-[10px] font-bold text-gray-600 uppercase">
+                              <th className="border border-gray-200 p-2 text-left">Descrizione Voce / Lavorazione</th>
+                              <th className="border border-gray-200 p-2 text-right">Quota Contratto</th>
+                              <th className="border border-gray-200 p-2 text-center">Stato</th>
+                              <th className="border border-gray-200 p-2 text-right">Importo Maturato</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {proj.tasks.map((t, idx) => {
+                              const taskPct = t.completed ? 100 : 0;
+                              const taskBudget = proj.budget / proj.tasks.length;
+                              const taskMaturato = t.completed ? taskBudget : 0;
+                              return (
+                                <tr key={idx} className="border-b border-gray-150">
+                                  <td className="border border-gray-200 p-2 font-medium">{t.title}</td>
+                                  <td className="border border-gray-200 p-2 text-right font-mono">€{taskBudget.toLocaleString("it-IT", { minimumFractionDigits: 2 })}</td>
+                                  <td className="border border-gray-200 p-2 text-center">
+                                    <span className={`px-2 py-0.5 rounded-full text-[8px] font-bold ${
+                                      t.completed ? "bg-green-50 text-green-700 border border-green-200" : "bg-gray-100 text-gray-500 border border-gray-200"
+                                    }`}>
+                                      {taskPct}%
+                                    </span>
+                                  </td>
+                                  <td className="border border-gray-200 p-2 text-right font-mono">€{taskMaturato.toLocaleString("it-IT", { minimumFractionDigits: 2 })}</td>
+                                </tr>
+                              );
+                            })}
+                          </tbody>
+                        </table>
+
+                        {/* Calculation summary */}
+                        <div className="w-64 ml-auto space-y-1.5 border-t border-gray-200 pt-3">
+                          <div className="flex justify-between">
+                            <span className="text-gray-500">Importo Lavori Maturati:</span>
+                            <span className="font-mono font-bold">€{totalEseguito.toLocaleString("it-IT", { minimumFractionDigits: 2 })}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-gray-500">Ritenuta Garanzia ({garanziaRetention}%):</span>
+                            <span className="font-mono text-rose-600">- €{retentionVal.toLocaleString("it-IT", { minimumFractionDigits: 2 })}</span>
+                          </div>
+                          <div className="flex justify-between border-t border-violet-200 pt-2 font-bold text-sm text-violet-750">
+                            <span>Importo Netto da Liquidare:</span>
+                            <span className="font-mono">€{nettoDaPagare.toLocaleString("it-IT", { minimumFractionDigits: 2 })}</span>
+                          </div>
+                        </div>
+
+                        {/* Signatures */}
+                        <div className="flex justify-between pt-12 text-[10px] text-center text-gray-500">
+                          <div className="w-40 border-t border-gray-300 pt-1.5">Il Direttore dei Lavori</div>
+                          <div className="w-40 border-t border-gray-300 pt-1.5">L'Impresa Appaltatrice</div>
+                          <div className="w-40 border-t border-gray-300 pt-1.5">Il Committente</div>
+                        </div>
+                      </div>
+
+                      {/* Action buttons */}
+                      <div className="flex justify-center gap-4">
+                        <button
+                          onClick={() => handlePrintSal(proj)}
+                          className="flex items-center gap-2 px-6 py-3 bg-violet-600 hover:bg-violet-700 text-white rounded-xl text-xs font-bold transition shadow-md hover:shadow-violet-600/10"
+                        >
+                          <FileText className="h-4 w-4" /> Genera & Stampa PDF SAL
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })()
+              ) : (
+                <div className="bg-white border border-gray-200 rounded-xl p-10 text-center text-gray-500 shadow-xs">
+                  Seleziona un cantiere in alto per configurare ed elaborare lo Stato Avanzamento Lavori.
+                </div>
+              )}
             </div>
           )}
 
