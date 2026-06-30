@@ -279,7 +279,7 @@ export function getCityRelatedSectors(sectorSlug: string): { slug: string; label
 export type JsonLdSchema = { "@context": string; "@type": string; [key: string]: unknown };
 
 export function buildCityJsonLd(sector: SectorData, city: CityData): JsonLdSchema[] {
-  const canonical = `${BASE_URL}/seo/${sector.slug}/${city.slug}/`;
+  const canonical = `${BASE_URL}/preventivi/${sector.slug}/${city.slug}/`;
   const faqItems = getCityFaqItems(sector, city);
   return [
     {
@@ -324,7 +324,7 @@ export function buildCityJsonLd(sector: SectorData, city: CityData): JsonLdSchem
       "@type": "BreadcrumbList",
       itemListElement: [
         { "@type": "ListItem", position: 1, name: "Home", item: `${BASE_URL}/` },
-        { "@type": "ListItem", position: 2, name: sector.label, item: `${BASE_URL}/seo/${sector.slug}/` },
+        { "@type": "ListItem", position: 2, name: sector.label, item: `${BASE_URL}/preventivi/${sector.slug}/` },
         { "@type": "ListItem", position: 3, name: city.name, item: canonical },
       ],
     },
@@ -368,7 +368,7 @@ export function verifyCityContentInDev(
 
   if (mismatches.length > 0) {
     console.warn(
-      `[seo-render-engine] Content mismatch on /seo/${sector.slug}/${city.slug}: ` +
+      `[seo-render-engine] Content mismatch on /preventivi/${sector.slug}/${city.slug}: ` +
         mismatches.join(", ") +
         ". SeoCityLanding must consume all data exclusively from seo-render-engine.ts."
     );

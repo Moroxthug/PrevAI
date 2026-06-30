@@ -5,8 +5,8 @@ import App from "./App.tsx";
 import { SeoNavShell } from "./components/seo-header.tsx";
 import "./index.css";
 
-const SEO_CITY_RE = /^\/seo\/[^/]+\/[^/]+\/?$/;
-const SEO_SECTOR_RE = /^\/seo\/[^/]+\/?$/;
+const SEO_CITY_RE = /^\/preventivi\/[^/]+\/[^/]+\/?$/;
+const SEO_SECTOR_RE = /^\/preventivi\/[^/]+\/?$/;
 const BLOG_RE = /^\/blog(\/.*)?$/;
 
 const rootEl = document.getElementById("root")!;

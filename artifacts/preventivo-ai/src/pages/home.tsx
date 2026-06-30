@@ -82,7 +82,7 @@ export default function Home() {
       "@type": "SearchAction",
       target: {
         "@type": "EntryPoint",
-        urlTemplate: "https://www.prevai.it/seo/{search_term_string}",
+        urlTemplate: "https://www.prevai.it/preventivi/{search_term_string}",
       },
       "query-input": "required name=search_term_string",
     },
@@ -710,9 +710,9 @@ export default function Home() {
             </div>
             <div className="grid sm:grid-cols-3 gap-3">
               {[
-                { href: "/seo/modello-excel", label: "Alternativa al preventivo Excel", desc: "Niente formule. Niente errori. Solo risultati.", badge: "vs Excel" },
-                { href: "/seo/modello-word", label: "Alternativa al template Word", desc: "PDF professionale in un clic, senza formattazione manuale.", badge: "vs Word" },
-                { href: "/seo/come-fare-preventivo", label: "Come fare un preventivo", desc: "Guida pratica per artigiani e PMI italiane.", badge: "Guida" },
+                { href: "/preventivi/modello-excel", label: "Alternativa al preventivo Excel", desc: "Niente formule. Niente errori. Solo risultati.", badge: "vs Excel" },
+                { href: "/preventivi/modello-word", label: "Alternativa al template Word", desc: "PDF professionale in un clic, senza formattazione manuale.", badge: "vs Word" },
+                { href: "/preventivi/come-fare-preventivo", label: "Come fare un preventivo", desc: "Guida pratica per artigiani e PMI italiane.", badge: "Guida" },
               ].map(({ href, label, desc, badge }) => (
                 <Link
                   key={href}
@@ -744,24 +744,24 @@ export default function Home() {
             <div className="pt-2 pb-4">
               <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-1.5 mb-4">
                 {[
-                  { href: "/seo/imbianchino", label: "Imbianchini" },
-                  { href: "/seo/elettricista", label: "Elettricisti" },
-                  { href: "/seo/idraulico", label: "Idraulici" },
-                  { href: "/seo/muratore", label: "Muratori" },
-                  { href: "/seo/edilizia", label: "Imprese Edili" },
-                  { href: "/seo/ristrutturazione", label: "Ristrutturazioni" },
-                  { href: "/seo/pittore", label: "Pittori Edili" },
-                  { href: "/seo/piastrellista", label: "Piastrellisti" },
-                  { href: "/seo/pavimentista", label: "Pavimentisti" },
-                  { href: "/seo/falegname", label: "Falegnami" },
-                  { href: "/seo/carpentiere", label: "Carpentieri" },
-                  { href: "/seo/serramentista", label: "Serramentisti" },
-                  { href: "/seo/tetto", label: "Coperture e Tetti" },
-                  { href: "/seo/condizionatori", label: "Climatizzatori" },
-                  { href: "/seo/giardiniere", label: "Giardinieri" },
-                  { href: "/seo/termoidraulico", label: "Termoidraulici" },
-                  { href: "/seo/freelance", label: "Freelance" },
-                  { href: "/seo/geometra", label: "Geometri" },
+                  { href: "/preventivi/imbianchino", label: "Imbianchini" },
+                  { href: "/preventivi/elettricista", label: "Elettricisti" },
+                  { href: "/preventivi/idraulico", label: "Idraulici" },
+                  { href: "/preventivi/muratore", label: "Muratori" },
+                  { href: "/preventivi/edilizia", label: "Imprese Edili" },
+                  { href: "/preventivi/ristrutturazione", label: "Ristrutturazioni" },
+                  { href: "/preventivi/pittore", label: "Pittori Edili" },
+                  { href: "/preventivi/piastrellista", label: "Piastrellisti" },
+                  { href: "/preventivi/pavimentista", label: "Pavimentisti" },
+                  { href: "/preventivi/falegname", label: "Falegnami" },
+                  { href: "/preventivi/carpentiere", label: "Carpentieri" },
+                  { href: "/preventivi/serramentista", label: "Serramentisti" },
+                  { href: "/preventivi/tetto", label: "Coperture e Tetti" },
+                  { href: "/preventivi/condizionatori", label: "Climatizzatori" },
+                  { href: "/preventivi/giardiniere", label: "Giardinieri" },
+                  { href: "/preventivi/termoidraulico", label: "Termoidraulici" },
+                  { href: "/preventivi/freelance", label: "Freelance" },
+                  { href: "/preventivi/geometra", label: "Geometri" },
                 ].map(({ href, label }) => (
                   <Link
                     key={href}
@@ -778,7 +778,7 @@ export default function Home() {
                   {["Roma", "Milano", "Napoli", "Torino", "Bologna", "Firenze", "Palermo", "Bari", "Venezia", "Verona"].map(city => (
                     <Link
                       key={city}
-                      href={`/seo/ristrutturazione/${city.toLowerCase()}/`}
+                      href={`/preventivi/ristrutturazione/${city.toLowerCase()}/`}
                       className="text-xs text-gray-400 hover:text-violet-600 hover:bg-violet-50 px-2 py-0.5 rounded transition-colors"
                     >
                       {city}

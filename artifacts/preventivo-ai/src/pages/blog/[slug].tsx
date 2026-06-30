@@ -160,7 +160,7 @@ export default function BlogArticlePage() {
                 {relatedSectorObjects.map((sector) => (
                   <Link
                     key={sector.slug}
-                    href={`/seo/${sector.slug}`}
+                    href={`/preventivi/${sector.slug}`}
                     className="inline-flex items-center gap-1.5 rounded-full border border-gray-200 bg-white px-4 py-2 text-xs font-medium text-gray-700 hover:border-violet-300 hover:text-violet-700 transition-colors"
                   >
                     <span className="text-violet-400 font-bold" aria-hidden="true">→</span>

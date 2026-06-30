@@ -254,7 +254,7 @@ export default function SeoLanding() {
   const slug = (params as { type?: string }).type ?? "professionista";
   const s = SECTORS[slug] ?? DEFAULT_SECTOR;
 
-  const canonical = `https://www.prevai.it/seo/${s.slug}/`;
+  const canonical = `https://www.prevai.it/preventivi/${s.slug}/`;
   const jsonLd = [
     {
       "@context": "https://schema.org",
@@ -479,7 +479,7 @@ export default function SeoLanding() {
               {TIER1_CITIES.map((city) => (
                 <Link
                   key={city.slug}
-                  href={`/seo/${slug}/${city.slug}`}
+                  href={`/preventivi/${slug}/${city.slug}`}
                   className="flex items-center gap-2.5 bg-white hover:bg-violet-50 border border-gray-100 hover:border-violet-200 rounded-xl px-4 py-3 transition-colors group"
                 >
                   <MapPin className="h-3.5 w-3.5 text-violet-400 group-hover:text-violet-600 shrink-0" />
@@ -504,7 +504,7 @@ export default function SeoLanding() {
               {RELATED_SECTORS[slug].map((r) => (
                 <Link
                   key={r.slug}
-                  href={`/seo/${r.slug}`}
+                  href={`/preventivi/${r.slug}`}
                   className="flex items-center gap-3 bg-gray-50 hover:bg-violet-50 border border-gray-100 hover:border-violet-200 rounded-xl px-5 py-3.5 transition-colors group"
                 >
                   <ArrowRight className="h-4 w-4 text-violet-400 group-hover:text-violet-600 shrink-0" />

@@ -258,7 +258,7 @@ export const BLOG_ARTICLES: BlogArticle[] = [
 
 <h2>Il costo reale degli errori</h2>
 <p>Un artigiano che fa 12 preventivi al mese con un tasso di conversione del 40% chiude 5 lavori. Migliorare il preventivo aumentando la conversione anche solo al 55% significa un lavoro in più ogni mese — con investimento zero, solo migliorando il documento.</p>
-<p>I software moderni di preventivazione con AI aiutano a eliminare questi errori automaticamente: generano documenti completi, con tutte le voci dettagliate, IVA inclusa, scadenza e intestazione professionale — in meno di un minuto. Se parti da zero, consulta la nostra <a href="/seo/come-fare-preventivo">guida completa su come fare un preventivo professionale</a>.</p>
+<p>I software moderni di preventivazione con AI aiutano a eliminare questi errori automaticamente: generano documenti completi, con tutte le voci dettagliate, IVA inclusa, scadenza e intestazione professionale — in meno di un minuto. Se parti da zero, consulta la nostra <a href="/preventivi/come-fare-preventivo">guida completa su come fare un preventivo professionale</a>.</p>
 
 <h2>Come usare questi consigli nella pratica quotidiana</h2>
 <p>Non è necessario rivoluzionare il proprio metodo di lavoro tutto in una volta. Il consiglio è di partire dal miglioramento più impattante — nella maggior parte dei casi è il punto 1 (voci dettagliate) o il punto 5 (intestazione professionale) — e integrarlo nei prossimi 5 preventivi come test. Misurare il tasso di risposta e continuare con il miglioramento successivo.</p>
@@ -715,7 +715,7 @@ export const BLOG_ARTICLES: BlogArticle[] = [
 <p>Il 40% dei preventivi non accettati è stato semplicemente dimenticato dal cliente, non rifiutato. Un messaggio breve ("Gentile Mario, le ricordo il preventivo inviato il 5 maggio — è rimasto qualche dubbio?") recupera una parte significativa di questi lavori potenziali. Sembra banale, ma pochi professionisti lo fanno.</p>
 
 <h2>7. Chiedi perché non hai vinto il lavoro</h2>
-<p>Quando perdi un preventivo, invia un breve messaggio: "Capisco che abbia scelto un altro professionista. Se posso chiederle, c'è qualcosa che avrei potuto fare meglio?" Otterrai informazioni preziose — spesso è il prezzo, ma spesso è anche la chiarezza del documento, i tempi comunicati, o la velocità di risposta. Ogni risposta è un'opportunità per migliorare il prossimo preventivo. Per approfondire la struttura di un preventivo efficace, leggi la nostra <a href="/seo/come-fare-preventivo">guida passo-passo su come fare un preventivo</a>.</p>
+<p>Quando perdi un preventivo, invia un breve messaggio: "Capisco che abbia scelto un altro professionista. Se posso chiederle, c'è qualcosa che avrei potuto fare meglio?" Otterrai informazioni preziose — spesso è il prezzo, ma spesso è anche la chiarezza del documento, i tempi comunicati, o la velocità di risposta. Ogni risposta è un'opportunità per migliorare il prossimo preventivo. Per approfondire la struttura di un preventivo efficace, leggi la nostra <a href="/preventivi/come-fare-preventivo">guida passo-passo su come fare un preventivo</a>.</p>
 
 <h2>Quanto vale migliorare il tasso di accettazione</h2>
 <p>Facciamo il conto. Un artigiano con 15 preventivi mensili e un tasso di accettazione del 35% chiude 5 lavori. Portando il tasso al 45% — un miglioramento del 10%, assolutamente realistico con questi accorgimenti — si passa a 7 lavori mensili: due in più, ogni mese, senza spendere un euro in pubblicità.</p>
@@ -842,7 +842,7 @@ export const BLOG_ARTICLES: BlogArticle[] = [
   <li>Calcola subtotali, IVA e totale finale</li>
   <li>Produce un PDF professionale con intestazione aziendale e logo</li>
 </ul>
-<p>Il tempo medio: 30–60 secondi per un preventivo completo. Se vuoi esplorare le opzioni disponibili, consulta la nostra pagina sui <a href="/seo/preventivi-gratis">preventivi gratis</a> per capire come iniziare senza costi.</p>
+<p>Il tempo medio: 30–60 secondi per un preventivo completo. Se vuoi esplorare le opzioni disponibili, consulta la nostra pagina sui <a href="/preventivi/preventivi-gratis">preventivi gratis</a> per capire come iniziare senza costi.</p>
 
 <h2>Un esempio pratico: il preventivo di un imbianchino</h2>
 <p>Invece di aprire Excel e compilare riga per riga, l'imbianchino scrive (o detta): <em>"Tinteggiatura appartamento 85mq, soggiorno e cucina a vista con pittura lavabile grigio chiaro due mani, tre camere bianco standard, bagno con antimuffa, tutti i soffitti bianchi, piccola rasatura in camera grande."</em></p>
@@ -998,7 +998,7 @@ export const BLOG_ARTICLES: BlogArticle[] = [
   <li><strong>Settimana 2–3</strong>: usate l'app per i prossimi 5 preventivi, in parallelo con il metodo attuale se volete</li>
   <li><strong>Dal mese 2</strong>: usate solo l'app, tenendo traccia del tempo risparmiato e del tasso di accettazione</li>
 </ul>
-<p>La maggior parte degli artigiani che fa questo percorso non torna indietro. Non perché il vecchio metodo non funzionasse, ma perché la differenza di velocità e qualità è immediata e tangibile. Scopri di più sulle <a href="/seo/preventivi-gratis">opzioni gratuite per iniziare a fare preventivi digitali</a> senza rischi.</p>
+<p>La maggior parte degli artigiani che fa questo percorso non torna indietro. Non perché il vecchio metodo non funzionasse, ma perché la differenza di velocità e qualità è immediata e tangibile. Scopri di più sulle <a href="/preventivi/preventivi-gratis">opzioni gratuite per iniziare a fare preventivi digitali</a> senza rischi.</p>
 `,
   },
   {
@@ -1729,7 +1729,7 @@ export const BLOG_ARTICLES: BlogArticle[] = [
   <li><strong>Impianto in rame anni '90:</strong> se il guasto è isolato e l'impianto non ha mai dato problemi, la riparazione costa 150–400€ e può bastare per 10+ anni</li>
   <li><strong>Impianto in polietilene anni 2000:</strong> generalmente affidabile; riparazione puntuale è sempre la prima opzione</li>
 </ul>
-<p>Un idraulico esperto esegue un'ispezione visiva e, se necessario, una termografia a infrarossi (costo 150–300€) per identificare perdite nascoste prima di decidere l'intervento. Affidati a un <a href="/seo/idraulico/">idraulico certificato</a> per una valutazione corretta.</p>
+<p>Un idraulico esperto esegue un'ispezione visiva e, se necessario, una termografia a infrarossi (costo 150–300€) per identificare perdite nascoste prima di decidere l'intervento. Affidati a un <a href="/preventivi/idraulico/">idraulico certificato</a> per una valutazione corretta.</p>
 
 <h2>Cosa verificare nel preventivo dell'idraulico</h2>
 <p>Un preventivo professionale per rifacimento impianto deve distinguere chiaramente:</p>
@@ -1809,7 +1809,7 @@ export const BLOG_ARTICLES: BlogArticle[] = [
   <li><strong>Parquet massello incollato</strong>: rimozione 700€ + massello 4.200€ + posa 1.500€ = ~6.400€</li>
   <li><strong>Laminato 8mm</strong>: rimozione 700€ + laminato 900€ + posa 500€ = ~2.100€</li>
 </ul>
-<p>Per una consulenza professionale sulla scelta del pavimento più adatto al tuo cantiere, rivolgiti a un <a href="/seo/pavimentista/">pavimentista esperto</a> nella tua zona.</p>
+<p>Per una consulenza professionale sulla scelta del pavimento più adatto al tuo cantiere, rivolgiti a un <a href="/preventivi/pavimentista/">pavimentista esperto</a> nella tua zona.</p>
 `,
   },
   {
@@ -1863,7 +1863,7 @@ export const BLOG_ARTICLES: BlogArticle[] = [
   <li>Sostituzione anodo sacrificale (ogni 2 anni): 30–60€</li>
   <li>Sostituzione kit guarnizioni (ogni 3-4 anni): 50–100€</li>
 </ul>
-<p>Un contratto di manutenzione annuale con un <a href="/seo/termoidraulico/">termoidraulico di fiducia</a> costa tipicamente 100–200€/anno e garantisce interventi in garanzia e priorità in caso di guasto.</p>
+<p>Un contratto di manutenzione annuale con un <a href="/preventivi/termoidraulico/">termoidraulico di fiducia</a> costa tipicamente 100–200€/anno e garantisce interventi in garanzia e priorità in caso di guasto.</p>
 `,
   },
   {
@@ -1930,7 +1930,7 @@ export const BLOG_ARTICLES: BlogArticle[] = [
   <li><strong>Ecobonus 65%</strong>: solo se il rifacimento include la coibentazione con valori di trasmittanza U conformi al D.Lgs. 48/2020. Richiede APE ante e post intervento</li>
   <li><strong>Sismabonus</strong>: se abbinato a interventi strutturali certificati da tecnico abilitato</li>
 </ul>
-<p>Per un tetto da 100mq con copertura in tegole + coibentazione, la spesa totale può aggirarsi tra 15.000 e 30.000€. Con l'Ecobonus al 65%, il risparmio fiscale in 10 anni arriva a 9.750–19.500€. Consulta un <a href="/seo/edilizia/">impresa edile specializzata</a> per valutare l'intervento e massimizzare gli incentivi.</p>
+<p>Per un tetto da 100mq con copertura in tegole + coibentazione, la spesa totale può aggirarsi tra 15.000 e 30.000€. Con l'Ecobonus al 65%, il risparmio fiscale in 10 anni arriva a 9.750–19.500€. Consulta un <a href="/preventivi/edilizia/">impresa edile specializzata</a> per valutare l'intervento e massimizzare gli incentivi.</p>
 `,
   },
   {
@@ -1987,7 +1987,7 @@ export const BLOG_ARTICLES: BlogArticle[] = [
   <li><strong>Conto Termico 2.0</strong> (GSE): per pompe di calore che sostituiscono impianti a combustibile fossile. Contributo a fondo perduto fino al 65% della spesa. Erogato in 1–5 anni</li>
   <li><strong>Detrazione 50% Bonus Ristrutturazione</strong>: per condizionatori con pompa di calore (classi A+). In 10 anni sulla dichiarazione dei redditi. Bonifico parlante obbligatorio</li>
 </ul>
-<p>Attenzione: l'acquisto online senza installatore non consente di accedere agli incentivi. La certificazione dell'installatore abilitato (patentino F-Gas obbligatorio per legge) è requisito indispensabile sia per le garanzie che per le detrazioni fiscali. Affidati sempre a un <a href="/seo/condizionatori/">installatore certificato F-Gas</a>.</p>
+<p>Attenzione: l'acquisto online senza installatore non consente di accedere agli incentivi. La certificazione dell'installatore abilitato (patentino F-Gas obbligatorio per legge) è requisito indispensabile sia per le garanzie che per le detrazioni fiscali. Affidati sempre a un <a href="/preventivi/condizionatori/">installatore certificato F-Gas</a>.</p>
 
 <h2>Errori da evitare nell'acquisto</h2>
 <ul>
@@ -2050,7 +2050,7 @@ export const BLOG_ARTICLES: BlogArticle[] = [
 
 <h2>Risparmio in bolletta con infissi nuovi</h2>
 <p>Secondo i dati ENEA, la sostituzione degli infissi in un appartamento anni '70 con finestre in ferro singolo vetro può ridurre i consumi di riscaldamento del 15–25%. Per un'abitazione con bolletta del gas da 1.200€/anno, il risparmio si aggira tra 180 e 300€/anno. Il payback dell'investimento (senza incentivi) è di 15–25 anni; con le detrazioni fiscali scende a 8–12 anni.</p>
-<p>Per ottenere preventivi comparabili, specifica sempre il numero di finestre, le dimensioni e la zona climatica del comune quando contatti un <a href="/seo/serramentista/">serramentista</a>.</p>
+<p>Per ottenere preventivi comparabili, specifica sempre il numero di finestre, le dimensioni e la zona climatica del comune quando contatti un <a href="/preventivi/serramentista/">serramentista</a>.</p>
 
 <h2>Errori comuni nella scelta del serramentista</h2>
 <ul>
@@ -2126,7 +2126,7 @@ export const BLOG_ARTICLES: BlogArticle[] = [
   <li><strong>Non specificare chi fornisce i materiali</strong>: se compri piastrelle online e arrivano rotte o con tonalità diverse, il piastrellista non è responsabile</li>
   <li><strong>Ignorare i profili di raccordo</strong>: angoli, soglie tra stanze, bordi doccia richiedono profilati specifici non sempre inclusi nel preventivo</li>
 </ul>
-<p>Per evitare sorprese, richiedi un preventivo dettagliato voce per voce a un <a href="/seo/piastrellista/">piastrellista esperto</a> dopo un sopralluogo in cantiere.</p>
+<p>Per evitare sorprese, richiedi un preventivo dettagliato voce per voce a un <a href="/preventivi/piastrellista/">piastrellista esperto</a> dopo un sopralluogo in cantiere.</p>
 `,
   },
   {
@@ -2196,7 +2196,7 @@ export const BLOG_ARTICLES: BlogArticle[] = [
   <li>Smaltimento del verde di risulta: portato via o lasciato in cantiere?</li>
   <li>Assicurazione RC professionale del giardiniere (danno a terzi durante i lavori)</li>
 </ul>
-<p>Un <a href="/seo/giardiniere/">giardiniere professionista</a> fornisce sempre un preventivo dettagliato con frequenza degli interventi e elenco preciso delle lavorazioni incluse nel canone mensile.</p>
+<p>Un <a href="/preventivi/giardiniere/">giardiniere professionista</a> fornisce sempre un preventivo dettagliato con frequenza degli interventi e elenco preciso delle lavorazioni incluse nel canone mensile.</p>
 `,
   },
   {
@@ -2254,7 +2254,7 @@ export const BLOG_ARTICLES: BlogArticle[] = [
   <li>L'appartamento è di fascia alta e si vuole valorizzare l'immobile (+3–8% valore percepito)</li>
   <li>Si preferisce un pavimento caldo al piede in zone fredde</li>
 </ul>
-<p>Affidati a un <a href="/seo/pavimentista/">pavimentista specializzato in legno</a> per valutare lo stato del sottofondo — è la variabile che determina quale tipo di posa è possibile e quanto costerà davvero.</p>
+<p>Affidati a un <a href="/preventivi/pavimentista/">pavimentista specializzato in legno</a> per valutare lo stato del sottofondo — è la variabile che determina quale tipo di posa è possibile e quanto costerà davvero.</p>
 `,
   },
   {
@@ -2318,7 +2318,7 @@ export const BLOG_ARTICLES: BlogArticle[] = [
   <li>Richiedi sempre le marche dei materiali principali (malte, intonaci, collanti): brand sconosciuti costano meno ma hanno prestazioni inferiori</li>
   <li>Un muratore che non vuole rilasciare fattura è un segnale di allarme — anche perché ti esclude da qualsiasi detrazione fiscale</li>
 </ul>
-<p>Per ristrutturazioni importanti, un <a href="/seo/muratore/">muratore certificato</a> rilascia sempre una Dichiarazione di Conformità per i lavori strutturali e garantisce i lavori per almeno 2 anni.</p>
+<p>Per ristrutturazioni importanti, un <a href="/preventivi/muratore/">muratore certificato</a> rilascia sempre una Dichiarazione di Conformità per i lavori strutturali e garantisce i lavori per almeno 2 anni.</p>
 `,
   },
   {
@@ -2367,7 +2367,7 @@ export const BLOG_ARTICLES: BlogArticle[] = [
 
 <h2>Cosa fare se il costo finale supera il preventivo</h2>
 <p>Se i lavori vengono consegnati con un conto superiore al preventivo firmato, hai diritto a contestarlo. Il preventivo scritto e firmato è un documento contrattuale. Per extra non autorizzati per iscritto, puoi legittimamente rifiutare il pagamento. Documenta tutto: preventivo firmato, comunicazioni WhatsApp o email, eventuali varianti discusse. Per ristrutturazioni importanti, utilizza sempre un contratto formale e non solo il preventivo.</p>
-<p>Usare strumenti come <a href="/seo/ristrutturazione/">prevai per generare preventivi strutturati</a> aiuta anche i professionisti onesti a comunicare con maggiore chiarezza e trasparenza ai propri clienti.</p>
+<p>Usare strumenti come <a href="/preventivi/ristrutturazione/">prevai per generare preventivi strutturati</a> aiuta anche i professionisti onesti a comunicare con maggiore chiarezza e trasparenza ai propri clienti.</p>
 `,
   },
   {
@@ -2415,7 +2415,7 @@ export const BLOG_ARTICLES: BlogArticle[] = [
 
 <h2>Come documentare tutto per iscritto</h2>
 <p>Qualsiasi accordo verbale non vale nulla in caso di controversia. Tutto — varianti, scadenze, pagamenti, garanzie — deve essere documentato via email, WhatsApp (con screenshot salvati), o meglio ancora in un contratto formale allegato al preventivo.</p>
-<p>Per confrontare più preventivi in modo strutturato e capire quale offre il miglior rapporto qualità/prezzo, leggi anche la guida su <a href="/seo/ristrutturazione/">come scegliere l'impresa per ristrutturazioni</a>.</p>
+<p>Per confrontare più preventivi in modo strutturato e capire quale offre il miglior rapporto qualità/prezzo, leggi anche la guida su <a href="/preventivi/ristrutturazione/">come scegliere l'impresa per ristrutturazioni</a>.</p>
 `,
   },
   {
@@ -2478,7 +2478,7 @@ export const BLOG_ARTICLES: BlogArticle[] = [
   <li>Sono previste ipoteche o garanzie reali sull'immobile</li>
   <li>L'impresa richiede acconti molto elevati come garanzia</li>
 </ul>
-<p>Per i lavori di ristrutturazione di fascia media, un contratto scritto tra privati è sufficiente. Rivolgiti a un <a href="/seo/geometra/">geometra professionista</a> per la redazione del capitolato tecnico allegato al contratto.</p>
+<p>Per i lavori di ristrutturazione di fascia media, un contratto scritto tra privati è sufficiente. Rivolgiti a un <a href="/preventivi/geometra/">geometra professionista</a> per la redazione del capitolato tecnico allegato al contratto.</p>
 `,
   },
   {
@@ -2526,7 +2526,7 @@ export const BLOG_ARTICLES: BlogArticle[] = [
   <li>Chi non sa rispondere alle domande su certificazioni e conformità di impianto probabilmente non le rispetta</li>
   <li>Chi insiste per pagamento in contanti "per risparmiare l'IVA" ti propone un'irregolarità fiscale e ti priva di tutte le tutele legali</li>
 </ul>
-<p>Consulta le guide specifiche per il tuo settore: <a href="/seo/idraulico/">trovare un idraulico affidabile</a> o <a href="/seo/elettricista/">scegliere un elettricista certificato</a>.</p>
+<p>Consulta le guide specifiche per il tuo settore: <a href="/preventivi/idraulico/">trovare un idraulico affidabile</a> o <a href="/preventivi/elettricista/">scegliere un elettricista certificato</a>.</p>
 `,
   },
   {
@@ -2585,7 +2585,7 @@ export const BLOG_ARTICLES: BlogArticle[] = [
 
 <h2>Quanto tempo dedicare alla selezione</h2>
 <p>Per una ristrutturazione da 10.000–30.000€, dedica almeno 2–3 settimane alla selezione: almeno 3 preventivi, almeno 1 sopralluogo con ciascun professionista, verifica delle referenze e lettura critica dei preventivi. Accelerare questa fase per risparmiare qualche giorno spesso costa molto di più a fine lavori.</p>
-<p>Consulta anche la guida su <a href="/seo/ristrutturazione/">come ristrutturare casa senza sorprese</a> per altri strumenti pratici.</p>
+<p>Consulta anche la guida su <a href="/preventivi/ristrutturazione/">come ristrutturare casa senza sorprese</a> per altri strumenti pratici.</p>
 `,
   },
   {
@@ -2638,7 +2638,7 @@ export const BLOG_ARTICLES: BlogArticle[] = [
 <p>La sanatoria ordinaria (accertamento di conformità) è possibile se l'abuso rispetta le norme urbanistiche attuali. Costo: oblazione + onorari tecnici. Il condono edilizio richiede invece una legge specifica del Parlamento — il terzo condono è del 2003 e ad oggi non esiste un nuovo condono nazionale.</p>
 
 <h2>Responsabilità dell'impresa e del committente</h2>
-<p>L'impresa che esegue lavori abusivi su richiesta del committente è penalmente responsabile insieme a lui. La responsabilità del committente non viene meno nemmeno se delega tutto all'impresa. Prima di commissionare qualsiasi lavoro strutturale o di ampliamento, verifica con un <a href="/seo/geometra/">geometra abilitato</a> cosa è possibile fare e quali titoli abilitativi sono necessari.</p>
+<p>L'impresa che esegue lavori abusivi su richiesta del committente è penalmente responsabile insieme a lui. La responsabilità del committente non viene meno nemmeno se delega tutto all'impresa. Prima di commissionare qualsiasi lavoro strutturale o di ampliamento, verifica con un <a href="/preventivi/geometra/">geometra abilitato</a> cosa è possibile fare e quali titoli abilitativi sono necessari.</p>
 `,
   },
   {
@@ -2696,7 +2696,7 @@ export const BLOG_ARTICLES: BlogArticle[] = [
   <li>"Il saldo finale non è dovuto finché non sono stati consegnati al committente tutte le dichiarazioni di conformità e i collaudi previsti"</li>
   <li>"In caso di ritardo nel pagamento da parte del committente superiore a 30 giorni, l'appaltatore può sospendere i lavori previa diffida scritta"</li>
 </ul>
-<p>Consulta un <a href="/seo/geometra/">direttore lavori</a> per la gestione formale dei SAL su cantieri complessi: il suo costo (1–3% del valore dell'opera) si ripaga ampiamente in protezione e qualità dei lavori consegnati.</p>
+<p>Consulta un <a href="/preventivi/geometra/">direttore lavori</a> per la gestione formale dei SAL su cantieri complessi: il suo costo (1–3% del valore dell'opera) si ripaga ampiamente in protezione e qualità dei lavori consegnati.</p>
 `,
   },
   {
@@ -2757,7 +2757,7 @@ export const BLOG_ARTICLES: BlogArticle[] = [
   <li>Alternativa rapida: mediazione civile (obbligatoria prima del giudizio per contratti d'appalto). Costo: 50–500€; risolve molte controversie senza tribunale</li>
   <li>Giudizio civile: Giudice di Pace fino a 10.000€; Tribunale sopra. Tempi: 1–3 anni</li>
 </ul>
-<p>Per <a href="/seo/ristrutturazione/">ristrutturazioni importanti</a>, affidati sempre a imprese con assicurazione RC e iscrizione alla CCIAA verificabile: sono i professionisti che non fuggono dopo i lavori.</p>
+<p>Per <a href="/preventivi/ristrutturazione/">ristrutturazioni importanti</a>, affidati sempre a imprese con assicurazione RC e iscrizione alla CCIAA verificabile: sono i professionisti che non fuggono dopo i lavori.</p>
 `,
   },
   {
@@ -2812,7 +2812,7 @@ export const BLOG_ARTICLES: BlogArticle[] = [
   <li>Silossanica per esterno: 12–25 €/litro</li>
   <li>Ai silicati: 18–40 €/litro</li>
 </ul>
-<p>Per un imbianchino professionista, la differenza tra un prodotto da 4 €/litro e uno da 12 €/litro può essere 180€ su 100mq di parete. Ma la pittura di qualità dura il doppio — il risparmio è nella mano d'opera non rifatta. Un <a href="/seo/imbianchino/">imbianchino esperto</a> sa sempre consigliare il prodotto giusto per ogni superfice.</p>
+<p>Per un imbianchino professionista, la differenza tra un prodotto da 4 €/litro e uno da 12 €/litro può essere 180€ su 100mq di parete. Ma la pittura di qualità dura il doppio — il risparmio è nella mano d'opera non rifatta. Un <a href="/preventivi/imbianchino/">imbianchino esperto</a> sa sempre consigliare il prodotto giusto per ogni superfice.</p>
 `,
   },
   {
@@ -2867,7 +2867,7 @@ export const BLOG_ARTICLES: BlogArticle[] = [
   <li>Lunghezza prevista in metri per ogni circuito</li>
   <li>Tipo di posa: sotto tubo rigido PVC, in canalina, sotto intonaco</li>
 </ul>
-<p>Se il preventivo riporta solo "cavi elettrici a norma" senza specificare tipo e sezione, chiedi l'integrazione per iscritto. La differenza tra un N07V-K 1,5mm² e un FG16OR16 4mm² può essere il doppio del costo del materiale — e fa tutta la differenza in sicurezza e conformità. Affidati sempre a un <a href="/seo/elettricista/">elettricista abilitato</a> per impianti nuovi e rifacimenti.</p>
+<p>Se il preventivo riporta solo "cavi elettrici a norma" senza specificare tipo e sezione, chiedi l'integrazione per iscritto. La differenza tra un N07V-K 1,5mm² e un FG16OR16 4mm² può essere il doppio del costo del materiale — e fa tutta la differenza in sicurezza e conformità. Affidati sempre a un <a href="/preventivi/elettricista/">elettricista abilitato</a> per impianti nuovi e rifacimenti.</p>
 `,
   },
   {
@@ -2933,7 +2933,7 @@ export const BLOG_ARTICLES: BlogArticle[] = [
   <li>Rame: materiale ~600–900€ + raccorderia ~300–500€ + manodopera (più lenta) ~800–1.200€</li>
   <li>Multistrato: materiale ~250–450€ + raccorderia ~400–700€ + manodopera (più rapida) ~600–900€</li>
 </ul>
-<p>Affidati a un <a href="/seo/idraulico/">idraulico certificato</a> per la scelta del materiale corretto in base alla qualità dell'acqua locale (durezza e pH) e al tipo di impianto.</p>
+<p>Affidati a un <a href="/preventivi/idraulico/">idraulico certificato</a> per la scelta del materiale corretto in base alla qualità dell'acqua locale (durezza e pH) e al tipo di impianto.</p>
 `,
   },
   {
@@ -3003,7 +3003,7 @@ export const BLOG_ARTICLES: BlogArticle[] = [
   <li><strong>"Posa sanitari a fornitura cliente":</strong> tu porti i sanitari, l'idraulico li installa. Tieni i cartoni — se si rompe durante la posa, il danno è tuo</li>
   <li><strong>"Fornitura con sconto su listino":</strong> l'idraulico ha sconti dal fornitore. Chiedi il listino originale e la percentuale di sconto applicata</li>
 </ul>
-<p>Pianifica l'acquisto dei materiali con anticipo: box doccia e piastrelle su ordinazione hanno tempi di consegna di 2–4 settimane. Consulta un <a href="/seo/idraulico/">idraulico esperto</a> per la sequenza corretta degli acquisti e dei lavori.</p>
+<p>Pianifica l'acquisto dei materiali con anticipo: box doccia e piastrelle su ordinazione hanno tempi di consegna di 2–4 settimane. Consulta un <a href="/preventivi/idraulico/">idraulico esperto</a> per la sequenza corretta degli acquisti e dei lavori.</p>
 `,
   },
   {
@@ -3064,7 +3064,7 @@ export const BLOG_ARTICLES: BlogArticle[] = [
   <li>Trattamento di finitura previsto (olio, vernice, lacca)</li>
   <li>Quantità in mq o ml con specifica di sfrido incluso (di solito 10–15%)</li>
 </ul>
-<p>Richiedi sempre il dettaglio per iscritto a un <a href="/seo/falegname/">falegname specializzato</a>. La differenza tra MDF laccato e rovere massello oliato può essere 400€/mq — e merita di essere scelta consapevolmente.</p>
+<p>Richiedi sempre il dettaglio per iscritto a un <a href="/preventivi/falegname/">falegname specializzato</a>. La differenza tra MDF laccato e rovere massello oliato può essere 400€/mq — e merita di essere scelta consapevolmente.</p>
 `,
   },
   {
@@ -3136,7 +3136,7 @@ export const BLOG_ARTICLES: BlogArticle[] = [
   <li>Quantità in mq incluso sfrido (10–15%)</li>
   <li>Se incluso nel prezzo o "a fornitura cliente"</li>
 </ul>
-<p>Senza questi dati, qualsiasi confronto tra preventivi di <a href="/seo/piastrellista/">piastrellisti</a> è inutile: stai confrontando prodotti completamente diversi.</p>
+<p>Senza questi dati, qualsiasi confronto tra preventivi di <a href="/preventivi/piastrellista/">piastrellisti</a> è inutile: stai confrontando prodotti completamente diversi.</p>
 `,
   },
   {
@@ -3203,7 +3203,7 @@ export const BLOG_ARTICLES: BlogArticle[] = [
   <li><strong>Scarpe antinfortunistiche:</strong> obbligatorie su cantiere (punta rinforzata). Costo: 50–150€</li>
   <li><strong>Imbracatura di sicurezza:</strong> obbligatoria per lavori in quota > 2m senza parapetti. Costo: 80–250€</li>
 </ul>
-<p>La mancata dotazione dei DPI comporta sanzioni fino a 5.000€ in caso di ispezione. Per chi vuole approfondire il settore, la guida su <a href="/seo/imbianchino/">come diventare imbianchino professionista</a> copre anche i corsi obbligatori di sicurezza.</p>
+<p>La mancata dotazione dei DPI comporta sanzioni fino a 5.000€ in caso di ispezione. Per chi vuole approfondire il settore, la guida su <a href="/preventivi/imbianchino/">come diventare imbianchino professionista</a> copre anche i corsi obbligatori di sicurezza.</p>
 `,
   },
   {
@@ -3327,7 +3327,7 @@ export const BLOG_ARTICLES: BlogArticle[] = [
   <li>Non accantonare nulla per le tasse e i contributi INPS: molti artigiani si trovano in difficoltà al momento della dichiarazione</li>
   <li>Comprare attrezzatura di bassa qualità: strumenti professionali durano 10x di più e producono risultati migliori</li>
 </ul>
-<p>Un preventivo professionale e rapido è spesso ciò che distingue il cliente acquisito da quello perso. Strumenti come <a href="/seo/imbianchino/">prevai per imbianchini</a> permettono di creare documenti professionali in 60 secondi anche dal telefono, dopo il sopralluogo.</p>
+<p>Un preventivo professionale e rapido è spesso ciò che distingue il cliente acquisito da quello perso. Strumenti come <a href="/preventivi/imbianchino/">prevai per imbianchini</a> permettono di creare documenti professionali in 60 secondi anche dal telefono, dopo il sopralluogo.</p>
 `,
   },
   {
@@ -3390,7 +3390,7 @@ export const BLOG_ARTICLES: BlogArticle[] = [
 
 <h2>Trend della domanda nel mercato italiano</h2>
 <p>Le stime di Confartigianato e CNA indicano che nei prossimi 5 anni mancheranno in Italia circa 30.000 elettricisti qualificati. La combinazione di pensionamenti dei boomer e scarso ricambio giovane crea uno squilibrio strutturale a favore di chi entra nel settore oggi. Il costo orario medio è destinato a crescere ulteriormente.</p>
-<p>Per lavorare in modo professionale ed efficiente, un <a href="/seo/elettricista/">elettricista</a> oggi usa strumenti digitali per preventivi, gestione cantieri e comunicazione con i clienti — parte integrante della competitività nel 2026.</p>
+<p>Per lavorare in modo professionale ed efficiente, un <a href="/preventivi/elettricista/">elettricista</a> oggi usa strumenti digitali per preventivi, gestione cantieri e comunicazione con i clienti — parte integrante della competitività nel 2026.</p>
 `,
   },
   {
@@ -3456,7 +3456,7 @@ export const BLOG_ARTICLES: BlogArticle[] = [
   <li>Ritardare la fatturazione: la fattura si emette al momento dell'incasso (forfettario) o alla consegna del servizio (ordinario)</li>
   <li>Dimenticare l'acconto IRPEF di novembre: l'Agenzia delle Entrate richiede un acconto basato sull'anno precedente — una sorpresa sgradevole se non pianificata</li>
 </ul>
-<p>Prima di aprire, parla con un commercialista specializzato in artigiani e PMI. Una consulenza iniziale da 150–300€ vale molto di più delle sanzioni per errori fiscali dei primi mesi. Per i preventivi, usa strumenti professionali come <a href="/seo/elettricista/">quelli disponibili per gli artigiani del tuo settore</a>.</p>
+<p>Prima di aprire, parla con un commercialista specializzato in artigiani e PMI. Una consulenza iniziale da 150–300€ vale molto di più delle sanzioni per errori fiscali dei primi mesi. Per i preventivi, usa strumenti professionali come <a href="/preventivi/elettricista/">quelli disponibili per gli artigiani del tuo settore</a>.</p>
 `,
   },
   {
@@ -3523,7 +3523,7 @@ export const BLOG_ARTICLES: BlogArticle[] = [
   <li>Aggiungi render fotografici (anche semplici, fatti con app come iScape o Planter) di come diventerà il giardino</li>
   <li>Cita per nome le varietà di piante proposte (es. "Photinia Fraseri Red Robin" non "arbusto sempreverde rosso")</li>
 </ul>
-<p>Un preventivo con foto e nomi precisi comunica competenza in modo immediato — e giustifica prezzi più alti. Usa strumenti digitali per creare documenti professionali in modo rapido: la <a href="/seo/giardiniere/">guida per giardinieri su prevai</a> spiega come strutturare il documento ideale.</p>
+<p>Un preventivo con foto e nomi precisi comunica competenza in modo immediato — e giustifica prezzi più alti. Usa strumenti digitali per creare documenti professionali in modo rapido: la <a href="/preventivi/giardiniere/">guida per giardinieri su prevai</a> spiega come strutturare il documento ideale.</p>
 `,
   },
   {
@@ -3582,7 +3582,7 @@ export const BLOG_ARTICLES: BlogArticle[] = [
 
 <h2>L'importanza del disegno tecnico allegato</h2>
 <p>Un preventivo senza disegno tecnico allegato è aperto a interpretazioni. Il disegno serve come riferimento di accordo contrattuale. Per lavori sopra i 5.000€, investi 2–4 ore nel disegno (anche con strumenti semplici come SketchUp Free o AutoCAD LT): ogni ora spesa nel disegno risparmia 3–4 ore di discussioni post-consegna.</p>
-<p>Genera preventivi professionali per i tuoi lavori di <a href="/seo/falegname/">falegnameria su misura</a> in modo rapido e strutturato con strumenti AI dedicati agli artigiani italiani.</p>
+<p>Genera preventivi professionali per i tuoi lavori di <a href="/preventivi/falegname/">falegnameria su misura</a> in modo rapido e strutturato con strumenti AI dedicati agli artigiani italiani.</p>
 `,
   },
   {
@@ -3645,7 +3645,7 @@ export const BLOG_ARTICLES: BlogArticle[] = [
 <p>Le sanzioni variano per regione: alcune regioni come Lombardia e Piemonte hanno sistemi di controllo più attivi (es. CURIT in Lombardia — catasto degli impianti termici).</p>
 
 <h2>Cosa deve includere un preventivo per manutenzione caldaia per essere compliant</h2>
-<p>Un preventivo professionale di manutenzione da un <a href="/seo/termoidraulico/">termoidraulico abilitato</a> deve riportare:</p>
+<p>Un preventivo professionale di manutenzione da un <a href="/preventivi/termoidraulico/">termoidraulico abilitato</a> deve riportare:</p>
 <ul>
   <li>Controllo combustione con analizzatore calibrato (misura CO, CO₂, temperatura fumi)</li>
   <li>Pulizia bruciatore e camera di combustione</li>
@@ -3720,7 +3720,7 @@ export const BLOG_ARTICLES: BlogArticle[] = [
 </ul>
 
 <h2>Scadenze previste per i bonus nel 2026</h2>
-<p>Il Bonus Ristrutturazione 50% è prorogato fino al 31 dicembre 2026 (poi potrebbe scendere al 36%). L'Ecobonus è prorogato fino al 31 dicembre 2027 con meccanismi diversi per edifici unifamiliari e condomini. Consulta sempre un <a href="/seo/geometra/">geometra o commercialista</a> per verificare le scadenze aggiornate al momento dei lavori.</p>
+<p>Il Bonus Ristrutturazione 50% è prorogato fino al 31 dicembre 2026 (poi potrebbe scendere al 36%). L'Ecobonus è prorogato fino al 31 dicembre 2027 con meccanismi diversi per edifici unifamiliari e condomini. Consulta sempre un <a href="/preventivi/geometra/">geometra o commercialista</a> per verificare le scadenze aggiornate al momento dei lavori.</p>
 `,
   },
   {
@@ -3798,7 +3798,7 @@ export const BLOG_ARTICLES: BlogArticle[] = [
   <li>Preventivo dettagliato con indicazione di tutte le pratiche necessarie e costi separati (onorari + diritti)</li>
   <li>Tempistica stimata: alcune pratiche richiedono settimane, pianifica in anticipo</li>
 </ul>
-<p>Il <a href="/seo/geometra/">geometra</a> è il professionista che ti protegge dai rischi legali e ti aiuta ad accedere agli incentivi fiscali nel modo corretto. Non è un costo — è un investimento nella regolarità del tuo immobile.</p>
+<p>Il <a href="/preventivi/geometra/">geometra</a> è il professionista che ti protegge dai rischi legali e ti aiuta ad accedere agli incentivi fiscali nel modo corretto. Non è un costo — è un investimento nella regolarità del tuo immobile.</p>
 `,
   },
   {
@@ -3897,7 +3897,7 @@ export const BLOG_ARTICLES: BlogArticle[] = [
   <li>Scegliere piastrelle su ordinazione con tempi di consegna di 4+ settimane</li>
   <li>Non coordinare le maestranze (idraulico che aspetta il piastrellista che aspetta l'elettricista)</li>
 </ul>
-<p>Per ottenere un preventivo strutturato per la tua ristrutturazione bagno, utilizza strumenti dedicati ai professionisti <a href="/seo/idraulico/">idraulici</a> e <a href="/seo/piastrellista/">piastrellisti</a> per confrontare le offerte in modo corretto.</p>
+<p>Per ottenere un preventivo strutturato per la tua ristrutturazione bagno, utilizza strumenti dedicati ai professionisti <a href="/preventivi/idraulico/">idraulici</a> e <a href="/preventivi/piastrellista/">piastrellisti</a> per confrontare le offerte in modo corretto.</p>
 `,
   },
   {
@@ -3968,7 +3968,7 @@ export const BLOG_ARTICLES: BlogArticle[] = [
   <li>Firma digitale integrata nel preventivo</li>
   <li>CRM integrato per il follow-up automatico dei preventivi non accettati</li>
 </ul>
-<p>Il futuro è già qui. Provare uno strumento AI per preventivi come <a href="/seo/ristrutturazione/">prevai</a> richiede meno di 5 minuti e può cambiare il tuo modo di lavorare dalla prima settimana.</p>
+<p>Il futuro è già qui. Provare uno strumento AI per preventivi come <a href="/preventivi/ristrutturazione/">prevai</a> richiede meno di 5 minuti e può cambiare il tuo modo di lavorare dalla prima settimana.</p>
 `,
   },
   {
@@ -4037,7 +4037,7 @@ export const BLOG_ARTICLES: BlogArticle[] = [
   <li>Rispondi a tutte le recensioni — anche quelle negative</li>
   <li>Usa Google Posts per promozioni stagionali ("Sconto 10% sui preventivi per lavori di tinteggiatura primaverile")</li>
 </ul>
-<p>Un profilo Google My Business ben ottimizzato porta in media 3–8 nuovi contatti mensili spontanei nella zona di riferimento — senza spendere nulla in pubblicità. Per gestire l'aumento di lavoro che ne deriva, strumenti come <a href="/seo/imbianchino/">prevai per artigiani</a> permettono di gestire preventivi rapidamente anche in periodi di picco.</p>
+<p>Un profilo Google My Business ben ottimizzato porta in media 3–8 nuovi contatti mensili spontanei nella zona di riferimento — senza spendere nulla in pubblicità. Per gestire l'aumento di lavoro che ne deriva, strumenti come <a href="/preventivi/imbianchino/">prevai per artigiani</a> permettono di gestire preventivi rapidamente anche in periodi di picco.</p>
 `,
   },
   {
@@ -4111,7 +4111,7 @@ export const BLOG_ARTICLES: BlogArticle[] = [
   <li>Fattura omessa: sanzione dal 90% al 180% dell'imposta + sanzione amministrativa</li>
   <li>Regime forfettario: sanzione ridotta a 1/10 per il primo anno di applicazione dell'obbligo</li>
 </ul>
-<p>L'integrazione preventivo → fattura nel flusso di lavoro quotidiano è il modo più efficiente per non dimenticare mai di fatturare. Usa strumenti come <a href="/seo/elettricista/">prevai per artigiani</a> che connettono direttamente la generazione del preventivo all'emissione della fattura finale.</p>
+<p>L'integrazione preventivo → fattura nel flusso di lavoro quotidiano è il modo più efficiente per non dimenticare mai di fatturare. Usa strumenti come <a href="/preventivi/elettricista/">prevai per artigiani</a> che connettono direttamente la generazione del preventivo all'emissione della fattura finale.</p>
 `,
   },
   {
@@ -4195,7 +4195,7 @@ export const BLOG_ARTICLES: BlogArticle[] = [
   <li>Quante chiamate sono arrivate direttamente dal profilo</li>
   <li>Quante richieste di indicazioni (verso il tuo indirizzo o area di servizio)</li>
 </ul>
-<p>Un profilo GMB ben ottimizzato è il fondamento del marketing locale. Combinalo con uno strumento per preventivi veloci come <a href="/seo/idraulico/">prevai per idraulici</a> e potrai rispondere a tutte le richieste in tempo reale, aumentando il tasso di conversione.</p>
+<p>Un profilo GMB ben ottimizzato è il fondamento del marketing locale. Combinalo con uno strumento per preventivi veloci come <a href="/preventivi/idraulico/">prevai per idraulici</a> e potrai rispondere a tutte le richieste in tempo reale, aumentando il tasso di conversione.</p>
 `,
   },
   {
@@ -4264,7 +4264,7 @@ export const BLOG_ARTICLES: BlogArticle[] = [
   <li><strong>Firma digitale:</strong> un PDF su WhatsApp non ha valore legale di firma. Per lavori sopra 5.000€, usa firma digitale separata</li>
   <li><strong>Archivio:</strong> i messaggi WhatsApp si perdono se si cambia telefono e non si fa backup. Archivia sempre copia dei preventivi inviati sul tuo sistema</li>
 </ul>
-<p>WhatsApp è lo strumento di comunicazione, non di archiviazione. Usa strumenti dedicati come <a href="/seo/ristrutturazione/">prevai</a> che archiviano automaticamente tutti i preventivi inviati e ne tracciano lo stato di accettazione.</p>
+<p>WhatsApp è lo strumento di comunicazione, non di archiviazione. Usa strumenti dedicati come <a href="/preventivi/ristrutturazione/">prevai</a> che archiviano automaticamente tutti i preventivi inviati e ne tracciano lo stato di accettazione.</p>
 `,
   },
 ];
@@ -4282,28 +4282,28 @@ export const GUIDE_CARDS: GuideCard[] = [
     slug: "come-fare-preventivo",
     title: "Come fare un preventivo professionale",
     description: "Guida passo-passo: struttura, voci, IVA e come inviarlo al cliente. Tutto quello che serve per creare un preventivo che converte.",
-    href: "/seo/come-fare-preventivo",
+    href: "/preventivi/come-fare-preventivo",
     icon: "📋",
   },
   {
     slug: "preventivi-gratis",
     title: "Preventivi gratis: inizia senza rischi",
     description: "Strumenti e opzioni gratuite per generare preventivi professionali. Scopri come iniziare senza investire nulla.",
-    href: "/seo/preventivi-gratis",
+    href: "/preventivi/preventivi-gratis",
     icon: "🎁",
   },
   {
     slug: "modello-excel",
     title: "Alternativa al modello Excel",
     description: "Perché il classico template Excel non basta più: confronto diretto con i software AI moderni per artigiani.",
-    href: "/seo/modello-excel",
+    href: "/preventivi/modello-excel",
     icon: "📊",
   },
   {
     slug: "modello-word",
     title: "Alternativa al modello Word",
     description: "Dal foglio Word al PDF professionale automatico: come fare il salto senza complicazioni.",
-    href: "/seo/modello-word",
+    href: "/preventivi/modello-word",
     icon: "📄",
   },
 ];

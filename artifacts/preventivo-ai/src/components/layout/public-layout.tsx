@@ -165,24 +165,24 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
             <div className="md:col-span-2">
               <h4 className="font-semibold mb-4 text-sm uppercase tracking-wider text-foreground">Professioni</h4>
               <ul className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm text-muted-foreground">
-                <li><Link href="/seo/imbianchino" className="hover:text-foreground transition-colors">Imbianchino</Link></li>
-                <li><Link href="/seo/muratore" className="hover:text-foreground transition-colors">Muratore</Link></li>
-                <li><Link href="/seo/elettricista" className="hover:text-foreground transition-colors">Elettricista</Link></li>
-                <li><Link href="/seo/pittore" className="hover:text-foreground transition-colors">Pittore</Link></li>
-                <li><Link href="/seo/idraulico" className="hover:text-foreground transition-colors">Idraulico</Link></li>
-                <li><Link href="/seo/piastrellista" className="hover:text-foreground transition-colors">Piastrellista</Link></li>
-                <li><Link href="/seo/edilizia" className="hover:text-foreground transition-colors">Imprese Edili</Link></li>
-                <li><Link href="/seo/giardiniere" className="hover:text-foreground transition-colors">Giardiniere</Link></li>
-                <li><Link href="/seo/ristrutturazione" className="hover:text-foreground transition-colors">Ristrutturazioni</Link></li>
-                <li><Link href="/seo/serramentista" className="hover:text-foreground transition-colors">Serramentista</Link></li>
-                <li><Link href="/seo/carpentiere" className="hover:text-foreground transition-colors">Carpentieri</Link></li>
-                <li><Link href="/seo/tetto" className="hover:text-foreground transition-colors">Coperture e Tetti</Link></li>
-                <li><Link href="/seo/falegname" className="hover:text-foreground transition-colors">Falegnami</Link></li>
-                <li><Link href="/seo/condizionatori" className="hover:text-foreground transition-colors">Condizionatori</Link></li>
-                <li><Link href="/seo/freelance" className="hover:text-foreground transition-colors">Freelance</Link></li>
-                <li><Link href="/seo/pavimentista" className="hover:text-foreground transition-colors">Pavimentista</Link></li>
-                <li><Link href="/seo/geometra" className="hover:text-foreground transition-colors">Geometri</Link></li>
-                <li><Link href="/seo/termoidraulico" className="hover:text-foreground transition-colors">Termoidraulico</Link></li>
+                <li><Link href="/preventivi/imbianchino" className="hover:text-foreground transition-colors">Imbianchino</Link></li>
+                <li><Link href="/preventivi/muratore" className="hover:text-foreground transition-colors">Muratore</Link></li>
+                <li><Link href="/preventivi/elettricista" className="hover:text-foreground transition-colors">Elettricista</Link></li>
+                <li><Link href="/preventivi/pittore" className="hover:text-foreground transition-colors">Pittore</Link></li>
+                <li><Link href="/preventivi/idraulico" className="hover:text-foreground transition-colors">Idraulico</Link></li>
+                <li><Link href="/preventivi/piastrellista" className="hover:text-foreground transition-colors">Piastrellista</Link></li>
+                <li><Link href="/preventivi/edilizia" className="hover:text-foreground transition-colors">Imprese Edili</Link></li>
+                <li><Link href="/preventivi/giardiniere" className="hover:text-foreground transition-colors">Giardiniere</Link></li>
+                <li><Link href="/preventivi/ristrutturazione" className="hover:text-foreground transition-colors">Ristrutturazioni</Link></li>
+                <li><Link href="/preventivi/serramentista" className="hover:text-foreground transition-colors">Serramentista</Link></li>
+                <li><Link href="/preventivi/carpentiere" className="hover:text-foreground transition-colors">Carpentieri</Link></li>
+                <li><Link href="/preventivi/tetto" className="hover:text-foreground transition-colors">Coperture e Tetti</Link></li>
+                <li><Link href="/preventivi/falegname" className="hover:text-foreground transition-colors">Falegnami</Link></li>
+                <li><Link href="/preventivi/condizionatori" className="hover:text-foreground transition-colors">Condizionatori</Link></li>
+                <li><Link href="/preventivi/freelance" className="hover:text-foreground transition-colors">Freelance</Link></li>
+                <li><Link href="/preventivi/pavimentista" className="hover:text-foreground transition-colors">Pavimentista</Link></li>
+                <li><Link href="/preventivi/geometra" className="hover:text-foreground transition-colors">Geometri</Link></li>
+                <li><Link href="/preventivi/termoidraulico" className="hover:text-foreground transition-colors">Termoidraulico</Link></li>
               </ul>
             </div>
             <div>
@@ -200,10 +200,10 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
               <h4 className="font-semibold mt-8 mb-4 text-sm uppercase tracking-wider text-foreground">Guide</h4>
               <ul className="space-y-2 text-sm text-muted-foreground">
                 <li><Link href="/blog" className="hover:text-foreground transition-colors font-medium text-foreground/80">Blog &amp; Approfondimenti</Link></li>
-                <li><Link href="/seo/modello-excel" className="hover:text-foreground transition-colors">Modello Excel</Link></li>
-                <li><Link href="/seo/modello-word" className="hover:text-foreground transition-colors">Modello Word</Link></li>
-                <li><Link href="/seo/come-fare-preventivo" className="hover:text-foreground transition-colors">Come Fare un Preventivo</Link></li>
-                <li><Link href="/seo/preventivi-gratis" className="hover:text-foreground transition-colors">Preventivi Gratis</Link></li>
+                <li><Link href="/preventivi/modello-excel" className="hover:text-foreground transition-colors">Modello Excel</Link></li>
+                <li><Link href="/preventivi/modello-word" className="hover:text-foreground transition-colors">Modello Word</Link></li>
+                <li><Link href="/preventivi/come-fare-preventivo" className="hover:text-foreground transition-colors">Come Fare un Preventivo</Link></li>
+                <li><Link href="/preventivi/preventivi-gratis" className="hover:text-foreground transition-colors">Preventivi Gratis</Link></li>
               </ul>
               <h4 className="font-semibold mt-8 mb-4 text-sm uppercase tracking-wider text-foreground">Azienda</h4>
               <ul className="space-y-2 text-sm text-muted-foreground">
@@ -219,6 +219,7 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
                 </li>
                 <li><Link href="/privacy" className="hover:text-foreground transition-colors">Privacy Policy</Link></li>
                 <li><Link href="/termini" className="hover:text-foreground transition-colors">Termini di Servizio</Link></li>
+                <li><Link href="/mappa-sito" className="hover:text-foreground transition-colors">Mappa del Sito</Link></li>
               </ul>
             </div>
           </div>

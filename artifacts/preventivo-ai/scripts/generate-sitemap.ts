@@ -38,14 +38,14 @@ for (const route of PUBLIC_ROUTES) {
 const citySectorSet = new Set(CITY_SECTORS);
 for (const sectorSlug of Object.keys(SECTORS)) {
   const priority = citySectorSet.has(sectorSlug) ? "0.8" : "0.7";
-  entries.push(url(`${BASE_URL}/seo/${sectorSlug}/`, priority, "monthly", "2026-05-01"));
+  entries.push(url(`${BASE_URL}/preventivi/${sectorSlug}/`, priority, "monthly", "2026-05-01"));
 }
 
 // SEO city×sector pages
 for (const sectorSlug of CITY_SECTORS) {
   for (const city of CITIES) {
     const priority = TIER1_CITY_SLUGS.has(city.slug) ? "0.7" : "0.6";
-    entries.push(url(`${BASE_URL}/seo/${sectorSlug}/${city.slug}/`, priority, "monthly", "2026-05-01"));
+    entries.push(url(`${BASE_URL}/preventivi/${sectorSlug}/${city.slug}/`, priority, "monthly", "2026-05-01"));
   }
 }
 

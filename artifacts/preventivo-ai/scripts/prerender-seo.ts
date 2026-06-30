@@ -184,34 +184,34 @@ const STATIC_FOOTER = `<footer class="border-t py-12 md:py-16 bg-white">
       <div class="md:col-span-2">
         <h4 class="font-semibold mb-4 text-sm uppercase tracking-wider text-foreground">Professioni</h4>
         <ul class="grid grid-cols-2 gap-x-6 gap-y-2 text-sm text-muted-foreground">
-          <li><a href="/seo/imbianchino/" class="hover:text-foreground transition-colors">Imbianchino</a></li>
-          <li><a href="/seo/muratore/" class="hover:text-foreground transition-colors">Muratore</a></li>
-          <li><a href="/seo/elettricista/" class="hover:text-foreground transition-colors">Elettricista</a></li>
-          <li><a href="/seo/pittore/" class="hover:text-foreground transition-colors">Pittore</a></li>
-          <li><a href="/seo/idraulico/" class="hover:text-foreground transition-colors">Idraulico</a></li>
-          <li><a href="/seo/piastrellista/" class="hover:text-foreground transition-colors">Piastrellista</a></li>
-          <li><a href="/seo/edilizia/" class="hover:text-foreground transition-colors">Imprese Edili</a></li>
-          <li><a href="/seo/giardiniere/" class="hover:text-foreground transition-colors">Giardiniere</a></li>
-          <li><a href="/seo/ristrutturazione/" class="hover:text-foreground transition-colors">Ristrutturazioni</a></li>
-          <li><a href="/seo/serramentista/" class="hover:text-foreground transition-colors">Serramentista</a></li>
-          <li><a href="/seo/carpentiere/" class="hover:text-foreground transition-colors">Carpentieri</a></li>
-          <li><a href="/seo/tetto/" class="hover:text-foreground transition-colors">Coperture e Tetti</a></li>
-          <li><a href="/seo/falegname/" class="hover:text-foreground transition-colors">Falegnami</a></li>
-          <li><a href="/seo/condizionatori/" class="hover:text-foreground transition-colors">Condizionatori</a></li>
-          <li><a href="/seo/freelance/" class="hover:text-foreground transition-colors">Freelance</a></li>
-          <li><a href="/seo/pavimentista/" class="hover:text-foreground transition-colors">Pavimentista</a></li>
-          <li><a href="/seo/geometra/" class="hover:text-foreground transition-colors">Geometri</a></li>
-          <li><a href="/seo/termoidraulico/" class="hover:text-foreground transition-colors">Termoidraulico</a></li>
+          <li><a href="/preventivi/imbianchino/" class="hover:text-foreground transition-colors">Imbianchino</a></li>
+          <li><a href="/preventivi/muratore/" class="hover:text-foreground transition-colors">Muratore</a></li>
+          <li><a href="/preventivi/elettricista/" class="hover:text-foreground transition-colors">Elettricista</a></li>
+          <li><a href="/preventivi/pittore/" class="hover:text-foreground transition-colors">Pittore</a></li>
+          <li><a href="/preventivi/idraulico/" class="hover:text-foreground transition-colors">Idraulico</a></li>
+          <li><a href="/preventivi/piastrellista/" class="hover:text-foreground transition-colors">Piastrellista</a></li>
+          <li><a href="/preventivi/edilizia/" class="hover:text-foreground transition-colors">Imprese Edili</a></li>
+          <li><a href="/preventivi/giardiniere/" class="hover:text-foreground transition-colors">Giardiniere</a></li>
+          <li><a href="/preventivi/ristrutturazione/" class="hover:text-foreground transition-colors">Ristrutturazioni</a></li>
+          <li><a href="/preventivi/serramentista/" class="hover:text-foreground transition-colors">Serramentista</a></li>
+          <li><a href="/preventivi/carpentiere/" class="hover:text-foreground transition-colors">Carpentieri</a></li>
+          <li><a href="/preventivi/tetto/" class="hover:text-foreground transition-colors">Coperture e Tetti</a></li>
+          <li><a href="/preventivi/falegname/" class="hover:text-foreground transition-colors">Falegnami</a></li>
+          <li><a href="/preventivi/condizionatori/" class="hover:text-foreground transition-colors">Condizionatori</a></li>
+          <li><a href="/preventivi/freelance/" class="hover:text-foreground transition-colors">Freelance</a></li>
+          <li><a href="/preventivi/pavimentista/" class="hover:text-foreground transition-colors">Pavimentista</a></li>
+          <li><a href="/preventivi/geometra/" class="hover:text-foreground transition-colors">Geometri</a></li>
+          <li><a href="/preventivi/termoidraulico/" class="hover:text-foreground transition-colors">Termoidraulico</a></li>
         </ul>
       </div>
       <div>
         <h4 class="font-semibold mb-4 text-sm uppercase tracking-wider text-foreground">Guide</h4>
         <ul class="space-y-2 text-sm text-muted-foreground">
           <li><a href="/blog/" class="hover:text-foreground transition-colors font-medium text-foreground/80">Blog &amp; Approfondimenti</a></li>
-          <li><a href="/seo/modello-excel/" class="hover:text-foreground transition-colors">Modello Excel</a></li>
-          <li><a href="/seo/modello-word/" class="hover:text-foreground transition-colors">Modello Word</a></li>
-          <li><a href="/seo/come-fare-preventivo/" class="hover:text-foreground transition-colors">Come Fare un Preventivo</a></li>
-          <li><a href="/seo/preventivi-gratis/" class="hover:text-foreground transition-colors">Preventivi Gratis</a></li>
+          <li><a href="/preventivi/modello-excel/" class="hover:text-foreground transition-colors">Modello Excel</a></li>
+          <li><a href="/preventivi/modello-word/" class="hover:text-foreground transition-colors">Modello Word</a></li>
+          <li><a href="/preventivi/come-fare-preventivo/" class="hover:text-foreground transition-colors">Come Fare un Preventivo</a></li>
+          <li><a href="/preventivi/preventivi-gratis/" class="hover:text-foreground transition-colors">Preventivi Gratis</a></li>
         </ul>
         <h4 class="font-semibold mt-8 mb-4 text-sm uppercase tracking-wider text-foreground">Azienda</h4>
         <ul class="space-y-2 text-sm text-muted-foreground">
@@ -220,6 +220,7 @@ const STATIC_FOOTER = `<footer class="border-t py-12 md:py-16 bg-white">
           <li><button class="hover:text-foreground transition-colors text-left">Supporto</button></li>
           <li><a href="/privacy/" class="hover:text-foreground transition-colors">Privacy Policy</a></li>
           <li><a href="/termini/" class="hover:text-foreground transition-colors">Termini di Servizio</a></li>
+          <li><a href="/mappa-sito/" class="hover:text-foreground transition-colors">Mappa del Sito</a></li>
         </ul>
       </div>
     </div>
@@ -1223,20 +1224,20 @@ for (const [sectorSlug, sector] of Object.entries(SECTORS)) {
       ? sector.descriptionVariants[descHash % sector.descriptionVariants.length]
       : sector.metaDescription;
 
-  const canonical = `${BASE_URL}/seo/${sectorSlug}/`;
+  const canonical = `${BASE_URL}/preventivi/${sectorSlug}/`;
   const jsonLd = buildSectorJsonLd(sector);
   const ogImagePath = ogImage(sectorSlug);
 
   const headBlock = buildHeadBlock({ title, description, canonical, ogImagePath, jsonLd });
   const bodyHtml = buildSectorBodyHtml(sector);
   const html = injectBody(injectHead(template, headBlock), bodyHtml);
-  writeRoute(`seo/${sectorSlug}`, html);
+  writeRoute(`preventivi/${sectorSlug}`, html);
   count++;
 
   if (!CITY_SECTORS.includes(sectorSlug)) continue;
 
   for (const city of CITIES) {
-    const cityCanonical = `${BASE_URL}/seo/${sectorSlug}/${city.slug}/`;
+    const cityCanonical = `${BASE_URL}/preventivi/${sectorSlug}/${city.slug}/`;
     const cityTitle = getCityTitle(sector, city.name, city.slug);
     const cityDesc = getCityDesc(sector, city.name, city.slug, city.region);
     const cityJsonLd = buildCityJsonLd(sector, city);
@@ -1250,7 +1251,7 @@ for (const [sectorSlug, sector] of Object.entries(SECTORS)) {
     });
     const cityBodyHtml = buildCityBodyHtml(sector, city);
     const cityHtml = injectBody(injectHead(template, cityHeadBlock), cityBodyHtml);
-    writeRoute(`seo/${sectorSlug}/${city.slug}`, cityHtml);
+    writeRoute(`preventivi/${sectorSlug}/${city.slug}`, cityHtml);
     count++;
   }
 }
@@ -1739,6 +1740,140 @@ function buildWebPageJsonLd(name: string, description: string, path: string, typ
   };
 }
 
+function buildMappaSitoBodyHtml(): string {
+  const breadcrumb = buildBreadcrumb([
+    { name: "Home", href: "/" },
+    { name: "Mappa del Sito", href: null },
+  ]);
+
+  const mainPages = `
+    <div class="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
+      <div class="flex items-center gap-3 mb-5 pb-3 border-b border-gray-50">
+        <h2 class="text-lg font-bold text-gray-900">Pagine Principali</h2>
+      </div>
+      <ul class="space-y-2.5 text-sm">
+        <li><a href="/" class="text-gray-600 hover:text-violet-600 transition-colors">Home Page</a></li>
+        <li><a href="/whatsapp/" class="text-gray-600 hover:text-violet-600 transition-colors">Preventivi su WhatsApp</a></li>
+        <li><a href="/chi-siamo/" class="text-gray-600 hover:text-violet-600 transition-colors">Chi Siamo</a></li>
+        <li><a href="/contatti/" class="text-gray-600 hover:text-violet-600 transition-colors">Contatti e Assistenza</a></li>
+        <li><a href="/privacy/" class="text-gray-600 hover:text-violet-600 transition-colors">Privacy Policy</a></li>
+        <li><a href="/termini/" class="text-gray-600 hover:text-violet-600 transition-colors">Termini di Servizio</a></li>
+      </ul>
+    </div>
+  `;
+
+  const blogCats = BLOG_CATEGORIES.map((cat) => `
+    <li><a href="/blog/categoria/${cat.slug}/" class="text-gray-600 hover:text-violet-600 transition-colors pl-2">Categoria: ${cat.name}</a></li>
+  `).join("");
+
+  const blogArts = BLOG_ARTICLES.slice(0, 5).map((art) => `
+    <li class="truncate max-w-full"><a href="/blog/${art.slug}/" class="text-gray-500 hover:text-violet-600 text-xs transition-colors pl-2">${esc(art.title)}</a></li>
+  `).join("");
+
+  const blogPages = `
+    <div class="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
+      <div class="flex items-center gap-3 mb-5 pb-3 border-b border-gray-50">
+        <h2 class="text-lg font-bold text-gray-900">Blog e Guide</h2>
+      </div>
+      <ul class="space-y-2.5 text-sm">
+        <li><a href="/blog/" class="font-semibold text-gray-800 hover:text-violet-600 transition-colors">Indice Blog</a></li>
+        ${blogCats}
+        <li class="pt-2 font-semibold text-gray-800 border-t border-gray-50 mt-2">Ultimi Articoli:</li>
+        ${blogArts}
+      </ul>
+    </div>
+  `;
+
+  const sectorLinks = Object.entries(SECTORS).map(([slug, sector]) => `
+    <li><a href="/preventivi/${slug}/" class="text-gray-600 hover:text-violet-600 transition-colors">${esc(sector.label)}</a></li>
+  `).join("");
+
+  const professionsIndex = `
+    <div class="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
+      <div class="flex items-center gap-3 mb-5 pb-3 border-b border-gray-50">
+        <h2 class="text-lg font-bold text-gray-900">Professioni e Servizi</h2>
+      </div>
+      <ul class="space-y-2.5 text-sm">
+        ${sectorLinks}
+      </ul>
+    </div>
+  `;
+
+  const citiesByRegion = new Map<string, typeof CITIES>();
+  for (const city of CITIES) {
+    const list = citiesByRegion.get(city.region) || [];
+    list.push(city);
+    citiesByRegion.set(city.region, list);
+  }
+
+  const sortedRegions = Array.from(citiesByRegion.keys()).sort();
+
+  const regionBlocks = sortedRegions.map((region) => {
+    const regionCities = citiesByRegion.get(region) || [];
+    const cityItems = regionCities.map((city) => {
+      const sectorLinksForCity = CITY_SECTORS.map((sectorSlug) => {
+        const s = SECTORS[sectorSlug];
+        if (!s) return "";
+        return `<a href="/preventivi/${sectorSlug}/${city.slug}/" class="text-gray-500 hover:text-violet-600 transition-colors truncate" title="Preventivo ${esc(s.label)} a ${esc(city.name)}">${esc(s.label)}</a>`;
+      }).join("\n");
+
+      return `
+        <div class="flex flex-col gap-1">
+          <span class="font-bold text-gray-900 border-b border-gray-50 pb-0.5 mb-1">${esc(city.name)}</span>
+          <div class="flex flex-col gap-1.5 pl-1">
+            ${sectorLinksForCity}
+          </div>
+        </div>
+      `;
+    }).join("");
+
+    return `
+      <div class="border-b border-gray-50 pb-8 last:border-0 last:pb-0">
+        <h3 class="text-sm font-semibold uppercase tracking-wider text-violet-700 mb-4">${esc(region)}</h3>
+        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-y-4 gap-x-2 text-xs">
+          ${cityItems}
+        </div>
+      </div>
+    `;
+  }).join("\n");
+
+  const citiesDirectory = `
+    <div class="mt-12 bg-white rounded-3xl p-8 border border-gray-100 shadow-sm">
+      <div class="flex items-center gap-3 mb-8 pb-4 border-b border-gray-100">
+        <div>
+          <h2 class="text-2xl font-bold text-gray-900">Preventivi Locali per Città</h2>
+          <p class="text-sm text-gray-500 mt-1">Seleziona un settore e la tua città per accedere ai prezzi e alle informazioni territoriali.</p>
+        </div>
+      </div>
+      <div class="space-y-10">
+        ${regionBlocks}
+      </div>
+    </div>
+  `;
+
+  return wrapInPublicLayout(`
+    <div class="flex flex-col min-h-screen bg-white">
+      ${breadcrumb}
+      <section class="relative overflow-hidden bg-white pt-20 pb-12 border-b border-gray-100">
+        <div class="container mx-auto px-4 sm:px-6 lg:px-8 text-center max-w-3xl">
+          <h1 class="text-4xl font-bold tracking-tight text-gray-900 mb-4">Mappa del Sito</h1>
+          <p class="text-lg text-gray-600">Esplora l'indice completo di prevai.it. Trova strumenti di preventivazione specifici, guide fiscali e tutte le pagine locali per regione.</p>
+        </div>
+      </section>
+      <section class="py-16 bg-gray-50/50">
+        <div class="container mx-auto px-4 sm:px-6 lg:px-8 max-w-6xl">
+          <div class="grid md:grid-cols-3 gap-8">
+            ${mainPages}
+            ${blogPages}
+            ${professionsIndex}
+          </div>
+          ${citiesDirectory}
+        </div>
+      </section>
+    </div>
+  `);
+}
+
 function buildStaticPageHtml(opts: {
   slug: string;
   title: string;
@@ -2030,6 +2165,16 @@ buildStaticPageHtml({
 </div>`),
 });
 
-console.log(`  ✓ 5 SPA pages prerendered (chi-siamo, contatti, privacy, termini, whatsapp)`);
+// /mappa-sito/
+buildStaticPageHtml({
+  slug: "mappa-sito",
+  title: "Mappa del Sito | prevai — Elenco Completo delle Pagine",
+  description: "Mappa del sito completa di prevai. Trova tutte le pagine statiche, gli articoli del blog e le guide per professionisti e artigiani nelle città italiane.",
+  path: "/mappa-sito/",
+  jsonLd: [buildWebPageJsonLd("Mappa del Sito", "Mappa del sito completa di prevai.it. Trova tutte le pagine statiche, gli articoli del blog e le guide per professionisti e artigiani nelle città italiane.", "/mappa-sito/"), buildBreadcrumbJsonLd("Mappa del Sito", "/mappa-sito/")],
+  bodyHtml: buildMappaSitoBodyHtml(),
+});
 
-console.log(`Prerendered ${count} pages total (1 homepage + SEO sector pages + ${BLOG_CATEGORIES.length} category pages + ${BLOG_ARTICLES.length + 1} blog pages + 5 SPA pages).`);
+console.log(`  ✓ 6 SPA pages prerendered (chi-siamo, contatti, privacy, termini, whatsapp, mappa-sito)`);
+
+console.log(`Prerendered ${count} pages total (1 homepage + SEO sector pages + ${BLOG_CATEGORIES.length} category pages + ${BLOG_ARTICLES.length + 1} blog pages + 6 SPA pages).`);

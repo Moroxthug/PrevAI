@@ -30,6 +30,7 @@ const _PUBLIC_ROUTES = [
   { name: "CONTATTI",   path: "/contatti",   priority: "0.7", changefreq: "yearly"  },
   { name: "PRIVACY",    path: "/privacy",    priority: "0.4", changefreq: "yearly"  },
   { name: "TERMINI",    path: "/termini",    priority: "0.4", changefreq: "yearly"  },
+  { name: "MAPPA_SITO", path: "/mappa-sito", priority: "0.5", changefreq: "monthly" },
 ] as const satisfies ReadonlyArray<PublicRoute>;
 
 /** Full route objects used by generate-sitemap.ts */
