@@ -16,9 +16,11 @@ async function isAdmin(req: Request): Promise<boolean> {
   try {
     const session = await auth.api.getSession({ headers: fromNodeHeaders(req.headers) });
     if (!session) return false;
-    const emails = adminEmail.split(",").map(e => e.trim().toLowerCase());
+    const cleanEmailStr = adminEmail.replace(/['"]/g, "");
+    const emails = cleanEmailStr.split(",").map(e => e.trim().toLowerCase());
     return emails.includes(session.user.email.toLowerCase());
-  } catch {
+  } catch (err) {
+    logger.error({ err }, "isAdmin check failed with exception");
     return false;
   }
 }
