@@ -14,6 +14,7 @@ import PrivacyPage from "@/pages/privacy";
 import TerminiPage from "@/pages/termini";
 import ChiSiamoPage from "@/pages/chi-siamo";
 import ContattiPage from "@/pages/contatti";
+import MappaSitoPage from "@/pages/mappa-sito";
 
 import { PATHS } from "@/data/sitemap-routes";
 
@@ -89,6 +90,7 @@ function Router() {
       <Route path={PATHS.CONTATTI} component={ContattiPage} />
       <Route path={PATHS.PRIVACY} component={PrivacyPage} />
       <Route path={PATHS.TERMINI} component={TerminiPage} />
+      <Route path={PATHS.MAPPA_SITO} component={MappaSitoPage} />
 
       {/* Auth routes (not indexed) */}
       <Route path="/sign-in" component={() => <PublicLayout><SignInPage /></PublicLayout>} />
@@ -146,15 +148,15 @@ function Router() {
       )} />
 
       {/* SEO landing pages — dynamic, driven by SECTORS / CITIES data */}
-      <Route path="/seo/:type/:city" component={() => <PublicLayout><Suspense fallback={null}><SeoCityLanding /></Suspense></PublicLayout>} />
-      <Route path="/seo/:type" component={() => <PublicLayout><Suspense fallback={null}><SeoLanding /></Suspense></PublicLayout>} />
+      <Route path="/preventivi/:type/:city" component={() => <PublicLayout><Suspense fallback={null}><SeoCityLanding /></Suspense></PublicLayout>} />
+      <Route path="/preventivi/:type" component={() => <PublicLayout><Suspense fallback={null}><SeoLanding /></Suspense></PublicLayout>} />
 
       {/* Blog — dynamic, driven by BLOG_ARTICLES / BLOG_CATEGORIES data */}
       <Route path="/blog/categoria/:slug" component={() => <PublicLayout><Suspense fallback={null}><BlogCategoryPage /></Suspense></PublicLayout>} />
       <Route path="/blog/:slug" component={() => <PublicLayout><Suspense fallback={null}><BlogArticlePage /></Suspense></PublicLayout>} />
       <Route path={PATHS.BLOG} component={() => <PublicLayout><Suspense fallback={null}><BlogPage /></Suspense></PublicLayout>} />
 
-      <Route path="/admin" component={() => <DashSuspense><AdminPage /></DashSuspense>} />
+      <Route path="/dashboard/admin" component={() => <DashSuspense><AdminPage /></DashSuspense>} />
 
       <Route component={NotFound} />
     </Switch>
