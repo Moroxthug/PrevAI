@@ -2477,6 +2477,94 @@ export const useCreateCatalogItem = <
 };
 
 /**
+ * @summary Bulk create price catalog items
+ */
+export const getBulkCreateCatalogItemsUrl = () => {
+  return `/api/catalog/bulk`;
+};
+
+export const bulkCreateCatalogItems = async (
+  createCatalogItemBody: CreateCatalogItemBody[],
+  options?: RequestInit,
+): Promise<CatalogItem[]> => {
+  return customFetch<CatalogItem[]>(getBulkCreateCatalogItemsUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(createCatalogItemBody),
+  });
+};
+
+export const getBulkCreateCatalogItemsMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof bulkCreateCatalogItems>>,
+    TError,
+    { data: BodyType<CreateCatalogItemBody[]> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof bulkCreateCatalogItems>>,
+  TError,
+  { data: BodyType<CreateCatalogItemBody[]> },
+  TContext
+> => {
+  const mutationKey = ["bulkCreateCatalogItems"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof bulkCreateCatalogItems>>,
+    { data: BodyType<CreateCatalogItemBody[]> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return bulkCreateCatalogItems(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type BulkCreateCatalogItemsMutationResult = NonNullable<
+  Awaited<ReturnType<typeof bulkCreateCatalogItems>>
+>;
+export type BulkCreateCatalogItemsMutationBody = BodyType<
+  CreateCatalogItemBody[]
+>;
+export type BulkCreateCatalogItemsMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Bulk create price catalog items
+ */
+export const useBulkCreateCatalogItems = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof bulkCreateCatalogItems>>,
+    TError,
+    { data: BodyType<CreateCatalogItemBody[]> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof bulkCreateCatalogItems>>,
+  TError,
+  { data: BodyType<CreateCatalogItemBody[]> },
+  TContext
+> => {
+  return useMutation(getBulkCreateCatalogItemsMutationOptions(options));
+};
+
+/**
  * @summary Get WhatsApp connection status for the authenticated user
  */
 export const getGetWhatsappStatusUrl = () => {

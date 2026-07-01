@@ -535,6 +535,30 @@ paths:
               schema:
                 $ref: "#/components/schemas/CatalogItem"
 
+  /catalog/bulk:
+    post:
+      operationId: bulkCreateCatalogItems
+      tags: [catalog]
+      summary: Bulk create price catalog items
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: "#/components/schemas/CreateCatalogItemBody"
+      responses:
+        "201":
+          description: Created catalog items
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/CatalogItem"
+
+
   /whatsapp/status:
     get:
       operationId: getWhatsappStatus

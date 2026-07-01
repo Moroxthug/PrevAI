@@ -4,7 +4,7 @@ import { useCreateQuote, useGetBusinessProfile, useGetSubscription } from "@work
 import {
   Sparkles, Mic, ImagePlus, ArrowRight, Loader2,
   X, User, Lock, Bot, PencilLine, FileText, FileSpreadsheet,
-  LayoutTemplate, CheckCircle2,
+  LayoutTemplate, CheckCircle2, BookOpen
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Input } from "@/components/ui/input";
@@ -13,6 +13,7 @@ import { cn } from "@/lib/utils";
 import { useClientMemory } from "@/hooks/use-client-memory";
 import type { SavedClient } from "@/hooks/use-client-memory";
 import ManualQuoteBuilder from "@/components/manual-quote-builder";
+import { PriceCatalogSection } from "@/components/price-catalog-section";
 
 const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp", "image/heic", "image/heif"];
 const ALLOWED_DOC_TYPES = [
@@ -214,7 +215,7 @@ function ClientSelector({
 
 // ─── Main page ───────────────────────────────────────────────────────────────
 export default function NewQuote() {
-  const [activeTab, setActiveTab] = useState<"ai" | "manual">("ai");
+  const [activeTab, setActiveTab] = useState<"ai" | "manual" | "listino">("ai");
 
   const [input, setInput] = useState("");
   const [templateId, setTemplateId] = useState<"standard" | "arosio" | "mariagrazia">("standard");
@@ -436,6 +437,19 @@ export default function NewQuote() {
         >
           <PencilLine className="h-4 w-4" />
           Manuale
+        </button>
+        <button
+          type="button"
+          onClick={() => setActiveTab("listino")}
+          className={cn(
+            "flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-sm font-semibold transition-all",
+            activeTab === "listino"
+              ? "bg-white text-violet-700 shadow-sm"
+              : "text-gray-500 hover:text-gray-700"
+          )}
+        >
+          <BookOpen className="h-4 w-4" />
+          Listino Prezzi
         </button>
       </div>
 
@@ -729,6 +743,15 @@ export default function NewQuote() {
             clientData={clientData}
             profileData={profile ?? undefined}
           />
+        </div>
+      )}
+
+      {/* ══ LISTINO TAB ═════════════════════════════════════════════════════ */}
+      {activeTab === "listino" && (
+        <div className="space-y-4 animate-in fade-in duration-200">
+          <Card className="p-4 border border-violet-105 bg-white shadow-xs">
+            <PriceCatalogSection />
+          </Card>
         </div>
       )}
     </div>

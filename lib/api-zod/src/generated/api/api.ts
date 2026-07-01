@@ -1016,6 +1016,20 @@ export const CreateCatalogItemBody = zod.object({
 });
 
 /**
+ * @summary Bulk create price catalog items
+ */
+export const BulkCreateCatalogItemsBodyItem = zod.object({
+  nome: zod.string(),
+  categoria: zod.string().optional(),
+  um: zod.string(),
+  prezzoUnitario: zod.number(),
+  note: zod.string().optional(),
+});
+export const BulkCreateCatalogItemsBody = zod.array(
+  BulkCreateCatalogItemsBodyItem,
+);
+
+/**
  * @summary Get WhatsApp connection status for the authenticated user
  */
 export const GetWhatsappStatusResponse = zod.object({

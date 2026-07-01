@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { useCreateManualQuote, useSuggestItemDescription } from "@workspace/api-client-react";
+import { useCreateManualQuote, useSuggestItemDescription, useListCatalogItems } from "@workspace/api-client-react";
 import type { CreateManualQuoteBody } from "@workspace/api-client-react";
 import { useToast } from "@/hooks/use-toast";
 import { useLocation } from "wouter";
@@ -163,6 +163,8 @@ export default function ManualQuoteBuilder({ clientData, profileData }: ManualQu
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const createManualQuote = useCreateManualQuote();
+  const { data: catalogItems = [] } = useListCatalogItems();
+  const [activeVoceId, setActiveVoceId] = useState<string | null>(null);
 
   const [templateId, setTemplateId] = useState<"standard" | "arosio" | "mariagrazia">("standard");
   const [titoloRiga1, setTitoloRiga1] = useState("Analisi Economica e Computo Metrico Prezzato");
@@ -412,10 +414,12 @@ export default function ManualQuoteBuilder({ clientData, profileData }: ManualQu
                     return (
                       <div key={v.id} className="grid grid-cols-[1fr_64px_80px_88px_72px_28px] gap-2 items-center">
                         {/* Descrizione + AI */}
-                        <div className="flex items-center gap-1 min-w-0">
+                        <div className="flex items-center gap-1 min-w-0 relative">
                           <input
                             value={v.descrizione}
                             onChange={e => updateVoce(ch.id, v.id, { descrizione: e.target.value })}
+                            onFocus={() => setActiveVoceId(v.id)}
+                            onBlur={() => setTimeout(() => setActiveVoceId(null), 250)}
                             placeholder="Descrizione lavoro..."
                             className="flex-1 h-8 px-2.5 rounded-lg border border-gray-200 text-xs text-gray-800 placeholder:text-gray-400 bg-white focus:outline-none focus:ring-2 focus:ring-violet-300 focus:border-transparent transition min-w-0"
                             disabled={isSubmitting}
@@ -426,6 +430,37 @@ export default function ManualQuoteBuilder({ clientData, profileData }: ManualQu
                             projectTitle={titoloRiga2}
                             onSuggest={desc => updateVoce(ch.id, v.id, { descrizione: desc })}
                           />
+
+                          {activeVoceId === v.id && v.descrizione.trim().length >= 2 && (() => {
+                            const suggestions = catalogItems.filter(item =>
+                              item.nome.toLowerCase().includes(v.descrizione.toLowerCase())
+                            ).slice(0, 5);
+
+                            if (suggestions.length === 0) return null;
+
+                            return (
+                              <div className="absolute left-0 right-0 top-9 bg-white border border-gray-200 rounded-lg shadow-lg z-50 max-h-40 overflow-y-auto divide-y">
+                                {suggestions.map(item => (
+                                  <button
+                                    key={item.id}
+                                    type="button"
+                                    onClick={() => {
+                                      updateVoce(ch.id, v.id, {
+                                        descrizione: item.nome,
+                                        um: item.um,
+                                        prezzoUnitario: String(item.prezzoUnitario),
+                                      });
+                                      setActiveVoceId(null);
+                                    }}
+                                    className="w-full text-left px-3 py-2 hover:bg-violet-50 text-[11px] flex justify-between gap-2"
+                                  >
+                                    <span className="font-semibold text-gray-800 truncate">{item.nome}</span>
+                                    <span className="text-gray-500 shrink-0 font-mono">({item.um}) €{item.prezzoUnitario}</span>
+                                  </button>
+                                ))}
+                              </div>
+                            );
+                          })()}
                         </div>
 
                         {/* U.M. */}

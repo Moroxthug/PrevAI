@@ -32,11 +32,13 @@ import {
   Mail,
   Sparkles,
   X,
-  ChevronRight
+  BookOpen
 } from "lucide-react";
 import { Logo } from "@/components/logo";
 import { Link } from "wouter";
 import { cn } from "@/lib/utils";
+import { PriceCatalogSection } from "@/components/price-catalog-section";
+
 
 
 // Mock Data Types
@@ -167,6 +169,8 @@ export default function CrmPage() {
     | "analytics"
     | "calendario"
     | "impostazioni"
+    | "listino"
+    | "sal"
   >("dashboard");
 
   const [projects, setProjects] = useState<Project[]>(() => {
@@ -648,6 +652,7 @@ export default function CrmPage() {
               { id: "finanze", label: "Gestione Finanze", icon: TrendingUp },
               { id: "costi_extra", label: "Costi Extra", icon: AlertCircle },
               { id: "fornitori", label: "Fornitori", icon: Building2 },
+              { id: "listino", label: "Listino Prezzi", icon: BookOpen },
             ].map((item) => {
               const Icon = item.icon;
               const active = activeSection === item.id;
@@ -1791,6 +1796,19 @@ export default function CrmPage() {
                   Seleziona un cantiere in alto per configurare ed elaborare lo Stato Avanzamento Lavori.
                 </div>
               )}
+            </div>
+          )}
+
+          {/* 13. SECTION: LISTINO PREZZI */}
+          {activeSection === "listino" && (
+            <div className="space-y-6 animate-in fade-in duration-300">
+              <div className="bg-white border border-gray-150 p-6 rounded-xl shadow-xs">
+                <div className="mb-4">
+                  <h3 className="font-bold text-gray-800 text-lg">Gestione Listino Prezzi</h3>
+                  <p className="text-xs text-gray-500 mt-1">Gestisci le lavorazioni e i prezzi unitari del tuo archivio. Le modifiche si riflettono istantaneamente sia nel CRM che nella generazione dei preventivi AI.</p>
+                </div>
+                <PriceCatalogSection />
+              </div>
             </div>
           )}
 
