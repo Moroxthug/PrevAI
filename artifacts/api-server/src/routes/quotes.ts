@@ -33,6 +33,12 @@ function getPdfmake(): PdfMakeInstance {
   if (_pdfmakeInstance) return _pdfmakeInstance;
   const lib = _pdfRequire("pdfmake") as PdfMakeInstance;
   lib.fonts = {
+    Roboto: {
+      normal: "Helvetica",
+      bold: "Helvetica-Bold",
+      italics: "Helvetica-Oblique",
+      bolditalics: "Helvetica-BoldOblique",
+    },
     Helvetica: {
       normal: "Helvetica",
       bold: "Helvetica-Bold",
