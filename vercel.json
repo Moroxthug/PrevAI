@@ -8,7 +8,10 @@
     "api/index.js": {
       "memory": 1024,
       "maxDuration": 60,
-      "includeFiles": "artifacts/api-server/dist/node_modules/**"
+      "includeFiles": [
+        "artifacts/api-server/dist/node_modules/**",
+        "artifacts/api-server/dist/data/**"
+      ]
     }
   },
   "rewrites": [

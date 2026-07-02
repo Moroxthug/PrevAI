@@ -148,6 +148,18 @@ globalThis.__dirname = __bannerPath.dirname(globalThis.__filename);
       console.warn(`Could not copy ${pkg}: ${err.message}`);
     }
   }
+
+  // Copy pdfkit's data folder (containing .afm font files) to dist/data
+  try {
+    const pdfmakeMain = globalThis.require.resolve("pdfmake");
+    const pdfkitMain = globalThis.require.resolve("pdfkit", { paths: [path.dirname(pdfmakeMain), artifactDir] });
+    const pdfkitDataDir = path.resolve(path.dirname(pdfkitMain), "data");
+    const destDataDir = path.resolve(distDir, "data");
+    await cp(pdfkitDataDir, destDataDir, { recursive: true, force: true });
+    console.log("Copied pdfkit/data -> dist/data");
+  } catch (err) {
+    console.warn(`Could not copy pdfkit/data: ${err.message}`);
+  }
 }
 
 buildAll().catch((err) => {
