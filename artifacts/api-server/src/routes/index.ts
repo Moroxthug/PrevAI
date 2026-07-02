@@ -10,6 +10,7 @@ import whatsappRouter from "./whatsapp";
 import clientsRouter from "./clients";
 import documentsRouter from "./documents";
 import crmRouter from "./crm";
+import supportRouter from "./support";
 
 const router: IRouter = Router();
 
@@ -24,5 +25,6 @@ router.use(whatsappRouter);
 router.use(clientsRouter);
 router.use(documentsRouter);
 router.use(crmRouter);
+router.use(supportRouter);
 
 export default router;

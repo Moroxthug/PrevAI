@@ -72,6 +72,50 @@ router.post("/catalog", requireAuth, async (req, res) => {
   }
 });
 
+router.post("/catalog/bulk", requireAuth, async (req, res) => {
+  try {
+    const userId = getUserId(res);
+    const items = req.body as Array<{
+      nome?: string;
+      categoria?: string;
+      um?: string;
+      prezzoUnitario?: number;
+      note?: string;
+    }>;
+
+    if (!Array.isArray(items)) {
+      res.status(400).json({ error: "body must be an array of items" });
+      return;
+    }
+
+    const inserted = [];
+    if (items.length > 0) {
+      const values = items.map(item => {
+        if (!item.nome || !item.um || item.prezzoUnitario === undefined) {
+          throw new Error("Invalid item in bulk array: nome, um, prezzoUnitario are required");
+        }
+        return {
+          userId,
+          nome: item.nome.trim(),
+          categoria: item.categoria?.trim() || null,
+          um: item.um.trim(),
+          prezzoUnitario: String(item.prezzoUnitario),
+          note: item.note?.trim() || null,
+        };
+      });
+
+      const result = await db.insert(priceCatalogItemsTable).values(values).returning();
+      inserted.push(...result.map(serializeItem));
+    }
+
+    res.status(201).json(inserted);
+  } catch (err) {
+    req.log.error({ err }, "Error bulk creating catalog items");
+    res.status(500).json({ error: (err instanceof Error ? err.message : "Internal server error") });
+  }
+});
+
+
 router.post("/catalog/import-from-quotes", requireAuth, async (req, res) => {
   try {
     const userId = getUserId(res);
