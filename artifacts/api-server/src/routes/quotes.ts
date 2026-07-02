@@ -1179,7 +1179,8 @@ router.post("/quotes/:id/generate-pdf", requireAuth, async (req, res) => {
     // Upload to Object Storage
     const dateStr = new Date().toISOString().split("T")[0];
     const numero = quote.numeroPreventivoData?.replace(/\//g, "_") || quote.id.slice(0, 4).toUpperCase();
-    const subPath = `quote-pdfs/${userId}/${dateStr}/${numero}.pdf`;
+    const cleanNumero = numero.replace(/[^a-zA-Z0-9_\-.]/g, "_");
+    const subPath = `quote-pdfs/${userId}/${dateStr}/${cleanNumero}.pdf`;
     const pdfPath = await objectStorage.uploadObjectBuffer({
       subPath,
       buffer: pdfBuffer,
