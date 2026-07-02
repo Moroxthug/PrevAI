@@ -1,5 +1,4 @@
-import { createRequire } from "node:module";
-const _pdfRequire = createRequire(import.meta.url);
+import pdfmake from "pdfmake";
 import type { TDocumentDefinitions, Content } from "pdfmake/interfaces";
 import type { QuoteChapter, QuoteDiscount, QuoteCompanySnapshot, QuoteClientData } from "@workspace/db";
 import { quotesTable, businessProfilesTable } from "@workspace/db";
@@ -16,7 +15,7 @@ type PdfMakeInstance = {
 let _pdfmakeInstance: PdfMakeInstance | null = null;
 function getPdfmake(): PdfMakeInstance {
   if (_pdfmakeInstance) return _pdfmakeInstance;
-  const lib = _pdfRequire("pdfmake") as PdfMakeInstance;
+  const lib = pdfmake as unknown as PdfMakeInstance;
   lib.fonts = {
     Roboto: {
       normal: "Helvetica",

@@ -15,8 +15,7 @@ import {
 import { openai } from "@workspace/integrations-openai-ai-server";
 import type { QuoteChapter, QuoteChapterItem, QuoteDiscount, QuoteCompanySnapshot, QuoteClientData, QuoteItem } from "@workspace/db";
 import { logger } from "../lib/logger.js";
-import { createRequire } from "node:module";
-const _pdfRequire = createRequire(import.meta.url);
+import pdfmake from "pdfmake";
 import type { TDocumentDefinitions, Content } from "pdfmake/interfaces";
 import {
   parseComputoMetrico, isComputoMetrico,
@@ -31,7 +30,7 @@ type PdfMakeInstance = {
 let _pdfmakeInstance: PdfMakeInstance | null = null;
 function getPdfmake(): PdfMakeInstance {
   if (_pdfmakeInstance) return _pdfmakeInstance;
-  const lib = _pdfRequire("pdfmake") as PdfMakeInstance;
+  const lib = pdfmake as unknown as PdfMakeInstance;
   lib.fonts = {
     Roboto: {
       normal: "Helvetica",
