@@ -5,6 +5,7 @@ import { useScrolled } from "@/hooks/use-scrolled";
 import { cn } from "@/lib/utils";
 import { X, Send, CheckCircle2, Menu } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
+import SupportBot from "@/components/support-bot";
 
 export function PublicLayout({ children }: { children: React.ReactNode }) {
   const { isSignedIn } = useAuth();
@@ -250,6 +251,9 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
       {supportOpen && (
         <SupportModal onClose={() => setSupportOpen(false)} />
       )}
+
+      {/* AI Support Bot Widget */}
+      <SupportBot />
     </div>
   );
 }

@@ -6,4 +6,6 @@ export * from "./auth";
 export * from "./whatsapp";
 export * from "./documents";
 export * from "./crm";
+export * from "./conversations";
+export * from "./messages";
 

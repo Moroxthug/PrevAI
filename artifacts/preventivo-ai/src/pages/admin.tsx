@@ -6,7 +6,8 @@ import {
   RefreshCw, ArrowLeft, Crown, Zap, Calendar, BarChart3,
   ChevronUp, ChevronDown, Minus, Search, Settings, ShieldAlert,
   Sparkles, CheckCircle2, AlertTriangle, PlayCircle, Activity,
-  Globe, Search as SearchIcon, Award, HeartHandshake, Eye
+  Globe, Search as SearchIcon, Award, HeartHandshake, Eye,
+  MessageSquare, Bot, Send
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -41,7 +42,7 @@ type AdminUser = {
 };
 
 type Settings = Record<string, string>;
-type Tab = "overview" | "users" | "stripe" | "gsc" | "seo" | "settings";
+type Tab = "overview" | "users" | "stripe" | "gsc" | "seo" | "settings" | "support";
 
 type GscSummary = {
   totalClicks: number;
@@ -134,6 +135,77 @@ export default function AdminPage() {
 
   // Users filter state
   const [userSearch, setUserSearch] = useState("");
+
+  // Support live chat states
+  const [adminOnline, setAdminOnline] = useState(false);
+  const [supportConvs, setSupportConvs] = useState<any[]>([]);
+  const [selectedConvId, setSelectedConvId] = useState<number | null>(null);
+  const [convMessages, setConvMessages] = useState<any[]>([]);
+  const [adminReply, setAdminReply] = useState("");
+  const [supportLoading, setSupportLoading] = useState(false);
+
+  async function loadSupportStatus() {
+    try {
+      const res = await authFetch("/api/support/admin-status");
+      setAdminOnline(res.online);
+    } catch (e) {
+      console.error(e);
+    }
+  }
+
+  async function loadSupportConvs() {
+    try {
+      const list = await authFetch("/api/support/conversations");
+      setSupportConvs(list);
+    } catch (e) {
+      console.error(e);
+    }
+  }
+
+  async function toggleAdminOnline() {
+    try {
+      const newStatus = !adminOnline;
+      await authFetch("/api/support/admin-status", {
+        method: "POST",
+        body: JSON.stringify({ online: newStatus }),
+      });
+      setAdminOnline(newStatus);
+      toast({ title: "Stato operatore aggiornato", description: `Ora sei ${newStatus ? "online" : "offline"} per il supporto.` });
+    } catch (e) {
+      toast({ variant: "destructive", title: "Errore", description: "Impossibile aggiornare lo stato." });
+    }
+  }
+
+  // Poll conversations when tab === "support"
+  useEffect(() => {
+    if (tab !== "support") return;
+    loadSupportStatus();
+    loadSupportConvs();
+
+    const interval = setInterval(() => {
+      loadSupportConvs();
+    }, 4000);
+
+    return () => clearInterval(interval);
+  }, [tab]);
+
+  // Poll messages for active conversation
+  useEffect(() => {
+    if (tab !== "support" || !selectedConvId) return;
+
+    const fetchMsgs = async () => {
+      try {
+        const msgs = await authFetch(`/api/support/conversations/${selectedConvId}/messages`);
+        setConvMessages(msgs);
+      } catch (e) {
+        console.error(e);
+      }
+    };
+
+    fetchMsgs();
+    const interval = setInterval(fetchMsgs, 3000);
+    return () => clearInterval(interval);
+  }, [tab, selectedConvId]);
 
   async function authFetch(path: string, options?: RequestInit) {
     const r = await fetch(`${BASE}${path}`, {
@@ -375,6 +447,7 @@ export default function AdminPage() {
               { id: "stripe", label: "Abbonamenti Stripe", icon: Euro },
               { id: "gsc", label: "Search Console", icon: Globe },
               { id: "seo", label: "SEO Checker", icon: Sparkles },
+              { id: "support", label: "Chat Supporto", icon: MessageSquare },
               { id: "settings", label: "Impostazioni", icon: Settings },
             ].map(item => (
               <button
@@ -930,6 +1003,237 @@ export default function AdminPage() {
 
               <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 text-xs text-amber-700">
                 <strong>Nota:</strong> Le registrazioni chiuse impediscono esclusivamente la creazione di nuovi account. Tutti gli utenti registrati esistenti potranno continuare ad accedere regolarmente alla propria dashboard.
+              </div>
+            </div>
+          )}
+
+          {/* SUPPORT TAB */}
+          {tab === "support" && (
+            <div className="space-y-6">
+              {/* Header section with toggle */}
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between bg-white rounded-2xl border border-slate-100 p-5 shadow-sm gap-4">
+                <div>
+                  <h2 className="text-base font-bold text-slate-800 flex items-center gap-2">
+                    <MessageSquare className="h-5 w-5 text-violet-500" /> Supporto Clienti Real-time
+                  </h2>
+                  <p className="text-xs text-slate-400 mt-1">Gestisci le chat di supporto, parla con i visitatori e imposta la tua disponibilità.</p>
+                </div>
+                <div className="flex items-center gap-3 shrink-0">
+                  <span className="text-xs font-bold text-slate-500">Stato Operatore:</span>
+                  <button
+                    onClick={toggleAdminOnline}
+                    className="flex items-center gap-1 px-3 py-1.5 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 transition-colors text-xs font-bold"
+                  >
+                    <span className={`h-2.5 w-2.5 rounded-full ${adminOnline ? "bg-emerald-500 animate-pulse" : "bg-slate-300"}`} />
+                    {adminOnline ? "Online (Ricevi chat)" : "Offline (Solo AI)"}
+                  </button>
+                </div>
+              </div>
+
+              {/* Chat Workspace */}
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-[600px]">
+                {/* Conversation List */}
+                <div className="bg-white rounded-2xl border border-slate-100 flex flex-col overflow-hidden shadow-sm lg:col-span-1">
+                  <div className="p-4 border-b border-slate-100 bg-slate-50/50">
+                    <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Conversazioni</h3>
+                  </div>
+                  <div className="flex-1 overflow-y-auto divide-y divide-slate-100">
+                    {supportConvs.length === 0 ? (
+                      <div className="p-8 text-center text-xs text-slate-400">
+                        Nessuna conversazione di supporto registrata.
+                      </div>
+                    ) : (
+                      supportConvs.map(c => {
+                        const isSelected = selectedConvId === c.id;
+                        const hasWaiting = c.status === "human_needed";
+                        const isActive = c.status === "human_active";
+                        return (
+                          <button
+                            key={c.id}
+                            onClick={() => setSelectedConvId(c.id)}
+                            className={`w-full text-left p-4 hover:bg-slate-50 transition-colors flex flex-col gap-1.5 ${
+                              isSelected ? "bg-violet-50/50 border-l-4 border-violet-600" : ""
+                            }`}
+                          >
+                            <div className="flex items-center justify-between gap-2">
+                              <span className="text-xs font-bold text-slate-800 truncate">{c.title}</span>
+                              <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold shrink-0 ${
+                                hasWaiting ? "bg-amber-100 text-amber-700 border border-amber-200" :
+                                isActive ? "bg-emerald-100 text-emerald-700 border border-emerald-200" :
+                                c.status === "closed" ? "bg-slate-100 text-slate-500 border border-slate-200" :
+                                "bg-violet-100 text-violet-700 border border-violet-200"
+                              }`}>
+                                {hasWaiting ? "Attesa" : isActive ? "Attiva" : c.status === "closed" ? "Chiusa" : "AI"}
+                              </span>
+                            </div>
+                            {c.visitorEmail && (
+                              <span className="text-[10px] text-slate-500 truncate">{c.visitorEmail}</span>
+                            )}
+                            <span className="text-[9px] text-slate-400 self-end">
+                              {new Date(c.updatedAt).toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" })}
+                            </span>
+                          </button>
+                        );
+                      })
+                    )}
+                  </div>
+                </div>
+
+                {/* Chat Panel */}
+                <div className="bg-white rounded-2xl border border-slate-100 flex flex-col overflow-hidden shadow-sm lg:col-span-2">
+                  {selectedConvId ? (
+                    (() => {
+                      const activeConv = supportConvs.find(c => c.id === selectedConvId);
+                      return (
+                        <>
+                          {/* Chat Header */}
+                          <div className="p-4 border-b border-slate-100 bg-slate-50/50 flex flex-wrap items-center justify-between gap-4">
+                            <div>
+                              <div className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                                {activeConv?.title}
+                                <span className={`h-2 w-2 rounded-full ${
+                                  activeConv?.status === "human_needed" ? "bg-amber-500 animate-ping" :
+                                  activeConv?.status === "human_active" ? "bg-emerald-500" :
+                                  activeConv?.status === "closed" ? "bg-slate-400" : "bg-violet-500"
+                                }`} />
+                              </div>
+                              {activeConv && (activeConv.visitorName || activeConv.visitorEmail || activeConv.visitorPhone) && (
+                                <div className="text-[10px] text-slate-400 mt-0.5 flex flex-wrap gap-x-2 gap-y-0.5">
+                                  {activeConv.visitorName && <span>Nome: <strong>{activeConv.visitorName}</strong></span>}
+                                  {activeConv.visitorEmail && <span>Email: <strong>{activeConv.visitorEmail}</strong></span>}
+                                  {activeConv.visitorPhone && <span>Tel: <strong>{activeConv.visitorPhone}</strong></span>}
+                                </div>
+                              )}
+                            </div>
+                            <div className="flex gap-2">
+                              {activeConv?.status === "human_needed" && (
+                                <button
+                                  onClick={async () => {
+                                    try {
+                                      await authFetch(`/api/support/conversations/${selectedConvId}/join`, { method: "POST" });
+                                      loadSupportConvs();
+                                      toast({ title: "Chat presa in carico", description: "Ora puoi rispondere al visitatore." });
+                                    } catch (e) {
+                                      toast({ variant: "destructive", title: "Errore", description: "Impossibile prendere in carico." });
+                                    }
+                                  }}
+                                  className="px-3 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-semibold shadow-sm transition"
+                                >
+                                  Prendi in Carico
+                                </button>
+                              )}
+                              {activeConv?.status !== "closed" && (
+                                <button
+                                  onClick={async () => {
+                                    if (confirm("Sei sicuro di voler chiudere questa conversazione?")) {
+                                      try {
+                                        await authFetch(`/api/support/conversations/${selectedConvId}/close`, { method: "POST" });
+                                        loadSupportConvs();
+                                        toast({ title: "Chat chiusa", description: "La conversazione è stata contrassegnata come chiusa." });
+                                      } catch (e) {
+                                        toast({ variant: "destructive", title: "Errore", description: "Impossibile chiudere la chat." });
+                                      }
+                                    }
+                                  }}
+                                  className="px-3 py-1 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-lg text-xs font-semibold transition"
+                                >
+                                  Chiudi Chat
+                                </button>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Message History */}
+                          <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-slate-50/30">
+                            {convMessages.length === 0 ? (
+                              <div className="p-8 text-center text-xs text-slate-400">
+                                In attesa di messaggi...
+                              </div>
+                            ) : (
+                              convMessages.map((m, idx) => {
+                                const isAdminMsg = m.role === "admin";
+                                const isAi = m.role === "assistant";
+                                return (
+                                  <div key={m.id || idx} className={`flex gap-2 ${isAdminMsg ? "justify-end" : ""}`}>
+                                    {!isAdminMsg && (
+                                      <div className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 text-[10px] font-bold ${isAi ? "bg-violet-100 text-violet-700" : "bg-blue-100 text-blue-700"}`}>
+                                        {isAi ? <Bot className="h-3.5 w-3.5" /> : "U"}
+                                      </div>
+                                    )}
+                                    <div className={`p-3 rounded-2xl text-xs max-w-[70%] shadow-sm ${
+                                      isAdminMsg ? "bg-violet-600 text-white rounded-tr-none" :
+                                      isAi ? "bg-white border border-slate-100 text-slate-600 rounded-tl-none italic" :
+                                      "bg-white border border-slate-100 text-slate-800 rounded-tl-none font-medium"
+                                    }`}>
+                                      <div className="leading-relaxed whitespace-pre-wrap">{m.content}</div>
+                                      <div className={`text-[8px] mt-1 text-right ${isAdminMsg ? "text-violet-200" : "text-slate-400"}`}>
+                                        {new Date(m.createdAt).toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" })}
+                                      </div>
+                                    </div>
+                                    {isAdminMsg && (
+                                      <div className="w-6 h-6 rounded-full bg-violet-100 text-violet-700 flex items-center justify-center shrink-0 text-[10px] font-bold">
+                                        OP
+                                      </div>
+                                    )}
+                                  </div>
+                                );
+                              })
+                            )}
+                          </div>
+
+                          {/* Message input */}
+                          {activeConv?.status !== "closed" ? (
+                            <form
+                              onSubmit={async (e) => {
+                                e.preventDefault();
+                                if (!adminReply.trim()) return;
+                                const content = adminReply;
+                                setAdminReply("");
+                                try {
+                                  await authFetch(`/api/support/conversations/${selectedConvId}/messages`, {
+                                    method: "POST",
+                                    body: JSON.stringify({ role: "admin", content }),
+                                  });
+                                  // Refresh messages
+                                  const msgs = await authFetch(`/api/support/conversations/${selectedConvId}/messages`);
+                                  setConvMessages(msgs);
+                                } catch (err) {
+                                  toast({ variant: "destructive", title: "Errore", description: "Impossibile inviare il messaggio." });
+                                }
+                              }}
+                              className="p-3 border-t border-slate-100 bg-white flex gap-2"
+                            >
+                              <input
+                                type="text"
+                                placeholder="Digita una risposta..."
+                                value={adminReply}
+                                onChange={e => setAdminReply(e.target.value)}
+                                className="flex-1 px-3 py-2 border border-slate-200 bg-slate-50/50 rounded-xl text-xs focus:outline-none focus:border-violet-500"
+                              />
+                              <button
+                                type="submit"
+                                disabled={!adminReply.trim()}
+                                className="p-2.5 bg-violet-600 hover:bg-violet-700 text-white rounded-xl transition-all disabled:opacity-50 shrink-0"
+                              >
+                                <Send className="h-4 w-4" />
+                              </button>
+                            </form>
+                          ) : (
+                            <div className="p-4 text-center text-xs text-slate-400 bg-slate-50 border-t">
+                              Questa chat è chiusa. Non puoi inviare messaggi.
+                            </div>
+                          )}
+                        </>
+                      );
+                    })()
+                  ) : (
+                    <div className="flex-1 flex flex-col items-center justify-center text-center p-8 text-slate-400">
+                      <MessageSquare className="h-10 w-10 text-slate-300 mb-2" />
+                      <p className="text-xs font-semibold">Nessuna conversazione selezionata</p>
+                      <p className="text-[10px] text-slate-400 mt-1">Seleziona una chat dalla lista a sinistra per iniziare.</p>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           )}
