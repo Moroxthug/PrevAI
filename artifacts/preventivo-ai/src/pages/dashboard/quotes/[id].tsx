@@ -179,7 +179,7 @@ export default function QuoteDetail() {
   const downloadPdfFromUrl = async (pdfUrl: string, filename: string) => {
     try {
       const fullUrl = pdfUrl.startsWith("/api") ? pdfUrl : `/api/storage${pdfUrl}`;
-      const response = await fetch(fullUrl);
+      const response = await fetch(fullUrl, { credentials: "include" });
       if (!response.ok) throw new Error("Download failed");
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
