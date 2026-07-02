@@ -3807,5 +3807,5 @@ function estimatePriceForVoce(categoria: string, descrizione: string, um: string
   return 80;
 }
 
-export { generateQuoteHtml };
+export { generateQuoteHtml, generateQuotePdfBuffer, generateCapitolatoPdfBuffer };
 export default router;
