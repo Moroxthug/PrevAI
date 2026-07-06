@@ -3,6 +3,8 @@
 # compiled output
 dist
 tmp
+api/data/
+
 
 # Un-ignore pre-built api-server dist (needed for Vercel deployment)
 !artifacts/api-server/dist/

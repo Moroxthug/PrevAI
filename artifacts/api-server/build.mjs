@@ -149,7 +149,7 @@ globalThis.__dirname = __bannerPath.dirname(globalThis.__filename);
     }
   }
 
-  // Copy pdfkit's data folder (containing .afm font files) to dist/data
+  // Copy pdfkit's data folder (containing .afm font files) to dist/data and root api/data (for Vercel)
   try {
     const pdfmakeMain = globalThis.require.resolve("pdfmake");
     const pdfkitMain = globalThis.require.resolve("pdfkit", { paths: [path.dirname(pdfmakeMain), artifactDir] });
@@ -157,6 +157,11 @@ globalThis.__dirname = __bannerPath.dirname(globalThis.__filename);
     const destDataDir = path.resolve(distDir, "data");
     await cp(pdfkitDataDir, destDataDir, { recursive: true, force: true });
     console.log("Copied pdfkit/data -> dist/data");
+
+    // Copy to api/data so that Vercel finds the fonts relative to its api/index.js execution context
+    const apiDataDir = path.resolve(artifactDir, "../../api/data");
+    await cp(pdfkitDataDir, apiDataDir, { recursive: true, force: true });
+    console.log("Copied pdfkit/data -> api/data");
   } catch (err) {
     console.warn(`Could not copy pdfkit/data: ${err.message}`);
   }

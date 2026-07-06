@@ -202,6 +202,9 @@ importers:
       pdf-parse:
         specifier: ^2.4.5
         version: 2.4.5
+      pdfkit:
+        specifier: ^0.19.1
+        version: 0.19.1
       pdfmake:
         specifier: ^0.3.7
         version: 0.3.7
@@ -3505,6 +3508,9 @@ packages:
 
   pdfkit@0.18.0:
     resolution: {integrity: sha512-NvUwSDZ0eYEzqAiWwVQkRkjYUkZ48kcsHuCO31ykqPPIVkwoSDjDGiwIgHHNtsiwls3z3P/zy4q00hl2chg2Ug==}
+
+  pdfkit@0.19.1:
+    resolution: {integrity: sha512-6Gzk+wDwTs4VSxsR5rCMTnIl5nlmkye1oWB0l2hDB1EX6ZNSIBroKQEv+2+fPPn+stVjyqzmsqRJVDfB9fo5DA==}
 
   pdfmake@0.3.7:
     resolution: {integrity: sha512-SwTFcaH3kCJBlPFWi/YB34zRg6lpCxq90tkZ9GxfSi9/v4Tk96cv4IvOstA+CC40rdW1OzQIuNhD2DLD1RDVgA==}
@@ -7268,6 +7274,15 @@ snapshots:
       '@napi-rs/canvas': 0.1.80
 
   pdfkit@0.18.0:
+    dependencies:
+      '@noble/ciphers': 1.3.0
+      '@noble/hashes': 1.8.0
+      fontkit: 2.0.4
+      js-md5: 0.8.3
+      linebreak: 1.1.0
+      png-js: 1.1.0
+
+  pdfkit@0.19.1:
     dependencies:
       '@noble/ciphers': 1.3.0
       '@noble/hashes': 1.8.0
