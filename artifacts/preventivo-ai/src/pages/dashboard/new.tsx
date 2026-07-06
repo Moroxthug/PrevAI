@@ -9,6 +9,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { useClientMemory } from "@/hooks/use-client-memory";
 import type { SavedClient } from "@/hooks/use-client-memory";

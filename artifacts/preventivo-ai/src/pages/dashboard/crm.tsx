@@ -32,7 +32,8 @@ import {
   Mail,
   Sparkles,
   X,
-  BookOpen
+  BookOpen,
+  Menu
 } from "lucide-react";
 import { Logo } from "@/components/logo";
 import { Link } from "wouter";
@@ -215,6 +216,8 @@ export default function CrmPage() {
     localStorage.setItem("prevai_crm_sidebar_collapsed", String(isSidebarCollapsed));
   }, [isSidebarCollapsed]);
 
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
+
   // States for interactive panels
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
   
@@ -232,6 +235,7 @@ export default function CrmPage() {
   const [newCollabPhone, setNewCollabPhone] = useState("");
   const [newSupplierName, setNewSupplierName] = useState("");
   const [newSupplierCat, setNewSupplierCat] = useState("Materiali Edili");
+  const [newSupplierContact, setNewSupplierContact] = useState("");
   const [newPraticaTitle, setNewPraticaTitle] = useState("");
   const [newPraticaProt, setNewPraticaProt] = useState("");
   const [selectedSalProjId, setSelectedSalProjId] = useState<string>("");
@@ -607,9 +611,114 @@ export default function CrmPage() {
   return (
     <div className="min-h-screen flex bg-gray-50/40 font-sans antialiased text-gray-900">
       
-      {/* ── LEFT SIDEBAR (MATCHING PREVAI LAYOUT STYLE) ────────────────────── */}
+      {/* Mobile Sidebar Overlay/Drawer */}
+      {isMobileSidebarOpen && (
+        <div 
+          className="fixed inset-0 z-40 bg-slate-900/60 backdrop-blur-xs md:hidden"
+          onClick={() => setIsMobileSidebarOpen(false)}
+        />
+      )}
       <aside className={cn(
-        "border-r border-gray-200 bg-white flex flex-col shrink-0 shadow-sm transition-all duration-200",
+        "fixed inset-y-0 left-0 z-50 w-64 bg-white flex flex-col border-r border-gray-200 shadow-xl transition-transform duration-300 md:hidden",
+        isMobileSidebarOpen ? "translate-x-0" : "-translate-x-full"
+      )}>
+        {/* Logo Section */}
+        <div className="h-14 flex items-center border-b border-gray-150 justify-between px-6 shrink-0">
+          <Link href="/dashboard" className="flex items-center" onClick={() => setIsMobileSidebarOpen(false)}>
+            <Logo />
+          </Link>
+          <button
+            onClick={() => setIsMobileSidebarOpen(false)}
+            className="p-1 rounded hover:bg-gray-100 text-gray-400 hover:text-gray-650 transition"
+            title="Chiudi menu"
+          >
+            <X className="h-5 w-5" />
+          </button>
+        </div>
+
+        {/* Sidebar Navigation Items */}
+        <div className="flex-1 p-4 overflow-y-auto space-y-4">
+          <div className="space-y-1">
+            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest px-2.5 pb-2">CRM CORE</p>
+            {[
+              { id: "dashboard", label: "Dashboard Generale", icon: LayoutDashboard },
+              { id: "cantieri", label: "Gestione Cantieri", icon: Briefcase },
+              { id: "lavoratori", label: "Gestione Lavoratori", icon: Users },
+              { id: "finanze", label: "Gestione Finanze", icon: TrendingUp },
+              { id: "costi_extra", label: "Costi Extra", icon: AlertCircle },
+              { id: "fornitori", label: "Fornitori", icon: Building2 },
+              { id: "listino", label: "Listino Prezzi", icon: BookOpen },
+            ].map((item) => {
+              const Icon = item.icon;
+              const active = activeSection === item.id;
+              return (
+                <button
+                  key={item.id}
+                  onClick={() => { 
+                    setActiveSection(item.id as any); 
+                    setSelectedProjectId(null); 
+                    setIsMobileSidebarOpen(false); 
+                  }}
+                  title={item.label}
+                  className={cn(
+                    "flex items-center rounded-lg text-sm font-semibold transition-all w-full gap-3 px-3 py-2",
+                    active
+                      ? "text-violet-750 bg-violet-50 font-bold"
+                      : "text-gray-500 hover:bg-gray-55 hover:text-gray-900"
+                  )}
+                >
+                  <Icon className={cn("h-4 w-4 shrink-0", active ? "text-violet-600" : "text-gray-400")} />
+                  <span>{item.label}</span>
+                </button>
+              );
+            })}
+          </div>
+
+          <div className="space-y-1 pt-4 border-t border-gray-100">
+            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest px-2.5 pb-2">AMMINISTRAZIONE</p>
+            {[
+              { id: "sal", label: "Stato Avanzamento (SAL)", icon: FileText },
+              { id: "fatturazione", label: "Fatturazione Elettronica", icon: Receipt },
+              { id: "pratiche", label: "Gestione Pratiche", icon: FolderOpen },
+              { id: "analytics", label: "KPI & Analytics", icon: BarChart3 },
+              { id: "calendario", label: "Calendario Scadenze", icon: Calendar },
+              { id: "impostazioni", label: "Impostazioni API", icon: Settings },
+            ].map((item) => {
+              const Icon = item.icon;
+              const active = activeSection === item.id;
+              return (
+                <button
+                  key={item.id}
+                  onClick={() => { 
+                    setActiveSection(item.id as any); 
+                    setSelectedProjectId(null); 
+                    setIsMobileSidebarOpen(false); 
+                  }}
+                  title={item.label}
+                  className={cn(
+                    "flex items-center rounded-lg text-sm font-semibold transition-all w-full gap-3 px-3 py-2",
+                    active
+                      ? "text-violet-750 bg-violet-50 font-bold"
+                      : "text-gray-500 hover:bg-gray-55 hover:text-gray-900"
+                  )}
+                >
+                  <Icon className={cn("h-4 w-4 shrink-0", active ? "text-violet-600" : "text-gray-400")} />
+                  <span>{item.label}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Footer info */}
+        <div className="p-4 border-t border-gray-100 text-[10px] text-gray-450 font-semibold text-center shrink-0">
+          PrevAI CRM Module v1.2
+        </div>
+      </aside>
+
+      {/* Desktop Sidebar */}
+      <aside className={cn(
+        "hidden md:flex border-r border-gray-200 bg-white flex-col shrink-0 shadow-sm transition-all duration-200",
         isSidebarCollapsed ? "w-14" : "w-64"
       )}>
         {/* Logo Section */}
@@ -638,9 +747,8 @@ export default function CrmPage() {
           )}
         </div>
 
-        {/* Sidebar Navigation Items - Individual, Clean Spacing */}
+        {/* Sidebar Navigation Items */}
         <div className="flex-1 p-4 overflow-y-auto space-y-4">
-          
           <div className="space-y-1">
             {!isSidebarCollapsed && (
               <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest px-2.5 pb-2">CRM CORE</p>
@@ -709,7 +817,6 @@ export default function CrmPage() {
               );
             })}
           </div>
-
         </div>
 
         {/* Footer info */}
@@ -724,9 +831,16 @@ export default function CrmPage() {
       <div className="flex-1 flex flex-col overflow-y-auto">
         
         {/* Top Header */}
-        <header className="h-14 bg-white border-b border-gray-200 px-8 flex items-center justify-between shrink-0">
-          <div className="flex items-center gap-2">
-            <h2 className="text-base font-bold text-gray-900 uppercase tracking-wider capitalize">
+        <header className="h-14 bg-white border-b border-gray-200 px-4 md:px-8 flex items-center justify-between shrink-0">
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setIsMobileSidebarOpen(true)}
+              className="p-1 rounded-lg hover:bg-gray-100 text-gray-500 hover:text-gray-900 md:hidden transition"
+              title="Apri menu"
+            >
+              <Menu className="h-5 w-5" />
+            </button>
+            <h2 className="text-sm md:text-base font-bold text-gray-900 uppercase tracking-wider capitalize">
               {activeSection.replace("_", " ")}
             </h2>
           </div>
@@ -734,19 +848,20 @@ export default function CrmPage() {
           <div className="flex items-center gap-4 text-xs font-semibold text-gray-500">
             <div className="flex items-center gap-1.5 bg-green-50 text-green-700 px-2.5 py-1 rounded-full border border-green-200">
               <span className="h-1.5 w-1.5 rounded-full bg-green-500" />
-              API Fatture in Cloud Attiva
+              <span className="hidden sm:inline">API Fatture in Cloud Attiva</span>
+              <span className="sm:hidden">API Attiva</span>
             </div>
           </div>
         </header>
 
         {/* Dynamic Section Contents */}
-        <main className="p-8 max-w-5xl mx-auto w-full flex-1">
+        <main className="p-4 sm:p-6 md:p-8 max-w-5xl mx-auto w-full flex-1">
 
           {/* 1. SECTION: DASHBOARD */}
           {activeSection === "dashboard" && (
             <div className="space-y-6 animate-in fade-in duration-300">
               {/* Stats Row */}
-              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 {[
                   { label: "Entrate Totali", val: `€${entrateTotali.toLocaleString("it-IT")}`, icon: DollarSign, color: "text-blue-600 bg-blue-50" },
                   { label: "Margine Operativo", val: `€${margineNetto.toLocaleString("it-IT")}`, icon: TrendingUp, color: "text-emerald-600 bg-emerald-50" },
@@ -757,7 +872,7 @@ export default function CrmPage() {
                     <CardContent className="p-4 flex items-center justify-between">
                       <div>
                         <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">{stat.label}</p>
-                        <h4 className="text-xl font-extrabold text-gray-900 mt-1">{stat.val}</h4>
+                        <h4 className="text-lg sm:text-xl font-extrabold text-gray-900 mt-1">{stat.val}</h4>
                       </div>
                       <div className={`h-8 w-8 rounded-lg flex items-center justify-center ${stat.color}`}>
                         <stat.icon className="h-4 w-4" />
@@ -797,7 +912,7 @@ export default function CrmPage() {
                   <CardContent className="p-5 space-y-4">
                     <h3 className="text-sm font-bold text-gray-800 uppercase tracking-wider">Pratiche e CILA Attive</h3>
                     <div className="divide-y divide-gray-150">
-                      {pratiche.map((pr, idx) => (
+                      {pratiche.map((pr: any, idx: number) => (
                         <div key={idx} className="flex justify-between py-2.5 first:pt-0 last:pb-0 items-center text-xs">
                           <div>
                             <p className="font-bold text-gray-800">{pr.title}</p>
@@ -837,8 +952,8 @@ export default function CrmPage() {
               {isAddingProj && (
                 <Card className="border-violet-100 bg-violet-50/20">
                   <CardContent className="p-4">
-                    <form onSubmit={handleCreateProject} className="flex flex-col sm:flex-row gap-4 items-end">
-                      <div className="flex-1 space-y-1">
+                    <form onSubmit={handleCreateProject} className="flex flex-col sm:flex-row gap-4 sm:items-end">
+                      <div className="flex-1 w-full space-y-1">
                         <label className="text-xs font-bold text-gray-600 uppercase">Nome Progetto</label>
                         <input
                           type="text"
@@ -848,7 +963,7 @@ export default function CrmPage() {
                           className="w-full bg-white border border-gray-200 rounded-lg p-2 text-sm focus:outline-none focus:ring-1 focus:ring-violet-500"
                         />
                       </div>
-                      <div className="w-48 space-y-1">
+                      <div className="w-full sm:w-48 space-y-1">
                         <label className="text-xs font-bold text-gray-600 uppercase">Budget Totale (€)</label>
                         <input
                           type="number"
@@ -858,7 +973,7 @@ export default function CrmPage() {
                           className="w-full bg-white border border-gray-200 rounded-lg p-2 text-sm focus:outline-none focus:ring-1 focus:ring-violet-500"
                         />
                       </div>
-                      <button type="submit" className="px-4 py-2 bg-violet-600 text-white rounded-lg text-sm font-bold hover:bg-violet-750">
+                      <button type="submit" className="w-full sm:w-auto px-4 py-2 bg-violet-600 text-white rounded-lg text-sm font-bold hover:bg-violet-750">
                         Aggiungi
                       </button>
                     </form>
@@ -975,7 +1090,7 @@ export default function CrmPage() {
                         </div>
 
                         {/* Upload Doc Form */}
-                        <div className="flex gap-2">
+                        <div className="flex flex-col sm:flex-row gap-2">
                           <input
                             type="text"
                             placeholder="Nome doc (es. Computo Metrico)"
@@ -983,22 +1098,24 @@ export default function CrmPage() {
                             onChange={(e) => setNewDocName(e.target.value)}
                             className="flex-1 bg-white border border-gray-200 rounded-lg p-2 text-xs focus:outline-none focus:ring-1 focus:ring-violet-500"
                           />
-                          <select
-                            value={newDocType}
-                            onChange={(e) => setNewDocType(e.target.value as any)}
-                            className="bg-white border border-gray-200 rounded-lg p-2 text-xs focus:outline-none focus:ring-1 focus:ring-violet-500"
-                          >
-                            <option value="computo">Computo</option>
-                            <option value="geometra">Geometra</option>
-                            <option value="collaboratore">P. Esterno</option>
-                            <option value="altro">Altro</option>
-                          </select>
-                          <button
-                            onClick={() => handleAddDocument(activeProject.id)}
-                            className="px-3 bg-violet-600 text-white rounded-lg text-xs font-bold hover:bg-violet-750"
-                          >
-                            Carica
-                          </button>
+                          <div className="flex gap-2 w-full sm:w-auto">
+                            <select
+                              value={newDocType}
+                              onChange={(e) => setNewDocType(e.target.value as any)}
+                              className="flex-1 sm:flex-initial bg-white border border-gray-200 rounded-lg p-2 text-xs focus:outline-none focus:ring-1 focus:ring-violet-500"
+                            >
+                              <option value="computo">Computo</option>
+                              <option value="geometra">Geometra</option>
+                              <option value="collaboratore">P. Esterno</option>
+                              <option value="altro">Altro</option>
+                            </select>
+                            <button
+                              onClick={() => handleAddDocument(activeProject.id)}
+                              className="px-3 bg-violet-600 text-white rounded-lg text-xs font-bold hover:bg-violet-750 shrink-0"
+                            >
+                              Carica
+                            </button>
+                          </div>
                         </div>
                       </div>
 
@@ -1018,7 +1135,7 @@ export default function CrmPage() {
                         </div>
 
                         {/* Add Material Form */}
-                        <div className="flex gap-2">
+                        <div className="flex flex-col sm:flex-row gap-2">
                           <input
                             type="text"
                             placeholder="Materiale (es. Cemento, Tubi)"
@@ -1026,26 +1143,28 @@ export default function CrmPage() {
                             onChange={(e) => setNewMaterialDesc(e.target.value)}
                             className="flex-1 bg-white border border-gray-200 rounded-lg p-2 text-xs focus:outline-none focus:ring-1 focus:ring-violet-500"
                           />
-                          <input
-                            type="number"
-                            placeholder="Costo €"
-                            value={newMaterialCost}
-                            onChange={(e) => setNewMaterialCost(e.target.value)}
-                            className="w-16 bg-white border border-gray-200 rounded-lg p-2 text-xs focus:outline-none focus:ring-1 focus:ring-violet-500"
-                          />
-                          <input
-                            type="text"
-                            placeholder="Fornitore"
-                            value={newMaterialSupplier}
-                            onChange={(e) => setNewMaterialSupplier(e.target.value)}
-                            className="w-20 bg-white border border-gray-200 rounded-lg p-2 text-xs focus:outline-none focus:ring-1 focus:ring-violet-500"
-                          />
-                          <button
-                            onClick={() => handleAddMaterial(activeProject.id)}
-                            className="px-3 bg-violet-600 text-white rounded-lg text-xs font-bold hover:bg-violet-750"
-                          >
-                            +
-                          </button>
+                          <div className="flex gap-2 w-full sm:w-auto">
+                            <input
+                              type="number"
+                              placeholder="Costo €"
+                              value={newMaterialCost}
+                              onChange={(e) => setNewMaterialCost(e.target.value)}
+                              className="w-20 bg-white border border-gray-200 rounded-lg p-2 text-xs focus:outline-none focus:ring-1 focus:ring-violet-500"
+                            />
+                            <input
+                              type="text"
+                              placeholder="Fornitore"
+                              value={newMaterialSupplier}
+                              onChange={(e) => setNewMaterialSupplier(e.target.value)}
+                              className="flex-1 sm:w-20 bg-white border border-gray-200 rounded-lg p-2 text-xs focus:outline-none focus:ring-1 focus:ring-violet-500"
+                            />
+                            <button
+                              onClick={() => handleAddMaterial(activeProject.id)}
+                              className="px-3 bg-violet-600 text-white rounded-lg text-xs font-bold hover:bg-violet-750 shrink-0"
+                            >
+                              +
+                            </button>
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -1203,7 +1322,7 @@ export default function CrmPage() {
               )}
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                {collaborators.map((c, idx) => {
+                {collaborators.map((c: any, idx: number) => {
                   const hours = projects.reduce((acc, p) => acc + (p.workers.find(w => w.name === c.name)?.hours || 0), 0);
                   return (
                     <Card key={idx} className="border-gray-150 shadow-xs">
@@ -1376,7 +1495,7 @@ export default function CrmPage() {
               )}
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                {suppliers.map((s, idx) => (
+                {suppliers.map((s: any, idx: number) => (
                   <Card key={idx} className="border-gray-150 shadow-xs">
                     <CardContent className="p-5 flex gap-3">
                       <div className="h-9 w-9 bg-gray-100 rounded-lg flex items-center justify-center shrink-0">
@@ -1513,7 +1632,7 @@ export default function CrmPage() {
               )}
 
               <div className="space-y-3">
-                {pratiche.map((p, idx) => (
+                {pratiche.map((p: any, idx: number) => (
                   <Card key={idx} className="border-gray-150 shadow-xs">
                     <CardContent className="p-4 flex justify-between items-center text-xs font-semibold">
                       <div>
@@ -1688,14 +1807,14 @@ export default function CrmPage() {
                   return (
                     <div className="space-y-6">
                       {/* Interactive Sheet Preview */}
-                      <div className="bg-white border border-gray-200 shadow-md rounded-2xl p-8 max-w-4xl mx-auto text-xs text-gray-800 space-y-6">
+                      <div className="bg-white border border-gray-200 shadow-md rounded-2xl p-4 sm:p-8 max-w-4xl mx-auto text-xs text-gray-800 space-y-6">
                         {/* Doc Header */}
-                        <div className="flex justify-between border-b-2 border-violet-600 pb-4">
+                        <div className="flex flex-col sm:flex-row justify-between gap-4 border-b-2 border-violet-600 pb-4">
                           <div>
                             <div className="text-lg font-black text-violet-750 uppercase tracking-wide">PrevAI</div>
                             <div className="text-[9px] text-gray-400 mt-0.5">Costruzioni & Ristrutturazioni</div>
                           </div>
-                          <div className="text-right text-[10px] text-gray-500">
+                          <div className="text-left sm:text-right text-[10px] text-gray-500">
                             <strong>PrevAI Costruzioni S.r.l.</strong><br />
                             P.IVA 01234567890<br />
                             Via dell'Artigianato 12, Milano
@@ -1707,7 +1826,7 @@ export default function CrmPage() {
                         </div>
 
                         {/* Info details */}
-                        <div className="grid grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                           <div className="bg-gray-50 border border-gray-150 p-4 rounded-xl space-y-1">
                             <h4 className="text-[9px] font-bold text-violet-600 uppercase tracking-wider">Cantiere</h4>
                             <p className="font-bold text-gray-900">{proj.name}</p>
@@ -1723,59 +1842,61 @@ export default function CrmPage() {
                         </div>
 
                         {/* Tasks Table */}
-                        <table className="w-full border-collapse border border-gray-200">
-                          <thead>
-                            <tr className="bg-gray-50 text-[10px] font-bold text-gray-600 uppercase">
-                              <th className="border border-gray-200 p-2 text-left">Descrizione Voce / Lavorazione</th>
-                              <th className="border border-gray-200 p-2 text-right">Quota Contratto</th>
-                              <th className="border border-gray-200 p-2 text-center">Stato</th>
-                              <th className="border border-gray-200 p-2 text-right">Importo Maturato</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {proj.tasks.map((t, idx) => {
-                              const taskPct = t.completed ? 100 : 0;
-                              const taskBudget = proj.budget / proj.tasks.length;
-                              const taskMaturato = t.completed ? taskBudget : 0;
-                              return (
-                                <tr key={idx} className="border-b border-gray-150">
-                                  <td className="border border-gray-200 p-2 font-medium">{t.title}</td>
-                                  <td className="border border-gray-200 p-2 text-right font-mono">€{taskBudget.toLocaleString("it-IT", { minimumFractionDigits: 2 })}</td>
-                                  <td className="border border-gray-200 p-2 text-center">
-                                    <span className={`px-2 py-0.5 rounded-full text-[8px] font-bold ${
-                                      t.completed ? "bg-green-50 text-green-700 border border-green-200" : "bg-gray-100 text-gray-500 border border-gray-200"
-                                    }`}>
-                                      {taskPct}%
-                                    </span>
-                                  </td>
-                                  <td className="border border-gray-200 p-2 text-right font-mono">€{taskMaturato.toLocaleString("it-IT", { minimumFractionDigits: 2 })}</td>
-                                </tr>
-                              );
-                            })}
-                          </tbody>
-                        </table>
+                        <div className="overflow-x-auto">
+                          <table className="w-full border-collapse border border-gray-200 min-w-[600px]">
+                            <thead>
+                              <tr className="bg-gray-50 text-[10px] font-bold text-gray-600 uppercase">
+                                <th className="border border-gray-200 p-2 text-left">Descrizione Voce / Lavorazione</th>
+                                <th className="border border-gray-200 p-2 text-right">Quota Contratto</th>
+                                <th className="border border-gray-200 p-2 text-center">Stato</th>
+                                <th className="border border-gray-200 p-2 text-right">Importo Maturato</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {proj.tasks.map((t, idx) => {
+                                const taskPct = t.completed ? 100 : 0;
+                                const taskBudget = proj.budget / proj.tasks.length;
+                                const taskMaturato = t.completed ? taskBudget : 0;
+                                return (
+                                  <tr key={idx} className="border-b border-gray-150">
+                                    <td className="border border-gray-200 p-2 font-medium">{t.title}</td>
+                                    <td className="border border-gray-200 p-2 text-right font-mono">€{taskBudget.toLocaleString("it-IT", { minimumFractionDigits: 2 })}</td>
+                                    <td className="border border-gray-200 p-2 text-center">
+                                      <span className={`px-2 py-0.5 rounded-full text-[8px] font-bold ${
+                                        t.completed ? "bg-green-50 text-green-700 border border-green-200" : "bg-gray-100 text-gray-500 border border-gray-200"
+                                      }`}>
+                                        {taskPct}%
+                                      </span>
+                                    </td>
+                                    <td className="border border-gray-200 p-2 text-right font-mono">€{taskMaturato.toLocaleString("it-IT", { minimumFractionDigits: 2 })}</td>
+                                  </tr>
+                                );
+                              })}
+                            </tbody>
+                          </table>
+                        </div>
 
                         {/* Calculation summary */}
-                        <div className="w-64 ml-auto space-y-1.5 border-t border-gray-200 pt-3">
-                          <div className="flex justify-between">
+                        <div className="w-full sm:w-64 ml-auto space-y-1.5 border-t border-gray-200 pt-3">
+                          <div className="flex justify-between gap-4">
                             <span className="text-gray-500">Importo Lavori Maturati:</span>
                             <span className="font-mono font-bold">€{totalEseguito.toLocaleString("it-IT", { minimumFractionDigits: 2 })}</span>
                           </div>
-                          <div className="flex justify-between">
+                          <div className="flex justify-between gap-4">
                             <span className="text-gray-500">Ritenuta Garanzia ({garanziaRetention}%):</span>
                             <span className="font-mono text-rose-600">- €{retentionVal.toLocaleString("it-IT", { minimumFractionDigits: 2 })}</span>
                           </div>
-                          <div className="flex justify-between border-t border-violet-200 pt-2 font-bold text-sm text-violet-750">
+                          <div className="flex justify-between border-t border-violet-200 pt-2 font-bold text-sm text-violet-750 gap-4">
                             <span>Importo Netto da Liquidare:</span>
                             <span className="font-mono">€{nettoDaPagare.toLocaleString("it-IT", { minimumFractionDigits: 2 })}</span>
                           </div>
                         </div>
 
                         {/* Signatures */}
-                        <div className="flex justify-between pt-12 text-[10px] text-center text-gray-500">
-                          <div className="w-40 border-t border-gray-300 pt-1.5">Il Direttore dei Lavori</div>
-                          <div className="w-40 border-t border-gray-300 pt-1.5">L'Impresa Appaltatrice</div>
-                          <div className="w-40 border-t border-gray-300 pt-1.5">Il Committente</div>
+                        <div className="flex flex-col sm:flex-row justify-between gap-8 sm:gap-4 pt-12 text-[10px] text-center text-gray-500">
+                          <div className="w-full sm:w-40 border-t border-gray-300 pt-1.5">Il Direttore dei Lavori</div>
+                          <div className="w-full sm:w-40 border-t border-gray-300 pt-1.5">L'Impresa Appaltatrice</div>
+                          <div className="w-full sm:w-40 border-t border-gray-300 pt-1.5">Il Committente</div>
                         </div>
                       </div>
 

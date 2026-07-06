@@ -90804,6 +90804,12 @@ function buildClient() {
         );
         body.model = hasImages ? "meta-llama/llama-4-scout-17b-16e-instruct" : "llama-3.3-70b-versatile";
       }
+      if (body.max_completion_tokens && body.max_completion_tokens > 8192) {
+        body.max_completion_tokens = 8192;
+      }
+      if (body.max_tokens && body.max_tokens > 8192) {
+        body.max_tokens = 8192;
+      }
       return originalCreate(body, options);
     };
     return client;
