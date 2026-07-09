@@ -13,7 +13,8 @@
     "serve:vite": "vite preview --config vite.config.ts --host 0.0.0.0",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "validate-prerender": "tsx ./scripts/validate-prerender.ts",
-    "validate-sitemap": "tsx ./scripts/validate-sitemap.ts"
+    "validate-sitemap": "tsx ./scripts/validate-sitemap.ts",
+    "submit-to-google": "tsx ./scripts/submit-to-google.ts"
   },
   "devDependencies": {
     "@hookform/resolvers": "^3.10.0",
@@ -85,6 +86,7 @@
     "better-auth": "^1.6.9",
     "compression": "^1.8.1",
     "express": "^5.2.1",
+    "googleapis": "^173.0.0",
     "html2pdf.js": "^0.14.0"
   }
 }

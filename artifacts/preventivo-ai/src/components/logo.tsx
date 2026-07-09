@@ -7,7 +7,7 @@ export function Logo({ className = "", style }: { className?: string; style?: Re
       alt="prevai"
       width={144}
       height={72}
-      className={className}
+      className={`logo-glow ${className}`}
       style={{ height: 72, width: "auto", objectFit: "contain", ...style }}
     />
   );

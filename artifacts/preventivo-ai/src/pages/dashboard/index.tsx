@@ -145,7 +145,7 @@ function OnboardingView() {
           <div className="mx-auto h-12 w-12 rounded-xl flex items-center justify-center mb-3" style={{ background: "linear-gradient(135deg, rgba(124,58,237,0.12), rgba(6,182,212,0.12))" }}>
             <Sparkles className="h-6 w-6 text-violet-500" />
           </div>
-          <h2 className="text-lg font-bold text-gray-900 mb-1">Benvenuto su PrevAI!</h2>
+          <h2 className="text-lg font-bold text-gray-900 mb-1">Benvenuto su <span className="prevai-word text-lg">PrevAI</span>!</h2>
           <p className="text-xs text-gray-500 max-w-md mx-auto mb-5">
             Genera il tuo primo preventivo professionale in meno di 60 secondi.
             Descrivi il lavoro e l'AI crea un computo metrico prezzato pronto da inviare al cliente.
@@ -383,7 +383,7 @@ function DashboardQuickBar() {
   return (
     <div className="space-y-2">
       {/* ── AI Bar ── */}
-      <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+      <div className="ai-bar-glow bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
         {/* Photo strip */}
         {photos.length > 0 && (
           <div className="px-3 pt-3 flex gap-2 flex-wrap border-b border-gray-100 pb-3">
@@ -715,7 +715,7 @@ export default function DashboardHome() {
   return (
     <div className="space-y-4 animate-in fade-in duration-500">
       {/* ── div 1: Hero greeting ── */}
-      <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-violet-600 via-violet-500 to-cyan-500 px-5 py-4 text-white shadow-md">
+      <div className="hero-sheen relative overflow-hidden rounded-xl bg-gradient-to-br from-violet-600 via-violet-500 to-cyan-500 px-5 py-4 text-white shadow-lg shadow-violet-300/40">
         <div className="absolute inset-0 opacity-10" style={{ backgroundImage: "radial-gradient(circle at 80% 20%, white 0%, transparent 60%)" }} />
         <div className="relative flex items-center justify-between gap-4">
           <div>
@@ -761,14 +761,14 @@ export default function DashboardHome() {
               const raw = stats?.[key] ?? 0;
               const value = isCurrency ? formatCurrency(raw as number) : String(raw);
               return (
-                <div key={key} className={`bg-white rounded-xl border ${border} p-3 shadow-sm hover-elevate transition-all`}>
+                <div key={key} className={`bg-white rounded-2xl border ${border} p-3 card-soft transition-all`}>
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-xs font-medium text-gray-500">{label}</span>
-                    <div className={`h-6 w-6 rounded-md ${accent} flex items-center justify-center`}>
-                      <Icon className={`h-3 w-3 ${color}`} />
+                    <div className={`h-7 w-7 rounded-lg ${accent} flex items-center justify-center`}>
+                      <Icon className={`h-3.5 w-3.5 ${color}`} />
                     </div>
                   </div>
-                  <div className="text-xl font-bold text-gray-900 truncate">{value}</div>
+                  <div className="text-xl font-extrabold text-gray-900 truncate">{value}</div>
                 </div>
               );
             })}
@@ -796,7 +796,7 @@ export default function DashboardHome() {
           {subscription?.isActive && subscription?.plan === "monthly_starter" && <StarterUpgradeCard />}
 
           {/* Recent quotes */}
-          <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+          <div className="bg-white rounded-2xl border border-gray-100 card-soft overflow-hidden">
             <div className="flex items-center justify-between px-4 py-3 border-b border-gray-50">
               <div>
                 <h2 className="text-sm font-semibold text-gray-900">Preventivi Recenti</h2>
@@ -838,15 +838,15 @@ export default function DashboardHome() {
 
           {/* Quick actions */}
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
-            <Link href="/dashboard/new" className="bg-white border border-gray-100 rounded-xl p-3 flex items-center gap-2.5 hover:border-violet-200 hover:bg-violet-50/30 transition-all group shadow-sm">
+            <Link href="/dashboard/new" className="bg-white border border-gray-100 rounded-2xl p-3 flex items-center gap-2.5 hover:border-violet-200 hover:bg-violet-50/30 transition-all group card-soft">
               <div className="h-7 w-7 rounded-lg bg-violet-100 flex items-center justify-center"><Plus className="h-3.5 w-3.5 text-violet-500" /></div>
               <span className="text-sm font-medium text-gray-700 group-hover:text-violet-700">Nuovo preventivo</span>
             </Link>
-            <Link href="/dashboard/quotes" className="bg-white border border-gray-100 rounded-xl p-3 flex items-center gap-2.5 hover:border-blue-200 hover:bg-blue-50/30 transition-all group shadow-sm">
+            <Link href="/dashboard/quotes" className="bg-white border border-gray-100 rounded-2xl p-3 flex items-center gap-2.5 hover:border-blue-200 hover:bg-blue-50/30 transition-all group card-soft">
               <div className="h-7 w-7 rounded-lg bg-blue-100 flex items-center justify-center"><FileText className="h-3.5 w-3.5 text-blue-500" /></div>
               <span className="text-sm font-medium text-gray-700 group-hover:text-blue-700">Tutti i preventivi</span>
             </Link>
-            <Link href="/dashboard/profile" className="bg-white border border-gray-100 rounded-xl p-3 flex items-center gap-2.5 hover:border-emerald-200 hover:bg-emerald-50/30 transition-all group shadow-sm">
+            <Link href="/dashboard/profile" className="bg-white border border-gray-100 rounded-2xl p-3 flex items-center gap-2.5 hover:border-emerald-200 hover:bg-emerald-50/30 transition-all group card-soft">
               <div className="h-7 w-7 rounded-lg bg-emerald-100 flex items-center justify-center"><Sparkles className="h-3.5 w-3.5 text-emerald-500" /></div>
               <span className="text-sm font-medium text-gray-700 group-hover:text-emerald-700">Profilo azienda</span>
             </Link>

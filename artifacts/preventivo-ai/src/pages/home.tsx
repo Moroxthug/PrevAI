@@ -37,6 +37,23 @@ export default function Home() {
   const [homepageInput, setHomepageInput] = useState("");
   const homepageInputRef = useRef<HTMLInputElement>(null);
   const [sectorsOpen, setSectorsOpen] = useState(false);
+  const heroDocRef = useRef<HTMLDivElement>(null);
+
+  const handleHeroMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    const el = heroDocRef.current;
+    if (!el) return;
+    const r = e.currentTarget.getBoundingClientRect();
+    const x = (e.clientX - r.left) / r.width - 0.5;
+    const y = (e.clientY - r.top) / r.height - 0.5;
+    el.style.animationPlayState = "paused";
+    el.style.transform = `rotateY(${-14 + x * 18}deg) rotateX(${8 - y * 14}deg) translateY(-8px)`;
+  };
+  const handleHeroLeave = () => {
+    const el = heroDocRef.current;
+    if (!el) return;
+    el.style.transform = "";
+    el.style.animationPlayState = "running";
+  };
 
   const plansArray = Array.isArray(plans) ? plans : [];
   const subscriptionPlans = plansArray.filter((p) => p.interval);
@@ -121,76 +138,151 @@ export default function Home() {
         jsonLd={[websiteJsonLd, aggregateRatingJsonLd]}
       />
 
-      {/* ── SEZIONE 1: Hero ───────────────────────────────────── */}
-      <section className="pt-24 pb-12 bg-white">
-        <div className="container mx-auto px-4 max-w-2xl text-center">
-          <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-gray-900 leading-tight mb-4">
-            Crea preventivi professionali<br />
-            in <span className="gradient-text">30 secondi</span> con l'AI
-          </h1>
-          <p className="text-sm text-gray-500 leading-relaxed mb-8 max-w-lg mx-auto">
-            Descrivi il lavoro a parole tue — prevai genera un preventivo professionale con voci di costo, quantità e IVA. Pronto da inviare al cliente.
-          </p>
+      {/* ── SEZIONE 1: Hero con scena 3D ──────────────────────── */}
+      <section
+        className="relative overflow-hidden pt-20 pb-16 bg-white"
+        onMouseMove={handleHeroMove}
+        onMouseLeave={handleHeroLeave}
+      >
+        <div className="hero-grid-bg" />
+        <div className="mesh-blob mesh-blob-1" />
+        <div className="mesh-blob mesh-blob-2" />
+        <div className="mesh-blob mesh-blob-3" />
 
-          {/* AI bar */}
-          <div className="flex items-center gap-2 bg-white border border-gray-200 rounded-xl px-4 py-3 shadow-sm focus-within:border-violet-400 focus-within:ring-2 focus-within:ring-violet-100 transition-all mb-3">
-            <div className="group relative shrink-0">
-              <button
-                disabled
-                className="h-8 w-8 flex items-center justify-center rounded-xl text-gray-400 cursor-not-allowed hover:bg-gray-100 transition-colors"
-              >
-                <ImagePlus className="h-4 w-4" />
-              </button>
-              <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2.5 py-1 bg-gray-900 text-white text-[11px] font-medium rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none shadow-lg">
-                Funzione in arrivo
-                <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-gray-900" />
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-6xl relative z-10">
+          <div className="grid lg:grid-cols-2 gap-12 items-center">
+            {/* Copy */}
+            <div className="text-center lg:text-left max-w-2xl mx-auto lg:mx-0">
+              <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-gray-900 leading-tight mb-4">
+                Crea preventivi professionali<br />
+                in <span className="gradient-text">30 secondi</span> con l'AI
+              </h1>
+              <p className="text-sm text-gray-500 leading-relaxed mb-8 max-w-lg mx-auto lg:mx-0">
+                Descrivi il lavoro a parole tue — <span className="prevai-word font-semibold">prevai</span> genera un preventivo professionale con voci di costo, quantità e IVA. Pronto da inviare al cliente.
+              </p>
+
+              {/* AI bar */}
+              <div className="ai-bar-glow flex items-center gap-2 bg-white border border-gray-200 rounded-xl px-4 py-3 shadow-sm focus-within:border-violet-400 focus-within:ring-2 focus-within:ring-violet-100 transition-all mb-3 max-w-lg mx-auto lg:mx-0">
+                <div className="group relative shrink-0">
+                  <button
+                    disabled
+                    className="h-8 w-8 flex items-center justify-center rounded-xl text-gray-400 cursor-not-allowed hover:bg-gray-100 transition-colors"
+                  >
+                    <ImagePlus className="h-4 w-4" />
+                  </button>
+                  <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2.5 py-1 bg-gray-900 text-white text-[11px] font-medium rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none shadow-lg">
+                    Funzione in arrivo
+                    <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-gray-900" />
+                  </div>
+                </div>
+                <Sparkles className="h-4 w-4 text-violet-400 shrink-0" />
+                <input
+                  ref={homepageInputRef}
+                  value={homepageInput}
+                  onChange={(e) => setHomepageInput(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === "Enter" && homepageInput.trim()) handleHomepageSubmit(); }}
+                  placeholder="Descrivi il lavoro e ottieni un preventivo in 30 secondi..."
+                  className="flex-1 text-sm outline-none placeholder:text-gray-400 text-gray-800 bg-transparent min-w-0"
+                />
+                <div className="group relative shrink-0">
+                  <button
+                    disabled
+                    className="h-8 w-8 flex items-center justify-center rounded-xl text-gray-400 cursor-not-allowed hover:bg-gray-100 transition-colors"
+                  >
+                    <Mic className="h-4 w-4" />
+                  </button>
+                  <div className="absolute bottom-full right-0 mb-2 px-2.5 py-1 bg-gray-900 text-white text-[11px] font-medium rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none shadow-lg">
+                    Funzione in arrivo
+                    <div className="absolute top-full right-3 border-4 border-transparent border-t-gray-900" />
+                  </div>
+                </div>
+                <button
+                  onClick={handleHomepageSubmit}
+                  disabled={!homepageInput.trim()}
+                  className="shrink-0 btn-gradient inline-flex h-8 w-8 items-center justify-center rounded-xl disabled:opacity-40 transition-all"
+                >
+                  <ArrowRight className="h-4 w-4" />
+                </button>
+              </div>
+              <p className="text-xs text-gray-400 mb-6">7 giorni gratis · Nessuna carta richiesta</p>
+
+              <div className="flex justify-center lg:justify-start gap-3">
+                <button
+                  onClick={() => navigate(isSignedIn ? "/dashboard/new" : "/sign-up")}
+                  className="btn-gradient inline-flex h-9 items-center px-5 text-sm font-semibold rounded-lg"
+                >
+                  Inizia gratis
+                  <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
+                </button>
+                <Link
+                  href="#prezzi"
+                  className="btn-gradient-outline inline-flex h-9 items-center px-5 text-sm font-semibold rounded-lg"
+                >
+                  Vedi i piani
+                </Link>
               </div>
             </div>
-            <Sparkles className="h-4 w-4 text-violet-400 shrink-0" />
-            <input
-              ref={homepageInputRef}
-              value={homepageInput}
-              onChange={(e) => setHomepageInput(e.target.value)}
-              onKeyDown={(e) => { if (e.key === "Enter" && homepageInput.trim()) handleHomepageSubmit(); }}
-              placeholder="Descrivi il lavoro e ottieni un preventivo in 30 secondi..."
-              className="flex-1 text-sm outline-none placeholder:text-gray-400 text-gray-800 bg-transparent min-w-0"
-            />
-            <div className="group relative shrink-0">
-              <button
-                disabled
-                className="h-8 w-8 flex items-center justify-center rounded-xl text-gray-400 cursor-not-allowed hover:bg-gray-100 transition-colors"
-              >
-                <Mic className="h-4 w-4" />
-              </button>
-              <div className="absolute bottom-full right-0 mb-2 px-2.5 py-1 bg-gray-900 text-white text-[11px] font-medium rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none shadow-lg">
-                Funzione in arrivo
-                <div className="absolute top-full right-3 border-4 border-transparent border-t-gray-900" />
+
+            {/* Scena 3D: documento del preventivo che fluttua */}
+            <div className="hero-3d-stage hidden lg:flex justify-center items-center relative h-[420px]">
+              <div ref={heroDocRef} className="hero-doc relative w-[320px]">
+                <div className="absolute -bottom-12 left-8 right-8 h-8 rounded-[50%] bg-violet-900/15 blur-xl" style={{ transform: "translateZ(-60px)" }} />
+                <div className="hero-doc-layer rounded-2xl overflow-hidden border border-gray-100 shadow-2xl shadow-violet-200/60 bg-white">
+                  <div className="bg-gray-900 px-3 py-2 flex items-center gap-2">
+                    <div className="flex gap-1.5">
+                      <div className="w-2.5 h-2.5 rounded-full bg-red-400" />
+                      <div className="w-2.5 h-2.5 rounded-full bg-amber-400" />
+                      <div className="w-2.5 h-2.5 rounded-full bg-green-400" />
+                    </div>
+                    <div className="text-[10px] font-medium text-gray-400 ml-2">Preventivo_Mario_Rossi.pdf</div>
+                  </div>
+                  <div className="bg-white text-black text-[9px] p-4 select-none">
+                    <div className="flex justify-between items-start border-b-2 border-slate-800 pb-2.5 mb-2.5">
+                      <div>
+                        <div className="font-bold text-slate-800 text-[11px]">Tinteggiature Pro s.r.l.</div>
+                        <div className="text-slate-500 text-[9px] mt-0.5">P.IVA: IT09876543210</div>
+                      </div>
+                      <div className="text-right">
+                        <div className="text-[8px] font-semibold text-slate-400 uppercase tracking-widest">Preventivo</div>
+                        <div className="text-[10px] font-bold text-slate-700 mt-0.5">N. 2024-042</div>
+                      </div>
+                    </div>
+                    <table className="w-full mb-2">
+                      <thead>
+                        <tr className="bg-slate-800 text-white">
+                          <th className="py-0.5 px-1.5 text-left text-[8px] font-semibold">Capitolo</th>
+                          <th className="py-0.5 px-1.5 text-right text-[8px] font-semibold">Importo netto</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr><td className="py-0.5 px-1.5 text-slate-700">A. Tinteggiatura pareti</td><td className="py-0.5 px-1.5 text-right font-medium text-slate-800">€ 1.200,00</td></tr>
+                        <tr className="bg-slate-50"><td className="py-0.5 px-1.5 text-slate-700">B. Rasatura e preparazione</td><td className="py-0.5 px-1.5 text-right font-medium text-slate-800">€ 250,00</td></tr>
+                      </tbody>
+                    </table>
+                    <div className="flex justify-end">
+                      <div className="w-44 border border-slate-200 rounded overflow-hidden">
+                        <div className="flex justify-between px-2 py-0.5 text-slate-600 border-b border-slate-100 text-[9px]"><span>Imponibile totale:</span><span className="font-medium">€ 1.450,00</span></div>
+                        <div className="flex justify-between px-2 py-0.5 text-slate-600 border-b border-slate-100 text-[9px]"><span>IVA (22%):</span><span className="font-medium">€ 319,00</span></div>
+                        <div className="flex justify-between px-2 py-1 bg-slate-800 text-white font-bold text-[10px]"><span>TOTALE</span><span>€ 1.769,00</span></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                {/* chip fluttuanti */}
+                <div className="hero-float-chip absolute -left-16 top-10 bg-white rounded-xl border border-gray-100 shadow-lg px-3 py-2 flex items-center gap-2">
+                  <div className="h-6 w-6 rounded-lg bg-emerald-50 flex items-center justify-center"><CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" /></div>
+                  <div className="text-[11px] font-semibold text-gray-700">IVA calcolata</div>
+                </div>
+                <div className="hero-float-chip absolute -right-14 top-40 bg-white rounded-xl border border-gray-100 shadow-lg px-3 py-2 flex items-center gap-2" style={{ animationDelay: "-2s" }}>
+                  <div className="h-6 w-6 rounded-lg bg-violet-50 flex items-center justify-center"><Sparkles className="h-3.5 w-3.5 text-violet-500" /></div>
+                  <div className="text-[11px] font-semibold text-gray-700">Generato in 30 sec</div>
+                </div>
+                <div className="hero-float-chip absolute -left-10 bottom-2 bg-white rounded-xl border border-gray-100 shadow-lg px-3 py-2 flex items-center gap-2" style={{ animationDelay: "-3.2s" }}>
+                  <div className="h-6 w-6 rounded-lg bg-cyan-50 flex items-center justify-center"><Euro className="h-3.5 w-3.5 text-cyan-500" /></div>
+                  <div className="text-[11px] font-semibold text-gray-700">€ 1.769,00 totale</div>
+                </div>
               </div>
             </div>
-            <button
-              onClick={handleHomepageSubmit}
-              disabled={!homepageInput.trim()}
-              className="shrink-0 btn-gradient inline-flex h-8 w-8 items-center justify-center rounded-xl disabled:opacity-40 transition-all"
-            >
-              <ArrowRight className="h-4 w-4" />
-            </button>
-          </div>
-          <p className="text-xs text-gray-400 mb-6">7 giorni gratis · Nessuna carta richiesta</p>
-
-          <div className="flex justify-center gap-3">
-            <button
-              onClick={() => navigate(isSignedIn ? "/dashboard/new" : "/sign-up")}
-              className="btn-gradient inline-flex h-9 items-center px-5 text-sm font-semibold rounded-lg"
-            >
-              Inizia gratis
-              <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
-            </button>
-            <Link
-              href="#prezzi"
-              className="btn-gradient-outline inline-flex h-9 items-center px-5 text-sm font-semibold rounded-lg"
-            >
-              Vedi i piani
-            </Link>
           </div>
         </div>
       </section>
@@ -480,9 +572,9 @@ export default function Home() {
               return (
                 <div
                   key={plan.id}
-                  className={`bg-white rounded-xl p-6 flex flex-col relative transition-all duration-300 ${
+                  className={`plan-card-enter card-soft bg-white rounded-xl p-6 flex flex-col relative transition-all duration-300 ${
                     isPro
-                      ? "border-2 border-violet-300"
+                      ? "border-2 border-violet-300 shadow-lg shadow-violet-200/40"
                       : isElite
                         ? "border-2 border-amber-300"
                         : "border border-gray-200"
@@ -601,7 +693,7 @@ export default function Home() {
           <div className="max-w-3xl mx-auto">
             <div className="text-center mb-8">
               <h2 className="text-xl font-semibold tracking-tight text-gray-900">
-                prevai vs{" "}
+                <span className="prevai-word">prevai</span> vs{" "}
                 <span className="gradient-text">Word ed Excel</span>
               </h2>
             </div>
@@ -615,7 +707,7 @@ export default function Home() {
                   { label: "Excel", gradient: false },
                 ].map(({ label, gradient }) => (
                   <div key={label} className={`px-4 py-3.5 text-center text-sm font-bold ${gradient ? "bg-gradient-to-b from-violet-50 to-cyan-50/40" : ""}`}>
-                    {gradient ? <span className="gradient-text">{label}</span> : <span className="text-gray-400">{label}</span>}
+                    {gradient ? <span className="prevai-word">{label}</span> : <span className="text-gray-400">{label}</span>}
                   </div>
                 ))}
               </div>
@@ -705,7 +797,7 @@ export default function Home() {
                 Dimentica <span className="gradient-text">Excel e Word</span>
               </h2>
               <p className="text-sm text-gray-500 max-w-xl mx-auto leading-relaxed">
-                I template Excel si rompono. I documenti Word non calcolano. Con prevai descrivi il lavoro a parole e in 30 secondi hai un documento professionale pronto da inviare.
+                I template Excel si rompono. I documenti Word non calcolano. Con <span className="prevai-word font-semibold">prevai</span> descrivi il lavoro a parole e in 30 secondi hai un documento professionale pronto da inviare.
               </p>
             </div>
             <div className="grid sm:grid-cols-3 gap-3">
@@ -800,7 +892,7 @@ export default function Home() {
                 <Sparkles className="h-3 w-3" /> Approfondimento
               </span>
               <h2 className="text-2xl font-bold tracking-tight text-gray-900 sm:text-3xl">
-                Cos'è <span className="gradient-text">prevai</span> e a chi serve
+                Cos'è <span className="prevai-word text-2xl sm:text-3xl">prevai</span> e a chi serve
               </h2>
             </div>
 
@@ -877,22 +969,26 @@ export default function Home() {
       </ScrollSection>
 
       {/* ── SEZIONE 11 (posiz.): CTA finale ──────────────────── */}
-      <ScrollSection className="py-14 bg-white">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="text-xl font-semibold tracking-tight text-gray-900 mb-3">
-            Pronto a rivoluzionare la tua attività?
-          </h2>
-          <p className="text-sm text-gray-500 mb-6 max-w-md mx-auto leading-relaxed">
-            Unisciti a centinaia di artigiani e professionisti italiani che
-            risparmiano ore ogni settimana.
-          </p>
-          <button
-            onClick={() => navigate(isSignedIn ? "/dashboard/new" : "/sign-up")}
-            className="btn-gradient inline-flex h-11 items-center justify-center px-8 text-sm font-semibold"
-          >
-            Crea il tuo Account Gratuito
-            <ArrowRight className="ml-2 h-4 w-4" />
-          </button>
+      <ScrollSection className="relative overflow-hidden">
+        <div className="relative overflow-hidden py-16" style={{ background: "linear-gradient(135deg, #0f0f1a 0%, #1a0a2e 55%, #0a1628 100%)" }}>
+          <div className="mesh-blob mesh-blob-1" style={{ opacity: 0.6 }} />
+          <div className="mesh-blob mesh-blob-2" style={{ opacity: 0.6 }} />
+          <div className="container mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-10">
+            <h2 className="text-xl sm:text-2xl font-semibold tracking-tight text-white mb-3">
+              Pronto a rivoluzionare la tua attività?
+            </h2>
+            <p className="text-sm text-gray-400 mb-7 max-w-md mx-auto leading-relaxed">
+              Unisciti a centinaia di artigiani e professionisti italiani che
+              risparmiano ore ogni settimana.
+            </p>
+            <button
+              onClick={() => navigate(isSignedIn ? "/dashboard/new" : "/sign-up")}
+              className="btn-gradient inline-flex h-11 items-center justify-center px-8 text-sm font-semibold"
+            >
+              Crea il tuo Account Gratuito
+              <ArrowRight className="ml-2 h-4 w-4" />
+            </button>
+          </div>
         </div>
       </ScrollSection>
     </div>

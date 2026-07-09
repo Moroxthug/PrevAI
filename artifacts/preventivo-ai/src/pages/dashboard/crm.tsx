@@ -35,7 +35,6 @@ import {
   BookOpen,
   Menu
 } from "lucide-react";
-import { Logo } from "@/components/logo";
 import { Link } from "wouter";
 import { cn } from "@/lib/utils";
 import { PriceCatalogSection } from "@/components/price-catalog-section";
@@ -609,27 +608,30 @@ export default function CrmPage() {
   };
 
   return (
-    <div className="min-h-screen flex bg-gray-50/40 font-sans antialiased text-gray-900">
-      
+    <div className="min-h-screen flex bg-white font-sans antialiased text-gray-900">
+
       {/* Mobile Sidebar Overlay/Drawer */}
       {isMobileSidebarOpen && (
-        <div 
+        <div
           className="fixed inset-0 z-40 bg-slate-900/60 backdrop-blur-xs md:hidden"
           onClick={() => setIsMobileSidebarOpen(false)}
         />
       )}
-      <aside className={cn(
-        "fixed inset-y-0 left-0 z-50 w-64 bg-white flex flex-col border-r border-gray-200 shadow-xl transition-transform duration-300 md:hidden",
-        isMobileSidebarOpen ? "translate-x-0" : "-translate-x-full"
-      )}>
+      <aside
+        className={cn(
+          "fixed inset-y-0 left-0 z-50 w-64 flex flex-col shadow-xl transition-transform duration-300 md:hidden text-gray-300",
+          isMobileSidebarOpen ? "translate-x-0" : "-translate-x-full"
+        )}
+        style={{ background: "linear-gradient(180deg, #0B1120 0%, #101830 100%)" }}
+      >
         {/* Logo Section */}
-        <div className="h-14 flex items-center border-b border-gray-150 justify-between px-6 shrink-0">
+        <div className="h-14 flex items-center border-b border-white/5 justify-between px-6 shrink-0">
           <Link href="/dashboard" className="flex items-center" onClick={() => setIsMobileSidebarOpen(false)}>
-            <Logo />
+            <span className="prevai-word text-xl font-extrabold">prevai</span>
           </Link>
           <button
             onClick={() => setIsMobileSidebarOpen(false)}
-            className="p-1 rounded hover:bg-gray-100 text-gray-400 hover:text-gray-650 transition"
+            className="p-1 rounded hover:bg-white/5 text-gray-400 hover:text-white transition"
             title="Chiudi menu"
           >
             <X className="h-5 w-5" />
@@ -639,7 +641,7 @@ export default function CrmPage() {
         {/* Sidebar Navigation Items */}
         <div className="flex-1 p-4 overflow-y-auto space-y-4">
           <div className="space-y-1">
-            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest px-2.5 pb-2">CRM CORE</p>
+            <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest px-2.5 pb-2">CRM CORE</p>
             {[
               { id: "dashboard", label: "Dashboard Generale", icon: LayoutDashboard },
               { id: "cantieri", label: "Gestione Cantieri", icon: Briefcase },
@@ -654,28 +656,28 @@ export default function CrmPage() {
               return (
                 <button
                   key={item.id}
-                  onClick={() => { 
-                    setActiveSection(item.id as any); 
-                    setSelectedProjectId(null); 
-                    setIsMobileSidebarOpen(false); 
+                  onClick={() => {
+                    setActiveSection(item.id as any);
+                    setSelectedProjectId(null);
+                    setIsMobileSidebarOpen(false);
                   }}
                   title={item.label}
                   className={cn(
-                    "flex items-center rounded-lg text-sm font-semibold transition-all w-full gap-3 px-3 py-2",
+                    "flex items-center rounded-xl text-sm font-semibold transition-all w-full gap-3 px-3 py-2",
                     active
-                      ? "text-violet-750 bg-violet-50 font-bold"
-                      : "text-gray-500 hover:bg-gray-55 hover:text-gray-900"
+                      ? "crm-nav-active"
+                      : "text-gray-400 hover:bg-white/5 hover:text-white"
                   )}
                 >
-                  <Icon className={cn("h-4 w-4 shrink-0", active ? "text-violet-600" : "text-gray-400")} />
+                  <Icon className="h-4 w-4 shrink-0 opacity-80" />
                   <span>{item.label}</span>
                 </button>
               );
             })}
           </div>
 
-          <div className="space-y-1 pt-4 border-t border-gray-100">
-            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest px-2.5 pb-2">AMMINISTRAZIONE</p>
+          <div className="space-y-1 pt-4 border-t border-white/5">
+            <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest px-2.5 pb-2">AMMINISTRAZIONE</p>
             {[
               { id: "sal", label: "Stato Avanzamento (SAL)", icon: FileText },
               { id: "fatturazione", label: "Fatturazione Elettronica", icon: Receipt },
@@ -689,20 +691,20 @@ export default function CrmPage() {
               return (
                 <button
                   key={item.id}
-                  onClick={() => { 
-                    setActiveSection(item.id as any); 
-                    setSelectedProjectId(null); 
-                    setIsMobileSidebarOpen(false); 
+                  onClick={() => {
+                    setActiveSection(item.id as any);
+                    setSelectedProjectId(null);
+                    setIsMobileSidebarOpen(false);
                   }}
                   title={item.label}
                   className={cn(
-                    "flex items-center rounded-lg text-sm font-semibold transition-all w-full gap-3 px-3 py-2",
+                    "flex items-center rounded-xl text-sm font-semibold transition-all w-full gap-3 px-3 py-2",
                     active
-                      ? "text-violet-750 bg-violet-50 font-bold"
-                      : "text-gray-500 hover:bg-gray-55 hover:text-gray-900"
+                      ? "crm-nav-active"
+                      : "text-gray-400 hover:bg-white/5 hover:text-white"
                   )}
                 >
-                  <Icon className={cn("h-4 w-4 shrink-0", active ? "text-violet-600" : "text-gray-400")} />
+                  <Icon className="h-4 w-4 shrink-0 opacity-80" />
                   <span>{item.label}</span>
                 </button>
               );
@@ -711,26 +713,29 @@ export default function CrmPage() {
         </div>
 
         {/* Footer info */}
-        <div className="p-4 border-t border-gray-100 text-[10px] text-gray-450 font-semibold text-center shrink-0">
+        <div className="p-4 border-t border-white/5 text-[10px] text-gray-500 font-semibold text-center shrink-0">
           PrevAI CRM Module v1.2
         </div>
       </aside>
 
       {/* Desktop Sidebar */}
-      <aside className={cn(
-        "hidden md:flex border-r border-gray-200 bg-white flex-col shrink-0 shadow-sm transition-all duration-200",
-        isSidebarCollapsed ? "w-14" : "w-64"
-      )}>
+      <aside
+        className={cn(
+          "hidden md:flex flex-col shrink-0 transition-all duration-200 text-gray-300",
+          isSidebarCollapsed ? "w-14" : "w-64"
+        )}
+        style={{ background: "linear-gradient(180deg, #0B1120 0%, #101830 100%)" }}
+      >
         {/* Logo Section */}
-        <div className={cn("h-14 flex items-center border-b border-gray-150 justify-between", isSidebarCollapsed ? "px-2 justify-center" : "px-6")}>
+        <div className={cn("h-14 flex items-center border-b border-white/5 justify-between", isSidebarCollapsed ? "px-2 justify-center" : "px-6")}>
           {!isSidebarCollapsed ? (
             <>
               <Link href="/dashboard" className="flex items-center">
-                <Logo />
+                <span className="prevai-word text-xl font-extrabold">prevai</span>
               </Link>
               <button
                 onClick={() => setIsSidebarCollapsed(true)}
-                className="p-1 rounded hover:bg-gray-100 text-gray-400 hover:text-gray-650 transition"
+                className="p-1 rounded hover:bg-white/5 text-gray-400 hover:text-white transition"
                 title="Comprimi sidebar"
               >
                 <ChevronLeft className="h-4 w-4" />
@@ -739,7 +744,7 @@ export default function CrmPage() {
           ) : (
             <button
               onClick={() => setIsSidebarCollapsed(false)}
-              className="p-1 rounded hover:bg-gray-100 text-gray-400 hover:text-gray-650 transition"
+              className="p-1 rounded hover:bg-white/5 text-gray-400 hover:text-white transition"
               title="Espandi sidebar"
             >
               <ChevronRight className="h-4 w-4" />
@@ -751,7 +756,7 @@ export default function CrmPage() {
         <div className="flex-1 p-4 overflow-y-auto space-y-4">
           <div className="space-y-1">
             {!isSidebarCollapsed && (
-              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest px-2.5 pb-2">CRM CORE</p>
+              <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest px-2.5 pb-2">CRM CORE</p>
             )}
             {[
               { id: "dashboard", label: "Dashboard Generale", icon: LayoutDashboard },
@@ -770,23 +775,23 @@ export default function CrmPage() {
                   onClick={() => { setActiveSection(item.id as any); setSelectedProjectId(null); }}
                   title={item.label}
                   className={cn(
-                    "flex items-center rounded-lg text-sm font-semibold transition-all w-full",
+                    "flex items-center rounded-xl text-sm font-semibold transition-all w-full",
                     isSidebarCollapsed ? "justify-center h-9 w-9 mx-auto p-0" : "gap-3 px-3 py-2",
                     active
-                      ? "text-violet-750 bg-violet-50 font-bold"
-                      : "text-gray-500 hover:bg-gray-50 hover:text-gray-900"
+                      ? "crm-nav-active"
+                      : "text-gray-400 hover:bg-white/5 hover:text-white"
                   )}
                 >
-                  <Icon className={cn("h-4 w-4 shrink-0", active ? "text-violet-600" : "text-gray-400")} />
+                  <Icon className="h-4 w-4 shrink-0 opacity-80" />
                   {!isSidebarCollapsed && <span>{item.label}</span>}
                 </button>
               );
             })}
           </div>
 
-          <div className="space-y-1 pt-4 border-t border-gray-100">
+          <div className="space-y-1 pt-4 border-t border-white/5">
             {!isSidebarCollapsed && (
-              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest px-2.5 pb-2">AMMINISTRAZIONE</p>
+              <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest px-2.5 pb-2">AMMINISTRAZIONE</p>
             )}
             {[
               { id: "sal", label: "Stato Avanzamento (SAL)", icon: FileText },
@@ -804,14 +809,14 @@ export default function CrmPage() {
                   onClick={() => { setActiveSection(item.id as any); setSelectedProjectId(null); }}
                   title={item.label}
                   className={cn(
-                    "flex items-center rounded-lg text-sm font-semibold transition-all w-full",
+                    "flex items-center rounded-xl text-sm font-semibold transition-all w-full",
                     isSidebarCollapsed ? "justify-center h-9 w-9 mx-auto p-0" : "gap-3 px-3 py-2",
                     active
-                      ? "text-violet-750 bg-violet-50 font-bold"
-                      : "text-gray-500 hover:bg-gray-50 hover:text-gray-900"
+                      ? "crm-nav-active"
+                      : "text-gray-400 hover:bg-white/5 hover:text-white"
                   )}
                 >
-                  <Icon className={cn("h-4 w-4 shrink-0", active ? "text-violet-600" : "text-gray-400")} />
+                  <Icon className="h-4 w-4 shrink-0 opacity-80" />
                   {!isSidebarCollapsed && <span>{item.label}</span>}
                 </button>
               );
@@ -821,7 +826,7 @@ export default function CrmPage() {
 
         {/* Footer info */}
         {!isSidebarCollapsed && (
-          <div className="p-4 border-t border-gray-100 text-[10px] text-gray-450 font-semibold text-center">
+          <div className="p-4 border-t border-white/5 text-[10px] text-gray-500 font-semibold text-center">
             PrevAI CRM Module v1.2
           </div>
         )}
@@ -868,13 +873,13 @@ export default function CrmPage() {
                   { label: "Costi Collaboratori", val: `€${costiLavoratori.toLocaleString("it-IT")}`, icon: Users, color: "text-amber-600 bg-amber-50" },
                   { label: "Spese Impreviste", val: `€${costiExtraTotali.toLocaleString("it-IT")}`, icon: AlertCircle, color: "text-rose-600 bg-rose-50" },
                 ].map((stat, idx) => (
-                  <Card key={idx} className="border-gray-150 shadow-xs">
+                  <Card key={idx} className="border-gray-100 card-soft rounded-2xl">
                     <CardContent className="p-4 flex items-center justify-between">
                       <div>
                         <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">{stat.label}</p>
                         <h4 className="text-lg sm:text-xl font-extrabold text-gray-900 mt-1">{stat.val}</h4>
                       </div>
-                      <div className={`h-8 w-8 rounded-lg flex items-center justify-center ${stat.color}`}>
+                      <div className={`h-9 w-9 rounded-xl flex items-center justify-center ${stat.color}`}>
                         <stat.icon className="h-4 w-4" />
                       </div>
                     </CardContent>
@@ -884,22 +889,25 @@ export default function CrmPage() {
 
               {/* Progress and Deadlines Overview */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <Card className="border-gray-150 shadow-xs">
+                <Card className="border-gray-100 card-soft rounded-2xl">
                   <CardContent className="p-5 space-y-4">
                     <h3 className="text-sm font-bold text-gray-800 uppercase tracking-wider">Avanzamento Lavori</h3>
                     <div className="space-y-4">
-                      {projects.map((p) => {
+                      {projects.map((p, idx) => {
                         const total = p.tasks.length;
                         const done = p.tasks.filter(t => t.completed).length;
                         const pct = total > 0 ? Math.round((done / total) * 100) : 0;
                         return (
                           <div key={p.id} className="space-y-1">
                             <div className="flex justify-between text-xs font-semibold text-gray-700">
-                              <span>{p.name}</span>
-                              <span>{pct}%</span>
+                              <span className="truncate pr-2">{p.name}</span>
+                              <span className="shrink-0">{pct}%</span>
                             </div>
-                            <div className="h-2 w-full bg-gray-100 rounded-full overflow-hidden border border-gray-200">
-                              <div className="h-full bg-violet-600 rounded-full" style={{ width: `${pct}%` }} />
+                            <div className="h-2.5 w-full bg-gray-100 rounded-full overflow-hidden">
+                              <div
+                                className="bar-grow-in h-full rounded-full"
+                                style={{ width: `${pct}%`, background: "linear-gradient(90deg, #7C3AED, #4F46E5, #06B6D4)", animationDelay: `${idx * 0.12}s` }}
+                              />
                             </div>
                           </div>
                         );
@@ -908,10 +916,10 @@ export default function CrmPage() {
                   </CardContent>
                 </Card>
 
-                <Card className="border-gray-150 shadow-xs">
+                <Card className="border-gray-100 card-soft rounded-2xl">
                   <CardContent className="p-5 space-y-4">
                     <h3 className="text-sm font-bold text-gray-800 uppercase tracking-wider">Pratiche e CILA Attive</h3>
-                    <div className="divide-y divide-gray-150">
+                    <div className="divide-y divide-gray-100">
                       {pratiche.map((pr: any, idx: number) => (
                         <div key={idx} className="flex justify-between py-2.5 first:pt-0 last:pb-0 items-center text-xs">
                           <div>

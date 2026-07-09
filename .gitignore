@@ -75,3 +75,19 @@ Thumbs.db
 .local/
 
 .vercel
+
+# Local Claude Code dev-server launch config — personal, not project source
+.claude/
+
+# Google service account keys — never commit
+*service-account*.json
+gen-lang-client-*.json
+**/google-indexing-key.json
+
+# Secrets / environment files — never commit
+.env
+.env.*
+!.env.example
+**/.env
+**/.env.*
+!**/.env.example

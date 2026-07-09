@@ -248,7 +248,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
   );
 
   return (
-    <div className="min-h-[100dvh] flex bg-gray-50/40">
+    <div className="min-h-[100dvh] flex bg-white">
       {/* Desktop Sidebar */}
       <aside
         className={cn(
