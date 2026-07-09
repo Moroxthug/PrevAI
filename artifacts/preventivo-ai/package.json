@@ -5,16 +5,18 @@
   "type": "module",
   "scripts": {
     "dev": "vite --config vite.config.ts --host 0.0.0.0",
-    "generate-og": "tsx ./scripts/generate-blog-og-images.ts",
-    "prebuild": "tsx ./scripts/generate-sitemap.ts && tsx ./scripts/generate-blog-og-images.ts",
-    "prerender": "tsx ./scripts/generate-blog-og-images.ts && tsx ./scripts/prerender-seo.ts",
-    "build": "vite build --config vite.config.ts && tsx ./scripts/generate-blog-og-images.ts && tsx ./scripts/prerender-seo.ts",
+    "generate-og": "tsx ./scripts/generate-blog-og-images.ts && tsx ./scripts/generate-sector-og-images.ts",
+    "prebuild": "tsx ./scripts/generate-sitemap.ts && tsx ./scripts/generate-blog-og-images.ts && tsx ./scripts/generate-sector-og-images.ts",
+    "prerender": "tsx ./scripts/generate-blog-og-images.ts && tsx ./scripts/generate-sector-og-images.ts && tsx ./scripts/prerender-seo.ts",
+    "build": "vite build --config vite.config.ts && tsx ./scripts/generate-blog-og-images.ts && tsx ./scripts/generate-sector-og-images.ts && tsx ./scripts/prerender-seo.ts",
     "serve": "node server/serve.mjs",
     "serve:vite": "vite preview --config vite.config.ts --host 0.0.0.0",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "validate-prerender": "tsx ./scripts/validate-prerender.ts",
     "validate-sitemap": "tsx ./scripts/validate-sitemap.ts",
-    "submit-to-google": "tsx ./scripts/submit-to-google.ts"
+    "submit-to-google": "tsx ./scripts/submit-to-google.ts",
+    "ga-traffic-report": "tsx ./scripts/ga-traffic-report.ts",
+    "gsc-inspect": "tsx ./scripts/gsc-inspect-urls.ts"
   },
   "devDependencies": {
     "@hookform/resolvers": "^3.10.0",
@@ -83,6 +85,8 @@
     "zod": "catalog:"
   },
   "dependencies": {
+    "@google-analytics/admin": "^9.2.0",
+    "@google-analytics/data": "^6.1.0",
     "better-auth": "^1.6.9",
     "compression": "^1.8.1",
     "express": "^5.2.1",

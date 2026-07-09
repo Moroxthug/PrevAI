@@ -37,16 +37,16 @@ export function strHash(s: string): number {
 // ─── OG image path ────────────────────────────────────────────────────────
 
 const SECTOR_OG_IMAGES: Record<string, string> = {
-  edilizia: "/og/edilizia.jpg",
-  ristrutturazione: "/og/ristrutturazione.jpg",
-  elettricista: "/og/elettricista.jpg",
-  idraulico: "/og/idraulico.jpg",
-  imbianchino: "/og/imbianchino.jpg",
-  carpentiere: "/og/carpentiere.jpg",
-  falegname: "/og/falegname.jpg",
-  termoidraulico: "/og/termoidraulico.jpg",
-  freelance: "/og/freelance.jpg",
-  geometra: "/og/geometra.jpg",
+  edilizia: "/og/sectors/edilizia.png",
+  ristrutturazione: "/og/sectors/ristrutturazione.png",
+  elettricista: "/og/sectors/elettricista.png",
+  idraulico: "/og/sectors/idraulico.png",
+  imbianchino: "/og/sectors/imbianchino.png",
+  carpentiere: "/og/sectors/carpentiere.png",
+  falegname: "/og/sectors/falegname.png",
+  termoidraulico: "/og/sectors/termoidraulico.png",
+  freelance: "/og/sectors/freelance.png",
+  geometra: "/og/sectors/geometra.png",
 };
 
 export function getOgImagePath(sectorSlug: string): string {

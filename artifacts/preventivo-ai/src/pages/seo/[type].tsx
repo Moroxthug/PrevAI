@@ -3,6 +3,7 @@ import { ArrowRight, CheckCircle2, Clock, FileText, Shield, TrendingUp, Star, Bu
 import { SeoHead } from "@/components/seo-head";
 import { SECTORS, DEFAULT_SECTOR, RELATED_SECTORS, CITY_SECTORS, CITIES } from "@/data/seo-data";
 import { BLOG_ARTICLES, SECTOR_ARTICLES } from "@/data/blog-data";
+import { getOgImagePath } from "@/data/seo-render-engine";
 
 const TIER1_CITY_SLUGS_ORDERED = [
   "roma", "milano", "napoli", "torino", "palermo", "genova", "bologna",
@@ -13,6 +14,18 @@ const TIER1_SLUG_SET = new Set(TIER1_CITY_SLUGS_ORDERED);
 const TIER1_CITIES = CITIES
   .filter((c) => TIER1_SLUG_SET.has(c.slug))
   .sort((a, b) => TIER1_CITY_SLUGS_ORDERED.indexOf(a.slug) - TIER1_CITY_SLUGS_ORDERED.indexOf(b.slug));
+
+// Tutte le città raggruppate per regione, in ordine alfabetico di regione e città.
+// Serve a garantire che ogni pagina città riceva almeno un link interno dalla
+// hub di settore (altrimenti resta orfana e Google non la scopre/indicizza).
+const CITIES_BY_REGION = CITIES.reduce<Record<string, typeof CITIES>>((acc, city) => {
+  (acc[city.region] ??= []).push(city);
+  return acc;
+}, {});
+const REGION_NAMES_SORTED = Object.keys(CITIES_BY_REGION).sort((a, b) => a.localeCompare(b, "it"));
+for (const region of REGION_NAMES_SORTED) {
+  CITIES_BY_REGION[region].sort((a, b) => a.name.localeCompare(b.name, "it"));
+}
 
 function ExcelWordComparisonBlock({ tool }: { tool: "Excel" | "Word" }) {
   const rows = tool === "Excel"
@@ -297,6 +310,7 @@ export default function SeoLanding() {
         description={s.metaDescription}
         canonical={canonical}
         jsonLd={jsonLd}
+        ogImage={getOgImagePath(s.slug)}
       />
       {/* ── Hero ─────────────────────────────────────────── */}
       <section className="relative overflow-hidden bg-white pt-24 pb-20" aria-label="Hero">
@@ -487,6 +501,43 @@ export default function SeoLanding() {
                     {city.name}
                   </span>
                 </Link>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* ── Tutte le città (link interni per indicizzazione) ──── */}
+      {CITY_SECTORS.includes(slug) && (
+        <section className="py-16 bg-white border-t border-gray-100">
+          <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-5xl">
+            <div className="text-center mb-8">
+              <h2 className="text-xl font-bold text-gray-900">
+                Preventivi {s.labelPlural} in tutte le città
+              </h2>
+              <p className="text-sm text-gray-500 mt-2">
+                Trova il tuo comune per un preventivo con tariffe locali aggiornate
+              </p>
+            </div>
+            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-8">
+              {REGION_NAMES_SORTED.map((region) => (
+                <div key={region}>
+                  <h3 className="text-xs font-semibold uppercase tracking-wider text-violet-600 mb-2.5">
+                    {region}
+                  </h3>
+                  <ul className="space-y-1.5">
+                    {CITIES_BY_REGION[region].map((city) => (
+                      <li key={city.slug}>
+                        <Link
+                          href={`/preventivi/${slug}/${city.slug}`}
+                          className="text-sm text-gray-500 hover:text-violet-600 transition-colors"
+                        >
+                          {s.label} {city.name}
+                        </Link>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
               ))}
             </div>
           </div>

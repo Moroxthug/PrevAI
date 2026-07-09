@@ -16,6 +16,7 @@ import {
   getCityRelatedSectors,
   buildCityJsonLd,
   verifyCityContentInDev,
+  getOgImagePath,
 } from "@/data/seo-render-engine";
 import { SeoHead } from "@/components/seo-head";
 
@@ -154,7 +155,7 @@ export default function SeoCityLanding() {
 
   return (
     <div className="flex flex-col min-h-screen bg-white">
-      <SeoHead title={titleTag} description={metaDesc} canonical={canonical} jsonLd={jsonLd} />
+      <SeoHead title={titleTag} description={metaDesc} canonical={canonical} jsonLd={jsonLd} ogImage={getOgImagePath(s.slug)} />
 
       {/* ── Breadcrumb ───────────────────────────────────────── */}
       <nav aria-label="Percorso di navigazione" className="bg-white border-b border-gray-100">
