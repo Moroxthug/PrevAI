@@ -5,6 +5,7 @@ import { db, businessProfilesTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
 import { UpdateBusinessProfileBody } from "@workspace/api-zod";
 import { ObjectStorageService } from "../lib/objectStorage.js";
+import { randomBytes } from "crypto";
 
 const router = Router();
 const objectStorageService = new ObjectStorageService();
@@ -50,6 +51,7 @@ router.get("/business-profile", requireAuth, async (req, res) => {
       logoUrl: profile.logoUrl ?? null,
       phone: profile.phone ?? null,
       email: profile.email ?? null,
+      apiKey: profile.apiKey ?? null,
     });
   } catch (err) {
     req.log.error({ err }, "Error fetching business profile");
@@ -104,6 +106,7 @@ router.put("/business-profile", requireAuth, async (req, res) => {
       logoUrl: profile!.logoUrl ?? null,
       phone: profile!.phone ?? null,
       email: profile!.email ?? null,
+      apiKey: profile!.apiKey ?? null,
     });
   } catch (err) {
     req.log.error({ err }, "Error updating business profile");
@@ -174,5 +177,33 @@ router.post(
     }
   }
 );
+
+router.post("/business-profile/apikey", requireAuth, async (req, res) => {
+  try {
+    const userId = getUserId(res);
+    const newApiKey = `prevai_pk_${randomBytes(24).toString("hex")}`;
+
+    const [existing] = await db
+      .select()
+      .from(businessProfilesTable)
+      .where(eq(businessProfilesTable.userId, userId));
+
+    if (existing) {
+      await db
+        .update(businessProfilesTable)
+        .set({ apiKey: newApiKey })
+        .where(eq(businessProfilesTable.userId, userId));
+    } else {
+      await db
+        .insert(businessProfilesTable)
+        .values({ userId, companyName: "", apiKey: newApiKey });
+    }
+
+    res.json({ apiKey: newApiKey });
+  } catch (err) {
+    req.log.error({ err }, "Error generating api key");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
 
 export default router;

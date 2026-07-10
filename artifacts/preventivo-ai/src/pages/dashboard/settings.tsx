@@ -878,6 +878,146 @@ function WhatsappTab() {
   );
 }
 
+function WidgetTab() {
+  const { data: profile, isLoading } = useGetBusinessProfile();
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const [generating, setGenerating] = useState(false);
+  const [copied, setCopied] = useState<"key" | "code" | null>(null);
+
+  const apiKey = (profile as any)?.apiKey || "";
+
+  const handleGenerateKey = async () => {
+    setGenerating(true);
+    try {
+      const res = await fetch("/api/business-profile/apikey", { method: "POST" });
+      if (!res.ok) throw new Error("Errore durante la generazione");
+      queryClient.invalidateQueries({ queryKey: getGetBusinessProfileQueryKey() });
+      toast({ title: "Chiave API generata con successo" });
+    } catch (err) {
+      toast({
+        title: "Errore durante la generazione",
+        description: err instanceof Error ? err.message : "Riprova tra poco",
+        variant: "destructive",
+      });
+    } finally {
+      setGenerating(false);
+    }
+  };
+
+  const copyToClipboard = (text: string, type: "key" | "code") => {
+    navigator.clipboard.writeText(text);
+    setCopied(type);
+    toast({ title: "Copiato negli appunti!" });
+    setTimeout(() => setCopied(null), 2000);
+  };
+
+  if (isLoading) {
+    return (
+      <div className="space-y-6">
+        <Skeleton className="h-32 w-full rounded-2xl" />
+        <Skeleton className="h-64 w-full rounded-2xl" />
+      </div>
+    );
+  }
+
+  const widgetUrl = typeof window !== "undefined" ? `${window.location.origin}/widget.js` : "https://prevai.vercel.app/widget.js";
+
+  const embedCode = `<!-- PrevAI Widget Funnel -->
+<div id="prevai-widget"></div>
+<script
+  src="${widgetUrl}"
+  data-api-key="${apiKey || 'INSERISCI_QUI_LA_TUA_CHIAVE_API'}"
+  async
+></script>`;
+
+  return (
+    <div className="space-y-6">
+      <Card>
+        <CardHeader>
+          <div className="flex items-center gap-3">
+            <div className="h-11 w-11 rounded-xl bg-violet-100 flex items-center justify-center">
+              <Zap className="h-6 w-6 text-violet-600" />
+            </div>
+            <div>
+              <CardTitle>Integrazione Sito Web (Funnel)</CardTitle>
+              <CardDescription className="mt-0.5">
+                Cattura contatti qualificati direttamente sul tuo sito web mostrando una stima di prezzo.
+              </CardDescription>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-5">
+          <div className="space-y-4">
+            <h3 className="text-sm font-semibold">1. La tua Chiave API (Token)</h3>
+            <p className="text-xs text-muted-foreground">
+              Questa chiave serve ad autenticare le richieste provenienti dal tuo widget sul tuo sito. Tienila al sicuro.
+            </p>
+            {apiKey ? (
+              <div className="flex items-center gap-2">
+                <Input
+                  readOnly
+                  value={apiKey}
+                  className="font-mono text-sm bg-gray-50 flex-1"
+                />
+                <Button
+                  variant="outline"
+                  onClick={() => copyToClipboard(apiKey, "key")}
+                  className="gap-2 shrink-0"
+                >
+                  {copied === "key" ? "Copiato!" : "Copia"}
+                </Button>
+                <Button
+                  variant="ghost"
+                  onClick={handleGenerateKey}
+                  disabled={generating}
+                  className="text-muted-foreground hover:text-foreground shrink-0"
+                >
+                  {generating ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+                </Button>
+              </div>
+            ) : (
+              <div className="bg-gray-50 rounded-xl p-4 text-center border border-dashed border-gray-200">
+                <p className="text-sm text-gray-500 mb-3">Non hai ancora generato una chiave API.</p>
+                <Button
+                  onClick={handleGenerateKey}
+                  disabled={generating}
+                  className="btn-gradient gap-2"
+                >
+                  {generating ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+                  Genera Chiave API
+                </Button>
+              </div>
+            )}
+          </div>
+
+          {apiKey && (
+            <div className="space-y-4 pt-4 border-t border-gray-100">
+              <h3 className="text-sm font-semibold">2. Codice da incollare sul tuo sito</h3>
+              <p className="text-xs text-muted-foreground">
+                Copia questo codice e incollalo nella pagina del tuo sito web dove desideri mostrare il funnel di acquisizione.
+              </p>
+              <div className="relative">
+                <pre className="p-4 bg-gray-900 text-gray-100 rounded-xl overflow-x-auto font-mono text-xs leading-relaxed max-h-48 whitespace-pre-wrap">
+                  {embedCode}
+                </pre>
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  onClick={() => copyToClipboard(embedCode, "code")}
+                  className="absolute right-3 top-3 gap-1.5"
+                >
+                  {copied === "code" ? "Copiato!" : "Copia Codice"}
+                </Button>
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
 export default function SettingsPage() {
   const search = useSearch();
   const params = new URLSearchParams(search);
@@ -885,13 +1025,14 @@ export default function SettingsPage() {
   const tabFromParam = params.get("tab");
   const { data: subscription } = useGetSubscription();
   const isProOrElite = subscription?.isActive && (subscription?.plan === "monthly_pro" || subscription?.plan === "monthly_elite");
-  const defaultTab = (isAccountPath || tabFromParam === "account") ? "account" : tabFromParam === "whatsapp" ? "whatsapp" : "billing";
-  const [activeTab, setActiveTab] = useState<"account" | "billing" | "whatsapp">(defaultTab as "account" | "billing" | "whatsapp");
+  const defaultTab = (isAccountPath || tabFromParam === "account") ? "account" : tabFromParam === "whatsapp" ? "whatsapp" : tabFromParam === "widget" ? "widget" : "billing";
+  const [activeTab, setActiveTab] = useState<"account" | "billing" | "whatsapp" | "widget">(defaultTab as any);
 
   const TABS = [
     { id: "account" as const, label: "Account Aziendale" },
     { id: "billing" as const, label: "Piano & Fatturazione" },
     ...(isProOrElite ? [{ id: "whatsapp" as const, label: "WhatsApp Bot" }] : []),
+    { id: "widget" as const, label: "Integrazione Sito (Funnel)" },
   ];
 
   return (
@@ -919,7 +1060,15 @@ export default function SettingsPage() {
         ))}
       </div>
 
-      {activeTab === "account" ? <AccountTab /> : activeTab === "whatsapp" ? <WhatsappTab /> : <BillingTab />}
+      {activeTab === "account" ? (
+        <AccountTab />
+      ) : activeTab === "whatsapp" ? (
+        <WhatsappTab />
+      ) : activeTab === "widget" ? (
+        <WidgetTab />
+      ) : (
+        <BillingTab />
+      )}
     </div>
   );
 }

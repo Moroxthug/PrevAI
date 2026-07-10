@@ -11,6 +11,7 @@ import clientsRouter from "./clients";
 import documentsRouter from "./documents";
 import crmRouter from "./crm";
 import supportRouter from "./support";
+import publicQuotesRouter from "./public-quotes";
 
 const router: IRouter = Router();
 
@@ -26,5 +27,6 @@ router.use(clientsRouter);
 router.use(documentsRouter);
 router.use(crmRouter);
 router.use(supportRouter);
+router.use(publicQuotesRouter);
 
 export default router;

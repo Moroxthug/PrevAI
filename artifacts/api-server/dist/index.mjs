@@ -510,6 +510,47 @@ var require_browser = __commonJS({
   }
 });
 
+// ../../../node_modules/supports-color/index.js
+var require_supports_color = __commonJS({
+  "../../../node_modules/supports-color/index.js"(exports, module) {
+    "use strict";
+    var argv = process.argv;
+    var terminator = argv.indexOf("--");
+    var hasFlag = function(flag) {
+      flag = "--" + flag;
+      var pos = argv.indexOf(flag);
+      return pos !== -1 && (terminator !== -1 ? pos < terminator : true);
+    };
+    module.exports = (function() {
+      if ("FORCE_COLOR" in process.env) {
+        return true;
+      }
+      if (hasFlag("no-color") || hasFlag("no-colors") || hasFlag("color=false")) {
+        return false;
+      }
+      if (hasFlag("color") || hasFlag("colors") || hasFlag("color=true") || hasFlag("color=always")) {
+        return true;
+      }
+      if (process.stdout && !process.stdout.isTTY) {
+        return false;
+      }
+      if (process.platform === "win32") {
+        return true;
+      }
+      if ("COLORTERM" in process.env) {
+        return true;
+      }
+      if (process.env.TERM === "dumb") {
+        return false;
+      }
+      if (/^screen|^xterm|^vt100|color|ansi|cygwin|linux/i.test(process.env.TERM)) {
+        return true;
+      }
+      return false;
+    })();
+  }
+});
+
 // ../../node_modules/.pnpm/debug@4.4.3/node_modules/debug/src/node.js
 var require_node = __commonJS({
   "../../node_modules/.pnpm/debug@4.4.3/node_modules/debug/src/node.js"(exports, module) {
@@ -528,7 +569,7 @@ var require_node = __commonJS({
     );
     exports.colors = [6, 2, 3, 4, 5, 1];
     try {
-      const supportsColor = __require("supports-color");
+      const supportsColor = require_supports_color();
       if (supportsColor && (supportsColor.stderr || supportsColor).level >= 2) {
         exports.colors = [
           20,
@@ -20490,27 +20531,27 @@ var require_router = __commonJS({
     var slice = Array.prototype.slice;
     var flatten = Array.prototype.flat;
     var methods2 = METHODS.map((method) => method.toLowerCase());
-    module.exports = Router14;
+    module.exports = Router15;
     module.exports.Route = Route;
-    function Router14(options) {
-      if (!(this instanceof Router14)) {
-        return new Router14(options);
+    function Router15(options) {
+      if (!(this instanceof Router15)) {
+        return new Router15(options);
       }
       const opts = options || {};
-      function router15(req, res, next) {
-        router15.handle(req, res, next);
+      function router16(req, res, next) {
+        router16.handle(req, res, next);
       }
-      Object.setPrototypeOf(router15, this);
-      router15.caseSensitive = opts.caseSensitive;
-      router15.mergeParams = opts.mergeParams;
-      router15.params = {};
-      router15.strict = opts.strict;
-      router15.stack = [];
-      return router15;
+      Object.setPrototypeOf(router16, this);
+      router16.caseSensitive = opts.caseSensitive;
+      router16.mergeParams = opts.mergeParams;
+      router16.params = {};
+      router16.strict = opts.strict;
+      router16.stack = [];
+      return router16;
     }
-    Router14.prototype = function() {
+    Router15.prototype = function() {
     };
-    Router14.prototype.param = function param(name, fn) {
+    Router15.prototype.param = function param(name, fn) {
       if (!name) {
         throw new TypeError("argument name is required");
       }
@@ -20530,7 +20571,7 @@ var require_router = __commonJS({
       params.push(fn);
       return this;
     };
-    Router14.prototype.handle = function handle(req, res, callback) {
+    Router15.prototype.handle = function handle(req, res, callback) {
       if (!callback) {
         throw new TypeError("argument callback is required");
       }
@@ -20657,7 +20698,7 @@ var require_router = __commonJS({
         }
       }
     };
-    Router14.prototype.use = function use2(handler) {
+    Router15.prototype.use = function use2(handler) {
       let offset = 0;
       let path4 = "/";
       if (typeof handler !== "function") {
@@ -20690,7 +20731,7 @@ var require_router = __commonJS({
       }
       return this;
     };
-    Router14.prototype.route = function route(path4) {
+    Router15.prototype.route = function route(path4) {
       const route2 = new Route(path4);
       const layer = new Layer(path4, {
         sensitive: this.caseSensitive,
@@ -20705,7 +20746,7 @@ var require_router = __commonJS({
       return route2;
     };
     methods2.concat("all").forEach(function(method) {
-      Router14.prototype[method] = function(path4) {
+      Router15.prototype[method] = function(path4) {
         const route = this.route(path4);
         route[method].apply(route, slice.call(arguments, 1));
         return this;
@@ -20888,13 +20929,13 @@ var require_application = __commonJS({
     var compileTrust = require_utils3().compileTrust;
     var resolve = __require("node:path").resolve;
     var once = require_once();
-    var Router14 = require_router();
+    var Router15 = require_router();
     var slice = Array.prototype.slice;
     var flatten = Array.prototype.flat;
     var app2 = exports = module.exports = {};
     var trustProxyDefaultSymbol = "@@symbol:trust_proxy_default";
     app2.init = function init2() {
-      var router15 = null;
+      var router16 = null;
       this.cache = /* @__PURE__ */ Object.create(null);
       this.engines = /* @__PURE__ */ Object.create(null);
       this.settings = /* @__PURE__ */ Object.create(null);
@@ -20903,13 +20944,13 @@ var require_application = __commonJS({
         configurable: true,
         enumerable: true,
         get: function getrouter() {
-          if (router15 === null) {
-            router15 = new Router14({
+          if (router16 === null) {
+            router16 = new Router15({
               caseSensitive: this.enabled("case sensitive routing"),
               strict: this.enabled("strict routing")
             });
           }
-          return router15;
+          return router16;
         }
       });
     };
@@ -20980,15 +21021,15 @@ var require_application = __commonJS({
       if (fns.length === 0) {
         throw new TypeError("app.use() requires a middleware function");
       }
-      var router15 = this.router;
+      var router16 = this.router;
       fns.forEach(function(fn2) {
         if (!fn2 || !fn2.handle || !fn2.set) {
-          return router15.use(path4, fn2);
+          return router16.use(path4, fn2);
         }
         debug(".use app under %s", path4);
         fn2.mountpath = path4;
         fn2.parent = this;
-        router15.use(path4, function mounted_app(req, res, next) {
+        router16.use(path4, function mounted_app(req, res, next) {
           var orig = req.app;
           fn2.handle(req, res, function(err) {
             Object.setPrototypeOf(req, orig.request);
@@ -23515,7 +23556,7 @@ var require_express = __commonJS({
     var EventEmitter2 = __require("node:events").EventEmitter;
     var mixin = require_merge_descriptors();
     var proto = require_application();
-    var Router14 = require_router();
+    var Router15 = require_router();
     var req = require_request();
     var res = require_response();
     exports = module.exports = createApplication;
@@ -23537,8 +23578,8 @@ var require_express = __commonJS({
     exports.application = proto;
     exports.request = req;
     exports.response = res;
-    exports.Route = Router14.Route;
-    exports.Router = Router14;
+    exports.Route = Router15.Route;
+    exports.Router = Router15;
     exports.json = bodyParser.json;
     exports.raw = bodyParser.raw;
     exports.static = require_serve_static();
@@ -46242,7 +46283,7 @@ var require_utils_webcrypto = __commonJS({
     var nodeCrypto = __require("crypto");
     module.exports = {
       postgresMd5PasswordHash,
-      randomBytes: randomBytes3,
+      randomBytes: randomBytes4,
       deriveKey: deriveKey3,
       sha256: sha2562,
       hashByName,
@@ -46252,7 +46293,7 @@ var require_utils_webcrypto = __commonJS({
     var webCrypto = nodeCrypto.webcrypto || globalThis.crypto;
     var subtleCrypto = webCrypto.subtle;
     var textEncoder2 = new TextEncoder();
-    function randomBytes3(length) {
+    function randomBytes4(length) {
       return webCrypto.getRandomValues(Buffer.alloc(length));
     }
     async function md52(string7) {
@@ -52484,8 +52525,8 @@ var init_bun_sqlite_dialect_na_YwnN = __esm({
         this.#db = db2;
       }
       executeQuery(compiledQuery) {
-        const { sql: sql7, parameters } = compiledQuery;
-        const stmt = this.#db.prepare(sql7);
+        const { sql: sql8, parameters } = compiledQuery;
+        const stmt = this.#db.prepare(sql8);
         return Promise.resolve({ rows: stmt.all(parameters) });
       }
       async *streamQuery() {
@@ -52647,8 +52688,8 @@ var init_node_sqlite_dialect = __esm({
         this.#db = db2;
       }
       executeQuery(compiledQuery) {
-        const { sql: sql7, parameters } = compiledQuery;
-        const rows = this.#db.prepare(sql7).all(...parameters);
+        const { sql: sql8, parameters } = compiledQuery;
+        const rows = this.#db.prepare(sql8).all(...parameters);
         return Promise.resolve({ rows });
       }
       async *streamQuery() {
@@ -91426,7 +91467,7 @@ var require_utils7 = __commonJS({
     exports.createHasher = createHasher2;
     exports.createOptHasher = createOptHasher;
     exports.createXOFer = createXOFer;
-    exports.randomBytes = randomBytes3;
+    exports.randomBytes = randomBytes4;
     var crypto_1 = require_cryptoNode();
     function isBytes3(a) {
       return a instanceof Uint8Array || ArrayBuffer.isView(a) && a.constructor.name === "Uint8Array";
@@ -91624,7 +91665,7 @@ var require_utils7 = __commonJS({
     exports.wrapConstructor = createHasher2;
     exports.wrapConstructorWithOpts = createOptHasher;
     exports.wrapXOFConstructorWithOpts = createXOFer;
-    function randomBytes3(bytesLength = 32) {
+    function randomBytes4(bytesLength = 32) {
       if (crypto_1.crypto && typeof crypto_1.crypto.getRandomValues === "function") {
         return crypto_1.crypto.getRandomValues(new Uint8Array(bytesLength));
       }
@@ -237193,7 +237234,7 @@ var require_pdfkit = __commonJS({
       }
       return output;
     }
-    function randomBytes3(length) {
+    function randomBytes4(length) {
       const bytes = new Uint8Array(length);
       if (globalThis.crypto?.getRandomValues) {
         globalThis.crypto.getRandomValues(bytes);
@@ -237302,7 +237343,7 @@ var require_pdfkit = __commonJS({
         return Buffer.from(md5Hash(infoStr));
       }
       static generateRandomWordArray(bytes) {
-        return randomBytes3(bytes);
+        return randomBytes4(bytes);
       }
       static create(document2, options = {}) {
         if (!options.ownerPassword && !options.userPassword) {
@@ -267810,7 +267851,7 @@ var require_main7 = __commonJS({
 });
 
 // src/app.ts
-var import_express14 = __toESM(require_express2(), 1);
+var import_express15 = __toESM(require_express2(), 1);
 var import_cors = __toESM(require_lib3(), 1);
 var import_pino_http = __toESM(require_logger(), 1);
 
@@ -268914,10 +268955,10 @@ function pgEnumObjectWithSchema(enumName, values, schema2) {
 // ../../node_modules/.pnpm/drizzle-orm@0.45.2_@types+pg@8.18.0_kysely@0.28.17_pg@8.20.0/node_modules/drizzle-orm/subquery.js
 var Subquery = class {
   static [entityKind] = "Subquery";
-  constructor(sql7, fields, alias, isWith = false, usedTables = []) {
+  constructor(sql8, fields, alias, isWith = false, usedTables = []) {
     this._ = {
       brand: "Subquery",
-      sql: sql7,
+      sql: sql8,
       selectedFields: fields,
       alias,
       isWith,
@@ -274432,10 +274473,10 @@ var PgRelationalQuery = class extends QueryPromise {
 
 // ../../node_modules/.pnpm/drizzle-orm@0.45.2_@types+pg@8.18.0_kysely@0.28.17_pg@8.20.0/node_modules/drizzle-orm/pg-core/query-builders/raw.js
 var PgRaw = class extends QueryPromise {
-  constructor(execute, sql7, query, mapBatchResult) {
+  constructor(execute, sql8, query, mapBatchResult) {
     super();
     this.execute = execute;
-    this.sql = sql7;
+    this.sql = sql8;
     this.query = query;
     this.mapBatchResult = mapBatchResult;
   }
@@ -274755,8 +274796,8 @@ var NoopCache = class extends Cache {
   async onMutate(_params) {
   }
 };
-async function hashQuery(sql7, params) {
-  const dataToHash = `${sql7}-${JSON.stringify(params)}`;
+async function hashQuery(sql8, params) {
+  const dataToHash = `${sql8}-${JSON.stringify(params)}`;
   const encoder3 = new TextEncoder();
   const data = encoder3.encode(dataToHash);
   const hashBuffer = await crypto.subtle.digest("SHA-256", data);
@@ -286755,6 +286796,7 @@ var businessProfilesTable = pgTable("business_profiles", {
   subscriptionPeriodEnd: timestamp("subscription_period_end", { withTimezone: true }),
   trialStartedAt: timestamp("trial_started_at", { withTimezone: true }),
   trialDownloadsUsed: integer("trial_downloads_used").notNull().default(0),
+  apiKey: text("api_key"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => /* @__PURE__ */ new Date())
 });
@@ -300791,13 +300833,13 @@ var createRouter$1 = (endpoints, config4) => {
       return new Response(getHTML(schema2, openapi.scalar), { headers: { "Content-Type": "text/html" } });
     });
   }
-  const router15 = createRouter();
+  const router16 = createRouter();
   const middlewareRouter = createRouter();
   for (const endpoint of Object.values(endpoints)) {
     if (!endpoint.options || !endpoint.path) continue;
     if (endpoint.options?.metadata?.SERVER_ONLY) continue;
     const methods2 = Array.isArray(endpoint.options?.method) ? endpoint.options.method : [endpoint.options?.method];
-    for (const method of methods2) addRoute(router15, method, endpoint.path, endpoint);
+    for (const method of methods2) addRoute(router16, method, endpoint.path, endpoint);
   }
   if (config4?.routerMiddleware?.length) for (const { path: path4, middleware } of config4.routerMiddleware) addRoute(middlewareRouter, "*", path4, middleware);
   const processRequest = async (request) => {
@@ -300816,7 +300858,7 @@ var createRouter$1 = (endpoints, config4) => {
       status: 404,
       statusText: "Not Found"
     });
-    const route = findRoute(router15, request.method, path4);
+    const route = findRoute(router16, request.method, path4);
     if (path4.endsWith("/") !== route?.data?.path?.endsWith("/") && !config4?.skipTrailingSlashes) return new Response(null, {
       status: 404,
       statusText: "Not Found"
@@ -322372,7 +322414,7 @@ router2.get("/payments/verify/:quoteId", requireAuth, async (req, res) => {
 var payments_default = router2;
 
 // src/routes/index.ts
-var import_express13 = __toESM(require_express2(), 1);
+var import_express14 = __toESM(require_express2(), 1);
 
 // src/routes/health.ts
 var import_express2 = __toESM(require_express2(), 1);
@@ -332089,17 +332131,20 @@ var imageUpload = (0, import_multer.default)({
 var router4 = (0, import_express3.Router)();
 var AI_PROMPT = `Sei un consulente esperto di preventivi professionali per il mercato italiano (artigiani, edilizia, impianti, servizi tecnici).
 
-Devi trasformare una descrizione libera in un'ANALISI ECONOMICA E COMPUTO METRICO PREZZATO professionale, strutturata a capitoli, coerente con i prezzi di mercato in Italia nel 2026.
+Devi trasformare una descrizione libera in un'ANALISI ECONOMICA E COMPUTO METRICO PREZZATO professionale, strutturata a capitoli, coerente con i prezzi di listino del proprietario e con le stime di mercato in Italia nel 2026.
 
 REGOLE FONDAMENTALI:
-1. Prezzi realistici di mercato italiano 2026:
-   - imbianchino/pittore: 5\u201312\u20AC/mq per tinteggiatura, 15\u201325\u20AC/mq per lavori speciali
-   - elettricista: 40\u201370\u20AC/ora manodopera, prezzi materiali a mercato
-   - idraulico: 45\u201375\u20AC/ora manodopera
-   - edilizia generale: prezzi coerenti con listino DEI/Regione
-   - muratore: 35\u201355\u20AC/ora
-   - carpentiere/falegname: 40\u201365\u20AC/ora
-2. Se mancano dati specifici: fai assunzioni realistiche, NON chiedere chiarimenti
+1. Prezzi di riferimento e di catalogo (LISTINO):
+   - Se \xE8 fornito un "LISTINO PREZZI PERSONALIZZATO DELL'UTENTE", devi usare PRIORITARIAMENTE i prezzi unitari definiti nel listino per tutte le lavorazioni corrispondenti o correlate.
+   - Non inventare nuovi prezzi unitari se la voce corrisponde a qualcosa presente nel listino personalizzato.
+   - Se una lavorazione non \xE8 presente nel listino personalizzato, usa prezzi realistici del mercato italiano 2026:
+     * imbianchino/pittore: 5\u201312\u20AC/mq per tinteggiatura, 15\u201325\u20AC/mq per lavori speciali
+     * elettricista: 40\u201370\u20AC/ora manodopera
+     * idraulico: 45\u201375\u20AC/ora manodopera
+     * edilizia generale: prezzi coerenti con listino DEI/Regione
+     * muratore: 35\u201355\u20AC/ora
+     * carpentiere/falegname: 40\u201365\u20AC/ora
+2. Se mancano dati specifici: fai assunzioni realistiche, NON chiedere chiarimenti. Se sono fornite le "MISURE E DIMENSIONI DELL'IMMOBILE", devi usarle rigorosamente per calcolare le quantit\xE0 (mq, metri lineari, ecc.) in modo matematico.
 3. Organizza il lavoro in CAPITOLI logici (A, B, C, D, \u2026) con titoli professionali (es: "Allestimento cantiere", "Opere di demolizione", "Nuove opere edili", "Impianto elettrico", ecc.)
 4. Ogni capitolo contiene VOCI di lavoro dettagliate con unit\xE0 di misura professionali (mq, ml, mc, kg, ore, a.c., pezzi, cadauno, kw, etc.)
 5. Calcola subtotale per ogni capitolo. Il QUADRO SINTETICO \xE8 ricavato automaticamente dall'array capitoli (lettera + titolo + subtotale + osservazione); non serve un campo separato.
@@ -332157,6 +332202,7 @@ CALCOLI:
 
 IMPORTANTISSIMO: output SOLO JSON puro, nessuna spiegazione, nessun markdown.`;
 function serializeQuote(q, attachments) {
+  const tot = Number(q.totale);
   return {
     id: q.id,
     userId: q.userId,
@@ -332173,7 +332219,9 @@ function serializeQuote(q, attachments) {
     subtotale: Number(q.subtotale),
     ivaPercentuale: Number(q.ivaPercentuale),
     ivaValore: Number(q.ivaValore),
-    totale: Number(q.totale),
+    totale: tot,
+    prezzoMinimo: Math.round(tot * 0.9 * 100) / 100,
+    prezzoMassimo: Math.round(tot * 1.25 * 100) / 100,
     note: q.note,
     status: q.status,
     pdfUrl: q.pdfUrl ?? null,
@@ -332246,6 +332294,35 @@ router4.get("/quotes", requireAuth, async (req, res) => {
     res.status(500).json({ error: "Internal server error" });
   }
 });
+function findRelevantCatalogItems(input, catalog, limit2 = 20) {
+  if (catalog.length <= limit2) return catalog;
+  const words = input.toLowerCase().split(/\W+/).filter((w) => w.length > 2);
+  if (words.length === 0) return catalog.slice(0, limit2);
+  const scored = catalog.map((item) => {
+    const nameLower = item.nome.toLowerCase();
+    const catLower = (item.categoria || "").toLowerCase();
+    const noteLower = (item.note || "").toLowerCase();
+    let score = 0;
+    for (const word of words) {
+      if (nameLower.includes(word)) score += 3;
+      if (catLower.includes(word)) score += 1.5;
+      if (noteLower.includes(word)) score += 0.5;
+    }
+    return { item, score };
+  });
+  const filtered = scored.filter((s) => s.score > 0).sort((a, b) => b.score - a.score).map((s) => s.item);
+  if (filtered.length < limit2) {
+    const addedIds = new Set(filtered.map((f) => f.id));
+    for (const item of catalog) {
+      if (filtered.length >= limit2) break;
+      if (!addedIds.has(item.id)) {
+        filtered.push(item);
+        addedIds.add(item.id);
+      }
+    }
+  }
+  return filtered.slice(0, limit2);
+}
 function buildPastQuotesContext(quotes) {
   const examples = quotes.filter((q) => Array.isArray(q.capitoli) && q.capitoli.length > 0).slice(0, 3).map((q) => {
     const caps = q.capitoli;
@@ -332291,6 +332368,14 @@ router4.post("/quotes", requireAuth, imageUpload.array("images", 3), async (req,
     if (!rawInput) {
       res.status(400).json({ error: "rawInput is required" });
       return;
+    }
+    let misure;
+    if (req.body.misure) {
+      try {
+        misure = typeof req.body.misure === "string" ? JSON.parse(req.body.misure) : req.body.misure;
+      } catch (err) {
+        req.log.warn({ err }, "Error parsing body.misure");
+      }
     }
     const requestedTemplateId = typeof req.body.templateId === "string" ? req.body.templateId : "standard";
     const validTemplateIds = ["standard", "arosio", "mariagrazia"];
@@ -332417,10 +332502,18 @@ L'utente ha allegato un documento con un computo metrico dettagliato. Ogni singo
       logoUrl: fetchedProfile.logoUrl ?? void 0
     } : null;
     const pastContext = buildPastQuotesContext(recentQuotes);
-    const catalogContext = catalogItems.length > 0 ? `LISTINO PREZZI PERSONALIZZATO DELL'UTENTE (usa questi prezzi come riferimento PRIORITARIO quando le lavorazioni corrispondono \u2014 adatta le quantit\xE0 al lavoro richiesto):
-${catalogItems.map((item) => `  - ${item.nome} (${item.um}): ${Number(item.prezzoUnitario).toFixed(2)}\u20AC/unit\xE0${item.categoria ? ` [${item.categoria}]` : ""}${item.note ? ` \u2014 ${item.note}` : ""}`).join("\n")}
+    const relevantCatalogItems = findRelevantCatalogItems(rawInput, catalogItems, 20);
+    const catalogContext = relevantCatalogItems.length > 0 ? `LISTINO PREZZI PERSONALIZZATO DELL'UTENTE (usa questi prezzi come riferimento PRIORITARIO quando le lavorazioni corrispondono \u2014 adatta le quantit\xE0 al lavoro richiesto):
+${relevantCatalogItems.map((item) => `  - ${item.nome} (${item.um}): ${Number(item.prezzoUnitario).toFixed(2)}\u20AC/unit\xE0${item.categoria ? ` [${item.categoria}]` : ""}${item.note ? ` \u2014 ${item.note}` : ""}`).join("\n")}
 
 Quando usi una voce del listino, applica il prezzo unitario esatto o molto simile. Per lavorazioni non presenti nel listino, usa i prezzi di mercato standard.` : "";
+    let misureContext = "";
+    if (misure && typeof misure === "object" && Object.keys(misure).length > 0) {
+      misureContext = `MISURE E DIMENSIONI DELL'IMMOBILE (vincolanti per il calcolo delle quantit\xE0):
+${Object.entries(misure).map(([key, val]) => `  - ${key}: ${val}`).join("\n")}
+
+Usa queste misure esatte per calcolare matematicamente le quantit\xE0 delle singole lavorazioni richieste nel preventivo. Non inventare quantit\xE0 arbitrarie che contraddicono queste dimensioni.`;
+    }
     const docCount = Number(processedDocCount[0]?.cnt ?? 0);
     const priceIntelContext = docCount >= 3 && priceIntelligenceItems.length > 0 ? `PRICE INTELLIGENCE PERSONALIZZATA (estratta da ${docCount} preventivi reali dell'utente \u2014 usa questi prezzi come guida per la zona e le tipologie di lavoro dell'utente):
 ${priceIntelligenceItems.slice(0, 30).map((item) => `  - ${item.workType}${item.zone ? ` [${item.zone}]` : ""}: ${Number(item.avgPrice ?? 0).toFixed(2)}\u20AC${item.unit ? `/${item.unit}` : ""}`).join("\n")}
@@ -332470,6 +332563,7 @@ Scrivi il preventivo in stile OFFERTA COMMERCIALE PROFESSIONALE e PERSUASIVA:
         messages: [
           { role: "system", content: AI_PROMPT },
           ...catalogContext ? [{ role: "system", content: catalogContext }] : [],
+          ...misureContext ? [{ role: "system", content: misureContext }] : [],
           ...priceIntelContext ? [{ role: "system", content: priceIntelContext }] : [],
           ...pastContext ? [{ role: "system", content: pastContext }] : [],
           ...targetTotalContext ? [{ role: "system", content: targetTotalContext }] : [],
@@ -334420,6 +334514,7 @@ var quotes_default = router4;
 // src/routes/business-profile.ts
 var import_express4 = __toESM(require_express2(), 1);
 var import_multer2 = __toESM(require_multer(), 1);
+import { randomBytes as randomBytes3 } from "crypto";
 var router5 = (0, import_express4.Router)();
 var objectStorageService = new ObjectStorageService();
 var upload = (0, import_multer2.default)({
@@ -334454,7 +334549,8 @@ router5.get("/business-profile", requireAuth, async (req, res) => {
       address: profile.address ?? null,
       logoUrl: profile.logoUrl ?? null,
       phone: profile.phone ?? null,
-      email: profile.email ?? null
+      email: profile.email ?? null,
+      apiKey: profile.apiKey ?? null
     });
   } catch (err) {
     req.log.error({ err }, "Error fetching business profile");
@@ -334493,7 +334589,8 @@ router5.put("/business-profile", requireAuth, async (req, res) => {
       address: profile.address ?? null,
       logoUrl: profile.logoUrl ?? null,
       phone: profile.phone ?? null,
-      email: profile.email ?? null
+      email: profile.email ?? null,
+      apiKey: profile.apiKey ?? null
     });
   } catch (err) {
     req.log.error({ err }, "Error updating business profile");
@@ -334544,6 +334641,22 @@ router5.post(
     }
   }
 );
+router5.post("/business-profile/apikey", requireAuth, async (req, res) => {
+  try {
+    const userId = getUserId(res);
+    const newApiKey = `prevai_pk_${randomBytes3(24).toString("hex")}`;
+    const [existing] = await db.select().from(businessProfilesTable).where(eq(businessProfilesTable.userId, userId));
+    if (existing) {
+      await db.update(businessProfilesTable).set({ apiKey: newApiKey }).where(eq(businessProfilesTable.userId, userId));
+    } else {
+      await db.insert(businessProfilesTable).values({ userId, companyName: "", apiKey: newApiKey });
+    }
+    res.json({ apiKey: newApiKey });
+  } catch (err) {
+    req.log.error({ err }, "Error generating api key");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
 var business_profile_default = router5;
 
 // src/routes/storage.ts
@@ -338291,24 +338404,229 @@ router13.post("/support/conversations/:id/close", async (req, res) => {
 });
 var support_default = router13;
 
-// src/routes/index.ts
+// src/routes/public-quotes.ts
+var import_express13 = __toESM(require_express2(), 1);
+init_src();
 var router14 = (0, import_express13.Router)();
-router14.use(health_default);
-router14.use(quotes_default);
-router14.use(business_profile_default);
-router14.use(payments_default);
-router14.use(storage_default);
-router14.use(admin_default);
-router14.use(catalog_default);
-router14.use(whatsapp_default);
-router14.use(clients_default);
-router14.use(documents_default);
-router14.use(crm_default);
-router14.use(support_default);
-var routes_default = router14;
+function findRelevantCatalogItems2(input, catalog, limit2 = 20) {
+  if (catalog.length <= limit2) return catalog;
+  const words = input.toLowerCase().split(/\W+/).filter((w) => w.length > 2);
+  if (words.length === 0) return catalog.slice(0, limit2);
+  const scored = catalog.map((item) => {
+    const nameLower = item.nome.toLowerCase();
+    const catLower = (item.categoria || "").toLowerCase();
+    const noteLower = (item.note || "").toLowerCase();
+    let score = 0;
+    for (const word of words) {
+      if (nameLower.includes(word)) score += 3;
+      if (catLower.includes(word)) score += 1.5;
+      if (noteLower.includes(word)) score += 0.5;
+    }
+    return { item, score };
+  });
+  const filtered = scored.filter((s) => s.score > 0).sort((a, b) => b.score - a.score).map((s) => s.item);
+  if (filtered.length < limit2) {
+    const addedIds = new Set(filtered.map((f) => f.id));
+    for (const item of catalog) {
+      if (filtered.length >= limit2) break;
+      if (!addedIds.has(item.id)) {
+        filtered.push(item);
+        addedIds.add(item.id);
+      }
+    }
+  }
+  return filtered.slice(0, limit2);
+}
+var AI_PROMPT3 = `Sei un consulente esperto di preventivi professionali per il mercato italiano (artigiani, edilizia, impianti, servizi tecnici).
+
+Devi trasformare una descrizione libera in un'ANALISI ECONOMICA E COMPUTO METRICO PREZZATO professionale, strutturata a capitoli, coerente con i prezzi di listino del proprietario e con le stime di mercato in Italia nel 2026.
+
+REGOLE FONDAMENTALI:
+1. Prezzi di riferimento e di catalogo (LISTINO):
+   - Se \xE8 fornito un "LISTINO PREZZI PERSONALIZZATO DELL'UTENTE", devi usare PRIORITARIAMENTE i prezzi unitari definiti nel listino per tutte le lavorazioni corrispondenti o correlate.
+   - Non inventare nuovi prezzi unitari se la voce corrisponde a qualcosa presente nel listino personalizzato.
+   - Se una lavorazione non \xE8 presente nel listino personalizzato, usa prezzi realistici del mercato italiano 2026.
+2. Se mancano dati specifici: fai assunzioni realistiche, NON chiedere chiarimenti. Se sono fornite le "MISURE E DIMENSIONI DELL'IMMOBILE", devi usarle rigorosamente per calcolare le quantit\xE0 (mq, metri lineari, ecc.) in modo matematico.
+3. Organizza il lavoro in CAPITOLI logici (A, B, C, D, \u2026) con titoli professionali (es: "Allestimento cantiere", "Opere di demolizione", "Nuove opere edili", "Impianto elettrico", ecc.)
+4. Ogni capitolo contiene VOCI di lavoro dettagliate con unit\xE0 di misura professionali (mq, ml, mc, kg, ore, a.c., pezzi, cadauno, kw, etc.)
+5. Calcola subtotale per ogni capitolo. Il QUADRO SINTETICO \xE8 ricavato automaticamente dall'array capitoli.
+6. Sempre IVA 22% salvo indicazione contraria.
+7. Il titolo_riga2 deve descrivere l'intervento.
+8. numero_preventivo_data: NON GENERARE \u2014 il server assegna il numero automaticamente. Restituisci una stringa vuota.
+
+OUTPUT \u2014 SOLO JSON VALIDO, nessun testo extra:
+{
+  "titolo_riga1": "Analisi Economica e Computo Metrico Prezzato",
+  "titolo_riga2": "Intervento di [descrizione breve]",
+  "numero_preventivo_data": "",
+  "cliente": { "nome": "", "indirizzo": "" },
+  "descrizione_generale": "Descrizione sintetica dell'intervento",
+  "capitoli": [
+    {
+      "lettera": "A",
+      "titolo": "Opere",
+      "osservazione": "Voce ordinaria",
+      "voci": [
+        {
+          "descrizione": "Descrizione voce",
+          "um": "mq",
+          "quantita": 10,
+          "prezzo_unitario": 25.00,
+          "totale": 250.00
+        }
+      ],
+      "subtotale": 250.00
+    }
+  ],
+  "sconto": { "percentuale": 0, "importo_scontato": 0 },
+  "condizioni_pagamento": [],
+  "subtotale": 0,
+  "iva_percentuale": 22,
+  "iva_valore": 0,
+  "totale": 0,
+  "note": "Preventivo generato via Widget"
+}
+
+IMPORTANTISSIMO: output SOLO JSON puro, nessuna spiegazione, nessun markdown.`;
+router14.post("/public/quotes", async (req, res) => {
+  try {
+    const apiKeyHeader = req.headers["x-api-key"] || req.query.apiKey;
+    if (!apiKeyHeader) {
+      res.status(401).json({ error: "Chiave API mancante. Fornisci l'header x-api-key o il parametro query apiKey." });
+      return;
+    }
+    const apiKey = String(apiKeyHeader);
+    const [profile] = await db.select().from(businessProfilesTable).where(eq(businessProfilesTable.apiKey, apiKey));
+    if (!profile) {
+      res.status(403).json({ error: "Chiave API non valida o inattiva." });
+      return;
+    }
+    const userId = profile.userId;
+    const { rawInput, clientData, misure } = req.body;
+    if (!rawInput || !rawInput.trim()) {
+      res.status(400).json({ error: "Il parametro rawInput \xE8 obbligatorio." });
+      return;
+    }
+    const catalogItems = await db.select().from(priceCatalogItemsTable).where(eq(priceCatalogItemsTable.userId, userId)).orderBy(priceCatalogItemsTable.categoria, priceCatalogItemsTable.nome);
+    const relevantCatalogItems = findRelevantCatalogItems2(rawInput, catalogItems, 20);
+    const catalogContext = relevantCatalogItems.length > 0 ? `LISTINO PREZZI PERSONALIZZATO DELL'UTENTE (usa questi prezzi come riferimento PRIORITARIO):
+${relevantCatalogItems.map((item) => `  - ${item.nome} (${item.um}): ${Number(item.prezzoUnitario).toFixed(2)}\u20AC/unit\xE0${item.categoria ? ` [${item.categoria}]` : ""}`).join("\n")}` : "";
+    let misureContext = "";
+    if (misure && typeof misure === "object" && Object.keys(misure).length > 0) {
+      misureContext = `MISURE E DIMENSIONI DELL'IMMOBILE:
+${Object.entries(misure).map(([key, val]) => `  - ${key}: ${val}`).join("\n")}
+Usa queste misure esatte per calcolare matematicamente le quantit\xE0.`;
+    }
+    const completion = await openai.chat.completions.create({
+      model: "gpt-4o-mini",
+      max_completion_tokens: 4096,
+      messages: [
+        { role: "system", content: AI_PROMPT3 },
+        ...catalogContext ? [{ role: "system", content: catalogContext }] : [],
+        ...misureContext ? [{ role: "system", content: misureContext }] : [],
+        { role: "user", content: rawInput }
+      ]
+    });
+    const content = completion.choices[0]?.message?.content ?? "{}";
+    let aiData = {};
+    try {
+      const cleaned = content.trim().replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/i, "");
+      aiData = JSON.parse(cleaned);
+    } catch (err) {
+      logger2.error({ content }, "Failed to parse public API quote JSON");
+      res.status(422).json({ error: "L'AI non \xE8 riuscita a strutturare il preventivo. Riprova con una descrizione diversa." });
+      return;
+    }
+    const capitoli = (aiData.capitoli ?? []).map((cap) => ({
+      lettera: cap.lettera ?? "A",
+      titolo: cap.titolo ?? "",
+      osservazione: cap.osservazione ?? "Voce ordinaria",
+      voci: (cap.voci ?? []).map((v) => ({
+        descrizione: v.descrizione ?? "",
+        um: v.um ?? "a.c.",
+        quantita: Number(v.quantita ?? 0),
+        prezzoUnitario: Number(v.prezzo_unitario ?? 0),
+        totale: Number(v.totale ?? 0)
+      })),
+      subtotale: Number(cap.subtotale ?? 0)
+    }));
+    const subtotale = Number(aiData.subtotale ?? 0);
+    const ivaPercentuale = Number(aiData.iva_percentuale ?? 22);
+    const ivaValore = Number(aiData.iva_valore ?? 0);
+    const totale = Number(aiData.totale ?? 0);
+    const resolvedClientData = {
+      nome: clientData?.nome || aiData.cliente?.nome || "Lead Widget",
+      indirizzo: clientData?.indirizzo || aiData.cliente?.indirizzo || "",
+      email: clientData?.email,
+      phone: clientData?.phone,
+      citta: clientData?.citta,
+      cap: clientData?.cap,
+      provincia: clientData?.provincia
+    };
+    const numeroPreventivoData = await generateNumeroPreventivo(userId);
+    const [quote] = await db.insert(quotesTable).values({
+      userId,
+      rawInput,
+      clientData: resolvedClientData,
+      companySnapshot: {
+        companyName: profile.companyName,
+        vatNumber: profile.vatNumber ?? void 0,
+        address: profile.address ?? void 0,
+        phone: profile.phone ?? void 0,
+        email: profile.email ?? void 0,
+        logoUrl: profile.logoUrl ?? void 0
+      },
+      descrizioneGenerale: aiData.descrizione_generale ?? "",
+      items: [],
+      capitoli,
+      sconto: null,
+      condizioniPagamento: aiData.condizioni_pagamento ?? [],
+      titoloPreventivoRiga1: aiData.titolo_riga1 ?? "Analisi Economica e Computo Metrico Prezzato",
+      titoloPreventivoRiga2: aiData.titolo_riga2 ?? "",
+      numeroPreventivoData,
+      subtotale: subtotale.toFixed(2),
+      ivaPercentuale: ivaPercentuale.toFixed(2),
+      ivaValore: ivaValore.toFixed(2),
+      totale: totale.toFixed(2),
+      note: aiData.note ?? "Preventivo generato via Widget",
+      status: "draft",
+      source: "widget"
+      // Traccia che arriva dal widget
+    }).returning();
+    res.status(201).json({
+      success: true,
+      quoteId: quote.id,
+      totale,
+      prezzoMinimo: Math.round(totale * 0.9 * 100) / 100,
+      prezzoMassimo: Math.round(totale * 1.25 * 100) / 100,
+      descrizioneGenerale: quote.descrizioneGenerale
+    });
+  } catch (err) {
+    logger2.error({ err }, "Error creating public widget quote");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+var public_quotes_default = router14;
+
+// src/routes/index.ts
+var router15 = (0, import_express14.Router)();
+router15.use(health_default);
+router15.use(quotes_default);
+router15.use(business_profile_default);
+router15.use(payments_default);
+router15.use(storage_default);
+router15.use(admin_default);
+router15.use(catalog_default);
+router15.use(whatsapp_default);
+router15.use(clients_default);
+router15.use(documents_default);
+router15.use(crm_default);
+router15.use(support_default);
+router15.use(public_quotes_default);
+var routes_default = router15;
 
 // src/app.ts
-var app = (0, import_express14.default)();
+var app = (0, import_express15.default)();
 app.use(
   (0, import_pino_http.default)({
     logger: logger2,
@@ -338337,7 +338655,7 @@ app.use((req, res, next) => {
 });
 app.post(
   "/api/payments/webhook",
-  import_express14.default.raw({ type: "application/json" }),
+  import_express15.default.raw({ type: "application/json" }),
   async (req, res) => {
     const signature = req.headers["stripe-signature"];
     if (!signature) {
@@ -338480,7 +338798,7 @@ app.post(
 );
 app.post(
   "/api/whatsapp/webhook",
-  import_express14.default.raw({ type: "application/json" }),
+  import_express15.default.raw({ type: "application/json" }),
   async (req, res, next) => {
     const appSecret = process.env.WHATSAPP_APP_SECRET;
     if (!appSecret) {
@@ -338535,8 +338853,8 @@ app.use(
     }
   })
 );
-app.use(import_express14.default.json({ limit: "25mb" }));
-app.use(import_express14.default.urlencoded({ extended: true }));
+app.use(import_express15.default.json({ limit: "25mb" }));
+app.use(import_express15.default.urlencoded({ extended: true }));
 app.use("/api", routes_default);
 app.use((err, _req, res, _next) => {
   if (err instanceof import_multer4.default.MulterError) {

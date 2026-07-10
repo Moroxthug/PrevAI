@@ -81,17 +81,20 @@ const router = Router();
 
 const AI_PROMPT = `Sei un consulente esperto di preventivi professionali per il mercato italiano (artigiani, edilizia, impianti, servizi tecnici).
 
-Devi trasformare una descrizione libera in un'ANALISI ECONOMICA E COMPUTO METRICO PREZZATO professionale, strutturata a capitoli, coerente con i prezzi di mercato in Italia nel 2026.
+Devi trasformare una descrizione libera in un'ANALISI ECONOMICA E COMPUTO METRICO PREZZATO professionale, strutturata a capitoli, coerente con i prezzi di listino del proprietario e con le stime di mercato in Italia nel 2026.
 
 REGOLE FONDAMENTALI:
-1. Prezzi realistici di mercato italiano 2026:
-   - imbianchino/pittore: 5–12€/mq per tinteggiatura, 15–25€/mq per lavori speciali
-   - elettricista: 40–70€/ora manodopera, prezzi materiali a mercato
-   - idraulico: 45–75€/ora manodopera
-   - edilizia generale: prezzi coerenti con listino DEI/Regione
-   - muratore: 35–55€/ora
-   - carpentiere/falegname: 40–65€/ora
-2. Se mancano dati specifici: fai assunzioni realistiche, NON chiedere chiarimenti
+1. Prezzi di riferimento e di catalogo (LISTINO):
+   - Se è fornito un "LISTINO PREZZI PERSONALIZZATO DELL'UTENTE", devi usare PRIORITARIAMENTE i prezzi unitari definiti nel listino per tutte le lavorazioni corrispondenti o correlate.
+   - Non inventare nuovi prezzi unitari se la voce corrisponde a qualcosa presente nel listino personalizzato.
+   - Se una lavorazione non è presente nel listino personalizzato, usa prezzi realistici del mercato italiano 2026:
+     * imbianchino/pittore: 5–12€/mq per tinteggiatura, 15–25€/mq per lavori speciali
+     * elettricista: 40–70€/ora manodopera
+     * idraulico: 45–75€/ora manodopera
+     * edilizia generale: prezzi coerenti con listino DEI/Regione
+     * muratore: 35–55€/ora
+     * carpentiere/falegname: 40–65€/ora
+2. Se mancano dati specifici: fai assunzioni realistiche, NON chiedere chiarimenti. Se sono fornite le "MISURE E DIMENSIONI DELL'IMMOBILE", devi usarle rigorosamente per calcolare le quantità (mq, metri lineari, ecc.) in modo matematico.
 3. Organizza il lavoro in CAPITOLI logici (A, B, C, D, …) con titoli professionali (es: "Allestimento cantiere", "Opere di demolizione", "Nuove opere edili", "Impianto elettrico", ecc.)
 4. Ogni capitolo contiene VOCI di lavoro dettagliate con unità di misura professionali (mq, ml, mc, kg, ore, a.c., pezzi, cadauno, kw, etc.)
 5. Calcola subtotale per ogni capitolo. Il QUADRO SINTETICO è ricavato automaticamente dall'array capitoli (lettera + titolo + subtotale + osservazione); non serve un campo separato.
@@ -154,6 +157,7 @@ type QuoteRow = typeof quotesTable.$inferSelect;
 type AttachmentRow = typeof quoteAttachmentsTable.$inferSelect;
 
 function serializeQuote(q: QuoteRow, attachments?: AttachmentRow[]) {
+  const tot = Number(q.totale);
   return {
     id: q.id,
     userId: q.userId,
@@ -170,7 +174,9 @@ function serializeQuote(q: QuoteRow, attachments?: AttachmentRow[]) {
     subtotale: Number(q.subtotale),
     ivaPercentuale: Number(q.ivaPercentuale),
     ivaValore: Number(q.ivaValore),
-    totale: Number(q.totale),
+    totale: tot,
+    prezzoMinimo: Math.round(tot * 0.9 * 100) / 100,
+    prezzoMassimo: Math.round(tot * 1.25 * 100) / 100,
     note: q.note,
     status: q.status,
     pdfUrl: q.pdfUrl ?? null,
@@ -268,6 +274,49 @@ router.get("/quotes", requireAuth, async (req, res) => {
   }
 });
 
+function findRelevantCatalogItems(
+  input: string,
+  catalog: Array<typeof priceCatalogItemsTable.$inferSelect>,
+  limit = 20
+): Array<typeof priceCatalogItemsTable.$inferSelect> {
+  if (catalog.length <= limit) return catalog;
+
+  const words = input.toLowerCase().split(/\W+/).filter(w => w.length > 2);
+  if (words.length === 0) return catalog.slice(0, limit);
+
+  const scored = catalog.map(item => {
+    const nameLower = item.nome.toLowerCase();
+    const catLower = (item.categoria || "").toLowerCase();
+    const noteLower = (item.note || "").toLowerCase();
+
+    let score = 0;
+    for (const word of words) {
+      if (nameLower.includes(word)) score += 3;
+      if (catLower.includes(word)) score += 1.5;
+      if (noteLower.includes(word)) score += 0.5;
+    }
+    return { item, score };
+  });
+
+  const filtered = scored
+    .filter(s => s.score > 0)
+    .sort((a, b) => b.score - a.score)
+    .map(s => s.item);
+
+  if (filtered.length < limit) {
+    const addedIds = new Set(filtered.map(f => f.id));
+    for (const item of catalog) {
+      if (filtered.length >= limit) break;
+      if (!addedIds.has(item.id)) {
+        filtered.push(item);
+        addedIds.add(item.id);
+      }
+    }
+  }
+
+  return filtered.slice(0, limit);
+}
+
 function buildPastQuotesContext(
   quotes: Array<{ rawInput: string; capitoli: unknown; totale: string }>
 ): string {
@@ -332,6 +381,15 @@ router.post("/quotes", requireAuth, imageUpload.array("images", 3), async (req, 
     if (!rawInput) {
       res.status(400).json({ error: "rawInput is required" });
       return;
+    }
+
+    let misure: Record<string, string | number> | undefined;
+    if (req.body.misure) {
+      try {
+        misure = typeof req.body.misure === "string" ? JSON.parse(req.body.misure) : req.body.misure;
+      } catch (err) {
+        req.log.warn({ err }, "Error parsing body.misure");
+      }
     }
 
     const requestedTemplateId = typeof req.body.templateId === "string" ? req.body.templateId : "standard";
@@ -500,14 +558,26 @@ L'utente ha allegato un documento con un computo metrico dettagliato. Ogni singo
     const pastContext = buildPastQuotesContext(recentQuotes as { rawInput: string; capitoli: unknown; totale: string }[]);
 
     // Build catalog context if user has custom price items
-    const catalogContext = catalogItems.length > 0
+    const relevantCatalogItems = findRelevantCatalogItems(rawInput, catalogItems, 20);
+    const catalogContext = relevantCatalogItems.length > 0
       ? `LISTINO PREZZI PERSONALIZZATO DELL'UTENTE (usa questi prezzi come riferimento PRIORITARIO quando le lavorazioni corrispondono — adatta le quantità al lavoro richiesto):
-${catalogItems
+${relevantCatalogItems
   .map(item => `  - ${item.nome} (${item.um}): ${Number(item.prezzoUnitario).toFixed(2)}€/unità${item.categoria ? ` [${item.categoria}]` : ""}${item.note ? ` — ${item.note}` : ""}`)
   .join("\n")}
 
 Quando usi una voce del listino, applica il prezzo unitario esatto o molto simile. Per lavorazioni non presenti nel listino, usa i prezzi di mercato standard.`
       : "";
+
+    // Build misure context if provided
+    let misureContext = "";
+    if (misure && typeof misure === "object" && Object.keys(misure).length > 0) {
+      misureContext = `MISURE E DIMENSIONI DELL'IMMOBILE (vincolanti per il calcolo delle quantità):
+${Object.entries(misure)
+  .map(([key, val]) => `  - ${key}: ${val}`)
+  .join("\n")}
+
+Usa queste misure esatte per calcolare matematicamente le quantità delle singole lavorazioni richieste nel preventivo. Non inventare quantità arbitrarie che contraddicono queste dimensioni.`;
+    }
 
     // Build price intelligence context from user's uploaded documents (activated when ≥3 docs processed)
     const docCount = Number(processedDocCount[0]?.cnt ?? 0);
@@ -605,6 +675,7 @@ Scrivi il preventivo in stile OFFERTA COMMERCIALE PROFESSIONALE e PERSUASIVA:
         messages: [
           { role: "system", content: AI_PROMPT },
           ...(catalogContext ? [{ role: "system" as const, content: catalogContext }] : []),
+          ...(misureContext ? [{ role: "system" as const, content: misureContext }] : []),
           ...(priceIntelContext ? [{ role: "system" as const, content: priceIntelContext }] : []),
           ...(pastContext ? [{ role: "system" as const, content: pastContext }] : []),
           ...(targetTotalContext ? [{ role: "system" as const, content: targetTotalContext }] : []),

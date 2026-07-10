@@ -21,6 +21,7 @@ export const businessProfilesTable = pgTable("business_profiles", {
   subscriptionPeriodEnd: timestamp("subscription_period_end", { withTimezone: true }),
   trialStartedAt: timestamp("trial_started_at", { withTimezone: true }),
   trialDownloadsUsed: integer("trial_downloads_used").notNull().default(0),
+  apiKey: text("api_key"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
 });
