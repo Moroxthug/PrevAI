@@ -346,7 +346,7 @@ export default function AdminPage() {
   }
 
   useEffect(() => {
-    if (tab === "users" || tab === "clients") {
+    if (tab === "users" || tab === "widget") {
       loadUsers();
     } else if (tab === "gsc") {
       loadGSC();
