@@ -647,7 +647,7 @@ export default function AdminPage() {
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
                   <h2 className="text-base font-bold text-slate-800">Elenco Utenti Registrati</h2>
-                  <p className="text-xs text-slate-400">Visualizza e gestisci le impostazioni degli account e gli abbonamenti di ciascun utente.</p>
+                  <p className="text-xs text-slate-400">Visualizza e gestisci le impostazioni degli account, i preventivi generati, i costi API e gli abbonamenti di ciascun utente.</p>
                 </div>
                 <div className="relative">
                   <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
@@ -669,40 +669,146 @@ export default function AdminPage() {
                         <th className="px-5 py-3.5 text-xs font-bold text-slate-400 uppercase tracking-wide">Utente</th>
                         <th className="px-5 py-3.5 text-xs font-bold text-slate-400 uppercase tracking-wide">Azienda</th>
                         <th className="px-5 py-3.5 text-xs font-bold text-slate-400 uppercase tracking-wide">Piano Attuale</th>
+                        <th className="px-5 py-3.5 text-xs font-bold text-slate-400 uppercase tracking-wide">Preventivi / Costo API</th>
                         <th className="px-5 py-3.5 text-xs font-bold text-slate-400 uppercase tracking-wide">Data Iscrizione</th>
                         <th className="px-5 py-3.5 text-xs font-bold text-slate-400 uppercase tracking-wide text-right">Azioni</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-50">
-                      {filteredUsers.map(u => (
-                        <tr key={u.userId} className="hover:bg-slate-50/40 transition-colors">
-                          <td className="px-5 py-4">
-                            <div className="font-semibold text-slate-800">{u.firstName || "Senza Nome"}</div>
-                            <div className="text-xs text-slate-400">{u.email || u.userId.slice(0, 16)}</div>
-                          </td>
-                          <td className="px-5 py-4 text-slate-600 font-medium">{u.companyName || "—"}</td>
-                          <td className="px-5 py-4"><PlanBadge plan={u.subscriptionPlan} status={u.subscriptionStatus} /></td>
-                          <td className="px-5 py-4 text-xs text-slate-400">{new Date(u.createdAt).toLocaleDateString("it-IT", { day: "numeric", month: "short", year: "numeric" })}</td>
-                          <td className="px-5 py-4 text-right space-x-2">
-                            <button
-                              onClick={() => {
-                                setSelectedUserEmail(u.email);
-                                setTab("stripe");
-                              }}
-                              className="text-xs font-bold text-violet-600 hover:text-violet-800 transition-colors"
-                            >
-                              Gestisci Piano
-                            </button>
-                            <button
-                              onClick={() => handleSyncStripe(u.email)}
-                              className="text-xs font-bold text-slate-500 hover:text-slate-700 transition-colors"
-                              title="Sincronizza stato da Stripe"
-                            >
-                              Sincronizza
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
+                      {filteredUsers.map(u => {
+                        const isExpanded = expandedUserId === u.userId;
+                        return (
+                          <optgroup key={u.userId} label={u.firstName || u.email || u.userId} className="contents">
+                            <tr className={`hover:bg-slate-50/40 transition-colors ${isExpanded ? "bg-slate-50/20" : ""}`}>
+                              <td className="px-5 py-4">
+                                <div className="font-semibold text-slate-800">{u.firstName || "Senza Nome"}</div>
+                                <div className="text-xs text-slate-400">{u.email || u.userId.slice(0, 16)}</div>
+                              </td>
+                              <td className="px-5 py-4 text-slate-600 font-medium">{u.companyName || "—"}</td>
+                              <td className="px-5 py-4"><PlanBadge plan={u.subscriptionPlan} status={u.subscriptionStatus} /></td>
+                              <td className="px-5 py-4">
+                                <div className="font-semibold text-slate-700">{(u as any).quoteCount ?? 0} prev.</div>
+                                <div className="text-xs text-emerald-600 font-bold">{Number((u as any).totalCost ?? 0).toFixed(4)} €</div>
+                              </td>
+                              <td className="px-5 py-4 text-xs text-slate-400">{new Date(u.createdAt).toLocaleDateString("it-IT", { day: "numeric", month: "short", year: "numeric" })}</td>
+                              <td className="px-5 py-4 text-right space-x-2">
+                                <button
+                                  onClick={() => handleToggleExpandClient(u.userId)}
+                                  className="text-xs font-bold text-violet-600 hover:text-violet-800 transition-colors inline-flex items-center gap-0.5 cursor-pointer mr-2"
+                                >
+                                  <span>Preventivi</span>
+                                  {isExpanded ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+                                </button>
+                                <button
+                                  onClick={() => {
+                                    setSelectedUserEmail(u.email);
+                                    setTab("stripe");
+                                  }}
+                                  className="text-xs font-bold text-slate-600 hover:text-slate-800 transition-colors"
+                                >
+                                  Gestisci Piano
+                                </button>
+                                <button
+                                  onClick={() => handleSyncStripe(u.email)}
+                                  className="text-xs font-bold text-slate-400 hover:text-slate-600 transition-colors"
+                                  title="Sincronizza stato da Stripe"
+                                >
+                                  Sincronizza
+                                </button>
+                              </td>
+                            </tr>
+                            {isExpanded && (
+                              <tr>
+                                <td colSpan={6} className="bg-slate-50/40 p-6 border-b border-slate-100">
+                                  <div className="bg-white rounded-2xl border border-slate-100 p-5 shadow-sm space-y-4 text-left max-w-5xl mx-auto">
+                                    <div className="flex items-center justify-between">
+                                      <div>
+                                        <h3 className="text-sm font-bold text-slate-800">
+                                          Cronologia Preventivi Generati — {u.companyName || u.firstName || "Cliente"}
+                                        </h3>
+                                        <p className="text-xs text-slate-400">Elenco completo dei preventivi richiesti via Web, WhatsApp e Widget.</p>
+                                      </div>
+                                      <div className="text-right">
+                                        <span className="text-xs font-bold text-slate-500 bg-slate-100 px-2.5 py-1 rounded-full">
+                                          Totale Costo API: <span className="text-emerald-600 font-mono">{Number((u as any).totalCost ?? 0).toFixed(4)} €</span>
+                                        </span>
+                                      </div>
+                                    </div>
+
+                                    {loadingQuotes ? (
+                                      <div className="py-12 flex flex-col items-center justify-center gap-2 text-slate-400">
+                                        <RefreshCw className="h-6 w-6 animate-spin text-violet-500" />
+                                        <span className="text-xs">Caricamento preventivi in corso...</span>
+                                      </div>
+                                    ) : clientQuotes.length === 0 ? (
+                                      <div className="py-12 text-center text-xs text-slate-400 bg-slate-50/50 border border-dashed border-slate-100 rounded-xl">
+                                        Nessun preventivo generato da questo utente.
+                                      </div>
+                                    ) : (
+                                      <div className="overflow-hidden border border-slate-100 rounded-xl">
+                                        <table className="w-full text-left text-xs border-collapse">
+                                          <thead>
+                                            <tr className="border-b border-slate-100 bg-slate-50/50">
+                                              <th className="px-4 py-3 font-bold text-slate-500">Preventivo / Cliente</th>
+                                              <th className="px-4 py-3 font-bold text-slate-500">Data Generazione</th>
+                                              <th className="px-4 py-3 font-bold text-slate-500">Canale / Origine</th>
+                                              <th className="px-4 py-3 font-bold text-slate-500">Modello & Token</th>
+                                              <th className="px-4 py-3 font-bold text-slate-500">Importo Totale</th>
+                                              <th className="px-4 py-3 font-bold text-slate-500 text-right">Costo API</th>
+                                            </tr>
+                                          </thead>
+                                          <tbody className="divide-y divide-slate-50">
+                                            {clientQuotes.map(q => (
+                                              <tr key={q.id} className="hover:bg-slate-50/20">
+                                                <td className="px-4 py-3">
+                                                  <div className="font-semibold text-slate-800" title={q.numeroPreventivoData}>
+                                                    {q.numeroPreventivoData || "Preventivo s.n."}
+                                                  </div>
+                                                  <div className="text-[10px] text-slate-400">
+                                                    {q.clientData?.nome || "Lead Anonimo"}
+                                                  </div>
+                                                </td>
+                                                <td className="px-4 py-3 text-slate-500">
+                                                  {new Date(q.createdAt).toLocaleDateString("it-IT", { day: "numeric", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit" })}
+                                                </td>
+                                                <td className="px-4 py-3">
+                                                  <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${
+                                                    q.source === "widget" ? "bg-cyan-50 text-cyan-700 border-cyan-150" :
+                                                    q.source === "whatsapp" ? "bg-emerald-50 text-emerald-700 border-emerald-150" :
+                                                    "bg-violet-50 text-violet-700 border-violet-150"
+                                                  }`}>
+                                                    {q.source === "widget" ? "Widget Funnel" : q.source === "whatsapp" ? "WhatsApp Bot" : "Web App"}
+                                                  </span>
+                                                </td>
+                                                <td className="px-4 py-3 text-slate-500">
+                                                  {q.modelUsed ? (
+                                                    <div>
+                                                      <div className="font-mono text-[10px] text-slate-700 font-medium">{q.modelUsed}</div>
+                                                      <div className="text-[9px] text-slate-400">Tokens: {q.promptTokens} in / {q.completionTokens} out</div>
+                                                    </div>
+                                                  ) : (
+                                                    <span className="text-slate-400">—</span>
+                                                  )}
+                                                </td>
+                                                <td className="px-4 py-3 font-semibold text-slate-700">
+                                                  {Number(q.totale || 0).toLocaleString("it-IT", { style: "currency", currency: "EUR" })}
+                                                </td>
+                                                <td className="px-4 py-3 text-right font-mono font-semibold text-slate-600">
+                                                  {q.apiCost ? `${Number(q.apiCost).toFixed(4)} €` : "0.0000 €"}
+                                                </td>
+                                              </tr>
+                                            ))}
+                                          </tbody>
+                                        </table>
+                                      </div>
+                                    )}
+                                  </div>
+                                </td>
+                              </tr>
+                            )}
+                          </optgroup>
+                        );
+                      })}
                     </tbody>
                   </table>
                 </div>
@@ -710,12 +816,13 @@ export default function AdminPage() {
             </div>
           )}
 
-          {tab === "clients" && (
+          {/* WIDGET TAB */}
+          {tab === "widget" && (
             <div className="space-y-4">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
-                  <h2 className="text-base font-bold text-slate-800">Monitoraggio Clienti & Controllo Widget</h2>
-                  <p className="text-xs text-slate-400">Tieni traccia dell'utilizzo dell'API, dei preventivi generati da ogni utente e controlla/assegna le chiavi API del widget.</p>
+                  <h2 className="text-base font-bold text-slate-800">Integrazione & Gestione Widget</h2>
+                  <p className="text-xs text-slate-400">Controlla l'attivazione dei widget di acquisizione lead edili, assegna chiavi API dedicate e preleva i codici embed.</p>
                 </div>
                 <div className="relative">
                   <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
@@ -736,10 +843,9 @@ export default function AdminPage() {
                       <tr className="border-b border-slate-100 bg-slate-50/50">
                         <th className="px-5 py-3.5 text-xs font-bold text-slate-400 uppercase tracking-wide">Cliente</th>
                         <th className="px-5 py-3.5 text-xs font-bold text-slate-400 uppercase tracking-wide">Azienda</th>
-                        <th className="px-5 py-3.5 text-xs font-bold text-slate-400 uppercase tracking-wide">Preventivi Generati</th>
-                        <th className="px-5 py-3.5 text-xs font-bold text-slate-400 uppercase tracking-wide">Costo API Totale</th>
                         <th className="px-5 py-3.5 text-xs font-bold text-slate-400 uppercase tracking-wide">Chiave API Widget</th>
-                        <th className="px-5 py-3.5 text-xs font-bold text-slate-400 uppercase tracking-wide text-right">Dettagli</th>
+                        <th className="px-5 py-3.5 text-xs font-bold text-slate-400 uppercase tracking-wide">Stato Widget</th>
+                        <th className="px-5 py-3.5 text-xs font-bold text-slate-400 uppercase tracking-wide text-right">Integrazione</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-50">
@@ -753,15 +859,26 @@ export default function AdminPage() {
                                 <div className="text-xs text-slate-400">{u.email || u.userId.slice(0, 16)}</div>
                               </td>
                               <td className="px-5 py-4 text-slate-600 font-medium">{u.companyName || "—"}</td>
-                              <td className="px-5 py-4 font-semibold text-slate-700">{(u as any).quoteCount ?? 0} preventivi</td>
-                              <td className="px-5 py-4 font-semibold text-emerald-600">{Number((u as any).totalCost ?? 0).toFixed(4)} €</td>
-                              <td className="px-5 py-4 font-mono text-xs">
+                              <td className="px-5 py-4">
                                 {(u as any).apiKey ? (
-                                  <span className="bg-slate-50 border border-slate-100 px-2 py-0.5 rounded text-slate-600 truncate max-w-[150px] inline-block font-mono" title={(u as any).apiKey}>
-                                    {(u as any).apiKey.slice(0, 14)}...
+                                  <span className="font-mono text-xs bg-slate-50 border border-slate-100 px-2 py-0.5 rounded text-slate-600">
+                                    {(u as any).apiKey.slice(0, 15)}...
                                   </span>
                                 ) : (
-                                  <span className="text-red-500 text-xs font-medium">Nessuna chiave</span>
+                                  <span className="text-red-500 text-xs font-medium bg-red-50 px-2 py-0.5 rounded border border-red-100">Nessuna chiave</span>
+                                )}
+                              </td>
+                              <td className="px-5 py-4">
+                                {(u as any).apiKey ? (
+                                  <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-150 px-2.5 py-0.5 rounded-full">
+                                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                                    Attivo
+                                  </span>
+                                ) : (
+                                  <span className="inline-flex items-center gap-1 text-[10px] font-bold text-slate-500 bg-slate-50 border border-slate-150 px-2.5 py-0.5 rounded-full">
+                                    <span className="h-1.5 w-1.5 rounded-full bg-slate-300"></span>
+                                    Disattivato
+                                  </span>
                                 )}
                               </td>
                               <td className="px-5 py-4 text-right">
@@ -769,48 +886,53 @@ export default function AdminPage() {
                                   onClick={() => handleToggleExpandClient(u.userId)}
                                   className="text-xs font-bold text-violet-600 hover:text-violet-800 transition-colors inline-flex items-center gap-1 cursor-pointer"
                                 >
-                                  {isExpanded ? "Nascondi" : "Mostra Dettagli"}
+                                  {isExpanded ? "Chiudi" : "Configura"}
                                   {isExpanded ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
                                 </button>
                               </td>
                             </tr>
                             {isExpanded && (
                               <tr>
-                                <td colSpan={6} className="bg-slate-50/30 p-6 border-b border-slate-100">
-                                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 text-left">
-                                    {/* Widget Control Box */}
-                                    <div className="bg-white rounded-xl border border-slate-100 p-5 shadow-sm space-y-4">
-                                      <h3 className="text-sm font-bold text-slate-800 flex items-center gap-1.5">
-                                        <Zap className="h-4 w-4 text-violet-600" />
-                                        Controllo Widget Funnel (Acquisizione contatti)
-                                      </h3>
-                                      
-                                      <div className="space-y-2">
-                                        <label className="text-xs font-semibold text-slate-500 block">Chiave API Attiva</label>
-                                        <div className="flex items-center gap-2">
+                                <td colSpan={5} className="bg-slate-50/40 p-6 border-b border-slate-100">
+                                  <div className="bg-white rounded-2xl border border-slate-100 p-6 shadow-sm text-left max-w-4xl mx-auto space-y-5">
+                                    <div className="flex items-start gap-4">
+                                      <div className="h-10 w-10 rounded-xl bg-violet-50 text-violet-600 flex items-center justify-center shrink-0">
+                                        <Zap className="h-5 w-5" />
+                                      </div>
+                                      <div>
+                                        <h3 className="text-sm font-bold text-slate-800">
+                                          Configurazione Funnel Lead — {u.companyName || u.firstName || "Cliente"}
+                                        </h3>
+                                        <p className="text-xs text-slate-400">Gestisci l'accesso al Widget di acquisizione per questo utente. Puoi impostare chiavi API e prelevare il codice HTML da inserire nel loro sito.</p>
+                                      </div>
+                                    </div>
+
+                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-2">
+                                      <div className="md:col-span-1 space-y-4">
+                                        <div className="space-y-1.5">
+                                          <label className="text-xs font-bold text-slate-500 block uppercase tracking-wider">Chiave API Attiva</label>
                                           <input
                                             type="text"
                                             readOnly
-                                            value={(u as any).apiKey || "Nessuna chiave assegnata"}
-                                            className="font-mono text-xs bg-slate-50 text-slate-700 px-3 py-2 border border-slate-100 rounded-xl flex-1 focus:outline-none"
+                                            value={(u as any).apiKey || "Nessuna chiave configurata"}
+                                            className="font-mono text-xs bg-slate-50 text-slate-700 px-3 py-2 border border-slate-100 rounded-xl w-full focus:outline-none text-center"
                                           />
-                                          <button
-                                            onClick={() => rotateApiKey(u.userId)}
-                                            disabled={rotatingKeyId === u.userId}
-                                            className="bg-violet-600 hover:bg-violet-700 disabled:bg-violet-300 text-white text-xs font-bold px-3 py-2 rounded-xl transition-all shadow-sm flex items-center gap-1 shrink-0 cursor-pointer"
-                                          >
-                                            {rotatingKeyId === u.userId ? <RefreshCw className="h-3 w-3 animate-spin" /> : <RefreshCw className="h-3 w-3" />}
-                                            {(u as any).apiKey ? "Rigenera" : "Genera Chiave"}
-                                          </button>
                                         </div>
+                                        <button
+                                          onClick={() => rotateApiKey(u.userId)}
+                                          disabled={rotatingKeyId === u.userId}
+                                          className="w-full bg-violet-600 hover:bg-violet-700 disabled:bg-violet-300 text-white text-xs font-bold py-2.5 rounded-xl transition-all shadow-sm flex items-center justify-center gap-1.5 cursor-pointer"
+                                        >
+                                          {rotatingKeyId === u.userId ? <RefreshCw className="h-3 w-3 animate-spin" /> : <RefreshCw className="h-3 w-3" />}
+                                          {(u as any).apiKey ? "Rigenera API Key" : "Genera Chiave API"}
+                                        </button>
                                       </div>
 
-                                      {(u as any).apiKey && (
-                                        <div className="space-y-2 pt-2 border-t border-slate-50">
-                                          <label className="text-xs font-semibold text-slate-500 block">Codice Embed per il Cliente</label>
-                                          <p className="text-[10px] text-slate-400">Fornisci questo codice al cliente per integrarlo nel suo sito web:</p>
+                                      <div className="md:col-span-2 space-y-2">
+                                        <label className="text-xs font-bold text-slate-500 block uppercase tracking-wider">Codice Script Embed</label>
+                                        {(u as any).apiKey ? (
                                           <div className="relative">
-                                            <pre className="p-3 bg-slate-900 text-slate-100 rounded-lg overflow-x-auto font-mono text-[10px] leading-relaxed max-h-36 whitespace-pre-wrap">
+                                            <pre className="p-4 bg-slate-950 text-slate-200 rounded-xl overflow-x-auto font-mono text-[10px] leading-relaxed max-h-40 whitespace-pre-wrap select-all border border-slate-800">
 {`<!-- PrevAI Widget Funnel -->
 <div id="prevai-widget"></div>
 <script
@@ -825,78 +947,17 @@ export default function AdminPage() {
                                                 navigator.clipboard.writeText(code);
                                                 toast({ title: "Codice copiato!", description: "Il codice di embed è stato copiato negli appunti." });
                                               }}
-                                              className="absolute right-2 top-2 bg-slate-800 hover:bg-slate-700 text-slate-200 text-[10px] font-semibold px-2 py-1 rounded border border-slate-700 transition-colors cursor-pointer"
+                                              className="absolute right-3 top-3 bg-slate-850 hover:bg-slate-800 text-slate-200 text-[10px] font-semibold px-2.5 py-1 rounded-md border border-slate-700 transition-all cursor-pointer shadow-sm"
                                             >
                                               Copia Codice
                                             </button>
                                           </div>
-                                        </div>
-                                      )}
-                                    </div>
-
-                                    {/* Quotes List Box */}
-                                    <div className="bg-white rounded-xl border border-slate-100 p-5 shadow-sm space-y-4">
-                                      <h3 className="text-sm font-bold text-slate-800 flex items-center justify-between">
-                                        <span>Elenco Preventivi Generati ({clientQuotes.length})</span>
-                                        {loadingQuotes && <RefreshCw className="h-3.5 w-3.5 text-slate-400 animate-spin" />}
-                                      </h3>
-
-                                      {loadingQuotes ? (
-                                        <div className="py-12 flex flex-col items-center justify-center gap-2 text-slate-400">
-                                          <RefreshCw className="h-6 w-6 animate-spin text-violet-500" />
-                                          <span className="text-xs">Caricamento preventivi in corso...</span>
-                                        </div>
-                                      ) : clientQuotes.length === 0 ? (
-                                        <div className="py-12 text-center text-xs text-slate-400 bg-slate-50/50 border border-dashed border-slate-100 rounded-xl">
-                                          Nessun preventivo generato da questo utente.
-                                        </div>
-                                      ) : (
-                                        <div className="overflow-hidden border border-slate-100 rounded-xl max-h-[300px] overflow-y-auto">
-                                          <table className="w-full text-left text-xs border-collapse">
-                                            <thead>
-                                              <tr className="border-b border-slate-100 bg-slate-50/50 sticky top-0">
-                                                <th className="px-4 py-2 font-semibold text-slate-500">Preventivo</th>
-                                                <th className="px-4 py-2 font-semibold text-slate-500">Data</th>
-                                                <th className="px-4 py-2 font-semibold text-slate-500">Origine</th>
-                                                <th className="px-4 py-2 font-semibold text-slate-500">Totale</th>
-                                                <th className="px-4 py-2 font-semibold text-slate-500 text-right">Costo API</th>
-                                              </tr>
-                                            </thead>
-                                            <tbody className="divide-y divide-slate-50">
-                                              {clientQuotes.map(q => (
-                                                <tr key={q.id} className="hover:bg-slate-50/20">
-                                                  <td className="px-4 py-2">
-                                                    <div className="font-semibold text-slate-800 truncate max-w-[150px]" title={q.numeroPreventivoData}>
-                                                      {q.numeroPreventivoData || "Preventivo s.n."}
-                                                    </div>
-                                                    <div className="text-[10px] text-slate-400 truncate max-w-[150px]">
-                                                      {q.clientData?.nome || "Lead Anonimo"}
-                                                    </div>
-                                                  </td>
-                                                  <td className="px-4 py-2 text-slate-500">
-                                                    {new Date(q.createdAt).toLocaleDateString("it-IT", { day: "numeric", month: "numeric" })}
-                                                  </td>
-                                                  <td className="px-4 py-2">
-                                                    <span className={`px-1.5 py-0.5 rounded text-[10px] font-semibold ${
-                                                      q.source === "widget" ? "bg-cyan-50 text-cyan-700 border border-cyan-100" :
-                                                      q.source === "whatsapp" ? "bg-emerald-50 text-emerald-700 border border-emerald-100" :
-                                                      "bg-violet-50 text-violet-700 border border-violet-100"
-                                                    }`}>
-                                                      {q.source || "web"}
-                                                    </span>
-                                                  </td>
-                                                  <td className="px-4 py-2 font-medium text-slate-700">
-                                                    {Number(q.totale || 0).toLocaleString("it-IT", { style: "currency", currency: "EUR" })}
-                                                  </td>
-                                                  <td className="px-4 py-2 text-right font-mono text-[10px] text-slate-500">
-                                                    {q.apiCost ? `${Number(q.apiCost).toFixed(4)} €` : "0.0000 €"}
-                                                  </td>
-                                                </tr>
-                                              ))}
-                                            </tbody>
-                                          </table>
-                                        </div>
-                                      )}
+                                        ) : (
+                                          <div className="bg-slate-50 border border-slate-100 rounded-xl p-6 text-center text-xs text-slate-400">
+                                            Genera una chiave API per visualizzare e prelevare il codice di embed.
+                                          </div>
+                                        )}
+                                      </div>
                                     </div>
                                   </div>
                                 </td>
