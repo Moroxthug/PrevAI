@@ -671,9 +671,35 @@ async function getGoogleAccessToken(serviceAccountJson: string): Promise<string>
   return data.access_token;
 }
 
-router.get("/admin/search-console", async (_req, res) => {
-  const gscKey = process.env.GSC_SERVICE_ACCOUNT_KEY;
+router.get("/admin/search-console", async (req, res) => {
+  let gscKey = process.env.GSC_SERVICE_ACCOUNT_KEY;
   const siteUrl = process.env.GSC_SITE_URL || "https://www.prevai.it/";
+
+  if (!gscKey) {
+    const possiblePaths = [
+      path.join(process.cwd(), "artifacts", "preventivo-ai", "scripts", "google-indexing-key.json"),
+      path.join(process.cwd(), "..", "preventivo-ai", "scripts", "google-indexing-key.json"),
+      path.join(process.cwd(), "scripts", "google-indexing-key.json"),
+      path.join(process.cwd(), "google-indexing-key.json"),
+      "/var/task/artifacts/preventivo-ai/scripts/google-indexing-key.json",
+      "/var/task/preventivo-ai/scripts/google-indexing-key.json",
+      path.join(process.cwd(), "artifacts/preventivo-ai/scripts/google-indexing-key.json")
+    ];
+    for (const p of possiblePaths) {
+      if (existsSync(p)) {
+        try {
+          const content = readFileSync(p, "utf8");
+          const parsed = JSON.parse(content);
+          if (parsed.type === "service_account" && parsed.private_key) {
+            gscKey = content;
+            break;
+          }
+        } catch (e) {
+          // ignore
+        }
+      }
+    }
+  }
 
   try {
     if (!gscKey) {

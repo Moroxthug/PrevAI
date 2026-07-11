@@ -499,7 +499,7 @@ export default function AdminPage() {
             {[
               { id: "overview", label: "Panoramica", icon: BarChart3 },
               { id: "users", label: "Utenti Registrati", icon: Users },
-              { id: "clients", label: "Clienti & Widget", icon: Zap },
+              { id: "widget", label: "Clienti & Widget", icon: Zap },
               { id: "stripe", label: "Abbonamenti Stripe", icon: Euro },
               { id: "gsc", label: "Search Console", icon: Globe },
               { id: "seo", label: "SEO Checker", icon: Sparkles },
