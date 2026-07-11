@@ -163,10 +163,30 @@ function Router() {
   );
 }
 
+import posthog from "posthog-js";
+
+function PostHogIdentify() {
+  const { user, isLoaded } = useAuth();
+
+  useEffect(() => {
+    if (isLoaded && user && import.meta.env.VITE_POSTHOG_KEY) {
+      posthog.identify(user.id, {
+        email: user.email,
+        name: user.name,
+      });
+    } else if (isLoaded && !user && import.meta.env.VITE_POSTHOG_KEY) {
+      posthog.reset();
+    }
+  }, [user, isLoaded]);
+
+  return null;
+}
+
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
+        <PostHogIdentify />
         <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
           <Router />
         </WouterRouter>

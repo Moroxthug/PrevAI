@@ -4,6 +4,7 @@ import { openai } from "@workspace/integrations-openai-ai-server";
 import { generateNumeroPreventivo } from "./quoteNumber.js";
 import type { QuoteChapter, QuoteDiscount, QuoteCompanySnapshot, QuoteClientData } from "@workspace/db";
 import type { Logger } from "pino";
+import { trackEvent } from "./telemetry.js";
 
 export const AI_PROMPT = `Sei un consulente esperto di preventivi professionali per il mercato italiano (artigiani, edilizia, impianti, servizi tecnici).
 
@@ -114,6 +115,11 @@ export type PendingQuoteData = {
   note: string;
   capitolatoPro: boolean;
   templateId?: string;
+  promptTokens?: number;
+  completionTokens?: number;
+  totalTokens?: number;
+  modelUsed?: string;
+  apiCost?: number;
 };
 
 // ── Internal helpers ────────────────────────────────────────────────────────────
@@ -264,29 +270,74 @@ export async function buildQuoteFromAI({
       ]
     : `${clientPrefix}${rawInput}`;
 
-  const completion = await openai.chat.completions.create({
-    model: process.env.AI_MODEL ?? "llama-3.3-70b-versatile",
-    max_completion_tokens: 8192,
-    messages: [
-      { role: "system", content: AI_PROMPT },
-      ...(catalogContext ? [{ role: "system" as const, content: catalogContext }] : []),
-      ...(pastContext ? [{ role: "system" as const, content: pastContext }] : []),
-      ...(useCapitolato ? [{ role: "system" as const, content: CAPITOLATO_CONTEXT }] : []),
-      { role: "user", content: userContent },
-    ],
+  const startTime = Date.now();
+  trackEvent(userId, "quote_generation_started", {
+    rawInputLength: rawInput.length,
+    templateId,
+    hasImages,
   });
 
-  const content = completion.choices[0]?.message?.content ?? "{}";
   try {
-    const result = parseAiResponse(content, rawInput, profile, templateId);
-    // Override client data if pre-filled
-    if (clientData?.nome) {
-      result.clientData = clientData;
+    const completion = await openai.chat.completions.create({
+      model: process.env.AI_MODEL ?? "llama-3.3-70b-versatile",
+      max_completion_tokens: 8192,
+      messages: [
+        { role: "system", content: AI_PROMPT },
+        ...(catalogContext ? [{ role: "system" as const, content: catalogContext }] : []),
+        ...(pastContext ? [{ role: "system" as const, content: pastContext }] : []),
+        ...(useCapitolato ? [{ role: "system" as const, content: CAPITOLATO_CONTEXT }] : []),
+        { role: "user", content: userContent },
+      ],
+    });
+
+    const latencyMs = Date.now() - startTime;
+    const usage = completion.usage;
+    const content = completion.choices[0]?.message?.content ?? "{}";
+
+    try {
+      const result = parseAiResponse(content, rawInput, profile, templateId);
+      // Override client data if pre-filled
+      if (clientData?.nome) {
+        result.clientData = clientData;
+      }
+
+      result.promptTokens = usage?.prompt_tokens ?? 0;
+      result.completionTokens = usage?.completion_tokens ?? 0;
+      result.totalTokens = usage?.total_tokens ?? 0;
+      result.modelUsed = completion.model || process.env.AI_MODEL || "llama-3.3-70b-versatile";
+
+      const isMini = result.modelUsed.includes("mini");
+      const isGpt4 = result.modelUsed.includes("gpt-4o") && !isMini;
+      const pCostRate = isMini ? 0.00000015 : isGpt4 ? 0.000005 : 0.00000059;
+      const cCostRate = isMini ? 0.00000060 : isGpt4 ? 0.000015 : 0.00000079;
+      result.apiCost = (result.promptTokens * pCostRate) + (result.completionTokens * cCostRate);
+
+      trackEvent(userId, "quote_generation_completed", {
+        latencyMs,
+        model: result.modelUsed,
+        promptTokens: result.promptTokens,
+        completionTokens: result.completionTokens,
+        totalTokens: result.totalTokens,
+        chaptersCount: result.capitoli?.length || 0,
+        totalAmount: result.totale,
+      });
+      return result;
+    } catch (parseErr) {
+      trackEvent(userId, "quote_generation_failed", {
+        latencyMs,
+        error: "Failed to parse AI JSON response",
+        contentSnippet: content.slice(0, 200),
+      });
+      log.error({ content }, "Failed to parse AI JSON in buildQuoteFromAI");
+      throw new Error("AI returned invalid JSON");
     }
-    return result;
-  } catch {
-    log.error({ content }, "Failed to parse AI JSON in buildQuoteFromAI");
-    throw new Error("AI returned invalid JSON");
+  } catch (err: any) {
+    const latencyMs = Date.now() - startTime;
+    trackEvent(userId, "quote_generation_failed", {
+      latencyMs,
+      error: err?.message || String(err),
+    });
+    throw err;
   }
 }
 
@@ -354,24 +405,68 @@ ${currentJson}
 
 Restituisci il preventivo aggiornato COMPLETO in JSON valido con la stessa struttura. Ricalcola tutti i subtotali, l'IVA e il totale. SOLO JSON puro, nessun testo extra.`;
 
-  const completion = await openai.chat.completions.create({
-    model: process.env.AI_MODEL ?? "llama-3.3-70b-versatile",
-    max_completion_tokens: 8192,
-    messages: [
-      { role: "system", content: AI_PROMPT },
-      ...(catalogContext ? [{ role: "system" as const, content: catalogContext }] : []),
-      ...(useCapitolato ? [{ role: "system" as const, content: CAPITOLATO_CONTEXT }] : []),
-      { role: "user", content: correctionPrompt },
-    ],
+  const startTime = Date.now();
+  trackEvent(userId, "quote_regeneration_started", {
+    correctionLength: correction.length,
+    currentChaptersCount: current.capitoli?.length || 0,
   });
 
-  const content = completion.choices[0]?.message?.content ?? "{}";
   try {
-    const result = parseAiResponse(content, current.rawInput, profile, current.templateId);
-    return result;
-  } catch {
-    log.error({ content }, "Failed to parse AI JSON in regenerateWithCorrection");
-    throw new Error("AI returned invalid JSON during correction");
+    const completion = await openai.chat.completions.create({
+      model: process.env.AI_MODEL ?? "llama-3.3-70b-versatile",
+      max_completion_tokens: 8192,
+      messages: [
+        { role: "system", content: AI_PROMPT },
+        ...(catalogContext ? [{ role: "system" as const, content: catalogContext }] : []),
+        ...(useCapitolato ? [{ role: "system" as const, content: CAPITOLATO_CONTEXT }] : []),
+        { role: "user", content: correctionPrompt },
+      ],
+    });
+
+    const latencyMs = Date.now() - startTime;
+    const usage = completion.usage;
+    const content = completion.choices[0]?.message?.content ?? "{}";
+
+    try {
+      const result = parseAiResponse(content, current.rawInput, profile, current.templateId);
+      
+      result.promptTokens = usage?.prompt_tokens ?? 0;
+      result.completionTokens = usage?.completion_tokens ?? 0;
+      result.totalTokens = usage?.total_tokens ?? 0;
+      result.modelUsed = completion.model || process.env.AI_MODEL || "llama-3.3-70b-versatile";
+
+      const isMini = result.modelUsed.includes("mini");
+      const isGpt4 = result.modelUsed.includes("gpt-4o") && !isMini;
+      const pCostRate = isMini ? 0.00000015 : isGpt4 ? 0.000005 : 0.00000059;
+      const cCostRate = isMini ? 0.00000060 : isGpt4 ? 0.000015 : 0.00000079;
+      result.apiCost = (result.promptTokens * pCostRate) + (result.completionTokens * cCostRate);
+
+      trackEvent(userId, "quote_regeneration_completed", {
+        latencyMs,
+        model: result.modelUsed,
+        promptTokens: result.promptTokens,
+        completionTokens: result.completionTokens,
+        totalTokens: result.totalTokens,
+        chaptersCount: result.capitoli?.length || 0,
+        totalAmount: result.totale,
+      });
+      return result;
+    } catch (parseErr) {
+      trackEvent(userId, "quote_regeneration_failed", {
+        latencyMs,
+        error: "Failed to parse AI JSON response",
+        contentSnippet: content.slice(0, 200),
+      });
+      log.error({ content }, "Failed to parse AI JSON in regenerateWithCorrection");
+      throw new Error("AI returned invalid JSON during correction");
+    }
+  } catch (err: any) {
+    const latencyMs = Date.now() - startTime;
+    trackEvent(userId, "quote_regeneration_failed", {
+      latencyMs,
+      error: err?.message || String(err),
+    });
+    throw err;
   }
 }
 
@@ -432,6 +527,11 @@ export async function saveQuoteToDb({
       status: "draft",
       source,
       templateId: resolvedTemplateId,
+      promptTokens: data.promptTokens,
+      completionTokens: data.completionTokens,
+      totalTokens: data.totalTokens,
+      modelUsed: data.modelUsed,
+      apiCost: data.apiCost !== undefined ? data.apiCost.toFixed(6) : null,
     }).returning();
 
     if (!q) {

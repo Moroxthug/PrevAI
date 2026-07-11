@@ -42,7 +42,7 @@ type AdminUser = {
 };
 
 type Settings = Record<string, string>;
-type Tab = "overview" | "users" | "stripe" | "gsc" | "seo" | "settings" | "support";
+type Tab = "overview" | "users" | "clients" | "stripe" | "gsc" | "seo" | "settings" | "support";
 
 type GscSummary = {
   totalClicks: number;
@@ -143,6 +143,12 @@ export default function AdminPage() {
   const [convMessages, setConvMessages] = useState<any[]>([]);
   const [adminReply, setAdminReply] = useState("");
   const [supportLoading, setSupportLoading] = useState(false);
+
+  // Client monitoring / widget control state
+  const [expandedUserId, setExpandedUserId] = useState<string | null>(null);
+  const [clientQuotes, setClientQuotes] = useState<any[]>([]);
+  const [loadingQuotes, setLoadingQuotes] = useState(false);
+  const [rotatingKeyId, setRotatingKeyId] = useState<string | null>(null);
 
   async function loadSupportStatus() {
     try {
@@ -261,6 +267,55 @@ export default function AdminPage() {
     }
   }
 
+  async function loadClientQuotes(targetUserId: string) {
+    setLoadingQuotes(true);
+    try {
+      const data = await authFetch(`/api/admin/users/${targetUserId}/quotes`);
+      setClientQuotes(data);
+    } catch (e) {
+      toast({
+        variant: "destructive",
+        title: "Errore",
+        description: "Impossibile caricare i preventivi per questo cliente.",
+      });
+    } finally {
+      setLoadingQuotes(false);
+    }
+  }
+
+  const handleToggleExpandClient = (targetUserId: string) => {
+    if (expandedUserId === targetUserId) {
+      setExpandedUserId(null);
+      setClientQuotes([]);
+    } else {
+      setExpandedUserId(targetUserId);
+      setClientQuotes([]);
+      loadClientQuotes(targetUserId);
+    }
+  };
+
+  async function rotateApiKey(targetUserId: string, customKey?: string) {
+    setRotatingKeyId(targetUserId);
+    try {
+      const res = await authFetch(`/api/admin/users/${targetUserId}/apikey`, {
+        method: "POST",
+        body: JSON.stringify({ apiKey: customKey }),
+      });
+      if (res.success) {
+        toast({ title: "Chiave API aggiornata", description: "La chiave API per questo client è stata aggiornata con successo." });
+        loadUsers();
+      }
+    } catch (e) {
+      toast({
+        variant: "destructive",
+        title: "Errore",
+        description: "Impossibile aggiornare la chiave API.",
+      });
+    } finally {
+      setRotatingKeyId(null);
+    }
+  }
+
   async function loadGSC() {
     setGscLoading(true);
     try {
@@ -291,7 +346,7 @@ export default function AdminPage() {
   }
 
   useEffect(() => {
-    if (tab === "users") {
+    if (tab === "users" || tab === "clients") {
       loadUsers();
     } else if (tab === "gsc") {
       loadGSC();
@@ -444,6 +499,7 @@ export default function AdminPage() {
             {[
               { id: "overview", label: "Panoramica", icon: BarChart3 },
               { id: "users", label: "Utenti Registrati", icon: Users },
+              { id: "clients", label: "Clienti & Widget", icon: Zap },
               { id: "stripe", label: "Abbonamenti Stripe", icon: Euro },
               { id: "gsc", label: "Search Console", icon: Globe },
               { id: "seo", label: "SEO Checker", icon: Sparkles },
@@ -647,6 +703,208 @@ export default function AdminPage() {
                           </td>
                         </tr>
                       ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {tab === "clients" && (
+            <div className="space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div>
+                  <h2 className="text-base font-bold text-slate-800">Monitoraggio Clienti & Controllo Widget</h2>
+                  <p className="text-xs text-slate-400">Tieni traccia dell'utilizzo dell'API, dei preventivi generati da ogni utente e controlla/assegna le chiavi API del widget.</p>
+                </div>
+                <div className="relative">
+                  <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
+                  <input
+                    type="text"
+                    placeholder="Cerca per email, nome, azienda..."
+                    value={userSearch}
+                    onChange={(e) => setUserSearch(e.target.value)}
+                    className="w-full sm:w-64 pl-9 pr-4 py-2 border border-slate-100 rounded-xl text-sm focus:outline-none focus:border-violet-500 bg-white"
+                  />
+                </div>
+              </div>
+
+              <div className="bg-white rounded-2xl border border-slate-100 overflow-hidden shadow-sm">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-sm border-collapse">
+                    <thead>
+                      <tr className="border-b border-slate-100 bg-slate-50/50">
+                        <th className="px-5 py-3.5 text-xs font-bold text-slate-400 uppercase tracking-wide">Cliente</th>
+                        <th className="px-5 py-3.5 text-xs font-bold text-slate-400 uppercase tracking-wide">Azienda</th>
+                        <th className="px-5 py-3.5 text-xs font-bold text-slate-400 uppercase tracking-wide">Preventivi Generati</th>
+                        <th className="px-5 py-3.5 text-xs font-bold text-slate-400 uppercase tracking-wide">Costo API Totale</th>
+                        <th className="px-5 py-3.5 text-xs font-bold text-slate-400 uppercase tracking-wide">Chiave API Widget</th>
+                        <th className="px-5 py-3.5 text-xs font-bold text-slate-400 uppercase tracking-wide text-right">Dettagli</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-50">
+                      {filteredUsers.map(u => {
+                        const isExpanded = expandedUserId === u.userId;
+                        return (
+                          <optgroup key={u.userId} label={u.firstName || u.email || u.userId} className="contents">
+                            <tr className={`hover:bg-slate-50/40 transition-colors ${isExpanded ? "bg-slate-50/20" : ""}`}>
+                              <td className="px-5 py-4">
+                                <div className="font-semibold text-slate-800">{u.firstName || "Senza Nome"}</div>
+                                <div className="text-xs text-slate-400">{u.email || u.userId.slice(0, 16)}</div>
+                              </td>
+                              <td className="px-5 py-4 text-slate-600 font-medium">{u.companyName || "—"}</td>
+                              <td className="px-5 py-4 font-semibold text-slate-700">{(u as any).quoteCount ?? 0} preventivi</td>
+                              <td className="px-5 py-4 font-semibold text-emerald-600">{Number((u as any).totalCost ?? 0).toFixed(4)} €</td>
+                              <td className="px-5 py-4 font-mono text-xs">
+                                {(u as any).apiKey ? (
+                                  <span className="bg-slate-50 border border-slate-100 px-2 py-0.5 rounded text-slate-600 truncate max-w-[150px] inline-block font-mono" title={(u as any).apiKey}>
+                                    {(u as any).apiKey.slice(0, 14)}...
+                                  </span>
+                                ) : (
+                                  <span className="text-red-500 text-xs font-medium">Nessuna chiave</span>
+                                )}
+                              </td>
+                              <td className="px-5 py-4 text-right">
+                                <button
+                                  onClick={() => handleToggleExpandClient(u.userId)}
+                                  className="text-xs font-bold text-violet-600 hover:text-violet-800 transition-colors inline-flex items-center gap-1 cursor-pointer"
+                                >
+                                  {isExpanded ? "Nascondi" : "Mostra Dettagli"}
+                                  {isExpanded ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+                                </button>
+                              </td>
+                            </tr>
+                            {isExpanded && (
+                              <tr>
+                                <td colSpan={6} className="bg-slate-50/30 p-6 border-b border-slate-100">
+                                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 text-left">
+                                    {/* Widget Control Box */}
+                                    <div className="bg-white rounded-xl border border-slate-100 p-5 shadow-sm space-y-4">
+                                      <h3 className="text-sm font-bold text-slate-800 flex items-center gap-1.5">
+                                        <Zap className="h-4 w-4 text-violet-600" />
+                                        Controllo Widget Funnel (Acquisizione contatti)
+                                      </h3>
+                                      
+                                      <div className="space-y-2">
+                                        <label className="text-xs font-semibold text-slate-500 block">Chiave API Attiva</label>
+                                        <div className="flex items-center gap-2">
+                                          <input
+                                            type="text"
+                                            readOnly
+                                            value={(u as any).apiKey || "Nessuna chiave assegnata"}
+                                            className="font-mono text-xs bg-slate-50 text-slate-700 px-3 py-2 border border-slate-100 rounded-xl flex-1 focus:outline-none"
+                                          />
+                                          <button
+                                            onClick={() => rotateApiKey(u.userId)}
+                                            disabled={rotatingKeyId === u.userId}
+                                            className="bg-violet-600 hover:bg-violet-700 disabled:bg-violet-300 text-white text-xs font-bold px-3 py-2 rounded-xl transition-all shadow-sm flex items-center gap-1 shrink-0 cursor-pointer"
+                                          >
+                                            {rotatingKeyId === u.userId ? <RefreshCw className="h-3 w-3 animate-spin" /> : <RefreshCw className="h-3 w-3" />}
+                                            {(u as any).apiKey ? "Rigenera" : "Genera Chiave"}
+                                          </button>
+                                        </div>
+                                      </div>
+
+                                      {(u as any).apiKey && (
+                                        <div className="space-y-2 pt-2 border-t border-slate-50">
+                                          <label className="text-xs font-semibold text-slate-500 block">Codice Embed per il Cliente</label>
+                                          <p className="text-[10px] text-slate-400">Fornisci questo codice al cliente per integrarlo nel suo sito web:</p>
+                                          <div className="relative">
+                                            <pre className="p-3 bg-slate-900 text-slate-100 rounded-lg overflow-x-auto font-mono text-[10px] leading-relaxed max-h-36 whitespace-pre-wrap">
+{`<!-- PrevAI Widget Funnel -->
+<div id="prevai-widget"></div>
+<script
+  src="${typeof window !== "undefined" ? window.location.origin : "https://prevai.vercel.app"}/widget.js"
+  data-api-key="${(u as any).apiKey}"
+  async
+></script>`}
+                                            </pre>
+                                            <button
+                                              onClick={() => {
+                                                const code = `<!-- PrevAI Widget Funnel -->\n<div id="prevai-widget"></div>\n<script\n  src="${typeof window !== "undefined" ? window.location.origin : "https://prevai.vercel.app"}/widget.js"\n  data-api-key="${(u as any).apiKey}"\n  async\n></script>`;
+                                                navigator.clipboard.writeText(code);
+                                                toast({ title: "Codice copiato!", description: "Il codice di embed è stato copiato negli appunti." });
+                                              }}
+                                              className="absolute right-2 top-2 bg-slate-800 hover:bg-slate-700 text-slate-200 text-[10px] font-semibold px-2 py-1 rounded border border-slate-700 transition-colors cursor-pointer"
+                                            >
+                                              Copia Codice
+                                            </button>
+                                          </div>
+                                        </div>
+                                      )}
+                                    </div>
+
+                                    {/* Quotes List Box */}
+                                    <div className="bg-white rounded-xl border border-slate-100 p-5 shadow-sm space-y-4">
+                                      <h3 className="text-sm font-bold text-slate-800 flex items-center justify-between">
+                                        <span>Elenco Preventivi Generati ({clientQuotes.length})</span>
+                                        {loadingQuotes && <RefreshCw className="h-3.5 w-3.5 text-slate-400 animate-spin" />}
+                                      </h3>
+
+                                      {loadingQuotes ? (
+                                        <div className="py-12 flex flex-col items-center justify-center gap-2 text-slate-400">
+                                          <RefreshCw className="h-6 w-6 animate-spin text-violet-500" />
+                                          <span className="text-xs">Caricamento preventivi in corso...</span>
+                                        </div>
+                                      ) : clientQuotes.length === 0 ? (
+                                        <div className="py-12 text-center text-xs text-slate-400 bg-slate-50/50 border border-dashed border-slate-100 rounded-xl">
+                                          Nessun preventivo generato da questo utente.
+                                        </div>
+                                      ) : (
+                                        <div className="overflow-hidden border border-slate-100 rounded-xl max-h-[300px] overflow-y-auto">
+                                          <table className="w-full text-left text-xs border-collapse">
+                                            <thead>
+                                              <tr className="border-b border-slate-100 bg-slate-50/50 sticky top-0">
+                                                <th className="px-4 py-2 font-semibold text-slate-500">Preventivo</th>
+                                                <th className="px-4 py-2 font-semibold text-slate-500">Data</th>
+                                                <th className="px-4 py-2 font-semibold text-slate-500">Origine</th>
+                                                <th className="px-4 py-2 font-semibold text-slate-500">Totale</th>
+                                                <th className="px-4 py-2 font-semibold text-slate-500 text-right">Costo API</th>
+                                              </tr>
+                                            </thead>
+                                            <tbody className="divide-y divide-slate-50">
+                                              {clientQuotes.map(q => (
+                                                <tr key={q.id} className="hover:bg-slate-50/20">
+                                                  <td className="px-4 py-2">
+                                                    <div className="font-semibold text-slate-800 truncate max-w-[150px]" title={q.numeroPreventivoData}>
+                                                      {q.numeroPreventivoData || "Preventivo s.n."}
+                                                    </div>
+                                                    <div className="text-[10px] text-slate-400 truncate max-w-[150px]">
+                                                      {q.clientData?.nome || "Lead Anonimo"}
+                                                    </div>
+                                                  </td>
+                                                  <td className="px-4 py-2 text-slate-500">
+                                                    {new Date(q.createdAt).toLocaleDateString("it-IT", { day: "numeric", month: "numeric" })}
+                                                  </td>
+                                                  <td className="px-4 py-2">
+                                                    <span className={`px-1.5 py-0.5 rounded text-[10px] font-semibold ${
+                                                      q.source === "widget" ? "bg-cyan-50 text-cyan-700 border border-cyan-100" :
+                                                      q.source === "whatsapp" ? "bg-emerald-50 text-emerald-700 border border-emerald-100" :
+                                                      "bg-violet-50 text-violet-700 border border-violet-100"
+                                                    }`}>
+                                                      {q.source || "web"}
+                                                    </span>
+                                                  </td>
+                                                  <td className="px-4 py-2 font-medium text-slate-700">
+                                                    {Number(q.totale || 0).toLocaleString("it-IT", { style: "currency", currency: "EUR" })}
+                                                  </td>
+                                                  <td className="px-4 py-2 text-right font-mono text-[10px] text-slate-500">
+                                                    {q.apiCost ? `${Number(q.apiCost).toFixed(4)} €` : "0.0000 €"}
+                                                  </td>
+                                                </tr>
+                                              ))}
+                                            </tbody>
+                                          </table>
+                                        </div>
+                                      )}
+                                    </div>
+                                  </div>
+                                </td>
+                              </tr>
+                            )}
+                          </optgroup>
+                        );
+                      })}
                     </tbody>
                   </table>
                 </div>

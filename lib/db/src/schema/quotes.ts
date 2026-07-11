@@ -6,6 +6,7 @@ import {
   numeric,
   jsonb,
   boolean,
+  integer,
 } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
@@ -95,6 +96,11 @@ export const quotesTable = pgTable("quotes", {
   templateId: text("template_id").default("standard"),
   pdfDownloadedAt: timestamp("pdf_downloaded_at", { withTimezone: true }),
   source: text("source").default("web"),
+  promptTokens: integer("prompt_tokens"),
+  completionTokens: integer("completion_tokens"),
+  totalTokens: integer("total_tokens"),
+  modelUsed: text("model_used"),
+  apiCost: numeric("api_cost", { precision: 10, scale: 6 }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
 });

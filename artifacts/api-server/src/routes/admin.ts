@@ -146,6 +146,24 @@ router.get("/admin/users", async (_req, res) => {
       }
     }
 
+    // Fetch stats grouped by userId
+    const quoteStats = await db
+      .select({
+        userId: quotesTable.userId,
+        quoteCount: sql<number>`count(${quotesTable.id})::int`,
+        totalCost: sql<number>`coalesce(sum(${quotesTable.apiCost}), 0)::float`,
+      })
+      .from(quotesTable)
+      .groupBy(quotesTable.userId);
+
+    const statsMap: Record<string, { quoteCount: number; totalCost: number }> = {};
+    for (const stat of quoteStats) {
+      statsMap[stat.userId] = {
+        quoteCount: stat.quoteCount,
+        totalCost: stat.totalCost,
+      };
+    }
+
     const rows = profiles.map(p => ({
       userId: p.userId,
       email: authUsers[p.userId]?.email ?? "",
@@ -154,12 +172,74 @@ router.get("/admin/users", async (_req, res) => {
       subscriptionPlan: p.subscriptionPlan ?? null,
       subscriptionStatus: p.subscriptionStatus ?? null,
       stripeCustomerId: p.stripeCustomerId ?? null,
+      apiKey: p.apiKey ?? null,
+      quoteCount: statsMap[p.userId]?.quoteCount ?? 0,
+      totalCost: statsMap[p.userId]?.totalCost ?? 0,
       createdAt: p.createdAt.toISOString(),
     }));
 
     res.json(rows);
   } catch (err) {
     logger.error({ err }, "Admin users error");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+router.get("/admin/users/:userId/quotes", async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const userQuotes = await db
+      .select({
+        id: quotesTable.id,
+        titoloRiga1: quotesTable.titoloPreventivoRiga1,
+        titoloRiga2: quotesTable.titoloPreventivoRiga2,
+        numeroPreventivoData: quotesTable.numeroPreventivoData,
+        clientData: quotesTable.clientData,
+        totale: quotesTable.totale,
+        status: quotesTable.status,
+        source: quotesTable.source,
+        promptTokens: quotesTable.promptTokens,
+        completionTokens: quotesTable.completionTokens,
+        totalTokens: quotesTable.totalTokens,
+        modelUsed: quotesTable.modelUsed,
+        apiCost: quotesTable.apiCost,
+        createdAt: quotesTable.createdAt,
+      })
+      .from(quotesTable)
+      .where(eq(quotesTable.userId, userId))
+      .orderBy(desc(quotesTable.createdAt));
+
+    res.json(userQuotes);
+  } catch (err) {
+    logger.error({ err }, "Admin fetch user quotes error");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+router.post("/admin/users/:userId/apikey", async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const { apiKey } = req.body;
+    
+    let newApiKey = apiKey;
+    if (!newApiKey) {
+      newApiKey = `prevai_pk_${crypto.randomBytes(24).toString("hex")}`;
+    }
+
+    const [updated] = await db
+      .update(businessProfilesTable)
+      .set({ apiKey: newApiKey })
+      .where(eq(businessProfilesTable.userId, userId))
+      .returning();
+
+    if (!updated) {
+      res.status(404).json({ error: "Profilo aziendale non trovato per questo utente." });
+      return;
+    }
+
+    res.json({ success: true, apiKey: newApiKey });
+  } catch (err) {
+    logger.error({ err }, "Admin assign API key error");
     res.status(500).json({ error: "Internal server error" });
   }
 });

@@ -176,6 +176,18 @@ Usa queste misure esatte per calcolare matematicamente le quantità.`;
       ],
     });
 
+    const usage = completion.usage;
+    const promptTokens = usage?.prompt_tokens ?? 0;
+    const completionTokens = usage?.completion_tokens ?? 0;
+    const totalTokens = usage?.total_tokens ?? 0;
+    const modelUsed = completion.model || "gpt-4o-mini";
+
+    const isMini = modelUsed.includes("mini");
+    const isGpt4 = modelUsed.includes("gpt-4o") && !isMini;
+    const pCostRate = isMini ? 0.00000015 : isGpt4 ? 0.000005 : 0.00000059;
+    const cCostRate = isMini ? 0.00000060 : isGpt4 ? 0.000015 : 0.00000079;
+    const apiCost = ((promptTokens * pCostRate) + (completionTokens * cCostRate)).toFixed(6);
+
     const content = completion.choices[0]?.message?.content ?? "{}";
     let aiData: any = {};
     try {
@@ -250,6 +262,11 @@ Usa queste misure esatte per calcolare matematicamente le quantità.`;
         note: aiData.note ?? "Preventivo generato via Widget",
         status: "draft",
         source: "widget", // Traccia che arriva dal widget
+        promptTokens,
+        completionTokens,
+        totalTokens,
+        modelUsed,
+        apiCost,
       })
       .returning();
 

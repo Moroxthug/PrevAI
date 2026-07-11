@@ -668,9 +668,16 @@ Scrivi il preventivo in stile OFFERTA COMMERCIALE PROFESSIONALE e PERSUASIVA:
       note?: string;
     } = {};
 
+    let promptTokens: number | null = null;
+    let completionTokens: number | null = null;
+    let totalTokens: number | null = null;
+    let modelUsed: string | null = null;
+    let apiCost: string | null = null;
+
     if (!isStructured && !isTabular && !isNumbered) {
+      const targetModel = (hasImages || docTexts.length > 0) ? "gpt-4o" : "gpt-4o-mini";
       const completion = await openai.chat.completions.create({
-        model: (hasImages || docTexts.length > 0) ? "gpt-4o" : "gpt-4o-mini",
+        model: targetModel,
         max_completion_tokens: (hasImages || docTexts.length > 0) ? 16384 : 8192,
         messages: [
           { role: "system", content: AI_PROMPT },
@@ -695,6 +702,18 @@ Scrivi il preventivo in stile OFFERTA COMMERCIALE PROFESSIONALE e PERSUASIVA:
           },
         ],
       });
+
+      const usage = completion.usage;
+      promptTokens = usage?.prompt_tokens ?? 0;
+      completionTokens = usage?.completion_tokens ?? 0;
+      totalTokens = usage?.total_tokens ?? 0;
+      modelUsed = completion.model || targetModel;
+
+      const isMini = modelUsed.includes("mini");
+      const isGpt4 = modelUsed.includes("gpt-4o") && !isMini;
+      const pCostRate = isMini ? 0.00000015 : isGpt4 ? 0.000005 : 0.00000059;
+      const cCostRate = isMini ? 0.00000060 : isGpt4 ? 0.000015 : 0.00000079;
+      apiCost = ((promptTokens * pCostRate) + (completionTokens * cCostRate)).toFixed(6);
 
       const content = completion.choices[0]?.message?.content ?? "{}";
       try {
@@ -990,8 +1009,11 @@ Scrivi il preventivo in stile OFFERTA COMMERCIALE PROFESSIONALE e PERSUASIVA:
           ivaValore: ivaValore.toFixed(2),
           totale: totale.toFixed(2),
           note: aiData.note ?? "Preventivo valido 30 giorni",
-          status: "draft",
-          templateId,
+          promptTokens,
+          completionTokens,
+          totalTokens,
+          modelUsed,
+          apiCost,
         })
         .returning();
     });
@@ -1462,6 +1484,18 @@ Quando usi una voce del listino, applica il prezzo unitario esatto o molto simil
       ],
     });
 
+    const usage = completion.usage;
+    const promptTokens = usage?.prompt_tokens ?? 0;
+    const completionTokens = usage?.completion_tokens ?? 0;
+    const totalTokens = usage?.total_tokens ?? 0;
+    const modelUsed = completion.model || "gpt-4o-mini";
+
+    const isMini = modelUsed.includes("mini");
+    const isGpt4 = modelUsed.includes("gpt-4o") && !isMini;
+    const pCostRate = isMini ? 0.00000015 : isGpt4 ? 0.000005 : 0.00000059;
+    const cCostRate = isMini ? 0.00000060 : isGpt4 ? 0.000015 : 0.00000079;
+    const apiCost = ((promptTokens * pCostRate) + (completionTokens * cCostRate)).toFixed(6);
+
     const content = completion.choices[0]?.message?.content ?? "{}";
     let aiData: {
       titolo_riga1?: string;
@@ -1552,6 +1586,11 @@ Quando usi una voce del listino, applica il prezzo unitario esatto o molto simil
         ivaValore: ivaValore.toFixed(2),
         totale: totale.toFixed(2),
         note: aiData.note ?? quote.note,
+        promptTokens,
+        completionTokens,
+        totalTokens,
+        modelUsed,
+        apiCost,
       })
       .where(eq(quotesTable.id, id))
       .returning();

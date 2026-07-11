@@ -739,7 +739,7 @@ var require_src = __commonJS({
 // ../../node_modules/.pnpm/depd@2.0.0/node_modules/depd/index.js
 var require_depd = __commonJS({
   "../../node_modules/.pnpm/depd@2.0.0/node_modules/depd/index.js"(exports, module) {
-    var relative = __require("path").relative;
+    var relative2 = __require("path").relative;
     module.exports = depd;
     var basePath = process.cwd();
     function containsNamespace(str2, namespace) {
@@ -931,7 +931,7 @@ var require_depd = __commonJS({
       return formatted;
     }
     function formatLocation(callSite) {
-      return relative(basePath, callSite[0]) + ":" + callSite[1] + ":" + callSite[2];
+      return relative2(basePath, callSite[0]) + ":" + callSite[1] + ":" + callSite[2];
     }
     function getStack() {
       var limit2 = Error.stackTraceLimit;
@@ -1331,11 +1331,11 @@ var require_http_errors = __commonJS({
     }
     function createClientErrorConstructor(HttpError, name, code) {
       var className = toClassName(name);
-      function ClientError(message2) {
+      function ClientError2(message2) {
         var msg = message2 != null ? message2 : statuses.message[code];
         var err = new Error(msg);
-        Error.captureStackTrace(err, ClientError);
-        setPrototypeOf(err, ClientError.prototype);
+        Error.captureStackTrace(err, ClientError2);
+        setPrototypeOf(err, ClientError2.prototype);
         Object.defineProperty(err, "message", {
           enumerable: true,
           configurable: true,
@@ -1350,12 +1350,12 @@ var require_http_errors = __commonJS({
         });
         return err;
       }
-      inherits(ClientError, HttpError);
-      nameFunc(ClientError, className);
-      ClientError.prototype.status = code;
-      ClientError.prototype.statusCode = code;
-      ClientError.prototype.expose = true;
-      return ClientError;
+      inherits(ClientError2, HttpError);
+      nameFunc(ClientError2, className);
+      ClientError2.prototype.status = code;
+      ClientError2.prototype.statusCode = code;
+      ClientError2.prototype.expose = true;
+      return ClientError2;
     }
     function createIsHttpErrorFunction(HttpError) {
       return function isHttpError(val) {
@@ -15917,7 +15917,7 @@ var require_object_inspect = __commonJS({
         depth = 0;
       }
       if (depth >= maxDepth && maxDepth > 0 && typeof obj === "object") {
-        return isArray2(obj) ? "[Array]" : "[Object]";
+        return isArray3(obj) ? "[Array]" : "[Object]";
       }
       var indent = getIndent(opts, depth);
       if (typeof seen === "undefined") {
@@ -15963,7 +15963,7 @@ var require_object_inspect = __commonJS({
         s += "</" + $toLowerCase.call(String(obj.nodeName)) + ">";
         return s;
       }
-      if (isArray2(obj)) {
+      if (isArray3(obj)) {
         if (obj.length === 0) {
           return "[]";
         }
@@ -15973,7 +15973,7 @@ var require_object_inspect = __commonJS({
         }
         return "[ " + $join.call(xs, ", ") + " ]";
       }
-      if (isError2(obj)) {
+      if (isError3(obj)) {
         var parts = arrObjKeys(obj, inspect);
         if (!("cause" in Error.prototype) && "cause" in obj && !isEnumerable.call(obj, "cause")) {
           return "{ [" + String(obj) + "] " + $join.call($concat.call("[cause]: " + inspect(obj.cause), parts), ", ") + " }";
@@ -16017,16 +16017,16 @@ var require_object_inspect = __commonJS({
       if (isWeakRef(obj)) {
         return weakCollectionOf("WeakRef");
       }
-      if (isNumber(obj)) {
+      if (isNumber2(obj)) {
         return markBoxed(inspect(Number(obj)));
       }
       if (isBigInt(obj)) {
         return markBoxed(inspect(bigIntValueOf.call(obj)));
       }
-      if (isBoolean(obj)) {
+      if (isBoolean2(obj)) {
         return markBoxed(booleanValueOf.call(obj));
       }
-      if (isString(obj)) {
+      if (isString2(obj)) {
         return markBoxed(inspect(String(obj)));
       }
       if (typeof window !== "undefined" && obj === window) {
@@ -16037,10 +16037,10 @@ var require_object_inspect = __commonJS({
       }
       if (!isDate(obj) && !isRegExp(obj)) {
         var ys = arrObjKeys(obj, inspect);
-        var isPlainObject6 = gPO ? gPO(obj) === Object.prototype : obj instanceof Object || obj.constructor === Object;
+        var isPlainObject7 = gPO ? gPO(obj) === Object.prototype : obj instanceof Object || obj.constructor === Object;
         var protoTag = obj instanceof Object ? "" : "null prototype";
-        var stringTag = !isPlainObject6 && toStringTag && Object(obj) === obj && toStringTag in obj ? $slice.call(toStr(obj), 8, -1) : protoTag ? "Object" : "";
-        var constructorTag = isPlainObject6 || typeof obj.constructor !== "function" ? "" : obj.constructor.name ? obj.constructor.name + " " : "";
+        var stringTag = !isPlainObject7 && toStringTag && Object(obj) === obj && toStringTag in obj ? $slice.call(toStr(obj), 8, -1) : protoTag ? "Object" : "";
+        var constructorTag = isPlainObject7 || typeof obj.constructor !== "function" ? "" : obj.constructor.name ? obj.constructor.name + " " : "";
         var tag2 = constructorTag + (stringTag || protoTag ? "[" + $join.call($concat.call([], stringTag || [], protoTag || []), ": ") + "] " : "");
         if (ys.length === 0) {
           return tag2 + "{}";
@@ -16063,7 +16063,7 @@ var require_object_inspect = __commonJS({
     function canTrustToString(obj) {
       return !toStringTag || !(typeof obj === "object" && (toStringTag in obj || typeof obj[toStringTag] !== "undefined"));
     }
-    function isArray2(obj) {
+    function isArray3(obj) {
       return toStr(obj) === "[object Array]" && canTrustToString(obj);
     }
     function isDate(obj) {
@@ -16072,16 +16072,16 @@ var require_object_inspect = __commonJS({
     function isRegExp(obj) {
       return toStr(obj) === "[object RegExp]" && canTrustToString(obj);
     }
-    function isError2(obj) {
+    function isError3(obj) {
       return toStr(obj) === "[object Error]" && canTrustToString(obj);
     }
-    function isString(obj) {
+    function isString2(obj) {
       return toStr(obj) === "[object String]" && canTrustToString(obj);
     }
-    function isNumber(obj) {
+    function isNumber2(obj) {
       return toStr(obj) === "[object Number]" && canTrustToString(obj);
     }
-    function isBoolean(obj) {
+    function isBoolean2(obj) {
       return toStr(obj) === "[object Boolean]" && canTrustToString(obj);
     }
     function isSymbol(obj) {
@@ -16291,7 +16291,7 @@ var require_object_inspect = __commonJS({
       return lineJoiner + $join.call(xs, "," + lineJoiner) + "\n" + indent.prev;
     }
     function arrObjKeys(obj, inspect) {
-      var isArr = isArray2(obj);
+      var isArr = isArray3(obj);
       var xs = [];
       if (isArr) {
         xs.length = obj.length;
@@ -17447,7 +17447,7 @@ var require_utils2 = __commonJS({
     var formats = require_formats();
     var getSideChannel = require_side_channel();
     var has2 = Object.prototype.hasOwnProperty;
-    var isArray2 = Array.isArray;
+    var isArray3 = Array.isArray;
     var overflowChannel = getSideChannel();
     var markOverflow = function markOverflow2(obj, maxIndex) {
       overflowChannel.set(obj, maxIndex);
@@ -17473,7 +17473,7 @@ var require_utils2 = __commonJS({
       while (queue.length > 1) {
         var item = queue.pop();
         var obj = item.obj[item.prop];
-        if (isArray2(obj)) {
+        if (isArray3(obj)) {
           var compacted = [];
           for (var j = 0; j < obj.length; ++j) {
             if (typeof obj[j] !== "undefined") {
@@ -17498,7 +17498,7 @@ var require_utils2 = __commonJS({
         return target;
       }
       if (typeof source !== "object" && typeof source !== "function") {
-        if (isArray2(target)) {
+        if (isArray3(target)) {
           var nextIndex = target.length;
           if (options && typeof options.arrayLimit === "number" && nextIndex > options.arrayLimit) {
             return markOverflow(arrayToObject(target.concat(source), options), nextIndex);
@@ -17536,10 +17536,10 @@ var require_utils2 = __commonJS({
         return combined;
       }
       var mergeTarget = target;
-      if (isArray2(target) && !isArray2(source)) {
+      if (isArray3(target) && !isArray3(source)) {
         mergeTarget = arrayToObject(target, options);
       }
-      if (isArray2(target) && isArray2(source)) {
+      if (isArray3(target) && isArray3(source)) {
         source.forEach(function(item, i) {
           if (has2.call(target, i)) {
             var targetItem = target[i];
@@ -17678,7 +17678,7 @@ var require_utils2 = __commonJS({
       return result;
     };
     var maybeMap = function maybeMap2(val, fn) {
-      if (isArray2(val)) {
+      if (isArray3(val)) {
         var mapped = [];
         for (var i = 0; i < val.length; i += 1) {
           mapped[mapped.length] = fn(val[i]);
@@ -17724,10 +17724,10 @@ var require_stringify = __commonJS({
         return prefix;
       }
     };
-    var isArray2 = Array.isArray;
+    var isArray3 = Array.isArray;
     var push = Array.prototype.push;
     var pushToArray = function(arr, valueOrArray) {
-      push.apply(arr, isArray2(valueOrArray) ? valueOrArray : [valueOrArray]);
+      push.apply(arr, isArray3(valueOrArray) ? valueOrArray : [valueOrArray]);
     };
     var toISO = Date.prototype.toISOString;
     var defaultFormat = formats["default"];
@@ -17782,7 +17782,7 @@ var require_stringify = __commonJS({
         obj = filter(prefix, obj);
       } else if (obj instanceof Date) {
         obj = serializeDate(obj);
-      } else if (generateArrayPrefix === "comma" && isArray2(obj)) {
+      } else if (generateArrayPrefix === "comma" && isArray3(obj)) {
         obj = utils.maybeMap(obj, function(value2) {
           if (value2 instanceof Date) {
             return serializeDate(value2);
@@ -17808,20 +17808,20 @@ var require_stringify = __commonJS({
         return values;
       }
       var objKeys;
-      if (generateArrayPrefix === "comma" && isArray2(obj)) {
+      if (generateArrayPrefix === "comma" && isArray3(obj)) {
         if (encodeValuesOnly && encoder3) {
           obj = utils.maybeMap(obj, encoder3);
         }
         objKeys = [{ value: obj.length > 0 ? obj.join(",") || null : void 0 }];
-      } else if (isArray2(filter)) {
+      } else if (isArray3(filter)) {
         objKeys = filter;
       } else {
         var keys = Object.keys(obj);
         objKeys = sort ? keys.sort(sort) : keys;
       }
       var encodedPrefix = encodeDotInKeys ? String(prefix).replace(/\./g, "%2E") : String(prefix);
-      var adjustedPrefix = commaRoundTrip && isArray2(obj) && obj.length === 1 ? encodedPrefix + "[]" : encodedPrefix;
-      if (allowEmptyArrays && isArray2(obj) && obj.length === 0) {
+      var adjustedPrefix = commaRoundTrip && isArray3(obj) && obj.length === 1 ? encodedPrefix + "[]" : encodedPrefix;
+      if (allowEmptyArrays && isArray3(obj) && obj.length === 0) {
         return adjustedPrefix + "[]";
       }
       for (var j = 0; j < objKeys.length; ++j) {
@@ -17831,7 +17831,7 @@ var require_stringify = __commonJS({
           continue;
         }
         var encodedKey = allowDots && encodeDotInKeys ? String(key).replace(/\./g, "%2E") : String(key);
-        var keyPrefix = isArray2(obj) ? typeof generateArrayPrefix === "function" ? generateArrayPrefix(adjustedPrefix, encodedKey) : adjustedPrefix : adjustedPrefix + (allowDots ? "." + encodedKey : "[" + encodedKey + "]");
+        var keyPrefix = isArray3(obj) ? typeof generateArrayPrefix === "function" ? generateArrayPrefix(adjustedPrefix, encodedKey) : adjustedPrefix : adjustedPrefix + (allowDots ? "." + encodedKey : "[" + encodedKey + "]");
         sideChannel.set(object3, step);
         var valueSideChannel = getSideChannel();
         valueSideChannel.set(sentinel2, sideChannel);
@@ -17844,7 +17844,7 @@ var require_stringify = __commonJS({
           strictNullHandling,
           skipNulls,
           encodeDotInKeys,
-          generateArrayPrefix === "comma" && encodeValuesOnly && isArray2(obj) ? null : encoder3,
+          generateArrayPrefix === "comma" && encodeValuesOnly && isArray3(obj) ? null : encoder3,
           filter,
           sort,
           allowDots,
@@ -17884,7 +17884,7 @@ var require_stringify = __commonJS({
       }
       var formatter = formats.formatters[format];
       var filter = defaults3.filter;
-      if (typeof opts.filter === "function" || isArray2(opts.filter)) {
+      if (typeof opts.filter === "function" || isArray3(opts.filter)) {
         filter = opts.filter;
       }
       var arrayFormat;
@@ -17929,7 +17929,7 @@ var require_stringify = __commonJS({
       if (typeof options.filter === "function") {
         filter = options.filter;
         obj = filter("", obj);
-      } else if (isArray2(options.filter)) {
+      } else if (isArray3(options.filter)) {
         filter = options.filter;
         objKeys = filter;
       }
@@ -17993,7 +17993,7 @@ var require_parse = __commonJS({
     "use strict";
     var utils = require_utils2();
     var has2 = Object.prototype.hasOwnProperty;
-    var isArray2 = Array.isArray;
+    var isArray3 = Array.isArray;
     var defaults3 = {
       allowDots: false,
       allowEmptyArrays: false,
@@ -18081,7 +18081,7 @@ var require_parse = __commonJS({
               parseArrayValue(
                 part.slice(pos + 1),
                 options,
-                isArray2(obj[key]) ? obj[key].length : 0
+                isArray3(obj[key]) ? obj[key].length : 0
               ),
               function(encodedVal) {
                 return options.decoder(encodedVal, defaults3.decoder, charset, "value");
@@ -18093,9 +18093,9 @@ var require_parse = __commonJS({
           val = interpretNumericEntities(String(val));
         }
         if (part.indexOf("[]=") > -1) {
-          val = isArray2(val) ? [val] : val;
+          val = isArray3(val) ? [val] : val;
         }
-        if (options.comma && isArray2(val) && val.length > options.arrayLimit) {
+        if (options.comma && isArray3(val) && val.length > options.arrayLimit) {
           if (options.throwOnLimitExceeded) {
             throw new RangeError("Array limit exceeded. Only " + options.arrayLimit + " element" + (options.arrayLimit === 1 ? "" : "s") + " allowed in an array.");
           }
@@ -18723,7 +18723,7 @@ var require_view = __commonJS({
     var debug = require_src()("express:view");
     var path4 = __require("node:path");
     var fs3 = __require("node:fs");
-    var dirname = path4.dirname;
+    var dirname2 = path4.dirname;
     var basename = path4.basename;
     var extname = path4.extname;
     var join = path4.join;
@@ -18762,7 +18762,7 @@ var require_view = __commonJS({
       for (var i = 0; i < roots.length && !path5; i++) {
         var root = roots[i];
         var loc = resolve(root, name);
-        var dir = dirname(loc);
+        var dir = dirname2(loc);
         var file3 = basename(loc);
         path5 = this.resolve(dir, file3);
       }
@@ -22441,7 +22441,7 @@ var require_send = __commonJS({
     var join = path4.join;
     var normalize = path4.normalize;
     var resolve = path4.resolve;
-    var sep = path4.sep;
+    var sep3 = path4.sep;
     var BYTES_RANGE_REGEXP = /^ *bytes=/;
     var MAX_MAXAGE = 60 * 60 * 24 * 365 * 1e3;
     var UP_PATH_REGEXP = /(?:^|[\\/])\.\.(?:[\\/]|$)/;
@@ -22602,14 +22602,14 @@ var require_send = __commonJS({
       var parts;
       if (root !== null) {
         if (path5) {
-          path5 = normalize("." + sep + path5);
+          path5 = normalize("." + sep3 + path5);
         }
         if (UP_PATH_REGEXP.test(path5)) {
           debug('malicious path "%s"', path5);
           this.error(403);
           return res;
         }
-        parts = path5.split(sep);
+        parts = path5.split(sep3);
         path5 = normalize(join(root, path5));
       } else {
         if (UP_PATH_REGEXP.test(path5)) {
@@ -22617,7 +22617,7 @@ var require_send = __commonJS({
           this.error(403);
           return res;
         }
-        parts = normalize(path5).split(sep);
+        parts = normalize(path5).split(sep3);
         path5 = resolve(path5);
       }
       if (containsDotFile(parts)) {
@@ -22711,7 +22711,7 @@ var require_send = __commonJS({
       var self2 = this;
       debug('stat "%s"', path5);
       fs3.stat(path5, function onstat(err, stat) {
-        var pathEndsWithSep = path5[path5.length - 1] === sep;
+        var pathEndsWithSep = path5[path5.length - 1] === sep3;
         if (err && err.code === "ENOENT" && !extname(path5) && !pathEndsWithSep) {
           return next(err);
         }
@@ -23679,7 +23679,7 @@ var require_lib3 = __commonJS({
         preflightContinue: false,
         optionsSuccessStatus: 204
       };
-      function isString(s) {
+      function isString2(s) {
         return typeof s === "string" || s instanceof String;
       }
       function isOriginAllowed(origin, allowedOrigin) {
@@ -23690,7 +23690,7 @@ var require_lib3 = __commonJS({
             }
           }
           return false;
-        } else if (isString(allowedOrigin)) {
+        } else if (isString2(allowedOrigin)) {
           return origin === allowedOrigin;
         } else if (allowedOrigin instanceof RegExp) {
           return allowedOrigin.test(origin);
@@ -23705,7 +23705,7 @@ var require_lib3 = __commonJS({
             key: "Access-Control-Allow-Origin",
             value: "*"
           }]);
-        } else if (isString(options.origin)) {
+        } else if (isString2(options.origin)) {
           headers.push([{
             key: "Access-Control-Allow-Origin",
             value: options.origin
@@ -25864,7 +25864,7 @@ var require_indexes = __commonJS({
 var require_thread_stream = __commonJS({
   "../../node_modules/.pnpm/thread-stream@3.1.0/node_modules/thread-stream/index.js"(exports, module) {
     "use strict";
-    var { version: version9 } = require_package();
+    var { version: version10 } = require_package();
     var { EventEmitter: EventEmitter2 } = __require("events");
     var { Worker: Worker2 } = __require("worker_threads");
     var { join } = __require("path");
@@ -25913,7 +25913,7 @@ var require_thread_stream = __commonJS({
           stateBuf: stream[kImpl].stateBuf,
           workerData: {
             $context: {
-              threadStreamVersion: version9
+              threadStreamVersion: version10
             },
             ...workerData
           }
@@ -26289,7 +26289,7 @@ var require_transport = __commonJS({
     "use strict";
     var { createRequire: createRequire3 } = __require("module");
     var getCallers = require_caller();
-    var { join, isAbsolute, sep } = __require("node:path");
+    var { join, isAbsolute: isAbsolute2, sep: sep3 } = __require("node:path");
     var sleep3 = require_atomic_sleep();
     var onExit = require_on_exit_leak_free();
     var ThreadStream = require_thread_stream();
@@ -26388,7 +26388,7 @@ var require_transport = __commonJS({
       return buildStream(fixTarget(target), options, worker, sync);
       function fixTarget(origin) {
         origin = bundlerOverrides[origin] || origin;
-        if (isAbsolute(origin) || origin.indexOf("file://") === 0) {
+        if (isAbsolute2(origin) || origin.indexOf("file://") === 0) {
           return origin;
         }
         if (origin === "pino/file") {
@@ -26397,7 +26397,7 @@ var require_transport = __commonJS({
         let fixTarget2;
         for (const filePath of callers) {
           try {
-            const context = filePath === "node:repl" ? process.cwd() + sep : filePath;
+            const context = filePath === "node:repl" ? process.cwd() + sep3 : filePath;
             fixTarget2 = createRequire3(context).resolve(origin);
             break;
           } catch (err) {
@@ -27023,7 +27023,7 @@ var require_proto = __commonJS({
       noop: noop4
     } = require_tools();
     var {
-      version: version9
+      version: version10
     } = require_meta();
     var redaction = require_redaction();
     var constructor = class Pino {
@@ -27035,7 +27035,7 @@ var require_proto = __commonJS({
       setBindings,
       flush,
       isLevelEnabled,
-      version: version9,
+      version: version10,
       get level() {
         return this[getLevelSym]();
       },
@@ -28002,7 +28002,7 @@ var require_pino = __commonJS({
       normalizeDestFileDescriptor,
       noop: noop4
     } = require_tools();
-    var { version: version9 } = require_meta();
+    var { version: version10 } = require_meta();
     var {
       chindingsSym,
       redactFmtSym,
@@ -28183,7 +28183,7 @@ var require_pino = __commonJS({
     module.exports.stdSerializers = serializers;
     module.exports.stdTimeFunctions = Object.assign({}, time6);
     module.exports.symbols = symbols;
-    module.exports.version = version9;
+    module.exports.version = version10;
     module.exports.default = pino2;
     module.exports.pino = pino2;
   }
@@ -41960,7 +41960,7 @@ var require_errors = __commonJS({
       }
       return str2.substring(this_len - search.length, this_len) === search;
     }
-    function includes(str2, search, start) {
+    function includes2(str2, search, start) {
       if (typeof start !== "number") {
         start = 0;
       }
@@ -41985,7 +41985,7 @@ var require_errors = __commonJS({
       if (endsWith(name, " argument")) {
         msg = `The ${name} ${determiner} ${oneOf(expected, "type")}`;
       } else {
-        const type = includes(name, ".") ? "property" : "argument";
+        const type = includes2(name, ".") ? "property" : "argument";
         msg = `The "${name}" ${type} ${determiner} ${oneOf(expected, "type")}`;
       }
       msg += `. Received type ${typeof actual}`;
@@ -53715,7 +53715,7 @@ function stringToBytes(str2) {
   }
   return bytes;
 }
-function v35(name, version9, hashfunc) {
+function v35(name, version10, hashfunc) {
   function generateUUID(value, namespace, buf, offset) {
     var _namespace;
     if (typeof value === "string") {
@@ -53731,7 +53731,7 @@ function v35(name, version9, hashfunc) {
     bytes.set(namespace);
     bytes.set(value, namespace.length);
     bytes = hashfunc(bytes);
-    bytes[6] = bytes[6] & 15 | version9;
+    bytes[6] = bytes[6] & 15 | version10;
     bytes[8] = bytes[8] & 63 | 128;
     if (buf) {
       offset = offset || 0;
@@ -61722,8 +61722,8 @@ var require_dist3 = __commonJS({
         const passedSignatures = msgSignature.split(" ");
         const encoder3 = new globalThis.TextEncoder();
         for (const versionedSignature of passedSignatures) {
-          const [version9, signature] = versionedSignature.split(",");
-          if (version9 !== "v1") {
+          const [version10, signature] = versionedSignature.split(",");
+          if (version10 !== "v1") {
             continue;
           }
           if ((0, timing_safe_equal_1.timingSafeEqual)(encoder3.encode(signature), encoder3.encode(expectedSignature))) {
@@ -80415,12 +80415,12 @@ var init_stripe_esm_node = __esm({
         if (!config4) {
           return {};
         }
-        const isString = typeof config4 === "string";
-        const isObject4 = config4 === Object(config4) && !Array.isArray(config4);
-        if (!isObject4 && !isString) {
+        const isString2 = typeof config4 === "string";
+        const isObject5 = config4 === Object(config4) && !Array.isArray(config4);
+        if (!isObject5 && !isString2) {
           throw new Error("Config must either be an object or a string");
         }
-        if (isString) {
+        if (isString2) {
           return {
             apiVersion: config4
           };
@@ -89310,9 +89310,9 @@ var init_content3 = __esm({
       /**
        * Download a skill version zip bundle.
        */
-      retrieve(version9, params, options) {
+      retrieve(version10, params, options) {
         const { skill_id } = params;
-        return this._client.get(path2`/skills/${skill_id}/versions/${version9}/content`, {
+        return this._client.get(path2`/skills/${skill_id}/versions/${version10}/content`, {
           ...options,
           headers: buildHeaders([{ Accept: "application/binary" }, options?.headers]),
           __security: { bearerAuth: true },
@@ -89347,9 +89347,9 @@ var init_versions = __esm({
       /**
        * Get a specific skill version.
        */
-      retrieve(version9, params, options) {
+      retrieve(version10, params, options) {
         const { skill_id } = params;
-        return this._client.get(path2`/skills/${skill_id}/versions/${version9}`, {
+        return this._client.get(path2`/skills/${skill_id}/versions/${version10}`, {
           ...options,
           __security: { bearerAuth: true }
         });
@@ -89367,9 +89367,9 @@ var init_versions = __esm({
       /**
        * Delete a skill version.
        */
-      delete(version9, params, options) {
+      delete(version10, params, options) {
         const { skill_id } = params;
-        return this._client.delete(path2`/skills/${skill_id}/versions/${version9}`, {
+        return this._client.delete(path2`/skills/${skill_id}/versions/${version10}`, {
           ...options,
           __security: { bearerAuth: true }
         });
@@ -91710,9 +91710,9 @@ var require_md5 = __commonJS({
         buffer8 = new Uint8Array(buffer);
         blocks = new Uint32Array(buffer);
       }
-      var isArray2 = Array.isArray;
-      if (root.JS_MD5_NO_NODE_JS || !isArray2) {
-        isArray2 = function(obj) {
+      var isArray3 = Array.isArray;
+      if (root.JS_MD5_NO_NODE_JS || !isArray3) {
+        isArray3 = function(obj) {
           return Object.prototype.toString.call(obj) === "[object Array]";
         };
       }
@@ -91733,7 +91733,7 @@ var require_md5 = __commonJS({
         if (ARRAY_BUFFER && message2.constructor === ArrayBuffer) {
           return [new Uint8Array(message2), false];
         }
-        if (!isArray2(message2) && !isView2(message2)) {
+        if (!isArray3(message2) && !isView2(message2)) {
           throw new Error(INPUT_ERROR);
         }
         return [message2, false];
@@ -91781,7 +91781,7 @@ var require_md5 = __commonJS({
               message2 = new Uint8Array(message2);
             }
           }
-          if (isArray2(message2) || isView2(message2) || message2.constructor === Buffer3) {
+          if (isArray3(message2) || isView2(message2) || message2.constructor === Buffer3) {
             return crypto9.createHash("md5").update(bufferFrom(message2)).digest("hex");
           } else {
             return method(message2);
@@ -91832,7 +91832,7 @@ var require_md5 = __commonJS({
         }
         var result = formatMessage2(message2);
         message2 = result[0];
-        var isString = result[1];
+        var isString2 = result[1];
         var code, index = 0, i, length = message2.length, blocks2 = this.blocks;
         var buffer82 = this.buffer8;
         while (index < length) {
@@ -91841,7 +91841,7 @@ var require_md5 = __commonJS({
             blocks2[0] = blocks2[16];
             blocks2[16] = blocks2[1] = blocks2[2] = blocks2[3] = blocks2[4] = blocks2[5] = blocks2[6] = blocks2[7] = blocks2[8] = blocks2[9] = blocks2[10] = blocks2[11] = blocks2[12] = blocks2[13] = blocks2[14] = blocks2[15] = 0;
           }
-          if (isString) {
+          if (isString2) {
             if (ARRAY_BUFFER) {
               for (i = this.start; index < length && i < 64; ++index) {
                 code = message2.charCodeAt(index);
@@ -95035,24 +95035,24 @@ var require_main = __commonJS({
       decode(stream, ctx) {
         const offset = this.offsetType.decode(stream, ctx);
         if (offset === this.options.nullValue && this.options.allowNull) return null;
-        let relative;
+        let relative2;
         switch (this.options.type) {
           case "local":
-            relative = ctx._startOffset;
+            relative2 = ctx._startOffset;
             break;
           case "immediate":
-            relative = stream.pos - this.offsetType.size();
+            relative2 = stream.pos - this.offsetType.size();
             break;
           case "parent":
-            relative = ctx.parent._startOffset;
+            relative2 = ctx.parent._startOffset;
             break;
           default:
             var c = ctx;
             while (c.parent) c = c.parent;
-            relative = c._startOffset || 0;
+            relative2 = c._startOffset || 0;
         }
-        if (this.options.relativeTo) relative += this.relativeToGetter(ctx);
-        const ptr = offset + relative;
+        if (this.options.relativeTo) relative2 += this.relativeToGetter(ctx);
+        const ptr = offset + relative2;
         if (this.type != null) {
           let val = null;
           const decodeValue = () => {
@@ -95094,7 +95094,7 @@ var require_main = __commonJS({
         return this.offsetType.size();
       }
       encode(stream, val, ctx) {
-        let relative;
+        let relative2;
         const parent = ctx;
         if (val == null) {
           this.offsetType.encode(stream, this.options.nullValue);
@@ -95102,21 +95102,21 @@ var require_main = __commonJS({
         }
         switch (this.options.type) {
           case "local":
-            relative = ctx.startOffset;
+            relative2 = ctx.startOffset;
             break;
           case "immediate":
-            relative = stream.pos + this.offsetType.size(val, parent);
+            relative2 = stream.pos + this.offsetType.size(val, parent);
             break;
           case "parent":
             ctx = ctx.parent;
-            relative = ctx.startOffset;
+            relative2 = ctx.startOffset;
             break;
           default:
-            relative = 0;
+            relative2 = 0;
             while (ctx.parent) ctx = ctx.parent;
         }
-        if (this.options.relativeTo) relative += this.relativeToGetter(parent.val);
-        this.offsetType.encode(stream, ctx.pointerOffset - relative);
+        if (this.options.relativeTo) relative2 += this.relativeToGetter(parent.val);
+        this.offsetType.encode(stream, ctx.pointerOffset - relative2);
         let { type } = this;
         if (type == null) {
           if (!(val instanceof $92184962f8f0d5e2$export$df5cb1f3d04f5a0f)) throw new Error("Must be a VoidPointer");
@@ -223709,8 +223709,8 @@ var require_main3 = __commonJS({
         return ctx ? ctx.version : -1;
       }
       decode(stream, parent) {
-        let version9 = this.getCFFVersion(parent);
-        let count2 = version9 >= 2 ? stream.readUInt32BE() : stream.readUInt16BE();
+        let version10 = this.getCFFVersion(parent);
+        let count2 = version10 >= 2 ? stream.readUInt32BE() : stream.readUInt16BE();
         if (count2 === 0) return [];
         let offSize = stream.readUInt8();
         let offsetType;
@@ -241964,16 +241964,16 @@ end`);
         return cache3.get(key);
       };
     }
-    function isObject4(item) {
+    function isObject5(item) {
       return item && typeof item === "object" && !Array.isArray(item);
     }
     function deepMerge(target, ...sources) {
-      if (!isObject4(target)) return target;
+      if (!isObject5(target)) return target;
       target = deepClone(target);
       for (const source of sources) {
-        if (isObject4(source)) {
+        if (isObject5(source)) {
           for (const key in source) {
-            if (isObject4(source[key])) {
+            if (isObject5(source[key])) {
               if (!(key in target)) target[key] = {};
               target[key] = deepMerge(target[key], source[key]);
             } else if (source[key] !== void 0) {
@@ -243122,29 +243122,29 @@ var require_variableType = __commonJS({
   "../../node_modules/.pnpm/pdfmake@0.3.7/node_modules/pdfmake/js/helpers/variableType.js"(exports) {
     "use strict";
     exports.__esModule = true;
-    exports.isEmptyObject = isEmptyObject;
-    exports.isNumber = isNumber;
-    exports.isObject = isObject4;
+    exports.isEmptyObject = isEmptyObject2;
+    exports.isNumber = isNumber2;
+    exports.isObject = isObject5;
     exports.isPositiveInteger = isPositiveInteger;
-    exports.isString = isString;
+    exports.isString = isString2;
     exports.isValue = isValue;
-    function isString(variable) {
+    function isString2(variable) {
       return typeof variable === "string" || variable instanceof String;
     }
-    function isNumber(variable) {
+    function isNumber2(variable) {
       return (typeof variable === "number" || variable instanceof Number) && !Number.isNaN(variable);
     }
     function isPositiveInteger(variable) {
-      if (!isNumber(variable) || !Number.isInteger(variable) || variable <= 0) {
+      if (!isNumber2(variable) || !Number.isInteger(variable) || variable <= 0) {
         return false;
       }
       return true;
     }
-    function isObject4(variable) {
-      return variable !== null && !Array.isArray(variable) && !isString(variable) && !isNumber(variable) && typeof variable === "object";
+    function isObject5(variable) {
+      return variable !== null && !Array.isArray(variable) && !isString2(variable) && !isNumber2(variable) && typeof variable === "object";
     }
-    function isEmptyObject(variable) {
-      return isObject4(variable) && Object.keys(variable).length === 0;
+    function isEmptyObject2(variable) {
+      return isObject5(variable) && Object.keys(variable).length === 0;
     }
     function isValue(variable) {
       return variable !== void 0 && variable !== null;
@@ -260276,9 +260276,9 @@ var require_helpers = __commonJS({
           throw new Error("Invalid alg claim");
       }
     }
-    var UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
+    var UUID_REGEX2 = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
     function validateUUID(str2) {
-      if (!UUID_REGEX.test(str2)) {
+      if (!UUID_REGEX2.test(str2)) {
         throw new Error("@supabase/auth-js: Expected parameter to be UUID but is not");
       }
     }
@@ -261872,7 +261872,7 @@ var require_ethereum = __commonJS({
     }
     function createSiweMessage(parameters) {
       var _a4;
-      const { chainId, domain: domain3, expirationTime, issuedAt = /* @__PURE__ */ new Date(), nonce, notBefore, requestId, resources, scheme, uri, version: version9 } = parameters;
+      const { chainId, domain: domain3, expirationTime, issuedAt = /* @__PURE__ */ new Date(), nonce, notBefore, requestId, resources, scheme, uri, version: version10 } = parameters;
       {
         if (!Number.isInteger(chainId))
           throw new Error(`@supabase/auth-js: Invalid SIWE message field "chainId". Chain ID must be a EIP-155 chain ID. Provided value: ${chainId}`);
@@ -261882,8 +261882,8 @@ var require_ethereum = __commonJS({
           throw new Error(`@supabase/auth-js: Invalid SIWE message field "nonce". Nonce must be at least 8 characters. Provided value: ${nonce}`);
         if (!uri)
           throw new Error(`@supabase/auth-js: Invalid SIWE message field "uri". URI must be provided.`);
-        if (version9 !== "1")
-          throw new Error(`@supabase/auth-js: Invalid SIWE message field "version". Version must be '1'. Provided value: ${version9}`);
+        if (version10 !== "1")
+          throw new Error(`@supabase/auth-js: Invalid SIWE message field "version". Version must be '1'. Provided value: ${version10}`);
         if ((_a4 = parameters.statement) === null || _a4 === void 0 ? void 0 : _a4.includes("\n"))
           throw new Error(`@supabase/auth-js: Invalid SIWE message field "statement". Statement must not include '\\n'. Provided value: ${parameters.statement}`);
       }
@@ -261896,7 +261896,7 @@ ${address}
 
 ${statement}`;
       let suffix = `URI: ${uri}
-Version: ${version9}
+Version: ${version10}
 Chain ID: ${chainId}${nonce ? `
 Nonce: ${nonce}` : ""}
 Issued At: ${issuedAt.toISOString()}`;
@@ -262374,7 +262374,7 @@ var require_webauthn = __commonJS({
       attestation: "direct"
     };
     function deepMerge(...sources) {
-      const isObject4 = (val) => val !== null && typeof val === "object" && !Array.isArray(val);
+      const isObject5 = (val) => val !== null && typeof val === "object" && !Array.isArray(val);
       const isArrayBufferLike = (val) => val instanceof ArrayBuffer || ArrayBuffer.isView(val);
       const result = {};
       for (const source of sources) {
@@ -262388,9 +262388,9 @@ var require_webauthn = __commonJS({
             result[key] = value;
           } else if (isArrayBufferLike(value)) {
             result[key] = value;
-          } else if (isObject4(value)) {
+          } else if (isObject5(value)) {
             const existing = result[key];
-            if (isObject4(existing)) {
+            if (isObject5(existing)) {
               result[key] = deepMerge(existing, value);
             } else {
               result[key] = deepMerge(value);
@@ -267958,11 +267958,11 @@ function parseSetCookie(input, options) {
     }
   }
   var split = options.split;
-  var isArray2 = Array.isArray(input);
+  var isArray3 = Array.isArray(input);
   if (split === "auto") {
-    split = !isArray2;
+    split = !isArray3;
   }
-  if (!isArray2) {
+  if (!isArray3) {
     input = [input];
   }
   input = input.filter(isNonEmptyString);
@@ -276593,10 +276593,10 @@ var nanoid = /^[a-zA-Z0-9_-]{21}$/;
 var duration = /^P(?:(\d+W)|(?!.*W)(?=\d|T\d)(\d+Y)?(\d+M)?(\d+D)?(T(?=\d)(\d+H)?(\d+M)?(\d+([.,]\d+)?S)?)?)$/;
 var extendedDuration = /^[-+]?P(?!$)(?:(?:[-+]?\d+Y)|(?:[-+]?\d+[.,]\d+Y$))?(?:(?:[-+]?\d+M)|(?:[-+]?\d+[.,]\d+M$))?(?:(?:[-+]?\d+W)|(?:[-+]?\d+[.,]\d+W$))?(?:(?:[-+]?\d+D)|(?:[-+]?\d+[.,]\d+D$))?(?:T(?=[\d+-])(?:(?:[-+]?\d+H)|(?:[-+]?\d+[.,]\d+H$))?(?:(?:[-+]?\d+M)|(?:[-+]?\d+[.,]\d+M$))?(?:[-+]?\d+(?:[.,]\d+)?S)?)??$/;
 var guid = /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})$/;
-var uuid2 = (version9) => {
-  if (!version9)
+var uuid2 = (version10) => {
+  if (!version10)
     return /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000)$/;
-  return new RegExp(`^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-${version9}[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12})$`);
+  return new RegExp(`^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-${version10}[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12})$`);
 };
 var uuid4 = /* @__PURE__ */ uuid2(4);
 var uuid6 = /* @__PURE__ */ uuid2(6);
@@ -277964,7 +277964,7 @@ var $ZodObject = /* @__PURE__ */ $constructor("$ZodObject", (inst, def) => {
     return (payload, ctx) => fn(shape, payload, ctx);
   };
   let fastpass;
-  const isObject4 = isObject;
+  const isObject5 = isObject;
   const jit = !globalConfig.jitless;
   const allowsEval3 = allowsEval;
   const fastEnabled = jit && allowsEval3.value;
@@ -277973,7 +277973,7 @@ var $ZodObject = /* @__PURE__ */ $constructor("$ZodObject", (inst, def) => {
   inst._zod.parse = (payload, ctx) => {
     value ?? (value = _normalized.value);
     const input = payload.value;
-    if (!isObject4(input)) {
+    if (!isObject5(input)) {
       payload.issues.push({
         expected: "object",
         code: "invalid_type",
@@ -284212,12 +284212,12 @@ function _uppercase(params) {
     ...normalizeParams(params)
   });
 }
-function _includes(includes, params) {
+function _includes(includes2, params) {
   return new $ZodCheckIncludes({
     check: "string_format",
     format: "includes",
     ...normalizeParams(params),
-    includes
+    includes: includes2
   });
 }
 function _startsWith(prefix, params) {
@@ -286762,6 +286762,11 @@ var quotesTable = pgTable("quotes", {
   templateId: text("template_id").default("standard"),
   pdfDownloadedAt: timestamp("pdf_downloaded_at", { withTimezone: true }),
   source: text("source").default("web"),
+  promptTokens: integer("prompt_tokens"),
+  completionTokens: integer("completion_tokens"),
+  totalTokens: integer("total_tokens"),
+  modelUsed: text("model_used"),
+  apiCost: numeric("api_cost", { precision: 10, scale: 6 }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => /* @__PURE__ */ new Date())
 });
@@ -290528,9 +290533,9 @@ function isCloudflareWorkers() {
 }
 var USER_AGENT;
 if (typeof navigator === "undefined" || !navigator.userAgent?.startsWith?.("Mozilla/5.0 ")) {
-  const NAME = "jose";
+  const NAME2 = "jose";
   const VERSION2 = "v6.2.3";
-  USER_AGENT = `${NAME}/${VERSION2}`;
+  USER_AGENT = `${NAME2}/${VERSION2}`;
 }
 var customFetch = /* @__PURE__ */ Symbol();
 async function fetchJwks(url3, headers, signal, fetchImpl = fetch) {
@@ -290812,8 +290817,8 @@ function getAllSecrets(secret2) {
     value: secret2
   }];
   const result = [];
-  for (const [version9, value] of secret2.keys) result.push({
-    version: version9,
+  for (const [version10, value] of secret2.keys) result.push({
+    version: version10,
     value
   });
   if (secret2.legacySecret && !result.some((s) => s.value === secret2.legacySecret)) result.push({
@@ -291929,15 +291934,15 @@ function parseEnvelope(data) {
   const firstSep = 4;
   const secondSep = data.indexOf("$", firstSep);
   if (secondSep === -1) return null;
-  const version9 = parseInt(data.slice(firstSep, secondSep), 10);
-  if (!Number.isInteger(version9) || version9 < 0) return null;
+  const version10 = parseInt(data.slice(firstSep, secondSep), 10);
+  if (!Number.isInteger(version10) || version10 < 0) return null;
   return {
-    version: version9,
+    version: version10,
     ciphertext: data.slice(secondSep + 1)
   };
 }
-function formatEnvelope(version9, ciphertext) {
-  return `${ENVELOPE_PREFIX}${version9}$${ciphertext}`;
+function formatEnvelope(version10, ciphertext) {
+  return `${ENVELOPE_PREFIX}${version10}$${ciphertext}`;
 }
 async function rawEncrypt(secret2, data) {
   const keyAsBytes = await createHash("SHA-256").digest(secret2);
@@ -292942,10 +292947,10 @@ var nanoid3 = /^[a-zA-Z0-9_-]{21}$/;
 var duration3 = /^P(?:(\d+W)|(?!.*W)(?=\d|T\d)(\d+Y)?(\d+M)?(\d+D)?(T(?=\d)(\d+H)?(\d+M)?(\d+([.,]\d+)?S)?)?)$/;
 var extendedDuration2 = /^[-+]?P(?!$)(?:(?:[-+]?\d+Y)|(?:[-+]?\d+[.,]\d+Y$))?(?:(?:[-+]?\d+M)|(?:[-+]?\d+[.,]\d+M$))?(?:(?:[-+]?\d+W)|(?:[-+]?\d+[.,]\d+W$))?(?:(?:[-+]?\d+D)|(?:[-+]?\d+[.,]\d+D$))?(?:T(?=[\d+-])(?:(?:[-+]?\d+H)|(?:[-+]?\d+[.,]\d+H$))?(?:(?:[-+]?\d+M)|(?:[-+]?\d+[.,]\d+M$))?(?:[-+]?\d+(?:[.,]\d+)?S)?)??$/;
 var guid3 = /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})$/;
-var uuid5 = (version9) => {
-  if (!version9)
+var uuid5 = (version10) => {
+  if (!version10)
     return /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/;
-  return new RegExp(`^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-${version9}[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12})$`);
+  return new RegExp(`^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-${version10}[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12})$`);
 };
 var uuid42 = /* @__PURE__ */ uuid5(4);
 var uuid62 = /* @__PURE__ */ uuid5(6);
@@ -294355,13 +294360,13 @@ var $ZodObject2 = /* @__PURE__ */ $constructor2("$ZodObject", (inst, def) => {
     }
     return propValues;
   });
-  const isObject4 = isObject3;
+  const isObject5 = isObject3;
   const catchall = def.catchall;
   let value;
   inst._zod.parse = (payload, ctx) => {
     value ?? (value = _normalized.value);
     const input = payload.value;
-    if (!isObject4(input)) {
+    if (!isObject5(input)) {
       payload.issues.push({
         expected: "object",
         code: "invalid_type",
@@ -294459,7 +294464,7 @@ var $ZodObjectJIT = /* @__PURE__ */ $constructor2("$ZodObjectJIT", (inst, def) =
     return (payload, ctx) => fn(shape, payload, ctx);
   };
   let fastpass;
-  const isObject4 = isObject3;
+  const isObject5 = isObject3;
   const jit = !globalConfig2.jitless;
   const allowsEval3 = allowsEval2;
   const fastEnabled = jit && allowsEval3.value;
@@ -294468,7 +294473,7 @@ var $ZodObjectJIT = /* @__PURE__ */ $constructor2("$ZodObjectJIT", (inst, def) =
   inst._zod.parse = (payload, ctx) => {
     value ?? (value = _normalized.value);
     const input = payload.value;
-    if (!isObject4(input)) {
+    if (!isObject5(input)) {
       payload.issues.push({
         expected: "object",
         code: "invalid_type",
@@ -296357,12 +296362,12 @@ function _uppercase2(params) {
   });
 }
 // @__NO_SIDE_EFFECTS__
-function _includes2(includes, params) {
+function _includes2(includes2, params) {
   return new $ZodCheckIncludes2({
     check: "string_format",
     format: "includes",
     ...normalizeParams2(params),
-    includes
+    includes: includes2
   });
 }
 // @__NO_SIDE_EFFECTS__
@@ -299444,19 +299449,19 @@ async function setCookieCache(ctx, session, dontRememberMe) {
   const filteredSession = filterOutputFields(session.session, ctx.context.options.session?.additionalFields);
   const filteredUser = parseUserOutput(ctx.context.options, session.user);
   const versionConfig = ctx.context.options.session?.cookieCache?.version;
-  let version9 = "1";
+  let version10 = "1";
   if (versionConfig) {
-    if (typeof versionConfig === "string") version9 = versionConfig;
+    if (typeof versionConfig === "string") version10 = versionConfig;
     else if (typeof versionConfig === "function") {
       const result = versionConfig(session.session, session.user);
-      version9 = isPromise(result) ? await result : result;
+      version10 = isPromise(result) ? await result : result;
     }
   }
   const sessionData = {
     session: filteredSession,
     user: filteredUser,
     updatedAt: Date.now(),
-    version: version9
+    version: version10
   };
   const options = {
     ...ctx.context.authCookies.sessionData.attributes,
@@ -299690,8 +299695,8 @@ async function getAsyncLocalStorage() {
 var ensureAsyncStorage = async () => {
   const betterAuthGlobal = __getBetterAuthGlobal();
   if (!betterAuthGlobal.context.endpointContextAsyncStorage) {
-    const AsyncLocalStorage = await getAsyncLocalStorage();
-    betterAuthGlobal.context.endpointContextAsyncStorage = new AsyncLocalStorage();
+    const AsyncLocalStorage2 = await getAsyncLocalStorage();
+    betterAuthGlobal.context.endpointContextAsyncStorage = new AsyncLocalStorage2();
   }
   return betterAuthGlobal.context.endpointContextAsyncStorage;
 };
@@ -299708,8 +299713,8 @@ async function runWithEndpointContext(context, fn) {
 var ensureAsyncStorage2 = async () => {
   const betterAuthGlobal = __getBetterAuthGlobal();
   if (!betterAuthGlobal.context.requestStateAsyncStorage) {
-    const AsyncLocalStorage = await getAsyncLocalStorage();
-    betterAuthGlobal.context.requestStateAsyncStorage = new AsyncLocalStorage();
+    const AsyncLocalStorage2 = await getAsyncLocalStorage();
+    betterAuthGlobal.context.requestStateAsyncStorage = new AsyncLocalStorage2();
   }
   return betterAuthGlobal.context.requestStateAsyncStorage;
 };
@@ -299749,8 +299754,8 @@ function defineRequestState(initFn) {
 var ensureAsyncStorage3 = async () => {
   const betterAuthGlobal = __getBetterAuthGlobal();
   if (!betterAuthGlobal.context.adapterAsyncStorage) {
-    const AsyncLocalStorage = await getAsyncLocalStorage();
-    betterAuthGlobal.context.adapterAsyncStorage = new AsyncLocalStorage();
+    const AsyncLocalStorage2 = await getAsyncLocalStorage();
+    betterAuthGlobal.context.adapterAsyncStorage = new AsyncLocalStorage2();
   }
   return betterAuthGlobal.context.adapterAsyncStorage;
 };
@@ -310163,12 +310168,12 @@ function parseSecretsEnv(envValue) {
     entry = entry.trim();
     const colonIdx = entry.indexOf(":");
     if (colonIdx === -1) throw new BetterAuthError(`Invalid BETTER_AUTH_SECRETS entry: "${entry}". Expected format: "<version>:<secret>"`);
-    const version9 = parseInt(entry.slice(0, colonIdx), 10);
-    if (!Number.isInteger(version9) || version9 < 0) throw new BetterAuthError(`Invalid version in BETTER_AUTH_SECRETS: "${entry.slice(0, colonIdx)}". Version must be a non-negative integer.`);
+    const version10 = parseInt(entry.slice(0, colonIdx), 10);
+    if (!Number.isInteger(version10) || version10 < 0) throw new BetterAuthError(`Invalid version in BETTER_AUTH_SECRETS: "${entry.slice(0, colonIdx)}". Version must be a non-negative integer.`);
     const value = entry.slice(colonIdx + 1).trim();
-    if (!value) throw new BetterAuthError(`Empty secret value for version ${version9} in BETTER_AUTH_SECRETS.`);
+    if (!value) throw new BetterAuthError(`Empty secret value for version ${version10} in BETTER_AUTH_SECRETS.`);
     return {
-      version: version9,
+      version: version10,
       value
     };
   });
@@ -310177,11 +310182,11 @@ function validateSecretsArray(secrets, logger3) {
   if (secrets.length === 0) throw new BetterAuthError("`secrets` array must contain at least one entry.");
   const seen = /* @__PURE__ */ new Set();
   for (const s of secrets) {
-    const version9 = parseInt(String(s.version), 10);
-    if (!Number.isInteger(version9) || version9 < 0 || String(version9) !== String(s.version).trim()) throw new BetterAuthError(`Invalid version ${s.version} in \`secrets\`. Version must be a non-negative integer.`);
-    if (!s.value) throw new BetterAuthError(`Empty secret value for version ${version9} in \`secrets\`.`);
-    if (seen.has(version9)) throw new BetterAuthError(`Duplicate version ${version9} in \`secrets\`. Each version must be unique.`);
-    seen.add(version9);
+    const version10 = parseInt(String(s.version), 10);
+    if (!Number.isInteger(version10) || version10 < 0 || String(version10) !== String(s.version).trim()) throw new BetterAuthError(`Invalid version ${s.version} in \`secrets\`. Version must be a non-negative integer.`);
+    if (!s.value) throw new BetterAuthError(`Empty secret value for version ${version10} in \`secrets\`.`);
+    if (seen.has(version10)) throw new BetterAuthError(`Duplicate version ${version10} in \`secrets\`. Each version must be unique.`);
+    seen.add(version10);
   }
   const current = secrets[0];
   if (current.value.length < 32) logger3.warn(`[better-auth] Warning: the current secret (version ${current.version}) should be at least 32 characters long for adequate security.`);
@@ -310594,10 +310599,10 @@ async function detectDatabaseNode() {
     mongodb: "mongodb",
     "drizzle-orm": "drizzle"
   })) {
-    const version9 = await getPackageVersion(pkg);
-    if (version9) return {
+    const version10 = await getPackageVersion(pkg);
+    if (version10) return {
       name,
-      version: version9
+      version: version10
     };
   }
 }
@@ -310615,10 +310620,10 @@ async function detectFrameworkNode() {
     elysia: "elysia",
     expo: "expo"
   })) {
-    const version9 = await getPackageVersion(pkg);
-    if (version9) return {
+    const version10 = await getPackageVersion(pkg);
+    if (version10) return {
       name,
-      version: version9
+      version: version10
     };
   }
 }
@@ -311178,16 +311183,16 @@ var drizzleAdapter = (db2, config4) => {
             logger.error(`[# Drizzle Adapter]: The model "${model}" was not found in the query object. Please update your Drizzle schema to include relations or re-generate using "npx auth@latest generate".`);
             logger.info("Falling back to regular query");
           } else {
-            let includes;
+            let includes2;
             const pluralJoinResults = [];
             if (join) {
-              includes = {};
+              includes2 = {};
               const joinEntries = Object.entries(join);
               for (const [model2, joinAttr] of joinEntries) {
                 const limit2 = joinAttr.limit ?? options.advanced?.database?.defaultFindManyLimit ?? 100;
                 const isUnique = joinAttr.relation === "one-to-one";
                 const pluralSuffix = isUnique || config4.usePlural ? "" : "s";
-                includes[`${model2}${pluralSuffix}`] = isUnique ? true : { limit: limit2 };
+                includes2[`${model2}${pluralSuffix}`] = isUnique ? true : { limit: limit2 };
                 if (!isUnique) pluralJoinResults.push(`${model2}${pluralSuffix}`);
               }
             }
@@ -311200,7 +311205,7 @@ var drizzleAdapter = (db2, config4) => {
                 })] = true;
                 return acc;
               }, {}) : void 0,
-              with: includes
+              with: includes2
             });
             if (res2) for (const pluralJoinResult of pluralJoinResults) {
               const singularKey = !config4.usePlural ? pluralJoinResult.slice(0, -1) : pluralJoinResult;
@@ -311233,16 +311238,16 @@ var drizzleAdapter = (db2, config4) => {
             logger.error(`[# Drizzle Adapter]: The model "${model}" was not found in the query object. Please update your Drizzle schema to include relations or re-generate using "npx auth@latest generate".`);
             logger.info("Falling back to regular query");
           } else {
-            let includes;
+            let includes2;
             const pluralJoinResults = [];
             if (join) {
-              includes = {};
+              includes2 = {};
               const joinEntries = Object.entries(join);
               for (const [model2, joinAttr] of joinEntries) {
                 const isUnique = joinAttr.relation === "one-to-one";
                 const limit3 = joinAttr.limit ?? options.advanced?.database?.defaultFindManyLimit ?? 100;
                 const pluralSuffix = isUnique || config4.usePlural ? "" : "s";
-                includes[`${model2}${pluralSuffix}`] = isUnique ? true : { limit: limit3 };
+                includes2[`${model2}${pluralSuffix}`] = isUnique ? true : { limit: limit3 };
                 if (!isUnique) pluralJoinResults.push(`${model2}${pluralSuffix}`);
               }
             }
@@ -311253,7 +311258,7 @@ var drizzleAdapter = (db2, config4) => {
             })])];
             const res = await db3.query[queryModel].findMany({
               where: clause[0],
-              with: includes,
+              with: includes2,
               columns: select?.length && select.length > 0 ? select.reduce((acc, field) => {
                 acc[getFieldName({
                   model,
@@ -311998,16 +312003,16 @@ var MimeNode = class {
     this.rawHeaderLines = [];
     for (let i = this.headerLines.length - 1; i >= 0; i--) {
       let rawLine = this.headerLines[i];
-      let sep = rawLine.indexOf(":");
-      let rawKey = sep < 0 ? rawLine.trim() : rawLine.substr(0, sep).trim();
+      let sep3 = rawLine.indexOf(":");
+      let rawKey = sep3 < 0 ? rawLine.trim() : rawLine.substr(0, sep3).trim();
       this.rawHeaderLines.push({
         key: rawKey.toLowerCase(),
         line: rawLine
       });
       let normalizedLine = rawLine.replace(/\s+/g, " ");
-      sep = normalizedLine.indexOf(":");
-      let key = sep < 0 ? normalizedLine.trim() : normalizedLine.substr(0, sep).trim();
-      let value = sep < 0 ? "" : normalizedLine.substr(sep + 1).trim();
+      sep3 = normalizedLine.indexOf(":");
+      let key = sep3 < 0 ? normalizedLine.trim() : normalizedLine.substr(0, sep3).trim();
+      let value = sep3 < 0 ? "" : normalizedLine.substr(sep3 + 1).trim();
       this.headers.push({ key: key.toLowerCase(), originalKey: key, value });
       switch (key.toLowerCase()) {
         case "content-type":
@@ -317923,11 +317928,11 @@ function datetimeRegex(args) {
   regex = `${regex}(${opts.join("|")})`;
   return new RegExp(`^${regex}$`);
 }
-function isValidIP2(ip, version9) {
-  if ((version9 === "v4" || !version9) && ipv4Regex.test(ip)) {
+function isValidIP2(ip, version10) {
+  if ((version10 === "v4" || !version10) && ipv4Regex.test(ip)) {
     return true;
   }
-  if ((version9 === "v6" || !version9) && ipv6Regex.test(ip)) {
+  if ((version10 === "v6" || !version10) && ipv6Regex.test(ip)) {
     return true;
   }
   return false;
@@ -317954,11 +317959,11 @@ function isValidJWT3(jwt3, alg2) {
     return false;
   }
 }
-function isValidCidr(ip, version9) {
-  if ((version9 === "v4" || !version9) && ipv4CidrRegex.test(ip)) {
+function isValidCidr(ip, version10) {
+  if ((version10 === "v4" || !version10) && ipv4CidrRegex.test(ip)) {
     return true;
   }
-  if ((version9 === "v6" || !version9) && ipv6CidrRegex.test(ip)) {
+  if ((version10 === "v6" || !version10) && ipv6CidrRegex.test(ip)) {
     return true;
   }
   return false;
@@ -332556,9 +332561,15 @@ Scrivi il preventivo in stile OFFERTA COMMERCIALE PROFESSIONALE e PERSUASIVA:
 - Includi una nota finale che sottolinei la qualit\xE0 del servizio, l'esperienza dell'impresa e la garanzia sui lavori
 - Condizioni di pagamento: proponi 2-3 rate semplici e chiare (es. 50% acconto alla firma, 50% saldo fine lavori)` : null;
     let aiData = {};
+    let promptTokens = null;
+    let completionTokens = null;
+    let totalTokens = null;
+    let modelUsed = null;
+    let apiCost = null;
     if (!isStructured && !isTabular && !isNumbered) {
+      const targetModel = hasImages || docTexts.length > 0 ? "gpt-4o" : "gpt-4o-mini";
       const completion = await openai.chat.completions.create({
-        model: hasImages || docTexts.length > 0 ? "gpt-4o" : "gpt-4o-mini",
+        model: targetModel,
         max_completion_tokens: hasImages || docTexts.length > 0 ? 16384 : 8192,
         messages: [
           { role: "system", content: AI_PROMPT },
@@ -332581,6 +332592,16 @@ Scrivi il preventivo in stile OFFERTA COMMERCIALE PROFESSIONALE e PERSUASIVA:
           }
         ]
       });
+      const usage = completion.usage;
+      promptTokens = usage?.prompt_tokens ?? 0;
+      completionTokens = usage?.completion_tokens ?? 0;
+      totalTokens = usage?.total_tokens ?? 0;
+      modelUsed = completion.model || targetModel;
+      const isMini = modelUsed.includes("mini");
+      const isGpt4 = modelUsed.includes("gpt-4o") && !isMini;
+      const pCostRate = isMini ? 15e-8 : isGpt4 ? 5e-6 : 59e-8;
+      const cCostRate = isMini ? 6e-7 : isGpt4 ? 15e-6 : 79e-8;
+      apiCost = (promptTokens * pCostRate + completionTokens * cCostRate).toFixed(6);
       const content = completion.choices[0]?.message?.content ?? "{}";
       try {
         const cleaned = content.trim().replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/i, "");
@@ -332831,8 +332852,11 @@ Scrivi il preventivo in stile OFFERTA COMMERCIALE PROFESSIONALE e PERSUASIVA:
         ivaValore: ivaValore.toFixed(2),
         totale: totale.toFixed(2),
         note: aiData.note ?? "Preventivo valido 30 giorni",
-        status: "draft",
-        templateId
+        promptTokens,
+        completionTokens,
+        totalTokens,
+        modelUsed,
+        apiCost
       }).returning();
     });
     const savedAttachments = [];
@@ -333167,6 +333191,16 @@ Quando usi una voce del listino, applica il prezzo unitario esatto o molto simil
         { role: "user", content: userMessage }
       ]
     });
+    const usage = completion.usage;
+    const promptTokens = usage?.prompt_tokens ?? 0;
+    const completionTokens = usage?.completion_tokens ?? 0;
+    const totalTokens = usage?.total_tokens ?? 0;
+    const modelUsed = completion.model || "gpt-4o-mini";
+    const isMini = modelUsed.includes("mini");
+    const isGpt4 = modelUsed.includes("gpt-4o") && !isMini;
+    const pCostRate = isMini ? 15e-8 : isGpt4 ? 5e-6 : 59e-8;
+    const cCostRate = isMini ? 6e-7 : isGpt4 ? 15e-6 : 79e-8;
+    const apiCost = (promptTokens * pCostRate + completionTokens * cCostRate).toFixed(6);
     const content = completion.choices[0]?.message?.content ?? "{}";
     let aiData;
     try {
@@ -333216,7 +333250,12 @@ Quando usi una voce del listino, applica il prezzo unitario esatto o molto simil
       ivaPercentuale: ivaPercentuale.toFixed(2),
       ivaValore: ivaValore.toFixed(2),
       totale: totale.toFixed(2),
-      note: aiData.note ?? quote.note
+      note: aiData.note ?? quote.note,
+      promptTokens,
+      completionTokens,
+      totalTokens,
+      modelUsed,
+      apiCost
     }).where(eq(quotesTable.id, id)).returning();
     res.json(serializeQuote(updated));
   } catch (err) {
@@ -334849,6 +334888,18 @@ router7.get("/admin/users", async (_req, res) => {
         logger2.error({ err: dbErr }, "Failed to fetch auth users (non-fatal)");
       }
     }
+    const quoteStats = await db.select({
+      userId: quotesTable.userId,
+      quoteCount: sql`count(${quotesTable.id})::int`,
+      totalCost: sql`coalesce(sum(${quotesTable.apiCost}), 0)::float`
+    }).from(quotesTable).groupBy(quotesTable.userId);
+    const statsMap = {};
+    for (const stat of quoteStats) {
+      statsMap[stat.userId] = {
+        quoteCount: stat.quoteCount,
+        totalCost: stat.totalCost
+      };
+    }
     const rows = profiles.map((p) => ({
       userId: p.userId,
       email: authUsers[p.userId]?.email ?? "",
@@ -334857,11 +334908,58 @@ router7.get("/admin/users", async (_req, res) => {
       subscriptionPlan: p.subscriptionPlan ?? null,
       subscriptionStatus: p.subscriptionStatus ?? null,
       stripeCustomerId: p.stripeCustomerId ?? null,
+      apiKey: p.apiKey ?? null,
+      quoteCount: statsMap[p.userId]?.quoteCount ?? 0,
+      totalCost: statsMap[p.userId]?.totalCost ?? 0,
       createdAt: p.createdAt.toISOString()
     }));
     res.json(rows);
   } catch (err) {
     logger2.error({ err }, "Admin users error");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+router7.get("/admin/users/:userId/quotes", async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const userQuotes = await db.select({
+      id: quotesTable.id,
+      titoloRiga1: quotesTable.titoloPreventivoRiga1,
+      titoloRiga2: quotesTable.titoloPreventivoRiga2,
+      numeroPreventivoData: quotesTable.numeroPreventivoData,
+      clientData: quotesTable.clientData,
+      totale: quotesTable.totale,
+      status: quotesTable.status,
+      source: quotesTable.source,
+      promptTokens: quotesTable.promptTokens,
+      completionTokens: quotesTable.completionTokens,
+      totalTokens: quotesTable.totalTokens,
+      modelUsed: quotesTable.modelUsed,
+      apiCost: quotesTable.apiCost,
+      createdAt: quotesTable.createdAt
+    }).from(quotesTable).where(eq(quotesTable.userId, userId)).orderBy(desc(quotesTable.createdAt));
+    res.json(userQuotes);
+  } catch (err) {
+    logger2.error({ err }, "Admin fetch user quotes error");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+router7.post("/admin/users/:userId/apikey", async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const { apiKey } = req.body;
+    let newApiKey = apiKey;
+    if (!newApiKey) {
+      newApiKey = `prevai_pk_${crypto8.randomBytes(24).toString("hex")}`;
+    }
+    const [updated] = await db.update(businessProfilesTable).set({ apiKey: newApiKey }).where(eq(businessProfilesTable.userId, userId)).returning();
+    if (!updated) {
+      res.status(404).json({ error: "Profilo aziendale non trovato per questo utente." });
+      return;
+    }
+    res.json({ success: true, apiKey: newApiKey });
+  } catch (err) {
+    logger2.error({ err }, "Admin assign API key error");
     res.status(500).json({ error: "Internal server error" });
   }
 });
@@ -335527,6 +335625,5046 @@ var import_express8 = __toESM(require_express2(), 1);
 
 // src/lib/generateQuoteFromText.ts
 init_src();
+
+// ../../node_modules/.pnpm/posthog-node@5.40.0/node_modules/posthog-node/dist/extensions/error-tracking/modifiers/module.node.mjs
+import { dirname, posix, sep } from "path";
+function createModulerModifier() {
+  const getModuleFromFileName = createGetModuleFromFilename();
+  return async (frames) => {
+    for (const frame of frames) frame.module = getModuleFromFileName(frame.filename);
+    return frames;
+  };
+}
+function createGetModuleFromFilename(basePath = process.argv[1] ? dirname(process.argv[1]) : process.cwd(), isWindows = "\\" === sep) {
+  const normalizedBase = isWindows ? normalizeWindowsPath(basePath) : basePath;
+  return (filename) => {
+    if (!filename) return;
+    const normalizedFilename = isWindows ? normalizeWindowsPath(filename) : filename;
+    let { dir, base: file3, ext } = posix.parse(normalizedFilename);
+    if (".js" === ext || ".mjs" === ext || ".cjs" === ext) file3 = file3.slice(0, -1 * ext.length);
+    const decodedFile = decodeURIComponent(file3);
+    if (!dir) dir = ".";
+    const n = dir.lastIndexOf("/node_modules");
+    if (n > -1) return `${dir.slice(n + 14).replace(/\//g, ".")}:${decodedFile}`;
+    if (dir.startsWith(normalizedBase)) {
+      const moduleName = dir.slice(normalizedBase.length + 1).replace(/\//g, ".");
+      return moduleName ? `${moduleName}:${decodedFile}` : decodedFile;
+    }
+    return decodedFile;
+  };
+}
+function normalizeWindowsPath(path4) {
+  return path4.replace(/^[A-Z]:/, "").replace(/\\/g, "/");
+}
+
+// ../../node_modules/.pnpm/@posthog+core@1.40.1/node_modules/@posthog/core/dist/featureFlagUtils.mjs
+var normalizeFlagsResponse = (flagsResponse) => {
+  if ("flags" in flagsResponse) {
+    const featureFlags = getFlagValuesFromFlags(flagsResponse.flags);
+    const featureFlagPayloads = getPayloadsFromFlags(flagsResponse.flags);
+    return {
+      ...flagsResponse,
+      featureFlags,
+      featureFlagPayloads
+    };
+  }
+  {
+    const featureFlags = flagsResponse.featureFlags ?? {};
+    const featureFlagPayloads = Object.fromEntries(Object.entries(flagsResponse.featureFlagPayloads || {}).map(([k, v]) => [
+      k,
+      parsePayload(v)
+    ]));
+    const flags = Object.fromEntries(Object.entries(featureFlags).map(([key, value]) => [
+      key,
+      getFlagDetailFromFlagAndPayload(key, value, featureFlagPayloads[key])
+    ]));
+    return {
+      ...flagsResponse,
+      featureFlags,
+      featureFlagPayloads,
+      flags
+    };
+  }
+};
+function getFlagDetailFromFlagAndPayload(key, value, payload) {
+  return {
+    key,
+    enabled: "string" == typeof value ? true : value,
+    variant: "string" == typeof value ? value : void 0,
+    reason: void 0,
+    metadata: {
+      id: void 0,
+      version: void 0,
+      payload: payload ? JSON.stringify(payload) : void 0,
+      description: void 0
+    }
+  };
+}
+var getFlagValuesFromFlags = (flags) => Object.fromEntries(Object.entries(flags ?? {}).map(([key, detail]) => [
+  key,
+  getFeatureFlagValue(detail)
+]).filter(([, value]) => void 0 !== value));
+var getPayloadsFromFlags = (flags) => {
+  const safeFlags = flags ?? {};
+  return Object.fromEntries(Object.keys(safeFlags).filter((flag) => {
+    const details = safeFlags[flag];
+    return details.enabled && details.metadata && void 0 !== details.metadata.payload;
+  }).map((flag) => {
+    const payload = safeFlags[flag].metadata?.payload;
+    return [
+      flag,
+      payload ? parsePayload(payload) : void 0
+    ];
+  }));
+};
+var getFeatureFlagValue = (detail) => void 0 === detail ? void 0 : detail.variant ?? detail.enabled;
+var parsePayload = (response) => {
+  if ("string" != typeof response) return response;
+  try {
+    return JSON.parse(response);
+  } catch {
+    return response;
+  }
+};
+
+// ../../node_modules/.pnpm/@posthog+core@1.40.1/node_modules/@posthog/core/dist/types.mjs
+var types_PostHogPersistedProperty = /* @__PURE__ */ (function(PostHogPersistedProperty) {
+  PostHogPersistedProperty["AnonymousId"] = "anonymous_id";
+  PostHogPersistedProperty["DistinctId"] = "distinct_id";
+  PostHogPersistedProperty["Props"] = "props";
+  PostHogPersistedProperty["EnablePersonProcessing"] = "enable_person_processing";
+  PostHogPersistedProperty["PersonMode"] = "person_mode";
+  PostHogPersistedProperty["FeatureFlagDetails"] = "feature_flag_details";
+  PostHogPersistedProperty["FeatureFlags"] = "feature_flags";
+  PostHogPersistedProperty["FeatureFlagPayloads"] = "feature_flag_payloads";
+  PostHogPersistedProperty["BootstrapFeatureFlagDetails"] = "bootstrap_feature_flag_details";
+  PostHogPersistedProperty["BootstrapFeatureFlags"] = "bootstrap_feature_flags";
+  PostHogPersistedProperty["BootstrapFeatureFlagPayloads"] = "bootstrap_feature_flag_payloads";
+  PostHogPersistedProperty["OverrideFeatureFlags"] = "override_feature_flags";
+  PostHogPersistedProperty["Queue"] = "queue";
+  PostHogPersistedProperty["LogsQueue"] = "logs_queue";
+  PostHogPersistedProperty["OptedOut"] = "opted_out";
+  PostHogPersistedProperty["SessionId"] = "session_id";
+  PostHogPersistedProperty["SessionStartTimestamp"] = "session_start_timestamp";
+  PostHogPersistedProperty["SessionLastTimestamp"] = "session_timestamp";
+  PostHogPersistedProperty["PersonProperties"] = "person_properties";
+  PostHogPersistedProperty["GroupProperties"] = "group_properties";
+  PostHogPersistedProperty["InstalledAppBuild"] = "installed_app_build";
+  PostHogPersistedProperty["InstalledAppVersion"] = "installed_app_version";
+  PostHogPersistedProperty["SessionReplay"] = "session_replay";
+  PostHogPersistedProperty["SessionReplayEventTriggerActivatedSession"] = "session_replay_event_trigger_activated_session";
+  PostHogPersistedProperty["SurveyLastSeenDate"] = "survey_last_seen_date";
+  PostHogPersistedProperty["SurveysSeen"] = "surveys_seen";
+  PostHogPersistedProperty["Surveys"] = "surveys";
+  PostHogPersistedProperty["RemoteConfig"] = "remote_config";
+  PostHogPersistedProperty["FlagsEndpointWasHit"] = "flags_endpoint_was_hit";
+  PostHogPersistedProperty["DeviceId"] = "device_id";
+  return PostHogPersistedProperty;
+})({});
+
+// ../../node_modules/.pnpm/@posthog+core@1.40.1/node_modules/@posthog/core/dist/gzip.mjs
+function isGzipSupported() {
+  return "CompressionStream" in globalThis && "TextEncoder" in globalThis && "Response" in globalThis && "function" == typeof Response.prototype.blob;
+}
+var NATIVE_GZIP_VALIDATION_ERROR = "NativeGzipValidationError";
+var GZIP_MAGIC_FIRST_BYTE = 31;
+var GZIP_MAGIC_SECOND_BYTE = 139;
+var GZIP_DEFLATE_METHOD = 8;
+var hasGzipMagic = (bytes) => bytes.length >= 2 && bytes[0] === GZIP_MAGIC_FIRST_BYTE && bytes[1] === GZIP_MAGIC_SECOND_BYTE;
+var crc32Table;
+var getCrc32Table = () => {
+  if (crc32Table) return crc32Table;
+  crc32Table = [];
+  for (let i = 0; i < 256; i++) {
+    let crc = i;
+    for (let j = 0; j < 8; j++) crc = 1 & crc ? 3988292384 ^ crc >>> 1 : crc >>> 1;
+    crc32Table[i] = crc >>> 0;
+  }
+  return crc32Table;
+};
+var crc32 = (bytes) => {
+  const table = getCrc32Table();
+  let crc = 4294967295;
+  for (let i = 0; i < bytes.length; i++) crc = table[(crc ^ bytes[i]) & 255] ^ crc >>> 8;
+  return (4294967295 ^ crc) >>> 0;
+};
+var throwNativeGzipValidationError = (reason) => {
+  const error42 = new Error(`Native gzip produced invalid output: ${reason}`);
+  error42.name = NATIVE_GZIP_VALIDATION_ERROR;
+  throw error42;
+};
+var validateNativeGzip = async (compressed, inputBytes) => {
+  if (compressed.size < 18) throwNativeGzipValidationError("too-short");
+  const header = new Uint8Array(await compressed.slice(0, 10).arrayBuffer());
+  if (!hasGzipMagic(header) || header[2] !== GZIP_DEFLATE_METHOD) throwNativeGzipValidationError("invalid-header");
+  const trailer = new DataView(await compressed.slice(compressed.size - 8).arrayBuffer());
+  if (trailer.getUint32(0, true) !== crc32(inputBytes)) throwNativeGzipValidationError("invalid-crc");
+  const inputSize = inputBytes.length >>> 0;
+  if (trailer.getUint32(4, true) !== inputSize) throwNativeGzipValidationError("invalid-size");
+};
+async function gzipCompress(input, isDebug = true, options) {
+  try {
+    const inputBytes = new TextEncoder().encode(input);
+    const compressedStream = new CompressionStream("gzip");
+    const writer = compressedStream.writable.getWriter();
+    const writePromise = writer.write(inputBytes).then(() => writer.close()).catch(async (err) => {
+      try {
+        await writer.abort(err);
+      } catch {
+      }
+      throw err;
+    });
+    const responsePromise = new Response(compressedStream.readable).blob();
+    const [compressed] = await Promise.all([
+      responsePromise,
+      writePromise
+    ]);
+    await validateNativeGzip(compressed, inputBytes);
+    return compressed;
+  } catch (error42) {
+    if (options?.rethrow) throw error42;
+    if (isDebug) console.error("Failed to gzip compress data", error42);
+    return null;
+  }
+}
+
+// ../../node_modules/.pnpm/@posthog+core@1.40.1/node_modules/@posthog/core/dist/utils/bot-detection.mjs
+var DEFAULT_BLOCKED_UA_STRS = [
+  "amazonbot",
+  "amazonproductbot",
+  "app.hypefactors.com",
+  "applebot",
+  "archive.org_bot",
+  "awariobot",
+  "backlinksextendedbot",
+  "baiduspider",
+  "bingbot",
+  "bingpreview",
+  "chrome-lighthouse",
+  "dataforseobot",
+  "deepscan",
+  "duckduckbot",
+  "facebookexternal",
+  "facebookcatalog",
+  "http://yandex.com/bots",
+  "hubspot",
+  "ia_archiver",
+  "leikibot",
+  "linkedinbot",
+  "meta-externalagent",
+  "mj12bot",
+  "msnbot",
+  "nessus",
+  "petalbot",
+  "pinterest",
+  "prerender",
+  "rogerbot",
+  "screaming frog",
+  "sebot-wa",
+  "sitebulb",
+  "slackbot",
+  "slurp",
+  "trendictionbot",
+  "turnitin",
+  "twitterbot",
+  "vercel-screenshot",
+  "vercelbot",
+  "yahoo! slurp",
+  "yandexbot",
+  "zoombot",
+  "bot.htm",
+  "bot.php",
+  "(bot;",
+  "bot/",
+  "crawler",
+  "ahrefsbot",
+  "ahrefssiteaudit",
+  "semrushbot",
+  "siteauditbot",
+  "splitsignalbot",
+  "gptbot",
+  "oai-searchbot",
+  "chatgpt-user",
+  "perplexitybot",
+  "better uptime bot",
+  "sentryuptimebot",
+  "uptimerobot",
+  "headlesschrome",
+  "cypress",
+  "google-hoteladsverifier",
+  "adsbot-google",
+  "apis-google",
+  "duplexweb-google",
+  "feedfetcher-google",
+  "google favicon",
+  "google web preview",
+  "google-read-aloud",
+  "googlebot",
+  "googleother",
+  "google-cloudvertexbot",
+  "googleweblight",
+  "mediapartners-google",
+  "storebot-google",
+  "google-inspectiontool",
+  "bytespider"
+];
+var isBlockedUA = function(ua, customBlockedUserAgents = []) {
+  if (!ua) return false;
+  const uaLower = ua.toLowerCase();
+  return DEFAULT_BLOCKED_UA_STRS.concat(customBlockedUserAgents).some((blockedUA) => {
+    const blockedUaLower = blockedUA.toLowerCase();
+    return -1 !== uaLower.indexOf(blockedUaLower);
+  });
+};
+
+// ../../node_modules/.pnpm/@posthog+core@1.40.1/node_modules/@posthog/core/dist/utils/string-utils.mjs
+function safeJsonStringify(value) {
+  const ancestors = [];
+  return JSON.stringify(value, function(_key, replacementValue) {
+    if ("bigint" == typeof replacementValue) return replacementValue.toString();
+    if ("function" == typeof replacementValue || "symbol" == typeof replacementValue) return;
+    if (replacementValue instanceof Error) return {
+      name: replacementValue.name,
+      message: replacementValue.message,
+      stack: replacementValue.stack
+    };
+    if (replacementValue && "object" == typeof replacementValue) {
+      while (ancestors.length > 0 && ancestors[ancestors.length - 1] !== this) ancestors.pop();
+      if (ancestors.includes(replacementValue)) return "[Circular]";
+      ancestors.push(replacementValue);
+    }
+    return replacementValue;
+  }) ?? "null";
+}
+
+// ../../node_modules/.pnpm/@posthog+core@1.40.1/node_modules/@posthog/core/dist/utils/type-utils.mjs
+var nativeIsArray = Array.isArray;
+var ObjProto = Object.prototype;
+var type_utils_hasOwnProperty = ObjProto.hasOwnProperty;
+var type_utils_toString = ObjProto.toString;
+var isArray2 = nativeIsArray || function(obj) {
+  return "[object Array]" === type_utils_toString.call(obj);
+};
+var isObject4 = (x) => x === Object(x) && !isArray2(x);
+var isUndefined = (x) => void 0 === x;
+var isString = (x) => "[object String]" == type_utils_toString.call(x);
+var isEmptyString = (x) => isString(x) && 0 === x.trim().length;
+var isNumber = (x) => "[object Number]" == type_utils_toString.call(x) && x === x;
+var isPlainError = (x) => x instanceof Error;
+function isPrimitive(value) {
+  return null === value || "object" != typeof value;
+}
+function isBuiltin(candidate, className) {
+  return Object.prototype.toString.call(candidate) === `[object ${className}]`;
+}
+function isErrorEvent(event) {
+  return isBuiltin(event, "ErrorEvent");
+}
+function isEvent(candidate) {
+  return "undefined" != typeof Event && isInstanceOf(candidate, Event);
+}
+function isPlainObject6(candidate) {
+  return isBuiltin(candidate, "Object");
+}
+function isInstanceOf(candidate, base) {
+  try {
+    return candidate instanceof base;
+  } catch {
+    return false;
+  }
+}
+
+// ../../node_modules/.pnpm/@posthog+core@1.40.1/node_modules/@posthog/core/dist/utils/number-utils.mjs
+function clampToRange(value, min2, max2, logger3, fallbackValue) {
+  if (min2 > max2) {
+    logger3.warn("min cannot be greater than max.");
+    min2 = max2;
+  }
+  if (isNumber(value)) if (value > max2) {
+    logger3.warn(" cannot be  greater than max: " + max2 + ". Using max value instead.");
+    return max2;
+  } else {
+    if (!(value < min2)) return value;
+    logger3.warn(" cannot be less than min: " + min2 + ". Using min value instead.");
+    return min2;
+  }
+  logger3.warn(" must be a number. using max or fallback. max: " + max2 + ", fallback: " + fallbackValue);
+  return clampToRange(fallbackValue || max2, min2, max2, logger3);
+}
+
+// ../../node_modules/.pnpm/@posthog+core@1.40.1/node_modules/@posthog/core/dist/utils/bucketed-rate-limiter.mjs
+var ONE_DAY_IN_MS = 864e5;
+var BucketedRateLimiter = class {
+  constructor(options) {
+    this._buckets = {};
+    this._onBucketRateLimited = options._onBucketRateLimited;
+    this._bucketSize = clampToRange(options.bucketSize, 0, 100, options._logger);
+    this._refillRate = clampToRange(options.refillRate, 0, this._bucketSize, options._logger);
+    this._refillInterval = clampToRange(options.refillInterval, 0, ONE_DAY_IN_MS, options._logger);
+  }
+  _applyRefill(bucket, now2) {
+    const elapsedMs = now2 - bucket.lastAccess;
+    const refillIntervals = Math.floor(elapsedMs / this._refillInterval);
+    if (refillIntervals > 0) {
+      const tokensToAdd = refillIntervals * this._refillRate;
+      bucket.tokens = Math.min(bucket.tokens + tokensToAdd, this._bucketSize);
+      bucket.lastAccess = bucket.lastAccess + refillIntervals * this._refillInterval;
+    }
+  }
+  consumeRateLimit(key) {
+    const now2 = Date.now();
+    const keyStr = String(key);
+    let bucket = this._buckets[keyStr];
+    if (bucket) this._applyRefill(bucket, now2);
+    else {
+      bucket = {
+        tokens: this._bucketSize,
+        lastAccess: now2
+      };
+      this._buckets[keyStr] = bucket;
+    }
+    if (0 === bucket.tokens) return true;
+    bucket.tokens--;
+    if (0 === bucket.tokens) this._onBucketRateLimited?.(key);
+    return 0 === bucket.tokens;
+  }
+  stop() {
+    this._buckets = {};
+  }
+};
+
+// ../../node_modules/.pnpm/@posthog+core@1.40.1/node_modules/@posthog/core/dist/vendor/uuidv7.mjs
+var DIGITS = "0123456789abcdef";
+var UUID = class _UUID {
+  constructor(bytes) {
+    this.bytes = bytes;
+  }
+  static ofInner(bytes) {
+    if (16 === bytes.length) return new _UUID(bytes);
+    throw new TypeError("not 128-bit length");
+  }
+  static fromFieldsV7(unixTsMs, randA, randBHi, randBLo) {
+    if (!Number.isInteger(unixTsMs) || !Number.isInteger(randA) || !Number.isInteger(randBHi) || !Number.isInteger(randBLo) || unixTsMs < 0 || randA < 0 || randBHi < 0 || randBLo < 0 || unixTsMs > 281474976710655 || randA > 4095 || randBHi > 1073741823 || randBLo > 4294967295) throw new RangeError("invalid field value");
+    const bytes = new Uint8Array(16);
+    bytes[0] = unixTsMs / 2 ** 40;
+    bytes[1] = unixTsMs / 2 ** 32;
+    bytes[2] = unixTsMs / 2 ** 24;
+    bytes[3] = unixTsMs / 2 ** 16;
+    bytes[4] = unixTsMs / 256;
+    bytes[5] = unixTsMs;
+    bytes[6] = 112 | randA >>> 8;
+    bytes[7] = randA;
+    bytes[8] = 128 | randBHi >>> 24;
+    bytes[9] = randBHi >>> 16;
+    bytes[10] = randBHi >>> 8;
+    bytes[11] = randBHi;
+    bytes[12] = randBLo >>> 24;
+    bytes[13] = randBLo >>> 16;
+    bytes[14] = randBLo >>> 8;
+    bytes[15] = randBLo;
+    return new _UUID(bytes);
+  }
+  static parse(uuid9) {
+    let hex4;
+    switch (uuid9.length) {
+      case 32:
+        hex4 = /^[0-9a-f]{32}$/i.exec(uuid9)?.[0];
+        break;
+      case 36:
+        hex4 = /^([0-9a-f]{8})-([0-9a-f]{4})-([0-9a-f]{4})-([0-9a-f]{4})-([0-9a-f]{12})$/i.exec(uuid9)?.slice(1, 6).join("");
+        break;
+      case 38:
+        hex4 = /^\{([0-9a-f]{8})-([0-9a-f]{4})-([0-9a-f]{4})-([0-9a-f]{4})-([0-9a-f]{12})\}$/i.exec(uuid9)?.slice(1, 6).join("");
+        break;
+      case 45:
+        hex4 = /^urn:uuid:([0-9a-f]{8})-([0-9a-f]{4})-([0-9a-f]{4})-([0-9a-f]{4})-([0-9a-f]{12})$/i.exec(uuid9)?.slice(1, 6).join("");
+        break;
+      default:
+        break;
+    }
+    if (hex4) {
+      const inner = new Uint8Array(16);
+      for (let i = 0; i < 16; i += 4) {
+        const n = parseInt(hex4.substring(2 * i, 2 * i + 8), 16);
+        inner[i + 0] = n >>> 24;
+        inner[i + 1] = n >>> 16;
+        inner[i + 2] = n >>> 8;
+        inner[i + 3] = n;
+      }
+      return new _UUID(inner);
+    }
+    throw new SyntaxError("could not parse UUID string");
+  }
+  toString() {
+    let text2 = "";
+    for (let i = 0; i < this.bytes.length; i++) {
+      text2 += DIGITS.charAt(this.bytes[i] >>> 4);
+      text2 += DIGITS.charAt(15 & this.bytes[i]);
+      if (3 === i || 5 === i || 7 === i || 9 === i) text2 += "-";
+    }
+    return text2;
+  }
+  toHex() {
+    let text2 = "";
+    for (let i = 0; i < this.bytes.length; i++) {
+      text2 += DIGITS.charAt(this.bytes[i] >>> 4);
+      text2 += DIGITS.charAt(15 & this.bytes[i]);
+    }
+    return text2;
+  }
+  toJSON() {
+    return this.toString();
+  }
+  getVariant() {
+    const n = this.bytes[8] >>> 4;
+    if (n < 0) throw new Error("unreachable");
+    if (n <= 7) return this.bytes.every((e) => 0 === e) ? "NIL" : "VAR_0";
+    if (n <= 11) return "VAR_10";
+    if (n <= 13) return "VAR_110";
+    if (n <= 15) return this.bytes.every((e) => 255 === e) ? "MAX" : "VAR_RESERVED";
+    else throw new Error("unreachable");
+  }
+  getVersion() {
+    return "VAR_10" === this.getVariant() ? this.bytes[6] >>> 4 : void 0;
+  }
+  clone() {
+    return new _UUID(this.bytes.slice(0));
+  }
+  equals(other) {
+    return 0 === this.compareTo(other);
+  }
+  compareTo(other) {
+    for (let i = 0; i < 16; i++) {
+      const diff = this.bytes[i] - other.bytes[i];
+      if (0 !== diff) return Math.sign(diff);
+    }
+    return 0;
+  }
+};
+var V7Generator = class {
+  constructor(randomNumberGenerator) {
+    this.timestamp = 0;
+    this.counter = 0;
+    this.random = randomNumberGenerator ?? getDefaultRandom();
+  }
+  generate() {
+    return this.generateOrResetCore(Date.now(), 1e4);
+  }
+  generateOrAbort() {
+    return this.generateOrAbortCore(Date.now(), 1e4);
+  }
+  generateOrResetCore(unixTsMs, rollbackAllowance) {
+    let value = this.generateOrAbortCore(unixTsMs, rollbackAllowance);
+    if (void 0 === value) {
+      this.timestamp = 0;
+      value = this.generateOrAbortCore(unixTsMs, rollbackAllowance);
+    }
+    return value;
+  }
+  generateOrAbortCore(unixTsMs, rollbackAllowance) {
+    const MAX_COUNTER2 = 4398046511103;
+    if (!Number.isInteger(unixTsMs) || unixTsMs < 1 || unixTsMs > 281474976710655) throw new RangeError("`unixTsMs` must be a 48-bit positive integer");
+    if (rollbackAllowance < 0 || rollbackAllowance > 281474976710655) throw new RangeError("`rollbackAllowance` out of reasonable range");
+    if (unixTsMs > this.timestamp) {
+      this.timestamp = unixTsMs;
+      this.resetCounter();
+    } else {
+      if (!(unixTsMs + rollbackAllowance >= this.timestamp)) return;
+      this.counter++;
+      if (this.counter > MAX_COUNTER2) {
+        this.timestamp++;
+        this.resetCounter();
+      }
+    }
+    return UUID.fromFieldsV7(this.timestamp, Math.trunc(this.counter / 2 ** 30), this.counter & 2 ** 30 - 1, this.random.nextUint32());
+  }
+  resetCounter() {
+    this.counter = 1024 * this.random.nextUint32() + (1023 & this.random.nextUint32());
+  }
+  generateV4() {
+    const bytes = new Uint8Array(Uint32Array.of(this.random.nextUint32(), this.random.nextUint32(), this.random.nextUint32(), this.random.nextUint32()).buffer);
+    bytes[6] = 64 | bytes[6] >>> 4;
+    bytes[8] = 128 | bytes[8] >>> 2;
+    return UUID.ofInner(bytes);
+  }
+};
+var getDefaultRandom = () => ({
+  nextUint32: () => 65536 * Math.trunc(65536 * Math.random()) + Math.trunc(65536 * Math.random())
+});
+var defaultGenerator;
+var uuidv73 = () => uuidv7obj().toString();
+var uuidv7obj = () => (defaultGenerator || (defaultGenerator = new V7Generator())).generate();
+
+// ../../node_modules/.pnpm/@posthog+core@1.40.1/node_modules/@posthog/core/dist/utils/promise-queue.mjs
+var PromiseQueue = class {
+  add(promise3) {
+    const promiseUUID = uuidv73();
+    const id = ++this.nextId;
+    this.promiseByIds[promiseUUID] = {
+      id,
+      promise: promise3
+    };
+    promise3.catch(() => {
+    }).finally(() => {
+      delete this.promiseByIds[promiseUUID];
+    });
+    return promise3;
+  }
+  async join() {
+    let promises = Object.values(this.promiseByIds).map((item) => item.promise);
+    let length = promises.length;
+    while (length > 0) {
+      await Promise.all(promises);
+      promises = Object.values(this.promiseByIds).map((item) => item.promise);
+      length = promises.length;
+    }
+  }
+  getPromises(ignoredPromises = [], maxId = this.nextId) {
+    const ignoredPromiseSet = new Set(ignoredPromises);
+    return Object.values(this.promiseByIds).filter((item) => item.id <= maxId && !ignoredPromiseSet.has(item.promise)).map((item) => item.promise);
+  }
+  get maxId() {
+    return this.nextId;
+  }
+  get length() {
+    return Object.keys(this.promiseByIds).length;
+  }
+  constructor() {
+    this.promiseByIds = {};
+    this.nextId = 0;
+  }
+};
+
+// ../../node_modules/.pnpm/@posthog+core@1.40.1/node_modules/@posthog/core/dist/utils/logger.mjs
+function createConsole(consoleLike = console) {
+  const lockedMethods = {
+    log: consoleLike.log.bind(consoleLike),
+    warn: consoleLike.warn.bind(consoleLike),
+    error: consoleLike.error.bind(consoleLike),
+    debug: consoleLike.debug.bind(consoleLike)
+  };
+  return lockedMethods;
+}
+var _createLogger = (prefix, maybeCall, consoleLike) => {
+  function _log(level, ...args) {
+    maybeCall(() => {
+      const consoleMethod = consoleLike[level];
+      consoleMethod(prefix, ...args);
+    });
+  }
+  const logger3 = {
+    debug: (...args) => {
+      _log("debug", ...args);
+    },
+    info: (...args) => {
+      _log("log", ...args);
+    },
+    warn: (...args) => {
+      _log("warn", ...args);
+    },
+    error: (...args) => {
+      _log("error", ...args);
+    },
+    critical: (...args) => {
+      consoleLike["error"](prefix, ...args);
+    },
+    createLogger: (additionalPrefix) => _createLogger(`${prefix} ${additionalPrefix}`, maybeCall, consoleLike)
+  };
+  return logger3;
+};
+var passThrough = (fn) => fn();
+function createLogger2(prefix, maybeCall = passThrough) {
+  return _createLogger(prefix, maybeCall, createConsole());
+}
+
+// ../../node_modules/.pnpm/@posthog+core@1.40.1/node_modules/@posthog/core/dist/utils/user-agent-utils.mjs
+var MOBILE = "Mobile";
+var IOS = "iOS";
+var ANDROID = "Android";
+var TABLET = "Tablet";
+var ANDROID_TABLET = ANDROID + " " + TABLET;
+var APPLE = "Apple";
+var APPLE_WATCH = APPLE + " Watch";
+var SAFARI = "Safari";
+var BLACKBERRY = "BlackBerry";
+var SAMSUNG = "Samsung";
+var SAMSUNG_BROWSER = SAMSUNG + "Browser";
+var SAMSUNG_INTERNET = SAMSUNG + " Internet";
+var CHROME = "Chrome";
+var CHROME_OS = CHROME + " OS";
+var CHROME_IOS = CHROME + " " + IOS;
+var INTERNET_EXPLORER = "Internet Explorer";
+var INTERNET_EXPLORER_MOBILE = INTERNET_EXPLORER + " " + MOBILE;
+var OPERA = "Opera";
+var OPERA_MINI = OPERA + " Mini";
+var EDGE = "Edge";
+var MICROSOFT_EDGE = "Microsoft " + EDGE;
+var FIREFOX = "Firefox";
+var FIREFOX_IOS = FIREFOX + " " + IOS;
+var NINTENDO = "Nintendo";
+var PLAYSTATION = "PlayStation";
+var XBOX = "Xbox";
+var ANDROID_MOBILE = ANDROID + " " + MOBILE;
+var MOBILE_SAFARI = MOBILE + " " + SAFARI;
+var WINDOWS = "Windows";
+var WINDOWS_PHONE = WINDOWS + " Phone";
+var GENERIC = "Generic";
+var GENERIC_MOBILE = GENERIC + " " + MOBILE.toLowerCase();
+var GENERIC_TABLET = GENERIC + " " + TABLET.toLowerCase();
+var KONQUEROR = "Konqueror";
+var OCULUS_BROWSER = "Oculus Browser";
+var VIVALDI = "Vivaldi";
+var YANDEX = "Yandex";
+var WHALE = "Whale";
+var DUCKDUCKGO = "DuckDuckGo";
+var PALE_MOON = "Pale Moon";
+var WATERFOX = "Waterfox";
+var BRAVE = "Brave";
+var GOOGLE_SEARCH_APP = "Google Search App";
+var BROWSER_VERSION_REGEX_SUFFIX = "(\\d+(\\.\\d+)?)";
+var DEFAULT_BROWSER_VERSION_REGEX = new RegExp("Version/" + BROWSER_VERSION_REGEX_SUFFIX);
+var XBOX_REGEX = new RegExp(XBOX, "i");
+var PLAYSTATION_REGEX = new RegExp(PLAYSTATION + " \\w+", "i");
+var NINTENDO_REGEX = new RegExp(NINTENDO + " \\w+", "i");
+var BLACKBERRY_REGEX = new RegExp(BLACKBERRY + "|PlayBook|BB10", "i");
+var windowsVersionMap = {
+  "NT3.51": "NT 3.11",
+  "NT4.0": "NT 4.0",
+  "5.0": "2000",
+  "5.1": "XP",
+  "5.2": "XP",
+  "6.0": "Vista",
+  "6.1": "7",
+  "6.2": "8",
+  "6.3": "8.1",
+  "6.4": "10",
+  "10.0": "10"
+};
+var versionRegexes = {
+  [INTERNET_EXPLORER_MOBILE]: [
+    new RegExp("rv:" + BROWSER_VERSION_REGEX_SUFFIX)
+  ],
+  [MICROSOFT_EDGE]: [
+    new RegExp(EDGE + "?\\/" + BROWSER_VERSION_REGEX_SUFFIX)
+  ],
+  [CHROME]: [
+    new RegExp("(" + CHROME + "|CrMo)\\/" + BROWSER_VERSION_REGEX_SUFFIX)
+  ],
+  [CHROME_IOS]: [
+    new RegExp("CriOS\\/" + BROWSER_VERSION_REGEX_SUFFIX)
+  ],
+  "UC Browser": [
+    new RegExp("(UCBrowser|UCWEB)\\/" + BROWSER_VERSION_REGEX_SUFFIX)
+  ],
+  [SAFARI]: [
+    DEFAULT_BROWSER_VERSION_REGEX
+  ],
+  [MOBILE_SAFARI]: [
+    DEFAULT_BROWSER_VERSION_REGEX
+  ],
+  [OPERA]: [
+    new RegExp("(" + OPERA + "|OPR)\\/" + BROWSER_VERSION_REGEX_SUFFIX)
+  ],
+  [FIREFOX]: [
+    new RegExp(FIREFOX + "\\/" + BROWSER_VERSION_REGEX_SUFFIX)
+  ],
+  [FIREFOX_IOS]: [
+    new RegExp("FxiOS\\/" + BROWSER_VERSION_REGEX_SUFFIX)
+  ],
+  [KONQUEROR]: [
+    new RegExp("Konqueror[:/]?" + BROWSER_VERSION_REGEX_SUFFIX, "i")
+  ],
+  [BLACKBERRY]: [
+    new RegExp(BLACKBERRY + " " + BROWSER_VERSION_REGEX_SUFFIX),
+    DEFAULT_BROWSER_VERSION_REGEX
+  ],
+  [ANDROID_MOBILE]: [
+    new RegExp("android\\s" + BROWSER_VERSION_REGEX_SUFFIX, "i")
+  ],
+  [SAMSUNG_INTERNET]: [
+    new RegExp(SAMSUNG_BROWSER + "\\/" + BROWSER_VERSION_REGEX_SUFFIX)
+  ],
+  [OCULUS_BROWSER]: [
+    new RegExp("OculusBrowser\\/" + BROWSER_VERSION_REGEX_SUFFIX)
+  ],
+  [VIVALDI]: [
+    new RegExp(VIVALDI + "\\/" + BROWSER_VERSION_REGEX_SUFFIX)
+  ],
+  [YANDEX]: [
+    new RegExp("YaBrowser\\/" + BROWSER_VERSION_REGEX_SUFFIX)
+  ],
+  [WHALE]: [
+    new RegExp(WHALE + "\\/" + BROWSER_VERSION_REGEX_SUFFIX)
+  ],
+  [BRAVE]: [
+    new RegExp(BRAVE + "\\/" + BROWSER_VERSION_REGEX_SUFFIX)
+  ],
+  [DUCKDUCKGO]: [
+    new RegExp("(DuckDuckGo|Ddg)\\/" + BROWSER_VERSION_REGEX_SUFFIX)
+  ],
+  [PALE_MOON]: [
+    new RegExp("PaleMoon\\/" + BROWSER_VERSION_REGEX_SUFFIX)
+  ],
+  [WATERFOX]: [
+    new RegExp(WATERFOX + "\\/" + BROWSER_VERSION_REGEX_SUFFIX)
+  ],
+  [GOOGLE_SEARCH_APP]: [
+    new RegExp("GSA\\/" + BROWSER_VERSION_REGEX_SUFFIX)
+  ],
+  [INTERNET_EXPLORER]: [
+    new RegExp("(rv:|MSIE )" + BROWSER_VERSION_REGEX_SUFFIX)
+  ],
+  Mozilla: [
+    new RegExp("rv:" + BROWSER_VERSION_REGEX_SUFFIX)
+  ]
+};
+var osMatchers = [
+  [
+    new RegExp(XBOX + "; " + XBOX + " (.*?)[);]", "i"),
+    (match) => [
+      XBOX,
+      match && match[1] || ""
+    ]
+  ],
+  [
+    new RegExp(NINTENDO, "i"),
+    [
+      NINTENDO,
+      ""
+    ]
+  ],
+  [
+    new RegExp(PLAYSTATION, "i"),
+    [
+      PLAYSTATION,
+      ""
+    ]
+  ],
+  [
+    BLACKBERRY_REGEX,
+    [
+      BLACKBERRY,
+      ""
+    ]
+  ],
+  [
+    new RegExp(WINDOWS, "i"),
+    (_, user_agent) => {
+      if (/Phone/.test(user_agent) || /WPDesktop/.test(user_agent)) return [
+        WINDOWS_PHONE,
+        ""
+      ];
+      if (new RegExp(MOBILE).test(user_agent) && !/IEMobile\b/.test(user_agent)) return [
+        WINDOWS + " " + MOBILE,
+        ""
+      ];
+      const match = /Windows NT ([0-9.]+)/i.exec(user_agent);
+      if (match && match[1]) {
+        const version10 = match[1];
+        let osVersion = windowsVersionMap[version10] || "";
+        if (/arm/i.test(user_agent)) osVersion = "RT";
+        return [
+          WINDOWS,
+          osVersion
+        ];
+      }
+      return [
+        WINDOWS,
+        ""
+      ];
+    }
+  ],
+  [
+    /((iPhone|iPad|iPod).*?OS (\d+)_(\d+)_?(\d+)?|iPhone)/,
+    (match) => {
+      if (match && match[3]) {
+        const versionParts = [
+          match[3],
+          match[4],
+          match[5] || "0"
+        ];
+        return [
+          IOS,
+          versionParts.join(".")
+        ];
+      }
+      return [
+        IOS,
+        ""
+      ];
+    }
+  ],
+  [
+    /(watch.*\/(\d+\.\d+\.\d+)|watch os,(\d+\.\d+),)/i,
+    (match) => {
+      let version10 = "";
+      if (match && match.length >= 3) version10 = isUndefined(match[2]) ? match[3] : match[2];
+      return [
+        "watchOS",
+        version10
+      ];
+    }
+  ],
+  [
+    new RegExp("(" + ANDROID + " (\\d+)\\.(\\d+)\\.?(\\d+)?|" + ANDROID + ")", "i"),
+    (match) => {
+      if (match && match[2]) {
+        const versionParts = [
+          match[2],
+          match[3],
+          match[4] || "0"
+        ];
+        return [
+          ANDROID,
+          versionParts.join(".")
+        ];
+      }
+      return [
+        ANDROID,
+        ""
+      ];
+    }
+  ],
+  [
+    /Mac OS X (\d+)[_.](\d+)[_.]?(\d+)?/i,
+    (match) => {
+      const result = [
+        "Mac OS X",
+        ""
+      ];
+      if (match && match[1]) {
+        const versionParts = [
+          match[1],
+          match[2],
+          match[3] || "0"
+        ];
+        result[1] = versionParts.join(".");
+      }
+      return result;
+    }
+  ],
+  [
+    /Mac/i,
+    [
+      "Mac OS X",
+      ""
+    ]
+  ],
+  [
+    /CrOS/,
+    [
+      CHROME_OS,
+      ""
+    ]
+  ],
+  [
+    /Linux|debian/i,
+    [
+      "Linux",
+      ""
+    ]
+  ]
+];
+
+// ../../node_modules/.pnpm/@posthog+core@1.40.1/node_modules/@posthog/core/dist/utils/index.mjs
+var STRING_FORMAT = "utf8";
+var UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+function isValidUUID(value) {
+  return "string" == typeof value && UUID_REGEX.test(value);
+}
+function getEventUuid(uuid9, generateUuid) {
+  return isValidUUID(uuid9) ? uuid9 : generateUuid();
+}
+function removeTrailingSlash(url3) {
+  return url3?.replace(/\/+$/, "");
+}
+async function retriable(fn, props) {
+  let lastError = null;
+  for (let i = 0; i < props.retryCount + 1; i++) {
+    if (i > 0) await new Promise((r) => setTimeout(r, props.retryDelay));
+    try {
+      const res = await fn();
+      return res;
+    } catch (e) {
+      lastError = e;
+      if (!props.retryCheck(e)) throw e;
+    }
+  }
+  throw lastError;
+}
+function currentISOTime() {
+  return (/* @__PURE__ */ new Date()).toISOString();
+}
+function safeSetTimeout(fn, timeout) {
+  const t = setTimeout(fn, timeout);
+  t?.unref && t?.unref();
+  return t;
+}
+var isError2 = (x) => x instanceof Error;
+function allSettled(promises) {
+  return Promise.all(promises.map((p) => (p ?? Promise.resolve()).then((value) => ({
+    status: "fulfilled",
+    value
+  }), (reason) => ({
+    status: "rejected",
+    reason
+  }))));
+}
+
+// ../../node_modules/.pnpm/@posthog+core@1.40.1/node_modules/@posthog/core/dist/logs/logs-utils.mjs
+var OTLP_SEVERITY_MAP = {
+  trace: {
+    text: "TRACE",
+    number: 1
+  },
+  debug: {
+    text: "DEBUG",
+    number: 5
+  },
+  info: {
+    text: "INFO",
+    number: 9
+  },
+  warn: {
+    text: "WARN",
+    number: 13
+  },
+  error: {
+    text: "ERROR",
+    number: 17
+  },
+  fatal: {
+    text: "FATAL",
+    number: 21
+  }
+};
+var DEFAULT_OTLP_SEVERITY = OTLP_SEVERITY_MAP.info;
+
+// ../../node_modules/.pnpm/@posthog+core@1.40.1/node_modules/@posthog/core/dist/eventemitter.mjs
+var SimpleEventEmitter = class {
+  constructor() {
+    this.events = {};
+    this.events = {};
+  }
+  on(event, listener) {
+    if (!this.events[event]) this.events[event] = [];
+    this.events[event].push(listener);
+    return () => {
+      this.events[event] = this.events[event].filter((x) => x !== listener);
+    };
+  }
+  emit(event, payload) {
+    for (const listener of this.events[event] || []) listener(payload);
+    for (const listener of this.events["*"] || []) listener(event, payload);
+  }
+};
+
+// ../../node_modules/.pnpm/@posthog+core@1.40.1/node_modules/@posthog/core/dist/error-tracking/index.mjs
+var error_tracking_exports = {};
+__export(error_tracking_exports, {
+  DEFAULT_EXCEPTION_STEPS_CONFIG: () => DEFAULT_EXCEPTION_STEPS_CONFIG,
+  DOMExceptionCoercer: () => DOMExceptionCoercer,
+  EXCEPTION_STEP_INTERNAL_FIELDS: () => EXCEPTION_STEP_INTERNAL_FIELDS,
+  ErrorCoercer: () => ErrorCoercer,
+  ErrorEventCoercer: () => ErrorEventCoercer,
+  ErrorPropertiesBuilder: () => ErrorPropertiesBuilder,
+  EventCoercer: () => EventCoercer,
+  ExceptionStepsBuffer: () => ExceptionStepsBuffer,
+  ObjectCoercer: () => ObjectCoercer,
+  PrimitiveCoercer: () => PrimitiveCoercer,
+  PromiseRejectionEventCoercer: () => PromiseRejectionEventCoercer,
+  ReduceableCache: () => ReduceableCache,
+  StringCoercer: () => StringCoercer,
+  chromeStackLineParser: () => chromeStackLineParser,
+  createDefaultStackParser: () => createDefaultStackParser,
+  createStackParser: () => createStackParser,
+  geckoStackLineParser: () => geckoStackLineParser,
+  getUtf8ByteLength: () => getUtf8ByteLength,
+  nodeStackLineParser: () => nodeStackLineParser,
+  opera10StackLineParser: () => opera10StackLineParser,
+  opera11StackLineParser: () => opera11StackLineParser,
+  resolveExceptionStepsConfig: () => resolveExceptionStepsConfig,
+  reverseAndStripFrames: () => reverseAndStripFrames,
+  stripReservedExceptionStepFields: () => stripReservedExceptionStepFields,
+  winjsStackLineParser: () => winjsStackLineParser
+});
+
+// ../../node_modules/.pnpm/@posthog+core@1.40.1/node_modules/@posthog/core/dist/error-tracking/chunk-ids.mjs
+var parsedStackResults;
+var lastKeysCount;
+var cachedFilenameChunkIds;
+function getFilenameToChunkIdMap(stackParser) {
+  const chunkIdMap = globalThis._posthogChunkIds;
+  if (!chunkIdMap) return;
+  const chunkIdKeys = Object.keys(chunkIdMap);
+  if (cachedFilenameChunkIds && chunkIdKeys.length === lastKeysCount) return cachedFilenameChunkIds;
+  lastKeysCount = chunkIdKeys.length;
+  cachedFilenameChunkIds = chunkIdKeys.reduce((acc, stackKey) => {
+    if (!parsedStackResults) parsedStackResults = {};
+    const result = parsedStackResults[stackKey];
+    if (result) acc[result[0]] = result[1];
+    else {
+      const parsedStack = stackParser(stackKey);
+      for (let i = parsedStack.length - 1; i >= 0; i--) {
+        const stackFrame = parsedStack[i];
+        const filename = stackFrame?.filename;
+        const chunkId = chunkIdMap[stackKey];
+        if (filename && chunkId) {
+          acc[filename] = chunkId;
+          parsedStackResults[stackKey] = [
+            filename,
+            chunkId
+          ];
+          break;
+        }
+      }
+    }
+    return acc;
+  }, {});
+  return cachedFilenameChunkIds;
+}
+
+// ../../node_modules/.pnpm/@posthog+core@1.40.1/node_modules/@posthog/core/dist/error-tracking/error-properties-builder.mjs
+var MAX_CAUSE_RECURSION = 4;
+var ErrorPropertiesBuilder = class {
+  constructor(coercers, stackParser, modifiers = []) {
+    this.coercers = coercers;
+    this.stackParser = stackParser;
+    this.modifiers = modifiers;
+  }
+  buildFromUnknown(input, hint = {}) {
+    const providedMechanism = hint && hint.mechanism;
+    const mechanism = providedMechanism || {
+      handled: true,
+      type: "generic"
+    };
+    const coercingContext = this.buildCoercingContext(mechanism, hint, 0);
+    const exceptionWithCause = coercingContext.apply(input);
+    const parsingContext = this.buildParsingContext(hint);
+    const exceptionWithStack = this.parseStacktrace(exceptionWithCause, parsingContext);
+    const exceptionList = this.convertToExceptionList(exceptionWithStack, mechanism);
+    return {
+      $exception_list: exceptionList,
+      $exception_level: "error"
+    };
+  }
+  async modifyFrames(exceptionList) {
+    for (const exc of exceptionList) if (exc.stacktrace && exc.stacktrace.frames && isArray2(exc.stacktrace.frames)) exc.stacktrace.frames = await this.applyModifiers(exc.stacktrace.frames);
+    return exceptionList;
+  }
+  coerceFallback(ctx) {
+    return {
+      type: "Error",
+      value: "Unknown error",
+      stack: ctx.syntheticException?.stack,
+      synthetic: true
+    };
+  }
+  parseStacktrace(err, ctx) {
+    let cause;
+    if (null != err.cause) cause = this.parseStacktrace(err.cause, ctx);
+    let stack;
+    if ("" != err.stack && null != err.stack) stack = this.applyChunkIds(this.stackParser(err.stack, err.synthetic ? ctx.skipFirstLines : 0), ctx.chunkIdMap);
+    return {
+      ...err,
+      cause,
+      stack
+    };
+  }
+  applyChunkIds(frames, chunkIdMap) {
+    return frames.map((frame) => {
+      if (frame.filename && chunkIdMap) frame.chunk_id = chunkIdMap[frame.filename];
+      return frame;
+    });
+  }
+  applyCoercers(input, ctx) {
+    for (const adapter of this.coercers) if (adapter.match(input)) return adapter.coerce(input, ctx);
+    return this.coerceFallback(ctx);
+  }
+  async applyModifiers(frames) {
+    let newFrames = frames;
+    for (const modifier of this.modifiers) newFrames = await modifier(newFrames);
+    return newFrames;
+  }
+  convertToExceptionList(exceptionWithStack, mechanism) {
+    const currentException = {
+      type: exceptionWithStack.type,
+      value: exceptionWithStack.value,
+      mechanism: {
+        type: mechanism.type ?? "generic",
+        handled: mechanism.handled ?? true,
+        synthetic: exceptionWithStack.synthetic ?? false
+      }
+    };
+    if (exceptionWithStack.stack) currentException.stacktrace = {
+      type: "raw",
+      frames: exceptionWithStack.stack
+    };
+    const exceptionList = [
+      currentException
+    ];
+    if (null != exceptionWithStack.cause) exceptionList.push(...this.convertToExceptionList(exceptionWithStack.cause, {
+      ...mechanism,
+      handled: true
+    }));
+    return exceptionList;
+  }
+  buildParsingContext(hint) {
+    const context = {
+      chunkIdMap: getFilenameToChunkIdMap(this.stackParser),
+      skipFirstLines: hint.skipFirstLines ?? 1
+    };
+    return context;
+  }
+  buildCoercingContext(mechanism, hint, depth = 0) {
+    const coerce2 = (input, depth2) => {
+      if (!(depth2 <= MAX_CAUSE_RECURSION)) return;
+      {
+        const ctx = this.buildCoercingContext(mechanism, hint, depth2);
+        return this.applyCoercers(input, ctx);
+      }
+    };
+    const context = {
+      ...hint,
+      syntheticException: 0 == depth ? hint.syntheticException : void 0,
+      mechanism,
+      apply: (input) => coerce2(input, depth),
+      next: (input) => coerce2(input, depth + 1)
+    };
+    return context;
+  }
+};
+
+// ../../node_modules/.pnpm/@posthog+core@1.40.1/node_modules/@posthog/core/dist/error-tracking/parsers/base.mjs
+var UNKNOWN_FUNCTION = "?";
+function createFrame(platform, filename, func, lineno, colno) {
+  const frame = {
+    platform,
+    filename,
+    function: "<anonymous>" === func ? UNKNOWN_FUNCTION : func,
+    in_app: true
+  };
+  if (!isUndefined(lineno)) frame.lineno = lineno;
+  if (!isUndefined(colno)) frame.colno = colno;
+  return frame;
+}
+
+// ../../node_modules/.pnpm/@posthog+core@1.40.1/node_modules/@posthog/core/dist/error-tracking/parsers/safari.mjs
+var extractSafariExtensionDetails = (func, filename) => {
+  const isSafariExtension = -1 !== func.indexOf("safari-extension");
+  const isSafariWebExtension = -1 !== func.indexOf("safari-web-extension");
+  return isSafariExtension || isSafariWebExtension ? [
+    -1 !== func.indexOf("@") ? func.split("@")[0] : UNKNOWN_FUNCTION,
+    isSafariExtension ? `safari-extension:${filename}` : `safari-web-extension:${filename}`
+  ] : [
+    func,
+    filename
+  ];
+};
+
+// ../../node_modules/.pnpm/@posthog+core@1.40.1/node_modules/@posthog/core/dist/error-tracking/parsers/chrome.mjs
+var chromeRegexNoFnName = /^\s*at (\S+?)(?::(\d+))(?::(\d+))\s*$/i;
+var chromeRegex = /^\s*at (?:(.+?\)(?: \[.+\])?|.*?) ?\((?:address at )?)?(?:async )?((?:<anonymous>|[-a-z]+:|.*bundle|\/)?.*?)(?::(\d+))?(?::(\d+))?\)?\s*$/i;
+var chromeEvalRegex = /\((\S*)(?::(\d+))(?::(\d+))\)/;
+var chromeStackLineParser = (line3, platform) => {
+  const noFnParts = chromeRegexNoFnName.exec(line3);
+  if (noFnParts) {
+    const [, filename, line4, col] = noFnParts;
+    return createFrame(platform, filename, UNKNOWN_FUNCTION, +line4, +col);
+  }
+  const parts = chromeRegex.exec(line3);
+  if (parts) {
+    const isEval = parts[2] && 0 === parts[2].indexOf("eval");
+    if (isEval) {
+      const subMatch = chromeEvalRegex.exec(parts[2]);
+      if (subMatch) {
+        parts[2] = subMatch[1];
+        parts[3] = subMatch[2];
+        parts[4] = subMatch[3];
+      }
+    }
+    const [func, filename] = extractSafariExtensionDetails(parts[1] || UNKNOWN_FUNCTION, parts[2]);
+    return createFrame(platform, filename, func, parts[3] ? +parts[3] : void 0, parts[4] ? +parts[4] : void 0);
+  }
+};
+
+// ../../node_modules/.pnpm/@posthog+core@1.40.1/node_modules/@posthog/core/dist/error-tracking/parsers/gecko.mjs
+var geckoREgex = /^\s*(.*?)(?:\((.*?)\))?(?:^|@)?((?:[-a-z]+)?:\/.*?|\[native code\]|[^@]*(?:bundle|\d+\.js)|\/[\w\-. /=]+)(?::(\d+))?(?::(\d+))?\s*$/i;
+var geckoEvalRegex = /(\S+) line (\d+)(?: > eval line \d+)* > eval/i;
+var geckoStackLineParser = (line3, platform) => {
+  const parts = geckoREgex.exec(line3);
+  if (parts) {
+    const isEval = parts[3] && parts[3].indexOf(" > eval") > -1;
+    if (isEval) {
+      const subMatch = geckoEvalRegex.exec(parts[3]);
+      if (subMatch) {
+        parts[1] = parts[1] || "eval";
+        parts[3] = subMatch[1];
+        parts[4] = subMatch[2];
+        parts[5] = "";
+      }
+    }
+    let filename = parts[3];
+    let func = parts[1] || UNKNOWN_FUNCTION;
+    [func, filename] = extractSafariExtensionDetails(func, filename);
+    return createFrame(platform, filename, func, parts[4] ? +parts[4] : void 0, parts[5] ? +parts[5] : void 0);
+  }
+};
+
+// ../../node_modules/.pnpm/@posthog+core@1.40.1/node_modules/@posthog/core/dist/error-tracking/parsers/winjs.mjs
+var winjsRegex = /^\s*at (?:((?:\[object object\])?.+) )?\(?((?:[-a-z]+):.*?):(\d+)(?::(\d+))?\)?\s*$/i;
+var winjsStackLineParser = (line3, platform) => {
+  const parts = winjsRegex.exec(line3);
+  return parts ? createFrame(platform, parts[2], parts[1] || UNKNOWN_FUNCTION, +parts[3], parts[4] ? +parts[4] : void 0) : void 0;
+};
+
+// ../../node_modules/.pnpm/@posthog+core@1.40.1/node_modules/@posthog/core/dist/error-tracking/parsers/opera.mjs
+var opera10Regex = / line (\d+).*script (?:in )?(\S+)(?:: in function (\S+))?$/i;
+var opera10StackLineParser = (line3, platform) => {
+  const parts = opera10Regex.exec(line3);
+  return parts ? createFrame(platform, parts[2], parts[3] || UNKNOWN_FUNCTION, +parts[1]) : void 0;
+};
+var opera11Regex = / line (\d+), column (\d+)\s*(?:in (?:<anonymous function: ([^>]+)>|([^)]+))\(.*\))? in (.*):\s*$/i;
+var opera11StackLineParser = (line3, platform) => {
+  const parts = opera11Regex.exec(line3);
+  return parts ? createFrame(platform, parts[5], parts[3] || parts[4] || UNKNOWN_FUNCTION, +parts[1], +parts[2]) : void 0;
+};
+
+// ../../node_modules/.pnpm/@posthog+core@1.40.1/node_modules/@posthog/core/dist/error-tracking/parsers/node.mjs
+var FILENAME_MATCH = /^\s*[-]{4,}$/;
+var FULL_MATCH = /at (?:async )?(?:(.+?)\s+\()?(?:(.+):(\d+):(\d+)?|([^)]+))\)?/;
+var nodeStackLineParser = (line3, platform) => {
+  const lineMatch = line3.match(FULL_MATCH);
+  if (lineMatch) {
+    let object3;
+    let method;
+    let functionName;
+    let typeName;
+    let methodName;
+    if (lineMatch[1]) {
+      functionName = lineMatch[1];
+      let methodStart = functionName.lastIndexOf(".");
+      if ("." === functionName[methodStart - 1]) methodStart--;
+      if (methodStart > 0) {
+        object3 = functionName.slice(0, methodStart);
+        method = functionName.slice(methodStart + 1);
+        const objectEnd = object3.indexOf(".Module");
+        if (objectEnd > 0) {
+          functionName = functionName.slice(objectEnd + 1);
+          object3 = object3.slice(0, objectEnd);
+        }
+      }
+      typeName = void 0;
+    }
+    if (method) {
+      typeName = object3;
+      methodName = method;
+    }
+    if ("<anonymous>" === method) {
+      methodName = void 0;
+      functionName = void 0;
+    }
+    if (void 0 === functionName) {
+      methodName = methodName || UNKNOWN_FUNCTION;
+      functionName = typeName ? `${typeName}.${methodName}` : methodName;
+    }
+    let filename = lineMatch[2]?.startsWith("file://") ? lineMatch[2].slice(7) : lineMatch[2];
+    const isNative = "native" === lineMatch[5];
+    if (filename?.match(/\/[A-Z]:/)) filename = filename.slice(1);
+    if (!filename && lineMatch[5] && !isNative) filename = lineMatch[5];
+    return {
+      filename: filename ? decodeURI(filename) : void 0,
+      module: void 0,
+      function: functionName,
+      lineno: _parseIntOrUndefined(lineMatch[3]),
+      colno: _parseIntOrUndefined(lineMatch[4]),
+      in_app: filenameIsInApp(filename || "", isNative),
+      platform
+    };
+  }
+  if (line3.match(FILENAME_MATCH)) return {
+    filename: line3,
+    platform
+  };
+};
+function filenameIsInApp(filename, isNative = false) {
+  const isInternal = isNative || filename && !filename.startsWith("/") && !filename.match(/^[A-Z]:/) && !filename.startsWith(".") && !filename.match(/^[a-zA-Z]([a-zA-Z0-9.\-+])*:\/\//);
+  return !isInternal && void 0 !== filename && !filename.includes("node_modules/");
+}
+function _parseIntOrUndefined(input) {
+  return parseInt(input || "", 10) || void 0;
+}
+
+// ../../node_modules/.pnpm/@posthog+core@1.40.1/node_modules/@posthog/core/dist/error-tracking/parsers/index.mjs
+var WEBPACK_ERROR_REGEXP = /\(error: (.*)\)/;
+var STACKTRACE_FRAME_LIMIT = 50;
+function reverseAndStripFrames(stack) {
+  if (!stack.length) return [];
+  const localStack = Array.from(stack);
+  localStack.reverse();
+  return localStack.slice(0, STACKTRACE_FRAME_LIMIT).map((frame) => ({
+    ...frame,
+    filename: frame.filename || getLastStackFrame(localStack).filename,
+    function: frame.function || UNKNOWN_FUNCTION
+  }));
+}
+function getLastStackFrame(arr) {
+  return arr[arr.length - 1] || {};
+}
+function createDefaultStackParser() {
+  return createStackParser("web:javascript", chromeStackLineParser, geckoStackLineParser);
+}
+function createStackParser(platform, ...parsers) {
+  return (stack, skipFirstLines = 0) => {
+    const frames = [];
+    const lines = stack.split("\n");
+    for (let i = skipFirstLines; i < lines.length; i++) {
+      const line3 = lines[i];
+      if (line3.length > 1024) continue;
+      const cleanedLine = WEBPACK_ERROR_REGEXP.test(line3) ? line3.replace(WEBPACK_ERROR_REGEXP, "$1") : line3;
+      if (!cleanedLine.match(/\S*Error: /)) {
+        for (const parser of parsers) {
+          const frame = parser(cleanedLine, platform);
+          if (frame) {
+            frames.push(frame);
+            break;
+          }
+        }
+        if (frames.length >= STACKTRACE_FRAME_LIMIT) break;
+      }
+    }
+    return reverseAndStripFrames(frames);
+  };
+}
+
+// ../../node_modules/.pnpm/@posthog+core@1.40.1/node_modules/@posthog/core/dist/error-tracking/coercers/dom-exception-coercer.mjs
+var DOMExceptionCoercer = class {
+  match(err) {
+    return this.isDOMException(err) || this.isDOMError(err);
+  }
+  coerce(err, ctx) {
+    const hasStack = isString(err.stack);
+    return {
+      type: this.getType(err),
+      value: this.getValue(err),
+      stack: hasStack ? err.stack : void 0,
+      cause: err.cause ? ctx.next(err.cause) : void 0,
+      synthetic: false
+    };
+  }
+  getType(candidate) {
+    return this.isDOMError(candidate) ? "DOMError" : "DOMException";
+  }
+  getValue(err) {
+    const name = err.name || (this.isDOMError(err) ? "DOMError" : "DOMException");
+    const message2 = err.message ? `${name}: ${err.message}` : name;
+    return message2;
+  }
+  isDOMException(err) {
+    return isBuiltin(err, "DOMException");
+  }
+  isDOMError(err) {
+    return isBuiltin(err, "DOMError");
+  }
+};
+
+// ../../node_modules/.pnpm/@posthog+core@1.40.1/node_modules/@posthog/core/dist/error-tracking/coercers/error-coercer.mjs
+var ErrorCoercer = class {
+  match(err) {
+    return isPlainError(err);
+  }
+  coerce(err, ctx) {
+    return {
+      type: this.getType(err),
+      value: this.getMessage(err, ctx),
+      stack: this.getStack(err),
+      cause: err.cause ? ctx.next(err.cause) : void 0,
+      synthetic: false
+    };
+  }
+  getType(err) {
+    return err.name || err.constructor.name;
+  }
+  getMessage(err, _ctx) {
+    const message2 = err.message;
+    if (message2.error && "string" == typeof message2.error.message) return String(message2.error.message);
+    return String(message2);
+  }
+  getStack(err) {
+    return err.stacktrace || err.stack || void 0;
+  }
+};
+
+// ../../node_modules/.pnpm/@posthog+core@1.40.1/node_modules/@posthog/core/dist/error-tracking/coercers/error-event-coercer.mjs
+var ErrorEventCoercer = class {
+  constructor() {
+  }
+  match(err) {
+    return isErrorEvent(err) && void 0 != err.error;
+  }
+  coerce(err, ctx) {
+    const exceptionLike = ctx.apply(err.error);
+    if (!exceptionLike) return {
+      type: "ErrorEvent",
+      value: err.message,
+      stack: ctx.syntheticException?.stack,
+      synthetic: true
+    };
+    return exceptionLike;
+  }
+};
+
+// ../../node_modules/.pnpm/@posthog+core@1.40.1/node_modules/@posthog/core/dist/error-tracking/coercers/string-coercer.mjs
+var ERROR_TYPES_PATTERN = /^(?:[Uu]ncaught (?:exception: )?)?(?:((?:Eval|Internal|Range|Reference|Syntax|Type|URI|)Error): )?(.*)$/i;
+var StringCoercer = class {
+  match(input) {
+    return "string" == typeof input;
+  }
+  coerce(input, ctx) {
+    const [type, value] = this.getInfos(input);
+    return {
+      type: type ?? "Error",
+      value: value ?? input,
+      stack: ctx.syntheticException?.stack,
+      synthetic: true
+    };
+  }
+  getInfos(candidate) {
+    let type = "Error";
+    let value = candidate;
+    const groups = candidate.match(ERROR_TYPES_PATTERN);
+    if (groups) {
+      type = groups[1];
+      value = groups[2];
+    }
+    return [
+      type,
+      value
+    ];
+  }
+};
+
+// ../../node_modules/.pnpm/@posthog+core@1.40.1/node_modules/@posthog/core/dist/error-tracking/types.mjs
+var severityLevels = [
+  "fatal",
+  "error",
+  "warning",
+  "log",
+  "info",
+  "debug"
+];
+
+// ../../node_modules/.pnpm/@posthog+core@1.40.1/node_modules/@posthog/core/dist/error-tracking/coercers/utils.mjs
+function extractExceptionKeysForMessage(err, maxLength = 40) {
+  const keys = Object.keys(err);
+  keys.sort();
+  if (!keys.length) return "[object has no keys]";
+  for (let i = keys.length; i > 0; i--) {
+    const serialized = keys.slice(0, i).join(", ");
+    if (!(serialized.length > maxLength)) {
+      if (i === keys.length) return serialized;
+      return serialized.length <= maxLength ? serialized : `${serialized.slice(0, maxLength)}...`;
+    }
+  }
+  return "";
+}
+
+// ../../node_modules/.pnpm/@posthog+core@1.40.1/node_modules/@posthog/core/dist/error-tracking/coercers/object-coercer.mjs
+var ObjectCoercer = class {
+  match(candidate) {
+    return "object" == typeof candidate && null !== candidate;
+  }
+  coerce(candidate, ctx) {
+    const errorProperty = this.getErrorPropertyFromObject(candidate);
+    if (errorProperty) return ctx.apply(errorProperty);
+    return {
+      type: this.getType(candidate),
+      value: this.getValue(candidate),
+      stack: ctx.syntheticException?.stack,
+      level: this.isSeverityLevel(candidate.level) ? candidate.level : "error",
+      synthetic: true
+    };
+  }
+  getType(err) {
+    return isEvent(err) ? err.constructor.name : "Error";
+  }
+  getValue(err) {
+    if ("name" in err && "string" == typeof err.name) {
+      let message2 = `'${err.name}' captured as exception`;
+      if ("message" in err && "string" == typeof err.message) message2 += ` with message: '${err.message}'`;
+      return message2;
+    }
+    if ("message" in err && "string" == typeof err.message) return err.message;
+    const className = this.getObjectClassName(err);
+    const keys = extractExceptionKeysForMessage(err);
+    return `${className && "Object" !== className ? `'${className}'` : "Object"} captured as exception with keys: ${keys}`;
+  }
+  isSeverityLevel(x) {
+    return isString(x) && !isEmptyString(x) && severityLevels.indexOf(x) >= 0;
+  }
+  getErrorPropertyFromObject(obj) {
+    for (const prop in obj) if (Object.prototype.hasOwnProperty.call(obj, prop)) {
+      const value = obj[prop];
+      if (isError2(value)) return value;
+    }
+  }
+  getObjectClassName(obj) {
+    try {
+      const prototype = Object.getPrototypeOf(obj);
+      return prototype ? prototype.constructor.name : void 0;
+    } catch (e) {
+      return;
+    }
+  }
+};
+
+// ../../node_modules/.pnpm/@posthog+core@1.40.1/node_modules/@posthog/core/dist/error-tracking/coercers/event-coercer.mjs
+var EventCoercer = class {
+  match(err) {
+    return isEvent(err);
+  }
+  coerce(evt, ctx) {
+    const constructorName = evt.constructor.name;
+    return {
+      type: constructorName,
+      value: `${constructorName} captured as exception with keys: ${extractExceptionKeysForMessage(evt)}`,
+      stack: ctx.syntheticException?.stack,
+      synthetic: true
+    };
+  }
+};
+
+// ../../node_modules/.pnpm/@posthog+core@1.40.1/node_modules/@posthog/core/dist/error-tracking/coercers/primitive-coercer.mjs
+var PrimitiveCoercer = class {
+  match(candidate) {
+    return isPrimitive(candidate);
+  }
+  coerce(value, ctx) {
+    return {
+      type: "Error",
+      value: `Primitive value captured as exception: ${String(value)}`,
+      stack: ctx.syntheticException?.stack,
+      synthetic: true
+    };
+  }
+};
+
+// ../../node_modules/.pnpm/@posthog+core@1.40.1/node_modules/@posthog/core/dist/error-tracking/coercers/promise-rejection-event.mjs
+var PromiseRejectionEventCoercer = class {
+  match(err) {
+    return isBuiltin(err, "PromiseRejectionEvent") || this.isCustomEventWrappingRejection(err);
+  }
+  isCustomEventWrappingRejection(err) {
+    if (!isEvent(err)) return false;
+    try {
+      const detail = err.detail;
+      return null != detail && "object" == typeof detail && "reason" in detail;
+    } catch {
+      return false;
+    }
+  }
+  coerce(err, ctx) {
+    const reason = this.getUnhandledRejectionReason(err);
+    if (isPrimitive(reason)) return {
+      type: "UnhandledRejection",
+      value: `Non-Error promise rejection captured with value: ${String(reason)}`,
+      stack: ctx.syntheticException?.stack,
+      synthetic: true
+    };
+    return ctx.apply(reason);
+  }
+  getUnhandledRejectionReason(error42) {
+    try {
+      if ("reason" in error42) return error42.reason;
+      if ("detail" in error42 && null != error42.detail && "object" == typeof error42.detail && "reason" in error42.detail) return error42.detail.reason;
+    } catch {
+    }
+    return error42;
+  }
+};
+
+// ../../node_modules/.pnpm/@posthog+core@1.40.1/node_modules/@posthog/core/dist/error-tracking/utils.mjs
+var ReduceableCache = class {
+  constructor(_maxSize3) {
+    this._maxSize = _maxSize3;
+    this._cache = /* @__PURE__ */ new Map();
+  }
+  get(key) {
+    const value = this._cache.get(key);
+    if (void 0 === value) return;
+    this._cache.delete(key);
+    this._cache.set(key, value);
+    return value;
+  }
+  set(key, value) {
+    this._cache.set(key, value);
+  }
+  reduce() {
+    while (this._cache.size >= this._maxSize) {
+      const value = this._cache.keys().next().value;
+      if (value) this._cache.delete(value);
+    }
+  }
+};
+
+// ../../node_modules/.pnpm/@posthog+core@1.40.1/node_modules/@posthog/core/dist/error-tracking/exception-steps.mjs
+var EXCEPTION_STEP_INTERNAL_FIELDS = {
+  MESSAGE: "$message",
+  TIMESTAMP: "$timestamp"
+};
+var RESERVED_EXCEPTION_STEP_KEYS = /* @__PURE__ */ new Set([
+  EXCEPTION_STEP_INTERNAL_FIELDS.MESSAGE,
+  EXCEPTION_STEP_INTERNAL_FIELDS.TIMESTAMP
+]);
+var DEFAULT_EXCEPTION_STEPS_CONFIG = {
+  enabled: true,
+  max_bytes: 32768
+};
+function resolveExceptionStepsConfig(config4) {
+  if (!config4) return {
+    ...DEFAULT_EXCEPTION_STEPS_CONFIG
+  };
+  return {
+    enabled: config4.enabled ?? DEFAULT_EXCEPTION_STEPS_CONFIG.enabled,
+    max_bytes: normalizePositiveInteger(config4.max_bytes, DEFAULT_EXCEPTION_STEPS_CONFIG.max_bytes)
+  };
+}
+function stripReservedExceptionStepFields(properties) {
+  if (!properties) return {
+    sanitizedProperties: {},
+    droppedKeys: []
+  };
+  const droppedKeys = [];
+  const sanitizedProperties = Object.keys(properties).reduce((acc, key) => {
+    if (RESERVED_EXCEPTION_STEP_KEYS.has(key)) {
+      droppedKeys.push(key);
+      return acc;
+    }
+    acc[key] = properties[key];
+    return acc;
+  }, {});
+  return {
+    sanitizedProperties,
+    droppedKeys
+  };
+}
+var ExceptionStepsBuffer = class {
+  constructor(config4) {
+    this._entries = [];
+    this._totalBytes = 0;
+    this._config = resolveExceptionStepsConfig(config4);
+  }
+  setConfig(config4) {
+    this._config = resolveExceptionStepsConfig(config4);
+    this._trimToMaxBytes();
+  }
+  add(step) {
+    const serialized = normalizeAndSerializeStep(step);
+    if (!serialized) return;
+    const bytes = getUtf8ByteLength(serialized.json);
+    if (bytes > this._config.max_bytes) return;
+    this._entries.push({
+      step: serialized.step,
+      bytes
+    });
+    this._totalBytes += bytes;
+    this._trimToMaxBytes();
+  }
+  getAttachable() {
+    return this._entries.map((e) => e.step);
+  }
+  clear() {
+    this._entries = [];
+    this._totalBytes = 0;
+  }
+  size() {
+    return this._entries.length;
+  }
+  _trimToMaxBytes() {
+    while (this._totalBytes > this._config.max_bytes && this._entries.length > 0) {
+      const evicted = this._entries.shift();
+      if (evicted) this._totalBytes -= evicted.bytes;
+    }
+  }
+};
+function normalizePositiveInteger(input, fallback) {
+  if (!isNumber(input) || input === 1 / 0 || input === -1 / 0) return fallback;
+  const normalized = Math.floor(input);
+  if (normalized < 0) return fallback;
+  return normalized;
+}
+function normalizeAndSerializeStep(step) {
+  let json4;
+  try {
+    json4 = safeJsonStringify(step);
+  } catch {
+    return;
+  }
+  try {
+    const parsed = JSON.parse(json4);
+    if (!isObject4(parsed)) return;
+    const parsedStep = parsed;
+    const message2 = parsedStep[EXCEPTION_STEP_INTERNAL_FIELDS.MESSAGE];
+    const timestamp2 = parsedStep[EXCEPTION_STEP_INTERNAL_FIELDS.TIMESTAMP];
+    if (!isString(message2) || 0 === message2.trim().length) return;
+    if (!isString(timestamp2) && !isNumber(timestamp2)) return;
+    return {
+      step: parsedStep,
+      json: json4
+    };
+  } catch {
+    return;
+  }
+}
+function getUtf8ByteLength(value) {
+  if ("undefined" != typeof TextEncoder) return new TextEncoder().encode(value).length;
+  const encoded = encodeURIComponent(value);
+  let byteLength = 0;
+  for (let i = 0; i < encoded.length; i++) if ("%" === encoded[i]) {
+    byteLength += 1;
+    i += 2;
+  } else byteLength += 1;
+  return byteLength;
+}
+
+// ../../node_modules/.pnpm/@posthog+core@1.40.1/node_modules/@posthog/core/dist/posthog-core-stateless.mjs
+var PostHogFetchHttpError = class extends Error {
+  constructor(response, reqByteLength) {
+    super("HTTP error while fetching PostHog: status=" + response.status + ", reqByteLength=" + reqByteLength), this.response = response, this.reqByteLength = reqByteLength, this.name = "PostHogFetchHttpError";
+  }
+  get status() {
+    return this.response.status;
+  }
+  get text() {
+    return this.response.text();
+  }
+  get json() {
+    return this.response.json();
+  }
+};
+var PostHogFetchNetworkError = class extends Error {
+  constructor(error42) {
+    super("Network error while fetching PostHog", error42 instanceof Error ? {
+      cause: error42
+    } : {}), this.error = error42, this.name = "PostHogFetchNetworkError";
+  }
+};
+var applyCallerFeatureFlagOverrides = (target, callerProperties) => {
+  for (const key of Object.keys(callerProperties)) if (key.startsWith("$feature/") || "$active_feature_flags" === key) target[key] = callerProperties[key];
+};
+async function logFlushError(err) {
+  if (err instanceof PostHogFetchHttpError) {
+    let text2 = "";
+    try {
+      text2 = await err.text;
+    } catch {
+    }
+    console.error(`Error while flushing PostHog: message=${err.message}, response body=${text2}`, err);
+  } else console.error("Error while flushing PostHog", err);
+  return Promise.resolve();
+}
+function isPostHogFetchError(err) {
+  return "object" == typeof err && (err instanceof PostHogFetchHttpError || isPostHogFetchNetworkError(err));
+}
+function isPostHogFetchNetworkError(err) {
+  return err instanceof PostHogFetchNetworkError;
+}
+function isRetryableFlagsFetchError(err) {
+  if (err instanceof PostHogFetchHttpError) return 502 === err.status || 504 === err.status;
+  if (!(err instanceof PostHogFetchNetworkError)) return false;
+  const cause = err.error;
+  const code = cause?.code ?? cause?.cause?.code;
+  return "ECONNREFUSED" !== code;
+}
+function isPostHogFetchContentTooLargeError(err) {
+  return "object" == typeof err && err instanceof PostHogFetchHttpError && 413 === err.status;
+}
+function isPostHogFetchRetryableError(err) {
+  if (err instanceof PostHogFetchHttpError) return 408 === err.status || 429 === err.status || err.status >= 500;
+  return isPostHogFetchNetworkError(err);
+}
+function isPostHogEventProperties(value) {
+  return null !== value && "object" == typeof value && !Array.isArray(value);
+}
+var PostHogCoreStateless = class {
+  getErrorPropertiesBuilder() {
+    if (!this._errorPropertiesBuilder) this._errorPropertiesBuilder = this.createErrorPropertiesBuilder();
+    return this._errorPropertiesBuilder;
+  }
+  createErrorPropertiesBuilder() {
+    return new ErrorPropertiesBuilder([
+      new ErrorCoercer(),
+      new ObjectCoercer(),
+      new StringCoercer(),
+      new PrimitiveCoercer()
+    ], createDefaultStackParser());
+  }
+  constructor(apiKey, options = {}) {
+    this.flushPromise = null;
+    this.pendingFlushPromise = null;
+    this.flushPromises = /* @__PURE__ */ new Set();
+    this._dequeuedMessagesCount = 0;
+    this.shutdownPromise = null;
+    this.promiseQueue = new PromiseQueue();
+    this._events = new SimpleEventEmitter();
+    this._isInitialized = false;
+    const normalizedApiKey = "string" == typeof apiKey ? apiKey.trim() : "";
+    const normalizedHost = "string" == typeof options.host ? options.host.trim() : "";
+    const missingApiKey = !normalizedApiKey;
+    this._logger = createLogger2("[PostHog]", this.logMsgIfDebug.bind(this));
+    if (missingApiKey) this._logger.error("You must pass your PostHog project's api key. The client will be disabled.");
+    this.apiKey = normalizedApiKey;
+    this.host = removeTrailingSlash(normalizedHost || "https://us.i.posthog.com");
+    this.flushAt = options.flushAt ? Math.max(options.flushAt, 1) : 20;
+    this.maxBatchSize = Math.max(this.flushAt, options.maxBatchSize ?? 100);
+    this.maxQueueSize = Math.max(this.flushAt, options.maxQueueSize ?? 1e3);
+    this.flushInterval = options.flushInterval ?? 1e4;
+    this.preloadFeatureFlags = options.preloadFeatureFlags ?? true;
+    this.defaultOptIn = options.defaultOptIn ?? true;
+    this.disableSurveys = options.disableSurveys ?? false;
+    this._retryOptions = {
+      retryCount: options.fetchRetryCount ?? 3,
+      retryDelay: options.fetchRetryDelay ?? 3e3,
+      retryCheck: isPostHogFetchRetryableError
+    };
+    this.requestTimeout = options.requestTimeout ?? 1e4;
+    this.featureFlagsRequestTimeoutMs = options.featureFlagsRequestTimeoutMs ?? 3e3;
+    this.featureFlagsRequestMaxRetries = options.featureFlagsRequestMaxRetries ?? 1;
+    this.remoteConfigRequestTimeoutMs = options.remoteConfigRequestTimeoutMs ?? 3e3;
+    this.disableGeoip = options.disableGeoip ?? true;
+    this.disabled = (options.disabled ?? false) || missingApiKey;
+    this.historicalMigration = options?.historicalMigration ?? false;
+    this._initPromise = Promise.resolve();
+    this._isInitialized = true;
+    this.evaluationContexts = options?.evaluationContexts ?? options?.evaluationEnvironments;
+    if (options?.evaluationEnvironments && !options?.evaluationContexts) this._logger.warn("evaluationEnvironments is deprecated. Use evaluationContexts instead. This property will be removed in a future version.");
+    this.disableCompression = !isGzipSupported() || (options?.disableCompression ?? false);
+  }
+  logMsgIfDebug(fn) {
+    if (this.isDebug) fn();
+  }
+  wrap(fn) {
+    if (this.disabled) return void this._logger.warn("The client is disabled");
+    if (this._isInitialized) return fn();
+    this._initPromise.then(() => fn());
+  }
+  getCommonEventProperties() {
+    return {
+      $lib: this.getLibraryId(),
+      $lib_version: this.getLibraryVersion()
+    };
+  }
+  get optedOut() {
+    return this.getPersistedProperty(types_PostHogPersistedProperty.OptedOut) ?? !this.defaultOptIn;
+  }
+  async optIn() {
+    this.wrap(() => {
+      this.setPersistedProperty(types_PostHogPersistedProperty.OptedOut, false);
+    });
+  }
+  async optOut() {
+    this.wrap(() => {
+      this.setPersistedProperty(types_PostHogPersistedProperty.OptedOut, true);
+    });
+  }
+  on(event, cb) {
+    return this._events.on(event, cb);
+  }
+  debug(enabled = true) {
+    this.removeDebugCallback?.();
+    if (enabled) {
+      const removeDebugCallback = this.on("*", (event, payload) => this._logger.info(event, payload));
+      this.removeDebugCallback = () => {
+        removeDebugCallback();
+        this.removeDebugCallback = void 0;
+      };
+    }
+  }
+  get isDebug() {
+    return !!this.removeDebugCallback;
+  }
+  get isDisabled() {
+    return this.disabled;
+  }
+  buildPayload(payload) {
+    const userProperties = payload.properties || {};
+    const properties = {
+      ...userProperties,
+      ...this.getCommonEventProperties()
+    };
+    applyCallerFeatureFlagOverrides(properties, userProperties);
+    return {
+      distinct_id: payload.distinct_id,
+      event: payload.event,
+      properties
+    };
+  }
+  addPendingPromise(promise3) {
+    return this.promiseQueue.add(promise3);
+  }
+  identifyStateless(distinctId, properties, options) {
+    this.wrap(() => {
+      const payload = {
+        ...this.buildPayload({
+          distinct_id: distinctId,
+          event: "$identify",
+          properties
+        })
+      };
+      this.enqueue("identify", payload, options);
+    });
+  }
+  async identifyStatelessImmediate(distinctId, properties, options) {
+    const payload = {
+      ...this.buildPayload({
+        distinct_id: distinctId,
+        event: "$identify",
+        properties
+      })
+    };
+    await this.sendImmediate("identify", payload, options);
+  }
+  captureStateless(distinctId, event, properties, options) {
+    this.wrap(() => {
+      const payload = this.buildPayload({
+        distinct_id: distinctId,
+        event,
+        properties
+      });
+      this.enqueue("capture", payload, options);
+    });
+  }
+  async captureStatelessImmediate(distinctId, event, properties, options) {
+    const payload = this.buildPayload({
+      distinct_id: distinctId,
+      event,
+      properties
+    });
+    await this.sendImmediate("capture", payload, options);
+  }
+  aliasStateless(alias, distinctId, properties, options) {
+    this.wrap(() => {
+      const payload = this.buildPayload({
+        event: "$create_alias",
+        distinct_id: distinctId,
+        properties: {
+          ...properties || {},
+          distinct_id: distinctId,
+          alias
+        }
+      });
+      this.enqueue("alias", payload, options);
+    });
+  }
+  async aliasStatelessImmediate(alias, distinctId, properties, options) {
+    const payload = this.buildPayload({
+      event: "$create_alias",
+      distinct_id: distinctId,
+      properties: {
+        ...properties || {},
+        distinct_id: distinctId,
+        alias
+      }
+    });
+    await this.sendImmediate("alias", payload, options);
+  }
+  groupIdentifyStateless(groupType, groupKey, groupProperties, options, distinctId, eventProperties) {
+    this.wrap(() => {
+      const payload = this.buildPayload({
+        distinct_id: distinctId || `$${groupType}_${groupKey}`,
+        event: "$groupidentify",
+        properties: {
+          $group_type: groupType,
+          $group_key: groupKey,
+          $group_set: groupProperties || {},
+          ...eventProperties || {}
+        }
+      });
+      this.enqueue("capture", payload, options);
+    });
+  }
+  async groupIdentifyStatelessImmediate(groupType, groupKey, groupProperties, options, distinctId, eventProperties) {
+    const payload = this.buildPayload({
+      distinct_id: distinctId || `$${groupType}_${groupKey}`,
+      event: "$groupidentify",
+      properties: {
+        $group_type: groupType,
+        $group_key: groupKey,
+        $group_set: groupProperties || {},
+        ...eventProperties || {}
+      }
+    });
+    await this.sendImmediate("capture", payload, options);
+  }
+  async getRemoteConfig() {
+    await this._initPromise;
+    let host = this.host;
+    if ("https://us.i.posthog.com" === host) host = "https://us-assets.i.posthog.com";
+    else if ("https://eu.i.posthog.com" === host) host = "https://eu-assets.i.posthog.com";
+    const url3 = `${host}/array/${this.apiKey}/config`;
+    const fetchOptions = {
+      method: "GET",
+      headers: {
+        ...this.getCustomHeaders(),
+        "Content-Type": "application/json"
+      }
+    };
+    return this.fetchWithRetry(url3, fetchOptions, {
+      retryCount: 0
+    }, this.remoteConfigRequestTimeoutMs).then((response) => response.json()).catch((error42) => {
+      this._logger.error("Remote config could not be loaded", error42);
+      this._events.emit("error", error42);
+    });
+  }
+  async getFlags(distinctId, groups = {}, personProperties = {}, groupProperties = {}, extraPayload = {}, fetchConfig = false) {
+    await this._initPromise;
+    const configParam = fetchConfig ? "&config=true" : "";
+    const url3 = `${this.host}/flags/?v=2${configParam}`;
+    const requestData = {
+      token: this.apiKey,
+      distinct_id: distinctId,
+      groups,
+      person_properties: personProperties,
+      group_properties: groupProperties,
+      ...extraPayload
+    };
+    if (personProperties.$device_id) requestData.$device_id = personProperties.$device_id;
+    if (this.evaluationContexts && this.evaluationContexts.length > 0) requestData.evaluation_contexts = this.evaluationContexts;
+    const fetchOptions = {
+      method: "POST",
+      headers: {
+        ...this.getCustomHeaders(),
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(requestData)
+    };
+    this._logger.info("Flags URL", url3);
+    return this.fetchWithRetry(url3, fetchOptions, {
+      retryCount: this.featureFlagsRequestMaxRetries,
+      retryCheck: isRetryableFlagsFetchError
+    }, this.featureFlagsRequestTimeoutMs).then((response) => response.json()).then((response) => ({
+      success: true,
+      response: normalizeFlagsResponse(response)
+    })).catch((error42) => {
+      this._events.emit("error", error42);
+      return {
+        success: false,
+        error: this.categorizeRequestError(error42)
+      };
+    });
+  }
+  categorizeRequestError(error42) {
+    if (error42 instanceof PostHogFetchHttpError) return {
+      type: "api_error",
+      statusCode: error42.status
+    };
+    if (error42 instanceof PostHogFetchNetworkError) {
+      const cause = error42.error;
+      if (cause instanceof Error && ("AbortError" === cause.name || "TimeoutError" === cause.name)) return {
+        type: "timeout"
+      };
+      return {
+        type: "connection_error"
+      };
+    }
+    return {
+      type: "unknown_error"
+    };
+  }
+  async getFeatureFlagStateless(key, distinctId, groups = {}, personProperties = {}, groupProperties = {}, disableGeoip) {
+    await this._initPromise;
+    const flagDetailResponse = await this.getFeatureFlagDetailStateless(key, distinctId, groups, personProperties, groupProperties, disableGeoip);
+    if (void 0 === flagDetailResponse) return {
+      response: void 0,
+      requestId: void 0
+    };
+    let response = getFeatureFlagValue(flagDetailResponse.response);
+    if (void 0 === response) response = false;
+    return {
+      response,
+      requestId: flagDetailResponse.requestId
+    };
+  }
+  async getFeatureFlagDetailStateless(key, distinctId, groups = {}, personProperties = {}, groupProperties = {}, disableGeoip) {
+    await this._initPromise;
+    const flagsResponse = await this.getFeatureFlagDetailsStateless(distinctId, groups, personProperties, groupProperties, disableGeoip, [
+      key
+    ]);
+    if (void 0 === flagsResponse) return;
+    const featureFlags = flagsResponse.flags;
+    const flagDetail = featureFlags[key];
+    return {
+      response: flagDetail,
+      requestId: flagsResponse.requestId,
+      evaluatedAt: flagsResponse.evaluatedAt
+    };
+  }
+  async getFeatureFlagPayloadStateless(key, distinctId, groups = {}, personProperties = {}, groupProperties = {}, disableGeoip) {
+    await this._initPromise;
+    const payloads = await this.getFeatureFlagPayloadsStateless(distinctId, groups, personProperties, groupProperties, disableGeoip, [
+      key
+    ]);
+    if (!payloads) return;
+    const response = payloads[key];
+    if (void 0 === response) return null;
+    return response;
+  }
+  async getFeatureFlagPayloadsStateless(distinctId, groups = {}, personProperties = {}, groupProperties = {}, disableGeoip, flagKeysToEvaluate) {
+    await this._initPromise;
+    const payloads = (await this.getFeatureFlagsAndPayloadsStateless(distinctId, groups, personProperties, groupProperties, disableGeoip, flagKeysToEvaluate)).payloads;
+    return payloads;
+  }
+  async getFeatureFlagsStateless(distinctId, groups = {}, personProperties = {}, groupProperties = {}, disableGeoip, flagKeysToEvaluate) {
+    await this._initPromise;
+    return await this.getFeatureFlagsAndPayloadsStateless(distinctId, groups, personProperties, groupProperties, disableGeoip, flagKeysToEvaluate);
+  }
+  async getFeatureFlagsAndPayloadsStateless(distinctId, groups = {}, personProperties = {}, groupProperties = {}, disableGeoip, flagKeysToEvaluate) {
+    await this._initPromise;
+    const featureFlagDetails = await this.getFeatureFlagDetailsStateless(distinctId, groups, personProperties, groupProperties, disableGeoip, flagKeysToEvaluate);
+    if (!featureFlagDetails) return {
+      flags: void 0,
+      payloads: void 0,
+      requestId: void 0
+    };
+    return {
+      flags: featureFlagDetails.featureFlags,
+      payloads: featureFlagDetails.featureFlagPayloads,
+      requestId: featureFlagDetails.requestId
+    };
+  }
+  async getFeatureFlagDetailsStateless(distinctId, groups = {}, personProperties = {}, groupProperties = {}, disableGeoip, flagKeysToEvaluate) {
+    await this._initPromise;
+    const extraPayload = {
+      geoip_disable: disableGeoip ?? this.disableGeoip
+    };
+    if (flagKeysToEvaluate) extraPayload["flag_keys_to_evaluate"] = flagKeysToEvaluate;
+    const result = await this.getFlags(distinctId, groups, personProperties, groupProperties, extraPayload);
+    if (!result.success) return;
+    const flagsResponse = result.response;
+    if (flagsResponse.errorsWhileComputingFlags) console.error("[FEATURE FLAGS] Error while computing feature flags, some flags may be missing or incorrect. Learn more at https://posthog.com/docs/feature-flags/best-practices");
+    if (flagsResponse.quotaLimited?.includes("feature_flags")) {
+      console.warn("[FEATURE FLAGS] Feature flags quota limit exceeded - feature flags unavailable. Learn more about billing limits at https://posthog.com/docs/billing/limits-alerts");
+      return {
+        flags: {},
+        featureFlags: {},
+        featureFlagPayloads: {},
+        requestId: flagsResponse?.requestId,
+        quotaLimited: flagsResponse.quotaLimited
+      };
+    }
+    return flagsResponse;
+  }
+  async getSurveysStateless() {
+    await this._initPromise;
+    if (this.disabled) return [];
+    if (true === this.disableSurveys) {
+      this._logger.info("Loading surveys is disabled.");
+      return [];
+    }
+    const url3 = `${this.host}/api/surveys/?token=${this.apiKey}`;
+    const fetchOptions = {
+      method: "GET",
+      headers: {
+        ...this.getCustomHeaders(),
+        "Content-Type": "application/json"
+      }
+    };
+    const response = await this.fetchWithRetry(url3, fetchOptions).then((response2) => {
+      if (200 !== response2.status || !response2.json) {
+        const msg = `Surveys API could not be loaded: ${response2.status}`;
+        const error42 = new Error(msg);
+        this._logger.error(error42);
+        this._events.emit("error", new Error(msg));
+        return;
+      }
+      return response2.json();
+    }).catch((error42) => {
+      this._logger.error("Surveys API could not be loaded", error42);
+      this._events.emit("error", error42);
+    });
+    const newSurveys = response?.surveys;
+    if (newSurveys) this._logger.info("Surveys fetched from API: ", JSON.stringify(newSurveys));
+    return newSurveys ?? [];
+  }
+  get props() {
+    if (!this._props) this._props = this.getPersistedProperty(types_PostHogPersistedProperty.Props);
+    return this._props || {};
+  }
+  set props(val) {
+    this._props = val;
+  }
+  async register(properties) {
+    this.wrap(() => {
+      this.props = {
+        ...this.props,
+        ...properties
+      };
+      this.setPersistedProperty(types_PostHogPersistedProperty.Props, this.props);
+    });
+  }
+  async unregister(property) {
+    this.wrap(() => {
+      delete this.props[property];
+      this.setPersistedProperty(types_PostHogPersistedProperty.Props, this.props);
+    });
+  }
+  processBeforeEnqueue(message2) {
+    return message2;
+  }
+  async flushStorage() {
+  }
+  enqueue(type, _message, options) {
+    this.wrap(() => {
+      if (this.optedOut) return void this._events.emit(type, "Library is disabled. Not sending event. To re-enable, call posthog.optIn()");
+      let message2 = this.prepareMessage(_message, options);
+      message2 = this.processBeforeEnqueue(message2);
+      if (null === message2) return;
+      message2 = this.normalizeMessage(message2);
+      const queue = this.getPersistedProperty(types_PostHogPersistedProperty.Queue) || [];
+      if (queue.length >= this.maxQueueSize) {
+        queue.shift();
+        this._logger.info("Queue is full, the oldest event is dropped.");
+      }
+      queue.push({
+        message: message2
+      });
+      this.setPersistedProperty(types_PostHogPersistedProperty.Queue, queue);
+      this._events.emit(type, message2);
+      if (queue.length >= this.flushAt) this.flushBackground();
+      if (this.flushInterval && !this._flushTimer) this._flushTimer = safeSetTimeout(() => this.flushBackground(), this.flushInterval);
+    });
+  }
+  async sendImmediate(type, _message, options) {
+    if (this.disabled) return void this._logger.warn("The client is disabled");
+    if (!this._isInitialized) await this._initPromise;
+    if (this.optedOut) return void this._events.emit(type, "Library is disabled. Not sending event. To re-enable, call posthog.optIn()");
+    let message2 = this.prepareMessage(_message, options);
+    message2 = this.processBeforeEnqueue(message2);
+    if (null === message2) return;
+    message2 = this.normalizeMessage(message2);
+    const data = {
+      api_key: this.apiKey,
+      batch: [
+        message2
+      ],
+      sent_at: currentISOTime()
+    };
+    if (this.historicalMigration) data.historical_migration = true;
+    const payload = safeJsonStringify(data);
+    const url3 = `${this.host}/batch/`;
+    const gzippedPayload = this.disableCompression ? null : await gzipCompress(payload, this.isDebug);
+    const fetchOptions = {
+      method: "POST",
+      headers: {
+        ...this.getCustomHeaders(),
+        "Content-Type": "application/json",
+        ...null !== gzippedPayload && {
+          "Content-Encoding": "gzip"
+        }
+      },
+      body: gzippedPayload || payload
+    };
+    try {
+      const response = await this.fetchWithRetry(url3, fetchOptions);
+      await response.body?.cancel()?.catch(() => {
+      });
+    } catch (err) {
+      this._events.emit("error", err);
+    }
+  }
+  normalizeMessage(message2) {
+    const { type: _type, library, library_version, ...sanitizedMessage } = message2;
+    let properties = isPostHogEventProperties(sanitizedMessage.properties) ? sanitizedMessage.properties : void 0;
+    if (void 0 !== library && properties?.$lib === void 0) properties = {
+      ...properties || {},
+      $lib: library
+    };
+    if (void 0 !== library_version && properties?.$lib_version === void 0) properties = {
+      ...properties || {},
+      $lib_version: library_version
+    };
+    if (properties) sanitizedMessage.properties = properties;
+    sanitizedMessage.uuid = getEventUuid(sanitizedMessage.uuid, uuidv73);
+    return sanitizedMessage;
+  }
+  prepareMessage(_message, options) {
+    const message2 = {
+      ..._message,
+      timestamp: options?.timestamp ? options?.timestamp : currentISOTime(),
+      uuid: getEventUuid(options?.uuid, uuidv73)
+    };
+    const addGeoipDisableProperty = options?.disableGeoip ?? this.disableGeoip;
+    if (addGeoipDisableProperty) {
+      if (!isPostHogEventProperties(message2.properties)) message2.properties = {};
+      message2.properties["$geoip_disable"] = true;
+    }
+    if (message2.distinctId) {
+      message2.distinct_id = message2.distinctId;
+      delete message2.distinctId;
+    }
+    return message2;
+  }
+  clearFlushTimer() {
+    if (this._flushTimer) {
+      clearTimeout(this._flushTimer);
+      this._flushTimer = void 0;
+    }
+  }
+  flushBackground() {
+    if (this.pendingFlushPromise) return;
+    this.flush().catch(async (err) => {
+      await logFlushError(err);
+    });
+  }
+  async waitForPendingPromises(maxPromiseId, ignoredPromises = []) {
+    const ignoredPendingPromises = ignoredPromises.filter((promise3) => !!promise3);
+    let iteration = 0;
+    while (true) {
+      const promises = this.promiseQueue.getPromises([
+        ...ignoredPendingPromises,
+        ...this.flushPromises
+      ], maxPromiseId);
+      if (0 === promises.length) return;
+      if (iteration > 0) this._logger.debug(`flush() re-checking ${promises.length} pending promise(s) before flushing`);
+      await Promise.all(promises.map((promise3) => promise3.catch(() => {
+      })));
+      iteration++;
+    }
+  }
+  flushWithPendingPromises() {
+    return this.flushInternal(true);
+  }
+  flush() {
+    return this.flushInternal(false);
+  }
+  flushInternal(waitForPendingPromises) {
+    if (this.disabled) return Promise.resolve();
+    if (!waitForPendingPromises && this.pendingFlushPromise) return this.pendingFlushPromise;
+    const previousFlushPromise = this.flushPromise;
+    const maxPromiseId = this.promiseQueue.maxId;
+    const nextFlushPromise = Promise.resolve().then(() => {
+      if (waitForPendingPromises) return this.waitForPendingPromises(maxPromiseId, [
+        previousFlushPromise,
+        nextFlushPromise
+      ]);
+    }).then(() => allSettled([
+      previousFlushPromise
+    ])).then(() => {
+      if (this.pendingFlushPromise === nextFlushPromise) this.pendingFlushPromise = null;
+      return this._flush();
+    });
+    this.pendingFlushPromise = nextFlushPromise;
+    this.flushPromise = nextFlushPromise;
+    this.flushPromises.add(nextFlushPromise);
+    this.addPendingPromise(nextFlushPromise);
+    allSettled([
+      nextFlushPromise
+    ]).then(() => {
+      this.flushPromises.delete(nextFlushPromise);
+      if (this.pendingFlushPromise === nextFlushPromise) this.pendingFlushPromise = null;
+      if (this.flushPromise === nextFlushPromise) this.flushPromise = null;
+    });
+    return nextFlushPromise;
+  }
+  getCustomHeaders() {
+    const customUserAgent = this.getCustomUserAgent();
+    const headers = {};
+    if (customUserAgent && "" !== customUserAgent) headers["User-Agent"] = customUserAgent;
+    return headers;
+  }
+  async _flush() {
+    this.clearFlushTimer();
+    await this._initPromise;
+    let queue = this.getPersistedProperty(types_PostHogPersistedProperty.Queue) || [];
+    if (!queue.length) return;
+    const sentMessages = [];
+    const originalQueueLength = queue.length;
+    while (queue.length > 0 && sentMessages.length < originalQueueLength) {
+      const batchItems = queue.slice(0, this.maxBatchSize);
+      const batchMessages = batchItems.map((item) => void 0 === item.message ? item.message : this.normalizeMessage(item.message));
+      const persistQueueChange = async () => {
+        const refreshedQueue = this.getPersistedProperty(types_PostHogPersistedProperty.Queue) || [];
+        const newQueue = refreshedQueue.slice(batchItems.length);
+        this.setPersistedProperty(types_PostHogPersistedProperty.Queue, newQueue);
+        queue = newQueue;
+        this._dequeuedMessagesCount += batchItems.length;
+        await this.flushStorage();
+      };
+      const data = {
+        api_key: this.apiKey,
+        batch: batchMessages,
+        sent_at: currentISOTime()
+      };
+      if (this.historicalMigration) data.historical_migration = true;
+      const payload = safeJsonStringify(data);
+      const url3 = `${this.host}/batch/`;
+      const gzippedPayload = this.disableCompression ? null : await gzipCompress(payload, this.isDebug);
+      const fetchOptions = {
+        method: "POST",
+        headers: {
+          ...this.getCustomHeaders(),
+          "Content-Type": "application/json",
+          ...null !== gzippedPayload && {
+            "Content-Encoding": "gzip"
+          }
+        },
+        body: gzippedPayload || payload
+      };
+      const retryOptions = {
+        retryCheck: (err) => {
+          if (isPostHogFetchContentTooLargeError(err)) return false;
+          return isPostHogFetchRetryableError(err);
+        }
+      };
+      try {
+        const response = await this.fetchWithRetry(url3, fetchOptions, retryOptions);
+        await response.body?.cancel()?.catch(() => {
+        });
+      } catch (err) {
+        if (isPostHogFetchContentTooLargeError(err) && batchMessages.length > 1) {
+          this.maxBatchSize = Math.max(1, Math.floor(batchMessages.length / 2));
+          this._logger.warn(`Received 413 when sending batch of size ${batchMessages.length}, reducing batch size to ${this.maxBatchSize}`);
+          continue;
+        }
+        if (!(err instanceof PostHogFetchNetworkError)) await persistQueueChange();
+        this._events.emit("error", err);
+        throw err;
+      }
+      await persistQueueChange();
+      sentMessages.push(...batchMessages);
+    }
+    this._events.emit("flush", sentMessages);
+  }
+  async _sendLogsBatch(payload) {
+    if (this.disabled) return {
+      kind: "fatal",
+      error: new Error("The client is disabled")
+    };
+    const serialized = JSON.stringify(payload);
+    const url3 = `${this.host}/i/v1/logs?token=${encodeURIComponent(this.apiKey)}`;
+    const gzippedPayload = this.disableCompression ? null : await gzipCompress(serialized, this.isDebug);
+    const fetchOptions = {
+      method: "POST",
+      headers: {
+        ...this.getCustomHeaders(),
+        "Content-Type": "application/json",
+        ...null !== gzippedPayload && {
+          "Content-Encoding": "gzip"
+        }
+      },
+      body: gzippedPayload || serialized
+    };
+    try {
+      await this.fetchWithRetry(url3, fetchOptions, {
+        retryCheck: (err) => {
+          if (isPostHogFetchContentTooLargeError(err)) return false;
+          return isPostHogFetchRetryableError(err);
+        }
+      });
+      return {
+        kind: "ok"
+      };
+    } catch (err) {
+      if (isPostHogFetchContentTooLargeError(err)) return {
+        kind: "too-large"
+      };
+      if (err instanceof PostHogFetchNetworkError) return {
+        kind: "retry-later",
+        error: err
+      };
+      return {
+        kind: "fatal",
+        error: err
+      };
+    }
+  }
+  async fetchWithRetry(url3, options, retryOptions, requestTimeout) {
+    const body = options.body ? options.body : "";
+    let reqByteLength = -1;
+    try {
+      reqByteLength = body instanceof Blob ? body.size : Buffer.byteLength(body, STRING_FORMAT);
+    } catch {
+      if (body instanceof Blob) reqByteLength = body.size;
+      else {
+        const encoded = new TextEncoder().encode(body);
+        reqByteLength = encoded.length;
+      }
+    }
+    return await retriable(async () => {
+      const ctrl = new AbortController();
+      const timeoutMs = requestTimeout ?? this.requestTimeout;
+      const timer = safeSetTimeout(() => ctrl.abort(), timeoutMs);
+      let res = null;
+      try {
+        res = await this.fetch(url3, {
+          signal: ctrl.signal,
+          ...options
+        });
+      } catch (e) {
+        throw new PostHogFetchNetworkError(e);
+      } finally {
+        clearTimeout(timer);
+      }
+      const isNoCors = "no-cors" === options.mode;
+      if (!isNoCors && (res.status < 200 || res.status >= 400)) throw new PostHogFetchHttpError(res, reqByteLength);
+      return res;
+    }, {
+      ...this._retryOptions,
+      ...retryOptions
+    });
+  }
+  async _shutdown(shutdownTimeoutMs = 3e4) {
+    await this._initPromise;
+    let hasTimedOut = false;
+    this.clearFlushTimer();
+    if (this.disabled) return;
+    const doShutdown = async () => {
+      try {
+        await this.promiseQueue.join();
+        while (true) {
+          const queue = this.getPersistedProperty(types_PostHogPersistedProperty.Queue) || [];
+          if (0 === queue.length) break;
+          const dequeuedBeforeFlush = this._dequeuedMessagesCount;
+          await this.flush();
+          if (hasTimedOut) break;
+          if (this._dequeuedMessagesCount === dequeuedBeforeFlush) {
+            this._logger.warn("Shutdown flush completed but did not send any queued events. Stopping drain to avoid a loop.");
+            break;
+          }
+        }
+      } catch (e) {
+        if (!isPostHogFetchError(e)) throw e;
+        await logFlushError(e);
+      }
+    };
+    let timeoutHandle;
+    try {
+      return await Promise.race([
+        new Promise((_, reject) => {
+          timeoutHandle = safeSetTimeout(() => {
+            this._logger.error("Timed out while shutting down PostHog");
+            hasTimedOut = true;
+            reject("Timeout while shutting down PostHog. Some events may not have been sent.");
+          }, shutdownTimeoutMs);
+        }),
+        doShutdown()
+      ]);
+    } finally {
+      clearTimeout(timeoutHandle);
+    }
+  }
+  async shutdown(shutdownTimeoutMs = 3e4) {
+    if (this.shutdownPromise) this._logger.warn("shutdown() called while already shutting down. shutdown() is meant to be called once before process exit - use flush() for per-request cleanup");
+    else this.shutdownPromise = this._shutdown(shutdownTimeoutMs).finally(() => {
+      this.shutdownPromise = null;
+    });
+    return this.shutdownPromise;
+  }
+};
+
+// ../../node_modules/.pnpm/posthog-node@5.40.0/node_modules/posthog-node/dist/extensions/error-tracking/modifiers/context-lines.node.mjs
+import { createReadStream } from "node:fs";
+import { createInterface } from "node:readline";
+var LRU_FILE_CONTENTS_CACHE = new error_tracking_exports.ReduceableCache(25);
+var LRU_FILE_CONTENTS_FS_READ_FAILED = new error_tracking_exports.ReduceableCache(20);
+var DEFAULT_LINES_OF_CONTEXT = 7;
+var MAX_CONTEXTLINES_COLNO = 1e3;
+var MAX_CONTEXTLINES_LINENO = 1e4;
+async function addSourceContext(frames) {
+  const filesToLines = {};
+  for (let i = frames.length - 1; i >= 0; i--) {
+    const frame = frames[i];
+    const filename = frame?.filename;
+    if (!frame || "string" != typeof filename || "number" != typeof frame.lineno || shouldSkipContextLinesForFile(filename) || shouldSkipContextLinesForFrame(frame)) continue;
+    const filesToLinesOutput = filesToLines[filename];
+    if (!filesToLinesOutput) filesToLines[filename] = [];
+    filesToLines[filename].push(frame.lineno);
+  }
+  const files = Object.keys(filesToLines);
+  if (0 == files.length) return frames;
+  const readlinePromises = [];
+  for (const file3 of files) {
+    if (LRU_FILE_CONTENTS_FS_READ_FAILED.get(file3)) continue;
+    const filesToLineRanges = filesToLines[file3];
+    if (!filesToLineRanges) continue;
+    filesToLineRanges.sort((a, b) => a - b);
+    const ranges = makeLineReaderRanges(filesToLineRanges);
+    if (ranges.every((r) => rangeExistsInContentCache(file3, r))) continue;
+    const cache3 = emplace(LRU_FILE_CONTENTS_CACHE, file3, {});
+    readlinePromises.push(getContextLinesFromFile(file3, ranges, cache3));
+  }
+  await Promise.all(readlinePromises).catch(() => {
+  });
+  if (frames && frames.length > 0) addSourceContextToFrames(frames, LRU_FILE_CONTENTS_CACHE);
+  LRU_FILE_CONTENTS_CACHE.reduce();
+  return frames;
+}
+function getContextLinesFromFile(path4, ranges, output) {
+  return new Promise((resolve) => {
+    const stream = createReadStream(path4);
+    const lineReaded = createInterface({
+      input: stream
+    });
+    function destroyStreamAndResolve() {
+      stream.destroy();
+      resolve();
+    }
+    let lineNumber = 0;
+    let currentRangeIndex = 0;
+    const range = ranges[currentRangeIndex];
+    if (void 0 === range) return void destroyStreamAndResolve();
+    let rangeStart = range[0];
+    let rangeEnd = range[1];
+    function onStreamError() {
+      LRU_FILE_CONTENTS_FS_READ_FAILED.set(path4, 1);
+      lineReaded.close();
+      lineReaded.removeAllListeners();
+      destroyStreamAndResolve();
+    }
+    stream.on("error", onStreamError);
+    lineReaded.on("error", onStreamError);
+    lineReaded.on("close", destroyStreamAndResolve);
+    lineReaded.on("line", (line3) => {
+      lineNumber++;
+      if (lineNumber < rangeStart) return;
+      output[lineNumber] = snipLine(line3, 0);
+      if (lineNumber >= rangeEnd) {
+        if (currentRangeIndex === ranges.length - 1) {
+          lineReaded.close();
+          lineReaded.removeAllListeners();
+          return;
+        }
+        currentRangeIndex++;
+        const range2 = ranges[currentRangeIndex];
+        if (void 0 === range2) {
+          lineReaded.close();
+          lineReaded.removeAllListeners();
+          return;
+        }
+        rangeStart = range2[0];
+        rangeEnd = range2[1];
+      }
+    });
+  });
+}
+function addSourceContextToFrames(frames, cache3) {
+  for (const frame of frames) if (frame.filename && void 0 === frame.context_line && "number" == typeof frame.lineno) {
+    const contents = cache3.get(frame.filename);
+    if (void 0 === contents) continue;
+    addContextToFrame(frame.lineno, frame, contents);
+  }
+}
+function addContextToFrame(lineno, frame, contents) {
+  if (void 0 === frame.lineno || void 0 === contents) return;
+  frame.pre_context = [];
+  for (let i = makeRangeStart(lineno); i < lineno; i++) {
+    const line3 = contents[i];
+    if (void 0 === line3) return void clearLineContext(frame);
+    frame.pre_context.push(line3);
+  }
+  if (void 0 === contents[lineno]) return void clearLineContext(frame);
+  frame.context_line = contents[lineno];
+  const end = makeRangeEnd(lineno);
+  frame.post_context = [];
+  for (let i = lineno + 1; i <= end; i++) {
+    const line3 = contents[i];
+    if (void 0 === line3) break;
+    frame.post_context.push(line3);
+  }
+}
+function clearLineContext(frame) {
+  delete frame.pre_context;
+  delete frame.context_line;
+  delete frame.post_context;
+}
+function shouldSkipContextLinesForFile(path4) {
+  return path4.startsWith("node:") || path4.endsWith(".min.js") || path4.endsWith(".min.cjs") || path4.endsWith(".min.mjs") || path4.startsWith("data:");
+}
+function shouldSkipContextLinesForFrame(frame) {
+  if (void 0 !== frame.lineno && frame.lineno > MAX_CONTEXTLINES_LINENO) return true;
+  if (void 0 !== frame.colno && frame.colno > MAX_CONTEXTLINES_COLNO) return true;
+  return false;
+}
+function rangeExistsInContentCache(file3, range) {
+  const contents = LRU_FILE_CONTENTS_CACHE.get(file3);
+  if (void 0 === contents) return false;
+  for (let i = range[0]; i <= range[1]; i++) if (void 0 === contents[i]) return false;
+  return true;
+}
+function makeLineReaderRanges(lines) {
+  if (!lines.length) return [];
+  let i = 0;
+  const line3 = lines[0];
+  if ("number" != typeof line3) return [];
+  let current = makeContextRange(line3);
+  const out = [];
+  while (true) {
+    if (i === lines.length - 1) {
+      out.push(current);
+      break;
+    }
+    const next = lines[i + 1];
+    if ("number" != typeof next) break;
+    if (next <= current[1]) current[1] = next + DEFAULT_LINES_OF_CONTEXT;
+    else {
+      out.push(current);
+      current = makeContextRange(next);
+    }
+    i++;
+  }
+  return out;
+}
+function makeContextRange(line3) {
+  return [
+    makeRangeStart(line3),
+    makeRangeEnd(line3)
+  ];
+}
+function makeRangeStart(line3) {
+  return Math.max(1, line3 - DEFAULT_LINES_OF_CONTEXT);
+}
+function makeRangeEnd(line3) {
+  return line3 + DEFAULT_LINES_OF_CONTEXT;
+}
+function emplace(map4, key, contents) {
+  const value = map4.get(key);
+  if (void 0 === value) {
+    map4.set(key, contents);
+    return contents;
+  }
+  return value;
+}
+function snipLine(line3, colno) {
+  let newLine = line3;
+  const lineLength = newLine.length;
+  if (lineLength <= 150) return newLine;
+  if (colno > lineLength) colno = lineLength;
+  let start = Math.max(colno - 60, 0);
+  if (start < 5) start = 0;
+  let end = Math.min(start + 140, lineLength);
+  if (end > lineLength - 5) end = lineLength;
+  if (end === lineLength) start = Math.max(end - 140, 0);
+  newLine = newLine.slice(start, end);
+  if (start > 0) newLine = `...${newLine}`;
+  if (end < lineLength) newLine += "...";
+  return newLine;
+}
+
+// ../../node_modules/.pnpm/posthog-node@5.40.0/node_modules/posthog-node/dist/extensions/error-tracking/modifiers/relative-path.node.mjs
+import { isAbsolute, relative, sep as sep2 } from "path";
+function createRelativePathModifier(basePath = process.cwd()) {
+  const isWindows = "\\" === sep2;
+  const toUnix = (p) => isWindows ? p.replace(/\\/g, "/") : p;
+  const normalizedBase = toUnix(basePath);
+  return async (frames) => {
+    for (const frame of frames) if (!(!frame.filename || frame.filename.startsWith("node:") || frame.filename.startsWith("data:"))) {
+      if (isAbsolute(frame.filename)) frame.filename = toUnix(relative(normalizedBase, toUnix(frame.filename)));
+    }
+    return frames;
+  };
+}
+
+// ../../node_modules/.pnpm/posthog-node@5.40.0/node_modules/posthog-node/dist/version.mjs
+var version9 = "5.40.0";
+
+// ../../node_modules/.pnpm/posthog-node@5.40.0/node_modules/posthog-node/dist/types.mjs
+var FeatureFlagError2 = {
+  ERRORS_WHILE_COMPUTING: "errors_while_computing_flags",
+  FLAG_MISSING: "flag_missing",
+  QUOTA_LIMITED: "quota_limited",
+  UNKNOWN_ERROR: "unknown_error"
+};
+
+// ../../node_modules/.pnpm/posthog-node@5.40.0/node_modules/posthog-node/dist/feature-flag-evaluations.mjs
+var FeatureFlagEvaluations = class _FeatureFlagEvaluations {
+  constructor(init2) {
+    this._host = init2.host;
+    this._distinctId = init2.distinctId;
+    this._groups = init2.groups;
+    this._disableGeoip = init2.disableGeoip;
+    this._flags = init2.flags;
+    this._requestId = init2.requestId;
+    this._evaluatedAt = init2.evaluatedAt;
+    this._flagDefinitionsLoadedAt = init2.flagDefinitionsLoadedAt;
+    this._errorsWhileComputing = init2.errorsWhileComputing ?? false;
+    this._quotaLimited = init2.quotaLimited ?? false;
+    this._accessed = init2.accessed ?? /* @__PURE__ */ new Set();
+    this._isSlice = init2.isSlice ?? false;
+  }
+  isEnabled(key) {
+    const flag = this._flags[key];
+    this._recordAccess(key);
+    return flag?.enabled ?? false;
+  }
+  getFlag(key) {
+    const flag = this._flags[key];
+    this._recordAccess(key);
+    if (!flag) return;
+    if (!flag.enabled) return false;
+    return flag.variant ?? true;
+  }
+  getFlagPayload(key) {
+    return this._flags[key]?.payload;
+  }
+  onlyAccessed() {
+    const filtered = {};
+    for (const key of this._accessed) {
+      const flag = this._flags[key];
+      if (flag) filtered[key] = flag;
+    }
+    return this._cloneWith(filtered);
+  }
+  only(keys) {
+    const filtered = {};
+    const missing = [];
+    for (const key of keys) {
+      const flag = this._flags[key];
+      if (flag) filtered[key] = flag;
+      else missing.push(key);
+    }
+    if (missing.length > 0) this._host.logWarning(`FeatureFlagEvaluations.only() was called with flag keys that are not in the evaluation set and will be dropped: ${missing.join(", ")}`);
+    return this._cloneWith(filtered);
+  }
+  get keys() {
+    return Object.keys(this._flags);
+  }
+  _getEventProperties() {
+    const properties = {};
+    const activeFlags = [];
+    for (const [key, flag] of Object.entries(this._flags)) {
+      const value = false === flag.enabled ? false : flag.variant ?? true;
+      properties[`$feature/${key}`] = value;
+      if (flag.enabled) activeFlags.push(key);
+    }
+    if (activeFlags.length > 0) {
+      activeFlags.sort();
+      properties["$active_feature_flags"] = activeFlags;
+    }
+    return properties;
+  }
+  _cloneWith(flags) {
+    return new _FeatureFlagEvaluations({
+      host: this._host,
+      distinctId: this._distinctId,
+      groups: this._groups,
+      disableGeoip: this._disableGeoip,
+      flags,
+      requestId: this._requestId,
+      evaluatedAt: this._evaluatedAt,
+      flagDefinitionsLoadedAt: this._flagDefinitionsLoadedAt,
+      errorsWhileComputing: this._errorsWhileComputing,
+      quotaLimited: this._quotaLimited,
+      accessed: new Set(this._accessed),
+      isSlice: true
+    });
+  }
+  _recordAccess(key) {
+    this._accessed.add(key);
+    if ("" === this._distinctId) return;
+    if (this._isSlice && !(key in this._flags)) return;
+    const flag = this._flags[key];
+    const response = void 0 === flag ? void 0 : false === flag.enabled ? false : flag.variant ?? true;
+    const properties = {
+      $feature_flag: key,
+      $feature_flag_response: response,
+      $feature_flag_id: flag?.id,
+      $feature_flag_version: flag?.version,
+      $feature_flag_reason: flag?.reason,
+      locally_evaluated: flag?.locallyEvaluated ?? false,
+      [`$feature/${key}`]: response,
+      $feature_flag_request_id: this._requestId,
+      $feature_flag_evaluated_at: flag?.locallyEvaluated ? Date.now() : this._evaluatedAt
+    };
+    if (flag?.locallyEvaluated && void 0 !== this._flagDefinitionsLoadedAt) properties.$feature_flag_definitions_loaded_at = this._flagDefinitionsLoadedAt;
+    const errors = [];
+    if (this._errorsWhileComputing) errors.push(FeatureFlagError2.ERRORS_WHILE_COMPUTING);
+    if (this._quotaLimited) errors.push(FeatureFlagError2.QUOTA_LIMITED);
+    if (void 0 === flag) errors.push(FeatureFlagError2.FLAG_MISSING);
+    if (errors.length > 0) properties.$feature_flag_error = errors.join(",");
+    this._host.captureFlagCalledEventIfNeeded({
+      distinctId: this._distinctId,
+      key,
+      response,
+      groups: this._groups,
+      disableGeoip: this._disableGeoip,
+      properties
+    });
+  }
+};
+
+// ../../node_modules/.pnpm/posthog-node@5.40.0/node_modules/posthog-node/dist/extensions/feature-flags/crypto.mjs
+async function hashSHA1(text2) {
+  const subtle = globalThis.crypto?.subtle;
+  if (!subtle) throw new Error("SubtleCrypto API not available");
+  const hashBuffer = await subtle.digest("SHA-1", new TextEncoder().encode(text2));
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map((byte) => byte.toString(16).padStart(2, "0")).join("");
+}
+
+// ../../node_modules/.pnpm/posthog-node@5.40.0/node_modules/posthog-node/dist/extensions/feature-flags/feature-flags.mjs
+var SIXTY_SECONDS = 6e4;
+var LONG_SCALE = 1152921504606847e3;
+var NULL_VALUES_ALLOWED_OPERATORS = [
+  "is_not",
+  "is_set"
+];
+var ClientError = class _ClientError extends Error {
+  constructor(message2) {
+    super();
+    Error.captureStackTrace(this, this.constructor);
+    this.name = "ClientError";
+    this.message = message2;
+    Object.setPrototypeOf(this, _ClientError.prototype);
+  }
+};
+function setCustomErrorPrototype(error42, constructor) {
+  error42.name = constructor.name;
+  Error.captureStackTrace(error42, constructor);
+  Object.setPrototypeOf(error42, constructor.prototype);
+}
+var InconclusiveMatchError = class _InconclusiveMatchError extends Error {
+  constructor(message2) {
+    super(message2);
+    setCustomErrorPrototype(this, _InconclusiveMatchError);
+  }
+};
+var RequiresServerEvaluation = class _RequiresServerEvaluation extends Error {
+  constructor(message2) {
+    super(message2);
+    setCustomErrorPrototype(this, _RequiresServerEvaluation);
+  }
+};
+var FeatureFlagsPoller = class {
+  constructor({ pollingInterval, personalApiKey, projectApiKey, timeout, host, customHeaders, ...options }) {
+    this.debugMode = false;
+    this.shouldBeginExponentialBackoff = false;
+    this.backOffCount = 0;
+    this.pollingInterval = pollingInterval;
+    this.personalApiKey = personalApiKey;
+    this.featureFlags = [];
+    this.featureFlagsByKey = {};
+    this.groupTypeMapping = {};
+    this.cohorts = {};
+    this.loadedSuccessfullyOnce = false;
+    this.timeout = timeout;
+    this.projectApiKey = projectApiKey;
+    this.host = host;
+    this.poller = void 0;
+    this.fetch = options.fetch || fetch;
+    this.onError = options.onError;
+    this.customHeaders = customHeaders;
+    this.onLoad = options.onLoad;
+    this.cacheProvider = options.cacheProvider;
+    this.strictLocalEvaluation = options.strictLocalEvaluation ?? false;
+    this.loadFeatureFlags();
+  }
+  debug(enabled = true) {
+    this.debugMode = enabled;
+  }
+  logMsgIfDebug(fn) {
+    if (this.debugMode) fn();
+  }
+  createEvaluationContext(distinctId, groups = {}, personProperties = {}, groupProperties = {}, evaluationCache = {}) {
+    return {
+      distinctId,
+      groups,
+      personProperties,
+      groupProperties,
+      evaluationCache
+    };
+  }
+  async getFeatureFlag(key, distinctId, groups = {}, personProperties = {}, groupProperties = {}) {
+    await this.loadFeatureFlags();
+    let response;
+    let featureFlag;
+    if (!this.loadedSuccessfullyOnce) return response;
+    featureFlag = this.featureFlagsByKey[key];
+    if (void 0 !== featureFlag) {
+      const evaluationContext = this.createEvaluationContext(distinctId, groups, personProperties, groupProperties);
+      try {
+        const result = await this.computeFlagAndPayloadLocally(featureFlag, evaluationContext);
+        response = result.value;
+        this.logMsgIfDebug(() => console.debug(`Successfully computed flag locally: ${key} -> ${response}`));
+      } catch (e) {
+        if (e instanceof RequiresServerEvaluation || e instanceof InconclusiveMatchError) this.logMsgIfDebug(() => console.debug(`${e.name} when computing flag locally: ${key}: ${e.message}`));
+        else if (e instanceof Error) this.onError?.(new Error(`Error computing flag locally: ${key}: ${e}`));
+      }
+    }
+    return response;
+  }
+  async getAllFlagsAndPayloads(evaluationContext, flagKeysToExplicitlyEvaluate) {
+    await this.loadFeatureFlags();
+    const response = {};
+    const payloads = {};
+    let fallbackToFlags = 0 == this.featureFlags.length;
+    const flagsToEvaluate = flagKeysToExplicitlyEvaluate ? flagKeysToExplicitlyEvaluate.map((key) => this.featureFlagsByKey[key]).filter(Boolean) : this.featureFlags;
+    const sharedEvaluationContext = {
+      ...evaluationContext,
+      evaluationCache: evaluationContext.evaluationCache ?? {}
+    };
+    await Promise.all(flagsToEvaluate.map(async (flag) => {
+      try {
+        const { value: matchValue, payload: matchPayload } = await this.computeFlagAndPayloadLocally(flag, sharedEvaluationContext);
+        response[flag.key] = matchValue;
+        if (matchPayload) payloads[flag.key] = matchPayload;
+      } catch (e) {
+        if (e instanceof RequiresServerEvaluation || e instanceof InconclusiveMatchError) this.logMsgIfDebug(() => console.debug(`${e.name} when computing flag locally: ${flag.key}: ${e.message}`));
+        else if (e instanceof Error) this.onError?.(new Error(`Error computing flag locally: ${flag.key}: ${e}`));
+        fallbackToFlags = true;
+      }
+    }));
+    return {
+      response,
+      payloads,
+      fallbackToFlags
+    };
+  }
+  async computeFlagAndPayloadLocally(flag, evaluationContext, options = {}) {
+    const { matchValue, skipLoadCheck = false } = options;
+    if (!skipLoadCheck) await this.loadFeatureFlags();
+    if (!this.loadedSuccessfullyOnce) return {
+      value: false,
+      payload: null
+    };
+    let flagValue;
+    flagValue = void 0 !== matchValue ? matchValue : await this.computeFlagValueLocally(flag, evaluationContext);
+    const payload = this.getFeatureFlagPayload(flag.key, flagValue);
+    return {
+      value: flagValue,
+      payload
+    };
+  }
+  async computeFlagValueLocally(flag, evaluationContext) {
+    const { distinctId, groups, personProperties, groupProperties } = evaluationContext;
+    if (!flag.active) return false;
+    if (flag.ensure_experience_continuity) throw new InconclusiveMatchError("Flag has experience continuity enabled");
+    const flagFilters = flag.filters || {};
+    const aggregation_group_type_index = flagFilters.aggregation_group_type_index;
+    if (void 0 != aggregation_group_type_index) {
+      const groupName = this.groupTypeMapping[String(aggregation_group_type_index)];
+      if (!groupName) {
+        this.logMsgIfDebug(() => console.warn(`[FEATURE FLAGS] Unknown group type index ${aggregation_group_type_index} for feature flag ${flag.key}`));
+        throw new InconclusiveMatchError("Flag has unknown group type index");
+      }
+      if (!(groupName in groups)) {
+        this.logMsgIfDebug(() => console.warn(`[FEATURE FLAGS] Can't compute group feature flag: ${flag.key} without group names passed in`));
+        return false;
+      }
+      if ("device_id" === flag.bucketing_identifier && (personProperties?.$device_id === void 0 || personProperties?.$device_id === null || personProperties?.$device_id === "")) this.logMsgIfDebug(() => console.warn(`[FEATURE FLAGS] Ignoring bucketing_identifier for group flag: ${flag.key}`));
+      const focusedGroupProperties = groupProperties[groupName];
+      return await this.matchFeatureFlagProperties(flag, groups[groupName], focusedGroupProperties, evaluationContext);
+    }
+    {
+      const bucketingValue = this.getBucketingValueForFlag(flag, distinctId, personProperties);
+      if (void 0 === bucketingValue) {
+        this.logMsgIfDebug(() => console.warn(`[FEATURE FLAGS] Can't compute feature flag: ${flag.key} without $device_id, falling back to server evaluation`));
+        throw new InconclusiveMatchError(`Can't compute feature flag: ${flag.key} without $device_id`);
+      }
+      return await this.matchFeatureFlagProperties(flag, bucketingValue, personProperties, evaluationContext);
+    }
+  }
+  getBucketingValueForFlag(flag, distinctId, properties) {
+    if (flag.filters?.aggregation_group_type_index != void 0) return distinctId;
+    if ("device_id" === flag.bucketing_identifier) {
+      const deviceId = properties?.$device_id;
+      if (null == deviceId || "" === deviceId) return;
+      return deviceId;
+    }
+    return distinctId;
+  }
+  getFeatureFlagPayload(key, flagValue) {
+    let payload = null;
+    if (false !== flagValue && null != flagValue) {
+      if ("boolean" == typeof flagValue) payload = this.featureFlagsByKey?.[key]?.filters?.payloads?.[flagValue.toString()] || null;
+      else if ("string" == typeof flagValue) payload = this.featureFlagsByKey?.[key]?.filters?.payloads?.[flagValue] || null;
+      if (null != payload) {
+        if ("object" == typeof payload) return payload;
+        if ("string" == typeof payload) try {
+          return JSON.parse(payload);
+        } catch {
+        }
+        return payload;
+      }
+    }
+    return null;
+  }
+  async evaluateFlagDependency(property, properties, evaluationContext) {
+    const { evaluationCache } = evaluationContext;
+    const targetFlagKey = property.key;
+    if (!this.featureFlagsByKey) throw new InconclusiveMatchError("Feature flags not available for dependency evaluation");
+    if (!("dependency_chain" in property)) throw new InconclusiveMatchError(`Flag dependency property for '${targetFlagKey}' is missing required 'dependency_chain' field`);
+    const dependencyChain = property.dependency_chain;
+    if (!Array.isArray(dependencyChain)) throw new InconclusiveMatchError(`Flag dependency property for '${targetFlagKey}' has an invalid 'dependency_chain' (expected array, got ${typeof dependencyChain})`);
+    if (0 === dependencyChain.length) throw new InconclusiveMatchError(`Circular dependency detected for flag '${targetFlagKey}' (empty dependency chain)`);
+    for (const depFlagKey of dependencyChain) {
+      if (!(depFlagKey in evaluationCache)) {
+        const depFlag = this.featureFlagsByKey[depFlagKey];
+        if (depFlag) if (depFlag.active) try {
+          const depResult = await this.computeFlagValueLocally(depFlag, evaluationContext);
+          evaluationCache[depFlagKey] = depResult;
+        } catch (error42) {
+          throw new InconclusiveMatchError(`Error evaluating flag dependency '${depFlagKey}' for flag '${targetFlagKey}': ${error42}`);
+        }
+        else evaluationCache[depFlagKey] = false;
+        else throw new InconclusiveMatchError(`Missing flag dependency '${depFlagKey}' for flag '${targetFlagKey}'`);
+      }
+      const cachedResult = evaluationCache[depFlagKey];
+      if (null == cachedResult) throw new InconclusiveMatchError(`Dependency '${depFlagKey}' could not be evaluated`);
+    }
+    const targetFlagValue = evaluationCache[targetFlagKey];
+    return this.flagEvaluatesToExpectedValue(property.value, targetFlagValue);
+  }
+  flagEvaluatesToExpectedValue(expectedValue, flagValue) {
+    if ("boolean" == typeof expectedValue) return expectedValue === flagValue || "string" == typeof flagValue && "" !== flagValue && true === expectedValue;
+    if ("string" == typeof expectedValue) return flagValue === expectedValue;
+    return false;
+  }
+  async matchFeatureFlagProperties(flag, bucketingValue, properties, evaluationContext) {
+    const flagFilters = flag.filters || {};
+    const flagConditions = flagFilters.groups || [];
+    const flagAggregation = flagFilters.aggregation_group_type_index;
+    const earlyExitEnabled = flagFilters.early_exit ?? false;
+    const { groups, groupProperties } = evaluationContext;
+    let isInconclusive = false;
+    let result;
+    for (const condition of flagConditions) try {
+      const conditionAggregation = void 0 !== condition.aggregation_group_type_index ? condition.aggregation_group_type_index : flagAggregation;
+      let effectiveProperties = properties;
+      let effectiveBucketingValue = bucketingValue;
+      if (conditionAggregation !== flagAggregation) {
+        if (null != conditionAggregation) {
+          const groupName = this.groupTypeMapping[String(conditionAggregation)];
+          if (!groupName || !(groupName in groups)) {
+            this.logMsgIfDebug(() => console.debug(`[FEATURE FLAGS] Skipping group condition for flag '${flag.key}': group type index ${conditionAggregation} not available`));
+            continue;
+          }
+          if (!(groupName in groupProperties)) {
+            isInconclusive = true;
+            continue;
+          }
+          effectiveProperties = groupProperties[groupName];
+          effectiveBucketingValue = groups[groupName];
+        }
+      }
+      const matchResult = await this.isConditionMatch(flag, effectiveBucketingValue, condition, effectiveProperties, evaluationContext);
+      if ("match" === matchResult) {
+        const variantOverride = condition.variant;
+        const flagVariants = flagFilters.multivariate?.variants || [];
+        result = variantOverride && flagVariants.some((variant) => variant.key === variantOverride) ? variantOverride : await this.getMatchingVariant(flag, effectiveBucketingValue) || true;
+        break;
+      }
+      if (earlyExitEnabled && "out_of_rollout_bound" === matchResult) return false;
+    } catch (e) {
+      if (e instanceof RequiresServerEvaluation) throw e;
+      if (e instanceof InconclusiveMatchError) isInconclusive = true;
+      else throw e;
+    }
+    if (void 0 !== result) return result;
+    if (isInconclusive) throw new InconclusiveMatchError("Can't determine if feature flag is enabled or not with given properties");
+    return false;
+  }
+  async isConditionMatch(flag, bucketingValue, condition, properties, evaluationContext) {
+    const rolloutPercentage = condition.rollout_percentage;
+    const warnFunction = (msg) => {
+      this.logMsgIfDebug(() => console.warn(msg));
+    };
+    if ((condition.properties || []).length > 0) {
+      for (const prop of condition.properties) {
+        const propertyType = prop.type;
+        let matches = false;
+        if ("cohort" === propertyType) {
+          const inCohort = await matchCohort(prop, properties, this.cohorts, this.debugMode, (depProp) => this.evaluateFlagDependency(depProp, properties, evaluationContext));
+          matches = "not_in" === prop.operator ? !inCohort : inCohort;
+        } else matches = "flag" === propertyType ? await this.evaluateFlagDependency(prop, properties, evaluationContext) : matchProperty(prop, properties, warnFunction);
+        if (!matches) return "no_match";
+      }
+      if (void 0 == rolloutPercentage) return "match";
+    }
+    if (void 0 != rolloutPercentage && await _hash(flag.key, bucketingValue) > rolloutPercentage / 100) return "out_of_rollout_bound";
+    return "match";
+  }
+  async getMatchingVariant(flag, bucketingValue) {
+    const hashValue = await _hash(flag.key, bucketingValue, "variant");
+    const matchingVariant = this.variantLookupTable(flag).find((variant) => hashValue >= variant.valueMin && hashValue < variant.valueMax);
+    if (matchingVariant) return matchingVariant.key;
+  }
+  variantLookupTable(flag) {
+    const lookupTable = [];
+    let valueMin = 0;
+    let valueMax = 0;
+    const flagFilters = flag.filters || {};
+    const multivariates = flagFilters.multivariate?.variants || [];
+    multivariates.forEach((variant) => {
+      valueMax = valueMin + variant.rollout_percentage / 100;
+      lookupTable.push({
+        valueMin,
+        valueMax,
+        key: variant.key
+      });
+      valueMin = valueMax;
+    });
+    return lookupTable;
+  }
+  updateFlagState(flagData) {
+    this.featureFlags = flagData.flags;
+    this.featureFlagsByKey = flagData.flags.reduce((acc, curr) => (acc[curr.key] = curr, acc), {});
+    this.groupTypeMapping = flagData.groupTypeMapping;
+    this.cohorts = flagData.cohorts;
+    this.loadedSuccessfullyOnce = true;
+  }
+  warnAboutExperienceContinuityFlags(flags) {
+    if (this.strictLocalEvaluation) return;
+    const experienceContinuityFlags = flags.filter((f) => f.ensure_experience_continuity);
+    if (experienceContinuityFlags.length > 0) console.warn(`[PostHog] You are using local evaluation but ${experienceContinuityFlags.length} flag(s) have experience continuity enabled: ${experienceContinuityFlags.map((f) => f.key).join(", ")}. Experience continuity is incompatible with local evaluation and will cause a server request on every flag evaluation, negating local evaluation cost savings. To avoid server requests and unexpected costs, either disable experience continuity on these flags in PostHog, use strictLocalEvaluation: true in client init, or pass onlyEvaluateLocally: true per flag call (flags that cannot be evaluated locally will return undefined).`);
+  }
+  async loadFromCache(debugMessage) {
+    if (!this.cacheProvider) return false;
+    try {
+      const cached3 = await this.cacheProvider.getFlagDefinitions();
+      if (cached3) {
+        this.updateFlagState(cached3);
+        this.logMsgIfDebug(() => console.debug(`[FEATURE FLAGS] ${debugMessage} (${cached3.flags.length} flags)`));
+        this.onLoad?.(this.featureFlags.length);
+        this.warnAboutExperienceContinuityFlags(cached3.flags);
+        return true;
+      }
+      return false;
+    } catch (err) {
+      this.onError?.(new Error(`Failed to load from cache: ${err}`));
+      return false;
+    }
+  }
+  async loadFeatureFlags(forceReload = false) {
+    if (this.loadedSuccessfullyOnce && !forceReload) return;
+    if (!forceReload && this.nextFetchAllowedAt && Date.now() < this.nextFetchAllowedAt) return void this.logMsgIfDebug(() => console.debug("[FEATURE FLAGS] Skipping fetch, in backoff period"));
+    if (!this.loadingPromise) this.loadingPromise = this._loadFeatureFlags().catch((err) => this.logMsgIfDebug(() => console.debug(`[FEATURE FLAGS] Failed to load feature flags: ${err}`))).finally(() => {
+      this.loadingPromise = void 0;
+    });
+    return this.loadingPromise;
+  }
+  isLocalEvaluationReady() {
+    return (this.loadedSuccessfullyOnce ?? false) && (this.featureFlags?.length ?? 0) > 0;
+  }
+  getFlagDefinitionsLoadedAt() {
+    return this.flagDefinitionsLoadedAt;
+  }
+  getPollingInterval() {
+    if (!this.shouldBeginExponentialBackoff) return this.pollingInterval;
+    return Math.min(SIXTY_SECONDS, this.pollingInterval * 2 ** this.backOffCount);
+  }
+  beginBackoff() {
+    this.shouldBeginExponentialBackoff = true;
+    this.backOffCount += 1;
+    this.nextFetchAllowedAt = Date.now() + this.getPollingInterval();
+  }
+  clearBackoff() {
+    this.shouldBeginExponentialBackoff = false;
+    this.backOffCount = 0;
+    this.nextFetchAllowedAt = void 0;
+  }
+  async _loadFeatureFlags() {
+    if (this.poller) {
+      clearTimeout(this.poller);
+      this.poller = void 0;
+    }
+    this.poller = setTimeout(() => this.loadFeatureFlags(true), this.getPollingInterval());
+    try {
+      let shouldFetch = true;
+      if (this.cacheProvider) try {
+        shouldFetch = await this.cacheProvider.shouldFetchFlagDefinitions();
+      } catch (err) {
+        this.onError?.(new Error(`Error in shouldFetchFlagDefinitions: ${err}`));
+      }
+      if (!shouldFetch) {
+        const loaded = await this.loadFromCache("Loaded flags from cache (skipped fetch)");
+        if (loaded) return;
+        if (this.loadedSuccessfullyOnce) return;
+      }
+      const res = await this._requestFeatureFlagDefinitions();
+      if (!res) return;
+      switch (res.status) {
+        case 304:
+          this.logMsgIfDebug(() => console.debug("[FEATURE FLAGS] Flags not modified (304), using cached data"));
+          this.flagsEtag = res.headers?.get("ETag") ?? this.flagsEtag;
+          this.loadedSuccessfullyOnce = true;
+          this.clearBackoff();
+          return;
+        case 401:
+          this.beginBackoff();
+          throw new ClientError(`Your project key or secret key is invalid. Setting next polling interval to ${this.getPollingInterval()}ms. More information: https://posthog.com/docs/api#rate-limiting`);
+        case 402:
+          console.warn("[FEATURE FLAGS] Feature flags quota limit exceeded - unsetting all local flags. Learn more about billing limits at https://posthog.com/docs/billing/limits-alerts");
+          this.featureFlags = [];
+          this.featureFlagsByKey = {};
+          this.groupTypeMapping = {};
+          this.cohorts = {};
+          return;
+        case 403:
+          this.beginBackoff();
+          throw new ClientError(`Your secret key does not have permission to fetch feature flag definitions for local evaluation. Setting next polling interval to ${this.getPollingInterval()}ms. Are you sure you're using the correct secret and Project API key pair? More information: https://posthog.com/docs/api/overview`);
+        case 429:
+          this.beginBackoff();
+          throw new ClientError(`You are being rate limited. Setting next polling interval to ${this.getPollingInterval()}ms. More information: https://posthog.com/docs/api#rate-limiting`);
+        case 200: {
+          const responseJson = await res.json() ?? {};
+          if (!("flags" in responseJson)) return void this.onError?.(new Error(`Invalid response when getting feature flags: ${JSON.stringify(responseJson)}`));
+          this.flagsEtag = res.headers?.get("ETag") ?? void 0;
+          const flagData = {
+            flags: responseJson.flags ?? [],
+            groupTypeMapping: responseJson.group_type_mapping || {},
+            cohorts: responseJson.cohorts || {}
+          };
+          this.updateFlagState(flagData);
+          this.flagDefinitionsLoadedAt = Date.now();
+          this.clearBackoff();
+          if (this.cacheProvider && shouldFetch) try {
+            await this.cacheProvider.onFlagDefinitionsReceived(flagData);
+          } catch (err) {
+            this.onError?.(new Error(`Failed to store in cache: ${err}`));
+          }
+          this.onLoad?.(this.featureFlags.length);
+          this.warnAboutExperienceContinuityFlags(flagData.flags);
+          break;
+        }
+        default:
+          return;
+      }
+    } catch (err) {
+      if (err instanceof ClientError) this.onError?.(err);
+    }
+  }
+  getPersonalApiKeyRequestOptions(method = "GET", etag) {
+    const headers = {
+      ...this.customHeaders,
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${this.personalApiKey}`
+    };
+    if (etag) headers["If-None-Match"] = etag;
+    return {
+      method,
+      headers
+    };
+  }
+  _requestFeatureFlagDefinitions() {
+    const url3 = `${this.host}/flags/definitions?token=${this.projectApiKey}&send_cohorts`;
+    const options = this.getPersonalApiKeyRequestOptions("GET", this.flagsEtag);
+    let abortTimeout = null;
+    if (this.timeout && "number" == typeof this.timeout) {
+      const controller = new AbortController();
+      abortTimeout = safeSetTimeout(() => {
+        controller.abort();
+      }, this.timeout);
+      options.signal = controller.signal;
+    }
+    try {
+      const fetch1 = this.fetch;
+      return fetch1(url3, options);
+    } finally {
+      clearTimeout(abortTimeout);
+    }
+  }
+  async stopPoller(timeoutMs = 3e4) {
+    clearTimeout(this.poller);
+    if (this.cacheProvider) try {
+      const shutdownResult = this.cacheProvider.shutdown();
+      if (shutdownResult instanceof Promise) await Promise.race([
+        shutdownResult,
+        new Promise((_, reject) => setTimeout(() => reject(new Error(`Cache shutdown timeout after ${timeoutMs}ms`)), timeoutMs))
+      ]);
+    } catch (err) {
+      this.onError?.(new Error(`Error during cache shutdown: ${err}`));
+    }
+  }
+};
+async function _hash(key, bucketingValue, salt = "") {
+  const hashString = await hashSHA1(`${key}.${bucketingValue}${salt}`);
+  return parseInt(hashString.slice(0, 15), 16) / LONG_SCALE;
+}
+function matchProperty(property, propertyValues, warnFunction) {
+  const key = property.key;
+  const value = property.value;
+  const operator = property.operator || "exact";
+  if (key in propertyValues) {
+    if ("is_not_set" === operator) return false;
+  } else {
+    if ("is_not_set" === operator) return true;
+    throw new InconclusiveMatchError(`Property ${key} not found in propertyValues`);
+  }
+  const overrideValue = propertyValues[key];
+  if (null == overrideValue && !NULL_VALUES_ALLOWED_OPERATORS.includes(operator)) {
+    if (warnFunction) warnFunction(`Property ${key} cannot have a value of null/undefined with the ${operator} operator`);
+    return false;
+  }
+  function computeExactMatch(value2, overrideValue2) {
+    if (Array.isArray(value2)) return value2.map((val) => String(val).toLowerCase()).includes(String(overrideValue2).toLowerCase());
+    return String(value2).toLowerCase() === String(overrideValue2).toLowerCase();
+  }
+  function compare(lhs, rhs, operator2) {
+    if ("gt" === operator2) return lhs > rhs;
+    if ("gte" === operator2) return lhs >= rhs;
+    if ("lt" === operator2) return lhs < rhs;
+    if ("lte" === operator2) return lhs <= rhs;
+    throw new Error(`Invalid operator: ${operator2}`);
+  }
+  switch (operator) {
+    case "exact":
+      return computeExactMatch(value, overrideValue);
+    case "is_not":
+      return !computeExactMatch(value, overrideValue);
+    case "is_set":
+      return key in propertyValues;
+    case "icontains":
+      return String(overrideValue).toLowerCase().includes(String(value).toLowerCase());
+    case "not_icontains":
+      return !String(overrideValue).toLowerCase().includes(String(value).toLowerCase());
+    case "regex":
+      return isValidRegex(String(value)) && null !== String(overrideValue).match(String(value));
+    case "not_regex":
+      return isValidRegex(String(value)) && null === String(overrideValue).match(String(value));
+    case "gt":
+    case "gte":
+    case "lt":
+    case "lte": {
+      const parsedValue = "number" == typeof value ? value : parseFloat(String(value));
+      let parsedOverride;
+      parsedOverride = "number" == typeof overrideValue ? overrideValue : null != overrideValue ? parseFloat(String(overrideValue)) : NaN;
+      if (Number.isFinite(parsedValue) && Number.isFinite(parsedOverride)) return compare(parsedOverride, parsedValue, operator);
+      return compare(String(overrideValue), String(value), operator);
+    }
+    case "is_date_after":
+    case "is_date_before": {
+      if ("boolean" == typeof value) throw new InconclusiveMatchError("Date operations cannot be performed on boolean values");
+      let parsedDate = relativeDateParseForFeatureFlagMatching(String(value));
+      if (null == parsedDate) parsedDate = convertToDateTime(value);
+      if (null == parsedDate) throw new InconclusiveMatchError(`Invalid date: ${value}`);
+      const overrideDate = convertToDateTime(overrideValue);
+      if ([
+        "is_date_before"
+      ].includes(operator)) return overrideDate < parsedDate;
+      return overrideDate > parsedDate;
+    }
+    case "semver_eq": {
+      const cmp = compareSemverTuples(parseSemver(String(overrideValue)), parseSemver(String(value)));
+      return 0 === cmp;
+    }
+    case "semver_neq": {
+      const cmp = compareSemverTuples(parseSemver(String(overrideValue)), parseSemver(String(value)));
+      return 0 !== cmp;
+    }
+    case "semver_gt": {
+      const cmp = compareSemverTuples(parseSemver(String(overrideValue)), parseSemver(String(value)));
+      return cmp > 0;
+    }
+    case "semver_gte": {
+      const cmp = compareSemverTuples(parseSemver(String(overrideValue)), parseSemver(String(value)));
+      return cmp >= 0;
+    }
+    case "semver_lt": {
+      const cmp = compareSemverTuples(parseSemver(String(overrideValue)), parseSemver(String(value)));
+      return cmp < 0;
+    }
+    case "semver_lte": {
+      const cmp = compareSemverTuples(parseSemver(String(overrideValue)), parseSemver(String(value)));
+      return cmp <= 0;
+    }
+    case "semver_tilde": {
+      const overrideParsed = parseSemver(String(overrideValue));
+      const { lower, upper } = computeTildeBounds(String(value));
+      return compareSemverTuples(overrideParsed, lower) >= 0 && compareSemverTuples(overrideParsed, upper) < 0;
+    }
+    case "semver_caret": {
+      const overrideParsed = parseSemver(String(overrideValue));
+      const { lower, upper } = computeCaretBounds(String(value));
+      return compareSemverTuples(overrideParsed, lower) >= 0 && compareSemverTuples(overrideParsed, upper) < 0;
+    }
+    case "semver_wildcard": {
+      const overrideParsed = parseSemver(String(overrideValue));
+      const { lower, upper } = computeWildcardBounds(String(value));
+      return compareSemverTuples(overrideParsed, lower) >= 0 && compareSemverTuples(overrideParsed, upper) < 0;
+    }
+    default:
+      throw new InconclusiveMatchError(`Unknown operator: ${operator}`);
+  }
+}
+function checkCohortExists(cohortId, cohortProperties) {
+  if (!(cohortId in cohortProperties)) throw new RequiresServerEvaluation(`cohort ${cohortId} not found in local cohorts - likely a static cohort that requires server evaluation`);
+}
+async function matchCohort(property, propertyValues, cohortProperties, debugMode = false, flagDependencyEvaluator) {
+  const cohortId = String(property.value);
+  checkCohortExists(cohortId, cohortProperties);
+  const propertyGroup = cohortProperties[cohortId];
+  return matchPropertyGroup(propertyGroup, propertyValues, cohortProperties, debugMode, flagDependencyEvaluator);
+}
+async function matchPropertyGroup(propertyGroup, propertyValues, cohortProperties, debugMode = false, flagDependencyEvaluator) {
+  if (!propertyGroup) return true;
+  const propertyGroupType = propertyGroup.type;
+  const properties = propertyGroup.values;
+  if (!properties || 0 === properties.length) return true;
+  let errorMatchingLocally = false;
+  if ("values" in properties[0]) {
+    for (const prop of properties) try {
+      const matches = await matchPropertyGroup(prop, propertyValues, cohortProperties, debugMode, flagDependencyEvaluator);
+      if ("AND" === propertyGroupType) {
+        if (!matches) return false;
+      } else if (matches) return true;
+    } catch (err) {
+      if (err instanceof RequiresServerEvaluation) throw err;
+      if (err instanceof InconclusiveMatchError) {
+        if (debugMode) console.debug(`Failed to compute property ${prop} locally: ${err}`);
+        errorMatchingLocally = true;
+      } else throw err;
+    }
+    if (errorMatchingLocally) throw new InconclusiveMatchError("Can't match cohort without a given cohort property value");
+    return "AND" === propertyGroupType;
+  }
+  for (const prop of properties) try {
+    let matches;
+    if ("cohort" === prop.type) matches = await matchCohort(prop, propertyValues, cohortProperties, debugMode, flagDependencyEvaluator);
+    else if ("flag" === prop.type) {
+      if (!flagDependencyEvaluator) throw new InconclusiveMatchError(`Flag dependency '${prop.key || "unknown"}' cannot be evaluated without a flag dependency evaluator`);
+      matches = await flagDependencyEvaluator(prop);
+    } else matches = matchProperty(prop, propertyValues);
+    const negation = prop.negation || false;
+    if ("AND" === propertyGroupType) {
+      if (!matches && !negation) return false;
+      if (matches && negation) return false;
+    } else {
+      if (matches && !negation) return true;
+      if (!matches && negation) return true;
+    }
+  } catch (err) {
+    if (err instanceof RequiresServerEvaluation) throw err;
+    if (err instanceof InconclusiveMatchError) {
+      if (debugMode) console.debug(`Failed to compute property ${prop} locally: ${err}`);
+      errorMatchingLocally = true;
+    } else throw err;
+  }
+  if (errorMatchingLocally) throw new InconclusiveMatchError("can't match cohort without a given cohort property value");
+  return "AND" === propertyGroupType;
+}
+function isValidRegex(regex) {
+  try {
+    new RegExp(regex);
+    return true;
+  } catch (err) {
+    return false;
+  }
+}
+function parseSemverNumericIdentifier(part, raw) {
+  if (!/^\d+$/.test(part)) throw new InconclusiveMatchError(`Invalid semver: ${raw}`);
+  if (part.length > 1 && "0" === part[0]) throw new InconclusiveMatchError(`Invalid semver: ${raw}`);
+  return parseInt(part, 10);
+}
+function parseSemver(value) {
+  const text2 = String(value).trim().replace(/^[vV]/, "");
+  const baseVersion = text2.split("-")[0].split("+")[0];
+  if (!baseVersion || baseVersion.startsWith(".")) throw new InconclusiveMatchError(`Invalid semver: ${value}`);
+  const parts = baseVersion.split(".");
+  const parsePart = (part) => {
+    if (void 0 === part || "" === part) return 0;
+    return parseSemverNumericIdentifier(part, value);
+  };
+  const major = parsePart(parts[0]);
+  const minor = parsePart(parts[1]);
+  const patch = parsePart(parts[2]);
+  return [
+    major,
+    minor,
+    patch
+  ];
+}
+function compareSemverTuples(a, b) {
+  for (let i = 0; i < 3; i++) {
+    if (a[i] < b[i]) return -1;
+    if (a[i] > b[i]) return 1;
+  }
+  return 0;
+}
+function computeTildeBounds(value) {
+  const parsed = parseSemver(value);
+  const lower = [
+    parsed[0],
+    parsed[1],
+    parsed[2]
+  ];
+  const upper = [
+    parsed[0],
+    parsed[1] + 1,
+    0
+  ];
+  return {
+    lower,
+    upper
+  };
+}
+function computeCaretBounds(value) {
+  const parsed = parseSemver(value);
+  const [major, minor, patch] = parsed;
+  const lower = [
+    major,
+    minor,
+    patch
+  ];
+  let upper;
+  upper = major > 0 ? [
+    major + 1,
+    0,
+    0
+  ] : minor > 0 ? [
+    0,
+    minor + 1,
+    0
+  ] : [
+    0,
+    0,
+    patch + 1
+  ];
+  return {
+    lower,
+    upper
+  };
+}
+function computeWildcardBounds(value) {
+  const text2 = String(value).trim().replace(/^[vV]/, "");
+  const cleanedText = text2.replace(/\.\*$/, "").replace(/\*$/, "");
+  if (!cleanedText) throw new InconclusiveMatchError(`Invalid wildcard semver: ${value}`);
+  const parts = cleanedText.split(".");
+  const parseWildcardPart = (part) => {
+    try {
+      return parseSemverNumericIdentifier(part, value);
+    } catch {
+      throw new InconclusiveMatchError(`Invalid wildcard semver: ${value}`);
+    }
+  };
+  const major = parseWildcardPart(parts[0]);
+  let lower;
+  let upper;
+  if (1 === parts.length) {
+    lower = [
+      major,
+      0,
+      0
+    ];
+    upper = [
+      major + 1,
+      0,
+      0
+    ];
+  } else {
+    const minor = parseWildcardPart(parts[1]);
+    lower = [
+      major,
+      minor,
+      0
+    ];
+    upper = [
+      major,
+      minor + 1,
+      0
+    ];
+  }
+  return {
+    lower,
+    upper
+  };
+}
+function convertToDateTime(value) {
+  if (value instanceof Date) return value;
+  if ("string" == typeof value || "number" == typeof value) {
+    const date10 = new Date(value);
+    if (!isNaN(date10.valueOf())) return date10;
+    throw new InconclusiveMatchError(`${value} is in an invalid date format`);
+  }
+  throw new InconclusiveMatchError(`The date provided ${value} must be a string, number, or date object`);
+}
+function relativeDateParseForFeatureFlagMatching(value) {
+  const regex = /^-?(?<number>[0-9]+)(?<interval>[a-z])$/;
+  const match = value.match(regex);
+  const parsedDt = new Date((/* @__PURE__ */ new Date()).toISOString());
+  if (!match) return null;
+  {
+    if (!match.groups) return null;
+    const number7 = parseInt(match.groups["number"]);
+    if (number7 >= 1e4) return null;
+    const interval2 = match.groups["interval"];
+    if ("h" == interval2) parsedDt.setUTCHours(parsedDt.getUTCHours() - number7);
+    else if ("d" == interval2) parsedDt.setUTCDate(parsedDt.getUTCDate() - number7);
+    else if ("w" == interval2) parsedDt.setUTCDate(parsedDt.getUTCDate() - 7 * number7);
+    else if ("m" == interval2) parsedDt.setUTCMonth(parsedDt.getUTCMonth() - number7);
+    else {
+      if ("y" != interval2) return null;
+      parsedDt.setUTCFullYear(parsedDt.getUTCFullYear() - number7);
+    }
+    return parsedDt;
+  }
+}
+
+// ../../node_modules/.pnpm/posthog-node@5.40.0/node_modules/posthog-node/dist/extensions/error-tracking/autocapture.mjs
+function makeUncaughtExceptionHandler(captureFn, onFatalFn) {
+  let calledFatalError = false;
+  return Object.assign((error42) => {
+    const userProvidedListenersCount = global.process.listeners("uncaughtException").filter((listener) => "domainUncaughtExceptionClear" !== listener.name && true !== listener._posthogErrorHandler).length;
+    const processWouldExit = 0 === userProvidedListenersCount;
+    captureFn(error42, {
+      mechanism: {
+        type: "onuncaughtexception",
+        handled: false
+      }
+    });
+    if (!calledFatalError && processWouldExit) {
+      calledFatalError = true;
+      onFatalFn(error42);
+    }
+  }, {
+    _posthogErrorHandler: true
+  });
+}
+function addUncaughtExceptionListener(captureFn, onFatalFn) {
+  globalThis.process?.on("uncaughtException", makeUncaughtExceptionHandler(captureFn, onFatalFn));
+}
+function addUnhandledRejectionListener(captureFn) {
+  globalThis.process?.on("unhandledRejection", (reason) => captureFn(reason, {
+    mechanism: {
+      type: "onunhandledrejection",
+      handled: false
+    }
+  }));
+}
+
+// ../../node_modules/.pnpm/posthog-node@5.40.0/node_modules/posthog-node/dist/extensions/error-tracking/index.mjs
+var SHUTDOWN_TIMEOUT = 2e3;
+var ErrorTracking = class _ErrorTracking {
+  constructor(client, options, _logger) {
+    this.client = client;
+    this._exceptionAutocaptureEnabled = options.enableExceptionAutocapture || false;
+    this._logger = _logger;
+    this._rateLimiter = new BucketedRateLimiter({
+      refillRate: 1,
+      bucketSize: 10,
+      refillInterval: 1e4,
+      _logger: this._logger
+    });
+    this.startAutocaptureIfEnabled();
+  }
+  static isPreviouslyCapturedError(x) {
+    return isObject4(x) && "__posthog_previously_captured_error" in x && true === x.__posthog_previously_captured_error;
+  }
+  static async buildEventMessage(builder, error42, hint, distinctId, additionalProperties) {
+    const properties = {
+      ...additionalProperties
+    };
+    const exceptionProperties = builder.buildFromUnknown(error42, hint);
+    exceptionProperties.$exception_list = await builder.modifyFrames(exceptionProperties.$exception_list);
+    return {
+      event: "$exception",
+      distinctId,
+      properties: {
+        ...exceptionProperties,
+        ...properties
+      },
+      _originatedFromCaptureException: true
+    };
+  }
+  startAutocaptureIfEnabled() {
+    if (this.isEnabled()) {
+      addUncaughtExceptionListener(this.onException.bind(this), this.onFatalError.bind(this));
+      addUnhandledRejectionListener(this.onException.bind(this));
+    }
+  }
+  onException(exception, hint) {
+    this.client.addPendingPromise((async () => {
+      if (!_ErrorTracking.isPreviouslyCapturedError(exception)) {
+        const eventMessage = await _ErrorTracking.buildEventMessage(this.client.getErrorPropertiesBuilder(), exception, hint);
+        const exceptionProperties = eventMessage.properties;
+        const exceptionType = exceptionProperties?.$exception_list[0]?.type ?? "Exception";
+        const isRateLimited = this._rateLimiter.consumeRateLimit(exceptionType);
+        if (isRateLimited) return void this._logger.info("Skipping exception capture because of client rate limiting.", {
+          exception: exceptionType
+        });
+        return this.client._capturePreparedEvent(eventMessage, false);
+      }
+    })());
+  }
+  async onFatalError(exception) {
+    console.error(exception);
+    await this.client.shutdown(SHUTDOWN_TIMEOUT);
+    process.exit(1);
+  }
+  isEnabled() {
+    return !this.client.isDisabled && this._exceptionAutocaptureEnabled;
+  }
+  shutdown() {
+    this._rateLimiter.stop();
+  }
+};
+
+// ../../node_modules/.pnpm/posthog-node@5.40.0/node_modules/posthog-node/dist/storage-memory.mjs
+var PostHogMemoryStorage = class {
+  getProperty(key) {
+    return this._memoryStorage[key];
+  }
+  setProperty(key, value) {
+    this._memoryStorage[key] = null !== value ? value : void 0;
+  }
+  constructor() {
+    this._memoryStorage = {};
+  }
+};
+
+// ../../node_modules/.pnpm/posthog-node@5.40.0/node_modules/posthog-node/dist/client.mjs
+var MINIMUM_POLLING_INTERVAL = 100;
+var THIRTY_SECONDS = 3e4;
+var MAX_CACHE_SIZE = 5e4;
+var WAITUNTIL_DEBOUNCE_MS = 50;
+var WAITUNTIL_MAX_WAIT_MS = 500;
+var DEFAULT_NODE_HOST = "https://us.i.posthog.com";
+var _emittedDeprecations = /* @__PURE__ */ new Set();
+function emitDeprecationWarningOnce(id, message2) {
+  if (_emittedDeprecations.has(id)) return;
+  _emittedDeprecations.add(id);
+  console.warn(`[PostHog] ${message2}`);
+}
+function normalizeApiKey(value) {
+  return "string" == typeof value ? value.trim() : "";
+}
+function normalizePersonalApiKey(value) {
+  const normalizedValue = "string" == typeof value ? value.trim() : "";
+  return normalizedValue || void 0;
+}
+function normalizeHost(value) {
+  const normalizedValue = "string" == typeof value ? value.trim() : "";
+  return normalizedValue || DEFAULT_NODE_HOST;
+}
+function normalizeUnsetPersonProperties(value) {
+  const propertyNames = Array.isArray(value) ? value : [
+    value
+  ];
+  return propertyNames.filter((propertyName) => "string" == typeof propertyName && propertyName.trim().length > 0);
+}
+function buildFlagEventProperties(flagValues) {
+  if (!flagValues) return {};
+  const additionalProperties = {};
+  for (const [feature, variant] of Object.entries(flagValues)) additionalProperties[`$feature/${feature}`] = variant;
+  const activeFlags = Object.keys(flagValues).filter((flag) => false !== flagValues[flag]).sort();
+  if (activeFlags.length > 0) additionalProperties["$active_feature_flags"] = activeFlags;
+  return additionalProperties;
+}
+var PostHogBackendClient = class extends PostHogCoreStateless {
+  constructor(apiKey, options = {}) {
+    const normalizedApiKey = normalizeApiKey(apiKey);
+    const normalizedOptions = {
+      ...options,
+      host: normalizeHost(options.host),
+      personalApiKey: normalizePersonalApiKey(options.secretKey ?? options.personalApiKey)
+    };
+    super(normalizedApiKey, normalizedOptions), this._memoryStorage = new PostHogMemoryStorage();
+    this.options = normalizedOptions;
+    this.context = this.initializeContext();
+    this.options.featureFlagsPollingInterval = "number" == typeof normalizedOptions.featureFlagsPollingInterval ? Math.max(normalizedOptions.featureFlagsPollingInterval, MINIMUM_POLLING_INTERVAL) : THIRTY_SECONDS;
+    if ("number" == typeof normalizedOptions.waitUntilDebounceMs) this.options.waitUntilDebounceMs = Math.max(normalizedOptions.waitUntilDebounceMs, 0);
+    if ("number" == typeof normalizedOptions.waitUntilMaxWaitMs) this.options.waitUntilMaxWaitMs = Math.max(normalizedOptions.waitUntilMaxWaitMs, 0);
+    if (!this.disabled && normalizedOptions.personalApiKey) {
+      if (normalizedOptions.personalApiKey.includes("phc_")) throw new Error('Your Personal API key is invalid. These keys are prefixed with "phx_" and can be created in PostHog project settings.');
+      const shouldEnableLocalEvaluation = false !== normalizedOptions.enableLocalEvaluation;
+      if (shouldEnableLocalEvaluation) this.featureFlagsPoller = new FeatureFlagsPoller({
+        pollingInterval: this.options.featureFlagsPollingInterval,
+        personalApiKey: normalizedOptions.personalApiKey,
+        projectApiKey: normalizedApiKey,
+        timeout: normalizedOptions.requestTimeout ?? 1e4,
+        host: this.host,
+        fetch: normalizedOptions.fetch,
+        onError: (err) => {
+          this._events.emit("error", err);
+        },
+        onLoad: (count2) => {
+          this._events.emit("localEvaluationFlagsLoaded", count2);
+        },
+        customHeaders: this.getCustomHeaders(),
+        cacheProvider: normalizedOptions.flagDefinitionCacheProvider,
+        strictLocalEvaluation: normalizedOptions.strictLocalEvaluation
+      });
+    }
+    this.errorTracking = new ErrorTracking(this, normalizedOptions, this._logger);
+    this.distinctIdHasSentFlagCalls = {};
+    this.maxCacheSize = normalizedOptions.maxCacheSize || MAX_CACHE_SIZE;
+  }
+  enqueue(type, message2, options) {
+    super.enqueue(type, message2, options);
+    this.scheduleDebouncedFlush();
+  }
+  async flush() {
+    const flushPromise = this.flushWithPendingPromises();
+    const waitUntil = this.options.waitUntil;
+    if (waitUntil && !this._waitUntilCycle) try {
+      waitUntil(flushPromise.catch(() => {
+      }));
+    } catch {
+    }
+    return flushPromise;
+  }
+  scheduleDebouncedFlush() {
+    const waitUntil = this.options.waitUntil;
+    if (!waitUntil) return;
+    if (this.disabled || this.optedOut) return;
+    if (!this._waitUntilCycle) {
+      let resolve;
+      const promise3 = new Promise((r) => {
+        resolve = r;
+      });
+      try {
+        waitUntil(promise3);
+      } catch {
+        return;
+      }
+      this._waitUntilCycle = {
+        resolve,
+        startedAt: Date.now(),
+        timer: void 0
+      };
+    }
+    const elapsed = Date.now() - this._waitUntilCycle.startedAt;
+    const maxWaitMs = this.options.waitUntilMaxWaitMs ?? WAITUNTIL_MAX_WAIT_MS;
+    const flushNow = elapsed >= maxWaitMs;
+    if (void 0 !== this._waitUntilCycle.timer) clearTimeout(this._waitUntilCycle.timer);
+    if (flushNow) return void this.resolveWaitUntilFlush();
+    const debounceMs = this.options.waitUntilDebounceMs ?? WAITUNTIL_DEBOUNCE_MS;
+    this._waitUntilCycle.timer = safeSetTimeout(() => {
+      this.resolveWaitUntilFlush();
+    }, debounceMs);
+  }
+  _consumeWaitUntilCycle() {
+    const cycle = this._waitUntilCycle;
+    if (cycle) {
+      clearTimeout(cycle.timer);
+      this._waitUntilCycle = void 0;
+    }
+    return cycle?.resolve;
+  }
+  async resolveWaitUntilFlush() {
+    const resolve = this._consumeWaitUntilCycle();
+    try {
+      await this.flushWithPendingPromises();
+    } catch {
+    } finally {
+      resolve?.();
+    }
+  }
+  getPersistedProperty(key) {
+    return this._memoryStorage.getProperty(key);
+  }
+  setPersistedProperty(key, value) {
+    return this._memoryStorage.setProperty(key, value);
+  }
+  fetch(url3, options) {
+    return this.options.fetch ? this.options.fetch(url3, options) : fetch(url3, options);
+  }
+  getLibraryVersion() {
+    return version9;
+  }
+  getCustomUserAgent() {
+    return `${this.getLibraryId()}/${this.getLibraryVersion()}`;
+  }
+  getCommonEventProperties() {
+    const commonProperties = super.getCommonEventProperties();
+    if (this.options.isServer ?? true) commonProperties.$is_server = true;
+    return commonProperties;
+  }
+  enable() {
+    return super.optIn();
+  }
+  disable() {
+    return super.optOut();
+  }
+  debug(enabled = true) {
+    super.debug(enabled);
+    this.featureFlagsPoller?.debug(enabled);
+  }
+  _warnIfInvalidCapture(props, stringArgumentWarning, exceptionCaptureWarning) {
+    if ("string" == typeof props) this._logger.warn(stringArgumentWarning);
+    if ("$exception" === props.event && !props._originatedFromCaptureException) this._logger.warn(exceptionCaptureWarning);
+  }
+  _sendPreparedEvent(type, props, immediate, prepareOptions) {
+    return this.addPendingPromise(this._prepareEventMessage(props, prepareOptions).then(({ distinctId, event, properties, options }) => {
+      const captureOptions = {
+        timestamp: options.timestamp,
+        disableGeoip: options.disableGeoip,
+        uuid: options.uuid
+      };
+      const message2 = {
+        distinctId,
+        event,
+        properties: {
+          ...properties,
+          ...this.getCommonEventProperties()
+        }
+      };
+      return immediate ? this.sendImmediate(type, message2, captureOptions) : this.enqueue(type, message2, captureOptions);
+    }).catch((err) => {
+      if (err) console.error(err);
+    }));
+  }
+  _capturePreparedEvent(props, immediate) {
+    return this._sendPreparedEvent("capture", props, immediate);
+  }
+  capture(props) {
+    this._warnIfInvalidCapture(props, "Called capture() with a string as the first argument when an object was expected.", "Using `posthog.capture('$exception')` is unreliable because it does not attach required metadata. Use `posthog.captureException(error)` instead, which attaches required metadata automatically.");
+    this._capturePreparedEvent(props, false);
+  }
+  async captureImmediate(props) {
+    this._warnIfInvalidCapture(props, "Called captureImmediate() with a string as the first argument when an object was expected.", "Capturing a `$exception` event via `posthog.captureImmediate('$exception')` is unreliable because it does not attach required metadata. Use `posthog.captureExceptionImmediate(error)` instead, which attaches this metadata by default.");
+    return this._capturePreparedEvent(props, true);
+  }
+  identify({ distinctId, properties = {}, disableGeoip }) {
+    const { $set, $set_once, $anon_distinct_id, ...rest } = properties;
+    const setProps = $set || rest;
+    const setOnceProps = $set_once || {};
+    const eventProperties = {
+      $set: setProps,
+      $set_once: setOnceProps,
+      $anon_distinct_id: $anon_distinct_id ?? void 0
+    };
+    this._sendPreparedEvent("identify", {
+      distinctId,
+      event: "$identify",
+      properties: eventProperties,
+      disableGeoip
+    }, false, {
+      includeContextProperties: false
+    });
+  }
+  async identifyImmediate({ distinctId, properties = {}, disableGeoip }) {
+    const { $set, $set_once, $anon_distinct_id, ...rest } = properties;
+    const setProps = $set || rest;
+    const setOnceProps = $set_once || {};
+    const eventProperties = {
+      $set: setProps,
+      $set_once: setOnceProps,
+      $anon_distinct_id: $anon_distinct_id ?? void 0
+    };
+    await this._sendPreparedEvent("identify", {
+      distinctId,
+      event: "$identify",
+      properties: eventProperties,
+      disableGeoip
+    }, true, {
+      includeContextProperties: false
+    });
+  }
+  setPersonProperties({ distinctId, properties = {}, propertiesOnce = {} }) {
+    if (0 === Object.keys(properties).length && 0 === Object.keys(propertiesOnce).length) return;
+    const eventProperties = {};
+    if (Object.keys(properties).length > 0) eventProperties.$set = properties;
+    if (Object.keys(propertiesOnce).length > 0) eventProperties.$set_once = propertiesOnce;
+    this.capture({
+      distinctId,
+      event: "$set",
+      properties: eventProperties
+    });
+  }
+  unsetPersonProperties({ distinctId, properties }) {
+    const propertyNames = normalizeUnsetPersonProperties(properties);
+    if (0 === propertyNames.length) return;
+    this.capture({
+      distinctId,
+      event: "$set",
+      properties: {
+        $unset: propertyNames
+      }
+    });
+  }
+  alias(data) {
+    this._sendPreparedEvent("alias", {
+      distinctId: data.distinctId,
+      event: "$create_alias",
+      properties: {
+        distinct_id: data.distinctId,
+        alias: data.alias
+      },
+      disableGeoip: data.disableGeoip
+    }, false, {
+      includeContextProperties: false
+    });
+  }
+  async aliasImmediate(data) {
+    await this._sendPreparedEvent("alias", {
+      distinctId: data.distinctId,
+      event: "$create_alias",
+      properties: {
+        distinct_id: data.distinctId,
+        alias: data.alias
+      },
+      disableGeoip: data.disableGeoip
+    }, true, {
+      includeContextProperties: false
+    });
+  }
+  isLocalEvaluationReady() {
+    return this.featureFlagsPoller?.isLocalEvaluationReady() ?? false;
+  }
+  async waitForLocalEvaluationReady(timeoutMs = THIRTY_SECONDS) {
+    if (this.isLocalEvaluationReady()) return true;
+    if (void 0 === this.featureFlagsPoller) return false;
+    return new Promise((resolve) => {
+      const timeout = setTimeout(() => {
+        cleanup();
+        resolve(false);
+      }, timeoutMs);
+      const cleanup = this._events.on("localEvaluationFlagsLoaded", (count2) => {
+        clearTimeout(timeout);
+        cleanup();
+        resolve(count2 > 0);
+      });
+    });
+  }
+  _resolveDistinctId(distinctIdOrOptions, options) {
+    if ("string" == typeof distinctIdOrOptions) return {
+      distinctId: distinctIdOrOptions,
+      options
+    };
+    return {
+      distinctId: this.context?.get()?.distinctId,
+      options: distinctIdOrOptions
+    };
+  }
+  async _getFeatureFlagResult(key, distinctId, options = {}, matchValue) {
+    if (this.disabled) return void this._logger.warn("The client is disabled");
+    const sendFeatureFlagEvents = options.sendFeatureFlagEvents ?? true;
+    if (void 0 !== this._flagOverrides && key in this._flagOverrides) {
+      const overrideValue = this._flagOverrides[key];
+      if (void 0 === overrideValue) return;
+      const overridePayload = this._payloadOverrides?.[key];
+      return {
+        key,
+        enabled: false !== overrideValue,
+        variant: "string" == typeof overrideValue ? overrideValue : void 0,
+        payload: overridePayload
+      };
+    }
+    const { groups, disableGeoip } = options;
+    let { onlyEvaluateLocally, personProperties, groupProperties } = options;
+    const adjustedProperties = this.addLocalPersonAndGroupProperties(distinctId, groups, personProperties, groupProperties);
+    personProperties = adjustedProperties.allPersonProperties;
+    groupProperties = adjustedProperties.allGroupProperties;
+    const evaluationContext = this.createFeatureFlagEvaluationContext(distinctId, groups, this.personPropertiesForLocalEvaluation(distinctId, personProperties), groupProperties);
+    if (void 0 == onlyEvaluateLocally) onlyEvaluateLocally = this.options.strictLocalEvaluation ?? false;
+    let result;
+    let flagWasLocallyEvaluated = false;
+    let requestId;
+    let evaluatedAt;
+    let featureFlagError;
+    let flagId;
+    let flagVersion;
+    let flagReason;
+    const localEvaluationEnabled = void 0 !== this.featureFlagsPoller;
+    if (localEvaluationEnabled) {
+      await this.featureFlagsPoller?.loadFeatureFlags();
+      const flag = this.featureFlagsPoller?.featureFlagsByKey[key];
+      if (flag) try {
+        const localResult = await this.featureFlagsPoller?.computeFlagAndPayloadLocally(flag, evaluationContext, {
+          matchValue
+        });
+        if (localResult) {
+          flagWasLocallyEvaluated = true;
+          const value = localResult.value;
+          flagId = flag.id;
+          flagReason = "Evaluated locally";
+          result = {
+            key,
+            enabled: false !== value,
+            variant: "string" == typeof value ? value : void 0,
+            payload: localResult.payload ?? void 0
+          };
+        }
+      } catch (e) {
+        if (e instanceof RequiresServerEvaluation || e instanceof InconclusiveMatchError) this._logger?.info(`${e.name} when computing flag locally: ${key}: ${e.message}`);
+        else throw e;
+      }
+    }
+    if (!flagWasLocallyEvaluated && !onlyEvaluateLocally) {
+      const flagsResponse = await super.getFeatureFlagDetailsStateless(evaluationContext.distinctId, evaluationContext.groups, personProperties, groupProperties, disableGeoip, [
+        key
+      ]);
+      if (void 0 === flagsResponse) featureFlagError = FeatureFlagError2.UNKNOWN_ERROR;
+      else {
+        requestId = flagsResponse.requestId;
+        evaluatedAt = flagsResponse.evaluatedAt;
+        const errors = [];
+        if (flagsResponse.errorsWhileComputingFlags) errors.push(FeatureFlagError2.ERRORS_WHILE_COMPUTING);
+        if (flagsResponse.quotaLimited?.includes("feature_flags")) errors.push(FeatureFlagError2.QUOTA_LIMITED);
+        const flagDetail = flagsResponse.flags[key];
+        if (void 0 === flagDetail) errors.push(FeatureFlagError2.FLAG_MISSING);
+        else {
+          flagId = flagDetail.metadata?.id;
+          flagVersion = flagDetail.metadata?.version;
+          flagReason = flagDetail.reason?.description ?? flagDetail.reason?.code;
+          let parsedPayload;
+          if (flagDetail.metadata?.payload !== void 0) try {
+            parsedPayload = JSON.parse(flagDetail.metadata.payload);
+          } catch {
+            parsedPayload = flagDetail.metadata.payload;
+          }
+          result = {
+            key,
+            enabled: flagDetail.enabled,
+            variant: flagDetail.variant,
+            payload: parsedPayload
+          };
+        }
+        if (errors.length > 0) featureFlagError = errors.join(",");
+      }
+    }
+    if (sendFeatureFlagEvents) {
+      const response = void 0 === result ? void 0 : false === result.enabled ? false : result.variant ?? true;
+      const properties = {
+        $feature_flag: key,
+        $feature_flag_response: response,
+        $feature_flag_id: flagId,
+        $feature_flag_version: flagVersion,
+        $feature_flag_reason: flagReason,
+        locally_evaluated: flagWasLocallyEvaluated,
+        [`$feature/${key}`]: response,
+        $feature_flag_request_id: requestId,
+        $feature_flag_evaluated_at: flagWasLocallyEvaluated ? Date.now() : evaluatedAt
+      };
+      if (flagWasLocallyEvaluated && this.featureFlagsPoller) {
+        const flagDefinitionsLoadedAt = this.featureFlagsPoller.getFlagDefinitionsLoadedAt();
+        if (void 0 !== flagDefinitionsLoadedAt) properties.$feature_flag_definitions_loaded_at = flagDefinitionsLoadedAt;
+      }
+      if (featureFlagError) properties.$feature_flag_error = featureFlagError;
+      this._captureFlagCalledEventIfNeeded({
+        distinctId,
+        key,
+        response,
+        groups,
+        disableGeoip,
+        properties
+      });
+    }
+    if (void 0 !== result && void 0 !== this._payloadOverrides && key in this._payloadOverrides) result = {
+      ...result,
+      payload: this._payloadOverrides[key]
+    };
+    return result;
+  }
+  async getFeatureFlag(key, distinctId, options) {
+    emitDeprecationWarningOnce("getFeatureFlag", "`getFeatureFlag` is deprecated and will be removed in a future major version. Use `posthog.evaluateFlags(distinctId, ...)` and call `flags.getFlag(key)` instead \u2014 this consolidates flag evaluation into a single `/flags` request per incoming request.");
+    const result = await this._getFeatureFlagResult(key, distinctId, {
+      ...options,
+      sendFeatureFlagEvents: options?.sendFeatureFlagEvents ?? this.options.sendFeatureFlagEvent ?? true
+    });
+    if (void 0 === result) return;
+    if (false === result.enabled) return false;
+    return result.variant ?? true;
+  }
+  async getFeatureFlagPayload(key, distinctId, matchValue, options) {
+    emitDeprecationWarningOnce("getFeatureFlagPayload", "`getFeatureFlagPayload` is deprecated and will be removed in a future major version. Use `posthog.evaluateFlags(distinctId, ...)` and call `flags.getFlagPayload(key)` instead \u2014 this consolidates flag evaluation into a single `/flags` request per incoming request.");
+    if (void 0 !== this._payloadOverrides && key in this._payloadOverrides) return this._payloadOverrides[key];
+    const result = await this._getFeatureFlagResult(key, distinctId, {
+      ...options,
+      sendFeatureFlagEvents: false
+    }, matchValue);
+    if (void 0 === result) return;
+    return result.payload ?? null;
+  }
+  async getFeatureFlagResult(key, distinctIdOrOptions, options) {
+    const { distinctId: resolvedDistinctId, options: resolvedOptions } = this._resolveDistinctId(distinctIdOrOptions, options);
+    if (!resolvedDistinctId) return void this._logger.warn("[PostHog] distinctId is required \u2014 pass it explicitly or use withContext()");
+    return this._getFeatureFlagResult(key, resolvedDistinctId, {
+      ...resolvedOptions,
+      sendFeatureFlagEvents: resolvedOptions?.sendFeatureFlagEvents ?? this.options.sendFeatureFlagEvent ?? true
+    });
+  }
+  async getRemoteConfigPayload(flagKey) {
+    if (this.disabled) return void this._logger.warn("The client is disabled");
+    if (!this.options.personalApiKey) throw new Error("Personal API key is required for remote config payload decryption");
+    const response = await this._requestRemoteConfigPayload(flagKey);
+    if (!response) return;
+    const parsed = await response.json();
+    if ("string" == typeof parsed) try {
+      return JSON.parse(parsed);
+    } catch (e) {
+    }
+    return parsed;
+  }
+  async isFeatureEnabled(key, distinctId, options) {
+    emitDeprecationWarningOnce("isFeatureEnabled", "`isFeatureEnabled` is deprecated and will be removed in a future major version. Use `posthog.evaluateFlags(distinctId, ...)` and call `flags.isEnabled(key)` instead \u2014 this consolidates flag evaluation into a single `/flags` request per incoming request.");
+    const result = await this._getFeatureFlagResult(key, distinctId, {
+      ...options,
+      sendFeatureFlagEvents: options?.sendFeatureFlagEvents ?? this.options.sendFeatureFlagEvent ?? true
+    });
+    if (void 0 === result) return;
+    if (false === result.enabled) return false;
+    const feat = result.variant ?? true;
+    return !!feat || false;
+  }
+  async getAllFlags(distinctIdOrOptions, options) {
+    const { distinctId: resolvedDistinctId, options: resolvedOptions } = this._resolveDistinctId(distinctIdOrOptions, options);
+    if (!resolvedDistinctId) {
+      this._logger.warn("[PostHog] distinctId is required to get feature flags \u2014 pass it explicitly or use withContext()");
+      return {};
+    }
+    const response = await this.getAllFlagsAndPayloads(resolvedDistinctId, resolvedOptions);
+    return response.featureFlags || {};
+  }
+  async getAllFlagsAndPayloads(distinctIdOrOptions, options) {
+    const { distinctId: resolvedDistinctId, options: resolvedOptions } = this._resolveDistinctId(distinctIdOrOptions, options);
+    if (!resolvedDistinctId) {
+      this._logger.warn("[PostHog] distinctId is required to get feature flags and payloads \u2014 pass it explicitly or use withContext()");
+      return {
+        featureFlags: {},
+        featureFlagPayloads: {}
+      };
+    }
+    if (this.disabled) {
+      this._logger.warn("The client is disabled");
+      return {
+        featureFlags: {},
+        featureFlagPayloads: {}
+      };
+    }
+    const { groups, disableGeoip, flagKeys } = resolvedOptions || {};
+    let { onlyEvaluateLocally, personProperties, groupProperties } = resolvedOptions || {};
+    const adjustedProperties = this.addLocalPersonAndGroupProperties(resolvedDistinctId, groups, personProperties, groupProperties);
+    personProperties = adjustedProperties.allPersonProperties;
+    groupProperties = adjustedProperties.allGroupProperties;
+    const evaluationContext = this.createFeatureFlagEvaluationContext(resolvedDistinctId, groups, this.personPropertiesForLocalEvaluation(resolvedDistinctId, personProperties), groupProperties);
+    if (void 0 == onlyEvaluateLocally) onlyEvaluateLocally = this.options.strictLocalEvaluation ?? false;
+    const localEvaluationResult = await this.featureFlagsPoller?.getAllFlagsAndPayloads(evaluationContext, flagKeys);
+    let featureFlags = {};
+    let featureFlagPayloads = {};
+    let fallbackToFlags = true;
+    if (localEvaluationResult) {
+      featureFlags = localEvaluationResult.response;
+      featureFlagPayloads = localEvaluationResult.payloads;
+      fallbackToFlags = localEvaluationResult.fallbackToFlags;
+    }
+    if (fallbackToFlags && !onlyEvaluateLocally) {
+      const remoteEvaluationResult = await super.getFeatureFlagsAndPayloadsStateless(evaluationContext.distinctId, evaluationContext.groups, personProperties, groupProperties, disableGeoip, flagKeys);
+      featureFlags = {
+        ...featureFlags,
+        ...remoteEvaluationResult.flags || {}
+      };
+      featureFlagPayloads = {
+        ...featureFlagPayloads,
+        ...remoteEvaluationResult.payloads || {}
+      };
+    }
+    if (void 0 !== this._flagOverrides) featureFlags = {
+      ...featureFlags,
+      ...this._flagOverrides
+    };
+    if (void 0 !== this._payloadOverrides) featureFlagPayloads = {
+      ...featureFlagPayloads,
+      ...this._payloadOverrides
+    };
+    return {
+      featureFlags,
+      featureFlagPayloads
+    };
+  }
+  async evaluateFlags(distinctIdOrOptions, options) {
+    const { distinctId: resolvedDistinctId, options: resolvedOptions } = this._resolveDistinctId(distinctIdOrOptions, options);
+    if (!resolvedDistinctId) {
+      this._logger.warn("[PostHog] distinctId is required to evaluate feature flags \u2014 pass it explicitly or use withContext()");
+      return new FeatureFlagEvaluations({
+        host: this._getFeatureFlagEvaluationsHost(),
+        distinctId: "",
+        flags: {}
+      });
+    }
+    if (this.disabled) {
+      this._logger.warn("The client is disabled");
+      return new FeatureFlagEvaluations({
+        host: this._getFeatureFlagEvaluationsHost(),
+        distinctId: resolvedDistinctId,
+        flags: {}
+      });
+    }
+    const { groups, disableGeoip, flagKeys } = resolvedOptions || {};
+    let { onlyEvaluateLocally, personProperties, groupProperties } = resolvedOptions || {};
+    const adjustedProperties = this.addLocalPersonAndGroupProperties(resolvedDistinctId, groups, personProperties, groupProperties);
+    personProperties = adjustedProperties.allPersonProperties;
+    groupProperties = adjustedProperties.allGroupProperties;
+    const evaluationContext = this.createFeatureFlagEvaluationContext(resolvedDistinctId, groups, this.personPropertiesForLocalEvaluation(resolvedDistinctId, personProperties), groupProperties);
+    if (void 0 == onlyEvaluateLocally) onlyEvaluateLocally = this.options.strictLocalEvaluation ?? false;
+    const records = {};
+    let requestId;
+    let evaluatedAt;
+    let errorsWhileComputing = false;
+    let quotaLimited = false;
+    const localResult = await this.featureFlagsPoller?.getAllFlagsAndPayloads(evaluationContext, flagKeys);
+    const locallyEvaluatedKeys = /* @__PURE__ */ new Set();
+    if (localResult) for (const [key, value] of Object.entries(localResult.response)) {
+      const flagDef = this.featureFlagsPoller?.featureFlagsByKey[key];
+      records[key] = {
+        key,
+        enabled: false !== value,
+        variant: "string" == typeof value ? value : void 0,
+        payload: localResult.payloads[key],
+        id: flagDef?.id,
+        version: void 0,
+        reason: "Evaluated locally",
+        locallyEvaluated: true
+      };
+      locallyEvaluatedKeys.add(key);
+    }
+    const fallbackToFlags = localResult ? localResult.fallbackToFlags : true;
+    if (fallbackToFlags && !onlyEvaluateLocally) {
+      const details = await super.getFeatureFlagDetailsStateless(evaluationContext.distinctId, evaluationContext.groups, personProperties, groupProperties, disableGeoip, flagKeys);
+      if (details) {
+        requestId = details.requestId;
+        evaluatedAt = details.evaluatedAt;
+        errorsWhileComputing = Boolean(details.errorsWhileComputingFlags);
+        quotaLimited = Array.isArray(details.quotaLimited) && details.quotaLimited.includes("feature_flags");
+        for (const [key, detail] of Object.entries(details.flags)) {
+          if (locallyEvaluatedKeys.has(key)) continue;
+          let parsedPayload;
+          if (detail.metadata?.payload !== void 0) try {
+            parsedPayload = JSON.parse(detail.metadata.payload);
+          } catch {
+            parsedPayload = detail.metadata.payload;
+          }
+          records[key] = {
+            key,
+            enabled: detail.enabled,
+            variant: detail.variant,
+            payload: parsedPayload,
+            id: detail.metadata?.id,
+            version: detail.metadata?.version,
+            reason: detail.reason?.description ?? detail.reason?.code,
+            locallyEvaluated: false
+          };
+        }
+      }
+    }
+    if (void 0 !== this._flagOverrides) for (const [key, value] of Object.entries(this._flagOverrides)) {
+      if (void 0 === value) {
+        delete records[key];
+        continue;
+      }
+      const existing = records[key];
+      records[key] = {
+        key,
+        enabled: false !== value,
+        variant: "string" == typeof value ? value : void 0,
+        payload: existing?.payload,
+        id: existing?.id,
+        version: existing?.version,
+        reason: existing?.reason,
+        locallyEvaluated: existing?.locallyEvaluated ?? false
+      };
+    }
+    if (void 0 !== this._payloadOverrides) for (const [key, payload] of Object.entries(this._payloadOverrides)) {
+      const existing = records[key];
+      if (existing) records[key] = {
+        ...existing,
+        payload
+      };
+    }
+    return new FeatureFlagEvaluations({
+      host: this._getFeatureFlagEvaluationsHost(),
+      distinctId: resolvedDistinctId,
+      groups,
+      disableGeoip,
+      flags: records,
+      requestId,
+      evaluatedAt,
+      flagDefinitionsLoadedAt: this.featureFlagsPoller?.getFlagDefinitionsLoadedAt(),
+      errorsWhileComputing,
+      quotaLimited
+    });
+  }
+  _captureFlagCalledEventIfNeeded(params) {
+    const { distinctId, key, response, groups, disableGeoip, properties } = params;
+    const groupSuffix = groups && Object.keys(groups).length > 0 ? `_${JSON.stringify(Object.entries(groups).sort(([a], [b]) => a < b ? -1 : a > b ? 1 : 0))}` : "";
+    const featureFlagReportedKey = `${key}_${response}${groupSuffix}`;
+    if (distinctId in this.distinctIdHasSentFlagCalls && this.distinctIdHasSentFlagCalls[distinctId].has(featureFlagReportedKey)) return;
+    if (Object.keys(this.distinctIdHasSentFlagCalls).length >= this.maxCacheSize) this.distinctIdHasSentFlagCalls = {};
+    if (this.distinctIdHasSentFlagCalls[distinctId] instanceof Set) this.distinctIdHasSentFlagCalls[distinctId].add(featureFlagReportedKey);
+    else this.distinctIdHasSentFlagCalls[distinctId] = /* @__PURE__ */ new Set([
+      featureFlagReportedKey
+    ]);
+    this.capture({
+      distinctId,
+      event: "$feature_flag_called",
+      properties,
+      groups,
+      disableGeoip
+    });
+  }
+  _getFeatureFlagEvaluationsHost() {
+    if (!this._featureFlagEvaluationsHost) this._featureFlagEvaluationsHost = {
+      captureFlagCalledEventIfNeeded: (params) => this._captureFlagCalledEventIfNeeded(params),
+      logWarning: (message2) => {
+        if (false !== this.options.featureFlagsLogWarnings) console.warn(`[PostHog] ${message2}`);
+      }
+    };
+    return this._featureFlagEvaluationsHost;
+  }
+  groupIdentify({ groupType, groupKey, properties, distinctId, disableGeoip }) {
+    this._sendPreparedEvent("capture", {
+      distinctId: distinctId || `$${groupType}_${groupKey}`,
+      event: "$groupidentify",
+      properties: {
+        $group_type: groupType,
+        $group_key: groupKey,
+        $group_set: properties || {}
+      },
+      disableGeoip
+    }, false, {
+      includeContextProperties: false
+    });
+  }
+  async groupIdentifyImmediate({ groupType, groupKey, properties, distinctId, disableGeoip }) {
+    await this._sendPreparedEvent("capture", {
+      distinctId: distinctId || `$${groupType}_${groupKey}`,
+      event: "$groupidentify",
+      properties: {
+        $group_type: groupType,
+        $group_key: groupKey,
+        $group_set: properties || {}
+      },
+      disableGeoip
+    }, true, {
+      includeContextProperties: false
+    });
+  }
+  async reloadFeatureFlags() {
+    await this.featureFlagsPoller?.loadFeatureFlags(true);
+  }
+  overrideFeatureFlags(overrides) {
+    const flagArrayToRecord = (flags) => Object.fromEntries(flags.map((f) => [
+      f,
+      true
+    ]));
+    if (false === overrides) {
+      this._flagOverrides = void 0;
+      this._payloadOverrides = void 0;
+      return;
+    }
+    if (Array.isArray(overrides)) {
+      this._flagOverrides = flagArrayToRecord(overrides);
+      return;
+    }
+    if (this._isFeatureFlagOverrideOptions(overrides)) {
+      if ("flags" in overrides) {
+        if (false === overrides.flags) this._flagOverrides = void 0;
+        else if (Array.isArray(overrides.flags)) this._flagOverrides = flagArrayToRecord(overrides.flags);
+        else if (void 0 !== overrides.flags) this._flagOverrides = {
+          ...overrides.flags
+        };
+      }
+      if ("payloads" in overrides) {
+        if (false === overrides.payloads) this._payloadOverrides = void 0;
+        else if (void 0 !== overrides.payloads) this._payloadOverrides = {
+          ...overrides.payloads
+        };
+      }
+      return;
+    }
+    this._flagOverrides = {
+      ...overrides
+    };
+  }
+  _isFeatureFlagOverrideOptions(overrides) {
+    if ("object" != typeof overrides || null === overrides || Array.isArray(overrides)) return false;
+    const obj = overrides;
+    if ("flags" in obj) {
+      const flagsValue = obj["flags"];
+      if (false === flagsValue || Array.isArray(flagsValue) || "object" == typeof flagsValue && null !== flagsValue) return true;
+    }
+    if ("payloads" in obj) {
+      const payloadsValue = obj["payloads"];
+      if (false === payloadsValue || "object" == typeof payloadsValue && null !== payloadsValue) return true;
+    }
+    return false;
+  }
+  withContext(data, fn, options) {
+    if (!this.context) return fn();
+    return this.context.run(data, fn, options);
+  }
+  getContext() {
+    return this.context?.get();
+  }
+  enterContext(data, options) {
+    this.context?.enter(data, options);
+  }
+  async _shutdown(shutdownTimeoutMs) {
+    const resolve = this._consumeWaitUntilCycle();
+    await this.featureFlagsPoller?.stopPoller(shutdownTimeoutMs);
+    this.errorTracking.shutdown();
+    try {
+      return await super._shutdown(shutdownTimeoutMs);
+    } finally {
+      this.distinctIdHasSentFlagCalls = {};
+      resolve?.();
+    }
+  }
+  async _requestRemoteConfigPayload(flagKey) {
+    if (this.disabled || !this.apiKey || !this.options.personalApiKey) return;
+    const url3 = `${this.host}/api/projects/@current/feature_flags/${flagKey}/remote_config?token=${encodeURIComponent(this.apiKey)}`;
+    const options = {
+      method: "GET",
+      headers: {
+        ...this.getCustomHeaders(),
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${this.options.personalApiKey}`
+      }
+    };
+    let abortTimeout = null;
+    if (this.options.requestTimeout && "number" == typeof this.options.requestTimeout) {
+      const controller = new AbortController();
+      abortTimeout = safeSetTimeout(() => {
+        controller.abort();
+      }, this.options.requestTimeout);
+      options.signal = controller.signal;
+    }
+    try {
+      return await this.fetch(url3, options);
+    } catch (error42) {
+      this._events.emit("error", error42);
+      return;
+    } finally {
+      if (abortTimeout) clearTimeout(abortTimeout);
+    }
+  }
+  extractPropertiesFromEvent(eventProperties, groups) {
+    if (!eventProperties) return {
+      personProperties: {},
+      groupProperties: {}
+    };
+    const personProperties = {};
+    const groupProperties = {};
+    for (const [key, value] of Object.entries(eventProperties)) if (isPlainObject6(value) && groups && key in groups) {
+      const groupProps = {};
+      for (const [groupKey, groupValue] of Object.entries(value)) groupProps[String(groupKey)] = String(groupValue);
+      groupProperties[String(key)] = groupProps;
+    } else personProperties[String(key)] = String(value);
+    return {
+      personProperties,
+      groupProperties
+    };
+  }
+  async getFeatureFlagsForEvent(distinctId, groups, disableGeoip, sendFeatureFlagsOptions) {
+    if (this.disabled || !this.apiKey) return void this._logger.warn("The client is disabled");
+    const finalPersonProperties = sendFeatureFlagsOptions?.personProperties || {};
+    const finalGroupProperties = sendFeatureFlagsOptions?.groupProperties || {};
+    const flagKeys = sendFeatureFlagsOptions?.flagKeys;
+    const onlyEvaluateLocally = sendFeatureFlagsOptions?.onlyEvaluateLocally ?? this.options.strictLocalEvaluation ?? false;
+    if (onlyEvaluateLocally) if (!((this.featureFlagsPoller?.featureFlags?.length || 0) > 0)) return {};
+    else {
+      const groupsWithStringValues = {};
+      for (const [key, value] of Object.entries(groups || {})) groupsWithStringValues[key] = String(value);
+      return await this.getAllFlags(distinctId, {
+        groups: groupsWithStringValues,
+        personProperties: finalPersonProperties,
+        groupProperties: finalGroupProperties,
+        disableGeoip,
+        onlyEvaluateLocally: true,
+        flagKeys
+      });
+    }
+    if ((this.featureFlagsPoller?.featureFlags?.length || 0) > 0) {
+      const groupsWithStringValues = {};
+      for (const [key, value] of Object.entries(groups || {})) groupsWithStringValues[key] = String(value);
+      return await this.getAllFlags(distinctId, {
+        groups: groupsWithStringValues,
+        personProperties: finalPersonProperties,
+        groupProperties: finalGroupProperties,
+        disableGeoip,
+        onlyEvaluateLocally: true,
+        flagKeys
+      });
+    }
+    return (await super.getFeatureFlagsStateless(distinctId, groups, finalPersonProperties, finalGroupProperties, disableGeoip)).flags;
+  }
+  addLocalPersonAndGroupProperties(distinctId, groups, personProperties, groupProperties) {
+    const allPersonProperties = {
+      ...personProperties || {}
+    };
+    const allGroupProperties = {};
+    if (groups) for (const groupName of Object.keys(groups)) allGroupProperties[groupName] = {
+      $group_key: groups[groupName],
+      ...groupProperties?.[groupName] || {}
+    };
+    return {
+      allPersonProperties,
+      allGroupProperties
+    };
+  }
+  personPropertiesForLocalEvaluation(distinctId, personProperties) {
+    return {
+      distinct_id: distinctId,
+      ...personProperties || {}
+    };
+  }
+  createFeatureFlagEvaluationContext(distinctId, groups, personProperties, groupProperties) {
+    return {
+      distinctId,
+      groups: groups || {},
+      personProperties: personProperties || {},
+      groupProperties: groupProperties || {},
+      evaluationCache: {}
+    };
+  }
+  captureException(error42, distinctId, additionalProperties, uuid9, flags) {
+    if (!ErrorTracking.isPreviouslyCapturedError(error42)) {
+      const syntheticException = new Error("PostHog syntheticException");
+      this.addPendingPromise(ErrorTracking.buildEventMessage(this.getErrorPropertiesBuilder(), error42, {
+        syntheticException
+      }, distinctId, additionalProperties).then((msg) => this._capturePreparedEvent({
+        ...msg,
+        uuid: uuid9,
+        flags
+      }, false)));
+    }
+  }
+  async captureExceptionImmediate(error42, distinctId, additionalProperties, flags) {
+    if (!ErrorTracking.isPreviouslyCapturedError(error42)) {
+      const syntheticException = new Error("PostHog syntheticException");
+      return this.addPendingPromise(ErrorTracking.buildEventMessage(this.getErrorPropertiesBuilder(), error42, {
+        syntheticException
+      }, distinctId, additionalProperties).then((msg) => this.captureImmediate({
+        ...msg,
+        flags
+      })));
+    }
+  }
+  async prepareEventMessage(props) {
+    return this._prepareEventMessage(props);
+  }
+  async _prepareEventMessage(props, options = {}) {
+    const { distinctId, event, properties, groups, flags, sendFeatureFlags, timestamp: timestamp2, disableGeoip, uuid: uuid9 } = props;
+    const contextData = this.context?.get();
+    const includeContextProperties = options.includeContextProperties ?? true;
+    let mergedDistinctId = distinctId || contextData?.distinctId;
+    const mergedProperties = includeContextProperties ? {
+      ...this.props,
+      ...contextData?.properties || {},
+      ...properties || {}
+    } : {
+      ...properties || {}
+    };
+    if (!mergedDistinctId) {
+      mergedDistinctId = uuidv73();
+      mergedProperties.$process_person_profile = false;
+    }
+    if (includeContextProperties && contextData?.sessionId && !mergedProperties.$session_id) mergedProperties.$session_id = contextData.sessionId;
+    const eventMessage = this._runBeforeSend({
+      distinctId: mergedDistinctId,
+      event,
+      properties: mergedProperties,
+      groups,
+      flags,
+      sendFeatureFlags,
+      timestamp: timestamp2,
+      disableGeoip,
+      uuid: uuid9
+    });
+    if (!eventMessage) return Promise.reject(null);
+    const eventProperties = await Promise.resolve().then(async () => {
+      if (flags) {
+        if (sendFeatureFlags) console.warn("[PostHog] Both `flags` and `sendFeatureFlags` were passed to capture(); using `flags` and ignoring `sendFeatureFlags`.");
+        return flags._getEventProperties();
+      }
+      if (sendFeatureFlags) {
+        emitDeprecationWarningOnce("sendFeatureFlags", "`sendFeatureFlags` is deprecated and will be removed in a future major version. Pass a `flags` snapshot from `posthog.evaluateFlags(...)` instead \u2014 it avoids a second `/flags` request per capture and guarantees the event carries the exact flag values your code branched on.");
+        const sendFeatureFlagsOptions = "object" == typeof sendFeatureFlags ? sendFeatureFlags : void 0;
+        const flagValues = await this.getFeatureFlagsForEvent(eventMessage.distinctId, groups, disableGeoip, sendFeatureFlagsOptions);
+        return buildFlagEventProperties(flagValues);
+      }
+      return {};
+    }).catch(() => ({})).then((additionalProperties) => {
+      const resolvedGroups = eventMessage.groups || groups;
+      return {
+        ...additionalProperties,
+        ...eventMessage.properties || {},
+        ...void 0 !== resolvedGroups && Object.keys(resolvedGroups).length > 0 ? {
+          $groups: resolvedGroups
+        } : {}
+      };
+    });
+    if ("$pageview" === eventMessage.event && this.options.__preview_capture_bot_pageviews && "string" == typeof eventProperties.$raw_user_agent) {
+      if (isBlockedUA(eventProperties.$raw_user_agent, this.options.custom_blocked_useragents || [])) {
+        eventMessage.event = "$bot_pageview";
+        eventProperties.$browser_type = "bot";
+      }
+    }
+    return {
+      distinctId: eventMessage.distinctId,
+      event: eventMessage.event,
+      properties: eventProperties,
+      options: {
+        timestamp: eventMessage.timestamp,
+        disableGeoip: eventMessage.disableGeoip,
+        uuid: eventMessage.uuid
+      }
+    };
+  }
+  _runBeforeSend(eventMessage) {
+    const beforeSend = this.options.before_send;
+    if (!beforeSend) return eventMessage;
+    const fns = Array.isArray(beforeSend) ? beforeSend : [
+      beforeSend
+    ];
+    let result = eventMessage;
+    for (const fn of fns) {
+      result = fn(result);
+      if (!result) {
+        this._logger.info(`Event '${eventMessage.event}' was rejected in beforeSend function`);
+        return null;
+      }
+      if (!result.properties || 0 === Object.keys(result.properties).length) {
+        const message2 = `Event '${result.event}' has no properties after beforeSend function, this is likely an error.`;
+        this._logger.warn(message2);
+      }
+    }
+    return result;
+  }
+};
+
+// ../../node_modules/.pnpm/posthog-node@5.40.0/node_modules/posthog-node/dist/extensions/context/context.mjs
+import { AsyncLocalStorage } from "node:async_hooks";
+var PostHogContext = class {
+  constructor() {
+    this.storage = new AsyncLocalStorage();
+  }
+  get() {
+    return this.storage.getStore();
+  }
+  run(context, fn, options) {
+    return this.storage.run(this.resolve(context, options), fn);
+  }
+  enter(context, options) {
+    this.storage.enterWith(this.resolve(context, options));
+  }
+  resolve(context, options) {
+    if (options?.fresh === true) return context;
+    const current = this.get() || {};
+    return {
+      distinctId: context.distinctId ?? current.distinctId,
+      sessionId: context.sessionId ?? current.sessionId,
+      properties: {
+        ...current.properties || {},
+        ...context.properties || {}
+      }
+    };
+  }
+};
+
+// ../../node_modules/.pnpm/posthog-node@5.40.0/node_modules/posthog-node/dist/extensions/sentry-integration.mjs
+var NAME = "posthog-node";
+function createEventProcessor(_posthog, { organization, projectId, prefix, severityAllowList = [
+  "error"
+], sendExceptionsToPostHog = true } = {}) {
+  return (event) => {
+    const shouldProcessLevel = "*" === severityAllowList || severityAllowList.includes(event.level);
+    if (!shouldProcessLevel) return event;
+    if (!event.tags) event.tags = {};
+    const userId = event.tags[PostHogSentryIntegration.POSTHOG_ID_TAG];
+    if (void 0 === userId) return event;
+    const uiHost = _posthog.options.host ?? "https://us.i.posthog.com";
+    const personUrl = new URL(`/project/${_posthog.apiKey}/person/${userId}`, uiHost).toString();
+    event.tags["PostHog Person URL"] = personUrl;
+    const exceptions = event.exception?.values || [];
+    const exceptionList = exceptions.map((exception) => ({
+      ...exception,
+      stacktrace: exception.stacktrace ? {
+        ...exception.stacktrace,
+        type: "raw",
+        frames: (exception.stacktrace.frames || []).map((frame) => ({
+          ...frame,
+          platform: "node:javascript"
+        }))
+      } : void 0
+    }));
+    const properties = {
+      $exception_message: exceptions[0]?.value || event.message,
+      $exception_type: exceptions[0]?.type,
+      $exception_level: event.level,
+      $exception_list: exceptionList,
+      $sentry_event_id: event.event_id,
+      $sentry_exception: event.exception,
+      $sentry_exception_message: exceptions[0]?.value || event.message,
+      $sentry_exception_type: exceptions[0]?.type,
+      $sentry_tags: event.tags
+    };
+    if (organization && projectId) properties["$sentry_url"] = (prefix || "https://sentry.io/organizations/") + organization + "/issues/?project=" + projectId + "&query=" + event.event_id;
+    if (sendExceptionsToPostHog) _posthog.capture({
+      event: "$exception",
+      distinctId: userId,
+      properties
+    });
+    return event;
+  };
+}
+var PostHogSentryIntegration = class {
+  static #_ = this.POSTHOG_ID_TAG = "posthog_distinct_id";
+  constructor(_posthog, organization, prefix, severityAllowList, sendExceptionsToPostHog) {
+    this.name = NAME;
+    this.name = NAME;
+    this.setupOnce = function(addGlobalEventProcessor, getCurrentHub) {
+      const projectId = getCurrentHub()?.getClient()?.getDsn()?.projectId;
+      addGlobalEventProcessor(createEventProcessor(_posthog, {
+        organization,
+        projectId,
+        prefix,
+        severityAllowList,
+        sendExceptionsToPostHog: sendExceptionsToPostHog ?? true
+      }));
+    };
+  }
+};
+
+// ../../node_modules/.pnpm/posthog-node@5.40.0/node_modules/posthog-node/dist/entrypoints/index.node.mjs
+var PostHog = class extends PostHogBackendClient {
+  getLibraryId() {
+    return "posthog-node";
+  }
+  initializeContext() {
+    return new PostHogContext();
+  }
+  createErrorPropertiesBuilder() {
+    return new error_tracking_exports.ErrorPropertiesBuilder([
+      new error_tracking_exports.EventCoercer(),
+      new error_tracking_exports.ErrorCoercer(),
+      new error_tracking_exports.ObjectCoercer(),
+      new error_tracking_exports.StringCoercer(),
+      new error_tracking_exports.PrimitiveCoercer()
+    ], error_tracking_exports.createStackParser("node:javascript", error_tracking_exports.nodeStackLineParser), [
+      createModulerModifier(),
+      addSourceContext,
+      createRelativePathModifier()
+    ]);
+  }
+};
+
+// src/lib/telemetry.ts
+var posthogKey = process.env.POSTHOG_KEY || process.env.posthog_key || "";
+var posthogHost = process.env.POSTHOG_HOST || process.env.posthog_host || "https://eu.i.posthog.com";
+var posthog = posthogKey ? new PostHog(posthogKey, { host: posthogHost }) : null;
+if (posthog) {
+  logger2.info("Telemetry: PostHog initialized successfully.");
+} else {
+  logger2.info("Telemetry: PostHog not configured (missing POSTHOG_KEY).");
+}
+function trackEvent(distinctId, event, properties) {
+  if (!posthog) return;
+  try {
+    posthog.capture({
+      distinctId,
+      event,
+      properties: {
+        ...properties,
+        $lib: "api-server"
+      }
+    });
+  } catch (err) {
+    logger2.error({ err, event }, "Failed to send telemetry event");
+  }
+}
+
+// src/lib/generateQuoteFromText.ts
 var AI_PROMPT2 = `Sei un consulente esperto di preventivi professionali per il mercato italiano (artigiani, edilizia, impianti, servizi tecnici).
 
 Devi trasformare una descrizione libera in un'ANALISI ECONOMICA E COMPUTO METRICO PREZZATO professionale, strutturata a capitoli, coerente con i prezzi di mercato in Italia nel 2026.
@@ -335718,27 +340856,67 @@ async function buildQuoteFromAI({
       image_url: { url: img, detail: "high" }
     }))
   ] : `${clientPrefix}${rawInput}`;
-  const completion = await openai.chat.completions.create({
-    model: process.env.AI_MODEL ?? "llama-3.3-70b-versatile",
-    max_completion_tokens: 8192,
-    messages: [
-      { role: "system", content: AI_PROMPT2 },
-      ...catalogContext ? [{ role: "system", content: catalogContext }] : [],
-      ...pastContext ? [{ role: "system", content: pastContext }] : [],
-      ...useCapitolato ? [{ role: "system", content: CAPITOLATO_CONTEXT }] : [],
-      { role: "user", content: userContent }
-    ]
+  const startTime = Date.now();
+  trackEvent(userId, "quote_generation_started", {
+    rawInputLength: rawInput.length,
+    templateId,
+    hasImages
   });
-  const content = completion.choices[0]?.message?.content ?? "{}";
   try {
-    const result = parseAiResponse(content, rawInput, profile, templateId);
-    if (clientData?.nome) {
-      result.clientData = clientData;
+    const completion = await openai.chat.completions.create({
+      model: process.env.AI_MODEL ?? "llama-3.3-70b-versatile",
+      max_completion_tokens: 8192,
+      messages: [
+        { role: "system", content: AI_PROMPT2 },
+        ...catalogContext ? [{ role: "system", content: catalogContext }] : [],
+        ...pastContext ? [{ role: "system", content: pastContext }] : [],
+        ...useCapitolato ? [{ role: "system", content: CAPITOLATO_CONTEXT }] : [],
+        { role: "user", content: userContent }
+      ]
+    });
+    const latencyMs = Date.now() - startTime;
+    const usage = completion.usage;
+    const content = completion.choices[0]?.message?.content ?? "{}";
+    try {
+      const result = parseAiResponse(content, rawInput, profile, templateId);
+      if (clientData?.nome) {
+        result.clientData = clientData;
+      }
+      result.promptTokens = usage?.prompt_tokens ?? 0;
+      result.completionTokens = usage?.completion_tokens ?? 0;
+      result.totalTokens = usage?.total_tokens ?? 0;
+      result.modelUsed = completion.model || process.env.AI_MODEL || "llama-3.3-70b-versatile";
+      const isMini = result.modelUsed.includes("mini");
+      const isGpt4 = result.modelUsed.includes("gpt-4o") && !isMini;
+      const pCostRate = isMini ? 15e-8 : isGpt4 ? 5e-6 : 59e-8;
+      const cCostRate = isMini ? 6e-7 : isGpt4 ? 15e-6 : 79e-8;
+      result.apiCost = result.promptTokens * pCostRate + result.completionTokens * cCostRate;
+      trackEvent(userId, "quote_generation_completed", {
+        latencyMs,
+        model: result.modelUsed,
+        promptTokens: result.promptTokens,
+        completionTokens: result.completionTokens,
+        totalTokens: result.totalTokens,
+        chaptersCount: result.capitoli?.length || 0,
+        totalAmount: result.totale
+      });
+      return result;
+    } catch (parseErr) {
+      trackEvent(userId, "quote_generation_failed", {
+        latencyMs,
+        error: "Failed to parse AI JSON response",
+        contentSnippet: content.slice(0, 200)
+      });
+      log.error({ content }, "Failed to parse AI JSON in buildQuoteFromAI");
+      throw new Error("AI returned invalid JSON");
     }
-    return result;
-  } catch {
-    log.error({ content }, "Failed to parse AI JSON in buildQuoteFromAI");
-    throw new Error("AI returned invalid JSON");
+  } catch (err) {
+    const latencyMs = Date.now() - startTime;
+    trackEvent(userId, "quote_generation_failed", {
+      latencyMs,
+      error: err?.message || String(err)
+    });
+    throw err;
   }
 }
 async function regenerateWithCorrection({
@@ -335787,23 +340965,62 @@ PREVENTIVO CORRENTE (JSON):
 ${currentJson}
 
 Restituisci il preventivo aggiornato COMPLETO in JSON valido con la stessa struttura. Ricalcola tutti i subtotali, l'IVA e il totale. SOLO JSON puro, nessun testo extra.`;
-  const completion = await openai.chat.completions.create({
-    model: process.env.AI_MODEL ?? "llama-3.3-70b-versatile",
-    max_completion_tokens: 8192,
-    messages: [
-      { role: "system", content: AI_PROMPT2 },
-      ...catalogContext ? [{ role: "system", content: catalogContext }] : [],
-      ...useCapitolato ? [{ role: "system", content: CAPITOLATO_CONTEXT }] : [],
-      { role: "user", content: correctionPrompt }
-    ]
+  const startTime = Date.now();
+  trackEvent(userId, "quote_regeneration_started", {
+    correctionLength: correction.length,
+    currentChaptersCount: current.capitoli?.length || 0
   });
-  const content = completion.choices[0]?.message?.content ?? "{}";
   try {
-    const result = parseAiResponse(content, current.rawInput, profile, current.templateId);
-    return result;
-  } catch {
-    log.error({ content }, "Failed to parse AI JSON in regenerateWithCorrection");
-    throw new Error("AI returned invalid JSON during correction");
+    const completion = await openai.chat.completions.create({
+      model: process.env.AI_MODEL ?? "llama-3.3-70b-versatile",
+      max_completion_tokens: 8192,
+      messages: [
+        { role: "system", content: AI_PROMPT2 },
+        ...catalogContext ? [{ role: "system", content: catalogContext }] : [],
+        ...useCapitolato ? [{ role: "system", content: CAPITOLATO_CONTEXT }] : [],
+        { role: "user", content: correctionPrompt }
+      ]
+    });
+    const latencyMs = Date.now() - startTime;
+    const usage = completion.usage;
+    const content = completion.choices[0]?.message?.content ?? "{}";
+    try {
+      const result = parseAiResponse(content, current.rawInput, profile, current.templateId);
+      result.promptTokens = usage?.prompt_tokens ?? 0;
+      result.completionTokens = usage?.completion_tokens ?? 0;
+      result.totalTokens = usage?.total_tokens ?? 0;
+      result.modelUsed = completion.model || process.env.AI_MODEL || "llama-3.3-70b-versatile";
+      const isMini = result.modelUsed.includes("mini");
+      const isGpt4 = result.modelUsed.includes("gpt-4o") && !isMini;
+      const pCostRate = isMini ? 15e-8 : isGpt4 ? 5e-6 : 59e-8;
+      const cCostRate = isMini ? 6e-7 : isGpt4 ? 15e-6 : 79e-8;
+      result.apiCost = result.promptTokens * pCostRate + result.completionTokens * cCostRate;
+      trackEvent(userId, "quote_regeneration_completed", {
+        latencyMs,
+        model: result.modelUsed,
+        promptTokens: result.promptTokens,
+        completionTokens: result.completionTokens,
+        totalTokens: result.totalTokens,
+        chaptersCount: result.capitoli?.length || 0,
+        totalAmount: result.totale
+      });
+      return result;
+    } catch (parseErr) {
+      trackEvent(userId, "quote_regeneration_failed", {
+        latencyMs,
+        error: "Failed to parse AI JSON response",
+        contentSnippet: content.slice(0, 200)
+      });
+      log.error({ content }, "Failed to parse AI JSON in regenerateWithCorrection");
+      throw new Error("AI returned invalid JSON during correction");
+    }
+  } catch (err) {
+    const latencyMs = Date.now() - startTime;
+    trackEvent(userId, "quote_regeneration_failed", {
+      latencyMs,
+      error: err?.message || String(err)
+    });
+    throw err;
   }
 }
 async function saveQuoteToDb({
@@ -335847,7 +341064,12 @@ async function saveQuoteToDb({
       note: data.note,
       status: "draft",
       source,
-      templateId: resolvedTemplateId
+      templateId: resolvedTemplateId,
+      promptTokens: data.promptTokens,
+      completionTokens: data.completionTokens,
+      totalTokens: data.totalTokens,
+      modelUsed: data.modelUsed,
+      apiCost: data.apiCost !== void 0 ? data.apiCost.toFixed(6) : null
     }).returning();
     if (!q) {
       throw new Error("Failed to insert quote");
@@ -338527,6 +343749,16 @@ Usa queste misure esatte per calcolare matematicamente le quantit\xE0.`;
         { role: "user", content: rawInput }
       ]
     });
+    const usage = completion.usage;
+    const promptTokens = usage?.prompt_tokens ?? 0;
+    const completionTokens = usage?.completion_tokens ?? 0;
+    const totalTokens = usage?.total_tokens ?? 0;
+    const modelUsed = completion.model || "gpt-4o-mini";
+    const isMini = modelUsed.includes("mini");
+    const isGpt4 = modelUsed.includes("gpt-4o") && !isMini;
+    const pCostRate = isMini ? 15e-8 : isGpt4 ? 5e-6 : 59e-8;
+    const cCostRate = isMini ? 6e-7 : isGpt4 ? 15e-6 : 79e-8;
+    const apiCost = (promptTokens * pCostRate + completionTokens * cCostRate).toFixed(6);
     const content = completion.choices[0]?.message?.content ?? "{}";
     let aiData = {};
     try {
@@ -338590,8 +343822,13 @@ Usa queste misure esatte per calcolare matematicamente le quantit\xE0.`;
       totale: totale.toFixed(2),
       note: aiData.note ?? "Preventivo generato via Widget",
       status: "draft",
-      source: "widget"
+      source: "widget",
       // Traccia che arriva dal widget
+      promptTokens,
+      completionTokens,
+      totalTokens,
+      modelUsed,
+      apiCost
     }).returning();
     res.status(201).json({
       success: true,
@@ -339200,5 +344437,15 @@ js-md5/src/md5.js:
 
 sax/lib/sax.js:
   (*! http://mths.be/fromcodepoint v0.1.0 by @mathias *)
+
+@posthog/core/dist/vendor/uuidv7.mjs:
+  (*! For license information please see uuidv7.mjs.LICENSE.txt *)
+  (**
+   * uuidv7: An experimental implementation of the proposed UUID Version 7
+   *
+   * @license Apache-2.0
+   * @copyright 2021-2023 LiosK
+   * @packageDocumentation
+   *)
 */
 //# sourceMappingURL=app.mjs.map

@@ -4,6 +4,15 @@ import { HelmetProvider } from "react-helmet-async";
 import App from "./App.tsx";
 import { SeoNavShell } from "./components/seo-header.tsx";
 import "./index.css";
+import posthog from "posthog-js";
+
+if (typeof window !== "undefined" && import.meta.env.VITE_POSTHOG_KEY) {
+  posthog.init(import.meta.env.VITE_POSTHOG_KEY, {
+    api_host: import.meta.env.VITE_POSTHOG_HOST || "https://eu.i.posthog.com",
+    person_profiles: "identified_only",
+    capture_pageview: true,
+  });
+}
 
 const SEO_CITY_RE = /^\/preventivi\/[^/]+\/[^/]+\/?$/;
 const SEO_SECTOR_RE = /^\/preventivi\/[^/]+\/?$/;
