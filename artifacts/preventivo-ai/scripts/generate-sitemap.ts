@@ -4,7 +4,7 @@ import { fileURLToPath } from "node:url";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
-import { SECTORS, CITIES, CITY_SECTORS } from "../src/data/seo-data.js";
+import { SECTORS, CITIES, ACTIVE_CITIES, CITY_SECTORS } from "../src/data/seo-data.js";
 import { BLOG_ARTICLES, BLOG_CATEGORIES } from "../src/data/blog-data.js";
 import { PUBLIC_ROUTES } from "../src/data/sitemap-routes.js";
 
@@ -35,15 +35,14 @@ for (const route of PUBLIC_ROUTES) {
 }
 
 // SEO sector landing pages
-const citySectorSet = new Set(CITY_SECTORS);
 for (const sectorSlug of Object.keys(SECTORS)) {
-  const priority = citySectorSet.has(sectorSlug) ? "0.8" : "0.7";
-  entries.push(url(`${BASE_URL}/preventivi/${sectorSlug}/`, priority, "monthly", "2026-05-01"));
+  entries.push(url(`${BASE_URL}/preventivi/${sectorSlug}/`, "0.8", "monthly", "2026-05-01"));
 }
 
-// SEO city×sector pages
+// SEO city×sector pages — restricted to ACTIVE_CITIES (see seo-data.ts) to
+// concentrate crawl budget instead of spreading it across 1000+ URLs.
 for (const sectorSlug of CITY_SECTORS) {
-  for (const city of CITIES) {
+  for (const city of ACTIVE_CITIES) {
     const priority = TIER1_CITY_SLUGS.has(city.slug) ? "0.7" : "0.6";
     entries.push(url(`${BASE_URL}/preventivi/${sectorSlug}/${city.slug}/`, priority, "monthly", "2026-05-01"));
   }
@@ -67,3 +66,32 @@ const outPath = join(__dirname, "../public/sitemap.xml");
 mkdirSync(dirname(outPath), { recursive: true });
 writeFileSync(outPath, sitemap, "utf-8");
 console.log(`Sitemap written: ${outPath} (${entries.length} URLs)`);
+
+// ─── robots.txt ──────────────────────────────────────────────────────────────
+// Disallow crawling of city pages outside ACTIVE_CITIES so Googlebot doesn't
+// keep spending crawl budget on the ~960 pages we no longer prerender or list
+// in the sitemap (they still resolve to the generic SPA shell if visited
+// directly, but carry no unique SEO content worth indexing right now).
+const activeSlugSet = new Set(ACTIVE_CITIES.map((c) => c.slug));
+const inactiveCitySlugs = CITIES.map((c) => c.slug).filter((slug) => !activeSlugSet.has(slug));
+
+const robotsTxt = `User-agent: *
+Allow: /
+
+Disallow: /dashboard
+Disallow: /dashboard/
+Disallow: /sign-in
+Disallow: /sign-up
+Disallow: /onboarding
+Disallow: /admin
+Disallow: /api
+
+# City pages outside the active region (see ACTIVE_CITIES in seo-data.ts)
+${inactiveCitySlugs.map((slug) => `Disallow: /preventivi/*/${slug}/`).join("\n")}
+
+Sitemap: https://www.prevai.it/sitemap.xml
+`;
+
+const robotsOutPath = join(__dirname, "../public/robots.txt");
+writeFileSync(robotsOutPath, robotsTxt, "utf-8");
+console.log(`robots.txt written: ${robotsOutPath} (${inactiveCitySlugs.length} city patterns disallowed)`);

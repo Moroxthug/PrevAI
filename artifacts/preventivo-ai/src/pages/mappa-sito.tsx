@@ -1,14 +1,16 @@
 import { PublicLayout } from "@/components/layout/public-layout";
 import { SeoHead } from "@/components/seo-head";
 import { Link } from "wouter";
-import { SECTORS, CITIES, CITY_SECTORS } from "@/data/seo-data";
+import { SECTORS, ACTIVE_CITIES, CITY_SECTORS } from "@/data/seo-data";
 import { BLOG_ARTICLES, BLOG_CATEGORIES } from "@/data/blog-data";
 import { MapPin, Globe, BookOpen, Layers } from "lucide-react";
 
 export default function MappaSitoPage() {
-  // Group cities by region for structured visual hierarchy
-  const citiesByRegion = new Map<string, typeof CITIES>();
-  for (const city of CITIES) {
+  // Group cities by region for structured visual hierarchy.
+  // Scoped to ACTIVE_CITIES to match what's actually prerendered/sitemapped —
+  // must stay in sync with scripts/prerender-seo.ts's mappa-sito builder.
+  const citiesByRegion = new Map<string, typeof ACTIVE_CITIES>();
+  for (const city of ACTIVE_CITIES) {
     const list = citiesByRegion.get(city.region) || [];
     list.push(city);
     citiesByRegion.set(city.region, list);

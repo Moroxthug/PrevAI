@@ -5,6 +5,7 @@ import { fileURLToPath } from "node:url";
 import {
   SECTORS,
   CITIES,
+  ACTIVE_CITIES,
   CITIES_BY_SLUG,
   CITY_SECTORS,
   getCityTitle,
@@ -64,12 +65,6 @@ const SECTOR_OG_IMAGES: Record<string, string> = {
   freelance: "/og/freelance.jpg",
   geometra: "/og/geometra.jpg",
 };
-
-const TOP20_CITY_SLUGS = [
-  "roma", "milano", "napoli", "torino", "palermo", "genova", "bologna",
-  "firenze", "bari", "catania", "venezia", "verona", "messina", "padova",
-  "trieste", "brescia", "reggio-calabria", "modena", "parma", "prato",
-];
 
 // ─── Core utilities ────────────────────────────────────────────────────────
 
@@ -267,7 +262,7 @@ function buildBreadcrumb(items: { name: string; href: string | null }[]): string
 
 function buildSectorCityGrid(s: SectorData): string {
   const byRegion = new Map<string, CityData[]>();
-  for (const city of CITIES) {
+  for (const city of ACTIVE_CITIES) {
     const arr = byRegion.get(city.region) ?? [];
     arr.push(city);
     byRegion.set(city.region, arr);
@@ -277,7 +272,7 @@ function buildSectorCityGrid(s: SectorData): string {
       const cityLinks = cities
         .map(
           (c) =>
-            `<a href="/seo/${esc(s.slug)}/${esc(c.slug)}/" class="inline-flex items-center rounded-full border border-gray-200 bg-white px-3 py-1.5 text-xs font-medium text-gray-600 hover:border-violet-300 hover:text-violet-600 transition-colors">${esc(c.name)}</a>`
+            `<a href="/preventivi/${esc(s.slug)}/${esc(c.slug)}/" class="inline-flex items-center rounded-full border border-gray-200 bg-white px-3 py-1.5 text-xs font-medium text-gray-600 hover:border-violet-300 hover:text-violet-600 transition-colors">${esc(c.name)}</a>`
         )
         .join("\n            ");
       return `<div>
@@ -310,7 +305,7 @@ function buildRelatedSectorsSection(s: SectorData, heading?: string): string {
   const links = related
     .map(
       (r) =>
-        `<a href="/seo/${esc(r.slug)}/" class="flex items-center gap-2 bg-white border border-gray-100 hover:border-violet-200 rounded-xl px-4 py-3 text-sm font-medium text-gray-700 hover:text-violet-700 transition-colors">
+        `<a href="/preventivi/${esc(r.slug)}/" class="flex items-center gap-2 bg-white border border-gray-100 hover:border-violet-200 rounded-xl px-4 py-3 text-sm font-medium text-gray-700 hover:text-violet-700 transition-colors">
           <span class="text-violet-400 font-bold" aria-hidden="true">→</span> ${esc(r.label)}
         </a>`
     )
@@ -383,7 +378,7 @@ function buildCityContextBlock(city: CityData, s: SectorData): string {
 // ─── JSON-LD schema builders ────────────────────────────────────────────────
 
 function buildSectorJsonLd(s: SectorData): object[] {
-  const canonical = `${BASE_URL}/seo/${s.slug}/`;
+  const canonical = `${BASE_URL}/preventivi/${s.slug}/`;
   const schemas: object[] = [
     {
       "@context": "https://schema.org",
@@ -697,7 +692,7 @@ function buildCityBodyHtml(s: SectorData, city: CityData): string {
 
   const breadcrumb = buildBreadcrumb([
     { name: "Home", href: "/" },
-    { name: s.label, href: `/seo/${s.slug}/` },
+    { name: s.label, href: `/preventivi/${s.slug}/` },
     { name: cityName, href: null },
   ]);
 
@@ -716,7 +711,7 @@ function buildCityBodyHtml(s: SectorData, city: CityData): string {
         <a href="/sign-up" class="btn-gradient inline-flex h-14 items-center justify-center px-8 text-lg font-semibold">
           Crea il tuo preventivo gratis
         </a>
-        <a href="/seo/${esc(s.slug)}/" class="btn-gradient-outline inline-flex h-14 items-center justify-center px-8 text-lg font-semibold">
+        <a href="/preventivi/${esc(s.slug)}/" class="btn-gradient-outline inline-flex h-14 items-center justify-center px-8 text-lg font-semibold">
           Scopri come funziona
         </a>
       </div>
@@ -789,7 +784,7 @@ function buildCityBodyHtml(s: SectorData, city: CityData): string {
 
   const nearbyLinks = getNearbyAnchors(s, city)
     .map(({ slug, anchorText }) =>
-      `<a href="/seo/${esc(s.slug)}/${esc(slug)}/" class="inline-flex items-center gap-1.5 rounded-full border border-gray-200 px-3.5 py-1.5 text-sm text-gray-500 hover:border-violet-300 hover:text-violet-600 transition-colors">${esc(anchorText)}</a>`
+      `<a href="/preventivi/${esc(s.slug)}/${esc(slug)}/" class="inline-flex items-center gap-1.5 rounded-full border border-gray-200 px-3.5 py-1.5 text-sm text-gray-500 hover:border-violet-300 hover:text-violet-600 transition-colors">${esc(anchorText)}</a>`
     )
     .join("\n          ");
 
@@ -916,18 +911,20 @@ function buildHomepageBodyHtml(): string {
   const sectorLinks = Object.values(SECTORS)
     .map(
       (s) =>
-        `<a href="/seo/${esc(s.slug)}/" class="group flex flex-col items-center gap-3 rounded-2xl border border-gray-100 bg-white p-5 text-center hover:border-violet-200 hover:shadow-sm transition-all">
+        `<a href="/preventivi/${esc(s.slug)}/" class="group flex flex-col items-center gap-3 rounded-2xl border border-gray-100 bg-white p-5 text-center hover:border-violet-200 hover:shadow-sm transition-all">
           <div class="h-10 w-10 rounded-xl flex items-center justify-center font-bold text-sm text-violet-600 bg-violet-50" aria-hidden="true">${esc(s.label.charAt(0))}</div>
           <span class="text-sm font-medium text-gray-700 group-hover:text-violet-700 transition-colors">${esc(s.label)}</span>
         </a>`
     )
     .join("\n      ");
 
-  const top20Cities = TOP20_CITY_SLUGS.map((slug) => CITIES_BY_SLUG[slug]).filter(Boolean);
-  const cityLinks = top20Cities
+  // Link the homepage's precious crawl authority only at cities we actually
+  // prerender (see ACTIVE_CITIES) — was TOP20_CITY_SLUGS, most of which
+  // aren't generated right now, so those links pointed at un-prerendered pages.
+  const cityLinks = ACTIVE_CITIES
     .map(
       (city) =>
-        `<a href="/seo/ristrutturazione/${esc(city.slug)}/" class="inline-flex items-center rounded-full border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-600 hover:border-violet-300 hover:text-violet-600 transition-colors">${esc(city.name)}</a>`
+        `<a href="/preventivi/ristrutturazione/${esc(city.slug)}/" class="inline-flex items-center rounded-full border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-600 hover:border-violet-300 hover:text-violet-600 transition-colors">${esc(city.name)}</a>`
     )
     .join("\n      ");
 
@@ -1166,11 +1163,6 @@ const homepageWebSiteSchema = {
   url: BASE_URL,
   description: "Software AI per preventivi professionali in 30 secondi. Per artigiani, PMI e freelance italiani.",
   inLanguage: "it",
-  potentialAction: {
-    "@type": "SearchAction",
-    target: { "@type": "EntryPoint", urlTemplate: `${BASE_URL}/seo/{search_term_string}` },
-    "query-input": "required name=search_term_string",
-  },
 };
 const homepageSoftwareSchema = {
   "@context": "https://schema.org",
@@ -1236,7 +1228,7 @@ for (const [sectorSlug, sector] of Object.entries(SECTORS)) {
 
   if (!CITY_SECTORS.includes(sectorSlug)) continue;
 
-  for (const city of CITIES) {
+  for (const city of ACTIVE_CITIES) {
     const cityCanonical = `${BASE_URL}/preventivi/${sectorSlug}/${city.slug}/`;
     const cityTitle = getCityTitle(sector, city.name, city.slug);
     const cityDesc = getCityDesc(sector, city.name, city.slug, city.region);
@@ -1474,7 +1466,7 @@ function buildBlogArticleBodyHtml(article: BlogArticle): string {
   const relatedSectorLinks = article.relatedSectors.map((sectorSlug) => {
     const sector = SECTORS[sectorSlug];
     if (!sector) return "";
-    return `<a href="/seo/${esc(sectorSlug)}/" class="inline-flex items-center gap-1.5 rounded-full border border-gray-200 bg-white px-4 py-2 text-xs font-medium text-gray-700 hover:border-violet-300 hover:text-violet-700 transition-colors">
+    return `<a href="/preventivi/${esc(sectorSlug)}/" class="inline-flex items-center gap-1.5 rounded-full border border-gray-200 bg-white px-4 py-2 text-xs font-medium text-gray-700 hover:border-violet-300 hover:text-violet-700 transition-colors">
       <span class="text-violet-400 font-bold">→</span> Preventivi ${esc(sector.label)}
     </a>`;
   }).filter(Boolean).join("\n    ");
@@ -1800,7 +1792,7 @@ function buildMappaSitoBodyHtml(): string {
   `;
 
   const citiesByRegion = new Map<string, typeof CITIES>();
-  for (const city of CITIES) {
+  for (const city of ACTIVE_CITIES) {
     const list = citiesByRegion.get(city.region) || [];
     list.push(city);
     citiesByRegion.set(city.region, list);

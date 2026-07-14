@@ -1459,18 +1459,33 @@ export const CITIES_BY_SLUG: Record<string, CityData> = Object.fromEntries(
   CITIES.map((c) => [c.slug, c])
 );
 
-export const CITY_SECTORS: readonly string[] = [
-  "imbianchino",
-  "elettricista",
-  "idraulico",
-  "edilizia",
-  "ristrutturazione",
-  "carpentiere",
-  "falegname",
-  "termoidraulico",
-  "freelance",
-  "geometra",
-];
+// A few SECTORS entries are generic guides/tools, not geo-localizable trades —
+// "preventivo con modello Excel a Bergamo" makes no sense as a distinct page.
+const NON_LOCAL_SECTOR_SLUGS = new Set([
+  "come-fare-preventivo",
+  "modello-excel",
+  "modello-word",
+  "preventivi-gratis",
+]);
+
+export const CITY_SECTORS: readonly string[] = Object.keys(SECTORS).filter(
+  (slug) => !NON_LOCAL_SECTOR_SLUGS.has(slug),
+);
+
+/**
+ * Crawl-budget containment: prevai.it is a new, low-authority domain with a
+ * sitemap that once listed 1000+ near-duplicate city pages. Google's crawler
+ * responded by leaving almost all of them at "Discovered – currently not
+ * indexed" indefinitely (see GSC Coverage report, 2026-07-11 export).
+ * Restricting generation/sitemap/internal-links to one region concentrates
+ * crawl budget on a page count Google will actually work through. Expand
+ * this once the Lombardia set is indexed and ranking.
+ */
+export const ACTIVE_REGION_SLUG = "lombardia";
+
+export const ACTIVE_CITIES: CityData[] = CITIES.filter(
+  (c) => c.regionSlug === ACTIVE_REGION_SLUG,
+);
 
 export const SECTOR_CITIES: Record<string, string[]> = Object.fromEntries(
   Object.keys(SECTORS).map((s) => [s, CITIES.map((c) => c.slug)])

@@ -1,24 +1,19 @@
 import { useParams, Link } from "wouter";
 import { ArrowRight, CheckCircle2, Clock, FileText, Shield, TrendingUp, Star, Building2, BookOpen, X, MapPin } from "lucide-react";
 import { SeoHead } from "@/components/seo-head";
-import { SECTORS, DEFAULT_SECTOR, RELATED_SECTORS, CITY_SECTORS, CITIES } from "@/data/seo-data";
+import { SECTORS, DEFAULT_SECTOR, RELATED_SECTORS, CITY_SECTORS, ACTIVE_CITIES } from "@/data/seo-data";
 import { BLOG_ARTICLES, SECTOR_ARTICLES } from "@/data/blog-data";
 import { getOgImagePath } from "@/data/seo-render-engine";
 
-const TIER1_CITY_SLUGS_ORDERED = [
-  "roma", "milano", "napoli", "torino", "palermo", "genova", "bologna",
-  "firenze", "bari", "catania", "venezia", "verona", "messina", "padova",
-  "trieste", "brescia", "reggio-calabria", "modena", "parma", "prato",
-];
-const TIER1_SLUG_SET = new Set(TIER1_CITY_SLUGS_ORDERED);
-const TIER1_CITIES = CITIES
-  .filter((c) => TIER1_SLUG_SET.has(c.slug))
-  .sort((a, b) => TIER1_CITY_SLUGS_ORDERED.indexOf(a.slug) - TIER1_CITY_SLUGS_ORDERED.indexOf(b.slug));
+// Highlighted cities on the sector hub page — must stay within ACTIVE_CITIES,
+// the only cities actually prerendered/sitemapped right now (see seo-data.ts).
+const TIER1_CITIES = ACTIVE_CITIES;
 
 // Tutte le città raggruppate per regione, in ordine alfabetico di regione e città.
 // Serve a garantire che ogni pagina città riceva almeno un link interno dalla
 // hub di settore (altrimenti resta orfana e Google non la scopre/indicizza).
-const CITIES_BY_REGION = CITIES.reduce<Record<string, typeof CITIES>>((acc, city) => {
+// Scoped to ACTIVE_CITIES so this hub never links toward un-prerendered pages.
+const CITIES_BY_REGION = ACTIVE_CITIES.reduce<Record<string, typeof ACTIVE_CITIES>>((acc, city) => {
   (acc[city.region] ??= []).push(city);
   return acc;
 }, {});

@@ -19,6 +19,7 @@ import {
   CITIES_BY_SLUG,
   RELATED_SECTORS,
   CITY_CONTEXT,
+  ACTIVE_REGION_SLUG,
 } from "./seo-data.js";
 import { CITY_INTELLIGENCE, DEMAND_TEXT } from "./seo-intelligence.js";
 import type { CityIntelligence } from "./seo-intelligence.js";
@@ -202,6 +203,9 @@ export function getNearbyAnchors(sector: SectorData, city: CityData): NearbyAnch
     .map((slug): NearbyAnchor | null => {
       const nearbyCity = CITIES_BY_SLUG[slug];
       if (!nearbyCity) return null;
+      // Don't link toward cities outside the active region — those pages
+      // aren't prerendered/indexable right now (see ACTIVE_CITIES).
+      if (nearbyCity.regionSlug !== ACTIVE_REGION_SLUG) return null;
       const nearbyIntel = CITY_INTELLIGENCE[slug];
       const anchorText = nearbyIntel
         ? nearbyIntel.priceIndex > 1.05
