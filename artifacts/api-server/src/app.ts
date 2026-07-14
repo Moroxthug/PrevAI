@@ -288,6 +288,9 @@ app.post(
 );
 // ─────────────────────────────────────────────────────────────────────────────
 
+// Consenti CORS libero per le chiamate API pubbliche del widget
+app.use("/api/public", cors());
+
 const trustedOrigins = new Set(getTrustedOrigins());
 app.use(
   cors({

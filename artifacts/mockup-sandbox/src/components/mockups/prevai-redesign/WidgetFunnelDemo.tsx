@@ -313,6 +313,12 @@ export type PrevAiQuoteBarConfig = {
   mostraPrezzo?: "range" | "da" | "nascosto";
   /** offri l'opzione "stima su WhatsApp" nel passo contatti */
   whatsapp?: boolean;
+  /** Chiave API per connettersi al backend reale */
+  apiKey?: string;
+  /** URL del server API di PrevAI */
+  apiBaseUrl?: string;
+  /** URL della privacy policy personalizzata */
+  privacyUrl?: string | null;
 };
 
 export function PrevAiQuoteBar({
@@ -321,6 +327,9 @@ export function PrevAiQuoteBar({
   capServiti = null,
   mostraPrezzo = "range",
   whatsapp = true,
+  apiKey,
+  apiBaseUrl = "http://localhost:5180",
+  privacyUrl = null,
 }: PrevAiQuoteBarConfig) {
   const [phase, setPhase] = useState<Phase>("lavoro");
   const [intervento, setIntervento] = useState<Intervento | null>(null);
@@ -337,6 +346,50 @@ export function PrevAiQuoteBar({
   const [telefono, setTelefono] = useState("");
   const [privacy, setPrivacy] = useState(false);
   const [touched, setTouched] = useState(false);
+
+  // Stato per la configurazione dinamica scaricata dal server
+  const [tenantConfig, setTenantConfig] = useState<{
+    companyName?: string;
+    logoUrl?: string;
+    email?: string;
+    phone?: string;
+    address?: string;
+    supportedCategories?: string[];
+  } | null>(null);
+
+  // Stato per il risultato del preventivo (dal backend o locale)
+  const [stimaResult, setStimaResult] = useState<{ min: number; max: number } | null>(null);
+  const [useFallback, setUseFallback] = useState(false);
+
+  // Caricamento configurazione dinamica
+  useEffect(() => {
+    if (!apiKey) return;
+    fetch(`${apiBaseUrl}/api/public/config?apiKey=${apiKey}`)
+      .then((r) => {
+        if (!r.ok) throw new Error("Config not found");
+        return r.json();
+      })
+      .then((data) => {
+        if (data.success) {
+          setTenantConfig(data);
+        }
+      })
+      .catch((err) => {
+        console.warn("Impossibile caricare la configurazione dell'impresa:", err);
+      });
+  }, [apiKey, apiBaseUrl]);
+
+  // Filtra gli interventi in base a quelli supportati nel catalogo dell'impresa
+  const listinoInterventi = useMemo(() => {
+    if (!tenantConfig?.supportedCategories || tenantConfig.supportedCategories.length === 0) {
+      return INTERVENTI;
+    }
+    const categories = tenantConfig.supportedCategories.map((c) => c.toLowerCase());
+    return INTERVENTI.filter((i) => {
+      if (i.id === "altro") return true;
+      return categories.some((cat) => i.label.toLowerCase().includes(cat) || i.id.includes(cat));
+    });
+  }, [tenantConfig]);
 
   const misureValid = intervento?.fields.every((f) => {
     const v = parseFloat(misure[f.key] || "");
@@ -357,9 +410,9 @@ export function PrevAiQuoteBar({
     const m =
       window.location.hash.match(/preventivo=([\w-]+)/) ||
       window.location.search.match(/[?&]pvq=([\w-]+)/);
-    const pre = m && INTERVENTI.find((i) => i.id === m[1]);
+    const pre = m && listinoInterventi.find((i) => i.id === m[1]);
     if (pre) setIntervento(pre);
-  }, []);
+  }, [listinoInterventi]);
 
   const avantiMisure = () => {
     if (!intervento || !misureValid) { setTouched(true); return; }
@@ -369,8 +422,6 @@ export function PrevAiQuoteBar({
 
   const avantiImmobile = () => {
     if (!proprieta || !urgenza || !capValid) { setTouched(true); return; }
-    // filtro zona: lead fuori area fermato con gentilezza, prima di fargli
-    // perdere altri passi (e senza intasare l'impresa di lead inutili)
     if (capServiti && cap && !capServiti.some((p) => cap.startsWith(p))) {
       track("fuori_zona", { cap });
       goTo("fuorizona");
@@ -388,24 +439,78 @@ export function PrevAiQuoteBar({
   const invia = () => {
     if (!contactValid) { setTouched(true); return; }
     setPhase("attesa");
-    /* Honeypot compilato = bot: mostra comunque il flusso di successo
-       (così il bot non capisce di essere stato scartato) ma il lead
-       non viene inviato. */
+    setUseFallback(false);
+    setStimaResult(null);
+
     const isBot = hp !== "";
-    if (!isBot) {
-      track("lead_inviato", { intervento: intervento?.id, urgenza, budget: budget || "n/d", whatsapp: viaWhatsapp, ...getUtm() });
-      /* In produzione:
-         POST /api/quotes { rawInput: intervento.label + descrizione,
-                            clientData: { nome, email, phone: telefono },
-                            misure,
-                            lead: { proprieta, urgenza, cap, budget, viaWhatsapp },
-                            utm: getUtm() }
-         → il backend risponde con prezzoMinimo/prezzoMassimo, invia
-           l'email al cliente via Resend con il logo dell'azienda e
-           notifica ISTANTANEAMENTE l'impresa (email/WhatsApp): la
-           velocità di ricontatto è ciò che converte il lead. */
+    if (isBot) {
+      setTimeout(() => {
+        setStimaResult(stimaDemo(intervento!, misure));
+        setPhase("stima");
+      }, 2000);
+      return;
     }
-    setTimeout(() => setPhase("stima"), 2600);
+
+    track("lead_inviato", { intervento: intervento?.id, urgenza, budget: budget || "n/d", whatsapp: viaWhatsapp, ...getUtm() });
+
+    const rawInputText = `Richiesta Preventivo Widget per ${intervento?.label}.
+Note utente: ${descrizione || "Nessuna nota aggiuntiva."}
+Tipo immobile: ${proprieta}. Urgenza: ${urgenza}. CAP: ${cap || "n/d"}. Budget indicativo: ${budget || "n/d"}.`;
+
+    const misurePayload: Record<string, number> = {};
+    Object.entries(misure).forEach(([key, val]) => {
+      const num = parseFloat(val);
+      if (!isNaN(num)) {
+        misurePayload[key] = num;
+      }
+    });
+
+    if (apiKey) {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 4000);
+
+      fetch(`${apiBaseUrl}/api/public/quotes`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-api-key": apiKey,
+        },
+        body: JSON.stringify({
+          rawInput: rawInputText,
+          clientData: {
+            nome,
+            email,
+            phone: telefono,
+          },
+          misure: misurePayload,
+        }),
+        signal: controller.signal,
+      })
+        .then((r) => {
+          clearTimeout(timeoutId);
+          if (!r.ok) throw new Error("Chiamata fallita");
+          return r.json();
+        })
+        .then((data) => {
+          if (data.success) {
+            setStimaResult({ min: data.prezzoMinimo, max: data.prezzoMassimo });
+            setPhase("stima");
+          } else {
+            throw new Error("Dati non validi");
+          }
+        })
+        .catch((err) => {
+          console.warn("Chiamata API fallita o timeout. Uso stima di fallback locale.", err);
+          setUseFallback(true);
+          setStimaResult(stimaDemo(intervento!, misure));
+          setPhase("stima");
+        });
+    } else {
+      setTimeout(() => {
+        setStimaResult(stimaDemo(intervento!, misure));
+        setPhase("stima");
+      }, 2600);
+    }
   };
 
   const ricomincia = () => {
@@ -414,6 +519,7 @@ export function PrevAiQuoteBar({
     setNome(""); setEmail(""); setTelefono(""); setPrivacy(false);
     setViaWhatsapp(false); setHp("");
     setTouched(false); setPhase("lavoro");
+    setStimaResult(null); setUseFallback(false);
   };
 
   return (
@@ -443,13 +549,13 @@ export function PrevAiQuoteBar({
               style={{ flex: "1 1 240px" }}
               value={intervento?.id ?? ""}
               onChange={(e) => {
-                setIntervento(INTERVENTI.find((i) => i.id === e.target.value) ?? null);
+                setIntervento(listinoInterventi.find((i) => i.id === e.target.value) ?? null);
                 setMisure({});
                 setTouched(false);
               }}
             >
               <option value="" disabled>Che lavoro devi fare?</option>
-              {INTERVENTI.map((i) => <option key={i.id} value={i.id}>{i.label}</option>)}
+              {listinoInterventi.map((i) => <option key={i.id} value={i.id}>{i.label}</option>)}
             </select>
 
             {intervento?.fields.map((f) => {
@@ -629,7 +735,7 @@ export function PrevAiQuoteBar({
                 <label className="pvq-check pvq-note">
                   <input type="checkbox" checked={privacy} onChange={(e) => setPrivacy(e.target.checked)} />
                   <span>
-                    Accetto di essere ricontattato per il preventivo (privacy).
+                    Accetto di essere ricontattato per il preventivo (leggi la <a href={privacyUrl || "#"} target="_blank" rel="noopener noreferrer" style={{ textDecoration: "underline", color: "inherit" }}>Privacy Policy</a>).
                     {touched && !privacy && <strong style={{ color: "#dc2626" }}> Richiesto.</strong>}
                   </span>
                 </label>
@@ -669,35 +775,35 @@ export function PrevAiQuoteBar({
         )}
 
         {/* ── Stima ── */}
-        {phase === "stima" && intervento && (
+        {phase === "stima" && intervento && stimaResult && (
           <RisultatoInline
             intervento={intervento} misure={misure} nome={nome}
             mostraPrezzo={mostraPrezzo} viaWhatsapp={viaWhatsapp}
-            onRestart={ricomincia}
+            onRestart={ricomincia} stimaResult={stimaResult} useFallback={useFallback}
           />
         )}
       </div>
 
-      {/* firma prevai — logo reale, link alla pagina */}
-      <a className="pvq-powered" href={prevaiUrl} target="_blank" rel="noopener noreferrer">
-        <span>Powered by</span>
-        <img src="/prevai-logo.png" alt="prevAI" />
+      {/* firma prevai — link backlink SEO */}
+      <a className="pvq-powered" href={prevaiUrl} target="_blank" rel="noopener noreferrer" style={{ display: "flex", alignItems: "center", gap: "6px", textDecoration: "none" }}>
+        <span style={{ fontSize: "11px", color: "var(--_muted)" }}>Stima calcolata con tecnologia <strong style={{ color: "var(--_accent, #4F46E5)" }}>PrevAI — Preventivi Edili</strong></span>
       </a>
     </div>
   );
 }
 
 function RisultatoInline({
-  intervento, misure, nome, mostraPrezzo, viaWhatsapp, onRestart,
+  intervento, misure, nome, mostraPrezzo, viaWhatsapp, onRestart, stimaResult, useFallback,
 }: {
   intervento: Intervento; misure: Record<string, string>; nome: string;
   mostraPrezzo: "range" | "da" | "nascosto"; viaWhatsapp: boolean;
   onRestart: () => void;
+  stimaResult: { min: number; max: number };
+  useFallback: boolean;
 }) {
-  const { min, max } = useMemo(() => stimaDemo(intervento, misure), [intervento, misure]);
-  const minAnim = useCountUp(min);
-  const maxAnim = useCountUp(max, 1300);
-  useEffect(() => { track("stima_mostrata", { min, max, modo: mostraPrezzo }); }, [min, max, mostraPrezzo]);
+  const minAnim = useCountUp(stimaResult.min);
+  const maxAnim = useCountUp(stimaResult.max, 1300);
+  useEffect(() => { track("stima_mostrata", { min: stimaResult.min, max: stimaResult.max, modo: mostraPrezzo }); }, [stimaResult, mostraPrezzo]);
   const canali = viaWhatsapp ? "via email e WhatsApp" : "via email";
   return (
     <div className="pvq-step">
@@ -721,6 +827,11 @@ function RisultatoInline({
         {mostraPrezzo === "nascosto" && (
           <p style={{ margin: "6px 0 0", fontSize: 18, fontWeight: 600 }}>
             La tua stima dettagliata è in arrivo {canali}.
+          </p>
+        )}
+        {useFallback && (
+          <p className="pvq-note" style={{ color: "#d97706", fontWeight: "600", marginTop: "6px" }}>
+            ⚠️ Connessione rallentata. Mostrata stima locale provvisoria; riceverai il preventivo ufficiale via email.
           </p>
         )}
       </div>

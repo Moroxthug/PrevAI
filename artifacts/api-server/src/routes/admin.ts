@@ -851,4 +851,108 @@ router.get("/admin/search-console", async (req, res) => {
   }
 });
 
+// GET /api/admin/widget/stats - Statistiche d'uso globali e per singolo cliente dei widget
+router.get("/admin/widget/stats", async (_req, res) => {
+  try {
+    // 1. Metriche globali del widget
+    const [globalStats] = await db
+      .select({
+        totalQuotes: count(),
+        totalCost: sql<string>`COALESCE(SUM(prompt_tokens * 0.00000015 + completion_tokens * 0.00000060), 0)`, // Stima costo Groq Llama 3.3
+        totalTokens: sql<string>`COALESCE(SUM(prompt_tokens + completion_tokens), 0)`,
+      })
+      .from(quotesTable)
+      .where(eq(quotesTable.source, "widget"));
+
+    // 2. Statistiche per cliente/impresa
+    const clientUsageRows = await db
+      .select({
+        userId: businessProfilesTable.userId,
+        companyName: businessProfilesTable.companyName,
+        apiKey: businessProfilesTable.apiKey,
+        quotesCount: count(quotesTable.id),
+        totalTokens: sql<string>`COALESCE(SUM(quotes.prompt_tokens + quotes.completion_tokens), 0)`,
+        totalCost: sql<string>`COALESCE(SUM(quotes.prompt_tokens * 0.00000015 + quotes.completion_tokens * 0.00000060), 0)`,
+      })
+      .from(businessProfilesTable)
+      .leftJoin(quotesTable, sql`quotes.user_id = business_profiles.user_id AND quotes.source = 'widget'`)
+      .groupBy(
+        businessProfilesTable.userId,
+        businessProfilesTable.companyName,
+        businessProfilesTable.apiKey
+      )
+      .orderBy(desc(count(quotesTable.id)));
+
+    // 3. Ultime chiamate effettuate dai widget
+    const recentCalls = await db
+      .select({
+        quoteId: quotesTable.id,
+        userId: quotesTable.userId,
+        clientName: sql<string>`quotes.client_data->>'nome'`,
+        clientEmail: sql<string>`quotes.client_data->>'email'`,
+        companyName: businessProfilesTable.companyName,
+        date: quotesTable.createdAt,
+        modelUsed: quotesTable.modelUsed,
+        apiCost: sql<string>`(quotes.prompt_tokens * 0.00000015 + quotes.completion_tokens * 0.00000060)`,
+        totalTokens: sql<number>`(quotes.prompt_tokens + quotes.completion_tokens)`,
+        status: quotesTable.status,
+      })
+      .from(quotesTable)
+      .leftJoin(businessProfilesTable, eq(quotesTable.userId, businessProfilesTable.userId))
+      .where(eq(quotesTable.source, "widget"))
+      .orderBy(desc(quotesTable.createdAt))
+      .limit(50);
+
+    res.json({
+      success: true,
+      global: {
+        totalQuotes: globalStats?.totalQuotes ?? 0,
+        totalCost: Number(globalStats?.totalCost ?? 0),
+        totalTokens: Number(globalStats?.totalTokens ?? 0),
+      },
+      clientUsage: clientUsageRows.map(row => ({
+        ...row,
+        quotesCount: Number(row.quotesCount),
+        totalTokens: Number(row.totalTokens),
+        totalCost: Number(row.totalCost),
+      })),
+      recentCalls,
+    });
+  } catch (err) {
+    logger.error({ err }, "Admin widget stats error");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// POST /api/admin/widget/create-client - Crea un'impresa/cliente virtuale (non registrato) e assegna API Key
+router.post("/admin/widget/create-client", async (req, res) => {
+  try {
+    const { companyName, email, phone, address, vatNumber } = req.body;
+    if (!companyName || !companyName.trim()) {
+      res.status(400).json({ error: "Il nome dell'azienda è obbligatorio." });
+      return;
+    }
+    const tempUserId = `temp_widget_${crypto.randomBytes(12).toString("hex")}`;
+    const apiKey = `prevai_pk_${crypto.randomBytes(24).toString("hex")}`;
+
+    const [profile] = await db
+      .insert(businessProfilesTable)
+      .values({
+        userId: tempUserId,
+        companyName: companyName.trim(),
+        email: email ? String(email).trim() : undefined,
+        phone: phone ? String(phone).trim() : undefined,
+        address: address ? String(address).trim() : undefined,
+        vatNumber: vatNumber ? String(vatNumber).trim() : undefined,
+        apiKey,
+      })
+      .returning();
+
+    res.status(201).json({ success: true, profile });
+  } catch (err) {
+    logger.error({ err }, "Error creating unregistered widget client");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
 export default router;

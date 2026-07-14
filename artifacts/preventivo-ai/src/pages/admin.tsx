@@ -42,7 +42,7 @@ type AdminUser = {
 };
 
 type Settings = Record<string, string>;
-type Tab = "overview" | "users" | "clients" | "stripe" | "gsc" | "seo" | "settings" | "support";
+type Tab = "overview" | "users" | "widget" | "stripe" | "gsc" | "seo" | "settings" | "support";
 
 type GscSummary = {
   totalClicks: number;
@@ -149,6 +149,76 @@ export default function AdminPage() {
   const [clientQuotes, setClientQuotes] = useState<any[]>([]);
   const [loadingQuotes, setLoadingQuotes] = useState(false);
   const [rotatingKeyId, setRotatingKeyId] = useState<string | null>(null);
+
+  // Widget sub-tab e stati per le statistiche avanzate
+  const [widgetSubTab, setWidgetSubTab] = useState<"keys" | "analytics">("keys");
+  const [widgetStats, setWidgetStats] = useState<any>(null);
+  const [widgetStatsLoading, setWidgetStatsLoading] = useState(false);
+
+  // Stati del form per la creazione di un cliente non registrato
+  const [newClientName, setNewClientName] = useState("");
+  const [newClientEmail, setNewClientEmail] = useState("");
+  const [newClientPhone, setNewClientPhone] = useState("");
+  const [newClientAddress, setNewClientAddress] = useState("");
+  const [newClientVat, setNewClientVat] = useState("");
+  const [creatingClient, setCreatingClient] = useState(false);
+
+  async function loadWidgetStats() {
+    setWidgetStatsLoading(true);
+    try {
+      const data = await authFetch("/api/admin/widget/stats");
+      setWidgetStats(data);
+    } catch (e) {
+      toast({
+        variant: "destructive",
+        title: "Errore",
+        description: "Impossibile caricare le statistiche del widget.",
+      });
+    } finally {
+      setWidgetStatsLoading(false);
+    }
+  }
+
+  async function handleCreateUnregisteredClient(e: React.FormEvent) {
+    e.preventDefault();
+    if (!newClientName.trim()) {
+      toast({ variant: "destructive", title: "Errore", description: "Il nome azienda è obbligatorio." });
+      return;
+    }
+    setCreatingClient(true);
+    try {
+      const res = await authFetch("/api/admin/widget/create-client", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          companyName: newClientName,
+          email: newClientEmail,
+          phone: newClientPhone,
+          address: newClientAddress,
+          vatNumber: newClientVat,
+        }),
+      });
+      if (res.success) {
+        toast({ title: "Cliente creato!", description: `Chiave generata per ${newClientName}.` });
+        setNewClientName("");
+        setNewClientEmail("");
+        setNewClientPhone("");
+        setNewClientAddress("");
+        setNewClientVat("");
+        loadUsers(); // Ricarica la griglia utenti
+      }
+    } catch (err: any) {
+      toast({ variant: "destructive", title: "Errore", description: err.message || "Impossibile creare il cliente." });
+    } finally {
+      setCreatingClient(false);
+    }
+  }
+
+  useEffect(() => {
+    if (tab === "widget" && widgetSubTab === "analytics") {
+      loadWidgetStats();
+    }
+  }, [tab, widgetSubTab]);
 
   async function loadSupportStatus() {
     try {
@@ -818,121 +888,220 @@ export default function AdminPage() {
 
           {/* WIDGET TAB */}
           {tab === "widget" && (
-            <div className="space-y-4">
+            <div className="space-y-6">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
                   <h2 className="text-base font-bold text-slate-800">Integrazione & Gestione Widget</h2>
-                  <p className="text-xs text-slate-400">Controlla l'attivazione dei widget di acquisizione lead edili, assegna chiavi API dedicate e preleva i codici embed.</p>
+                  <p className="text-xs text-slate-400">Controlla l'attivazione dei widget di acquisizione lead edili, analizza l'utilizzo di Groq/AI e crea API key per nuovi clienti.</p>
                 </div>
-                <div className="relative">
-                  <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
-                  <input
-                    type="text"
-                    placeholder="Cerca per email, nome, azienda..."
-                    value={userSearch}
-                    onChange={(e) => setUserSearch(e.target.value)}
-                    className="w-full sm:w-64 pl-9 pr-4 py-2 border border-slate-100 rounded-xl text-sm focus:outline-none focus:border-violet-500 bg-white"
-                  />
+
+                {/* Sub-tab Navigation */}
+                <div className="flex bg-slate-100 p-1 rounded-xl shrink-0 self-start sm:self-center">
+                  <button
+                    onClick={() => setWidgetSubTab("keys")}
+                    className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all cursor-pointer ${
+                      widgetSubTab === "keys" ? "bg-white text-slate-800 shadow-sm" : "text-slate-500 hover:text-slate-800"
+                    }`}
+                  >
+                    Gestione Chiavi & Clienti
+                  </button>
+                  <button
+                    onClick={() => setWidgetSubTab("analytics")}
+                    className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all cursor-pointer ${
+                      widgetSubTab === "analytics" ? "bg-white text-slate-800 shadow-sm" : "text-slate-500 hover:text-slate-800"
+                    }`}
+                  >
+                    Analisi & Monitoraggio AI
+                  </button>
                 </div>
               </div>
 
-              <div className="bg-white rounded-2xl border border-slate-100 overflow-hidden shadow-sm">
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left text-sm border-collapse">
-                    <thead>
-                      <tr className="border-b border-slate-100 bg-slate-50/50">
-                        <th className="px-5 py-3.5 text-xs font-bold text-slate-400 uppercase tracking-wide">Cliente</th>
-                        <th className="px-5 py-3.5 text-xs font-bold text-slate-400 uppercase tracking-wide">Azienda</th>
-                        <th className="px-5 py-3.5 text-xs font-bold text-slate-400 uppercase tracking-wide">Chiave API Widget</th>
-                        <th className="px-5 py-3.5 text-xs font-bold text-slate-400 uppercase tracking-wide">Stato Widget</th>
-                        <th className="px-5 py-3.5 text-xs font-bold text-slate-400 uppercase tracking-wide text-right">Integrazione</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-50">
-                      {filteredUsers.map(u => {
-                        const isExpanded = expandedUserId === u.userId;
-                        return (
-                          <optgroup key={u.userId} label={u.firstName || u.email || u.userId} className="contents">
-                            <tr className={`hover:bg-slate-50/40 transition-colors ${isExpanded ? "bg-slate-50/20" : ""}`}>
-                              <td className="px-5 py-4">
-                                <div className="font-semibold text-slate-800">{u.firstName || "Senza Nome"}</div>
-                                <div className="text-xs text-slate-400">{u.email || u.userId.slice(0, 16)}</div>
-                              </td>
-                              <td className="px-5 py-4 text-slate-600 font-medium">{u.companyName || "—"}</td>
-                              <td className="px-5 py-4">
-                                {(u as any).apiKey ? (
-                                  <span className="font-mono text-xs bg-slate-50 border border-slate-100 px-2 py-0.5 rounded text-slate-600">
-                                    {(u as any).apiKey.slice(0, 15)}...
-                                  </span>
-                                ) : (
-                                  <span className="text-red-500 text-xs font-medium bg-red-50 px-2 py-0.5 rounded border border-red-100">Nessuna chiave</span>
-                                )}
-                              </td>
-                              <td className="px-5 py-4">
-                                {(u as any).apiKey ? (
-                                  <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-150 px-2.5 py-0.5 rounded-full">
-                                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                                    Attivo
-                                  </span>
-                                ) : (
-                                  <span className="inline-flex items-center gap-1 text-[10px] font-bold text-slate-500 bg-slate-50 border border-slate-150 px-2.5 py-0.5 rounded-full">
-                                    <span className="h-1.5 w-1.5 rounded-full bg-slate-300"></span>
-                                    Disattivato
-                                  </span>
-                                )}
-                              </td>
-                              <td className="px-5 py-4 text-right">
-                                <button
-                                  onClick={() => handleToggleExpandClient(u.userId)}
-                                  className="text-xs font-bold text-violet-600 hover:text-violet-800 transition-colors inline-flex items-center gap-1 cursor-pointer"
-                                >
-                                  {isExpanded ? "Chiudi" : "Configura"}
-                                  {isExpanded ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
-                                </button>
-                              </td>
+              {widgetSubTab === "keys" ? (
+                <div className="space-y-6">
+                  {/* Form per la creazione di un cliente virtuale / non registrato */}
+                  <div className="bg-white rounded-2xl border border-slate-100 p-6 shadow-sm">
+                    <h3 className="text-sm font-bold text-slate-800 mb-1 flex items-center gap-1.5">
+                      <Sparkles className="h-4 w-4 text-violet-500" />
+                      Registra Nuova Impresa / Cliente Virtuale
+                    </h3>
+                    <p className="text-xs text-slate-400 mb-4">Crea una configurazione e genera all'istante un'API Key per un'impresa partner non ancora registrata a PrevAI.</p>
+                    <form onSubmit={handleCreateUnregisteredClient} className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div>
+                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Nome Impresa/Azienda *</label>
+                        <input
+                          type="text"
+                          required
+                          placeholder="es. Rossi Costruzioni S.r.l."
+                          value={newClientName}
+                          onChange={(e) => setNewClientName(e.target.value)}
+                          className="w-full px-3 py-2 border border-slate-100 rounded-xl text-sm focus:outline-none focus:border-violet-500 bg-white"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Email Impresa</label>
+                        <input
+                          type="email"
+                          placeholder="es. info@rossicostruzioni.it"
+                          value={newClientEmail}
+                          onChange={(e) => setNewClientEmail(e.target.value)}
+                          className="w-full px-3 py-2 border border-slate-100 rounded-xl text-sm focus:outline-none focus:border-violet-500 bg-white"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Telefono</label>
+                        <input
+                          type="text"
+                          placeholder="es. 3331234567"
+                          value={newClientPhone}
+                          onChange={(e) => setNewClientPhone(e.target.value)}
+                          className="w-full px-3 py-2 border border-slate-100 rounded-xl text-sm focus:outline-none focus:border-violet-500 bg-white"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Indirizzo</label>
+                        <input
+                          type="text"
+                          placeholder="es. Via Milano 15, Milano"
+                          value={newClientAddress}
+                          onChange={(e) => setNewClientAddress(e.target.value)}
+                          className="w-full px-3 py-2 border border-slate-100 rounded-xl text-sm focus:outline-none focus:border-violet-500 bg-white"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Partita IVA</label>
+                        <input
+                          type="text"
+                          placeholder="es. IT12345678901"
+                          value={newClientVat}
+                          onChange={(e) => setNewClientVat(e.target.value)}
+                          className="w-full px-3 py-2 border border-slate-100 rounded-xl text-sm focus:outline-none focus:border-violet-500 bg-white"
+                        />
+                      </div>
+                      <div className="flex items-end">
+                        <button
+                          type="submit"
+                          disabled={creatingClient}
+                          className="w-full bg-violet-600 hover:bg-violet-700 disabled:bg-violet-300 text-white text-xs font-bold py-2.5 rounded-xl transition-all shadow-sm flex items-center justify-center gap-1.5 cursor-pointer h-[38px]"
+                        >
+                          {creatingClient ? "Generazione..." : "Genera Chiave API e Profilo"}
+                        </button>
+                      </div>
+                    </form>
+                  </div>
+
+                  {/* Ricerca e tabella delle chiavi */}
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-sm font-bold text-slate-800">Elenco Imprese e Integrazioni Attive</h3>
+                      <div className="relative">
+                        <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
+                        <input
+                          type="text"
+                          placeholder="Filtra imprese..."
+                          value={userSearch}
+                          onChange={(e) => setUserSearch(e.target.value)}
+                          className="w-full sm:w-64 pl-9 pr-4 py-2 border border-slate-100 rounded-xl text-sm focus:outline-none focus:border-violet-500 bg-white"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="bg-white rounded-2xl border border-slate-100 overflow-hidden shadow-sm">
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-left text-sm border-collapse">
+                          <thead>
+                            <tr className="border-b border-slate-100 bg-slate-50/50">
+                              <th className="px-5 py-3.5 text-xs font-bold text-slate-400 uppercase tracking-wide">Cliente / ID</th>
+                              <th className="px-5 py-3.5 text-xs font-bold text-slate-400 uppercase tracking-wide">Azienda</th>
+                              <th className="px-5 py-3.5 text-xs font-bold text-slate-400 uppercase tracking-wide">Chiave API Widget</th>
+                              <th className="px-5 py-3.5 text-xs font-bold text-slate-400 uppercase tracking-wide">Stato Widget</th>
+                              <th className="px-5 py-3.5 text-xs font-bold text-slate-400 uppercase tracking-wide text-right">Integrazione</th>
                             </tr>
-                            {isExpanded && (
-                              <tr>
-                                <td colSpan={5} className="bg-slate-50/40 p-6 border-b border-slate-100">
-                                  <div className="bg-white rounded-2xl border border-slate-100 p-6 shadow-sm text-left max-w-4xl mx-auto space-y-5">
-                                    <div className="flex items-start gap-4">
-                                      <div className="h-10 w-10 rounded-xl bg-violet-50 text-violet-600 flex items-center justify-center shrink-0">
-                                        <Zap className="h-5 w-5" />
-                                      </div>
-                                      <div>
-                                        <h3 className="text-sm font-bold text-slate-800">
-                                          Configurazione Funnel Lead — {u.companyName || u.firstName || "Cliente"}
-                                        </h3>
-                                        <p className="text-xs text-slate-400">Gestisci l'accesso al Widget di acquisizione per questo utente. Puoi impostare chiavi API e prelevare il codice HTML da inserire nel loro sito.</p>
-                                      </div>
-                                    </div>
+                          </thead>
+                          <tbody className="divide-y divide-slate-50">
+                            {filteredUsers.map(u => {
+                              const isExpanded = expandedUserId === u.userId;
+                              return (
+                                <optgroup key={u.userId} label={u.firstName || u.email || u.userId} className="contents">
+                                  <tr className={`hover:bg-slate-50/40 transition-colors ${isExpanded ? "bg-slate-50/20" : ""}`}>
+                                    <td className="px-5 py-4">
+                                      <div className="font-semibold text-slate-800">{u.firstName || "Senza Nome"}</div>
+                                      <div className="text-xs text-slate-400">{u.email || u.userId.slice(0, 16)}</div>
+                                    </td>
+                                    <td className="px-5 py-4 text-slate-600 font-medium">{u.companyName || "—"}</td>
+                                    <td className="px-5 py-4">
+                                      {(u as any).apiKey ? (
+                                        <span className="font-mono text-xs bg-slate-50 border border-slate-100 px-2 py-0.5 rounded text-slate-600">
+                                          {(u as any).apiKey.slice(0, 15)}...
+                                        </span>
+                                      ) : (
+                                        <span className="text-red-500 text-xs font-medium bg-red-50 px-2 py-0.5 rounded border border-red-100">Nessuna chiave</span>
+                                      )}
+                                    </td>
+                                    <td className="px-5 py-4">
+                                      {(u as any).apiKey ? (
+                                        <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-150 px-2.5 py-0.5 rounded-full">
+                                          <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                                          Attivo
+                                        </span>
+                                      ) : (
+                                        <span className="inline-flex items-center gap-1 text-[10px] font-bold text-slate-500 bg-slate-50 border border-slate-150 px-2.5 py-0.5 rounded-full">
+                                          <span className="h-1.5 w-1.5 rounded-full bg-slate-300"></span>
+                                          Disattivato
+                                        </span>
+                                      )}
+                                    </td>
+                                    <td className="px-5 py-4 text-right">
+                                      <button
+                                        onClick={() => handleToggleExpandClient(u.userId)}
+                                        className="text-xs font-bold text-violet-600 hover:text-violet-800 transition-colors inline-flex items-center gap-1 cursor-pointer"
+                                      >
+                                        {isExpanded ? "Chiudi" : "Configura"}
+                                        {isExpanded ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+                                      </button>
+                                    </td>
+                                  </tr>
+                                  {isExpanded && (
+                                    <tr>
+                                      <td colSpan={5} className="bg-slate-50/40 p-6 border-b border-slate-100">
+                                        <div className="bg-white rounded-2xl border border-slate-100 p-6 shadow-sm text-left max-w-4xl mx-auto space-y-5">
+                                          <div className="flex items-start gap-4">
+                                            <div className="h-10 w-10 rounded-xl bg-violet-50 text-violet-600 flex items-center justify-center shrink-0">
+                                              <Zap className="h-5 w-5" />
+                                            </div>
+                                            <div>
+                                              <h3 className="text-sm font-bold text-slate-800">
+                                                Configurazione Funnel Lead — {u.companyName || u.firstName || "Cliente"}
+                                              </h3>
+                                              <p className="text-xs text-slate-400">Gestisci l'accesso al Widget di acquisizione per questo utente. Puoi impostare chiavi API e prelevare il codice HTML da inserire nel loro sito.</p>
+                                            </div>
+                                          </div>
 
-                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-2">
-                                      <div className="md:col-span-1 space-y-4">
-                                        <div className="space-y-1.5">
-                                          <label className="text-xs font-bold text-slate-500 block uppercase tracking-wider">Chiave API Attiva</label>
-                                          <input
-                                            type="text"
-                                            readOnly
-                                            value={(u as any).apiKey || "Nessuna chiave configurata"}
-                                            className="font-mono text-xs bg-slate-50 text-slate-700 px-3 py-2 border border-slate-100 rounded-xl w-full focus:outline-none text-center"
-                                          />
-                                        </div>
-                                        <button
-                                          onClick={() => rotateApiKey(u.userId)}
-                                          disabled={rotatingKeyId === u.userId}
-                                          className="w-full bg-violet-600 hover:bg-violet-700 disabled:bg-violet-300 text-white text-xs font-bold py-2.5 rounded-xl transition-all shadow-sm flex items-center justify-center gap-1.5 cursor-pointer"
-                                        >
-                                          {rotatingKeyId === u.userId ? <RefreshCw className="h-3 w-3 animate-spin" /> : <RefreshCw className="h-3 w-3" />}
-                                          {(u as any).apiKey ? "Rigenera API Key" : "Genera Chiave API"}
-                                        </button>
-                                      </div>
+                                          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-2">
+                                            <div className="md:col-span-1 space-y-4">
+                                              <div className="space-y-1.5">
+                                                <label className="text-xs font-bold text-slate-500 block uppercase tracking-wider">Chiave API Attiva</label>
+                                                <input
+                                                  type="text"
+                                                  readOnly
+                                                  value={(u as any).apiKey || "Nessuna chiave configurata"}
+                                                  className="font-mono text-xs bg-slate-50 text-slate-700 px-3 py-2 border border-slate-100 rounded-xl w-full focus:outline-none text-center"
+                                                />
+                                              </div>
+                                              <button
+                                                onClick={() => rotateApiKey(u.userId)}
+                                                disabled={rotatingKeyId === u.userId}
+                                                className="w-full bg-violet-600 hover:bg-violet-700 disabled:bg-violet-300 text-white text-xs font-bold py-2.5 rounded-xl transition-all shadow-sm flex items-center justify-center gap-1.5 cursor-pointer"
+                                              >
+                                                {rotatingKeyId === u.userId ? <RefreshCw className="h-3 w-3 animate-spin" /> : <RefreshCw className="h-3 w-3" />}
+                                                {(u as any).apiKey ? "Rigenera API Key" : "Genera Chiave API"}
+                                              </button>
+                                            </div>
 
-                                      <div className="md:col-span-2 space-y-2">
-                                        <label className="text-xs font-bold text-slate-500 block uppercase tracking-wider">Codice Script Embed</label>
-                                        {(u as any).apiKey ? (
-                                          <div className="relative">
-                                            <pre className="p-4 bg-slate-950 text-slate-200 rounded-xl overflow-x-auto font-mono text-[10px] leading-relaxed max-h-40 whitespace-pre-wrap select-all border border-slate-800">
+                                            <div className="md:col-span-2 space-y-2">
+                                              <label className="text-xs font-bold text-slate-500 block uppercase tracking-wider">Codice Script Embed</label>
+                                              {(u as any).apiKey ? (
+                                                <div className="relative">
+                                                  <pre className="p-4 bg-slate-950 text-slate-200 rounded-xl overflow-x-auto font-mono text-[10px] leading-relaxed max-h-40 whitespace-pre-wrap select-all border border-slate-800">
 {`<!-- PrevAI Widget Funnel -->
 <div id="prevai-widget"></div>
 <script
@@ -940,36 +1109,135 @@ export default function AdminPage() {
   data-api-key="${(u as any).apiKey}"
   async
 ></script>`}
-                                            </pre>
-                                            <button
-                                              onClick={() => {
-                                                const code = `<!-- PrevAI Widget Funnel -->\n<div id="prevai-widget"></div>\n<script\n  src="${typeof window !== "undefined" ? window.location.origin : "https://prevai.vercel.app"}/widget.js"\n  data-api-key="${(u as any).apiKey}"\n  async\n></script>`;
-                                                navigator.clipboard.writeText(code);
-                                                toast({ title: "Codice copiato!", description: "Il codice di embed è stato copiato negli appunti." });
-                                              }}
-                                              className="absolute right-3 top-3 bg-slate-850 hover:bg-slate-800 text-slate-200 text-[10px] font-semibold px-2.5 py-1 rounded-md border border-slate-700 transition-all cursor-pointer shadow-sm"
-                                            >
-                                              Copia Codice
-                                            </button>
+                                                  </pre>
+                                                  <button
+                                                    onClick={() => {
+                                                      const code = `<!-- PrevAI Widget Funnel -->\n<div id="prevai-widget"></div>\n<script\n  src="${typeof window !== "undefined" ? window.location.origin : "https://prevai.vercel.app"}/widget.js"\n  data-api-key="${(u as any).apiKey}"\n  async\n></script>`;
+                                                      navigator.clipboard.writeText(code);
+                                                      toast({ title: "Codice copiato!", description: "Il codice di embed è stato copiato negli appunti." });
+                                                    }}
+                                                    className="absolute right-3 top-3 bg-slate-850 hover:bg-slate-800 text-slate-200 text-[10px] font-semibold px-2.5 py-1 rounded-md border border-slate-700 transition-all cursor-pointer shadow-sm"
+                                                  >
+                                                    Copia Codice
+                                                  </button>
+                                                </div>
+                                              ) : (
+                                                <div className="bg-slate-50 border border-slate-100 rounded-xl p-6 text-center text-xs text-slate-400">
+                                                  Genera una chiave API per visualizzare e prelevare il codice di embed.
+                                                </div>
+                                              )}
+                                            </div>
                                           </div>
-                                        ) : (
-                                          <div className="bg-slate-50 border border-slate-100 rounded-xl p-6 text-center text-xs text-slate-400">
-                                            Genera una chiave API per visualizzare e prelevare il codice di embed.
-                                          </div>
-                                        )}
-                                      </div>
-                                    </div>
-                                  </div>
-                                </td>
-                              </tr>
-                            )}
-                          </optgroup>
-                        );
-                      })}
-                    </tbody>
-                  </table>
+                                        </div>
+                                      </td>
+                                    </tr>
+                                  )}
+                                </optgroup>
+                              );
+                            })}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  </div>
                 </div>
-              </div>
+              ) : (
+                <div className="space-y-6">
+                  {/* Metriche globali */}
+                  {widgetStatsLoading || !widgetStats ? (
+                    <div className="flex items-center justify-center py-12">
+                      <RefreshCw className="h-6 w-6 text-violet-500 animate-spin" />
+                      <span className="ml-2 text-sm text-slate-500">Caricamento statistiche in corso...</span>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        {[
+                          { label: "Preventivi Widget Generati", value: String(widgetStats.global.totalQuotes), desc: "Richieste totali dai widget", icon: FileText, color: "text-violet-500", bg: "bg-violet-50" },
+                          { label: "Costo Totale AI (Groq)", value: `€${Number(widgetStats.global.totalCost).toFixed(4)}`, desc: "Costo stimato token Llama 3.3", icon: Euro, color: "text-emerald-500", bg: "bg-emerald-50" },
+                          { label: "Token Complessivi", value: widgetStats.global.totalTokens.toLocaleString("it-IT"), desc: `Prompt + Completion. Media: ${widgetStats.global.totalQuotes > 0 ? Math.round(widgetStats.global.totalTokens / widgetStats.global.totalQuotes) : 0} / chiamata`, icon: Bot, color: "text-blue-500", bg: "bg-blue-50" },
+                        ].map(({ label, value, desc, icon: Icon, color, bg }) => (
+                          <div key={label} className="bg-white rounded-2xl border border-slate-100 p-5 shadow-sm">
+                            <div className="flex items-center justify-between mb-3">
+                              <span className="text-xs font-semibold text-slate-400 uppercase tracking-wide">{label}</span>
+                              <div className={`h-7 w-7 rounded-lg ${bg} flex items-center justify-center`}><Icon className={`h-4 w-4 ${color}`} /></div>
+                            </div>
+                            <div className="text-2xl font-bold text-slate-800">{value}</div>
+                            <div className="text-xs text-slate-400 font-medium mt-1">{desc}</div>
+                          </div>
+                        ))}
+                      </div>
+
+                      {/* Consumo dettagliato per Impresa */}
+                      <div className="bg-white rounded-2xl border border-slate-100 p-6 shadow-sm">
+                        <h3 className="text-sm font-bold text-slate-800 mb-4">Consumo AI per Impresa Edile</h3>
+                        <div className="overflow-x-auto">
+                          <table className="w-full text-left text-sm border-collapse">
+                            <thead>
+                              <tr className="border-b border-slate-100 bg-slate-50/50">
+                                <th className="px-5 py-3.5 text-xs font-bold text-slate-400 uppercase">Impresa</th>
+                                <th className="px-5 py-3.5 text-xs font-bold text-slate-400 uppercase">Chiave API</th>
+                                <th className="px-5 py-3.5 text-xs font-bold text-slate-400 uppercase text-center">Richieste Widget</th>
+                                <th className="px-5 py-3.5 text-xs font-bold text-slate-400 uppercase text-right">Token Totali</th>
+                                <th className="px-5 py-3.5 text-xs font-bold text-slate-400 uppercase text-right">Costo AI</th>
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-50">
+                              {widgetStats.clientUsage.map((c: any) => (
+                                <tr key={c.userId} className="hover:bg-slate-50/20">
+                                  <td className="px-5 py-3.5 font-semibold text-slate-800">{c.companyName || "Senza Nome (Virtuale)"}</td>
+                                  <td className="px-5 py-3.5 font-mono text-xs text-slate-500">{c.apiKey ? `${c.apiKey.slice(0, 15)}...` : "Nessuna"}</td>
+                                  <td className="px-5 py-3.5 text-center text-slate-700 font-medium">{c.quotesCount}</td>
+                                  <td className="px-5 py-3.5 text-right text-slate-500">{c.totalTokens.toLocaleString("it-IT")}</td>
+                                  <td className="px-5 py-3.5 text-right text-emerald-600 font-semibold">€{c.totalCost.toFixed(5)}</td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+
+                      {/* Ultime chiamate API (Log debug) */}
+                      <div className="bg-white rounded-2xl border border-slate-100 p-6 shadow-sm">
+                        <h3 className="text-sm font-bold text-slate-800 mb-4">Registro Ultime Chiamate AI Widget</h3>
+                        <div className="overflow-x-auto">
+                          <table className="w-full text-left text-sm border-collapse">
+                            <thead>
+                              <tr className="border-b border-slate-100 bg-slate-50/50">
+                                <th className="px-5 py-3.5 text-xs font-bold text-slate-400 uppercase">Data</th>
+                                <th className="px-5 py-3.5 text-xs font-bold text-slate-400 uppercase">Impresa Ospite</th>
+                                <th className="px-5 py-3.5 text-xs font-bold text-slate-400 uppercase">Lead</th>
+                                <th className="px-5 py-3.5 text-xs font-bold text-slate-400 uppercase text-center">Modello AI</th>
+                                <th className="px-5 py-3.5 text-xs font-bold text-slate-400 uppercase text-right">Token</th>
+                                <th className="px-5 py-3.5 text-xs font-bold text-slate-400 uppercase text-right">Costo AI</th>
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-50">
+                              {widgetStats.recentCalls.map((call: any) => (
+                                <tr key={call.quoteId} className="hover:bg-slate-50/20 text-xs">
+                                  <td className="px-5 py-3 text-slate-500">{new Date(call.date).toLocaleString("it-IT")}</td>
+                                  <td className="px-5 py-3 font-semibold text-slate-800">{call.companyName || "Virtuale"}</td>
+                                  <td className="px-5 py-3">
+                                    <div className="font-semibold text-slate-800">{call.clientName}</div>
+                                    <div className="text-[10px] text-slate-400">{call.clientEmail}</div>
+                                  </td>
+                                  <td className="px-5 py-3 text-center">
+                                    <span className="bg-violet-50 text-violet-700 px-2 py-0.5 rounded border border-violet-100 font-medium">
+                                      Llama 3.3 (Groq)
+                                    </span>
+                                  </td>
+                                  <td className="px-5 py-3 text-right text-slate-500">{(call.totalTokens || 0).toLocaleString("it-IT")}</td>
+                                  <td className="px-5 py-3 text-right text-emerald-600 font-semibold">€{Number(call.apiCost || 0).toFixed(5)}</td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+                    </>
+                  )}
+                </div>
+              )}
             </div>
           )}
 

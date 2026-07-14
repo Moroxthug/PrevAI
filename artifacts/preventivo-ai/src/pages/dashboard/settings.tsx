@@ -46,6 +46,22 @@ function AccountTab() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const currentLogoUrl = logoPreview ?? profile?.logoUrl ?? null;
 
+  const [generatingKey, setGeneratingKey] = useState(false);
+  const handleGenerateApiKey = async () => {
+    setGeneratingKey(true);
+    try {
+      const res = await fetch("/api/business-profile/apikey", { method: "POST" });
+      if (!res.ok) throw new Error("Generazione fallita");
+      const data = await res.json() as { apiKey: string };
+      queryClient.invalidateQueries({ queryKey: getGetBusinessProfileQueryKey() });
+      toast({ title: "Chiave API Widget generata con successo!" });
+    } catch (err) {
+      toast({ title: "Errore generazione chiave", variant: "destructive" });
+    } finally {
+      setGeneratingKey(false);
+    }
+  };
+
   const form = useForm<ProfileFormValues>({
     resolver: zodResolver(profileSchema),
     values: {
@@ -236,6 +252,79 @@ function AccountTab() {
           </Card>
         </form>
       </Form>
+
+      {/* Widget Funnel Integration Card */}
+      <Card className="mt-6">
+        <CardHeader>
+          <div className="flex items-center gap-2">
+            <Zap className="h-5 w-5 text-violet-500" />
+            <CardTitle>Integrazione Widget Funnel</CardTitle>
+          </div>
+          <CardDescription>
+            Installa il preventivatore automatico PrevAI direttamente sul tuo sito web per catturare nuovi lead qualificati h24.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {profile?.apiKey ? (
+            <div className="space-y-4">
+              <div className="space-y-1.5">
+                <FormLabel className="text-xs font-bold text-muted-foreground block uppercase tracking-wider">La tua Chiave API Attiva</FormLabel>
+                <div className="flex gap-2">
+                  <Input
+                    readOnly
+                    value={profile.apiKey}
+                    className="font-mono text-xs bg-muted/30 text-center"
+                  />
+                  <Button
+                    onClick={handleGenerateApiKey}
+                    disabled={generatingKey}
+                    variant="outline"
+                    className="shrink-0"
+                  >
+                    {generatingKey ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4 mr-2" />}
+                    Rigenera
+                  </Button>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <FormLabel className="text-xs font-bold text-muted-foreground block uppercase tracking-wider">Codice Embed HTML</FormLabel>
+                <p className="text-xs text-muted-foreground">Incolla questo codice nel corpo della pagina (HTML) del tuo sito web (WordPress, Wix, o siti personalizzati) dove vuoi far apparire il preventivatore:</p>
+                <div className="relative">
+                  <pre className="p-4 bg-slate-950 text-slate-200 rounded-xl overflow-x-auto font-mono text-[10px] leading-relaxed max-h-40 whitespace-pre-wrap select-all border border-slate-800">
+{`<!-- PrevAI Widget Funnel -->
+<div id="prevai-widget"></div>
+<script
+  src="${typeof window !== "undefined" ? window.location.origin : "https://prevai.it"}/widget.js"
+  data-api-key="${profile.apiKey}"
+  async
+></script>`}
+                  </pre>
+                  <Button
+                    size="sm"
+                    onClick={() => {
+                      const code = `<!-- PrevAI Widget Funnel -->\n<div id="prevai-widget"></div>\n<script\n  src="${typeof window !== "undefined" ? window.location.origin : "https://prevai.it"}/widget.js"\n  data-api-key="${profile.apiKey}"\n  async\n></script>`;
+                      navigator.clipboard.writeText(code);
+                      toast({ title: "Codice copiato!", description: "Il codice di embed è stato copiato negli appunti." });
+                    }}
+                    className="absolute right-3 top-3 text-[10px] font-semibold h-7 px-3 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700"
+                  >
+                    Copia
+                  </Button>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="text-center py-6 border border-dashed rounded-xl bg-muted/10 space-y-3">
+              <p className="text-sm text-muted-foreground">Non hai ancora una chiave API attiva per il widget.</p>
+              <Button onClick={handleGenerateApiKey} disabled={generatingKey}>
+                {generatingKey ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Zap className="h-4 w-4 mr-2" />}
+                Abilita Widget e Genera API Key
+              </Button>
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }

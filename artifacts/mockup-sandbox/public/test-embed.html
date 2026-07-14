@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Test Integrazione Standalone Widget - PrevAI</title>
+  <style>
+    :root {
+      --primary-color: #0d9488; /* Verde ottanio */
+      --text-color: #1f2937;
+      --bg-color: #f9fafb;
+    }
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      margin: 0;
+      padding: 0;
+      background-color: var(--bg-color);
+      color: var(--text-color);
+    }
+    header {
+      background-color: white;
+      border-bottom: 1px solid #e5e7eb;
+      padding: 20px 40px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .logo {
+      font-size: 24px;
+      font-weight: bold;
+      color: var(--primary-color);
+    }
+    nav a {
+      margin-left: 20px;
+      text-decoration: none;
+      color: #4b5563;
+      font-weight: 500;
+    }
+    .hero {
+      max-width: 1000px;
+      margin: 60px auto;
+      text-align: center;
+      padding: 0 20px;
+    }
+    .hero h1 {
+      font-size: 48px;
+      margin-bottom: 20px;
+      color: #111827;
+    }
+    .hero p {
+      font-size: 18px;
+      color: #6b7280;
+      max-width: 600px;
+      margin: 0 auto 40px;
+      line-height: 1.6;
+    }
+    .widget-box {
+      background: white;
+      border: 1px solid #e5e7eb;
+      border-radius: 16px;
+      padding: 24px;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+      margin-bottom: 60px;
+    }
+    .footer-site {
+      background-color: #111827;
+      color: white;
+      padding: 40px;
+      text-align: center;
+      font-size: 14px;
+    }
+    .config-panel {
+      background-color: #f3f4f6;
+      border: 1px solid #d1d5db;
+      border-radius: 8px;
+      padding: 16px;
+      max-width: 400px;
+      margin: 20px auto;
+      text-align: left;
+    }
+    .config-panel label {
+      display: block;
+      margin-bottom: 8px;
+      font-weight: 600;
+    }
+    .config-panel input {
+      width: 100%;
+      padding: 8px;
+      margin-top: 4px;
+      box-sizing: border-box;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+    }
+    .config-panel button {
+      margin-top: 12px;
+      background-color: var(--primary-color);
+      color: white;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-weight: 600;
+    }
+  </style>
+
+  <!-- Caricamento del widget in modalità sviluppo (TypeScript nativo in Vite) -->
+  <script type="module">
+    import "/src/widget-entry.tsx";
+  </script>
+</head>
+<body>
+
+  <header>
+    <div class="logo">Rossi Ristrutturazioni</div>
+    <nav>
+      <a href="#servizi">Servizi</a>
+      <a href="#lavori">Lavori</a>
+      <a href="#contatti">Contatti</a>
+    </nav>
+  </header>
+
+  <main class="hero">
+    <h1>Ristrutturare casa non è mai stato così semplice</h1>
+    <p>Calcola in pochi secondi una stima del costo per la tua ristrutturazione. Scegli l'intervento, inserisci le misure e ricevi subito il prezzo.</p>
+
+    <!-- Pannello per testare le API Key del server locale -->
+    <div class="config-panel">
+      <label>
+        Test API Key (opzionale - inserisci una chiave valida per abilitare il calcolo AI reale):
+        <input type="text" id="api-key-input" placeholder="prevai_pk_..." value="">
+      </label>
+      <button onclick="caricaWidgetConApiKey()">Inizializza Widget</button>
+    </div>
+
+    <!-- Contenitore del Widget PrevAI -->
+    <div class="widget-box">
+      <div id="prevai-widget-container"></div>
+    </div>
+  </main>
+
+  <footer class="footer-site">
+    <p>&copy; 2026 Rossi Costruzioni S.r.l. - Tutti i diritti riservati.</p>
+  </footer>
+
+  <script>
+    // Inizializzazione di default (modalità simulata offline/demo)
+    function initDefaultWidget(apiKey = "") {
+      // Pulisce il contenitore prima di reinizializzare
+      document.getElementById('prevai-widget-container').innerHTML = '';
+      
+      const config = {
+        target: "#prevai-widget-container",
+        prevaiUrl: "http://localhost:5173",
+        apiBaseUrl: "http://localhost:5180",
+        rating: { stars: 4.9, count: 42 },
+        mostraPrezzo: "range",
+        whatsapp: true,
+        privacyUrl: "https://rossiristrutturazioni.it/privacy"
+      };
+
+      if (apiKey) {
+        config.apiKey = apiKey;
+      }
+
+      // Applica le variabili CSS per il tema del widget adattandolo al sito ospite
+      const root = document.documentElement;
+      root.style.setProperty('--pvq-accent', '#0d9488'); // Corrisponde al colore primario del sito
+      root.style.setProperty('--pvq-radius', '12px');
+
+      if (window.PrevAiWidget) {
+        window.PrevAiWidget.init(config);
+      } else {
+        // Aspetta che lo script carichi
+        setTimeout(() => {
+          if (window.PrevAiWidget) {
+            window.PrevAiWidget.init(config);
+          }
+        }, 500);
+      }
+    }
+
+    function caricaWidgetConApiKey() {
+      const key = document.getElementById('api-key-input').value.trim();
+      initDefaultWidget(key);
+    }
+
+    // Avvia al caricamento della pagina
+    window.addEventListener('load', () => {
+      initDefaultWidget();
+    });
+  </script>
+
+</body>
+</html>

@@ -316767,6 +316767,91 @@ async function sendQuotePdfEmail(params) {
     throw new Error("Impossibile inviare l'email con il preventivo");
   }
 }
+async function sendWidgetLeadNotification(params) {
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!apiKey) {
+    logger2.warn("RESEND_API_KEY not set \u2014 skipping widget lead notification email");
+    return;
+  }
+  const { toEmail, companyName, clientName, clientEmail, clientPhone, rawInput, totale, prezzoMinimo, prezzoMassimo } = params;
+  try {
+    const resend2 = new Resend(apiKey);
+    await resend2.emails.send({
+      from: "Prevai <no-reply@prevai.it>",
+      to: [toEmail],
+      subject: `\u26A1 Nuovo Lead Convertito da Widget \u2014 ${clientName}`,
+      html: `<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8" />
+<title>Nuovo Lead Widget</title>
+<style>
+  body { margin:0; padding:0; background:#f4f4f5; font-family:system-ui,-apple-system,sans-serif; }
+  .wrapper { max-width:560px; margin:32px auto; background:#ffffff; border-radius:16px; overflow:hidden; box-shadow:0 4px 24px rgba(0,0,0,0.06); border:1px solid #e4e4e7; }
+  .header { background:linear-gradient(135deg,#7c3aed,#4f46e5); padding:28px 32px; text-align:center; color:white; }
+  .header h1 { font-size:20px; font-weight:700; margin:0; }
+  .header p { font-size:13px; color:rgba(255,255,255,0.85); margin:6px 0 0; }
+  .body { padding:32px; }
+  .section-title { font-size:12px; font-weight:700; text-transform:uppercase; color:#71717a; letter-spacing:0.05em; margin-bottom:12px; border-bottom:1px solid #e4e4e7; padding-bottom:6px; }
+  .field { margin-bottom:14px; }
+  .label { font-size:11px; color:#a1a1aa; font-weight:600; text-transform:uppercase; }
+  .val { font-size:14px; color:#18181b; font-weight:500; margin-top:2px; }
+  .price-box { background:#f5f3ff; border:1px solid #ede9fe; border-radius:12px; padding:16px 20px; margin:20px 0; }
+  .price-row { display:flex; justify-content:space-between; align-items:center; font-size:14px; color:#4f46e5; font-weight:700; }
+  .footer { background:#f9fafb; padding:20px 32px; text-align:center; font-size:11px; color:#71717a; border-top:1px solid #f4f4f5; }
+</style>
+</head>
+<body>
+<div class="wrapper">
+  <div class="header">
+    <h1>\u26A1 Nuovo Lead Convertito</h1>
+    <p>Un utente ha appena completato il preventivatore sul tuo sito web</p>
+  </div>
+  <div class="body">
+    <div class="section-title">Contatti del Lead</div>
+    <div class="field">
+      <div class="label">Nome Cliente</div>
+      <div class="val">${clientName}</div>
+    </div>
+    <div class="field">
+      <div class="label">Email</div>
+      <div class="val"><a href="mailto:${clientEmail}" style="color:#4f46e5;">${clientEmail}</a></div>
+    </div>
+    <div class="field">
+      <div class="label">Telefono</div>
+      <div class="val"><a href="tel:${clientPhone}" style="color:#4f46e5;">${clientPhone}</a></div>
+    </div>
+
+    <div class="section-title">Dettaglio Richiesta</div>
+    <div class="field">
+      <div class="label">Descrizione e Parametri</div>
+      <div class="val" style="white-space:pre-wrap; font-size:13px; color:#3f3f46; line-height:1.5;">${rawInput}</div>
+    </div>
+
+    <div class="price-box">
+      <div class="price-row">
+        <span>Stima Generata AI:</span>
+        <span style="font-size:16px;">\u20AC${prezzoMinimo} \u2013 \u20AC${prezzoMassimo}</span>
+      </div>
+      <div style="font-size:11px; color:#71717a; font-weight:normal; margin-top:4px; text-align:right;">Totale preventivo calcolato: \u20AC${totale}</div>
+    </div>
+
+    <p style="font-size:13px; color:#71717a; line-height:1.5; text-align:center; margin-top:24px;">
+      Ti consigliamo di ricontattare il cliente entro 24 ore per fissare il sopralluogo ed ottimizzare la conversione.
+    </p>
+  </div>
+  <div class="footer">
+    Prevai Widget \u2022 Tecnologia di stima istantanea AI per l'edilizia
+  </div>
+</div>
+</body>
+</html>`
+    });
+    logger2.info({ to: toEmail, clientName }, "Widget lead email notification sent to contractor");
+  } catch (err) {
+    logger2.error({ err }, "Failed to send widget lead notification email");
+  }
+}
 
 // src/lib/auth.ts
 var resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
@@ -335470,6 +335555,82 @@ router7.get("/admin/search-console", async (req, res) => {
     res.status(500).json({ error: "Internal server error" });
   }
 });
+router7.get("/admin/widget/stats", async (_req, res) => {
+  try {
+    const [globalStats] = await db.select({
+      totalQuotes: count(),
+      totalCost: sql`COALESCE(SUM(prompt_tokens * 0.00000015 + completion_tokens * 0.00000060), 0)`,
+      // Stima costo Groq Llama 3.3
+      totalTokens: sql`COALESCE(SUM(prompt_tokens + completion_tokens), 0)`
+    }).from(quotesTable).where(eq(quotesTable.source, "widget"));
+    const clientUsageRows = await db.select({
+      userId: businessProfilesTable.userId,
+      companyName: businessProfilesTable.companyName,
+      apiKey: businessProfilesTable.apiKey,
+      quotesCount: count(quotesTable.id),
+      totalTokens: sql`COALESCE(SUM(quotes.prompt_tokens + quotes.completion_tokens), 0)`,
+      totalCost: sql`COALESCE(SUM(quotes.prompt_tokens * 0.00000015 + quotes.completion_tokens * 0.00000060), 0)`
+    }).from(businessProfilesTable).leftJoin(quotesTable, sql`quotes.user_id = business_profiles.user_id AND quotes.source = 'widget'`).groupBy(
+      businessProfilesTable.userId,
+      businessProfilesTable.companyName,
+      businessProfilesTable.apiKey
+    ).orderBy(desc(count(quotesTable.id)));
+    const recentCalls = await db.select({
+      quoteId: quotesTable.id,
+      userId: quotesTable.userId,
+      clientName: sql`quotes.client_data->>'nome'`,
+      clientEmail: sql`quotes.client_data->>'email'`,
+      companyName: businessProfilesTable.companyName,
+      date: quotesTable.createdAt,
+      modelUsed: quotesTable.modelUsed,
+      apiCost: sql`(quotes.prompt_tokens * 0.00000015 + quotes.completion_tokens * 0.00000060)`,
+      totalTokens: sql`(quotes.prompt_tokens + quotes.completion_tokens)`,
+      status: quotesTable.status
+    }).from(quotesTable).leftJoin(businessProfilesTable, eq(quotesTable.userId, businessProfilesTable.userId)).where(eq(quotesTable.source, "widget")).orderBy(desc(quotesTable.createdAt)).limit(50);
+    res.json({
+      success: true,
+      global: {
+        totalQuotes: globalStats?.totalQuotes ?? 0,
+        totalCost: Number(globalStats?.totalCost ?? 0),
+        totalTokens: Number(globalStats?.totalTokens ?? 0)
+      },
+      clientUsage: clientUsageRows.map((row) => ({
+        ...row,
+        quotesCount: Number(row.quotesCount),
+        totalTokens: Number(row.totalTokens),
+        totalCost: Number(row.totalCost)
+      })),
+      recentCalls
+    });
+  } catch (err) {
+    logger2.error({ err }, "Admin widget stats error");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+router7.post("/admin/widget/create-client", async (req, res) => {
+  try {
+    const { companyName, email: email5, phone, address, vatNumber } = req.body;
+    if (!companyName || !companyName.trim()) {
+      res.status(400).json({ error: "Il nome dell'azienda \xE8 obbligatorio." });
+      return;
+    }
+    const tempUserId = `temp_widget_${crypto8.randomBytes(12).toString("hex")}`;
+    const apiKey = `prevai_pk_${crypto8.randomBytes(24).toString("hex")}`;
+    const [profile] = await db.insert(businessProfilesTable).values({
+      userId: tempUserId,
+      companyName: companyName.trim(),
+      email: email5 ? String(email5).trim() : void 0,
+      phone: phone ? String(phone).trim() : void 0,
+      address: address ? String(address).trim() : void 0,
+      vatNumber: vatNumber ? String(vatNumber).trim() : void 0,
+      apiKey
+    }).returning();
+    res.status(201).json({ success: true, profile });
+  } catch (err) {
+    logger2.error({ err }, "Error creating unregistered widget client");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
 var admin_default = router7;
 
 // src/routes/catalog.ts
@@ -343734,6 +343895,40 @@ OUTPUT \u2014 SOLO JSON VALIDO, nessun testo extra:
 }
 
 IMPORTANTISSIMO: output SOLO JSON puro, nessuna spiegazione, nessun markdown.`;
+router14.get("/public/config", async (req, res) => {
+  try {
+    const apiKeyHeader = req.headers["x-api-key"] || req.query.apiKey;
+    if (!apiKeyHeader) {
+      res.status(401).json({ error: "Chiave API mancante. Fornisci l'header x-api-key o il parametro query apiKey." });
+      return;
+    }
+    const apiKey = String(apiKeyHeader);
+    const [profile] = await db.select().from(businessProfilesTable).where(eq(businessProfilesTable.apiKey, apiKey));
+    if (!profile) {
+      res.status(403).json({ error: "Chiave API non valida o inattiva." });
+      return;
+    }
+    const catalogItems = await db.select().from(priceCatalogItemsTable).where(eq(priceCatalogItemsTable.userId, profile.userId));
+    const categoriesSet = /* @__PURE__ */ new Set();
+    for (const item of catalogItems) {
+      if (item.categoria) {
+        categoriesSet.add(item.categoria.trim());
+      }
+    }
+    res.json({
+      success: true,
+      companyName: profile.companyName,
+      logoUrl: profile.logoUrl,
+      email: profile.email,
+      phone: profile.phone,
+      address: profile.address,
+      supportedCategories: Array.from(categoriesSet)
+    });
+  } catch (err) {
+    logger2.error({ err }, "Error fetching public widget config");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
 router14.post("/public/quotes", async (req, res) => {
   try {
     const apiKeyHeader = req.headers["x-api-key"] || req.query.apiKey;
@@ -343862,6 +344057,22 @@ Usa queste misure esatte per calcolare matematicamente le quantit\xE0.`;
       prezzoMassimo: Math.round(totale * 1.25 * 100) / 100,
       descrizioneGenerale: quote.descrizioneGenerale
     });
+    const contractorEmail = profile.email || "notifiche@prevai.it";
+    if (contractorEmail) {
+      sendWidgetLeadNotification({
+        toEmail: contractorEmail,
+        companyName: profile.companyName,
+        clientName: resolvedClientData.nome,
+        clientEmail: resolvedClientData.email || "Nessuna email fornita",
+        clientPhone: resolvedClientData.phone || "Nessun telefono fornito",
+        rawInput: rawInput || "",
+        totale: totale.toFixed(2),
+        prezzoMinimo: (totale * 0.9).toFixed(2),
+        prezzoMassimo: (totale * 1.25).toFixed(2)
+      }).catch((emailErr) => {
+        logger2.error({ err: emailErr }, "Failed to send lead email notification asynchronously");
+      });
+    }
   } catch (err) {
     logger2.error({ err }, "Error creating public widget quote");
     res.status(500).json({ error: "Internal server error" });
@@ -344093,6 +344304,7 @@ app.post(
     next();
   }
 );
+app.use("/api/public", (0, import_cors.default)());
 var trustedOrigins = new Set(getTrustedOrigins2());
 app.use(
   (0, import_cors.default)({

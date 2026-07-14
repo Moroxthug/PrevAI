@@ -5,7 +5,7 @@
   "private": true,
   "scripts": {
     "dev": "vite dev",
-    "build": "vite build",
+    "build": "vite build && vite build -c vite-widget.config.ts && node copy-widget.js",
     "preview": "vite preview",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },

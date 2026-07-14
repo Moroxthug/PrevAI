@@ -407,3 +407,99 @@ export async function sendQuotePdfEmail(params: {
     throw new Error("Impossibile inviare l'email con il preventivo");
   }
 }
+
+export async function sendWidgetLeadNotification(params: {
+  toEmail: string;
+  companyName: string;
+  clientName: string;
+  clientEmail: string;
+  clientPhone: string;
+  rawInput: string;
+  totale: string;
+  prezzoMinimo: string;
+  prezzoMassimo: string;
+}): Promise<void> {
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!apiKey) {
+    logger.warn("RESEND_API_KEY not set — skipping widget lead notification email");
+    return;
+  }
+  const { toEmail, companyName, clientName, clientEmail, clientPhone, rawInput, totale, prezzoMinimo, prezzoMassimo } = params;
+  try {
+    const resend = new Resend(apiKey);
+    await resend.emails.send({
+      from: "Prevai <no-reply@prevai.it>",
+      to: [toEmail],
+      subject: `⚡ Nuovo Lead Convertito da Widget — ${clientName}`,
+      html: `<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8" />
+<title>Nuovo Lead Widget</title>
+<style>
+  body { margin:0; padding:0; background:#f4f4f5; font-family:system-ui,-apple-system,sans-serif; }
+  .wrapper { max-width:560px; margin:32px auto; background:#ffffff; border-radius:16px; overflow:hidden; box-shadow:0 4px 24px rgba(0,0,0,0.06); border:1px solid #e4e4e7; }
+  .header { background:linear-gradient(135deg,#7c3aed,#4f46e5); padding:28px 32px; text-align:center; color:white; }
+  .header h1 { font-size:20px; font-weight:700; margin:0; }
+  .header p { font-size:13px; color:rgba(255,255,255,0.85); margin:6px 0 0; }
+  .body { padding:32px; }
+  .section-title { font-size:12px; font-weight:700; text-transform:uppercase; color:#71717a; letter-spacing:0.05em; margin-bottom:12px; border-bottom:1px solid #e4e4e7; padding-bottom:6px; }
+  .field { margin-bottom:14px; }
+  .label { font-size:11px; color:#a1a1aa; font-weight:600; text-transform:uppercase; }
+  .val { font-size:14px; color:#18181b; font-weight:500; margin-top:2px; }
+  .price-box { background:#f5f3ff; border:1px solid #ede9fe; border-radius:12px; padding:16px 20px; margin:20px 0; }
+  .price-row { display:flex; justify-content:space-between; align-items:center; font-size:14px; color:#4f46e5; font-weight:700; }
+  .footer { background:#f9fafb; padding:20px 32px; text-align:center; font-size:11px; color:#71717a; border-top:1px solid #f4f4f5; }
+</style>
+</head>
+<body>
+<div class="wrapper">
+  <div class="header">
+    <h1>⚡ Nuovo Lead Convertito</h1>
+    <p>Un utente ha appena completato il preventivatore sul tuo sito web</p>
+  </div>
+  <div class="body">
+    <div class="section-title">Contatti del Lead</div>
+    <div class="field">
+      <div class="label">Nome Cliente</div>
+      <div class="val">${clientName}</div>
+    </div>
+    <div class="field">
+      <div class="label">Email</div>
+      <div class="val"><a href="mailto:${clientEmail}" style="color:#4f46e5;">${clientEmail}</a></div>
+    </div>
+    <div class="field">
+      <div class="label">Telefono</div>
+      <div class="val"><a href="tel:${clientPhone}" style="color:#4f46e5;">${clientPhone}</a></div>
+    </div>
+
+    <div class="section-title">Dettaglio Richiesta</div>
+    <div class="field">
+      <div class="label">Descrizione e Parametri</div>
+      <div class="val" style="white-space:pre-wrap; font-size:13px; color:#3f3f46; line-height:1.5;">${rawInput}</div>
+    </div>
+
+    <div class="price-box">
+      <div class="price-row">
+        <span>Stima Generata AI:</span>
+        <span style="font-size:16px;">€${prezzoMinimo} – €${prezzoMassimo}</span>
+      </div>
+      <div style="font-size:11px; color:#71717a; font-weight:normal; margin-top:4px; text-align:right;">Totale preventivo calcolato: €${totale}</div>
+    </div>
+
+    <p style="font-size:13px; color:#71717a; line-height:1.5; text-align:center; margin-top:24px;">
+      Ti consigliamo di ricontattare il cliente entro 24 ore per fissare il sopralluogo ed ottimizzare la conversione.
+    </p>
+  </div>
+  <div class="footer">
+    Prevai Widget • Tecnologia di stima istantanea AI per l'edilizia
+  </div>
+</div>
+</body>
+</html>`
+    });
+    logger.info({ to: toEmail, clientName }, "Widget lead email notification sent to contractor");
+  } catch (err) {
+    logger.error({ err }, "Failed to send widget lead notification email");
+  }
+}

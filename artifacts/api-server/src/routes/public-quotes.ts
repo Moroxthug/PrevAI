@@ -5,6 +5,7 @@ import { openai } from "@workspace/integrations-openai-ai-server";
 import { generateNumeroPreventivo } from "../lib/quoteNumber.js";
 import { logger } from "../lib/logger.js";
 import type { QuoteChapter, QuoteDiscount, QuoteClientData } from "@workspace/db";
+import { sendWidgetLeadNotification } from "../lib/email.js";
 
 const router = Router();
 
@@ -103,6 +104,55 @@ OUTPUT — SOLO JSON VALIDO, nessun testo extra:
 }
 
 IMPORTANTISSIMO: output SOLO JSON puro, nessuna spiegazione, nessun markdown.`;
+
+// GET /api/public/config (autenticato con x-api-key o query param apiKey)
+router.get("/public/config", async (req, res) => {
+  try {
+    const apiKeyHeader = req.headers["x-api-key"] || req.query.apiKey;
+    if (!apiKeyHeader) {
+      res.status(401).json({ error: "Chiave API mancante. Fornisci l'header x-api-key o il parametro query apiKey." });
+      return;
+    }
+
+    const apiKey = String(apiKeyHeader);
+
+    const [profile] = await db
+      .select()
+      .from(businessProfilesTable)
+      .where(eq(businessProfilesTable.apiKey, apiKey));
+
+    if (!profile) {
+      res.status(403).json({ error: "Chiave API non valida o inattiva." });
+      return;
+    }
+
+    // Carica il catalogo prezzi per determinare le categorie supportate
+    const catalogItems = await db
+      .select()
+      .from(priceCatalogItemsTable)
+      .where(eq(priceCatalogItemsTable.userId, profile.userId));
+
+    const categoriesSet = new Set<string>();
+    for (const item of catalogItems) {
+      if (item.categoria) {
+        categoriesSet.add(item.categoria.trim());
+      }
+    }
+
+    res.json({
+      success: true,
+      companyName: profile.companyName,
+      logoUrl: profile.logoUrl,
+      email: profile.email,
+      phone: profile.phone,
+      address: profile.address,
+      supportedCategories: Array.from(categoriesSet),
+    });
+  } catch (err) {
+    logger.error({ err }, "Error fetching public widget config");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
 
 // POST /api/public/quotes (autenticato con x-api-key)
 router.post("/public/quotes", async (req, res) => {
@@ -279,6 +329,24 @@ Usa queste misure esatte per calcolare matematicamente le quantità.`;
       prezzoMassimo: Math.round(totale * 1.25 * 100) / 100,
       descrizioneGenerale: quote.descrizioneGenerale,
     });
+
+    // Invia notifica email asincrona all'impresa
+    const contractorEmail = profile.email || "notifiche@prevai.it";
+    if (contractorEmail) {
+      sendWidgetLeadNotification({
+        toEmail: contractorEmail,
+        companyName: profile.companyName,
+        clientName: resolvedClientData.nome,
+        clientEmail: resolvedClientData.email || "Nessuna email fornita",
+        clientPhone: resolvedClientData.phone || "Nessun telefono fornito",
+        rawInput: rawInput || "",
+        totale: totale.toFixed(2),
+        prezzoMinimo: (totale * 0.9).toFixed(2),
+        prezzoMassimo: (totale * 1.25).toFixed(2),
+      }).catch(emailErr => {
+        logger.error({ err: emailErr }, "Failed to send lead email notification asynchronously");
+      });
+    }
   } catch (err) {
     logger.error({ err }, "Error creating public widget quote");
     res.status(500).json({ error: "Internal server error" });
