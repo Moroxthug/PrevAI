@@ -330,7 +330,7 @@ export function PrevAiQuoteBar({
   mostraPrezzo = "range",
   whatsapp = true,
   apiKey,
-  apiBaseUrl = "http://localhost:5180",
+  apiBaseUrl = "https://prevai.it",
   privacyUrl = null,
 }: PrevAiQuoteBarConfig) {
   const [phase, setPhase] = useState<Phase>("lavoro");
