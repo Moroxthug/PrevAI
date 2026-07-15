@@ -29,6 +29,18 @@ export const quoteClientDataSchema = z.object({
   citta: z.string().optional(),
   cap: z.string().optional(),
   provincia: z.string().optional(),
+  incentivesData: z.object({
+    tipoImmobile: z.string().optional(),
+    obiettivoLavori: z.string().optional(),
+    fasciaIsee: z.string().optional(),
+    regione: z.string().optional(),
+    cap: z.string().optional(),
+    bonusStataleApplicato: z.string().optional(),
+    bandoRegionaleApplicato: z.string().optional(),
+    scontoIvaStimato: z.number().optional(),
+    totaleIncentiviStimati: z.number().optional(),
+    costoNettoStimato: z.number().optional(),
+  }).optional(),
 });
 
 export const quoteChapterItemSchema = z.object({

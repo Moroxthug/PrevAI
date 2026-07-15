@@ -227,6 +227,47 @@ export async function generateQuoteWhatsappPdfBuffer(quote: QuoteRow, profile: P
       ]
     : [];
 
+  const incentivesData = (clientData as any)?.incentivesData;
+  const incentivesBoxContent: Content[] = incentivesData && (incentivesData.bonusStataleApplicato || incentivesData.bandoRegionaleApplicato)
+    ? [
+        { text: "PIANO AGEVOLAZIONI FISCALI E CONTRIBUTI A FONDO PERDUTO", style: "sectionHeading", margin: [0, 14, 0, 4] as [number, number, number, number] },
+        {
+          table: {
+            widths: ["*", "auto"],
+            body: [
+              [
+                { text: "Agevolazione / Bando Verificato AI", bold: true, fontSize: 8.5, color: DARK },
+                { text: "Beneficio Stimato", bold: true, fontSize: 8.5, alignment: "right" as const, color: DARK },
+              ],
+              ...(incentivesData.bonusStataleApplicato ? [[
+                { text: `Detrazione Statale: ${incentivesData.bonusStataleApplicato}`, fontSize: 8 },
+                { text: `- € ${formatEur(Number(incentivesData.detrazioneAnnuaStimata || 0) * 10)} (in 10 anni)`, fontSize: 8, alignment: "right" as const },
+              ]] : []),
+              ...(incentivesData.bandoRegionaleApplicato ? [[
+                { text: `Contributo Locale: ${incentivesData.bandoRegionaleApplicato}`, fontSize: 8 },
+                { text: `- € ${formatEur(Number(incentivesData.contributoRegionaleStimato || 0))}`, fontSize: 8, alignment: "right" as const, color: "#067D68" },
+              ]] : []),
+              [
+                { text: "INVESTIMENTO NETTO REALE STIMATO", bold: true, fontSize: 9, fillColor: "#e6f4f1", color: "#067D68" },
+                { text: `€ ${formatEur(Number(incentivesData.costoNettoStimato || totale))}`, bold: true, fontSize: 9, alignment: "right" as const, fillColor: "#e6f4f1", color: "#067D68" },
+              ],
+            ] as Content[][],
+          },
+          layout: {
+            hLineWidth: () => 0.5,
+            vLineWidth: () => 0.5,
+            hLineColor: () => "#b2d8d2",
+            vLineColor: () => "#b2d8d2",
+            paddingLeft: () => 6,
+            paddingRight: () => 6,
+            paddingTop: () => 4,
+            paddingBottom: () => 4,
+          },
+          margin: [0, 0, 0, 10] as [number, number, number, number],
+        },
+      ]
+    : [];
+
   const signatureSection: Content[] = [
     { text: "ACCETTAZIONE DEL PREVENTIVO", style: "sectionHeading", margin: [0, 20, 0, 6] as [number, number, number, number] },
     {
@@ -374,6 +415,7 @@ export async function generateQuoteWhatsappPdfBuffer(quote: QuoteRow, profile: P
         margin: [0, 0, 0, 14] as [number, number, number, number],
       } as Content,
 
+      ...incentivesBoxContent,
       ...condizioniContent,
 
       ...(quote.note ? [

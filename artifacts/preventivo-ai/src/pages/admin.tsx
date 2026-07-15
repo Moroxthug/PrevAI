@@ -42,7 +42,7 @@ type AdminUser = {
 };
 
 type Settings = Record<string, string>;
-type Tab = "overview" | "users" | "widget" | "stripe" | "gsc" | "seo" | "settings" | "support";
+type Tab = "overview" | "users" | "widget" | "incentives" | "stripe" | "gsc" | "seo" | "settings" | "support";
 
 type GscSummary = {
   totalClicks: number;
@@ -178,6 +178,84 @@ export default function AdminPage() {
       setWidgetStatsLoading(false);
     }
   }
+
+  // Stato e funzioni per la gestione del catalogo incentivi & cron AI quotidiano
+  const [incentivesList, setIncentivesList] = useState<any[]>([]);
+  const [loadingIncentives, setLoadingIncentives] = useState(false);
+  const [syncingAi, setSyncingAi] = useState(false);
+  const [newIncCodice, setNewIncCodice] = useState("");
+  const [newIncTitolo, setNewIncTitolo] = useState("");
+  const [newIncDesc, setNewIncDesc] = useState("");
+  const [newIncRegione, setNewIncRegione] = useState("Lombardia");
+  const [newIncLevel, setNewIncLevel] = useState("regionale");
+  const [newIncMassimale, setNewIncMassimale] = useState("5000");
+
+  async function loadIncentives() {
+    setLoadingIncentives(true);
+    try {
+      const res = await authFetch("/api/admin/incentives");
+      if (res.success) setIncentivesList(res.incentives || []);
+    } catch (e: any) {
+      toast({ variant: "destructive", title: "Errore", description: "Impossibile caricare il catalogo incentivi." });
+    } finally {
+      setLoadingIncentives(false);
+    }
+  }
+
+  async function runAiSync() {
+    setSyncingAi(true);
+    try {
+      const res = await authFetch("/api/admin/incentives/cron-sync", { method: "POST" });
+      if (res.success) {
+        toast({ title: "Verifica AI Completata!", description: res.summary });
+        loadIncentives();
+      }
+    } catch (e: any) {
+      toast({ variant: "destructive", title: "Errore", description: e.message || "Errore durante la scansione AI." });
+    } finally {
+      setSyncingAi(false);
+    }
+  }
+
+  async function handleCreateIncentive(e: React.FormEvent) {
+    e.preventDefault();
+    if (!newIncCodice || !newIncTitolo) return;
+    try {
+      const res = await authFetch("/api/admin/incentives", {
+        method: "POST",
+        body: JSON.stringify({
+          level: newIncLevel,
+          codice: newIncCodice,
+          titolo: newIncTitolo,
+          descrizione: newIncDesc || newIncTitolo,
+          regione: newIncLevel === "regionale" || newIncLevel === "comunale" ? newIncRegione : null,
+          massimaleContributo: newIncMassimale,
+          stato: "active"
+        })
+      });
+      if (res.success) {
+        toast({ title: "Incentivo Aggiunto!", description: `Bando ${newIncTitolo} inserito a catalogo.` });
+        setNewIncCodice(""); setNewIncTitolo(""); setNewIncDesc("");
+        loadIncentives();
+      }
+    } catch (e: any) {
+      toast({ variant: "destructive", title: "Errore", description: e.message });
+    }
+  }
+
+  async function handleDeleteIncentive(id: string) {
+    if (!confirm("Sei sicuro di voler rimuovere questo bando?")) return;
+    try {
+      await authFetch(`/api/admin/incentives/${id}`, { method: "DELETE" });
+      loadIncentives();
+    } catch (e: any) {
+      toast({ variant: "destructive", title: "Errore", description: e.message });
+    }
+  }
+
+  useEffect(() => {
+    if (tab === "incentives") loadIncentives();
+  }, [tab]);
 
   async function handleCreateUnregisteredClient(e: React.FormEvent) {
     e.preventDefault();
@@ -570,6 +648,7 @@ export default function AdminPage() {
               { id: "overview", label: "Panoramica", icon: BarChart3 },
               { id: "users", label: "Utenti Registrati", icon: Users },
               { id: "widget", label: "Clienti & Widget", icon: Zap },
+              { id: "incentives", label: "Catalogo Bandi (AI Daily)", icon: Award },
               { id: "stripe", label: "Abbonamenti Stripe", icon: Euro },
               { id: "gsc", label: "Search Console", icon: Globe },
               { id: "seo", label: "SEO Checker", icon: Sparkles },
@@ -1238,6 +1317,180 @@ export default function AdminPage() {
                   )}
                 </div>
               )}
+            </div>
+          )}
+
+          {/* INCENTIVES & BANDI EDILI CATALOG (AI DAILY UPDATED) */}
+          {tab === "incentives" && (
+            <div className="space-y-6">
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white rounded-2xl border border-slate-100 p-6 shadow-sm">
+                <div>
+                  <h2 className="text-base font-bold text-slate-800 flex items-center gap-2">
+                    <Award className="h-5 w-5 text-emerald-500" /> Motore & Catalogo Incentivi Edili (3 Livelli & AI Sync)
+                  </h2>
+                  <p className="text-xs text-slate-400 mt-1">
+                    Gestisce i bandi Statali, Regionali e Comunali verificati dall'Agente AI per alimentare il widget in tempo reale.
+                  </p>
+                </div>
+                <button
+                  onClick={runAiSync}
+                  disabled={syncingAi}
+                  className="inline-flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-semibold rounded-xl shadow-sm text-xs transition-all disabled:opacity-50"
+                >
+                  <RefreshCw className={`h-4 w-4 ${syncingAi ? "animate-spin" : ""}`} />
+                  {syncingAi ? "Scansione AI & Verifica in corso..." : "⚡ Esegui Scansione AI Quotidiana Adesso"}
+                </button>
+              </div>
+
+              {/* Form Nuova Aggiunta Manuale/Custom */}
+              <div className="bg-white rounded-2xl border border-slate-100 p-6 shadow-sm space-y-4">
+                <h3 className="text-sm font-bold text-slate-800 flex items-center gap-2">
+                  <Sparkles className="h-4 w-4 text-violet-500" /> Aggiungi Nuovo Bando o Incentivo Custom
+                </h3>
+                <form onSubmit={handleCreateIncentive} className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div>
+                    <label className="block text-xs font-bold text-slate-500 mb-1">Livello</label>
+                    <select
+                      value={newIncLevel}
+                      onChange={(e) => setNewIncLevel(e.target.value)}
+                      className="w-full px-3 py-2 border border-slate-100 rounded-xl text-sm focus:outline-none focus:border-violet-500 bg-white"
+                    >
+                      <option value="statale">Statale</option>
+                      <option value="regionale">Regionale</option>
+                      <option value="comunale">Comunale / Locale</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-slate-500 mb-1">Codice Identificativo</label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="es. LOMBARDIA_ECO_2026"
+                      value={newIncCodice}
+                      onChange={(e) => setNewIncCodice(e.target.value)}
+                      className="w-full px-3 py-2 border border-slate-100 rounded-xl text-sm focus:outline-none focus:border-violet-500 bg-white"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-slate-500 mb-1">Regione / Comune</label>
+                    <input
+                      type="text"
+                      placeholder="es. Lombardia o Milano"
+                      value={newIncRegione}
+                      onChange={(e) => setNewIncRegione(e.target.value)}
+                      className="w-full px-3 py-2 border border-slate-100 rounded-xl text-sm focus:outline-none focus:border-violet-500 bg-white"
+                    />
+                  </div>
+
+                  <div className="md:col-span-2">
+                    <label className="block text-xs font-bold text-slate-500 mb-1">Titolo Bando</label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="es. Bando Efficienza e Riscaldamento Regione Lombardia"
+                      value={newIncTitolo}
+                      onChange={(e) => setNewIncTitolo(e.target.value)}
+                      className="w-full px-3 py-2 border border-slate-100 rounded-xl text-sm focus:outline-none focus:border-violet-500 bg-white"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-slate-500 mb-1">Massimale Contributo (€)</label>
+                    <input
+                      type="number"
+                      required
+                      placeholder="5000"
+                      value={newIncMassimale}
+                      onChange={(e) => setNewIncMassimale(e.target.value)}
+                      className="w-full px-3 py-2 border border-slate-100 rounded-xl text-sm focus:outline-none focus:border-violet-500 bg-white"
+                    />
+                  </div>
+
+                  <div className="md:col-span-3 flex justify-end">
+                    <button type="submit" className="px-5 py-2 bg-violet-600 hover:bg-violet-700 text-white font-semibold rounded-xl text-xs transition-all">
+                      + Aggiungi Bando a Catalogo
+                    </button>
+                  </div>
+                </form>
+              </div>
+
+              {/* Tabella Catalogo Incentivi */}
+              <div className="bg-white rounded-2xl border border-slate-100 p-6 shadow-sm space-y-4">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-sm font-bold text-slate-800">Elenco Bandi Attivi & Verificati ({incentivesList.length})</h3>
+                  {loadingIncentives && <span className="text-xs text-slate-400 animate-pulse">Caricamento in corso...</span>}
+                </div>
+
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-sm border-collapse">
+                    <thead>
+                      <tr className="border-b border-slate-100 bg-slate-50/50">
+                        <th className="px-4 py-3 text-xs font-bold text-slate-400 uppercase">Livello</th>
+                        <th className="px-4 py-3 text-xs font-bold text-slate-400 uppercase">Codice / Titolo</th>
+                        <th className="px-4 py-3 text-xs font-bold text-slate-400 uppercase">Zona</th>
+                        <th className="px-4 py-3 text-xs font-bold text-slate-400 uppercase text-right">Contributo Max</th>
+                        <th className="px-4 py-3 text-xs font-bold text-slate-400 uppercase text-center">Stato</th>
+                        <th className="px-4 py-3 text-xs font-bold text-slate-400 uppercase text-center">Verifica AI</th>
+                        <th className="px-4 py-3 text-xs font-bold text-slate-400 uppercase text-right">Azioni</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-50">
+                      {incentivesList.map((inc) => (
+                        <tr key={inc.id} className="hover:bg-slate-50/20 text-xs">
+                          <td className="px-4 py-3.5">
+                            <span className={`px-2 py-0.5 rounded-full font-bold uppercase ${
+                              inc.level === "statale" ? "bg-violet-50 text-violet-700 border border-violet-100" :
+                              inc.level === "regionale" ? "bg-emerald-50 text-emerald-700 border border-emerald-100" :
+                              "bg-blue-50 text-blue-700 border border-blue-100"
+                            }`}>
+                              {inc.level}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3.5">
+                            <div className="font-bold text-slate-800">{inc.titolo}</div>
+                            <div className="font-mono text-[10px] text-slate-400">{inc.codice}</div>
+                          </td>
+                          <td className="px-4 py-3.5 font-medium text-slate-600">
+                            {inc.regione || inc.comune || "Nazionale"}
+                          </td>
+                          <td className="px-4 py-3.5 text-right font-bold text-emerald-600">
+                            €{Number(inc.massimaleContributo || 0).toLocaleString("it-IT")}
+                          </td>
+                          <td className="px-4 py-3.5 text-center">
+                            <span className={`px-2 py-0.5 rounded-full font-semibold ${
+                              inc.stato === "active" ? "bg-emerald-100 text-emerald-800" : "bg-amber-100 text-amber-800"
+                            }`}>
+                              {inc.stato === "active" ? "Attivo ✓" : "In Esaurimento"}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3.5 text-center">
+                            <span className={`px-2 py-0.5 rounded-full ${
+                              inc.isVerifiedByAi ? "bg-cyan-50 text-cyan-700 border border-cyan-200 font-semibold" : "bg-slate-100 text-slate-500"
+                            }`}>
+                              {inc.isVerifiedByAi ? "Verificato AI ✓" : "In attesa"}
+                            </span>
+                            {inc.lastCheckedAt && (
+                              <div className="text-[9px] text-slate-400 mt-0.5">
+                                {new Date(inc.lastCheckedAt).toLocaleDateString("it-IT")}
+                              </div>
+                            )}
+                          </td>
+                          <td className="px-4 py-3.5 text-right">
+                            <button
+                              onClick={() => handleDeleteIncentive(inc.id)}
+                              className="text-red-500 hover:text-red-700 font-medium px-2 py-1 rounded hover:bg-red-50 transition-colors"
+                            >
+                              Elimina
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
             </div>
           )}
 

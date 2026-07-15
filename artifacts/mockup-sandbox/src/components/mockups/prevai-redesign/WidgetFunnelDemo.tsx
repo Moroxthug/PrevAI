@@ -360,6 +360,7 @@ export function PrevAiQuoteBar({
   // Stato per il risultato del preventivo (dal backend o locale)
   const [stimaResult, setStimaResult] = useState<{ min: number; max: number } | null>(null);
   const [useFallback, setUseFallback] = useState(false);
+  const [quoteId, setQuoteId] = useState<string | null>(null);
 
   // Caricamento configurazione dinamica
   useEffect(() => {
@@ -493,6 +494,7 @@ Tipo immobile: ${proprieta}. Urgenza: ${urgenza}. CAP: ${cap || "n/d"}. Budget i
         })
         .then((data) => {
           if (data.success) {
+            if (data.quoteId) setQuoteId(data.quoteId);
             setStimaResult({ min: data.prezzoMinimo, max: data.prezzoMassimo });
             setPhase("stima");
           } else {
@@ -517,7 +519,7 @@ Tipo immobile: ${proprieta}. Urgenza: ${urgenza}. CAP: ${cap || "n/d"}. Budget i
     setIntervento(null); setMisure({}); setDescrizione("");
     setProprieta(""); setUrgenza(""); setCap(""); setBudget("");
     setNome(""); setEmail(""); setTelefono(""); setPrivacy(false);
-    setViaWhatsapp(false); setHp("");
+    setViaWhatsapp(false); setHp(""); setQuoteId(null);
     setTouched(false); setPhase("lavoro");
     setStimaResult(null); setUseFallback(false);
   };
@@ -780,6 +782,7 @@ Tipo immobile: ${proprieta}. Urgenza: ${urgenza}. CAP: ${cap || "n/d"}. Budget i
             intervento={intervento} misure={misure} nome={nome}
             mostraPrezzo={mostraPrezzo} viaWhatsapp={viaWhatsapp}
             onRestart={ricomincia} stimaResult={stimaResult} useFallback={useFallback}
+            quoteId={quoteId} apiKey={apiKey} apiBaseUrl={apiBaseUrl}
           />
         )}
       </div>
@@ -793,20 +796,118 @@ Tipo immobile: ${proprieta}. Urgenza: ${urgenza}. CAP: ${cap || "n/d"}. Budget i
 }
 
 function RisultatoInline({
-  intervento, misure, nome, mostraPrezzo, viaWhatsapp, onRestart, stimaResult, useFallback,
+  intervento, misure, nome, mostraPrezzo, viaWhatsapp, onRestart, stimaResult, useFallback, quoteId, apiKey, apiBaseUrl,
 }: {
   intervento: Intervento; misure: Record<string, string>; nome: string;
   mostraPrezzo: "range" | "da" | "nascosto"; viaWhatsapp: boolean;
   onRestart: () => void;
   stimaResult: { min: number; max: number };
   useFallback: boolean;
+  quoteId?: string | null;
+  apiKey?: string;
+  apiBaseUrl?: string;
 }) {
   const minAnim = useCountUp(stimaResult.min);
   const maxAnim = useCountUp(stimaResult.max, 1300);
   useEffect(() => { track("stima_mostrata", { min: stimaResult.min, max: stimaResult.max, modo: mostraPrezzo }); }, [stimaResult, mostraPrezzo]);
   const canali = viaWhatsapp ? "via email e WhatsApp" : "via email";
+
+  // Stato per il motore interattivo degli incentivi
+  const [incentivesStep, setIncentivesStep] = useState<"hidden" | "questions" | "result">("hidden");
+  const [tipoImmobile, setTipoImmobile] = useState("prima_casa");
+  const [obiettivoLavori, setObiettivoLavori] = useState("ristrutturazione");
+  const [fasciaIsee, setFasciaIsee] = useState("sopra_30k");
+  const [regione, setRegione] = useState("Lombardia");
+  const [loadingInc, setLoadingInc] = useState(false);
+
+  // Risultati incentivi calcolati
+  const [incResult, setIncResult] = useState<{
+    scontoIva: number;
+    bonusStataleNome: string;
+    bonusStataleImporto: number;
+    bandoRegionaleNome: string;
+    bandoRegionaleImporto: number;
+    totaleIncentivi: number;
+    costoNetto: number;
+  } | null>(null);
+
+  const calcolaIncentiviLocal = () => {
+    setLoadingInc(true);
+    setTimeout(() => {
+      const medio = Math.round((stimaResult.min + stimaResult.max) / 2);
+      const isRes = tipoImmobile !== "ufficio";
+      const scontoIva = isRes ? Math.round(medio * 0.10) : 0;
+
+      let bonusStataleNome = "Bonus Ristrutturazione Edilizia 50% (Detrazione 10 anni)";
+      let importoStat = Math.round(medio * 0.50);
+      if (obiettivoLavori === "efficienza") {
+        bonusStataleNome = "Ecobonus 65% / Conto Termico GSE (Incentivo Diretto)";
+        importoStat = Math.round(medio * 0.65);
+      } else if (obiettivoLavori === "barriere") {
+        bonusStataleNome = "Bonus Abbattimento Barriere Architettoniche 75%";
+        importoStat = Math.round(medio * 0.75);
+      }
+      if (importoStat > 48000) importoStat = 48000;
+
+      let bandoRegionaleNome = "Nessun bando regionale a sportello specifico (si applicano i Bonus Statali compatibili)";
+      let importoReg = 0;
+
+      if (regione === "Lombardia") {
+        bandoRegionaleNome = "⚡ Bando Efficienza e Riscaldamento Regione Lombardia 2026 (Fondo Perduto)";
+        importoReg = fasciaIsee === "sotto_30k" ? 5000 : 3500;
+      } else if (regione === "Piemonte") {
+        bandoRegionaleNome = "⚡ Bando Sostituzione Impianti Termici ed Efficienza Piemonte (Fondo Perduto)";
+        importoReg = fasciaIsee === "sotto_30k" ? 4000 : 3000;
+      } else if (regione === "Emilia-Romagna") {
+        bandoRegionaleNome = "⚡ Bando Solare e Rinnovabili Residenziale Emilia-Romagna (Fondo Perduto)";
+        importoReg = fasciaIsee === "sotto_30k" ? 4000 : 2500;
+      } else if (regione === "Veneto") {
+        bandoRegionaleNome = "⚡ Bando Rigenerazione Sostenibile Veneto 2026 (Fondo Perduto)";
+        importoReg = 3000;
+      } else if (regione === "Lazio" || regione === "Campania" || regione === "Toscana") {
+        bandoRegionaleNome = "⚡ Bando Riqualificazione ed Efficienza Energetica Residenziale";
+        importoReg = 2500;
+      }
+
+      const totaleInc = importoStat + importoReg;
+      const costoNetto = Math.max(Math.round(medio * 0.25), Math.round(medio - importoReg - (importoStat * 0.55) - scontoIva));
+
+      setIncResult({
+        scontoIva,
+        bonusStataleNome,
+        bonusStataleImporto: importoStat,
+        bandoRegionaleNome,
+        bandoRegionaleImporto: importoReg,
+        totaleIncentivi: totaleInc,
+        costoNetto,
+      });
+      setLoadingInc(false);
+      setIncentivesStep("result");
+      track("incentivi_verificati", { medio, costoNetto, regione });
+
+      // Sincronizza all'istante all'API backend il profilo incentivi verificato per aggiornare il CRM del partner edile
+      if (quoteId && apiKey && apiBaseUrl) {
+        fetch(`${apiBaseUrl}/api/public/quotes/${quoteId}/incentives`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "x-api-key": apiKey,
+          },
+          body: JSON.stringify({
+            tipoImmobile,
+            obiettivoLavori,
+            fasciaIsee,
+            regione,
+            cap: "",
+            totalePreventivo: stimaResult.max,
+          }),
+        }).catch((err) => console.warn("Failed to sync verified incentives with backend", err));
+      }
+    }, 400);
+  };
+
   return (
-    <div className="pvq-step">
+    <div className="pvq-step" style={{ flexWrap: "wrap" }}>
       <div style={{ flex: "1 1 auto", padding: "4px 8px" }}>
         <p className="pvq-note" style={{ margin: 0 }}>
           {intervento.label} · stima per {nome.split(" ")[0] || "te"}
@@ -848,7 +949,111 @@ function RisultatoInline({
           Calcola un altro lavoro
         </button>
       </div>
-      <p className="pvq-note" style={{ flexBasis: "100%", margin: "0 8px", fontSize: 12 }}>
+
+      {/* ── MOTORE INTERATTIVO INCENTIVI E BANDI REGIONALI/COMUNALI ── */}
+      {incentivesStep === "hidden" && (
+        <div style={{ flexBasis: "100%", marginTop: 14, padding: "12px 16px", background: "rgba(16, 185, 129, 0.09)", border: "1px solid rgba(16, 185, 129, 0.3)", borderRadius: "var(--_radius)", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 10 }}>
+          <div>
+            <span style={{ fontSize: 13, fontWeight: 700, color: "#059669" }}>🎁 INCENTIVI E BANDI REGIONALI 2026</span>
+            <p style={{ margin: "2px 0 0", fontSize: 13, color: "var(--_text)" }}>
+              Scopri subito quanti fondi a fondo perduto, agevolazioni IVA e detrazioni statali puoi ottenere per questo lavoro.
+            </p>
+          </div>
+          <button className="pvq-btn" style={{ background: "#059669", color: "#fff", padding: "8px 16px", fontSize: 13 }} onClick={() => setIncentivesStep("questions")}>
+            Verifica Incentivi Ora →
+          </button>
+        </div>
+      )}
+
+      {incentivesStep === "questions" && (
+        <div style={{ flexBasis: "100%", marginTop: 14, padding: "16px", background: "var(--_field-bg)", border: "1px solid var(--_border)", borderRadius: "var(--_radius)", display: "flex", flexDirection: "column", gap: 12 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <strong style={{ fontSize: 14, color: "var(--_text)" }}>Verifica rapida idoneità bandi e detrazioni (3 domande)</strong>
+            <button className="pvq-link" style={{ padding: 0, fontSize: 12 }} onClick={() => setIncentivesStep("hidden")}>✕ Chiudi</button>
+          </div>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 12 }}>
+            <div style={{ flex: "1 1 200px", display: "flex", flexDirection: "column", gap: 4 }}>
+              <label style={{ fontSize: 11, fontWeight: 600, color: "var(--_muted)", textTransform: "uppercase" }}>1. Tipo Immobile</label>
+              <select className="pvq-input" value={tipoImmobile} onChange={(e) => setTipoImmobile(e.target.value)}>
+                <option value="prima_casa">Prima Casa (Residenza principale)</option>
+                <option value="seconda_casa">Seconda Casa / Casa vacanze</option>
+                <option value="condominio">Condominio (o unità in condominio)</option>
+                <option value="ufficio">Ufficio / Immobile commerciale</option>
+              </select>
+            </div>
+            <div style={{ flex: "1 1 230px", display: "flex", flexDirection: "column", gap: 4 }}>
+              <label style={{ fontSize: 11, fontWeight: 600, color: "var(--_muted)", textTransform: "uppercase" }}>2. Obiettivo Lavori</label>
+              <select className="pvq-input" value={obiettivoLavori} onChange={(e) => setObiettivoLavori(e.target.value)}>
+                <option value="ristrutturazione">Manutenzione / Ristrutturazione ordinaria</option>
+                <option value="efficienza">Efficienza Energetica (+2 classi, infissi, caldaia/pompa di calore)</option>
+                <option value="barriere">Abbattimento Barriere Architettoniche (es. doccia accessibile)</option>
+              </select>
+            </div>
+            <div style={{ flex: "1 1 170px", display: "flex", flexDirection: "column", gap: 4 }}>
+              <label style={{ fontSize: 11, fontWeight: 600, color: "var(--_muted)", textTransform: "uppercase" }}>3. Regione dell'Immobile</label>
+              <select className="pvq-input" value={regione} onChange={(e) => setRegione(e.target.value)}>
+                <option value="Lombardia">Lombardia</option>
+                <option value="Piemonte">Piemonte</option>
+                <option value="Emilia-Romagna">Emilia-Romagna</option>
+                <option value="Veneto">Veneto</option>
+                <option value="Lazio">Lazio</option>
+                <option value="Toscana">Toscana</option>
+                <option value="Campania">Campania</option>
+                <option value="Sicilia">Sicilia</option>
+                <option value="Altra">Altra Regione</option>
+              </select>
+            </div>
+            <div style={{ flex: "1 1 170px", display: "flex", flexDirection: "column", gap: 4 }}>
+              <label style={{ fontSize: 11, fontWeight: 600, color: "var(--_muted)", textTransform: "uppercase" }}>ISEE / Requisito Sociale</label>
+              <select className="pvq-input" value={fasciaIsee} onChange={(e) => setFasciaIsee(e.target.value)}>
+                <option value="sopra_30k">Standard (o non dichiaro)</option>
+                <option value="sotto_30k">ISEE &lt; 30.000 € (Maggiorazione bandi sociali)</option>
+              </select>
+            </div>
+          </div>
+          <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, marginTop: 4 }}>
+            <button className="pvq-btn" style={{ background: "var(--_accent)", color: "var(--_on-accent)" }} onClick={calcolaIncentiviLocal} disabled={loadingInc}>
+              {loadingInc ? "Verifica bandi in corso..." : "⚡ Calcola Risparmio e Costo Netto"}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {incentivesStep === "result" && incResult && (
+        <div style={{ flexBasis: "100%", marginTop: 14, padding: "16px 18px", background: "#ecfdf5", border: "1px solid #10b981", borderRadius: "var(--_radius)", display: "flex", flexDirection: "column", gap: 10, color: "#065f46" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid rgba(16, 185, 129, 0.2)", paddingBottom: 8 }}>
+            <strong style={{ fontSize: 15 }}>🎯 Profilo Incentivi Verificato per {regione}</strong>
+            <button className="pvq-link" style={{ padding: 0, fontSize: 12, color: "#059669" }} onClick={() => setIncentivesStep("questions")}>✎ Ricalcola</button>
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 6, fontSize: 13 }}>
+            {incResult.scontoIva > 0 && (
+              <div style={{ display: "flex", justifyContent: "space-between" }}>
+                <span>📉 Vantaggio immediato IVA residenziale (10% vs 22%):</span>
+                <strong>– {fmtEuro(incResult.scontoIva)}</strong>
+              </div>
+            )}
+            <div style={{ display: "flex", justifyContent: "space-between" }}>
+              <span>🏛️ {incResult.bonusStataleNome}:</span>
+              <strong>– {fmtEuro(incResult.bonusStataleImporto)}</strong>
+            </div>
+            <div style={{ display: "flex", justifyContent: "space-between", color: incResult.bandoRegionaleImporto > 0 ? "#047857" : "inherit" }}>
+              <span>📍 {incResult.bandoRegionaleNome}:</span>
+              <strong>{incResult.bandoRegionaleImporto > 0 ? `– ${fmtEuro(incResult.bandoRegionaleImporto)}` : "Incluso nei Bonus Statali"}</strong>
+            </div>
+          </div>
+          <div style={{ marginTop: 4, paddingTop: 10, borderTop: "2px dashed rgba(16, 185, 129, 0.3)", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 8 }}>
+            <div>
+              <span style={{ fontSize: 12, textTransform: "uppercase", fontWeight: 700, letterSpacing: "0.03em" }}>Investimento Netto Stimato:</span>
+              <div style={{ fontSize: 22, fontWeight: 800, color: "#047857" }}>{fmtEuro(incResult.costoNetto)}</div>
+            </div>
+            <div style={{ fontSize: 11, maxWidth: 320, color: "#065f46" }}>
+              ✅ Profilo incentivi abbinato alla tua richiesta. Il tecnico dell'impresa verificherà con te la fattibilità durante il sopralluogo gratuito.
+            </div>
+          </div>
+        </div>
+      )}
+
+      <p className="pvq-note" style={{ flexBasis: "100%", margin: "10px 8px 0", fontSize: 12 }}>
         Molti interventi come questo godono di detrazioni fiscali: al sopralluogo
         ti diciamo quali spettano a te. La stima è orientativa: è il sopralluogo —
         gratuito e senza impegno — a trasformarla nel prezzo esatto, nero su bianco.

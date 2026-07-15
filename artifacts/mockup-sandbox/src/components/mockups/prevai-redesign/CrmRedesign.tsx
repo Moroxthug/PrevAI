@@ -90,9 +90,9 @@ const KPI = [
 ];
 
 const CANTIERI = [
-  { name: "Ristrutturazione Villa Bifamiliare - Cantiere Via Roma", progress: 62, budget: "€38.000", stato: "In Corso", statoCls: "bg-blue-50 text-blue-700 border-blue-200" },
-  { name: "Rifacimento Tetto e Lattoneria - Condominio Aurora", progress: 12, budget: "€21.500", stato: "In Partenza", statoCls: "bg-amber-50 text-amber-700 border-amber-200" },
-  { name: "Isolamento Termico a Cappotto - Residenza Verde", progress: 100, budget: "€9.000", stato: "Completato", statoCls: "bg-emerald-50 text-emerald-700 border-emerald-200" },
+  { name: "Ristrutturazione Villa Bifamiliare - Cantiere Via Roma", progress: 62, budget: "€38.000", stato: "In Corso", statoCls: "bg-blue-50 text-blue-700 border-blue-200", incentivi: "Ecobonus 65% + Bando Lombardia (Detrazione Max €24.700)" },
+  { name: "Rifacimento Tetto e Lattoneria - Condominio Aurora", progress: 12, budget: "€21.500", stato: "In Partenza", statoCls: "bg-amber-50 text-amber-700 border-amber-200", incentivi: "Bonus Casa 50% + Sconto IVA 10%" },
+  { name: "Isolamento Termico a Cappotto - Residenza Verde", progress: 100, budget: "€9.000", stato: "Completato", statoCls: "bg-emerald-50 text-emerald-700 border-emerald-200", incentivi: "Conto Termico GSE 65% (Erogato)" },
 ];
 
 const PRATICHE = [
@@ -212,7 +212,14 @@ export function Preview() {
                     <div className="h-2.5 rounded-full bg-gray-100 overflow-hidden">
                       <div className="bar-grow h-full rounded-full" style={{ width: `${c.progress}%`, background: "linear-gradient(90deg, #7C3AED, #4F46E5, #06B6D4)", animationDelay: `${i * 0.15}s` }} />
                     </div>
-                    <div className="text-[11px] text-gray-400 mt-1">Budget: {c.budget}</div>
+                    <div className="flex flex-wrap items-center justify-between mt-1 text-[11px] gap-2">
+                      <span className="text-gray-400">Budget: {c.budget}</span>
+                      {c.incentivi && (
+                        <span className="font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+                          🎁 {c.incentivi}
+                        </span>
+                      )}
+                    </div>
                   </div>
                 ))}
               </div>

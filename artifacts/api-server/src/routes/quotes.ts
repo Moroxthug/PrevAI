@@ -2373,6 +2373,18 @@ function generateHtmlProfessionale(
       </div>`
     : "";
 
+  const incentivesData = (clientData as any)?.incentivesData;
+  const incentivesHtml = incentivesData && (incentivesData.bonusStataleApplicato || incentivesData.bandoRegionaleApplicato)
+    ? `<div class="condizioni" style="border-color: #0d9488; background: #f0fdfa;">
+        <div class="condizioni-title" style="color: #0f766e;">🎁 PIANO AGEVOLAZIONI FISCALI E CONTRIBUTI VERIFICATI AI</div>
+        <ul style="list-style: none; padding-left: 0; margin-top: 4px;">
+          ${incentivesData.bonusStataleApplicato ? `<li style="margin-bottom:3px;"><strong>Detrazione Statale:</strong> ${incentivesData.bonusStataleApplicato} (−€&nbsp;${formatEur(Number(incentivesData.detrazioneAnnuaStimata || 0) * 10)} in 10 anni)</li>` : ""}
+          ${incentivesData.bandoRegionaleApplicato ? `<li style="margin-bottom:3px;color:#047857;"><strong>Contributo Locale:</strong> ${incentivesData.bandoRegionaleApplicato} (−€&nbsp;${formatEur(Number(incentivesData.contributoRegionaleStimato || 0))})</li>` : ""}
+          <li style="margin-top: 8px; font-weight: bold; font-size: 10pt; color: #047857; border-top: 1px dashed #99f6e4; padding-top: 6px;">INVESTIMENTO NETTO REALE STIMATO: €&nbsp;${formatEur(Number(incentivesData.costoNettoStimato || totale))}</li>
+        </ul>
+      </div>`
+    : "";
+
   const footerHtml = companyName
     ? `<div class="doc-footer">${companyName}${companyAddress ? ` — ${companyAddress}` : ""}</div>` : "";
 
@@ -2480,6 +2492,7 @@ function generateHtmlProfessionale(
     </table>
   </div>
 
+  ${incentivesHtml}
   ${condizioniHtml}
   ${footerHtml}
 </body>
@@ -2545,6 +2558,18 @@ function generateHtmlElegante(
         <div class="condizioni-title">CONDIZIONI DI PAGAMENTO</div>
         <ul>${condizioniPagamento.map(c => `<li>${c}</li>`).join("")}</ul>
       </div>` : "";
+
+  const incentivesData = (clientData as any)?.incentivesData;
+  const incentivesHtml = incentivesData && (incentivesData.bonusStataleApplicato || incentivesData.bandoRegionaleApplicato)
+    ? `<div class="condizioni" style="border-color: #0d9488; background: #f0fdfa;">
+        <div class="condizioni-title" style="color: #0f766e;">🎁 PIANO AGEVOLAZIONI FISCALI E CONTRIBUTI VERIFICATI AI</div>
+        <ul style="list-style: none; padding-left: 0; margin-top: 4px;">
+          ${incentivesData.bonusStataleApplicato ? `<li style="margin-bottom:3px;"><strong>Detrazione Statale:</strong> ${incentivesData.bonusStataleApplicato} (−€&nbsp;${formatEur(Number(incentivesData.detrazioneAnnuaStimata || 0) * 10)} in 10 anni)</li>` : ""}
+          ${incentivesData.bandoRegionaleApplicato ? `<li style="margin-bottom:3px;color:#047857;"><strong>Contributo Locale:</strong> ${incentivesData.bandoRegionaleApplicato} (−€&nbsp;${formatEur(Number(incentivesData.contributoRegionaleStimato || 0))})</li>` : ""}
+          <li style="margin-top: 8px; font-weight: bold; font-size: 10pt; color: #047857; border-top: 1px dashed #99f6e4; padding-top: 6px;">INVESTIMENTO NETTO REALE STIMATO: €&nbsp;${formatEur(Number(incentivesData.costoNettoStimato || totale))}</li>
+        </ul>
+      </div>`
+    : "";
 
   const footerHtml = companyName
     ? `<div class="doc-footer">${companyName}${companyAddress ? ` — ${companyAddress}` : ""}</div>` : "";
@@ -2655,6 +2680,7 @@ function generateHtmlElegante(
     </div>
   </div>
 
+  ${incentivesHtml}
   ${condizioniHtml}
   ${footerHtml}
 </body>

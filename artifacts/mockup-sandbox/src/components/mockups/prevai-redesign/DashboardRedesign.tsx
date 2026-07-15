@@ -82,11 +82,11 @@ const STAT_CARDS = [
 ];
 
 const RECENT_QUOTES = [
-  { client: "Mario Rossi", status: "unlocked", date: "04/07/2026", total: "€ 1.769" },
-  { client: "Condominio Aurora", status: "pending_payment", date: "03/07/2026", total: "€ 12.400" },
-  { client: "Giulia Bianchi", status: "unlocked", date: "01/07/2026", total: "€ 3.150" },
-  { client: "Cliente non specificato", status: "draft", date: "28/06/2026", total: "€ 890" },
-  { client: "Impresa Verdi srl", status: "unlocked", date: "26/06/2026", total: "€ 6.140" },
+  { client: "Mario Rossi", status: "unlocked", date: "04/07/2026", total: "€ 1.769", incentivi: "Ecobonus 65% + Bando Milano" },
+  { client: "Condominio Aurora", status: "pending_payment", date: "03/07/2026", total: "€ 12.400", incentivi: "Bonus Casa 50% + Sconto IVA 10%" },
+  { client: "Giulia Bianchi", status: "unlocked", date: "01/07/2026", total: "€ 3.150", incentivi: "Bando Efficienza Lombardia" },
+  { client: "Cliente non specificato", status: "draft", date: "28/06/2026", total: "€ 890", incentivi: "Verifica non richiesta" },
+  { client: "Impresa Verdi srl", status: "unlocked", date: "26/06/2026", total: "€ 6.140", incentivi: "Conto Termico GSE 65%" },
 ];
 
 function Sparkline({ data, className }: { data: number[]; className?: string }) {
@@ -273,9 +273,14 @@ export function Preview() {
                     </div>
                     <div className="min-w-0">
                       <div className="font-medium text-gray-900 text-sm truncate">{q.client}</div>
-                      <div className="flex items-center gap-1.5 mt-0.5">
+                      <div className="flex flex-wrap items-center gap-1.5 mt-0.5">
                         <StatusBadge status={q.status} />
                         <span className="text-[10px] text-gray-400">{q.date}</span>
+                        {q.incentivi && q.incentivi !== "Verifica non richiesta" && (
+                          <span className="inline-flex items-center gap-1 text-[10px] font-bold bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded-full border border-emerald-200">
+                            🎁 {q.incentivi}
+                          </span>
+                        )}
                       </div>
                     </div>
                   </div>

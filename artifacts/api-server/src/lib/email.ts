@@ -418,13 +418,14 @@ export async function sendWidgetLeadNotification(params: {
   totale: string;
   prezzoMinimo: string;
   prezzoMassimo: string;
+  incentivesSummary?: string;
 }): Promise<void> {
   const apiKey = process.env.RESEND_API_KEY;
   if (!apiKey) {
     logger.warn("RESEND_API_KEY not set — skipping widget lead notification email");
     return;
   }
-  const { toEmail, companyName, clientName, clientEmail, clientPhone, rawInput, totale, prezzoMinimo, prezzoMassimo } = params;
+  const { toEmail, companyName, clientName, clientEmail, clientPhone, rawInput, totale, prezzoMinimo, prezzoMassimo, incentivesSummary } = params;
   try {
     const resend = new Resend(apiKey);
     await resend.emails.send({
@@ -449,6 +450,7 @@ export async function sendWidgetLeadNotification(params: {
   .val { font-size:14px; color:#18181b; font-weight:500; margin-top:2px; }
   .price-box { background:#f5f3ff; border:1px solid #ede9fe; border-radius:12px; padding:16px 20px; margin:20px 0; }
   .price-row { display:flex; justify-content:space-between; align-items:center; font-size:14px; color:#4f46e5; font-weight:700; }
+  .incentives-box { background:#ecfdf5; border:1px solid #d1fae5; border-radius:12px; padding:16px 20px; margin:20px 0; font-size:13px; color:#065f46; white-space:pre-wrap; line-height:1.5; }
   .footer { background:#f9fafb; padding:20px 32px; text-align:center; font-size:11px; color:#71717a; border-top:1px solid #f4f4f5; }
 </style>
 </head>
@@ -486,6 +488,8 @@ export async function sendWidgetLeadNotification(params: {
       </div>
       <div style="font-size:11px; color:#71717a; font-weight:normal; margin-top:4px; text-align:right;">Totale preventivo calcolato: €${totale}</div>
     </div>
+
+    ${incentivesSummary ? `<div class="incentives-box"><strong>🎁 ESITO VERIFICA INCENTIVI & BANDI:</strong>\n${incentivesSummary}</div>` : ""}
 
     <p style="font-size:13px; color:#71717a; line-height:1.5; text-align:center; margin-top:24px;">
       Ti consigliamo di ricontattare il cliente entro 24 ore per fissare il sopralluogo ed ottimizzare la conversione.

@@ -13,7 +13,7 @@ import { PRICE_TO_PLAN } from "./payments.js";
 
 const router = Router();
 
-async function isAdmin(req: Request): Promise<boolean> {
+export async function isAdmin(req: Request): Promise<boolean> {
   const adminEmail = process.env.ADMIN_EMAIL || process.env.admin_email;
   if (!adminEmail) return false;
   try {
@@ -28,7 +28,7 @@ async function isAdmin(req: Request): Promise<boolean> {
   }
 }
 
-async function requireAdmin(req: Request, res: Response, next: NextFunction): Promise<void> {
+export async function requireAdmin(req: Request, res: Response, next: NextFunction): Promise<void> {
   const ok = await isAdmin(req);
   if (!ok) {
     res.status(403).json({ error: "Forbidden" });

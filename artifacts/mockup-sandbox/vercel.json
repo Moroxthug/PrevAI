@@ -1,0 +1,6 @@
+{
+  "version": 2,
+  "buildCommand": "vite build -c vite-widget.config.ts",
+  "outputDirectory": "dist",
+  "cleanUrls": true
+}
