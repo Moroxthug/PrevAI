@@ -24,17 +24,18 @@ tool call che scarica `fonteUfficialeUrl` e ne estrae lo stato), o
 in alternativa etichettare chiaramente il risultato del cron come
 "controllo euristico preliminare", non come verifica.
 
-## 2. `humanVerified` esiste nello schema ma non è ancora usato
+## 2. `humanVerified` — ora modificabile da admin, ma non mostrato nel widget
 
-**File:** [incentives.ts (schema)](lib/db/src/schema/incentives.ts)
+**File:** [incentives.ts (schema)](lib/db/src/schema/incentives.ts), [incentives.ts (admin routes)](artifacts/api-server/src/routes/incentives.ts), [admin.tsx](artifacts/preventivo-ai/src/pages/admin.tsx)
 
-Il campo booleano è stato aggiunto (default `false`) ma:
-- non c'è ancora un'interfaccia admin per marcarlo manualmente vero
-  dopo che qualcuno ha controllato la fonte ufficiale a mano;
-- il widget/frontend non lo legge né lo mostra all'utente finale
-  (es. bollino "✓ verificato da un operatore" vs "in attesa di
-  conferma umana").
-- La migration va applicata al DB reale con `pnpm --filter @workspace/db push`
+Aggiornamento 2026-07-16: esiste ora `PATCH /api/admin/incentives/:id`
+e un modale "Modifica" nel tab Incentivi dell'admin con checkbox
+"Ho controllato personalmente questo bando" che imposta `humanVerified`.
+Resta da fare:
+- il widget pubblico (`WidgetFunnelDemo.tsx`) non legge/mostra ancora
+  questo flag all'utente finale (nessun bollino "✓ verificato da un
+  operatore" vs "in attesa di conferma umana");
+- la migration va applicata al DB reale con `pnpm --filter @workspace/db push`
   (non ancora eseguita in produzione al momento di questa nota).
 
 ## 3. Dati seed del catalogo bandi mai validati contro fonti ufficiali
@@ -71,6 +72,52 @@ percentuali diverse per seconda casa; nel calcolo attuale
 `tipoImmobile` incide solo sullo sconto IVA (`isResidenziale`), non
 sulla percentuale del bonus statale stesso. Da rivedere quando si
 formalizzano le regole normative reali.
+
+## 7. Webhook Resend in ingresso — solo log, nessuna persistenza/UI
+
+**File:** [app.ts](artifacts/api-server/src/app.ts) — `POST /api/webhooks/resend`
+
+Aggiunto un endpoint che verifica la firma Svix e riceve gli eventi
+di delivery/bounce/complaint da Resend. Al momento gli eventi vengono
+solo loggati (`logger.warn` per bounce/complaint, `logger.info` per
+il resto) — non c'è nessuna tabella che li persiste né una sezione
+nell'admin dashboard per vederli nel tempo. Se un partner smette di
+ricevere le notifiche lead perché la sua email rimbalza, oggi lo si
+scopre solo guardando i log del server, non dall'app.
+
+**Da fare prima che sia davvero operativo in produzione:**
+- impostare `RESEND_WEBHOOK_SECRET` nell'env (va preso dalla dashboard
+  Resend quando si configura l'endpoint webhook — non ancora fatto);
+- registrare l'URL `https://<dominio>/api/webhooks/resend` nella
+  dashboard Resend;
+- valutare se serve persistere gli eventi (nuova tabella tipo
+  `email_events`) per mostrare nell'admin/nel profilo del partner
+  quando le sue notifiche falliscono.
+
+## 8. Modulo CRM (`/crm`) — cantieri/lavoratori/fornitori ora reali, alcune feature rimosse
+
+**File:** [crm.tsx](artifacts/preventivo-ai/src/pages/dashboard/crm.tsx), [crm.ts](artifacts/api-server/src/routes/crm.ts)
+
+Aggiornamento 2026-07-16: cantieri, scadenze, collaboratori, fornitori,
+costi extra, assegnazioni operai e generazione fattura (simulata) sono
+ora collegati al backend reale invece che a `localStorage`. Nel farlo
+sono state **rimosse** tre funzionalità che erano solo finte demo senza
+alcun supporto nel DB, per non continuare a mostrare dati inventati:
+- tracciamento ore lavorate per operaio (nessuna tabella le contiene;
+  la UI "Lavoratori" mostrava ore aggregate finte);
+- materiali acquistati e documenti/computo metrico per cantiere
+  (nessuna tabella dedicata);
+- l'"assistente AI" del cantiere (rispondeva con testo precotto via
+  `setTimeout`, non chiamava nessun modello reale).
+
+**Restano fuori scope** (non toccate, ancora `localStorage`):
+- "Gestione Pratiche" (CILA/SCIA/APE) — nessuna tabella backend esiste;
+- "Calendario Scadenze" — timeline completamente hardcoded, slegata
+  dai dati reali dei cantieri.
+
+Se servono materiali/documenti/ore lavorate reali, serve prima
+decidere lo schema DB (nuove tabelle) prima di poter ricollegare
+quelle sezioni.
 
 ---
 

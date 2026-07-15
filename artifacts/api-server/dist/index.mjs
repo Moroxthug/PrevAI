@@ -287121,6 +287121,9 @@ var incentivesCatalogTable = pgTable("incentives_catalog", {
   stato: text("stato", { enum: ["active", "expiring_soon", "closed"] }).notNull().default("active"),
   fonteUfficialeUrl: text("fonte_ufficiale_url"),
   isVerifiedByAi: boolean("is_verified_by_ai").notNull().default(true),
+  // esito dell'ultimo controllo euristico del cron AI (non è una validazione legale)
+  humanVerified: boolean("human_verified").notNull().default(false),
+  // true solo se un admin ha controllato la fonte ufficiale a mano
   lastCheckedAt: timestamp("last_checked_at", { withTimezone: true }).defaultNow(),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => /* @__PURE__ */ new Date())
@@ -343494,6 +343497,113 @@ router12.post("/crm/projects/:projectId/tasks", requireAuth, async (req, res) =>
     res.status(500).json({ error: "Internal server error" });
   }
 });
+router12.patch("/crm/projects/:projectId/tasks/:taskId", requireAuth, async (req, res) => {
+  try {
+    const userId = getUserId(res);
+    const { projectId, taskId } = req.params;
+    const [project] = await db.select().from(projectsTable).where(and(eq(projectsTable.id, projectId), eq(projectsTable.userId, userId)));
+    if (!project) {
+      res.status(404).json({ error: "Project not found" });
+      return;
+    }
+    const schema2 = external_exports2.object({
+      status: external_exports2.enum(["todo", "in_progress", "done"])
+    });
+    const parsed = schema2.safeParse(req.body);
+    if (!parsed.success) {
+      res.status(400).json({ error: "Invalid parameters", details: parsed.error });
+      return;
+    }
+    const [updated] = await db.update(projectTasksTable).set({ status: parsed.data.status }).where(and(eq(projectTasksTable.id, taskId), eq(projectTasksTable.projectId, projectId))).returning();
+    if (!updated) {
+      res.status(404).json({ error: "Task not found" });
+      return;
+    }
+    res.json(updated);
+  } catch (err) {
+    req.log.error({ err }, "Error updating task status");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+router12.get("/crm/projects/:projectId/assignments", requireAuth, async (req, res) => {
+  try {
+    const userId = getUserId(res);
+    const { projectId } = req.params;
+    const [project] = await db.select().from(projectsTable).where(and(eq(projectsTable.id, projectId), eq(projectsTable.userId, userId)));
+    if (!project) {
+      res.status(404).json({ error: "Project not found" });
+      return;
+    }
+    const rows = await db.select({
+      id: projectAssignmentsTable.id,
+      projectId: projectAssignmentsTable.projectId,
+      collaboratorId: projectAssignmentsTable.collaboratorId,
+      roleInProject: projectAssignmentsTable.roleInProject,
+      createdAt: projectAssignmentsTable.createdAt,
+      collaboratorName: collaboratorsTable.name,
+      collaboratorRole: collaboratorsTable.role,
+      collaboratorHourlyRate: collaboratorsTable.hourlyRate
+    }).from(projectAssignmentsTable).innerJoin(collaboratorsTable, eq(projectAssignmentsTable.collaboratorId, collaboratorsTable.id)).where(eq(projectAssignmentsTable.projectId, projectId));
+    res.json(rows);
+  } catch (err) {
+    req.log.error({ err }, "Error fetching project assignments");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+router12.post("/crm/projects/:projectId/assignments", requireAuth, async (req, res) => {
+  try {
+    const userId = getUserId(res);
+    const { projectId } = req.params;
+    const [project] = await db.select().from(projectsTable).where(and(eq(projectsTable.id, projectId), eq(projectsTable.userId, userId)));
+    if (!project) {
+      res.status(404).json({ error: "Project not found" });
+      return;
+    }
+    const schema2 = external_exports2.object({
+      collaboratorId: external_exports2.string().uuid(),
+      roleInProject: external_exports2.string().optional()
+    });
+    const parsed = schema2.safeParse(req.body);
+    if (!parsed.success) {
+      res.status(400).json({ error: "Invalid parameters", details: parsed.error });
+      return;
+    }
+    const [collaborator] = await db.select().from(collaboratorsTable).where(and(eq(collaboratorsTable.id, parsed.data.collaboratorId), eq(collaboratorsTable.userId, userId)));
+    if (!collaborator) {
+      res.status(404).json({ error: "Collaborator not found" });
+      return;
+    }
+    const [assignment] = await db.insert(projectAssignmentsTable).values({
+      projectId,
+      collaboratorId: parsed.data.collaboratorId,
+      roleInProject: parsed.data.roleInProject ?? ""
+    }).returning();
+    res.status(201).json({ ...assignment, collaboratorName: collaborator.name, collaboratorRole: collaborator.role, collaboratorHourlyRate: collaborator.hourlyRate });
+  } catch (err) {
+    req.log.error({ err }, "Error creating project assignment");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+router12.delete("/crm/projects/:projectId/assignments/:assignmentId", requireAuth, async (req, res) => {
+  try {
+    const userId = getUserId(res);
+    const { projectId, assignmentId } = req.params;
+    const [project] = await db.select().from(projectsTable).where(and(eq(projectsTable.id, projectId), eq(projectsTable.userId, userId)));
+    if (!project) {
+      res.status(404).json({ error: "Project not found" });
+      return;
+    }
+    const [deleted] = await db.delete(projectAssignmentsTable).where(and(eq(projectAssignmentsTable.id, assignmentId), eq(projectAssignmentsTable.projectId, projectId))).returning();
+    if (!deleted) {
+      res.status(404).json({ error: "Assignment not found" });
+      return;
+    }
+    res.json({ success: true });
+  } catch (err) {
+    req.log.error({ err }, "Error deleting project assignment");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
 router12.get("/crm/collaborators", requireAuth, async (req, res) => {
   try {
     const userId = getUserId(res);
@@ -344201,7 +344311,9 @@ async function ensureDefaultIncentives() {
       massimaleContributo: "48000.00",
       stato: "active",
       fonteUfficialeUrl: "https://www.agenziaentrate.gov.it",
-      isVerifiedByAi: true
+      isVerifiedByAi: true,
+      // esito heuristico cron AI, non verifica legale
+      humanVerified: false
     },
     {
       level: "statale",
@@ -344217,7 +344329,9 @@ async function ensureDefaultIncentives() {
       massimaleContributo: "65000.00",
       stato: "active",
       fonteUfficialeUrl: "https://www.enea.it",
-      isVerifiedByAi: true
+      isVerifiedByAi: true,
+      // esito heuristico cron AI, non verifica legale
+      humanVerified: false
     },
     {
       level: "statale",
@@ -344233,7 +344347,9 @@ async function ensureDefaultIncentives() {
       massimaleContributo: "15000.00",
       stato: "active",
       fonteUfficialeUrl: "https://www.gse.it",
-      isVerifiedByAi: true
+      isVerifiedByAi: true,
+      // esito heuristico cron AI, non verifica legale
+      humanVerified: false
     },
     {
       level: "statale",
@@ -344249,7 +344365,9 @@ async function ensureDefaultIncentives() {
       massimaleContributo: "37500.00",
       stato: "active",
       fonteUfficialeUrl: "https://www.agenziaentrate.gov.it",
-      isVerifiedByAi: true
+      isVerifiedByAi: true,
+      // esito heuristico cron AI, non verifica legale
+      humanVerified: false
     },
     {
       level: "regionale",
@@ -344266,7 +344384,9 @@ async function ensureDefaultIncentives() {
       requisitiIseeMax: "45000.00",
       stato: "active",
       fonteUfficialeUrl: "https://www.regione.lombardia.it",
-      isVerifiedByAi: true
+      isVerifiedByAi: true,
+      // esito heuristico cron AI, non verifica legale
+      humanVerified: false
     },
     {
       level: "regionale",
@@ -344282,7 +344402,9 @@ async function ensureDefaultIncentives() {
       massimaleContributo: "3500.00",
       stato: "active",
       fonteUfficialeUrl: "https://www.regione.piemonte.it",
-      isVerifiedByAi: true
+      isVerifiedByAi: true,
+      // esito heuristico cron AI, non verifica legale
+      humanVerified: false
     },
     {
       level: "regionale",
@@ -344298,7 +344420,9 @@ async function ensureDefaultIncentives() {
       massimaleContributo: "4000.00",
       stato: "active",
       fonteUfficialeUrl: "https://energia.regione.emilia-romagna.it",
-      isVerifiedByAi: true
+      isVerifiedByAi: true,
+      // esito heuristico cron AI, non verifica legale
+      humanVerified: false
     },
     {
       level: "regionale",
@@ -344314,7 +344438,9 @@ async function ensureDefaultIncentives() {
       massimaleContributo: "4500.00",
       stato: "active",
       fonteUfficialeUrl: "https://www.regione.veneto.it",
-      isVerifiedByAi: true
+      isVerifiedByAi: true,
+      // esito heuristico cron AI, non verifica legale
+      humanVerified: false
     },
     {
       level: "comunale",
@@ -344330,7 +344456,9 @@ async function ensureDefaultIncentives() {
       massimaleContributo: "3000.00",
       stato: "active",
       fonteUfficialeUrl: "https://www.comune.milano.it",
-      isVerifiedByAi: true
+      isVerifiedByAi: true,
+      // esito heuristico cron AI, non verifica legale
+      humanVerified: false
     },
     {
       level: "comunale",
@@ -344346,7 +344474,9 @@ async function ensureDefaultIncentives() {
       massimaleContributo: "2500.00",
       stato: "active",
       fonteUfficialeUrl: "https://www.comune.bologna.it",
-      isVerifiedByAi: true
+      isVerifiedByAi: true,
+      // esito heuristico cron AI, non verifica legale
+      humanVerified: false
     }
   ]);
 }
@@ -344436,8 +344566,8 @@ router15.post("/public/quotes/:quoteId/incentives", async (req, res) => {
         }
       }
     }
-    const totaleIncentiviStimati = importoBonusStatale + importoBandoRegionale;
-    const costoNettoStimato = Math.max(Math.round(totaleLavori * 0.25), Math.round(totaleLavori - importoBandoRegionale - importoBonusStatale * 0.55 - scontoIvaStimato));
+    const esborsoImmediatoStimato = Math.max(0, Math.round(totaleLavori - importoBandoRegionale - scontoIvaStimato));
+    const detrazioneFiscaleAnnua = Math.round(importoBonusStatale / 10);
     const incentivesData = {
       tipoImmobile,
       obiettivoLavori,
@@ -344447,8 +344577,9 @@ router15.post("/public/quotes/:quoteId/incentives", async (req, res) => {
       bonusStataleApplicato: `${bonusStataleApplicato} (~\u20AC${importoBonusStatale.toLocaleString("it-IT")})`,
       bandoRegionaleApplicato: importoBandoRegionale > 0 ? `${bandoRegionaleApplicato} (~\u20AC${importoBandoRegionale.toLocaleString("it-IT")})` : bandoRegionaleApplicato,
       scontoIvaStimato,
-      totaleIncentiviStimati,
-      costoNettoStimato
+      esborsoImmediatoStimato,
+      detrazioneFiscaleDecennale: importoBonusStatale,
+      detrazioneFiscaleAnnua
     };
     const currentClientData = quote.clientData || { nome: "", indirizzo: "" };
     const updatedClientData = {
@@ -344471,12 +344602,12 @@ router15.post("/public/quotes/:quoteId/incentives", async (req, res) => {
         totale: quote.totale,
         prezzoMinimo: (Number(quote.totale) * 0.9).toFixed(2),
         prezzoMassimo: (Number(quote.totale) * 1.25).toFixed(2),
-        incentivesSummary: `\u{1F3DB}\uFE0F PROFILO INCENTIVI VERIFICATO DAL CLIENTE:
+        incentivesSummary: `\u{1F3DB}\uFE0F STIMA PRELIMINARE AGEVOLAZIONI (da confermare in sede di sopralluogo tecnico e fiscale):
 \u2022 Immobile: ${tipoImmobile} | Obiettivo: ${obiettivoLavori} | ISEE: ${fasciaIsee}
-\u2022 Bonus Statale Compatibile: ${bonusStataleApplicato} (~\u20AC${importoBonusStatale.toLocaleString("it-IT")})
+\u2022 Bonus Statale Compatibile: ${bonusStataleApplicato} (~\u20AC${importoBonusStatale.toLocaleString("it-IT")}, detrazione IRPEF in 10 quote annuali da ~\u20AC${detrazioneFiscaleAnnua.toLocaleString("it-IT")})
 \u2022 Bando Regionale/Comunale: ${importoBandoRegionale > 0 ? `${bandoRegionaleApplicato} (~\u20AC${importoBandoRegionale.toLocaleString("it-IT")})` : "Nessuno a sportello"}
 \u2022 Risparmio IVA 10%: ~\u20AC${scontoIvaStimato.toLocaleString("it-IT")}
-\u{1F449} INVESTIMENTO NETTO STIMATO PER IL CLIENTE: ~\u20AC${costoNettoStimato.toLocaleString("it-IT")}`
+\u{1F449} ESBORSO IMMEDIATO STIMATO (esclusa detrazione, recuperata in 10 anni): ~\u20AC${esborsoImmediatoStimato.toLocaleString("it-IT")}`
       }).catch((err) => {
         logger2.error({ err }, "Failed to send updated incentives email notification to contractor");
       });
@@ -344488,8 +344619,9 @@ router15.post("/public/quotes/:quoteId/incentives", async (req, res) => {
       scontoIvaStimato,
       bonusStataleApplicato: incentivesData.bonusStataleApplicato,
       bandoRegionaleApplicato: incentivesData.bandoRegionaleApplicato,
-      totaleIncentiviStimati,
-      costoNettoStimato
+      esborsoImmediatoStimato,
+      detrazioneFiscaleDecennale: importoBonusStatale,
+      detrazioneFiscaleAnnua
     });
   } catch (err) {
     logger2.error({ err }, "Error calculating incentives for quote");
@@ -344548,6 +344680,57 @@ router15.post("/admin/incentives", requireAdmin, async (req, res) => {
     res.status(201).json({ success: true, incentive: inserted });
   } catch (err) {
     logger2.error({ err }, "Error creating admin incentive");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+router15.patch("/admin/incentives/:id", requireAdmin, async (req, res) => {
+  try {
+    const id = req.params.id;
+    const {
+      level,
+      codice,
+      titolo,
+      descrizione,
+      regione,
+      comune,
+      categoriaIntervento,
+      tipoAgevolazione,
+      percentualeMassima,
+      massimaleSpesa,
+      massimaleContributo,
+      requisitiIseeMax,
+      stato,
+      fonteUfficialeUrl,
+      humanVerified
+    } = req.body;
+    const updates = {};
+    if (level !== void 0) updates.level = level;
+    if (codice !== void 0) updates.codice = codice;
+    if (titolo !== void 0) updates.titolo = titolo;
+    if (descrizione !== void 0) updates.descrizione = descrizione;
+    if (regione !== void 0) updates.regione = regione;
+    if (comune !== void 0) updates.comune = comune;
+    if (categoriaIntervento !== void 0) updates.categoriaIntervento = categoriaIntervento;
+    if (tipoAgevolazione !== void 0) updates.tipoAgevolazione = tipoAgevolazione;
+    if (percentualeMassima !== void 0) updates.percentualeMassima = String(percentualeMassima);
+    if (massimaleSpesa !== void 0) updates.massimaleSpesa = massimaleSpesa ? String(massimaleSpesa) : null;
+    if (massimaleContributo !== void 0) updates.massimaleContributo = massimaleContributo ? String(massimaleContributo) : null;
+    if (requisitiIseeMax !== void 0) updates.requisitiIseeMax = requisitiIseeMax ? String(requisitiIseeMax) : null;
+    if (stato !== void 0) updates.stato = stato;
+    if (fonteUfficialeUrl !== void 0) updates.fonteUfficialeUrl = fonteUfficialeUrl;
+    if (humanVerified !== void 0) updates.humanVerified = Boolean(humanVerified);
+    if (Object.keys(updates).length === 0) {
+      res.status(400).json({ error: "Nessun campo da aggiornare." });
+      return;
+    }
+    const [updated] = await db.update(incentivesCatalogTable).set(updates).where(eq(incentivesCatalogTable.id, id)).returning();
+    if (!updated) {
+      res.status(404).json({ error: "Bando non trovato." });
+      return;
+    }
+    res.json({ success: true, incentive: updated });
+  } catch (err) {
+    logger2.error({ err }, "Error updating admin incentive");
     res.status(500).json({ error: "Internal server error" });
   }
 });
@@ -344846,6 +345029,64 @@ app.post(
       return;
     }
     next();
+  }
+);
+app.post(
+  "/api/webhooks/resend",
+  import_express16.default.raw({ type: "application/json" }),
+  async (req, res) => {
+    const webhookSecret = process.env.RESEND_WEBHOOK_SECRET;
+    if (!webhookSecret) {
+      logger2.error("RESEND_WEBHOOK_SECRET not set \u2014 rejecting Resend webhook POST to prevent spoofing");
+      res.status(500).json({ error: "Webhook secret not configured" });
+      return;
+    }
+    const svixId = req.headers["svix-id"];
+    const svixTimestamp = req.headers["svix-timestamp"];
+    const svixSignature = req.headers["svix-signature"];
+    const idStr = Array.isArray(svixId) ? svixId[0] : svixId;
+    const tsStr = Array.isArray(svixTimestamp) ? svixTimestamp[0] : svixTimestamp;
+    const sigStr = Array.isArray(svixSignature) ? svixSignature[0] : svixSignature;
+    if (!idStr || !tsStr || !sigStr) {
+      res.status(400).json({ error: "Missing svix-id, svix-timestamp or svix-signature header" });
+      return;
+    }
+    const { createHmac: createHmac2, timingSafeEqual: timingSafeEqual3 } = await import("node:crypto");
+    const rawBody = req.body;
+    const signedContent = `${idStr}.${tsStr}.${rawBody.toString("utf-8")}`;
+    const secretBytes = Buffer.from(webhookSecret.replace(/^whsec_/, ""), "base64");
+    const expectedSig = createHmac2("sha256", secretBytes).update(signedContent).digest("base64");
+    const providedSigs = sigStr.split(" ").map((s) => s.split(",")[1]).filter(Boolean);
+    const expectedBuf = Buffer.from(expectedSig, "base64");
+    const isValid2 = providedSigs.some((sig) => {
+      const providedBuf = Buffer.from(sig, "base64");
+      return providedBuf.length === expectedBuf.length && timingSafeEqual3(providedBuf, expectedBuf);
+    });
+    if (!isValid2) {
+      logger2.error("Resend webhook signature mismatch \u2014 request rejected");
+      res.status(403).json({ error: "Forbidden" });
+      return;
+    }
+    let event;
+    try {
+      event = JSON.parse(rawBody.toString("utf-8"));
+    } catch {
+      res.status(400).json({ error: "Invalid JSON" });
+      return;
+    }
+    const eventData = {
+      type: event.type,
+      emailId: event.data?.email_id,
+      to: event.data?.to,
+      from: event.data?.from,
+      subject: event.data?.subject
+    };
+    if (event.type === "email.bounced" || event.type === "email.complained") {
+      logger2.warn(eventData, `Resend: ${event.type}`);
+    } else {
+      logger2.info(eventData, `Resend: ${event.type ?? "evento sconosciuto"}`);
+    }
+    res.status(200).json({ received: true });
   }
 );
 app.use("/api/public", (0, import_cors.default)());

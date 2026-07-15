@@ -41,114 +41,71 @@ import { PriceCatalogSection } from "@/components/price-catalog-section";
 
 
 
-// Mock Data Types
-interface Task {
+// Tipi allineati allo schema reale del backend (lib/db/src/schema/crm.ts).
+// budget/hourlyRate/amount arrivano dal DB in centesimi (integer); vengono
+// convertiti in euro solo per la visualizzazione tramite centsToEuro().
+interface ProjectTask {
   id: string;
+  projectId: string;
   title: string;
-  dueDate: string;
-  completed: boolean;
-}
-
-interface Worker {
-  name: string;
-  role: string;
-  hours: number;
-  rate: number;
+  description: string;
+  status: "todo" | "in_progress" | "done";
+  dueDate: string | null;
 }
 
 interface Project {
   id: string;
+  userId: string;
+  quoteId: string | null;
   name: string;
+  description: string;
   status: "planning" | "active" | "suspended" | "completed";
-  budget: number;
-  startDate: string;
-  endDate: string;
-  tasks: Task[];
-  workers: Worker[];
-  extraCosts: { desc: string; amount: number; date: string }[];
-  invoiceStatus: "not_invoiced" | "draft" | "sent";
-  invoiceNum?: string;
-  materials?: { desc: string; cost: number; supplier: string; date: string }[];
-  documents?: { name: string; type: "computo" | "geometra" | "collaboratore" | "altro"; date: string }[];
+  startDate: string | null;
+  endDate: string | null;
+  budget: number; // centesimi
+  createdAt: string;
 }
 
-const INITIAL_PROJECTS: Project[] = [
-  {
-    id: "p1",
-    name: "Ristrutturazione Villa Bifamiliare - Cantiere Via Roma",
-    status: "active",
-    budget: 85000,
-    startDate: "2026-05-10",
-    endDate: "2026-08-30",
-    tasks: [
-      { id: "t1", title: "Approvazione Pratica Edilizia CILA", dueDate: "2026-05-02", completed: true },
-      { id: "t2", title: "Posa del massetto autolivellante", dueDate: "2026-07-05", completed: false },
-      { id: "t3", title: "Finitura intonaci e tinteggiatura", dueDate: "2026-07-20", completed: false }
-    ],
-    workers: [
-      { name: "Marco Bianchi", role: "Capocantiere", hours: 140, rate: 25 },
-      { name: "Alessandro Neri", role: "Elettricista", hours: 35, rate: 30 },
-      { name: "Roberto Verdi", role: "Idraulico", hours: 45, rate: 30 },
-    ],
-    extraCosts: [
-      { desc: "Smaltimento macerie imprevisto", amount: 1200, date: "2026-05-15" },
-      { desc: "Adeguamento quadro elettrico esterno", amount: 650, date: "2026-06-02" },
-    ],
-    invoiceStatus: "not_invoiced",
-  },
-  {
-    id: "p2",
-    name: "Rifacimento Tetto e Lattoneria - Condominio Aurora",
-    status: "planning",
-    budget: 42000,
-    startDate: "2026-07-15",
-    endDate: "2026-09-10",
-    tasks: [
-      { id: "t4", title: "Firma contratto e versamento acconto", dueDate: "2026-07-10", completed: false },
-      { id: "t5", title: "Montaggio ponteggio di sicurezza", dueDate: "2026-07-16", completed: false },
-    ],
-    workers: [
-      { name: "Marco Bianchi", role: "Capocantiere", hours: 0, rate: 25 },
-    ],
-    extraCosts: [],
-    invoiceStatus: "not_invoiced",
-  },
-  {
-    id: "p3",
-    name: "Isolamento Termico a Cappotto - Residenza Verde",
-    status: "completed",
-    budget: 68000,
-    startDate: "2026-03-01",
-    endDate: "2026-06-15",
-    tasks: [
-      { id: "t6", title: "Rimozione intonaco esistente", dueDate: "2026-03-10", completed: true },
-      { id: "t7", title: "Incollaggio pannelli EPS 12cm", dueDate: "2026-04-15", completed: true },
-      { id: "t8", title: "Certificazione energetica APE pre/post", dueDate: "2026-06-20", completed: true },
-    ],
-    workers: [
-      { name: "Marco Bianchi", role: "Capocantiere", hours: 220, rate: 25 },
-      { name: "Luca Rossi", role: "Cartongessista", hours: 110, rate: 22 },
-    ],
-    extraCosts: [
-      { desc: "Pannelli extra per spessore pilastri", amount: 480, date: "2026-04-20" },
-    ],
-    invoiceStatus: "draft",
-    invoiceNum: "FAT-2026-104",
-  },
-];
+interface Collaborator {
+  id: string;
+  userId: string;
+  name: string;
+  role: string;
+  email: string | null;
+  phone: string | null;
+  hourlyRate: number; // centesimi
+}
 
-const INITIAL_COLLABORATORS = [
-  { name: "Marco Bianchi", role: "Dipendente", category: "Muratore/Capocantiere", hourlyRate: 25, phone: "+39 333 445566" },
-  { name: "Alessandro Neri", role: "Collaboratore Esterno", category: "Elettricista", hourlyRate: 30, phone: "+39 347 112233" },
-  { name: "Roberto Verdi", role: "Collaboratore Esterno", category: "Idraulico", hourlyRate: 30, phone: "+39 349 998877" },
-  { name: "Luca Rossi", role: "Dipendente", category: "Cartongessista/Pintore", hourlyRate: 22, phone: "+39 328 554433" },
-];
+interface Supplier {
+  id: string;
+  userId: string;
+  name: string;
+  category: string;
+  contactInfo: string;
+  email: string | null;
+  phone: string | null;
+}
 
-const INITIAL_SUPPLIERS = [
-  { name: "Edilizia Moderna Spa", category: "Materiali Edili", contactInfo: "Milano - ciao@edilizia.it", phone: "02 887766" },
-  { name: "TermoIdraulica Srl", category: "Impiantistica e Tubature", contactInfo: "Torino - info@termo.it", phone: "011 443322" },
-  { name: "ElettroForniture Nord", category: "Materiale Elettrico", contactInfo: "Bergamo - sales@elettronord.it", phone: "035 998877" },
-];
+interface ExtraCost {
+  id: string;
+  projectId: string;
+  description: string;
+  amount: number; // centesimi
+  date: string;
+}
+
+interface ProjectAssignment {
+  id: string;
+  projectId: string;
+  collaboratorId: string;
+  roleInProject: string;
+  collaboratorName: string;
+  collaboratorRole: string;
+  collaboratorHourlyRate: number;
+}
+
+const centsToEuro = (c: number) => Math.round(c) / 100;
+const euroToCents = (e: number) => Math.round(e * 100);
 
 const INITIAL_PRATICHE = [
   { title: "CILA - Via Roma 45", status: "Approvata", date: "2026-05-02", prot: "CILA-2026/8892" },
@@ -173,38 +130,80 @@ export default function CrmPage() {
     | "sal"
   >("dashboard");
 
-  const [projects, setProjects] = useState<Project[]>(() => {
-    const saved = typeof window !== "undefined" ? localStorage.getItem("prevai_crm_projects") : null;
-    return saved ? JSON.parse(saved) : INITIAL_PROJECTS;
-  });
-  const [collaborators, setCollaborators] = useState(() => {
-    const saved = typeof window !== "undefined" ? localStorage.getItem("prevai_crm_collaborators") : null;
-    return saved ? JSON.parse(saved) : INITIAL_COLLABORATORS;
-  });
-  const [suppliers, setSuppliers] = useState(() => {
-    const saved = typeof window !== "undefined" ? localStorage.getItem("prevai_crm_suppliers") : null;
-    return saved ? JSON.parse(saved) : INITIAL_SUPPLIERS;
-  });
+  // Dati reali dal backend CRM (artifacts/api-server/src/routes/crm.ts).
+  // "pratiche" (CILA/SCIA/APE) resta locale: non esiste ancora una tabella
+  // dedicata nel backend per le pratiche edilizie.
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [isLoadingProjects, setIsLoadingProjects] = useState(true);
+  const [projectTasks, setProjectTasks] = useState<Record<string, ProjectTask[]>>({});
+  const [extraCosts, setExtraCosts] = useState<Record<string, ExtraCost[]>>({});
+  const [assignments, setAssignments] = useState<Record<string, ProjectAssignment[]>>({});
+  const [collaborators, setCollaborators] = useState<Collaborator[]>([]);
+  const [suppliers, setSuppliers] = useState<Supplier[]>([]);
+  const [crmError, setCrmError] = useState<string | null>(null);
+  const [invoiceResults, setInvoiceResults] = useState<Record<string, { number: string; url: string; total: number }>>({});
+
   const [pratiche, setPratiche] = useState(() => {
     const saved = typeof window !== "undefined" ? localStorage.getItem("prevai_crm_pratiche") : null;
     return saved ? JSON.parse(saved) : INITIAL_PRATICHE;
   });
 
   React.useEffect(() => {
-    localStorage.setItem("prevai_crm_projects", JSON.stringify(projects));
-  }, [projects]);
-
-  React.useEffect(() => {
-    localStorage.setItem("prevai_crm_collaborators", JSON.stringify(collaborators));
-  }, [collaborators]);
-
-  React.useEffect(() => {
-    localStorage.setItem("prevai_crm_suppliers", JSON.stringify(suppliers));
-  }, [suppliers]);
-
-  React.useEffect(() => {
     localStorage.setItem("prevai_crm_pratiche", JSON.stringify(pratiche));
   }, [pratiche]);
+
+  async function crmFetch<T = any>(path: string, options?: RequestInit): Promise<T> {
+    const r = await fetch(path, {
+      ...options,
+      credentials: "include",
+      headers: { "Content-Type": "application/json", ...options?.headers },
+    });
+    if (!r.ok) {
+      const data = await r.json().catch(() => ({}));
+      throw new Error(data.error || `Errore ${r.status}`);
+    }
+    if (r.status === 204) return null as T;
+    return r.json();
+  }
+
+  // Caricamento iniziale: cantieri, collaboratori, fornitori
+  React.useEffect(() => {
+    let cancelled = false;
+    setIsLoadingProjects(true);
+    crmFetch<Project[]>("/api/crm/projects")
+      .then((data) => { if (!cancelled) setProjects(data); })
+      .catch((err) => { console.error("Errore caricamento cantieri", err); if (!cancelled) setCrmError("Impossibile caricare i cantieri."); })
+      .finally(() => { if (!cancelled) setIsLoadingProjects(false); });
+    crmFetch<Collaborator[]>("/api/crm/collaborators")
+      .then((data) => { if (!cancelled) setCollaborators(data); })
+      .catch((err) => console.error("Errore caricamento collaboratori", err));
+    crmFetch<Supplier[]>("/api/crm/suppliers")
+      .then((data) => { if (!cancelled) setSuppliers(data); })
+      .catch((err) => console.error("Errore caricamento fornitori", err));
+    return () => { cancelled = true; };
+  }, []);
+
+  // Task e costi extra sono mostrati sia nella lista cantieri (barre di
+  // avanzamento) sia nel dettaglio: li carichiamo in blocco per progetto.
+  React.useEffect(() => {
+    if (projects.length === 0) return;
+    let cancelled = false;
+    Promise.all(
+      projects.map((p) =>
+        crmFetch<ProjectTask[]>(`/api/crm/projects/${p.id}/tasks`)
+          .then((tasks) => [p.id, tasks] as const)
+          .catch(() => [p.id, []] as const)
+      )
+    ).then((results) => { if (!cancelled) setProjectTasks(Object.fromEntries(results)); });
+    Promise.all(
+      projects.map((p) =>
+        crmFetch<ExtraCost[]>(`/api/crm/projects/${p.id}/extra-costs`)
+          .then((costs) => [p.id, costs] as const)
+          .catch(() => [p.id, []] as const)
+      )
+    ).then((results) => { if (!cancelled) setExtraCosts(Object.fromEntries(results)); });
+    return () => { cancelled = true; };
+  }, [projects]);
 
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(() => {
     const saved = typeof window !== "undefined" ? localStorage.getItem("prevai_crm_sidebar_collapsed") : null;
@@ -219,7 +218,15 @@ export default function CrmPage() {
 
   // States for interactive panels
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
-  
+
+  // Gli "operai assegnati" servono solo nel dettaglio del cantiere aperto
+  React.useEffect(() => {
+    if (!selectedProjectId || assignments[selectedProjectId]) return;
+    crmFetch<ProjectAssignment[]>(`/api/crm/projects/${selectedProjectId}/assignments`)
+      .then((data) => setAssignments((prev) => ({ ...prev, [selectedProjectId]: data })))
+      .catch((err) => console.error("Errore caricamento assegnazioni", err));
+  }, [selectedProjectId]);
+
   // Forms toggles
   const [isAddingProj, setIsAddingProj] = useState(false);
   const [isAddingCollab, setIsAddingCollab] = useState(false);
@@ -245,220 +252,194 @@ export default function CrmPage() {
   const [newExtraCostDesc, setNewExtraCostDesc] = useState("");
   const [newExtraCostAmount, setNewExtraCostAmount] = useState("");
   const [isInvoicing, setIsInvoicing] = useState(false);
-  const [newMaterialDesc, setNewMaterialDesc] = useState("");
-  const [newMaterialCost, setNewMaterialCost] = useState("");
-  const [newMaterialSupplier, setNewMaterialSupplier] = useState("");
-  const [newDocName, setNewDocName] = useState("");
-  const [newDocType, setNewDocType] = useState<"computo" | "geometra" | "collaboratore" | "altro">("computo");
-  const [aiQuery, setAiQuery] = useState("");
-  const [aiResponse, setAiResponse] = useState("");
-  const [isAiThinking, setIsAiThinking] = useState(false);
+  const [newAssignCollabId, setNewAssignCollabId] = useState("");
+  const [newAssignRole, setNewAssignRole] = useState("");
 
-  // API Config
-  const [apiKey, setApiKey] = useState("fic_live_7c29a8fbc83d91ea82d3");
-  const [apiSecret, setApiSecret] = useState("••••••••••••••••••••");
-
-  // Calculations
+  // Calculations — in centesimi come lo schema DB; convertiti in euro solo
+  // in fase di rendering tramite centsToEuro(). Non esiste tracciamento
+  // ore lavorate nel backend: i costi "collaboratori" non sono calcolabili,
+  // solo i costi extra registrati per cantiere.
   const budgetTotale = projects.reduce((acc, p) => acc + p.budget, 0);
-  const costiLavoratori = projects.reduce(
-    (acc, p) => acc + p.workers.reduce((wAcc, w) => wAcc + w.hours * w.rate, 0),
-    0
-  );
-  const costiExtraTotali = projects.reduce(
-    (acc, p) => acc + p.extraCosts.reduce((eAcc, e) => eAcc + e.amount, 0),
-    0
-  );
+  const costiExtraTotali = Object.values(extraCosts).flat().reduce((acc, c) => acc + c.amount, 0);
   const entrateTotali = projects.filter(p => p.status === "completed" || p.status === "active").reduce((acc, p) => acc + p.budget, 0);
-  const margineNetto = entrateTotali - costiLavoratori - costiExtraTotali;
+  const margineNetto = entrateTotali - costiExtraTotali;
 
   const activeProject = projects.find((p) => p.id === selectedProjectId);
+  const activeProjectTasks = selectedProjectId ? (projectTasks[selectedProjectId] ?? []) : [];
+  const activeProjectExtraCosts = selectedProjectId ? (extraCosts[selectedProjectId] ?? []) : [];
+  const activeProjectAssignments = selectedProjectId ? (assignments[selectedProjectId] ?? []) : [];
 
-  // Methods
-  const handleCreateProject = (e: React.FormEvent) => {
+  // Methods — chiamano il backend reale (artifacts/api-server/src/routes/crm.ts)
+  const handleCreateProject = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newProjName.trim()) return;
-    const newProj: Project = {
-      id: "p_" + Date.now(),
-      name: newProjName,
-      status: "planning",
-      budget: parseFloat(newProjBudget) || 0,
-      startDate: new Date().toISOString().split("T")[0],
-      endDate: "",
-      tasks: [],
-      workers: [{ name: "Marco Bianchi", role: "Capocantiere", hours: 0, rate: 25 }],
-      extraCosts: [],
-      invoiceStatus: "not_invoiced",
-    };
-    setProjects([newProj, ...projects]);
-    setNewProjName("");
-    setNewProjBudget("");
-    setIsAddingProj(false);
+    try {
+      const created = await crmFetch<Project>("/api/crm/projects", {
+        method: "POST",
+        body: JSON.stringify({ name: newProjName, budget: euroToCents(parseFloat(newProjBudget) || 0) }),
+      });
+      setProjects((prev) => [created, ...prev]);
+      setNewProjName("");
+      setNewProjBudget("");
+      setIsAddingProj(false);
+    } catch (err) {
+      console.error("Errore creazione cantiere", err);
+      setCrmError("Impossibile creare il cantiere. Riprova.");
+    }
   };
 
-  const handleAddTask = (projectId: string) => {
+  const handleUpdateProjectStatus = async (projectId: string, status: Project["status"]) => {
+    try {
+      const updated = await crmFetch<Project>(`/api/crm/projects/${projectId}`, {
+        method: "PUT",
+        body: JSON.stringify({ status }),
+      });
+      setProjects((prev) => prev.map((p) => (p.id === projectId ? updated : p)));
+    } catch (err) {
+      console.error("Errore aggiornamento stato cantiere", err);
+      setCrmError("Impossibile aggiornare lo stato del cantiere.");
+    }
+  };
+
+  const handleAddTask = async (projectId: string) => {
     if (!newTaskTitle.trim()) return;
-    setProjects(
-      projects.map((p) => {
-        if (p.id === projectId) {
-          return {
-            ...p,
-            tasks: [
-              ...p.tasks,
-              { id: "t_" + Date.now(), title: newTaskTitle, dueDate: "2026-07-30", completed: false },
-            ],
-          };
-        }
-        return p;
-      })
-    );
-    setNewTaskTitle("");
+    try {
+      const created = await crmFetch<ProjectTask>(`/api/crm/projects/${projectId}/tasks`, {
+        method: "POST",
+        body: JSON.stringify({ title: newTaskTitle }),
+      });
+      setProjectTasks((prev) => ({ ...prev, [projectId]: [...(prev[projectId] ?? []), created] }));
+      setNewTaskTitle("");
+    } catch (err) {
+      console.error("Errore creazione scadenza", err);
+      setCrmError("Impossibile aggiungere la scadenza.");
+    }
   };
 
-  const handleToggleTask = (projectId: string, taskId: string) => {
-    setProjects(
-      projects.map((p) => {
-        if (p.id === projectId) {
-          return {
-            ...p,
-            tasks: p.tasks.map((t) => (t.id === taskId ? { ...t, completed: !t.completed } : t)),
-          };
-        }
-        return p;
-      })
-    );
+  const handleToggleTask = async (projectId: string, task: ProjectTask) => {
+    const nextStatus = task.status === "done" ? "todo" : "done";
+    try {
+      const updated = await crmFetch<ProjectTask>(`/api/crm/projects/${projectId}/tasks/${task.id}`, {
+        method: "PATCH",
+        body: JSON.stringify({ status: nextStatus }),
+      });
+      setProjectTasks((prev) => ({
+        ...prev,
+        [projectId]: (prev[projectId] ?? []).map((t) => (t.id === task.id ? updated : t)),
+      }));
+    } catch (err) {
+      console.error("Errore aggiornamento scadenza", err);
+      setCrmError("Impossibile aggiornare la scadenza.");
+    }
   };
 
-  const handleAddExtraCost = (projectId: string) => {
+  const handleAddExtraCost = async (projectId: string) => {
     const amt = parseFloat(newExtraCostAmount);
     if (!newExtraCostDesc.trim() || isNaN(amt)) return;
-    setProjects(
-      projects.map((p) => {
-        if (p.id === projectId) {
-          return {
-            ...p,
-            extraCosts: [
-              ...p.extraCosts,
-              { desc: newExtraCostDesc, amount: amt, date: new Date().toISOString().split("T")[0] },
-            ],
-          };
-        }
-        return p;
-      })
-    );
-    setNewExtraCostDesc("");
-    setNewExtraCostAmount("");
+    try {
+      const created = await crmFetch<ExtraCost>(`/api/crm/projects/${projectId}/extra-costs`, {
+        method: "POST",
+        body: JSON.stringify({ description: newExtraCostDesc, amount: euroToCents(amt) }),
+      });
+      setExtraCosts((prev) => ({ ...prev, [projectId]: [...(prev[projectId] ?? []), created] }));
+      setNewExtraCostDesc("");
+      setNewExtraCostAmount("");
+    } catch (err) {
+      console.error("Errore registrazione costo extra", err);
+      setCrmError("Impossibile registrare il costo extra.");
+    }
   };
 
-  const handleAddMaterial = (projectId: string) => {
-    const costNum = parseFloat(newMaterialCost);
-    if (!newMaterialDesc.trim() || isNaN(costNum)) return;
-    setProjects(projects.map(p => {
-      if (p.id === projectId) {
-        return {
-          ...p,
-          materials: [
-            ...(p.materials || []),
-            { desc: newMaterialDesc, cost: costNum, supplier: newMaterialSupplier || "Generico", date: new Date().toISOString().split("T")[0] }
-          ]
-        };
-      }
-      return p;
-    }));
-    setNewMaterialDesc("");
-    setNewMaterialCost("");
-    setNewMaterialSupplier("");
+  const handleAssignCollaborator = async (projectId: string) => {
+    if (!newAssignCollabId) return;
+    try {
+      const created = await crmFetch<ProjectAssignment>(`/api/crm/projects/${projectId}/assignments`, {
+        method: "POST",
+        body: JSON.stringify({ collaboratorId: newAssignCollabId, roleInProject: newAssignRole }),
+      });
+      setAssignments((prev) => ({ ...prev, [projectId]: [...(prev[projectId] ?? []), created] }));
+      setNewAssignCollabId("");
+      setNewAssignRole("");
+    } catch (err) {
+      console.error("Errore assegnazione collaboratore", err);
+      setCrmError("Impossibile assegnare il collaboratore al cantiere.");
+    }
   };
 
-  const handleAddDocument = (projectId: string) => {
-    if (!newDocName.trim()) return;
-    setProjects(projects.map(p => {
-      if (p.id === projectId) {
-        return {
-          ...p,
-          documents: [
-            ...(p.documents || []),
-            { name: newDocName, type: newDocType, date: new Date().toISOString().split("T")[0] }
-          ]
-        };
-      }
-      return p;
-    }));
-    setNewDocName("");
+  const handleRemoveAssignment = async (projectId: string, assignmentId: string) => {
+    try {
+      await crmFetch(`/api/crm/projects/${projectId}/assignments/${assignmentId}`, { method: "DELETE" });
+      setAssignments((prev) => ({ ...prev, [projectId]: (prev[projectId] ?? []).filter((a) => a.id !== assignmentId) }));
+    } catch (err) {
+      console.error("Errore rimozione assegnazione", err);
+      setCrmError("Impossibile rimuovere l'assegnazione.");
+    }
   };
 
-  const handleAskAi = (projectId: string, type?: string) => {
-    const proj = projects.find(p => p.id === projectId);
-    if (!proj) return;
-    setIsAiThinking(true);
-    setAiResponse("");
-
-    const laborCost = proj.workers.reduce((acc, w) => acc + w.hours * w.rate, 0);
-    const extraCost = proj.extraCosts.reduce((acc, c) => acc + c.amount, 0);
-    const materialsCost = (proj.materials || []).reduce((acc, m) => acc + m.cost, 0);
-    const totalCost = laborCost + extraCost + materialsCost;
-    const margin = proj.budget - totalCost;
-    const marginPct = Math.max(0, Math.round((margin / Math.max(1, proj.budget)) * 100));
-
-    setTimeout(() => {
-      let resp = "";
-      const q = type || aiQuery.toLowerCase();
-
-      if (q.includes("margin") || q.includes("margine") || q.includes("analiz")) {
-        resp = `L'analisi finanziaria del cantiere "${proj.name}" mostra un budget totale di €${proj.budget.toLocaleString('it-IT')}.\n` +
-               `I costi ad oggi sono suddivisi in:\n` +
-               `- Manodopera: €${laborCost.toLocaleString('it-IT')}\n` +
-               `- Materiali acquistati: €${materialsCost.toLocaleString('it-IT')}\n` +
-               `- Spese extra/imprevisti: €${extraCost.toLocaleString('it-IT')}\n` +
-               `Il costo totale è di €${totalCost.toLocaleString('it-IT')}, con un margine residuo stimato di €${margin.toLocaleString('it-IT')} (${marginPct}% del budget).\n\n` +
-               `Consiglio: il margine è stabile. Cerca di monitorare gli extra costi nelle fasi finali per mantenere l'utile sopra il 30%.`;
-      } else if (q.includes("email") || q.includes("sollecito") || q.includes("letter")) {
-        resp = `Ecco una bozza di e-mail pronta per essere inviata al committente:\n\n` +
-               `--------------------------------------------------\n` +
-               `Oggetto: Stato avanzamento lavori e richiesta acconto - ${proj.name}\n\n` +
-               `Gentile Cliente,\n` +
-               `Le comunichiamo che le lavorazioni per il cantiere in oggetto stanno procedendo regolarmente.\n` +
-               `Siamo pronti ad avviare la prossima fase programmata. Come concordato nelle condizioni di pagamento del preventivo, Le chiediamo di disporre il pagamento del prossimo acconto del 30% (pari a €${(proj.budget * 0.3).toLocaleString('it-IT')}).\n\n` +
-               `Rimaniamo a disposizione per qualsiasi chiarimento.\n\n` +
-               `Cordiali saluti,\n` +
-               `PrevAI Team / Direzione Cantieri\n` +
-               `--------------------------------------------------`;
-      } else if (q.includes("opera") || q.includes("lavorat") || q.includes("ore") || q.includes("stipend")) {
-        resp = `Riepilogo ore e costi manodopera per "${proj.name}":\n` +
-               `Costo totale accumulato: €${laborCost.toLocaleString('it-IT')}.\n` +
-               `Risorse impegnate:\n` +
-               proj.workers.map(w => `- ${w.name} (${w.role}): ${w.hours} ore lavorate a €${w.rate}/ora (Totale dovuto: €${w.hours * w.rate})`).join('\n') +
-               `\n\nPuoi registrare ulteriori ore direttamente nella sezione "Gestione Lavoratori".`;
-      } else {
-        resp = `Ciao! Sono il tuo assistente PrevAI CRM. Ho analizzato i dati in tempo reale del cantiere "${proj.name}".\n\n` +
-               `Posso aiutarti a:\n` +
-               `- Analizzare la redditività e il margine (scrivi 'analizza margine')\n` +
-               `- Generare una mail di richiesta acconto (scrivi 'bozza email acconto')\n` +
-               `- Riepilogare le ore lavorate (scrivi 'riepilogo ore')\n\n` +
-               `Puoi usare anche i pulsanti rapidi qui sotto!`;
-      }
-
-      setAiResponse(resp);
-      setIsAiThinking(false);
-    }, 1200);
+  const handleCreateCollaborator = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newCollabName.trim()) return;
+    try {
+      const created = await crmFetch<Collaborator>("/api/crm/collaborators", {
+        method: "POST",
+        body: JSON.stringify({
+          name: newCollabName,
+          role: "Dipendente",
+          hourlyRate: euroToCents(parseFloat(newCollabRate) || 0),
+          phone: newCollabPhone || null,
+        }),
+      });
+      setCollaborators((prev) => [...prev, created]);
+      setNewCollabName("");
+      setNewCollabRate("");
+      setNewCollabPhone("");
+      setIsAddingCollab(false);
+    } catch (err) {
+      console.error("Errore creazione collaboratore", err);
+      setCrmError("Impossibile aggiungere il collaboratore.");
+    }
   };
 
-  const handleTriggerInvoice = (projectId: string) => {
+  const handleCreateSupplier = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newSupplierName.trim()) return;
+    try {
+      const created = await crmFetch<Supplier>("/api/crm/suppliers", {
+        method: "POST",
+        body: JSON.stringify({
+          name: newSupplierName,
+          category: newSupplierCat,
+          contactInfo: newSupplierContact,
+        }),
+      });
+      setSuppliers((prev) => [...prev, created]);
+      setNewSupplierName("");
+      setNewSupplierContact("");
+      setIsAddingSupplier(false);
+    } catch (err) {
+      console.error("Errore creazione fornitore", err);
+      setCrmError("Impossibile aggiungere il fornitore.");
+    }
+  };
+
+  // Genera fattura: chiama l'endpoint reale del backend, che al momento
+  // restituisce un documento SIMULATO (integrazione Fatture in Cloud non
+  // ancora attiva). Il risultato non viene persistito sul cantiere — il
+  // backend stesso non lo salva — quindi resta visibile solo per la sessione.
+  const handleTriggerInvoice = async (projectId: string) => {
     setIsInvoicing(true);
-    setTimeout(() => {
-      setProjects(
-        projects.map((p) => {
-          if (p.id === projectId) {
-            return {
-              ...p,
-              invoiceStatus: "draft" as const,
-              invoiceNum: `FAT-2026-${Math.floor(100 + Math.random() * 900)}`,
-            };
-          }
-          return p;
-        })
+    try {
+      const result = await crmFetch<{ success: boolean; invoice: { number: string; url: string; total: number } }>(
+        "/api/crm/invoices/generate",
+        { method: "POST", body: JSON.stringify({ projectId }) }
       );
+      setInvoiceResults((prev) => ({ ...prev, [projectId]: result.invoice }));
+    } catch (err) {
+      console.error("Errore generazione fattura", err);
+      setCrmError("Impossibile generare la fattura. Riprova.");
+    } finally {
       setIsInvoicing(false);
-    }, 1500);
+    }
   };
 
   const handleAddPratica = (e: React.FormEvent) => {
@@ -478,12 +459,14 @@ export default function CrmPage() {
     setIsAddingPratica(false);
   };
 
-  const handlePrintSal = (proj: Project) => {
-    const doneTasks = proj.tasks.filter(t => t.completed).length;
-    const pct = proj.tasks.length > 0 ? Math.round((doneTasks / proj.tasks.length) * 100) : 0;
-    const totalEseguito = (proj.budget * pct) / 100;
+  const handlePrintSal = (proj: Project, tasks: ProjectTask[]) => {
+    const doneTasks = tasks.filter(t => t.status === "done").length;
+    const pct = tasks.length > 0 ? Math.round((doneTasks / tasks.length) * 100) : 0;
+    const budgetEuro = centsToEuro(proj.budget);
+    const totalEseguito = (budgetEuro * pct) / 100;
     const retentionVal = totalEseguito * (garanziaRetention / 100);
     const nettoDaPagare = totalEseguito - retentionVal;
+    const startDateLabel = proj.startDate ? new Date(proj.startDate).toLocaleDateString("it-IT") : "N/D";
 
     const printWindow = window.open("", "_blank");
     if (!printWindow) return;
@@ -530,8 +513,8 @@ export default function CrmPage() {
             <div class="info-box">
               <h4>Dettagli Cantiere</h4>
               <strong>${proj.name}</strong><br>
-              Budget Contrattuale: €${proj.budget.toLocaleString('it-IT')}<br>
-              Data inizio: ${proj.startDate}<br>
+              Budget Contrattuale: €${budgetEuro.toLocaleString('it-IT')}<br>
+              Data inizio: ${startDateLabel}<br>
               Stato Avanzamento Globale: ${pct}%
             </div>
             <div class="info-box">
@@ -553,10 +536,10 @@ export default function CrmPage() {
               </tr>
             </thead>
             <tbody>
-              ${proj.tasks.map((t, idx) => {
-                const taskPct = t.completed ? 100 : 0;
-                const taskBudget = proj.budget / proj.tasks.length;
-                const taskMaturato = t.completed ? taskBudget : 0;
+              ${tasks.map((t) => {
+                const taskPct = t.status === "done" ? 100 : 0;
+                const taskBudget = budgetEuro / tasks.length;
+                const taskMaturato = t.status === "done" ? taskBudget : 0;
                 return `
                   <tr>
                     <td>${t.title}</td>
@@ -644,6 +627,7 @@ export default function CrmPage() {
             <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest px-2.5 pb-2">CRM CORE</p>
             {[
               { id: "dashboard", label: "Dashboard Generale", icon: LayoutDashboard },
+              { id: "clienti", label: "Clienti & Lead", icon: UserPlus },
               { id: "cantieri", label: "Gestione Cantieri", icon: Briefcase },
               { id: "lavoratori", label: "Gestione Lavoratori", icon: Users },
               { id: "finanze", label: "Gestione Finanze", icon: TrendingUp },
@@ -653,6 +637,26 @@ export default function CrmPage() {
             ].map((item) => {
               const Icon = item.icon;
               const active = activeSection === item.id;
+              const navClass = cn(
+                "flex items-center rounded-xl text-sm font-semibold transition-all w-full gap-3 px-3 py-2",
+                active
+                  ? "crm-nav-active"
+                  : "text-gray-400 hover:bg-white/5 hover:text-white"
+              );
+              if (item.id === "clienti") {
+                return (
+                  <Link
+                    key={item.id}
+                    href="/dashboard/clients"
+                    title="Anagrafica clienti e lead reali (dai preventivi)"
+                    className={navClass}
+                    onClick={() => setIsMobileSidebarOpen(false)}
+                  >
+                    <Icon className="h-4 w-4 shrink-0 opacity-80" />
+                    <span>{item.label}</span>
+                  </Link>
+                );
+              }
               return (
                 <button
                   key={item.id}
@@ -662,12 +666,7 @@ export default function CrmPage() {
                     setIsMobileSidebarOpen(false);
                   }}
                   title={item.label}
-                  className={cn(
-                    "flex items-center rounded-xl text-sm font-semibold transition-all w-full gap-3 px-3 py-2",
-                    active
-                      ? "crm-nav-active"
-                      : "text-gray-400 hover:bg-white/5 hover:text-white"
-                  )}
+                  className={navClass}
                 >
                   <Icon className="h-4 w-4 shrink-0 opacity-80" />
                   <span>{item.label}</span>
@@ -760,6 +759,7 @@ export default function CrmPage() {
             )}
             {[
               { id: "dashboard", label: "Dashboard Generale", icon: LayoutDashboard },
+              { id: "clienti", label: "Clienti & Lead", icon: UserPlus },
               { id: "cantieri", label: "Gestione Cantieri", icon: Briefcase },
               { id: "lavoratori", label: "Gestione Lavoratori", icon: Users },
               { id: "finanze", label: "Gestione Finanze", icon: TrendingUp },
@@ -769,18 +769,32 @@ export default function CrmPage() {
             ].map((item) => {
               const Icon = item.icon;
               const active = activeSection === item.id;
+              const navClass = cn(
+                "flex items-center rounded-xl text-sm font-semibold transition-all w-full",
+                isSidebarCollapsed ? "justify-center h-9 w-9 mx-auto p-0" : "gap-3 px-3 py-2",
+                active
+                  ? "crm-nav-active"
+                  : "text-gray-400 hover:bg-white/5 hover:text-white"
+              );
+              if (item.id === "clienti") {
+                return (
+                  <Link
+                    key={item.id}
+                    href="/dashboard/clients"
+                    title="Anagrafica clienti e lead reali (dai preventivi)"
+                    className={navClass}
+                  >
+                    <Icon className="h-4 w-4 shrink-0 opacity-80" />
+                    {!isSidebarCollapsed && <span>{item.label}</span>}
+                  </Link>
+                );
+              }
               return (
                 <button
                   key={item.id}
                   onClick={() => { setActiveSection(item.id as any); setSelectedProjectId(null); }}
                   title={item.label}
-                  className={cn(
-                    "flex items-center rounded-xl text-sm font-semibold transition-all w-full",
-                    isSidebarCollapsed ? "justify-center h-9 w-9 mx-auto p-0" : "gap-3 px-3 py-2",
-                    active
-                      ? "crm-nav-active"
-                      : "text-gray-400 hover:bg-white/5 hover:text-white"
-                  )}
+                  className={navClass}
                 >
                   <Icon className="h-4 w-4 shrink-0 opacity-80" />
                   {!isSidebarCollapsed && <span>{item.label}</span>}
@@ -851,10 +865,10 @@ export default function CrmPage() {
           </div>
           
           <div className="flex items-center gap-4 text-xs font-semibold text-gray-500">
-            <div className="flex items-center gap-1.5 bg-green-50 text-green-700 px-2.5 py-1 rounded-full border border-green-200">
-              <span className="h-1.5 w-1.5 rounded-full bg-green-500" />
-              <span className="hidden sm:inline">API Fatture in Cloud Attiva</span>
-              <span className="sm:hidden">API Attiva</span>
+            <div className="flex items-center gap-1.5 bg-amber-50 text-amber-700 px-2.5 py-1 rounded-full border border-amber-200">
+              <span className="h-1.5 w-1.5 rounded-full bg-amber-500" />
+              <span className="hidden sm:inline">Fatture in Cloud: modalità simulazione</span>
+              <span className="sm:hidden">Simulazione</span>
             </div>
           </div>
         </header>
@@ -862,16 +876,25 @@ export default function CrmPage() {
         {/* Dynamic Section Contents */}
         <main className="p-4 sm:p-6 md:p-8 max-w-5xl mx-auto w-full flex-1">
 
+          {crmError && (
+            <div className="mb-4 flex items-center justify-between gap-3 bg-rose-50 border border-rose-200 text-rose-700 text-xs font-semibold px-4 py-2.5 rounded-xl">
+              <span>{crmError}</span>
+              <button onClick={() => setCrmError(null)} className="p-1 rounded hover:bg-rose-100 shrink-0">
+                <X className="h-3.5 w-3.5" />
+              </button>
+            </div>
+          )}
+
           {/* 1. SECTION: DASHBOARD */}
           {activeSection === "dashboard" && (
             <div className="space-y-6 animate-in fade-in duration-300">
               {/* Stats Row */}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 {[
-                  { label: "Entrate Totali", val: `€${entrateTotali.toLocaleString("it-IT")}`, icon: DollarSign, color: "text-blue-600 bg-blue-50" },
-                  { label: "Margine Operativo", val: `€${margineNetto.toLocaleString("it-IT")}`, icon: TrendingUp, color: "text-emerald-600 bg-emerald-50" },
-                  { label: "Costi Collaboratori", val: `€${costiLavoratori.toLocaleString("it-IT")}`, icon: Users, color: "text-amber-600 bg-amber-50" },
-                  { label: "Spese Impreviste", val: `€${costiExtraTotali.toLocaleString("it-IT")}`, icon: AlertCircle, color: "text-rose-600 bg-rose-50" },
+                  { label: "Entrate Totali", val: `€${centsToEuro(entrateTotali).toLocaleString("it-IT")}`, icon: DollarSign, color: "text-blue-600 bg-blue-50" },
+                  { label: "Margine Operativo", val: `€${centsToEuro(margineNetto).toLocaleString("it-IT")}`, icon: TrendingUp, color: "text-emerald-600 bg-emerald-50" },
+                  { label: "Collaboratori in Rubrica", val: `${collaborators.length}`, icon: Users, color: "text-amber-600 bg-amber-50" },
+                  { label: "Spese Impreviste", val: `€${centsToEuro(costiExtraTotali).toLocaleString("it-IT")}`, icon: AlertCircle, color: "text-rose-600 bg-rose-50" },
                 ].map((stat, idx) => (
                   <Card key={idx} className="border-gray-100 card-soft rounded-2xl">
                     <CardContent className="p-4 flex items-center justify-between">
@@ -892,10 +915,14 @@ export default function CrmPage() {
                 <Card className="border-gray-100 card-soft rounded-2xl">
                   <CardContent className="p-5 space-y-4">
                     <h3 className="text-sm font-bold text-gray-800 uppercase tracking-wider">Avanzamento Lavori</h3>
+                    {projects.length === 0 && !isLoadingProjects && (
+                      <p className="text-xs text-gray-400">Nessun cantiere ancora. Creane uno da "Gestione Cantieri".</p>
+                    )}
                     <div className="space-y-4">
                       {projects.map((p, idx) => {
-                        const total = p.tasks.length;
-                        const done = p.tasks.filter(t => t.completed).length;
+                        const tasks = projectTasks[p.id] ?? [];
+                        const total = tasks.length;
+                        const done = tasks.filter(t => t.status === "done").length;
                         const pct = total > 0 ? Math.round((done / total) * 100) : 0;
                         return (
                           <div key={p.id} className="space-y-1">
@@ -947,7 +974,7 @@ export default function CrmPage() {
               <div className="flex justify-between items-center bg-white p-4 rounded-xl border border-gray-150 shadow-xs">
                 <div>
                   <h3 className="font-extrabold text-gray-800">Elenco Cantieri Operativi</h3>
-                  <p className="text-xs text-gray-500">Gestisci lavorazioni, budget e assegnazioni workers</p>
+                  <p className="text-xs text-gray-500">Gestisci lavorazioni, budget e assegnazioni operai</p>
                 </div>
                 <button
                   onClick={() => setIsAddingProj(true)}
@@ -989,77 +1016,115 @@ export default function CrmPage() {
                 </Card>
               )}
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {projects.map((p) => {
-                  const done = p.tasks.filter(t => t.completed).length;
-                  const total = p.tasks.length;
-                  const pct = total > 0 ? Math.round((done / total) * 100) : 0;
-                  const isSelected = selectedProjectId === p.id;
-                  
-                  return (
-                    <Card
-                      key={p.id}
-                      className={`border-gray-150 hover:shadow-sm transition cursor-pointer ${
-                        isSelected ? "ring-2 ring-violet-500" : ""
-                      }`}
-                      onClick={() => setSelectedProjectId(p.id)}
-                    >
-                      <CardContent className="p-5 space-y-4">
-                        <div className="flex justify-between items-center">
-                          <span className="text-xs font-bold text-slate-500">Stato: {p.status}</span>
-                          <span className="text-sm font-extrabold text-violet-700">€{p.budget.toLocaleString("it-IT")}</span>
-                        </div>
-                        <h4 className="font-extrabold text-gray-900 text-sm">{p.name}</h4>
-                        <div className="space-y-1 pt-2">
-                          <div className="flex justify-between text-[10px] font-bold text-gray-400 uppercase">
-                            <span>Pratiche</span>
-                            <span>{done}/{total} Complete</span>
+              {isLoadingProjects ? (
+                <p className="text-xs text-gray-400">Caricamento cantieri...</p>
+              ) : projects.length === 0 ? (
+                <p className="text-xs text-gray-400">Nessun cantiere ancora. Creane uno con "Nuovo Cantiere".</p>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {projects.map((p) => {
+                    const tasks = projectTasks[p.id] ?? [];
+                    const done = tasks.filter(t => t.status === "done").length;
+                    const total = tasks.length;
+                    const pct = total > 0 ? Math.round((done / total) * 100) : 0;
+                    const isSelected = selectedProjectId === p.id;
+
+                    return (
+                      <Card
+                        key={p.id}
+                        className={`border-gray-150 hover:shadow-sm transition cursor-pointer ${
+                          isSelected ? "ring-2 ring-violet-500" : ""
+                        }`}
+                        onClick={() => setSelectedProjectId(p.id)}
+                      >
+                        <CardContent className="p-5 space-y-4">
+                          <div className="flex justify-between items-center">
+                            <span className="text-xs font-bold text-slate-500">Stato: {p.status}</span>
+                            <span className="text-sm font-extrabold text-violet-700">€{centsToEuro(p.budget).toLocaleString("it-IT")}</span>
                           </div>
-                          <div className="h-2 w-full bg-gray-100 rounded-full overflow-hidden border border-gray-150">
-                            <div className="h-full bg-violet-600" style={{ width: `${pct}%` }} />
+                          <h4 className="font-extrabold text-gray-900 text-sm">{p.name}</h4>
+                          <div className="space-y-1 pt-2">
+                            <div className="flex justify-between text-[10px] font-bold text-gray-400 uppercase">
+                              <span>Scadenze</span>
+                              <span>{done}/{total} Complete</span>
+                            </div>
+                            <div className="h-2 w-full bg-gray-100 rounded-full overflow-hidden border border-gray-150">
+                              <div className="h-full bg-violet-600" style={{ width: `${pct}%` }} />
+                            </div>
                           </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  );
-                })}
-              </div>
+                        </CardContent>
+                      </Card>
+                    );
+                  })}
+                </div>
+              )}
 
               {/* Popup Detail Modal */}
               {activeProject && (
                 <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-200">
                   <div className="bg-white border border-gray-200 rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto shadow-2xl p-6 relative animate-in zoom-in-95 duration-200">
-                    <button 
+                    <button
                       onClick={() => setSelectedProjectId(null)}
                       className="absolute top-4 right-4 p-1.5 rounded-full hover:bg-gray-100 text-gray-400 hover:text-gray-700 transition"
                       title="Chiudi"
                     >
                       <X className="h-5 w-5" />
                     </button>
-                    <div className="border-b border-gray-100 pb-4 pr-8">
-                      <h3 className="font-black text-gray-900 text-base">{activeProject.name}</h3>
-                      <p className="text-xs text-gray-450 mt-1">Budget allocato: €{activeProject.budget.toLocaleString("it-IT")}</p>
+                    <div className="border-b border-gray-100 pb-4 pr-8 flex items-center justify-between flex-wrap gap-2">
+                      <div>
+                        <h3 className="font-black text-gray-900 text-base">{activeProject.name}</h3>
+                        <p className="text-xs text-gray-450 mt-1">Budget allocato: €{centsToEuro(activeProject.budget).toLocaleString("it-IT")}</p>
+                      </div>
+                      <select
+                        value={activeProject.status}
+                        onChange={(e) => handleUpdateProjectStatus(activeProject.id, e.target.value as Project["status"])}
+                        className="bg-white border border-gray-200 rounded-lg p-2 text-xs font-bold focus:outline-none focus:ring-1 focus:ring-violet-500"
+                      >
+                        <option value="planning">Pianificazione</option>
+                        <option value="active">Attivo</option>
+                        <option value="suspended">Sospeso</option>
+                        <option value="completed">Completato</option>
+                      </select>
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       {/* Sub-tasks */}
                       <div className="space-y-3">
-                        <h4 className="text-xs font-black text-gray-500 uppercase tracking-widest">Pratiche Cantiere</h4>
+                        <h4 className="text-xs font-black text-gray-500 uppercase tracking-widest">Scadenze Cantiere</h4>
                         <div className="space-y-2">
-                          {activeProject.tasks.map(t => (
+                          {activeProjectTasks.map(t => (
                             <div
                               key={t.id}
-                              onClick={() => handleToggleTask(activeProject.id, t.id)}
+                              onClick={() => handleToggleTask(activeProject.id, t)}
                               className="flex items-center gap-2.5 p-2.5 bg-gray-55/40 hover:bg-gray-50 rounded-lg border border-gray-200 cursor-pointer text-xs"
                             >
                               <div className={`h-4.5 w-4.5 rounded border flex items-center justify-center ${
-                                t.completed ? "bg-green-500 border-green-500 text-white" : "border-gray-300"
+                                t.status === "done" ? "bg-green-500 border-green-500 text-white" : "border-gray-300"
                               }`}>
-                                {t.completed && <Check className="h-3 w-3" />}
+                                {t.status === "done" && <Check className="h-3 w-3" />}
                               </div>
-                              <span className={t.completed ? "line-through text-gray-400" : "font-semibold text-gray-700"}>{t.title}</span>
+                              <span className={t.status === "done" ? "line-through text-gray-400" : "font-semibold text-gray-700"}>{t.title}</span>
                             </div>
                           ))}
+                          {activeProjectTasks.length === 0 && (
+                            <p className="text-[11px] text-gray-400">Nessuna scadenza ancora.</p>
+                          )}
+                        </div>
+                        <div className="flex gap-2 pt-1">
+                          <input
+                            type="text"
+                            placeholder="Nuova scadenza..."
+                            value={newTaskTitle}
+                            onChange={(e) => setNewTaskTitle(e.target.value)}
+                            onKeyDown={(e) => e.key === "Enter" && handleAddTask(activeProject.id)}
+                            className="flex-1 bg-white border border-gray-200 rounded-lg p-2 text-xs focus:outline-none focus:ring-1 focus:ring-violet-500"
+                          />
+                          <button
+                            onClick={() => handleAddTask(activeProject.id)}
+                            className="px-3 bg-violet-600 text-white rounded-lg text-xs font-bold hover:bg-violet-750 shrink-0"
+                          >
+                            +
+                          </button>
                         </div>
                       </div>
 
@@ -1067,183 +1132,119 @@ export default function CrmPage() {
                       <div className="space-y-3">
                         <h4 className="text-xs font-black text-gray-500 uppercase tracking-widest">Operai Assegnati</h4>
                         <div className="space-y-2.5">
-                          {activeProject.workers.map((w, idx) => (
-                            <div key={idx} className="flex justify-between items-center text-xs p-2.5 bg-gray-50 border border-gray-200 rounded-lg">
+                          {activeProjectAssignments.map((a) => (
+                            <div key={a.id} className="flex justify-between items-center text-xs p-2.5 bg-gray-50 border border-gray-200 rounded-lg">
                               <div>
-                                <p className="font-bold text-gray-800">{w.name}</p>
-                                <p className="text-[10px] text-gray-400 mt-0.5">{w.role}</p>
+                                <p className="font-bold text-gray-800">{a.collaboratorName}</p>
+                                <p className="text-[10px] text-gray-400 mt-0.5">{a.roleInProject || a.collaboratorRole}</p>
                               </div>
-                              <span className="font-mono font-bold text-gray-600">{w.hours} h a €{w.rate}/h</span>
+                              <button
+                                onClick={() => handleRemoveAssignment(activeProject.id, a.id)}
+                                className="p-1 rounded hover:bg-rose-50 text-gray-350 hover:text-rose-600 transition"
+                                title="Rimuovi dal cantiere"
+                              >
+                                <X className="h-3.5 w-3.5" />
+                              </button>
                             </div>
                           ))}
+                          {activeProjectAssignments.length === 0 && (
+                            <p className="text-[11px] text-gray-400">Nessun operaio assegnato.</p>
+                          )}
+                        </div>
+                        <div className="flex flex-col sm:flex-row gap-2 pt-1">
+                          <select
+                            value={newAssignCollabId}
+                            onChange={(e) => setNewAssignCollabId(e.target.value)}
+                            className="flex-1 bg-white border border-gray-200 rounded-lg p-2 text-xs focus:outline-none focus:ring-1 focus:ring-violet-500"
+                          >
+                            <option value="">Seleziona collaboratore...</option>
+                            {collaborators.map((c) => (
+                              <option key={c.id} value={c.id}>{c.name}</option>
+                            ))}
+                          </select>
+                          <input
+                            type="text"
+                            placeholder="Ruolo (es. Capocantiere)"
+                            value={newAssignRole}
+                            onChange={(e) => setNewAssignRole(e.target.value)}
+                            className="flex-1 sm:w-32 bg-white border border-gray-200 rounded-lg p-2 text-xs focus:outline-none focus:ring-1 focus:ring-violet-500"
+                          />
+                          <button
+                            onClick={() => handleAssignCollaborator(activeProject.id)}
+                            className="px-3 bg-violet-600 text-white rounded-lg text-xs font-bold hover:bg-violet-750 shrink-0"
+                          >
+                            Assegna
+                          </button>
                         </div>
                       </div>
                     </div>
 
-                    {/* Materiali & Documenti Section */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-6 border-t border-gray-100">
-                      {/* Documenti Tecnici Upload */}
-                      <div className="space-y-4">
-                        <h4 className="text-xs font-black text-gray-500 uppercase tracking-widest">Documenti e Computo Metrico</h4>
-                        <div className="space-y-2">
-                          {(activeProject.documents || []).map((doc, idx) => (
-                            <div key={idx} className="flex justify-between items-center text-xs p-2.5 bg-gray-50 border border-gray-200 rounded-lg">
-                              <div>
-                                <p className="font-bold text-gray-800">{doc.name}</p>
-                                <p className="text-[10px] text-gray-400 mt-0.5">Tipo: {doc.type} | Data: {doc.date}</p>
-                              </div>
-                              <span className="text-[10px] font-bold text-violet-700 bg-violet-50 px-2 py-0.5 rounded">PDF</span>
+                    {/* Costi Extra del Cantiere */}
+                    <div className="pt-6 border-t border-gray-100 space-y-3">
+                      <h4 className="text-xs font-black text-gray-500 uppercase tracking-widest">Costi Extra</h4>
+                      <div className="space-y-2">
+                        {activeProjectExtraCosts.map((c) => (
+                          <div key={c.id} className="flex justify-between items-center text-xs p-2.5 bg-gray-50 border border-gray-200 rounded-lg">
+                            <div>
+                              <p className="font-bold text-gray-800">{c.description}</p>
+                              <p className="text-[10px] text-gray-400 mt-0.5">{new Date(c.date).toLocaleDateString("it-IT")}</p>
                             </div>
-                          ))}
-                        </div>
-
-                        {/* Upload Doc Form */}
-                        <div className="flex flex-col sm:flex-row gap-2">
-                          <input
-                            type="text"
-                            placeholder="Nome doc (es. Computo Metrico)"
-                            value={newDocName}
-                            onChange={(e) => setNewDocName(e.target.value)}
-                            className="flex-1 bg-white border border-gray-200 rounded-lg p-2 text-xs focus:outline-none focus:ring-1 focus:ring-violet-500"
-                          />
-                          <div className="flex gap-2 w-full sm:w-auto">
-                            <select
-                              value={newDocType}
-                              onChange={(e) => setNewDocType(e.target.value as any)}
-                              className="flex-1 sm:flex-initial bg-white border border-gray-200 rounded-lg p-2 text-xs focus:outline-none focus:ring-1 focus:ring-violet-500"
-                            >
-                              <option value="computo">Computo</option>
-                              <option value="geometra">Geometra</option>
-                              <option value="collaboratore">P. Esterno</option>
-                              <option value="altro">Altro</option>
-                            </select>
-                            <button
-                              onClick={() => handleAddDocument(activeProject.id)}
-                              className="px-3 bg-violet-600 text-white rounded-lg text-xs font-bold hover:bg-violet-750 shrink-0"
-                            >
-                              Carica
-                            </button>
+                            <span className="font-bold text-rose-600">- €{centsToEuro(c.amount).toLocaleString("it-IT")}</span>
                           </div>
-                        </div>
-                      </div>
-
-                      {/* Registro Materiali Comprati */}
-                      <div className="space-y-4">
-                        <h4 className="text-xs font-black text-gray-500 uppercase tracking-widest">Materiali Acquistati</h4>
-                        <div className="space-y-2">
-                          {(activeProject.materials || []).map((mat, idx) => (
-                            <div key={idx} className="flex justify-between items-center text-xs p-2.5 bg-gray-50 border border-gray-200 rounded-lg">
-                              <div>
-                                <p className="font-bold text-gray-800">{mat.desc}</p>
-                                <p className="text-[10px] text-gray-400 mt-0.5">Fornitore: {mat.supplier} | Data: {mat.date}</p>
-                              </div>
-                              <span className="font-bold text-rose-600">€{mat.cost.toLocaleString("it-IT")}</span>
-                            </div>
-                          ))}
-                        </div>
-
-                        {/* Add Material Form */}
-                        <div className="flex flex-col sm:flex-row gap-2">
-                          <input
-                            type="text"
-                            placeholder="Materiale (es. Cemento, Tubi)"
-                            value={newMaterialDesc}
-                            onChange={(e) => setNewMaterialDesc(e.target.value)}
-                            className="flex-1 bg-white border border-gray-200 rounded-lg p-2 text-xs focus:outline-none focus:ring-1 focus:ring-violet-500"
-                          />
-                          <div className="flex gap-2 w-full sm:w-auto">
-                            <input
-                              type="number"
-                              placeholder="Costo €"
-                              value={newMaterialCost}
-                              onChange={(e) => setNewMaterialCost(e.target.value)}
-                              className="w-20 bg-white border border-gray-200 rounded-lg p-2 text-xs focus:outline-none focus:ring-1 focus:ring-violet-500"
-                            />
-                            <input
-                              type="text"
-                              placeholder="Fornitore"
-                              value={newMaterialSupplier}
-                              onChange={(e) => setNewMaterialSupplier(e.target.value)}
-                              className="flex-1 sm:w-20 bg-white border border-gray-200 rounded-lg p-2 text-xs focus:outline-none focus:ring-1 focus:ring-violet-500"
-                            />
-                            <button
-                              onClick={() => handleAddMaterial(activeProject.id)}
-                              className="px-3 bg-violet-600 text-white rounded-lg text-xs font-bold hover:bg-violet-750 shrink-0"
-                            >
-                              +
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* AI Project Assistant Widget */}
-                    <div className="pt-6 border-t border-gray-100 space-y-4">
-                      <div className="flex items-center gap-2">
-                        <span className="p-1 bg-violet-100 rounded-md">
-                          <Sparkles className="h-4 w-4 text-violet-600 animate-pulse" />
-                        </span>
-                        <h4 className="text-xs font-black text-violet-700 uppercase tracking-widest">
-                          Assistente Progetto PrevAI (AI)
-                        </h4>
-                      </div>
-
-                      <div className="bg-violet-50/30 border border-violet-100 rounded-xl p-4 space-y-3">
-                        {aiResponse ? (
-                          <div className="bg-white border border-gray-200 rounded-lg p-3 text-xs text-gray-800 font-medium whitespace-pre-line shadow-xs">
-                            {aiResponse}
-                          </div>
-                        ) : (
-                          <p className="text-xs text-gray-505">
-                            Chiedimi di analizzare il margine, riepilogare le ore o redigere una mail per questo cantiere.
-                          </p>
+                        ))}
+                        {activeProjectExtraCosts.length === 0 && (
+                          <p className="text-[11px] text-gray-400">Nessun costo extra registrato.</p>
                         )}
-
-                        <div className="flex flex-wrap gap-2">
-                          <button
-                            onClick={() => handleAskAi(activeProject.id, "margin")}
-                            disabled={isAiThinking}
-                            className="px-2.5 py-1.5 bg-white hover:bg-gray-50 text-gray-700 border border-gray-200 rounded-lg text-[10px] font-bold transition flex items-center gap-1 shadow-xs"
-                          >
-                            <TrendingUp className="h-3 w-3 text-emerald-500" />
-                            Analizza Margine
-                          </button>
-                          <button
-                            onClick={() => handleAskAi(activeProject.id, "email")}
-                            disabled={isAiThinking}
-                            className="px-2.5 py-1.5 bg-white hover:bg-gray-50 text-gray-700 border border-gray-200 rounded-lg text-[10px] font-bold transition flex items-center gap-1 shadow-xs"
-                          >
-                            <Mail className="h-3 w-3 text-blue-500" />
-                            Bozza Email Acconto
-                          </button>
-                          <button
-                            onClick={() => handleAskAi(activeProject.id, "opera")}
-                            disabled={isAiThinking}
-                            className="px-2.5 py-1.5 bg-white hover:bg-gray-50 text-gray-700 border border-gray-200 rounded-lg text-[10px] font-bold transition flex items-center gap-1 shadow-xs"
-                          >
-                            <Users className="h-3 w-3 text-amber-500" />
-                            Riepilogo Ore Lavorate
-                          </button>
-                        </div>
-
-                        <div className="flex gap-2">
+                      </div>
+                      <div className="flex flex-col sm:flex-row gap-2">
+                        <input
+                          type="text"
+                          placeholder="Descrizione costo extra"
+                          value={newExtraCostDesc}
+                          onChange={(e) => setNewExtraCostDesc(e.target.value)}
+                          className="flex-1 bg-white border border-gray-200 rounded-lg p-2 text-xs focus:outline-none focus:ring-1 focus:ring-violet-500"
+                        />
+                        <div className="flex gap-2 w-full sm:w-auto">
                           <input
-                            type="text"
-                            placeholder="Chiedi qualcosa all'AI su questo cantiere..."
-                            value={aiQuery}
-                            onChange={(e) => setAiQuery(e.target.value)}
-                            onKeyDown={(e) => e.key === "Enter" && handleAskAi(activeProject.id)}
-                            className="flex-1 bg-white border border-gray-200 rounded-lg p-2 text-xs focus:outline-none focus:ring-1 focus:ring-violet-500"
+                            type="number"
+                            placeholder="Importo €"
+                            value={newExtraCostAmount}
+                            onChange={(e) => setNewExtraCostAmount(e.target.value)}
+                            className="w-28 bg-white border border-gray-200 rounded-lg p-2 text-xs focus:outline-none focus:ring-1 focus:ring-violet-500"
                           />
                           <button
-                            onClick={() => handleAskAi(activeProject.id)}
-                            disabled={isAiThinking}
-                            className="px-4 bg-violet-600 hover:bg-violet-700 text-white rounded-lg text-xs font-bold transition flex items-center justify-center min-w-[70px]"
+                            onClick={() => handleAddExtraCost(activeProject.id)}
+                            className="px-3 bg-violet-600 text-white rounded-lg text-xs font-bold hover:bg-violet-750 shrink-0"
                           >
-                            {isAiThinking ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Chiedi"}
+                            +
                           </button>
                         </div>
                       </div>
+                    </div>
+
+                    {/* Fatturazione del Cantiere */}
+                    <div className="pt-6 border-t border-gray-100 space-y-3">
+                      <h4 className="text-xs font-black text-gray-500 uppercase tracking-widest">Fatturazione</h4>
+                      {invoiceResults[activeProject.id] ? (
+                        <div className="flex justify-between items-center text-xs p-3 bg-blue-50 border border-blue-150 rounded-lg">
+                          <div>
+                            <p className="font-extrabold text-gray-800">{invoiceResults[activeProject.id].number}</p>
+                            <p className="text-[10px] text-gray-500 mt-0.5">Documento simulato (sessione corrente) — €{invoiceResults[activeProject.id].total.toLocaleString("it-IT")}</p>
+                          </div>
+                          <a href={invoiceResults[activeProject.id].url} target="_blank" rel="noopener noreferrer" className="p-1 rounded hover:bg-blue-100 text-blue-500">
+                            <ExternalLink className="h-4 w-4" />
+                          </a>
+                        </div>
+                      ) : (
+                        <button
+                          onClick={() => handleTriggerInvoice(activeProject.id)}
+                          disabled={isInvoicing}
+                          className="flex items-center gap-1.5 px-3 py-1.5 bg-violet-600 text-white rounded-lg text-xs font-bold hover:bg-violet-750 transition disabled:opacity-50"
+                        >
+                          {isInvoicing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Receipt className="h-3.5 w-3.5" />}
+                          Genera Fattura (Simulazione)
+                        </button>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -1257,7 +1258,7 @@ export default function CrmPage() {
               <div className="flex justify-between items-center bg-white p-4 rounded-xl border border-gray-150 shadow-xs">
                 <div>
                   <h3 className="font-extrabold text-gray-800">Collaboratori e Ore</h3>
-                  <p className="text-xs text-slate-500">Gestisci i dipendenti dell'azienda e calcola le paghe mensili</p>
+                  <p className="text-xs text-slate-500">Gestisci i dipendenti e collaboratori dell'azienda</p>
                 </div>
                 <button
                   onClick={() => setIsAddingCollab(true)}
@@ -1271,24 +1272,7 @@ export default function CrmPage() {
                 <Card className="border-violet-100 bg-violet-50/20">
                   <CardContent className="p-4">
                     <form
-                      onSubmit={(e) => {
-                        e.preventDefault();
-                        if (!newCollabName.trim()) return;
-                        setCollaborators([
-                          ...collaborators,
-                          {
-                            name: newCollabName,
-                            role: "Dipendente",
-                            category: "Dipendente",
-                            hourlyRate: parseFloat(newCollabRate) || 20,
-                            phone: newCollabPhone,
-                          }
-                        ]);
-                        setNewCollabName("");
-                        setNewCollabRate("");
-                        setNewCollabPhone("");
-                        setIsAddingCollab(false);
-                      }}
+                      onSubmit={handleCreateCollaborator}
                       className="grid grid-cols-1 sm:grid-cols-4 gap-4 items-end"
                     >
                       <div className="space-y-1">
@@ -1329,32 +1313,27 @@ export default function CrmPage() {
                 </Card>
               )}
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                {collaborators.map((c: any, idx: number) => {
-                  const hours = projects.reduce((acc, p) => acc + (p.workers.find(w => w.name === c.name)?.hours || 0), 0);
-                  return (
-                    <Card key={idx} className="border-gray-150 shadow-xs">
+              {collaborators.length === 0 ? (
+                <p className="text-xs text-gray-400">Nessun collaboratore ancora. Aggiungine uno con "Aggiungi Collaboratore".</p>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  {collaborators.map((c) => (
+                    <Card key={c.id} className="border-gray-150 shadow-xs">
                       <CardContent className="p-5 space-y-4">
                         <div>
                           <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">{c.role}</span>
                           <h4 className="font-extrabold text-gray-900 text-sm mt-1">{c.name}</h4>
-                          <p className="text-xs text-gray-500 mt-0.5">{c.phone}</p>
+                          <p className="text-xs text-gray-500 mt-0.5">{c.phone || "Nessun telefono"}</p>
                         </div>
-                        <div className="flex justify-between items-center pt-3 border-t border-gray-100 text-xs">
-                          <div>
-                            <p className="text-gray-400">Tariffa</p>
-                            <p className="font-extrabold text-gray-700 mt-0.5">€{c.hourlyRate}/h</p>
-                          </div>
-                          <div className="text-right">
-                            <p className="text-gray-400">Ore totali</p>
-                            <p className="font-extrabold text-violet-700 mt-0.5">{hours} h</p>
-                          </div>
+                        <div className="pt-3 border-t border-gray-100 text-xs">
+                          <p className="text-gray-400">Tariffa</p>
+                          <p className="font-extrabold text-gray-700 mt-0.5">€{centsToEuro(c.hourlyRate)}/h</p>
                         </div>
                       </CardContent>
                     </Card>
-                  );
-                })}
-              </div>
+                  ))}
+                </div>
+              )}
             </div>
           )}
 
@@ -1365,7 +1344,7 @@ export default function CrmPage() {
                 <Card className="border-gray-150 bg-gradient-to-tr from-slate-900 to-slate-800 text-white shadow-sm">
                   <CardContent className="p-5 space-y-2">
                     <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Entrate Certificate</p>
-                    <h3 className="text-2xl font-black">€{entrateTotali.toLocaleString("it-IT")}</h3>
+                    <h3 className="text-2xl font-black">€{centsToEuro(entrateTotali).toLocaleString("it-IT")}</h3>
                     <p className="text-[10px] text-slate-450">Commesse sbloccate o in corso</p>
                   </CardContent>
                 </Card>
@@ -1373,16 +1352,16 @@ export default function CrmPage() {
                 <Card className="border-gray-150 shadow-xs bg-white">
                   <CardContent className="p-5 space-y-2">
                     <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">Margine di Cassa</p>
-                    <h3 className="text-2xl font-black text-emerald-600">€{margineNetto.toLocaleString("it-IT")}</h3>
-                    <p className="text-[10px] text-gray-500">Utile lordo stimato</p>
+                    <h3 className="text-2xl font-black text-emerald-600">€{centsToEuro(margineNetto).toLocaleString("it-IT")}</h3>
+                    <p className="text-[10px] text-gray-500">Entrate meno costi extra registrati</p>
                   </CardContent>
                 </Card>
 
                 <Card className="border-gray-150 shadow-xs bg-white">
                   <CardContent className="p-5 space-y-2">
-                    <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">Totale Costi Commesse</p>
-                    <h3 className="text-2xl font-black text-rose-600">€{(costiLavoratori + costiExtraTotali).toLocaleString("it-IT")}</h3>
-                    <p className="text-[10px] text-gray-500">Paghe operaie e costi extra</p>
+                    <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">Costi Extra Commesse</p>
+                    <h3 className="text-2xl font-black text-rose-600">€{centsToEuro(costiExtraTotali).toLocaleString("it-IT")}</h3>
+                    <p className="text-[10px] text-gray-500">Spese impreviste registrate sui cantieri</p>
                   </CardContent>
                 </Card>
               </div>
@@ -1394,7 +1373,7 @@ export default function CrmPage() {
                   <div className="space-y-4 pt-2">
                     <div className="flex justify-between items-center text-xs">
                       <span className="font-semibold text-gray-600">Margine Operativo ({Math.round((margineNetto / Math.max(1, entrateTotali)) * 100)}%)</span>
-                      <span className="font-bold text-emerald-600">€{margineNetto.toLocaleString("it-IT")}</span>
+                      <span className="font-bold text-emerald-600">€{centsToEuro(margineNetto).toLocaleString("it-IT")}</span>
                     </div>
                     <div className="h-3 w-full bg-rose-100 rounded-full overflow-hidden border border-rose-200 flex">
                       <div className="h-full bg-emerald-500" style={{ width: `${Math.max(0, (margineNetto / Math.max(1, entrateTotali)) * 100)}%` }} />
@@ -1414,23 +1393,26 @@ export default function CrmPage() {
                   <p className="text-xs text-gray-500">Visualizza tutte le spese impreviste sostenute al di fuori del preventivo iniziale</p>
                 </div>
                 <span className="text-xs font-extrabold text-rose-600 bg-rose-50 border border-rose-200 px-3 py-1 rounded-full">
-                  Speso Extra: €{costiExtraTotali.toLocaleString("it-IT")}
+                  Speso Extra: €{centsToEuro(costiExtraTotali).toLocaleString("it-IT")}
                 </span>
               </div>
 
               <div className="space-y-3">
-                {projects.map(p => 
-                  p.extraCosts.map((c, idx) => (
-                    <Card key={`${p.id}-${idx}`} className="border-gray-150 shadow-xs">
+                {projects.flatMap((p) =>
+                  (extraCosts[p.id] ?? []).map((c) => (
+                    <Card key={c.id} className="border-gray-150 shadow-xs">
                       <CardContent className="p-4 flex justify-between items-center text-xs font-semibold">
                         <div>
-                          <p className="text-gray-900 font-bold">{c.desc}</p>
-                          <p className="text-[10px] text-gray-450 mt-1">Cantiere: {p.name} | Data: {c.date}</p>
+                          <p className="text-gray-900 font-bold">{c.description}</p>
+                          <p className="text-[10px] text-gray-450 mt-1">Cantiere: {p.name} | Data: {new Date(c.date).toLocaleDateString("it-IT")}</p>
                         </div>
-                        <span className="font-bold text-rose-600">- €{c.amount.toLocaleString("it-IT")}</span>
+                        <span className="font-bold text-rose-600">- €{centsToEuro(c.amount).toLocaleString("it-IT")}</span>
                       </CardContent>
                     </Card>
                   ))
+                )}
+                {projects.every((p) => (extraCosts[p.id] ?? []).length === 0) && (
+                  <p className="text-xs text-gray-400">Nessun costo extra registrato.</p>
                 )}
               </div>
             </div>
@@ -1456,22 +1438,7 @@ export default function CrmPage() {
                 <Card className="border-violet-100 bg-violet-50/20">
                   <CardContent className="p-4">
                     <form
-                      onSubmit={(e) => {
-                        e.preventDefault();
-                        if (!newSupplierName.trim()) return;
-                        setSuppliers([
-                          ...suppliers,
-                          {
-                            name: newSupplierName,
-                            category: newSupplierCat,
-                            contactInfo: newSupplierContact,
-                            phone: "",
-                          }
-                        ]);
-                        setNewSupplierName("");
-                        setNewSupplierContact("");
-                        setIsAddingSupplier(false);
-                      }}
+                      onSubmit={handleCreateSupplier}
                       className="flex flex-col sm:flex-row gap-4 items-end"
                     >
                       <div className="flex-1 space-y-1">
@@ -1502,91 +1469,82 @@ export default function CrmPage() {
                 </Card>
               )}
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                {suppliers.map((s: any, idx: number) => (
-                  <Card key={idx} className="border-gray-150 shadow-xs">
-                    <CardContent className="p-5 flex gap-3">
-                      <div className="h-9 w-9 bg-gray-100 rounded-lg flex items-center justify-center shrink-0">
-                        <Building2 className="h-4.5 w-4.5 text-gray-500" />
-                      </div>
-                      <div>
-                        <h4 className="font-extrabold text-gray-900 text-sm">{s.name}</h4>
-                        <span className="inline-block text-[9px] font-bold text-violet-700 bg-violet-55/50 border border-violet-100 px-2 py-0.5 rounded-full mt-1.5 uppercase">
-                          {s.category}
-                        </span>
-                        <p className="text-xs text-gray-500 mt-2">{s.contactInfo}</p>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
+              {suppliers.length === 0 ? (
+                <p className="text-xs text-gray-400">Nessun fornitore ancora. Aggiungine uno con "Nuovo Fornitore".</p>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  {suppliers.map((s) => (
+                    <Card key={s.id} className="border-gray-150 shadow-xs">
+                      <CardContent className="p-5 flex gap-3">
+                        <div className="h-9 w-9 bg-gray-100 rounded-lg flex items-center justify-center shrink-0">
+                          <Building2 className="h-4.5 w-4.5 text-gray-500" />
+                        </div>
+                        <div>
+                          <h4 className="font-extrabold text-gray-900 text-sm">{s.name}</h4>
+                          <span className="inline-block text-[9px] font-bold text-violet-700 bg-violet-55/50 border border-violet-100 px-2 py-0.5 rounded-full mt-1.5 uppercase">
+                            {s.category}
+                          </span>
+                          <p className="text-xs text-gray-500 mt-2">{s.contactInfo}</p>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              )}
             </div>
           )}
 
           {/* 7. SECTION: FATTURAZIONE (Fatture in Cloud API Sync) */}
           {activeSection === "fatturazione" && (
             <div className="space-y-6 animate-in fade-in duration-300">
-              <div className="bg-white border border-gray-150 p-6 rounded-xl shadow-xs space-y-4">
+              <div className="bg-white border border-gray-150 p-6 rounded-xl shadow-xs space-y-2">
                 <div className="flex items-center justify-between">
                   <div>
-                    <h3 className="font-black text-gray-800 text-base">Integrazione API Fatture in Cloud</h3>
-                    <p className="text-xs text-gray-500 mt-0.5">Le fatture verranno inviate in bozza al tuo portale SDI</p>
+                    <h3 className="font-black text-gray-800 text-base">Integrazione Fatture in Cloud</h3>
+                    <p className="text-xs text-gray-500 mt-0.5">
+                      L'integrazione con Fatture in Cloud non è ancora attiva: "Genera Fattura" chiama il backend
+                      reale, che al momento restituisce un documento simulato per permetterti di testare il flusso.
+                    </p>
                   </div>
-                  <span className="px-2.5 py-1 bg-green-50 text-green-700 border border-green-200 text-xs font-bold rounded-full">
-                    Connesso
+                  <span className="px-2.5 py-1 bg-amber-50 text-amber-700 border border-amber-200 text-xs font-bold rounded-full shrink-0">
+                    Simulazione
                   </span>
-                </div>
-
-                {/* API Status panel */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
-                  <div className="space-y-1.5">
-                    <label className="text-[10px] font-extrabold text-gray-400 uppercase tracking-wider">Chiave API (UID)</label>
-                    <input
-                      type="text"
-                      disabled
-                      value={apiKey}
-                      className="w-full bg-gray-50 border border-gray-150 rounded-lg p-2 text-xs font-mono text-gray-550"
-                    />
-                  </div>
-                  <div className="space-y-1.5">
-                    <label className="text-[10px] font-extrabold text-gray-400 uppercase tracking-wider">Secret Token</label>
-                    <input
-                      type="password"
-                      disabled
-                      value={apiSecret}
-                      className="w-full bg-gray-50 border border-gray-150 rounded-lg p-2 text-xs font-mono text-gray-550"
-                    />
-                  </div>
                 </div>
               </div>
 
-              {/* Invoices created list */}
+              {/* Invoices created list (solo per la sessione corrente: il backend non le persiste ancora) */}
               <div className="space-y-3">
-                <h3 className="text-xs font-black text-gray-500 uppercase tracking-widest">Storico Documenti Emessi</h3>
-                {projects.filter(p => p.invoiceStatus !== "not_invoiced").map((p, idx) => (
-                  <Card key={idx} className="border-gray-150 shadow-xs">
-                    <CardContent className="p-4 flex justify-between items-center text-xs">
-                      <div>
-                        <div className="flex items-center gap-1.5">
-                          <span className="px-2 py-0.5 bg-blue-50 text-blue-700 border border-blue-150 text-[9px] font-black rounded uppercase">BOZZA</span>
-                          <span className="font-extrabold text-gray-800">{p.invoiceNum}</span>
+                <h3 className="text-xs font-black text-gray-500 uppercase tracking-widest">Documenti Generati in Questa Sessione</h3>
+                {Object.entries(invoiceResults).map(([projectId, inv]) => {
+                  const proj = projects.find((p) => p.id === projectId);
+                  return (
+                    <Card key={projectId} className="border-gray-150 shadow-xs">
+                      <CardContent className="p-4 flex justify-between items-center text-xs">
+                        <div>
+                          <div className="flex items-center gap-1.5">
+                            <span className="px-2 py-0.5 bg-blue-50 text-blue-700 border border-blue-150 text-[9px] font-black rounded uppercase">BOZZA SIMULATA</span>
+                            <span className="font-extrabold text-gray-800">{inv.number}</span>
+                          </div>
+                          <p className="text-[10px] text-gray-500 mt-1">Cantiere: {proj?.name ?? "N/D"}</p>
                         </div>
-                        <p className="text-[10px] text-gray-500 mt-1">Cantiere: {p.name}</p>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <span className="font-bold text-gray-800">€{p.budget.toLocaleString("it-IT")}</span>
-                        <a
-                          href="https://mock.fattureincloud.it/documenti/fatture"
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="p-1 rounded hover:bg-gray-100 text-gray-400 hover:text-gray-700"
-                        >
-                          <ExternalLink className="h-4 w-4" />
-                        </a>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
+                        <div className="flex items-center gap-2">
+                          <span className="font-bold text-gray-800">€{inv.total.toLocaleString("it-IT")}</span>
+                          <a
+                            href={inv.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="p-1 rounded hover:bg-gray-100 text-gray-400 hover:text-gray-700"
+                          >
+                            <ExternalLink className="h-4 w-4" />
+                          </a>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  );
+                })}
+                {Object.keys(invoiceResults).length === 0 && (
+                  <p className="text-xs text-gray-400">Nessun documento generato. Aprine uno da "Gestione Cantieri" → dettaglio cantiere.</p>
+                )}
               </div>
             </div>
           )}
@@ -1669,15 +1627,15 @@ export default function CrmPage() {
                   
                   <div className="space-y-4">
                     {projects.map(p => {
-                      const cost = p.workers.reduce((acc, w) => acc + w.hours * w.rate, 0) + p.extraCosts.reduce((acc, c) => acc + c.amount, 0);
-                      const margin = p.budget - cost;
-                      const pct = Math.max(0, Math.round((margin / Math.max(1, p.budget)) * 100));
-                      
+                      const costCents = (extraCosts[p.id] ?? []).reduce((acc, c) => acc + c.amount, 0);
+                      const marginCents = p.budget - costCents;
+                      const pct = Math.max(0, Math.round((marginCents / Math.max(1, p.budget)) * 100));
+
                       return (
                         <div key={p.id} className="space-y-2">
                           <div className="flex justify-between items-center text-xs">
                             <span className="font-bold text-gray-800">{p.name}</span>
-                            <span className="font-bold text-emerald-600">{pct}% Margine (Utile: €{margin.toLocaleString("it-IT")})</span>
+                            <span className="font-bold text-emerald-600">{pct}% Margine (Utile: €{centsToEuro(marginCents).toLocaleString("it-IT")})</span>
                           </div>
                           <div className="h-3 w-full bg-gray-100 rounded-full border border-gray-150 overflow-hidden flex">
                             <div className="h-full bg-emerald-500 rounded-full" style={{ width: `${pct}%` }} />
@@ -1725,34 +1683,17 @@ export default function CrmPage() {
           {activeSection === "impostazioni" && (
             <div className="space-y-6 animate-in fade-in duration-300">
               <Card className="border-gray-150 shadow-xs bg-white">
-                <CardContent className="p-6 space-y-5">
-                  <div>
-                    <h3 className="font-bold text-gray-800 text-sm uppercase tracking-wider">Chiavi API Fatture in Cloud</h3>
-                    <p className="text-xs text-gray-500 mt-0.5">Configura le chiavi di integrazione ufficiale per la trasmissione dei documenti</p>
+                <CardContent className="p-6 space-y-3">
+                  <div className="flex items-center gap-2">
+                    <span className="h-1.5 w-1.5 rounded-full bg-amber-500" />
+                    <h3 className="font-bold text-gray-800 text-sm uppercase tracking-wider">Integrazione Fatture in Cloud non ancora attiva</h3>
                   </div>
-                  <div className="space-y-4">
-                    <div className="space-y-1.5">
-                      <label className="text-xs font-bold text-gray-650 uppercase">UID API KEY</label>
-                      <input
-                        type="text"
-                        value={apiKey}
-                        onChange={(e) => setApiKey(e.target.value)}
-                        className="w-full bg-white border border-gray-200 rounded-lg p-2.5 text-xs font-mono focus:outline-none focus:ring-1 focus:ring-violet-500"
-                      />
-                    </div>
-                    <div className="space-y-1.5">
-                      <label className="text-xs font-bold text-gray-650 uppercase">SECRET TOKEN</label>
-                      <input
-                        type="text"
-                        value={apiSecret}
-                        onChange={(e) => setApiSecret(e.target.value)}
-                        className="w-full bg-white border border-gray-200 rounded-lg p-2.5 text-xs font-mono focus:outline-none focus:ring-1 focus:ring-violet-500"
-                      />
-                    </div>
-                    <button className="px-4 py-2.5 bg-violet-600 text-white rounded-xl text-xs font-bold hover:bg-violet-750 transition shadow-sm">
-                      Salva Configurazione
-                    </button>
-                  </div>
+                  <p className="text-xs text-gray-500">
+                    Non c'è ancora una configurazione delle chiavi API da salvare qui: la generazione fatture
+                    (sezione "Fatturazione") usa al momento un endpoint di backend che simula il documento,
+                    in attesa dell'attivazione dell'account Fatture in Cloud del partner. Quando sarà collegato,
+                    questa pagina permetterà di inserire e salvare le chiavi reali.
+                  </p>
                 </CardContent>
               </Card>
             </div>
@@ -1806,11 +1747,14 @@ export default function CrmPage() {
                 (() => {
                   const proj = projects.find(p => p.id === selectedSalProjId);
                   if (!proj) return null;
-                  const doneTasks = proj.tasks.filter(t => t.completed).length;
-                  const pct = proj.tasks.length > 0 ? Math.round((doneTasks / proj.tasks.length) * 100) : 0;
-                  const totalEseguito = (proj.budget * pct) / 100;
+                  const tasks = projectTasks[proj.id] ?? [];
+                  const doneTasks = tasks.filter(t => t.status === "done").length;
+                  const pct = tasks.length > 0 ? Math.round((doneTasks / tasks.length) * 100) : 0;
+                  const budgetEuro = centsToEuro(proj.budget);
+                  const totalEseguito = (budgetEuro * pct) / 100;
                   const retentionVal = totalEseguito * (garanziaRetention / 100);
                   const nettoDaPagare = totalEseguito - retentionVal;
+                  const startDateLabel = proj.startDate ? new Date(proj.startDate).toLocaleDateString("it-IT") : "N/D";
 
                   return (
                     <div className="space-y-6">
@@ -1838,8 +1782,8 @@ export default function CrmPage() {
                           <div className="bg-gray-50 border border-gray-150 p-4 rounded-xl space-y-1">
                             <h4 className="text-[9px] font-bold text-violet-600 uppercase tracking-wider">Cantiere</h4>
                             <p className="font-bold text-gray-900">{proj.name}</p>
-                            <p>Budget di Contratto: €{proj.budget.toLocaleString("it-IT")}</p>
-                            <p>Data inizio: {proj.startDate}</p>
+                            <p>Budget di Contratto: €{budgetEuro.toLocaleString("it-IT")}</p>
+                            <p>Data inizio: {startDateLabel}</p>
                           </div>
                           <div className="bg-gray-50 border border-gray-150 p-4 rounded-xl space-y-1">
                             <h4 className="text-[9px] font-bold text-violet-600 uppercase tracking-wider">Committente</h4>
@@ -1861,17 +1805,17 @@ export default function CrmPage() {
                               </tr>
                             </thead>
                             <tbody>
-                              {proj.tasks.map((t, idx) => {
-                                const taskPct = t.completed ? 100 : 0;
-                                const taskBudget = proj.budget / proj.tasks.length;
-                                const taskMaturato = t.completed ? taskBudget : 0;
+                              {tasks.map((t) => {
+                                const taskPct = t.status === "done" ? 100 : 0;
+                                const taskBudget = budgetEuro / tasks.length;
+                                const taskMaturato = t.status === "done" ? taskBudget : 0;
                                 return (
-                                  <tr key={idx} className="border-b border-gray-150">
+                                  <tr key={t.id} className="border-b border-gray-150">
                                     <td className="border border-gray-200 p-2 font-medium">{t.title}</td>
                                     <td className="border border-gray-200 p-2 text-right font-mono">€{taskBudget.toLocaleString("it-IT", { minimumFractionDigits: 2 })}</td>
                                     <td className="border border-gray-200 p-2 text-center">
                                       <span className={`px-2 py-0.5 rounded-full text-[8px] font-bold ${
-                                        t.completed ? "bg-green-50 text-green-700 border border-green-200" : "bg-gray-100 text-gray-500 border border-gray-200"
+                                        t.status === "done" ? "bg-green-50 text-green-700 border border-green-200" : "bg-gray-100 text-gray-500 border border-gray-200"
                                       }`}>
                                         {taskPct}%
                                       </span>
@@ -1911,7 +1855,7 @@ export default function CrmPage() {
                       {/* Action buttons */}
                       <div className="flex justify-center gap-4">
                         <button
-                          onClick={() => handlePrintSal(proj)}
+                          onClick={() => handlePrintSal(proj, tasks)}
                           className="flex items-center gap-2 px-6 py-3 bg-violet-600 hover:bg-violet-700 text-white rounded-xl text-xs font-bold transition shadow-md hover:shadow-violet-600/10"
                         >
                           <FileText className="h-4 w-4" /> Genera & Stampa PDF SAL

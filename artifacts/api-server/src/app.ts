@@ -288,6 +288,83 @@ app.post(
 );
 // ─────────────────────────────────────────────────────────────────────────────
 
+// ── Resend webhook — eventi di delivery/bounce/complaint delle email ─────────
+// Verifica la firma secondo lo standard Svix usato da Resend:
+// signed content = "{svix-id}.{svix-timestamp}.{raw body}", HMAC-SHA256 con
+// il secret RESEND_WEBHOOK_SECRET (formato "whsec_<base64>").
+app.post(
+  "/api/webhooks/resend",
+  express.raw({ type: "application/json" }),
+  async (req: Request, res: Response): Promise<void> => {
+    const webhookSecret = process.env.RESEND_WEBHOOK_SECRET;
+    if (!webhookSecret) {
+      logger.error("RESEND_WEBHOOK_SECRET not set — rejecting Resend webhook POST to prevent spoofing");
+      res.status(500).json({ error: "Webhook secret not configured" });
+      return;
+    }
+
+    const svixId = req.headers["svix-id"];
+    const svixTimestamp = req.headers["svix-timestamp"];
+    const svixSignature = req.headers["svix-signature"];
+    const idStr = Array.isArray(svixId) ? svixId[0] : svixId;
+    const tsStr = Array.isArray(svixTimestamp) ? svixTimestamp[0] : svixTimestamp;
+    const sigStr = Array.isArray(svixSignature) ? svixSignature[0] : svixSignature;
+
+    if (!idStr || !tsStr || !sigStr) {
+      res.status(400).json({ error: "Missing svix-id, svix-timestamp or svix-signature header" });
+      return;
+    }
+
+    const { createHmac, timingSafeEqual } = await import("node:crypto");
+    const rawBody = req.body as Buffer;
+    const signedContent = `${idStr}.${tsStr}.${rawBody.toString("utf-8")}`;
+    const secretBytes = Buffer.from(webhookSecret.replace(/^whsec_/, ""), "base64");
+    const expectedSig = createHmac("sha256", secretBytes).update(signedContent).digest("base64");
+
+    // svix-signature contiene una o più firme spazio-separate, es. "v1,<base64> v1,<base64>"
+    const providedSigs = sigStr.split(" ").map((s) => s.split(",")[1]).filter(Boolean);
+    const expectedBuf = Buffer.from(expectedSig, "base64");
+    const isValid = providedSigs.some((sig) => {
+      const providedBuf = Buffer.from(sig, "base64");
+      return providedBuf.length === expectedBuf.length && timingSafeEqual(providedBuf, expectedBuf);
+    });
+
+    if (!isValid) {
+      logger.error("Resend webhook signature mismatch — request rejected");
+      res.status(403).json({ error: "Forbidden" });
+      return;
+    }
+
+    let event: { type?: string; data?: Record<string, unknown> };
+    try {
+      event = JSON.parse(rawBody.toString("utf-8")) as typeof event;
+    } catch {
+      res.status(400).json({ error: "Invalid JSON" });
+      return;
+    }
+
+    const eventData = {
+      type: event.type,
+      emailId: event.data?.email_id,
+      to: event.data?.to,
+      from: event.data?.from,
+      subject: event.data?.subject,
+    };
+
+    if (event.type === "email.bounced" || event.type === "email.complained") {
+      // Segnali importanti: un indirizzo email del partner non riceve più
+      // le notifiche lead dal widget. Al momento solo loggato — non c'è
+      // ancora una tabella/UI admin che mostri lo storico di questi eventi.
+      logger.warn(eventData, `Resend: ${event.type}`);
+    } else {
+      logger.info(eventData, `Resend: ${event.type ?? "evento sconosciuto"}`);
+    }
+
+    res.status(200).json({ received: true });
+  }
+);
+// ─────────────────────────────────────────────────────────────────────────────
+
 // Consenti CORS libero per le chiamate API pubbliche del widget
 app.use("/api/public", cors());
 

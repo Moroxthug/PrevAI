@@ -216,6 +216,171 @@ router.post("/crm/projects/:projectId/tasks", requireAuth, async (req, res) => {
   }
 });
 
+router.patch("/crm/projects/:projectId/tasks/:taskId", requireAuth, async (req, res) => {
+  try {
+    const userId = getUserId(res);
+    const { projectId, taskId } = req.params;
+
+    const [project] = await db
+      .select()
+      .from(projectsTable)
+      .where(and(eq(projectsTable.id, projectId), eq(projectsTable.userId, userId)));
+
+    if (!project) {
+      res.status(404).json({ error: "Project not found" });
+      return;
+    }
+
+    const schema = z.object({
+      status: z.enum(["todo", "in_progress", "done"]),
+    });
+
+    const parsed = schema.safeParse(req.body);
+    if (!parsed.success) {
+      res.status(400).json({ error: "Invalid parameters", details: parsed.error });
+      return;
+    }
+
+    const [updated] = await db
+      .update(projectTasksTable)
+      .set({ status: parsed.data.status })
+      .where(and(eq(projectTasksTable.id, taskId), eq(projectTasksTable.projectId, projectId)))
+      .returning();
+
+    if (!updated) {
+      res.status(404).json({ error: "Task not found" });
+      return;
+    }
+
+    res.json(updated);
+  } catch (err) {
+    req.log.error({ err }, "Error updating task status");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// ── PROJECT ASSIGNMENTS (OPERAI ASSEGNATI AL CANTIERE) ───────────────────────
+router.get("/crm/projects/:projectId/assignments", requireAuth, async (req, res) => {
+  try {
+    const userId = getUserId(res);
+    const { projectId } = req.params;
+
+    const [project] = await db
+      .select()
+      .from(projectsTable)
+      .where(and(eq(projectsTable.id, projectId), eq(projectsTable.userId, userId)));
+
+    if (!project) {
+      res.status(404).json({ error: "Project not found" });
+      return;
+    }
+
+    const rows = await db
+      .select({
+        id: projectAssignmentsTable.id,
+        projectId: projectAssignmentsTable.projectId,
+        collaboratorId: projectAssignmentsTable.collaboratorId,
+        roleInProject: projectAssignmentsTable.roleInProject,
+        createdAt: projectAssignmentsTable.createdAt,
+        collaboratorName: collaboratorsTable.name,
+        collaboratorRole: collaboratorsTable.role,
+        collaboratorHourlyRate: collaboratorsTable.hourlyRate,
+      })
+      .from(projectAssignmentsTable)
+      .innerJoin(collaboratorsTable, eq(projectAssignmentsTable.collaboratorId, collaboratorsTable.id))
+      .where(eq(projectAssignmentsTable.projectId, projectId));
+
+    res.json(rows);
+  } catch (err) {
+    req.log.error({ err }, "Error fetching project assignments");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+router.post("/crm/projects/:projectId/assignments", requireAuth, async (req, res) => {
+  try {
+    const userId = getUserId(res);
+    const { projectId } = req.params;
+
+    const [project] = await db
+      .select()
+      .from(projectsTable)
+      .where(and(eq(projectsTable.id, projectId), eq(projectsTable.userId, userId)));
+
+    if (!project) {
+      res.status(404).json({ error: "Project not found" });
+      return;
+    }
+
+    const schema = z.object({
+      collaboratorId: z.string().uuid(),
+      roleInProject: z.string().optional(),
+    });
+
+    const parsed = schema.safeParse(req.body);
+    if (!parsed.success) {
+      res.status(400).json({ error: "Invalid parameters", details: parsed.error });
+      return;
+    }
+
+    const [collaborator] = await db
+      .select()
+      .from(collaboratorsTable)
+      .where(and(eq(collaboratorsTable.id, parsed.data.collaboratorId), eq(collaboratorsTable.userId, userId)));
+
+    if (!collaborator) {
+      res.status(404).json({ error: "Collaborator not found" });
+      return;
+    }
+
+    const [assignment] = await db
+      .insert(projectAssignmentsTable)
+      .values({
+        projectId,
+        collaboratorId: parsed.data.collaboratorId,
+        roleInProject: parsed.data.roleInProject ?? "",
+      })
+      .returning();
+
+    res.status(201).json({ ...assignment, collaboratorName: collaborator.name, collaboratorRole: collaborator.role, collaboratorHourlyRate: collaborator.hourlyRate });
+  } catch (err) {
+    req.log.error({ err }, "Error creating project assignment");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+router.delete("/crm/projects/:projectId/assignments/:assignmentId", requireAuth, async (req, res) => {
+  try {
+    const userId = getUserId(res);
+    const { projectId, assignmentId } = req.params;
+
+    const [project] = await db
+      .select()
+      .from(projectsTable)
+      .where(and(eq(projectsTable.id, projectId), eq(projectsTable.userId, userId)));
+
+    if (!project) {
+      res.status(404).json({ error: "Project not found" });
+      return;
+    }
+
+    const [deleted] = await db
+      .delete(projectAssignmentsTable)
+      .where(and(eq(projectAssignmentsTable.id, assignmentId), eq(projectAssignmentsTable.projectId, projectId)))
+      .returning();
+
+    if (!deleted) {
+      res.status(404).json({ error: "Assignment not found" });
+      return;
+    }
+
+    res.json({ success: true });
+  } catch (err) {
+    req.log.error({ err }, "Error deleting project assignment");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
 // ── COLLABORATORS (COLLABORATORI E STIPENDI) ─────────────────────────────────
 router.get("/crm/collaborators", requireAuth, async (req, res) => {
   try {

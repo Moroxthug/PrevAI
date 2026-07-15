@@ -470,6 +470,71 @@ router.post("/admin/incentives", requireAdmin, async (req, res) => {
   }
 });
 
+// PATCH /api/admin/incentives/:id - Modifica di un bando esistente
+router.patch("/admin/incentives/:id", requireAdmin, async (req, res) => {
+  try {
+    const id = req.params.id;
+    const {
+      level,
+      codice,
+      titolo,
+      descrizione,
+      regione,
+      comune,
+      categoriaIntervento,
+      tipoAgevolazione,
+      percentualeMassima,
+      massimaleSpesa,
+      massimaleContributo,
+      requisitiIseeMax,
+      stato,
+      fonteUfficialeUrl,
+      humanVerified,
+    } = req.body;
+
+    const updates: Record<string, unknown> = {};
+    if (level !== undefined) updates.level = level;
+    if (codice !== undefined) updates.codice = codice;
+    if (titolo !== undefined) updates.titolo = titolo;
+    if (descrizione !== undefined) updates.descrizione = descrizione;
+    if (regione !== undefined) updates.regione = regione;
+    if (comune !== undefined) updates.comune = comune;
+    if (categoriaIntervento !== undefined) updates.categoriaIntervento = categoriaIntervento;
+    if (tipoAgevolazione !== undefined) updates.tipoAgevolazione = tipoAgevolazione;
+    if (percentualeMassima !== undefined) updates.percentualeMassima = String(percentualeMassima);
+    if (massimaleSpesa !== undefined) updates.massimaleSpesa = massimaleSpesa ? String(massimaleSpesa) : null;
+    if (massimaleContributo !== undefined) updates.massimaleContributo = massimaleContributo ? String(massimaleContributo) : null;
+    if (requisitiIseeMax !== undefined) updates.requisitiIseeMax = requisitiIseeMax ? String(requisitiIseeMax) : null;
+    if (stato !== undefined) updates.stato = stato;
+    if (fonteUfficialeUrl !== undefined) updates.fonteUfficialeUrl = fonteUfficialeUrl;
+    // humanVerified: unico modo per marcare un bando come controllato a mano
+    // da un admin contro la fonte ufficiale (a differenza di isVerifiedByAi,
+    // che riflette solo l'esito euristico del cron AI).
+    if (humanVerified !== undefined) updates.humanVerified = Boolean(humanVerified);
+
+    if (Object.keys(updates).length === 0) {
+      res.status(400).json({ error: "Nessun campo da aggiornare." });
+      return;
+    }
+
+    const [updated] = await db
+      .update(incentivesCatalogTable)
+      .set(updates)
+      .where(eq(incentivesCatalogTable.id, id))
+      .returning();
+
+    if (!updated) {
+      res.status(404).json({ error: "Bando non trovato." });
+      return;
+    }
+
+    res.json({ success: true, incentive: updated });
+  } catch (err) {
+    logger.error({ err }, "Error updating admin incentive");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
 // DELETE /api/admin/incentives/:id - Eliminazione di un bando
 router.delete("/admin/incentives/:id", requireAdmin, async (req, res) => {
   try {

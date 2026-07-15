@@ -7,7 +7,7 @@ import {
   ChevronUp, ChevronDown, Minus, Search, Settings, ShieldAlert,
   Sparkles, CheckCircle2, AlertTriangle, PlayCircle, Activity,
   Globe, Search as SearchIcon, Award, HeartHandshake, Eye,
-  MessageSquare, Bot, Send
+  MessageSquare, Bot, Send, X
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -189,6 +189,16 @@ export default function AdminPage() {
   const [newIncRegione, setNewIncRegione] = useState("Lombardia");
   const [newIncLevel, setNewIncLevel] = useState("regionale");
   const [newIncMassimale, setNewIncMassimale] = useState("5000");
+  const [editingIncentive, setEditingIncentive] = useState<any | null>(null);
+  const [editForm, setEditForm] = useState({
+    titolo: "",
+    descrizione: "",
+    percentualeMassima: "",
+    massimaleContributo: "",
+    stato: "active",
+    fonteUfficialeUrl: "",
+    humanVerified: false,
+  });
 
   async function loadIncentives() {
     setLoadingIncentives(true);
@@ -248,6 +258,37 @@ export default function AdminPage() {
     try {
       await authFetch(`/api/admin/incentives/${id}`, { method: "DELETE" });
       loadIncentives();
+    } catch (e: any) {
+      toast({ variant: "destructive", title: "Errore", description: e.message });
+    }
+  }
+
+  function openEditIncentive(inc: any) {
+    setEditingIncentive(inc);
+    setEditForm({
+      titolo: inc.titolo || "",
+      descrizione: inc.descrizione || "",
+      percentualeMassima: inc.percentualeMassima || "",
+      massimaleContributo: inc.massimaleContributo || "",
+      stato: inc.stato || "active",
+      fonteUfficialeUrl: inc.fonteUfficialeUrl || "",
+      humanVerified: !!inc.humanVerified,
+    });
+  }
+
+  async function handleUpdateIncentive(e: React.FormEvent) {
+    e.preventDefault();
+    if (!editingIncentive) return;
+    try {
+      const res = await authFetch(`/api/admin/incentives/${editingIncentive.id}`, {
+        method: "PATCH",
+        body: JSON.stringify(editForm),
+      });
+      if (res.success) {
+        toast({ title: "Bando aggiornato", description: editForm.titolo });
+        setEditingIncentive(null);
+        loadIncentives();
+      }
     } catch (e: any) {
       toast({ variant: "destructive", title: "Errore", description: e.message });
     }
@@ -1476,8 +1517,19 @@ export default function AdminPage() {
                                 {new Date(inc.lastCheckedAt).toLocaleDateString("it-IT")}
                               </div>
                             )}
+                            <div className={`mt-1 px-2 py-0.5 rounded-full inline-block ${
+                              inc.humanVerified ? "bg-emerald-50 text-emerald-700 border border-emerald-200 font-semibold" : "bg-slate-50 text-slate-400 border border-slate-150"
+                            }`}>
+                              {inc.humanVerified ? "Controllato a mano ✓" : "Non controllato a mano"}
+                            </div>
                           </td>
-                          <td className="px-4 py-3.5 text-right">
+                          <td className="px-4 py-3.5 text-right whitespace-nowrap">
+                            <button
+                              onClick={() => openEditIncentive(inc)}
+                              className="text-violet-600 hover:text-violet-800 font-medium px-2 py-1 rounded hover:bg-violet-50 transition-colors mr-1"
+                            >
+                              Modifica
+                            </button>
                             <button
                               onClick={() => handleDeleteIncentive(inc.id)}
                               className="text-red-500 hover:text-red-700 font-medium px-2 py-1 rounded hover:bg-red-50 transition-colors"
@@ -1491,6 +1543,106 @@ export default function AdminPage() {
                   </table>
                 </div>
               </div>
+
+              {editingIncentive && (
+                <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+                  <div className="bg-white border border-slate-200 rounded-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto shadow-2xl p-6 relative">
+                    <button
+                      onClick={() => setEditingIncentive(null)}
+                      className="absolute top-4 right-4 p-1.5 rounded-full hover:bg-slate-100 text-slate-400 hover:text-slate-700 transition"
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                    <h3 className="text-sm font-bold text-slate-800 mb-1">Modifica Bando</h3>
+                    <p className="text-xs text-slate-400 mb-4 font-mono">{editingIncentive.codice}</p>
+                    <form onSubmit={handleUpdateIncentive} className="space-y-3">
+                      <div>
+                        <label className="block text-xs font-bold text-slate-500 mb-1">Titolo</label>
+                        <input
+                          type="text"
+                          value={editForm.titolo}
+                          onChange={(e) => setEditForm((f) => ({ ...f, titolo: e.target.value }))}
+                          className="w-full border border-slate-200 rounded-lg p-2 text-sm focus:outline-none focus:ring-1 focus:ring-violet-500"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-bold text-slate-500 mb-1">Descrizione</label>
+                        <textarea
+                          value={editForm.descrizione}
+                          onChange={(e) => setEditForm((f) => ({ ...f, descrizione: e.target.value }))}
+                          rows={3}
+                          className="w-full border border-slate-200 rounded-lg p-2 text-sm focus:outline-none focus:ring-1 focus:ring-violet-500"
+                        />
+                      </div>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <label className="block text-xs font-bold text-slate-500 mb-1">Percentuale Max (%)</label>
+                          <input
+                            type="number"
+                            step="0.01"
+                            value={editForm.percentualeMassima}
+                            onChange={(e) => setEditForm((f) => ({ ...f, percentualeMassima: e.target.value }))}
+                            className="w-full border border-slate-200 rounded-lg p-2 text-sm focus:outline-none focus:ring-1 focus:ring-violet-500"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-bold text-slate-500 mb-1">Massimale Contributo (€)</label>
+                          <input
+                            type="number"
+                            value={editForm.massimaleContributo}
+                            onChange={(e) => setEditForm((f) => ({ ...f, massimaleContributo: e.target.value }))}
+                            className="w-full border border-slate-200 rounded-lg p-2 text-sm focus:outline-none focus:ring-1 focus:ring-violet-500"
+                          />
+                        </div>
+                      </div>
+                      <div>
+                        <label className="block text-xs font-bold text-slate-500 mb-1">Stato</label>
+                        <select
+                          value={editForm.stato}
+                          onChange={(e) => setEditForm((f) => ({ ...f, stato: e.target.value }))}
+                          className="w-full border border-slate-200 rounded-lg p-2 text-sm focus:outline-none focus:ring-1 focus:ring-violet-500"
+                        >
+                          <option value="active">Attivo</option>
+                          <option value="expiring_soon">In esaurimento</option>
+                          <option value="closed">Chiuso</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-xs font-bold text-slate-500 mb-1">Fonte Ufficiale (URL)</label>
+                        <input
+                          type="text"
+                          value={editForm.fonteUfficialeUrl}
+                          onChange={(e) => setEditForm((f) => ({ ...f, fonteUfficialeUrl: e.target.value }))}
+                          className="w-full border border-slate-200 rounded-lg p-2 text-sm focus:outline-none focus:ring-1 focus:ring-violet-500"
+                        />
+                      </div>
+                      <label className="flex items-center gap-2 text-xs font-semibold text-slate-600 pt-1">
+                        <input
+                          type="checkbox"
+                          checked={editForm.humanVerified}
+                          onChange={(e) => setEditForm((f) => ({ ...f, humanVerified: e.target.checked }))}
+                        />
+                        Ho controllato personalmente questo bando sulla fonte ufficiale
+                      </label>
+                      <div className="flex justify-end gap-2 pt-2">
+                        <button
+                          type="button"
+                          onClick={() => setEditingIncentive(null)}
+                          className="px-4 py-2 text-xs font-bold text-slate-500 hover:bg-slate-50 rounded-lg transition"
+                        >
+                          Annulla
+                        </button>
+                        <button
+                          type="submit"
+                          className="px-4 py-2 bg-violet-600 text-white rounded-lg text-xs font-bold hover:bg-violet-700 transition"
+                        >
+                          Salva Modifiche
+                        </button>
+                      </div>
+                    </form>
+                  </div>
+                </div>
+              )}
             </div>
           )}
 

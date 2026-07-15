@@ -71,6 +71,15 @@ export default defineConfig({
     fs: {
       strict: true,
     },
+    // In produzione frontend e API condividono lo stesso dominio (un solo
+    // deploy Vercel); in dev locale girano su porte separate, quindi le
+    // fetch relative a /api/* servono questo proxy per raggiungere l'api-server.
+    proxy: {
+      "/api": {
+        target: process.env.API_PROXY_TARGET ?? "http://localhost:5000",
+        changeOrigin: true,
+      },
+    },
   },
   preview: {
     port,
