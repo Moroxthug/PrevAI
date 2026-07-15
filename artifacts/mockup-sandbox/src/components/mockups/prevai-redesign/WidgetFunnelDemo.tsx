@@ -241,6 +241,7 @@ const WIDGET_CSS = `
   .pvq-price { font-weight: 700; font-size: clamp(26px, 3vw, 36px); color: var(--_accent); font-variant-numeric: tabular-nums; }
 
   .pvq-powered {
+    flex-basis: 100%;
     display: flex; align-items: center; justify-content: flex-end; gap: 7px;
     margin-top: 10px; text-decoration: none;
   }
@@ -323,7 +324,7 @@ export type PrevAiQuoteBarConfig = {
 };
 
 export function PrevAiQuoteBar({
-  prevaiUrl = "https://prevai.vercel.app",
+  prevaiUrl = "https://prevai.it",
   rating = null,
   capServiti = null,
   mostraPrezzo = "range",
@@ -777,19 +778,19 @@ Tipo immobile: ${proprieta}. Urgenza: ${urgenza}. CAP: ${cap || "n/d"}. Budget i
             quoteId={quoteId} apiKey={apiKey} apiBaseUrl={apiBaseUrl}
           />
         )}
-      </div>
 
-      {/* firma prevai — link backlink SEO con logo ufficiale */}
-      <a
-        className="pvq-powered"
-        href={prevaiUrl}
-        target="_blank"
-        rel="noopener noreferrer"
-        onClick={() => track("click_powered_by")}
-      >
-        <span>Stima calcolata con tecnologia</span>
-        <img src="/prevai-logo.png" alt="PrevAI — Preventivi Edili" />
-      </a>
+        {/* firma prevai — link backlink SEO con logo ufficiale */}
+        <a
+          className="pvq-powered"
+          href={prevaiUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          onClick={() => track("click_powered_by")}
+        >
+          <span>Stima calcolata con tecnologia</span>
+          <img src="/prevai-logo.png" alt="PrevAI — Preventivi Edili" />
+        </a>
+      </div>
     </div>
   );
 }
