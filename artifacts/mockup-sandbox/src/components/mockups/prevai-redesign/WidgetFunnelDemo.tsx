@@ -324,13 +324,13 @@ export type PrevAiQuoteBarConfig = {
 };
 
 export function PrevAiQuoteBar({
-  prevaiUrl = "https://prevai.it",
+  prevaiUrl = "https://www.prevai.it",
   rating = null,
   capServiti = null,
   mostraPrezzo = "range",
   whatsapp = true,
   apiKey,
-  apiBaseUrl = "https://prevai.it",
+  apiBaseUrl = "https://www.prevai.it",
   privacyUrl = null,
 }: PrevAiQuoteBarConfig) {
   const [phase, setPhase] = useState<Phase>("lavoro");
@@ -784,11 +784,16 @@ Tipo immobile: ${proprieta}. Urgenza: ${urgenza}. CAP: ${cap || "n/d"}. Budget i
           className="pvq-powered"
           href={prevaiUrl}
           target="_blank"
-          rel="noopener noreferrer"
           onClick={() => track("click_powered_by")}
         >
           <span>Stima calcolata con tecnologia</span>
-          <img src="/prevai-logo.png" alt="PrevAI — Preventivi Edili" />
+          <img
+            src={`${apiBaseUrl || "https://www.prevai.it"}/prevai-logo.png`}
+            alt="PrevAI — Preventivi Edili"
+            onError={(e) => {
+              (e.currentTarget as HTMLImageElement).src = "https://www.prevai.it/prevai-logo.png";
+            }}
+          />
         </a>
       </div>
     </div>

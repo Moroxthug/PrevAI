@@ -1184,14 +1184,14 @@ export default function AdminPage() {
 {`<!-- PrevAI Widget Funnel -->
 <div id="prevai-widget"></div>
 <script
-  src="${typeof window !== "undefined" ? window.location.origin : "https://prevai.vercel.app"}/widget.js"
+  src="${typeof window !== "undefined" ? window.location.origin : "https://www.prevai.it"}/widget.js"
   data-api-key="${(u as any).apiKey}"
   async
 ></script>`}
                                                   </pre>
                                                   <button
                                                     onClick={() => {
-                                                      const code = `<!-- PrevAI Widget Funnel -->\n<div id="prevai-widget"></div>\n<script\n  src="${typeof window !== "undefined" ? window.location.origin : "https://prevai.vercel.app"}/widget.js"\n  data-api-key="${(u as any).apiKey}"\n  async\n></script>`;
+                                                      const code = `<!-- PrevAI Widget Funnel -->\n<div id="prevai-widget"></div>\n<script\n  src="${typeof window !== "undefined" ? window.location.origin : "https://www.prevai.it"}/widget.js"\n  data-api-key="${(u as any).apiKey}"\n  async\n></script>`;
                                                       navigator.clipboard.writeText(code);
                                                       toast({ title: "Codice copiato!", description: "Il codice di embed è stato copiato negli appunti." });
                                                     }}
