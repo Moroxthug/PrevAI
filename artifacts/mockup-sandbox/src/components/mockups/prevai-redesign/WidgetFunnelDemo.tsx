@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 /* ─────────────────────────────────────────────────────────────
    PREVAI — Widget preventivo "search bar"
@@ -137,22 +137,27 @@ const WIDGET_CSS = `
   .pvq {
     font: inherit;
     color: inherit;
-    --_accent: var(--pvq-accent, var(--primary, var(--accent-color, #4F46E5)));
+    --_accent: var(--pvq-accent, var(--accent-color, #4338CA));
+    --_accent-2: var(--pvq-accent-2, #6D28D9);
     --_on-accent: var(--pvq-on-accent, #ffffff);
     --_bg: var(--pvq-bg, #ffffff);
-    --_text: var(--pvq-text, #1f2430);
-    --_muted: var(--pvq-muted, #6b7280);
-    --_border: var(--pvq-border, rgba(15, 23, 42, 0.14));
+    --_text: var(--pvq-text, #0F1222);
+    --_muted: var(--pvq-muted, #656B85);
+    --_border: var(--pvq-border, rgba(15, 18, 34, 0.09));
     --_radius: var(--pvq-radius, 20px);
-    --_field-bg: var(--pvq-field-bg, rgba(0, 0, 0, 0.035));
+    --_field-bg: var(--pvq-field-bg, rgba(15, 18, 34, 0.028));
   }
 
   .pvq-bar {
-    background: var(--_bg);
+    background: linear-gradient(180deg, var(--_bg) 0%, var(--_bg) 100%);
+    background-color: var(--_bg);
     color: var(--_text);
     border: 1px solid var(--_border);
     border-radius: var(--_radius);
-    box-shadow: 0 10px 36px -14px rgba(15, 23, 42, 0.22);
+    box-shadow:
+      0 1px 0 0 rgba(255, 255, 255, 0.6) inset,
+      0 24px 48px -22px rgba(15, 18, 34, 0.18),
+      0 6px 16px -8px rgba(15, 18, 34, 0.10);
     padding: 20px;
     min-height: 150px;
     display: flex;
@@ -160,9 +165,15 @@ const WIDGET_CSS = `
     align-content: center;
     align-items: center;
     gap: 14px;
-    transition: box-shadow .2s ease, border-color .2s ease;
+    transition: box-shadow .25s cubic-bezier(.16,1,.3,1), border-color .25s ease;
   }
-  .pvq-bar:focus-within { border-color: var(--_accent); box-shadow: 0 14px 44px -14px rgba(15,23,42,.32); }
+  .pvq-bar:focus-within {
+    border-color: color-mix(in srgb, var(--_accent) 45%, transparent);
+    box-shadow:
+      0 1px 0 0 rgba(255, 255, 255, 0.6) inset,
+      0 0 0 4px color-mix(in srgb, var(--_accent) 10%, transparent),
+      0 28px 56px -22px rgba(15, 18, 34, 0.24);
+  }
 
   /* riga di intestazione del passo */
   .pvq-head {
@@ -170,52 +181,115 @@ const WIDGET_CSS = `
     display: flex; align-items: baseline; justify-content: space-between; gap: 12px;
     margin-bottom: 2px;
   }
-  .pvq-title { font-size: 17px; font-weight: 600; margin: 0; }
-  .pvq-stepnum { font-size: 13px; color: var(--_muted); white-space: nowrap; }
+  .pvq-title { font-size: 17px; font-weight: 650; letter-spacing: -0.012em; margin: 0; color: var(--_text); }
+  .pvq-stepnum {
+    font-size: 13px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase;
+    color: var(--_muted); white-space: nowrap; opacity: .75;
+  }
 
   .pvq-select, .pvq-input, .pvq-textarea {
     font: inherit;
     font-size: 17px;
     color: var(--_text);
     background: var(--_field-bg);
-    border: 1px solid transparent;
+    border: 1px solid var(--_border);
     border-radius: calc(var(--_radius) - 8px);
     padding: 16px 18px;
     outline: none;
-    transition: border-color .15s ease, background .15s ease;
+    box-shadow: 0 1px 2px 0 rgba(15, 18, 34, 0.03) inset;
+    transition: border-color .18s ease, background .18s ease, box-shadow .18s ease;
     min-width: 0;
   }
-  .pvq-select:hover, .pvq-input:hover, .pvq-textarea:hover { border-color: var(--_border); }
-  .pvq-select:focus, .pvq-input:focus, .pvq-textarea:focus { border-color: var(--_accent); background: var(--_bg); }
-  .pvq-input::placeholder, .pvq-textarea::placeholder { color: var(--_muted); }
-  .pvq-input[data-invalid="true"], .pvq-select[data-invalid="true"] { border-color: #dc2626; }
-  .pvq-select { cursor: pointer; appearance: auto; }
+  .pvq-select:hover, .pvq-input:hover, .pvq-textarea:hover { border-color: color-mix(in srgb, var(--_accent) 22%, var(--_border)); }
+  .pvq-select:focus, .pvq-input:focus, .pvq-textarea:focus {
+    border-color: var(--_accent);
+    background: var(--_bg);
+    box-shadow: 0 0 0 4px color-mix(in srgb, var(--_accent) 12%, transparent);
+  }
+  .pvq-input::placeholder, .pvq-textarea::placeholder { color: var(--_muted); opacity: .85; }
+  .pvq-input[data-invalid="true"], .pvq-select[data-invalid="true"] { border-color: #DC2626; box-shadow: 0 0 0 4px rgba(220, 38, 38, 0.08); }
   .pvq-textarea { resize: none; line-height: 1.45; }
+
+  /* trigger del select custom (sostituisce l'<select> nativo) */
+  .pvq-select-wrap { position: relative; display: block; }
+  .pvq-select {
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: space-between; gap: 10px;
+    width: 100%; box-sizing: border-box; text-align: left;
+  }
+  .pvq-select[aria-expanded="true"] {
+    border-color: var(--_accent); background: var(--_bg);
+    box-shadow: 0 0 0 4px color-mix(in srgb, var(--_accent) 12%, transparent);
+  }
+  .pvq-select-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .pvq-select-chevron { flex: none; color: var(--_muted); transition: transform .18s ease, color .18s ease; }
+  .pvq-select-chevron[data-open="true"] { transform: rotate(180deg); color: var(--_accent); }
+
+  @keyframes pvqPanel { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
+  .pvq-select-panel {
+    position: absolute; left: 0; right: 0; top: calc(100% + 6px);
+    background: var(--_bg); border: 1px solid var(--_border);
+    border-radius: calc(var(--_radius) - 8px);
+    box-shadow: 0 20px 40px -16px rgba(15, 18, 34, 0.22), 0 4px 12px -4px rgba(15, 18, 34, 0.12);
+    padding: 6px; z-index: 60; max-height: 264px; overflow-y: auto;
+    animation: pvqPanel .16s cubic-bezier(.16,1,.3,1) both;
+    scrollbar-width: thin; scrollbar-color: var(--_border) transparent;
+  }
+  .pvq-select-panel::-webkit-scrollbar { width: 8px; }
+  .pvq-select-panel::-webkit-scrollbar-thumb { background: var(--_border); border-radius: 99px; }
+  .pvq-select-panel::-webkit-scrollbar-track { background: transparent; }
+  .pvq-select-option {
+    padding: 10px 12px; border-radius: calc(var(--_radius) - 14px);
+    font-size: 15px; color: var(--_text);
+    display: flex; align-items: center; justify-content: space-between; gap: 8px;
+    cursor: pointer; transition: background .12s ease, color .12s ease;
+  }
+  .pvq-select-option:hover { background: color-mix(in srgb, var(--_accent) 8%, transparent); }
+  .pvq-select-option[data-selected="true"] {
+    background: color-mix(in srgb, var(--_accent) 12%, transparent);
+    color: var(--_accent); font-weight: 600;
+  }
+  .pvq-select-option[data-disabled="true"] { color: var(--_muted); cursor: default; opacity: .6; }
+  .pvq-select-check { color: var(--_accent); font-size: 12px; font-weight: 700; }
 
   .pvq-measure { position: relative; width: 165px; flex: none; }
   .pvq-measure .pvq-input { width: 100%; padding-right: 46px; }
   .pvq-measure span {
     position: absolute; right: 16px; top: 50%; transform: translateY(-50%);
-    font-size: 14px; color: var(--_muted); pointer-events: none;
+    font-size: 14px; font-weight: 600; color: var(--_muted); pointer-events: none;
   }
 
   .pvq-btn {
-    font: inherit; font-size: 17px; font-weight: 600;
+    font: inherit; font-size: 17px; font-weight: 650; letter-spacing: -0.008em;
     color: var(--_on-accent);
-    background: var(--_accent);
-    border: none; cursor: pointer;
+    background: linear-gradient(155deg, color-mix(in srgb, var(--_accent) 100%, white 6%) 0%, var(--_accent-2) 130%);
+    border: 1px solid color-mix(in srgb, var(--_accent-2) 60%, black 8%);
+    cursor: pointer;
     border-radius: calc(var(--_radius) - 8px);
     padding: 16px 30px;
     white-space: nowrap;
-    transition: filter .15s ease, transform .15s ease;
+    box-shadow:
+      0 1px 0 0 rgba(255, 255, 255, 0.22) inset,
+      0 10px 24px -10px color-mix(in srgb, var(--_accent) 65%, transparent),
+      0 2px 6px -2px rgba(15, 18, 34, 0.25);
+    transition: filter .18s ease, transform .18s ease, box-shadow .18s ease;
   }
-  .pvq-btn:hover:not(:disabled) { filter: brightness(1.08); transform: translateY(-1px); }
-  .pvq-btn:disabled { opacity: .5; cursor: not-allowed; }
+  .pvq-btn:hover:not(:disabled) {
+    filter: brightness(1.05);
+    transform: translateY(-1px);
+    box-shadow:
+      0 1px 0 0 rgba(255, 255, 255, 0.28) inset,
+      0 14px 30px -10px color-mix(in srgb, var(--_accent) 70%, transparent),
+      0 3px 8px -2px rgba(15, 18, 34, 0.3);
+  }
+  .pvq-btn:active:not(:disabled) { transform: translateY(0); filter: brightness(.98); }
+  .pvq-btn:disabled { opacity: .45; cursor: not-allowed; box-shadow: none; }
 
   .pvq-link {
-    font: inherit; font-size: 14px; font-weight: 500;
+    font: inherit; font-size: 14px; font-weight: 600;
     background: none; border: none; cursor: pointer;
     color: var(--_muted); padding: 4px 6px;
+    transition: color .15s ease;
   }
   .pvq-link:hover { color: var(--_accent); }
 
@@ -226,28 +300,35 @@ const WIDGET_CSS = `
 
   /* transizione morbida tra i passi */
   @keyframes pvqFade { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: none; } }
-  .pvq-step { animation: pvqFade .25s ease both; display: contents; }
+  .pvq-step { animation: pvqFade .3s cubic-bezier(.16,1,.3,1) both; display: contents; }
 
   /* puntini di attesa */
-  @keyframes pvqDot { 0%, 80%, 100% { opacity: .25; } 40% { opacity: 1; } }
+  @keyframes pvqDot { 0%, 80%, 100% { opacity: .2; } 40% { opacity: 1; } }
   .pvq-dots span {
     display: inline-block; width: 6px; height: 6px; border-radius: 99px;
-    background: var(--_accent); margin-left: 5px;
+    background: linear-gradient(135deg, var(--_accent), var(--_accent-2));
+    margin-left: 5px;
     animation: pvqDot 1.2s ease-in-out infinite;
   }
   .pvq-dots span:nth-child(2) { animation-delay: .15s; }
   .pvq-dots span:nth-child(3) { animation-delay: .3s; }
 
-  .pvq-price { font-weight: 700; font-size: clamp(26px, 3vw, 36px); color: var(--_accent); font-variant-numeric: tabular-nums; }
+  .pvq-price {
+    font-weight: 750; font-size: clamp(26px, 3vw, 36px); font-variant-numeric: tabular-nums;
+    letter-spacing: -0.02em;
+    background: linear-gradient(120deg, var(--_accent) 0%, var(--_accent-2) 100%);
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
 
   .pvq-powered {
     flex-basis: 100%;
     display: flex; align-items: center; justify-content: flex-end; gap: 7px;
     margin-top: 10px; text-decoration: none;
   }
-  .pvq-powered span { font-size: 12px; color: var(--_muted); }
-  .pvq-powered img { height: 20px; width: auto; display: block; opacity: .85; transition: opacity .15s ease; }
+  .pvq-powered span { font-size: 12px; font-weight: 500; letter-spacing: .01em; color: var(--_muted); opacity: .8; }
+  .pvq-powered img { height: 20px; width: auto; display: block; opacity: .8; transition: opacity .15s ease; }
   .pvq-powered:hover img { opacity: 1; }
+  .pvq-powered:hover span { opacity: 1; }
 
   @media (max-width: 720px) {
     .pvq-bar > * { flex: 1 1 100%; }
@@ -255,6 +336,80 @@ const WIDGET_CSS = `
     .pvq-brand-header { flex-direction: column; align-items: flex-start; gap: 8px; }
   }
 `;
+
+/* ══════════════ Select custom (sostituisce l'<select> nativo) ══════════════
+   Il menu a tendina del browser non è stilizzabile in modo affidabile
+   cross-browser: qui ricostruiamo trigger + pannello opzioni con lo
+   stesso ingombro del vecchio <select>, ma coerenti con il tema. */
+
+type PvqOption = { value: string; label: string; disabled?: boolean };
+
+function PvqSelect({
+  value, onChange, options, placeholder, invalid, style,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  options: PvqOption[];
+  placeholder?: string;
+  invalid?: boolean;
+  style?: React.CSSProperties;
+}) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const onDocMouseDown = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    const onKeyDown = (e: KeyboardEvent) => { if (e.key === "Escape") setOpen(false); };
+    document.addEventListener("mousedown", onDocMouseDown);
+    document.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.removeEventListener("mousedown", onDocMouseDown);
+      document.removeEventListener("keydown", onKeyDown);
+    };
+  }, [open]);
+
+  const selected = options.find((o) => o.value === value);
+
+  return (
+    <div className="pvq-select-wrap" ref={ref} style={style}>
+      <button
+        type="button"
+        className="pvq-select"
+        data-invalid={invalid}
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        onClick={() => setOpen((o) => !o)}
+        style={{ color: selected ? "var(--_text)" : "var(--_muted)" }}
+      >
+        <span className="pvq-select-label">{selected ? selected.label : (placeholder ?? "")}</span>
+        <svg className="pvq-select-chevron" data-open={open} width="11" height="7" viewBox="0 0 11 7" fill="none" aria-hidden="true">
+          <path d="M1 1L5.5 5.5L10 1" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      </button>
+      {open && (
+        <div className="pvq-select-panel" role="listbox">
+          {options.map((o) => (
+            <div
+              key={o.value}
+              role="option"
+              aria-selected={o.value === value}
+              className="pvq-select-option"
+              data-disabled={o.disabled}
+              data-selected={o.value === value}
+              onClick={() => { if (o.disabled) return; onChange(o.value); setOpen(false); }}
+            >
+              <span>{o.label}</span>
+              {o.value === value && <span className="pvq-select-check">✓</span>}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
 
 /* ══════════════ Widget ══════════════ */
 
@@ -539,19 +694,17 @@ Tipo immobile: ${proprieta}. Urgenza: ${urgenza}. CAP: ${cap || "n/d"}. Budget i
               <span className="pvq-stepnum">Passo 1 di 4</span>
             </div>
 
-            <select
-              className="pvq-select"
+            <PvqSelect
               style={{ flex: "1 1 240px" }}
               value={intervento?.id ?? ""}
-              onChange={(e) => {
-                setIntervento(listinoInterventi.find((i) => i.id === e.target.value) ?? null);
+              placeholder="Che lavoro devi fare?"
+              onChange={(v) => {
+                setIntervento(listinoInterventi.find((i) => i.id === v) ?? null);
                 setMisure({});
                 setTouched(false);
               }}
-            >
-              <option value="" disabled>Che lavoro devi fare?</option>
-              {listinoInterventi.map((i) => <option key={i.id} value={i.id}>{i.label}</option>)}
-            </select>
+              options={listinoInterventi.map((i) => ({ value: i.id, label: i.label }))}
+            />
 
             {intervento?.fields.map((f) => {
               const v = misure[f.key] ?? "";
@@ -591,28 +744,23 @@ Tipo immobile: ${proprieta}. Urgenza: ${urgenza}. CAP: ${cap || "n/d"}. Budget i
               <span className="pvq-stepnum">Passo 2 di 4</span>
             </div>
 
-            <select
-              className="pvq-select"
-              style={{ flex: "1 1 210px", color: proprieta ? "var(--_text)" : "var(--_muted)" }}
+            <PvqSelect
+              style={{ flex: "1 1 210px" }}
               value={proprieta}
-              data-invalid={touched && !proprieta}
-              onChange={(e) => setProprieta(e.target.value)}
-            >
-              <option value="" disabled>Il tuo rapporto con l'immobile</option>
-              {PROPRIETA.map((p) => <option key={p.id} value={p.id}>{p.label}</option>)}
-            </select>
+              invalid={touched && !proprieta}
+              placeholder="Il tuo rapporto con l'immobile"
+              onChange={setProprieta}
+              options={PROPRIETA.map((p) => ({ value: p.id, label: p.label }))}
+            />
 
-            <select
-              className="pvq-select"
-              style={{ flex: "1 1 200px", color: urgenza ? "var(--_text)" : "var(--_muted)" }}
+            <PvqSelect
+              style={{ flex: "1 1 200px" }}
               value={urgenza}
-              data-invalid={touched && !urgenza}
-              onChange={(e) => setUrgenza(e.target.value)}
-            >
-              {URGENZE.map((u) => (
-                <option key={u.id} value={u.id} disabled={u.id === ""}>{u.label}</option>
-              ))}
-            </select>
+              invalid={touched && !urgenza}
+              placeholder={URGENZE[0].label}
+              onChange={setUrgenza}
+              options={URGENZE.filter((u) => u.id !== "").map((u) => ({ value: u.id, label: u.label }))}
+            />
 
             <div className="pvq-measure" title="CAP dell'immobile" style={{ width: 130 }}>
               <input
@@ -625,14 +773,13 @@ Tipo immobile: ${proprieta}. Urgenza: ${urgenza}. CAP: ${cap || "n/d"}. Budget i
               <span>📍</span>
             </div>
 
-            <select
-              className="pvq-select"
-              style={{ flex: "1 1 210px", color: budget ? "var(--_text)" : "var(--_muted)" }}
+            <PvqSelect
+              style={{ flex: "1 1 210px" }}
               value={budget}
-              onChange={(e) => setBudget(e.target.value)}
-            >
-              {BUDGETS.map((b) => <option key={b.id} value={b.id}>{b.label}</option>)}
-            </select>
+              placeholder={BUDGETS[0].label}
+              onChange={setBudget}
+              options={BUDGETS.filter((b) => b.id !== "").map((b) => ({ value: b.id, label: b.label }))}
+            />
 
             <div style={{ display: "flex", flexDirection: "column", alignItems: "stretch", gap: 6 }}>
               <button className="pvq-btn" onClick={avantiImmobile}>
@@ -822,93 +969,67 @@ function RisultatoInline({
   const [tipoImmobile, setTipoImmobile] = useState("prima_casa");
   const [obiettivoLavori, setObiettivoLavori] = useState("ristrutturazione");
   const [fasciaIsee, setFasciaIsee] = useState("sopra_30k");
-  const [regione, setRegione] = useState("Lombardia");
+  const [regione, setRegione] = useState("");
   const [loadingInc, setLoadingInc] = useState(false);
+  const [incError, setIncError] = useState<string | null>(null);
 
-  // Risultati incentivi calcolati
+  // Risultati incentivi: arrivano dal catalogo/calcolo server-side, mai da formule nel widget
   const [incResult, setIncResult] = useState<{
     scontoIva: number;
     bonusStataleNome: string;
     bonusStataleImporto: number;
+    detrazioneFiscaleAnnua: number;
     bandoRegionaleNome: string;
-    bandoRegionaleImporto: number;
-    totaleIncentivi: number;
-    costoNetto: number;
+    hasBandoRegionale: boolean;
+    esborsoImmediato: number;
   } | null>(null);
 
-  const calcolaIncentiviLocal = () => {
+  const calcolaIncentivi = () => {
+    if (!quoteId || !apiKey || !apiBaseUrl) {
+      setIncError("La verifica agevolazioni richiede una richiesta preventivo inviata correttamente.");
+      return;
+    }
     setLoadingInc(true);
-    setTimeout(() => {
-      const medio = Math.round((stimaResult.min + stimaResult.max) / 2);
-      const isRes = tipoImmobile !== "ufficio";
-      const scontoIva = isRes ? Math.round(medio * 0.10) : 0;
+    setIncError(null);
 
-      let bonusStataleNome = "Bonus Ristrutturazione Edilizia 50% (Detrazione 10 anni)";
-      let importoStat = Math.round(medio * 0.50);
-      if (obiettivoLavori === "efficienza") {
-        bonusStataleNome = "Ecobonus 65% / Conto Termico GSE (Incentivo Diretto)";
-        importoStat = Math.round(medio * 0.65);
-      } else if (obiettivoLavori === "barriere") {
-        bonusStataleNome = "Bonus Abbattimento Barriere Architettoniche 75%";
-        importoStat = Math.round(medio * 0.75);
-      }
-      if (importoStat > 48000) importoStat = 48000;
-
-      let bandoRegionaleNome = "Nessun bando regionale a sportello specifico (si applicano i Bonus Statali compatibili)";
-      let importoReg = 0;
-
-      if (regione === "Lombardia") {
-        bandoRegionaleNome = "⚡ Bando Efficienza e Riscaldamento Regione Lombardia 2026 (Fondo Perduto)";
-        importoReg = fasciaIsee === "sotto_30k" ? 5000 : 3500;
-      } else if (regione === "Piemonte") {
-        bandoRegionaleNome = "⚡ Bando Sostituzione Impianti Termici ed Efficienza Piemonte (Fondo Perduto)";
-        importoReg = fasciaIsee === "sotto_30k" ? 4000 : 3000;
-      } else if (regione === "Emilia-Romagna") {
-        bandoRegionaleNome = "⚡ Bando Solare e Rinnovabili Residenziale Emilia-Romagna (Fondo Perduto)";
-        importoReg = fasciaIsee === "sotto_30k" ? 4000 : 2500;
-      } else if (regione === "Veneto") {
-        bandoRegionaleNome = "⚡ Bando Rigenerazione Sostenibile Veneto 2026 (Fondo Perduto)";
-        importoReg = 3000;
-      } else if (regione === "Lazio" || regione === "Campania" || regione === "Toscana") {
-        bandoRegionaleNome = "⚡ Bando Riqualificazione ed Efficienza Energetica Residenziale";
-        importoReg = 2500;
-      }
-
-      const totaleInc = importoStat + importoReg;
-      const costoNetto = Math.max(Math.round(medio * 0.25), Math.round(medio - importoReg - (importoStat * 0.55) - scontoIva));
-
-      setIncResult({
-        scontoIva,
-        bonusStataleNome,
-        bonusStataleImporto: importoStat,
-        bandoRegionaleNome,
-        bandoRegionaleImporto: importoReg,
-        totaleIncentivi: totaleInc,
-        costoNetto,
-      });
-      setLoadingInc(false);
-      setIncentivesStep("result");
-      track("incentivi_verificati", { medio, costoNetto, regione });
-
-      // Sincronizza all'istante all'API backend il profilo incentivi verificato per aggiornare il CRM del partner edile
-      if (quoteId && apiKey && apiBaseUrl) {
-        fetch(`${apiBaseUrl}/api/public/quotes/${quoteId}/incentives`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "x-api-key": apiKey,
-          },
-          body: JSON.stringify({
-            tipoImmobile,
-            obiettivoLavori,
-            fasciaIsee,
-            regione,
-            cap: "",
-            totalePreventivo: stimaResult.max,
-          }),
-        }).catch((err) => console.warn("Failed to sync verified incentives with backend", err));
-      }
-    }, 400);
+    fetch(`${apiBaseUrl}/api/public/quotes/${quoteId}/incentives`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-api-key": apiKey,
+      },
+      body: JSON.stringify({
+        tipoImmobile,
+        obiettivoLavori,
+        fasciaIsee,
+        regione,
+        cap: "",
+        totalePreventivo: stimaResult.max,
+      }),
+    })
+      .then((r) => {
+        if (!r.ok) throw new Error("Chiamata fallita");
+        return r.json();
+      })
+      .then((data) => {
+        if (!data.success) throw new Error("Dati non validi");
+        setIncResult({
+          scontoIva: data.scontoIvaStimato,
+          bonusStataleNome: data.bonusStataleApplicato,
+          bonusStataleImporto: data.detrazioneFiscaleDecennale,
+          detrazioneFiscaleAnnua: data.detrazioneFiscaleAnnua,
+          bandoRegionaleNome: data.bandoRegionaleApplicato,
+          hasBandoRegionale: !String(data.bandoRegionaleApplicato || "").startsWith("Nessun bando"),
+          esborsoImmediato: data.esborsoImmediatoStimato,
+        });
+        setIncentivesStep("result");
+        track("incentivi_verificati", { regione, quoteId });
+      })
+      .catch((err) => {
+        console.warn("Verifica incentivi fallita", err);
+        setIncError("Non è stato possibile verificare le agevolazioni in questo momento. Ti contatteremo con il dettaglio.");
+      })
+      .finally(() => setLoadingInc(false));
   };
 
   return (
@@ -936,7 +1057,7 @@ function RisultatoInline({
           </p>
         )}
         {useFallback && (
-          <p className="pvq-note" style={{ color: "#d97706", fontWeight: "600", marginTop: "6px" }}>
+          <p className="pvq-note" style={{ color: "#B45309", fontWeight: "600", marginTop: "6px" }}>
             ⚠️ Connessione rallentata. Mostrata stima locale provvisoria; riceverai il preventivo ufficiale via email.
           </p>
         )}
@@ -957,14 +1078,14 @@ function RisultatoInline({
 
       {/* ── MOTORE INTERATTIVO INCENTIVI E BANDI REGIONALI/COMUNALI ── */}
       {incentivesStep === "hidden" && (
-        <div style={{ flexBasis: "100%", marginTop: 14, padding: "12px 16px", background: "rgba(16, 185, 129, 0.09)", border: "1px solid rgba(16, 185, 129, 0.3)", borderRadius: "var(--_radius)", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 10 }}>
+        <div style={{ flexBasis: "100%", marginTop: 14, padding: "12px 16px", background: "linear-gradient(135deg, rgba(6, 95, 70, 0.07), rgba(6, 95, 70, 0.03))", border: "1px solid rgba(6, 95, 70, 0.18)", borderRadius: "var(--_radius)", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 10 }}>
           <div>
-            <span style={{ fontSize: 13, fontWeight: 700, color: "#059669" }}>🎁 INCENTIVI E BANDI REGIONALI 2026</span>
+            <span style={{ fontSize: 13, fontWeight: 700, letterSpacing: "0.02em", color: "#065F46" }}>🎁 INCENTIVI E BANDI REGIONALI 2026</span>
             <p style={{ margin: "2px 0 0", fontSize: 13, color: "var(--_text)" }}>
               Scopri subito quanti fondi a fondo perduto, agevolazioni IVA e detrazioni statali puoi ottenere per questo lavoro.
             </p>
           </div>
-          <button className="pvq-btn" style={{ background: "#059669", color: "#fff", padding: "8px 16px", fontSize: 13 }} onClick={() => setIncentivesStep("questions")}>
+          <button className="pvq-btn" style={{ background: "linear-gradient(155deg, #0D9488, #065F46)", border: "1px solid rgba(6, 95, 70, 0.55)", color: "#fff", padding: "8px 16px", fontSize: 13 }} onClick={() => setIncentivesStep("questions")}>
             Verifica Incentivi Ora →
           </button>
         </div>
@@ -979,56 +1100,67 @@ function RisultatoInline({
           <div style={{ display: "flex", flexWrap: "wrap", gap: 12 }}>
             <div style={{ flex: "1 1 200px", display: "flex", flexDirection: "column", gap: 4 }}>
               <label style={{ fontSize: 11, fontWeight: 600, color: "var(--_muted)", textTransform: "uppercase" }}>1. Tipo Immobile</label>
-              <select className="pvq-input" value={tipoImmobile} onChange={(e) => setTipoImmobile(e.target.value)}>
-                <option value="prima_casa">Prima Casa (Residenza principale)</option>
-                <option value="seconda_casa">Seconda Casa / Casa vacanze</option>
-                <option value="condominio">Condominio (o unità in condominio)</option>
-                <option value="ufficio">Ufficio / Immobile commerciale</option>
-              </select>
+              <PvqSelect
+                value={tipoImmobile}
+                onChange={setTipoImmobile}
+                options={[
+                  { value: "prima_casa", label: "Prima Casa (Residenza principale)" },
+                  { value: "seconda_casa", label: "Seconda Casa / Casa vacanze" },
+                  { value: "condominio", label: "Condominio (o unità in condominio)" },
+                  { value: "ufficio", label: "Ufficio / Immobile commerciale" },
+                ]}
+              />
             </div>
             <div style={{ flex: "1 1 230px", display: "flex", flexDirection: "column", gap: 4 }}>
               <label style={{ fontSize: 11, fontWeight: 600, color: "var(--_muted)", textTransform: "uppercase" }}>2. Obiettivo Lavori</label>
-              <select className="pvq-input" value={obiettivoLavori} onChange={(e) => setObiettivoLavori(e.target.value)}>
-                <option value="ristrutturazione">Manutenzione / Ristrutturazione ordinaria</option>
-                <option value="efficienza">Efficienza Energetica (+2 classi, infissi, caldaia/pompa di calore)</option>
-                <option value="barriere">Abbattimento Barriere Architettoniche (es. doccia accessibile)</option>
-              </select>
+              <PvqSelect
+                value={obiettivoLavori}
+                onChange={setObiettivoLavori}
+                options={[
+                  { value: "ristrutturazione", label: "Manutenzione / Ristrutturazione ordinaria" },
+                  { value: "efficienza", label: "Efficienza Energetica (+2 classi, infissi, caldaia/pompa di calore)" },
+                  { value: "barriere", label: "Abbattimento Barriere Architettoniche (es. doccia accessibile)" },
+                ]}
+              />
             </div>
             <div style={{ flex: "1 1 170px", display: "flex", flexDirection: "column", gap: 4 }}>
               <label style={{ fontSize: 11, fontWeight: 600, color: "var(--_muted)", textTransform: "uppercase" }}>3. Regione dell'Immobile</label>
-              <select className="pvq-input" value={regione} onChange={(e) => setRegione(e.target.value)}>
-                <option value="Lombardia">Lombardia</option>
-                <option value="Piemonte">Piemonte</option>
-                <option value="Emilia-Romagna">Emilia-Romagna</option>
-                <option value="Veneto">Veneto</option>
-                <option value="Lazio">Lazio</option>
-                <option value="Toscana">Toscana</option>
-                <option value="Campania">Campania</option>
-                <option value="Sicilia">Sicilia</option>
-                <option value="Altra">Altra Regione</option>
-              </select>
+              <PvqSelect
+                value={regione}
+                placeholder="Seleziona la regione…"
+                onChange={setRegione}
+                options={["Lombardia", "Piemonte", "Emilia-Romagna", "Veneto", "Lazio", "Toscana", "Campania", "Sicilia", "Altra"]
+                  .map((r) => ({ value: r, label: r === "Altra" ? "Altra Regione" : r }))}
+              />
             </div>
             <div style={{ flex: "1 1 170px", display: "flex", flexDirection: "column", gap: 4 }}>
               <label style={{ fontSize: 11, fontWeight: 600, color: "var(--_muted)", textTransform: "uppercase" }}>ISEE / Requisito Sociale</label>
-              <select className="pvq-input" value={fasciaIsee} onChange={(e) => setFasciaIsee(e.target.value)}>
-                <option value="sopra_30k">Standard (o non dichiaro)</option>
-                <option value="sotto_30k">ISEE &lt; 30.000 € (Maggiorazione bandi sociali)</option>
-              </select>
+              <PvqSelect
+                value={fasciaIsee}
+                onChange={setFasciaIsee}
+                options={[
+                  { value: "sopra_30k", label: "Standard (o non dichiaro)" },
+                  { value: "sotto_30k", label: "ISEE < 30.000 € (Maggiorazione bandi sociali)" },
+                ]}
+              />
             </div>
           </div>
+          {incError && (
+            <p className="pvq-note" style={{ color: "#dc2626", margin: 0 }}>{incError}</p>
+          )}
           <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, marginTop: 4 }}>
-            <button className="pvq-btn" style={{ background: "var(--_accent)", color: "var(--_on-accent)" }} onClick={calcolaIncentiviLocal} disabled={loadingInc}>
-              {loadingInc ? "Verifica bandi in corso..." : "⚡ Calcola Risparmio e Costo Netto"}
+            <button className="pvq-btn" style={{ background: "var(--_accent)", color: "var(--_on-accent)" }} onClick={calcolaIncentivi} disabled={loadingInc || !regione}>
+              {loadingInc ? "Verifica bandi in corso..." : "⚡ Verifica Agevolazioni"}
             </button>
           </div>
         </div>
       )}
 
       {incentivesStep === "result" && incResult && (
-        <div style={{ flexBasis: "100%", marginTop: 14, padding: "16px 18px", background: "#ecfdf5", border: "1px solid #10b981", borderRadius: "var(--_radius)", display: "flex", flexDirection: "column", gap: 10, color: "#065f46" }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid rgba(16, 185, 129, 0.2)", paddingBottom: 8 }}>
-            <strong style={{ fontSize: 15 }}>🎯 Profilo Incentivi Verificato per {regione}</strong>
-            <button className="pvq-link" style={{ padding: 0, fontSize: 12, color: "#059669" }} onClick={() => setIncentivesStep("questions")}>✎ Ricalcola</button>
+        <div style={{ flexBasis: "100%", marginTop: 14, padding: "16px 18px", background: "linear-gradient(160deg, rgba(6, 95, 70, 0.06), rgba(13, 148, 136, 0.04))", border: "1px solid rgba(6, 95, 70, 0.22)", borderRadius: "var(--_radius)", display: "flex", flexDirection: "column", gap: 10, color: "#065F46" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid rgba(6, 95, 70, 0.15)", paddingBottom: 8 }}>
+            <strong style={{ fontSize: 15, letterSpacing: "-0.01em" }}>🎯 Stima Preliminare Agevolazioni per {regione}</strong>
+            <button className="pvq-link" style={{ padding: 0, fontSize: 12, color: "#0D9488" }} onClick={() => setIncentivesStep("questions")}>✎ Ricalcola</button>
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: 6, fontSize: 13 }}>
             {incResult.scontoIva > 0 && (
@@ -1038,21 +1170,20 @@ function RisultatoInline({
               </div>
             )}
             <div style={{ display: "flex", justifyContent: "space-between" }}>
-              <span>🏛️ {incResult.bonusStataleNome}:</span>
-              <strong>– {fmtEuro(incResult.bonusStataleImporto)}</strong>
+              <span>🏛️ {incResult.bonusStataleNome}</span>
+              <strong>~{fmtEuro(incResult.detrazioneFiscaleAnnua)}/anno × 10 anni</strong>
             </div>
-            <div style={{ display: "flex", justifyContent: "space-between", color: incResult.bandoRegionaleImporto > 0 ? "#047857" : "inherit" }}>
-              <span>📍 {incResult.bandoRegionaleNome}:</span>
-              <strong>{incResult.bandoRegionaleImporto > 0 ? `– ${fmtEuro(incResult.bandoRegionaleImporto)}` : "Incluso nei Bonus Statali"}</strong>
+            <div style={{ display: "flex", justifyContent: "space-between", color: incResult.hasBandoRegionale ? "#0D9488" : "inherit" }}>
+              <span>📍 {incResult.bandoRegionaleNome}</span>
             </div>
           </div>
-          <div style={{ marginTop: 4, paddingTop: 10, borderTop: "2px dashed rgba(16, 185, 129, 0.3)", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 8 }}>
+          <div style={{ marginTop: 4, paddingTop: 10, borderTop: "2px dashed rgba(6, 95, 70, 0.25)", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 8 }}>
             <div>
-              <span style={{ fontSize: 12, textTransform: "uppercase", fontWeight: 700, letterSpacing: "0.03em" }}>Investimento Netto Stimato:</span>
-              <div style={{ fontSize: 22, fontWeight: 800, color: "#047857" }}>{fmtEuro(incResult.costoNetto)}</div>
+              <span style={{ fontSize: 12, textTransform: "uppercase", fontWeight: 700, letterSpacing: "0.03em" }}>Esborso Immediato Stimato (esclusa detrazione):</span>
+              <div style={{ fontSize: 22, fontWeight: 800, letterSpacing: "-0.01em", background: "linear-gradient(120deg, #065F46, #0D9488)", WebkitBackgroundClip: "text", backgroundClip: "text", color: "transparent" }}>{fmtEuro(incResult.esborsoImmediato)}</div>
             </div>
-            <div style={{ fontSize: 11, maxWidth: 320, color: "#065f46" }}>
-              ✅ Profilo incentivi abbinato alla tua richiesta. Il tecnico dell'impresa verificherà con te la fattibilità durante il sopralluogo gratuito.
+            <div style={{ fontSize: 11, maxWidth: 320, color: "#065F46", opacity: .85 }}>
+              La detrazione fiscale non riduce l'esborso di cassa: si recupera in 10 anni con la dichiarazione dei redditi. Stima preliminare, da confermare in sede di sopralluogo tecnico e fiscale.
             </div>
           </div>
         </div>
@@ -1060,9 +1191,9 @@ function RisultatoInline({
 
       <p className="pvq-note" style={{ flexBasis: "100%", margin: "10px 8px 0", fontSize: 12 }}>
         Molti interventi come questo godono di detrazioni fiscali: al sopralluogo
-        ti diciamo quali spettano a te. La stima è orientativa: è il sopralluogo —
-        gratuito e senza impegno — a trasformarla nel prezzo esatto, nero su bianco.
-        Prezzi IVA esclusa.
+        ti diciamo quali spettano a te. La stima è orientativa e non costituisce
+        consulenza fiscale: è il sopralluogo — gratuito e senza impegno — a
+        trasformarla nel prezzo esatto, nero su bianco. Prezzi IVA esclusa.
       </p>
     </div>
   );

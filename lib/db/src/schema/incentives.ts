@@ -27,7 +27,8 @@ export const incentivesCatalogTable = pgTable("incentives_catalog", {
   scadenza: timestamp("scadenza", { withTimezone: true }), // data o null se bonus strutturale
   stato: text("stato", { enum: ["active", "expiring_soon", "closed"] }).notNull().default("active"),
   fonteUfficialeUrl: text("fonte_ufficiale_url"),
-  isVerifiedByAi: boolean("is_verified_by_ai").notNull().default(true),
+  isVerifiedByAi: boolean("is_verified_by_ai").notNull().default(true), // esito dell'ultimo controllo euristico del cron AI (non è una validazione legale)
+  humanVerified: boolean("human_verified").notNull().default(false), // true solo se un admin ha controllato la fonte ufficiale a mano
   lastCheckedAt: timestamp("last_checked_at", { withTimezone: true }).defaultNow(),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),

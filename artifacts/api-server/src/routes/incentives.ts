@@ -29,7 +29,8 @@ async function ensureDefaultIncentives() {
       massimaleContributo: "48000.00",
       stato: "active",
       fonteUfficialeUrl: "https://www.agenziaentrate.gov.it",
-      isVerifiedByAi: true,
+      isVerifiedByAi: true, // esito heuristico cron AI, non verifica legale
+      humanVerified: false,
     },
     {
       level: "statale",
@@ -45,7 +46,8 @@ async function ensureDefaultIncentives() {
       massimaleContributo: "65000.00",
       stato: "active",
       fonteUfficialeUrl: "https://www.enea.it",
-      isVerifiedByAi: true,
+      isVerifiedByAi: true, // esito heuristico cron AI, non verifica legale
+      humanVerified: false,
     },
     {
       level: "statale",
@@ -61,7 +63,8 @@ async function ensureDefaultIncentives() {
       massimaleContributo: "15000.00",
       stato: "active",
       fonteUfficialeUrl: "https://www.gse.it",
-      isVerifiedByAi: true,
+      isVerifiedByAi: true, // esito heuristico cron AI, non verifica legale
+      humanVerified: false,
     },
     {
       level: "statale",
@@ -77,7 +80,8 @@ async function ensureDefaultIncentives() {
       massimaleContributo: "37500.00",
       stato: "active",
       fonteUfficialeUrl: "https://www.agenziaentrate.gov.it",
-      isVerifiedByAi: true,
+      isVerifiedByAi: true, // esito heuristico cron AI, non verifica legale
+      humanVerified: false,
     },
     {
       level: "regionale",
@@ -94,7 +98,8 @@ async function ensureDefaultIncentives() {
       requisitiIseeMax: "45000.00",
       stato: "active",
       fonteUfficialeUrl: "https://www.regione.lombardia.it",
-      isVerifiedByAi: true,
+      isVerifiedByAi: true, // esito heuristico cron AI, non verifica legale
+      humanVerified: false,
     },
     {
       level: "regionale",
@@ -110,7 +115,8 @@ async function ensureDefaultIncentives() {
       massimaleContributo: "3500.00",
       stato: "active",
       fonteUfficialeUrl: "https://www.regione.piemonte.it",
-      isVerifiedByAi: true,
+      isVerifiedByAi: true, // esito heuristico cron AI, non verifica legale
+      humanVerified: false,
     },
     {
       level: "regionale",
@@ -126,7 +132,8 @@ async function ensureDefaultIncentives() {
       massimaleContributo: "4000.00",
       stato: "active",
       fonteUfficialeUrl: "https://energia.regione.emilia-romagna.it",
-      isVerifiedByAi: true,
+      isVerifiedByAi: true, // esito heuristico cron AI, non verifica legale
+      humanVerified: false,
     },
     {
       level: "regionale",
@@ -142,7 +149,8 @@ async function ensureDefaultIncentives() {
       massimaleContributo: "4500.00",
       stato: "active",
       fonteUfficialeUrl: "https://www.regione.veneto.it",
-      isVerifiedByAi: true,
+      isVerifiedByAi: true, // esito heuristico cron AI, non verifica legale
+      humanVerified: false,
     },
     {
       level: "comunale",
@@ -158,7 +166,8 @@ async function ensureDefaultIncentives() {
       massimaleContributo: "3000.00",
       stato: "active",
       fonteUfficialeUrl: "https://www.comune.milano.it",
-      isVerifiedByAi: true,
+      isVerifiedByAi: true, // esito heuristico cron AI, non verifica legale
+      humanVerified: false,
     },
     {
       level: "comunale",
@@ -174,7 +183,8 @@ async function ensureDefaultIncentives() {
       massimaleContributo: "2500.00",
       stato: "active",
       fonteUfficialeUrl: "https://www.comune.bologna.it",
-      isVerifiedByAi: true,
+      isVerifiedByAi: true, // esito heuristico cron AI, non verifica legale
+      humanVerified: false,
     },
   ]);
 }
@@ -308,9 +318,11 @@ router.post("/public/quotes/:quoteId/incentives", async (req, res) => {
       }
     }
 
-    const totaleIncentiviStimati = importoBonusStatale + importoBandoRegionale;
-    // Il costo netto reale stima l'immediato abbattimento del fondo perduto + il valore di recupero dei bonus
-    const costoNettoStimato = Math.max(Math.round(totaleLavori * 0.25), Math.round(totaleLavori - importoBandoRegionale - (importoBonusStatale * 0.55) - scontoIvaStimato));
+    // Esborso immediato: solo ciò che riduce davvero il pagamento in fase di lavori
+    // (fondo perduto e IVA agevolata). Le detrazioni fiscali si recuperano in 10 anni
+    // di dichiarazione dei redditi e NON vanno sottratte come sconto cassa.
+    const esborsoImmediatoStimato = Math.max(0, Math.round(totaleLavori - importoBandoRegionale - scontoIvaStimato));
+    const detrazioneFiscaleAnnua = Math.round(importoBonusStatale / 10);
 
     const incentivesData = {
       tipoImmobile,
@@ -321,8 +333,9 @@ router.post("/public/quotes/:quoteId/incentives", async (req, res) => {
       bonusStataleApplicato: `${bonusStataleApplicato} (~€${importoBonusStatale.toLocaleString("it-IT")})`,
       bandoRegionaleApplicato: importoBandoRegionale > 0 ? `${bandoRegionaleApplicato} (~€${importoBandoRegionale.toLocaleString("it-IT")})` : bandoRegionaleApplicato,
       scontoIvaStimato,
-      totaleIncentiviStimati,
-      costoNettoStimato,
+      esborsoImmediatoStimato,
+      detrazioneFiscaleDecennale: importoBonusStatale,
+      detrazioneFiscaleAnnua,
     };
 
     // Aggiorna il preventivo con le risposte incentivi
@@ -357,12 +370,12 @@ router.post("/public/quotes/:quoteId/incentives", async (req, res) => {
         totale: quote.totale,
         prezzoMinimo: (Number(quote.totale) * 0.9).toFixed(2),
         prezzoMassimo: (Number(quote.totale) * 1.25).toFixed(2),
-        incentivesSummary: `🏛️ PROFILO INCENTIVI VERIFICATO DAL CLIENTE:\n` +
+        incentivesSummary: `🏛️ STIMA PRELIMINARE AGEVOLAZIONI (da confermare in sede di sopralluogo tecnico e fiscale):\n` +
           `• Immobile: ${tipoImmobile} | Obiettivo: ${obiettivoLavori} | ISEE: ${fasciaIsee}\n` +
-          `• Bonus Statale Compatibile: ${bonusStataleApplicato} (~€${importoBonusStatale.toLocaleString("it-IT")})\n` +
+          `• Bonus Statale Compatibile: ${bonusStataleApplicato} (~€${importoBonusStatale.toLocaleString("it-IT")}, detrazione IRPEF in 10 quote annuali da ~€${detrazioneFiscaleAnnua.toLocaleString("it-IT")})\n` +
           `• Bando Regionale/Comunale: ${importoBandoRegionale > 0 ? `${bandoRegionaleApplicato} (~€${importoBandoRegionale.toLocaleString("it-IT")})` : 'Nessuno a sportello'}\n` +
           `• Risparmio IVA 10%: ~€${scontoIvaStimato.toLocaleString("it-IT")}\n` +
-          `👉 INVESTIMENTO NETTO STIMATO PER IL CLIENTE: ~€${costoNettoStimato.toLocaleString("it-IT")}`
+          `👉 ESBORSO IMMEDIATO STIMATO (esclusa detrazione, recuperata in 10 anni): ~€${esborsoImmediatoStimato.toLocaleString("it-IT")}`
       }).catch(err => {
         logger.error({ err }, "Failed to send updated incentives email notification to contractor");
       });
@@ -375,8 +388,9 @@ router.post("/public/quotes/:quoteId/incentives", async (req, res) => {
       scontoIvaStimato,
       bonusStataleApplicato: incentivesData.bonusStataleApplicato,
       bandoRegionaleApplicato: incentivesData.bandoRegionaleApplicato,
-      totaleIncentiviStimati,
-      costoNettoStimato,
+      esborsoImmediatoStimato,
+      detrazioneFiscaleDecennale: importoBonusStatale,
+      detrazioneFiscaleAnnua,
     });
   } catch (err) {
     logger.error({ err }, "Error calculating incentives for quote");
