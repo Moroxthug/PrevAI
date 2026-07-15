@@ -140,163 +140,93 @@ const WIDGET_CSS = `
     --_accent: var(--pvq-accent, var(--primary, var(--accent-color, #4F46E5)));
     --_on-accent: var(--pvq-on-accent, #ffffff);
     --_bg: var(--pvq-bg, #ffffff);
-    --_text: var(--pvq-text, #1e293b);
-    --_muted: var(--pvq-muted, #64748b);
-    --_border: var(--pvq-border, rgba(226, 232, 240, 0.95));
-    --_radius: var(--pvq-radius, 24px);
-    --_field-bg: var(--pvq-field-bg, #f8fafc);
+    --_text: var(--pvq-text, #1f2430);
+    --_muted: var(--pvq-muted, #6b7280);
+    --_border: var(--pvq-border, rgba(15, 23, 42, 0.14));
+    --_radius: var(--pvq-radius, 20px);
+    --_field-bg: var(--pvq-field-bg, rgba(0, 0, 0, 0.035));
   }
 
   .pvq-bar {
     background: var(--_bg);
     color: var(--_text);
-    border: 1.5px solid var(--_border);
+    border: 1px solid var(--_border);
     border-radius: var(--_radius);
-    box-shadow: 0 25px 50px -12px rgba(15, 23, 42, 0.12), 0 10px 25px -10px rgba(15, 23, 42, 0.05);
-    padding: 26px 28px;
+    box-shadow: 0 10px 36px -14px rgba(15, 23, 42, 0.22);
+    padding: 20px;
     min-height: 150px;
     display: flex;
     flex-wrap: wrap;
     align-content: center;
     align-items: center;
-    gap: 16px;
-    transition: all .25s cubic-bezier(0.16, 1, 0.3, 1);
+    gap: 14px;
+    transition: box-shadow .2s ease, border-color .2s ease;
   }
-  .pvq-bar:focus-within {
-    border-color: rgba(79, 70, 229, 0.45);
-    box-shadow: 0 30px 65px -12px rgba(79, 70, 229, 0.15), 0 12px 30px -10px rgba(15, 23, 42, 0.08);
-  }
-
-  .pvq-brand-header {
-    flex-basis: 100%;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-    padding-bottom: 16px;
-    margin-bottom: 4px;
-    border-bottom: 1.5px solid var(--_border);
-  }
-  .pvq-logo {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-  }
-  .pvq-logo-icon {
-    width: 36px;
-    height: 36px;
-    border-radius: 11px;
-    background: linear-gradient(135deg, #4F46E5 0%, #10B981 100%);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: #ffffff;
-    font-weight: 900;
-    font-size: 19px;
-    box-shadow: 0 4px 12px rgba(79, 70, 229, 0.35);
-  }
-  .pvq-logo-text {
-    font-size: 20px;
-    font-weight: 800;
-    letter-spacing: -0.03em;
-    background: linear-gradient(135deg, #1e1b4b 0%, #4F46E5 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-  }
-  .pvq-logo-badge {
-    background: rgba(16, 185, 129, 0.12);
-    color: #059669;
-    font-size: 11px;
-    font-weight: 700;
-    padding: 3px 10px;
-    border-radius: 99px;
-    border: 1px solid rgba(16, 185, 129, 0.28);
-    letter-spacing: 0.02em;
-  }
-  .pvq-rating-pill {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    font-size: 12px;
-    color: var(--_muted);
-    background: var(--_field-bg);
-    padding: 6px 14px;
-    border-radius: 99px;
-    border: 1.5px solid var(--_border);
-    font-weight: 500;
-  }
+  .pvq-bar:focus-within { border-color: var(--_accent); box-shadow: 0 14px 44px -14px rgba(15,23,42,.32); }
 
   /* riga di intestazione del passo */
   .pvq-head {
     flex-basis: 100%;
     display: flex; align-items: baseline; justify-content: space-between; gap: 12px;
-    margin-bottom: 4px;
+    margin-bottom: 2px;
   }
-  .pvq-title { font-size: 19px; font-weight: 700; color: var(--_text); letter-spacing: -0.015em; margin: 0; }
-  .pvq-stepnum {
-    font-size: 12px; font-weight: 600; color: #4F46E5;
-    background: rgba(79, 70, 229, 0.08); padding: 4px 12px; border-radius: 99px;
-    border: 1px solid rgba(79, 70, 229, 0.18); white-space: nowrap;
-  }
+  .pvq-title { font-size: 17px; font-weight: 600; margin: 0; }
+  .pvq-stepnum { font-size: 13px; color: var(--_muted); white-space: nowrap; }
 
   .pvq-select, .pvq-input, .pvq-textarea {
     font: inherit;
-    font-size: 16px;
-    font-weight: 500;
+    font-size: 17px;
     color: var(--_text);
     background: var(--_field-bg);
-    border: 1.5px solid var(--_border);
+    border: 1px solid transparent;
     border-radius: calc(var(--_radius) - 8px);
     padding: 16px 18px;
     outline: none;
-    transition: all .2s cubic-bezier(0.16, 1, 0.3, 1);
+    transition: border-color .15s ease, background .15s ease;
     min-width: 0;
   }
-  .pvq-select:hover, .pvq-input:hover, .pvq-textarea:hover { border-color: #cbd5e1; background: #ffffff; }
-  .pvq-select:focus, .pvq-input:focus, .pvq-textarea:focus { border-color: var(--_accent); background: #ffffff; box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.12); }
-  .pvq-input::placeholder, .pvq-textarea::placeholder { color: #94a3b8; font-weight: 400; }
-  .pvq-input[data-invalid="true"], .pvq-select[data-invalid="true"] { border-color: #ef4444; background: #fef2f2; }
+  .pvq-select:hover, .pvq-input:hover, .pvq-textarea:hover { border-color: var(--_border); }
+  .pvq-select:focus, .pvq-input:focus, .pvq-textarea:focus { border-color: var(--_accent); background: var(--_bg); }
+  .pvq-input::placeholder, .pvq-textarea::placeholder { color: var(--_muted); }
+  .pvq-input[data-invalid="true"], .pvq-select[data-invalid="true"] { border-color: #dc2626; }
   .pvq-select { cursor: pointer; appearance: auto; }
   .pvq-textarea { resize: none; line-height: 1.45; }
 
-  .pvq-measure { position: relative; width: 175px; flex: none; }
-  .pvq-measure .pvq-input { width: 100%; padding-right: 48px; }
+  .pvq-measure { position: relative; width: 165px; flex: none; }
+  .pvq-measure .pvq-input { width: 100%; padding-right: 46px; }
   .pvq-measure span {
     position: absolute; right: 16px; top: 50%; transform: translateY(-50%);
-    font-size: 14px; font-weight: 600; color: #64748b; pointer-events: none;
+    font-size: 14px; color: var(--_muted); pointer-events: none;
   }
 
   .pvq-btn {
-    font: inherit; font-size: 16px; font-weight: 600;
+    font: inherit; font-size: 17px; font-weight: 600;
     color: var(--_on-accent);
-    background: linear-gradient(135deg, var(--_accent) 0%, #3730A3 100%);
+    background: var(--_accent);
     border: none; cursor: pointer;
     border-radius: calc(var(--_radius) - 8px);
-    padding: 16px 32px;
+    padding: 16px 30px;
     white-space: nowrap;
-    box-shadow: 0 8px 20px -6px rgba(79, 70, 229, 0.45);
-    transition: all .2s cubic-bezier(0.16, 1, 0.3, 1);
+    transition: filter .15s ease, transform .15s ease;
   }
-  .pvq-btn:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 12px 28px -6px rgba(79, 70, 229, 0.6); filter: brightness(1.06); }
-  .pvq-btn:active:not(:disabled) { transform: translateY(0); }
-  .pvq-btn:disabled { opacity: .5; cursor: not-allowed; box-shadow: none; }
+  .pvq-btn:hover:not(:disabled) { filter: brightness(1.08); transform: translateY(-1px); }
+  .pvq-btn:disabled { opacity: .5; cursor: not-allowed; }
 
   .pvq-link {
-    font: inherit; font-size: 14px; font-weight: 600;
+    font: inherit; font-size: 14px; font-weight: 500;
     background: none; border: none; cursor: pointer;
     color: var(--_muted); padding: 4px 6px;
-    transition: color .15s ease;
   }
   .pvq-link:hover { color: var(--_accent); }
 
-  .pvq-note { font-size: 13px; color: var(--_muted); line-height: 1.5; font-weight: 450; }
+  .pvq-note { font-size: 13px; color: var(--_muted); line-height: 1.5; }
 
   .pvq-check { display: inline-flex; align-items: center; gap: 8px; cursor: pointer; user-select: none; }
-  .pvq-check input { accent-color: var(--_accent); width: 17px; height: 17px; flex: none; }
+  .pvq-check input { accent-color: var(--_accent); width: 16px; height: 16px; flex: none; }
 
   /* transizione morbida tra i passi */
-  @keyframes pvqFade { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
-  .pvq-step { animation: pvqFade .28s cubic-bezier(0.16, 1, 0.3, 1) both; display: contents; }
+  @keyframes pvqFade { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: none; } }
+  .pvq-step { animation: pvqFade .25s ease both; display: contents; }
 
   /* puntini di attesa */
   @keyframes pvqDot { 0%, 80%, 100% { opacity: .25; } 40% { opacity: 1; } }
@@ -308,24 +238,15 @@ const WIDGET_CSS = `
   .pvq-dots span:nth-child(2) { animation-delay: .15s; }
   .pvq-dots span:nth-child(3) { animation-delay: .3s; }
 
-  .pvq-price { font-weight: 800; font-size: clamp(30px, 3.5vw, 40px); background: linear-gradient(135deg, #4F46E5, #10B981); -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-variant-numeric: tabular-nums; letter-spacing: -0.02em; }
+  .pvq-price { font-weight: 700; font-size: clamp(26px, 3vw, 36px); color: var(--_accent); font-variant-numeric: tabular-nums; }
 
   .pvq-powered {
-    display: flex; align-items: center; justify-content: flex-end; gap: 8px;
-    margin-top: 14px; text-decoration: none;
+    display: flex; align-items: center; justify-content: flex-end; gap: 7px;
+    margin-top: 10px; text-decoration: none;
   }
-  .pvq-powered span { font-size: 12.5px; color: var(--_muted); font-weight: 500; }
-  .pvq-powered-badge {
-    display: inline-flex; align-items: center; gap: 6px;
-    font-weight: 800; font-size: 13.5px; color: #4F46E5;
-    background: rgba(79, 70, 229, 0.08); padding: 4px 10px; border-radius: 8px;
-    border: 1px solid rgba(79, 70, 229, 0.15);
-    transition: all .2s ease;
-  }
-  .pvq-powered:hover .pvq-powered-badge {
-    background: rgba(79, 70, 229, 0.14);
-    transform: translateY(-1px);
-  }
+  .pvq-powered span { font-size: 12px; color: var(--_muted); }
+  .pvq-powered img { height: 20px; width: auto; display: block; opacity: .85; transition: opacity .15s ease; }
+  .pvq-powered:hover img { opacity: 1; }
 
   @media (max-width: 720px) {
     .pvq-bar > * { flex: 1 1 100%; }
@@ -605,27 +526,19 @@ Tipo immobile: ${proprieta}. Urgenza: ${urgenza}. CAP: ${cap || "n/d"}. Budget i
   };
 
   return (
-    <div className="pvq" style={{ width: "100%", maxWidth: 940 }}>
+    <div className="pvq" style={{ width: "100%", maxWidth: 900 }}>
       <style>{WIDGET_CSS}</style>
 
-      <div className="pvq-bar">
-        <div className="pvq-brand-header">
-          <div className="pvq-logo">
-            <div className="pvq-logo-icon">
-              <span>P</span>
-            </div>
-            <span className="pvq-logo-text">PrevAI</span>
-            <span className="pvq-logo-badge">⚡ AI Powered</span>
-          </div>
-          {rating && (
-            <div className="pvq-rating-pill">
-              <span style={{ color: "#f59e0b", fontSize: 14 }}>★</span>
-              <strong style={{ color: "var(--_text)" }}>{rating.stars.toLocaleString("it-IT")}</strong>
-              <span>({rating.count.toLocaleString("it-IT")} stime calcolate)</span>
-            </div>
-          )}
-        </div>
+      {/* prova sociale — collegata alla scheda Google dell'impresa */}
+      {rating && (
+        <p className="pvq-note" style={{ margin: "0 0 8px 6px" }}>
+          <span style={{ color: "#f59e0b" }}>★</span>{" "}
+          <strong style={{ color: "var(--_text)" }}>{rating.stars.toLocaleString("it-IT")}</strong> su Google
+          · {rating.count.toLocaleString("it-IT")} preventivi calcolati
+        </p>
+      )}
 
+      <div className="pvq-bar">
         {/* ── Passo 1: lavoro + misure ── */}
         {phase === "lavoro" && (
           <div className="pvq-step">
@@ -875,12 +788,16 @@ Tipo immobile: ${proprieta}. Urgenza: ${urgenza}. CAP: ${cap || "n/d"}. Budget i
         )}
       </div>
 
-      {/* firma prevai — link backlink SEO */}
-      <a className="pvq-powered" href={prevaiUrl} target="_blank" rel="noopener noreferrer">
+      {/* firma prevai — link backlink SEO con logo ufficiale */}
+      <a
+        className="pvq-powered"
+        href={prevaiUrl}
+        target="_blank"
+        rel="noopener noreferrer"
+        onClick={() => track("click_powered_by")}
+      >
         <span>Stima calcolata con tecnologia</span>
-        <div className="pvq-powered-badge">
-          <span>⚡ PrevAI</span>
-        </div>
+        <img src="/prevai-logo.png" alt="PrevAI — Preventivi Edili" />
       </a>
     </div>
   );
@@ -1156,25 +1073,14 @@ function RisultatoInline({
 
 export default function WidgetFunnelDemo() {
   return (
-    <div
-      style={{
-        minHeight: "100vh",
-        background: "radial-gradient(circle at 50% 0%, #f8fafc 0%, #e2e8f0 100%)",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        padding: "32px 20px",
-        fontFamily: "'Inter', system-ui, -apple-system, BlinkMacSystemFont, sans-serif",
-      }}
-    >
-      <div style={{ width: "100%", maxWidth: 940 }}>
-        <PrevAiQuoteBar
-          mostraPrezzo="range"
-          whatsapp={true}
-          rating={{ stars: 4.9, count: 214 }}
-        />
-      </div>
+    <div style={{ padding: "16px", maxWidth: 900, margin: "0 auto", fontFamily: "'Inter', system-ui, sans-serif" }}>
+      <PrevAiQuoteBar
+        mostraPrezzo="range"
+        whatsapp={true}
+        rating={{ stars: 4.8, count: 214 }}
+      />
     </div>
   );
 }
+
 
