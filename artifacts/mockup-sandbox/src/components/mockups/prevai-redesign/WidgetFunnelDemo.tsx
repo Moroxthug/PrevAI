@@ -529,15 +529,6 @@ Tipo immobile: ${proprieta}. Urgenza: ${urgenza}. CAP: ${cap || "n/d"}. Budget i
     <div className="pvq" style={{ width: "100%", maxWidth: 900 }}>
       <style>{WIDGET_CSS}</style>
 
-      {/* prova sociale — collegata alla scheda Google dell'impresa */}
-      {rating && (
-        <p className="pvq-note" style={{ margin: "0 0 8px 6px" }}>
-          <span style={{ color: "#f59e0b" }}>★</span>{" "}
-          <strong style={{ color: "var(--_text)" }}>{rating.stars.toLocaleString("it-IT")}</strong> su Google
-          · {rating.count.toLocaleString("it-IT")} preventivi calcolati
-        </p>
-      )}
-
       <div className="pvq-bar">
         {/* ── Passo 1: lavoro + misure ── */}
         {phase === "lavoro" && (
@@ -1077,7 +1068,7 @@ export default function WidgetFunnelDemo() {
       <PrevAiQuoteBar
         mostraPrezzo="range"
         whatsapp={true}
-        rating={{ stars: 4.8, count: 214 }}
+        rating={null}
       />
     </div>
   );
