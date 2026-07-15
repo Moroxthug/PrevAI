@@ -140,93 +140,163 @@ const WIDGET_CSS = `
     --_accent: var(--pvq-accent, var(--primary, var(--accent-color, #4F46E5)));
     --_on-accent: var(--pvq-on-accent, #ffffff);
     --_bg: var(--pvq-bg, #ffffff);
-    --_text: var(--pvq-text, #1f2430);
-    --_muted: var(--pvq-muted, #6b7280);
-    --_border: var(--pvq-border, rgba(15, 23, 42, 0.14));
-    --_radius: var(--pvq-radius, 20px);
-    --_field-bg: var(--pvq-field-bg, rgba(0, 0, 0, 0.035));
+    --_text: var(--pvq-text, #1e293b);
+    --_muted: var(--pvq-muted, #64748b);
+    --_border: var(--pvq-border, rgba(226, 232, 240, 0.95));
+    --_radius: var(--pvq-radius, 24px);
+    --_field-bg: var(--pvq-field-bg, #f8fafc);
   }
 
   .pvq-bar {
     background: var(--_bg);
     color: var(--_text);
-    border: 1px solid var(--_border);
+    border: 1.5px solid var(--_border);
     border-radius: var(--_radius);
-    box-shadow: 0 10px 36px -14px rgba(15, 23, 42, 0.22);
-    padding: 20px;
+    box-shadow: 0 25px 50px -12px rgba(15, 23, 42, 0.12), 0 10px 25px -10px rgba(15, 23, 42, 0.05);
+    padding: 26px 28px;
     min-height: 150px;
     display: flex;
     flex-wrap: wrap;
     align-content: center;
     align-items: center;
-    gap: 14px;
-    transition: box-shadow .2s ease, border-color .2s ease;
+    gap: 16px;
+    transition: all .25s cubic-bezier(0.16, 1, 0.3, 1);
   }
-  .pvq-bar:focus-within { border-color: var(--_accent); box-shadow: 0 14px 44px -14px rgba(15,23,42,.32); }
+  .pvq-bar:focus-within {
+    border-color: rgba(79, 70, 229, 0.45);
+    box-shadow: 0 30px 65px -12px rgba(79, 70, 229, 0.15), 0 12px 30px -10px rgba(15, 23, 42, 0.08);
+  }
+
+  .pvq-brand-header {
+    flex-basis: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding-bottom: 16px;
+    margin-bottom: 4px;
+    border-bottom: 1.5px solid var(--_border);
+  }
+  .pvq-logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .pvq-logo-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 11px;
+    background: linear-gradient(135deg, #4F46E5 0%, #10B981 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #ffffff;
+    font-weight: 900;
+    font-size: 19px;
+    box-shadow: 0 4px 12px rgba(79, 70, 229, 0.35);
+  }
+  .pvq-logo-text {
+    font-size: 20px;
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    background: linear-gradient(135deg, #1e1b4b 0%, #4F46E5 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  .pvq-logo-badge {
+    background: rgba(16, 185, 129, 0.12);
+    color: #059669;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 3px 10px;
+    border-radius: 99px;
+    border: 1px solid rgba(16, 185, 129, 0.28);
+    letter-spacing: 0.02em;
+  }
+  .pvq-rating-pill {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: var(--_muted);
+    background: var(--_field-bg);
+    padding: 6px 14px;
+    border-radius: 99px;
+    border: 1.5px solid var(--_border);
+    font-weight: 500;
+  }
 
   /* riga di intestazione del passo */
   .pvq-head {
     flex-basis: 100%;
     display: flex; align-items: baseline; justify-content: space-between; gap: 12px;
-    margin-bottom: 2px;
+    margin-bottom: 4px;
   }
-  .pvq-title { font-size: 17px; font-weight: 600; margin: 0; }
-  .pvq-stepnum { font-size: 13px; color: var(--_muted); white-space: nowrap; }
+  .pvq-title { font-size: 19px; font-weight: 700; color: var(--_text); letter-spacing: -0.015em; margin: 0; }
+  .pvq-stepnum {
+    font-size: 12px; font-weight: 600; color: #4F46E5;
+    background: rgba(79, 70, 229, 0.08); padding: 4px 12px; border-radius: 99px;
+    border: 1px solid rgba(79, 70, 229, 0.18); white-space: nowrap;
+  }
 
   .pvq-select, .pvq-input, .pvq-textarea {
     font: inherit;
-    font-size: 17px;
+    font-size: 16px;
+    font-weight: 500;
     color: var(--_text);
     background: var(--_field-bg);
-    border: 1px solid transparent;
+    border: 1.5px solid var(--_border);
     border-radius: calc(var(--_radius) - 8px);
     padding: 16px 18px;
     outline: none;
-    transition: border-color .15s ease, background .15s ease;
+    transition: all .2s cubic-bezier(0.16, 1, 0.3, 1);
     min-width: 0;
   }
-  .pvq-select:hover, .pvq-input:hover, .pvq-textarea:hover { border-color: var(--_border); }
-  .pvq-select:focus, .pvq-input:focus, .pvq-textarea:focus { border-color: var(--_accent); background: var(--_bg); }
-  .pvq-input::placeholder, .pvq-textarea::placeholder { color: var(--_muted); }
-  .pvq-input[data-invalid="true"], .pvq-select[data-invalid="true"] { border-color: #dc2626; }
+  .pvq-select:hover, .pvq-input:hover, .pvq-textarea:hover { border-color: #cbd5e1; background: #ffffff; }
+  .pvq-select:focus, .pvq-input:focus, .pvq-textarea:focus { border-color: var(--_accent); background: #ffffff; box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.12); }
+  .pvq-input::placeholder, .pvq-textarea::placeholder { color: #94a3b8; font-weight: 400; }
+  .pvq-input[data-invalid="true"], .pvq-select[data-invalid="true"] { border-color: #ef4444; background: #fef2f2; }
   .pvq-select { cursor: pointer; appearance: auto; }
   .pvq-textarea { resize: none; line-height: 1.45; }
 
-  .pvq-measure { position: relative; width: 165px; flex: none; }
-  .pvq-measure .pvq-input { width: 100%; padding-right: 46px; }
+  .pvq-measure { position: relative; width: 175px; flex: none; }
+  .pvq-measure .pvq-input { width: 100%; padding-right: 48px; }
   .pvq-measure span {
     position: absolute; right: 16px; top: 50%; transform: translateY(-50%);
-    font-size: 14px; color: var(--_muted); pointer-events: none;
+    font-size: 14px; font-weight: 600; color: #64748b; pointer-events: none;
   }
 
   .pvq-btn {
-    font: inherit; font-size: 17px; font-weight: 600;
+    font: inherit; font-size: 16px; font-weight: 600;
     color: var(--_on-accent);
-    background: var(--_accent);
+    background: linear-gradient(135deg, var(--_accent) 0%, #3730A3 100%);
     border: none; cursor: pointer;
     border-radius: calc(var(--_radius) - 8px);
-    padding: 16px 30px;
+    padding: 16px 32px;
     white-space: nowrap;
-    transition: filter .15s ease, transform .15s ease;
+    box-shadow: 0 8px 20px -6px rgba(79, 70, 229, 0.45);
+    transition: all .2s cubic-bezier(0.16, 1, 0.3, 1);
   }
-  .pvq-btn:hover:not(:disabled) { filter: brightness(1.08); transform: translateY(-1px); }
-  .pvq-btn:disabled { opacity: .5; cursor: not-allowed; }
+  .pvq-btn:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 12px 28px -6px rgba(79, 70, 229, 0.6); filter: brightness(1.06); }
+  .pvq-btn:active:not(:disabled) { transform: translateY(0); }
+  .pvq-btn:disabled { opacity: .5; cursor: not-allowed; box-shadow: none; }
 
   .pvq-link {
-    font: inherit; font-size: 14px; font-weight: 500;
+    font: inherit; font-size: 14px; font-weight: 600;
     background: none; border: none; cursor: pointer;
     color: var(--_muted); padding: 4px 6px;
+    transition: color .15s ease;
   }
   .pvq-link:hover { color: var(--_accent); }
 
-  .pvq-note { font-size: 13px; color: var(--_muted); line-height: 1.5; }
+  .pvq-note { font-size: 13px; color: var(--_muted); line-height: 1.5; font-weight: 450; }
 
   .pvq-check { display: inline-flex; align-items: center; gap: 8px; cursor: pointer; user-select: none; }
-  .pvq-check input { accent-color: var(--_accent); width: 16px; height: 16px; flex: none; }
+  .pvq-check input { accent-color: var(--_accent); width: 17px; height: 17px; flex: none; }
 
   /* transizione morbida tra i passi */
-  @keyframes pvqFade { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: none; } }
-  .pvq-step { animation: pvqFade .25s ease both; display: contents; }
+  @keyframes pvqFade { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+  .pvq-step { animation: pvqFade .28s cubic-bezier(0.16, 1, 0.3, 1) both; display: contents; }
 
   /* puntini di attesa */
   @keyframes pvqDot { 0%, 80%, 100% { opacity: .25; } 40% { opacity: 1; } }
@@ -238,19 +308,29 @@ const WIDGET_CSS = `
   .pvq-dots span:nth-child(2) { animation-delay: .15s; }
   .pvq-dots span:nth-child(3) { animation-delay: .3s; }
 
-  .pvq-price { font-weight: 700; font-size: clamp(26px, 3vw, 36px); color: var(--_accent); font-variant-numeric: tabular-nums; }
+  .pvq-price { font-weight: 800; font-size: clamp(30px, 3.5vw, 40px); background: linear-gradient(135deg, #4F46E5, #10B981); -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-variant-numeric: tabular-nums; letter-spacing: -0.02em; }
 
   .pvq-powered {
-    display: flex; align-items: center; justify-content: flex-end; gap: 7px;
-    margin-top: 10px; text-decoration: none;
+    display: flex; align-items: center; justify-content: flex-end; gap: 8px;
+    margin-top: 14px; text-decoration: none;
   }
-  .pvq-powered span { font-size: 12px; color: var(--_muted); }
-  .pvq-powered img { height: 20px; width: auto; display: block; opacity: .85; transition: opacity .15s ease; }
-  .pvq-powered:hover img { opacity: 1; }
+  .pvq-powered span { font-size: 12.5px; color: var(--_muted); font-weight: 500; }
+  .pvq-powered-badge {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-weight: 800; font-size: 13.5px; color: #4F46E5;
+    background: rgba(79, 70, 229, 0.08); padding: 4px 10px; border-radius: 8px;
+    border: 1px solid rgba(79, 70, 229, 0.15);
+    transition: all .2s ease;
+  }
+  .pvq-powered:hover .pvq-powered-badge {
+    background: rgba(79, 70, 229, 0.14);
+    transform: translateY(-1px);
+  }
 
   @media (max-width: 720px) {
     .pvq-bar > * { flex: 1 1 100%; }
     .pvq-measure { flex: 1 1 45%; width: auto; }
+    .pvq-brand-header { flex-direction: column; align-items: flex-start; gap: 8px; }
   }
 `;
 
@@ -525,19 +605,27 @@ Tipo immobile: ${proprieta}. Urgenza: ${urgenza}. CAP: ${cap || "n/d"}. Budget i
   };
 
   return (
-    <div className="pvq" style={{ width: "100%", maxWidth: 900 }}>
+    <div className="pvq" style={{ width: "100%", maxWidth: 940 }}>
       <style>{WIDGET_CSS}</style>
 
-      {/* prova sociale — collegata alla scheda Google dell'impresa */}
-      {rating && (
-        <p className="pvq-note" style={{ margin: "0 0 8px 6px" }}>
-          <span style={{ color: "#f59e0b" }}>★</span>{" "}
-          <strong style={{ color: "var(--_text)" }}>{rating.stars.toLocaleString("it-IT")}</strong> su Google
-          · {rating.count.toLocaleString("it-IT")} preventivi calcolati
-        </p>
-      )}
-
       <div className="pvq-bar">
+        <div className="pvq-brand-header">
+          <div className="pvq-logo">
+            <div className="pvq-logo-icon">
+              <span>P</span>
+            </div>
+            <span className="pvq-logo-text">PrevAI</span>
+            <span className="pvq-logo-badge">⚡ AI Powered</span>
+          </div>
+          {rating && (
+            <div className="pvq-rating-pill">
+              <span style={{ color: "#f59e0b", fontSize: 14 }}>★</span>
+              <strong style={{ color: "var(--_text)" }}>{rating.stars.toLocaleString("it-IT")}</strong>
+              <span>({rating.count.toLocaleString("it-IT")} stime calcolate)</span>
+            </div>
+          )}
+        </div>
+
         {/* ── Passo 1: lavoro + misure ── */}
         {phase === "lavoro" && (
           <div className="pvq-step">
@@ -788,8 +876,11 @@ Tipo immobile: ${proprieta}. Urgenza: ${urgenza}. CAP: ${cap || "n/d"}. Budget i
       </div>
 
       {/* firma prevai — link backlink SEO */}
-      <a className="pvq-powered" href={prevaiUrl} target="_blank" rel="noopener noreferrer" style={{ display: "flex", alignItems: "center", gap: "6px", textDecoration: "none" }}>
-        <span style={{ fontSize: "11px", color: "var(--_muted)" }}>Stima calcolata con tecnologia <strong style={{ color: "var(--_accent, #4F46E5)" }}>PrevAI — Preventivi Edili</strong></span>
+      <a className="pvq-powered" href={prevaiUrl} target="_blank" rel="noopener noreferrer">
+        <span>Stima calcolata con tecnologia</span>
+        <div className="pvq-powered-badge">
+          <span>⚡ PrevAI</span>
+        </div>
       </a>
     </div>
   );
@@ -1063,147 +1154,27 @@ function RisultatoInline({
   );
 }
 
-/* ══════════════ Demo: la barra dentro tre siti diversi ══════════════
-   Ogni "sito" ospite ha font e colori propri: la barra li eredita
-   tramite le variabili --pvq-*. Anteprima di come apparirà sui siti
-   dei tester (prevai, RBA Edilizia, Abdul Edilizia). */
-
-type HostPreset = {
-  id: string;
-  nome: string;
-  claim: string;
-  sub: string;
-  font: string;
-  pageBg: string;
-  pageText: string;
-  pageMuted: string;
-  vars: Record<string, string>;
-  widget: PrevAiQuoteBarConfig;
-};
-
-const HOSTS: HostPreset[] = [
-  {
-    id: "prevai",
-    nome: "prevai",
-    claim: "Preventivi edili in 30 secondi",
-    sub: "Landing di prova sul sito prevai: la barra usa i nostri colori e il nostro font. Range di prezzo completo.",
-    font: "'Inter', system-ui, sans-serif",
-    pageBg: "linear-gradient(180deg, #f8f7ff, #f1f0fb)",
-    pageText: "#1e1b2e",
-    pageMuted: "#5b566e",
-    vars: {
-      "--pvq-accent": "#4F46E5",
-      "--pvq-radius": "22px",
-    },
-    widget: {
-      rating: { stars: 4.8, count: 214 },
-      mostraPrezzo: "range",
-    },
-  },
-  {
-    id: "rba",
-    nome: "RBA Edilizia",
-    claim: "Costruiamo e ristrutturiamo da 25 anni",
-    sub: "Esempio: sito scuro con arancione da impresa. Serve solo Milano e provincia: prova un CAP fuori zona (es. 00184) al passo 2.",
-    font: "'Georgia', 'Times New Roman', serif",
-    pageBg: "linear-gradient(180deg, #191d24, #12151a)",
-    pageText: "#f2efe9",
-    pageMuted: "#a8a29a",
-    vars: {
-      "--pvq-accent": "#d97706",
-      "--pvq-bg": "#232830",
-      "--pvq-text": "#f2efe9",
-      "--pvq-muted": "#a8a29a",
-      "--pvq-border": "rgba(255,255,255,0.14)",
-      "--pvq-field-bg": "rgba(255,255,255,0.06)",
-      "--pvq-radius": "10px",
-    },
-    widget: {
-      rating: { stars: 4.7, count: 98 },
-      capServiti: ["20"], // Milano e provincia
-      mostraPrezzo: "range",
-    },
-  },
-  {
-    id: "abdul",
-    nome: "Abdul Edilizia",
-    claim: "Ristrutturazioni chiavi in mano",
-    sub: "Esempio: sito chiaro con verde aziendale. Prezzo mostrato solo come \"a partire da\" (scelta dell'impresa nel setup).",
-    font: "'Trebuchet MS', 'Segoe UI', sans-serif",
-    pageBg: "linear-gradient(180deg, #f7faf7, #eef4ee)",
-    pageText: "#1c2a20",
-    pageMuted: "#5c6b60",
-    vars: {
-      "--pvq-accent": "#15803d",
-      "--pvq-radius": "28px",
-    },
-    widget: {
-      rating: { stars: 4.9, count: 61 },
-      mostraPrezzo: "da",
-    },
-  },
-];
-
 export default function WidgetFunnelDemo() {
-  const [host, setHost] = useState<HostPreset>(HOSTS[0]);
-
   return (
-    <div style={{ minHeight: "100vh", background: host.pageBg, transition: "background .4s ease" }}>
-      {/* selettore del sito ospite (solo per la demo) */}
-      <div style={{
-        position: "sticky", top: 0, zIndex: 10, padding: "10px 16px",
-        display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap",
-        background: "rgba(20,20,28,.85)", backdropFilter: "blur(8px)", color: "#fff",
-        fontFamily: "system-ui, sans-serif", fontSize: 13,
-      }}>
-        <span style={{ opacity: .7, marginRight: 4 }}>Anteprima sul sito di:</span>
-        {HOSTS.map((h) => (
-          <button key={h.id} onClick={() => setHost(h)}
-            style={{
-              font: "inherit", cursor: "pointer", padding: "6px 14px", borderRadius: 99,
-              border: "1px solid rgba(255,255,255,.25)",
-              background: host.id === h.id ? "#fff" : "transparent",
-              color: host.id === h.id ? "#16161d" : "#fff",
-              fontWeight: 600,
-            }}>
-            {h.nome}
-          </button>
-        ))}
-      </div>
-
-      {/* il "sito ospite": header + hero + barra prevai ereditata */}
-      <div style={{
-        fontFamily: host.font, color: host.pageText, ...host.vars,
-        maxWidth: 1080, margin: "0 auto", padding: "0 20px",
-      } as React.CSSProperties}>
-        <header style={{
-          display: "flex", alignItems: "center", justifyContent: "space-between",
-          padding: "22px 0", borderBottom: `1px solid ${host.id === "rba" ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)"}`,
-        }}>
-          <strong style={{ fontSize: 20 }}>{host.nome}</strong>
-          <nav style={{ display: "flex", gap: 22, fontSize: 14, color: host.pageMuted }}>
-            <span>Servizi</span><span>Lavori</span><span>Chi siamo</span><span>Contatti</span>
-          </nav>
-        </header>
-
-        <main style={{ padding: "56px 0 90px" }}>
-          <h1 style={{ fontSize: "clamp(30px, 4.5vw, 46px)", lineHeight: 1.12, margin: 0, maxWidth: 680 }}>
-            {host.claim}
-          </h1>
-          <p style={{ fontSize: 17, lineHeight: 1.6, color: host.pageMuted, maxWidth: 560, margin: "16px 0 36px" }}>
-            Quanto costa il tuo lavoro? Scoprilo subito: scegli l'intervento,
-            inserisci due misure e ricevi una stima di prezzo onesta, senza impegno.
-          </p>
-
-          {/* ⬇ il widget: una riga di embed sul sito reale.
-              key = ricrea la barra quando si cambia sito ospite */}
-          <PrevAiQuoteBar key={host.id} {...host.widget} />
-
-          <p style={{ fontSize: 13, color: host.pageMuted, marginTop: 42 }}>
-            {host.sub}
-          </p>
-        </main>
+    <div
+      style={{
+        minHeight: "100vh",
+        background: "radial-gradient(circle at 50% 0%, #f8fafc 0%, #e2e8f0 100%)",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        padding: "32px 20px",
+        fontFamily: "'Inter', system-ui, -apple-system, BlinkMacSystemFont, sans-serif",
+      }}
+    >
+      <div style={{ width: "100%", maxWidth: 940 }}>
+        <PrevAiQuoteBar
+          mostraPrezzo="range"
+          whatsapp={true}
+          rating={{ stars: 4.9, count: 214 }}
+        />
       </div>
     </div>
   );
 }
+
