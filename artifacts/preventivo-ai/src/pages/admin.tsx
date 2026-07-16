@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, Fragment } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { Link } from "wouter";
 import {
@@ -111,6 +111,33 @@ function PlanBadge({ plan, status }: { plan: string | null; status: string | nul
     }`}>
       {isPro || isElite ? <Crown className="h-3 w-3" /> : <Zap className="h-3 w-3" />}
       {isElite ? "Elite" : isPro ? "Pro" : "Starter"}
+    </span>
+  );
+}
+
+function WidgetStatusBadge({ active }: { active: boolean }) {
+  return active ? (
+    <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 rounded-full">
+      <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+      Attivo
+    </span>
+  ) : (
+    <span className="inline-flex items-center gap-1 text-[10px] font-bold text-slate-500 bg-slate-50 border border-slate-200 px-2.5 py-0.5 rounded-full">
+      <span className="h-1.5 w-1.5 rounded-full bg-slate-300" />
+      Disattivato
+    </span>
+  );
+}
+
+function QuoteSourceBadge({ source }: { source: string }) {
+  const style =
+    source === "widget" ? "bg-cyan-50 text-cyan-700 border-cyan-200" :
+    source === "whatsapp" ? "bg-emerald-50 text-emerald-700 border-emerald-200" :
+    "bg-violet-50 text-violet-700 border-violet-200";
+  const label = source === "widget" ? "Widget Funnel" : source === "whatsapp" ? "WhatsApp Bot" : "Web App";
+  return (
+    <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${style}`}>
+      {label}
     </span>
   );
 }
@@ -367,6 +394,10 @@ export default function AdminPage() {
     if (tab === "widget" && widgetSubTab === "analytics") {
       loadWidgetStats();
     }
+    // Evita che una riga espansa in "Utenti" resti aperta (con contenuto
+    // sbagliato) passando a "Clienti & Widget", visto che condividono lo
+    // stesso expandedUserId.
+    setExpandedUserId(null);
   }, [tab, widgetSubTab]);
 
   async function loadSupportStatus() {
@@ -899,7 +930,7 @@ export default function AdminPage() {
                       {filteredUsers.map(u => {
                         const isExpanded = expandedUserId === u.userId;
                         return (
-                          <optgroup key={u.userId} label={u.firstName || u.email || u.userId} className="contents">
+                          <Fragment key={u.userId}>
                             <tr className={`hover:bg-slate-50/40 transition-colors ${isExpanded ? "bg-slate-50/20" : ""}`}>
                               <td className="px-5 py-4">
                                 <div className="font-semibold text-slate-800">{u.firstName || "Senza Nome"}</div>
@@ -912,36 +943,41 @@ export default function AdminPage() {
                                 <div className="text-xs text-emerald-600 font-bold">{Number((u as any).totalCost ?? 0).toFixed(4)} €</div>
                               </td>
                               <td className="px-5 py-4 text-xs text-slate-400">{new Date(u.createdAt).toLocaleDateString("it-IT", { day: "numeric", month: "short", year: "numeric" })}</td>
-                              <td className="px-5 py-4 text-right space-x-2">
-                                <button
-                                  onClick={() => handleToggleExpandClient(u.userId)}
-                                  className="text-xs font-bold text-violet-600 hover:text-violet-800 transition-colors inline-flex items-center gap-0.5 cursor-pointer mr-2"
-                                >
-                                  <span>Preventivi</span>
-                                  {isExpanded ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
-                                </button>
-                                <button
-                                  onClick={() => {
-                                    setSelectedUserEmail(u.email);
-                                    setTab("stripe");
-                                  }}
-                                  className="text-xs font-bold text-slate-600 hover:text-slate-800 transition-colors"
-                                >
-                                  Gestisci Piano
-                                </button>
-                                <button
-                                  onClick={() => handleSyncStripe(u.email)}
-                                  className="text-xs font-bold text-slate-400 hover:text-slate-600 transition-colors"
-                                  title="Sincronizza stato da Stripe"
-                                >
-                                  Sincronizza
-                                </button>
+                              <td className="px-5 py-4 text-right">
+                                <div className="inline-flex items-center gap-1">
+                                  <button
+                                    onClick={() => handleToggleExpandClient(u.userId)}
+                                    className={`inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-1.5 rounded-lg transition-colors cursor-pointer ${
+                                      isExpanded ? "text-violet-700 bg-violet-50" : "text-slate-600 hover:text-violet-700 hover:bg-violet-50"
+                                    }`}
+                                  >
+                                    {isExpanded ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
+                                    Preventivi
+                                  </button>
+                                  <button
+                                    onClick={() => {
+                                      setSelectedUserEmail(u.email);
+                                      setTab("stripe");
+                                    }}
+                                    className="inline-flex items-center gap-1 text-xs font-semibold text-slate-600 hover:text-violet-700 hover:bg-violet-50 px-2.5 py-1.5 rounded-lg transition-colors cursor-pointer"
+                                  >
+                                    <Crown className="h-3.5 w-3.5" />
+                                    Piano
+                                  </button>
+                                  <button
+                                    onClick={() => handleSyncStripe(u.email)}
+                                    title="Sincronizza stato da Stripe"
+                                    className="inline-flex items-center text-slate-400 hover:text-slate-700 hover:bg-slate-100 p-1.5 rounded-lg transition-colors cursor-pointer"
+                                  >
+                                    <RefreshCw className="h-3.5 w-3.5" />
+                                  </button>
+                                </div>
                               </td>
                             </tr>
                             {isExpanded && (
                               <tr>
                                 <td colSpan={6} className="bg-slate-50/40 p-6 border-b border-slate-100">
-                                  <div className="bg-white rounded-2xl border border-slate-100 p-5 shadow-sm space-y-4 text-left max-w-5xl mx-auto">
+                                  <div className="bg-white rounded-2xl border border-slate-100 p-5 shadow-sm space-y-4 text-left">
                                     <div className="flex items-center justify-between">
                                       <div>
                                         <h3 className="text-sm font-bold text-slate-800">
@@ -993,13 +1029,7 @@ export default function AdminPage() {
                                                   {new Date(q.createdAt).toLocaleDateString("it-IT", { day: "numeric", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit" })}
                                                 </td>
                                                 <td className="px-4 py-3">
-                                                  <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${
-                                                    q.source === "widget" ? "bg-cyan-50 text-cyan-700 border-cyan-150" :
-                                                    q.source === "whatsapp" ? "bg-emerald-50 text-emerald-700 border-emerald-150" :
-                                                    "bg-violet-50 text-violet-700 border-violet-150"
-                                                  }`}>
-                                                    {q.source === "widget" ? "Widget Funnel" : q.source === "whatsapp" ? "WhatsApp Bot" : "Web App"}
-                                                  </span>
+                                                  <QuoteSourceBadge source={q.source} />
                                                 </td>
                                                 <td className="px-4 py-3 text-slate-500">
                                                   {q.modelUsed ? (
@@ -1027,7 +1057,7 @@ export default function AdminPage() {
                                 </td>
                               </tr>
                             )}
-                          </optgroup>
+                          </Fragment>
                         );
                       })}
                     </tbody>
@@ -1172,7 +1202,7 @@ export default function AdminPage() {
                             {filteredUsers.map(u => {
                               const isExpanded = expandedUserId === u.userId;
                               return (
-                                <optgroup key={u.userId} label={u.firstName || u.email || u.userId} className="contents">
+                                <Fragment key={u.userId}>
                                   <tr className={`hover:bg-slate-50/40 transition-colors ${isExpanded ? "bg-slate-50/20" : ""}`}>
                                     <td className="px-5 py-4">
                                       <div className="font-semibold text-slate-800">{u.firstName || "Senza Nome"}</div>
@@ -1189,32 +1219,24 @@ export default function AdminPage() {
                                       )}
                                     </td>
                                     <td className="px-5 py-4">
-                                      {(u as any).apiKey ? (
-                                        <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-150 px-2.5 py-0.5 rounded-full">
-                                          <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                                          Attivo
-                                        </span>
-                                      ) : (
-                                        <span className="inline-flex items-center gap-1 text-[10px] font-bold text-slate-500 bg-slate-50 border border-slate-150 px-2.5 py-0.5 rounded-full">
-                                          <span className="h-1.5 w-1.5 rounded-full bg-slate-300"></span>
-                                          Disattivato
-                                        </span>
-                                      )}
+                                      <WidgetStatusBadge active={Boolean((u as any).apiKey)} />
                                     </td>
                                     <td className="px-5 py-4 text-right">
                                       <button
                                         onClick={() => handleToggleExpandClient(u.userId)}
-                                        className="text-xs font-bold text-violet-600 hover:text-violet-800 transition-colors inline-flex items-center gap-1 cursor-pointer"
+                                        className={`inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-1.5 rounded-lg transition-colors cursor-pointer ${
+                                          isExpanded ? "text-violet-700 bg-violet-50" : "text-slate-600 hover:text-violet-700 hover:bg-violet-50"
+                                        }`}
                                       >
+                                        {isExpanded ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
                                         {isExpanded ? "Chiudi" : "Configura"}
-                                        {isExpanded ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
                                       </button>
                                     </td>
                                   </tr>
                                   {isExpanded && (
                                     <tr>
                                       <td colSpan={5} className="bg-slate-50/40 p-6 border-b border-slate-100">
-                                        <div className="bg-white rounded-2xl border border-slate-100 p-6 shadow-sm text-left max-w-4xl mx-auto space-y-5">
+                                        <div className="bg-white rounded-2xl border border-slate-100 p-6 shadow-sm text-left space-y-5">
                                           <div className="flex items-start gap-4">
                                             <div className="h-10 w-10 rounded-xl bg-violet-50 text-violet-600 flex items-center justify-center shrink-0">
                                               <Zap className="h-5 w-5" />
@@ -1267,7 +1289,7 @@ export default function AdminPage() {
                                                       navigator.clipboard.writeText(code);
                                                       toast({ title: "Codice copiato!", description: "Il codice di embed è stato copiato negli appunti." });
                                                     }}
-                                                    className="absolute right-3 top-3 bg-slate-850 hover:bg-slate-800 text-slate-200 text-[10px] font-semibold px-2.5 py-1 rounded-md border border-slate-700 transition-all cursor-pointer shadow-sm"
+                                                    className="absolute right-3 top-3 bg-slate-900 hover:bg-slate-800 text-slate-200 text-[10px] font-semibold px-2.5 py-1 rounded-md border border-slate-700 transition-all cursor-pointer shadow-sm"
                                                   >
                                                     Copia Codice
                                                   </button>
@@ -1283,7 +1305,7 @@ export default function AdminPage() {
                                       </td>
                                     </tr>
                                   )}
-                                </optgroup>
+                                </Fragment>
                               );
                             })}
                           </tbody>
@@ -1549,7 +1571,7 @@ export default function AdminPage() {
                               </div>
                             )}
                             <div className={`mt-1 px-2 py-0.5 rounded-full inline-block ${
-                              inc.humanVerified ? "bg-emerald-50 text-emerald-700 border border-emerald-200 font-semibold" : "bg-slate-50 text-slate-400 border border-slate-150"
+                              inc.humanVerified ? "bg-emerald-50 text-emerald-700 border border-emerald-200 font-semibold" : "bg-slate-50 text-slate-400 border border-slate-200"
                             }`}>
                               {inc.humanVerified ? "Controllato a mano ✓" : "Non controllato a mano"}
                             </div>

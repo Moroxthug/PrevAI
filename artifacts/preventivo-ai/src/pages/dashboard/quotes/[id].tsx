@@ -292,43 +292,50 @@ export default function QuoteDetail() {
   };
 
   
-  const handleAvviaCantiere = () => {
-    if (!quote) return;
+  const [avviandoCantiere, setAvviandoCantiere] = useState(false);
+
+  const handleAvviaCantiere = async () => {
+    if (!quote || !id || avviandoCantiere) return;
     const clientName = (quote.clientData as { nome?: string })?.nome || "Cliente Generico";
     const budget = Number(quote.totale || 0);
 
-    const newProject = {
-      id: "p_" + Date.now(),
-      name: `Cantiere - Ristrutturazione per ${clientName}`,
-      status: "active",
-      budget: budget,
-      startDate: new Date().toISOString().split("T")[0],
-      endDate: "",
-      tasks: [
-        { id: "t_cila", title: "Verifica e deposito CILA/SCIA", dueDate: "2026-07-15", completed: false },
-        { id: "t_dep", title: "Registrazione acconto / deposito", dueDate: "2026-07-25", completed: false },
-        { id: "t_avv", title: "Allestimento cantiere e avvio lavori", dueDate: "2026-08-01", completed: false },
-      ],
-      workers: [
-        { name: "Marco Bianchi", role: "Capocantiere", hours: 0, rate: 25 },
-      ],
-      extraCosts: [],
-      invoiceStatus: "not_invoiced",
-    };
+    setAvviandoCantiere(true);
+    try {
+      // Il CRM (artifacts/preventivo-ai/src/pages/dashboard/crm.tsx) legge i
+      // cantieri da /api/crm/projects nel backend reale, non più da
+      // localStorage: creiamo il cantiere lì, collegato al preventivo tramite
+      // quoteId così il controllo duplicati è affidabile (non basato sul nome).
+      const existingRes = await fetch("/api/crm/projects", { credentials: "include" });
+      if (!existingRes.ok) throw new Error("Impossibile verificare i cantieri esistenti");
+      const existingProjects: Array<{ quoteId: string | null }> = await existingRes.json();
 
-    const saved = localStorage.getItem("prevai_crm_projects");
-    const list = saved ? JSON.parse(saved) : [];
-    
-    const exists = list.some((p: any) => p.name.includes(clientName));
-    if (exists) {
-      toast({ title: "Cantiere già avviato", description: "Esiste già un cantiere attivo per questo committente." });
-    } else {
-      list.unshift(newProject);
-      localStorage.setItem("prevai_crm_projects", JSON.stringify(list));
+      if (existingProjects.some((p) => p.quoteId === id)) {
+        toast({ title: "Cantiere già avviato", description: "Esiste già un cantiere collegato a questo preventivo." });
+        window.open("/crm", "_blank");
+        return;
+      }
+
+      const createRes = await fetch("/api/crm/projects", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: `Cantiere - Ristrutturazione per ${clientName}`,
+          quoteId: id,
+          status: "active",
+          budget: Math.round(budget * 100), // il backend salva il budget in centesimi
+          startDate: new Date().toISOString().split("T")[0],
+        }),
+      });
+      if (!createRes.ok) throw new Error("Errore creazione cantiere");
+
       toast({ title: "Cantiere avviato!", description: "Il progetto è stato creato nel CRM." });
+      window.open("/crm", "_blank");
+    } catch (err) {
+      toast({ title: "Errore", description: "Impossibile avviare il cantiere. Riprova.", variant: "destructive" });
+    } finally {
+      setAvviandoCantiere(false);
     }
-
-    window.open("/crm", "_blank");
   };
 
   const handleRegenerate = () => {
@@ -649,8 +656,11 @@ export default function QuoteDetail() {
             <Button
               className="gap-2 bg-gradient-to-r from-violet-600 to-indigo-600 text-white font-bold"
               onClick={handleAvviaCantiere}
+              disabled={avviandoCantiere}
             >
-              <Hammer className="h-4 w-4" />
+              {avviandoCantiere
+                ? <Loader2 className="h-4 w-4 animate-spin" />
+                : <Hammer className="h-4 w-4" />}
               Avvia Cantiere CRM
             </Button>
           )}
