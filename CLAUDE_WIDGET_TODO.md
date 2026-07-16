@@ -121,4 +121,45 @@ quelle sezioni.
 
 ---
 
+## Aggiornamento 2026-07-16 — Tutti gli 8 punti implementati
+
+1. **Cron AI**: creato [incentivesVerification.ts](artifacts/api-server/src/lib/incentivesVerification.ts),
+   condiviso tra il cron schedulato e la route admin. Ora scarica per davvero
+   la pagina `fonteUfficialeUrl` di ogni bando (best-effort, con timeout) e la
+   passa al modello come grounding; la risposta include sempre un `disclaimer`
+   esplicito ("controllo euristico preliminare, non verifica legale") mostrato
+   anche nell'admin UI dopo ogni scansione.
+2. **humanVerified nel widget**: `POST /public/quotes/:id/incentives` ora
+   restituisce `bonusStataleHumanVerified` e `bandoRegionaleHumanVerified`;
+   `WidgetFunnelDemo.tsx` mostra un bollino "✓ Verificato da un operatore" o
+   "⏳ In attesa di conferma umana" accanto a ciascun bonus/bando. **Resta da
+   fare:** applicare la migration in produzione (`pnpm --filter @workspace/db push`)
+   — non eseguita in autopilot per non toccare il DB di produzione senza conferma esplicita.
+3. **Dati seed non validati**: il seeder ora inserisce i bandi con
+   `isVerifiedByAi: false` e `lastCheckedAt: null` (prima si dichiaravano già
+   "verificati" all'inserimento, il che era fuorviante) così il primo giro
+   reale del cron (punto 1) li tratta correttamente come da controllare.
+   La validazione manuale contro le fonti ufficiali resta comunque da fare da un umano.
+4. **Scadenza bandi a sportello**: valorizzato il campo `scadenza` sui 6 bandi
+   regionali/comunali a fondo perduto (date indicative, da confermare) e
+   aggiunta `closeExpiredIncentives()` che marca `closed` automaticamente i
+   bandi scaduti ad ogni chiamata di `ensureDefaultIncentives()`.
+5. **GET pubblico collegato al widget**: `WidgetFunnelDemo.tsx` interroga
+   `GET /api/public/incentives?regione=...&categoria=...` non appena l'utente
+   seleziona la regione nel motore incentivi, mostrando un'anteprima dei bandi
+   trovati prima del calcolo finale sul preventivo.
+6. **Prima casa / seconda casa / ufficio**: il bonus statale ora varia anche
+   per `tipoImmobile`, non solo l'IVA — aliquota piena su prima casa/condominio,
+   ridotta su seconda casa (aliquote indicative, da confermare quando si
+   formalizzano le regole reali), non applicabile su ufficio/immobile
+   commerciale. Il bonus barriere architettoniche resta invariato per tutti i tipi.
+7. **Webhook Resend**: nuova tabella `email_events` ([email-events.ts](lib/db/src/schema/email-events.ts)),
+   il webhook in [app.ts](artifacts/api-server/src/app.ts) ora persiste ogni evento oltre
+   a loggarlo, nuovo endpoint `GET /api/admin/email-events` e sezione
+   "Eventi Email (Resend)" nell'admin UI. **Resta da fare (azioni esterne,
+   non automatizzabili da qui):** impostare `RESEND_WEBHOOK_SECRET` nell'env
+   e registrare l'URL `https://<dominio>/api/webhooks/resend` nella dashboard Resend.
+8. **CRM**: verificato — lo stato del codice corrisponde esattamente a quanto
+   già descritto sopra, nessuna discrepanza trovata, nessuna modifica necessaria.
+
 *Aggiungi qui sotto altri punti scoperti durante il prossimo giro di lavoro.*

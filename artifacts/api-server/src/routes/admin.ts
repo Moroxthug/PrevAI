@@ -1,7 +1,7 @@
 import { Router, type Request, type Response, type NextFunction } from "express";
 import { fromNodeHeaders } from "better-auth/node";
 import { auth } from "../lib/auth";
-import { db, quotesTable, businessProfilesTable, settingsTable, authUsersTable } from "@workspace/db";
+import { db, quotesTable, businessProfilesTable, settingsTable, authUsersTable, emailEventsTable } from "@workspace/db";
 import { eq, sql, desc, count, inArray } from "drizzle-orm";
 import { logger } from "../lib/logger";
 import { getUncachableStripeClient } from "../stripeClient";
@@ -951,6 +951,24 @@ router.post("/admin/widget/create-client", async (req, res) => {
     res.status(201).json({ success: true, profile });
   } catch (err) {
     logger.error({ err }, "Error creating unregistered widget client");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// GET /api/admin/email-events - Storico eventi Resend (delivery/bounce/complaint)
+// persistiti dal webhook in app.ts, per capire da qui quando l'email di un
+// partner smette di ricevere le notifiche lead invece di dover leggere i log.
+router.get("/admin/email-events", requireAdmin, async (req, res) => {
+  try {
+    const limit = Math.min(Number(req.query.limit) || 100, 500);
+    const events = await db
+      .select()
+      .from(emailEventsTable)
+      .orderBy(desc(emailEventsTable.createdAt))
+      .limit(limit);
+    res.json({ success: true, count: events.length, events });
+  } catch (err) {
+    logger.error({ err }, "Error fetching email events");
     res.status(500).json({ error: "Internal server error" });
   }
 });

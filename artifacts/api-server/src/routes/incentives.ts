@@ -1,15 +1,28 @@
 import { Router } from "express";
 import { db, incentivesCatalogTable, quotesTable, businessProfilesTable } from "@workspace/db";
-import { eq, and, ne, or, desc } from "drizzle-orm";
-import { openai } from "@workspace/integrations-openai-ai-server";
+import { eq, and, ne, or, desc, lt } from "drizzle-orm";
 import { logger } from "../lib/logger.js";
 import { requireAdmin } from "./admin.js";
 import { sendWidgetLeadNotification } from "../lib/email.js";
+import { runIncentivesVerification } from "../lib/incentivesVerification.js";
 
 const router = Router();
 
+// I bandi "a fondo perduto" esauriscono i fondi ed hanno una scadenza (sportello):
+// una volta superata, senza intervento umano restano marcati "active" per sempre.
+// Qui li chiudiamo automaticamente in base al campo scadenza, così lo stato riflette
+// almeno la data nota anche se nessuno passa a controllarli manualmente.
+async function closeExpiredIncentives() {
+  await db
+    .update(incentivesCatalogTable)
+    .set({ stato: "closed" })
+    .where(and(lt(incentivesCatalogTable.scadenza, new Date()), ne(incentivesCatalogTable.stato, "closed")));
+}
+
 // Funzione di seeder automatico per garantire che il catalogo contenga sempre incentivi statali, regionali e comunali
 async function ensureDefaultIncentives() {
+  await closeExpiredIncentives();
+
   const existingCount = await db.select().from(incentivesCatalogTable);
   if (existingCount.length > 0) return;
 
@@ -29,7 +42,12 @@ async function ensureDefaultIncentives() {
       massimaleContributo: "48000.00",
       stato: "active",
       fonteUfficialeUrl: "https://www.agenziaentrate.gov.it",
-      isVerifiedByAi: true, // esito heuristico cron AI, non verifica legale
+      // Dati placeholder inseriti al primo avvio, mai controllati contro le fonti
+      // ufficiali: isVerifiedByAi parte a false e lastCheckedAt a null così il
+      // primo giro del cron (vedi lib/incentivesVerification.ts) li tratta come
+      // non ancora verificati, invece di dichiararli falsamente già confermati.
+      isVerifiedByAi: false,
+      lastCheckedAt: null,
       humanVerified: false,
     },
     {
@@ -46,7 +64,12 @@ async function ensureDefaultIncentives() {
       massimaleContributo: "65000.00",
       stato: "active",
       fonteUfficialeUrl: "https://www.enea.it",
-      isVerifiedByAi: true, // esito heuristico cron AI, non verifica legale
+      // Dati placeholder inseriti al primo avvio, mai controllati contro le fonti
+      // ufficiali: isVerifiedByAi parte a false e lastCheckedAt a null così il
+      // primo giro del cron (vedi lib/incentivesVerification.ts) li tratta come
+      // non ancora verificati, invece di dichiararli falsamente già confermati.
+      isVerifiedByAi: false,
+      lastCheckedAt: null,
       humanVerified: false,
     },
     {
@@ -63,7 +86,12 @@ async function ensureDefaultIncentives() {
       massimaleContributo: "15000.00",
       stato: "active",
       fonteUfficialeUrl: "https://www.gse.it",
-      isVerifiedByAi: true, // esito heuristico cron AI, non verifica legale
+      // Dati placeholder inseriti al primo avvio, mai controllati contro le fonti
+      // ufficiali: isVerifiedByAi parte a false e lastCheckedAt a null così il
+      // primo giro del cron (vedi lib/incentivesVerification.ts) li tratta come
+      // non ancora verificati, invece di dichiararli falsamente già confermati.
+      isVerifiedByAi: false,
+      lastCheckedAt: null,
       humanVerified: false,
     },
     {
@@ -80,7 +108,12 @@ async function ensureDefaultIncentives() {
       massimaleContributo: "37500.00",
       stato: "active",
       fonteUfficialeUrl: "https://www.agenziaentrate.gov.it",
-      isVerifiedByAi: true, // esito heuristico cron AI, non verifica legale
+      // Dati placeholder inseriti al primo avvio, mai controllati contro le fonti
+      // ufficiali: isVerifiedByAi parte a false e lastCheckedAt a null così il
+      // primo giro del cron (vedi lib/incentivesVerification.ts) li tratta come
+      // non ancora verificati, invece di dichiararli falsamente già confermati.
+      isVerifiedByAi: false,
+      lastCheckedAt: null,
       humanVerified: false,
     },
     {
@@ -96,9 +129,18 @@ async function ensureDefaultIncentives() {
       massimaleSpesa: "20000.00",
       massimaleContributo: "5000.00",
       requisitiIseeMax: "45000.00",
+      // Data indicativa di chiusura sportello (placeholder, da confermare: vedi punto 3
+      // del TODO). Senza scadenza il bando non può mai essere auto-marcato "closed"
+      // quando i fondi a sportello si esauriscono.
+      scadenza: new Date("2026-12-31T23:59:59Z"),
       stato: "active",
       fonteUfficialeUrl: "https://www.regione.lombardia.it",
-      isVerifiedByAi: true, // esito heuristico cron AI, non verifica legale
+      // Dati placeholder inseriti al primo avvio, mai controllati contro le fonti
+      // ufficiali: isVerifiedByAi parte a false e lastCheckedAt a null così il
+      // primo giro del cron (vedi lib/incentivesVerification.ts) li tratta come
+      // non ancora verificati, invece di dichiararli falsamente già confermati.
+      isVerifiedByAi: false,
+      lastCheckedAt: null,
       humanVerified: false,
     },
     {
@@ -113,9 +155,15 @@ async function ensureDefaultIncentives() {
       percentualeMassima: "40.00",
       massimaleSpesa: "15000.00",
       massimaleContributo: "3500.00",
+      scadenza: new Date("2026-12-31T23:59:59Z"), // placeholder, da confermare (vedi punto 3)
       stato: "active",
       fonteUfficialeUrl: "https://www.regione.piemonte.it",
-      isVerifiedByAi: true, // esito heuristico cron AI, non verifica legale
+      // Dati placeholder inseriti al primo avvio, mai controllati contro le fonti
+      // ufficiali: isVerifiedByAi parte a false e lastCheckedAt a null così il
+      // primo giro del cron (vedi lib/incentivesVerification.ts) li tratta come
+      // non ancora verificati, invece di dichiararli falsamente già confermati.
+      isVerifiedByAi: false,
+      lastCheckedAt: null,
       humanVerified: false,
     },
     {
@@ -130,9 +178,15 @@ async function ensureDefaultIncentives() {
       percentualeMassima: "40.00",
       massimaleSpesa: "12000.00",
       massimaleContributo: "4000.00",
+      scadenza: new Date("2026-11-30T23:59:59Z"), // placeholder, da confermare (vedi punto 3)
       stato: "active",
       fonteUfficialeUrl: "https://energia.regione.emilia-romagna.it",
-      isVerifiedByAi: true, // esito heuristico cron AI, non verifica legale
+      // Dati placeholder inseriti al primo avvio, mai controllati contro le fonti
+      // ufficiali: isVerifiedByAi parte a false e lastCheckedAt a null così il
+      // primo giro del cron (vedi lib/incentivesVerification.ts) li tratta come
+      // non ancora verificati, invece di dichiararli falsamente già confermati.
+      isVerifiedByAi: false,
+      lastCheckedAt: null,
       humanVerified: false,
     },
     {
@@ -147,9 +201,15 @@ async function ensureDefaultIncentives() {
       percentualeMassima: "35.00",
       massimaleSpesa: "25000.00",
       massimaleContributo: "4500.00",
+      scadenza: new Date("2026-12-31T23:59:59Z"), // placeholder, da confermare (vedi punto 3)
       stato: "active",
       fonteUfficialeUrl: "https://www.regione.veneto.it",
-      isVerifiedByAi: true, // esito heuristico cron AI, non verifica legale
+      // Dati placeholder inseriti al primo avvio, mai controllati contro le fonti
+      // ufficiali: isVerifiedByAi parte a false e lastCheckedAt a null così il
+      // primo giro del cron (vedi lib/incentivesVerification.ts) li tratta come
+      // non ancora verificati, invece di dichiararli falsamente già confermati.
+      isVerifiedByAi: false,
+      lastCheckedAt: null,
       humanVerified: false,
     },
     {
@@ -164,9 +224,15 @@ async function ensureDefaultIncentives() {
       percentualeMassima: "30.00",
       massimaleSpesa: "15000.00",
       massimaleContributo: "3000.00",
+      scadenza: new Date("2026-10-31T23:59:59Z"), // placeholder, da confermare (vedi punto 3)
       stato: "active",
       fonteUfficialeUrl: "https://www.comune.milano.it",
-      isVerifiedByAi: true, // esito heuristico cron AI, non verifica legale
+      // Dati placeholder inseriti al primo avvio, mai controllati contro le fonti
+      // ufficiali: isVerifiedByAi parte a false e lastCheckedAt a null così il
+      // primo giro del cron (vedi lib/incentivesVerification.ts) li tratta come
+      // non ancora verificati, invece di dichiararli falsamente già confermati.
+      isVerifiedByAi: false,
+      lastCheckedAt: null,
       humanVerified: false,
     },
     {
@@ -181,9 +247,15 @@ async function ensureDefaultIncentives() {
       percentualeMassima: "35.00",
       massimaleSpesa: "10000.00",
       massimaleContributo: "2500.00",
+      scadenza: new Date("2026-12-15T23:59:59Z"), // placeholder, da confermare (vedi punto 3)
       stato: "active",
       fonteUfficialeUrl: "https://www.comune.bologna.it",
-      isVerifiedByAi: true, // esito heuristico cron AI, non verifica legale
+      // Dati placeholder inseriti al primo avvio, mai controllati contro le fonti
+      // ufficiali: isVerifiedByAi parte a false e lastCheckedAt a null così il
+      // primo giro del cron (vedi lib/incentivesVerification.ts) li tratta come
+      // non ancora verificati, invece di dichiararli falsamente già confermati.
+      isVerifiedByAi: false,
+      lastCheckedAt: null,
       humanVerified: false,
     },
   ]);
@@ -276,16 +348,43 @@ router.post("/public/quotes/:quoteId/incentives", async (req, res) => {
     const scontoIvaStimato = isResidenziale ? Math.round(totaleLavori * 0.10) : 0; // Risparmio netto ~10% sull'imponibile
 
     // 2. Calcolo Bonus Statale compatibile
+    // La detrazione IRPEF su cui si basano Ristrutturazione/Ecobonus è riservata
+    // alle persone fisiche su immobili ad uso abitativo: un ufficio/immobile
+    // commerciale non rientra. Tra prima e seconda casa l'aliquota piena si
+    // applica solo alla prima casa/condominio; sulla seconda casa è ridotta
+    // (aliquota indicativa, da confermare quando si formalizzano le regole
+    // normative reali — vedi punto 3 del TODO). Il bonus barriere architettoniche
+    // resta invece invariato: la normativa non lo limita alla sola prima casa.
+    const isUfficio = tipoImmobile === "ufficio";
+    const isSecondaCasa = tipoImmobile === "seconda_casa";
+
     let bonusStataleApplicato = "Bonus Ristrutturazione Edilizia 50% (Detrazione 10 anni)";
-    let importoBonusStatale = Math.round(totaleLavori * 0.50);
+    let bonusStataleCodice = "BONUS_CASA_50";
+    let percentualeBonusStatale = 0.50;
+    let percentualeSecondaCasa = 0.36;
 
     if (obiettivoLavori === "efficienza" || obiettivoLavori === "efficienza_energetica") {
       bonusStataleApplicato = "Ecobonus 65% / Conto Termico GSE (Incentivo Diretto)";
-      importoBonusStatale = Math.round(totaleLavori * 0.65);
+      bonusStataleCodice = "ECOBONUS_65";
+      percentualeBonusStatale = 0.65;
+      percentualeSecondaCasa = 0.50;
     } else if (obiettivoLavori === "barriere" || obiettivoLavori === "barriere_architettoniche") {
       bonusStataleApplicato = "Bonus Abbattimento Barriere Architettoniche 75%";
-      importoBonusStatale = Math.round(totaleLavori * 0.75);
+      bonusStataleCodice = "BARRIERE_75";
+      percentualeBonusStatale = 0.75;
+      percentualeSecondaCasa = 0.75; // la normativa non riduce questo bonus per seconda casa
     }
+
+    const bonusBarriere = bonusStataleCodice === "BARRIERE_75";
+    if (isUfficio && !bonusBarriere) {
+      bonusStataleApplicato = `${bonusStataleApplicato} — non applicabile: detrazione riservata a immobili ad uso abitativo`;
+      percentualeBonusStatale = 0;
+    } else if (isSecondaCasa && !bonusBarriere) {
+      percentualeBonusStatale = percentualeSecondaCasa;
+      bonusStataleApplicato = `${bonusStataleApplicato} — aliquota ridotta ${Math.round(percentualeSecondaCasa * 100)}% per seconda casa`;
+    }
+
+    let importoBonusStatale = Math.round(totaleLavori * percentualeBonusStatale);
 
     // Limita al massimale standard
     if (importoBonusStatale > 48000) importoBonusStatale = 48000;
@@ -297,11 +396,17 @@ router.post("/public/quotes/:quoteId/incentives", async (req, res) => {
       .from(incentivesCatalogTable)
       .where(ne(incentivesCatalogTable.stato, "closed"));
 
+    // Stato di verifica del bonus statale applicato: riflette se un admin
+    // ha controllato a mano la relativa voce di catalogo (vedi humanVerified).
+    const bonusStataleRecord = allIncentives.find(inc => inc.codice === bonusStataleCodice);
+    const bonusStataleHumanVerified = bonusStataleRecord?.humanVerified ?? false;
+
     let bandoRegionaleApplicato = "Nessun bando regionale a sportello specifico individuato (si applicano i Bonus Statali)";
     let importoBandoRegionale = 0;
+    let bandoRegionaleHumanVerified: boolean | null = null;
 
     if (regione || cap) {
-      const matchReg = allIncentives.find(inc => 
+      const matchReg = allIncentives.find(inc =>
         (inc.level === "regionale" || inc.level === "comunale") &&
         ((regione && inc.regione?.toLowerCase().includes(regione.toLowerCase())) ||
          (regione && regione.toLowerCase().includes(inc.regione?.toLowerCase() || "")) ||
@@ -312,6 +417,7 @@ router.post("/public/quotes/:quoteId/incentives", async (req, res) => {
       if (matchReg) {
         bandoRegionaleApplicato = `${matchReg.titolo} (${matchReg.tipoAgevolazione === 'fondo_perduto' ? 'Fondo Perduto' : 'Contributo'})`;
         importoBandoRegionale = Number(matchReg.massimaleContributo) || 3000;
+        bandoRegionaleHumanVerified = matchReg.humanVerified;
         if (fasciaIsee === "sotto_30k") {
           importoBandoRegionale = Math.round(importoBandoRegionale * 1.25); // Maggiorazione sociale ISEE
         }
@@ -331,7 +437,9 @@ router.post("/public/quotes/:quoteId/incentives", async (req, res) => {
       regione,
       cap,
       bonusStataleApplicato: `${bonusStataleApplicato} (~€${importoBonusStatale.toLocaleString("it-IT")})`,
+      bonusStataleHumanVerified,
       bandoRegionaleApplicato: importoBandoRegionale > 0 ? `${bandoRegionaleApplicato} (~€${importoBandoRegionale.toLocaleString("it-IT")})` : bandoRegionaleApplicato,
+      bandoRegionaleHumanVerified,
       scontoIvaStimato,
       esborsoImmediatoStimato,
       detrazioneFiscaleDecennale: importoBonusStatale,
@@ -387,7 +495,9 @@ router.post("/public/quotes/:quoteId/incentives", async (req, res) => {
       totaleLavori,
       scontoIvaStimato,
       bonusStataleApplicato: incentivesData.bonusStataleApplicato,
+      bonusStataleHumanVerified,
       bandoRegionaleApplicato: incentivesData.bandoRegionaleApplicato,
+      bandoRegionaleHumanVerified,
       esborsoImmediatoStimato,
       detrazioneFiscaleDecennale: importoBonusStatale,
       detrazioneFiscaleAnnua,
@@ -552,73 +662,21 @@ router.post("/admin/incentives/cron-sync", requireAdmin, async (_req, res) => {
   try {
     logger.info("Executing Daily AI Incentive Agent verification...");
     await ensureDefaultIncentives();
-    
+
     const activeIncentives = await db
       .select()
       .from(incentivesCatalogTable)
       .where(ne(incentivesCatalogTable.stato, "closed"));
 
-    // Contatta OpenAI/Llama per verificare lo stato aggiornato
-    const prompt = `Sei l'agente AI responsabile della verifica quotidiana dei bandi e incentivi edili italiani per PrevAI.
-Ecco l'elenco attuale dei bandi nel database:
-${activeIncentives.map(inc => `- ID: ${inc.id} | Codice: ${inc.codice} | Titolo: ${inc.titolo} | Scadenza/Stato: ${inc.stato} | Regione: ${inc.regione || 'Statale'}`).join("\n")}
-
-Fornisci una verifica di coerenza normativa 2026 e indica se qualche bando è da contrassegnare come "expiring_soon" (in esaurimento a sportello) o confermato "active".
-Restituisci SOLO un JSON valido nel seguente formato:
-{
-  "updatedStatus": [
-    { "id": "ID_DEL_BANDO", "stato": "active" | "expiring_soon", "note_di_verifica": "Sintesi verifica legale/fondi" }
-  ],
-  "riepilogoScansione": "Scansione quotidiana completata con successo. Confermati 10 bandi attivi in Italia per edilizia ed efficienza 2026."
-}`;
-
-    const completion = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
-      max_completion_tokens: 1500,
-      messages: [
-        { role: "system", content: "Sei un revisore legale ed esperto di bandi pubblici italiani per l'edilizia." },
-        { role: "user", content: prompt },
-      ],
-    });
-
-    let aiResult: any = { updatedStatus: [], riepilogoScansione: "Scansione AI completata con successo." };
-    try {
-      const cleaned = (completion.choices[0]?.message?.content || "{}").trim().replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/i, "");
-      aiResult = JSON.parse(cleaned);
-    } catch (parseErr) {
-      logger.warn({ parseErr }, "Could not parse AI sync response cleanly, proceeding with timestamp update");
-    }
-
-    let updatedCount = 0;
-    if (aiResult.updatedStatus && Array.isArray(aiResult.updatedStatus)) {
-      for (const item of aiResult.updatedStatus) {
-        if (item.id && (item.stato === "active" || item.stato === "expiring_soon")) {
-          await db
-            .update(incentivesCatalogTable)
-            .set({
-              stato: item.stato,
-              isVerifiedByAi: true,
-              lastCheckedAt: new Date(),
-            })
-            .where(eq(incentivesCatalogTable.id, item.id));
-          updatedCount++;
-        }
-      }
-    } else {
-      // Aggiorna comunque il timestamp di verifica
-      for (const inc of activeIncentives) {
-        await db
-          .update(incentivesCatalogTable)
-          .set({ isVerifiedByAi: true, lastCheckedAt: new Date() })
-          .where(eq(incentivesCatalogTable.id, inc.id));
-      }
-      updatedCount = activeIncentives.length;
-    }
+    const outcome = await runIncentivesVerification(activeIncentives);
 
     res.json({
       success: true,
-      verifiedCount: updatedCount,
-      summary: aiResult.riepilogoScansione || "Tutti i bandi statali e regionali sono stati verificati e confermati attivi per il 2026.",
+      verifiedCount: outcome.updatedCount,
+      sourcesFetched: outcome.sourcesFetched,
+      sourcesTotal: outcome.sourcesTotal,
+      summary: outcome.summary,
+      disclaimer: outcome.disclaimer,
     });
   } catch (err) {
     logger.error({ err }, "Error running daily AI incentive sync");

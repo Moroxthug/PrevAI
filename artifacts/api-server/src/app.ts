@@ -3,7 +3,7 @@ import cors from "cors";
 import pinoHttp from "pino-http";
 import { toNodeHandler } from "better-auth/node";
 import multer from "multer";
-import { db, quotesTable, businessProfilesTable, authUsersTable } from "@workspace/db";
+import { db, quotesTable, businessProfilesTable, authUsersTable, emailEventsTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
 import { auth, getTrustedOrigins } from "./lib/auth";
 import { PRICE_TO_PLAN } from "./routes/payments.js";
@@ -353,11 +353,24 @@ app.post(
 
     if (event.type === "email.bounced" || event.type === "email.complained") {
       // Segnali importanti: un indirizzo email del partner non riceve più
-      // le notifiche lead dal widget. Al momento solo loggato — non c'è
-      // ancora una tabella/UI admin che mostri lo storico di questi eventi.
+      // le notifiche lead dal widget. Persistiti in email_events così l'admin
+      // può vederli nel tempo invece di dover controllare i log del server.
       logger.warn(eventData, `Resend: ${event.type}`);
     } else {
       logger.info(eventData, `Resend: ${event.type ?? "evento sconosciuto"}`);
+    }
+
+    try {
+      await db.insert(emailEventsTable).values({
+        type: event.type || "sconosciuto",
+        emailId: typeof event.data?.email_id === "string" ? event.data.email_id : null,
+        to: Array.isArray(event.data?.to) ? (event.data.to as string[]) : (event.data?.to ? [String(event.data.to)] : null),
+        from: typeof event.data?.from === "string" ? event.data.from : null,
+        subject: typeof event.data?.subject === "string" ? event.data.subject : null,
+        payload: event.data ?? {},
+      });
+    } catch (err) {
+      logger.error({ err }, "Failed to persist Resend webhook event");
     }
 
     res.status(200).json({ received: true });

@@ -411,6 +411,22 @@ function PvqSelect({
   );
 }
 
+/* Bollino di stato verifica di un bando/bonus: distingue una conferma
+   umana reale (humanVerified) da una semplice ipotesi in attesa di
+   controllo, così l'utente finale non scambia l'una per l'altra. */
+function VerificationBadge({ humanVerified }: { humanVerified: boolean | null }) {
+  if (humanVerified === null) return null;
+  return humanVerified ? (
+    <span style={{ fontSize: 11, fontWeight: 700, color: "#065F46", background: "rgba(6, 95, 70, 0.12)", borderRadius: 999, padding: "2px 8px", whiteSpace: "nowrap" }}>
+      ✓ Verificato da un operatore
+    </span>
+  ) : (
+    <span style={{ fontSize: 11, fontWeight: 700, color: "#92400E", background: "rgba(146, 64, 14, 0.12)", borderRadius: 999, padding: "2px 8px", whiteSpace: "nowrap" }}>
+      ⏳ In attesa di conferma umana
+    </span>
+  );
+}
+
 /* ══════════════ Widget ══════════════ */
 
 type Phase = "lavoro" | "immobile" | "descrizione" | "contatto" | "attesa" | "stima" | "fuorizona";
@@ -973,14 +989,39 @@ function RisultatoInline({
   const [loadingInc, setLoadingInc] = useState(false);
   const [incError, setIncError] = useState<string | null>(null);
 
+  // Anteprima bandi (GET /api/public/incentives, sola lettura): mostra subito
+  // quali bandi esistono per la regione/categoria scelta, prima ancora che
+  // l'utente lanci il calcolo completo su un preventivo salvato.
+  const [previewBandi, setPreviewBandi] = useState<{ titolo: string; level: string; massimaleContributo: string | null; percentualeMassima: string }[] | null>(null);
+  const [loadingPreview, setLoadingPreview] = useState(false);
+
+  useEffect(() => {
+    if (incentivesStep !== "questions" || !regione || !apiBaseUrl) {
+      setPreviewBandi(null);
+      return;
+    }
+    const categoriaMap: Record<string, string> = { efficienza: "efficienza_energetica", barriere: "barriere" };
+    const categoria = categoriaMap[obiettivoLavori] || "ristrutturazione";
+    const controller = new AbortController();
+    setLoadingPreview(true);
+    fetch(`${apiBaseUrl}/api/public/incentives?regione=${encodeURIComponent(regione)}&categoria=${encodeURIComponent(categoria)}`, { signal: controller.signal })
+      .then((r) => { if (!r.ok) throw new Error("Anteprima non disponibile"); return r.json(); })
+      .then((data) => { if (data.success) setPreviewBandi(data.incentives || []); })
+      .catch(() => setPreviewBandi(null))
+      .finally(() => setLoadingPreview(false));
+    return () => controller.abort();
+  }, [incentivesStep, regione, obiettivoLavori, apiBaseUrl]);
+
   // Risultati incentivi: arrivano dal catalogo/calcolo server-side, mai da formule nel widget
   const [incResult, setIncResult] = useState<{
     scontoIva: number;
     bonusStataleNome: string;
     bonusStataleImporto: number;
+    bonusStataleHumanVerified: boolean;
     detrazioneFiscaleAnnua: number;
     bandoRegionaleNome: string;
     hasBandoRegionale: boolean;
+    bandoRegionaleHumanVerified: boolean | null;
     esborsoImmediato: number;
   } | null>(null);
 
@@ -1017,9 +1058,11 @@ function RisultatoInline({
           scontoIva: data.scontoIvaStimato,
           bonusStataleNome: data.bonusStataleApplicato,
           bonusStataleImporto: data.detrazioneFiscaleDecennale,
+          bonusStataleHumanVerified: Boolean(data.bonusStataleHumanVerified),
           detrazioneFiscaleAnnua: data.detrazioneFiscaleAnnua,
           bandoRegionaleNome: data.bandoRegionaleApplicato,
           hasBandoRegionale: !String(data.bandoRegionaleApplicato || "").startsWith("Nessun bando"),
+          bandoRegionaleHumanVerified: data.bandoRegionaleHumanVerified ?? null,
           esborsoImmediato: data.esborsoImmediatoStimato,
         });
         setIncentivesStep("result");
@@ -1145,6 +1188,23 @@ function RisultatoInline({
               />
             </div>
           </div>
+
+          {regione && (
+            <div className="pvq-note" style={{ margin: 0 }}>
+              {loadingPreview && "Cerco i bandi disponibili per questa zona…"}
+              {!loadingPreview && previewBandi && previewBandi.length > 0 && (
+                <span>
+                  📋 Anteprima: {previewBandi.length} bando/i potenzialmente compatibili trovati nel catalogo
+                  {" "}({previewBandi.slice(0, 3).map((b) => b.titolo).join(", ")}{previewBandi.length > 3 ? "…" : ""}).
+                  Il calcolo esatto arriva al passo successivo.
+                </span>
+              )}
+              {!loadingPreview && previewBandi && previewBandi.length === 0 && (
+                <span>Nessun bando a sportello specifico nel catalogo per questa zona: restano comunque valide le detrazioni statali.</span>
+              )}
+            </div>
+          )}
+
           {incError && (
             <p className="pvq-note" style={{ color: "#dc2626", margin: 0 }}>{incError}</p>
           )}
@@ -1169,12 +1229,16 @@ function RisultatoInline({
                 <strong>– {fmtEuro(incResult.scontoIva)}</strong>
               </div>
             )}
-            <div style={{ display: "flex", justifyContent: "space-between" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
               <span>🏛️ {incResult.bonusStataleNome}</span>
-              <strong>~{fmtEuro(incResult.detrazioneFiscaleAnnua)}/anno × 10 anni</strong>
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <VerificationBadge humanVerified={incResult.bonusStataleHumanVerified} />
+                <strong>~{fmtEuro(incResult.detrazioneFiscaleAnnua)}/anno × 10 anni</strong>
+              </div>
             </div>
-            <div style={{ display: "flex", justifyContent: "space-between", color: incResult.hasBandoRegionale ? "#0D9488" : "inherit" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, flexWrap: "wrap", color: incResult.hasBandoRegionale ? "#0D9488" : "inherit" }}>
               <span>📍 {incResult.bandoRegionaleNome}</span>
+              {incResult.hasBandoRegionale && <VerificationBadge humanVerified={incResult.bandoRegionaleHumanVerified} />}
             </div>
           </div>
           <div style={{ marginTop: 4, paddingTop: 10, borderTop: "2px dashed rgba(6, 95, 70, 0.25)", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 8 }}>

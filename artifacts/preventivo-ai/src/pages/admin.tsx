@@ -7,7 +7,7 @@ import {
   ChevronUp, ChevronDown, Minus, Search, Settings, ShieldAlert,
   Sparkles, CheckCircle2, AlertTriangle, PlayCircle, Activity,
   Globe, Search as SearchIcon, Award, HeartHandshake, Eye,
-  MessageSquare, Bot, Send, X
+  MessageSquare, Bot, Send, X, Mail
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -42,7 +42,17 @@ type AdminUser = {
 };
 
 type Settings = Record<string, string>;
-type Tab = "overview" | "users" | "widget" | "incentives" | "stripe" | "gsc" | "seo" | "settings" | "support";
+type Tab = "overview" | "users" | "widget" | "incentives" | "stripe" | "gsc" | "seo" | "settings" | "support" | "email-events";
+
+type EmailEvent = {
+  id: string;
+  type: string;
+  emailId: string | null;
+  to: string[] | null;
+  from: string | null;
+  subject: string | null;
+  createdAt: string;
+};
 
 type GscSummary = {
   totalClicks: number;
@@ -179,6 +189,22 @@ export default function AdminPage() {
     }
   }
 
+  // Stato e funzioni per lo storico eventi Resend (delivery/bounce/complaint)
+  const [emailEvents, setEmailEvents] = useState<EmailEvent[]>([]);
+  const [loadingEmailEvents, setLoadingEmailEvents] = useState(false);
+
+  async function loadEmailEvents() {
+    setLoadingEmailEvents(true);
+    try {
+      const res = await authFetch("/api/admin/email-events");
+      if (res.success) setEmailEvents(res.events || []);
+    } catch (e: any) {
+      toast({ variant: "destructive", title: "Errore", description: "Impossibile caricare lo storico eventi email." });
+    } finally {
+      setLoadingEmailEvents(false);
+    }
+  }
+
   // Stato e funzioni per la gestione del catalogo incentivi & cron AI quotidiano
   const [incentivesList, setIncentivesList] = useState<any[]>([]);
   const [loadingIncentives, setLoadingIncentives] = useState(false);
@@ -217,7 +243,10 @@ export default function AdminPage() {
     try {
       const res = await authFetch("/api/admin/incentives/cron-sync", { method: "POST" });
       if (res.success) {
-        toast({ title: "Verifica AI Completata!", description: res.summary });
+        toast({
+          title: "Controllo euristico AI completato (non è una verifica legale)",
+          description: `${res.summary}${res.disclaimer ? ` — ${res.disclaimer}` : ""}`,
+        });
         loadIncentives();
       }
     } catch (e: any) {
@@ -296,6 +325,7 @@ export default function AdminPage() {
 
   useEffect(() => {
     if (tab === "incentives") loadIncentives();
+    if (tab === "email-events") loadEmailEvents();
   }, [tab]);
 
   async function handleCreateUnregisteredClient(e: React.FormEvent) {
@@ -694,6 +724,7 @@ export default function AdminPage() {
               { id: "gsc", label: "Search Console", icon: Globe },
               { id: "seo", label: "SEO Checker", icon: Sparkles },
               { id: "support", label: "Chat Supporto", icon: MessageSquare },
+              { id: "email-events", label: "Eventi Email (Resend)", icon: Mail },
               { id: "settings", label: "Impostazioni", icon: Settings },
             ].map(item => (
               <button
@@ -1965,6 +1996,71 @@ export default function AdminPage() {
                   </div>
                 </div>
               )}
+            </div>
+          )}
+
+          {/* RESEND WEBHOOK EVENTS (delivery/bounce/complaint) */}
+          {tab === "email-events" && (
+            <div className="space-y-6">
+              <div className="bg-white rounded-2xl border border-slate-100 p-6 shadow-sm">
+                <h2 className="text-base font-bold text-slate-800 flex items-center gap-2">
+                  <Mail className="h-5 w-5 text-blue-500" /> Eventi Email (Webhook Resend)
+                </h2>
+                <p className="text-xs text-slate-400 mt-1">
+                  Storico degli eventi di delivery/bounce/complaint ricevuti da Resend. Un bounce o complaint
+                  ripetuto sull'email di un partner significa che le notifiche lead del widget non gli arrivano più.
+                </p>
+              </div>
+
+              <div className="bg-white rounded-2xl border border-slate-100 p-6 shadow-sm space-y-4">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-sm font-bold text-slate-800">Ultimi Eventi ({emailEvents.length})</h3>
+                  <button
+                    onClick={loadEmailEvents}
+                    disabled={loadingEmailEvents}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-100 bg-white shadow-sm text-xs text-slate-500 hover:text-slate-800 transition-all font-medium disabled:opacity-50"
+                  >
+                    <RefreshCw className={`h-3.5 w-3.5 ${loadingEmailEvents ? "animate-spin" : ""}`} />
+                    Aggiorna
+                  </button>
+                </div>
+
+                {emailEvents.length === 0 && !loadingEmailEvents && (
+                  <p className="text-xs text-slate-400">Nessun evento ricevuto ancora dal webhook Resend.</p>
+                )}
+
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-sm border-collapse">
+                    <thead>
+                      <tr className="border-b border-slate-100 bg-slate-50/50">
+                        <th className="px-4 py-3 text-xs font-bold text-slate-400 uppercase">Tipo</th>
+                        <th className="px-4 py-3 text-xs font-bold text-slate-400 uppercase">Destinatario</th>
+                        <th className="px-4 py-3 text-xs font-bold text-slate-400 uppercase">Oggetto</th>
+                        <th className="px-4 py-3 text-xs font-bold text-slate-400 uppercase text-right">Data</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-50">
+                      {emailEvents.map((ev) => {
+                        const isProblem = ev.type === "email.bounced" || ev.type === "email.complained";
+                        return (
+                          <tr key={ev.id} className="hover:bg-slate-50/20 text-xs">
+                            <td className="px-4 py-3.5">
+                              <span className={`px-2 py-0.5 rounded-full font-bold ${isProblem ? "bg-red-50 text-red-700 border border-red-100" : "bg-slate-100 text-slate-600"}`}>
+                                {ev.type}
+                              </span>
+                            </td>
+                            <td className="px-4 py-3.5 text-slate-600">{(ev.to || []).join(", ") || "—"}</td>
+                            <td className="px-4 py-3.5 text-slate-600">{ev.subject || "—"}</td>
+                            <td className="px-4 py-3.5 text-right text-slate-400">
+                              {new Date(ev.createdAt).toLocaleString("it-IT")}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
             </div>
           )}
 
