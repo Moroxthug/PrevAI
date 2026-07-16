@@ -12,7 +12,13 @@ declare global {
   }
 }
 
-export async function requireAuth(req: Request, res: Response, next: NextFunction): Promise<void> {
+// Generico su P: se restasse fisso al default di Request, TypeScript
+// unificherebbe il tipo di req.params sull'intera catena di handler al
+// valore più generico (string | string[]) ogni volta che questo middleware
+// precede un handler con parametri di rotta letterali (es.
+// router.get("/foo/:id", requireAuth, (req) => req.params.id)), nascondendo
+// il tipo reale inferito dalla stringa di rotta.
+export async function requireAuth<P = Record<string, string>>(req: Request<P>, res: Response, next: NextFunction): Promise<void> {
   try {
     const session = await auth.api.getSession({ headers: fromNodeHeaders(req.headers) });
     if (!session) {

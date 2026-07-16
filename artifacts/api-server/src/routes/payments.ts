@@ -421,9 +421,12 @@ router.post("/payments/sync-subscription", requireAuth, async (req, res) => {
       return;
     }
 
-    const periodEnd = sub.current_period_end
-      ? new Date(sub.current_period_end * 1000)
-      : null;
+    // Dalla v22 dell'SDK Stripe, current_period_end/start vivono sul singolo
+    // subscription item (non più sull'oggetto Subscription): senza questo,
+    // periodEnd risultava sempre null e subscriptionPeriodEnd non veniva
+    // mai sincronizzato correttamente in fase di risincronizzazione manuale.
+    const currentPeriodEnd = sub.items.data[0]?.current_period_end;
+    const periodEnd = currentPeriodEnd ? new Date(currentPeriodEnd * 1000) : null;
 
     await db
       .insert(businessProfilesTable)

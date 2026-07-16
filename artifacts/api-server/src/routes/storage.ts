@@ -52,7 +52,11 @@ router.get("/storage/public-objects/*filePath", async (req: Request, res: Respon
     response.headers.forEach((value, key) => res.setHeader(key, value));
 
     if (response.body) {
-      const nodeStream = Readable.fromWeb(response.body as ReadableStream<Uint8Array>);
+      // Il ReadableStream globale (lib DOM/undici) non espone values()/
+      // Symbol.asyncIterator del tipo di node:stream/web atteso da
+      // Readable.fromWeb: il doppio cast riflette che a runtime è comunque
+      // uno stream compatibile, solo con una dichiarazione di tipo diversa.
+      const nodeStream = Readable.fromWeb(response.body as unknown as import("node:stream/web").ReadableStream<Uint8Array>);
       nodeStream.pipe(res);
     } else {
       res.end();
@@ -73,7 +77,7 @@ router.get("/storage/objects/*objectPath", requireAuth, async (req: Request, res
     objectData.headers.forEach((value: string, key: string) => res.setHeader(key, value));
 
     if (objectData.body) {
-      const nodeStream = Readable.fromWeb(objectData.body as ReadableStream<Uint8Array>);
+      const nodeStream = Readable.fromWeb(objectData.body as unknown as import("node:stream/web").ReadableStream<Uint8Array>);
       nodeStream.pipe(res);
     } else {
       res.end();

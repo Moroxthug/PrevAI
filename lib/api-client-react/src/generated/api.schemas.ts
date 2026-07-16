@@ -214,6 +214,7 @@ export interface BusinessProfile {
   logoUrl?: string | null;
   phone?: string | null;
   email?: string | null;
+  apiKey?: string | null;
 }
 
 export interface UpdateBusinessProfileBody {

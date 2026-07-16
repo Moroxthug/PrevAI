@@ -1,38 +1,11 @@
-import { Router, type Request, type Response, type NextFunction } from "express";
-import { fromNodeHeaders } from "better-auth/node";
-import { auth } from "../lib/auth.js";
+import { Router } from "express";
 import { db, conversations, messages, settingsTable } from "@workspace/db";
 import { eq, desc, asc } from "drizzle-orm";
 import { logger } from "../lib/logger.js";
 import { openai } from "@workspace/integrations-openai-ai-server";
+import { requireAdmin } from "./admin.js";
 
 const router = Router();
-
-// Helper to check if user is admin
-async function isAdmin(req: Request): Promise<boolean> {
-  const adminEmail = process.env.ADMIN_EMAIL || process.env.admin_email;
-  if (!adminEmail) return false;
-  try {
-    const session = await auth.api.getSession({ headers: fromNodeHeaders(req.headers) });
-    if (!session) return false;
-    const cleanEmailStr = adminEmail.replace(/['"]/g, "");
-    const emails = cleanEmailStr.split(",").map(e => e.trim().toLowerCase());
-    return emails.includes(session.user.email.toLowerCase());
-  } catch (err) {
-    logger.error({ err }, "isAdmin check in support failed");
-    return false;
-  }
-}
-
-// Middleware to enforce admin access
-async function requireAdmin(req: Request, res: Response, next: NextFunction): Promise<void> {
-  const ok = await isAdmin(req);
-  if (!ok) {
-    res.status(403).json({ error: "Forbidden" });
-    return;
-  }
-  next();
-}
 
 // --- Admin status endpoints ---
 

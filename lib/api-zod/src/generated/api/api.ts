@@ -840,6 +840,7 @@ export const GetBusinessProfileResponse = zod.object({
   logoUrl: zod.string().nullish(),
   phone: zod.string().nullish(),
   email: zod.string().nullish(),
+  apiKey: zod.string().nullish(),
 });
 
 /**
@@ -862,6 +863,7 @@ export const UpdateBusinessProfileResponse = zod.object({
   logoUrl: zod.string().nullish(),
   phone: zod.string().nullish(),
   email: zod.string().nullish(),
+  apiKey: zod.string().nullish(),
 });
 
 /**
