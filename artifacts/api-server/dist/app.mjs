@@ -18463,8 +18463,8 @@ var require_escape_html = __commonJS({
   "../../node_modules/.pnpm/escape-html@1.0.3/node_modules/escape-html/index.js"(exports, module) {
     "use strict";
     var matchHtmlRegExp = /["'&<>]/;
-    module.exports = escapeHtml2;
-    function escapeHtml2(string7) {
+    module.exports = escapeHtml3;
+    function escapeHtml3(string7) {
       var str2 = "" + string7;
       var match = matchHtmlRegExp.exec(str2);
       if (!match) {
@@ -18595,13 +18595,13 @@ var require_finalhandler = __commonJS({
     "use strict";
     var debug = require_src()("finalhandler");
     var encodeUrl = require_encodeurl();
-    var escapeHtml2 = require_escape_html();
+    var escapeHtml3 = require_escape_html();
     var onFinished = require_on_finished();
     var parseUrl = require_parseurl();
     var statuses = require_statuses();
     var isFinished = onFinished.isFinished;
     function createHtmlDocument(message2) {
-      var body = escapeHtml2(message2).replaceAll("\n", "<br>").replaceAll("  ", " &nbsp;");
+      var body = escapeHtml3(message2).replaceAll("\n", "<br>").replaceAll("  ", " &nbsp;");
       return '<!DOCTYPE html>\n<html lang="en">\n<head>\n<meta charset="utf-8">\n<title>Error</title>\n</head>\n<body>\n<pre>' + body + "</pre>\n</body>\n</html>\n";
     }
     module.exports = finalhandler;
@@ -22425,7 +22425,7 @@ var require_send = __commonJS({
     var createError = require_http_errors();
     var debug = require_src()("send");
     var encodeUrl = require_encodeurl();
-    var escapeHtml2 = require_escape_html();
+    var escapeHtml3 = require_escape_html();
     var etag = require_etag();
     var fresh = require_fresh();
     var fs3 = __require("fs");
@@ -22478,7 +22478,7 @@ var require_send = __commonJS({
       }
       var res = this.res;
       var msg = statuses.message[status] || String(status);
-      var doc = createHtmlDocument("Error", escapeHtml2(msg));
+      var doc = createHtmlDocument("Error", escapeHtml3(msg));
       clearHeaders(res);
       if (err && err.headers) {
         setHeaders(res, err.headers);
@@ -22578,7 +22578,7 @@ var require_send = __commonJS({
         return;
       }
       var loc = encodeUrl(collapseLeadingSlashes(this.path + "/"));
-      var doc = createHtmlDocument("Redirecting", "Redirecting to " + escapeHtml2(loc));
+      var doc = createHtmlDocument("Redirecting", "Redirecting to " + escapeHtml3(loc));
       res.statusCode = 301;
       res.setHeader("Content-Type", "text/html; charset=UTF-8");
       res.setHeader("Content-Length", Buffer.byteLength(doc));
@@ -22982,7 +22982,7 @@ var require_response = __commonJS({
     var createError = require_http_errors();
     var deprecate2 = require_depd()("express");
     var encodeUrl = require_encodeurl();
-    var escapeHtml2 = require_escape_html();
+    var escapeHtml3 = require_escape_html();
     var http2 = __require("node:http");
     var onFinished = require_on_finished();
     var mime = require_mime_types();
@@ -23321,7 +23321,7 @@ var require_response = __commonJS({
           body = statuses.message[status] + ". Redirecting to " + address;
         },
         html: function() {
-          var u = escapeHtml2(address);
+          var u = escapeHtml3(address);
           body = "<p>" + statuses.message[status] + ". Redirecting to " + u + "</p>";
         },
         default: function() {
@@ -23449,7 +23449,7 @@ var require_serve_static = __commonJS({
   "../../node_modules/.pnpm/serve-static@2.2.1/node_modules/serve-static/index.js"(exports, module) {
     "use strict";
     var encodeUrl = require_encodeurl();
-    var escapeHtml2 = require_escape_html();
+    var escapeHtml3 = require_escape_html();
     var parseUrl = require_parseurl();
     var resolve = __require("path").resolve;
     var send = require_send();
@@ -23535,7 +23535,7 @@ var require_serve_static = __commonJS({
         originalUrl.path = null;
         originalUrl.pathname = collapseLeadingSlashes(originalUrl.pathname + "/");
         var loc = encodeUrl(url3.format(originalUrl));
-        var doc = createHtmlDocument("Redirecting", "Redirecting to " + escapeHtml2(loc));
+        var doc = createHtmlDocument("Redirecting", "Redirecting to " + escapeHtml3(loc));
         res.statusCode = 301;
         res.setHeader("Content-Type", "text/html; charset=UTF-8");
         res.setHeader("Content-Length", Buffer.byteLength(doc));
@@ -53210,10 +53210,10 @@ var init_dist2 = __esm({
               return await withReturning(data, db3.insertInto(model).values(data), model, []);
             },
             async findOne({ model, where, select, join }) {
-              const { and: and3, or: or3 } = convertWhereClause(model, where);
+              const { and: and2, or: or3 } = convertWhereClause(model, where);
               let query = db3.selectFrom((eb) => {
                 let b = eb.selectFrom(model);
-                if (and3) b = b.where((eb2) => eb2.and(and3.map((expr) => expr(eb2))));
+                if (and2) b = b.where((eb2) => eb2.and(and2.map((expr) => expr(eb2))));
                 if (or3) b = b.where((eb2) => eb2.or(or3.map((expr) => expr(eb2))));
                 if (select?.length && select.length > 0) b = b.select(select.map((field) => getFieldName({
                   model,
@@ -53235,7 +53235,7 @@ var init_dist2 = __esm({
               return row;
             },
             async findMany({ model, where, limit: limit2, select, offset, sortBy, join }) {
-              const { and: and3, or: or3 } = convertWhereClause(model, where);
+              const { and: and2, or: or3 } = convertWhereClause(model, where);
               let query = db3.selectFrom((eb) => {
                 let b = eb.selectFrom(model);
                 if (config4?.type === "mssql") {
@@ -53254,7 +53254,7 @@ var init_dist2 = __esm({
                   model,
                   field: sortBy.field
                 })}`, sortBy.direction);
-                if (and3) b = b.where((eb2) => eb2.and(and3.map((expr) => expr(eb2))));
+                if (and2) b = b.where((eb2) => eb2.and(and2.map((expr) => expr(eb2))));
                 if (or3) b = b.where((eb2) => eb2.or(or3.map((expr) => expr(eb2))));
                 if (select?.length && select.length > 0) b = b.select(select.map((field) => getFieldName({
                   model,
@@ -53279,24 +53279,24 @@ var init_dist2 = __esm({
               return res;
             },
             async update({ model, where, update: values }) {
-              const { and: and3, or: or3 } = convertWhereClause(model, where);
+              const { and: and2, or: or3 } = convertWhereClause(model, where);
               let query = db3.updateTable(model).set(values);
-              if (and3) query = query.where((eb) => eb.and(and3.map((expr) => expr(eb))));
+              if (and2) query = query.where((eb) => eb.and(and2.map((expr) => expr(eb))));
               if (or3) query = query.where((eb) => eb.or(or3.map((expr) => expr(eb))));
               return await withReturning(values, query, model, where);
             },
             async updateMany({ model, where, update: values }) {
-              const { and: and3, or: or3 } = convertWhereClause(model, where);
+              const { and: and2, or: or3 } = convertWhereClause(model, where);
               let query = db3.updateTable(model).set(values);
-              if (and3) query = query.where((eb) => eb.and(and3.map((expr) => expr(eb))));
+              if (and2) query = query.where((eb) => eb.and(and2.map((expr) => expr(eb))));
               if (or3) query = query.where((eb) => eb.or(or3.map((expr) => expr(eb))));
               const res = (await query.executeTakeFirst()).numUpdatedRows;
               return res > Number.MAX_SAFE_INTEGER ? Number.MAX_SAFE_INTEGER : Number(res);
             },
             async count({ model, where }) {
-              const { and: and3, or: or3 } = convertWhereClause(model, where);
+              const { and: and2, or: or3 } = convertWhereClause(model, where);
               let query = db3.selectFrom(model).select(db3.fn.count("id").as("count"));
-              if (and3) query = query.where((eb) => eb.and(and3.map((expr) => expr(eb))));
+              if (and2) query = query.where((eb) => eb.and(and2.map((expr) => expr(eb))));
               if (or3) query = query.where((eb) => eb.or(or3.map((expr) => expr(eb))));
               const res = await query.execute();
               if (typeof res[0].count === "number") return res[0].count;
@@ -53304,16 +53304,16 @@ var init_dist2 = __esm({
               return parseInt(res[0].count);
             },
             async delete({ model, where }) {
-              const { and: and3, or: or3 } = convertWhereClause(model, where);
+              const { and: and2, or: or3 } = convertWhereClause(model, where);
               let query = db3.deleteFrom(model);
-              if (and3) query = query.where((eb) => eb.and(and3.map((expr) => expr(eb))));
+              if (and2) query = query.where((eb) => eb.and(and2.map((expr) => expr(eb))));
               if (or3) query = query.where((eb) => eb.or(or3.map((expr) => expr(eb))));
               await query.execute();
             },
             async deleteMany({ model, where }) {
-              const { and: and3, or: or3 } = convertWhereClause(model, where);
+              const { and: and2, or: or3 } = convertWhereClause(model, where);
               let query = db3.deleteFrom(model);
-              if (and3) query = query.where((eb) => eb.and(and3.map((expr) => expr(eb))));
+              if (and2) query = query.where((eb) => eb.and(and2.map((expr) => expr(eb))));
               if (or3) query = query.where((eb) => eb.or(or3.map((expr) => expr(eb))));
               const res = (await query.executeTakeFirst()).numDeletedRows;
               return res > Number.MAX_SAFE_INTEGER ? Number.MAX_SAFE_INTEGER : Number(res);
@@ -275265,12 +275265,14 @@ __export(schema_exports, {
   collaboratorsTable: () => collaboratorsTable,
   conversations: () => conversations,
   documentStatusEnum: () => documentStatusEnum,
+  emailEventsTable: () => emailEventsTable,
   extraCostsTable: () => extraCostsTable,
   extractedDocumentDataSchema: () => extractedDocumentDataSchema,
   incentivesCatalogTable: () => incentivesCatalogTable,
   insertBusinessProfileSchema: () => insertBusinessProfileSchema,
   insertCollaboratorSchema: () => insertCollaboratorSchema,
   insertConversationSchema: () => insertConversationSchema,
+  insertEmailEventSchema: () => insertEmailEventSchema,
   insertExtraCostSchema: () => insertExtraCostSchema,
   insertIncentivesCatalogSchema: () => insertIncentivesCatalogSchema,
   insertMessageSchema: () => insertMessageSchema,
@@ -287132,6 +287134,25 @@ var insertIncentivesCatalogSchema = createInsertSchema(incentivesCatalogTable).o
   id: true,
   createdAt: true,
   updatedAt: true
+});
+
+// ../../lib/db/src/schema/email-events.ts
+var emailEventsTable = pgTable("email_events", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  type: text("type").notNull(),
+  // es. 'email.bounced', 'email.delivered', 'email.complained'
+  emailId: text("email_id"),
+  // id Resend del messaggio (event.data.email_id)
+  to: jsonb("to").$type(),
+  from: text("from"),
+  subject: text("subject"),
+  payload: jsonb("payload").$type(),
+  // corpo completo dell'evento per diagnosi
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow()
+});
+var insertEmailEventSchema = createInsertSchema(emailEventsTable).omit({
+  id: true,
+  createdAt: true
 });
 
 // ../../lib/db/src/index.ts
@@ -316487,6 +316508,9 @@ var PREVAI_LOGO_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="120" heigh
   <text x="70" y="22" font-family="system-ui,sans-serif" font-size="18" font-weight="700" fill="#7c3aed">ai</text>
 </svg>`;
 var LOGO_DATA_URI = `data:image/svg+xml;base64,${Buffer.from(PREVAI_LOGO_SVG).toString("base64")}`;
+function escapeHtml2(value) {
+  return value.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+}
 function getPlanTier(planName) {
   const lower = planName.toLowerCase();
   if (lower.includes("pro")) return "pro";
@@ -316738,7 +316762,9 @@ async function sendSubscriptionEmail(params) {
   }
 }
 function buildQuoteEmailHtml(params) {
-  const { companyName, clientName, quoteNumber, totale } = params;
+  const companyName = escapeHtml2(params.companyName);
+  const clientName = escapeHtml2(params.clientName);
+  const { quoteNumber, totale } = params;
   return `<!DOCTYPE html>
 <html lang="it">
 <head>
@@ -316832,6 +316858,11 @@ async function sendWidgetLeadNotification(params) {
     return;
   }
   const { toEmail, companyName, clientName, clientEmail, clientPhone, rawInput, totale, prezzoMinimo, prezzoMassimo, incentivesSummary } = params;
+  const safeClientName = escapeHtml2(clientName);
+  const safeClientEmail = escapeHtml2(clientEmail);
+  const safeClientPhone = escapeHtml2(clientPhone);
+  const safeRawInput = escapeHtml2(rawInput);
+  const safeIncentivesSummary = incentivesSummary ? escapeHtml2(incentivesSummary) : incentivesSummary;
   try {
     const resend2 = new Resend(apiKey);
     await resend2.emails.send({
@@ -316870,21 +316901,21 @@ async function sendWidgetLeadNotification(params) {
     <div class="section-title">Contatti del Lead</div>
     <div class="field">
       <div class="label">Nome Cliente</div>
-      <div class="val">${clientName}</div>
+      <div class="val">${safeClientName}</div>
     </div>
     <div class="field">
       <div class="label">Email</div>
-      <div class="val"><a href="mailto:${clientEmail}" style="color:#4f46e5;">${clientEmail}</a></div>
+      <div class="val"><a href="mailto:${safeClientEmail}" style="color:#4f46e5;">${safeClientEmail}</a></div>
     </div>
     <div class="field">
       <div class="label">Telefono</div>
-      <div class="val"><a href="tel:${clientPhone}" style="color:#4f46e5;">${clientPhone}</a></div>
+      <div class="val"><a href="tel:${safeClientPhone}" style="color:#4f46e5;">${safeClientPhone}</a></div>
     </div>
 
     <div class="section-title">Dettaglio Richiesta</div>
     <div class="field">
       <div class="label">Descrizione e Parametri</div>
-      <div class="val" style="white-space:pre-wrap; font-size:13px; color:#3f3f46; line-height:1.5;">${rawInput}</div>
+      <div class="val" style="white-space:pre-wrap; font-size:13px; color:#3f3f46; line-height:1.5;">${safeRawInput}</div>
     </div>
 
     <div class="price-box">
@@ -316895,8 +316926,8 @@ async function sendWidgetLeadNotification(params) {
       <div style="font-size:11px; color:#71717a; font-weight:normal; margin-top:4px; text-align:right;">Totale preventivo calcolato: \u20AC${totale}</div>
     </div>
 
-    ${incentivesSummary ? `<div class="incentives-box"><strong>\u{1F381} ESITO VERIFICA INCENTIVI & BANDI:</strong>
-${incentivesSummary}</div>` : ""}
+    ${safeIncentivesSummary ? `<div class="incentives-box"><strong>\u{1F381} ESITO VERIFICA INCENTIVI & BANDI:</strong>
+${safeIncentivesSummary}</div>` : ""}
 
     <p style="font-size:13px; color:#71717a; line-height:1.5; text-align:center; margin-top:24px;">
       Ti consigliamo di ricontattare il cliente entro 24 ore per fissare il sopralluogo ed ottimizzare la conversione.
@@ -321823,7 +321854,8 @@ var GetBusinessProfileResponse = objectType({
   address: stringType().optional(),
   logoUrl: stringType().nullish(),
   phone: stringType().nullish(),
-  email: stringType().nullish()
+  email: stringType().nullish(),
+  apiKey: stringType().nullish()
 });
 var UpdateBusinessProfileBody = objectType({
   companyName: stringType().optional(),
@@ -321840,7 +321872,8 @@ var UpdateBusinessProfileResponse = objectType({
   address: stringType().optional(),
   logoUrl: stringType().nullish(),
   phone: stringType().nullish(),
-  email: stringType().nullish()
+  email: stringType().nullish(),
+  apiKey: stringType().nullish()
 });
 var UploadBusinessProfileLogoBody = objectType({
   logo: instanceOfType(File)
@@ -322508,7 +322541,8 @@ router2.post("/payments/sync-subscription", requireAuth, async (req, res) => {
       res.json({ synced: false, message: `Price ID sconosciuto: ${priceId ?? "N/A"}` });
       return;
     }
-    const periodEnd = sub.current_period_end ? new Date(sub.current_period_end * 1e3) : null;
+    const currentPeriodEnd = sub.items.data[0]?.current_period_end;
+    const periodEnd = currentPeriodEnd ? new Date(currentPeriodEnd * 1e3) : null;
     await db.insert(businessProfilesTable).values({
       userId,
       stripeCustomerId: customerId,
@@ -335693,6 +335727,16 @@ router7.post("/admin/widget/create-client", async (req, res) => {
     res.status(500).json({ error: "Internal server error" });
   }
 });
+router7.get("/admin/email-events", requireAdmin, async (req, res) => {
+  try {
+    const limit2 = Math.min(Number(req.query.limit) || 100, 500);
+    const events = await db.select().from(emailEventsTable).orderBy(desc(emailEventsTable.createdAt)).limit(limit2);
+    res.json({ success: true, count: events.length, events });
+  } catch (err) {
+    logger2.error({ err }, "Error fetching email events");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
 var admin_default = router7;
 
 // src/routes/catalog.ts
@@ -343784,28 +343828,6 @@ var crm_default = router12;
 var import_express12 = __toESM(require_express2(), 1);
 init_src();
 var router13 = (0, import_express12.Router)();
-async function isAdmin2(req) {
-  const adminEmail = process.env.ADMIN_EMAIL || process.env.admin_email;
-  if (!adminEmail) return false;
-  try {
-    const session = await auth.api.getSession({ headers: fromNodeHeaders(req.headers) });
-    if (!session) return false;
-    const cleanEmailStr = adminEmail.replace(/['"]/g, "");
-    const emails = cleanEmailStr.split(",").map((e) => e.trim().toLowerCase());
-    return emails.includes(session.user.email.toLowerCase());
-  } catch (err) {
-    logger2.error({ err }, "isAdmin check in support failed");
-    return false;
-  }
-}
-async function requireAdmin2(req, res, next) {
-  const ok2 = await isAdmin2(req);
-  if (!ok2) {
-    res.status(403).json({ error: "Forbidden" });
-    return;
-  }
-  next();
-}
 router13.get("/support/admin-status", async (_req, res) => {
   try {
     const [row] = await db.select().from(settingsTable).where(eq(settingsTable.key, "admin_online"));
@@ -343816,7 +343838,7 @@ router13.get("/support/admin-status", async (_req, res) => {
     res.json({ online: false });
   }
 });
-router13.post("/support/admin-status", requireAdmin2, async (req, res) => {
+router13.post("/support/admin-status", requireAdmin, async (req, res) => {
   try {
     const { online } = req.body;
     const value = online ? "true" : "false";
@@ -343853,7 +343875,7 @@ router13.post("/support/conversations", async (req, res) => {
     res.status(500).json({ error: "Failed to start support conversation" });
   }
 });
-router13.get("/support/conversations", requireAdmin2, async (_req, res) => {
+router13.get("/support/conversations", requireAdmin, async (_req, res) => {
   try {
     const list = await db.select().from(conversations).orderBy(desc(conversations.updatedAt));
     res.json(list);
@@ -343979,7 +344001,7 @@ router13.post("/support/conversations/:id/request-human", async (req, res) => {
     res.status(500).json({ error: "Failed to request human support" });
   }
 });
-router13.post("/support/conversations/:id/join", requireAdmin2, async (req, res) => {
+router13.post("/support/conversations/:id/join", requireAdmin, async (req, res) => {
   try {
     const convId = parseInt(req.params.id);
     if (isNaN(convId)) {
@@ -344290,9 +344312,114 @@ var public_quotes_default = router14;
 
 // src/routes/incentives.ts
 var import_express14 = __toESM(require_express2(), 1);
+
+// src/lib/incentivesVerification.ts
 init_src();
+var FETCH_TIMEOUT_MS = 8e3;
+var SNIPPET_MAX_CHARS = 2500;
+async function fetchOfficialSourceSnippet(url3) {
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
+    const response = await fetch(url3, {
+      signal: controller.signal,
+      headers: { "User-Agent": "Mozilla/5.0 (compatible; PrevAI-IncentiveBot/1.0)" }
+    }).finally(() => clearTimeout(timeout));
+    if (!response.ok) {
+      return { ok: false, snippet: "" };
+    }
+    const html2 = await response.text();
+    const text2 = html2.replace(/<script[\s\S]*?<\/script>/gi, " ").replace(/<style[\s\S]*?<\/style>/gi, " ").replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+    return { ok: true, snippet: text2.slice(0, SNIPPET_MAX_CHARS) };
+  } catch (err) {
+    logger2.warn({ err, url: url3 }, "Could not fetch official incentive source for AI grounding");
+    return { ok: false, snippet: "" };
+  }
+}
+var HEURISTIC_DISCLAIMER = "Controllo euristico preliminare (AI + fonti ufficiali quando raggiungibili). NON costituisce una verifica legale: i bandi vanno confermati da un operatore umano prima di essere mostrati come garantiti a clienti finali.";
+async function runIncentivesVerification(activeIncentives) {
+  if (activeIncentives.length === 0) {
+    return { updatedCount: 0, sourcesFetched: 0, sourcesTotal: 0, summary: "Nessun bando attivo da verificare.", disclaimer: HEURISTIC_DISCLAIMER };
+  }
+  const sourceLookups = await Promise.all(
+    activeIncentives.map(async (inc) => {
+      if (!inc.fonteUfficialeUrl) return { inc, ok: false, snippet: "" };
+      const result = await fetchOfficialSourceSnippet(inc.fonteUfficialeUrl);
+      return { inc, ...result };
+    })
+  );
+  const sourcesFetched = sourceLookups.filter((s) => s.ok).length;
+  const bandiBlock = sourceLookups.map(({ inc, ok: ok2, snippet }) => {
+    const fonteInfo = ok2 ? `Estratto fonte ufficiale (${inc.fonteUfficialeUrl}): "${snippet || "(pagina vuota)"}"` : `Fonte ufficiale non raggiungibile automaticamente (${inc.fonteUfficialeUrl || "nessun URL registrato"}) \u2014 basati solo su conoscenza generale e segnalalo in note_di_verifica.`;
+    return `- ID: ${inc.id} | Codice: ${inc.codice} | Titolo: ${inc.titolo} | Stato attuale: ${inc.stato} | Regione: ${inc.regione || "Statale"}
+  ${fonteInfo}`;
+  }).join("\n");
+  const prompt = `Sei l'agente AI responsabile della verifica quotidiana dei bandi e incentivi edili italiani per PrevAI.
+Ecco l'elenco attuale dei bandi nel database, con l'estratto testuale della relativa pagina ufficiale quando \xE8 stato possibile recuperarla:
+${bandiBlock}
+
+Usa il testo estratto dalla fonte ufficiale (quando presente) come base primaria per la verifica. Se la fonte non \xE8 stata recuperata, non inventare conferme: imposta comunque uno stato plausibile ma scrivi in note_di_verifica che si tratta di sola verifica euristica senza fonte consultata.
+Indica se qualche bando \xE8 da contrassegnare come "expiring_soon" (in esaurimento a sportello) o confermato "active".
+Restituisci SOLO un JSON valido nel seguente formato:
+{
+  "updatedStatus": [
+    { "id": "ID_DEL_BANDO", "stato": "active" | "expiring_soon", "note_di_verifica": "Sintesi verifica ed eventuale fonte consultata" }
+  ],
+  "riepilogoScansione": "Sintesi complessiva della scansione"
+}`;
+  let aiResult = { updatedStatus: [], riepilogoScansione: "Scansione AI completata." };
+  try {
+    const completion = await openai.chat.completions.create({
+      model: "gpt-4o-mini",
+      max_completion_tokens: 1500,
+      messages: [
+        { role: "system", content: "Sei un revisore legale ed esperto di bandi pubblici italiani per l'edilizia. Non affermi mai una conferma ufficiale se non hai un estratto di fonte a supporto." },
+        { role: "user", content: prompt }
+      ]
+    });
+    const cleaned = (completion.choices[0]?.message?.content || "{}").trim().replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/i, "");
+    aiResult = JSON.parse(cleaned);
+  } catch (err) {
+    logger2.warn({ err }, "Could not parse AI sync response cleanly, proceeding with timestamp-only update");
+  }
+  let updatedCount = 0;
+  if (aiResult.updatedStatus && Array.isArray(aiResult.updatedStatus)) {
+    for (const item of aiResult.updatedStatus) {
+      if (item.id && (item.stato === "active" || item.stato === "expiring_soon")) {
+        await db.update(incentivesCatalogTable).set({
+          stato: item.stato,
+          isVerifiedByAi: true,
+          lastCheckedAt: /* @__PURE__ */ new Date()
+        }).where(eq(incentivesCatalogTable.id, item.id));
+        updatedCount++;
+        if (item.note_di_verifica) {
+          logger2.info({ incentiveId: item.id, note: item.note_di_verifica }, "AI incentive verification note");
+        }
+      }
+    }
+  } else {
+    for (const inc of activeIncentives) {
+      await db.update(incentivesCatalogTable).set({ isVerifiedByAi: true, lastCheckedAt: /* @__PURE__ */ new Date() }).where(eq(incentivesCatalogTable.id, inc.id));
+      updatedCount++;
+    }
+  }
+  const baseSummary = aiResult.riepilogoScansione || "Scansione euristica completata.";
+  return {
+    updatedCount,
+    sourcesFetched,
+    sourcesTotal: activeIncentives.length,
+    summary: `${baseSummary} (fonti ufficiali raggiunte: ${sourcesFetched}/${activeIncentives.length})`,
+    disclaimer: HEURISTIC_DISCLAIMER
+  };
+}
+
+// src/routes/incentives.ts
 var router15 = (0, import_express14.Router)();
+async function closeExpiredIncentives() {
+  await db.update(incentivesCatalogTable).set({ stato: "closed" }).where(and(lt(incentivesCatalogTable.scadenza, /* @__PURE__ */ new Date()), ne(incentivesCatalogTable.stato, "closed")));
+}
 async function ensureDefaultIncentives() {
+  await closeExpiredIncentives();
   const existingCount = await db.select().from(incentivesCatalogTable);
   if (existingCount.length > 0) return;
   logger2.info("Seeding default incentives catalog (Statali, Regionali, Comunali)...");
@@ -344311,8 +344438,12 @@ async function ensureDefaultIncentives() {
       massimaleContributo: "48000.00",
       stato: "active",
       fonteUfficialeUrl: "https://www.agenziaentrate.gov.it",
-      isVerifiedByAi: true,
-      // esito heuristico cron AI, non verifica legale
+      // Dati placeholder inseriti al primo avvio, mai controllati contro le fonti
+      // ufficiali: isVerifiedByAi parte a false e lastCheckedAt a null così il
+      // primo giro del cron (vedi lib/incentivesVerification.ts) li tratta come
+      // non ancora verificati, invece di dichiararli falsamente già confermati.
+      isVerifiedByAi: false,
+      lastCheckedAt: null,
       humanVerified: false
     },
     {
@@ -344329,8 +344460,12 @@ async function ensureDefaultIncentives() {
       massimaleContributo: "65000.00",
       stato: "active",
       fonteUfficialeUrl: "https://www.enea.it",
-      isVerifiedByAi: true,
-      // esito heuristico cron AI, non verifica legale
+      // Dati placeholder inseriti al primo avvio, mai controllati contro le fonti
+      // ufficiali: isVerifiedByAi parte a false e lastCheckedAt a null così il
+      // primo giro del cron (vedi lib/incentivesVerification.ts) li tratta come
+      // non ancora verificati, invece di dichiararli falsamente già confermati.
+      isVerifiedByAi: false,
+      lastCheckedAt: null,
       humanVerified: false
     },
     {
@@ -344347,8 +344482,12 @@ async function ensureDefaultIncentives() {
       massimaleContributo: "15000.00",
       stato: "active",
       fonteUfficialeUrl: "https://www.gse.it",
-      isVerifiedByAi: true,
-      // esito heuristico cron AI, non verifica legale
+      // Dati placeholder inseriti al primo avvio, mai controllati contro le fonti
+      // ufficiali: isVerifiedByAi parte a false e lastCheckedAt a null così il
+      // primo giro del cron (vedi lib/incentivesVerification.ts) li tratta come
+      // non ancora verificati, invece di dichiararli falsamente già confermati.
+      isVerifiedByAi: false,
+      lastCheckedAt: null,
       humanVerified: false
     },
     {
@@ -344365,8 +344504,12 @@ async function ensureDefaultIncentives() {
       massimaleContributo: "37500.00",
       stato: "active",
       fonteUfficialeUrl: "https://www.agenziaentrate.gov.it",
-      isVerifiedByAi: true,
-      // esito heuristico cron AI, non verifica legale
+      // Dati placeholder inseriti al primo avvio, mai controllati contro le fonti
+      // ufficiali: isVerifiedByAi parte a false e lastCheckedAt a null così il
+      // primo giro del cron (vedi lib/incentivesVerification.ts) li tratta come
+      // non ancora verificati, invece di dichiararli falsamente già confermati.
+      isVerifiedByAi: false,
+      lastCheckedAt: null,
       humanVerified: false
     },
     {
@@ -344382,10 +344525,18 @@ async function ensureDefaultIncentives() {
       massimaleSpesa: "20000.00",
       massimaleContributo: "5000.00",
       requisitiIseeMax: "45000.00",
+      // Data indicativa di chiusura sportello (placeholder, da confermare: vedi punto 3
+      // del TODO). Senza scadenza il bando non può mai essere auto-marcato "closed"
+      // quando i fondi a sportello si esauriscono.
+      scadenza: /* @__PURE__ */ new Date("2026-12-31T23:59:59Z"),
       stato: "active",
       fonteUfficialeUrl: "https://www.regione.lombardia.it",
-      isVerifiedByAi: true,
-      // esito heuristico cron AI, non verifica legale
+      // Dati placeholder inseriti al primo avvio, mai controllati contro le fonti
+      // ufficiali: isVerifiedByAi parte a false e lastCheckedAt a null così il
+      // primo giro del cron (vedi lib/incentivesVerification.ts) li tratta come
+      // non ancora verificati, invece di dichiararli falsamente già confermati.
+      isVerifiedByAi: false,
+      lastCheckedAt: null,
       humanVerified: false
     },
     {
@@ -344400,10 +344551,16 @@ async function ensureDefaultIncentives() {
       percentualeMassima: "40.00",
       massimaleSpesa: "15000.00",
       massimaleContributo: "3500.00",
+      scadenza: /* @__PURE__ */ new Date("2026-12-31T23:59:59Z"),
+      // placeholder, da confermare (vedi punto 3)
       stato: "active",
       fonteUfficialeUrl: "https://www.regione.piemonte.it",
-      isVerifiedByAi: true,
-      // esito heuristico cron AI, non verifica legale
+      // Dati placeholder inseriti al primo avvio, mai controllati contro le fonti
+      // ufficiali: isVerifiedByAi parte a false e lastCheckedAt a null così il
+      // primo giro del cron (vedi lib/incentivesVerification.ts) li tratta come
+      // non ancora verificati, invece di dichiararli falsamente già confermati.
+      isVerifiedByAi: false,
+      lastCheckedAt: null,
       humanVerified: false
     },
     {
@@ -344418,10 +344575,16 @@ async function ensureDefaultIncentives() {
       percentualeMassima: "40.00",
       massimaleSpesa: "12000.00",
       massimaleContributo: "4000.00",
+      scadenza: /* @__PURE__ */ new Date("2026-11-30T23:59:59Z"),
+      // placeholder, da confermare (vedi punto 3)
       stato: "active",
       fonteUfficialeUrl: "https://energia.regione.emilia-romagna.it",
-      isVerifiedByAi: true,
-      // esito heuristico cron AI, non verifica legale
+      // Dati placeholder inseriti al primo avvio, mai controllati contro le fonti
+      // ufficiali: isVerifiedByAi parte a false e lastCheckedAt a null così il
+      // primo giro del cron (vedi lib/incentivesVerification.ts) li tratta come
+      // non ancora verificati, invece di dichiararli falsamente già confermati.
+      isVerifiedByAi: false,
+      lastCheckedAt: null,
       humanVerified: false
     },
     {
@@ -344436,10 +344599,16 @@ async function ensureDefaultIncentives() {
       percentualeMassima: "35.00",
       massimaleSpesa: "25000.00",
       massimaleContributo: "4500.00",
+      scadenza: /* @__PURE__ */ new Date("2026-12-31T23:59:59Z"),
+      // placeholder, da confermare (vedi punto 3)
       stato: "active",
       fonteUfficialeUrl: "https://www.regione.veneto.it",
-      isVerifiedByAi: true,
-      // esito heuristico cron AI, non verifica legale
+      // Dati placeholder inseriti al primo avvio, mai controllati contro le fonti
+      // ufficiali: isVerifiedByAi parte a false e lastCheckedAt a null così il
+      // primo giro del cron (vedi lib/incentivesVerification.ts) li tratta come
+      // non ancora verificati, invece di dichiararli falsamente già confermati.
+      isVerifiedByAi: false,
+      lastCheckedAt: null,
       humanVerified: false
     },
     {
@@ -344454,10 +344623,16 @@ async function ensureDefaultIncentives() {
       percentualeMassima: "30.00",
       massimaleSpesa: "15000.00",
       massimaleContributo: "3000.00",
+      scadenza: /* @__PURE__ */ new Date("2026-10-31T23:59:59Z"),
+      // placeholder, da confermare (vedi punto 3)
       stato: "active",
       fonteUfficialeUrl: "https://www.comune.milano.it",
-      isVerifiedByAi: true,
-      // esito heuristico cron AI, non verifica legale
+      // Dati placeholder inseriti al primo avvio, mai controllati contro le fonti
+      // ufficiali: isVerifiedByAi parte a false e lastCheckedAt a null così il
+      // primo giro del cron (vedi lib/incentivesVerification.ts) li tratta come
+      // non ancora verificati, invece di dichiararli falsamente già confermati.
+      isVerifiedByAi: false,
+      lastCheckedAt: null,
       humanVerified: false
     },
     {
@@ -344472,10 +344647,16 @@ async function ensureDefaultIncentives() {
       percentualeMassima: "35.00",
       massimaleSpesa: "10000.00",
       massimaleContributo: "2500.00",
+      scadenza: /* @__PURE__ */ new Date("2026-12-15T23:59:59Z"),
+      // placeholder, da confermare (vedi punto 3)
       stato: "active",
       fonteUfficialeUrl: "https://www.comune.bologna.it",
-      isVerifiedByAi: true,
-      // esito heuristico cron AI, non verifica legale
+      // Dati placeholder inseriti al primo avvio, mai controllati contro le fonti
+      // ufficiali: isVerifiedByAi parte a false e lastCheckedAt a null così il
+      // primo giro del cron (vedi lib/incentivesVerification.ts) li tratta come
+      // non ancora verificati, invece di dichiararli falsamente già confermati.
+      isVerifiedByAi: false,
+      lastCheckedAt: null,
       humanVerified: false
     }
   ]);
@@ -344540,20 +344721,40 @@ router15.post("/public/quotes/:quoteId/incentives", async (req, res) => {
     const totaleLavori = Number(totalePreventivo) || Number(quote.totale) || 0;
     const isResidenziale = tipoImmobile === "prima_casa" || tipoImmobile === "seconda_casa" || tipoImmobile === "condominio";
     const scontoIvaStimato = isResidenziale ? Math.round(totaleLavori * 0.1) : 0;
+    const isUfficio = tipoImmobile === "ufficio";
+    const isSecondaCasa = tipoImmobile === "seconda_casa";
     let bonusStataleApplicato = "Bonus Ristrutturazione Edilizia 50% (Detrazione 10 anni)";
-    let importoBonusStatale = Math.round(totaleLavori * 0.5);
+    let bonusStataleCodice = "BONUS_CASA_50";
+    let percentualeBonusStatale = 0.5;
+    let percentualeSecondaCasa = 0.36;
     if (obiettivoLavori === "efficienza" || obiettivoLavori === "efficienza_energetica") {
       bonusStataleApplicato = "Ecobonus 65% / Conto Termico GSE (Incentivo Diretto)";
-      importoBonusStatale = Math.round(totaleLavori * 0.65);
+      bonusStataleCodice = "ECOBONUS_65";
+      percentualeBonusStatale = 0.65;
+      percentualeSecondaCasa = 0.5;
     } else if (obiettivoLavori === "barriere" || obiettivoLavori === "barriere_architettoniche") {
       bonusStataleApplicato = "Bonus Abbattimento Barriere Architettoniche 75%";
-      importoBonusStatale = Math.round(totaleLavori * 0.75);
+      bonusStataleCodice = "BARRIERE_75";
+      percentualeBonusStatale = 0.75;
+      percentualeSecondaCasa = 0.75;
     }
+    const bonusBarriere = bonusStataleCodice === "BARRIERE_75";
+    if (isUfficio && !bonusBarriere) {
+      bonusStataleApplicato = `${bonusStataleApplicato} \u2014 non applicabile: detrazione riservata a immobili ad uso abitativo`;
+      percentualeBonusStatale = 0;
+    } else if (isSecondaCasa && !bonusBarriere) {
+      percentualeBonusStatale = percentualeSecondaCasa;
+      bonusStataleApplicato = `${bonusStataleApplicato} \u2014 aliquota ridotta ${Math.round(percentualeSecondaCasa * 100)}% per seconda casa`;
+    }
+    let importoBonusStatale = Math.round(totaleLavori * percentualeBonusStatale);
     if (importoBonusStatale > 48e3) importoBonusStatale = 48e3;
     await ensureDefaultIncentives();
     const allIncentives = await db.select().from(incentivesCatalogTable).where(ne(incentivesCatalogTable.stato, "closed"));
+    const bonusStataleRecord = allIncentives.find((inc) => inc.codice === bonusStataleCodice);
+    const bonusStataleHumanVerified = bonusStataleRecord?.humanVerified ?? false;
     let bandoRegionaleApplicato = "Nessun bando regionale a sportello specifico individuato (si applicano i Bonus Statali)";
     let importoBandoRegionale = 0;
+    let bandoRegionaleHumanVerified = null;
     if (regione || cap) {
       const matchReg = allIncentives.find(
         (inc) => (inc.level === "regionale" || inc.level === "comunale") && (regione && inc.regione?.toLowerCase().includes(regione.toLowerCase()) || regione && regione.toLowerCase().includes(inc.regione?.toLowerCase() || "") || inc.comune && cap.startsWith("20") && inc.comune.toLowerCase() === "milano" || inc.comune && cap.startsWith("40") && inc.comune.toLowerCase() === "bologna")
@@ -344561,6 +344762,7 @@ router15.post("/public/quotes/:quoteId/incentives", async (req, res) => {
       if (matchReg) {
         bandoRegionaleApplicato = `${matchReg.titolo} (${matchReg.tipoAgevolazione === "fondo_perduto" ? "Fondo Perduto" : "Contributo"})`;
         importoBandoRegionale = Number(matchReg.massimaleContributo) || 3e3;
+        bandoRegionaleHumanVerified = matchReg.humanVerified;
         if (fasciaIsee === "sotto_30k") {
           importoBandoRegionale = Math.round(importoBandoRegionale * 1.25);
         }
@@ -344575,7 +344777,9 @@ router15.post("/public/quotes/:quoteId/incentives", async (req, res) => {
       regione,
       cap,
       bonusStataleApplicato: `${bonusStataleApplicato} (~\u20AC${importoBonusStatale.toLocaleString("it-IT")})`,
+      bonusStataleHumanVerified,
       bandoRegionaleApplicato: importoBandoRegionale > 0 ? `${bandoRegionaleApplicato} (~\u20AC${importoBandoRegionale.toLocaleString("it-IT")})` : bandoRegionaleApplicato,
+      bandoRegionaleHumanVerified,
       scontoIvaStimato,
       esborsoImmediatoStimato,
       detrazioneFiscaleDecennale: importoBonusStatale,
@@ -344618,7 +344822,9 @@ router15.post("/public/quotes/:quoteId/incentives", async (req, res) => {
       totaleLavori,
       scontoIvaStimato,
       bonusStataleApplicato: incentivesData.bonusStataleApplicato,
+      bonusStataleHumanVerified,
       bandoRegionaleApplicato: incentivesData.bandoRegionaleApplicato,
+      bandoRegionaleHumanVerified,
       esborsoImmediatoStimato,
       detrazioneFiscaleDecennale: importoBonusStatale,
       detrazioneFiscaleAnnua
@@ -344749,55 +344955,14 @@ router15.post("/admin/incentives/cron-sync", requireAdmin, async (_req, res) => 
     logger2.info("Executing Daily AI Incentive Agent verification...");
     await ensureDefaultIncentives();
     const activeIncentives = await db.select().from(incentivesCatalogTable).where(ne(incentivesCatalogTable.stato, "closed"));
-    const prompt = `Sei l'agente AI responsabile della verifica quotidiana dei bandi e incentivi edili italiani per PrevAI.
-Ecco l'elenco attuale dei bandi nel database:
-${activeIncentives.map((inc) => `- ID: ${inc.id} | Codice: ${inc.codice} | Titolo: ${inc.titolo} | Scadenza/Stato: ${inc.stato} | Regione: ${inc.regione || "Statale"}`).join("\n")}
-
-Fornisci una verifica di coerenza normativa 2026 e indica se qualche bando \xE8 da contrassegnare come "expiring_soon" (in esaurimento a sportello) o confermato "active".
-Restituisci SOLO un JSON valido nel seguente formato:
-{
-  "updatedStatus": [
-    { "id": "ID_DEL_BANDO", "stato": "active" | "expiring_soon", "note_di_verifica": "Sintesi verifica legale/fondi" }
-  ],
-  "riepilogoScansione": "Scansione quotidiana completata con successo. Confermati 10 bandi attivi in Italia per edilizia ed efficienza 2026."
-}`;
-    const completion = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
-      max_completion_tokens: 1500,
-      messages: [
-        { role: "system", content: "Sei un revisore legale ed esperto di bandi pubblici italiani per l'edilizia." },
-        { role: "user", content: prompt }
-      ]
-    });
-    let aiResult = { updatedStatus: [], riepilogoScansione: "Scansione AI completata con successo." };
-    try {
-      const cleaned = (completion.choices[0]?.message?.content || "{}").trim().replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/i, "");
-      aiResult = JSON.parse(cleaned);
-    } catch (parseErr) {
-      logger2.warn({ parseErr }, "Could not parse AI sync response cleanly, proceeding with timestamp update");
-    }
-    let updatedCount = 0;
-    if (aiResult.updatedStatus && Array.isArray(aiResult.updatedStatus)) {
-      for (const item of aiResult.updatedStatus) {
-        if (item.id && (item.stato === "active" || item.stato === "expiring_soon")) {
-          await db.update(incentivesCatalogTable).set({
-            stato: item.stato,
-            isVerifiedByAi: true,
-            lastCheckedAt: /* @__PURE__ */ new Date()
-          }).where(eq(incentivesCatalogTable.id, item.id));
-          updatedCount++;
-        }
-      }
-    } else {
-      for (const inc of activeIncentives) {
-        await db.update(incentivesCatalogTable).set({ isVerifiedByAi: true, lastCheckedAt: /* @__PURE__ */ new Date() }).where(eq(incentivesCatalogTable.id, inc.id));
-      }
-      updatedCount = activeIncentives.length;
-    }
+    const outcome = await runIncentivesVerification(activeIncentives);
     res.json({
       success: true,
-      verifiedCount: updatedCount,
-      summary: aiResult.riepilogoScansione || "Tutti i bandi statali e regionali sono stati verificati e confermati attivi per il 2026."
+      verifiedCount: outcome.updatedCount,
+      sourcesFetched: outcome.sourcesFetched,
+      sourcesTotal: outcome.sourcesTotal,
+      summary: outcome.summary,
+      disclaimer: outcome.disclaimer
     });
   } catch (err) {
     logger2.error({ err }, "Error running daily AI incentive sync");
@@ -345086,28 +345251,33 @@ app.post(
     } else {
       logger2.info(eventData, `Resend: ${event.type ?? "evento sconosciuto"}`);
     }
+    try {
+      await db.insert(emailEventsTable).values({
+        type: event.type || "sconosciuto",
+        emailId: typeof event.data?.email_id === "string" ? event.data.email_id : null,
+        to: Array.isArray(event.data?.to) ? event.data.to : event.data?.to ? [String(event.data.to)] : null,
+        from: typeof event.data?.from === "string" ? event.data.from : null,
+        subject: typeof event.data?.subject === "string" ? event.data.subject : null,
+        payload: event.data ?? {}
+      });
+    } catch (err) {
+      logger2.error({ err }, "Failed to persist Resend webhook event");
+    }
     res.status(200).json({ received: true });
   }
 );
-app.use("/api/public", (0, import_cors.default)());
 var trustedOrigins = new Set(getTrustedOrigins2());
 app.use(
-  (0, import_cors.default)({
-    credentials: true,
-    origin: (origin, callback) => {
-      if (!origin) {
-        callback(null, true);
-        return;
-      }
-      if (trustedOrigins.has(origin)) {
-        callback(null, true);
-      } else {
-        if (/^https?:\/\/localhost(:\d+)?$/.test(origin)) {
-          callback(null, true);
-        } else {
-          callback(new Error("Not allowed by CORS"));
-        }
-      }
+  (0, import_cors.default)((req, callback) => {
+    if (req.path.startsWith("/api/public")) {
+      callback(null, { origin: true, credentials: false });
+      return;
+    }
+    const origin = req.headers.origin;
+    if (!origin || trustedOrigins.has(origin) || /^https?:\/\/localhost(:\d+)?$/.test(origin)) {
+      callback(null, { origin: true, credentials: true });
+    } else {
+      callback(null, { origin: false, credentials: true });
     }
   })
 );

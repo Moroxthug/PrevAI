@@ -378,28 +378,32 @@ app.post(
 );
 // ─────────────────────────────────────────────────────────────────────────────
 
-// Consenti CORS libero per le chiamate API pubbliche del widget
-app.use("/api/public", cors());
-
+// CORS: le chiamate /api/public/* (widget embeddato su siti terzi) devono
+// restare aperte a QUALSIASI origine, incluse quelle mai viste prima — sono
+// il traffico dei visitatori dei siti dei clienti (contractor), non nostro.
+// Tutto il resto dell'API resta ristretto a trustedOrigins.
+// NB: prima questi erano due `app.use(cors(...))` separati; il primo
+// (path-scoped su /api/public) impostava gli header permissivi ma non
+// fermava la catena, quindi la richiesta ricadeva comunque nel secondo
+// middleware globale, che per un'origine non fidata chiamava
+// `callback(new Error(...))` — errore non gestito che si propagava come
+// 500 generico invece di un normale blocco CORS lato browser. Risultato:
+// ogni chiamata reale del widget da un sito cliente falliva con 500.
+// Unificati in un solo middleware con options-delegate per eliminare il
+// doppio attraversamento.
 const trustedOrigins = new Set(getTrustedOrigins());
 app.use(
-  cors({
-    credentials: true,
-    origin: (origin, callback) => {
-      if (!origin) {
-        callback(null, true);
-        return;
-      }
-      if (trustedOrigins.has(origin)) {
-        callback(null, true);
-      } else {
-        if (/^https?:\/\/localhost(:\d+)?$/.test(origin)) {
-          callback(null, true);
-        } else {
-          callback(new Error("Not allowed by CORS"));
-        }
-      }
-    },
+  cors((req, callback) => {
+    if (req.path.startsWith("/api/public")) {
+      callback(null, { origin: true, credentials: false });
+      return;
+    }
+    const origin = req.headers.origin;
+    if (!origin || trustedOrigins.has(origin) || /^https?:\/\/localhost(:\d+)?$/.test(origin)) {
+      callback(null, { origin: true, credentials: true });
+    } else {
+      callback(null, { origin: false, credentials: true });
+    }
   })
 );
 app.use(express.json({ limit: "25mb" }));

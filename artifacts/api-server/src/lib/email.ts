@@ -16,6 +16,15 @@ const PREVAI_LOGO_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="120" hei
 
 const LOGO_DATA_URI = `data:image/svg+xml;base64,${Buffer.from(PREVAI_LOGO_SVG).toString("base64")}`;
 
+function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
 type PlanTier = "pro" | "starter" | "oneshot";
 
 function getPlanTier(planName: string): PlanTier {
@@ -311,7 +320,9 @@ function buildQuoteEmailHtml(params: {
   quoteNumber: string;
   totale: string;
 }): string {
-  const { companyName, clientName, quoteNumber, totale } = params;
+  const companyName = escapeHtml(params.companyName);
+  const clientName = escapeHtml(params.clientName);
+  const { quoteNumber, totale } = params;
   return `<!DOCTYPE html>
 <html lang="it">
 <head>
@@ -426,6 +437,11 @@ export async function sendWidgetLeadNotification(params: {
     return;
   }
   const { toEmail, companyName, clientName, clientEmail, clientPhone, rawInput, totale, prezzoMinimo, prezzoMassimo, incentivesSummary } = params;
+  const safeClientName = escapeHtml(clientName);
+  const safeClientEmail = escapeHtml(clientEmail);
+  const safeClientPhone = escapeHtml(clientPhone);
+  const safeRawInput = escapeHtml(rawInput);
+  const safeIncentivesSummary = incentivesSummary ? escapeHtml(incentivesSummary) : incentivesSummary;
   try {
     const resend = new Resend(apiKey);
     await resend.emails.send({
@@ -464,21 +480,21 @@ export async function sendWidgetLeadNotification(params: {
     <div class="section-title">Contatti del Lead</div>
     <div class="field">
       <div class="label">Nome Cliente</div>
-      <div class="val">${clientName}</div>
+      <div class="val">${safeClientName}</div>
     </div>
     <div class="field">
       <div class="label">Email</div>
-      <div class="val"><a href="mailto:${clientEmail}" style="color:#4f46e5;">${clientEmail}</a></div>
+      <div class="val"><a href="mailto:${safeClientEmail}" style="color:#4f46e5;">${safeClientEmail}</a></div>
     </div>
     <div class="field">
       <div class="label">Telefono</div>
-      <div class="val"><a href="tel:${clientPhone}" style="color:#4f46e5;">${clientPhone}</a></div>
+      <div class="val"><a href="tel:${safeClientPhone}" style="color:#4f46e5;">${safeClientPhone}</a></div>
     </div>
 
     <div class="section-title">Dettaglio Richiesta</div>
     <div class="field">
       <div class="label">Descrizione e Parametri</div>
-      <div class="val" style="white-space:pre-wrap; font-size:13px; color:#3f3f46; line-height:1.5;">${rawInput}</div>
+      <div class="val" style="white-space:pre-wrap; font-size:13px; color:#3f3f46; line-height:1.5;">${safeRawInput}</div>
     </div>
 
     <div class="price-box">
@@ -489,7 +505,7 @@ export async function sendWidgetLeadNotification(params: {
       <div style="font-size:11px; color:#71717a; font-weight:normal; margin-top:4px; text-align:right;">Totale preventivo calcolato: €${totale}</div>
     </div>
 
-    ${incentivesSummary ? `<div class="incentives-box"><strong>🎁 ESITO VERIFICA INCENTIVI & BANDI:</strong>\n${incentivesSummary}</div>` : ""}
+    ${safeIncentivesSummary ? `<div class="incentives-box"><strong>🎁 ESITO VERIFICA INCENTIVI & BANDI:</strong>\n${safeIncentivesSummary}</div>` : ""}
 
     <p style="font-size:13px; color:#71717a; line-height:1.5; text-align:center; margin-top:24px;">
       Ti consigliamo di ricontattare il cliente entro 24 ore per fissare il sopralluogo ed ottimizzare la conversione.
