@@ -293,7 +293,9 @@ function AccountTab() {
                 <div className="relative">
                   <pre className="p-4 bg-slate-950 text-slate-200 rounded-xl overflow-x-auto font-mono text-[10px] leading-relaxed max-h-40 whitespace-pre-wrap select-all border border-slate-800">
 {`<!-- PrevAI Widget Funnel -->
-<div id="prevai-widget"></div>
+<div id="prevai-widget">
+  <a href="https://prevai.it" rel="noopener">Calcola il tuo preventivo con PrevAI</a>
+</div>
 <script
   src="${typeof window !== "undefined" ? window.location.origin : "https://prevai.it"}/widget.js"
   data-api-key="${profile.apiKey}"
@@ -303,7 +305,7 @@ function AccountTab() {
                   <Button
                     size="sm"
                     onClick={() => {
-                      const code = `<!-- PrevAI Widget Funnel -->\n<div id="prevai-widget"></div>\n<script\n  src="${typeof window !== "undefined" ? window.location.origin : "https://prevai.it"}/widget.js"\n  data-api-key="${profile.apiKey}"\n  async\n></script>`;
+                      const code = `<!-- PrevAI Widget Funnel -->\n<div id="prevai-widget">\n  <a href="https://prevai.it" rel="noopener">Calcola il tuo preventivo con PrevAI</a>\n</div>\n<script\n  src="${typeof window !== "undefined" ? window.location.origin : "https://prevai.it"}/widget.js"\n  data-api-key="${profile.apiKey}"\n  async\n></script>`;
                       navigator.clipboard.writeText(code);
                       toast({ title: "Codice copiato!", description: "Il codice di embed è stato copiato negli appunti." });
                     }}
@@ -1013,7 +1015,9 @@ function WidgetTab() {
   const widgetUrl = typeof window !== "undefined" ? `${window.location.origin}/widget.js` : "https://www.prevai.it/widget.js";
 
   const embedCode = `<!-- PrevAI Widget Funnel -->
-<div id="prevai-widget"></div>
+<div id="prevai-widget">
+  <a href="https://prevai.it" rel="noopener">Calcola il tuo preventivo con PrevAI</a>
+</div>
 <script
   src="${widgetUrl}"
   data-api-key="${apiKey || 'INSERISCI_QUI_LA_TUA_CHIAVE_API'}"

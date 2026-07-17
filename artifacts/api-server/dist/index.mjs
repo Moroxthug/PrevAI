@@ -316820,6 +316820,81 @@ function buildQuoteEmailHtml(params) {
 </body>
 </html>`;
 }
+function buildWidgetClientConfirmationEmail(params) {
+  const { clientName, companyName, companyPhone, companyEmail, prezzoMinimo, prezzoMassimo } = params;
+  const contactLine = [companyPhone, companyEmail].filter(Boolean).join(" \xB7 ");
+  return `<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>La tua richiesta \xE8 stata ricevuta \u2013 ${companyName}</title>
+<style>
+  body { margin:0; padding:0; background:#f5f3ff; font-family:system-ui,-apple-system,sans-serif; }
+  .wrapper { max-width:560px; margin:32px auto; background:#ffffff; border-radius:16px; overflow:hidden; box-shadow:0 4px 24px rgba(124,58,237,0.08); }
+  .header { background:linear-gradient(135deg,#7c3aed,#06b6d4); padding:32px 40px; text-align:center; }
+  .header img { height:36px; }
+  .header h1 { color:white; font-size:20px; font-weight:700; margin:16px 0 4px; }
+  .header p { color:rgba(255,255,255,0.85); font-size:14px; margin:0; }
+  .body { padding:32px 40px; }
+  .greeting { font-size:16px; color:#1a1a2e; margin-bottom:20px; line-height:1.6; }
+  .price-box { background:#f5f3ff; border:1px solid #ede9fe; border-radius:12px; padding:20px 24px; margin:24px 0; text-align:center; }
+  .price-box .label { font-size:12px; color:#6b7280; text-transform:uppercase; letter-spacing:0.05em; }
+  .price-box .range { font-size:22px; font-weight:700; color:#7c3aed; margin-top:6px; }
+  .footer { background:#f9fafb; padding:20px 40px; text-align:center; font-size:12px; color:#9ca3af; border-top:1px solid #f3f4f6; }
+</style>
+</head>
+<body>
+<div class="wrapper">
+  <div class="header">
+    <img src="${LOGO_DATA_URI}" alt="Prevai" />
+    <h1>Richiesta ricevuta \u2713</h1>
+    <p>${companyName} ha ricevuto la tua richiesta di preventivo</p>
+  </div>
+  <div class="body">
+    <p class="greeting">Ciao ${clientName},<br/><br/>grazie per aver richiesto una stima a <strong>${companyName}</strong>. Il team ti ricontatter\xE0 a breve per fissare un sopralluogo e definire il preventivo definitivo.</p>
+
+    <div class="price-box">
+      <div class="label">Stima indicativa</div>
+      <div class="range">\u20AC${prezzoMinimo} \u2013 \u20AC${prezzoMassimo}</div>
+    </div>
+
+    <p style="font-size:13px;color:#6b7280;text-align:center;">Questa \xE8 una stima automatica generata dall'AI e potrebbe variare dopo un sopralluogo tecnico.${contactLine ? ` Per qualsiasi domanda puoi contattare direttamente ${companyName}: ${contactLine}.` : ""}</p>
+  </div>
+  <div class="footer">
+    Stima calcolata con tecnologia <a href="https://prevai.it" style="color:#7c3aed;">Prevai</a><br/>
+    Hai ricevuto questa email perch\xE9 hai richiesto un preventivo tramite il sito di ${companyName}.
+  </div>
+</div>
+</body>
+</html>`;
+}
+async function sendWidgetClientConfirmationEmail(params) {
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!apiKey) {
+    logger2.warn("RESEND_API_KEY not set \u2014 skipping widget client confirmation email");
+    return;
+  }
+  try {
+    const resend2 = new Resend(apiKey);
+    await resend2.emails.send({
+      from: "Prevai <no-reply@prevai.it>",
+      to: [params.toEmail],
+      subject: `La tua richiesta a ${params.companyName} \xE8 stata ricevuta`,
+      html: buildWidgetClientConfirmationEmail({
+        clientName: escapeHtml2(params.clientName),
+        companyName: escapeHtml2(params.companyName),
+        companyPhone: params.companyPhone,
+        companyEmail: params.companyEmail,
+        prezzoMinimo: params.prezzoMinimo,
+        prezzoMassimo: params.prezzoMassimo
+      })
+    });
+    logger2.info({ to: params.toEmail }, "Widget client confirmation email sent");
+  } catch (err) {
+    logger2.error({ err }, "Failed to send widget client confirmation email (non-fatal)");
+  }
+}
 async function sendQuotePdfEmail(params) {
   const apiKey = process.env.RESEND_API_KEY;
   if (!apiKey) {
@@ -344301,6 +344376,20 @@ Usa queste misure esatte per calcolare matematicamente le quantit\xE0.`;
         prezzoMassimo: (totale * 1.25).toFixed(2)
       }).catch((emailErr) => {
         logger2.error({ err: emailErr }, "Failed to send lead email notification asynchronously");
+      });
+    }
+    const clientEmail = resolvedClientData.email;
+    if (clientEmail && clientEmail.includes("@")) {
+      sendWidgetClientConfirmationEmail({
+        toEmail: clientEmail,
+        clientName: resolvedClientData.nome,
+        companyName: profile.companyName,
+        companyPhone: profile.phone ?? null,
+        companyEmail: profile.email ?? null,
+        prezzoMinimo: (totale * 0.9).toFixed(2),
+        prezzoMassimo: (totale * 1.25).toFixed(2)
+      }).catch((emailErr) => {
+        logger2.error({ err: emailErr }, "Failed to send client confirmation email asynchronously");
       });
     }
   } catch (err) {

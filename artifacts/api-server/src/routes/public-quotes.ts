@@ -5,7 +5,7 @@ import { openai } from "@workspace/integrations-openai-ai-server";
 import { generateNumeroPreventivo } from "../lib/quoteNumber.js";
 import { logger } from "../lib/logger.js";
 import type { QuoteChapter, QuoteDiscount, QuoteClientData } from "@workspace/db";
-import { sendWidgetLeadNotification } from "../lib/email.js";
+import { sendWidgetLeadNotification, sendWidgetClientConfirmationEmail } from "../lib/email.js";
 
 const router = Router();
 
@@ -345,6 +345,22 @@ Usa queste misure esatte per calcolare matematicamente le quantità.`;
         prezzoMassimo: (totale * 1.25).toFixed(2),
       }).catch(emailErr => {
         logger.error({ err: emailErr }, "Failed to send lead email notification asynchronously");
+      });
+    }
+
+    // Invia conferma email asincrona al cliente finale, se ha fornito un indirizzo
+    const clientEmail = resolvedClientData.email;
+    if (clientEmail && clientEmail.includes("@")) {
+      sendWidgetClientConfirmationEmail({
+        toEmail: clientEmail,
+        clientName: resolvedClientData.nome,
+        companyName: profile.companyName,
+        companyPhone: profile.phone ?? null,
+        companyEmail: profile.email ?? null,
+        prezzoMinimo: (totale * 0.9).toFixed(2),
+        prezzoMassimo: (totale * 1.25).toFixed(2),
+      }).catch(emailErr => {
+        logger.error({ err: emailErr }, "Failed to send client confirmation email asynchronously");
       });
     }
   } catch (err) {
