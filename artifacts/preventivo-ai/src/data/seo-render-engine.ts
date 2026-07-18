@@ -20,6 +20,8 @@ import {
   RELATED_SECTORS,
   CITY_CONTEXT,
   ACTIVE_REGION_SLUG,
+  CITY_SECTORS,
+  SECTORS,
 } from "./seo-data.js";
 import { CITY_INTELLIGENCE, DEMAND_TEXT } from "./seo-intelligence.js";
 import type { CityIntelligence } from "./seo-intelligence.js";
@@ -276,6 +278,24 @@ export function getCityContextText(citySlug: string): string | null {
 
 export function getCityRelatedSectors(sectorSlug: string): { slug: string; label: string }[] {
   return RELATED_SECTORS[sectorSlug] ?? [];
+}
+
+// ─── Same-city, other trades — cross-links every city page to sibling ────
+// trade pages for the same city (e.g. imbianchino/monza → elettricista/monza).
+// Rotated deterministically per city+sector so the ~18 local trades get an
+// even spread of inbound links across a city's pages rather than always
+// linking the same subset from every page.
+
+export function getSameCityOtherSectors(
+  sectorSlug: string,
+  citySlug: string,
+  limit = 6
+): { slug: string; label: string }[] {
+  const others = CITY_SECTORS.filter((slug) => slug !== sectorSlug);
+  if (others.length === 0) return [];
+  const start = strHash(citySlug + sectorSlug) % others.length;
+  const rotated = [...others.slice(start), ...others.slice(0, start)];
+  return rotated.slice(0, limit).map((slug) => ({ slug, label: SECTORS[slug].label }));
 }
 
 // ─── JSON-LD schemas (unified — same FAQ text as visible body) ────────────

@@ -14,6 +14,7 @@ import {
   getOsservatorioData,
   getCityContextText,
   getCityRelatedSectors,
+  getSameCityOtherSectors,
   buildCityJsonLd,
   verifyCityContentInDev,
   getOgImagePath,
@@ -44,6 +45,7 @@ export default function SeoCityLanding() {
   const osservatorio = city ? getOsservatorioData(city.slug) : null;
   const contextText = city ? getCityContextText(city.slug) : null;
   const relatedSectors = getCityRelatedSectors(s.slug);
+  const sameCityOtherSectors = city ? getSameCityOtherSectors(s.slug, city.slug) : [];
   const jsonLd = city ? buildCityJsonLd(s, city) : [];
 
   useEffect(() => {
@@ -300,6 +302,29 @@ export default function SeoCityLanding() {
                   className="inline-flex items-center gap-1.5 rounded-full border border-gray-200 px-3.5 py-1.5 text-sm text-gray-500 hover:border-violet-300 hover:text-violet-600 transition-colors"
                 >
                   {anchorText}
+                </a>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* ── Altri servizi nella stessa città ──────────────────── */}
+      {sameCityOtherSectors.length > 0 && (
+        <section className="py-14 bg-gray-50 border-t border-gray-100">
+          <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-4xl">
+            <h2 className="text-base font-semibold text-gray-500 mb-5 text-center">
+              Altri servizi a {cityName}
+            </h2>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+              {sameCityOtherSectors.map((r) => (
+                <a
+                  key={r.slug}
+                  href={`/preventivi/${r.slug}/${citySlug}`}
+                  className="flex items-center gap-2 bg-white border border-gray-100 hover:border-violet-200 rounded-xl px-4 py-3 text-sm font-medium text-gray-700 hover:text-violet-700 transition-colors"
+                >
+                  <span className="text-violet-400 font-bold" aria-hidden="true">→</span>
+                  {r.label} a {cityName}
                 </a>
               ))}
             </div>

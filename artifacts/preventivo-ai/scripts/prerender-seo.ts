@@ -25,6 +25,7 @@ import {
   getCityCtaTexts,
   getCityHowItWorksSteps,
   getNearbyAnchors,
+  getSameCityOtherSectors,
   buildCityJsonLd as buildCityJsonLdFromEngine,
 } from "../src/data/seo-render-engine.js";
 import {
@@ -803,6 +804,24 @@ function buildCityBodyHtml(s: SectorData, city: CityData): string {
 
   const sQuantoCosta = buildQuantoCostaBlock(s, city, intel);
   const sContext = buildCityContextBlock(city, s);
+  const sameCityOtherSectors = getSameCityOtherSectors(s.slug, city.slug);
+  const sSameCityOther = sameCityOtherSectors.length
+    ? `<section class="py-14 bg-gray-50 border-t border-gray-100">
+    <div class="container mx-auto px-4 sm:px-6 lg:px-8 max-w-4xl">
+      <h2 class="text-base font-semibold text-gray-500 mb-5 text-center">Altri servizi a ${esc(cityName)}</h2>
+      <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
+        ${sameCityOtherSectors
+          .map(
+            (r) =>
+              `<a href="/preventivi/${esc(r.slug)}/${esc(city.slug)}/" class="flex items-center gap-2 bg-white border border-gray-100 hover:border-violet-200 rounded-xl px-4 py-3 text-sm font-medium text-gray-700 hover:text-violet-700 transition-colors">
+          <span class="text-violet-400 font-bold" aria-hidden="true">→</span> ${esc(r.label)} a ${esc(cityName)}
+        </a>`
+          )
+          .join("\n        ")}
+      </div>
+    </div>
+  </section>`
+    : "";
   const sRelated = buildRelatedSectorsSection(s, `Scopri anche: preventivi per`);
   const sApprofondimenti = buildApprofondimentiSection(s.slug);
 
@@ -839,6 +858,7 @@ function buildCityBodyHtml(s: SectorData, city: CityData): string {
   ${sQuantoCosta}
   ${sContext}
   ${sNearby}
+  ${sSameCityOther}
   ${sRelated}
   ${sApprofondimenti}
   ${sCta}
