@@ -171,14 +171,14 @@ export default function ChiSiamoPage() {
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link
-              href="/sign-up"
+              href="/sign-up/"
               className="inline-flex items-center justify-center gap-2 rounded-xl px-8 py-4 text-base font-semibold text-white"
               style={{ background: "linear-gradient(135deg, #7C3AED 0%, #A855F7 100%)" }}
             >
               Inizia gratis <ArrowRight className="h-4 w-4" />
             </Link>
             <Link
-              href="/contatti"
+              href="/contatti/"
               className="inline-flex items-center justify-center gap-2 rounded-xl px-8 py-4 text-base font-semibold text-gray-700 border border-gray-200 hover:border-violet-300 hover:text-violet-700 transition-colors"
             >
               Contattaci

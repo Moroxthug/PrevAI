@@ -132,7 +132,7 @@ export default function Home() {
   return (
     <div className="flex flex-col min-h-screen bg-white">
       <SeoHead
-        title="prevai – Preventivi Online per Artigiani e Aziende | AI in 30 Secondi"
+        title="prevai – Preventivi Online per Artigiani e Aziende | AI in 30s"
         description="Dimentica Excel e i documenti scritti a mano. Descrivi il lavoro a parole tue e prevai genera un preventivo professionale con IVA, voci di costo e totali in 30 secondi."
         canonical="https://www.prevai.it/"
         jsonLd={[websiteJsonLd, aggregateRatingJsonLd]}
@@ -313,7 +313,7 @@ export default function Home() {
 
       {/* ── SEZIONE 3: WhatsApp teaser ────────────────────────── */}
       <ScrollSection className="py-0">
-        <Link href="/whatsapp">
+        <Link href="/whatsapp/">
           <div className="relative overflow-hidden cursor-pointer group" style={{ background: "linear-gradient(135deg, #0f0f1a 0%, #1a0a2e 50%, #0a1628 100%)" }}>
             <div className="absolute right-0 top-1/2 -translate-y-1/2 w-80 h-80 rounded-full blur-3xl opacity-20 pointer-events-none" style={{ background: "radial-gradient(ellipse, #7c3aed, transparent)" }} />
 
@@ -393,7 +393,7 @@ export default function Home() {
                 </div>
 
                 <Link
-                  href="/whatsapp"
+                  href="/whatsapp/"
                   className="inline-flex items-center gap-2 text-sm font-semibold text-violet-600 hover:text-violet-700 transition-colors group"
                 >
                   Scopri tutta la funzionalità

@@ -1511,10 +1511,15 @@ const CITY_DESC_FORMULAS: Array<(label: string, labelPlural: string, city: strin
   (_l, labelPlural, city) => `Preventivi per ${labelPlural} a ${city} in 30 secondi con AI. Nessuna installazione richiesta. Provalo gratis.`,
 ];
 
+// Google truncates titles at ~70 chars; Semrush flags anything longer.
+const MAX_TITLE_LENGTH = 70;
+
 export function getCityTitle(sector: SectorData, cityName: string, citySlug: string): string {
   const hash = strHash(sector.slug + citySlug);
   const formula = CITY_TITLE_FORMULAS[hash % CITY_TITLE_FORMULAS.length];
-  return formula(sector.label, sector.labelPlural, cityName);
+  const title = formula(sector.label, sector.labelPlural, cityName);
+  if (title.length <= MAX_TITLE_LENGTH) return title;
+  return `Preventivi ${sector.labelPlural} a ${cityName} | prevai`;
 }
 
 export function getCityDesc(sector: SectorData, cityName: string, citySlug: string, region: string): string {

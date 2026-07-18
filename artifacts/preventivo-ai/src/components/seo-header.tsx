@@ -24,13 +24,13 @@ function SeoHeaderInner() {
           {!isSignedIn ? (
             <>
               <a
-                href="/sign-in"
+                href="/sign-in/"
                 className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors px-3 py-1.5 rounded-full"
               >
                 Accedi
               </a>
               <a
-                href="/sign-up"
+                href="/sign-up/"
                 className="btn-gradient inline-flex h-9 items-center justify-center px-5 text-sm font-semibold"
               >
                 Registrati

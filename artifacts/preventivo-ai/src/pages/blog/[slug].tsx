@@ -30,7 +30,7 @@ export default function BlogArticlePage() {
       <div className="flex flex-col items-center justify-center py-32 text-center px-4">
         <h1 className="text-2xl font-bold text-gray-900 mb-3">Articolo non trovato</h1>
         <p className="text-gray-500 mb-8">L'articolo cercato non esiste o è stato rimosso.</p>
-        <Link href="/blog" className="btn-gradient inline-flex h-11 items-center justify-center px-7 text-sm font-semibold">
+        <Link href="/blog/" className="btn-gradient inline-flex h-11 items-center justify-center px-7 text-sm font-semibold">
           Torna al Blog
         </Link>
       </div>
@@ -86,7 +86,7 @@ export default function BlogArticlePage() {
   return (
     <div className="flex flex-col min-h-screen bg-white">
       <SeoHead
-        title={`${article.title} | prevai Blog`}
+        title={`${article.seoTitle ?? article.title} | prevai`}
         description={article.metaDescription}
         canonical={canonical}
         ogType="article"
@@ -98,7 +98,7 @@ export default function BlogArticlePage() {
           <ol className="flex items-center text-sm text-gray-500 flex-wrap gap-1">
             <li><Link href="/" className="hover:text-violet-600 transition-colors">Home</Link></li>
             <li aria-hidden="true" className="mx-1.5 text-gray-300">/</li>
-            <li><Link href="/blog" className="hover:text-violet-600 transition-colors">Blog</Link></li>
+            <li><Link href="/blog/" className="hover:text-violet-600 transition-colors">Blog</Link></li>
             <li aria-hidden="true" className="mx-1.5 text-gray-300">/</li>
             <li className="text-gray-900 font-medium truncate max-w-[200px]" aria-current="page">{article.title}</li>
           </ol>
@@ -163,7 +163,7 @@ export default function BlogArticlePage() {
                 {relatedSectorObjects.map((sector) => (
                   <Link
                     key={sector.slug}
-                    href={`/preventivi/${sector.slug}`}
+                    href={`/preventivi/${sector.slug}/`}
                     className="inline-flex items-center gap-1.5 rounded-full border border-gray-200 bg-white px-4 py-2 text-xs font-medium text-gray-700 hover:border-violet-300 hover:text-violet-700 transition-colors"
                   >
                     <span className="text-violet-400 font-bold" aria-hidden="true">→</span>
@@ -185,7 +185,7 @@ export default function BlogArticlePage() {
                 {ACTIVE_CITIES.map((city) => (
                   <Link
                     key={city.slug}
-                    href={`/preventivi/${geoSector.slug}/${city.slug}`}
+                    href={`/preventivi/${geoSector.slug}/${city.slug}/`}
                     className="inline-flex items-center gap-1.5 rounded-full border border-gray-200 bg-white px-4 py-2 text-xs font-medium text-gray-700 hover:border-violet-300 hover:text-violet-700 transition-colors"
                   >
                     <span className="text-violet-400 font-bold" aria-hidden="true">→</span>
@@ -205,7 +205,7 @@ export default function BlogArticlePage() {
                 {relatedArticles.map((a) => (
                   <Link
                     key={a.slug}
-                    href={`/blog/${a.slug}`}
+                    href={`/blog/${a.slug}/`}
                     className="group flex flex-col bg-white rounded-xl border border-gray-100 hover:border-violet-200 hover:shadow-sm transition-all p-4"
                   >
                     <span className={`text-xs font-semibold px-2 py-0.5 rounded-full self-start mb-2 ${CATEGORY_COLORS[a.category] ?? "bg-gray-100 text-gray-600"}`}>
@@ -231,7 +231,7 @@ export default function BlogArticlePage() {
             Nessuna carta di credito. Nessun impegno. Il tuo primo preventivo è gratis.
           </p>
           <Link
-            href="/sign-up"
+            href="/sign-up/"
             className="btn-gradient inline-flex h-12 items-center justify-center px-8 text-sm font-semibold"
           >
             Inizia Gratuitamente

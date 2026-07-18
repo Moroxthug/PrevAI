@@ -103,7 +103,7 @@ export default function ContattiPage() {
                 Vuoi provare il servizio via WhatsApp o hai una domanda rapida? Scrivici direttamente.
               </p>
               <Link
-                href="/whatsapp"
+                href="/whatsapp/"
                 className="text-green-600 font-semibold text-sm hover:text-green-800 transition-colors"
               >
                 Scopri prevai su WhatsApp →
@@ -186,7 +186,7 @@ export default function ContattiPage() {
             Prova prevai gratis — nessuna carta di credito richiesta.
           </p>
           <Link
-            href="/sign-up"
+            href="/sign-up/"
             className="inline-flex items-center justify-center gap-2 rounded-xl px-8 py-4 text-base font-semibold text-white"
             style={{ background: "linear-gradient(135deg, #7C3AED 0%, #A855F7 100%)" }}
           >

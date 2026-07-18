@@ -57,7 +57,7 @@ export default function BlogPage() {
             {BLOG_CATEGORIES.map((cat) => (
               <Link
                 key={cat.slug}
-                href={`/blog/categoria/${cat.slug}`}
+                href={`/blog/categoria/${cat.slug}/`}
                 className={`inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold transition-colors ${CATEGORY_COLORS[cat.name] ?? "bg-gray-100 text-gray-600"} border-transparent hover:opacity-80`}
               >
                 {cat.name}
@@ -102,7 +102,7 @@ export default function BlogPage() {
             {BLOG_ARTICLES.map((article) => (
               <Link
                 key={article.slug}
-                href={`/blog/${article.slug}`}
+                href={`/blog/${article.slug}/`}
                 className="group flex flex-col bg-white rounded-2xl border border-gray-100 hover:border-violet-200 hover:shadow-md transition-all duration-200 overflow-hidden"
               >
                 <div className="p-6 flex flex-col flex-1">
@@ -142,7 +142,7 @@ export default function BlogPage() {
             Nessuna carta di credito. Nessun impegno. Il tuo primo preventivo è gratis.
           </p>
           <Link
-            href="/sign-up"
+            href="/sign-up/"
             className="btn-gradient inline-flex h-12 items-center justify-center px-8 text-sm font-semibold"
           >
             Inizia Gratuitamente

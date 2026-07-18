@@ -165,7 +165,7 @@ export default function SeoCityLanding() {
           <ol className="flex items-center text-sm text-gray-500 flex-wrap">
             <li><Link href="/" className="hover:text-violet-600 transition-colors">Home</Link></li>
             <li aria-hidden="true" className="mx-1.5 text-gray-300 select-none">/</li>
-            <li><Link href={`/preventivi/${s.slug}`} className="hover:text-violet-600 transition-colors">{s.label}</Link></li>
+            <li><Link href={`/preventivi/${s.slug}/`} className="hover:text-violet-600 transition-colors">{s.label}</Link></li>
             <li aria-hidden="true" className="mx-1.5 text-gray-300 select-none">/</li>
             <li className="text-gray-900 font-medium truncate max-w-[200px]" aria-current="page">{cityName}</li>
           </ol>
@@ -193,14 +193,14 @@ export default function SeoCityLanding() {
           <p className="text-xl text-gray-500 mb-10 max-w-2xl mx-auto leading-relaxed">{intro}</p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <a
-              href="/sign-up"
+              href="/sign-up/"
               className="btn-gradient inline-flex h-14 items-center justify-center px-8 text-lg font-semibold"
             >
               Crea il tuo preventivo gratis
               <ArrowRight className="ml-2 h-5 w-5" />
             </a>
             <a
-              href={`/preventivi/${s.slug}`}
+              href={`/preventivi/${s.slug}/`}
               className="btn-gradient-outline inline-flex h-14 items-center justify-center px-8 text-lg font-semibold"
             >
               Scopri come funziona
@@ -298,7 +298,7 @@ export default function SeoCityLanding() {
               {nearbyAnchors.map(({ slug, anchorText }) => (
                 <a
                   key={slug}
-                  href={`/preventivi/${s.slug}/${slug}`}
+                  href={`/preventivi/${s.slug}/${slug}/`}
                   className="inline-flex items-center gap-1.5 rounded-full border border-gray-200 px-3.5 py-1.5 text-sm text-gray-500 hover:border-violet-300 hover:text-violet-600 transition-colors"
                 >
                   {anchorText}
@@ -320,7 +320,7 @@ export default function SeoCityLanding() {
               {sameCityOtherSectors.map((r) => (
                 <a
                   key={r.slug}
-                  href={`/preventivi/${r.slug}/${citySlug}`}
+                  href={`/preventivi/${r.slug}/${citySlug}/`}
                   className="flex items-center gap-2 bg-white border border-gray-100 hover:border-violet-200 rounded-xl px-4 py-3 text-sm font-medium text-gray-700 hover:text-violet-700 transition-colors"
                 >
                   <span className="text-violet-400 font-bold" aria-hidden="true">→</span>
@@ -343,7 +343,7 @@ export default function SeoCityLanding() {
               {relatedSectors.map((r) => (
                 <a
                   key={r.slug}
-                  href={`/preventivi/${r.slug}`}
+                  href={`/preventivi/${r.slug}/`}
                   className="flex items-center gap-2 bg-white border border-gray-100 hover:border-violet-200 rounded-xl px-4 py-3 text-sm font-medium text-gray-700 hover:text-violet-700 transition-colors"
                 >
                   <span className="text-violet-400 font-bold" aria-hidden="true">→</span>
@@ -377,7 +377,7 @@ export default function SeoCityLanding() {
                   </div>
                   <h2 className="text-base font-semibold text-gray-900">Approfondimenti</h2>
                 </div>
-                <Link href="/blog" className="text-xs font-semibold text-violet-600 hover:text-violet-700 transition-colors">
+                <Link href="/blog/" className="text-xs font-semibold text-violet-600 hover:text-violet-700 transition-colors">
                   Tutti gli articoli →
                 </Link>
               </div>
@@ -385,7 +385,7 @@ export default function SeoCityLanding() {
                 {articles.map((a) => (
                   <a
                     key={a.slug}
-                    href={`/blog/${a.slug}`}
+                    href={`/blog/${a.slug}/`}
                     className="group flex flex-col bg-white rounded-xl border border-gray-100 hover:border-violet-200 hover:shadow-sm transition-all duration-200 p-5"
                   >
                     <span className="text-xs font-semibold text-violet-700 mb-2">{a.category}</span>
@@ -412,7 +412,7 @@ export default function SeoCityLanding() {
             Nessuna carta di credito richiesta. Il tuo primo preventivo professionale è gratis.
           </p>
           <a
-            href="/sign-up"
+            href="/sign-up/"
             className="btn-gradient inline-flex h-14 items-center justify-center px-10 text-lg font-semibold"
           >
             {cta.button}

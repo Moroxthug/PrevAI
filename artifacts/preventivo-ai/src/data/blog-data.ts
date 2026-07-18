@@ -1,6 +1,8 @@
 export interface BlogArticle {
   slug: string;
   title: string;
+  /** Shorter title for the <title> tag (≤61 chars so the " | prevai" suffix stays within 70). Falls back to title. */
+  seoTitle?: string;
   metaDescription: string;
   category: string;
   publishedAt: string;
@@ -14,6 +16,7 @@ export const BLOG_ARTICLES: BlogArticle[] = [
   {
     slug: "come-fare-preventivo-imbianchino",
     title: "Come fare un preventivo professionale per lavori di imbiancatura",
+    seoTitle: "Preventivo per lavori di imbiancatura: guida",
     metaDescription: "Guida completa per imbianchini: come strutturare un preventivo professionale, quali voci includere, come calcolare i prezzi al mq e convincere il cliente.",
     category: "Professioni",
     publishedAt: "2026-04-10",
@@ -76,6 +79,7 @@ export const BLOG_ARTICLES: BlogArticle[] = [
   {
     slug: "quanto-costa-tinteggiatura-appartamento",
     title: "Quanto costa tinteggiare un appartamento nel 2025: guida ai prezzi",
+    seoTitle: "Quanto costa tinteggiare un appartamento nel 2025",
     metaDescription: "Prezzi aggiornati per tinteggiatura appartamento: costo al mq, manodopera vs materiali, differenze per tipo di pittura. Guida completa per proprietari e professionisti.",
     category: "Prezzi",
     publishedAt: "2026-04-15",
@@ -152,6 +156,7 @@ export const BLOG_ARTICLES: BlogArticle[] = [
   {
     slug: "preventivo-impianto-elettrico",
     title: "Come fare un preventivo per impianto elettrico: guida per elettricisti",
+    seoTitle: "Preventivo impianto elettrico: guida per elettricisti",
     metaDescription: "Guida pratica per elettricisti: come strutturare un preventivo professionale per impianti elettrici civili e industriali, voci da includere e prezzi di riferimento.",
     category: "Professioni",
     publishedAt: "2026-04-18",
@@ -221,6 +226,7 @@ export const BLOG_ARTICLES: BlogArticle[] = [
   {
     slug: "errori-preventivi-artigiani",
     title: "I 5 errori più comuni nei preventivi degli artigiani (e come evitarli)",
+    seoTitle: "I 5 errori più comuni nei preventivi degli artigiani",
     metaDescription: "Scopri i 5 errori che fanno perdere lavori agli artigiani nei preventivi: voci generiche, prezzi senza IVA, tempi sbagliati. Come correggerli subito.",
     category: "Consigli",
     publishedAt: "2026-04-22",
@@ -258,7 +264,7 @@ export const BLOG_ARTICLES: BlogArticle[] = [
 
 <h2>Il costo reale degli errori</h2>
 <p>Un artigiano che fa 12 preventivi al mese con un tasso di conversione del 40% chiude 5 lavori. Migliorare il preventivo aumentando la conversione anche solo al 55% significa un lavoro in più ogni mese — con investimento zero, solo migliorando il documento.</p>
-<p>I software moderni di preventivazione con AI aiutano a eliminare questi errori automaticamente: generano documenti completi, con tutte le voci dettagliate, IVA inclusa, scadenza e intestazione professionale — in meno di un minuto. Se parti da zero, consulta la nostra <a href="/preventivi/come-fare-preventivo">guida completa su come fare un preventivo professionale</a>.</p>
+<p>I software moderni di preventivazione con AI aiutano a eliminare questi errori automaticamente: generano documenti completi, con tutte le voci dettagliate, IVA inclusa, scadenza e intestazione professionale — in meno di un minuto. Se parti da zero, consulta la nostra <a href="/preventivi/come-fare-preventivo/">guida completa su come fare un preventivo professionale</a>.</p>
 
 <h2>Come usare questi consigli nella pratica quotidiana</h2>
 <p>Non è necessario rivoluzionare il proprio metodo di lavoro tutto in una volta. Il consiglio è di partire dal miglioramento più impattante — nella maggior parte dei casi è il punto 1 (voci dettagliate) o il punto 5 (intestazione professionale) — e integrarlo nei prossimi 5 preventivi come test. Misurare il tasso di risposta e continuare con il miglioramento successivo.</p>
@@ -268,6 +274,7 @@ export const BLOG_ARTICLES: BlogArticle[] = [
   {
     slug: "preventivo-ristrutturazione-guida",
     title: "Come fare un preventivo per ristrutturazione casa: guida completa",
+    seoTitle: "Preventivo ristrutturazione casa: guida completa",
     metaDescription: "Guida completa per creare un preventivo professionale per ristrutturazione: capitoli, voci, calcolo costi, bonus edilizi. Per imprese e artigiani italiani.",
     category: "Professioni",
     publishedAt: "2026-04-25",
@@ -404,6 +411,7 @@ export const BLOG_ARTICLES: BlogArticle[] = [
   {
     slug: "quanto-costa-impianto-elettrico",
     title: "Quanto costa un impianto elettrico nel 2025: prezzi per appartamento e ristrutturazione",
+    seoTitle: "Quanto costa un impianto elettrico nel 2025: prezzi",
     metaDescription: "Prezzi aggiornati per impianti elettrici civili nel 2025: costo per appartamento, per punto luce, quadro elettrico, rifacimento completo. Guida per proprietari e committenti.",
     category: "Prezzi",
     publishedAt: "2026-05-05",
@@ -474,6 +482,7 @@ export const BLOG_ARTICLES: BlogArticle[] = [
   {
     slug: "quanto-costa-idraulico",
     title: "Quanto costa un idraulico nel 2025: prezzi per interventi e impianti",
+    seoTitle: "Quanto costa un idraulico nel 2025: prezzi",
     metaDescription: "Prezzi aggiornati per lavori idraulici nel 2025: costo per intervento urgente, sostituzione boiler, nuovo impianto, perdita d'acqua. Guida completa per proprietari di casa.",
     category: "Prezzi",
     publishedAt: "2026-05-07",
@@ -687,6 +696,7 @@ export const BLOG_ARTICLES: BlogArticle[] = [
   {
     slug: "come-vincere-piu-lavori",
     title: "Come vincere più lavori con i tuoi preventivi: 7 consigli pratici",
+    seoTitle: "Come vincere più lavori con i preventivi: 7 consigli",
     metaDescription: "7 consigli pratici per artigiani e PMI: come aumentare il tasso di accettazione dei preventivi, rispondere più velocemente e comunicare meglio il proprio valore.",
     category: "Consigli",
     publishedAt: "2026-05-06",
@@ -715,7 +725,7 @@ export const BLOG_ARTICLES: BlogArticle[] = [
 <p>Il 40% dei preventivi non accettati è stato semplicemente dimenticato dal cliente, non rifiutato. Un messaggio breve ("Gentile Mario, le ricordo il preventivo inviato il 5 maggio — è rimasto qualche dubbio?") recupera una parte significativa di questi lavori potenziali. Sembra banale, ma pochi professionisti lo fanno.</p>
 
 <h2>7. Chiedi perché non hai vinto il lavoro</h2>
-<p>Quando perdi un preventivo, invia un breve messaggio: "Capisco che abbia scelto un altro professionista. Se posso chiederle, c'è qualcosa che avrei potuto fare meglio?" Otterrai informazioni preziose — spesso è il prezzo, ma spesso è anche la chiarezza del documento, i tempi comunicati, o la velocità di risposta. Ogni risposta è un'opportunità per migliorare il prossimo preventivo. Per approfondire la struttura di un preventivo efficace, leggi la nostra <a href="/preventivi/come-fare-preventivo">guida passo-passo su come fare un preventivo</a>.</p>
+<p>Quando perdi un preventivo, invia un breve messaggio: "Capisco che abbia scelto un altro professionista. Se posso chiederle, c'è qualcosa che avrei potuto fare meglio?" Otterrai informazioni preziose — spesso è il prezzo, ma spesso è anche la chiarezza del documento, i tempi comunicati, o la velocità di risposta. Ogni risposta è un'opportunità per migliorare il prossimo preventivo. Per approfondire la struttura di un preventivo efficace, leggi la nostra <a href="/preventivi/come-fare-preventivo/">guida passo-passo su come fare un preventivo</a>.</p>
 
 <h2>Quanto vale migliorare il tasso di accettazione</h2>
 <p>Facciamo il conto. Un artigiano con 15 preventivi mensili e un tasso di accettazione del 35% chiude 5 lavori. Portando il tasso al 45% — un miglioramento del 10%, assolutamente realistico con questi accorgimenti — si passa a 7 lavori mensili: due in più, ogni mese, senza spendere un euro in pubblicità.</p>
@@ -816,6 +826,7 @@ export const BLOG_ARTICLES: BlogArticle[] = [
   {
     slug: "ai-preventivi-artigiani",
     title: "L'intelligenza artificiale per i preventivi: come cambia il lavoro degli artigiani",
+    seoTitle: "AI per i preventivi: come cambia il lavoro artigiano",
     metaDescription: "Come l'AI sta trasformando la preventivazione per artigiani e PMI italiane: meno tempo, più lavori vinti, documenti professionali in 30 secondi. Guida pratica.",
     category: "Innovazione",
     publishedAt: "2026-05-08",
@@ -842,7 +853,7 @@ export const BLOG_ARTICLES: BlogArticle[] = [
   <li>Calcola subtotali, IVA e totale finale</li>
   <li>Produce un PDF professionale con intestazione aziendale e logo</li>
 </ul>
-<p>Il tempo medio: 30–60 secondi per un preventivo completo. Se vuoi esplorare le opzioni disponibili, consulta la nostra pagina sui <a href="/preventivi/preventivi-gratis">preventivi gratis</a> per capire come iniziare senza costi.</p>
+<p>Il tempo medio: 30–60 secondi per un preventivo completo. Se vuoi esplorare le opzioni disponibili, consulta la nostra pagina sui <a href="/preventivi/preventivi-gratis/">preventivi gratis</a> per capire come iniziare senza costi.</p>
 
 <h2>Un esempio pratico: il preventivo di un imbianchino</h2>
 <p>Invece di aprire Excel e compilare riga per riga, l'imbianchino scrive (o detta): <em>"Tinteggiatura appartamento 85mq, soggiorno e cucina a vista con pittura lavabile grigio chiaro due mani, tre camere bianco standard, bagno con antimuffa, tutti i soffitti bianchi, piccola rasatura in camera grande."</em></p>
@@ -876,6 +887,7 @@ export const BLOG_ARTICLES: BlogArticle[] = [
   {
     slug: "preventivo-falegname-carpentiere",
     title: "Come fare un preventivo per falegnameria e carpenteria metallica",
+    seoTitle: "Preventivo falegnameria e carpenteria metallica",
     metaDescription: "Guida pratica per falegnami e carpentieri: come strutturare un preventivo professionale con voci per materiali, lavorazione e posa. Prezzi di riferimento 2025.",
     category: "Professioni",
     publishedAt: "2026-05-08",
@@ -998,7 +1010,7 @@ export const BLOG_ARTICLES: BlogArticle[] = [
   <li><strong>Settimana 2–3</strong>: usate l'app per i prossimi 5 preventivi, in parallelo con il metodo attuale se volete</li>
   <li><strong>Dal mese 2</strong>: usate solo l'app, tenendo traccia del tempo risparmiato e del tasso di accettazione</li>
 </ul>
-<p>La maggior parte degli artigiani che fa questo percorso non torna indietro. Non perché il vecchio metodo non funzionasse, ma perché la differenza di velocità e qualità è immediata e tangibile. Scopri di più sulle <a href="/preventivi/preventivi-gratis">opzioni gratuite per iniziare a fare preventivi digitali</a> senza rischi.</p>
+<p>La maggior parte degli artigiani che fa questo percorso non torna indietro. Non perché il vecchio metodo non funzionasse, ma perché la differenza di velocità e qualità è immediata e tangibile. Scopri di più sulle <a href="/preventivi/preventivi-gratis/">opzioni gratuite per iniziare a fare preventivi digitali</a> senza rischi.</p>
 `,
   },
   {
@@ -1053,6 +1065,7 @@ export const BLOG_ARTICLES: BlogArticle[] = [
   {
     slug: "digitalizzazione-artigiani-italiani",
     title: "Digitalizzazione degli artigiani italiani: a che punto siamo nel 2025",
+    seoTitle: "Digitalizzazione degli artigiani italiani nel 2025",
     metaDescription: "Il quadro della digitalizzazione tra gli artigiani italiani nel 2025: dati, ostacoli, opportunità. Chi ha già fatto il salto e cosa manca per gli altri.",
     category: "Innovazione",
     publishedAt: "2026-05-05",
@@ -1103,6 +1116,7 @@ export const BLOG_ARTICLES: BlogArticle[] = [
   {
     slug: "preventivi-foto-cantiere",
     title: "Come usare le foto del cantiere per preventivi più precisi e convincenti",
+    seoTitle: "Foto del cantiere per preventivi più precisi",
     metaDescription: "Come usare le foto del sopralluogo per generare preventivi più accurati, convincere il cliente e documentare lo stato iniziale dei lavori. Guida pratica.",
     category: "Innovazione",
     publishedAt: "2026-05-07",
@@ -1157,6 +1171,7 @@ export const BLOG_ARTICLES: BlogArticle[] = [
   {
     slug: "come-fare-prezzo-lavori",
     title: "Come fissare il prezzo giusto per i tuoi lavori senza svendere",
+    seoTitle: "Come fissare il prezzo giusto senza svendere",
     metaDescription: "Come calcolare il prezzo corretto per i propri lavori da artigiano: costi reali, margine, mercato locale. Come smettere di svendere il proprio lavoro.",
     category: "Business",
     publishedAt: "2026-05-05",
@@ -1255,6 +1270,7 @@ export const BLOG_ARTICLES: BlogArticle[] = [
   {
     slug: "gestione-preventivi-pmi",
     title: "Come gestire i preventivi in una piccola impresa: guida pratica",
+    seoTitle: "Come gestire i preventivi in una piccola impresa",
     metaDescription: "Come organizzare e gestire i preventivi in una PMI italiana: dalla numerazione all'archivio, dal follow-up alla conversione. Strumenti e consigli pratici.",
     category: "Business",
     publishedAt: "2026-05-08",
@@ -1333,6 +1349,7 @@ export const BLOG_ARTICLES: BlogArticle[] = [
   {
     slug: "preventivo-freelance-professionisti",
     title: "Come fare un preventivo professionale da freelance: guida per consulenti, geometri e tecnici",
+    seoTitle: "Preventivo da freelance: guida per consulenti e tecnici",
     metaDescription: "Guida pratica per freelance, geometri e consulenti: come strutturare un preventivo professionale, definire il prezzo delle prestazioni e aumentare il tasso di accettazione.",
     category: "Consigli",
     publishedAt: "2026-05-08",
@@ -1387,6 +1404,7 @@ export const BLOG_ARTICLES: BlogArticle[] = [
   {
     slug: "preventivo-giardiniere",
     title: "Come fare un preventivo professionale per lavori di giardinaggio",
+    seoTitle: "Preventivo per lavori di giardinaggio: come farlo",
     metaDescription: "Guida completa per giardinieri e paesaggisti: come strutturare un preventivo professionale, quali voci includere, come calcolare il prezzo per potatura, manutenzione e progettazione del verde.",
     category: "Professioni",
     publishedAt: "2026-05-09",
@@ -1569,6 +1587,7 @@ export const BLOG_ARTICLES: BlogArticle[] = [
   {
     slug: "preventivo-piastrellista",
     title: "Come fare un preventivo da piastrellista: guida completa con prezzi 2026",
+    seoTitle: "Preventivo da piastrellista: guida con prezzi 2026",
     metaDescription: "Guida per piastrellisti e posatori: come strutturare un preventivo professionale, prezzi per la posa di pavimenti e rivestimenti, voci da includere e consigli pratici.",
     category: "Professioni",
     publishedAt: "2026-05-11",
@@ -1746,6 +1765,7 @@ export const BLOG_ARTICLES: BlogArticle[] = [
   {
     slug: "prezzi-posa-pavimento-gres-parquet",
     title: "Prezzi posa pavimento 2026: gres, parquet e laminato a confronto",
+    seoTitle: "Prezzi posa pavimento 2026: gres, parquet, laminato",
     metaDescription: "Prezzi posa pavimento 2026 per gres porcellanato, parquet e laminato: costo al mq, rimozione, massetto. Tabelle con fasce bassa, media e alta per confrontare i preventivi.",
     category: "Prezzi",
     publishedAt: "2026-04-02",
@@ -1815,6 +1835,7 @@ export const BLOG_ARTICLES: BlogArticle[] = [
   {
     slug: "costo-sostituzione-caldaia-condensazione",
     title: "Costo sostituzione caldaia a condensazione 2026: prezzi e incentivi",
+    seoTitle: "Costo sostituzione caldaia a condensazione 2026",
     metaDescription: "Costo sostituzione caldaia a condensazione 2026: prezzi per potenza, manodopera, incentivi fiscali Ecobonus. Confronta marche e risparmia sulla bolletta grazie agli incentivi.",
     category: "Prezzi",
     publishedAt: "2026-04-03",
@@ -2001,6 +2022,7 @@ export const BLOG_ARTICLES: BlogArticle[] = [
   {
     slug: "costo-serramenti-infissi-sostituzione",
     title: "Costo sostituzione infissi e serramenti 2026: prezzi per tipologia",
+    seoTitle: "Costo sostituzione infissi e serramenti 2026",
     metaDescription: "Costo sostituzione infissi 2026: PVC, alluminio, legno e legno-alluminio a confronto. Prezzi al mq, detrazioni 50% e 65%, risparmio in bolletta. Guida ai preventivi.",
     category: "Prezzi",
     publishedAt: "2026-04-06",
@@ -2132,6 +2154,7 @@ export const BLOG_ARTICLES: BlogArticle[] = [
   {
     slug: "quanto-costa-giardiniere-manutenzione",
     title: "Quanto costa un giardiniere nel 2026: manutenzione e progettazione",
+    seoTitle: "Quanto costa un giardiniere nel 2026: prezzi",
     metaDescription: "Costo giardiniere 2026: prezzi per manutenzione ordinaria, potatura, irrigazione e progettazione giardino. Forfait mensile vs chiamata singola: cosa conviene davvero.",
     category: "Prezzi",
     publishedAt: "2026-04-08",
@@ -2202,6 +2225,7 @@ export const BLOG_ARTICLES: BlogArticle[] = [
   {
     slug: "costo-pavimento-in-legno-parquet",
     title: "Costo pavimento in legno 2026: parquet massello, prefinito e laminato",
+    seoTitle: "Costo pavimento in legno 2026: parquet e laminato",
     metaDescription: "Costo parquet 2026: massello, prefinito multistrato e laminato a confronto. Levigatura, posa incollata vs flottante, essenze e prezzi al mq. Guida completa per scegliere bene.",
     category: "Prezzi",
     publishedAt: "2026-04-09",
@@ -2324,6 +2348,7 @@ export const BLOG_ARTICLES: BlogArticle[] = [
   {
     slug: "come-capire-preventivo-gonfiato",
     title: "Come capire se un preventivo è gonfiato: 8 segnali da riconoscere",
+    seoTitle: "Preventivo gonfiato: 8 segnali da riconoscere",
     metaDescription: "Preventivo gonfiato: 8 segnali concreti per riconoscerlo, con esempi reali. Voci vaghe, IVA assente, nessuna scadenza. Come confrontare preventivi e tutelarsi per iscritto.",
     category: "Consigli",
     publishedAt: "2026-04-12",
@@ -2373,6 +2398,7 @@ export const BLOG_ARTICLES: BlogArticle[] = [
   {
     slug: "domande-da-fare-prima-firmare-preventivo",
     title: "10 domande da fare prima di firmare un preventivo di ristrutturazione",
+    seoTitle: "Preventivo di ristrutturazione: 10 domande da fare",
     metaDescription: "Domande preventivo ristrutturazione: 10 domande essenziali prima di firmare. Materiali inclusi, smaltimento rifiuti, RC professionale, prezzo fisso o a consuntivo. Guida pratica.",
     category: "Consigli",
     publishedAt: "2026-04-13",
@@ -2484,6 +2510,7 @@ export const BLOG_ARTICLES: BlogArticle[] = [
   {
     slug: "red-flag-preventivi-idraulici-elettricisti",
     title: "Red flag nei preventivi di idraulici ed elettricisti: come riconoscerli",
+    seoTitle: "Red flag nei preventivi di idraulici ed elettricisti",
     metaDescription: "Preventivo idraulico elettricista affidabile: red flag concreti, certificazioni obbligatorie da verificare, P.IVA e CCIAA. Come distinguere i professionisti seri in 5 minuti.",
     category: "Consigli",
     publishedAt: "2026-04-16",
@@ -2532,6 +2559,7 @@ export const BLOG_ARTICLES: BlogArticle[] = [
   {
     slug: "come-confrontare-preventivi-ristrutturazione",
     title: "Come confrontare preventivi di ristrutturazione: metodo pratico",
+    seoTitle: "Come confrontare preventivi di ristrutturazione",
     metaDescription: "Confrontare preventivi ristrutturazione correttamente: metodo per normalizzare voci diverse, valutare esperienza oltre il prezzo, capitolato tecnico e referenze verificabili.",
     category: "Consigli",
     publishedAt: "2026-04-17",
@@ -2818,6 +2846,7 @@ export const BLOG_ARTICLES: BlogArticle[] = [
   {
     slug: "tipi-cavi-elettrici-impianti-civili",
     title: "Tipi di cavi elettrici per impianti civili: guida tecnica per capire il preventivo",
+    seoTitle: "Tipi di cavi elettrici per impianti civili: guida",
     metaDescription: "Tipi cavi elettrici impianti: FG16OR16, N07V-K, FG17, sezioni per circuito, normativa CEI 64-8. Costi al metro e come leggere il preventivo dell'elettricista. Guida tecnica.",
     category: "Tool",
     publishedAt: "2026-04-22",
@@ -2873,6 +2902,7 @@ export const BLOG_ARTICLES: BlogArticle[] = [
   {
     slug: "tipi-tubazioni-impianti-idraulici",
     title: "Tipi di tubazioni per impianti idraulici: rame, multistrato e PEX a confronto",
+    seoTitle: "Tubazioni per impianti idraulici: rame, multistrato, PEX",
     metaDescription: "Tubazioni impianti idraulici: rame, multistrato alluminio-polietilene e PEX a confronto tecnico. Norme UNI, costi al metro, vita utile e quando usare ogni tipo. Guida completa.",
     category: "Tool",
     publishedAt: "2026-04-23",
@@ -2939,6 +2969,7 @@ export const BLOG_ARTICLES: BlogArticle[] = [
   {
     slug: "materiali-ristrutturazione-bagno-guida",
     title: "Materiali per la ristrutturazione del bagno: guida completa ai costi",
+    seoTitle: "Materiali per ristrutturare il bagno: guida ai costi",
     metaDescription: "Materiali ristrutturazione bagno: lista completa con prezzi per fascia economica, media e alta. Impermeabilizzante, piastrelle, sanitari, rubinetteria, box doccia. Guida 2026.",
     category: "Tool",
     publishedAt: "2026-04-24",
@@ -3009,6 +3040,7 @@ export const BLOG_ARTICLES: BlogArticle[] = [
   {
     slug: "tipologie-legno-falegnameria-prezzi",
     title: "Tipologie di legno per falegnameria: guida ai prezzi e agli utilizzi",
+    seoTitle: "Tipologie di legno per falegnameria: guida ai prezzi",
     metaDescription: "Tipi legno falegnameria: rovere, noce, ciliegio, pino e abete con prezzi al mq. Massello vs multistrato, MDF, trattamenti e verniciature. Come leggere il preventivo del falegname.",
     category: "Tool",
     publishedAt: "2026-04-25",
@@ -3070,6 +3102,7 @@ export const BLOG_ARTICLES: BlogArticle[] = [
   {
     slug: "gres-porcellanato-quale-scegliere",
     title: "Gres porcellanato: come scegliere il formato giusto e leggere il preventivo",
+    seoTitle: "Gres porcellanato: formati, prezzi e preventivo",
     metaDescription: "Gres porcellanato scegliere: classi PEI, scivolosità R9-R13, rettificato vs non, grandi formati, spessori slim vs outdoor. Marchi italiani e come leggere la voce fornitura nel preventivo.",
     category: "Tool",
     publishedAt: "2026-04-26",
@@ -3142,6 +3175,7 @@ export const BLOG_ARTICLES: BlogArticle[] = [
   {
     slug: "strumenti-imbianchino-professionista",
     title: "Strumenti da imbianchino professionista: quali servono e quanto costano",
+    seoTitle: "Strumenti da imbianchino: quali servono e costi",
     metaDescription: "Strumenti imbianchino professionista: lista completa rulli, pennelli, airless, trabattello. Costi acquisto vs noleggio, DPI obbligatori D.Lgs. 81/2008. Guida pratica per iniziare.",
     category: "Tool",
     publishedAt: "2026-04-27",
@@ -3209,6 +3243,7 @@ export const BLOG_ARTICLES: BlogArticle[] = [
   {
     slug: "software-preventivi-artigiani-confronto",
     title: "Software preventivi per artigiani 2026: confronto tra le opzioni disponibili",
+    seoTitle: "Software preventivi per artigiani 2026: confronto",
     metaDescription: "Software preventivi artigiani 2026: Excel, gestionali, app mobile e AI a confronto. Cosa valutare, limiti di Excel, impatto sulla conversione. Integrazione WhatsApp e PDF.",
     category: "Tool",
     publishedAt: "2026-04-28",
@@ -3266,6 +3301,7 @@ export const BLOG_ARTICLES: BlogArticle[] = [
   {
     slug: "come-diventare-imbianchino-professionista",
     title: "Come diventare imbianchino professionista in Italia: guida completa",
+    seoTitle: "Come diventare imbianchino professionista in Italia",
     metaDescription: "Diventare imbianchino professionista: percorso formativo, abilitazioni obbligatorie, corsi sicurezza D.Lgs. 81/2008, guadagni medi e come trovare i primi clienti. Guida 2026.",
     category: "Professioni",
     publishedAt: "2026-04-29",
@@ -3333,6 +3369,7 @@ export const BLOG_ARTICLES: BlogArticle[] = [
   {
     slug: "quanto-guadagna-elettricista-italia",
     title: "Quanto guadagna un elettricista in Italia nel 2026: dati e prospettive",
+    seoTitle: "Quanto guadagna un elettricista in Italia nel 2026",
     metaDescription: "Quanto guadagna elettricista in Italia 2026: stipendio dipendente CCNL, reddito autonomo per zona, specializzazioni redditizie, certificazioni CEI. Dati aggiornati e prospettive.",
     category: "Professioni",
     publishedAt: "2026-04-30",
@@ -3462,6 +3499,7 @@ export const BLOG_ARTICLES: BlogArticle[] = [
   {
     slug: "preventivo-lavori-giardino-guida",
     title: "Come fare un preventivo per lavori di giardinaggio: guida professionale",
+    seoTitle: "Preventivo giardinaggio: guida professionale",
     metaDescription: "Preventivo lavori giardino: voci da includere, come misurare, prezzi di riferimento per lavorazione, contratti condominio, stagionalità e come distinguersi con foto del sopralluogo.",
     category: "Professioni",
     publishedAt: "2026-05-02",
@@ -3588,6 +3626,7 @@ export const BLOG_ARTICLES: BlogArticle[] = [
   {
     slug: "normativa-impianti-termici-obblighi",
     title: "Normativa impianti termici 2026: obblighi per artigiani e committenti",
+    seoTitle: "Normativa impianti termici 2026: gli obblighi",
     metaDescription: "Normativa impianti termici 2026: D.P.R. 74/2013, libretto d'impianto, controllo efficienza energetica, sanzioni fino a 3.000€. Obblighi di manutenzione e cosa includere nel preventivo.",
     category: "Professioni",
     publishedAt: "2026-05-04",
@@ -3661,6 +3700,7 @@ export const BLOG_ARTICLES: BlogArticle[] = [
   {
     slug: "bonus-edilizi-2026-guida-artigiani",
     title: "Bonus edilizi 2026: guida per artigiani e clienti su detrazioni e incentivi",
+    seoTitle: "Bonus edilizi 2026: guida a detrazioni e incentivi",
     metaDescription: "Bonus edilizi 2026: Bonus Ristrutturazione 50%, Ecobonus 65%, Bonus Mobili, Verde, Conto Termico. Requisiti, bonifico parlante, visto conformità. Guida aggiornata per artigiani.",
     category: "Professioni",
     publishedAt: "2026-05-05",
@@ -3804,6 +3844,7 @@ export const BLOG_ARTICLES: BlogArticle[] = [
   {
     slug: "preventivo-ristrutturazione-bagno-completo",
     title: "Preventivo ristrutturazione bagno completo 2026: voci e prezzi",
+    seoTitle: "Preventivo ristrutturazione bagno 2026: prezzi",
     metaDescription: "Preventivo ristrutturazione bagno 2026: tutte le voci con prezzi indicativi per bagno 4mq, 6mq e 9mq. Costo totale, ordine delle lavorazioni, tempi di cantiere ed errori da evitare.",
     category: "Professioni",
     publishedAt: "2026-05-07",
@@ -3903,6 +3944,7 @@ export const BLOG_ARTICLES: BlogArticle[] = [
   {
     slug: "ai-preventivi-artigiani-come-funziona",
     title: "AI per preventivi degli artigiani: come funziona e cosa cambia",
+    seoTitle: "AI per preventivi degli artigiani: come funziona",
     metaDescription: "AI preventivi artigiani: come funziona l'AI per la preventivazione, differenza con ChatGPT, vantaggi su velocità e accuratezza, integrazione WhatsApp. Dati su risparmio di tempo.",
     category: "Innovazione",
     publishedAt: "2026-05-08",
@@ -3974,6 +4016,7 @@ export const BLOG_ARTICLES: BlogArticle[] = [
   {
     slug: "gestione-clienti-artigiano-crm",
     title: "Come gestire i clienti da artigiano: dalla prima richiesta al saldo",
+    seoTitle: "Come gestire i clienti da artigiano: guida pratica",
     metaDescription: "Gestione clienti artigiano: ciclo di vita completo, follow-up preventivi non accettati, raccolta recensioni, Google My Business, valore del cliente ripetuto. Guida pratica 2026.",
     category: "Business",
     publishedAt: "2026-05-09",
@@ -4117,6 +4160,7 @@ export const BLOG_ARTICLES: BlogArticle[] = [
   {
     slug: "google-my-business-artigiani-guida",
     title: "Google My Business per artigiani: come ottimizzare il profilo e trovare clienti",
+    seoTitle: "Google My Business per artigiani: guida completa",
     metaDescription: "Google My Business artigiani: come creare e ottimizzare il profilo, foto prima/dopo, raccogliere recensioni, Google Posts stagionali, statistiche. Guida pratica per artigiani locali.",
     category: "Business",
     publishedAt: "2026-05-09",
@@ -4201,6 +4245,7 @@ export const BLOG_ARTICLES: BlogArticle[] = [
   {
     slug: "preventivo-whatsapp-artigiani-vantaggi",
     title: "Preventivi su WhatsApp: perché gli artigiani stanno abbandonando l'email",
+    seoTitle: "Preventivi su WhatsApp: perché battono l'email",
     metaDescription: "Preventivo WhatsApp artigiani: tasso apertura 98% vs 20% email, velocità risposta, PDF professionale, etichette e broadcast. Integrazione AI per preventivo in 2 minuti. Guida 2026.",
     category: "Business",
     publishedAt: "2026-05-10",

@@ -164,8 +164,8 @@ const STATIC_HEADER = `<header class="sticky top-0 z-50 w-full transition-all du
   <div class="container mx-auto flex h-16 items-center justify-between px-4 sm:px-6 lg:px-8">
     <a href="/" class="flex items-center">${STATIC_LOGO}</a>
     <nav class="flex items-center gap-3">
-      <a href="/sign-in" class="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors px-3 py-1.5 rounded-full">Accedi</a>
-      <a href="/sign-up" class="btn-gradient inline-flex h-9 items-center justify-center px-5 text-sm font-semibold">Registrati</a>
+      <a href="/sign-in/" class="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors px-3 py-1.5 rounded-full">Accedi</a>
+      <a href="/sign-up/" class="btn-gradient inline-flex h-9 items-center justify-center px-5 text-sm font-semibold">Registrati</a>
     </nav>
   </div>
 </header>`;
@@ -347,7 +347,7 @@ function buildApprofondimentiSection(sectorSlug: string): string {
   <div class="container mx-auto px-4 sm:px-6 lg:px-8 max-w-4xl">
     <div class="flex items-center justify-between mb-6">
       <h2 class="text-base font-semibold text-gray-900">Approfondimenti</h2>
-      <a href="/blog" class="text-xs font-semibold text-violet-600 hover:text-violet-700 transition-colors">Tutti gli articoli →</a>
+      <a href="/blog/" class="text-xs font-semibold text-violet-600 hover:text-violet-700 transition-colors">Tutti gli articoli →</a>
     </div>
     <div class="grid sm:grid-cols-3 gap-4">
       ${cards}
@@ -447,7 +447,7 @@ function buildSectorBodyHtml(s: SectorData): string {
       </h1>
       <p class="text-xl text-gray-500 mb-10 max-w-2xl mx-auto leading-relaxed">${esc(s.intro)}</p>
       <div class="flex flex-col sm:flex-row gap-4 justify-center">
-        <a href="/sign-up" class="btn-gradient inline-flex h-14 items-center justify-center px-8 text-lg font-semibold">
+        <a href="/sign-up/" class="btn-gradient inline-flex h-14 items-center justify-center px-8 text-lg font-semibold">
           Crea il tuo preventivo gratis
         </a>
         <a href="#come-funziona" class="btn-gradient-outline inline-flex h-14 items-center justify-center px-8 text-lg font-semibold">
@@ -570,7 +570,7 @@ function buildSectorBodyHtml(s: SectorData): string {
       <p class="text-lg text-gray-500 mb-10">
         Nessuna carta di credito. Nessun impegno. Il tuo primo preventivo è gratis.
       </p>
-      <a href="/sign-up" class="btn-gradient inline-flex h-14 items-center justify-center px-10 text-lg font-semibold">
+      <a href="/sign-up/" class="btn-gradient inline-flex h-14 items-center justify-center px-10 text-lg font-semibold">
         ${ctaBtn}
         <svg xmlns="http://www.w3.org/2000/svg" class="ml-2 h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
       </a>
@@ -709,7 +709,7 @@ function buildCityBodyHtml(s: SectorData, city: CityData): string {
       </h1>
       <p class="text-xl text-gray-500 mb-10 max-w-2xl mx-auto leading-relaxed">${esc(intro)}</p>
       <div class="flex flex-col sm:flex-row gap-4 justify-center">
-        <a href="/sign-up" class="btn-gradient inline-flex h-14 items-center justify-center px-8 text-lg font-semibold">
+        <a href="/sign-up/" class="btn-gradient inline-flex h-14 items-center justify-center px-8 text-lg font-semibold">
           Crea il tuo preventivo gratis
         </a>
         <a href="/preventivi/${esc(s.slug)}/" class="btn-gradient-outline inline-flex h-14 items-center justify-center px-8 text-lg font-semibold">
@@ -835,7 +835,7 @@ function buildCityBodyHtml(s: SectorData, city: CityData): string {
       <p class="text-lg text-gray-500 mb-10">
         Nessuna carta di credito richiesta. Il tuo primo preventivo professionale è gratis.
       </p>
-      <a href="/sign-up" class="btn-gradient inline-flex h-14 items-center justify-center px-10 text-lg font-semibold">
+      <a href="/sign-up/" class="btn-gradient inline-flex h-14 items-center justify-center px-10 text-lg font-semibold">
         ${esc(ctaTexts.button)}
         <svg xmlns="http://www.w3.org/2000/svg" class="ml-2 h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
       </a>
@@ -961,7 +961,7 @@ function buildHomepageBodyHtml(): string {
         Dimentica Excel e i documenti scritti a mano. Descrivi il lavoro a parole tue e prevai genera un documento impeccabile, pronto da inviare al cliente.
       </p>
       <div class="mt-12 flex flex-col sm:flex-row justify-center gap-4">
-        <a href="/sign-up" class="btn-gradient inline-flex h-14 items-center justify-center px-8 text-lg font-semibold">
+        <a href="/sign-up/" class="btn-gradient inline-flex h-14 items-center justify-center px-8 text-lg font-semibold">
           Inizia Gratuitamente
           <svg xmlns="http://www.w3.org/2000/svg" class="ml-2 h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
         </a>
@@ -1159,7 +1159,7 @@ function buildHomepageBodyHtml(): string {
       <p class="text-lg text-gray-500 mb-10">
         Unisciti a centinaia di professionisti italiani che usano prevai ogni giorno. Nessuna carta di credito. Nessun impegno.
       </p>
-      <a href="/sign-up" class="btn-gradient inline-flex h-14 items-center justify-center px-10 text-lg font-semibold">
+      <a href="/sign-up/" class="btn-gradient inline-flex h-14 items-center justify-center px-10 text-lg font-semibold">
         Inizia Gratuitamente
         <svg xmlns="http://www.w3.org/2000/svg" class="ml-2 h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
       </a>
@@ -1211,7 +1211,7 @@ const homepageSoftwareSchema = {
   })),
 };
 const homepageHeadBlock = buildHeadBlock({
-  title: "prevai – Preventivi Online per Artigiani e Aziende | AI in 30 Secondi",
+  title: "prevai – Preventivi Online per Artigiani e Aziende | AI in 30s",
   description: "Crea preventivi professionali in 30 secondi con l'AI. Software di preventivazione per artigiani, PMI e professionisti italiani. Niente Excel, niente errori. Provalo gratis.",
   canonical: `${BASE_URL}/`,
   ogImagePath: "/opengraph.jpg",
@@ -1417,7 +1417,7 @@ function buildBlogListBodyHtml(): string {
       Pronto a creare preventivi in <span class="gradient-text">30 secondi</span>?
     </h2>
     <p class="text-gray-500 mb-8 text-sm">Nessuna carta di credito. Nessun impegno. Il tuo primo preventivo è gratis.</p>
-    <a href="/sign-up" class="btn-gradient inline-flex h-12 items-center justify-center px-8 text-sm font-semibold">
+    <a href="/sign-up/" class="btn-gradient inline-flex h-12 items-center justify-center px-8 text-sm font-semibold">
       Inizia Gratuitamente
     </a>
   </div>
@@ -1440,7 +1440,7 @@ function buildBlogArticleBodyHtml(article: BlogArticle): string {
     <ol class="flex items-center text-sm text-gray-500 flex-wrap">
       <li><a href="/" class="hover:text-violet-600 transition-colors">Home</a></li>
       <li aria-hidden="true" class="mx-1.5 text-gray-300 select-none">/</li>
-      <li><a href="/blog" class="hover:text-violet-600 transition-colors">Blog</a></li>
+      <li><a href="/blog/" class="hover:text-violet-600 transition-colors">Blog</a></li>
       <li aria-hidden="true" class="mx-1.5 text-gray-300 select-none">/</li>
       <li class="text-gray-900 font-medium truncate max-w-[200px]" aria-current="page">${esc(article.title)}</li>
     </ol>
@@ -1547,7 +1547,7 @@ function buildBlogArticleBodyHtml(article: BlogArticle): string {
       Pronto a creare preventivi in <span class="gradient-text">30 secondi</span>?
     </h2>
     <p class="text-gray-500 mb-8 text-sm">Nessuna carta di credito. Nessun impegno. Il tuo primo preventivo è gratis.</p>
-    <a href="/sign-up" class="btn-gradient inline-flex h-12 items-center justify-center px-8 text-sm font-semibold">
+    <a href="/sign-up/" class="btn-gradient inline-flex h-12 items-center justify-center px-8 text-sm font-semibold">
       Inizia Gratuitamente
       <svg xmlns="http://www.w3.org/2000/svg" class="ml-2 h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
     </a>
@@ -1612,7 +1612,7 @@ function buildBlogCategoryBodyHtml(category: BlogCategory): string {
     <ol class="flex items-center text-sm text-gray-500 flex-wrap">
       <li><a href="/" class="hover:text-violet-600 transition-colors">Home</a></li>
       <li aria-hidden="true" class="mx-1.5 text-gray-300 select-none">/</li>
-      <li><a href="/blog" class="hover:text-violet-600 transition-colors">Blog</a></li>
+      <li><a href="/blog/" class="hover:text-violet-600 transition-colors">Blog</a></li>
       <li aria-hidden="true" class="mx-1.5 text-gray-300 select-none">/</li>
       <li class="text-gray-900 font-medium" aria-current="page">${esc(category.name)}</li>
     </ol>
@@ -1659,7 +1659,7 @@ function buildBlogCategoryBodyHtml(category: BlogCategory): string {
 </section>`
     : `<section class="py-20 text-center text-gray-400">
   <p class="text-lg font-medium">Nessun articolo in questa categoria.</p>
-  <a href="/blog" class="mt-6 inline-block text-violet-600 text-sm font-semibold">Torna al Blog →</a>
+  <a href="/blog/" class="mt-6 inline-block text-violet-600 text-sm font-semibold">Torna al Blog →</a>
 </section>`;
 
   const otherCats = BLOG_CATEGORIES.filter((c) => c.slug !== category.slug);
@@ -1683,7 +1683,7 @@ function buildBlogCategoryBodyHtml(category: BlogCategory): string {
       Pronto a creare preventivi in <span class="gradient-text">30 secondi</span>?
     </h2>
     <p class="text-gray-500 mb-8 text-sm">Nessuna carta di credito. Nessun impegno. Il tuo primo preventivo è gratis.</p>
-    <a href="/sign-up" class="btn-gradient inline-flex h-12 items-center justify-center px-8 text-sm font-semibold">
+    <a href="/sign-up/" class="btn-gradient inline-flex h-12 items-center justify-center px-8 text-sm font-semibold">
       Inizia Gratuitamente
     </a>
   </div>
@@ -1734,7 +1734,7 @@ for (const article of BLOG_ARTICLES) {
   const articleCanonical = `${BASE_URL}/blog/${article.slug}/`;
   const articleOgImage = `/og/blog/${article.slug}.png`;
   const articleHeadBlock = buildHeadBlock({
-    title: `${article.title} | prevai Blog`,
+    title: `${article.seoTitle ?? article.title} | prevai`,
     description: article.metaDescription,
     canonical: articleCanonical,
     ogImagePath: articleOgImage,
@@ -1991,8 +1991,8 @@ buildStaticPageHtml({
     <h2 class="text-3xl font-bold text-gray-900 mb-5">Prova prevai gratuitamente</h2>
     <p class="text-gray-500 text-lg mb-8">Crea il tuo primo preventivo in 30 secondi. Nessuna carta di credito richiesta.</p>
     <div class="flex flex-col sm:flex-row gap-4 justify-center">
-      <a href="/sign-up" class="inline-flex items-center justify-center gap-2 rounded-xl px-8 py-4 text-base font-semibold text-white" style="background:linear-gradient(135deg,#7C3AED 0%,#A855F7 100%)">Inizia gratis</a>
-      <a href="/contatti" class="inline-flex items-center justify-center gap-2 rounded-xl px-8 py-4 text-base font-semibold text-gray-700 border border-gray-200">Contattaci</a>
+      <a href="/sign-up/" class="inline-flex items-center justify-center gap-2 rounded-xl px-8 py-4 text-base font-semibold text-white" style="background:linear-gradient(135deg,#7C3AED 0%,#A855F7 100%)">Inizia gratis</a>
+      <a href="/contatti/" class="inline-flex items-center justify-center gap-2 rounded-xl px-8 py-4 text-base font-semibold text-gray-700 border border-gray-200">Contattaci</a>
     </div>
   </div>
 </section>`),
@@ -2039,7 +2039,7 @@ buildStaticPageHtml({
       <div class="bg-white rounded-2xl p-8 border border-gray-100 shadow-sm">
         <h2 class="text-lg font-bold text-gray-900 mb-2">WhatsApp</h2>
         <p class="text-gray-500 text-sm leading-relaxed mb-4">Vuoi provare il servizio via WhatsApp o hai una domanda rapida? Scrivici direttamente.</p>
-        <a href="/whatsapp" class="text-green-600 font-semibold text-sm">Scopri prevai su WhatsApp →</a>
+        <a href="/whatsapp/" class="text-green-600 font-semibold text-sm">Scopri prevai su WhatsApp →</a>
       </div>
       <div class="bg-white rounded-2xl p-8 border border-gray-100 shadow-sm">
         <h2 class="text-lg font-bold text-gray-900 mb-2">Privacy &amp; legale</h2>
@@ -2072,7 +2072,7 @@ buildStaticPageHtml({
   <div class="container mx-auto px-4 sm:px-6 lg:px-8 max-w-xl text-center">
     <h2 class="text-2xl font-bold text-gray-900 mb-4">Non hai ancora un account?</h2>
     <p class="text-gray-500 mb-6">Prova prevai gratis — nessuna carta di credito richiesta.</p>
-    <a href="/sign-up" class="inline-flex items-center justify-center gap-2 rounded-xl px-8 py-4 text-base font-semibold text-white" style="background:linear-gradient(135deg,#7C3AED 0%,#A855F7 100%)">Crea account gratuito</a>
+    <a href="/sign-up/" class="inline-flex items-center justify-center gap-2 rounded-xl px-8 py-4 text-base font-semibold text-white" style="background:linear-gradient(135deg,#7C3AED 0%,#A855F7 100%)">Crea account gratuito</a>
   </div>
 </section>`),
 });
@@ -2143,7 +2143,7 @@ buildStaticPageHtml({
     <p class="text-lg text-gray-400 leading-relaxed mb-4 max-w-2xl mx-auto">Manda un vocale dal cantiere. PrevAI genera il preventivo professionale, te lo mostra in anteprima e ti invia il PDF — senza aprire nessuna app.</p>
     <p class="text-sm text-gray-600 mb-10 font-medium">Mentre i tuoi concorrenti aprono ancora Excel, i tuoi clienti già ricevono il preventivo.</p>
     <div class="flex flex-col sm:flex-row justify-center gap-3">
-      <a href="/sign-up?plan=monthly_pro" class="inline-flex h-12 items-center justify-center gap-2 px-7 rounded-xl text-sm font-bold text-white" style="background:linear-gradient(135deg,#7c3aed,#2563eb)">Attiva WhatsApp Bot</a>
+      <a href="/sign-up/?plan=monthly_pro" class="inline-flex h-12 items-center justify-center gap-2 px-7 rounded-xl text-sm font-bold text-white" style="background:linear-gradient(135deg,#7c3aed,#2563eb)">Attiva WhatsApp Bot</a>
       <a href="#demo" class="inline-flex h-12 items-center justify-center gap-2 px-7 rounded-xl text-sm font-semibold text-gray-300 border border-gray-700">Guarda la demo</a>
     </div>
     <div class="mt-8 flex flex-col sm:flex-row items-center justify-center gap-4 text-xs text-gray-500">
@@ -2187,7 +2187,7 @@ buildStaticPageHtml({
     <h2 class="text-2xl font-bold tracking-tight text-gray-900 mb-3">Inizia oggi. Zero configurazione.</h2>
     <p class="text-gray-500 text-sm mb-7 leading-relaxed">Collega il tuo numero WhatsApp dalle impostazioni in meno di 2 minuti. Il bot è subito attivo.</p>
     <div class="flex flex-col sm:flex-row justify-center gap-3">
-      <a href="/sign-up?plan=monthly_pro" class="inline-flex h-11 items-center justify-center gap-2 px-7 rounded-xl text-sm font-bold text-white" style="background:linear-gradient(135deg,#7c3aed,#2563eb)">Prova Gratis 7 Giorni</a>
+      <a href="/sign-up/?plan=monthly_pro" class="inline-flex h-11 items-center justify-center gap-2 px-7 rounded-xl text-sm font-bold text-white" style="background:linear-gradient(135deg,#7c3aed,#2563eb)">Prova Gratis 7 Giorni</a>
       <a href="/#prezzi" class="inline-flex h-11 items-center justify-center px-7 rounded-xl text-sm font-semibold text-gray-700 border border-gray-200">Confronta i piani</a>
     </div>
     <p class="text-xs text-gray-400 mt-4">7 giorni gratis · Nessuna carta richiesta · Cancella quando vuoi</p>

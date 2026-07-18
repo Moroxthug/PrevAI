@@ -4,6 +4,7 @@
   "outputDirectory": "artifacts/preventivo-ai/dist/public",
   "installCommand": "pnpm install",
   "framework": null,
+  "trailingSlash": true,
   "functions": {
     "api/index.js": {
       "memory": 1024,

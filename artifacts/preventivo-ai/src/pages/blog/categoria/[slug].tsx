@@ -32,7 +32,7 @@ export default function BlogCategoryPage() {
       <div className="flex flex-col items-center justify-center py-32 text-center px-4">
         <h1 className="text-2xl font-bold text-gray-900 mb-3">Categoria non trovata</h1>
         <p className="text-gray-500 mb-8">La categoria cercata non esiste.</p>
-        <Link href="/blog" className="btn-gradient inline-flex h-11 items-center justify-center px-7 text-sm font-semibold">
+        <Link href="/blog/" className="btn-gradient inline-flex h-11 items-center justify-center px-7 text-sm font-semibold">
           Torna al Blog
         </Link>
       </div>
@@ -78,7 +78,7 @@ export default function BlogCategoryPage() {
           <ol className="flex items-center text-sm text-gray-500 flex-wrap gap-1">
             <li><Link href="/" className="hover:text-violet-600 transition-colors">Home</Link></li>
             <li aria-hidden="true" className="mx-1.5 text-gray-300">/</li>
-            <li><Link href="/blog" className="hover:text-violet-600 transition-colors">Blog</Link></li>
+            <li><Link href="/blog/" className="hover:text-violet-600 transition-colors">Blog</Link></li>
             <li aria-hidden="true" className="mx-1.5 text-gray-300">/</li>
             <li className="text-gray-900 font-medium" aria-current="page">{category.name}</li>
           </ol>
@@ -107,7 +107,7 @@ export default function BlogCategoryPage() {
           {articles.length === 0 ? (
             <div className="text-center py-20 text-gray-400">
               <p className="text-lg font-medium">Nessun articolo in questa categoria.</p>
-              <Link href="/blog" className="mt-6 inline-block text-violet-600 hover:underline text-sm font-semibold">
+              <Link href="/blog/" className="mt-6 inline-block text-violet-600 hover:underline text-sm font-semibold">
                 Torna al Blog →
               </Link>
             </div>
@@ -116,7 +116,7 @@ export default function BlogCategoryPage() {
               {articles.map((article) => (
                 <Link
                   key={article.slug}
-                  href={`/blog/${article.slug}`}
+                  href={`/blog/${article.slug}/`}
                   className="group flex flex-col bg-white rounded-2xl border border-gray-100 hover:border-violet-200 hover:shadow-md transition-all duration-200 overflow-hidden"
                 >
                   <div className="p-6 flex flex-col flex-1">
@@ -156,7 +156,7 @@ export default function BlogCategoryPage() {
               {otherCategories.map((cat) => (
                 <Link
                   key={cat.slug}
-                  href={`/blog/categoria/${cat.slug}`}
+                  href={`/blog/categoria/${cat.slug}/`}
                   className={`inline-flex items-center rounded-full border px-4 py-2 text-xs font-semibold transition-colors ${CATEGORY_COLORS[cat.name] ?? "bg-gray-100 text-gray-600 border-gray-200"}`}
                 >
                   {cat.name}
@@ -176,7 +176,7 @@ export default function BlogCategoryPage() {
             Nessuna carta di credito. Nessun impegno. Il tuo primo preventivo è gratis.
           </p>
           <Link
-            href="/sign-up"
+            href="/sign-up/"
             className="btn-gradient inline-flex h-12 items-center justify-center px-8 text-sm font-semibold"
           >
             Inizia Gratuitamente

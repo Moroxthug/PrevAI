@@ -78,7 +78,7 @@ function ExcelWordComparisonBlock({ tool }: { tool: "Excel" | "Word" }) {
         </div>
         <div className="mt-8 text-center">
           <Link
-            href="/sign-up"
+            href="/sign-up/"
             className="btn-gradient inline-flex h-12 items-center justify-center px-8 text-base font-semibold"
           >
             Prova prevai gratis — niente carta di credito
@@ -331,7 +331,7 @@ export default function SeoLanding() {
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link
-              href="/sign-up"
+              href="/sign-up/"
               className="btn-gradient inline-flex h-14 items-center justify-center px-8 text-lg font-semibold"
             >
               Crea il tuo preventivo in 60 secondi
@@ -488,7 +488,7 @@ export default function SeoLanding() {
               {TIER1_CITIES.map((city) => (
                 <Link
                   key={city.slug}
-                  href={`/preventivi/${slug}/${city.slug}`}
+                  href={`/preventivi/${slug}/${city.slug}/`}
                   className="flex items-center gap-2.5 bg-white hover:bg-violet-50 border border-gray-100 hover:border-violet-200 rounded-xl px-4 py-3 transition-colors group"
                 >
                   <MapPin className="h-3.5 w-3.5 text-violet-400 group-hover:text-violet-600 shrink-0" />
@@ -524,7 +524,7 @@ export default function SeoLanding() {
                     {CITIES_BY_REGION[region].map((city) => (
                       <li key={city.slug}>
                         <Link
-                          href={`/preventivi/${slug}/${city.slug}`}
+                          href={`/preventivi/${slug}/${city.slug}/`}
                           className="text-sm text-gray-500 hover:text-violet-600 transition-colors"
                         >
                           {s.label} {city.name}
@@ -550,7 +550,7 @@ export default function SeoLanding() {
               {RELATED_SECTORS[slug].map((r) => (
                 <Link
                   key={r.slug}
-                  href={`/preventivi/${r.slug}`}
+                  href={`/preventivi/${r.slug}/`}
                   className="flex items-center gap-3 bg-gray-50 hover:bg-violet-50 border border-gray-100 hover:border-violet-200 rounded-xl px-5 py-3.5 transition-colors group"
                 >
                   <ArrowRight className="h-4 w-4 text-violet-400 group-hover:text-violet-600 shrink-0" />
@@ -585,7 +585,7 @@ export default function SeoLanding() {
                 {articles.map((a) => (
                   <Link
                     key={a.slug}
-                    href={`/blog/${a.slug}`}
+                    href={`/blog/${a.slug}/`}
                     className="group flex flex-col bg-white rounded-xl border border-gray-100 hover:border-violet-200 hover:shadow-sm transition-all p-5"
                   >
                     <span className="text-xs font-semibold text-violet-600 mb-2">{a.category}</span>
@@ -597,7 +597,7 @@ export default function SeoLanding() {
                 ))}
               </div>
               <div className="mt-6 text-center">
-                <Link href="/blog" className="text-sm font-medium text-violet-600 hover:text-violet-800 transition-colors">
+                <Link href="/blog/" className="text-sm font-medium text-violet-600 hover:text-violet-800 transition-colors">
                   Vedi tutte le guide →
                 </Link>
               </div>
@@ -622,7 +622,7 @@ export default function SeoLanding() {
             Nessuna carta di credito. Nessun impegno.
           </p>
           <Link
-            href="/sign-up"
+            href="/sign-up/"
             className="btn-gradient inline-flex h-14 items-center justify-center px-10 text-lg font-semibold"
           >
             Inizia Gratuitamente

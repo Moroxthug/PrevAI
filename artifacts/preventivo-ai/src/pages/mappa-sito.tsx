@@ -67,27 +67,27 @@ export default function MappaSitoPage() {
                   </Link>
                 </li>
                 <li>
-                  <Link href="/whatsapp" className="text-gray-600 hover:text-violet-600 transition-colors">
+                  <Link href="/whatsapp/" className="text-gray-600 hover:text-violet-600 transition-colors">
                     Preventivi su WhatsApp
                   </Link>
                 </li>
                 <li>
-                  <Link href="/chi-siamo" className="text-gray-600 hover:text-violet-600 transition-colors">
+                  <Link href="/chi-siamo/" className="text-gray-600 hover:text-violet-600 transition-colors">
                     Chi Siamo
                   </Link>
                 </li>
                 <li>
-                  <Link href="/contatti" className="text-gray-600 hover:text-violet-600 transition-colors">
+                  <Link href="/contatti/" className="text-gray-600 hover:text-violet-600 transition-colors">
                     Contatti e Assistenza
                   </Link>
                 </li>
                 <li>
-                  <Link href="/privacy" className="text-gray-600 hover:text-violet-600 transition-colors">
+                  <Link href="/privacy/" className="text-gray-600 hover:text-violet-600 transition-colors">
                     Privacy Policy
                   </Link>
                 </li>
                 <li>
-                  <Link href="/termini" className="text-gray-600 hover:text-violet-600 transition-colors">
+                  <Link href="/termini/" className="text-gray-600 hover:text-violet-600 transition-colors">
                     Termini di Servizio
                   </Link>
                 </li>
@@ -102,13 +102,13 @@ export default function MappaSitoPage() {
               </div>
               <ul className="space-y-2.5 text-sm">
                 <li>
-                  <Link href="/blog" className="font-semibold text-gray-800 hover:text-violet-600 transition-colors">
+                  <Link href="/blog/" className="font-semibold text-gray-800 hover:text-violet-600 transition-colors">
                     Indice Blog
                   </Link>
                 </li>
                 {BLOG_CATEGORIES.map((cat) => (
                   <li key={cat.slug}>
-                    <Link href={`/blog/categoria/${cat.slug}`} className="text-gray-600 hover:text-violet-600 transition-colors pl-2">
+                    <Link href={`/blog/categoria/${cat.slug}/`} className="text-gray-600 hover:text-violet-600 transition-colors pl-2">
                       Categoria: {cat.name}
                     </Link>
                   </li>
@@ -116,7 +116,7 @@ export default function MappaSitoPage() {
                 <li className="pt-2 font-semibold text-gray-800 border-t border-gray-50 mt-2">Ultimi Articoli:</li>
                 {BLOG_ARTICLES.slice(0, 5).map((art) => (
                   <li key={art.slug} className="truncate max-w-full">
-                    <Link href={`/blog/${art.slug}`} className="text-gray-500 hover:text-violet-600 text-xs transition-colors pl-2">
+                    <Link href={`/blog/${art.slug}/`} className="text-gray-500 hover:text-violet-600 text-xs transition-colors pl-2">
                       {art.title}
                     </Link>
                   </li>
@@ -133,7 +133,7 @@ export default function MappaSitoPage() {
               <ul className="space-y-2.5 text-sm">
                 {Object.entries(SECTORS).map(([slug, sector]) => (
                   <li key={slug}>
-                    <Link href={`/preventivi/${slug}`} className="text-gray-600 hover:text-violet-600 transition-colors">
+                    <Link href={`/preventivi/${slug}/`} className="text-gray-600 hover:text-violet-600 transition-colors">
                       {sector.label}
                     </Link>
                   </li>
@@ -170,7 +170,7 @@ export default function MappaSitoPage() {
                               return (
                                 <Link
                                   key={sectorSlug}
-                                  href={`/preventivi/${sectorSlug}/${city.slug}`}
+                                  href={`/preventivi/${sectorSlug}/${city.slug}/`}
                                   className="text-gray-500 hover:text-violet-600 transition-colors truncate"
                                   title={`Preventivo ${s.label} a ${city.name}`}
                                 >

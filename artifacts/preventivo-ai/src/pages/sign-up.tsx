@@ -87,7 +87,7 @@ export default function SignUpPage() {
           </p>
           <p className="text-sm text-gray-500 mb-6">
             Hai già un invito?{" "}
-            <Link href="/sign-in" className="text-violet-600 font-semibold hover:underline">
+            <Link href="/sign-in/" className="text-violet-600 font-semibold hover:underline">
               Accedi qui
             </Link>
           </p>
@@ -182,9 +182,9 @@ export default function SignUpPage() {
 
               <p className="text-[11px] text-gray-400 text-center leading-relaxed">
                 Registrandoti accetti i nostri{" "}
-                <Link href="/termini" className="underline hover:text-gray-600">Termini di Servizio</Link>{" "}
+                <Link href="/termini/" className="underline hover:text-gray-600">Termini di Servizio</Link>{" "}
                 e la{" "}
-                <Link href="/privacy" className="underline hover:text-gray-600">Privacy Policy</Link>.
+                <Link href="/privacy/" className="underline hover:text-gray-600">Privacy Policy</Link>.
               </p>
             </form>
           </div>
