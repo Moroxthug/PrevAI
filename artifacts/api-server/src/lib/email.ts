@@ -1,20 +1,10 @@
 import { Resend } from "resend";
 import { logger } from "./logger";
+import { getBaseUrl } from "./baseUrl";
 
-const PREVAI_LOGO_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="120" height="32" viewBox="0 0 120 32">
-  <defs>
-    <linearGradient id="g" x1="0%" y1="0%" x2="100%" y2="0%">
-      <stop offset="0%" style="stop-color:#7c3aed"/>
-      <stop offset="100%" style="stop-color:#06b6d4"/>
-    </linearGradient>
-  </defs>
-  <rect width="28" height="28" rx="6" y="2" fill="url(#g)"/>
-  <text x="14" y="20" font-family="system-ui,sans-serif" font-size="15" font-weight="bold" fill="white" text-anchor="middle">P</text>
-  <text x="38" y="22" font-family="system-ui,sans-serif" font-size="18" font-weight="700" fill="#1a1a2e">prev</text>
-  <text x="70" y="22" font-family="system-ui,sans-serif" font-size="18" font-weight="700" fill="#7c3aed">ai</text>
-</svg>`;
-
-const LOGO_DATA_URI = `data:image/svg+xml;base64,${Buffer.from(PREVAI_LOGO_SVG).toString("base64")}`;
+// Gmail and most webmail clients strip data: URI images from HTML emails,
+// so the logo must be a real hosted URL rather than an inline base64 SVG.
+const LOGO_URL = `${getBaseUrl()}/prevai-logo.png`;
 
 function escapeHtml(value: string): string {
   return value
@@ -132,7 +122,7 @@ function buildSubscriptionEmail(params: {
 <body>
 <div class="wrapper">
   <div class="header">
-    <img src="${LOGO_DATA_URI}" alt="Prevai" />
+    <img src="${LOGO_URL}" alt="Prevai" />
     <h1>${headline}</h1>
     <p>${subline}</p>
   </div>
@@ -209,7 +199,7 @@ function buildWelcomeEmail(name: string): string {
 <body>
 <div class="wrapper">
   <div class="header">
-    <img src="${LOGO_DATA_URI}" alt="Prevai" />
+    <img src="${LOGO_URL}" alt="Prevai" />
     <h1>Benvenuto su Prevai! 🎉</h1>
     <p>Il tuo account è pronto — inizia subito a creare preventivi</p>
   </div>
@@ -350,7 +340,7 @@ function buildQuoteEmailHtml(params: {
 <body>
 <div class="wrapper">
   <div class="header">
-    <img src="${LOGO_DATA_URI}" alt="Prevai" />
+    <img src="${LOGO_URL}" alt="Prevai" />
     <h1>Il tuo preventivo è pronto</h1>
     <p>${companyName} ti ha inviato un preventivo professionale</p>
   </div>
@@ -413,7 +403,7 @@ function buildWidgetClientConfirmationEmail(params: {
 <body>
 <div class="wrapper">
   <div class="header">
-    <img src="${LOGO_DATA_URI}" alt="Prevai" />
+    <img src="${LOGO_URL}" alt="Prevai" />
     <h1>Richiesta ricevuta ✓</h1>
     <p>${companyName} ha ricevuto la tua richiesta di preventivo</p>
   </div>
