@@ -1,6 +1,6 @@
 import { useParams, Link } from "wouter";
 import { BLOG_ARTICLES } from "@/data/blog-data";
-import { SECTORS } from "@/data/seo-data";
+import { SECTORS, ACTIVE_CITIES, CITY_SECTORS } from "@/data/seo-data";
 import { extractToc, injectHeadingIds } from "@/data/blog-toc";
 import { SeoHead } from "@/components/seo-head";
 
@@ -50,6 +50,9 @@ export default function BlogArticlePage() {
   const relatedSectorObjects = article.relatedSectors
     .map((s) => SECTORS[s])
     .filter(Boolean);
+
+  const geoSectorSlug = article.relatedSectors.find((s) => CITY_SECTORS.includes(s));
+  const geoSector = geoSectorSlug ? SECTORS[geoSectorSlug] : undefined;
 
   const jsonLd = [
     {
@@ -165,6 +168,28 @@ export default function BlogArticlePage() {
                   >
                     <span className="text-violet-400 font-bold" aria-hidden="true">→</span>
                     Preventivi {sector.label}
+                  </Link>
+                ))}
+              </div>
+            </div>
+          </section>
+        )}
+
+        {geoSector && (
+          <section className="border-t border-gray-100 bg-white py-10">
+            <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-3xl">
+              <h2 className="text-sm font-semibold text-gray-500 mb-4 uppercase tracking-wider">
+                Preventivi {geoSector.labelPlural} nella tua città
+              </h2>
+              <div className="flex flex-wrap gap-3">
+                {ACTIVE_CITIES.map((city) => (
+                  <Link
+                    key={city.slug}
+                    href={`/preventivi/${geoSector.slug}/${city.slug}`}
+                    className="inline-flex items-center gap-1.5 rounded-full border border-gray-200 bg-white px-4 py-2 text-xs font-medium text-gray-700 hover:border-violet-300 hover:text-violet-700 transition-colors"
+                  >
+                    <span className="text-violet-400 font-bold" aria-hidden="true">→</span>
+                    {city.name}
                   </Link>
                 ))}
               </div>

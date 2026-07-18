@@ -1500,6 +1500,24 @@ function buildBlogArticleBodyHtml(article: BlogArticle): string {
   </div>
 </section>` : "";
 
+  const geoSectorSlug = article.relatedSectors.find((slug) => CITY_SECTORS.includes(slug));
+  const geoSector = geoSectorSlug ? SECTORS[geoSectorSlug] : undefined;
+  const citySection = geoSector ? `<section class="border-t border-gray-100 bg-white py-10">
+  <div class="container mx-auto px-4 sm:px-6 lg:px-8 max-w-3xl">
+    <h2 class="text-sm font-semibold text-gray-500 mb-4 uppercase tracking-wider">Preventivi ${esc(geoSector.labelPlural)} nella tua città</h2>
+    <div class="flex flex-wrap gap-3">
+      ${ACTIVE_CITIES
+        .map(
+          (city) =>
+            `<a href="/preventivi/${esc(geoSector.slug)}/${esc(city.slug)}/" class="inline-flex items-center gap-1.5 rounded-full border border-gray-200 bg-white px-4 py-2 text-xs font-medium text-gray-700 hover:border-violet-300 hover:text-violet-700 transition-colors">
+        <span class="text-violet-400 font-bold">→</span> ${esc(city.name)}
+      </a>`
+        )
+        .join("\n      ")}
+    </div>
+  </div>
+</section>` : "";
+
   const relatedArticles = BLOG_ARTICLES.filter(
     (a) => a.slug !== article.slug &&
       (a.relatedSectors.some((s) => article.relatedSectors.includes(s)) ||
@@ -1542,6 +1560,7 @@ function buildBlogArticleBodyHtml(article: BlogArticle): string {
     ${header}
     ${body}
     ${relatedSectorsSection}
+    ${citySection}
     ${relatedArticlesSection}
   </article>
   ${cta}
