@@ -9,6 +9,8 @@ export const conversations = pgTable("conversations", {
   visitorName: text("visitor_name"),
   visitorEmail: text("visitor_email"),
   visitorPhone: text("visitor_phone"),
+  ipAddress: text("ip_address"),
+  userAgent: text("user_agent"),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
 });

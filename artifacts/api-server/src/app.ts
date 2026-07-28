@@ -13,6 +13,11 @@ import { logger } from "./lib/logger";
 
 const app: Express = express();
 
+// Vercel terminates TLS and proxies requests — without this, req.ip resolves
+// to Vercel's edge IP for every request, breaking both IP-based rate limiting
+// and abuse-investigation logging (all visitors would look identical).
+app.set("trust proxy", 1);
+
 app.use(
   pinoHttp({
     logger,

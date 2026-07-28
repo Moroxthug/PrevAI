@@ -1521,7 +1521,7 @@ var require_safer = __commonJS({
   "../../node_modules/.pnpm/safer-buffer@2.1.2/node_modules/safer-buffer/safer.js"(exports, module) {
     "use strict";
     var buffer = __require("buffer");
-    var Buffer3 = buffer.Buffer;
+    var Buffer4 = buffer.Buffer;
     var safer = {};
     var key;
     for (key in buffer) {
@@ -1530,12 +1530,12 @@ var require_safer = __commonJS({
       safer[key] = buffer[key];
     }
     var Safer = safer.Buffer = {};
-    for (key in Buffer3) {
-      if (!Buffer3.hasOwnProperty(key)) continue;
+    for (key in Buffer4) {
+      if (!Buffer4.hasOwnProperty(key)) continue;
       if (key === "allocUnsafe" || key === "allocUnsafeSlow") continue;
-      Safer[key] = Buffer3[key];
+      Safer[key] = Buffer4[key];
     }
-    safer.Buffer.prototype = Buffer3.prototype;
+    safer.Buffer.prototype = Buffer4.prototype;
     if (!Safer.from || Safer.from === Uint8Array.from) {
       Safer.from = function(value, encodingOrOffset, length) {
         if (typeof value === "number") {
@@ -1544,7 +1544,7 @@ var require_safer = __commonJS({
         if (value && typeof value.length === "undefined") {
           throw new TypeError("The first argument must be one of type string, Buffer, ArrayBuffer, Array, or Array-like Object. Received type " + typeof value);
         }
-        return Buffer3(value, encodingOrOffset, length);
+        return Buffer4(value, encodingOrOffset, length);
       };
     }
     if (!Safer.alloc) {
@@ -1555,7 +1555,7 @@ var require_safer = __commonJS({
         if (size < 0 || size >= 2 * (1 << 30)) {
           throw new RangeError('The value "' + size + '" is invalid for option "size"');
         }
-        var buf = Buffer3(size);
+        var buf = Buffer4(size);
         if (!fill || fill.length === 0) {
           buf.fill(0);
         } else if (typeof encoding === "string") {
@@ -1650,7 +1650,7 @@ var require_merge_exports = __commonJS({
 var require_internal = __commonJS({
   "../../node_modules/.pnpm/iconv-lite@0.7.2/node_modules/iconv-lite/encodings/internal.js"(exports, module) {
     "use strict";
-    var Buffer3 = require_safer().Buffer;
+    var Buffer4 = require_safer().Buffer;
     module.exports = {
       // Encodings
       utf8: { type: "_internal", bomAware: true },
@@ -1674,7 +1674,7 @@ var require_internal = __commonJS({
       } else if (this.enc === "cesu8") {
         this.enc = "utf8";
         this.encoder = InternalEncoderCesu8;
-        if (Buffer3.from("eda0bdedb2a9", "hex").toString() !== "\u{1F4A9}") {
+        if (Buffer4.from("eda0bdedb2a9", "hex").toString() !== "\u{1F4A9}") {
           this.decoder = InternalDecoderCesu8;
           this.defaultCharUnicode = iconv.defaultCharUnicode;
         }
@@ -1687,8 +1687,8 @@ var require_internal = __commonJS({
       this.decoder = new StringDecoder(codec2.enc);
     }
     InternalDecoder.prototype.write = function(buf) {
-      if (!Buffer3.isBuffer(buf)) {
-        buf = Buffer3.from(buf);
+      if (!Buffer4.isBuffer(buf)) {
+        buf = Buffer4.from(buf);
       }
       return this.decoder.write(buf);
     };
@@ -1699,7 +1699,7 @@ var require_internal = __commonJS({
       this.enc = codec2.enc;
     }
     InternalEncoder.prototype.write = function(str2) {
-      return Buffer3.from(str2, this.enc);
+      return Buffer4.from(str2, this.enc);
     };
     InternalEncoder.prototype.end = function() {
     };
@@ -1711,15 +1711,15 @@ var require_internal = __commonJS({
       var completeQuads = str2.length - str2.length % 4;
       this.prevStr = str2.slice(completeQuads);
       str2 = str2.slice(0, completeQuads);
-      return Buffer3.from(str2, "base64");
+      return Buffer4.from(str2, "base64");
     };
     InternalEncoderBase64.prototype.end = function() {
-      return Buffer3.from(this.prevStr, "base64");
+      return Buffer4.from(this.prevStr, "base64");
     };
     function InternalEncoderCesu8(options, codec2) {
     }
     InternalEncoderCesu8.prototype.write = function(str2) {
-      var buf = Buffer3.alloc(str2.length * 3);
+      var buf = Buffer4.alloc(str2.length * 3);
       var bufIdx = 0;
       for (var i = 0; i < str2.length; i++) {
         var charCode = str2.charCodeAt(i);
@@ -1815,13 +1815,13 @@ var require_internal = __commonJS({
           str2 = str2.slice(0, str2.length - 1);
         }
       }
-      return Buffer3.from(str2, this.enc);
+      return Buffer4.from(str2, this.enc);
     };
     InternalEncoderUtf8.prototype.end = function() {
       if (this.highSurrogate) {
         var str2 = this.highSurrogate;
         this.highSurrogate = "";
-        return Buffer3.from(str2, this.enc);
+        return Buffer4.from(str2, this.enc);
       }
     };
   }
@@ -1831,7 +1831,7 @@ var require_internal = __commonJS({
 var require_utf32 = __commonJS({
   "../../node_modules/.pnpm/iconv-lite@0.7.2/node_modules/iconv-lite/encodings/utf32.js"(exports) {
     "use strict";
-    var Buffer3 = require_safer().Buffer;
+    var Buffer4 = require_safer().Buffer;
     exports._utf32 = Utf32Codec;
     function Utf32Codec(codecOptions, iconv) {
       this.iconv = iconv;
@@ -1849,8 +1849,8 @@ var require_utf32 = __commonJS({
       this.highSurrogate = 0;
     }
     Utf32Encoder.prototype.write = function(str2) {
-      var src = Buffer3.from(str2, "ucs2");
-      var dst = Buffer3.alloc(src.length * 2);
+      var src = Buffer4.from(str2, "ucs2");
+      var dst = Buffer4.alloc(src.length * 2);
       var write32 = this.isLE ? dst.writeUInt32LE : dst.writeUInt32BE;
       var offset = 0;
       for (var i = 0; i < src.length; i += 2) {
@@ -1886,7 +1886,7 @@ var require_utf32 = __commonJS({
       if (!this.highSurrogate) {
         return;
       }
-      var buf = Buffer3.alloc(4);
+      var buf = Buffer4.alloc(4);
       if (this.isLE) {
         buf.writeUInt32LE(this.highSurrogate, 0);
       } else {
@@ -1906,7 +1906,7 @@ var require_utf32 = __commonJS({
       }
       var i = 0;
       var codepoint = 0;
-      var dst = Buffer3.alloc(src.length + 4);
+      var dst = Buffer4.alloc(src.length + 4);
       var offset = 0;
       var isLE2 = this.isLE;
       var overflow = this.overflow;
@@ -2062,7 +2062,7 @@ var require_utf32 = __commonJS({
 var require_utf16 = __commonJS({
   "../../node_modules/.pnpm/iconv-lite@0.7.2/node_modules/iconv-lite/encodings/utf16.js"(exports) {
     "use strict";
-    var Buffer3 = require_safer().Buffer;
+    var Buffer4 = require_safer().Buffer;
     exports.utf16be = Utf16BECodec;
     function Utf16BECodec() {
     }
@@ -2072,7 +2072,7 @@ var require_utf16 = __commonJS({
     function Utf16BEEncoder() {
     }
     Utf16BEEncoder.prototype.write = function(str2) {
-      var buf = Buffer3.from(str2, "ucs2");
+      var buf = Buffer4.from(str2, "ucs2");
       for (var i = 0; i < buf.length; i += 2) {
         var tmp = buf[i];
         buf[i] = buf[i + 1];
@@ -2089,7 +2089,7 @@ var require_utf16 = __commonJS({
       if (buf.length == 0) {
         return "";
       }
-      var buf2 = Buffer3.alloc(buf.length + 1);
+      var buf2 = Buffer4.alloc(buf.length + 1);
       var i = 0;
       var j = 0;
       if (this.overflowByte !== -1) {
@@ -2205,7 +2205,7 @@ var require_utf16 = __commonJS({
 var require_utf7 = __commonJS({
   "../../node_modules/.pnpm/iconv-lite@0.7.2/node_modules/iconv-lite/encodings/utf7.js"(exports) {
     "use strict";
-    var Buffer3 = require_safer().Buffer;
+    var Buffer4 = require_safer().Buffer;
     exports.utf7 = Utf7Codec;
     exports.unicode11utf7 = "utf7";
     function Utf7Codec(codecOptions, iconv) {
@@ -2219,7 +2219,7 @@ var require_utf7 = __commonJS({
       this.iconv = codec2.iconv;
     }
     Utf7Encoder.prototype.write = function(str2) {
-      return Buffer3.from(str2.replace(nonDirectChars, function(chunk) {
+      return Buffer4.from(str2.replace(nonDirectChars, function(chunk) {
         return "+" + (chunk === "+" ? "" : this.iconv.encode(chunk, "utf16-be").toString("base64").replace(/=+$/, "")) + "-";
       }.bind(this)));
     };
@@ -2257,7 +2257,7 @@ var require_utf7 = __commonJS({
               res += "+";
             } else {
               var b64str = base64Accum + this.iconv.decode(buf.slice(lastI, i2), "ascii");
-              res += this.iconv.decode(Buffer3.from(b64str, "base64"), "utf16-be");
+              res += this.iconv.decode(Buffer4.from(b64str, "base64"), "utf16-be");
             }
             if (buf[i2] != minusChar) {
               i2--;
@@ -2275,7 +2275,7 @@ var require_utf7 = __commonJS({
         var canBeDecoded = b64str.length - b64str.length % 8;
         base64Accum = b64str.slice(canBeDecoded);
         b64str = b64str.slice(0, canBeDecoded);
-        res += this.iconv.decode(Buffer3.from(b64str, "base64"), "utf16-be");
+        res += this.iconv.decode(Buffer4.from(b64str, "base64"), "utf16-be");
       }
       this.inBase64 = inBase64;
       this.base64Accum = base64Accum;
@@ -2284,7 +2284,7 @@ var require_utf7 = __commonJS({
     Utf7Decoder.prototype.end = function() {
       var res = "";
       if (this.inBase64 && this.base64Accum.length > 0) {
-        res = this.iconv.decode(Buffer3.from(this.base64Accum, "base64"), "utf16-be");
+        res = this.iconv.decode(Buffer4.from(this.base64Accum, "base64"), "utf16-be");
       }
       this.inBase64 = false;
       this.base64Accum = "";
@@ -2300,14 +2300,14 @@ var require_utf7 = __commonJS({
     function Utf7IMAPEncoder(options, codec2) {
       this.iconv = codec2.iconv;
       this.inBase64 = false;
-      this.base64Accum = Buffer3.alloc(6);
+      this.base64Accum = Buffer4.alloc(6);
       this.base64AccumIdx = 0;
     }
     Utf7IMAPEncoder.prototype.write = function(str2) {
       var inBase64 = this.inBase64;
       var base64Accum = this.base64Accum;
       var base64AccumIdx = this.base64AccumIdx;
-      var buf = Buffer3.alloc(str2.length * 5 + 10);
+      var buf = Buffer4.alloc(str2.length * 5 + 10);
       var bufIdx = 0;
       for (var i2 = 0; i2 < str2.length; i2++) {
         var uChar = str2.charCodeAt(i2);
@@ -2346,7 +2346,7 @@ var require_utf7 = __commonJS({
       return buf.slice(0, bufIdx);
     };
     Utf7IMAPEncoder.prototype.end = function() {
-      var buf = Buffer3.alloc(10);
+      var buf = Buffer4.alloc(10);
       var bufIdx = 0;
       if (this.inBase64) {
         if (this.base64AccumIdx > 0) {
@@ -2383,7 +2383,7 @@ var require_utf7 = __commonJS({
               res += "&";
             } else {
               var b64str = base64Accum + this.iconv.decode(buf.slice(lastI, i2), "ascii").replace(/,/g, "/");
-              res += this.iconv.decode(Buffer3.from(b64str, "base64"), "utf16-be");
+              res += this.iconv.decode(Buffer4.from(b64str, "base64"), "utf16-be");
             }
             if (buf[i2] != minusChar) {
               i2--;
@@ -2401,7 +2401,7 @@ var require_utf7 = __commonJS({
         var canBeDecoded = b64str.length - b64str.length % 8;
         base64Accum = b64str.slice(canBeDecoded);
         b64str = b64str.slice(0, canBeDecoded);
-        res += this.iconv.decode(Buffer3.from(b64str, "base64"), "utf16-be");
+        res += this.iconv.decode(Buffer4.from(b64str, "base64"), "utf16-be");
       }
       this.inBase64 = inBase64;
       this.base64Accum = base64Accum;
@@ -2410,7 +2410,7 @@ var require_utf7 = __commonJS({
     Utf7IMAPDecoder.prototype.end = function() {
       var res = "";
       if (this.inBase64 && this.base64Accum.length > 0) {
-        res = this.iconv.decode(Buffer3.from(this.base64Accum, "base64"), "utf16-be");
+        res = this.iconv.decode(Buffer4.from(this.base64Accum, "base64"), "utf16-be");
       }
       this.inBase64 = false;
       this.base64Accum = "";
@@ -2423,7 +2423,7 @@ var require_utf7 = __commonJS({
 var require_sbcs_codec = __commonJS({
   "../../node_modules/.pnpm/iconv-lite@0.7.2/node_modules/iconv-lite/encodings/sbcs-codec.js"(exports) {
     "use strict";
-    var Buffer3 = require_safer().Buffer;
+    var Buffer4 = require_safer().Buffer;
     exports._sbcs = SBCSCodec;
     function SBCSCodec(codecOptions, iconv) {
       if (!codecOptions) {
@@ -2439,8 +2439,8 @@ var require_sbcs_codec = __commonJS({
         }
         codecOptions.chars = asciiString + codecOptions.chars;
       }
-      this.decodeBuf = Buffer3.from(codecOptions.chars, "ucs2");
-      var encodeBuf = Buffer3.alloc(65536, iconv.defaultCharSingleByte.charCodeAt(0));
+      this.decodeBuf = Buffer4.from(codecOptions.chars, "ucs2");
+      var encodeBuf = Buffer4.alloc(65536, iconv.defaultCharSingleByte.charCodeAt(0));
       for (var i = 0; i < codecOptions.chars.length; i++) {
         encodeBuf[codecOptions.chars.charCodeAt(i)] = i;
       }
@@ -2452,7 +2452,7 @@ var require_sbcs_codec = __commonJS({
       this.encodeBuf = codec2.encodeBuf;
     }
     SBCSEncoder.prototype.write = function(str2) {
-      var buf = Buffer3.alloc(str2.length);
+      var buf = Buffer4.alloc(str2.length);
       for (var i = 0; i < str2.length; i++) {
         buf[i] = this.encodeBuf[str2.charCodeAt(i)];
       }
@@ -2465,7 +2465,7 @@ var require_sbcs_codec = __commonJS({
     }
     SBCSDecoder.prototype.write = function(buf) {
       var decodeBuf = this.decodeBuf;
-      var newBuf = Buffer3.alloc(buf.length * 2);
+      var newBuf = Buffer4.alloc(buf.length * 2);
       var idx1 = 0;
       var idx2 = 0;
       for (var i = 0; i < buf.length; i++) {
@@ -3093,7 +3093,7 @@ var require_sbcs_data_generated = __commonJS({
 var require_dbcs_codec = __commonJS({
   "../../node_modules/.pnpm/iconv-lite@0.7.2/node_modules/iconv-lite/encodings/dbcs-codec.js"(exports) {
     "use strict";
-    var Buffer3 = require_safer().Buffer;
+    var Buffer4 = require_safer().Buffer;
     exports._dbcs = DBCSCodec;
     var UNASSIGNED = -1;
     var GB18030_CODE = -2;
@@ -3329,7 +3329,7 @@ var require_dbcs_codec = __commonJS({
       this.gb18030 = codec2.gb18030;
     }
     DBCSEncoder.prototype.write = function(str2) {
-      var newBuf = Buffer3.alloc(str2.length * (this.gb18030 ? 4 : 3));
+      var newBuf = Buffer4.alloc(str2.length * (this.gb18030 ? 4 : 3));
       var leadSurrogate = this.leadSurrogate;
       var seqObj = this.seqObj;
       var nextChar = -1;
@@ -3433,7 +3433,7 @@ var require_dbcs_codec = __commonJS({
       if (this.leadSurrogate === -1 && this.seqObj === void 0) {
         return;
       }
-      var newBuf = Buffer3.alloc(10);
+      var newBuf = Buffer4.alloc(10);
       var j = 0;
       if (this.seqObj) {
         var dbcsCode = this.seqObj[DEF_CHAR];
@@ -3464,7 +3464,7 @@ var require_dbcs_codec = __commonJS({
       this.gb18030 = codec2.gb18030;
     }
     DBCSDecoder.prototype.write = function(buf) {
-      var newBuf = Buffer3.alloc(buf.length * 2);
+      var newBuf = Buffer4.alloc(buf.length * 2);
       var nodeIdx = this.nodeIdx;
       var prevBytes = this.prevBytes;
       var prevOffset = this.prevBytes.length;
@@ -5073,7 +5073,7 @@ var require_encodings = __commonJS({
 var require_streams = __commonJS({
   "../../node_modules/.pnpm/iconv-lite@0.7.2/node_modules/iconv-lite/lib/streams.js"(exports, module) {
     "use strict";
-    var Buffer3 = require_safer().Buffer;
+    var Buffer4 = require_safer().Buffer;
     module.exports = function(streamModule) {
       var Transform = streamModule.Transform;
       function IconvLiteEncoderStream(conv, options) {
@@ -5113,7 +5113,7 @@ var require_streams = __commonJS({
           chunks.push(chunk);
         });
         this.on("end", function() {
-          cb(null, Buffer3.concat(chunks));
+          cb(null, Buffer4.concat(chunks));
         });
         return this;
       };
@@ -5127,7 +5127,7 @@ var require_streams = __commonJS({
         constructor: { value: IconvLiteDecoderStream }
       });
       IconvLiteDecoderStream.prototype._transform = function(chunk, encoding, done) {
-        if (!Buffer3.isBuffer(chunk) && !(chunk instanceof Uint8Array)) {
+        if (!Buffer4.isBuffer(chunk) && !(chunk instanceof Uint8Array)) {
           return done(new Error("Iconv decoding stream needs buffers as its input."));
         }
         try {
@@ -5170,7 +5170,7 @@ var require_streams = __commonJS({
 var require_lib = __commonJS({
   "../../node_modules/.pnpm/iconv-lite@0.7.2/node_modules/iconv-lite/lib/index.js"(exports, module) {
     "use strict";
-    var Buffer3 = require_safer().Buffer;
+    var Buffer4 = require_safer().Buffer;
     var bomHandling = require_bom_handling();
     var mergeModules = require_merge_exports();
     module.exports.encodings = null;
@@ -5181,7 +5181,7 @@ var require_lib = __commonJS({
       var encoder3 = module.exports.getEncoder(encoding, options);
       var res = encoder3.write(str2);
       var trail = encoder3.end();
-      return trail && trail.length > 0 ? Buffer3.concat([res, trail]) : res;
+      return trail && trail.length > 0 ? Buffer4.concat([res, trail]) : res;
     };
     module.exports.decode = function decode3(buf, encoding, options) {
       if (typeof buf === "string") {
@@ -5189,7 +5189,7 @@ var require_lib = __commonJS({
           console.error("Iconv-lite warning: decode()-ing strings is deprecated. Refer to https://github.com/ashtuchkin/iconv-lite/wiki/Use-Buffers-when-decoding");
           module.exports.skipDecodeWarning = true;
         }
-        buf = Buffer3.from("" + (buf || ""), "binary");
+        buf = Buffer4.from("" + (buf || ""), "binary");
       }
       var decoder2 = module.exports.getDecoder(encoding, options);
       var res = decoder2.write(buf);
@@ -19691,7 +19691,7 @@ var require_utils3 = __commonJS({
     var proxyaddr = require_proxy_addr();
     var qs = require_lib2();
     var querystring = __require("node:querystring");
-    var { Buffer: Buffer3 } = __require("node:buffer");
+    var { Buffer: Buffer4 } = __require("node:buffer");
     exports.methods = METHODS.map((method) => method.toLowerCase());
     exports.etag = createETagGenerator({ weak: false });
     exports.wetag = createETagGenerator({ weak: true });
@@ -19795,7 +19795,7 @@ var require_utils3 = __commonJS({
     };
     function createETagGenerator(options) {
       return function generateETag(body, encoding) {
-        var buf = !Buffer3.isBuffer(body) ? Buffer3.from(body, encoding) : body;
+        var buf = !Buffer4.isBuffer(body) ? Buffer4.from(body, encoding) : body;
         return etag(buf, options);
       };
     }
@@ -21928,7 +21928,7 @@ var require_request = __commonJS({
   "../../node_modules/.pnpm/express@5.2.1/node_modules/express/lib/request.js"(exports, module) {
     "use strict";
     var accepts = require_accepts();
-    var isIP = __require("node:net").isIP;
+    var isIP2 = __require("node:net").isIP;
     var typeis = require_type_is();
     var http2 = __require("node:http");
     var fresh = require_fresh();
@@ -22018,7 +22018,7 @@ var require_request = __commonJS({
       var hostname4 = this.hostname;
       if (!hostname4) return [];
       var offset = this.app.get("subdomain offset");
-      var subdomains2 = !isIP(hostname4) ? hostname4.split(".").reverse() : [hostname4];
+      var subdomains2 = !isIP2(hostname4) ? hostname4.split(".").reverse() : [hostname4];
       return subdomains2.slice(offset);
     });
     defineGetter(req, "path", function path4() {
@@ -22998,7 +22998,7 @@ var require_response = __commonJS({
     var extname = path4.extname;
     var resolve = path4.resolve;
     var vary = require_vary();
-    var { Buffer: Buffer3 } = __require("node:buffer");
+    var { Buffer: Buffer4 } = __require("node:buffer");
     var res = Object.create(http2.ServerResponse.prototype);
     module.exports = res;
     res.status = function status(code) {
@@ -23062,12 +23062,12 @@ var require_response = __commonJS({
       var generateETag = !this.get("ETag") && typeof etagFn === "function";
       var len;
       if (chunk !== void 0) {
-        if (Buffer3.isBuffer(chunk)) {
+        if (Buffer4.isBuffer(chunk)) {
           len = chunk.length;
         } else if (!generateETag && chunk.length < 1e3) {
-          len = Buffer3.byteLength(chunk, encoding);
+          len = Buffer4.byteLength(chunk, encoding);
         } else {
-          chunk = Buffer3.from(chunk, encoding);
+          chunk = Buffer4.from(chunk, encoding);
           encoding = void 0;
           len = chunk.length;
         }
@@ -23329,7 +23329,7 @@ var require_response = __commonJS({
         }
       });
       this.status(status);
-      this.set("Content-Length", Buffer3.byteLength(body));
+      this.set("Content-Length", Buffer4.byteLength(body));
       if (this.req.method === "HEAD") {
         this.end();
       } else {
@@ -41649,12 +41649,12 @@ var require_buffer_list = __commonJS({
       return (hint === "string" ? String : Number)(input);
     }
     var _require3 = __require("buffer");
-    var Buffer3 = _require3.Buffer;
+    var Buffer4 = _require3.Buffer;
     var _require22 = __require("util");
     var inspect = _require22.inspect;
     var custom4 = inspect && inspect.custom || "inspect";
     function copyBuffer(src, target, offset) {
-      Buffer3.prototype.copy.call(src, target, offset);
+      Buffer4.prototype.copy.call(src, target, offset);
     }
     module.exports = /* @__PURE__ */ (function() {
       function BufferList() {
@@ -41714,8 +41714,8 @@ var require_buffer_list = __commonJS({
       }, {
         key: "concat",
         value: function concat3(n) {
-          if (this.length === 0) return Buffer3.alloc(0);
-          var ret = Buffer3.allocUnsafe(n >>> 0);
+          if (this.length === 0) return Buffer4.alloc(0);
+          var ret = Buffer4.allocUnsafe(n >>> 0);
           var p = this.head;
           var i = 0;
           while (p) {
@@ -41779,7 +41779,7 @@ var require_buffer_list = __commonJS({
       }, {
         key: "_getBuffer",
         value: function _getBuffer(n) {
-          var ret = Buffer3.allocUnsafe(n);
+          var ret = Buffer4.allocUnsafe(n);
           var p = this.head;
           var c = 1;
           p.data.copy(ret);
@@ -42062,14 +42062,14 @@ var require_stream_writable = __commonJS({
       deprecate: require_node2()
     };
     var Stream2 = require_stream();
-    var Buffer3 = __require("buffer").Buffer;
+    var Buffer4 = __require("buffer").Buffer;
     var OurUint8Array = (typeof global !== "undefined" ? global : typeof window !== "undefined" ? window : typeof self !== "undefined" ? self : {}).Uint8Array || function() {
     };
     function _uint8ArrayToBuffer(chunk) {
-      return Buffer3.from(chunk);
+      return Buffer4.from(chunk);
     }
     function _isUint8Array(obj) {
-      return Buffer3.isBuffer(obj) || obj instanceof OurUint8Array;
+      return Buffer4.isBuffer(obj) || obj instanceof OurUint8Array;
     }
     var destroyImpl = require_destroy();
     var _require3 = require_state();
@@ -42197,7 +42197,7 @@ var require_stream_writable = __commonJS({
       var state = this._writableState;
       var ret = false;
       var isBuf = !state.objectMode && _isUint8Array(chunk);
-      if (isBuf && !Buffer3.isBuffer(chunk)) {
+      if (isBuf && !Buffer4.isBuffer(chunk)) {
         chunk = _uint8ArrayToBuffer(chunk);
       }
       if (typeof encoding === "function") {
@@ -42241,7 +42241,7 @@ var require_stream_writable = __commonJS({
     });
     function decodeChunk(state, chunk, encoding) {
       if (!state.objectMode && state.decodeStrings !== false && typeof chunk === "string") {
-        chunk = Buffer3.from(chunk, encoding);
+        chunk = Buffer4.from(chunk, encoding);
       }
       return chunk;
     }
@@ -42611,34 +42611,34 @@ var require_stream_duplex = __commonJS({
 var require_safe_buffer = __commonJS({
   "../../node_modules/.pnpm/safe-buffer@5.2.1/node_modules/safe-buffer/index.js"(exports, module) {
     var buffer = __require("buffer");
-    var Buffer3 = buffer.Buffer;
+    var Buffer4 = buffer.Buffer;
     function copyProps(src, dst) {
       for (var key in src) {
         dst[key] = src[key];
       }
     }
-    if (Buffer3.from && Buffer3.alloc && Buffer3.allocUnsafe && Buffer3.allocUnsafeSlow) {
+    if (Buffer4.from && Buffer4.alloc && Buffer4.allocUnsafe && Buffer4.allocUnsafeSlow) {
       module.exports = buffer;
     } else {
       copyProps(buffer, exports);
       exports.Buffer = SafeBuffer;
     }
     function SafeBuffer(arg, encodingOrOffset, length) {
-      return Buffer3(arg, encodingOrOffset, length);
+      return Buffer4(arg, encodingOrOffset, length);
     }
-    SafeBuffer.prototype = Object.create(Buffer3.prototype);
-    copyProps(Buffer3, SafeBuffer);
+    SafeBuffer.prototype = Object.create(Buffer4.prototype);
+    copyProps(Buffer4, SafeBuffer);
     SafeBuffer.from = function(arg, encodingOrOffset, length) {
       if (typeof arg === "number") {
         throw new TypeError("Argument must not be a number");
       }
-      return Buffer3(arg, encodingOrOffset, length);
+      return Buffer4(arg, encodingOrOffset, length);
     };
     SafeBuffer.alloc = function(size, fill, encoding) {
       if (typeof size !== "number") {
         throw new TypeError("Argument must be a number");
       }
-      var buf = Buffer3(size);
+      var buf = Buffer4(size);
       if (fill !== void 0) {
         if (typeof encoding === "string") {
           buf.fill(fill, encoding);
@@ -42654,7 +42654,7 @@ var require_safe_buffer = __commonJS({
       if (typeof size !== "number") {
         throw new TypeError("Argument must be a number");
       }
-      return Buffer3(size);
+      return Buffer4(size);
     };
     SafeBuffer.allocUnsafeSlow = function(size) {
       if (typeof size !== "number") {
@@ -42669,8 +42669,8 @@ var require_safe_buffer = __commonJS({
 var require_string_decoder = __commonJS({
   "../../node_modules/.pnpm/string_decoder@1.3.0/node_modules/string_decoder/lib/string_decoder.js"(exports) {
     "use strict";
-    var Buffer3 = require_safe_buffer().Buffer;
-    var isEncoding = Buffer3.isEncoding || function(encoding) {
+    var Buffer4 = require_safe_buffer().Buffer;
+    var isEncoding = Buffer4.isEncoding || function(encoding) {
       encoding = "" + encoding;
       switch (encoding && encoding.toLowerCase()) {
         case "hex":
@@ -42718,7 +42718,7 @@ var require_string_decoder = __commonJS({
     }
     function normalizeEncoding(enc2) {
       var nenc = _normalizeEncoding(enc2);
-      if (typeof nenc !== "string" && (Buffer3.isEncoding === isEncoding || !isEncoding(enc2))) throw new Error("Unknown encoding: " + enc2);
+      if (typeof nenc !== "string" && (Buffer4.isEncoding === isEncoding || !isEncoding(enc2))) throw new Error("Unknown encoding: " + enc2);
       return nenc || enc2;
     }
     exports.StringDecoder = StringDecoder;
@@ -42747,7 +42747,7 @@ var require_string_decoder = __commonJS({
       }
       this.lastNeed = 0;
       this.lastTotal = 0;
-      this.lastChar = Buffer3.allocUnsafe(nb);
+      this.lastChar = Buffer4.allocUnsafe(nb);
     }
     StringDecoder.prototype.write = function(buf) {
       if (buf.length === 0) return "";
@@ -43308,14 +43308,14 @@ var require_stream_readable = __commonJS({
       return emitter.listeners(type).length;
     };
     var Stream2 = require_stream();
-    var Buffer3 = __require("buffer").Buffer;
+    var Buffer4 = __require("buffer").Buffer;
     var OurUint8Array = (typeof global !== "undefined" ? global : typeof window !== "undefined" ? window : typeof self !== "undefined" ? self : {}).Uint8Array || function() {
     };
     function _uint8ArrayToBuffer(chunk) {
-      return Buffer3.from(chunk);
+      return Buffer4.from(chunk);
     }
     function _isUint8Array(obj) {
-      return Buffer3.isBuffer(obj) || obj instanceof OurUint8Array;
+      return Buffer4.isBuffer(obj) || obj instanceof OurUint8Array;
     }
     var debugUtil = __require("util");
     var debug;
@@ -43423,7 +43423,7 @@ var require_stream_readable = __commonJS({
         if (typeof chunk === "string") {
           encoding = encoding || state.defaultEncoding;
           if (encoding !== state.encoding) {
-            chunk = Buffer3.from(chunk, encoding);
+            chunk = Buffer4.from(chunk, encoding);
             encoding = "";
           }
           skipChunkCheck = true;
@@ -43448,7 +43448,7 @@ var require_stream_readable = __commonJS({
         if (er) {
           errorOrDestroy(stream, er);
         } else if (state.objectMode || chunk && chunk.length > 0) {
-          if (typeof chunk !== "string" && !state.objectMode && Object.getPrototypeOf(chunk) !== Buffer3.prototype) {
+          if (typeof chunk !== "string" && !state.objectMode && Object.getPrototypeOf(chunk) !== Buffer4.prototype) {
             chunk = _uint8ArrayToBuffer(chunk);
           }
           if (addToFront) {
@@ -60939,15 +60939,15 @@ var require_HttpErrors = __commonJS({
         format: ""
       }
     ];
-    var ValidationError3 = class _ValidationError2 {
+    var ValidationError4 = class _ValidationError2 {
       static getAttributeTypeMap() {
         return _ValidationError2.attributeTypeMap;
       }
     };
-    exports.ValidationError = ValidationError3;
-    ValidationError3.discriminator = void 0;
-    ValidationError3.mapping = void 0;
-    ValidationError3.attributeTypeMap = [
+    exports.ValidationError = ValidationError4;
+    ValidationError4.discriminator = void 0;
+    ValidationError4.mapping = void 0;
+    ValidationError4.attributeTypeMap = [
       {
         name: "loc",
         baseName: "loc",
@@ -91762,13 +91762,13 @@ var require_md5 = __commonJS({
       };
       var nodeWrap = function(method) {
         var crypto9 = __require("crypto");
-        var Buffer3 = __require("buffer").Buffer;
+        var Buffer4 = __require("buffer").Buffer;
         var bufferFrom;
-        if (Buffer3.from && !root.JS_MD5_NO_BUFFER_FROM) {
-          bufferFrom = Buffer3.from;
+        if (Buffer4.from && !root.JS_MD5_NO_BUFFER_FROM) {
+          bufferFrom = Buffer4.from;
         } else {
           bufferFrom = function(message2) {
-            return new Buffer3(message2);
+            return new Buffer4(message2);
           };
         }
         var nodeMethod = function(message2) {
@@ -91781,7 +91781,7 @@ var require_md5 = __commonJS({
               message2 = new Uint8Array(message2);
             }
           }
-          if (isArray3(message2) || isView2(message2) || message2.constructor === Buffer3) {
+          if (isArray3(message2) || isView2(message2) || message2.constructor === Buffer4) {
             return crypto9.createHash("md5").update(bufferFrom(message2)).digest("hex");
           } else {
             return method(message2);
@@ -287070,6 +287070,8 @@ var conversations = pgTable("conversations", {
   visitorName: text("visitor_name"),
   visitorEmail: text("visitor_email"),
   visitorPhone: text("visitor_phone"),
+  ipAddress: text("ip_address"),
+  userAgent: text("user_agent"),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull()
 });
@@ -316494,20 +316496,16 @@ var logger2 = (0, import_pino.default)({
   }
 });
 
+// src/lib/baseUrl.ts
+function getBaseUrl() {
+  if (process.env.PREVAI_BASE_URL) return process.env.PREVAI_BASE_URL;
+  if (process.env.VERCEL_PROJECT_PRODUCTION_URL) return `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`;
+  if (process.env.VERCEL_URL) return `https://${process.env.VERCEL_URL}`;
+  return "http://localhost:5000";
+}
+
 // src/lib/email.ts
-var PREVAI_LOGO_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="120" height="32" viewBox="0 0 120 32">
-  <defs>
-    <linearGradient id="g" x1="0%" y1="0%" x2="100%" y2="0%">
-      <stop offset="0%" style="stop-color:#7c3aed"/>
-      <stop offset="100%" style="stop-color:#06b6d4"/>
-    </linearGradient>
-  </defs>
-  <rect width="28" height="28" rx="6" y="2" fill="url(#g)"/>
-  <text x="14" y="20" font-family="system-ui,sans-serif" font-size="15" font-weight="bold" fill="white" text-anchor="middle">P</text>
-  <text x="38" y="22" font-family="system-ui,sans-serif" font-size="18" font-weight="700" fill="#1a1a2e">prev</text>
-  <text x="70" y="22" font-family="system-ui,sans-serif" font-size="18" font-weight="700" fill="#7c3aed">ai</text>
-</svg>`;
-var LOGO_DATA_URI = `data:image/svg+xml;base64,${Buffer.from(PREVAI_LOGO_SVG).toString("base64")}`;
+var LOGO_URL = `${getBaseUrl()}/prevai-logo.png`;
 function escapeHtml2(value) {
   return value.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
 }
@@ -316596,7 +316594,7 @@ function buildSubscriptionEmail(params) {
 <body>
 <div class="wrapper">
   <div class="header">
-    <img src="${LOGO_DATA_URI}" alt="Prevai" />
+    <img src="${LOGO_URL}" alt="Prevai" />
     <h1>${headline}</h1>
     <p>${subline}</p>
   </div>
@@ -316672,7 +316670,7 @@ function buildWelcomeEmail(name) {
 <body>
 <div class="wrapper">
   <div class="header">
-    <img src="${LOGO_DATA_URI}" alt="Prevai" />
+    <img src="${LOGO_URL}" alt="Prevai" />
     <h1>Benvenuto su Prevai! \u{1F389}</h1>
     <p>Il tuo account \xE8 pronto \u2014 inizia subito a creare preventivi</p>
   </div>
@@ -316792,7 +316790,7 @@ function buildQuoteEmailHtml(params) {
 <body>
 <div class="wrapper">
   <div class="header">
-    <img src="${LOGO_DATA_URI}" alt="Prevai" />
+    <img src="${LOGO_URL}" alt="Prevai" />
     <h1>Il tuo preventivo \xE8 pronto</h1>
     <p>${companyName} ti ha inviato un preventivo professionale</p>
   </div>
@@ -316847,7 +316845,7 @@ function buildWidgetClientConfirmationEmail(params) {
 <body>
 <div class="wrapper">
   <div class="header">
-    <img src="${LOGO_DATA_URI}" alt="Prevai" />
+    <img src="${LOGO_URL}" alt="Prevai" />
     <h1>Richiesta ricevuta \u2713</h1>
     <p>${companyName} ha ricevuto la tua richiesta di preventivo</p>
   </div>
@@ -317193,14 +317191,6 @@ async function requireAuth(req, res, next) {
 }
 function getUserId(res) {
   return res.locals.userId;
-}
-
-// src/lib/baseUrl.ts
-function getBaseUrl() {
-  if (process.env.PREVAI_BASE_URL) return process.env.PREVAI_BASE_URL;
-  if (process.env.VERCEL_PROJECT_PRODUCTION_URL) return `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`;
-  if (process.env.VERCEL_URL) return `https://${process.env.VERCEL_URL}`;
-  return "http://localhost:5000";
 }
 
 // ../../node_modules/.pnpm/zod@3.25.76/node_modules/zod/v3/external.js
@@ -323158,6 +323148,810 @@ function parseNumberedComputoMetrico(text2) {
   const totalVoci = sections.reduce((sum2, s) => sum2 + s.voci.length, 0);
   if (sections.length === 0 || totalVoci === 0) return null;
   return { sections, totalVoci };
+}
+
+// ../../node_modules/.pnpm/express-rate-limit@7.5.1_express@5.2.1/node_modules/express-rate-limit/dist/index.mjs
+import { Buffer as Buffer3 } from "node:buffer";
+import { createHash as createHash3 } from "node:crypto";
+import { isIP } from "node:net";
+var SUPPORTED_DRAFT_VERSIONS = [
+  "draft-6",
+  "draft-7",
+  "draft-8"
+];
+var getResetSeconds = (resetTime, windowMs) => {
+  let resetSeconds = void 0;
+  if (resetTime) {
+    const deltaSeconds = Math.ceil((resetTime.getTime() - Date.now()) / 1e3);
+    resetSeconds = Math.max(0, deltaSeconds);
+  } else if (windowMs) {
+    resetSeconds = Math.ceil(windowMs / 1e3);
+  }
+  return resetSeconds;
+};
+var getPartitionKey = (key) => {
+  const hash2 = createHash3("sha256");
+  hash2.update(key);
+  const partitionKey = hash2.digest("hex").slice(0, 12);
+  return Buffer3.from(partitionKey).toString("base64");
+};
+var setLegacyHeaders = (response, info2) => {
+  if (response.headersSent) return;
+  response.setHeader("X-RateLimit-Limit", info2.limit.toString());
+  response.setHeader("X-RateLimit-Remaining", info2.remaining.toString());
+  if (info2.resetTime instanceof Date) {
+    response.setHeader("Date", (/* @__PURE__ */ new Date()).toUTCString());
+    response.setHeader(
+      "X-RateLimit-Reset",
+      Math.ceil(info2.resetTime.getTime() / 1e3).toString()
+    );
+  }
+};
+var setDraft6Headers = (response, info2, windowMs) => {
+  if (response.headersSent) return;
+  const windowSeconds = Math.ceil(windowMs / 1e3);
+  const resetSeconds = getResetSeconds(info2.resetTime);
+  response.setHeader("RateLimit-Policy", `${info2.limit};w=${windowSeconds}`);
+  response.setHeader("RateLimit-Limit", info2.limit.toString());
+  response.setHeader("RateLimit-Remaining", info2.remaining.toString());
+  if (resetSeconds)
+    response.setHeader("RateLimit-Reset", resetSeconds.toString());
+};
+var setDraft7Headers = (response, info2, windowMs) => {
+  if (response.headersSent) return;
+  const windowSeconds = Math.ceil(windowMs / 1e3);
+  const resetSeconds = getResetSeconds(info2.resetTime, windowMs);
+  response.setHeader("RateLimit-Policy", `${info2.limit};w=${windowSeconds}`);
+  response.setHeader(
+    "RateLimit",
+    `limit=${info2.limit}, remaining=${info2.remaining}, reset=${resetSeconds}`
+  );
+};
+var setDraft8Headers = (response, info2, windowMs, name, key) => {
+  if (response.headersSent) return;
+  const windowSeconds = Math.ceil(windowMs / 1e3);
+  const resetSeconds = getResetSeconds(info2.resetTime, windowMs);
+  const partitionKey = getPartitionKey(key);
+  const policy = `q=${info2.limit}; w=${windowSeconds}; pk=:${partitionKey}:`;
+  const header = `r=${info2.remaining}; t=${resetSeconds}`;
+  response.append("RateLimit-Policy", `"${name}"; ${policy}`);
+  response.append("RateLimit", `"${name}"; ${header}`);
+};
+var setRetryAfterHeader = (response, info2, windowMs) => {
+  if (response.headersSent) return;
+  const resetSeconds = getResetSeconds(info2.resetTime, windowMs);
+  response.setHeader("Retry-After", resetSeconds.toString());
+};
+var ValidationError3 = class extends Error {
+  /**
+   * The code must be a string, in snake case and all capital, that starts with
+   * the substring `ERR_ERL_`.
+   *
+   * The message must be a string, starting with an uppercase character,
+   * describing the issue in detail.
+   */
+  constructor(code, message2) {
+    const url3 = `https://express-rate-limit.github.io/${code}/`;
+    super(`${message2} See ${url3} for more information.`);
+    this.name = this.constructor.name;
+    this.code = code;
+    this.help = url3;
+  }
+};
+var ChangeWarning = class extends ValidationError3 {
+};
+var usedStores = /* @__PURE__ */ new Set();
+var singleCountKeys = /* @__PURE__ */ new WeakMap();
+var validations = {
+  // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
+  enabled: {
+    default: true
+  },
+  // Should be EnabledValidations type, but that's a circular reference
+  disable() {
+    for (const k of Object.keys(this.enabled)) this.enabled[k] = false;
+  },
+  /**
+   * Checks whether the IP address is valid, and that it does not have a port
+   * number in it.
+   *
+   * See https://github.com/express-rate-limit/express-rate-limit/wiki/Error-Codes#err_erl_invalid_ip_address.
+   *
+   * @param ip {string | undefined} - The IP address provided by Express as request.ip.
+   *
+   * @returns {void}
+   */
+  ip(ip) {
+    if (ip === void 0) {
+      throw new ValidationError3(
+        "ERR_ERL_UNDEFINED_IP_ADDRESS",
+        `An undefined 'request.ip' was detected. This might indicate a misconfiguration or the connection being destroyed prematurely.`
+      );
+    }
+    if (!isIP(ip)) {
+      throw new ValidationError3(
+        "ERR_ERL_INVALID_IP_ADDRESS",
+        `An invalid 'request.ip' (${ip}) was detected. Consider passing a custom 'keyGenerator' function to the rate limiter.`
+      );
+    }
+  },
+  /**
+   * Makes sure the trust proxy setting is not set to `true`.
+   *
+   * See https://github.com/express-rate-limit/express-rate-limit/wiki/Error-Codes#err_erl_permissive_trust_proxy.
+   *
+   * @param request {Request} - The Express request object.
+   *
+   * @returns {void}
+   */
+  trustProxy(request) {
+    if (request.app.get("trust proxy") === true) {
+      throw new ValidationError3(
+        "ERR_ERL_PERMISSIVE_TRUST_PROXY",
+        `The Express 'trust proxy' setting is true, which allows anyone to trivially bypass IP-based rate limiting.`
+      );
+    }
+  },
+  /**
+   * Makes sure the trust proxy setting is set in case the `X-Forwarded-For`
+   * header is present.
+   *
+   * See https://github.com/express-rate-limit/express-rate-limit/wiki/Error-Codes#err_erl_unset_trust_proxy.
+   *
+   * @param request {Request} - The Express request object.
+   *
+   * @returns {void}
+   */
+  xForwardedForHeader(request) {
+    if (request.headers["x-forwarded-for"] && request.app.get("trust proxy") === false) {
+      throw new ValidationError3(
+        "ERR_ERL_UNEXPECTED_X_FORWARDED_FOR",
+        `The 'X-Forwarded-For' header is set but the Express 'trust proxy' setting is false (default). This could indicate a misconfiguration which would prevent express-rate-limit from accurately identifying users.`
+      );
+    }
+  },
+  /**
+   * Ensures totalHits value from store is a positive integer.
+   *
+   * @param hits {any} - The `totalHits` returned by the store.
+   */
+  positiveHits(hits) {
+    if (typeof hits !== "number" || hits < 1 || hits !== Math.round(hits)) {
+      throw new ValidationError3(
+        "ERR_ERL_INVALID_HITS",
+        `The totalHits value returned from the store must be a positive integer, got ${hits}`
+      );
+    }
+  },
+  /**
+   * Ensures a single store instance is not used with multiple express-rate-limit instances
+   */
+  unsharedStore(store) {
+    if (usedStores.has(store)) {
+      const maybeUniquePrefix = store?.localKeys ? "" : " (with a unique prefix)";
+      throw new ValidationError3(
+        "ERR_ERL_STORE_REUSE",
+        `A Store instance must not be shared across multiple rate limiters. Create a new instance of ${store.constructor.name}${maybeUniquePrefix} for each limiter instead.`
+      );
+    }
+    usedStores.add(store);
+  },
+  /**
+   * Ensures a given key is incremented only once per request.
+   *
+   * @param request {Request} - The Express request object.
+   * @param store {Store} - The store class.
+   * @param key {string} - The key used to store the client's hit count.
+   *
+   * @returns {void}
+   */
+  singleCount(request, store, key) {
+    let storeKeys = singleCountKeys.get(request);
+    if (!storeKeys) {
+      storeKeys = /* @__PURE__ */ new Map();
+      singleCountKeys.set(request, storeKeys);
+    }
+    const storeKey = store.localKeys ? store : store.constructor.name;
+    let keys = storeKeys.get(storeKey);
+    if (!keys) {
+      keys = [];
+      storeKeys.set(storeKey, keys);
+    }
+    const prefixedKey = `${store.prefix ?? ""}${key}`;
+    if (keys.includes(prefixedKey)) {
+      throw new ValidationError3(
+        "ERR_ERL_DOUBLE_COUNT",
+        `The hit count for ${key} was incremented more than once for a single request.`
+      );
+    }
+    keys.push(prefixedKey);
+  },
+  /**
+   * Warns the user that the behaviour for `max: 0` / `limit: 0` is
+   * changing in the next major release.
+   *
+   * @param limit {number} - The maximum number of hits per client.
+   *
+   * @returns {void}
+   */
+  limit(limit2) {
+    if (limit2 === 0) {
+      throw new ChangeWarning(
+        "WRN_ERL_MAX_ZERO",
+        `Setting limit or max to 0 disables rate limiting in express-rate-limit v6 and older, but will cause all requests to be blocked in v7`
+      );
+    }
+  },
+  /**
+   * Warns the user that the `draft_polli_ratelimit_headers` option is deprecated
+   * and will be removed in the next major release.
+   *
+   * @param draft_polli_ratelimit_headers {any | undefined} - The now-deprecated setting that was used to enable standard headers.
+   *
+   * @returns {void}
+   */
+  draftPolliHeaders(draft_polli_ratelimit_headers) {
+    if (draft_polli_ratelimit_headers) {
+      throw new ChangeWarning(
+        "WRN_ERL_DEPRECATED_DRAFT_POLLI_HEADERS",
+        `The draft_polli_ratelimit_headers configuration option is deprecated and has been removed in express-rate-limit v7, please set standardHeaders: 'draft-6' instead.`
+      );
+    }
+  },
+  /**
+   * Warns the user that the `onLimitReached` option is deprecated and
+   * will be removed in the next major release.
+   *
+   * @param onLimitReached {any | undefined} - The maximum number of hits per client.
+   *
+   * @returns {void}
+   */
+  onLimitReached(onLimitReached) {
+    if (onLimitReached) {
+      throw new ChangeWarning(
+        "WRN_ERL_DEPRECATED_ON_LIMIT_REACHED",
+        `The onLimitReached configuration option is deprecated and has been removed in express-rate-limit v7.`
+      );
+    }
+  },
+  /**
+   * Warns the user when an invalid/unsupported version of the draft spec is passed.
+   *
+   * @param version {any | undefined} - The version passed by the user.
+   *
+   * @returns {void}
+   */
+  headersDraftVersion(version10) {
+    if (typeof version10 !== "string" || // @ts-expect-error This is fine. If version is not in the array, it will just return false.
+    !SUPPORTED_DRAFT_VERSIONS.includes(version10)) {
+      const versionString = SUPPORTED_DRAFT_VERSIONS.join(", ");
+      throw new ValidationError3(
+        "ERR_ERL_HEADERS_UNSUPPORTED_DRAFT_VERSION",
+        `standardHeaders: only the following versions of the IETF draft specification are supported: ${versionString}.`
+      );
+    }
+  },
+  /**
+   * Warns the user when the selected headers option requires a reset time but
+   * the store does not provide one.
+   *
+   * @param resetTime {Date | undefined} - The timestamp when the client's hit count will be reset.
+   *
+   * @returns {void}
+   */
+  headersResetTime(resetTime) {
+    if (!resetTime) {
+      throw new ValidationError3(
+        "ERR_ERL_HEADERS_NO_RESET",
+        `standardHeaders:  'draft-7' requires a 'resetTime', but the store did not provide one. The 'windowMs' value will be used instead, which may cause clients to wait longer than necessary.`
+      );
+    }
+  },
+  /**
+   * Checks the options.validate setting to ensure that only recognized
+   * validations are enabled or disabled.
+   *
+   * If any unrecognized values are found, an error is logged that
+   * includes the list of supported vaidations.
+   */
+  validationsConfig() {
+    const supportedValidations = Object.keys(this).filter(
+      (k) => !["enabled", "disable"].includes(k)
+    );
+    supportedValidations.push("default");
+    for (const key of Object.keys(this.enabled)) {
+      if (!supportedValidations.includes(key)) {
+        throw new ValidationError3(
+          "ERR_ERL_UNKNOWN_VALIDATION",
+          `options.validate.${key} is not recognized. Supported validate options are: ${supportedValidations.join(
+            ", "
+          )}.`
+        );
+      }
+    }
+  },
+  /**
+   * Checks to see if the instance was created inside of a request handler,
+   * which would prevent it from working correctly, with the default memory
+   * store (or any other store with localKeys.)
+   */
+  creationStack(store) {
+    const { stack } = new Error(
+      "express-rate-limit validation check (set options.validate.creationStack=false to disable)"
+    );
+    if (stack?.includes("Layer.handle [as handle_request]")) {
+      if (!store.localKeys) {
+        throw new ValidationError3(
+          "ERR_ERL_CREATED_IN_REQUEST_HANDLER",
+          "express-rate-limit instance should *usually* be created at app initialization, not when responding to a request."
+        );
+      }
+      throw new ValidationError3(
+        "ERR_ERL_CREATED_IN_REQUEST_HANDLER",
+        `express-rate-limit instance should be created at app initialization, not when responding to a request.`
+      );
+    }
+  }
+};
+var getValidations = (_enabled) => {
+  let enabled;
+  if (typeof _enabled === "boolean") {
+    enabled = {
+      default: _enabled
+    };
+  } else {
+    enabled = {
+      default: true,
+      ..._enabled
+    };
+  }
+  const wrappedValidations = {
+    enabled
+  };
+  for (const [name, validation] of Object.entries(validations)) {
+    if (typeof validation === "function")
+      wrappedValidations[name] = (...args) => {
+        if (!(enabled[name] ?? enabled.default)) {
+          return;
+        }
+        try {
+          ;
+          validation.apply(
+            wrappedValidations,
+            args
+          );
+        } catch (error42) {
+          if (error42 instanceof ChangeWarning) console.warn(error42);
+          else console.error(error42);
+        }
+      };
+  }
+  return wrappedValidations;
+};
+var MemoryStore = class {
+  constructor() {
+    this.previous = /* @__PURE__ */ new Map();
+    this.current = /* @__PURE__ */ new Map();
+    this.localKeys = true;
+  }
+  /**
+   * Method that initializes the store.
+   *
+   * @param options {Options} - The options used to setup the middleware.
+   */
+  init(options) {
+    this.windowMs = options.windowMs;
+    if (this.interval) clearInterval(this.interval);
+    this.interval = setInterval(() => {
+      this.clearExpired();
+    }, this.windowMs);
+    if (this.interval.unref) this.interval.unref();
+  }
+  /**
+   * Method to fetch a client's hit count and reset time.
+   *
+   * @param key {string} - The identifier for a client.
+   *
+   * @returns {ClientRateLimitInfo | undefined} - The number of hits and reset time for that client.
+   *
+   * @public
+   */
+  async get(key) {
+    return this.current.get(key) ?? this.previous.get(key);
+  }
+  /**
+   * Method to increment a client's hit counter.
+   *
+   * @param key {string} - The identifier for a client.
+   *
+   * @returns {ClientRateLimitInfo} - The number of hits and reset time for that client.
+   *
+   * @public
+   */
+  async increment(key) {
+    const client = this.getClient(key);
+    const now2 = Date.now();
+    if (client.resetTime.getTime() <= now2) {
+      this.resetClient(client, now2);
+    }
+    client.totalHits++;
+    return client;
+  }
+  /**
+   * Method to decrement a client's hit counter.
+   *
+   * @param key {string} - The identifier for a client.
+   *
+   * @public
+   */
+  async decrement(key) {
+    const client = this.getClient(key);
+    if (client.totalHits > 0) client.totalHits--;
+  }
+  /**
+   * Method to reset a client's hit counter.
+   *
+   * @param key {string} - The identifier for a client.
+   *
+   * @public
+   */
+  async resetKey(key) {
+    this.current.delete(key);
+    this.previous.delete(key);
+  }
+  /**
+   * Method to reset everyone's hit counter.
+   *
+   * @public
+   */
+  async resetAll() {
+    this.current.clear();
+    this.previous.clear();
+  }
+  /**
+   * Method to stop the timer (if currently running) and prevent any memory
+   * leaks.
+   *
+   * @public
+   */
+  shutdown() {
+    clearInterval(this.interval);
+    void this.resetAll();
+  }
+  /**
+   * Recycles a client by setting its hit count to zero, and reset time to
+   * `windowMs` milliseconds from now.
+   *
+   * NOT to be confused with `#resetKey()`, which removes a client from both the
+   * `current` and `previous` maps.
+   *
+   * @param client {Client} - The client to recycle.
+   * @param now {number} - The current time, to which the `windowMs` is added to get the `resetTime` for the client.
+   *
+   * @return {Client} - The modified client that was passed in, to allow for chaining.
+   */
+  resetClient(client, now2 = Date.now()) {
+    client.totalHits = 0;
+    client.resetTime.setTime(now2 + this.windowMs);
+    return client;
+  }
+  /**
+   * Retrieves or creates a client, given a key. Also ensures that the client being
+   * returned is in the `current` map.
+   *
+   * @param key {string} - The key under which the client is (or is to be) stored.
+   *
+   * @returns {Client} - The requested client.
+   */
+  getClient(key) {
+    if (this.current.has(key)) return this.current.get(key);
+    let client;
+    if (this.previous.has(key)) {
+      client = this.previous.get(key);
+      this.previous.delete(key);
+    } else {
+      client = { totalHits: 0, resetTime: /* @__PURE__ */ new Date() };
+      this.resetClient(client);
+    }
+    this.current.set(key, client);
+    return client;
+  }
+  /**
+   * Move current clients to previous, create a new map for current.
+   *
+   * This function is called every `windowMs`.
+   */
+  clearExpired() {
+    this.previous = this.current;
+    this.current = /* @__PURE__ */ new Map();
+  }
+};
+var isLegacyStore = (store) => (
+  // Check that `incr` exists but `increment` does not - store authors might want
+  // to keep both around for backwards compatibility.
+  typeof store.incr === "function" && typeof store.increment !== "function"
+);
+var promisifyStore = (passedStore) => {
+  if (!isLegacyStore(passedStore)) {
+    return passedStore;
+  }
+  const legacyStore = passedStore;
+  class PromisifiedStore {
+    async increment(key) {
+      return new Promise((resolve, reject) => {
+        legacyStore.incr(
+          key,
+          (error42, totalHits, resetTime) => {
+            if (error42) reject(error42);
+            resolve({ totalHits, resetTime });
+          }
+        );
+      });
+    }
+    async decrement(key) {
+      return legacyStore.decrement(key);
+    }
+    async resetKey(key) {
+      return legacyStore.resetKey(key);
+    }
+    /* istanbul ignore next */
+    async resetAll() {
+      if (typeof legacyStore.resetAll === "function")
+        return legacyStore.resetAll();
+    }
+  }
+  return new PromisifiedStore();
+};
+var getOptionsFromConfig = (config4) => {
+  const { validations: validations2, ...directlyPassableEntries } = config4;
+  return {
+    ...directlyPassableEntries,
+    validate: validations2.enabled
+  };
+};
+var omitUndefinedOptions = (passedOptions) => {
+  const omittedOptions = {};
+  for (const k of Object.keys(passedOptions)) {
+    const key = k;
+    if (passedOptions[key] !== void 0) {
+      omittedOptions[key] = passedOptions[key];
+    }
+  }
+  return omittedOptions;
+};
+var parseOptions = (passedOptions) => {
+  const notUndefinedOptions = omitUndefinedOptions(passedOptions);
+  const validations2 = getValidations(notUndefinedOptions?.validate ?? true);
+  validations2.validationsConfig();
+  validations2.draftPolliHeaders(
+    // @ts-expect-error see the note above.
+    notUndefinedOptions.draft_polli_ratelimit_headers
+  );
+  validations2.onLimitReached(notUndefinedOptions.onLimitReached);
+  let standardHeaders = notUndefinedOptions.standardHeaders ?? false;
+  if (standardHeaders === true) standardHeaders = "draft-6";
+  const config4 = {
+    windowMs: 60 * 1e3,
+    limit: passedOptions.max ?? 5,
+    // `max` is deprecated, but support it anyways.
+    message: "Too many requests, please try again later.",
+    statusCode: 429,
+    legacyHeaders: passedOptions.headers ?? true,
+    identifier(request, _response) {
+      let duration5 = "";
+      const property = config4.requestPropertyName;
+      const { limit: limit2 } = request[property];
+      const seconds = config4.windowMs / 1e3;
+      const minutes = config4.windowMs / (1e3 * 60);
+      const hours = config4.windowMs / (1e3 * 60 * 60);
+      const days = config4.windowMs / (1e3 * 60 * 60 * 24);
+      if (seconds < 60) duration5 = `${seconds}sec`;
+      else if (minutes < 60) duration5 = `${minutes}min`;
+      else if (hours < 24) duration5 = `${hours}hr${hours > 1 ? "s" : ""}`;
+      else duration5 = `${days}day${days > 1 ? "s" : ""}`;
+      return `${limit2}-in-${duration5}`;
+    },
+    requestPropertyName: "rateLimit",
+    skipFailedRequests: false,
+    skipSuccessfulRequests: false,
+    requestWasSuccessful: (_request, response) => response.statusCode < 400,
+    skip: (_request, _response) => false,
+    keyGenerator(request, _response) {
+      validations2.ip(request.ip);
+      validations2.trustProxy(request);
+      validations2.xForwardedForHeader(request);
+      return request.ip;
+    },
+    async handler(request, response, _next, _optionsUsed) {
+      response.status(config4.statusCode);
+      const message2 = typeof config4.message === "function" ? await config4.message(
+        request,
+        response
+      ) : config4.message;
+      if (!response.writableEnded) {
+        response.send(message2);
+      }
+    },
+    passOnStoreError: false,
+    // Allow the default options to be overridden by the passed options.
+    ...notUndefinedOptions,
+    // `standardHeaders` is resolved into a draft version above, use that.
+    standardHeaders,
+    // Note that this field is declared after the user's options are spread in,
+    // so that this field doesn't get overridden with an un-promisified store!
+    store: promisifyStore(notUndefinedOptions.store ?? new MemoryStore()),
+    // Print an error to the console if a few known misconfigurations are detected.
+    validations: validations2
+  };
+  if (typeof config4.store.increment !== "function" || typeof config4.store.decrement !== "function" || typeof config4.store.resetKey !== "function" || config4.store.resetAll !== void 0 && typeof config4.store.resetAll !== "function" || config4.store.init !== void 0 && typeof config4.store.init !== "function") {
+    throw new TypeError(
+      "An invalid store was passed. Please ensure that the store is a class that implements the `Store` interface."
+    );
+  }
+  return config4;
+};
+var handleAsyncErrors = (fn) => async (request, response, next) => {
+  try {
+    await Promise.resolve(fn(request, response, next)).catch(next);
+  } catch (error42) {
+    next(error42);
+  }
+};
+var rateLimit = (passedOptions) => {
+  const config4 = parseOptions(passedOptions ?? {});
+  const options = getOptionsFromConfig(config4);
+  config4.validations.creationStack(config4.store);
+  config4.validations.unsharedStore(config4.store);
+  if (typeof config4.store.init === "function") config4.store.init(options);
+  const middleware = handleAsyncErrors(
+    async (request, response, next) => {
+      const skip = await config4.skip(request, response);
+      if (skip) {
+        next();
+        return;
+      }
+      const augmentedRequest = request;
+      const key = await config4.keyGenerator(request, response);
+      let totalHits = 0;
+      let resetTime;
+      try {
+        const incrementResult = await config4.store.increment(key);
+        totalHits = incrementResult.totalHits;
+        resetTime = incrementResult.resetTime;
+      } catch (error42) {
+        if (config4.passOnStoreError) {
+          console.error(
+            "express-rate-limit: error from store, allowing request without rate-limiting.",
+            error42
+          );
+          next();
+          return;
+        }
+        throw error42;
+      }
+      config4.validations.positiveHits(totalHits);
+      config4.validations.singleCount(request, config4.store, key);
+      const retrieveLimit = typeof config4.limit === "function" ? config4.limit(request, response) : config4.limit;
+      const limit2 = await retrieveLimit;
+      config4.validations.limit(limit2);
+      const info2 = {
+        limit: limit2,
+        used: totalHits,
+        remaining: Math.max(limit2 - totalHits, 0),
+        resetTime
+      };
+      Object.defineProperty(info2, "current", {
+        configurable: false,
+        enumerable: false,
+        value: totalHits
+      });
+      augmentedRequest[config4.requestPropertyName] = info2;
+      if (config4.legacyHeaders && !response.headersSent) {
+        setLegacyHeaders(response, info2);
+      }
+      if (config4.standardHeaders && !response.headersSent) {
+        switch (config4.standardHeaders) {
+          case "draft-6": {
+            setDraft6Headers(response, info2, config4.windowMs);
+            break;
+          }
+          case "draft-7": {
+            config4.validations.headersResetTime(info2.resetTime);
+            setDraft7Headers(response, info2, config4.windowMs);
+            break;
+          }
+          case "draft-8": {
+            const retrieveName = typeof config4.identifier === "function" ? config4.identifier(request, response) : config4.identifier;
+            const name = await retrieveName;
+            config4.validations.headersResetTime(info2.resetTime);
+            setDraft8Headers(response, info2, config4.windowMs, name, key);
+            break;
+          }
+          default: {
+            config4.validations.headersDraftVersion(config4.standardHeaders);
+            break;
+          }
+        }
+      }
+      if (config4.skipFailedRequests || config4.skipSuccessfulRequests) {
+        let decremented = false;
+        const decrementKey = async () => {
+          if (!decremented) {
+            await config4.store.decrement(key);
+            decremented = true;
+          }
+        };
+        if (config4.skipFailedRequests) {
+          response.on("finish", async () => {
+            if (!await config4.requestWasSuccessful(request, response))
+              await decrementKey();
+          });
+          response.on("close", async () => {
+            if (!response.writableEnded) await decrementKey();
+          });
+          response.on("error", async () => {
+            await decrementKey();
+          });
+        }
+        if (config4.skipSuccessfulRequests) {
+          response.on("finish", async () => {
+            if (await config4.requestWasSuccessful(request, response))
+              await decrementKey();
+          });
+        }
+      }
+      config4.validations.disable();
+      if (totalHits > limit2) {
+        if (config4.legacyHeaders || config4.standardHeaders) {
+          setRetryAfterHeader(response, info2, config4.windowMs);
+        }
+        config4.handler(request, response, next, options);
+        return;
+      }
+      next();
+    }
+  );
+  const getThrowFn = () => {
+    throw new Error("The current store does not support the get/getKey method");
+  };
+  middleware.resetKey = config4.store.resetKey.bind(config4.store);
+  middleware.getKey = typeof config4.store.get === "function" ? config4.store.get.bind(config4.store) : getThrowFn;
+  return middleware;
+};
+var lib_default = rateLimit;
+
+// src/lib/rateLimit.ts
+function ipRateLimiter(opts) {
+  return lib_default({
+    windowMs: opts.windowMs,
+    limit: opts.max,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { error: opts.message }
+  });
+}
+function apiKeyRateLimiter(opts) {
+  return lib_default({
+    windowMs: opts.windowMs,
+    limit: opts.max,
+    standardHeaders: true,
+    legacyHeaders: false,
+    keyGenerator: (req) => {
+      const apiKey = req.headers["x-api-key"] || req.query.apiKey;
+      return apiKey ? String(apiKey) : req.ip || "unknown";
+    },
+    message: { error: opts.message }
+  });
+}
+function userRateLimiter(opts) {
+  return lib_default({
+    windowMs: opts.windowMs,
+    limit: opts.max,
+    standardHeaders: true,
+    legacyHeaders: false,
+    keyGenerator: (req, res) => res.locals.userId || req.ip || "unknown",
+    message: { error: opts.message }
+  });
 }
 
 // ../../node_modules/.pnpm/@supabase+supabase-js@2.108.2/node_modules/@supabase/supabase-js/dist/index.mjs
@@ -332349,6 +333143,11 @@ ${XLSX.utils.sheet_to_csv(sheet)}`);
 }
 
 // src/routes/quotes.ts
+var aiCallLimiter = userRateLimiter({
+  windowMs: 60 * 60 * 1e3,
+  max: 40,
+  message: "Hai raggiunto il limite orario di generazioni AI. Riprova pi\xF9 tardi."
+});
 var _pdfmakeInstance = null;
 function getPdfmake() {
   if (_pdfmakeInstance) return _pdfmakeInstance;
@@ -332601,7 +333400,7 @@ Questi sono i preventivi precedenti dello stesso utente. Mantieni coerenza con i
 
 ${examples.join("\n\n---\n\n")}`;
 }
-router4.post("/quotes", requireAuth, imageUpload.array("images", 3), async (req, res) => {
+router4.post("/quotes", requireAuth, aiCallLimiter, imageUpload.array("images", 3), async (req, res) => {
   try {
     const userId = getUserId(res);
     const [profile] = await db.select({
@@ -333399,7 +334198,7 @@ router4.post("/quotes/:id/duplicate", requireAuth, async (req, res) => {
     res.status(500).json({ error: "Internal server error" });
   }
 });
-router4.post("/quotes/:id/regenerate", requireAuth, async (req, res) => {
+router4.post("/quotes/:id/regenerate", requireAuth, aiCallLimiter, async (req, res) => {
   try {
     const userId = getUserId(res);
     const id = req.params.id;
@@ -333519,7 +334318,7 @@ Quando usi una voce del listino, applica il prezzo unitario esatto o molto simil
     res.status(500).json({ error: "Internal server error" });
   }
 });
-router4.post("/quotes/:id/upgrade-to-capitolato", requireAuth, async (req, res) => {
+router4.post("/quotes/:id/upgrade-to-capitolato", requireAuth, aiCallLimiter, async (req, res) => {
   try {
     const userId = getUserId(res);
     const id = req.params.id;
@@ -334509,7 +335308,7 @@ router4.post("/quotes/manual", requireAuth, async (req, res) => {
     res.status(500).json({ error: "Internal server error" });
   }
 });
-router4.post("/quotes/suggest-item-description", requireAuth, async (req, res) => {
+router4.post("/quotes/suggest-item-description", requireAuth, aiCallLimiter, async (req, res) => {
   try {
     const { brief, context } = req.body;
     if (!brief || typeof brief !== "string" || !brief.trim()) {
@@ -343089,6 +343888,11 @@ init_src();
 import { randomUUID as randomUUID5 } from "crypto";
 import { createRequire as createRequire2 } from "node:module";
 var _require2 = createRequire2(import.meta.url);
+var documentAiLimiter = userRateLimiter({
+  windowMs: 60 * 60 * 1e3,
+  max: 40,
+  message: "Hai raggiunto il limite orario di elaborazioni AI documenti. Riprova pi\xF9 tardi."
+});
 var objectStorage4 = new ObjectStorageService();
 var ALLOWED_MIME_TYPES = [
   "application/pdf",
@@ -343361,7 +344165,7 @@ router11.get("/documents/price-summary", requireAuth, async (req, res) => {
     res.status(500).json({ error: "Internal server error" });
   }
 });
-router11.post("/documents/:id/extract", requireAuth, async (req, res) => {
+router11.post("/documents/:id/extract", requireAuth, documentAiLimiter, async (req, res) => {
   try {
     const userId = getUserId(res);
     const docId = String(req.params.id);
@@ -343903,6 +344707,18 @@ var crm_default = router12;
 var import_express12 = __toESM(require_express2(), 1);
 init_src();
 var router13 = (0, import_express12.Router)();
+var MAX_MESSAGE_LENGTH = 4e3;
+var MAX_VISITOR_FIELD_LENGTH = 200;
+var createConversationLimiter = ipRateLimiter({
+  windowMs: 15 * 60 * 1e3,
+  max: 15,
+  message: "Troppe richieste. Riprova tra qualche minuto."
+});
+var sendMessageLimiter = ipRateLimiter({
+  windowMs: 10 * 60 * 1e3,
+  max: 30,
+  message: "Troppi messaggi inviati. Riprova pi\xF9 tardi."
+});
 router13.get("/support/admin-status", async (_req, res) => {
   try {
     const [row] = await db.select().from(settingsTable).where(eq(settingsTable.key, "admin_online"));
@@ -343927,9 +344743,12 @@ router13.post("/support/admin-status", requireAdmin, async (req, res) => {
     res.status(500).json({ error: "Failed to update admin online status" });
   }
 });
-router13.post("/support/conversations", async (req, res) => {
+router13.post("/support/conversations", createConversationLimiter, async (req, res) => {
   try {
-    const { visitorName, visitorEmail, visitorPhone } = req.body;
+    let { visitorName, visitorEmail, visitorPhone } = req.body;
+    if (typeof visitorName === "string") visitorName = visitorName.slice(0, MAX_VISITOR_FIELD_LENGTH);
+    if (typeof visitorEmail === "string") visitorEmail = visitorEmail.slice(0, MAX_VISITOR_FIELD_LENGTH);
+    if (typeof visitorPhone === "string") visitorPhone = visitorPhone.slice(0, MAX_VISITOR_FIELD_LENGTH);
     const dateStr = (/* @__PURE__ */ new Date()).toLocaleDateString("it-IT", {
       day: "2-digit",
       month: "2-digit",
@@ -343942,6 +344761,8 @@ router13.post("/support/conversations", async (req, res) => {
       visitorName: visitorName || null,
       visitorEmail: visitorEmail || null,
       visitorPhone: visitorPhone || null,
+      ipAddress: req.ip || null,
+      userAgent: (Array.isArray(req.headers["user-agent"]) ? req.headers["user-agent"][0] : req.headers["user-agent"])?.slice(0, 500) || null,
       status: "ai"
     }).returning();
     res.json(newConv);
@@ -343973,9 +344794,9 @@ router13.get("/support/conversations/:id/messages", async (req, res) => {
     res.status(500).json({ error: "Failed to get messages" });
   }
 });
-router13.post("/support/conversations/:id/messages", async (req, res) => {
+router13.post("/support/conversations/:id/messages", sendMessageLimiter, async (req, res) => {
   try {
-    const convId = parseInt(req.params.id);
+    const convId = parseInt(String(req.params.id));
     if (isNaN(convId)) {
       res.status(400).json({ error: "Invalid conversation ID" });
       return;
@@ -343983,6 +344804,10 @@ router13.post("/support/conversations/:id/messages", async (req, res) => {
     const { role, content } = req.body;
     if (!content || !role) {
       res.status(400).json({ error: "Role and content are required" });
+      return;
+    }
+    if (typeof content !== "string" || content.length > MAX_MESSAGE_LENGTH) {
+      res.status(400).json({ error: `Messaggio troppo lungo (massimo ${MAX_MESSAGE_LENGTH} caratteri).` });
       return;
     }
     const [conv] = await db.select().from(conversations).where(eq(conversations.id, convId));
@@ -344120,6 +344945,22 @@ var support_default = router13;
 var import_express13 = __toESM(require_express2(), 1);
 init_src();
 var router14 = (0, import_express13.Router)();
+var MAX_RAW_INPUT_LENGTH = 6e3;
+var configLimiter = ipRateLimiter({
+  windowMs: 60 * 1e3,
+  max: 60,
+  message: "Troppe richieste. Riprova tra qualche istante."
+});
+var quoteIpLimiter = ipRateLimiter({
+  windowMs: 60 * 60 * 1e3,
+  max: 20,
+  message: "Troppe richieste di preventivo da questo indirizzo IP. Riprova pi\xF9 tardi."
+});
+var quoteApiKeyLimiter = apiKeyRateLimiter({
+  windowMs: 60 * 60 * 1e3,
+  max: 60,
+  message: "Limite orario di preventivi raggiunto per questo account. Riprova pi\xF9 tardi."
+});
 function findRelevantCatalogItems2(input, catalog, limit2 = 20) {
   if (catalog.length <= limit2) return catalog;
   const words = input.toLowerCase().split(/\W+/).filter((w) => w.length > 2);
@@ -344200,7 +345041,7 @@ OUTPUT \u2014 SOLO JSON VALIDO, nessun testo extra:
 }
 
 IMPORTANTISSIMO: output SOLO JSON puro, nessuna spiegazione, nessun markdown.`;
-router14.get("/public/config", async (req, res) => {
+router14.get("/public/config", configLimiter, async (req, res) => {
   try {
     const apiKeyHeader = req.headers["x-api-key"] || req.query.apiKey;
     if (!apiKeyHeader) {
@@ -344234,7 +345075,7 @@ router14.get("/public/config", async (req, res) => {
     res.status(500).json({ error: "Internal server error" });
   }
 });
-router14.post("/public/quotes", async (req, res) => {
+router14.post("/public/quotes", quoteIpLimiter, quoteApiKeyLimiter, async (req, res) => {
   try {
     const apiKeyHeader = req.headers["x-api-key"] || req.query.apiKey;
     if (!apiKeyHeader) {
@@ -344251,6 +345092,10 @@ router14.post("/public/quotes", async (req, res) => {
     const { rawInput, clientData, misure } = req.body;
     if (!rawInput || !rawInput.trim()) {
       res.status(400).json({ error: "Il parametro rawInput \xE8 obbligatorio." });
+      return;
+    }
+    if (rawInput.length > MAX_RAW_INPUT_LENGTH) {
+      res.status(400).json({ error: `Descrizione troppo lunga (massimo ${MAX_RAW_INPUT_LENGTH} caratteri).` });
       return;
     }
     const catalogItems = await db.select().from(priceCatalogItemsTable).where(eq(priceCatalogItemsTable.userId, userId)).orderBy(priceCatalogItemsTable.categoria, priceCatalogItemsTable.nome);
@@ -345080,6 +345925,7 @@ var routes_default = router16;
 
 // src/app.ts
 var app = (0, import_express16.default)();
+app.set("trust proxy", 1);
 app.use(
   (0, import_pino_http.default)({
     logger: logger2,

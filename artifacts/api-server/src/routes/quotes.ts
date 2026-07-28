@@ -22,6 +22,17 @@ import {
   isTabularComputoMetrico, parseTabularComputoMetrico,
   isNumberedComputoMetrico, parseNumberedComputoMetrico,
 } from "../lib/computeParser.js";
+import { userRateLimiter } from "../lib/rateLimit.js";
+
+// Shared across every AI-calling authenticated endpoint below (create,
+// regenerate, upgrade-to-capitolato, suggest-item-description) so the cap is
+// on total AI spend per user, not per endpoint — a runaway/compromised
+// account can't just spread calls across routes to dodge the limit.
+const aiCallLimiter = userRateLimiter({
+  windowMs: 60 * 60 * 1000,
+  max: 40,
+  message: "Hai raggiunto il limite orario di generazioni AI. Riprova più tardi.",
+});
 
 type PdfMakeInstance = {
   fonts: Record<string, Record<string, string>>;
@@ -342,7 +353,7 @@ ${examples.join("\n\n---\n\n")}`;
 }
 
 // POST /api/quotes  (multipart/form-data: rawInput, clientData?, companySnapshot?, images[])
-router.post("/quotes", requireAuth, imageUpload.array("images", 3), async (req, res) => {
+router.post("/quotes", requireAuth, aiCallLimiter, imageUpload.array("images", 3), async (req, res) => {
   try {
     const userId = getUserId(res);
 
@@ -1409,7 +1420,7 @@ router.post("/quotes/:id/duplicate", requireAuth, async (req, res) => {
 });
 
 // POST /api/quotes/:id/regenerate — re-run AI on an existing quote
-router.post("/quotes/:id/regenerate", requireAuth, async (req, res) => {
+router.post("/quotes/:id/regenerate", requireAuth, aiCallLimiter, async (req, res) => {
   try {
     const userId = getUserId(res);
     const id = req.params.id as string;
@@ -1603,7 +1614,7 @@ Quando usi una voce del listino, applica il prezzo unitario esatto o molto simil
 });
 
 // POST /api/quotes/:id/upgrade-to-capitolato — rewrite descriptions in professional capitolato style (Pro only)
-router.post("/quotes/:id/upgrade-to-capitolato", requireAuth, async (req, res) => {
+router.post("/quotes/:id/upgrade-to-capitolato", requireAuth, aiCallLimiter, async (req, res) => {
   try {
     const userId = getUserId(res);
     const id = req.params.id as string;
@@ -3614,7 +3625,7 @@ router.post("/quotes/manual", requireAuth, async (req, res) => {
 });
 
 // POST /api/quotes/suggest-item-description — AI helper for manual quote items
-router.post("/quotes/suggest-item-description", requireAuth, async (req, res) => {
+router.post("/quotes/suggest-item-description", requireAuth, aiCallLimiter, async (req, res) => {
   try {
     const { brief, context } = req.body as { brief?: string; context?: string };
     if (!brief || typeof brief !== "string" || !brief.trim()) {

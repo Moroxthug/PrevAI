@@ -13,8 +13,15 @@ import { openai } from "@workspace/integrations-openai-ai-server";
 import { randomUUID } from "crypto";
 import { logger } from "../lib/logger.js";
 import { createRequire } from "node:module";
+import { userRateLimiter } from "../lib/rateLimit.js";
 
 const _require = createRequire(import.meta.url);
+
+const documentAiLimiter = userRateLimiter({
+  windowMs: 60 * 60 * 1000,
+  max: 40,
+  message: "Hai raggiunto il limite orario di elaborazioni AI documenti. Riprova più tardi.",
+});
 
 const objectStorage = new ObjectStorageService();
 
@@ -358,7 +365,7 @@ router.get("/documents/price-summary", requireAuth, async (req, res) => {
 });
 
 // POST /api/documents/:id/extract
-router.post("/documents/:id/extract", requireAuth, async (req, res) => {
+router.post("/documents/:id/extract", requireAuth, documentAiLimiter, async (req, res) => {
   try {
     const userId = getUserId(res);
     const docId = String(req.params.id);

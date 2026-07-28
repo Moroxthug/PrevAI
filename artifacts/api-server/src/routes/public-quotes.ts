@@ -6,8 +6,32 @@ import { generateNumeroPreventivo } from "../lib/quoteNumber.js";
 import { logger } from "../lib/logger.js";
 import type { QuoteChapter, QuoteDiscount, QuoteClientData } from "@workspace/db";
 import { sendWidgetLeadNotification, sendWidgetClientConfirmationEmail } from "../lib/email.js";
+import { ipRateLimiter, apiKeyRateLimiter } from "../lib/rateLimit.js";
 
 const router = Router();
+
+const MAX_RAW_INPUT_LENGTH = 6000;
+
+// /api/public/* is open to any origin (widget visitors on customer sites), so
+// it's rate-limited both per source IP and per tenant API key — the latter
+// caps damage if a single key is scraped/abused from many IPs.
+const configLimiter = ipRateLimiter({
+  windowMs: 60 * 1000,
+  max: 60,
+  message: "Troppe richieste. Riprova tra qualche istante.",
+});
+
+const quoteIpLimiter = ipRateLimiter({
+  windowMs: 60 * 60 * 1000,
+  max: 20,
+  message: "Troppe richieste di preventivo da questo indirizzo IP. Riprova più tardi.",
+});
+
+const quoteApiKeyLimiter = apiKeyRateLimiter({
+  windowMs: 60 * 60 * 1000,
+  max: 60,
+  message: "Limite orario di preventivi raggiunto per questo account. Riprova più tardi.",
+});
 
 // Helper in-memory semantic search for listino prices
 function findRelevantCatalogItems(
@@ -106,7 +130,7 @@ OUTPUT — SOLO JSON VALIDO, nessun testo extra:
 IMPORTANTISSIMO: output SOLO JSON puro, nessuna spiegazione, nessun markdown.`;
 
 // GET /api/public/config (autenticato con x-api-key o query param apiKey)
-router.get("/public/config", async (req, res) => {
+router.get("/public/config", configLimiter, async (req, res) => {
   try {
     const apiKeyHeader = req.headers["x-api-key"] || req.query.apiKey;
     if (!apiKeyHeader) {
@@ -155,7 +179,7 @@ router.get("/public/config", async (req, res) => {
 });
 
 // POST /api/public/quotes (autenticato con x-api-key)
-router.post("/public/quotes", async (req, res) => {
+router.post("/public/quotes", quoteIpLimiter, quoteApiKeyLimiter, async (req, res) => {
   try {
     const apiKeyHeader = req.headers["x-api-key"] || req.query.apiKey;
     if (!apiKeyHeader) {
@@ -186,6 +210,10 @@ router.post("/public/quotes", async (req, res) => {
 
     if (!rawInput || !rawInput.trim()) {
       res.status(400).json({ error: "Il parametro rawInput è obbligatorio." });
+      return;
+    }
+    if (rawInput.length > MAX_RAW_INPUT_LENGTH) {
+      res.status(400).json({ error: `Descrizione troppo lunga (massimo ${MAX_RAW_INPUT_LENGTH} caratteri).` });
       return;
     }
 

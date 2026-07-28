@@ -4,8 +4,27 @@ import { eq, desc, asc } from "drizzle-orm";
 import { logger } from "../lib/logger.js";
 import { openai } from "@workspace/integrations-openai-ai-server";
 import { requireAdmin } from "./admin.js";
+import { ipRateLimiter } from "../lib/rateLimit.js";
 
 const router = Router();
+
+const MAX_MESSAGE_LENGTH = 4000;
+const MAX_VISITOR_FIELD_LENGTH = 200;
+
+// Widget chat is fully unauthenticated public traffic — anyone can open a
+// conversation and trigger an AI completion per message, so both are capped
+// per-IP. Limits are generous enough for a real visitor conversation.
+const createConversationLimiter = ipRateLimiter({
+  windowMs: 15 * 60 * 1000,
+  max: 15,
+  message: "Troppe richieste. Riprova tra qualche minuto.",
+});
+
+const sendMessageLimiter = ipRateLimiter({
+  windowMs: 10 * 60 * 1000,
+  max: 30,
+  message: "Troppi messaggi inviati. Riprova più tardi.",
+});
 
 // --- Admin status endpoints ---
 
@@ -46,9 +65,13 @@ router.post("/support/admin-status", requireAdmin, async (req, res) => {
 // --- Conversations endpoints ---
 
 // Start conversation (Visitor)
-router.post("/support/conversations", async (req, res) => {
+router.post("/support/conversations", createConversationLimiter, async (req, res) => {
   try {
-    const { visitorName, visitorEmail, visitorPhone } = req.body;
+    let { visitorName, visitorEmail, visitorPhone } = req.body;
+    if (typeof visitorName === "string") visitorName = visitorName.slice(0, MAX_VISITOR_FIELD_LENGTH);
+    if (typeof visitorEmail === "string") visitorEmail = visitorEmail.slice(0, MAX_VISITOR_FIELD_LENGTH);
+    if (typeof visitorPhone === "string") visitorPhone = visitorPhone.slice(0, MAX_VISITOR_FIELD_LENGTH);
+
     const dateStr = new Date().toLocaleDateString("it-IT", {
       day: "2-digit",
       month: "2-digit",
@@ -64,6 +87,8 @@ router.post("/support/conversations", async (req, res) => {
         visitorName: visitorName || null,
         visitorEmail: visitorEmail || null,
         visitorPhone: visitorPhone || null,
+        ipAddress: req.ip || null,
+        userAgent: (Array.isArray(req.headers["user-agent"]) ? req.headers["user-agent"][0] : req.headers["user-agent"])?.slice(0, 500) || null,
         status: "ai",
       })
       .returning();
@@ -112,9 +137,9 @@ router.get("/support/conversations/:id/messages", async (req, res) => {
 });
 
 // Send message
-router.post("/support/conversations/:id/messages", async (req, res) => {
+router.post("/support/conversations/:id/messages", sendMessageLimiter, async (req, res) => {
   try {
-    const convId = parseInt(req.params.id);
+    const convId = parseInt(String(req.params.id));
     if (isNaN(convId)) {
       res.status(400).json({ error: "Invalid conversation ID" });
       return;
@@ -123,6 +148,10 @@ router.post("/support/conversations/:id/messages", async (req, res) => {
     const { role, content } = req.body;
     if (!content || !role) {
       res.status(400).json({ error: "Role and content are required" });
+      return;
+    }
+    if (typeof content !== "string" || content.length > MAX_MESSAGE_LENGTH) {
+      res.status(400).json({ error: `Messaggio troppo lungo (massimo ${MAX_MESSAGE_LENGTH} caratteri).` });
       return;
     }
 
