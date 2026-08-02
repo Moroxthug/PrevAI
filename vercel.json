@@ -13,6 +13,11 @@
   },
   "redirects": [
     {
+      "source": "/seo/(?<rest>.*)",
+      "destination": "/preventivi/$rest",
+      "permanent": true
+    },
+    {
       "source": "/((?!api/)(?!.*\\.)[^/]+(?:/[^/]+)*)",
       "destination": "/$1/",
       "permanent": true
