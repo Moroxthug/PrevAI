@@ -5,8 +5,13 @@ import { db, authUsersTable, authSessionsTable, authAccountsTable, authVerificat
 import { Resend } from "resend";
 import { logger } from "./logger";
 import { sendWelcomeEmail } from "./email";
+import { getBaseUrl } from "./baseUrl";
 
 const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
+
+// Gmail and most webmail clients strip data: URI images from HTML emails,
+// so the logo must be a real hosted URL rather than an inline base64 SVG.
+const LOGO_URL = `${getBaseUrl()}/prevai-logo.png`;
 
 const secret = process.env.BETTER_AUTH_SECRET ?? process.env.SESSION_SECRET;
 if (!secret) {
@@ -55,7 +60,7 @@ export const auth = betterAuth({
   plugins: [bearer()],
   emailAndPassword: {
     enabled: true,
-    requireEmailVerification: false,
+    requireEmailVerification: true,
     async sendResetPassword({ user, url }) {
       if (!resend) {
         logger.warn("RESEND_API_KEY not set — skipping password reset email");
@@ -75,6 +80,7 @@ export const auth = betterAuth({
   },
   emailVerification: {
     sendOnSignUp: true,
+    sendOnSignIn: true,
     autoSignInAfterVerification: true,
     async sendVerificationEmail({ user, url }) {
       if (!resend) return;
@@ -110,7 +116,7 @@ function buildResetPasswordEmail(name: string, url: string): string {
 <tr><td align="center">
 <table width="560" cellpadding="0" cellspacing="0" style="border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(124,58,237,0.10)">
 <tr><td style="background:linear-gradient(135deg,#7c3aed,#06b6d4);padding:28px 40px;text-align:center">
-  <span style="font-size:26px;font-weight:700"><span style="color:#fff">prev</span><span style="color:#e0f2fe">ai</span></span>
+  <img src="${LOGO_URL}" alt="Prevai" height="36" />
 </td></tr>
 <tr><td style="background:#fff;padding:32px 40px">
   <h1 style="margin:0 0 16px;font-size:22px;font-weight:700;color:#1a1a2e">Reimposta la tua password</h1>
@@ -141,7 +147,7 @@ function buildVerificationEmail(name: string, url: string): string {
 <tr><td align="center">
 <table width="560" cellpadding="0" cellspacing="0" style="border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(124,58,237,0.10)">
 <tr><td style="background:linear-gradient(135deg,#7c3aed,#06b6d4);padding:28px 40px;text-align:center">
-  <span style="font-size:26px;font-weight:700"><span style="color:#fff">prev</span><span style="color:#e0f2fe">ai</span></span>
+  <img src="${LOGO_URL}" alt="Prevai" height="36" />
 </td></tr>
 <tr><td style="background:#fff;padding:32px 40px">
   <h1 style="margin:0 0 16px;font-size:22px;font-weight:700;color:#1a1a2e">Verifica il tuo indirizzo email</h1>

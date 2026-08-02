@@ -37,7 +37,12 @@ export default function SignInPage() {
         callbackURL: nextPath,
       });
       if (result.error) {
-        setError(result.error.message ?? "Credenziali non valide. Riprova.");
+        const msg = result.error.message ?? "";
+        if (msg.toLowerCase().includes("not verified")) {
+          setError("Devi verificare la tua email prima di accedere. Ti abbiamo inviato di nuovo il link di verifica — controlla la tua casella di posta.");
+        } else {
+          setError(msg || "Credenziali non valide. Riprova.");
+        }
       } else {
         navigate(nextPath);
       }
