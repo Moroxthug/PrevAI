@@ -13,8 +13,8 @@
   },
   "redirects": [
     {
-      "source": "/seo/(?<rest>.*)",
-      "destination": "/preventivi/$rest",
+      "source": "/seo/(.*)",
+      "destination": "/preventivi/$1",
       "permanent": true
     },
     {
