@@ -4,52 +4,24 @@ import { useScrollFade } from "@/hooks/use-scroll-fade";
 
 export const TESTIMONIALS = [
   {
-    name: "Marco R.",
-    role: "Imbianchino",
-    city: "Milano",
+    name: "RBA Edilizia",
+    logo: "/images/testimonials/rba-edilizia-logo.svg",
+    website: "rba-edilizia.it",
     rating: 5,
-    text: "Faccio il doppio dei preventivi in metà tempo. Prima ci mettevo un'ora, adesso 2 minuti. I clienti sono sorpresi dalla qualità del documento.",
+    text: "Ho sempre speso 3/4 ore dopo il lavoro per fare preventivi, gestire i cantieri ed avere un quadro completo su ciascun cantiere. Con PrevAI faccio tutto in pochi minuti, ed è sempre efficiente, consigliatissimo.",
   },
   {
-    name: "Giulia T.",
-    role: "Titolare, Termoidraulica srl",
-    city: "Torino",
+    name: "Abdul Edilizia",
+    logo: "/images/testimonials/abdul-edilizia-logo.png",
+    website: "abduledilizia.it",
     rating: 5,
-    text: "Ho vinto 2 lavori nel primo giorno solo perché ho risposto prima dei concorrenti. prevai mi ha dato un vantaggio enorme sulla concorrenza.",
-  },
-  {
-    name: "Luca S.",
-    role: "Elettricista",
-    city: "Roma",
-    rating: 5,
-    text: "Il PDF è professionale come quello di una grande azienda. I clienti non chiedono più sconti — si fidano subito di più.",
-  },
-  {
-    name: "Antonio B.",
-    role: "Muratore",
-    city: "Napoli",
-    rating: 4,
-    text: "Uso prevai dal telefono direttamente in cantiere. In 3 minuti ho il preventivo pronto da mandare su WhatsApp. Prima me lo dimenticavo.",
-  },
-  {
-    name: "Sara M.",
-    role: "Gestione Immobiliare",
-    city: "Bologna",
-    rating: 5,
-    text: "Non sono artigiana ma coordino molti interventi. prevai mi ha tolto ore di burocrazia ogni settimana — l'adozione è stata immediata.",
-  },
-  {
-    name: "Roberto C.",
-    role: "Falegname",
-    city: "Brescia",
-    rating: 5,
-    text: "Ho alzato i prezzi del 15% senza perdere lavori. Quando il cliente vede un preventivo ben strutturato, la fiducia aumenta automaticamente.",
+    text: "PrevAI è stata la soluzione al problema dei preventivi, li fa con logo, professionali ed impeccabili, grandissimi.",
   },
 ];
 
 export const AGGREGATE_RATING = {
-  ratingValue: "4.9",
-  reviewCount: 127,
+  ratingValue: "5.0",
+  reviewCount: TESTIMONIALS.length,
 };
 
 function StarRating({ rating }: { rating: number }) {
@@ -66,20 +38,10 @@ function StarRating({ rating }: { rating: number }) {
   );
 }
 
-function Avatar({ name }: { name: string }) {
-  const initials = name
-    .split(" ")
-    .map((n) => n[0])
-    .join("")
-    .slice(0, 2)
-    .toUpperCase();
+function Logo({ src, name }: { src: string; name: string }) {
   return (
-    <div
-      className="h-9 w-9 rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0"
-      style={{ background: "linear-gradient(135deg, #7C3AED, #06B6D4)" }}
-      aria-hidden="true"
-    >
-      {initials}
+    <div className="h-9 w-9 rounded-lg bg-gray-50 border border-gray-100 flex items-center justify-center shrink-0 overflow-hidden p-1">
+      <img src={src} alt={`Logo ${name}`} className="max-h-full max-w-full object-contain" />
     </div>
   );
 }
@@ -111,7 +73,7 @@ export function TestimonialsSection() {
           </div>
         </div>
 
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 max-w-5xl mx-auto">
+        <div className="grid sm:grid-cols-2 gap-4 max-w-3xl mx-auto">
           {TESTIMONIALS.map((t) => (
             <div
               key={t.name}
@@ -122,14 +84,12 @@ export function TestimonialsSection() {
                 &ldquo;{t.text}&rdquo;
               </p>
               <div className="flex items-center gap-3 pt-2 border-t border-gray-50">
-                <Avatar name={t.name} />
+                <Logo src={t.logo} name={t.name} />
                 <div>
                   <div className="text-sm font-semibold text-gray-900">
                     {t.name}
                   </div>
-                  <div className="text-xs text-gray-400">
-                    {t.role} &middot; {t.city}
-                  </div>
+                  <div className="text-xs text-gray-400">{t.website}</div>
                 </div>
               </div>
             </div>
