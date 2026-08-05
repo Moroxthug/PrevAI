@@ -4312,6 +4312,622 @@ export const BLOG_ARTICLES: BlogArticle[] = [
 <p>WhatsApp è lo strumento di comunicazione, non di archiviazione. Usa strumenti dedicati come <a href="/preventivi/ristrutturazione/">prevai</a> che archiviano automaticamente tutti i preventivi inviati e ne tracciano lo stato di accettazione.</p>
 `,
   },
+  {
+    slug: "modello-preventivo-edile",
+    title: "Modello preventivo edile: word, excel e PDF da scaricare gratis",
+    seoTitle: "Modello preventivo edile: word, excel e PDF",
+    metaDescription: "Modello preventivo edile 2026: struttura completa in Word, Excel e PDF con voci, quantità e prezzi. Cosa deve contenere per essere valido e professionale.",
+    category: "Tool",
+    publishedAt: "2026-08-05",
+    readingTimeMin: 5,
+    relatedSectors: ["edilizia", "muratore", "ristrutturazione"],
+    contentHtml: `
+<p>Cercare un "modello preventivo edile" da scaricare è il primo passo di chi sta per aprire un cantiere, piccolo o grande. Il problema è che la maggior parte dei modelli gratuiti trovati online sono generici, mancano di voci obbligatorie o non rispettano la normativa fiscale italiana. Ecco come deve essere fatto un modello valido, in ogni formato.</p>
+
+<h2>Cosa deve contenere un modello preventivo edile completo</h2>
+<p>Indipendentemente dal formato scelto (Word, Excel o PDF), un preventivo edile professionale deve avere questa struttura minima:</p>
+<ul>
+  <li><strong>Intestazione impresa</strong> — ragione sociale, P.IVA, iscrizione CCIAA, indirizzo, contatti</li>
+  <li><strong>Dati cantiere</strong> — indirizzo dell'immobile, riferimento catastale se richiesto</li>
+  <li><strong>Descrizione lavorazioni</strong> — voce per voce, con quantità in mq, ml o a corpo</li>
+  <li><strong>Prezzi unitari</strong> — separati tra manodopera e materiali</li>
+  <li><strong>Imponibile, IVA e totale</strong> — con aliquota corretta (22% ordinaria, 10% per ristrutturazione abitativa)</li>
+  <li><strong>Tempi di esecuzione</strong> — data di inizio e durata stimata dei lavori</li>
+  <li><strong>Modalità di pagamento</strong> — acconto, SAL, saldo</li>
+  <li><strong>Validità dell'offerta</strong> — tipicamente 30 giorni</li>
+</ul>
+
+<h2>Modello preventivo edile in Word</h2>
+<p>Il formato Word (.docx) resta il più usato dalle piccole imprese perché è familiare e facile da personalizzare. Un modello Word ben strutturato usa tabelle per le voci di costo, non semplici elenchi puntati: questo evita che i numeri si disallineino quando si aggiungono righe.</p>
+<h3>Limiti del modello Word</h3>
+<p>Word non calcola automaticamente i totali: ogni somma va rifatta a mano, con il rischio concreto di errori quando il preventivo ha più di 10-15 righe. Inoltre un file .docx è facilmente modificabile dal destinatario, cosa che riduce la percezione di serietà del documento rispetto a un PDF bloccato.</p>
+
+<h2>Modello preventivo edile in Excel</h2>
+<p>Excel risolve il problema del calcolo automatico: con formule su quantità × prezzo unitario, IVA e totale si aggiornano da soli. È lo strumento giusto per chi prepara molti preventivi simili e vuole riutilizzare la stessa struttura cambiando solo i numeri.</p>
+<ul>
+  <li>Foglio con listino prezzi separato (materiali e manodopera), richiamato con formule VLOOKUP/CERCA.VERT nel foglio preventivo</li>
+  <li>Colonna quantità collegata al calcolo automatico dell'imponibile</li>
+  <li>Cella IVA con percentuale modificabile (22% o 10%)</li>
+  <li>Totale finale in grassetto, sempre visibile in alto o in fondo al foglio</li>
+</ul>
+<h3>Perché Excel non basta più</h3>
+<p>Un file Excel inviato al cliente si presenta come un foglio di calcolo, non come un documento commerciale. Va sempre convertito in PDF prima dell'invio, e questo passaggio manuale è spesso la causa di errori (versione sbagliata, formule non aggiornate, formattazione che si rompe in fase di stampa).</p>
+
+<h2>Modello preventivo edile in PDF</h2>
+<p>Il PDF è il formato di consegna finale, non di lavoro: si prepara in Word o Excel e si esporta in PDF prima di inviarlo. Un PDF ben fatto per un preventivo edile ha margini puliti, logo aziendale in alto, tabella delle voci leggibile anche da smartphone e una pagina di massimo 2-3 fogli — oltre diventa difficile da consultare rapidamente per il cliente.</p>
+
+<h2>L'alternativa: generare il preventivo senza partire da un modello</h2>
+<p>Il limite comune a Word, Excel e PDF preimpostati è che vanno compilati manualmente ogni volta: quantità, prezzi, calcoli, formattazione. Per un'impresa edile che fa 10-20 preventivi al mese, sono ore sottratte al cantiere. Descrivendo il lavoro a voce o per iscritto, un <a href="/preventivi/edilizia/">generatore di preventivi con intelligenza artificiale</a> produce lo stesso documento — con tutte le voci obbligatorie e i calcoli corretti — in meno di un minuto, pronto da inviare in PDF.</p>
+
+<h2>Errori comuni nei modelli scaricati gratis online</h2>
+<ul>
+  <li><strong>Aliquota IVA sbagliata o assente</strong> — molti modelli generici non distinguono tra 22% e 10% agevolato</li>
+  <li><strong>Nessun campo per la validità dell'offerta</strong> — il prezzo resta vincolante a tempo indeterminato, un rischio per l'impresa</li>
+  <li><strong>Voci troppo generiche</strong> — "lavori edili vari" invece di un elenco dettagliato</li>
+  <li><strong>Mancanza dei dati fiscali obbligatori</strong> — P.IVA e iscrizione CCIAA non sempre previste nei template scaricati da siti esteri</li>
+</ul>
+<p>Prima di usare un modello trovato online, verifica sempre che rispetti questi punti: un preventivo incompleto può creare contestazioni in fase di pagamento o di detrazione fiscale per il cliente.</p>
+`,
+  },
+  {
+    slug: "modello-preventivo-excel",
+    title: "Modello preventivo Excel: come farlo con formule automatiche",
+    seoTitle: "Modello preventivo Excel: guida con formule",
+    metaDescription: "Modello preventivo Excel 2026: come costruirlo con formule per calcolo automatico di imponibile, IVA e totale. Struttura consigliata e limiti da conoscere.",
+    category: "Tool",
+    publishedAt: "2026-08-06",
+    readingTimeMin: 5,
+    relatedSectors: ["modello-excel", "edilizia", "freelance"],
+    contentHtml: `
+<p>Excel resta lo strumento più diffuso tra artigiani e piccole imprese per preparare i preventivi, perché è già installato su quasi ogni computer e permette di automatizzare i calcoli. Ecco come costruire un modello preventivo Excel che funzioni davvero, senza errori di formula.</p>
+
+<h2>Struttura di base del foglio preventivo</h2>
+<p>Un modello Excel efficace è organizzato su colonne fisse, sempre nello stesso ordine:</p>
+<ul>
+  <li><strong>Colonna A</strong> — descrizione della voce/lavorazione</li>
+  <li><strong>Colonna B</strong> — quantità (mq, ml, pezzi, ore)</li>
+  <li><strong>Colonna C</strong> — unità di misura</li>
+  <li><strong>Colonna D</strong> — prezzo unitario (€)</li>
+  <li><strong>Colonna E</strong> — totale riga (formula: quantità × prezzo unitario)</li>
+</ul>
+<p>In fondo alla tabella: riga "Imponibile" (somma della colonna E), riga "IVA" (imponibile × 22% o 10%), riga "Totale" (imponibile + IVA) in grassetto.</p>
+
+<h2>Le formule essenziali da inserire</h2>
+<h3>Calcolo automatico del totale riga</h3>
+<p>Nella colonna E, la formula base è <code>=B2*D2</code> trascinata su tutte le righe. Questo evita l'errore più comune: dimenticare di aggiornare un totale dopo aver cambiato una quantità.</p>
+<h3>Somma e IVA automatiche</h3>
+<p>Per l'imponibile: <code>=SOMMA(E2:E20)</code>. Per l'IVA: <code>=Imponibile*0,22</code> (o *0,10 per l'aliquota agevolata su ristrutturazione abitativa). Per il totale: <code>=Imponibile+IVA</code>. Con queste tre formule, cambiare una singola quantità aggiorna automaticamente tutto il documento.</p>
+
+<h2>Listino prezzi separato: la funzione più utile</h2>
+<p>Chi prepara molti preventivi simili dovrebbe creare un secondo foglio "Listino" con tutti i prezzi unitari usati abitualmente (manodopera per categoria, materiali principali). Nel foglio preventivo, invece di digitare il prezzo a mano ogni volta, si usa <code>=CERCA.VERT(A2;Listino!A:B;2;FALSO)</code>: il prezzo si aggiorna da solo se cambia nel listino, senza dover correggere ogni preventivo già fatto.</p>
+
+<h2>Vantaggi e limiti del modello Excel</h2>
+<ul>
+  <li><strong>Vantaggio:</strong> calcolo automatico, zero errori di somma, riutilizzabile all'infinito</li>
+  <li><strong>Vantaggio:</strong> nessun costo aggiuntivo, funziona anche offline</li>
+  <li><strong>Limite:</strong> va sempre esportato in PDF prima dell'invio — un cliente non deve mai ricevere il file .xlsx originale, modificabile</li>
+  <li><strong>Limite:</strong> ogni preventivo richiede comunque 15-40 minuti di compilazione manuale, anche con le formule pronte</li>
+  <li><strong>Limite:</strong> zero controllo automatico su voci obbligatorie mancanti (P.IVA, validità offerta, condizioni di pagamento)</li>
+</ul>
+
+<h2>Come esportare correttamente il preventivo in PDF</h2>
+<p>Prima di salvare in PDF, imposta l'area di stampa (Layout di pagina → Area di stampa) per evitare che il documento si tagli su più fogli. Nascondi le colonne di appoggio (es. codici del listino) e verifica che il font sia leggibile anche da smartphone: molti clienti aprono il preventivo direttamente da WhatsApp.</p>
+
+<h2>Quando conviene passare a un altro strumento</h2>
+<p>Il modello Excel funziona bene fino a 10-15 preventivi al mese. Oltre questa soglia, il tempo di compilazione manuale — anche con le formule pronte — diventa un collo di bottiglia. Un <a href="/preventivi/come-fare-preventivo/">generatore di preventivi AI</a> mantiene la stessa precisione di calcolo di Excel ma elimina completamente la digitazione manuale delle voci: basta descrivere il lavoro e il documento viene generato pronto per l'invio, con tutte le voci obbligatorie già incluse.</p>
+
+<h2>Checklist finale prima di inviare un preventivo Excel</h2>
+<ul>
+  <li>Tutte le formule dei totali sono aggiornate (nessuna cella con #RIF! o #VALORE!)</li>
+  <li>L'aliquota IVA corrisponde al tipo di lavoro (22% ordinaria, 10% ristrutturazione abitativa)</li>
+  <li>Il file è stato esportato in PDF, non inviato come .xlsx</li>
+  <li>Sono presenti data di validità dell'offerta e condizioni di pagamento</li>
+</ul>
+`,
+  },
+  {
+    slug: "modello-preventivo-lavori-edili-word",
+    title: "Modello preventivo lavori edili in Word: guida e struttura",
+    seoTitle: "Modello preventivo lavori edili in Word",
+    metaDescription: "Modello preventivo lavori edili in Word 2026: struttura consigliata, tabelle, voci obbligatorie e come evitare gli errori più comuni prima di inviarlo al cliente.",
+    category: "Tool",
+    publishedAt: "2026-08-07",
+    readingTimeMin: 4,
+    relatedSectors: ["edilizia", "muratore", "modello-word"],
+    contentHtml: `
+<p>Word resta il programma più usato dalle piccole imprese edili per scrivere un preventivo, grazie alla sua familiarità. Il problema non è lo strumento, ma come viene usato: un preventivo scritto come un semplice elenco puntato comunica poca professionalità rispetto a uno organizzato in tabelle.</p>
+
+<h2>Perché usare le tabelle e non gli elenchi puntati</h2>
+<p>Un preventivo lavori edili in Word con voci allineate in tabella (descrizione, quantità, unità di misura, prezzo unitario, totale riga) è immediatamente più leggibile e più difficile da alterare accidentalmente rispetto a un testo libero. Le tabelle Word permettono anche di bloccare la larghezza delle colonne, evitando che il documento si disallinei quando viene stampato o convertito in PDF su un altro computer.</p>
+
+<h2>Struttura consigliata del documento</h2>
+<ul>
+  <li><strong>Intestazione</strong> — logo (se presente), ragione sociale, P.IVA, contatti, in alto a sinistra o centrata</li>
+  <li><strong>Riferimenti</strong> — numero preventivo, data, dati del cliente e dell'indirizzo cantiere</li>
+  <li><strong>Tabella voci</strong> — descrizione lavorazione, quantità, unità (mq/ml/corpo), prezzo unitario, totale</li>
+  <li><strong>Riepilogo</strong> — imponibile, IVA (22% o 10%), totale finale in grassetto</li>
+  <li><strong>Note e condizioni</strong> — tempi di esecuzione, modalità di pagamento, validità dell'offerta</li>
+  <li><strong>Firma</strong> — spazio per firma del titolare o del tecnico incaricato</li>
+</ul>
+
+<h3>Esempio di voci per un intervento tipico</h3>
+<p>Per un lavoro di ristrutturazione parziale, le righe della tabella potrebbero essere organizzate così:</p>
+<ul>
+  <li>Demolizione tramezzo esistente — 8mq — 20 €/mq — 160€</li>
+  <li>Costruzione nuovo tramezzo in cartongesso — 12mq — 50 €/mq — 600€</li>
+  <li>Intonaco civile pareti nuove — 24mq — 30 €/mq — 720€</li>
+  <li>Rasatura e stuccatura — 24mq — 12 €/mq — 288€</li>
+</ul>
+<p>Ogni riga deve corrispondere a una lavorazione verificabile in cantiere: questo permette al cliente di confrontare punto per punto preventivi di imprese diverse.</p>
+
+<h3>Impostazioni tecniche utili in Word</h3>
+<p>Usa lo stile "Griglia tabella" con bordi leggeri, non colori invadenti. Imposta l'interlinea a 1,15 per non appesantire visivamente il documento. Verifica sempre l'anteprima di stampa prima di esportare in PDF: le tabelle Word a volte si spezzano male tra una pagina e l'altra se non viene attivata l'opzione "Ripeti righe di intestazione" per tabelle su più pagine.</p>
+
+<h2>Errori da evitare nel modello Word</h2>
+<ul>
+  <li><strong>Inviare il file .docx originale</strong> — è modificabile dal destinatario e appare meno professionale di un PDF. Esporta sempre in PDF prima dell'invio</li>
+  <li><strong>Voci senza quantità</strong> — un totale a corpo senza il dettaglio di mq o ore non è verificabile</li>
+  <li><strong>Font diversi nello stesso documento</strong> — risultato di copia-incolla da fonti diverse, comunica scarsa cura</li>
+  <li><strong>Nessun numero di preventivo</strong> — rende difficile la tracciabilità in caso di più revisioni inviate allo stesso cliente</li>
+</ul>
+
+<h2>Il limite del modello Word: il tempo di compilazione</h2>
+<p>Anche con un modello ben fatto, ogni nuovo preventivo richiede riscrivere voci, quantità e prezzi da zero o copiare da un preventivo precedente e modificarlo a mano — un'operazione che richiede in media 30-60 minuti per un intervento edile con 15-20 voci. Un <a href="/preventivi/muratore/">software di preventivazione con intelligenza artificiale</a> genera lo stesso documento, con la stessa struttura professionale, descrivendo semplicemente il lavoro: il tempo scende a meno di un minuto, senza dover aprire Word né sistemare tabelle.</p>
+`,
+  },
+  {
+    slug: "modello-preventivo-impianto-elettrico",
+    title: "Modello preventivo impianto elettrico: template gratuito e voci",
+    seoTitle: "Modello preventivo impianto elettrico: guida e voci",
+    metaDescription: "Modello preventivo impianto elettrico 2026 in Word: voci obbligatorie, quadro elettrico, punti luce, prese, dichiarazione di conformità. Struttura pronta da compilare.",
+    category: "Tool",
+    publishedAt: "2026-08-08",
+    readingTimeMin: 4,
+    relatedSectors: ["elettricista"],
+    contentHtml: `
+<p>Un modello preventivo per impianto elettrico deve rispettare regole più tecniche rispetto a un preventivo edile generico, perché coinvolge normativa specifica (D.M. 37/2008) e obblighi di collaudo. Ecco come costruirne uno completo, in formato Word o PDF.</p>
+
+<h2>Voci obbligatorie in un preventivo impianto elettrico</h2>
+<p>Un preventivo tecnicamente corretto per impianto elettrico civile deve includere, sezione per sezione:</p>
+<ul>
+  <li><strong>Quadro elettrico</strong> — tipo (incasso/sporgente), numero moduli, interruttore generale, differenziale, magnetotermici per circuito</li>
+  <li><strong>Distribuzione</strong> — metri di cavo per tipo (FG16OR16, N07V-K), tubi corrugati, scatole di derivazione</li>
+  <li><strong>Punti luce</strong> — interruttori, deviatori, plafoniere, numero e posizione per stanza</li>
+  <li><strong>Prese</strong> — Schuko, 16A per elettrodomestici, TV, dati RJ45, USB</li>
+  <li><strong>Impianto di terra</strong> — dispersore, conduttori, collegamento masse metalliche</li>
+  <li><strong>Dichiarazione di Conformità (D.M. 37/2008)</strong> — obbligatoria per legge, va indicata esplicitamente come voce a sé</li>
+</ul>
+
+<h2>Struttura tabellare del modello</h2>
+<p>Ogni voce va quantificata con precisione, non "a corpo": un preventivo che riporta solo "impianto elettrico appartamento — €4.500" senza dettaglio non permette al cliente di capire quanti punti luce e prese sono inclusi.</p>
+<ul>
+  <li>Quadro elettrico 24 moduli con differenziale e 8 magnetotermici — 1 — 380€</li>
+  <li>Punto luce semplice (interruttore + plafoniera) — 12 — 65 €/cad — 780€</li>
+  <li>Punto presa Schuko 16A — 18 — 45 €/cad — 810€</li>
+  <li>Punto dati/TV — 4 — 55 €/cad — 220€</li>
+  <li>Messa a terra completa — 1 a corpo — 350€</li>
+</ul>
+<p>Con questa struttura, il cliente vede esattamente quanti punti luce e prese riceve per ogni stanza, ed è più facile confrontare preventivi di elettricisti diversi voce per voce.</p>
+
+<h3>Come calcolare il costo per punto</h3>
+<p>Il "costo per punto" (punto luce o presa) include cavo, scatola, frutto, placca e manodopera di posa e collegamento. Nel 2026 i prezzi di mercato per un punto semplice si aggirano tra 40 e 75€, in base alla zona geografica e alla difficoltà di posa (a vista costa meno, incassato nella muratura costa di più).</p>
+<h3>Perché indicare sempre la Dichiarazione di Conformità</h3>
+<p>La Dichiarazione di Conformità non è un optional: è un documento obbligatorio per legge che attesta che l'impianto è a norma. Un elettricista che non la include nel preventivo, o che la propone come costo extra non dichiarato, va evitato — senza questo documento, l'impianto non può essere collegato regolarmente e la casa non può essere venduta senza problemi in fase di rogito.</p>
+
+<h2>Formato Word vs PDF per questo tipo di preventivo</h2>
+<p>Il formato Word è utile in fase di preparazione perché permette di riutilizzare la stessa tabella per preventivi simili, cambiando solo le quantità. Il PDF finale, però, è l'unico formato da inviare al cliente: blocca la formattazione e comunica maggiore serietà tecnica, importante per un lavoro che tocca la sicurezza dell'abitazione.</p>
+
+<h2>Errori tipici nei modelli scaricati online</h2>
+<ul>
+  <li><strong>Nessuna distinzione tra circuiti</strong> — un buon preventivo indica quanti magnetotermici e quali circuiti separati (luce, prese, forno, condizionatore)</li>
+  <li><strong>Sezione dei cavi non specificata</strong> — 1,5mm² per illuminazione, 2,5mm² per prese, 4-6mm² per elettrodomestici ad alto assorbimento: differenze che il cliente ha diritto di conoscere</li>
+  <li><strong>Dichiarazione di Conformità omessa o "su richiesta"</strong> — deve essere sempre inclusa, non facoltativa</li>
+</ul>
+<p>Per evitare di ricostruire questa struttura ogni volta da zero, un <a href="/preventivi/elettricista/">generatore di preventivi AI per elettricisti</a> include già tutte queste voci tecniche e la Dichiarazione di Conformità come voce standard, producendo un documento completo partendo solo dalla descrizione del lavoro da fare.</p>
+`,
+  },
+  {
+    slug: "esempio-preventivo-ristrutturazione-bagno",
+    title: "Esempio preventivo ristrutturazione bagno: voci e prezzi reali",
+    seoTitle: "Esempio preventivo ristrutturazione bagno: voci reali",
+    metaDescription: "Esempio preventivo ristrutturazione bagno 2026 con voci reali e prezzi: demolizione, impianti, piastrelle, sanitari. Un modello completo da usare come riferimento.",
+    category: "Prezzi",
+    publishedAt: "2026-08-09",
+    readingTimeMin: 6,
+    relatedSectors: ["idraulico", "piastrellista", "ristrutturazione"],
+    contentHtml: `
+<p>Chi cerca un esempio di preventivo per la ristrutturazione del bagno vuole capire una cosa sola: come deve essere strutturato un documento vero, con voci reali e prezzi di mercato, non un modello vuoto da compilare a caso. Ecco un esempio completo su un bagno di 6mq, con ogni voce spiegata.</p>
+
+<h2>Esempio preventivo: bagno 6mq, ristrutturazione completa</h2>
+<p>Questo è un esempio realistico di come si presenta un preventivo ben fatto per un bagno medio, con demolizione completa e rifacimento di tutti gli impianti:</p>
+<ul>
+  <li>Demolizione piastrelle e sanitari esistenti — a corpo — 420€</li>
+  <li>Smaltimento macerie — a corpo — 200€</li>
+  <li>Impermeabilizzazione zona doccia (2mq) — 25 €/mq — 50€</li>
+  <li>Rifacimento impianto idraulico (distribuzione + scarichi) — a corpo — 1.100€</li>
+  <li>Rifacimento impianto elettrico (linea dedicata, 3 punti IP44) — a corpo — 650€</li>
+  <li>Fornitura e posa gres pavimento 60x60 (6mq) — 45 €/mq — 270€</li>
+  <li>Fornitura e posa rivestimento pareti (14mq) — 55 €/mq — 770€</li>
+  <li>Fornitura e posa sanitari (WC sospeso + lavabo + mobile) — a corpo — 950€</li>
+  <li>Box doccia 80x80 cristallo 6mm — a corpo — 480€</li>
+  <li>Tinteggiatura soffitto — a corpo — 90€</li>
+</ul>
+<p><strong>Imponibile: 4.980€ — IVA 10% (ristrutturazione abitativa): 498€ — Totale: 5.478€</strong></p>
+
+<h2>Perché ogni voce è indicata separatamente</h2>
+<p>Un preventivo con voci separate, invece di un unico importo "chiavi in mano", permette due cose fondamentali: confrontare offerte diverse punto per punto, e capire subito dove si può risparmiare senza rinunciare alla qualità del lavoro (es. scegliere sanitari di fascia più economica, mantenendo invariati impianti e posa).</p>
+
+<h3>Cosa cambia tra bagno piccolo, medio e grande</h3>
+<p>Le voci a corpo (demolizione, impianti) restano quasi invariate al variare della metratura, mentre le voci al mq (piastrelle, rivestimenti) scalano proporzionalmente:</p>
+<ul>
+  <li><strong>Bagno piccolo 4mq</strong>: totale indicativo 4.200–5.500€</li>
+  <li><strong>Bagno medio 6mq</strong> (esempio sopra): totale indicativo 5.000–6.500€</li>
+  <li><strong>Bagno grande 9mq</strong>: totale indicativo 6.500–9.000€</li>
+</ul>
+<p>Questo spiega perché un bagno più piccolo non costa proporzionalmente meno: gli impianti (idraulico, elettrico) hanno un costo fisso che incide di più su metrature ridotte.</p>
+
+<h2>Voci che spesso mancano nei preventivi generici</h2>
+<p>Confrontando questo esempio con preventivi "chiavi in mano" trovati online, mancano spesso:</p>
+<ul>
+  <li>La Dichiarazione di Conformità per impianto idraulico ed elettrico (obbligatoria per legge)</li>
+  <li>Lo smaltimento macerie separato dalla demolizione</li>
+  <li>La specifica del formato e della marca di piastrelle e sanitari</li>
+  <li>L'aliquota IVA applicata (10% per ristrutturazione abitativa, non sempre applicabile automaticamente)</li>
+</ul>
+
+<h2>Come adattare questo esempio al proprio caso</h2>
+<p>Ogni bagno ha variabili che cambiano il totale: posizione dei nuovi scarichi rispetto a quelli esistenti (spostare uno scarico costa 200-500€ in più), altezza del rivestimento richiesta, qualità dei materiali scelti. Usa questo esempio come struttura di riferimento, non come preventivo definitivo: chiedi sempre un sopralluogo per un preventivo su misura.</p>
+<p>Per generare rapidamente un documento con questa stessa struttura, adattato al proprio cantiere specifico, un <a href="/preventivi/idraulico/">generatore di preventivi AI</a> permette di ottenere in pochi secondi un documento organizzato per voci, con calcolo automatico di imponibile e IVA.</p>
+`,
+  },
+  {
+    slug: "preventivo-ristrutturazione-casa-esempio",
+    title: "Preventivo ristrutturazione casa: esempio completo passo per passo",
+    seoTitle: "Preventivo ristrutturazione casa: esempio completo",
+    metaDescription: "Preventivo ristrutturazione casa 2026: esempio completo passo per passo con voci, capitoli di spesa e prezzi reali per un appartamento tipo. Guida pratica.",
+    category: "Prezzi",
+    publishedAt: "2026-08-10",
+    readingTimeMin: 6,
+    relatedSectors: ["ristrutturazione", "edilizia", "muratore"],
+    contentHtml: `
+<p>Un preventivo di ristrutturazione casa completo coinvolge diverse categorie di lavoro e diversi artigiani. Vedere un esempio reale, capitolo per capitolo, aiuta a capire cosa aspettarsi prima di chiedere i primi preventivi veri per il proprio appartamento.</p>
+
+<h2>Esempio: ristrutturazione appartamento 80mq, intervento medio</h2>
+<p>Ecco come si presenta un preventivo organizzato per capitoli di spesa, su un appartamento di 80mq con ristrutturazione parziale (no interventi strutturali):</p>
+<ul>
+  <li><strong>Capitolo 1 — Opere murarie</strong>: demolizioni, nuovi tramezzi, intonaci — 4.200€</li>
+  <li><strong>Capitolo 2 — Impianto elettrico</strong>: rifacimento completo, 45 punti — 3.800€</li>
+  <li><strong>Capitolo 3 — Impianto idraulico</strong>: rifacimento bagno + cucina — 2.600€</li>
+  <li><strong>Capitolo 4 — Pavimenti e rivestimenti</strong>: gres 80mq + rivestimento bagni — 5.400€</li>
+  <li><strong>Capitolo 5 — Serramenti interni</strong>: 6 porte interne + soglie — 2.100€</li>
+  <li><strong>Capitolo 6 — Tinteggiatura</strong>: pareti e soffitti, 80mq — 1.600€</li>
+  <li><strong>Capitolo 7 — Sanitari e rubinetteria</strong>: 2 bagni completi — 2.400€</li>
+</ul>
+<p><strong>Imponibile: 22.100€ — IVA 10%: 2.210€ — Totale: 24.310€</strong></p>
+
+<h2>Come è organizzato ogni capitolo</h2>
+<p>Ogni capitolo, a sua volta, dovrebbe essere scomposto in voci verificabili. Ad esempio, il Capitolo 1 (Opere murarie) si articola così:</p>
+<ul>
+  <li>Demolizione 3 tramezzi esistenti (24mq totali) — 480€</li>
+  <li>Costruzione 2 nuovi tramezzi in cartongesso (18mq) — 900€</li>
+  <li>Intonaco civile su pareti nuove e ripristinate (60mq) — 1.800€</li>
+  <li>Rasatura e stuccatura finale (60mq) — 720€</li>
+  <li>Smaltimento macerie — 300€</li>
+</ul>
+<p>Questo livello di dettaglio è quello che distingue un preventivo verificabile da un semplice preventivo "a pacchetto".</p>
+
+<h3>Perché conviene un preventivo per capitoli</h3>
+<p>Organizzare il preventivo per capitoli permette di capire subito quanto incide ogni categoria di lavoro sul totale, e quindi dove intervenire se il budget è limitato. Nell'esempio sopra, pavimenti e rivestimenti pesano il 24% del totale: è spesso la voce su cui si può risparmiare scegliendo materiali di fascia media senza compromettere la qualità della posa.</p>
+<h3>L'ordine corretto delle lavorazioni</h3>
+<p>Il preventivo deve rispettare l'ordine logico del cantiere: demolizioni, impianti (che vanno "sotto traccia" prima degli intonaci), intonaci, pavimenti e rivestimenti, tinteggiatura, sanitari e serramenti come ultime fasi. Un preventivo che non rispetta questo ordine, o che non lo indica affatto, spesso nasconde una pianificazione poco professionale del cantiere.</p>
+
+<h2>Quanto incide la manodopera sul totale</h2>
+<p>In una ristrutturazione completa come questa, la manodopera rappresenta tipicamente il 55-65% del totale, i materiali il resto. Se in un preventivo ricevuto la manodopera pesa meno del 45%, è un segnale da verificare: può indicare materiali di fascia molto bassa o un errore di calcolo.</p>
+
+<h2>Come usare questo esempio per il proprio appartamento</h2>
+<p>I prezzi variano in base a metratura, zona geografica e stato di partenza dell'immobile (un appartamento con impianti già recenti richiede interventi più limitati). Usa questa struttura per capitoli come base per confrontare i preventivi che riceverai, verificando che ognuno copra le stesse voci con lo stesso livello di dettaglio. Per generare rapidamente un documento con questa struttura, un <a href="/preventivi/ristrutturazione/">generatore di preventivi AI per ristrutturazioni</a> organizza automaticamente le voci per capitolo di spesa.</p>
+`,
+  },
+  {
+    slug: "esempio-preventivo-ristrutturazione-facciata",
+    title: "Esempio preventivo ristrutturazione facciata: voci e costi",
+    seoTitle: "Esempio preventivo ristrutturazione facciata",
+    metaDescription: "Esempio preventivo ristrutturazione facciata 2026: voci reali, ponteggio, intonaco, tinteggiatura esterna, cappotto termico. Prezzi al mq e bonus applicabili.",
+    category: "Prezzi",
+    publishedAt: "2026-08-11",
+    readingTimeMin: 5,
+    relatedSectors: ["edilizia", "muratore", "ristrutturazione"],
+    contentHtml: `
+<p>Il rifacimento della facciata è un intervento che coinvolge spesso l'intero condominio e richiede un preventivo particolarmente dettagliato, perché include voci che non compaiono in altri lavori edilizi — ponteggio, permessi comunali, eventuale cappotto termico. Ecco un esempio completo, voce per voce.</p>
+
+<h2>Esempio preventivo: facciata condominiale 300mq</h2>
+<p>Un esempio realistico di preventivo per il rifacimento di una facciata di medie dimensioni, senza cappotto termico:</p>
+<ul>
+  <li>Montaggio e smontaggio ponteggio (300mq, altezza 4 piani) — 8 €/mq — 2.400€</li>
+  <li>Rimozione intonaco ammalorato (stima 40% della superficie) — 120mq — 12 €/mq — 1.440€</li>
+  <li>Ripristino intonaco nelle zone rimosse — 120mq — 28 €/mq — 3.360€</li>
+  <li>Rasatura e stuccatura generale — 300mq — 8 €/mq — 2.400€</li>
+  <li>Tinteggiatura esterna (pittura silossanica, 2 mani) — 300mq — 14 €/mq — 4.200€</li>
+  <li>Trattamento cornicioni e balconi — a corpo — 1.200€</li>
+</ul>
+<p><strong>Imponibile: 15.000€ — IVA 22% (facciata condominiale non sempre agevolabile al 10%): 3.300€ — Totale: 18.300€</strong></p>
+
+<h2>Il ponteggio: la voce spesso sottovalutata</h2>
+<p>Il ponteggio incide mediamente per il 12-18% del totale di un rifacimento facciata, ma è la voce più spesso sottostimata nei preventivi generici. Il prezzo dipende da altezza dell'edificio, tempo di permanenza previsto (il canone di noleggio è mensile, non forfettario) e necessità di occupazione di suolo pubblico, che richiede permesso comunale con costi variabili per comune.</p>
+
+<h3>Differenza tra rifacimento semplice e con cappotto termico</h3>
+<p>Se al rifacimento si aggiunge un cappotto termico esterno (EPS o lana di roccia, 10-12cm), il costo al mq sale significativamente:</p>
+<ul>
+  <li>Rifacimento intonaco e tinteggiatura senza cappotto: 35-55 €/mq</li>
+  <li>Rifacimento con cappotto termico completo: 90-140 €/mq (pannello + intonaco armato + finitura)</li>
+</ul>
+<p>Il cappotto termico può però rientrare nell'Ecobonus con detrazione fiscale, riducendo l'impatto economico reale sul condominio nel medio periodo.</p>
+
+<h2>Permessi comunali: voce da includere sempre</h2>
+<p>Il rifacimento della facciata su edifici prospicienti la via pubblica richiede quasi sempre una Comunicazione di Inizio Lavori (CILA) e, per il ponteggio su suolo pubblico, un'autorizzazione con relativo canone (COSAP/TOSAP). Un preventivo completo dovrebbe indicare chi si occupa delle pratiche — l'impresa o un tecnico esterno — e se il costo è incluso o a parte.</p>
+
+<h2>Bonus fiscali applicabili</h2>
+<ul>
+  <li><strong>Bonus Facciate</strong> (se ancora attivo nell'anno di riferimento) o <strong>Bonus Ristrutturazione 50%</strong> — verifica sempre la normativa vigente al momento dei lavori</li>
+  <li><strong>Ecobonus 65%</strong> — se l'intervento migliora la classe energetica (es. cappotto termico)</li>
+  <li>Il visto di conformità è obbligatorio per interventi condominiali sopra i 10.000€ complessivi</li>
+</ul>
+<p>Prima di firmare, verifica che il preventivo indichi chiaramente quale bonus è applicabile e chi si occupa dell'invio della pratica ENEA quando richiesta. Per un preventivo su misura per il proprio edificio, un <a href="/preventivi/edilizia/">generatore di preventivi AI</a> aiuta a strutturare rapidamente tutte queste voci tecniche in un documento pronto per l'assemblea condominiale.</p>
+`,
+  },
+  {
+    slug: "fac-simile-preventivo",
+    title: "Fac simile preventivo: esempio pronto da compilare per ogni settore",
+    seoTitle: "Fac simile preventivo: esempio pronto da compilare",
+    metaDescription: "Fac simile preventivo 2026: esempio completo con tutte le voci obbligatorie, pronto da adattare per edilizia, elettricista, idraulico e altri mestieri.",
+    category: "Tool",
+    publishedAt: "2026-08-12",
+    readingTimeMin: 5,
+    relatedSectors: ["edilizia", "ristrutturazione", "freelance"],
+    contentHtml: `
+<p>Chi cerca un "fac simile preventivo" vuole vedere un esempio concreto, già compilato, da usare come riferimento per il proprio documento — non un modulo vuoto. Ecco un fac simile completo con la struttura corretta, valido come base per qualsiasi settore.</p>
+
+<h2>Fac simile preventivo: struttura generale</h2>
+<p>Un fac simile utile deve mostrare esattamente come compilare ogni sezione, con dati realistici invece di campi vuoti tipo "[inserire qui]". Ecco un esempio per un intervento generico di manutenzione:</p>
+<ul>
+  <li><strong>Impresa Edile Rossi S.r.l.</strong> — P.IVA 01234567890 — Via Roma 12, Milano — tel. 02 1234567</li>
+  <li><strong>Preventivo n.</strong> 2026-034 del 12/08/2026</li>
+  <li><strong>Cliente</strong>: Sig. Bianchi Mario — Via Verdi 8, Milano</li>
+  <li><strong>Oggetto</strong>: manutenzione straordinaria appartamento</li>
+</ul>
+
+<h3>Corpo del preventivo — esempio di voci compilate</h3>
+<ul>
+  <li>Sopralluogo e rilievo misure — a corpo — incluso</li>
+  <li>Fornitura e posa materiale (specificare tipo e marca) — 25mq — 35 €/mq — 875€</li>
+  <li>Manodopera (2 operai, 3 giorni, 8 ore/giorno) — 48 ore — 40 €/ora — 1.920€</li>
+  <li>Smaltimento materiale di risulta — a corpo — 180€</li>
+</ul>
+<p><strong>Imponibile: 2.975€ — IVA 22%: 654,50€ — Totale: 3.629,50€</strong></p>
+<p><em>Validità offerta: 30 giorni dalla data di emissione. Pagamento: 30% acconto alla conferma, saldo a fine lavori.</em></p>
+
+<h2>Perché un fac simile compilato è più utile di un modulo vuoto</h2>
+<p>Un modulo vuoto lascia dubbi su come formulare correttamente ogni voce: quanto dettaglio serve, come indicare la manodopera, dove va l'IVA. Un fac simile con dati realistici, come quello sopra, mostra concretamente il livello di dettaglio necessario per un documento professionale e verificabile.</p>
+
+<h3>Gli elementi che non devono mai mancare</h3>
+<ul>
+  <li>Numero e data del preventivo (per tracciabilità in caso di revisioni)</li>
+  <li>Dati fiscali completi dell'impresa (P.IVA, iscrizione CCIAA)</li>
+  <li>Descrizione della lavorazione con quantità verificabili, mai solo "a corpo" per l'intero lavoro</li>
+  <li>IVA esplicita con aliquota corretta</li>
+  <li>Data di validità dell'offerta e condizioni di pagamento</li>
+</ul>
+
+<h2>Fac simile per settore: cosa cambia</h2>
+<p>La struttura generale resta identica in ogni settore, ma cambiano le voci tecniche specifiche: un fac simile per elettricisti include quadro elettrico e Dichiarazione di Conformità, uno per idraulici include collaudo dell'impianto, uno per edili include voci di demolizione e smaltimento. Trovi esempi specifici e compilati per i mestieri più richiesti nelle guide dedicate del blog, con voci e prezzi realistici per ogni categoria di lavoro.</p>
+
+<h2>Dal fac simile al preventivo vero: cosa cambia nella pratica</h2>
+<p>Copiare un fac simile e sostituire i numeri richiede comunque tempo: bisogna adattare ogni voce al proprio lavoro reale, ricalcolare i totali, controllare che l'IVA sia corretta. Un <a href="/preventivi/come-fare-preventivo/">generatore di preventivi con intelligenza artificiale</a> parte dalla stessa struttura di questo fac simile ma la compila automaticamente a partire dalla descrizione del lavoro, con calcoli sempre corretti e pronta per l'invio in PDF in meno di un minuto.</p>
+`,
+  },
+  {
+    slug: "fac-simile-preventivo-edile",
+    title: "Fac simile preventivo edile: esempio pronto da compilare",
+    seoTitle: "Fac simile preventivo edile: esempio compilato",
+    metaDescription: "Fac simile preventivo edile 2026 con voci e prezzi reali per demolizioni, murature, intonaci. Esempio completo pronto da usare come riferimento.",
+    category: "Tool",
+    publishedAt: "2026-08-13",
+    readingTimeMin: 4,
+    relatedSectors: ["edilizia", "muratore"],
+    contentHtml: `
+<p>Un fac simile preventivo edile deve mostrare come si documentano correttamente le lavorazioni più comuni di un cantiere edile: demolizioni, murature, intonaci, massetti. Ecco un esempio completo compilato con prezzi reali, utile come riferimento diretto.</p>
+
+<h2>Fac simile: lavori edili di ristrutturazione parziale</h2>
+<p>Esempio compilato per un intervento tipico di piccola ristrutturazione edile:</p>
+<ul>
+  <li>Demolizione tramezzo esistente (10mq) — 20 €/mq — 200€</li>
+  <li>Costruzione nuovo tramezzo in mattoni forati (14mq) — 55 €/mq — 770€</li>
+  <li>Intonaco civile su pareti nuove (28mq) — 30 €/mq — 840€</li>
+  <li>Rasatura e stuccatura finale (28mq) — 12 €/mq — 336€</li>
+  <li>Massetto di livellamento (10mq) — 22 €/mq — 220€</li>
+  <li>Smaltimento macerie — a corpo — 220€</li>
+</ul>
+<p><strong>Imponibile: 2.586€ — IVA 10% (ristrutturazione abitativa): 258,60€ — Totale: 2.844,60€</strong></p>
+<p><em>Tempi previsti: 8 giorni lavorativi. Validità offerta: 30 giorni. Pagamento: 30% acconto, 40% a metà lavori, saldo a consegna.</em></p>
+
+<h2>Come leggere questo fac simile</h2>
+<p>Ogni voce riporta quantità misurabile (mq), prezzo unitario di mercato e totale calcolato — questo è ciò che rende un preventivo verificabile in cantiere, non solo sulla carta. Un'impresa che propone lo stesso lavoro con un unico importo "a corpo" senza queste quantità sta nascondendo informazioni che il cliente ha diritto di conoscere.</p>
+
+<h3>Perché includere sempre i tempi di esecuzione</h3>
+<p>Un fac simile completo indica anche i giorni lavorativi previsti. Questo serve a due scopi: dare al cliente un'aspettativa realistica, e proteggere l'impresa in caso di ritardi imputabili al committente (es. mancato accesso al cantiere).</p>
+<h3>La scansione dei pagamenti</h3>
+<p>Per lavori edili sopra i 2.000-3.000€, è normale prevedere pagamenti scaglionati (SAL) invece di un unico saldo finale: un acconto iniziale del 20-30%, una o più tranche intermedie legate all'avanzamento, e il saldo a fine lavori dopo verifica.</p>
+
+<h2>Adattare il fac simile a lavori più grandi</h2>
+<p>Per interventi di dimensioni maggiori (es. ristrutturazione completa di un appartamento), la stessa logica si ripete su più capitoli: opere murarie, impianti, pavimenti, finiture, ciascuno con le proprie voci quantificate. Il fac simile qui sopra è la base che si moltiplica per ogni categoria di lavoro.</p>
+<p>Per generare velocemente un documento con questa stessa struttura, partendo da una descrizione del lavoro reale da eseguire, un <a href="/preventivi/muratore/">generatore di preventivi AI per l'edilizia</a> calcola automaticamente quantità e totali, riducendo il tempo di compilazione da 30-40 minuti a pochi secondi.</p>
+`,
+  },
+  {
+    slug: "fac-simile-preventivo-impianto-elettrico",
+    title: "Fac simile preventivo impianto elettrico: esempio compilato",
+    seoTitle: "Fac simile preventivo impianto elettrico",
+    metaDescription: "Fac simile preventivo impianto elettrico 2026: esempio con quadro, punti luce, prese e Dichiarazione di Conformità. Prezzi reali pronti da consultare.",
+    category: "Tool",
+    publishedAt: "2026-08-14",
+    readingTimeMin: 4,
+    relatedSectors: ["elettricista"],
+    contentHtml: `
+<p>Un fac simile per un preventivo di impianto elettrico deve rispettare regole tecniche precise, perché coinvolge normativa di sicurezza. Ecco un esempio compilato con voci e prezzi realistici, utile come riferimento diretto per elettricisti e clienti.</p>
+
+<h2>Fac simile: impianto elettrico civile appartamento 70mq</h2>
+<p>Esempio compilato per il rifacimento completo dell'impianto elettrico di un appartamento di medie dimensioni:</p>
+<ul>
+  <li>Quadro elettrico 24 moduli, differenziale + 8 magnetotermici — 1 — 380€</li>
+  <li>Punto luce semplice (interruttore + plafoniera) — 14 — 65 €/cad — 910€</li>
+  <li>Punto luce con deviatore (doppio comando) — 4 — 85 €/cad — 340€</li>
+  <li>Punto presa Schuko 16A — 20 — 45 €/cad — 900€</li>
+  <li>Punto dedicato forno/piano cottura (linea 32A) — 2 — 110 €/cad — 220€</li>
+  <li>Punto dati/TV RJ45 — 3 — 55 €/cad — 165€</li>
+  <li>Messa a terra completa — a corpo — 380€</li>
+  <li>Dichiarazione di Conformità D.M. 37/2008 — a corpo — 150€</li>
+</ul>
+<p><strong>Imponibile: 3.445€ — IVA 10% (ristrutturazione abitativa): 344,50€ — Totale: 3.789,50€</strong></p>
+
+<h2>Perché ogni punto va contato singolarmente</h2>
+<p>A differenza di altri lavori edili, l'impianto elettrico si presta a un conteggio molto preciso: ogni punto luce, presa o linea dedicata ha un costo unitario chiaro. Un fac simile che riporta "impianto elettrico completo — €3.500" senza il conteggio dei punti non permette di verificare se il numero di prese e punti luce corrisponde davvero al progetto discusso con l'elettricista.</p>
+
+<h3>Le linee dedicate: una voce spesso dimenticata</h3>
+<p>Elettrodomestici ad alto assorbimento (forno, piano cottura elettrico, condizionatore, lavatrice) richiedono linee dedicate con sezione di cavo maggiore (4-6mm²) e magnetotermico specifico. Un preventivo che non separa queste linee dai normali punti presa rischia di sottostimare il carico elettrico reale dell'abitazione.</p>
+<h3>La Dichiarazione di Conformità come voce obbligatoria</h3>
+<p>Va sempre indicata come riga a sé, mai "inclusa genericamente": è il documento che attesta la conformità alla normativa D.M. 37/2008 e che serve per collegare l'impianto e, in futuro, per la vendita dell'immobile.</p>
+
+<h2>Come adattare questo fac simile</h2>
+<p>Il numero di punti luce e prese varia in base alla metratura e al layout dell'appartamento: una cucina richiede più punti presa dedicati rispetto a una camera da letto, un bagno richiede punti con grado di protezione IP44 per la zona doccia. Usa questo fac simile come riferimento di struttura e prezzi unitari, adattando le quantità al proprio progetto specifico dopo un sopralluogo.</p>
+<p>Per ottenere rapidamente un documento con questa stessa struttura tecnica, un <a href="/preventivi/elettricista/">generatore di preventivi AI per elettricisti</a> calcola automaticamente il numero di punti e i relativi costi partendo dalla descrizione dell'impianto richiesto.</p>
+`,
+  },
+  {
+    slug: "fac-simile-preventivo-imbianchino",
+    title: "Fac simile preventivo imbianchino: modello Word pronto",
+    seoTitle: "Fac simile preventivo imbianchino: esempio Word",
+    metaDescription: "Fac simile preventivo imbianchino 2026: esempio compilato con voci per tinteggiatura e stuccatura, prezzi al mq reali, pronto da adattare in Word.",
+    category: "Tool",
+    publishedAt: "2026-08-15",
+    readingTimeMin: 4,
+    relatedSectors: ["imbianchino", "pittore"],
+    contentHtml: `
+<p>Un fac simile per un preventivo da imbianchino deve mostrare come tradurre in voci chiare un lavoro che, a differenza di altri mestieri edili, si misura quasi sempre in metri quadri di superficie trattata. Ecco un esempio compilato, pronto da adattare in Word.</p>
+
+<h2>Fac simile: tinteggiatura appartamento 85mq</h2>
+<p>Esempio compilato per un lavoro di tinteggiatura completa con stuccatura leggera:</p>
+<ul>
+  <li>Stuccatura leggera su crepe e imperfezioni (85mq) — 3 €/mq — 255€</li>
+  <li>Fondo aggrappante su pareti (85mq) — 2,50 €/mq — 212,50€</li>
+  <li>Tinteggiatura pareti, pittura lavabile bianca, due mani (85mq) — 9 €/mq — 765€</li>
+  <li>Tinteggiatura soffitti, due mani (85mq) — 7 €/mq — 595€</li>
+  <li>Pittura antimuffa bagni (14mq) — 12 €/mq — 168€</li>
+  <li>Protezione pavimenti e infissi durante i lavori — a corpo — 80€</li>
+</ul>
+<p><strong>Imponibile: 2.075,50€ — IVA 10% (ristrutturazione abitativa): 207,55€ — Totale: 2.283,05€</strong></p>
+<p><em>Tempi previsti: 5 giorni lavorativi. Validità offerta: 30 giorni.</em></p>
+
+<h2>Perché separare pareti, soffitti e bagni</h2>
+<p>Il costo al mq cambia in base al tipo di superficie e al prodotto usato: le pareti standard costano meno dei soffitti (posizione più scomoda per la posa), e i bagni richiedono pittura antimuffa specifica più cara della pittura lavabile standard. Un fac simile che indica un unico prezzo al mq per tutto l'appartamento nasconde queste differenze.</p>
+
+<h3>Quando aggiungere la voce stuccatura</h3>
+<p>La stuccatura leggera (chiusura di piccole crepe e imperfezioni) è diversa dalla rasatura completa: la prima costa 2-4 €/mq, la seconda — necessaria su pareti molto rovinate o con vecchia carta da parati da rimuovere — può arrivare a 12-18 €/mq. Il fac simile deve sempre specificare quale delle due è prevista, perché la differenza di prezzo è significativa.</p>
+<h3>Colori scuri e finiture speciali: sovrapprezzo da indicare</h3>
+<p>Colori scuri o saturi richiedono spesso una terza mano di pittura per una copertura uniforme, con un sovrapprezzo del 20-30% rispetto al bianco standard. Un fac simile onesto lo segnala esplicitamente invece di scoprirlo a lavori iniziati.</p>
+
+<h2>Versione Word: cosa cambia nella formattazione</h2>
+<p>In Word, questo fac simile si traduce in una tabella a 5 colonne (descrizione, superficie, prezzo unitario, totale riga) con il riepilogo IVA in fondo, sempre evidenziato in grassetto. Ricorda di esportare sempre in PDF prima di inviarlo al cliente.</p>
+<p>Per generare automaticamente un documento con questa struttura, un <a href="/preventivi/imbianchino/">generatore di preventivi AI per imbianchini</a> calcola in automatico le superfici per tipo di lavorazione (pareti, soffitti, bagni) a partire dalla descrizione dell'appartamento.</p>
+`,
+  },
+  {
+    slug: "fac-simile-preventivo-tinteggiatura",
+    title: "Fac simile preventivo tinteggiatura e pitturazione interna",
+    seoTitle: "Fac simile preventivo tinteggiatura interna",
+    metaDescription: "Fac simile preventivo tinteggiatura e pitturazione interna 2026: esempio con prezzi per stanza, prodotti e mani di pittura. Pronto da consultare e adattare.",
+    category: "Tool",
+    publishedAt: "2026-08-16",
+    readingTimeMin: 4,
+    relatedSectors: ["imbianchino", "pittore"],
+    contentHtml: `
+<p>Quando il lavoro riguarda solo poche stanze e non l'intero appartamento, un fac simile organizzato per singolo ambiente è più utile di un preventivo calcolato sulla metratura totale. Ecco un esempio di preventivo per pitturazione interna limitata a due stanze.</p>
+
+<h2>Fac simile: pitturazione soggiorno e camera da letto</h2>
+<p>Esempio compilato per un intervento circoscritto a due ambienti:</p>
+<ul>
+  <li><strong>Soggiorno (28mq pareti + 22mq soffitto)</strong>: pittura lavabile bianca, due mani — 9 €/mq pareti, 7 €/mq soffitto — 252€ + 154€ = 406€</li>
+  <li><strong>Camera da letto (18mq pareti + 14mq soffitto)</strong>: pittura lavabile colore chiaro, due mani — 10 €/mq pareti (sovrapprezzo colore), 7 €/mq soffitto — 180€ + 98€ = 278€</li>
+  <li>Protezione pavimenti, mobili e infissi — a corpo — 60€</li>
+  <li>Piccola stuccatura di rifinitura (crepe angoli) — a corpo — 90€</li>
+</ul>
+<p><strong>Imponibile: 834€ — IVA 10%: 83,40€ — Totale: 917,40€</strong></p>
+
+<h2>Perché conviene calcolare stanza per stanza</h2>
+<p>Un preventivo diviso per ambiente permette al cliente di decidere facilmente di aggiungere o togliere una stanza, vedendo l'impatto esatto sul totale. È anche più semplice da confrontare con altri preventivi ricevuti solo per una parte della casa, situazione comune quando si tinteggia gradualmente nel tempo.</p>
+
+<h3>Pittura lavabile vs pittura tradizionale: differenza di prezzo</h3>
+<p>La pittura lavabile, resistente a sfregamenti e macchie leggere, costa 3-6 €/litro in più rispetto alla pittura tradizionale (idropittura semplice), ma riduce la necessità di ritinteggiare frequentemente. Per ambienti di passaggio (soggiorno, corridoio) è quasi sempre la scelta più conveniente nel medio periodo.</p>
+<h3>Il sovrapprezzo dei colori</h3>
+<p>Come mostrato nell'esempio, un colore diverso dal bianco standard comporta tipicamente un sovrapprezzo di 1-2 €/mq, perché richiede basi tintometriche specifiche e talvolta una mano aggiuntiva per una copertura uniforme, soprattutto su colori scuri o saturi.</p>
+
+<h2>Cosa includere sempre, anche in un lavoro piccolo</h2>
+<ul>
+  <li>Protezione di pavimenti, mobili e infissi — spesso dimenticata nei preventivi "veloci" fatti a voce</li>
+  <li>Specifica del tipo di pittura (lavabile, traspirante, opaca/satinata)</li>
+  <li>Numero di mani previste — due è lo standard, tre su colori scuri o pareti molto assorbenti</li>
+  <li>Smaltimento di eventuali residui di vernice e materiali di protezione</li>
+</ul>
+<p>Anche per lavori di piccole dimensioni, un preventivo scritto (non solo verbale) tutela sia il cliente che l'imbianchino in caso di contestazioni sul risultato finale. Per generare rapidamente un documento con questa struttura per stanza, un <a href="/preventivi/imbianchino/">generatore di preventivi AI</a> calcola automaticamente le superfici a partire dalla descrizione degli ambienti da trattare.</p>
+`,
+  },
+  {
+    slug: "fac-simile-preventivo-idraulico",
+    title: "Fac simile preventivo idraulico: esempio impianto e riparazioni",
+    seoTitle: "Fac simile preventivo idraulico: esempio compilato",
+    metaDescription: "Fac simile preventivo idraulico 2026: esempio con voci per impianto, sostituzione sanitari e riparazioni urgenti. Prezzi reali pronti da consultare.",
+    category: "Tool",
+    publishedAt: "2026-08-17",
+    readingTimeMin: 4,
+    relatedSectors: ["idraulico", "termoidraulico"],
+    contentHtml: `
+<p>Un fac simile per un preventivo idraulico cambia molto in base al tipo di intervento: un impianto nuovo si preventiva per metro di tubazione e punti di erogazione, un intervento urgente si preventiva a corpo con tariffa oraria maggiorata. Ecco due esempi compilati, per i casi più comuni.</p>
+
+<h2>Fac simile 1: rifacimento impianto idraulico bagno</h2>
+<p>Esempio compilato per il rifacimento completo della distribuzione idrica di un bagno:</p>
+<ul>
+  <li>Rifacimento distribuzione acqua calda/fredda (4 punti: lavabo, doccia, WC, bidet) — a corpo — 850€</li>
+  <li>Rifacimento scarichi (collegamento a colonna esistente) — a corpo — 480€</li>
+  <li>Fornitura e posa sanitari (WC sospeso + lavabo) — a corpo — 620€</li>
+  <li>Collaudo impianto e prova di tenuta — a corpo — 120€</li>
+  <li>Dichiarazione di Conformità D.M. 37/2008 — a corpo — 150€</li>
+</ul>
+<p><strong>Imponibile: 2.220€ — IVA 10%: 222€ — Totale: 2.442€</strong></p>
+
+<h2>Fac simile 2: intervento urgente (perdita d'acqua)</h2>
+<p>Esempio compilato per una riparazione urgente, con tariffazione oraria maggiorata tipica degli interventi fuori programmazione:</p>
+<ul>
+  <li>Uscita urgente entro 2 ore — a corpo — 60€</li>
+  <li>Manodopera intervento (2 ore) — 70 €/ora (tariffa urgenza) — 140€</li>
+  <li>Materiale di riparazione (raccordi, guarnizioni) — a corpo — 35€</li>
+</ul>
+<p><strong>Imponibile: 235€ — IVA 22%: 51,70€ — Totale: 286,70€</strong></p>
+
+<h2>Perché la tariffa urgenza è più alta</h2>
+<p>Gli interventi urgenti (perdite, allagamenti, guasti alla caldaia in inverno) hanno una tariffa oraria maggiorata del 30-60% rispetto a un intervento programmato, perché richiedono all'idraulico di riorganizzare la giornata all'ultimo momento. Un fac simile onesto indica sempre questa maggiorazione come voce separata, non nascosta nel totale finale.</p>
+
+<h3>La differenza tra "a corpo" e "a consuntivo"</h3>
+<p>Per lavori programmabili (rifacimento impianto), il preventivo "a corpo" con prezzo fisso è lo standard e tutela entrambe le parti. Per interventi urgenti dove l'entità del guasto non è nota prima del sopralluogo, è normale un preventivo "a consuntivo" con tariffa oraria dichiarata in anticipo: il cliente conosce il prezzo orario prima che l'idraulico inizi a lavorare, anche se il totale finale dipende dalle ore effettive.</p>
+
+<h2>Cosa verificare sempre in un preventivo idraulico</h2>
+<ul>
+  <li>La Dichiarazione di Conformità è inclusa (obbligatoria per legge su impianti nuovi o modificati)</li>
+  <li>La tariffa oraria è dichiarata esplicitamente, non solo il totale finale</li>
+  <li>Il materiale di consumo (raccordi, guarnizioni, sigillanti) è indicato, anche se di importo ridotto</li>
+  <li>Per interventi urgenti, il costo dell'uscita è separato dal costo della manodopera</li>
+</ul>
+<p>Per generare rapidamente un documento con questa struttura, sia per lavori programmati che per interventi urgenti, un <a href="/preventivi/idraulico/">generatore di preventivi AI per idraulici</a> permette di ottenere il documento corretto in meno di un minuto, direttamente da smartphone durante il sopralluogo.</p>
+`,
+  },
 ];
 
 export interface GuideCard {
@@ -4411,26 +5027,26 @@ export function getArticlesByCategory(categoryName: string): BlogArticle[] {
 }
 
 export const SECTOR_ARTICLES: Record<string, string[]> = {
-  imbianchino: ["come-fare-preventivo-imbianchino", "quanto-costa-tinteggiatura-appartamento", "errori-preventivi-artigiani", "preventivi-foto-cantiere", "tipi-pittura-pareti-quale-scegliere", "strumenti-imbianchino-professionista", "come-diventare-imbianchino-professionista", "software-preventivi-artigiani-confronto", "gestione-clienti-artigiano-crm", "fatturazione-elettronica-artigiani-guida", "google-my-business-artigiani-guida", "preventivo-whatsapp-artigiani-vantaggi", "aprire-partita-iva-artigiano-guida"],
-  pittore: ["come-fare-preventivo-imbianchino", "quanto-costa-tinteggiatura-appartamento", "come-vincere-piu-lavori", "tipi-pittura-pareti-quale-scegliere", "strumenti-imbianchino-professionista", "come-diventare-imbianchino-professionista"],
-  elettricista: ["preventivo-impianto-elettrico", "quanto-costa-impianto-elettrico", "errori-preventivi-artigiani", "come-vincere-piu-lavori", "preventivi-foto-cantiere", "tipi-cavi-elettrici-impianti-civili", "red-flag-preventivi-idraulici-elettricisti", "quanto-guadagna-elettricista-italia", "aprire-partita-iva-artigiano-guida", "gestione-clienti-artigiano-crm", "fatturazione-elettronica-artigiani-guida", "google-my-business-artigiani-guida", "preventivo-whatsapp-artigiani-vantaggi", "software-preventivi-artigiani-confronto"],
-  idraulico: ["preventivo-idraulico", "quanto-costa-idraulico", "quanto-costa-ristrutturare-bagno", "errori-preventivi-artigiani", "preventivi-foto-cantiere", "costo-impianto-idraulico-appartamento", "tipi-tubazioni-impianti-idraulici", "materiali-ristrutturazione-bagno-guida", "red-flag-preventivi-idraulici-elettricisti", "come-capire-preventivo-gonfiato", "domande-da-fare-prima-firmare-preventivo", "garanzia-lavori-artigiani-diritti", "preventivo-ristrutturazione-bagno-completo", "aprire-partita-iva-artigiano-guida", "gestione-clienti-artigiano-crm", "preventivo-whatsapp-artigiani-vantaggi"],
-  termoidraulico: ["preventivo-idraulico", "quanto-costa-idraulico", "come-vincere-piu-lavori", "gestione-preventivi-pmi", "costo-sostituzione-caldaia-condensazione", "tipi-tubazioni-impianti-idraulici", "normativa-impianti-termici-obblighi", "red-flag-preventivi-idraulici-elettricisti", "bonus-edilizi-2026-guida-artigiani"],
-  muratore: ["preventivo-muratore", "quanto-costa-muratore", "preventivo-ristrutturazione-guida", "errori-preventivi-artigiani", "preventivi-foto-cantiere", "prezzi-muratore-lavori-edilizi", "lavori-casa-senza-permessi-rischi", "aprire-partita-iva-artigiano-guida"],
-  edilizia: ["preventivo-ristrutturazione-guida", "gestione-preventivi-pmi", "software-preventivi-artigiani", "trovare-clienti-artigiano", "come-capire-preventivo-gonfiato", "domande-da-fare-prima-firmare-preventivo", "come-confrontare-preventivi-ristrutturazione", "lavori-casa-senza-permessi-rischi", "acconti-pagamenti-lavori-casa-guida", "garanzia-lavori-artigiani-diritti", "software-preventivi-artigiani-confronto", "gestione-clienti-artigiano-crm", "google-my-business-artigiani-guida"],
-  ristrutturazione: ["preventivo-ristrutturazione-guida", "quanto-costa-ristrutturare-bagno", "gestione-preventivi-pmi", "come-capire-preventivo-gonfiato", "domande-da-fare-prima-firmare-preventivo", "differenza-preventivo-contratto-appalto", "come-confrontare-preventivi-ristrutturazione", "lavori-casa-senza-permessi-rischi", "acconti-pagamenti-lavori-casa-guida", "garanzia-lavori-artigiani-diritti", "preventivo-ristrutturazione-bagno-completo", "bonus-edilizi-2026-guida-artigiani", "ai-preventivi-artigiani-come-funziona", "preventivo-whatsapp-artigiani-vantaggi"],
+  imbianchino: ["come-fare-preventivo-imbianchino", "quanto-costa-tinteggiatura-appartamento", "errori-preventivi-artigiani", "preventivi-foto-cantiere", "tipi-pittura-pareti-quale-scegliere", "strumenti-imbianchino-professionista", "come-diventare-imbianchino-professionista", "software-preventivi-artigiani-confronto", "gestione-clienti-artigiano-crm", "fatturazione-elettronica-artigiani-guida", "google-my-business-artigiani-guida", "preventivo-whatsapp-artigiani-vantaggi", "aprire-partita-iva-artigiano-guida", "fac-simile-preventivo-imbianchino", "fac-simile-preventivo-tinteggiatura"],
+  pittore: ["come-fare-preventivo-imbianchino", "quanto-costa-tinteggiatura-appartamento", "come-vincere-piu-lavori", "tipi-pittura-pareti-quale-scegliere", "strumenti-imbianchino-professionista", "come-diventare-imbianchino-professionista", "fac-simile-preventivo-imbianchino", "fac-simile-preventivo-tinteggiatura"],
+  elettricista: ["preventivo-impianto-elettrico", "quanto-costa-impianto-elettrico", "errori-preventivi-artigiani", "come-vincere-piu-lavori", "preventivi-foto-cantiere", "tipi-cavi-elettrici-impianti-civili", "red-flag-preventivi-idraulici-elettricisti", "quanto-guadagna-elettricista-italia", "aprire-partita-iva-artigiano-guida", "gestione-clienti-artigiano-crm", "fatturazione-elettronica-artigiani-guida", "google-my-business-artigiani-guida", "preventivo-whatsapp-artigiani-vantaggi", "software-preventivi-artigiani-confronto", "modello-preventivo-impianto-elettrico", "fac-simile-preventivo-impianto-elettrico"],
+  idraulico: ["preventivo-idraulico", "quanto-costa-idraulico", "quanto-costa-ristrutturare-bagno", "errori-preventivi-artigiani", "preventivi-foto-cantiere", "costo-impianto-idraulico-appartamento", "tipi-tubazioni-impianti-idraulici", "materiali-ristrutturazione-bagno-guida", "red-flag-preventivi-idraulici-elettricisti", "come-capire-preventivo-gonfiato", "domande-da-fare-prima-firmare-preventivo", "garanzia-lavori-artigiani-diritti", "preventivo-ristrutturazione-bagno-completo", "aprire-partita-iva-artigiano-guida", "gestione-clienti-artigiano-crm", "preventivo-whatsapp-artigiani-vantaggi", "esempio-preventivo-ristrutturazione-bagno", "fac-simile-preventivo-idraulico"],
+  termoidraulico: ["preventivo-idraulico", "quanto-costa-idraulico", "come-vincere-piu-lavori", "gestione-preventivi-pmi", "costo-sostituzione-caldaia-condensazione", "tipi-tubazioni-impianti-idraulici", "normativa-impianti-termici-obblighi", "red-flag-preventivi-idraulici-elettricisti", "bonus-edilizi-2026-guida-artigiani", "fac-simile-preventivo-idraulico"],
+  muratore: ["preventivo-muratore", "quanto-costa-muratore", "preventivo-ristrutturazione-guida", "errori-preventivi-artigiani", "preventivi-foto-cantiere", "prezzi-muratore-lavori-edilizi", "lavori-casa-senza-permessi-rischi", "aprire-partita-iva-artigiano-guida", "modello-preventivo-edile", "modello-preventivo-lavori-edili-word", "preventivo-ristrutturazione-casa-esempio", "esempio-preventivo-ristrutturazione-facciata", "fac-simile-preventivo-edile"],
+  edilizia: ["preventivo-ristrutturazione-guida", "gestione-preventivi-pmi", "software-preventivi-artigiani", "trovare-clienti-artigiano", "come-capire-preventivo-gonfiato", "domande-da-fare-prima-firmare-preventivo", "come-confrontare-preventivi-ristrutturazione", "lavori-casa-senza-permessi-rischi", "acconti-pagamenti-lavori-casa-guida", "garanzia-lavori-artigiani-diritti", "software-preventivi-artigiani-confronto", "gestione-clienti-artigiano-crm", "google-my-business-artigiani-guida", "modello-preventivo-edile", "modello-preventivo-lavori-edili-word", "preventivo-ristrutturazione-casa-esempio", "esempio-preventivo-ristrutturazione-facciata", "fac-simile-preventivo", "fac-simile-preventivo-edile"],
+  ristrutturazione: ["preventivo-ristrutturazione-guida", "quanto-costa-ristrutturare-bagno", "gestione-preventivi-pmi", "come-capire-preventivo-gonfiato", "domande-da-fare-prima-firmare-preventivo", "differenza-preventivo-contratto-appalto", "come-confrontare-preventivi-ristrutturazione", "lavori-casa-senza-permessi-rischi", "acconti-pagamenti-lavori-casa-guida", "garanzia-lavori-artigiani-diritti", "preventivo-ristrutturazione-bagno-completo", "bonus-edilizi-2026-guida-artigiani", "ai-preventivi-artigiani-come-funziona", "preventivo-whatsapp-artigiani-vantaggi", "esempio-preventivo-ristrutturazione-bagno", "preventivo-ristrutturazione-casa-esempio", "esempio-preventivo-ristrutturazione-facciata"],
   falegname: ["preventivo-falegname-carpentiere", "errori-preventivi-artigiani", "come-vincere-piu-lavori", "tipologie-legno-falegnameria-prezzi", "preventivo-falegnameria-su-misura", "aprire-partita-iva-artigiano-guida", "fatturazione-elettronica-artigiani-guida"],
   carpentiere: ["preventivo-falegname-carpentiere", "errori-preventivi-artigiani", "come-vincere-piu-lavori", "tipologie-legno-falegnameria-prezzi", "preventivo-falegnameria-su-misura"],
-  piastrellista: ["preventivo-piastrellista", "quanto-costa-ristrutturare-bagno", "preventivo-ristrutturazione-guida", "errori-preventivi-artigiani", "costo-posa-piastrelle-bagno-cucina", "gres-porcellanato-quale-scegliere", "materiali-ristrutturazione-bagno-guida", "preventivo-ristrutturazione-bagno-completo"],
+  piastrellista: ["preventivo-piastrellista", "quanto-costa-ristrutturare-bagno", "preventivo-ristrutturazione-guida", "errori-preventivi-artigiani", "costo-posa-piastrelle-bagno-cucina", "gres-porcellanato-quale-scegliere", "materiali-ristrutturazione-bagno-guida", "preventivo-ristrutturazione-bagno-completo", "esempio-preventivo-ristrutturazione-bagno"],
   giardiniere: ["preventivo-giardiniere", "errori-preventivi-artigiani", "come-vincere-piu-lavori", "trovare-clienti-artigiano", "quanto-costa-giardiniere-manutenzione", "preventivo-lavori-giardino-guida", "fatturazione-elettronica-artigiani-guida", "google-my-business-artigiani-guida", "preventivo-whatsapp-artigiani-vantaggi"],
-  freelance: ["preventivo-freelance-professionisti", "software-preventivi-artigiani", "come-vincere-piu-lavori", "gestione-preventivi-pmi", "come-fare-prezzo-lavori", "aprire-partita-iva-artigiano-guida"],
+  freelance: ["preventivo-freelance-professionisti", "software-preventivi-artigiani", "come-vincere-piu-lavori", "gestione-preventivi-pmi", "come-fare-prezzo-lavori", "aprire-partita-iva-artigiano-guida", "fac-simile-preventivo", "modello-preventivo-excel"],
   geometra: ["preventivo-freelance-professionisti", "gestione-preventivi-pmi", "preventivo-ristrutturazione-guida", "software-preventivi-artigiani", "differenza-preventivo-contratto-appalto", "come-confrontare-preventivi-ristrutturazione", "lavori-casa-senza-permessi-rischi", "acconti-pagamenti-lavori-casa-guida", "geometra-quando-serve-lavori-casa", "bonus-edilizi-2026-guida-artigiani"],
   serramentista: ["preventivo-falegname-carpentiere", "errori-preventivi-artigiani", "come-vincere-piu-lavori", "costo-serramenti-infissi-sostituzione", "bonus-edilizi-2026-guida-artigiani"],
   tetto: ["preventivo-muratore", "preventivo-ristrutturazione-guida", "errori-preventivi-artigiani", "costo-rifacimento-tetto-materiali-prezzi"],
   condizionatori: ["preventivo-idraulico", "errori-preventivi-artigiani", "ai-preventivi-artigiani", "prezzi-condizionatori-installazione-2026", "costo-sostituzione-caldaia-condensazione", "normativa-impianti-termici-obblighi"],
   pavimentista: ["quanto-costa-ristrutturare-bagno", "preventivo-ristrutturazione-guida", "errori-preventivi-artigiani", "prezzi-posa-pavimento-gres-parquet", "costo-pavimento-in-legno-parquet", "gres-porcellanato-quale-scegliere"],
-  "modello-excel": ["preventivo-digitale-vs-carta", "errori-preventivi-artigiani", "app-preventivi-smartphone"],
-  "modello-word": ["preventivo-digitale-vs-carta", "gestione-preventivi-pmi", "errori-preventivi-artigiani"],
-  "come-fare-preventivo": ["errori-preventivi-artigiani", "app-preventivi-smartphone", "come-vincere-piu-lavori"],
+  "modello-excel": ["preventivo-digitale-vs-carta", "errori-preventivi-artigiani", "app-preventivi-smartphone", "modello-preventivo-excel"],
+  "modello-word": ["preventivo-digitale-vs-carta", "gestione-preventivi-pmi", "errori-preventivi-artigiani", "modello-preventivo-lavori-edili-word"],
+  "come-fare-preventivo": ["errori-preventivi-artigiani", "app-preventivi-smartphone", "come-vincere-piu-lavori", "fac-simile-preventivo"],
   "preventivi-gratis": ["app-preventivi-smartphone", "ai-preventivi-artigiani", "preventivo-digitale-vs-carta"],
 };

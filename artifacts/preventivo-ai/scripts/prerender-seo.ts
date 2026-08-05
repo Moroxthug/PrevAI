@@ -1057,7 +1057,7 @@ function buildHomepageBodyHtml(): string {
               <div class="h-9 w-9 rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0" style="background:linear-gradient(135deg,#7C3AED,#06B6D4)" aria-hidden="true">${initials}</div>
               <div>
                 <div class="text-sm font-semibold text-gray-900">${esc(t.name)}</div>
-                <div class="text-xs text-gray-400">${esc(t.role)} &middot; ${esc(t.city)}</div>
+                <div class="text-xs text-gray-400">${esc(t.website)}</div>
               </div>
             </div>
           </div>`;
