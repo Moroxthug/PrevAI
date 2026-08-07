@@ -376,9 +376,13 @@ function buildWidgetClientConfirmationEmail(params: {
   companyEmail: string | null;
   prezzoMinimo: string;
   prezzoMassimo: string;
+  incentivesSummary?: string;
 }): string {
-  const { clientName, companyName, companyPhone, companyEmail, prezzoMinimo, prezzoMassimo } = params;
+  const { clientName, companyName, companyPhone, companyEmail, prezzoMinimo, prezzoMassimo, incentivesSummary } = params;
   const contactLine = [companyPhone, companyEmail].filter(Boolean).join(" · ");
+  const incentivesBlock = incentivesSummary
+    ? `<div class="incentives-box"><strong>🎁 Agevolazioni potenzialmente applicabili</strong><br/>${incentivesSummary.replace(/\n/g, "<br/>")}</div>`
+    : "";
   return `<!DOCTYPE html>
 <html lang="it">
 <head>
@@ -397,6 +401,7 @@ function buildWidgetClientConfirmationEmail(params: {
   .price-box { background:#f5f3ff; border:1px solid #ede9fe; border-radius:12px; padding:20px 24px; margin:24px 0; text-align:center; }
   .price-box .label { font-size:12px; color:#6b7280; text-transform:uppercase; letter-spacing:0.05em; }
   .price-box .range { font-size:22px; font-weight:700; color:#7c3aed; margin-top:6px; }
+  .incentives-box { background:#ecfdf5; border:1px solid #d1fae5; border-radius:12px; padding:16px 20px; margin:20px 0; font-size:13px; color:#065f46; line-height:1.6; }
   .footer { background:#f9fafb; padding:20px 40px; text-align:center; font-size:12px; color:#9ca3af; border-top:1px solid #f3f4f6; }
 </style>
 </head>
@@ -415,7 +420,9 @@ function buildWidgetClientConfirmationEmail(params: {
       <div class="range">€${prezzoMinimo} – €${prezzoMassimo}</div>
     </div>
 
-    <p style="font-size:13px;color:#6b7280;text-align:center;">Questa è una stima automatica generata dall'AI e potrebbe variare dopo un sopralluogo tecnico.${contactLine ? ` Per qualsiasi domanda puoi contattare direttamente ${companyName}: ${contactLine}.` : ""}</p>
+    ${incentivesBlock}
+
+    <p style="font-size:13px;color:#6b7280;text-align:center;">Questa è una stima automatica generata dall'AI e potrebbe variare dopo un sopralluogo tecnico.${incentivesSummary ? " Anche le agevolazioni indicate sono una stima preliminare, da confermare in sede di sopralluogo tecnico e fiscale." : ""}${contactLine ? ` Per qualsiasi domanda puoi contattare direttamente ${companyName}: ${contactLine}.` : ""}</p>
   </div>
   <div class="footer">
     Stima calcolata con tecnologia <a href="https://prevai.it" style="color:#7c3aed;">Prevai</a><br/>
@@ -434,6 +441,7 @@ export async function sendWidgetClientConfirmationEmail(params: {
   companyEmail: string | null;
   prezzoMinimo: string;
   prezzoMassimo: string;
+  incentivesSummary?: string;
 }): Promise<void> {
   const apiKey = process.env.RESEND_API_KEY;
   if (!apiKey) {
@@ -453,6 +461,7 @@ export async function sendWidgetClientConfirmationEmail(params: {
         companyEmail: params.companyEmail,
         prezzoMinimo: params.prezzoMinimo,
         prezzoMassimo: params.prezzoMassimo,
+        incentivesSummary: params.incentivesSummary ? escapeHtml(params.incentivesSummary) : undefined,
       }),
     });
     logger.info({ to: params.toEmail }, "Widget client confirmation email sent");

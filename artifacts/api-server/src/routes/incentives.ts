@@ -3,7 +3,7 @@ import { db, incentivesCatalogTable, quotesTable, businessProfilesTable } from "
 import { eq, and, ne, or, desc, lt } from "drizzle-orm";
 import { logger } from "../lib/logger.js";
 import { requireAdmin } from "./admin.js";
-import { sendWidgetLeadNotification } from "../lib/email.js";
+import { sendWidgetLeadNotification, sendWidgetClientConfirmationEmail } from "../lib/email.js";
 import { runIncentivesVerification } from "../lib/incentivesVerification.js";
 
 const router = Router();
@@ -486,6 +486,27 @@ router.post("/public/quotes/:quoteId/incentives", async (req, res) => {
           `👉 ESBORSO IMMEDIATO STIMATO (esclusa detrazione, recuperata in 10 anni): ~€${esborsoImmediatoStimato.toLocaleString("it-IT")}`
       }).catch(err => {
         logger.error({ err }, "Failed to send updated incentives email notification to contractor");
+      });
+    }
+
+    // Notifica email al cliente finale, se ha fornito un indirizzo, con il riepilogo incentivi incluso
+    const clientEmail = currentClientData.email;
+    if (clientEmail && clientEmail.includes("@") && profile) {
+      sendWidgetClientConfirmationEmail({
+        toEmail: clientEmail,
+        clientName: currentClientData.nome || "Cliente",
+        companyName: profile.companyName,
+        companyPhone: profile.phone ?? null,
+        companyEmail: profile.email ?? null,
+        prezzoMinimo: (Number(quote.totale) * 0.9).toFixed(2),
+        prezzoMassimo: (Number(quote.totale) * 1.25).toFixed(2),
+        incentivesSummary: `Immobile: ${tipoImmobile} | Obiettivo: ${obiettivoLavori}\n` +
+          `• Bonus Statale Compatibile: ${bonusStataleApplicato} (~€${importoBonusStatale.toLocaleString("it-IT")}, detrazione IRPEF in 10 quote annuali da ~€${detrazioneFiscaleAnnua.toLocaleString("it-IT")})\n` +
+          `• Bando Regionale/Comunale: ${importoBandoRegionale > 0 ? `${bandoRegionaleApplicato} (~€${importoBandoRegionale.toLocaleString("it-IT")})` : 'Nessuno a sportello'}\n` +
+          `• Risparmio IVA 10%: ~€${scontoIvaStimato.toLocaleString("it-IT")}\n` +
+          `• Esborso immediato stimato (esclusa detrazione, recuperata in 10 anni): ~€${esborsoImmediatoStimato.toLocaleString("it-IT")}`,
+      }).catch(err => {
+        logger.error({ err }, "Failed to send incentives confirmation email to client");
       });
     }
 
