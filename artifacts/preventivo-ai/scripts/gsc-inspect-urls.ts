@@ -16,7 +16,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const KEY_PATH = path.join(__dirname, "google-indexing-key.json");
 const SITEMAP_PATH = path.join(__dirname, "..", "public", "sitemap.xml");
 
-const SITE_URL = "https://www.prevai.it/";
+const SITE_URL = "https://prevai.it/";
 
 function loadSitemapUrls(): string[] {
   const xml = readFileSync(SITEMAP_PATH, "utf-8");

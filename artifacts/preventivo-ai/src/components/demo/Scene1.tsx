@@ -56,23 +56,23 @@ export function Scene1() {
         </div>
 
         <div className="relative z-20">
-          <motion.h1 
+          <motion.p
             className="text-[6vw] font-black tracking-tighter text-white leading-[1.1] max-w-[60vw]"
             initial={{ y: 50, opacity: 0, filter: 'blur(10px)' }}
             animate={phase >= 3 ? { y: 0, opacity: 1, filter: 'blur(0px)' } : { y: 50, opacity: 0, filter: 'blur(10px)' }}
             transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
           >
             Fare preventivi.
-          </motion.h1>
-          
-          <motion.h2 
+          </motion.p>
+
+          <motion.p
             className="text-[4vw] font-bold tracking-tight text-white/70 leading-[1.2] mt-4 max-w-[60vw]"
             initial={{ y: 30, opacity: 0, filter: 'blur(10px)' }}
             animate={phase >= 4 ? { y: 0, opacity: 1, filter: 'blur(0px)' } : { y: 30, opacity: 0, filter: 'blur(10px)' }}
             transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
           >
             Il lavoro che nessuno vuole fare.
-          </motion.h2>
+          </motion.p>
         </div>
       </div>
     </motion.div>

@@ -1280,14 +1280,14 @@ export default function AdminPage() {
   <a href="https://prevai.it" rel="noopener">Calcola il tuo preventivo con PrevAI</a>
 </div>
 <script
-  src="${typeof window !== "undefined" ? window.location.origin : "https://www.prevai.it"}/widget.js"
+  src="${typeof window !== "undefined" ? window.location.origin : "https://prevai.it"}/widget.js"
   data-api-key="${(u as any).apiKey}"
   async
 ></script>`}
                                                   </pre>
                                                   <button
                                                     onClick={() => {
-                                                      const code = `<!-- PrevAI Widget Funnel -->\n<div id="prevai-widget">\n  <a href="https://prevai.it" rel="noopener">Calcola il tuo preventivo con PrevAI</a>\n</div>\n<script\n  src="${typeof window !== "undefined" ? window.location.origin : "https://www.prevai.it"}/widget.js"\n  data-api-key="${(u as any).apiKey}"\n  async\n></script>`;
+                                                      const code = `<!-- PrevAI Widget Funnel -->\n<div id="prevai-widget">\n  <a href="https://prevai.it" rel="noopener">Calcola il tuo preventivo con PrevAI</a>\n</div>\n<script\n  src="${typeof window !== "undefined" ? window.location.origin : "https://prevai.it"}/widget.js"\n  data-api-key="${(u as any).apiKey}"\n  async\n></script>`;
                                                       navigator.clipboard.writeText(code);
                                                       toast({ title: "Codice copiato!", description: "Il codice di embed è stato copiato negli appunti." });
                                                     }}

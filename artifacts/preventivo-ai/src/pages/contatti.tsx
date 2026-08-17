@@ -9,12 +9,12 @@ export default function ContattiPage() {
       "@context": "https://schema.org",
       "@type": "ContactPage",
       name: "Contatti prevai",
-      url: "https://www.prevai.it/contatti/",
+      url: "https://prevai.it/contatti/",
       description: "Contatta il team prevai per supporto, domande sul prodotto o informazioni commerciali.",
       mainEntity: {
         "@type": "Organization",
         name: "prevai",
-        url: "https://www.prevai.it/",
+        url: "https://prevai.it/",
         email: "info@prevai.it",
         contactPoint: [
           {
@@ -39,7 +39,7 @@ export default function ContattiPage() {
       <SeoHead
         title="Contatti | prevai — Assistenza e Supporto"
         description="Hai domande su prevai? Contattaci via email o WhatsApp. Siamo qui per aiutarti a generare preventivi professionali più velocemente."
-        canonical="https://www.prevai.it/contatti/"
+        canonical="https://prevai.it/contatti/"
         jsonLd={jsonLd}
       />
 

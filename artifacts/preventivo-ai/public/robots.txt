@@ -107,4 +107,4 @@ Disallow: /preventivi/*/olbia/
 Disallow: /preventivi/*/oristano/
 Disallow: /preventivi/*/sassari/
 
-Sitemap: https://www.prevai.it/sitemap.xml
+Sitemap: https://prevai.it/sitemap.xml

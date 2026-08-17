@@ -52,7 +52,7 @@ if (!existsSync(templatePath)) {
   process.exit(1);
 }
 
-const BASE_URL = "https://www.prevai.it";
+const BASE_URL = "https://prevai.it";
 
 const SECTOR_OG_IMAGES: Record<string, string> = {
   edilizia: "/og/edilizia.jpg",
@@ -1183,6 +1183,14 @@ const homepageWebSiteSchema = {
   url: BASE_URL,
   description: "Software AI per preventivi professionali in 30 secondi. Per artigiani, PMI e freelance italiani.",
   inLanguage: "it",
+  potentialAction: {
+    "@type": "SearchAction",
+    target: {
+      "@type": "EntryPoint",
+      urlTemplate: `${BASE_URL}/preventivi/{search_term_string}`,
+    },
+    "query-input": "required name=search_term_string",
+  },
 };
 const homepageSoftwareSchema = {
   "@context": "https://schema.org",

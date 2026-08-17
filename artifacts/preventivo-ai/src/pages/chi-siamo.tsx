@@ -9,8 +9,8 @@ export default function ChiSiamoPage() {
       "@context": "https://schema.org",
       "@type": "Organization",
       name: "prevai",
-      url: "https://www.prevai.it/",
-      logo: "https://www.prevai.it/icon-192.png",
+      url: "https://prevai.it/",
+      logo: "https://prevai.it/icon-192.png",
       description:
         "prevai è il software di preventivazione AI per artigiani e liberi professionisti italiani. Genera preventivi professionali in 30 secondi descrivendo il lavoro in italiano.",
       foundingDate: "2026",
@@ -29,7 +29,7 @@ export default function ChiSiamoPage() {
       <SeoHead
         title="Chi Siamo | prevai — Software Preventivi AI per Artigiani"
         description="prevai nasce per liberare gli artigiani italiani dalla burocrazia. Scopri la nostra missione: preventivi professionali in 30 secondi grazie all'intelligenza artificiale."
-        canonical="https://www.prevai.it/chi-siamo/"
+        canonical="https://prevai.it/chi-siamo/"
         jsonLd={jsonLd}
       />
 

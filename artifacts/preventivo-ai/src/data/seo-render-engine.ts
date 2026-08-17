@@ -29,7 +29,7 @@ import type { CityIntelligence } from "./seo-intelligence.js";
 export { getCityTitle, getCityDesc };
 export type { CityIntelligence, SectorData, CityData };
 
-const BASE_URL = "https://www.prevai.it";
+const BASE_URL = "https://prevai.it";
 
 // ─── Deterministic hash ────────────────────────────────────────────────────
 

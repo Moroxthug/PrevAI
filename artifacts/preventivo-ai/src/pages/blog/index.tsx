@@ -16,7 +16,7 @@ const CATEGORY_COLORS: Record<string, string> = {
   Business: "bg-rose-50 text-rose-700",
 };
 
-const BASE_URL = "https://www.prevai.it";
+const BASE_URL = "https://prevai.it";
 
 export default function BlogPage() {
   return (

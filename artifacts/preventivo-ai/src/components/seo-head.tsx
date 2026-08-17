@@ -24,7 +24,7 @@ export function SeoHead({
   title,
   description,
   canonical,
-  ogImage = "https://www.prevai.it/opengraph.jpg",
+  ogImage = "https://prevai.it/opengraph.jpg",
   noIndex = false,
   ogTitle,
   ogDescription,
@@ -33,7 +33,7 @@ export function SeoHead({
   twitterCard = "summary_large_image",
   jsonLd = [],
 }: SeoHeadProps) {
-  const resolvedOgImage = ogImage.startsWith("http") ? ogImage : `https://www.prevai.it${ogImage}`;
+  const resolvedOgImage = ogImage.startsWith("http") ? ogImage : `https://prevai.it${ogImage}`;
   const resolvedOgTitle = ogTitle ?? title;
   const resolvedOgDescription = ogDescription ?? description;
   const resolvedOgUrl = ogUrl ?? canonical;

@@ -262,7 +262,7 @@ export default function SeoLanding() {
   const slug = (params as { type?: string }).type ?? "professionista";
   const s = SECTORS[slug] ?? DEFAULT_SECTOR;
 
-  const canonical = `https://www.prevai.it/preventivi/${s.slug}/`;
+  const canonical = `https://prevai.it/preventivi/${s.slug}/`;
   const jsonLd = [
     {
       "@context": "https://schema.org",
@@ -279,7 +279,7 @@ export default function SeoLanding() {
       "@context": "https://schema.org",
       "@type": "BreadcrumbList" as const,
       itemListElement: [
-        { "@type": "ListItem", position: 1, name: "Home", item: "https://www.prevai.it/" },
+        { "@type": "ListItem", position: 1, name: "Home", item: "https://prevai.it/" },
         { "@type": "ListItem", position: 2, name: s.h1Highlight, item: canonical },
       ],
     },

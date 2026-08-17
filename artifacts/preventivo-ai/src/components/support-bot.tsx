@@ -17,6 +17,9 @@ export default function SupportBot() {
     const saved = localStorage.getItem("prevai_support_conv_id");
     return saved ? parseInt(saved) : null;
   });
+  const [conversationToken, setConversationToken] = useState<string | null>(() =>
+    localStorage.getItem("prevai_support_conv_token"),
+  );
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputText, setInputText] = useState("");
   const [isAdminOnline, setIsAdminOnline] = useState(false);
@@ -54,19 +57,35 @@ export default function SupportBot() {
     return () => clearInterval(interval);
   }, []);
 
+  // Token issued when the conversation was created; required on every
+  // subsequent call to that conversation (admins bypass it via their session).
+  const withToken = (token: string | null, init: RequestInit = {}): RequestInit => ({
+    ...init,
+    headers: { ...(init.headers || {}), ...(token ? { "x-conversation-token": token } : {}) },
+  });
+
+  // Discards a conversation whose token the server no longer accepts (e.g.
+  // stale localStorage from before this token was introduced).
+  const resetConversation = () => {
+    localStorage.removeItem("prevai_support_conv_id");
+    localStorage.removeItem("prevai_support_conv_token");
+    setConversationId(null);
+    setConversationToken(null);
+    setMessages([]);
+    setConvStatus("ai");
+  };
+
   // Fetch messages if conversation exists
-  const fetchMessages = async (id: number) => {
+  const fetchMessages = async (id: number, token: string | null) => {
     try {
-      const res = await fetch(`${BASE}/api/support/conversations/${id}/messages`);
+      const res = await fetch(`${BASE}/api/support/conversations/${id}/messages`, withToken(token));
+      if (res.status === 403) {
+        resetConversation();
+        return;
+      }
       if (res.ok) {
         const data = await res.json();
         setMessages(data);
-        if (data.length > 0) {
-          // Update status based on the last system message or just general flow
-          // But it's better to fetch conversation details to get the actual status
-          const lastMsg = data[data.length - 1];
-          // We can fetch conversation details too if needed
-        }
       }
     } catch (e) {
       console.error("Failed to fetch messages", e);
@@ -77,23 +96,13 @@ export default function SupportBot() {
   useEffect(() => {
     if (!conversationId || !isOpen) return;
 
-    fetchMessages(conversationId);
+    fetchMessages(conversationId, conversationToken);
     const interval = setInterval(() => {
-      fetchMessages(conversationId);
-      // Let's also fetch conversation status
-      fetch(`${BASE}/api/support/conversations`)
-        .then(r => r.json())
-        .then(list => {
-          const current = list.find((c: any) => c.id === conversationId);
-          if (current) {
-            setConvStatus(current.status);
-          }
-        })
-        .catch(err => console.error(err));
+      fetchMessages(conversationId, conversationToken);
     }, 3000);
 
     return () => clearInterval(interval);
-  }, [conversationId, isOpen]);
+  }, [conversationId, conversationToken, isOpen]);
 
   // Scroll to bottom
   useEffect(() => {
@@ -113,11 +122,13 @@ export default function SupportBot() {
       if (res.ok) {
         const data = await res.json();
         setConversationId(data.id);
+        setConversationToken(data.token);
         setConvStatus(data.status);
         localStorage.setItem("prevai_support_conv_id", data.id.toString());
+        localStorage.setItem("prevai_support_conv_token", data.token);
         setShowOnboarding(false);
         // Add initial greeting message
-        await fetchMessages(data.id);
+        await fetchMessages(data.id, data.token);
       }
     } catch (err) {
       console.error("Failed to start conversation", err);
@@ -135,6 +146,7 @@ export default function SupportBot() {
     setInputText("");
 
     let activeId = conversationId;
+    let activeToken = conversationToken;
 
     // If no conversation yet, start one silently as guest
     if (!activeId) {
@@ -147,9 +159,12 @@ export default function SupportBot() {
         if (res.ok) {
           const data = await res.json();
           activeId = data.id;
+          activeToken = data.token;
           setConversationId(data.id);
+          setConversationToken(data.token);
           setConvStatus(data.status);
           localStorage.setItem("prevai_support_conv_id", data.id.toString());
+          localStorage.setItem("prevai_support_conv_token", data.token);
         } else {
           return;
         }
@@ -170,11 +185,18 @@ export default function SupportBot() {
 
     setLoading(true);
     try {
-      const res = await fetch(`${BASE}/api/support/conversations/${activeId}/messages`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ role: "user", content: textToSend }),
-      });
+      const res = await fetch(
+        `${BASE}/api/support/conversations/${activeId}/messages`,
+        withToken(activeToken, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ role: "user", content: textToSend }),
+        }),
+      );
+      if (res.status === 403) {
+        resetConversation();
+        return;
+      }
       if (res.ok) {
         const data = await res.json();
         setConvStatus(data.status);
@@ -196,13 +218,13 @@ export default function SupportBot() {
     if (!conversationId) return;
     setLoading(true);
     try {
-      const res = await fetch(`${BASE}/api/support/conversations/${conversationId}/request-human`, {
-        method: "POST",
-      });
+      const res = await fetch(
+        `${BASE}/api/support/conversations/${conversationId}/request-human`,
+        withToken(conversationToken, { method: "POST" }),
+      );
       if (res.ok) {
-        const data = await res.json();
         setConvStatus("human_needed");
-        fetchMessages(conversationId);
+        fetchMessages(conversationId, conversationToken);
       }
     } catch (err) {
       console.error(err);
@@ -396,10 +418,7 @@ export default function SupportBot() {
                 <button
                   onClick={() => {
                     if (confirm("Vuoi iniziare una nuova chat?")) {
-                      localStorage.removeItem("prevai_support_conv_id");
-                      setConversationId(null);
-                      setMessages([]);
-                      setConvStatus("ai");
+                      resetConversation();
                       setShowOnboarding(true);
                     }
                   }}

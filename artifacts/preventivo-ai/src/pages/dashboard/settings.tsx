@@ -1012,7 +1012,7 @@ function WidgetTab() {
     );
   }
 
-  const widgetUrl = typeof window !== "undefined" ? `${window.location.origin}/widget.js` : "https://www.prevai.it/widget.js";
+  const widgetUrl = typeof window !== "undefined" ? `${window.location.origin}/widget.js` : "https://prevai.it/widget.js";
 
   const embedCode = `<!-- PrevAI Widget Funnel -->
 <div id="prevai-widget">

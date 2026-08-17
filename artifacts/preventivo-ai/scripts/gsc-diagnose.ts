@@ -4,15 +4,15 @@ import { google } from "googleapis";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const KEY_PATH = path.join(__dirname, "google-indexing-key.json");
-const SITE_URL = "https://www.prevai.it/";
+const SITE_URL = "https://prevai.it/";
 
 const urls = [
-  "https://www.prevai.it/preventivi/condizionatori/",
-  "https://www.prevai.it/preventivi/imbianchino/monza/",
-  "https://www.prevai.it/preventivi/edilizia/brescia/",
-  "https://www.prevai.it/blog/privacy/",
-  "https://www.prevai.it/privacy/",
-  "https://www.prevai.it/chi-siamo/",
+  "https://prevai.it/preventivi/condizionatori/",
+  "https://prevai.it/preventivi/imbianchino/monza/",
+  "https://prevai.it/preventivi/edilizia/brescia/",
+  "https://prevai.it/blog/privacy/",
+  "https://prevai.it/privacy/",
+  "https://prevai.it/chi-siamo/",
 ];
 
 async function main() {

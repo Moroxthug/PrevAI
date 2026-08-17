@@ -87,31 +87,15 @@ export default function Home() {
     navigate(isSignedIn ? "/dashboard/new" : "/sign-up?next=/dashboard/new");
   };
 
-  const websiteJsonLd = {
-    "@context": "https://schema.org",
-    "@type": "WebSite",
-    name: "prevai",
-    url: "https://www.prevai.it",
-    description:
-      "Software AI per preventivi professionali in 30 secondi. Per artigiani, PMI e freelance italiani.",
-    inLanguage: "it",
-    potentialAction: {
-      "@type": "SearchAction",
-      target: {
-        "@type": "EntryPoint",
-        urlTemplate: "https://www.prevai.it/preventivi/{search_term_string}",
-      },
-      "query-input": "required name=search_term_string",
-    },
-  };
-
   return (
     <div className="flex flex-col min-h-screen bg-white">
+      {/* WebSite + SoftwareApplication JSON-LD for "/" is already baked into
+          the prerendered shell by scripts/prerender-seo.ts — don't duplicate
+          it here via Helmet, or crawlers see two WebSite schemas. */}
       <SeoHead
         title="prevai – Preventivi Online per Artigiani e Aziende | AI in 30s"
         description="Dimentica Excel e i documenti scritti a mano. Descrivi il lavoro a parole tue e prevai genera un preventivo professionale con IVA, voci di costo e totali in 30 secondi."
-        canonical="https://www.prevai.it/"
-        jsonLd={[websiteJsonLd]}
+        canonical="https://prevai.it/"
       />
 
       {/* ── SEZIONE 1: Hero con scena 3D ──────────────────────── */}

@@ -1,15 +1,71 @@
-import { Router } from "express";
+import { Router, type Request, type Response, type NextFunction } from "express";
 import { db, conversations, messages, settingsTable } from "@workspace/db";
 import { eq, desc, asc } from "drizzle-orm";
 import { logger } from "../lib/logger.js";
 import { openai } from "@workspace/integrations-openai-ai-server";
-import { requireAdmin } from "./admin.js";
+import { requireAdmin, isAdmin } from "./admin.js";
 import { ipRateLimiter } from "../lib/rateLimit.js";
+import crypto from "crypto";
 
 const router = Router();
 
 const MAX_MESSAGE_LENGTH = 4000;
 const MAX_VISITOR_FIELD_LENGTH = 200;
+
+// Conversations are opened by unauthenticated widget visitors, so ownership
+// can't rely on a session. Instead each conversation gets a stateless HMAC
+// token (derived from its id + BETTER_AUTH_SECRET) handed back on creation;
+// the widget stores it and must present it on every subsequent call. Admins
+// bypass the token check via their own session (isAdmin), since they need to
+// reach any conversation.
+function conversationToken(convId: number): string {
+  const secret = process.env.BETTER_AUTH_SECRET || "";
+  return crypto.createHmac("sha256", secret).update(String(convId)).digest("hex").slice(0, 32);
+}
+
+function getRequestToken(req: Request): string | undefined {
+  const header = req.headers["x-conversation-token"];
+  if (typeof header === "string") return header;
+  if (Array.isArray(header)) return header[0];
+  const query = req.query.token;
+  return typeof query === "string" ? query : undefined;
+}
+
+// Guards the visitor-facing conversation routes: an authenticated admin may
+// always proceed; otherwise the caller must present the token issued when
+// the conversation was created.
+async function requireConversationAccess(
+  req: Request<{ id: string }>,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  const convId = parseInt(req.params.id);
+  if (isNaN(convId)) {
+    res.status(400).json({ error: "Invalid conversation ID" });
+    return;
+  }
+
+  if (await isAdmin(req)) {
+    next();
+    return;
+  }
+
+  const provided = getRequestToken(req);
+  const expected = conversationToken(convId);
+  const providedBuf = Buffer.from(provided || "");
+  const expectedBuf = Buffer.from(expected);
+  const valid =
+    provided !== undefined &&
+    providedBuf.length === expectedBuf.length &&
+    crypto.timingSafeEqual(providedBuf, expectedBuf);
+
+  if (!valid) {
+    res.status(403).json({ error: "Forbidden" });
+    return;
+  }
+
+  next();
+}
 
 // Widget chat is fully unauthenticated public traffic — anyone can open a
 // conversation and trigger an AI completion per message, so both are capped
@@ -93,7 +149,7 @@ router.post("/support/conversations", createConversationLimiter, async (req, res
       })
       .returning();
 
-    res.json(newConv);
+    res.json({ ...newConv, token: conversationToken(newConv.id) });
   } catch (err) {
     logger.error({ err }, "Failed to start support conversation");
     res.status(500).json({ error: "Failed to start support conversation" });
@@ -115,7 +171,7 @@ router.get("/support/conversations", requireAdmin, async (_req, res) => {
 });
 
 // Get messages (Visitor or Admin)
-router.get("/support/conversations/:id/messages", async (req, res) => {
+router.get("/support/conversations/:id/messages", requireConversationAccess, async (req, res) => {
   try {
     const convId = parseInt(req.params.id);
     if (isNaN(convId)) {
@@ -137,7 +193,7 @@ router.get("/support/conversations/:id/messages", async (req, res) => {
 });
 
 // Send message
-router.post("/support/conversations/:id/messages", sendMessageLimiter, async (req, res) => {
+router.post("/support/conversations/:id/messages", sendMessageLimiter, requireConversationAccess, async (req, res) => {
   try {
     const convId = parseInt(String(req.params.id));
     if (isNaN(convId)) {
@@ -145,8 +201,13 @@ router.post("/support/conversations/:id/messages", sendMessageLimiter, async (re
       return;
     }
 
-    const { role, content } = req.body;
-    if (!content || !role) {
+    const { content } = req.body;
+    // The caller may only claim to be an admin if they actually authenticated
+    // as one (checked by requireConversationAccess) — every other sender is
+    // forced to "user", regardless of what the request body asks for.
+    const requestedRole = req.body.role;
+    const role = requestedRole === "admin" && (await isAdmin(req)) ? "admin" : "user";
+    if (!content) {
       res.status(400).json({ error: "Role and content are required" });
       return;
     }
@@ -279,7 +340,7 @@ router.post("/support/conversations/:id/messages", sendMessageLimiter, async (re
 });
 
 // Request Human
-router.post("/support/conversations/:id/request-human", async (req, res) => {
+router.post("/support/conversations/:id/request-human", requireConversationAccess, async (req, res) => {
   try {
     const convId = parseInt(req.params.id);
     if (isNaN(convId)) {
@@ -339,7 +400,7 @@ router.post("/support/conversations/:id/join", requireAdmin, async (req, res) =>
 });
 
 // Close conversation
-router.post("/support/conversations/:id/close", async (req, res) => {
+router.post("/support/conversations/:id/close", requireConversationAccess, async (req, res) => {
   try {
     const convId = parseInt(req.params.id);
     if (isNaN(convId)) {

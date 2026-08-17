@@ -7,7 +7,7 @@ export default function TerminiPage() {
       <SeoHead
         title="Termini di Servizio | prevai"
         description="Termini e condizioni di utilizzo della piattaforma prevai per la generazione di preventivi AI."
-        canonical="https://www.prevai.it/termini/"
+        canonical="https://prevai.it/termini/"
       />
       <div className="container mx-auto px-4 py-16 max-w-3xl">
         <h1 className="text-3xl font-bold text-gray-900 mb-2">Termini di Servizio</h1>

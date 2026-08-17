@@ -8,7 +8,7 @@ import { SECTORS, CITIES, ACTIVE_CITIES, CITY_SECTORS } from "../src/data/seo-da
 import { BLOG_ARTICLES, BLOG_CATEGORIES } from "../src/data/blog-data.js";
 import { PUBLIC_ROUTES } from "../src/data/sitemap-routes.js";
 
-const BASE_URL = "https://www.prevai.it";
+const BASE_URL = "https://prevai.it";
 const TODAY = new Date().toISOString().split("T")[0];
 
 const TIER1_CITY_SLUGS = new Set([
@@ -89,7 +89,7 @@ Disallow: /api
 # City pages outside the active region (see ACTIVE_CITIES in seo-data.ts)
 ${inactiveCitySlugs.map((slug) => `Disallow: /preventivi/*/${slug}/`).join("\n")}
 
-Sitemap: https://www.prevai.it/sitemap.xml
+Sitemap: https://prevai.it/sitemap.xml
 `;
 
 const robotsOutPath = join(__dirname, "../public/robots.txt");

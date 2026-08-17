@@ -120,7 +120,7 @@ function buildOgSvg(article: BlogArticle): string {
   <line x1="80" y1="${H - 80}" x2="${W - 80}" y2="${H - 80}" stroke="#e5e7eb" stroke-width="1"/>
 
   <!-- Site URL -->
-  <text x="80" y="${H - 40}" font-size="22" fill="#9ca3af" font-family="'Segoe UI', Arial, Helvetica, sans-serif">www.prevai.it/blog</text>
+  <text x="80" y="${H - 40}" font-size="22" fill="#9ca3af" font-family="'Segoe UI', Arial, Helvetica, sans-serif">prevai.it/blog</text>
 </svg>`;
 }
 

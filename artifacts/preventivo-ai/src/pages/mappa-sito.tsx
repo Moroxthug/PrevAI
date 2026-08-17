@@ -24,7 +24,7 @@ export default function MappaSitoPage() {
       "@type": "WebPage",
       name: "Mappa del Sito | prevai",
       description: "Mappa del sito completa di prevai. Trova tutte le pagine statiche, gli articoli del blog e le guide per professionisti e artigiani nelle città italiane.",
-      url: "https://www.prevai.it/mappa-sito/",
+      url: "https://prevai.it/mappa-sito/",
     }
   ];
 
@@ -33,7 +33,7 @@ export default function MappaSitoPage() {
       <SeoHead
         title="Mappa del Sito | prevai — Elenco Completo delle Pagine"
         description="Trova tutti i nostri servizi di preventivazione per artigiani e professionisti in Italia, organizzati per professione e città."
-        canonical="https://www.prevai.it/mappa-sito/"
+        canonical="https://prevai.it/mappa-sito/"
         jsonLd={jsonLd}
       />
 

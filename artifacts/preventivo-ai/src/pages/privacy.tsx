@@ -7,7 +7,7 @@ export default function PrivacyPage() {
       <SeoHead
         title="Privacy Policy | prevai"
         description="Informativa sulla privacy di prevai — come raccogliamo e trattiamo i tuoi dati personali."
-        canonical="https://www.prevai.it/privacy/"
+        canonical="https://prevai.it/privacy/"
       />
       <div className="container mx-auto px-4 py-16 max-w-3xl">
         <h1 className="text-3xl font-bold text-gray-900 mb-2">Privacy Policy</h1>
