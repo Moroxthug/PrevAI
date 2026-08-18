@@ -5,6 +5,7 @@ import { logger } from "../lib/logger.js";
 import { openai } from "@workspace/integrations-openai-ai-server";
 import { requireAdmin, isAdmin } from "./admin.js";
 import { ipRateLimiter } from "../lib/rateLimit.js";
+import { moderateSupportMessage } from "../lib/moderation.js";
 import crypto from "crypto";
 
 const router = Router();
@@ -270,6 +271,23 @@ router.post("/support/conversations/:id/messages", sendMessageLimiter, requireCo
         return;
       }
 
+      // Screen the message before it reaches the assistant model, so a
+      // prompt-injection or abuse payload can't influence this turn's reply.
+      const moderation = await moderateSupportMessage(content);
+      if (moderation.violation) {
+        logger.warn({ convId, category: moderation.category, rationale: moderation.rationale }, "Support chat message blocked by moderation");
+        const [blockedMsg] = await db
+          .insert(messages)
+          .values({
+            conversationId: convId,
+            role: "assistant",
+            content: "Il tuo messaggio non rispetta le linee guida della chat e non può essere elaborato. Riformula la richiesta oppure richiedi un operatore umano.",
+          })
+          .returning();
+        res.json({ userMessage: userMsg, aiMessage: blockedMsg, status: "ai" });
+        return;
+      }
+
       // Otherwise generate AI response using OpenAI (mapped to Groq)
       try {
         // Get chat history for context
@@ -291,7 +309,7 @@ router.post("/support/conversations/:id/messages", sendMessageLimiter, requireCo
         ];
 
         const aiResponse = await openai.chat.completions.create({
-          model: "gpt-4o-mini", // Auto-mapped to llama-3.3-70b-versatile
+          model: "gpt-4o-mini", // Auto-mapped to openai/gpt-oss-20b on Groq
           messages: formattedMessages,
           max_tokens: 350,
           temperature: 0.7,

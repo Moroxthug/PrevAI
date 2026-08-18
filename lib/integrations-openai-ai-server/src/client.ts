@@ -8,22 +8,35 @@ function buildClient(): OpenAI {
       baseURL: "https://api.groq.com/openai/v1",
     });
 
-    // Intercept chat completions to rewrite model names for Groq compatibility
+    // Intercept chat completions to rewrite model names for Groq compatibility.
+    // llama-3.3-70b-versatile and llama-4-scout were retired from this account's
+    // model catalog after the move to a paid Groq plan (2026-08-18) — gpt-oss
+    // and qwen3.6 are the current equivalents. gpt-oss models bill reasoning
+    // tokens separately from `content`, so reasoning_effort caps that overhead;
+    // qwen3.6 instead inlines its <think> block into `content` unless told not
+    // to, which would otherwise break every caller's JSON.parse(content).
     const originalCreate = client.chat.completions.create.bind(client.chat.completions);
     (client.chat.completions as any).create = function (body: any, options: any) {
       if (body.model === "gpt-4o-mini") {
-        body.model = "llama-3.3-70b-versatile";
+        body.model = "openai/gpt-oss-20b";
+        body.reasoning_effort ??= "low";
       } else if (body.model === "gpt-4o") {
         const hasImages = body.messages.some((msg: any) =>
           Array.isArray(msg.content) && msg.content.some((c: any) => c.type === "image_url")
         );
-        body.model = hasImages ? "meta-llama/llama-4-scout-17b-16e-instruct" : "llama-3.3-70b-versatile";
+        if (hasImages) {
+          body.model = "qwen/qwen3.6-27b";
+          body.reasoning_effort ??= "none";
+        } else {
+          body.model = "openai/gpt-oss-120b";
+          body.reasoning_effort ??= "low";
+        }
       }
-      if (body.max_completion_tokens && body.max_completion_tokens > 8192) {
-        body.max_completion_tokens = 8192;
+      if (body.max_completion_tokens && body.max_completion_tokens > 16384) {
+        body.max_completion_tokens = 16384;
       }
-      if (body.max_tokens && body.max_tokens > 8192) {
-        body.max_tokens = 8192;
+      if (body.max_tokens && body.max_tokens > 16384) {
+        body.max_tokens = 16384;
       }
       return originalCreate(body, options);
     };

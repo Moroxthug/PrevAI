@@ -279,7 +279,7 @@ export async function buildQuoteFromAI({
 
   try {
     const completion = await openai.chat.completions.create({
-      model: process.env.AI_MODEL ?? "llama-3.3-70b-versatile",
+      model: process.env.AI_MODEL ?? (hasImages ? "gpt-4o" : "gpt-4o-mini"),
       max_completion_tokens: 8192,
       messages: [
         { role: "system", content: AI_PROMPT },
@@ -304,7 +304,7 @@ export async function buildQuoteFromAI({
       result.promptTokens = usage?.prompt_tokens ?? 0;
       result.completionTokens = usage?.completion_tokens ?? 0;
       result.totalTokens = usage?.total_tokens ?? 0;
-      result.modelUsed = completion.model || process.env.AI_MODEL || "llama-3.3-70b-versatile";
+      result.modelUsed = completion.model || process.env.AI_MODEL || (hasImages ? "gpt-4o" : "gpt-4o-mini");
 
       const isMini = result.modelUsed.includes("mini");
       const isGpt4 = result.modelUsed.includes("gpt-4o") && !isMini;
@@ -413,7 +413,7 @@ Restituisci il preventivo aggiornato COMPLETO in JSON valido con la stessa strut
 
   try {
     const completion = await openai.chat.completions.create({
-      model: process.env.AI_MODEL ?? "llama-3.3-70b-versatile",
+      model: process.env.AI_MODEL ?? "gpt-4o-mini",
       max_completion_tokens: 8192,
       messages: [
         { role: "system", content: AI_PROMPT },
@@ -433,7 +433,7 @@ Restituisci il preventivo aggiornato COMPLETO in JSON valido con la stessa strut
       result.promptTokens = usage?.prompt_tokens ?? 0;
       result.completionTokens = usage?.completion_tokens ?? 0;
       result.totalTokens = usage?.total_tokens ?? 0;
-      result.modelUsed = completion.model || process.env.AI_MODEL || "llama-3.3-70b-versatile";
+      result.modelUsed = completion.model || process.env.AI_MODEL || "gpt-4o-mini";
 
       const isMini = result.modelUsed.includes("mini");
       const isGpt4 = result.modelUsed.includes("gpt-4o") && !isMini;

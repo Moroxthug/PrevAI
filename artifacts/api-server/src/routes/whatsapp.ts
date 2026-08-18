@@ -224,7 +224,7 @@ async function extractRawInput(
       const file = new File([new Uint8Array(buffer)], `audio.${ext}`, { type: mimeType });
       const { openai } = await import("@workspace/integrations-openai-ai-server");
       const transcription = await openai.audio.transcriptions.create({
-        model: "gpt-4o-transcribe",
+        model: "whisper-large-v3-turbo",
         file,
         language: "it",
       });
