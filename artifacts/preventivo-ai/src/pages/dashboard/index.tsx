@@ -26,7 +26,6 @@ import {
   Clock,
   Gift,
   ImagePlus,
-  Mic,
   X,
   User,
   Loader2,
@@ -41,6 +40,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
+import { MicButton } from "@/components/mic-button";
 
 /* ─── plan helpers ─────────────────────────────────────────────────────────── */
 
@@ -481,15 +481,10 @@ function DashboardQuickBar() {
           />
 
           {/* Mic */}
-          <div className="group relative shrink-0">
-            <button disabled className="h-8 w-8 flex items-center justify-center rounded-xl text-gray-400 cursor-not-allowed hover:bg-gray-100 transition-colors">
-              <Mic className="h-4 w-4" />
-            </button>
-            <div className="absolute bottom-full right-0 mb-2 px-2.5 py-1 bg-gray-900 text-white text-[11px] font-medium rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none shadow-lg z-10">
-              Funzione in arrivo
-              <div className="absolute top-full right-3 border-4 border-transparent border-t-gray-900" />
-            </div>
-          </div>
+          <MicButton
+            disabled={isSubmitting}
+            onTranscribed={text => setInput(prev => (prev.trim() ? `${prev.trim()} ${text}` : text))}
+          />
 
           {/* Send */}
           <button onClick={handleSubmit} disabled={!canSubmit}

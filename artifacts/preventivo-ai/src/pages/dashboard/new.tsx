@@ -2,7 +2,7 @@ import { useState, useRef, useCallback, useEffect } from "react";
 import { useLocation } from "wouter";
 import { useCreateQuote, useGetBusinessProfile, useGetSubscription } from "@workspace/api-client-react";
 import {
-  Sparkles, Mic, ImagePlus, ArrowRight, Loader2,
+  Sparkles, ImagePlus, ArrowRight, Loader2,
   X, User, Lock, Bot, PencilLine, FileText, FileSpreadsheet,
   LayoutTemplate, CheckCircle2, BookOpen
 } from "lucide-react";
@@ -15,6 +15,7 @@ import { useClientMemory } from "@/hooks/use-client-memory";
 import type { SavedClient } from "@/hooks/use-client-memory";
 import ManualQuoteBuilder from "@/components/manual-quote-builder";
 import { PriceCatalogSection } from "@/components/price-catalog-section";
+import { MicButton } from "@/components/mic-button";
 
 const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp", "image/heic", "image/heif"];
 const ALLOWED_DOC_TYPES = [
@@ -642,18 +643,10 @@ export default function NewQuote() {
                 disabled={isAiSubmitting}
               />
 
-              <div className="group relative shrink-0">
-                <button
-                  disabled
-                  className="h-8 w-8 flex items-center justify-center rounded-xl text-gray-400 cursor-not-allowed hover:bg-gray-100 transition-colors"
-                >
-                  <Mic className="h-4 w-4" />
-                </button>
-                <div className="absolute bottom-full right-0 mb-2 px-2.5 py-1 bg-gray-900 text-white text-[11px] font-medium rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none shadow-lg z-10">
-                  Funzione in arrivo
-                  <div className="absolute top-full right-3 border-4 border-transparent border-t-gray-900" />
-                </div>
-              </div>
+              <MicButton
+                disabled={isAiSubmitting}
+                onTranscribed={text => setInput(prev => (prev.trim() ? `${prev.trim()} ${text}` : text))}
+              />
 
               <button
                 onClick={handleAiSubmit}
