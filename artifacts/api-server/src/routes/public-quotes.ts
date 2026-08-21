@@ -2,6 +2,7 @@ import { Router } from "express";
 import { db, quotesTable, businessProfilesTable, priceCatalogItemsTable } from "@workspace/db";
 import { eq, sql } from "drizzle-orm";
 import { openai } from "@workspace/integrations-openai-ai-server";
+import { REGIONAL_PRICING_GUIDANCE, DESCRIPTION_QUALITY_GUIDANCE } from "../lib/generateQuoteFromText.js";
 import { generateNumeroPreventivo } from "../lib/quoteNumber.js";
 import { logger } from "../lib/logger.js";
 import type { QuoteChapter, QuoteDiscount, QuoteClientData } from "@workspace/db";
@@ -242,14 +243,23 @@ ${Object.entries(misure)
 Usa queste misure esatte per calcolare matematicamente le quantità.`;
     }
 
+    // Location context (city/province the widget visitor provided) so the AI can price by zone
+    const locationContext = clientData?.citta || clientData?.provincia
+      ? `LOCALITÀ DEL CANTIERE: ${[clientData?.citta, clientData?.provincia ? `(${clientData.provincia})` : ""].filter(Boolean).join(" ")}`
+      : "";
+
     // Chiama OpenAI
     const completion = await openai.chat.completions.create({
       model: "gpt-4o-mini",
       max_completion_tokens: 4096,
+      temperature: 0.3,
       messages: [
         { role: "system", content: AI_PROMPT },
+        { role: "system", content: REGIONAL_PRICING_GUIDANCE },
+        { role: "system", content: DESCRIPTION_QUALITY_GUIDANCE },
         ...(catalogContext ? [{ role: "system" as const, content: catalogContext }] : []),
         ...(misureContext ? [{ role: "system" as const, content: misureContext }] : []),
+        ...(locationContext ? [{ role: "system" as const, content: locationContext }] : []),
         { role: "user", content: rawInput },
       ],
     });

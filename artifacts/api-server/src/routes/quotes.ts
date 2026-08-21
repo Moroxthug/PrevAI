@@ -13,6 +13,7 @@ import {
   RegenerateQuoteBody,
 } from "@workspace/api-zod";
 import { openai } from "@workspace/integrations-openai-ai-server";
+import { REGIONAL_PRICING_GUIDANCE, DESCRIPTION_QUALITY_GUIDANCE } from "../lib/generateQuoteFromText.js";
 import type { QuoteChapter, QuoteChapterItem, QuoteDiscount, QuoteCompanySnapshot, QuoteClientData, QuoteItem } from "@workspace/db";
 import { logger } from "../lib/logger.js";
 import pdfmake from "pdfmake";
@@ -690,8 +691,11 @@ Scrivi il preventivo in stile OFFERTA COMMERCIALE PROFESSIONALE e PERSUASIVA:
       const completion = await openai.chat.completions.create({
         model: targetModel,
         max_completion_tokens: (hasImages || docTexts.length > 0) ? 16384 : 8192,
+        temperature: 0.3,
         messages: [
           { role: "system", content: AI_PROMPT },
+          { role: "system", content: REGIONAL_PRICING_GUIDANCE },
+          { role: "system", content: DESCRIPTION_QUALITY_GUIDANCE },
           ...(catalogContext ? [{ role: "system" as const, content: catalogContext }] : []),
           ...(misureContext ? [{ role: "system" as const, content: misureContext }] : []),
           ...(priceIntelContext ? [{ role: "system" as const, content: priceIntelContext }] : []),
@@ -1487,8 +1491,11 @@ Quando usi una voce del listino, applica il prezzo unitario esatto o molto simil
     const completion = await openai.chat.completions.create({
       model: "gpt-4o-mini",
       max_completion_tokens: 8192,
+      temperature: 0.3,
       messages: [
         { role: "system", content: AI_PROMPT },
+        { role: "system", content: REGIONAL_PRICING_GUIDANCE },
+        { role: "system", content: DESCRIPTION_QUALITY_GUIDANCE },
         ...(catalogContext ? [{ role: "system" as const, content: catalogContext }] : []),
         ...(pastContext ? [{ role: "system" as const, content: pastContext }] : []),
         { role: "user", content: userMessage },

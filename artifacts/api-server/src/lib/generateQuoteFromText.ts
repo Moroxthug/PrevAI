@@ -85,6 +85,18 @@ CALCOLI:
 
 IMPORTANTISSIMO: output SOLO JSON puro, nessuna spiegazione, nessun markdown.`;
 
+export const REGIONAL_PRICING_GUIDANCE = `ADEGUAMENTO GEOGRAFICO DEI PREZZI:
+Se dal testo, dall'indirizzo del cliente o dal luogo del cantiere è possibile individuare la regione, provincia o città italiana, adegua i prezzi unitari secondo la reale variazione del costo del lavoro edile/artigianale in Italia:
+- Nord Italia (Lombardia, Piemonte, Veneto, Emilia-Romagna, Liguria, Trentino-Alto Adige, Friuli-Venezia Giulia, Valle d'Aosta): +10/+20% sopra i prezzi medi nazionali indicati nelle regole sopra.
+- Centro Italia (Toscana, Lazio, Umbria, Marche): in linea con i prezzi medi nazionali indicati.
+- Sud Italia e Isole (Campania, Puglia, Calabria, Basilicata, Molise, Abruzzo, Sicilia, Sardegna): -15/-25% sotto i prezzi medi nazionali indicati.
+- Città metropolitane ad alto costo (Milano, Roma, Bologna, Firenze, Venezia): usa la fascia alta dell'intervallo indicato, anche superandola leggermente (fino a +10% oltre il massimo) per la manodopera.
+- Se non è possibile individuare alcuna località, usa i prezzi medi nazionali indicati senza applicare correzioni.
+Applica l'adeguamento in modo coerente a TUTTE le voci del preventivo (manodopera e materiali), non solo al totale finale — i prezzi unitari delle singole voci devono già riflettere la zona.`;
+
+export const DESCRIPTION_QUALITY_GUIDANCE = `QUALITÀ DELLE DESCRIZIONI:
+Ogni voce (campo "descrizione") deve essere specifica e professionale, mai generica: indica con precisione cosa viene fatto, e quando rilevante con quali materiali, tecniche o modalità esecutive (es. "Tinteggiatura pareti e soffitti a due mani con pittura lavabile traspirante, previa stuccatura e carteggiatura" invece di "Pittura"). Evita voci vaghe come "Lavori vari", "Manodopera generica" o "Materiali edili" senza ulteriori dettagli. Se sono allegate immagini, usa i dettagli visibili (stato dei luoghi, superfici, finiture esistenti, misure leggibili) per rendere le voci più precise e per calibrare meglio quantità e prezzi.`;
+
 export const CAPITOLATO_CONTEXT = `MODALITÀ CAPITOLATO TECNICO PROFESSIONALE:
 Per ogni voce di lavoro, scrivi la descrizione in stile CAPITOLATO SPECIALE D'APPALTO con ALMENO 4-6 linee tecniche in italiano formale:
 - Descrivi con precisione le operazioni eseguite e le modalità esecutive (ciclo lavorativo, tecniche, successione delle fasi)
@@ -281,8 +293,11 @@ export async function buildQuoteFromAI({
     const completion = await openai.chat.completions.create({
       model: process.env.AI_MODEL ?? (hasImages ? "gpt-4o" : "gpt-4o-mini"),
       max_completion_tokens: 8192,
+      temperature: 0.3,
       messages: [
         { role: "system", content: AI_PROMPT },
+        { role: "system", content: REGIONAL_PRICING_GUIDANCE },
+        { role: "system", content: DESCRIPTION_QUALITY_GUIDANCE },
         ...(catalogContext ? [{ role: "system" as const, content: catalogContext }] : []),
         ...(pastContext ? [{ role: "system" as const, content: pastContext }] : []),
         ...(useCapitolato ? [{ role: "system" as const, content: CAPITOLATO_CONTEXT }] : []),
@@ -311,6 +326,8 @@ export async function buildQuoteFromAI({
       const pCostRate = isMini ? 0.00000015 : isGpt4 ? 0.000005 : 0.00000059;
       const cCostRate = isMini ? 0.00000060 : isGpt4 ? 0.000015 : 0.00000079;
       result.apiCost = (result.promptTokens * pCostRate) + (result.completionTokens * cCostRate);
+
+      flagIfAnomalousTotal(userId, result, log, "generation");
 
       trackEvent(userId, "quote_generation_completed", {
         latencyMs,
@@ -415,8 +432,11 @@ Restituisci il preventivo aggiornato COMPLETO in JSON valido con la stessa strut
     const completion = await openai.chat.completions.create({
       model: process.env.AI_MODEL ?? "gpt-4o-mini",
       max_completion_tokens: 8192,
+      temperature: 0.3,
       messages: [
         { role: "system", content: AI_PROMPT },
+        { role: "system", content: REGIONAL_PRICING_GUIDANCE },
+        { role: "system", content: DESCRIPTION_QUALITY_GUIDANCE },
         ...(catalogContext ? [{ role: "system" as const, content: catalogContext }] : []),
         ...(useCapitolato ? [{ role: "system" as const, content: CAPITOLATO_CONTEXT }] : []),
         { role: "user", content: correctionPrompt },
@@ -440,6 +460,8 @@ Restituisci il preventivo aggiornato COMPLETO in JSON valido con la stessa strut
       const pCostRate = isMini ? 0.00000015 : isGpt4 ? 0.000005 : 0.00000059;
       const cCostRate = isMini ? 0.00000060 : isGpt4 ? 0.000015 : 0.00000079;
       result.apiCost = (result.promptTokens * pCostRate) + (result.completionTokens * cCostRate);
+
+      flagIfAnomalousTotal(userId, result, log, "regeneration");
 
       trackEvent(userId, "quote_regeneration_completed", {
         latencyMs,
@@ -573,6 +595,28 @@ export async function generateQuoteFromText({
 }): Promise<typeof quotesTable.$inferSelect> {
   const data = await buildQuoteFromAI({ userId, rawInput, log });
   return saveQuoteToDb({ userId, data, source });
+}
+
+// ── Guardrails ──────────────────────────────────────────────────────────────────
+
+/**
+ * Cheap sanity check on AI-generated totals: catches the failure mode where the
+ * model returns a near-zero or wildly small total despite producing real line
+ * items (e.g. malformed prezzo_unitario). Doesn't block generation — just makes
+ * the anomaly visible in telemetry/logs instead of silently reaching the user.
+ */
+function flagIfAnomalousTotal(userId: string, result: PendingQuoteData, log: Logger, eventSuffix: string): void {
+  const totale = Number(result.totale);
+  const voceCount = result.capitoli.reduce((n, c) => n + c.voci.length, 0);
+  if (voceCount > 0 && totale < 50) {
+    log.warn({ userId, totale, voceCount, chaptersCount: result.capitoli.length }, "Suspiciously low quote total from AI");
+    trackEvent(userId, `quote_${eventSuffix}_anomaly`, {
+      reason: "total_too_low",
+      totale,
+      voceCount,
+      chaptersCount: result.capitoli.length,
+    });
+  }
 }
 
 // ── Context builders ────────────────────────────────────────────────────────────
