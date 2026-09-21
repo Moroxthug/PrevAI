@@ -5,44 +5,42 @@ import { test } from "vitest";
 
 test("invoices/math", () => {
 
-  // ON progress invoice with 10% holdback: tax on the net of holdback.
-  const on = computeInvoiceAmounts({ lines: [lineFrom("Framing", 1_000_000)], province: "ON", holdbackPercent: 10, registration: { gstHstNumber: "123456789RT0001" } });
-  assert.equal(on.subtotalCents, 1_000_000);
-  assert.equal(on.holdbackCents, 100_000);
-  assert.equal(on.taxableCents, 900_000);
-  assert.deepEqual(on.taxLines.map((t) => [t.code, t.amountCents, t.registrationNumber]), [["HST", 117_000, "123456789RT0001"]]);
-  assert.equal(on.totalCents, 1_017_000);
+  // SAL con ritenuta a garanzia 10 %: IVA sul netto della ritenuta.
+  const sal = computeInvoiceAmounts({ lines: [lineFrom("Opere murarie", 1_000_000)], taxCode: "IVA22", holdbackPercent: 10, registration: { gstHstNumber: "01234567890" } });
+  assert.equal(sal.subtotalCents, 1_000_000);
+  assert.equal(sal.holdbackCents, 100_000);
+  assert.equal(sal.taxableCents, 900_000);
+  assert.deepEqual(sal.taxLines.map((t) => [t.code, t.amountCents, t.registrationNumber]), [["IVA22", 198_000, "01234567890"]]);
+  assert.equal(sal.totalCents, 1_098_000);
 
-  // QC: GST + QST split with the QST registration number on the QST line only.
-  const qc = computeInvoiceAmounts({ lines: [lineFrom("Plomberie", 250_000)], province: "QC", registration: { gstHstNumber: "1234", qstNumber: "5678" } });
-  assert.deepEqual(qc.taxLines.map((t) => [t.code, t.amountCents, t.registrationNumber]), [["GST", 12_500, "1234"], ["QST", 24_938, "5678"]]);
-  assert.equal(qc.totalCents, 287_438);
+  // Ristrutturazione: IVA 10 %.
+  const rid = computeInvoiceAmounts({ lines: [lineFrom("Idraulica", 250_000)], taxCode: "IVA10", registration: { gstHstNumber: "1234" } });
+  assert.deepEqual(rid.taxLines.map((t) => [t.code, t.amountCents, t.registrationNumber]), [["IVA10", 25_000, "1234"]]);
+  assert.equal(rid.totalCents, 275_000);
 
-  // Deposit: no holdback even if requested percent is 0; BC has GST + PST.
-  const bc = computeInvoiceAmounts({ lines: [lineFrom("Deposit", 100_000)], province: "BC", holdbackPercent: 0 });
-  assert.equal(bc.holdbackCents, 0);
-  assert.equal(bc.taxCents, 12_000);
+  // Acconto: niente ritenuta anche se la percentuale è 0; regime sconosciuto → 22 %.
+  const acc = computeInvoiceAmounts({ lines: [lineFrom("Acconto", 100_000)], taxCode: null, holdbackPercent: 0 });
+  assert.equal(acc.holdbackCents, 0);
+  assert.equal(acc.taxCents, 22_000);
 
-  // Credit note: negative lines, never a holdback, negative taxes.
-  const cn = computeInvoiceAmounts({ lines: [lineFrom("Correction", -50_000)], province: "ON", holdbackPercent: 10 });
+  // Nota di credito: righe negative, mai ritenuta, IVA negativa.
+  const cn = computeInvoiceAmounts({ lines: [lineFrom("Storno", -50_000)], taxCode: "IVA22", holdbackPercent: 10 });
   assert.equal(cn.holdbackCents, 0);
-  assert.equal(cn.taxCents, -6_500);
-  assert.equal(cn.totalCents, -56_500);
+  assert.equal(cn.taxCents, -11_000);
+  assert.equal(cn.totalCents, -61_000);
 
-  // Term amounts: percent of pre-tax subtotal; fixed incl.-tax backed out.
-  const contract = { subtotalCents: 2_000_000, totalCents: 2_260_000 }; // ON 13%
+  // Importi delle rate: percentuale dell'imponibile; importo fisso IVA inclusa scorporato.
+  const contract = { subtotalCents: 2_000_000, totalCents: 2_440_000 }; // IVA 22 %
   assert.equal(termSubtotalCents({ amountType: "percent", value: 15 }, contract), 300_000);
-  assert.equal(termSubtotalCents({ amountType: "fixed", value: 2260 }, contract), 200_000);
+  assert.equal(termSubtotalCents({ amountType: "fixed", value: 2440 }, contract), 200_000);
 
   // Final invoice = remaining unbilled, incl. change orders, never negative.
   assert.equal(finalInvoiceSubtotalCents({ jobSubtotalCents: 2_150_000, invoicedSubtotalCents: 1_700_000 }), 450_000);
   assert.equal(finalInvoiceSubtotalCents({ jobSubtotalCents: 2_000_000, invoicedSubtotalCents: 2_000_100 }), 0);
 
   // Lien periods.
-  assert.equal(lienPeriodDays("ON"), 60);
-  assert.equal(lienPeriodDays("BC"), 55);
-  assert.equal(lienPeriodDays("AB"), 60);
-  assert.equal(lienPeriodDays("QC"), 60);
+  assert.equal(lienPeriodDays("MI"), 60);
+  assert.equal(lienPeriodDays(null), 60);
 
   // Status transitions.
   const due = new Date("2026-09-01T00:00:00Z");
@@ -70,6 +68,7 @@ test("invoices/math", () => {
   );
   assert.deepEqual(aging, { current: 1000, d1_30: 750, d31_60: 0, d61_90: 500, d90_plus: 0, totalCents: 2250, overdueCents: 1250 });
 
-  // Tax lines never emit a registration number for a component the company is not registered for.
-  assert.equal(taxLinesFor(10_000, "BC", { gstHstNumber: "X" })[1]!.registrationNumber, null);
+  // Righe IVA: regime ridotto e P. IVA accanto alla riga; regime sconosciuto → ordinaria.
+  assert.deepEqual(taxLinesFor(10_000, "IVA10", { gstHstNumber: "01234567890" }).map((l) => [l.code, l.amountCents, l.registrationNumber]), [["IVA10", 1000, "01234567890"]]);
+  assert.equal(taxLinesFor(10_000, null)[0]!.rate, 22);
 });

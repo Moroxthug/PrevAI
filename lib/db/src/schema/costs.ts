@@ -26,7 +26,8 @@ export const COST_ENTRY_SOURCES = ["manual", "receipt", "time_entry", "equipment
 export type CostEntrySource = (typeof COST_ENTRY_SOURCES)[number];
 
 /** GST/HST/PST/QST split in cents, as read from the receipt (or computed). */
-export type TaxBreakdown = { GST?: number; HST?: number; PST?: number; QST?: number; RST?: number };
+/** V2-2: in Italia una sola imposta (IVA). Le chiavi canadesi restano solo in eventuali righe storiche. */
+export type TaxBreakdown = { IVA?: number };
 
 /** Raw AI reading of a receipt, kept so the review card can show what the model saw. */
 export type ReceiptExtraction = {
@@ -35,7 +36,7 @@ export type ReceiptExtraction = {
   currency: string | null;
   lines: { description: string; quantity: number | null; unitPrice: number | null; total: number | null }[];
   subtotal: number | null;
-  taxes: { GST?: number | null; HST?: number | null; PST?: number | null; QST?: number | null };
+  taxes: { IVA?: number | null };
   total: number | null;
   suggestedCategory: (typeof COST_CATEGORIES)[number] | null;
   suggestedProjectId: string | null;

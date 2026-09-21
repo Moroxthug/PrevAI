@@ -1,108 +1,106 @@
 import type { Invoice, InvoiceParty, InvoicePayment } from "@workspace/db";
-import { PROVINCE_NAMES, isProvinceCode } from "@workspace/db";
+import { provinceName as provinciaNome } from "@workspace/db";
+import { MARKET, fmtEurCents, fmtNumber, type Lang } from "@workspace/config";
 
-// ── Invoice rendering: strings + HTML ────────────────────────────────────────
-// The PDF (pdf.ts) and the public page / email share these labels so the
-// customer sees the same document everywhere. CRA invoice requirements
-// (≥ $150): supplier name + GST/HST number, date, buyer name, description,
-// tax shown separately with the rate, total. QC adds the QST number.
+// ── Rendering fatture: etichette + HTML ──────────────────────────────────────
+// Il PDF (pdf.ts) e la pagina pubblica / email condividono queste etichette
+// così il cliente vede lo stesso documento ovunque. Requisiti art. 21 DPR
+// 633/72: dati del cedente con P. IVA, data e numero, dati del cessionario,
+// descrizione, imponibile e IVA per aliquota, totale. Finché non c'è SDI la
+// fattura è "pro-forma" (V2-4, D3).
 
-export type Lang = "en" | "fr";
+export type { Lang };
 
 export const I = {
-  invoice: { en: "Invoice", fr: "Facture" },
-  creditNote: { en: "Credit note", fr: "Note de crédit" },
-  invoiceNo: { en: "Invoice No.", fr: "Facture n°" },
-  creditNoteNo: { en: "Credit note No.", fr: "Note de crédit n°" },
-  issued: { en: "Issued", fr: "Émise le" },
-  due: { en: "Due", fr: "Échéance" },
-  dueOnReceipt: { en: "Due on receipt", fr: "Payable à réception" },
-  from: { en: "From", fr: "De" },
-  billTo: { en: "Bill to", fr: "Facturer à" },
-  site: { en: "Job site", fr: "Chantier" },
-  job: { en: "Job", fr: "Projet" },
-  contract: { en: "Contract", fr: "Contrat" },
-  description: { en: "Description", fr: "Description" },
-  qty: { en: "Qty", fr: "Qté" },
-  unit: { en: "Unit price", fr: "Prix unitaire" },
-  amount: { en: "Amount", fr: "Montant" },
-  subtotal: { en: "Subtotal", fr: "Sous-total" },
-  holdback: { en: "Less statutory holdback", fr: "Moins retenue légale" },
-  holdbackNote: {
-    en: "The statutory holdback is retained as required by the applicable construction lien legislation and will be invoiced, with the applicable taxes, at the end of the lien period.",
-    fr: "La retenue légale est conservée conformément à la législation applicable sur les privilèges de construction et sera facturée, avec les taxes applicables, à la fin de la période de privilège.",
-  },
-  taxable: { en: "Taxable amount", fr: "Montant taxable" },
-  total: { en: "Total due", fr: "Total à payer" },
-  creditTotal: { en: "Credit amount", fr: "Montant du crédit" },
-  paid: { en: "Paid", fr: "Payé" },
-  balance: { en: "Balance due", fr: "Solde à payer" },
-  payment: { en: "How to pay", fr: "Modalités de paiement" },
-  paymentTerm: { en: "Payment term", fr: "Versement" },
-  etransfer: { en: "Interac e-Transfer to", fr: "Virement Interac à" },
-  cheque: { en: "Cheque payable to", fr: "Chèque à l'ordre de" },
-  reference: { en: "Please quote the invoice number as the payment reference.", fr: "Veuillez indiquer le numéro de facture comme référence de paiement." },
-  notes: { en: "Notes", fr: "Notes" },
-  gstHst: { en: "GST/HST No.", fr: "N° TPS/TVH" },
-  qst: { en: "QST No.", fr: "N° TVQ" },
-  pst: { en: "PST No.", fr: "N° TVP" },
-  licence: { en: "Licence No.", fr: "N° de licence" },
-  email: { en: "Email", fr: "Courriel" },
-  phone: { en: "Phone", fr: "Téléphone" },
-  status_draft: { en: "DRAFT", fr: "BROUILLON" },
-  status_void: { en: "VOID", fr: "ANNULÉE" },
-  status_paid: { en: "PAID", fr: "PAYÉE" },
-  status_overdue: { en: "OVERDUE", fr: "EN RETARD" },
-  status_partially_paid: { en: "PARTIALLY PAID", fr: "PARTIELLEMENT PAYÉE" },
-  page: { en: "Page", fr: "Page" },
-  refersTo: { en: "Correction of invoice", fr: "Correction de la facture" },
-  netDays: { en: "Net {n} days", fr: "Net {n} jours" },
-  type_deposit: { en: "Deposit", fr: "Dépôt" },
-  type_progress: { en: "Progress payment", fr: "Paiement progressif" },
-  type_final: { en: "Final invoice", fr: "Facture finale" },
-  type_holdback_release: { en: "Holdback release", fr: "Libération de la retenue" },
-  type_change_order: { en: "Change order", fr: "Ordre de changement" },
-  type_manual: { en: "Invoice", fr: "Facture" },
-  type_credit_note: { en: "Credit note", fr: "Note de crédit" },
-  paymentsReceived: { en: "Payments received", fr: "Paiements reçus" },
-  method_etransfer: { en: "e-Transfer", fr: "Virement Interac" },
-  method_cheque: { en: "Cheque", fr: "Chèque" },
-  method_cash: { en: "Cash", fr: "Comptant" },
-  method_card: { en: "Card", fr: "Carte" },
-  method_bank_transfer: { en: "Bank transfer", fr: "Virement bancaire" },
-  method_credit_note: { en: "Credit note", fr: "Note de crédit" },
-  method_other: { en: "Other", fr: "Autre" },
-  thanks: { en: "Thank you for your business.", fr: "Merci de votre confiance." },
-} satisfies Record<string, { en: string; fr: string }>;
+  invoice: "Fattura",
+  creditNote: "Nota di credito",
+  invoiceNo: "Fattura n.",
+  creditNoteNo: "Nota di credito n.",
+  issued: "Emessa il",
+  due: "Scadenza",
+  dueOnReceipt: "Pagamento a vista",
+  from: "Emittente",
+  billTo: "Intestata a",
+  site: "Cantiere",
+  job: "Commessa",
+  contract: "Contratto",
+  description: "Descrizione",
+  qty: "Q.tà",
+  unit: "Prezzo unitario",
+  amount: "Importo",
+  subtotal: "Imponibile",
+  holdback: "Meno ritenuta a garanzia",
+  holdbackNote: "La ritenuta a garanzia è trattenuta come previsto dal contratto (art. 1666 c.c.) e sarà fatturata, con l'IVA applicabile, al collaudo o allo scadere del periodo di garanzia pattuito.",
+  taxable: "Imponibile netto",
+  total: "Totale da pagare",
+  creditTotal: "Importo a credito",
+  paid: "Pagato",
+  balance: "Residuo da pagare",
+  payment: "Modalità di pagamento",
+  paymentTerm: "Rata",
+  etransfer: "Bonifico bancario — IBAN",
+  cheque: "Assegno intestato a",
+  reference: "Indicare il numero del documento nella causale del pagamento.",
+  notes: "Note",
+  gstHst: "P. IVA",
+  qst: "C.F.",
+  pst: "Cod. SDI",
+  licence: "N° REA / albo",
+  email: "Email",
+  phone: "Tel.",
+  status_draft: "BOZZA",
+  status_void: "ANNULLATA",
+  status_paid: "PAGATA",
+  status_overdue: "SCADUTA",
+  status_partially_paid: "PARZIALMENTE PAGATA",
+  page: "Pagina",
+  refersTo: "Storno della fattura",
+  netDays: "{n} giorni data fattura",
+  type_deposit: "Acconto",
+  type_progress: "SAL — stato avanzamento lavori",
+  type_final: "Saldo finale",
+  type_holdback_release: "Svincolo ritenuta a garanzia",
+  type_change_order: "Variante in corso d'opera",
+  type_manual: "Fattura",
+  type_credit_note: "Nota di credito",
+  paymentsReceived: "Pagamenti ricevuti",
+  method_etransfer: "Bonifico",
+  method_cheque: "Assegno",
+  method_cash: "Contanti",
+  method_card: "Carta",
+  method_bank_transfer: "Bonifico bancario",
+  method_credit_note: "Nota di credito",
+  method_other: "Altro",
+  thanks: "Grazie per la fiducia.",
+} satisfies Record<string, string>;
 
 export type IKey = keyof typeof I;
 
-export function ti(key: IKey, lang: Lang): string {
-  return I[key][lang];
+export function ti(key: IKey, _lang?: Lang): string {
+  return I[key];
 }
 
-/** Tax component labels are stored in English ("GST", "QST"); French documents say TPS / TVQ. Phase 67. */
-const TAX_LABEL_FR: Record<string, string> = { GST: "TPS", HST: "TVH", QST: "TVQ", PST: "TVP", RST: "TVD" };
-export function taxLabel(label: string, lang: Lang): string {
-  return lang === "fr" ? (TAX_LABEL_FR[label.toUpperCase()] ?? label) : label;
+/** Le etichette IVA sono già italiane ("IVA"); conservata per i chiamanti. */
+export function taxLabel(label: string, _lang?: Lang): string {
+  return label;
 }
 
-export function fmtCents(cents: number, lang: Lang): string {
-  return new Intl.NumberFormat(lang === "fr" ? "fr-CA" : "en-CA", { style: "currency", currency: "CAD" }).format(cents / 100);
+export function fmtCents(cents: number, _lang?: Lang): string {
+  return fmtEurCents(cents);
 }
 
-export function fmtDay(d: Date | string | null | undefined, lang: Lang): string {
+export function fmtDay(d: Date | string | null | undefined, _lang?: Lang): string {
   if (!d) return "—";
   const date = typeof d === "string" ? new Date(d) : d;
-  return date.toLocaleDateString(lang === "fr" ? "fr-CA" : "en-CA", { dateStyle: "long", timeZone: "America/Toronto" });
+  return date.toLocaleDateString(MARKET.locale, { dateStyle: "long", timeZone: MARKET.timeZone });
 }
 
-export function fmtQty(q: number, lang: Lang): string {
-  return new Intl.NumberFormat(lang === "fr" ? "fr-CA" : "en-CA", { maximumFractionDigits: 2 }).format(q);
+export function fmtQty(q: number, _lang?: Lang): string {
+  return fmtNumber(q, Number.isInteger(q) ? 0 : 2);
 }
 
-export function provinceName(code: string | null | undefined, lang: Lang): string {
-  return code && isProvinceCode(code) ? PROVINCE_NAMES[code][lang] : code ?? "";
+export function provinceName(code: string | null | undefined, _lang?: Lang): string {
+  return provinciaNome(code);
 }
 
 export function isCreditNote(inv: Pick<Invoice, "type">): boolean {
@@ -187,7 +185,7 @@ export const INVOICE_CSS = `
 `;
 
 export function renderInvoiceHtml(inv: Invoice, payments: InvoicePayment[] = []): string {
-  const lang = inv.language as Lang;
+  const lang = MARKET.lang;
   const credit = isCreditNote(inv);
   const parts: string[] = [];
   const wm = watermark(inv);
@@ -216,7 +214,7 @@ export function renderInvoiceHtml(inv: Invoice, payments: InvoicePayment[] = [])
     totals.push(`<tr class="muted"><td>${ti("taxable", lang)}</td><td class="num">${fmtCents(inv.taxableCents, lang)}</td></tr>`);
   }
   for (const t of inv.taxLines) {
-    totals.push(`<tr><td>${esc(taxLabel(t.label, lang))} ${t.rate}%${t.registrationNumber ? ` <span style="color:#6b7280">(${esc(t.registrationNumber)})</span>` : ""}</td><td class="num">${fmtCents(t.amountCents, lang)}</td></tr>`);
+    totals.push(`<tr><td>${esc(taxLabel(t.label, lang))} ${t.rate} %${t.registrationNumber ? ` <span style="color:#6b7280">(${esc(t.registrationNumber)})</span>` : ""}</td><td class="num">${fmtCents(t.amountCents, lang)}</td></tr>`);
   }
   totals.push(`<tr class="total"><td>${credit ? ti("creditTotal", lang) : ti("total", lang)}</td><td class="num">${fmtCents(inv.totalCents, lang)}</td></tr>`);
   if (!credit && inv.paidCents > 0 && inv.status !== "void") {

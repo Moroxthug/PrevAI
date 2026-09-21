@@ -197,7 +197,7 @@ function writeRoute(relPath: string, html: string): void {
 
 const CURRENT_YEAR = new Date().getFullYear();
 
-const STATIC_LOGO = `<img src="/quoteai-logo.png" alt="quoteai" width="144" height="72" style="height: 72px; width: auto; object-fit: contain;">`;
+const STATIC_LOGO = `<img src="/prevai-logo.png" alt="PrevAI" width="144" height="72" style="height: 72px; width: auto; object-fit: contain;">`;
 
 const STATIC_HEADER = `<header class="sticky top-0 z-50 w-full transition-all duration-300 bg-transparent border-b border-transparent">
   <div class="container mx-auto flex h-16 items-center justify-between px-4 sm:px-6 lg:px-8">

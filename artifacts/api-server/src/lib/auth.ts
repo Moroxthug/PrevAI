@@ -30,7 +30,7 @@ const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KE
 
 // Gmail and most webmail clients strip data: URI images from HTML emails,
 // so the logo must be a real hosted URL rather than an inline base64 SVG.
-const LOGO_URL = `${getBaseUrl()}/quoteai-logo.png`;
+const LOGO_URL = `${getBaseUrl()}/prevai-logo.png`;
 
 const secret = process.env.BETTER_AUTH_SECRET ?? process.env.SESSION_SECRET;
 if (!secret) {

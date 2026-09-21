@@ -136,7 +136,7 @@ router.post("/team/members/invite", requireAuth, requirePermission("team", "full
     let emailed = false;
     if (body.data.send !== false) {
       try {
-        await sendTeamMemberInviteEmail({ toEmail: email, companyName: profile?.companyName || "your contractor", inviterName: getUserEmail(res) || "a teammate", role: body.data.role, url, language: profile?.province === "QC" ? "fr" : "en" });
+        await sendTeamMemberInviteEmail({ toEmail: email, companyName: profile?.companyName || "la tua impresa", inviterName: getUserEmail(res) || "un collega", role: body.data.role, url, language: "it" });
         emailed = true;
       } catch (err) {
         logger.warn({ err, email }, "Team invite email failed; link returned to the dashboard");
@@ -167,7 +167,7 @@ router.post("/team/members/:id/resend", requireAuth, requirePermission("team", "
     const url = `${getBaseUrl()}/team-invite/${raw}`;
     let emailed = false;
     try {
-      await sendTeamMemberInviteEmail({ toEmail: member.invitedEmail, companyName: profile?.companyName || "your contractor", inviterName: getUserEmail(res) || "a teammate", role: member.role, url, language: profile?.province === "QC" ? "fr" : "en" });
+      await sendTeamMemberInviteEmail({ toEmail: member.invitedEmail, companyName: profile?.companyName || "la tua impresa", inviterName: getUserEmail(res) || "un collega", role: member.role, url, language: "it" });
       emailed = true;
     } catch (err) {
       logger.warn({ err, memberId: member.id }, "Team invite resend failed; link returned to the dashboard");

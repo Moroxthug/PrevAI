@@ -67,11 +67,11 @@ Columns — **Auth**: session (`requireAuth`), apiKey (`requireApiKey`), admin (
 
 | Line | Method | Path | Auth | Perm | RL | Val | Gate | Scope | Archived | Token | Webhook |
 |---|---|---|---|---|---|---|---|---|---|---|---|
-| 40 | GET | `/api/assistant/conversation` | session | — | — | none | hasFeature(assistant) | n/a | — | — | — |
-| 60 | POST | `/api/assistant/conversations/:id/messages` | session | jobs:view | chatLimiter | zod | hasFeature(assistant) | predicate | — | — | — |
-| 78 | DELETE | `/api/assistant/conversations/:id` | session | jobs:view | — | none | — | helper | — | — | — |
-| 90 | POST | `/api/assistant/proposals/:id/confirm` | session | jobs:edit | — | none | — | helper | — | — | — |
-| 102 | POST | `/api/assistant/proposals/:id/dismiss` | session | jobs:edit | — | none | — | helper | — | — | — |
+| 37 | GET | `/api/assistant/conversation` | session | — | — | none | hasFeature(assistant) | n/a | — | — | — |
+| 57 | POST | `/api/assistant/conversations/:id/messages` | session | jobs:view | chatLimiter | zod | hasFeature(assistant) | predicate | — | — | — |
+| 75 | DELETE | `/api/assistant/conversations/:id` | session | jobs:view | — | none | — | helper | — | — | — |
+| 87 | POST | `/api/assistant/proposals/:id/confirm` | session | jobs:edit | — | none | — | helper | — | — | — |
+| 99 | POST | `/api/assistant/proposals/:id/dismiss` | session | jobs:edit | — | none | — | helper | — | — | — |
 
 ## artifacts/api-server/src/routes/business-profile.ts
 
@@ -124,9 +124,9 @@ Columns — **Auth**: session (`requireAuth`), apiKey (`requireApiKey`), admin (
 | 177 | GET | `/api/contracts/:id` | session | — | — | none | — | post-check | — | — | — |
 | 213 | PUT | `/api/contracts/:id` | session | contracts:edit | — | zod | — | post-check | — | — | — |
 | 279 | POST | `/api/contracts/:id/sign` | session | contracts:edit | — | zod | — | post-check | — | — | — |
-| 326 | POST | `/api/contracts/:id/send` | session | contracts:edit | — | zod | — | helper | — | — | — |
-| 353 | POST | `/api/contracts/:id/void` | session | contracts:full | — | manual | — | post-check | — | — | — |
-| 379 | GET | `/api/contracts/:id/pdf` | session | — | — | none | — | post-check | — | — | — |
+| 324 | POST | `/api/contracts/:id/send` | session | contracts:edit | — | zod | — | helper | — | — | — |
+| 351 | POST | `/api/contracts/:id/void` | session | contracts:full | — | manual | — | post-check | — | — | — |
+| 377 | GET | `/api/contracts/:id/pdf` | session | — | — | none | — | post-check | — | — | — |
 
 ## artifacts/api-server/src/routes/costs.ts
 
@@ -494,8 +494,8 @@ Columns — **Auth**: session (`requireAuth`), apiKey (`requireApiKey`), admin (
 | 104 | POST | `/api/sign/:token/otp` | none | — | otpLimiter | none | — | n/a | — | hash-lookup | — |
 | 131 | POST | `/api/sign/:token/verify` | none | — | otpLimiter | zod | — | n/a | — | timing-safe | — |
 | 178 | POST | `/api/sign/:token/complete` | none | — | signLimiter | zod | — | n/a | — | hash-lookup | — |
-| 226 | POST | `/api/sign/:token/decline` | none | — | signLimiter | manual | — | n/a | — | hash-lookup | — |
-| 258 | GET | `/api/sign/:token/pdf` | none | — | viewLimiter | none | — | n/a | — | hash-lookup | — |
+| 224 | POST | `/api/sign/:token/decline` | none | — | signLimiter | manual | — | n/a | — | hash-lookup | — |
+| 256 | GET | `/api/sign/:token/pdf` | none | — | viewLimiter | none | — | n/a | — | hash-lookup | — |
 
 ## artifacts/api-server/src/routes/speech.ts
 

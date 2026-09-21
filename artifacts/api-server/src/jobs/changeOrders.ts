@@ -27,12 +27,11 @@ import { addCalendarDays } from "./dates.js";
 // contract.signed automation calls `applySignedChangeOrder`, which adds the
 // amount to the job and shifts the remaining schedule.
 
-type Lang = "en" | "fr";
-const L = (en: string, fr: string, lang: Lang) => (lang === "fr" ? fr : en);
+type Lang = "it";
 
-export function changeOrderTotals(items: ChangeOrderItem[], province: string | null | undefined): { subtotal: number; tax: number; total: number; taxLines: { code: string; label: string; rate: number; amount: number }[] } {
+export function changeOrderTotals(items: ChangeOrderItem[], taxCode: string | null | undefined): { subtotal: number; tax: number; total: number; taxLines: { code: string; label: string; rate: number; amount: number }[] } {
   const subtotal = Math.round(items.reduce((s, i) => s + Number(i.totale || 0), 0) * 100) / 100;
-  const calc = computeTax(subtotal, province);
+  const calc = computeTax(subtotal, taxCode);
   return {
     subtotal,
     tax: calc.total,
@@ -46,46 +45,33 @@ function buildChangeOrderDocument(params: { parent: Contract; co: { number: stri
   const delta = co.scheduleDeltaDays;
   const scheduleBody =
     delta > 0
-      ? L(`The time for completion under the Agreement is extended by **${delta} calendar days** to account for the additional work described above. All milestone dates that have not yet been reached move accordingly.`,
-          `Le délai d'exécution prévu au Contrat est prolongé de **${delta} jours civils** pour tenir compte des travaux additionnels décrits ci-dessus. Les jalons non encore atteints sont reportés en conséquence.`, lang)
+      ? `I tempi di esecuzione previsti dal Contratto sono prorogati di **${delta} giorni** per tenere conto delle lavorazioni aggiuntive sopra descritte. Le fasi non ancora raggiunte slittano di conseguenza.`
       : delta < 0
-        ? L(`The time for completion under the Agreement is reduced by **${Math.abs(delta)} calendar days**.`, `Le délai d'exécution prévu au Contrat est réduit de **${Math.abs(delta)} jours civils**.`, lang)
-        : L("This change does not affect the time for completion under the Agreement.", "Cette modification n'a aucune incidence sur le délai d'exécution prévu au Contrat.", lang);
+        ? `I tempi di esecuzione previsti dal Contratto sono ridotti di **${Math.abs(delta)} giorni**.`
+        : "La presente variante non incide sui tempi di esecuzione previsti dal Contratto.";
 
   const sections: ContractSection[] = [
-    { key: "parties", heading: L("Parties", "Parties", lang), body: "", kind: "data", editable: false },
+    { key: "parties", heading: "Parti", body: "", kind: "data", editable: false },
     {
       key: "reference",
-      heading: L("Agreement being amended", "Contrat modifié", lang),
-      body: L(
-        `This Change Order ${co.number} amends the construction services agreement **${parent.contractNumber}** signed on ${fmtDate(parent.signedAt, lang)} (the "Agreement"). Except as expressly modified below, all terms and conditions of the Agreement remain in full force and effect and apply to the work described in this Change Order.`,
-        `Le présent avenant ${co.number} modifie le contrat d'entreprise **${parent.contractNumber}** signé le ${fmtDate(parent.signedAt, lang)} (le « Contrat »). Sauf modification expresse ci-dessous, toutes les conditions du Contrat demeurent en vigueur et s'appliquent aux travaux décrits dans le présent avenant.`,
-        lang,
-      ),
+      heading: "Contratto modificato",
+      body: `La presente variante ${co.number} modifica il contratto d'appalto **${parent.contractNumber}** firmato il ${fmtDate(parent.signedAt)} (il "Contratto"). Salvo quanto espressamente modificato di seguito, tutte le condizioni del Contratto restano in vigore e si applicano alle lavorazioni descritte nella presente variante.`,
       kind: "legal",
       editable: false,
     },
-    { key: "change", heading: L("Description of the change", "Description de la modification", lang), body: co.description || co.title, kind: "ai", editable: true },
+    { key: "change", heading: "Descrizione della variante", body: co.description || co.title, kind: "ai", editable: true },
     {
       key: "price",
-      heading: L("Change in contract price", "Modification du prix du contrat", lang),
-      body: L(
-        `The Contract Price is ${v.total >= 0 ? "increased" : "reduced"} by **${fmtMoney(Math.abs(v.total), lang)}** (taxes included) as itemized below. Unless otherwise agreed in writing, the amount is invoiced with the next progress invoice or, if none remains, on completion.`,
-        `Le prix du contrat est ${v.total >= 0 ? "majoré" : "réduit"} de **${fmtMoney(Math.abs(v.total), lang)}** (taxes incluses) selon le détail ci-dessous. Sauf entente écrite contraire, ce montant est facturé avec la prochaine facture d'étape ou, à défaut, à la fin des travaux.`,
-        lang,
-      ),
+      heading: "Variazione del corrispettivo",
+      body: `Il corrispettivo è ${v.total >= 0 ? "aumentato" : "ridotto"} di **${fmtMoney(Math.abs(v.total))}** (IVA inclusa) come dettagliato di seguito. Salvo diverso accordo scritto, l'importo è fatturato con la prossima fattura di SAL o, in mancanza, a fine lavori.`,
       kind: "data",
       editable: false,
     },
-    { key: "schedule", heading: L("Schedule", "Échéancier", lang), body: scheduleBody, kind: "legal", editable: false },
+    { key: "schedule", heading: "Tempi di esecuzione", body: scheduleBody, kind: "legal", editable: false },
     {
       key: "signatures",
-      heading: L("Signatures", "Signatures", lang),
-      body: L(
-        "By signing below, both parties agree to the change described in this Change Order. Electronic signatures are binding under applicable Canadian and provincial electronic commerce legislation.",
-        "En signant ci-dessous, les parties acceptent la modification décrite dans le présent avenant. Les signatures électroniques ont force obligatoire en vertu des lois canadiennes et provinciales applicables au commerce électronique.",
-        lang,
-      ),
+      heading: "Firme",
+      body: "Con la sottoscrizione, le parti accettano la variante descritta nel presente atto. Le firme elettroniche hanno l'efficacia prevista dal Regolamento (UE) 910/2014 (eIDAS) e dal D.Lgs. 82/2005.",
       kind: "data",
       editable: false,
     },
@@ -94,7 +80,7 @@ function buildChangeOrderDocument(params: { parent: Contract; co: { number: stri
     templateKey: parent.templateKey,
     templateVersion: TEMPLATE_VERSION,
     language: lang,
-    title: L(`Change Order ${co.number}`, `Avenant ${co.number}`, lang),
+    title: `Variante ${co.number}`,
     sections,
   };
 }
@@ -118,7 +104,7 @@ export async function createChangeOrder(params: {
   const seq = Number(count ?? 0) + 1;
   const number = `CO-${String(seq).padStart(2, "0")}`;
 
-  const totals = changeOrderTotals(params.items, project.province ?? parent.province);
+  const totals = changeOrderTotals(params.items, parent.variables.taxLines[0]?.code ?? null);
   const pv = parent.variables;
   const variables: ContractVariables = {
     ...pv,
@@ -130,10 +116,10 @@ export async function createChangeOrder(params: {
     taxTotal: totals.tax,
     total: totals.total,
     paymentSchedule: {
-      currency: "CAD",
+      currency: "EUR",
       derived: true,
       holdback: { enabled: false, percent: 10 },
-      terms: [{ id: "co", type: "completion", label: L("With the next progress invoice", "Avec la prochaine facture d'étape", lang), trigger: "on_completion", amountType: "percent", value: 100, dueDays: 15 }],
+      terms: [{ id: "co", type: "completion", label: "Con la prossima fattura di SAL", trigger: "on_completion", amountType: "percent", value: 100, dueDays: 15 }],
     },
     startDate: null,
     estimatedDurationWeeks: null,
@@ -218,7 +204,7 @@ export async function updateChangeOrder(params: {
     items: params.items ?? co.items,
     scheduleDeltaDays: params.scheduleDeltaDays ?? co.scheduleDeltaDays,
   };
-  const totals = changeOrderTotals(next.items, project?.province ?? parent.province);
+  const totals = changeOrderTotals(next.items, parent.variables.taxLines[0]?.code ?? null);
   const lang = doc.language as Lang;
   const variables: ContractVariables = {
     ...doc.variables,

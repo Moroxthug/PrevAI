@@ -53,7 +53,7 @@ export async function runContractMaintenance(): Promise<{ expired: number; remin
         contractNumber: c.contractNumber,
         signUrl: `${getBaseUrl()}/sign/${raw}`,
         expiresAt: c.expiresAt ?? new Date(now.getTime() + 7 * 86_400_000),
-        language: c.language as "en" | "fr",
+        language: c.language as "it",
         companyLogoUrl: senderProfile?.logoUrl ?? null,
         replyTo: senderProfile?.email ?? null,
       });

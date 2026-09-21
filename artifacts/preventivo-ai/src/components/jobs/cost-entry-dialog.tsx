@@ -8,7 +8,7 @@ import { useLanguage } from "@/i18n/LanguageContext";
 import { jobsApi, formatCents, type CostCategory, type CostEntryDto, type CostEntryEdit, type MilestoneDto } from "@/lib/jobs-api";
 
 export const COST_CATEGORY_KEYS: CostCategory[] = ["materials", "labour", "subcontractor", "permits_fees", "equipment", "misc"];
-const TAX_KEYS = ["GST", "HST", "PST", "QST"] as const;
+const TAX_KEYS = ["IVA"] as const;
 
 const toDollars = (c: number | undefined | null) => (c ? (c / 100).toFixed(2) : "");
 const toCents = (s: string) => Math.round((Number(s) || 0) * 100);
@@ -48,7 +48,7 @@ export function CostEntryDialog({
   const [date, setDate] = useState(entry?.date ?? localDay());
   const [milestoneId, setMilestoneId] = useState<string>(entry?.milestoneId ?? "");
   const [subtotal, setSubtotal] = useState(toDollars(entry?.subtotalCents));
-  const [taxes, setTaxes] = useState<Record<(typeof TAX_KEYS)[number], string>>({ GST: toDollars(entry?.taxBreakdown.GST), HST: toDollars(entry?.taxBreakdown.HST), PST: toDollars(entry?.taxBreakdown.PST), QST: toDollars(entry?.taxBreakdown.QST) });
+  const [taxes, setTaxes] = useState<Record<(typeof TAX_KEYS)[number], string>>({ IVA: toDollars(entry?.taxBreakdown.IVA) });
   const [total, setTotal] = useState(toDollars(entry?.totalCents));
 
   useEffect(() => {
@@ -60,7 +60,7 @@ export function CostEntryDialog({
     setDate(entry?.date ?? localDay());
     setMilestoneId(entry?.milestoneId ?? "");
     setSubtotal(toDollars(entry?.subtotalCents));
-    setTaxes({ GST: toDollars(entry?.taxBreakdown.GST), HST: toDollars(entry?.taxBreakdown.HST), PST: toDollars(entry?.taxBreakdown.PST), QST: toDollars(entry?.taxBreakdown.QST) });
+    setTaxes({ IVA: toDollars(entry?.taxBreakdown.IVA) });
     setTotal(toDollars(entry?.totalCents));
   }, [open, entry, jobId]);
 

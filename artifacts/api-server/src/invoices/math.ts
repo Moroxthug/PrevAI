@@ -28,16 +28,16 @@ function round(n: number): number {
   return Math.round(n);
 }
 
-/** Tax breakdown on a pre-tax amount, in cents, with the registration number printed next to each component. */
-export function taxLinesFor(taxableCents: number, province: string | null | undefined, reg: RegistrationNumbers = {}): InvoiceTaxLine[] {
-  const profile = getTaxProfile(province);
+/** Scomposizione IVA su un imponibile in centesimi, con la P. IVA accanto alla riga. `taxCode` è il regime (IVA22/IVA10/…); in assenza, aliquota ordinaria. */
+export function taxLinesFor(taxableCents: number, taxCode: string | null | undefined, reg: RegistrationNumbers = {}): InvoiceTaxLine[] {
+  const profile = getTaxProfile(taxCode);
   return profile.components.map((c) => ({
     code: c.code,
     label: c.label,
     rate: c.rate,
     // Rate is a percent (13 → 13%); amounts stay integer cents.
     amountCents: round((taxableCents * c.rate) / 100),
-    registrationNumber: c.code === "QST" ? reg.qstNumber ?? null : c.code === "PST" || c.code === "RST" ? reg.pstNumber ?? null : reg.gstHstNumber ?? null,
+    registrationNumber: reg.gstHstNumber ?? null,
   }));
 }
 
@@ -53,13 +53,13 @@ export function lineFrom(description: string, unitCents: number, quantity = 1): 
  * Computes holdback, taxable base, taxes and total for a set of lines.
  * `holdbackPercent` = 0 for deposits, manual invoices and the release itself.
  */
-export function computeInvoiceAmounts(params: { lines: InvoiceLine[]; province: string; holdbackPercent?: number; registration?: RegistrationNumbers }): InvoiceAmounts {
+export function computeInvoiceAmounts(params: { lines: InvoiceLine[]; taxCode: string | null | undefined; holdbackPercent?: number; registration?: RegistrationNumbers }): InvoiceAmounts {
   const subtotalCents = sumLines(params.lines);
   const holdbackPercent = Math.max(0, Math.min(50, Math.round(params.holdbackPercent ?? 0)));
   // Never withhold on a negative (credit) invoice.
   const holdbackCents = subtotalCents > 0 ? round((subtotalCents * holdbackPercent) / 100) : 0;
   const taxableCents = subtotalCents - holdbackCents;
-  const taxLines = taxLinesFor(taxableCents, params.province, params.registration);
+  const taxLines = taxLinesFor(taxableCents, params.taxCode, params.registration);
   const taxCents = taxLines.reduce((s, l) => s + l.amountCents, 0);
   return { subtotalCents, holdbackPercent, holdbackCents, taxableCents, taxLines, taxCents, totalCents: taxableCents + taxCents };
 }
@@ -86,18 +86,9 @@ export function finalInvoiceSubtotalCents(params: { jobSubtotalCents: number; in
   return Math.max(0, params.jobSubtotalCents - params.invoicedSubtotalCents);
 }
 
-/** Lien / holdback period in calendar days after substantial completion. */
-export function lienPeriodDays(province: string | null | undefined): number {
-  switch ((province ?? "").toUpperCase()) {
-    case "BC":
-      return 55; // Builders Lien Act s. 8: 55 days after completion
-    case "ON":
-      return 60; // Construction Act s. 31: 60 days after publication of the certificate of substantial performance
-    case "AB":
-      return 60; // Prompt Payment and Construction Lien Act: 60 days (90 for oil & gas)
-    default:
-      return 60;
-  }
+/** Giorni dopo la fine lavori per lo svincolo della ritenuta a garanzia (art. 1666 c.c.: termine contrattuale, di prassi 30-60 giorni dal collaudo). */
+export function lienPeriodDays(_province?: string | null | undefined): number {
+  return 60;
 }
 
 export function addDays(d: Date, days: number): Date {

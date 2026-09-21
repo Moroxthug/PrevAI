@@ -64,7 +64,7 @@ const createSchema = z.object({
   province: z.string().max(2).optional(),
   postalCode: z.string().max(20).optional(),
   businessNumber: z.string().max(60).optional(),
-  preferredLanguage: z.enum(["en", "fr"]).optional(),
+  preferredLanguage: z.enum(["it"]).optional(),
   notes: z.string().max(2000).optional(),
 });
 
@@ -95,7 +95,7 @@ router.post("/clients", requireApiKey, publicApiLimiter, requirePermission("lead
         province: normalizeProvince(d.province) ?? null,
         postalCode: d.postalCode ?? null,
         businessNumber: d.businessNumber ?? null,
-        preferredLanguage: d.preferredLanguage ?? "en",
+        preferredLanguage: "it",
         notes: d.notes ?? "",
         dedupKey,
       })

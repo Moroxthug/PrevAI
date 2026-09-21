@@ -94,7 +94,9 @@ export type TaxProfileComponentsItem = {
 };
 
 export interface TaxProfile {
-  province: string;
+  code: string;
+  name: string;
+  hint: string;
   totalRate: number;
   components: TaxProfileComponentsItem[];
 }
@@ -112,7 +114,7 @@ export interface QuoteVariant {
   subtotale: number;
   ivaPercentuale: number;
   ivaValore: number;
-  /** Phase 71 — statutory components (GST/QST, GST/PST, HST) or one generic "Tax" line; amounts sum to ivaValore. */
+  /** Righe IVA (IVA22/IVA10/IVA4) o una riga generica "Imposta"; gli importi sommano a ivaValore. */
   taxLines?: QuoteTaxLine[];
   totale: number;
   createdAt: string;
@@ -140,14 +142,13 @@ export interface UpdateQuoteVariantBody {
 }
 
 /**
- * Language of the customer-facing documents (client preference, else French in Québec).
+ * Lingua dei documenti rivolti al cliente (sempre italiano).
  */
 export type QuoteDocumentLanguage = typeof QuoteDocumentLanguage[keyof typeof QuoteDocumentLanguage];
 
 
 export const QuoteDocumentLanguage = {
-  en: 'en',
-  fr: 'fr',
+  it: 'it',
 } as const;
 
 export type QuoteStatus = typeof QuoteStatus[keyof typeof QuoteStatus];
@@ -185,9 +186,9 @@ export interface Quote {
   subtotale: number;
   ivaPercentuale: number;
   ivaValore: number;
-  /** Phase 71 — statutory components (GST/QST, GST/PST, HST) or one generic "Tax" line; amounts sum to ivaValore. */
+  /** Righe IVA (IVA22/IVA10/IVA4) o una riga generica "Imposta"; gli importi sommano a ivaValore. */
   taxLines?: QuoteTaxLine[];
-  /** Language of the customer-facing documents (client preference, else French in Québec). */
+  /** Lingua dei documenti rivolti al cliente (sempre italiano). */
   documentLanguage?: QuoteDocumentLanguage;
   totale: number;
   note: string;

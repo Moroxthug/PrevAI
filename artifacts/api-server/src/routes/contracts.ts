@@ -148,7 +148,7 @@ router.post("/contracts/from-quote/:quoteId", requireAuth, requirePermission("co
       res.status(403).json({ error: "PLAN_REQUIRED", requiredPlan: gate.plan, message: "Contracts require the Pro plan" });
       return;
     }
-    const body = z.object({ language: z.enum(["en", "fr"]).optional(), province: z.string().optional() }).safeParse(req.body ?? {});
+    const body = z.object({ language: z.enum(["it"]).optional(), province: z.string().optional() }).safeParse(req.body ?? {});
     if (!body.success) {
       res.status(400).json({ error: "Invalid request" });
       return;
@@ -302,9 +302,7 @@ router.post("/contracts/:id/sign", requireAuth, requirePermission("contracts", "
       res.status(500).json({ error: "Missing contractor signer" });
       return;
     }
-    const consentText = loaded.contract.language === "fr"
-      ? "J'accepte de signer ce contrat électroniquement et je reconnais que ma signature électronique a la même valeur qu'une signature manuscrite."
-      : "I agree to sign this contract electronically and acknowledge that my electronic signature has the same effect as a handwritten signature.";
+    const consentText = "Accetto di firmare questo contratto elettronicamente e riconosco che la mia firma elettronica ha lo stesso valore di una firma autografa.";
     await db
       .update(contractSignersTable)
       .set({ status: "signed", name: parsed.data.name, signatureType: parsed.data.signatureType, signatureData: parsed.data.signatureData, consentText, signedAt: new Date(), ip: req.ip ?? null, userAgent: req.headers["user-agent"] ?? null })

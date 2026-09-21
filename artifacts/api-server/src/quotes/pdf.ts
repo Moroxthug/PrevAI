@@ -84,8 +84,8 @@ export async function generateCapitolatoPdfBuffer(quote: QuoteRow, profile: Prof
   const companyAddress = snap?.address || profile?.address || "";
   const companyPhone = snap?.phone || profile?.phone || "";
   const companyEmail = snap?.email || profile?.email || "";
-  // The DB default title is the English string; a French document localises it unless the company typed its own.
-  const titolo1 = quote.titoloPreventivoRiga1 && quote.titoloPreventivoRiga1 !== qt("defaultTitle", "en") ? quote.titoloPreventivoRiga1 : qt("defaultTitle", lang);
+  // Il titolo predefinito QuoteAI ("Project Quote & Itemized Estimate") di eventuali righe importate viene localizzato; un titolo scritto dall'impresa resta.
+  const titolo1 = quote.titoloPreventivoRiga1 && quote.titoloPreventivoRiga1 !== "Project Quote & Itemized Estimate" ? quote.titoloPreventivoRiga1 : qt("defaultTitle", lang);
   const titolo2 = quote.titoloPreventivoRiga2 || "";
   const numeroData = quote.numeroPreventivoData || `${qt("quoteNo", lang)} ${quote.id.slice(0, 4).toUpperCase()} - ${fmtQuoteDate(new Date(), lang)}`;
   const subtotale = Number(quote.subtotale);
@@ -475,8 +475,8 @@ export async function generateQuotePdfBuffer(quote: QuoteRow, profile: ProfileRo
   const companyAddress = snap?.address || profile?.address || "";
   const companyPhone = snap?.phone || profile?.phone || "";
   const companyEmail = snap?.email || profile?.email || "";
-  // The DB default title is the English string; a French document localises it unless the company typed its own.
-  const titolo1 = quote.titoloPreventivoRiga1 && quote.titoloPreventivoRiga1 !== qt("defaultTitle", "en") ? quote.titoloPreventivoRiga1 : qt("defaultTitle", lang);
+  // Il titolo predefinito QuoteAI ("Project Quote & Itemized Estimate") di eventuali righe importate viene localizzato; un titolo scritto dall'impresa resta.
+  const titolo1 = quote.titoloPreventivoRiga1 && quote.titoloPreventivoRiga1 !== "Project Quote & Itemized Estimate" ? quote.titoloPreventivoRiga1 : qt("defaultTitle", lang);
   const titolo2 = quote.titoloPreventivoRiga2 || "";
   const numeroData = quote.numeroPreventivoData || `${qt("quoteNo", lang)} ${quote.id.slice(0, 4).toUpperCase()} - ${fmtQuoteDate(new Date(), lang)}`;
   const subtotale = Number(quote.subtotale);

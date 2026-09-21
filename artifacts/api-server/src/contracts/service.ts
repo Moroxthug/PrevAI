@@ -9,7 +9,7 @@ import {
   businessProfilesTable,
   clientsTable,
   authUsersTable,
-  computeTax,
+  quoteTaxLines,
   normalizeProvince,
   derivePaymentScheduleFromText,
   type Contract,
@@ -30,6 +30,7 @@ import { getBaseUrl } from "../lib/baseUrl.js";
 import { raiseAutomation } from "../lib/automation.js";
 import { writeAudit } from "../lib/notifications.js";
 import { sendContractSigningEmail, sendContractSignedEmail } from "../lib/emailContracts.js";
+import { MARKET } from "@workspace/config";
 import { buildContractDocument, fallbackScope, fallbackSchedule, templateKeyForProvince, refreshLockedSections, type Lang, type TemplateKey } from "./templates.js";
 import { buildContractPdf } from "./pdf.js";
 
@@ -115,14 +116,10 @@ export function buildVariablesFromQuote(params: {
   const discountAmount = discount && discount.percentuale > 0 ? Number(discount.importoScontato) : 0;
   const subtotal = Math.round((grossSubtotal - discountAmount) * 100) / 100;
 
-  // Tax: use the quote's stored rate when it matches the province profile,
-  // otherwise recompute from the province (keeps GST/QST split correct).
-  const taxCalc = computeTax(subtotal, params.province);
+  // IVA: l'aliquota memorizzata sul preventivo (22/10/4 → regime, altrimenti
+  // riga generica "Imposta"); 0 = operazione senza IVA, nessuna riga.
   const storedRate = Number(quote.ivaPercentuale);
-  const useProfile = Math.abs(taxCalc.profile.totalRate - storedRate) < 0.01 || storedRate === 0;
-  const taxLines = useProfile
-    ? taxCalc.lines.map((l) => ({ code: l.code, label: l.label, rate: l.rate, amount: l.amount }))
-    : [{ code: "TAX", label: params.language === "fr" ? "Taxes" : "Sales tax", rate: storedRate, amount: Math.round(subtotal * storedRate) / 100 }];
+  const taxLines = quoteTaxLines(subtotal, storedRate, Math.round(subtotal * storedRate) / 100).map((l) => ({ code: l.code, label: l.label, rate: l.rate, amount: l.amount }));
   const taxTotal = Math.round(taxLines.reduce((s, l) => s + l.amount, 0) * 100) / 100;
   const total = Math.round((subtotal + taxTotal) * 100) / 100;
 
@@ -156,7 +153,7 @@ export function buildVariablesFromQuote(params: {
     },
     siteAddress,
     province: params.province,
-    projectTitle: quote.titoloPreventivoRiga2 || quote.descrizioneGenerale?.slice(0, 120) || (params.language === "fr" ? "Travaux de rénovation" : "Renovation work"),
+    projectTitle: quote.titoloPreventivoRiga2 || quote.descrizioneGenerale?.slice(0, 120) || "Lavori di ristrutturazione",
     priceLines,
     discount: discountAmount > 0 && discount ? { percent: Number(discount.percentuale), amount: discountAmount } : null,
     subtotal,
@@ -167,7 +164,7 @@ export function buildVariablesFromQuote(params: {
     startDate: params.overrides?.startDate ?? null,
     estimatedDurationWeeks: params.overrides?.estimatedDurationWeeks ?? null,
     warrantyMonths: params.overrides?.warrantyMonths ?? 12,
-    englishRequestedInQuebec: params.overrides?.englishRequestedInQuebec ?? (params.province === "QC" && params.language === "en"),
+    englishRequestedInQuebec: params.overrides?.englishRequestedInQuebec ?? false,
     directAgreement: params.overrides?.directAgreement ?? true,
   };
 }
@@ -179,19 +176,14 @@ async function draftWithAi(quote: QuoteRow, vars: ContractVariables, lang: Lang)
   const quoteText = chapters
     .map((c) => `${c.lettera}. ${c.titolo}\n${c.voci.map((v) => `  - ${v.descrizione} (${v.quantita} ${v.um})`).join("\n")}${c.osservazione ? `\n  Note: ${c.osservazione}` : ""}`)
     .join("\n");
-  const system = lang === "fr"
-    ? `Tu es un rédacteur de contrats de construction au Canada. À partir d'une soumission, rédige en français, pour un contrat d'entreprise, (1) la section « Description des travaux » et (2) la section « Échéancier ». Style clair, précis, sans jargon juridique, sans prix. Réponds UNIQUEMENT en JSON.`
-    : `You draft construction contracts in Canada. From a quote, write, for a services agreement, (1) the "Scope of Work" section and (2) the "Schedule" section. Clear, precise, plain language, no legalese, no prices. Reply with JSON ONLY.`;
-  const user = `${lang === "fr" ? "Soumission" : "Quote"} ${vars.quoteNumber} — ${vars.projectTitle}
-${lang === "fr" ? "Adresse du chantier" : "Site address"}: ${vars.siteAddress}
-${lang === "fr" ? "Description générale" : "General description"}: ${quote.descrizioneGenerale || "-"}
-${lang === "fr" ? "Notes" : "Notes"}: ${quote.note || "-"}
+  const system = `Sei un redattore di contratti d'appalto edili in Italia. A partire da un preventivo, scrivi in italiano, per un contratto d'appalto, (1) la sezione "Oggetto dei lavori" e (2) la sezione "Tempi di esecuzione". Stile chiaro, preciso, senza gergo legale, senza prezzi. Rispondi SOLO in JSON.`;
+  const user = `Preventivo ${vars.quoteNumber} — ${vars.projectTitle}
+Indirizzo del cantiere: ${vars.siteAddress}
+Descrizione generale: ${quote.descrizioneGenerale || "-"}
+Note: ${quote.note || "-"}
 ${quoteText}
 
-${lang === "fr"
-  ? `Retourne: {"scope": "<texte markdown-lite: paragraphes séparés par une ligne vide, puces '- ' par poste de travail, **gras** permis; termine par une liste 'Exclusions' réaliste>", "schedule": "<1-2 paragraphes: phases principales dans l'ordre, dépendances (permis, matériaux), et que les dates sont des estimations>", "duration_weeks": <entier estimé ou null>}`
-  : `Return: {"scope": "<markdown-lite text: paragraphs separated by a blank line, '- ' bullets per work item, **bold** allowed; end with a realistic 'Exclusions' list>", "schedule": "<1-2 paragraphs: main phases in order, dependencies (permits, materials), and that dates are estimates>", "duration_weeks": <estimated integer or null>}`}`;
-
+Restituisci: {"scope": "<testo markdown-lite: paragrafi separati da riga vuota, elenco '- ' per ogni lavorazione, **grassetto** ammesso; chiudi con un elenco 'Esclusioni' realistico>", "schedule": "<1-2 paragrafi: fasi principali in ordine, dipendenze (titoli abilitativi, materiali), e che le date sono stime>", "duration_weeks": <intero stimato o null>}`;
   const completion = await openai.chat.completions.create({
     model: process.env.AI_MODEL ?? "gpt-4o-mini",
     temperature: 0.2,
@@ -239,8 +231,8 @@ export async function createContractFromQuote(params: {
     normalizeProvince(quote.province) ??
     normalizeProvince((quote.clientData as QuoteClientData | null)?.province) ??
     normalizeProvince(profile?.province) ??
-    "ON";
-  const language: Lang = params.language ?? (client?.preferredLanguage as Lang | undefined) ?? (province === "QC" ? "fr" : "en");
+    "";
+  const language: Lang = MARKET.lang;
   const templateKey: TemplateKey = templateKeyForProvince(province);
   const contractNumber = await nextContractNumber(params.userId);
 

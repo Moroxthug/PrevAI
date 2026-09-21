@@ -30,10 +30,10 @@ paths:
     get:
       operationId: listTaxProfiles
       tags: [health]
-      summary: Canadian sales-tax profiles by province (static, public)
+      summary: Regimi IVA italiani (statici, pubblici)
       responses:
         "200":
-          description: One profile per province/territory
+          description: Un profilo per regime IVA (IVA22, IVA10, IVA4, RC, SP, ESENTE)
           content:
             application/json:
               schema:
@@ -1588,7 +1588,7 @@ components:
       properties:
         code:
           type: string
-          enum: [GST, HST, PST, QST, RST, TAX]
+          enum: [IVA22, IVA10, IVA4, RC, SP, ESENTE, TAX]
         label:
           type: string
         rate:
@@ -1600,7 +1600,11 @@ components:
     TaxProfile:
       type: object
       properties:
-        province:
+        code:
+          type: string
+        name:
+          type: string
+        hint:
           type: string
         totalRate:
           type: number
@@ -1616,7 +1620,7 @@ components:
               rate:
                 type: number
             required: [code, label, rate]
-      required: [province, totalRate, components]
+      required: [code, name, hint, totalRate, components]
 
     QuoteVariant:
       type: object
@@ -1653,7 +1657,7 @@ components:
         ivaValore:
           type: number
         taxLines:
-          description: Phase 71 — statutory components (GST/QST, GST/PST, HST) or one generic "Tax" line; amounts sum to ivaValore.
+          description: Righe IVA (IVA22/IVA10/IVA4) o una riga generica "Imposta"; gli importi sommano a ivaValore.
           type: array
           items:
             $ref: "#/components/schemas/QuoteTaxLine"
@@ -1764,14 +1768,14 @@ components:
         ivaValore:
           type: number
         taxLines:
-          description: Phase 71 — statutory components (GST/QST, GST/PST, HST) or one generic "Tax" line; amounts sum to ivaValore.
+          description: Righe IVA (IVA22/IVA10/IVA4) o una riga generica "Imposta"; gli importi sommano a ivaValore.
           type: array
           items:
             $ref: "#/components/schemas/QuoteTaxLine"
         documentLanguage:
-          description: Language of the customer-facing documents (client preference, else French in Québec).
+          description: Lingua dei documenti rivolti al cliente (sempre italiano).
           type: string
-          enum: [en, fr]
+          enum: [it]
         totale:
           type: number
         note:

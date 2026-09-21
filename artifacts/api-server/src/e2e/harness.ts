@@ -101,14 +101,14 @@ export async function createUser(opts: { name?: string; email?: string } = {}): 
 }
 
 export type OrgOptions = {
-  province?: "ON" | "QC";
+  province?: string;
   plan?: "free" | "monthly_starter" | "monthly_pro" | "monthly_elite";
   companyName?: string;
   profile?: Partial<typeof businessProfilesTable.$inferInsert>;
 };
 
 /** A contractor account: user + business profile on the given plan (elite by default — every feature on). */
-export async function createOrg(opts: OrgOptions = {}): Promise<TestUser & { province: "ON" | "QC" }> {
+export async function createOrg(opts: OrgOptions = {}): Promise<TestUser & { province: string }> {
   const province = opts.province ?? "ON";
   const companyName = opts.companyName ?? `E2E ${province} Co`;
   const user = await createUser({ name: companyName });
@@ -134,7 +134,7 @@ export async function createOrg(opts: OrgOptions = {}): Promise<TestUser & { pro
 // ── Quotes ───────────────────────────────────────────────────────────────────
 
 export type SeedQuoteOptions = {
-  province?: "ON" | "QC";
+  province?: string;
   holdback?: boolean;
   clientName?: string;
   clientEmail?: string;

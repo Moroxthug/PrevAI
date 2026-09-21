@@ -58,7 +58,7 @@ async function ownedProject(userId: string, id: string) {
 }
 
 const dateRe = /^\d{4}-\d{2}-\d{2}$/;
-const TaxBreakdownBody = z.object({ GST: z.number().int().min(0).optional(), HST: z.number().int().min(0).optional(), PST: z.number().int().min(0).optional(), QST: z.number().int().min(0).optional() });
+const TaxBreakdownBody = z.object({ IVA: z.number().int().min(0).optional() });
 
 const CostBody = z.object({
   category: z.enum(COST_CATEGORIES),

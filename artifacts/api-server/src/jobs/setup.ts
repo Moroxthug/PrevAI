@@ -31,21 +31,17 @@ import { buildFallbackPlan, budgetFromSplit, DEFAULT_COST_RATIO, DEFAULT_SPLIT, 
 // The AI only adjusts durations and the budget split of the deterministic
 // plan; it never invents milestones, so payment links stay intact.
 
-async function refineWithAi(plan: SetupPlan, params: { chapters: QuoteChapter[]; variables: ContractVariables; language: "en" | "fr" }): Promise<SetupPlan> {
+async function refineWithAi(plan: SetupPlan, params: { chapters: QuoteChapter[]; variables: ContractVariables; language: "it" }): Promise<SetupPlan> {
   const { variables: v, language } = params;
   const model = process.env.AI_MODEL ?? "gpt-4o-mini";
-  const list = plan.milestones.map((m) => `- key=${m.key} | ${m.title} | value ${(m.valueCents / 100).toFixed(0)} CAD | tasks: ${m.tasks.slice(0, 5).join("; ") || "-"}`).join("\n");
-  const system = language === "fr"
-    ? "Tu es un chargé de projet en rénovation résidentielle au Canada. Tu estimes des durées réalistes en jours ouvrables et une répartition des coûts. Réponds UNIQUEMENT en JSON."
-    : "You are a residential renovation project manager in Canada. You estimate realistic working-day durations and an expected cost split. Reply with JSON ONLY.";
-  const user = `${language === "fr" ? "Projet" : "Project"}: ${v.projectTitle}
-${language === "fr" ? "Prix avant taxes" : "Pre-tax price"}: ${v.subtotal.toFixed(0)} CAD · ${language === "fr" ? "Durée estimée au contrat" : "Contract duration estimate"}: ${v.estimatedDurationWeeks ? `${v.estimatedDurationWeeks} ${language === "fr" ? "semaines" : "weeks"}` : "-"}
-${language === "fr" ? "Jalons (dans l'ordre)" : "Milestones (in order)"}:
+  const list = plan.milestones.map((m) => `- key=${m.key} | ${m.title} | value ${(m.valueCents / 100).toFixed(0)} EUR | tasks: ${m.tasks.slice(0, 5).join("; ") || "-"}`).join("\n");
+  const system = "Sei un direttore di cantiere per ristrutturazioni residenziali in Italia. Stimi durate realistiche in giorni lavorativi e una ripartizione dei costi attesa. Rispondi SOLO in JSON.";
+  const user = `Progetto: ${v.projectTitle}
+Prezzo IVA esclusa: ${v.subtotal.toFixed(0)} EUR · Durata stimata da contratto: ${v.estimatedDurationWeeks ? `${v.estimatedDurationWeeks} settimane` : "-"}
+Fasi (in ordine):
 ${list}
 
-${language === "fr"
-  ? `Retourne: {"milestones":[{"key":"<key>","duration_days":<entier ≥1>}...pour chaque jalon], "cost_ratio": <coût attendu ÷ prix avant taxes, entre 0.5 et 0.9>, "split": {"materials":<0-1>,"labour":<0-1>,"subcontractor":<0-1>,"permits_fees":<0-1>,"equipment":<0-1>,"misc":<0-1>} (somme = 1), "rationale": "<2 phrases max>"}`
-  : `Return: {"milestones":[{"key":"<key>","duration_days":<integer ≥1>}...one per milestone], "cost_ratio": <expected cost ÷ pre-tax price, between 0.5 and 0.9>, "split": {"materials":<0-1>,"labour":<0-1>,"subcontractor":<0-1>,"permits_fees":<0-1>,"equipment":<0-1>,"misc":<0-1>} (sums to 1), "rationale": "<2 sentences max>"}`}`;
+Restituisci: {"milestones":[{"key":"<key>","duration_days":<intero ≥1>}...una per fase], "cost_ratio": <costo atteso ÷ prezzo IVA esclusa, tra 0.5 e 0.9>, "split": {"materials":<0-1>,"labour":<0-1>,"subcontractor":<0-1>,"permits_fees":<0-1>,"equipment":<0-1>,"misc":<0-1>} (somma = 1), "rationale": "<max 2 frasi>"}`;
 
   const completion = await openai.chat.completions.create(
     {
@@ -106,7 +102,7 @@ function jobName(v: ContractVariables): string {
 export async function setupJobFromContract(contract: Contract): Promise<{ projectId: string; created: boolean; milestoneCount: number; plannedEnd: Date | null }> {
   if (contract.kind !== "agreement") throw new Error("Only agreements create jobs");
   const v = contract.variables;
-  const language = contract.language as "en" | "fr";
+  const language = contract.language as "it";
 
   // Idempotent: a retry after a partial failure reuses the project row.
   const [existing] = await db.select().from(projectsTable).where(and(eq(projectsTable.contractId, contract.id), eq(projectsTable.userId, contract.userId)));

@@ -1,4 +1,4 @@
-import { COST_CATEGORIES, getTaxProfile, normalizeProvince, type CostCategory, type ReceiptExtraction, type TaxBreakdown } from "@workspace/db";
+import { COST_CATEGORIES, type CostCategory, type ReceiptExtraction, type TaxBreakdown } from "@workspace/db";
 import { openai } from "@workspace/integrations-openai-ai-server";
 import { createRequire } from "node:module";
 import { logger } from "../lib/logger.js";
@@ -19,11 +19,11 @@ function systemPrompt(candidates: JobCandidate[], province: string | null): stri
   const jobs = candidates.length
     ? candidates.map((j) => `- id "${j.id}": ${j.name}${j.address ? ` (${j.address})` : ""}${j.clientName ? ` — client ${j.clientName}` : ""}`).join("\n")
     : "- (none)";
-  return `You read receipts and supplier invoices for a small Canadian construction company${province ? ` based in ${province}` : ""}.
-Extract the purchase into JSON. Amounts are in dollars (decimals), never cents. Canadian sales taxes: GST 5%, HST 13–15%, PST/RST 6–7%, QST 9.975%. A receipt shows either HST alone, or GST plus a provincial tax; never invent a tax that is not printed.
+  return `You read receipts and supplier invoices (scontrini, fatture, DDT) for a small Italian construction company${province ? ` based in the province of ${province}` : ""}.
+Extract the purchase into JSON. Amounts are in euros (decimals), never cents. Italian VAT (IVA) is 22% ordinary, 10% or 4% reduced; a receipt may print one IVA total or split it by rate — report the total IVA. Never invent a tax that is not printed. Reverse-charge (inversione contabile) invoices show no IVA.
 
 Cost categories: ${COST_CATEGORIES.join(" | ")}.
-- materials: lumber, drywall, tile, paint, fasteners, plumbing/electrical supplies, hardware stores (Home Depot, RONA, Lowe's, Canac, BMR…)
+- materials: lumber, drywall, tile, paint, fasteners, plumbing/electrical supplies, hardware stores and builders' merchants (Leroy Merlin, Bricoman, OBI, Brico io, rivendite edili…)
 - labour: wages, staffing agencies
 - subcontractor: another trade's invoice (electrician, plumber, roofer…)
 - permits_fees: municipal permits, inspections, disposal/dump fees, insurance certificates
@@ -37,10 +37,10 @@ Return ONLY this JSON object:
 {
   "vendor": "store or supplier name or null",
   "date": "YYYY-MM-DD or null",
-  "currency": "CAD",
+  "currency": "EUR",
   "lines": [{ "description": "...", "quantity": 1, "unitPrice": 0.0, "total": 0.0 }],
   "subtotal": 0.0,
-  "taxes": { "GST": 0.0, "HST": null, "PST": null, "QST": null },
+  "taxes": { "IVA": 0.0 },
   "total": 0.0,
   "suggestedCategory": "materials",
   "suggestedProjectId": "uuid or null",
@@ -120,32 +120,22 @@ export function normalizeReceipt(raw: unknown, opts: { model: string; candidateI
   const r = (raw && typeof raw === "object" ? raw : {}) as Record<string, unknown>;
   const taxesRaw = (r.taxes && typeof r.taxes === "object" ? r.taxes : {}) as Record<string, unknown>;
   const taxes: ReceiptExtraction["taxes"] = {};
-  for (const k of ["GST", "HST", "PST", "QST"] as const) {
+  // Accetta anche le chiavi canadesi del vecchio prompt sommandole nell'IVA.
+  let ivaRaw = 0;
+  for (const k of ["IVA", "VAT", "GST", "HST", "PST", "QST", "RST"]) {
     const v = num(taxesRaw[k]);
-    if (v !== null && v > 0) taxes[k] = v;
+    if (v !== null && v > 0) ivaRaw += v;
   }
-  // RST (Manitoba) is printed as PST on most receipts; accept both spellings.
-  const rst = num(taxesRaw.RST);
-  if (rst !== null && rst > 0 && !taxes.PST) taxes.PST = rst;
+  if (ivaRaw > 0) taxes.IVA = Math.round(ivaRaw * 100) / 100;
 
   let subtotal = num(r.subtotal);
   let total = num(r.total);
   let taxSum: number = (Object.values(taxes) as (number | null | undefined)[]).reduce<number>((s, v) => s + (v ?? 0), 0);
 
   if (total !== null && subtotal !== null && taxSum === 0 && total > subtotal) {
-    // Receipt printed a tax the model did not itemise: attribute it to the province's components.
+    // Lo scontrino riporta un'imposta che il modello non ha isolato: è IVA.
     taxSum = Math.round((total - subtotal) * 100) / 100;
-    const code = normalizeProvince(opts.province);
-    if (code) {
-      const profile = getTaxProfile(code);
-      for (const c of profile.components) {
-        const key = c.code === "RST" ? "PST" : c.code;
-        if (key === "TAX") continue; // never in a provincial profile
-        taxes[key] = Math.round(((taxSum * c.rate) / profile.totalRate) * 100) / 100;
-      }
-    } else {
-      taxes.GST = taxSum;
-    }
+    taxes.IVA = taxSum;
   } else if (total === null && subtotal !== null) {
     total = Math.round((subtotal + taxSum) * 100) / 100;
   } else if (subtotal === null && total !== null) {
@@ -169,13 +159,13 @@ export function normalizeReceipt(raw: unknown, opts: { model: string; candidateI
   const date = dateStr && /^\d{4}-\d{2}-\d{2}$/.test(dateStr) && !Number.isNaN(Date.parse(dateStr)) ? new Date(`${dateStr}T12:00:00Z`) : null;
 
   const taxBreakdown: TaxBreakdown = {};
-  for (const k of ["GST", "HST", "PST", "QST"] as const) if (taxes[k]) taxBreakdown[k] = cents(taxes[k]!);
+  if (taxes.IVA) taxBreakdown.IVA = cents(taxes.IVA);
   const taxCents = Object.values(taxBreakdown).reduce((s, v) => s + (v ?? 0), 0);
   const subtotalCents = cents(subtotal);
   const totalCents = total !== null ? cents(total) : subtotalCents + taxCents;
 
   return {
-    extraction: { vendor: str(r.vendor), date: date ? dateStr : null, currency: str(r.currency) ?? "CAD", lines, subtotal, taxes, total, suggestedCategory, suggestedProjectId, confidence, note: str(r.note), model: opts.model },
+    extraction: { vendor: str(r.vendor), date: date ? dateStr : null, currency: str(r.currency) ?? "EUR", lines, subtotal, taxes, total, suggestedCategory, suggestedProjectId, confidence, note: str(r.note), model: opts.model },
     subtotalCents,
     taxCents,
     totalCents,

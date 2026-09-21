@@ -1,11 +1,11 @@
 import type { ContractDocument, ContractVariables, ContractSigner, ContractEvent } from "@workspace/db";
 import { paymentTermAmount } from "@workspace/db";
-import type { Lang } from "./templates.js";
+import { MARKET, fmtEur, fmtDateLong, fmtDateTime, fmtIsoDateLong, type Lang } from "@workspace/config";
 import { taxLabel } from "../invoices/render.js";
 
-// ── Markdown-lite parser (shared by HTML and PDF renderers) ─────────────────
-// Supported: paragraphs separated by blank lines, "- " bullets, **bold**,
-// *italic*. Deliberately tiny: contract text must stay predictable.
+// ── Parser markdown-lite (condiviso da renderer HTML e PDF) ─────────────────
+// Supporta: paragrafi separati da riga vuota, elenchi "- ", **grassetto**,
+// *corsivo*. Volutamente minimale: il testo contrattuale deve restare prevedibile.
 
 export type Run = { text: string; bold?: boolean; italic?: boolean };
 export type Block = { type: "p"; runs: Run[] } | { type: "ul"; items: Run[][] };
@@ -54,88 +54,85 @@ export function parseBlocks(body: string): Block[] {
   return blocks;
 }
 
-// ── Formatting helpers ───────────────────────────────────────────────────────
+// ── Formattazione ────────────────────────────────────────────────────────────
 
-export function fmtMoney(n: number, lang: Lang): string {
-  return new Intl.NumberFormat(lang === "fr" ? "fr-CA" : "en-CA", { style: "currency", currency: "CAD" }).format(n);
+export function fmtMoney(n: number, _lang?: Lang): string {
+  return fmtEur(n);
 }
 
-export function fmtDate(d: Date | string | null | undefined, lang: Lang, withTime = false): string {
+export function fmtDate(d: Date | string | null | undefined, _lang?: Lang, withTime = false): string {
   if (!d) return "—";
-  const date = typeof d === "string" ? new Date(d.length === 10 ? d + "T00:00:00" : d) : d;
-  return date.toLocaleString(lang === "fr" ? "fr-CA" : "en-CA", withTime ? { dateStyle: "long", timeStyle: "short", timeZone: "America/Toronto" } : { dateStyle: "long" });
+  if (typeof d === "string" && d.length === 10) return fmtIsoDateLong(d);
+  return withTime ? fmtDateTime(d) : fmtDateLong(d);
 }
 
 export const T = {
-  contractor: { en: "Contractor", fr: "Entrepreneur" },
-  customer: { en: "Customer", fr: "Client" },
-  siteAddress: { en: "Site address", fr: "Adresse du chantier" },
-  project: { en: "Project", fr: "Projet" },
-  contractNo: { en: "Contract No.", fr: "Contrat n°" },
-  quoteNo: { en: "Based on Quote No.", fr: "Selon la soumission n°" },
-  date: { en: "Date", fr: "Date" },
-  description: { en: "Description", fr: "Description" },
-  amount: { en: "Amount", fr: "Montant" },
-  discount: { en: "Discount", fr: "Rabais" },
-  subtotal: { en: "Subtotal (before tax)", fr: "Sous-total (avant taxes)" },
-  total: { en: "Contract Price (incl. tax)", fr: "Prix du contrat (taxes incluses)" },
-  payment: { en: "Payment", fr: "Versement" },
-  due: { en: "Due", fr: "Échéance" },
-  dueOnSigning: { en: "On signing", fr: "À la signature" },
-  dueOnCompletion: { en: "On completion", fr: "À la fin des travaux" },
-  dueMilestone: { en: "When the milestone is reached", fr: "À l'atteinte du jalon" },
-  dueHoldback: { en: "Holdback release", fr: "Libération de la retenue" },
-  netDays: { en: "net {n} days", fr: "net {n} jours" },
-  bn: { en: "GST/HST No.", fr: "N° TPS/TVH" },
-  licence: { en: "Licence No.", fr: "N° de licence" },
-  email: { en: "Email", fr: "Courriel" },
-  phone: { en: "Phone", fr: "Téléphone" },
-  signedBy: { en: "Signed by", fr: "Signé par" },
-  signedOn: { en: "Signed on", fr: "Signé le" },
-  notYetSigned: { en: "Not yet signed", fr: "Non signé" },
-  auditTitle: { en: "Electronic Signature Certificate", fr: "Certificat de signature électronique" },
-  auditIntro: {
-    en: "This certificate records the electronic signing of the agreement above. Signatures were captured through QuoteAI with email verification. Document integrity can be checked by comparing the SHA-256 fingerprints below with those of the PDF files.",
-    fr: "Le présent certificat consigne la signature électronique du contrat ci-dessus. Les signatures ont été recueillies par QuoteAI avec vérification du courriel. L'intégrité du document peut être vérifiée en comparant les empreintes SHA-256 ci-dessous avec celles des fichiers PDF.",
-  },
-  event: { en: "Event", fr: "Événement" },
-  when: { en: "Date & time (ET)", fr: "Date et heure (HE)" },
-  who: { en: "Party", fr: "Partie" },
-  ipUa: { en: "IP / device", fr: "IP / appareil" },
-  unsignedHash: { en: "Fingerprint of the document as sent", fr: "Empreinte du document tel qu'envoyé" },
-  signedHash: { en: "Fingerprint of the signed document", fr: "Empreinte du document signé" },
-  draft: { en: "DRAFT — NOT YET SIGNED", fr: "BROUILLON — NON SIGNÉ" },
-  page: { en: "Page", fr: "Page" },
-  signatureTyped: { en: "Typed signature", fr: "Signature dactylographiée" },
-} satisfies Record<string, { en: string; fr: string }>;
+  contractor: "Appaltatore",
+  customer: "Committente",
+  siteAddress: "Indirizzo del cantiere",
+  project: "Oggetto",
+  contractNo: "Contratto n.",
+  quoteNo: "Sulla base del preventivo",
+  date: "Data",
+  description: "Descrizione",
+  amount: "Importo",
+  discount: "Sconto",
+  subtotal: "Imponibile (IVA esclusa)",
+  total: "Corrispettivo (IVA inclusa)",
+  payment: "Rata",
+  due: "Scadenza",
+  dueOnSigning: "Alla firma",
+  dueOnCompletion: "A fine lavori",
+  dueMilestone: "Al raggiungimento della fase",
+  dueHoldback: "Svincolo ritenuta a garanzia",
+  netDays: "{n} giorni data fattura",
+  bn: "P. IVA",
+  licence: "N° REA / albo",
+  email: "Email",
+  phone: "Tel.",
+  signedBy: "Firmato da",
+  signedOn: "il",
+  notYetSigned: "Non ancora firmato",
+  auditTitle: "Certificato di firma elettronica",
+  auditIntro: `Il presente certificato registra la sottoscrizione elettronica del contratto che precede. Le firme sono state raccolte tramite ${MARKET.brand} con verifica dell'indirizzo email (firma elettronica ai sensi del Regolamento eIDAS). L'integrità del documento può essere verificata confrontando le impronte SHA-256 riportate sotto con quelle dei file PDF.`,
+  event: "Evento",
+  when: "Data e ora (Europe/Rome)",
+  who: "Parte",
+  ipUa: "IP / dispositivo",
+  unsignedHash: "Impronta del documento inviato",
+  signedHash: "Impronta del documento firmato",
+  draft: "BOZZA — NON ANCORA FIRMATO",
+  page: "Pagina",
+  signatureTyped: "Firma digitata",
+} satisfies Record<string, string>;
 
-export function tr(key: keyof typeof T, lang: Lang): string {
-  return T[key][lang];
+export function tr(key: keyof typeof T, _lang?: Lang): string {
+  return T[key];
 }
 
-export function dueLabel(trigger: string, dueDays: number, lang: Lang): string {
+export function dueLabel(trigger: string, dueDays: number, _lang?: Lang): string {
   const base =
-    trigger === "on_signing" ? tr("dueOnSigning", lang)
-    : trigger === "on_completion" ? tr("dueOnCompletion", lang)
-    : trigger === "holdback_release" ? tr("dueHoldback", lang)
-    : tr("dueMilestone", lang);
-  return dueDays > 0 ? `${base}, ${tr("netDays", lang).replace("{n}", String(dueDays))}` : base;
+    trigger === "on_signing" ? tr("dueOnSigning")
+    : trigger === "on_completion" ? tr("dueOnCompletion")
+    : trigger === "holdback_release" ? tr("dueHoldback")
+    : tr("dueMilestone");
+  return dueDays > 0 ? `${base}, ${tr("netDays").replace("{n}", String(dueDays))}` : base;
 }
 
-export const EVENT_LABELS: Record<string, { en: string; fr: string }> = {
-  created: { en: "Contract drafted", fr: "Contrat rédigé" },
-  edited: { en: "Contract edited", fr: "Contrat modifié" },
-  contractor_signed: { en: "Signed by contractor", fr: "Signé par l'entrepreneur" },
-  sent: { en: "Sent to customer for signature", fr: "Envoyé au client pour signature" },
-  viewed: { en: "Opened by customer", fr: "Ouvert par le client" },
-  otp_sent: { en: "Verification code emailed", fr: "Code de vérification envoyé" },
-  otp_verified: { en: "Email verified", fr: "Courriel vérifié" },
-  signed: { en: "Signed by customer", fr: "Signé par le client" },
-  completed: { en: "All parties signed — contract executed", fr: "Toutes les parties ont signé — contrat conclu" },
-  declined: { en: "Declined by customer", fr: "Refusé par le client" },
-  voided: { en: "Voided by contractor", fr: "Annulé par l'entrepreneur" },
-  expired: { en: "Signing link expired", fr: "Lien de signature expiré" },
-  reminder_sent: { en: "Reminder sent", fr: "Rappel envoyé" },
+export const EVENT_LABELS: Record<string, string> = {
+  created: "Contratto redatto",
+  edited: "Contratto modificato",
+  contractor_signed: "Firmato dall'appaltatore",
+  sent: "Inviato al committente per la firma",
+  viewed: "Aperto dal committente",
+  otp_sent: "Codice di verifica inviato via email",
+  otp_verified: "Email verificata",
+  signed: "Firmato dal committente",
+  completed: "Tutte le parti hanno firmato — contratto concluso",
+  declined: "Rifiutato dal committente",
+  voided: "Annullato dall'appaltatore",
+  expired: "Link di firma scaduto",
+  reminder_sent: "Promemoria inviato",
 };
 
 // ── HTML renderer (preview + public signing page + email body) ───────────────
@@ -179,14 +176,14 @@ export function partiesHtml(v: ContractVariables, lang: Lang): string {
 
 export function priceTableHtml(v: ContractVariables, lang: Lang): string {
   const rows = v.priceLines.map((l) => `<tr><td>${esc(l.label)}</td><td class="num">${fmtMoney(l.amount, lang)}</td></tr>`).join("");
-  const discount = v.discount ? `<tr><td>${tr("discount", lang)} (${v.discount.percent}%)</td><td class="num">− ${fmtMoney(v.discount.amount, lang)}</td></tr>` : "";
-  const taxes = v.taxLines.map((t) => `<tr><td>${esc(taxLabel(t.label, lang))} (${t.rate}%)</td><td class="num">${fmtMoney(t.amount, lang)}</td></tr>`).join("");
+  const discount = v.discount ? `<tr><td>${tr("discount", lang)} (${v.discount.percent} %)</td><td class="num">− ${fmtMoney(v.discount.amount, lang)}</td></tr>` : "";
+  const taxes = v.taxLines.map((t) => `<tr><td>${esc(taxLabel(t.label, lang))} (${t.rate} %)</td><td class="num">${fmtMoney(t.amount, lang)}</td></tr>`).join("");
   return `<div class="table-wrap"><table class="grid"><thead><tr><th>${tr("description", lang)}</th><th class="num">${tr("amount", lang)}</th></tr></thead><tbody>${rows}${discount}<tr class="sub"><td>${tr("subtotal", lang)}</td><td class="num">${fmtMoney(v.subtotal, lang)}</td></tr>${taxes}<tr class="total"><td>${tr("total", lang)}</td><td class="num">${fmtMoney(v.total, lang)}</td></tr></tbody></table></div>`;
 }
 
 export function paymentTableHtml(v: ContractVariables, lang: Lang): string {
   const rows = v.paymentSchedule.terms
-    .map((t, i) => `<tr><td>${i + 1}. ${esc(t.label)}</td><td>${esc(dueLabel(t.trigger, t.dueDays, lang))}</td><td class="num">${t.amountType === "percent" ? `${t.value}%` : ""}</td><td class="num">${fmtMoney(paymentTermAmount(t, v.total), lang)}</td></tr>`)
+    .map((t, i) => `<tr><td>${i + 1}. ${esc(t.label)}</td><td>${esc(dueLabel(t.trigger, t.dueDays, lang))}</td><td class="num">${t.amountType === "percent" ? `${t.value} %` : ""}</td><td class="num">${fmtMoney(paymentTermAmount(t, v.total), lang)}</td></tr>`)
     .join("");
   return `<div class="table-wrap"><table class="grid"><thead><tr><th>${tr("payment", lang)}</th><th>${tr("due", lang)}</th><th class="num">%</th><th class="num">${tr("amount", lang)}</th></tr></thead><tbody>${rows}</tbody></table></div>`;
 }
@@ -267,6 +264,6 @@ export function renderContractHtml(params: {
   return `<div class="contract">${parts.join("\n")}</div>`;
 }
 
-export function eventLabel(e: ContractEvent, lang: Lang): string {
-  return EVENT_LABELS[e.type]?.[lang] ?? e.type;
+export function eventLabel(e: ContractEvent, _lang?: Lang): string {
+  return EVENT_LABELS[e.type] ?? e.type;
 }

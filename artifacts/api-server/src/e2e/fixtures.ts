@@ -17,8 +17,8 @@ import { TINY_PNG_DATA_URL } from "../lib/pngDataUrl.js";
 import { seedQuote, type TestUser } from "./harness.js";
 
 export type Showcase = {
-  province: "ON" | "QC";
-  language: "en" | "fr";
+  province: string;
+  language: "it";
   /** Accepted, signed, job running. */
   quoteId: string;
   /** Unlocked, 4 chapters / 30 lines — page-break material. */
@@ -54,7 +54,7 @@ async function raiseOrThrow(params: Parameters<typeof raiseAutomation>[0]) {
 }
 
 /** A long quote: 4 chapters, 30 line items, a discount, so PDFs have to break pages. */
-async function seedLongQuote(userId: string, province: "ON" | "QC") {
+async function seedLongQuote(userId: string, province: string) {
   const chapters = ["Demolition and site prep", "Rough-in (plumbing, electrical)", "Cabinets, counters and tile", "Finishing and clean-up"];
   const capitoli = chapters.map((titolo, ci) => {
     const voci = Array.from({ length: ci === 3 ? 6 : 8 }, (_, i) => {
@@ -84,18 +84,18 @@ async function seedLongQuote(userId: string, province: "ON" | "QC") {
       subtotale: String(subtotale),
       // Phase 71: real province taxes on the long quote so the PDF matrix shows
       // the GST + QST split (and the discount as the taxable base).
-      ivaPercentuale: String(getTaxProfile(province).totalRate),
-      ivaValore: String(Math.round(Math.round(subtotale * 0.95 * 100) / 100 * getTaxProfile(province).totalRate) / 100),
-      totale: String(Math.round((Math.round(subtotale * 0.95 * 100) / 100) * (1 + getTaxProfile(province).totalRate / 100) * 100) / 100),
+      ivaPercentuale: String(getTaxProfile("IVA10").totalRate),
+      ivaValore: String(Math.round(Math.round(subtotale * 0.95 * 100) / 100 * getTaxProfile("IVA10").totalRate) / 100),
+      totale: String(Math.round((Math.round(subtotale * 0.95 * 100) / 100) * (1 + getTaxProfile("IVA10").totalRate / 100) * 100) / 100),
       status: "unlocked",
     })
     .returning();
   return quote!;
 }
 
-export async function seedShowcase(org: TestUser & { province: "ON" | "QC" }, opts: { withLogo?: boolean } = {}): Promise<Showcase> {
+export async function seedShowcase(org: TestUser & { province: string }, opts: { withLogo?: boolean } = {}): Promise<Showcase> {
   const { userId, province } = org;
-  const language = province === "QC" ? "fr" : "en";
+  const language = "it" as const;
 
   if (opts.withLogo) {
     await db.update(businessProfilesTable).set({ logoUrl: TINY_PNG_DATA_URL }).where(eq(businessProfilesTable.userId, userId));
@@ -144,7 +144,7 @@ export async function seedShowcase(org: TestUser & { province: "ON" | "QC" }, op
   const signToken = captureSignToken?.() ?? null;
 
   // ── A sent manual invoice with a public link (/i/:token) ──
-  const [client] = await db.insert(clientsTable).values({ userId, name: "Pay Client", email: "pay@e2e-test.invalid", phone: "6135550150", city: province === "QC" ? "Québec" : "Ottawa", province, preferredLanguage: language, dedupKey: `pay-${userId}` }).returning();
+  const [client] = await db.insert(clientsTable).values({ userId, name: "Pay Client", email: "pay@e2e-test.invalid", phone: "6135550150", city: province === "QC" ? "Québec" : "Ottawa", province, preferredLanguage: "it", dedupKey: `pay-${userId}` }).returning();
   const ctx = await buildInvoiceContext({ userId, clientId: client!.id });
   const manual = await createInvoice({
     userId, ctx, type: "manual", source: "manual", actor: "contractor", dueDays: 15,

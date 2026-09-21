@@ -49,13 +49,13 @@ export const DEFAULT_SPLIT: Record<CostCategory, number> = {
   equipment: 0.04,
   misc: 0.06,
 };
-const CATEGORY_LABELS: Record<CostCategory, { en: string; fr: string }> = {
-  materials: { en: "Materials", fr: "Matériaux" },
-  labour: { en: "Labour", fr: "Main-d'œuvre" },
-  subcontractor: { en: "Subcontractors", fr: "Sous-traitants" },
-  permits_fees: { en: "Permits & fees", fr: "Permis et frais" },
-  equipment: { en: "Equipment", fr: "Équipement" },
-  misc: { en: "Miscellaneous", fr: "Divers" },
+const CATEGORY_LABELS: Record<CostCategory, string> = {
+  materials: "Materiali",
+  labour: "Manodopera",
+  subcontractor: "Subappaltatori",
+  permits_fees: "Pratiche e oneri",
+  equipment: "Attrezzature",
+  misc: "Varie",
 };
 const COMPLETION_KEY = "completion";
 
@@ -129,7 +129,7 @@ export function buildFallbackPlan(params: {
   chapters: QuoteChapter[];
   variables: ContractVariables;
   signedAt: Date;
-  language: "en" | "fr";
+  language: "it";
 }): SetupPlan {
   const { chapters, variables: v, signedAt, language } = params;
   const schedule: PaymentSchedule = v.paymentSchedule;
@@ -175,7 +175,7 @@ export function buildFallbackPlan(params: {
   } else {
     work = [{
       key: "work",
-      title: language === "fr" ? "Travaux" : "Work",
+      title: "Lavori",
       description: v.projectTitle,
       sourceChapter: null,
       valueCents: cents(subtotal),
@@ -189,8 +189,8 @@ export function buildFallbackPlan(params: {
   // 2. Final walkthrough milestone releases the completion payment.
   const completion: Omit<PlannedMilestone, "durationDays"> = {
     key: COMPLETION_KEY,
-    title: language === "fr" ? "Achèvement et inspection finale" : "Completion & final walkthrough",
-    description: language === "fr" ? "Nettoyage final, liste de déficiences, inspection avec le client." : "Final cleanup, deficiency list, walkthrough with the customer.",
+    title: "Fine lavori e collaudo",
+    description: "Pulizia finale, elenco delle rifiniture, verifica con il committente.",
     sourceChapter: null,
     valueCents: 0,
     paymentTermId: completionTerm?.id ?? null,
@@ -228,10 +228,10 @@ export function buildFallbackPlan(params: {
   };
 }
 
-export function budgetFromSplit(expectedCost: number, split: Record<CostCategory, number>, language: "en" | "fr"): PlannedBudgetLine[] {
+export function budgetFromSplit(expectedCost: number, split: Record<CostCategory, number>, language: "it"): PlannedBudgetLine[] {
   const sum = COST_CATEGORIES.reduce((s, c) => s + (split[c] ?? 0), 0) || 1;
   return COST_CATEGORIES
-    .map((c) => ({ category: c, label: CATEGORY_LABELS[c][language], plannedCents: cents((expectedCost * (split[c] ?? 0)) / sum) }))
+    .map((c) => ({ category: c, label: CATEGORY_LABELS[c], plannedCents: cents((expectedCost * (split[c] ?? 0)) / sum) }))
     .filter((l) => l.plannedCents > 0);
 }
 

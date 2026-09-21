@@ -16,6 +16,9 @@
   },
   "references": [
     {
+      "path": "../../lib/config"
+    },
+    {
       "path": "../../lib/api-client-react"
     },
     {

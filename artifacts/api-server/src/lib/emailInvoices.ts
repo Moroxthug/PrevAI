@@ -1,14 +1,15 @@
+import { MARKET, fmtEurCents, fmtDateLong } from "@workspace/config";
 import { logger } from "./logger.js";
 import { shell, escapeHtml, type EmailLang } from "./emailContracts.js";
 import { sendCustomerEmail } from "./connectedEmailSend.js";
 
-// ── Invoice emails (Phase 4) ─────────────────────────────────────────────────
-// Same visual shell as the contract emails. Every email carries the PDF and
-// a link to the public invoice page (/i/:token) where the customer can see
-// the balance and payment instructions.
+// ── Email fatture (Phase 4) ──────────────────────────────────────────────────
+// Stessa veste grafica delle email contratti. Ogni email porta il PDF e un
+// link alla pagina pubblica della fattura (/i/:token) dove il cliente vede
+// residuo e modalità di pagamento.
 
-const cad = (cents: number, lang: EmailLang) => new Intl.NumberFormat(lang === "fr" ? "fr-CA" : "en-CA", { style: "currency", currency: "CAD" }).format(cents / 100);
-const day = (d: Date, lang: EmailLang) => d.toLocaleDateString(lang === "fr" ? "fr-CA" : "en-CA", { dateStyle: "long", timeZone: "America/Toronto" });
+const eur = (cents: number) => fmtEurCents(cents);
+const day = (d: Date) => fmtDateLong(d);
 
 type Common = {
   toEmail: string;
@@ -20,7 +21,7 @@ type Common = {
   balanceCents: number;
   dueDate: Date;
   publicUrl: string;
-  language: EmailLang;
+  language?: EmailLang;
   etransferEmail?: string | null;
   replyTo?: string | null;
 };
@@ -28,43 +29,30 @@ type Common = {
 function summaryBox(p: Common, t: { invoice: string; due: string; total: string; balance: string; etransfer: string }): string {
   return `<div class="box">
     <div class="row"><span class="label">${t.invoice}</span><span><strong>${escapeHtml(p.number)}</strong></span></div>
-    <div class="row"><span class="label">${t.due}</span><span>${day(p.dueDate, p.language)}</span></div>
+    <div class="row"><span class="label">${t.due}</span><span>${day(p.dueDate)}</span></div>
     ${p.etransferEmail ? `<div class="row"><span class="label">${t.etransfer}</span><span>${escapeHtml(p.etransferEmail)}</span></div>` : ""}
-    ${p.balanceCents !== p.totalCents ? `<div class="row"><span class="label">${t.total}</span><span>${cad(p.totalCents, p.language)}</span></div>` : ""}
-    <div class="row"><span class="label">${t.balance}</span><span>${cad(p.balanceCents, p.language)}</span></div>
+    ${p.balanceCents !== p.totalCents ? `<div class="row"><span class="label">${t.total}</span><span>${eur(p.totalCents)}</span></div>` : ""}
+    <div class="row"><span class="label">${t.balance}</span><span>${eur(p.balanceCents)}</span></div>
   </div>`;
 }
 
+const greet = (name: string) => `Gentile ${escapeHtml(name || "cliente")}`;
+
 export async function sendInvoiceEmail(params: Common & { pdfBuffer: Buffer; message?: string; isCreditNote?: boolean; typeLabel: string }): Promise<void> {
-  const { language: lang } = params;
   const company = escapeHtml(params.companyName);
-  const customer = escapeHtml(params.customerName || (lang === "fr" ? "Bonjour" : "there"));
   const cn = params.isCreditNote;
-  const t = lang === "fr"
-    ? {
-        title: cn ? "Note de crédit" : `${params.typeLabel} — ${params.number}`,
-        sub: `${params.companyName}`,
-        body: cn
-          ? `Bonjour ${customer},<br/><br/><strong>${company}</strong> vous a émis une note de crédit. Le document est joint à ce courriel et le solde de votre facture a été ajusté en conséquence.`
-          : `Bonjour ${customer},<br/><br/><strong>${company}</strong> vous a envoyé une facture pour votre projet. Le document PDF est joint; vous pouvez aussi la consulter en ligne avec les modalités de paiement.`,
-        btn: cn ? "Voir la note de crédit" : "Voir la facture et payer",
-        footer: `Facture envoyée via QuoteAI au nom de ${company}. Des questions ? Répondez directement à ${company}.`,
-        subject: cn ? `Note de crédit ${params.number} de ${params.companyName}` : `Facture ${params.number} de ${params.companyName} — ${cad(params.balanceCents, lang)}`,
-        invoice: cn ? "Note de crédit" : "Facture", due: "Échéance", total: "Total", balance: cn ? "Montant" : "Solde à payer", etransfer: "Virement Interac à",
-      }
-    : {
-        title: cn ? "Credit note" : `${params.typeLabel} — ${params.number}`,
-        sub: `${params.companyName}`,
-        body: cn
-          ? `Hi ${customer},<br/><br/><strong>${company}</strong> has issued you a credit note. The document is attached and the balance of your invoice has been adjusted accordingly.`
-          : `Hi ${customer},<br/><br/><strong>${company}</strong> has sent you an invoice for your project. The PDF is attached; you can also view it online along with the payment instructions.`,
-        btn: cn ? "View credit note" : "View invoice & pay",
-        footer: `Invoice sent through QuoteAI on behalf of ${company}. Questions? Reply to ${company} directly.`,
-        subject: cn ? `Credit note ${params.number} from ${params.companyName}` : `Invoice ${params.number} from ${params.companyName} — ${cad(params.balanceCents, lang)}`,
-        invoice: cn ? "Credit note" : "Invoice", due: "Due", total: "Total", balance: cn ? "Amount" : "Balance due", etransfer: "Interac e-Transfer to",
-      };
+  const t = {
+    title: cn ? "Nota di credito" : `${params.typeLabel} — ${params.number}`,
+    sub: `${params.companyName}`,
+    body: cn
+      ? `${greet(params.customerName)},<br/><br/><strong>${company}</strong> ti ha emesso una nota di credito. Il documento è allegato a questa email e il saldo della tua fattura è stato aggiornato di conseguenza.`
+      : `${greet(params.customerName)},<br/><br/><strong>${company}</strong> ti ha inviato una fattura per i tuoi lavori. Il PDF è allegato; puoi consultarla anche online insieme alle modalità di pagamento.`,
+    btn: cn ? "Vedi la nota di credito" : "Vedi la fattura e paga",
+    footer: `Fattura inviata tramite ${MARKET.brand} per conto di ${company}. Domande? Rispondi direttamente a ${company}.`,
+    subject: cn ? `Nota di credito ${params.number} di ${params.companyName}` : `Fattura ${params.number} di ${params.companyName} — ${eur(params.balanceCents)}`,
+    invoice: cn ? "Nota di credito" : "Fattura", due: "Scadenza", total: "Totale", balance: cn ? "Importo" : "Da pagare", etransfer: "Bonifico — IBAN",
+  };
   const html = shell({
-    lang,
     accent: cn ? "linear-gradient(135deg,#0f766e,#06b6d4)" : undefined,
     headerTitle: t.title,
     headerSub: t.sub,
@@ -84,23 +72,14 @@ export async function sendInvoiceEmail(params: Common & { pdfBuffer: Buffer; mes
 }
 
 export async function sendInvoiceReminderEmail(params: Common & { daysOverdue: number; pdfBuffer?: Buffer }): Promise<void> {
-  const { language: lang } = params;
   const company = escapeHtml(params.companyName);
-  const customer = escapeHtml(params.customerName || (lang === "fr" ? "Bonjour" : "there"));
-  const t = lang === "fr"
-    ? {
-        title: "Rappel de paiement", sub: `Facture ${params.number}`,
-        body: `Bonjour ${customer},<br/><br/>un petit rappel : la facture <strong>${escapeHtml(params.number)}</strong> de <strong>${company}</strong>, échue le ${day(params.dueDate, lang)}, présente un solde de <strong>${cad(params.balanceCents, lang)}</strong>. Si le paiement a déjà été effectué, merci d'ignorer ce message.`,
-        btn: "Voir la facture et payer", subject: `Rappel — facture ${params.number} (${cad(params.balanceCents, lang)})`, footer: `Envoyé via QuoteAI au nom de ${company}.`,
-        invoice: "Facture", due: "Échue le", total: "Total", balance: "Solde à payer", etransfer: "Virement Interac à",
-      }
-    : {
-        title: "Payment reminder", sub: `Invoice ${params.number}`,
-        body: `Hi ${customer},<br/><br/>a friendly reminder that invoice <strong>${escapeHtml(params.number)}</strong> from <strong>${company}</strong>, due ${day(params.dueDate, lang)}, has an outstanding balance of <strong>${cad(params.balanceCents, lang)}</strong>. If you have already paid, please disregard this message.`,
-        btn: "View invoice & pay", subject: `Reminder — invoice ${params.number} (${cad(params.balanceCents, lang)})`, footer: `Sent through QuoteAI on behalf of ${company}.`,
-        invoice: "Invoice", due: "Was due", total: "Total", balance: "Balance due", etransfer: "Interac e-Transfer to",
-      };
-  const html = shell({ lang, accent: "linear-gradient(135deg,#d97706,#f97316)", headerTitle: t.title, headerSub: t.sub, bodyHtml: `<p>${t.body}</p>${summaryBox(params, t)}<div class="cta"><a class="btn" href="${params.publicUrl}">${t.btn}</a></div>`, footer: t.footer });
+  const t = {
+    title: "Promemoria di pagamento", sub: `Fattura ${params.number}`,
+    body: `${greet(params.customerName)},<br/><br/>un gentile promemoria: la fattura <strong>${escapeHtml(params.number)}</strong> di <strong>${company}</strong>, scaduta il ${day(params.dueDate)}, presenta un residuo di <strong>${eur(params.balanceCents)}</strong>. Se hai già pagato, ignora questo messaggio.`,
+    btn: "Vedi la fattura e paga", subject: `Promemoria — fattura ${params.number} (${eur(params.balanceCents)})`, footer: `Inviato tramite ${MARKET.brand} per conto di ${company}.`,
+    invoice: "Fattura", due: "Scaduta il", total: "Totale", balance: "Da pagare", etransfer: "Bonifico — IBAN",
+  };
+  const html = shell({ accent: "linear-gradient(135deg,#d97706,#f97316)", headerTitle: t.title, headerSub: t.sub, bodyHtml: `<p>${t.body}</p>${summaryBox(params, t)}<div class="cta"><a class="btn" href="${params.publicUrl}">${t.btn}</a></div>`, footer: t.footer });
   await sendCustomerEmail({
     userId: params.userId,
     toEmail: params.toEmail,
@@ -113,23 +92,14 @@ export async function sendInvoiceReminderEmail(params: Common & { daysOverdue: n
 }
 
 export async function sendPaymentReceiptEmail(params: Common & { paidCents: number; paidOn: Date }): Promise<void> {
-  const { language: lang } = params;
   const company = escapeHtml(params.companyName);
-  const customer = escapeHtml(params.customerName || (lang === "fr" ? "Bonjour" : "there"));
   const settled = params.balanceCents <= 0;
-  const t = lang === "fr"
-    ? {
-        title: settled ? "Paiement reçu — merci !" : "Paiement partiel reçu", sub: `Facture ${params.number}`,
-        body: `Bonjour ${customer},<br/><br/><strong>${company}</strong> confirme la réception de votre paiement de <strong>${cad(params.paidCents, lang)}</strong> le ${day(params.paidOn, lang)} pour la facture ${escapeHtml(params.number)}.${settled ? " La facture est maintenant entièrement payée." : ` Solde restant : <strong>${cad(params.balanceCents, lang)}</strong>.`}`,
-        btn: "Voir la facture", subject: settled ? `Reçu — facture ${params.number} payée` : `Reçu — paiement de ${cad(params.paidCents, lang)} sur la facture ${params.number}`, footer: `Envoyé via QuoteAI au nom de ${company}.`,
-        invoice: "Facture", due: "Échéance", total: "Total", balance: "Solde", etransfer: "Virement Interac à",
-      }
-    : {
-        title: settled ? "Payment received — thank you!" : "Partial payment received", sub: `Invoice ${params.number}`,
-        body: `Hi ${customer},<br/><br/><strong>${company}</strong> confirms receipt of your payment of <strong>${cad(params.paidCents, lang)}</strong> on ${day(params.paidOn, lang)} for invoice ${escapeHtml(params.number)}.${settled ? " The invoice is now paid in full." : ` Remaining balance: <strong>${cad(params.balanceCents, lang)}</strong>.`}`,
-        btn: "View invoice", subject: settled ? `Receipt — invoice ${params.number} paid` : `Receipt — ${cad(params.paidCents, lang)} payment on invoice ${params.number}`, footer: `Sent through QuoteAI on behalf of ${company}.`,
-        invoice: "Invoice", due: "Due", total: "Total", balance: "Balance", etransfer: "Interac e-Transfer to",
-      };
-  const html = shell({ lang, accent: "linear-gradient(135deg,#059669,#06b6d4)", headerTitle: t.title, headerSub: t.sub, bodyHtml: `<p>${t.body}</p>${summaryBox({ ...params, etransferEmail: settled ? null : params.etransferEmail }, t)}<div class="cta"><a class="btn" href="${params.publicUrl}">${t.btn}</a></div>`, footer: t.footer });
+  const t = {
+    title: settled ? "Pagamento ricevuto — grazie!" : "Pagamento parziale ricevuto", sub: `Fattura ${params.number}`,
+    body: `${greet(params.customerName)},<br/><br/><strong>${company}</strong> conferma di aver ricevuto il tuo pagamento di <strong>${eur(params.paidCents)}</strong> il ${day(params.paidOn)} per la fattura ${escapeHtml(params.number)}.${settled ? " La fattura è ora interamente pagata." : ` Residuo: <strong>${eur(params.balanceCents)}</strong>.`}`,
+    btn: "Vedi la fattura", subject: settled ? `Ricevuta — fattura ${params.number} pagata` : `Ricevuta — pagamento di ${eur(params.paidCents)} sulla fattura ${params.number}`, footer: `Inviato tramite ${MARKET.brand} per conto di ${company}.`,
+    invoice: "Fattura", due: "Scadenza", total: "Totale", balance: "Residuo", etransfer: "Bonifico — IBAN",
+  };
+  const html = shell({ accent: "linear-gradient(135deg,#059669,#06b6d4)", headerTitle: t.title, headerSub: t.sub, bodyHtml: `<p>${t.body}</p>${summaryBox({ ...params, etransferEmail: settled ? null : params.etransferEmail }, t)}<div class="cta"><a class="btn" href="${params.publicUrl}">${t.btn}</a></div>`, footer: t.footer });
   await sendCustomerEmail({ userId: params.userId, toEmail: params.toEmail, fromDisplayName: params.companyName, replyTo: params.replyTo, subject: t.subject, html });
 }

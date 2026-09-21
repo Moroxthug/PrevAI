@@ -35,7 +35,7 @@ router.post("/leads", requireAuth, requirePermission("leads", "edit"), async (re
         name: z.string().min(1).max(200),
         email: z.string().email().optional(),
         phone: z.string().max(30).optional(),
-        preferredLanguage: z.enum(["en", "fr"]).optional(),
+        preferredLanguage: z.enum(["it"]).optional(),
         preferredChannel: z.enum(LEAD_CHANNELS).optional(),
         notes: z.string().max(2000).optional(),
       })
@@ -52,7 +52,7 @@ router.post("/leads", requireAuth, requirePermission("leads", "edit"), async (re
         name: d.name,
         email: d.email ?? null,
         phone: d.phone ?? null,
-        preferredLanguage: d.preferredLanguage ?? "en",
+        preferredLanguage: "it",
         preferredChannel: d.preferredChannel ?? "email",
         source: "manual",
         status: "new",
@@ -97,7 +97,7 @@ router.patch("/leads/:id", requireAuth, requirePermission("leads", "edit"), asyn
         status: z.enum(LEAD_STATUSES).optional(),
         notes: z.string().max(2000).optional(),
         preferredChannel: z.enum(LEAD_CHANNELS).optional(),
-        preferredLanguage: z.enum(["en", "fr"]).optional(),
+        preferredLanguage: z.enum(["it"]).optional(),
       })
       .safeParse(req.body);
     if (!body.success) {

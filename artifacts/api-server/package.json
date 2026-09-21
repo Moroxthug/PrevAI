@@ -26,6 +26,7 @@
     "@supabase/supabase-js": "^2.49.1",
     "@types/pdfmake": "^0.3.2",
     "@workspace/api-zod": "workspace:*",
+    "@workspace/config": "workspace:*",
     "@workspace/db": "workspace:*",
     "@workspace/error-reporting": "workspace:*",
     "@workspace/integrations-openai-ai-server": "workspace:*",

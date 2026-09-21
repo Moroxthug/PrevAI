@@ -91,7 +91,7 @@ function toPublicVariant(v: typeof quoteVariantsTable.$inferSelect, province: st
     subtotale: v.subtotale,
     ivaPercentuale: v.ivaPercentuale,
     ivaValore: v.ivaValore,
-    taxLines: quoteTaxLines((v.sconto as QuoteDiscount | null)?.importoScontato ?? Number(v.subtotale), Number(v.ivaPercentuale), Number(v.ivaValore), province),
+    taxLines: quoteTaxLines((v.sconto as QuoteDiscount | null)?.importoScontato ?? Number(v.subtotale), Number(v.ivaPercentuale), Number(v.ivaValore)),
     totale: v.totale,
   };
 }
@@ -113,7 +113,7 @@ function toPublicQuote(quote: typeof quotesTable.$inferSelect, variants?: (typeo
     subtotale: quote.subtotale,
     ivaPercentuale: quote.ivaPercentuale,
     ivaValore: quote.ivaValore,
-    taxLines: quoteTaxLines((quote.sconto as QuoteDiscount | null)?.importoScontato ?? Number(quote.subtotale), Number(quote.ivaPercentuale), Number(quote.ivaValore), province),
+    taxLines: quoteTaxLines((quote.sconto as QuoteDiscount | null)?.importoScontato ?? Number(quote.subtotale), Number(quote.ivaPercentuale), Number(quote.ivaValore)),
     province,
     totale: quote.totale,
     note: quote.note,
@@ -447,7 +447,7 @@ Use these exact measurements to mathematically calculate the quantities.`;
         capitoli,
         sconto: null,
         condizioniPagamento: aiData.condizioni_pagamento ?? [],
-        titoloPreventivoRiga1: aiData.titolo_riga1 ?? "Project Quote & Itemized Estimate",
+        titoloPreventivoRiga1: aiData.titolo_riga1 ?? "Analisi Economica e Computo Metrico Prezzato",
         titoloPreventivoRiga2: aiData.titolo_riga2 ?? "",
         numeroPreventivoData,
         subtotale: subtotale.toFixed(2),

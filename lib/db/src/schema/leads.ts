@@ -42,7 +42,7 @@ export const leadsTable = pgTable(
     name: text("name").notNull(),
     email: text("email"),
     phone: text("phone"),
-    preferredLanguage: text("preferred_language", { enum: ["en", "fr"] }).notNull().default("en"),
+    preferredLanguage: text("preferred_language", { enum: ["it"] }).notNull().default("it"),
     preferredChannel: text("preferred_channel", { enum: LEAD_CHANNELS }).notNull().default("email"),
     source: text("source", { enum: LEAD_SOURCES }).notNull().default("manual"),
     status: text("status", { enum: LEAD_STATUSES }).notNull().default("new"),

@@ -101,6 +101,8 @@ export type InvoiceContext = {
   customer: InvoiceParty;
   siteAddress: string;
   province: string;
+  /** Regime IVA del documento (IVA22/IVA10/…): dal contratto, altrimenti aliquota ordinaria. */
+  taxCode: string;
   language: Lang;
   paymentInstructions: PaymentInstructions;
   /** Pre-tax and incl.-tax contract amounts in cents (0 when there is no contract). */
@@ -118,8 +120,9 @@ export async function buildInvoiceContext(params: { userId: string; projectId?: 
   const client = clientId ? ((await db.select().from(clientsTable).where(eq(clientsTable.id, clientId)))[0] ?? null) : null;
 
   const v = contract?.variables ?? null;
-  const province = normalizeProvince(params.province) ?? normalizeProvince(contract?.province) ?? normalizeProvince(project?.province) ?? normalizeProvince(client?.province) ?? normalizeProvince(profile?.province) ?? "ON";
-  const language: Lang = params.language ?? (contract?.language as Lang | undefined) ?? (client?.preferredLanguage as Lang | undefined) ?? (province === "QC" ? "fr" : "en");
+  const province = normalizeProvince(params.province) ?? normalizeProvince(contract?.province) ?? normalizeProvince(project?.province) ?? normalizeProvince(client?.province) ?? normalizeProvince(profile?.province) ?? "";
+  const taxCode = v?.taxLines[0]?.code && v.taxLines[0].code !== "TAX" ? v.taxLines[0].code : "IVA22";
+  const language: Lang = "it";
 
   const contractor: InvoiceParty = {
     name: v?.contractor.name || profile?.companyName || "",
@@ -156,6 +159,7 @@ export async function buildInvoiceContext(params: { userId: string; projectId?: 
     customer,
     siteAddress,
     province,
+    taxCode,
     language,
     paymentInstructions,
     contractSubtotalCents: v ? Math.round(v.subtotal * 100) : 0,
@@ -192,7 +196,7 @@ export async function createInvoice(input: CreateInvoiceInput): Promise<Invoice>
   const issueDate = input.issueDate ?? input.scheduledFor ?? now;
   const amounts = computeInvoiceAmounts({
     lines: input.lines,
-    province: ctx.province,
+    taxCode: ctx.taxCode,
     holdbackPercent: input.holdbackPercent ?? 0,
     registration: { gstHstNumber: ctx.contractor.gstHstNumber, qstNumber: ctx.contractor.qstNumber, pstNumber: ctx.contractor.pstNumber },
   });
@@ -238,7 +242,7 @@ export function repriceDraft(inv: Invoice, edits: { lines?: InvoiceLine[]; holdb
   const lines = edits.lines ?? inv.lines;
   return computeInvoiceAmounts({
     lines,
-    province: inv.province,
+    taxCode: inv.taxLines[0]?.code ?? null,
     holdbackPercent: edits.holdbackPercent ?? inv.holdbackPercent,
     registration: { gstHstNumber: inv.contractor.gstHstNumber, qstNumber: inv.contractor.qstNumber, pstNumber: inv.contractor.pstNumber },
   });
@@ -269,8 +273,8 @@ async function invoicedSubtotalCents(projectId: string): Promise<number> {
 
 /** Pre-tax value of the job: contract subtotal + signed change orders. */
 export async function jobSubtotalCents(project: Project, ctx: InvoiceContext): Promise<number> {
-  // Manual jobs store an incl.-tax value; back the province tax out of it.
-  const base = ctx.contract ? ctx.contractSubtotalCents : Math.round(project.contractValueCents / (1 + getTaxProfile(ctx.province).totalRate / 100));
+  // I cantieri manuali memorizzano un valore IVA inclusa: si scorpora l'IVA del regime.
+  const base = ctx.contract ? ctx.contractSubtotalCents : Math.round(project.contractValueCents / (1 + getTaxProfile(ctx.taxCode).totalRate / 100));
   const cos = await db.select({ s: changeOrdersTable.subtotalCents }).from(changeOrdersTable).where(and(eq(changeOrdersTable.projectId, project.id), eq(changeOrdersTable.status, "signed")));
   return base + cos.reduce((s, c) => s + c.s, 0);
 }
@@ -343,7 +347,7 @@ export async function draftFinalInvoice(params: { project: Project; source?: "au
   const subtotal = finalInvoiceSubtotalCents({ jobSubtotalCents: jobSubtotal, invoicedSubtotalCents: billed });
   if (subtotal <= 0) return null;
   const lang = ctx.language;
-  const lines: InvoiceLine[] = [lineFrom(term?.label ?? (lang === "fr" ? "Solde final des travaux" : "Final balance of the work"), subtotal)];
+  const lines: InvoiceLine[] = [lineFrom(term?.label ?? "Saldo finale dei lavori", subtotal)];
   const invoice = await createInvoice({
     userId: project.userId,
     ctx,
@@ -356,7 +360,7 @@ export async function draftFinalInvoice(params: { project: Project; source?: "au
     milestoneId: params.milestoneId ?? null,
     paymentTermId: term?.id ?? null,
     paymentTermLabel: term?.label ?? null,
-    notes: lang === "fr" ? "Facture finale : solde du contrat et des ordres de changement signés, moins les montants déjà facturés." : "Final invoice: balance of the contract and signed change orders, less amounts already invoiced.",
+    notes: "Fattura di saldo: residuo del contratto e delle varianti firmate, al netto degli importi già fatturati.",
   });
   return { invoice, created: true };
 }
@@ -384,15 +388,13 @@ export async function draftHoldbackReleaseInvoice(params: { project: Project; so
     type: "holdback_release",
     source: params.source ?? "automation",
     actor: params.actor ?? "system",
-    lines: withheld.map((w) => lineFrom(`${lang === "fr" ? "Retenue légale sur la facture" : "Statutory holdback withheld on invoice"} ${w.number}`, w.holdbackCents)),
+    lines: withheld.map((w) => lineFrom(`Ritenuta a garanzia trattenuta sulla fattura ${w.number}`, w.holdbackCents)),
     holdbackPercent: 0,
     dueDays: term?.dueDays ?? 15,
     paymentTermId: term?.id ?? null,
     paymentTermLabel: term?.label ?? null,
     scheduledFor,
-    notes: lang === "fr"
-      ? `Libération de la retenue légale à l'expiration du délai de privilège (${lienPeriodDays(ctx.province)} jours après l'achèvement des travaux).`
-      : `Release of the statutory holdback at the end of the lien period (${lienPeriodDays(ctx.province)} days after completion of the work).`,
+    notes: `Svincolo della ritenuta a garanzia al termine del periodo pattuito (${lienPeriodDays(ctx.province)} giorni dalla fine dei lavori).`,
   });
   return { invoice, created: true };
 }

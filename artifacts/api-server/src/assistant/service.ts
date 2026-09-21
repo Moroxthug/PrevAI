@@ -20,7 +20,7 @@ import { logger } from "../lib/logger.js";
 import { toIsoDate } from "../jobs/dates.js";
 import { TOOL_DEFINITIONS, PROPOSAL_TOOLS, runReadTool, validateProposal, type ToolContext } from "./tools.js";
 
-export type Lang = "en" | "fr";
+export type Lang = "it";
 const MAX_ROUNDS = 6;
 const HISTORY_LIMIT = 40;
 const MODEL = "gpt-4o";
@@ -65,8 +65,8 @@ async function buildSystemPrompt(params: { userId: string; projectId: string | n
       jobBlock = `\nCurrent job (tools default to it): id ${p.id} — "${p.name}"${client ? ` for ${client.name}` : ""}, status ${p.status}, ${p.progressPercent}% complete, ${toIsoDate(p.plannedStart ?? p.startDate) ?? "?"} → ${toIsoDate(p.plannedEnd ?? p.endDate) ?? "?"}, value ${((p.contractValueCents + p.changeOrdersCents) / 100).toFixed(2)} CAD incl. tax.`;
     }
   }
-  const langLine = params.language === "fr" ? "Réponds toujours en français (Canada)." : "Always answer in English (Canada).";
-  const prompt = `You are the job assistant inside QuoteAI, a construction management app used by ${company}, a Canadian contractor${province ? ` based in ${province}` : ""}. Today is ${toIsoDate(params.now)}.
+  const langLine = "Rispondi sempre in italiano.";
+  const prompt = `You are the job assistant inside PrevAI, a construction management app used by ${company}, an Italian contractor${province ? ` based in the province of ${province}` : ""}. Today is ${toIsoDate(params.now)}.
 ${langLine}
 ${jobBlock}
 
@@ -128,7 +128,7 @@ export async function runAssistantTurn(params: { conversation: AssistantConversa
     if (!choice) throw new Error("Empty completion");
     const calls = (choice.tool_calls ?? []).filter((c): c is OpenAI.Chat.Completions.ChatCompletionMessageFunctionToolCall => c.type === "function");
     if (!calls.length) {
-      const text = (choice.content ?? "").trim() || (params.language === "fr" ? "Je n'ai rien à ajouter." : "Nothing to add.");
+      const text = (choice.content ?? "").trim() || "Non ho nulla da aggiungere.";
       await insertMessage({ role: "assistant", content: text });
       break;
     }

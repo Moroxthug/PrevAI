@@ -81,18 +81,16 @@ try {
 
       await emit(dir, `contract-signed-${s.language}.pdf`, async () => (await contractPdfBuffer(s.contractId)).buffer);
       await emit(dir, `contract-sent-unsigned-${s.language}.pdf`, async () => (await contractPdfBuffer(s.pendingContractId)).buffer);
-      // Language flip: the opposite official language for the same province.
-      const flip = s.language === "fr" ? "en" : "fr";
-      await emit(dir, `contract-draft-${flip}-flipped.pdf`, async () => {
-        const { contract } = await createContractFromQuote({ userId: org.userId, quoteId: s.longQuoteId, language: flip, actor: "contractor" });
+      await emit(dir, `contract-draft-long.pdf`, async () => {
+        const { contract } = await createContractFromQuote({ userId: org.userId, quoteId: s.longQuoteId, language: "it", actor: "contractor" });
         return (await contractPdfBuffer(contract.id)).buffer;
       });
 
       await emit(dir, `invoice-progress-partly-paid-${s.language}.pdf`, async () => (await invoicePdfBuffer(invoice.id)).buffer);
       const deposit = (await db.select().from(invoicesTable).where(and(eq(invoicesTable.projectId, s.jobId), eq(invoicesTable.type, "deposit"))))[0];
       if (deposit) await emit(dir, `invoice-deposit-draft-${s.language}.pdf`, async () => (await invoicePdfBuffer(deposit.id)).buffer);
-      await emit(dir, `invoice-manual-${flip}-flipped-long.pdf`, async () => {
-        const ctx = await buildInvoiceContext({ userId: org.userId, language: flip });
+      await emit(dir, `invoice-manual-long.pdf`, async () => {
+        const ctx = await buildInvoiceContext({ userId: org.userId, language: "it" });
         const lines = Array.from({ length: 28 }, (_, i) => ({ description: `Line ${i + 1} — ${i % 4 === 0 ? "supply and install of finish carpentry, including all trims, casings and caulking" : "labour"}`, quantity: 1 + (i % 3), unitCents: 12_500 + i * 1_000, amountCents: (1 + (i % 3)) * (12_500 + i * 1_000) }));
         const inv = await createInvoice({ userId: org.userId, ctx, type: "manual", source: "manual", actor: "contractor", dueDays: 30, lines });
         return (await invoicePdfBuffer(inv.id)).buffer;

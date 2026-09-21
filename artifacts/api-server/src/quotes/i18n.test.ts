@@ -1,61 +1,58 @@
-// Phase 71 — the quote tax split and French/English presentation.
+// V2-2 — scomposizione IVA e presentazione italiana dei preventivi.
 import { describe, it, expect } from "vitest";
-import { quoteTaxLines, splitTaxRate } from "@workspace/db";
+import { quoteTaxLines, splitTaxRate, normalizeProvince, regioneDiProvincia } from "@workspace/db";
 import { fmtMoney, fmtRate, quoteTaxLinesFor, resolveQuoteLanguage } from "./i18n.js";
 
-/** fr-CA groups digits with U+202F / U+00A0 (no-break spaces); compare on plain spaces. */
+/** it-IT può raggruppare con U+00A0; confronto su spazi semplici. */
 const plain = (s: string) => s.replace(new RegExp(`[${String.fromCharCode(0xa0)}${String.fromCharCode(0x202f)}]`, "g"), " ");
 
 describe("splitTaxRate", () => {
-  it("maps a province's statutory total to its components", () => {
-    expect(splitTaxRate(14.975, "QC").map((c) => c.code)).toEqual(["GST", "QST"]);
-    expect(splitTaxRate(12, "BC").map((c) => c.code)).toEqual(["GST", "PST"]);
-    expect(splitTaxRate(13, "ON").map((c) => c.code)).toEqual(["HST"]);
+  it("riconosce le aliquote di legge", () => {
+    expect(splitTaxRate(22).map((c) => c.code)).toEqual(["IVA22"]);
+    expect(splitTaxRate(10).map((c) => c.code)).toEqual(["IVA10"]);
+    expect(splitTaxRate(4).map((c) => c.code)).toEqual(["IVA4"]);
   });
-  it("tolerates the old 2-decimal storage of the Québec rate", () => {
-    expect(splitTaxRate(14.98, "QC").map((c) => c.code)).toEqual(["GST", "QST"]);
-  });
-  it("is tax-exempt at 0 and generic for an unknown rate", () => {
-    expect(splitTaxRate(0, "QC")).toEqual([]);
-    expect(splitTaxRate(7, "ON")).toEqual([{ code: "TAX", label: "Tax", rate: 7 }]);
-  });
-  it("recognises another province's single-component total without a province", () => {
-    expect(splitTaxRate(13, null).map((c) => c.code)).toEqual(["HST"]);
+  it("0 = nessuna riga, aliquota sconosciuta = riga generica", () => {
+    expect(splitTaxRate(0)).toEqual([]);
+    expect(splitTaxRate(7)).toEqual([{ code: "TAX", label: "Imposta", rate: 7 }]);
   });
 });
 
 describe("quoteTaxLines", () => {
-  it("component amounts sum exactly to the stored tax total", () => {
-    // $1 234.56 taxable in Québec: 5 % = 61.728 → 61.73, 9.975 % = 123.147 → 123.15; stored total 184.87
-    const lines = quoteTaxLines(1234.56, 14.975, 184.87, "QC");
-    expect(lines.map((l) => [l.code, l.amount])).toEqual([["GST", 61.73], ["QST", 123.14]]);
-    expect(lines.reduce((s, l) => s + l.amount, 0)).toBeCloseTo(184.87, 2);
+  it("l'importo coincide esattamente con l'IVA memorizzata", () => {
+    const lines = quoteTaxLines(1234.56, 22, 271.6);
+    expect(lines.map((l) => [l.code, l.amount])).toEqual([["IVA22", 271.6]]);
   });
-  it("uses the discounted subtotal as the taxable base", () => {
-    const lines = quoteTaxLinesFor({ subtotale: "1000", ivaPercentuale: "13", ivaValore: "117", sconto: { importoScontato: 900 } }, "ON", "en");
-    expect(lines).toEqual([{ code: "HST", label: "HST", rate: 13, amount: 117, display: "HST 13%" }]);
+  it("usa l'imponibile scontato come base", () => {
+    const lines = quoteTaxLinesFor({ subtotale: "1000", ivaPercentuale: "10", ivaValore: "90", sconto: { importoScontato: 900 } }, null);
+    expect(lines.map((l) => [l.code, l.amount, plain(l.display)])).toEqual([["IVA10", 90, "IVA 10 %"]]);
   });
-  it("labels in French with TPS/TVQ and a French percent", () => {
-    const lines = quoteTaxLinesFor({ subtotale: "100", ivaPercentuale: "14.975", ivaValore: "14.98" }, "QC", "fr");
-    expect(lines.map((l) => plain(l.display))).toEqual(["TPS 5 %", "TVQ 9,975 %"]);
-  });
-  it("shows one generic line for a hand-entered rate", () => {
-    const [line] = quoteTaxLinesFor({ subtotale: "100", ivaPercentuale: "7", ivaValore: "7" }, "ON", "en");
-    expect(line.display).toBe("TAX (7%)");
+  it("mostra una riga generica per un'aliquota inserita a mano", () => {
+    const [line] = quoteTaxLinesFor({ subtotale: "100", ivaPercentuale: "7", ivaValore: "7" }, null);
+    expect(plain(line.display)).toBe("IVA (7 %)");
   });
 });
 
-describe("presentation", () => {
-  it("formats money per locale", () => {
-    expect(fmtMoney(1234.5, "en")).toBe("$ 1,234.50");
-    // fr-CA groups with U+202F (narrow no-break space); compare on plain spaces.
-    expect(plain(fmtMoney(1234.5, "fr"))).toBe("1 234,50 $");
-    expect(plain(fmtRate(9.975, "fr"))).toBe("9,975 %");
+describe("presentazione", () => {
+  it("formatta importi e percentuali in italiano", () => {
+    expect(plain(fmtMoney(12345.5))).toBe("€ 12.345,50");
+    expect(plain(fmtRate(9.975))).toBe("9,975 %");
   });
-  it("picks the document language: client preference, else French in Québec", () => {
-    expect(resolveQuoteLanguage({ clientLanguage: "en", province: "QC" })).toBe("en");
-    expect(resolveQuoteLanguage({ clientLanguage: null, province: "QC" })).toBe("fr");
-    expect(resolveQuoteLanguage({ clientLanguage: null, province: "ON" })).toBe("en");
-    expect(resolveQuoteLanguage({ clientLanguage: "fr", province: "BC" })).toBe("fr");
+  it("la lingua del documento è sempre l'italiano", () => {
+    expect(resolveQuoteLanguage({ clientLanguage: "en", province: "MI" })).toBe("it");
+  });
+});
+
+describe("province italiane", () => {
+  it("normalizza sigla e nome", () => {
+    expect(normalizeProvince("mi")).toBe("MI");
+    expect(normalizeProvince("Milano")).toBe("MI");
+    expect(normalizeProvince("prov. di Roma")).toBe("RM");
+    expect(normalizeProvince("Reggio nell'Emilia")).toBe("RE");
+    expect(normalizeProvince("Ontario")).toBeNull();
+  });
+  it("ricava la regione", () => {
+    expect(regioneDiProvincia("BO")).toBe("Emilia-Romagna");
+    expect(regioneDiProvincia("XX")).toBeNull();
   });
 });

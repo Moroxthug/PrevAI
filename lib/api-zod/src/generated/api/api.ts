@@ -8,11 +8,13 @@
 import * as zod from 'zod';
 
 /**
- * @summary Canadian sales-tax profiles by province (static, public)
+ * @summary Regimi IVA italiani (statici, pubblici)
  */
 export const ListTaxProfilesResponse = zod.object({
   "profiles": zod.array(zod.object({
-  "province": zod.string(),
+  "code": zod.string(),
+  "name": zod.string(),
+  "hint": zod.string(),
   "totalRate": zod.number(),
   "components": zod.array(zod.object({
   "code": zod.string(),
@@ -141,8 +143,8 @@ export const CreateQuoteResponse = zod.object({
   "label": zod.string(),
   "rate": zod.number(),
   "amount": zod.number()
-})).optional().describe('Phase 71 — statutory components (GST/QST, GST/PST, HST) or one generic "Tax" line; amounts sum to ivaValore.'),
-  "documentLanguage": zod.enum(['en', 'fr']).optional().describe('Language of the customer-facing documents (client preference, else French in Québec).'),
+})).optional().describe('Righe IVA (IVA22/IVA10/IVA4) o una riga generica "Imposta"; gli importi sommano a ivaValore.'),
+  "documentLanguage": zod.enum(['it']).optional().describe('Lingua dei documenti rivolti al cliente (sempre italiano).'),
   "totale": zod.number(),
   "note": zod.string(),
   "status": zod.enum(['draft', 'unlocked', 'pending_payment', 'accepted']),
@@ -202,7 +204,7 @@ export const CreateQuoteResponse = zod.object({
   "label": zod.string(),
   "rate": zod.number(),
   "amount": zod.number()
-})).optional().describe('Phase 71 — statutory components (GST/QST, GST/PST, HST) or one generic "Tax" line; amounts sum to ivaValore.'),
+})).optional().describe('Righe IVA (IVA22/IVA10/IVA4) o una riga generica "Imposta"; gli importi sommano a ivaValore.'),
   "totale": zod.number(),
   "createdAt": zod.string(),
   "updatedAt": zod.string()
@@ -285,8 +287,8 @@ export const GetQuoteStatsResponse = zod.object({
   "label": zod.string(),
   "rate": zod.number(),
   "amount": zod.number()
-})).optional().describe('Phase 71 — statutory components (GST/QST, GST/PST, HST) or one generic "Tax" line; amounts sum to ivaValore.'),
-  "documentLanguage": zod.enum(['en', 'fr']).optional().describe('Language of the customer-facing documents (client preference, else French in Québec).'),
+})).optional().describe('Righe IVA (IVA22/IVA10/IVA4) o una riga generica "Imposta"; gli importi sommano a ivaValore.'),
+  "documentLanguage": zod.enum(['it']).optional().describe('Lingua dei documenti rivolti al cliente (sempre italiano).'),
   "totale": zod.number(),
   "note": zod.string(),
   "status": zod.enum(['draft', 'unlocked', 'pending_payment', 'accepted']),
@@ -346,7 +348,7 @@ export const GetQuoteStatsResponse = zod.object({
   "label": zod.string(),
   "rate": zod.number(),
   "amount": zod.number()
-})).optional().describe('Phase 71 — statutory components (GST/QST, GST/PST, HST) or one generic "Tax" line; amounts sum to ivaValore.'),
+})).optional().describe('Righe IVA (IVA22/IVA10/IVA4) o una riga generica "Imposta"; gli importi sommano a ivaValore.'),
   "totale": zod.number(),
   "createdAt": zod.string(),
   "updatedAt": zod.string()
@@ -463,8 +465,8 @@ export const CreateManualQuoteResponse = zod.object({
   "label": zod.string(),
   "rate": zod.number(),
   "amount": zod.number()
-})).optional().describe('Phase 71 — statutory components (GST/QST, GST/PST, HST) or one generic "Tax" line; amounts sum to ivaValore.'),
-  "documentLanguage": zod.enum(['en', 'fr']).optional().describe('Language of the customer-facing documents (client preference, else French in Québec).'),
+})).optional().describe('Righe IVA (IVA22/IVA10/IVA4) o una riga generica "Imposta"; gli importi sommano a ivaValore.'),
+  "documentLanguage": zod.enum(['it']).optional().describe('Lingua dei documenti rivolti al cliente (sempre italiano).'),
   "totale": zod.number(),
   "note": zod.string(),
   "status": zod.enum(['draft', 'unlocked', 'pending_payment', 'accepted']),
@@ -524,7 +526,7 @@ export const CreateManualQuoteResponse = zod.object({
   "label": zod.string(),
   "rate": zod.number(),
   "amount": zod.number()
-})).optional().describe('Phase 71 — statutory components (GST/QST, GST/PST, HST) or one generic "Tax" line; amounts sum to ivaValore.'),
+})).optional().describe('Righe IVA (IVA22/IVA10/IVA4) o una riga generica "Imposta"; gli importi sommano a ivaValore.'),
   "totale": zod.number(),
   "createdAt": zod.string(),
   "updatedAt": zod.string()
@@ -614,8 +616,8 @@ export const GetQuoteResponse = zod.object({
   "label": zod.string(),
   "rate": zod.number(),
   "amount": zod.number()
-})).optional().describe('Phase 71 — statutory components (GST/QST, GST/PST, HST) or one generic "Tax" line; amounts sum to ivaValore.'),
-  "documentLanguage": zod.enum(['en', 'fr']).optional().describe('Language of the customer-facing documents (client preference, else French in Québec).'),
+})).optional().describe('Righe IVA (IVA22/IVA10/IVA4) o una riga generica "Imposta"; gli importi sommano a ivaValore.'),
+  "documentLanguage": zod.enum(['it']).optional().describe('Lingua dei documenti rivolti al cliente (sempre italiano).'),
   "totale": zod.number(),
   "note": zod.string(),
   "status": zod.enum(['draft', 'unlocked', 'pending_payment', 'accepted']),
@@ -675,7 +677,7 @@ export const GetQuoteResponse = zod.object({
   "label": zod.string(),
   "rate": zod.number(),
   "amount": zod.number()
-})).optional().describe('Phase 71 — statutory components (GST/QST, GST/PST, HST) or one generic "Tax" line; amounts sum to ivaValore.'),
+})).optional().describe('Righe IVA (IVA22/IVA10/IVA4) o una riga generica "Imposta"; gli importi sommano a ivaValore.'),
   "totale": zod.number(),
   "createdAt": zod.string(),
   "updatedAt": zod.string()
@@ -801,8 +803,8 @@ export const UpdateQuoteResponse = zod.object({
   "label": zod.string(),
   "rate": zod.number(),
   "amount": zod.number()
-})).optional().describe('Phase 71 — statutory components (GST/QST, GST/PST, HST) or one generic "Tax" line; amounts sum to ivaValore.'),
-  "documentLanguage": zod.enum(['en', 'fr']).optional().describe('Language of the customer-facing documents (client preference, else French in Québec).'),
+})).optional().describe('Righe IVA (IVA22/IVA10/IVA4) o una riga generica "Imposta"; gli importi sommano a ivaValore.'),
+  "documentLanguage": zod.enum(['it']).optional().describe('Lingua dei documenti rivolti al cliente (sempre italiano).'),
   "totale": zod.number(),
   "note": zod.string(),
   "status": zod.enum(['draft', 'unlocked', 'pending_payment', 'accepted']),
@@ -862,7 +864,7 @@ export const UpdateQuoteResponse = zod.object({
   "label": zod.string(),
   "rate": zod.number(),
   "amount": zod.number()
-})).optional().describe('Phase 71 — statutory components (GST/QST, GST/PST, HST) or one generic "Tax" line; amounts sum to ivaValore.'),
+})).optional().describe('Righe IVA (IVA22/IVA10/IVA4) o una riga generica "Imposta"; gli importi sommano a ivaValore.'),
   "totale": zod.number(),
   "createdAt": zod.string(),
   "updatedAt": zod.string()
@@ -949,8 +951,8 @@ export const ArchiveQuoteResponse = zod.object({
   "label": zod.string(),
   "rate": zod.number(),
   "amount": zod.number()
-})).optional().describe('Phase 71 — statutory components (GST/QST, GST/PST, HST) or one generic "Tax" line; amounts sum to ivaValore.'),
-  "documentLanguage": zod.enum(['en', 'fr']).optional().describe('Language of the customer-facing documents (client preference, else French in Québec).'),
+})).optional().describe('Righe IVA (IVA22/IVA10/IVA4) o una riga generica "Imposta"; gli importi sommano a ivaValore.'),
+  "documentLanguage": zod.enum(['it']).optional().describe('Lingua dei documenti rivolti al cliente (sempre italiano).'),
   "totale": zod.number(),
   "note": zod.string(),
   "status": zod.enum(['draft', 'unlocked', 'pending_payment', 'accepted']),
@@ -1010,7 +1012,7 @@ export const ArchiveQuoteResponse = zod.object({
   "label": zod.string(),
   "rate": zod.number(),
   "amount": zod.number()
-})).optional().describe('Phase 71 — statutory components (GST/QST, GST/PST, HST) or one generic "Tax" line; amounts sum to ivaValore.'),
+})).optional().describe('Righe IVA (IVA22/IVA10/IVA4) o una riga generica "Imposta"; gli importi sommano a ivaValore.'),
   "totale": zod.number(),
   "createdAt": zod.string(),
   "updatedAt": zod.string()
@@ -1087,8 +1089,8 @@ export const RestoreQuoteResponse = zod.object({
   "label": zod.string(),
   "rate": zod.number(),
   "amount": zod.number()
-})).optional().describe('Phase 71 — statutory components (GST/QST, GST/PST, HST) or one generic "Tax" line; amounts sum to ivaValore.'),
-  "documentLanguage": zod.enum(['en', 'fr']).optional().describe('Language of the customer-facing documents (client preference, else French in Québec).'),
+})).optional().describe('Righe IVA (IVA22/IVA10/IVA4) o una riga generica "Imposta"; gli importi sommano a ivaValore.'),
+  "documentLanguage": zod.enum(['it']).optional().describe('Lingua dei documenti rivolti al cliente (sempre italiano).'),
   "totale": zod.number(),
   "note": zod.string(),
   "status": zod.enum(['draft', 'unlocked', 'pending_payment', 'accepted']),
@@ -1148,7 +1150,7 @@ export const RestoreQuoteResponse = zod.object({
   "label": zod.string(),
   "rate": zod.number(),
   "amount": zod.number()
-})).optional().describe('Phase 71 — statutory components (GST/QST, GST/PST, HST) or one generic "Tax" line; amounts sum to ivaValore.'),
+})).optional().describe('Righe IVA (IVA22/IVA10/IVA4) o una riga generica "Imposta"; gli importi sommano a ivaValore.'),
   "totale": zod.number(),
   "createdAt": zod.string(),
   "updatedAt": zod.string()
@@ -1255,8 +1257,8 @@ export const DuplicateQuoteResponse = zod.object({
   "label": zod.string(),
   "rate": zod.number(),
   "amount": zod.number()
-})).optional().describe('Phase 71 — statutory components (GST/QST, GST/PST, HST) or one generic "Tax" line; amounts sum to ivaValore.'),
-  "documentLanguage": zod.enum(['en', 'fr']).optional().describe('Language of the customer-facing documents (client preference, else French in Québec).'),
+})).optional().describe('Righe IVA (IVA22/IVA10/IVA4) o una riga generica "Imposta"; gli importi sommano a ivaValore.'),
+  "documentLanguage": zod.enum(['it']).optional().describe('Lingua dei documenti rivolti al cliente (sempre italiano).'),
   "totale": zod.number(),
   "note": zod.string(),
   "status": zod.enum(['draft', 'unlocked', 'pending_payment', 'accepted']),
@@ -1316,7 +1318,7 @@ export const DuplicateQuoteResponse = zod.object({
   "label": zod.string(),
   "rate": zod.number(),
   "amount": zod.number()
-})).optional().describe('Phase 71 — statutory components (GST/QST, GST/PST, HST) or one generic "Tax" line; amounts sum to ivaValore.'),
+})).optional().describe('Righe IVA (IVA22/IVA10/IVA4) o una riga generica "Imposta"; gli importi sommano a ivaValore.'),
   "totale": zod.number(),
   "createdAt": zod.string(),
   "updatedAt": zod.string()
@@ -1374,7 +1376,7 @@ export const ListQuoteVariantsResponse = zod.object({
   "label": zod.string(),
   "rate": zod.number(),
   "amount": zod.number()
-})).optional().describe('Phase 71 — statutory components (GST/QST, GST/PST, HST) or one generic "Tax" line; amounts sum to ivaValore.'),
+})).optional().describe('Righe IVA (IVA22/IVA10/IVA4) o una riga generica "Imposta"; gli importi sommano a ivaValore.'),
   "totale": zod.number(),
   "createdAt": zod.string(),
   "updatedAt": zod.string()
@@ -1434,7 +1436,7 @@ export const CreateQuoteVariantResponse = zod.object({
   "label": zod.string(),
   "rate": zod.number(),
   "amount": zod.number()
-})).optional().describe('Phase 71 — statutory components (GST/QST, GST/PST, HST) or one generic "Tax" line; amounts sum to ivaValore.'),
+})).optional().describe('Righe IVA (IVA22/IVA10/IVA4) o una riga generica "Imposta"; gli importi sommano a ivaValore.'),
   "totale": zod.number(),
   "createdAt": zod.string(),
   "updatedAt": zod.string()
@@ -1522,7 +1524,7 @@ export const UpdateQuoteVariantResponse = zod.object({
   "label": zod.string(),
   "rate": zod.number(),
   "amount": zod.number()
-})).optional().describe('Phase 71 — statutory components (GST/QST, GST/PST, HST) or one generic "Tax" line; amounts sum to ivaValore.'),
+})).optional().describe('Righe IVA (IVA22/IVA10/IVA4) o una riga generica "Imposta"; gli importi sommano a ivaValore.'),
   "totale": zod.number(),
   "createdAt": zod.string(),
   "updatedAt": zod.string()
@@ -1611,8 +1613,8 @@ export const RegenerateQuoteResponse = zod.object({
   "label": zod.string(),
   "rate": zod.number(),
   "amount": zod.number()
-})).optional().describe('Phase 71 — statutory components (GST/QST, GST/PST, HST) or one generic "Tax" line; amounts sum to ivaValore.'),
-  "documentLanguage": zod.enum(['en', 'fr']).optional().describe('Language of the customer-facing documents (client preference, else French in Québec).'),
+})).optional().describe('Righe IVA (IVA22/IVA10/IVA4) o una riga generica "Imposta"; gli importi sommano a ivaValore.'),
+  "documentLanguage": zod.enum(['it']).optional().describe('Lingua dei documenti rivolti al cliente (sempre italiano).'),
   "totale": zod.number(),
   "note": zod.string(),
   "status": zod.enum(['draft', 'unlocked', 'pending_payment', 'accepted']),
@@ -1672,7 +1674,7 @@ export const RegenerateQuoteResponse = zod.object({
   "label": zod.string(),
   "rate": zod.number(),
   "amount": zod.number()
-})).optional().describe('Phase 71 — statutory components (GST/QST, GST/PST, HST) or one generic "Tax" line; amounts sum to ivaValore.'),
+})).optional().describe('Righe IVA (IVA22/IVA10/IVA4) o una riga generica "Imposta"; gli importi sommano a ivaValore.'),
   "totale": zod.number(),
   "createdAt": zod.string(),
   "updatedAt": zod.string()
@@ -1749,8 +1751,8 @@ export const UpgradeToCapitolatoProResponse = zod.object({
   "label": zod.string(),
   "rate": zod.number(),
   "amount": zod.number()
-})).optional().describe('Phase 71 — statutory components (GST/QST, GST/PST, HST) or one generic "Tax" line; amounts sum to ivaValore.'),
-  "documentLanguage": zod.enum(['en', 'fr']).optional().describe('Language of the customer-facing documents (client preference, else French in Québec).'),
+})).optional().describe('Righe IVA (IVA22/IVA10/IVA4) o una riga generica "Imposta"; gli importi sommano a ivaValore.'),
+  "documentLanguage": zod.enum(['it']).optional().describe('Lingua dei documenti rivolti al cliente (sempre italiano).'),
   "totale": zod.number(),
   "note": zod.string(),
   "status": zod.enum(['draft', 'unlocked', 'pending_payment', 'accepted']),
@@ -1810,7 +1812,7 @@ export const UpgradeToCapitolatoProResponse = zod.object({
   "label": zod.string(),
   "rate": zod.number(),
   "amount": zod.number()
-})).optional().describe('Phase 71 — statutory components (GST/QST, GST/PST, HST) or one generic "Tax" line; amounts sum to ivaValore.'),
+})).optional().describe('Righe IVA (IVA22/IVA10/IVA4) o una riga generica "Imposta"; gli importi sommano a ivaValore.'),
   "totale": zod.number(),
   "createdAt": zod.string(),
   "updatedAt": zod.string()
@@ -2756,8 +2758,8 @@ export const ListClientQuotesResponseItem = zod.object({
   "label": zod.string(),
   "rate": zod.number(),
   "amount": zod.number()
-})).optional().describe('Phase 71 — statutory components (GST/QST, GST/PST, HST) or one generic "Tax" line; amounts sum to ivaValore.'),
-  "documentLanguage": zod.enum(['en', 'fr']).optional().describe('Language of the customer-facing documents (client preference, else French in Québec).'),
+})).optional().describe('Righe IVA (IVA22/IVA10/IVA4) o una riga generica "Imposta"; gli importi sommano a ivaValore.'),
+  "documentLanguage": zod.enum(['it']).optional().describe('Lingua dei documenti rivolti al cliente (sempre italiano).'),
   "totale": zod.number(),
   "note": zod.string(),
   "status": zod.enum(['draft', 'unlocked', 'pending_payment', 'accepted']),
@@ -2817,7 +2819,7 @@ export const ListClientQuotesResponseItem = zod.object({
   "label": zod.string(),
   "rate": zod.number(),
   "amount": zod.number()
-})).optional().describe('Phase 71 — statutory components (GST/QST, GST/PST, HST) or one generic "Tax" line; amounts sum to ivaValore.'),
+})).optional().describe('Righe IVA (IVA22/IVA10/IVA4) o una riga generica "Imposta"; gli importi sommano a ivaValore.'),
   "totale": zod.number(),
   "createdAt": zod.string(),
   "updatedAt": zod.string()

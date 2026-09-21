@@ -30,19 +30,20 @@ export const paymentTermSchema = z.object({
   /** Offset used by "days_after_signing". */
   offsetDays: z.number().int().min(0).max(3650).optional(),
   amountType: z.enum(["percent", "fixed"]),
-  /** Percent of the contract total (0-100) or a fixed amount in CAD (not cents — matches quote totals). */
+  /** Percentuale del totale contratto (0-100) o importo fisso in EUR (non centesimi — come i totali del preventivo). */
   value: z.number().min(0),
   /** Invoice due N days after issue (net terms). */
   dueDays: z.number().int().min(0).max(365).default(15),
 });
 
 export const paymentScheduleSchema = z.object({
-  currency: z.literal("CAD").default("CAD"),
+  /** V2-2: EUR. "CAD" accettato solo per righe importate da QuoteAI. */
+  currency: z.enum(["EUR", "CAD"]).default("EUR"),
   terms: z.array(paymentTermSchema).min(1).max(20),
   holdback: z
     .object({
       enabled: z.boolean().default(false),
-      /** Statutory lien holdback (ON/BC/AB: 10%). */
+      /** Ritenuta a garanzia contrattuale (art. 1666 c.c.; prassi 5-10 %). */
       percent: z.number().min(0).max(50).default(10),
     })
     .default({ enabled: false, percent: 10 }),
@@ -55,39 +56,50 @@ export type PaymentSchedule = z.infer<typeof paymentScheduleSchema>;
 export type PaymentTrigger = z.infer<typeof paymentTriggerSchema>;
 
 export const DEFAULT_PAYMENT_TERMS_TEXT = [
-  "15% deposit upon contract signing",
-  "35% upon delivery of materials and start of work",
-  "35% upon substantial completion",
-  "15% final balance upon completion and client walkthrough",
+  "30% acconto alla firma del contratto",
+  "30% a completamento prima fase lavori",
+  "30% a completamento seconda fase lavori",
+  "10% saldo a fine lavori",
 ];
 
 export function defaultPaymentSchedule(): PaymentSchedule {
   return {
-    currency: "CAD",
+    currency: "EUR",
     derived: true,
     holdback: { enabled: false, percent: 10 },
     terms: [
-      { id: "t1", type: "deposit", label: "Deposit upon contract signing", trigger: "on_signing", amountType: "percent", value: 15, dueDays: 0 },
-      { id: "t2", type: "milestone", label: "Delivery of materials and start of work", trigger: "milestone", amountType: "percent", value: 35, dueDays: 15 },
-      { id: "t3", type: "milestone", label: "Substantial completion", trigger: "milestone", amountType: "percent", value: 35, dueDays: 15 },
-      { id: "t4", type: "completion", label: "Final balance upon completion and client walkthrough", trigger: "on_completion", amountType: "percent", value: 15, dueDays: 15 },
+      { id: "t1", type: "deposit", label: "Acconto alla firma del contratto", trigger: "on_signing", amountType: "percent", value: 30, dueDays: 0 },
+      { id: "t2", type: "milestone", label: "A completamento prima fase lavori", trigger: "milestone", amountType: "percent", value: 30, dueDays: 15 },
+      { id: "t3", type: "milestone", label: "A completamento seconda fase lavori", trigger: "milestone", amountType: "percent", value: 30, dueDays: 15 },
+      { id: "t4", type: "completion", label: "Saldo a fine lavori", trigger: "on_completion", amountType: "percent", value: 10, dueDays: 15 },
     ],
   };
 }
 
 const PERCENT_RE = /(\d{1,3}(?:[.,]\d+)?)\s*%/;
-const FIXED_RE = /(?:\$|CAD\s?)\s?(\d[\d,]*(?:\.\d{1,2})?)/i;
-const NET_DAYS_RE = /net\s*(\d{1,3})|within\s*(\d{1,3})\s*days|(\d{1,3})\s*days?\s*(?:after|from|of)\s*(?:the\s*)?invoice/i;
+const FIXED_RE = /(?:€|EUR\s?|\$|CAD\s?)\s?(\d[\d.,]*)|(\d[\d.,]*)\s?(?:€|EUR\b|euro\b)/i;
+const NET_DAYS_RE = /net\s*(\d{1,3})|(?:within|entro)\s*(\d{1,3})\s*(?:days|giorni)|(\d{1,3})\s*(?:days?|giorni|gg)\s*(?:after|from|of|d\.?f\.?|data|dalla?)\s*(?:the\s*)?(?:invoice|fattura|f\.?m\.?)?/i;
+
+/** "1.234,56" / "1,234.56" / "2.000" / "2000" → numero (separatore decimale = ultimo tra . e , se seguito da 1-2 cifre). */
+function parseAmount(raw: string): number {
+  const s = raw.trim();
+  const dec = Math.max(s.lastIndexOf("."), s.lastIndexOf(","));
+  if (dec < 0) return Number(s.replace(/[^\d]/g, ""));
+  const decimals = s.slice(dec + 1).replace(/[^\d]/g, "");
+  const intPart = s.slice(0, dec).replace(/[^\d]/g, "");
+  if (decimals.length === 3) return Number(intPart + decimals); // "2.000" → 2000
+  return Number(intPart + "." + (decimals || "0"));
+}
 
 function classify(text: string): { type: PaymentTerm["type"]; trigger: PaymentTrigger } {
   const t = text.toLowerCase();
-  if (/holdback/.test(t)) return { type: "holdback_release", trigger: "holdback_release" };
-  if (/deposit|acconto|signing|signature|acceptance|upfront|up-front|booking|retainer/.test(t)) {
+  if (/holdback|ritenuta|svincolo/.test(t)) return { type: "holdback_release", trigger: "holdback_release" };
+  if (/deposit|acconto|anticipo|caparra|firma|signing|signature|accettazione|acceptance|upfront|up-front|booking|retainer|ordine/.test(t)) {
     return { type: "deposit", trigger: "on_signing" };
   }
-  // "Substantial completion" is a progress milestone, not the final payment.
-  if (/substantial/.test(t)) return { type: "milestone", trigger: "milestone" };
-  if (/final|completion|walkthrough|walk-through|handover|hand-over|balance|saldo|fine lavori/.test(t)) {
+  // "Substantial completion" / "SAL" è una fase intermedia, non il saldo.
+  if (/substantial|\bsal\b|stato avanzamento|fase|avanzamento/.test(t)) return { type: "milestone", trigger: "milestone" };
+  if (/final|completion|walkthrough|walk-through|handover|hand-over|balance|saldo|fine lavori|ultimazione|consegna|collaudo/.test(t)) {
     return { type: "completion", trigger: "on_completion" };
   }
   return { type: "milestone", trigger: "milestone" };
@@ -132,7 +144,7 @@ export function derivePaymentScheduleFromText(
         label: line.replace(FIXED_RE, "").replace(/^[\s\-–:,]+/, "").trim() || line,
         trigger,
         amountType: "fixed",
-        value: Number(fixed[1].replace(/,/g, "")),
+        value: parseAmount(fixed[1] ?? fixed[2] ?? "0"),
         dueDays: dueDays ?? (trigger === "on_signing" ? 0 : 15),
       });
     }
@@ -148,20 +160,20 @@ export function derivePaymentScheduleFromText(
   if (!usable) {
     // Single "100% on completion" style quotes are still valid.
     if (terms.length === 1 && terms[0].amountType === "percent" && terms[0].value === 100) {
-      return { currency: "CAD", derived: true, holdback: { enabled: false, percent: 10 }, terms };
+      return { currency: "EUR", derived: true, holdback: { enabled: false, percent: 10 }, terms };
     }
     return defaultPaymentSchedule();
   }
 
   return {
-    currency: "CAD",
+    currency: "EUR",
     derived: true,
     holdback: { enabled: false, percent: 10 },
     terms,
   };
 }
 
-/** Amount (CAD, 2 decimals) of a term against a contract total. */
+/** Importo (EUR, 2 decimali) di una rata rispetto al totale contratto. */
 export function paymentTermAmount(term: PaymentTerm, total: number): number {
   const raw = term.amountType === "percent" ? (total * term.value) / 100 : term.value;
   return Math.round(raw * 100) / 100;
@@ -181,7 +193,7 @@ export function validatePaymentSchedule(schedule: PaymentSchedule, total: number
 /** Human-readable lines for PDFs / emails, kept in sync with the structured schedule. */
 export function paymentScheduleToText(schedule: PaymentSchedule): string[] {
   return schedule.terms.map((t) => {
-    const amount = t.amountType === "percent" ? `${t.value}%` : `$${t.value.toLocaleString("en-CA", { minimumFractionDigits: 2 })}`;
+    const amount = t.amountType === "percent" ? `${t.value}%` : `€ ${t.value.toLocaleString("it-IT", { minimumFractionDigits: 2 })}`;
     return `${amount} ${t.label}`.trim();
   });
 }

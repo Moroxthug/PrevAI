@@ -118,7 +118,7 @@ router.post("/sign/:token/otp", otpLimiter, async (req, res) => {
       .update(contractSignersTable)
       .set({ otpHash: createHash("sha256").update(`${signer.id}:${code}`).digest("hex"), otpExpiresAt: new Date(Date.now() + OTP_TTL_MS), otpAttempts: 0 })
       .where(eq(contractSignersTable.id, signer.id));
-    await sendContractOtpEmail({ toEmail: signer.email, code, companyName: loaded.contract.variables.contractor.name, language: loaded.contract.language as "en" | "fr" });
+    await sendContractOtpEmail({ toEmail: signer.email, code, companyName: loaded.contract.variables.contractor.name, language: loaded.contract.language as "it" });
     await logContractEvent({ contractId: loaded.contract.id, type: "otp_sent", actor: "system", signerId: signer.id, ip: req.ip });
     res.json({ success: true });
   } catch (err) {
@@ -203,9 +203,7 @@ router.post("/sign/:token/complete", signLimiter, async (req, res) => {
       return;
     }
     const lang = loaded.contract.language;
-    const consentText = lang === "fr"
-      ? "J'ai lu le contrat, y compris mon droit de résolution, et j'accepte de le signer électroniquement. Ma signature électronique a la même valeur qu'une signature manuscrite."
-      : "I have read the contract, including my cancellation rights, and agree to sign it electronically. My electronic signature has the same effect as a handwritten signature.";
+    const consentText = "Ho letto il contratto, compreso il mio diritto di recesso, e accetto di firmarlo elettronicamente. La mia firma elettronica ha lo stesso valore di una firma autografa.";
     await db
       .update(contractSignersTable)
       .set({ status: "signed", name: body.data.name, signatureType: body.data.signatureType, signatureData: body.data.signatureData, consentText, signedAt: new Date(), ip: req.ip ?? null, userAgent: req.headers["user-agent"] ?? null, tokenHash: signer.tokenHash })

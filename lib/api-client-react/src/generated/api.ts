@@ -131,7 +131,7 @@ export const getListTaxProfilesUrl = () => {
 }
 
 /**
- * @summary Canadian sales-tax profiles by province (static, public)
+ * @summary Regimi IVA italiani (statici, pubblici)
  */
 export const listTaxProfiles = async ( options?: Parameters<typeof customFetch>[1]): Promise<ListTaxProfiles200> => {
 
@@ -178,7 +178,7 @@ export type ListTaxProfilesQueryError = ErrorType<unknown>
 
 
 /**
- * @summary Canadian sales-tax profiles by province (static, public)
+ * @summary Regimi IVA italiani (statici, pubblici)
  */
 
 export function useListTaxProfiles<TData = Awaited<ReturnType<typeof listTaxProfiles>>, TError = ErrorType<unknown>>(

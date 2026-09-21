@@ -118,7 +118,7 @@ export async function createManualQuote(userId: string, input: ManualQuoteInput)
         clientData: clientDataInput ?? { nome: "", indirizzo: "" },
         companySnapshot: resolvedSnapshot,
         templateId: (["standard", "arosio", "mariagrazia"].includes(input.templateId ?? "") ? input.templateId : "standard") as "standard" | "arosio" | "mariagrazia",
-        titoloPreventivoRiga1: input.titoloPreventivoRiga1 ?? "Project Quote & Itemized Estimate",
+        titoloPreventivoRiga1: input.titoloPreventivoRiga1 ?? "Analisi Economica e Computo Metrico Prezzato",
         titoloPreventivoRiga2: input.titoloPreventivoRiga2 ?? "",
         descrizioneGenerale: input.descrizioneGenerale ?? "",
         numeroPreventivoData,
@@ -128,7 +128,7 @@ export async function createManualQuote(userId: string, input: ManualQuoteInput)
         totale: totale.toFixed(2),
         province,
         condizioniPagamento: Array.isArray(input.condizioniPagamento) ? input.condizioniPagamento : ["30% deposit on signing", "40% at mid-project milestone", "30% on completion"],
-        note: input.note ?? "Quote valid for 30 days",
+        note: input.note ?? "Preventivo valido 30 giorni",
         status: "draft",
       })
       .returning();

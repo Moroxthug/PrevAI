@@ -74,7 +74,7 @@ async function connectWebhook(payload: string) {
   return rawPost("/api/payments/connect-webhook", payload, { "stripe-signature": stripe.webhooks.generateTestHeaderString({ payload, secret: process.env.STRIPE_CONNECT_WEBHOOK_SECRET! }) });
 }
 
-async function seedClient(org: TestUser, opts: { name?: string; email?: string; phone?: string | null; lang?: "en" | "fr" } = {}) {
+async function seedClient(org: TestUser, opts: { name?: string; email?: string; phone?: string | null; lang?: "it" } = {}) {
   const [client] = await db
     .insert(clientsTable)
     .values({
@@ -82,14 +82,14 @@ async function seedClient(org: TestUser, opts: { name?: string; email?: string; 
       name: opts.name ?? "Integration Client",
       email: opts.email ?? `client-${Math.random().toString(36).slice(2)}-${org.userId}@example.invalid`,
       phone: opts.phone ?? null,
-      preferredLanguage: opts.lang ?? "en",
+      preferredLanguage: "it",
       dedupKey: `int-${Math.random().toString(36).slice(2)}-${org.userId}`,
     })
     .returning();
   return client!;
 }
 
-async function createManualInvoice(org: TestUser, clientId: string, opts: { unitCents?: number; dueDays?: number; language?: "en" | "fr" } = {}) {
+async function createManualInvoice(org: TestUser, clientId: string, opts: { unitCents?: number; dueDays?: number; language?: "it" } = {}) {
   const res = await org.api("/api/invoices", {
     body: { clientId, lines: [{ description: "Deck boards", quantity: 1, unitCents: opts.unitCents ?? 250_000 }], dueDays: opts.dueDays ?? 15, language: opts.language },
   });
@@ -124,19 +124,19 @@ describe("Phase 65 — integrations", () => {
     test("every due item kind fires once; a second tick is a no-op", async () => {
       // QC/FR so the reminder / follow-up / receipt templates render in French here (the rest of the file is EN).
       const org = await createOrg({ province: "QC", companyName: "Cron QC Inc", profile: { sendReviewRequests: true, googleReviewUrl: "https://g.page/r/e2e/review" } });
-      const client = await seedClient(org, { name: "Client Tick", lang: "fr" });
+      const client = await seedClient(org, { name: "Client Tick", lang: "it" });
 
       // a. Sent invoice 5 days past due → overdue + first (3-day) reminder in the same tick.
-      const overdue = await createManualInvoice(org, client.id, { language: "fr" });
+      const overdue = await createManualInvoice(org, client.id, { language: "it" });
       expect((await org.api(`/api/invoices/${overdue.id}/send`, { body: {} })).status).toBe(200);
       await db.update(invoicesTable).set({ dueDate: daysAgo(5) }).where(eq(invoicesTable.id, overdue.id));
 
       // b. Draft whose review window elapsed → auto-sent.
-      const autoSend = await createManualInvoice(org, client.id, { language: "fr" });
+      const autoSend = await createManualInvoice(org, client.id, { language: "it" });
       await db.update(invoicesTable).set({ autoSendAt: daysAgo(0.01) }).where(eq(invoicesTable.id, autoSend.id));
 
       // c. Holdback release whose lien period ended → in-app notification (autoSendInvoices is off on the fixture profile).
-      const release = await createManualInvoice(org, client.id, { language: "fr" });
+      const release = await createManualInvoice(org, client.id, { language: "it" });
       await db.update(invoicesTable).set({ type: "holdback_release", scheduledFor: daysAgo(1) }).where(eq(invoicesTable.id, release.id));
 
       // d. Contract sent 4 days ago, unsigned → 3-day reminder (re-issued token).
@@ -328,7 +328,7 @@ describe("Phase 65 — integrations", () => {
       // Approved template: Meta accepts → no email.
       resetRecorded();
       stubHost(GRAPH, () => json(200, { messaging_product: "whatsapp", contacts: [{ wa_id: "16135550102" }], messages: [{ id: "wamid.e2e" }] }));
-      const client2 = await seedClient(org, { name: "Client FR", phone: "+16135550102", lang: "fr" });
+      const client2 = await seedClient(org, { name: "Client FR", phone: "+16135550102", lang: "it" });
       const [job2] = await db.insert(projectsTable).values({ userId: org.userId, clientId: client2.id, name: "Toiture", status: "completed", completedAt: daysAgo(REVIEW_REQUEST_DELAY_DAYS + 1) }).returning();
       await runJobReviewRequestMaintenance();
       expect(requestsTo(GRAPH)).toHaveLength(1);

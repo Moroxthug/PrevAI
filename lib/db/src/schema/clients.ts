@@ -20,7 +20,7 @@ export const clientsTable = pgTable(
     province: text("province"), // ISO-ish 2-letter code (ON, QC, ...)
     postalCode: text("postal_code"),
     businessNumber: text("business_number"), // CRA BN / GST-HST number for business clients
-    preferredLanguage: text("preferred_language", { enum: ["en", "fr"] }).notNull().default("en"),
+    preferredLanguage: text("preferred_language", { enum: ["it"] }).notNull().default("it"),
     notes: text("notes").notNull().default(""),
     /** Stable dedup key: lower(name)|lower(email)|phone — same recipe used by the legacy derived clients list. */
     dedupKey: text("dedup_key").notNull(),

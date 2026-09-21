@@ -92,7 +92,7 @@ export const invoicesTable = pgTable(
     type: text("type", { enum: INVOICE_TYPES }).notNull().default("manual"),
     status: text("status", { enum: INVOICE_STATUSES }).notNull().default("draft"),
     source: text("source", { enum: ["automation", "manual"] }).notNull().default("manual"),
-    language: text("language", { enum: ["en", "fr"] }).notNull().default("en"),
+    language: text("language", { enum: ["it"] }).notNull().default("it"),
     province: text("province").notNull(),
     title: text("title").notNull().default(""),
     issueDate: timestamp("issue_date", { withTimezone: true }).notNull().defaultNow(),

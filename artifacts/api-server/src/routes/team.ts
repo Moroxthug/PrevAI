@@ -219,7 +219,7 @@ router.post("/team/workers/:wid/invite", requireAuth, requirePermission("team", 
     if (body.success && body.data.send !== false && w.email) {
       const [profile] = await db.select({ companyName: businessProfilesTable.companyName, province: businessProfilesTable.province }).from(businessProfilesTable).where(eq(businessProfilesTable.userId, userId));
       try {
-        await sendWorkerInviteEmail({ toEmail: w.email, workerName: w.name, companyName: profile?.companyName || "your contractor", url, language: profile?.province === "QC" ? "fr" : "en" });
+        await sendWorkerInviteEmail({ toEmail: w.email, workerName: w.name, companyName: profile?.companyName || "la tua impresa", url, language: "it" });
         emailed = true;
       } catch (err) {
         logger.warn({ err, workerId: w.id }, "Worker invite email failed; link returned to the dashboard");

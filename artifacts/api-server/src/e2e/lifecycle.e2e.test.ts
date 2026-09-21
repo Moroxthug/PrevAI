@@ -66,14 +66,14 @@ async function raiseAndExpectSuccess(params: Parameters<typeof raiseAutomation>[
 
 type Scenario = {
   label: string;
-  province: "ON" | "QC";
-  language: "en" | "fr";
+  province: string;
+  language: "it";
   holdback: boolean;
 };
 
 const SCENARIOS: Scenario[] = [
-  { label: "Ontario / English", province: "ON", language: "en", holdback: true },
-  { label: "Quebec / French", province: "QC", language: "fr", holdback: false },
+  { label: "Milano / con ritenuta", province: "MI", language: "it", holdback: true },
+  { label: "Roma / senza ritenuta", province: "RM", language: "it", holdback: false },
 ];
 
 async function runScenario(s: Scenario) {

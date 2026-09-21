@@ -51,14 +51,15 @@ for (const a of process.argv.slice(2)) {
   const m = /^--([^=]+)(?:=(.*))?$/.exec(a);
   if (m) args.set(m[1]!, m[2] ?? "true");
 }
-const LANGS = (args.get("lang") ?? "en,fr").split(",").filter(Boolean) as Array<"en" | "fr">;
-const WIDTHS_EN = (args.get("widths") ?? "1280,980,768,640,375").split(",").map(Number);
-const WIDTHS_FR = args.has("widths") ? WIDTHS_EN : [1280, 375];
+const LANGS = (args.get("lang") ?? "it").split(",").filter(Boolean) as Array<"it">;
+const WIDTHS_IT = (args.get("widths") ?? "1280,980,768,640,375").split(",").map(Number);
+const WIDTHS_FR = WIDTHS_IT;
+const WIDTHS_EN = WIDTHS_IT;
 const ROUTE_FILTER = (args.get("routes") ?? "").split(",").filter(Boolean);
 const RUN_AXE = args.get("axe") !== "false";
 const SCREENSHOTS = args.get("screenshots") !== "false";
 const KEEP = args.has("keep");
-const PROVINCE = (args.get("province") ?? "ON") as "ON" | "QC";
+const PROVINCE = (args.get("province") ?? "MI");
 const VITE_PORT = Number(args.get("port") ?? 5197);
 // A second run alongside a full sweep needs its own port AND its own output dir (the run starts by wiping it).
 const OUT = resolve(import.meta.dirname, "../../.qa", args.get("out") ?? "visual");
@@ -302,12 +303,12 @@ try {
   const results: PageResult[] = [];
   const all = routes(showcase);
   for (const lang of LANGS) {
-    const widths = lang === "fr" ? WIDTHS_FR : WIDTHS_EN;
+    const widths = WIDTHS_IT;
     for (const auth of [false, true]) {
       const rs = all.filter((r) => r.auth === auth);
       if (!rs.length) continue;
       const ctx = await browser.newContext({
-        locale: lang === "fr" ? "fr-CA" : "en-CA",
+        locale: "it-IT",
         extraHTTPHeaders: auth ? { authorization: `Bearer ${org.token}` } : {},
         reducedMotion: "reduce",
         deviceScaleFactor: 1,

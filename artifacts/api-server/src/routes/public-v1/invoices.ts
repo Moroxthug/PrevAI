@@ -52,7 +52,7 @@ const createSchema = z.object({
   dueDays: z.number().int().min(0).max(365).default(15),
   holdbackPercent: z.number().int().min(0).max(50).optional(),
   notes: z.string().max(4000).optional(),
-  language: z.enum(["en", "fr"]).optional(),
+  language: z.enum(["it"]).optional(),
   province: z.string().max(2).optional(),
 });
 

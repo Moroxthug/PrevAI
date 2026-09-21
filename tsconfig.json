@@ -4,6 +4,9 @@
   "files": [],
   "references": [
     {
+      "path": "./lib/config"
+    },
+    {
       "path": "./lib/db"
     },
     {

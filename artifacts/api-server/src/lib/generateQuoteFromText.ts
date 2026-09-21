@@ -47,7 +47,7 @@ FUNDAMENTAL RULES:
 
 OUTPUT — VALID JSON ONLY, no extra text:
 {
-  "titolo_riga1": "Project Quote & Itemized Estimate",
+  "titolo_riga1": "Analisi Economica e Computo Metrico Prezzato",
   "titolo_riga2": "Project: [brief description] – [City] ([Province])",
   "numero_preventivo_data": "",
   "cliente": { "nome": "", "indirizzo": "" },
@@ -204,7 +204,7 @@ function parseAiResponse(content: string, rawInput: string, profile: typeof busi
 
   return {
     rawInput,
-    titoloPreventivoRiga1: aiData.titolo_riga1 ?? "Project Quote & Itemized Estimate",
+    titoloPreventivoRiga1: aiData.titolo_riga1 ?? "Analisi Economica e Computo Metrico Prezzato",
     titoloPreventivoRiga2: aiData.titolo_riga2 ?? "",
     numeroPreventivoData: aiData.numero_preventivo_data ?? "",
     clientData: { nome: aiData.cliente?.nome ?? "", indirizzo: aiData.cliente?.indirizzo ?? "" },

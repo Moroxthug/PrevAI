@@ -29,11 +29,8 @@ export function serializeProposal(p: AssistantProposal) {
   return { id: p.id, messageId: p.messageId, projectId: p.projectId, kind: p.kind, summary: p.summary, payload: p.payload, status: p.status, resultEntityType: p.resultEntityType, resultEntityId: p.resultEntityId, error: p.error, resolvedAt: p.resolvedAt?.toISOString() ?? null, createdAt: p.createdAt.toISOString() };
 }
 
-function langOf(req: { headers: Record<string, unknown>; body?: unknown }): Lang {
-  const fromBody = (req.body as { language?: string } | undefined)?.language;
-  if (fromBody === "fr" || fromBody === "en") return fromBody;
-  const header = String(req.headers["x-language"] ?? req.headers["accept-language"] ?? "");
-  return header.toLowerCase().startsWith("fr") ? "fr" : "en";
+function langOf(_req: { headers: Record<string, unknown>; body?: unknown }): Lang {
+  return "it";
 }
 
 // GET /api/assistant/conversation?projectId=… — the conversation for a job (or the company one), created on first use
@@ -62,7 +59,7 @@ router.post("/assistant/conversations/:id/messages", requireAuth, requirePermiss
     const userId = getUserId(res);
     const gate = await requireAssistant(userId);
     if (!gate.ok) { res.status(403).json({ error: "PLAN_REQUIRED", requiredPlan: gate.plan }); return; }
-    const body = z.object({ content: z.string().trim().min(1).max(4000), language: z.enum(["en", "fr"]).optional() }).safeParse(req.body);
+    const body = z.object({ content: z.string().trim().min(1).max(4000), language: z.enum(["it"]).optional() }).safeParse(req.body);
     if (!body.success) { res.status(400).json({ error: "Invalid parameters", details: body.error }); return; }
     const loaded = await loadConversation(userId, req.params.id as string);
     if (!loaded) { res.status(404).json({ error: "Not found" }); return; }

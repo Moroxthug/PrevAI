@@ -33,7 +33,7 @@ export type ContractSection = z.infer<typeof contractSectionSchema>;
 export const contractDocumentSchema = z.object({
   templateKey: z.string(), // ON | BC | AB | QC | CA (generic)
   templateVersion: z.number().int(),
-  language: z.enum(["en", "fr"]),
+  language: z.enum(["it"]),
   title: z.string(),
   sections: z.array(contractSectionSchema),
 });
@@ -111,7 +111,7 @@ export const contractsTable = pgTable(
     contractNumber: text("contract_number").notNull(),
     status: text("status", { enum: CONTRACT_STATUSES }).notNull().default("draft"),
     province: text("province").notNull(),
-    language: text("language", { enum: ["en", "fr"] }).notNull().default("en"),
+    language: text("language", { enum: ["it"] }).notNull().default("it"),
     templateKey: text("template_key").notNull(),
     document: jsonb("document").$type<ContractDocument>().notNull(),
     variables: jsonb("variables").$type<ContractVariables>().notNull(),

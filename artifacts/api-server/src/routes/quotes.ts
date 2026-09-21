@@ -127,7 +127,7 @@ CORE RULES:
 
 OUTPUT — VALID JSON ONLY, no extra text:
 {
-  "titolo_riga1": "Project Quote & Itemized Estimate",
+  "titolo_riga1": "Analisi Economica e Computo Metrico Prezzato",
   "titolo_riga2": "[Brief description] project – [City] ([Province])",
   "numero_preventivo_data": "",
   "cliente": { "nome": "", "indirizzo": "" },
@@ -192,7 +192,7 @@ export function serializeQuoteVariant(v: VariantRow, province: string | null = n
     ivaPercentuale: Number(v.ivaPercentuale),
     ivaValore: Number(v.ivaValore),
     /** Phase 71: statutory components (GST/QST…) or one generic "Tax" line; sums to ivaValore. */
-    taxLines: quoteTaxLines(v.sconto && typeof (v.sconto as QuoteDiscount).importoScontato === "number" ? (v.sconto as QuoteDiscount).importoScontato : Number(v.subtotale), Number(v.ivaPercentuale), Number(v.ivaValore), province),
+    taxLines: quoteTaxLines(v.sconto && typeof (v.sconto as QuoteDiscount).importoScontato === "number" ? (v.sconto as QuoteDiscount).importoScontato : Number(v.subtotale), Number(v.ivaPercentuale), Number(v.ivaValore)),
     totale: Number(v.totale),
     createdAt: v.createdAt.toISOString(),
     updatedAt: v.updatedAt.toISOString(),
@@ -224,7 +224,7 @@ export function serializeQuote(q: QuoteRow, attachments?: AttachmentRow[], varia
     ivaPercentuale: Number(q.ivaPercentuale),
     ivaValore: Number(q.ivaValore),
     /** Phase 71: statutory components (GST/QST…) or one generic "Tax" line; sums to ivaValore. */
-    taxLines: quoteTaxLines((q.sconto as QuoteDiscount | null)?.importoScontato ?? Number(q.subtotale), Number(q.ivaPercentuale), Number(q.ivaValore), province),
+    taxLines: quoteTaxLines((q.sconto as QuoteDiscount | null)?.importoScontato ?? Number(q.subtotale), Number(q.ivaPercentuale), Number(q.ivaValore)),
     /** Language the customer-facing documents are produced in (client preference, else French in Québec). Phase 71. */
     documentLanguage: province === "QC" ? "fr" : "en",
     totale: tot,
@@ -909,7 +909,7 @@ Write all output text in English.`
         iva_valore: iva,
         totale,
         descrizione_generale: "Itemized quote generated from the uploaded price list document.",
-        note: "Quote valid for 30 days",
+        note: "Preventivo valido 30 giorni",
         sconto: { percentuale: 0, importo_scontato: 0 },
         condizioni_pagamento: [
           "15% deposit upon contract signing",
@@ -917,7 +917,7 @@ Write all output text in English.`
           "35% upon substantial completion",
           "15% final balance upon completion and client walkthrough",
         ],
-        titolo_riga1: "Project Quote & Itemized Estimate",
+        titolo_riga1: "Analisi Economica e Computo Metrico Prezzato",
         titolo_riga2: "",
         numero_preventivo_data: "",
         cliente: { nome: "", indirizzo: "" },
@@ -982,7 +982,7 @@ Write all output text in English.`
         iva_valore: iva,
         totale,
         descrizione_generale: "Economic analysis and priced bill of quantities",
-        note: "Quote valid for 30 days",
+        note: "Preventivo valido 30 giorni",
         sconto: { percentuale: 0, importo_scontato: 0 },
         condizioni_pagamento: [
           "15% deposit upon contract signing",
@@ -990,7 +990,7 @@ Write all output text in English.`
           "35% upon substantial completion",
           "15% final balance upon completion and client walkthrough",
         ],
-        titolo_riga1: "Project Quote & Itemized Estimate",
+        titolo_riga1: "Analisi Economica e Computo Metrico Prezzato",
         titolo_riga2: "",
         numero_preventivo_data: "",
         cliente: { nome: "", indirizzo: "" },
@@ -1018,7 +1018,7 @@ Write all output text in English.`
         iva_valore: iva,
         totale: subTot + iva,
         descrizione_generale: "Economic analysis and priced bill of quantities",
-        note: "Quote valid for 30 days",
+        note: "Preventivo valido 30 giorni",
       };
     }
 
@@ -1130,14 +1130,14 @@ Write all output text in English.`
           sconto,
           condizioniPagamento,
           capitolatoPro: !!(profile?.subscriptionStatus === "active" && (profile?.subscriptionPlan === "monthly_pro" || profile?.subscriptionPlan === "monthly_elite")),
-          titoloPreventivoRiga1: aiData.titolo_riga1 ?? "Project Quote & Itemized Estimate",
+          titoloPreventivoRiga1: aiData.titolo_riga1 ?? "Analisi Economica e Computo Metrico Prezzato",
           titoloPreventivoRiga2: aiData.titolo_riga2 ?? "",
           numeroPreventivoData,
           subtotale: subtotale.toFixed(2),
           ivaPercentuale: ivaPercentuale.toFixed(3),
           ivaValore: ivaValore.toFixed(2),
           totale: totale.toFixed(2),
-          note: aiData.note ?? "Quote valid for 30 days",
+          note: aiData.note ?? "Preventivo valido 30 giorni",
           promptTokens,
           completionTokens,
           totalTokens,
@@ -1725,11 +1725,11 @@ router.post("/quotes/:id/send-pdf-email", requireAuth, requirePermission("quotes
     const pdfBuffer = await generateQuotePdfBuffer(quote, profile ?? null, false);
     const lang = await quoteLanguageFor(quote);
 
-    const companyName = (quote.companySnapshot as QuoteCompanySnapshot | null)?.companyName || profile?.companyName || "Your company";
+    const companyName = (quote.companySnapshot as QuoteCompanySnapshot | null)?.companyName || profile?.companyName || "La tua impresa";
     const numeroData = quote.numeroPreventivoData || `${qt("quoteNo", lang)} ${quote.id.slice(0, 4).toUpperCase()} - ${fmtQuoteDate(new Date(), lang)}`;
     const totale = Number(quote.totale);
     const totaleFormatted = fmtQty(totale, lang);
-    const filename = `${lang === "fr" ? "Soumission" : "Quote"} ${numeroData.replace(/\//g, "_")}.pdf`;
+    const filename = `Preventivo ${numeroData.replace(/\//g, "_")}.pdf`;
 
     await sendQuotePdfEmail({
       toEmail,
