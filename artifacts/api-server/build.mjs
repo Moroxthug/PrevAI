@@ -54,7 +54,8 @@ async function buildAll() {
       "mongodb-client-encryption",
       "nodemailer",
       "handlebars",
-      "kysely",
+      // "kysely" is NOT external: same reason as @opentelemetry/* below (used by
+      // @better-auth/core, not a dependency of this package).
       "knex",
       "typeorm",
       "protobufjs",
@@ -66,7 +67,10 @@ async function buildAll() {
       "@swc/core",
       "@aws-sdk/*",
       "@azure/*",
-      "@opentelemetry/*",
+      // "@opentelemetry/*" is NOT external: @better-auth/core (bundled) imports
+      // @opentelemetry/semantic-conventions, which is not a dependency of this
+      // package, so an external import cannot be resolved inside the Vercel
+      // function (pnpm does not hoist it). Bundling it is a few KB of constants.
       "@google-cloud/*",
       "@google/*",
       "googleapis",
