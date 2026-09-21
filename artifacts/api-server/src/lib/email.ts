@@ -1,12 +1,14 @@
 import { Resend } from "resend";
 import { logger } from "./logger";
 import { getBaseUrl } from "./baseUrl";
+import { sendCustomerEmail } from "./connectedEmailSend.js";
 
 // Gmail and most webmail clients strip data: URI images from HTML emails,
 // so the logo must be a real hosted URL rather than an inline base64 SVG.
-const LOGO_URL = `${getBaseUrl()}/prevai-logo.png`;
+const LOGO_URL = `${getBaseUrl()}/quoteai-logo.png`;
 
-function escapeHtml(value: string): string {
+
+export function escapeHtml(value: string): string {
   return value
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
@@ -27,32 +29,32 @@ function getPlanTier(planName: string): PlanTier {
 function getPlanFeatures(planName: string, tier: PlanTier): string {
   if (tier === "pro") {
     return `
-      <div class="feature"><span class="check">✓</span> Preventivi illimitati senza filigrana</div>
-      <div class="feature"><span class="check">✓</span> PDF professionali con il tuo logo aziendale</div>
-      <div class="feature"><span class="check">✓</span> Template premium ad alta qualità</div>
-      <div class="feature"><span class="check">✓</span> Branding completamente personalizzabile</div>
-      <div class="feature"><span class="check">✓</span> Generazione AI con foto cantiere</div>
-      <div class="feature"><span class="check">✓</span> Priorità nella generazione AI</div>
+      <div class="feature"><span class="check">✓</span> Unlimited quotes with no watermark</div>
+      <div class="feature"><span class="check">✓</span> Professional PDFs with your company logo</div>
+      <div class="feature"><span class="check">✓</span> High-quality premium templates</div>
+      <div class="feature"><span class="check">✓</span> Fully customizable branding</div>
+      <div class="feature"><span class="check">✓</span> AI generation from job-site photos</div>
+      <div class="feature"><span class="check">✓</span> Priority AI generation</div>
     `;
   }
   if (tier === "starter") {
     return `
-      <div class="feature"><span class="check">✓</span> Fino a 20 preventivi al mese</div>
-      <div class="feature"><span class="check">✓</span> Download PDF professionale</div>
-      <div class="feature"><span class="check">✓</span> Supporto email incluso</div>
+      <div class="feature"><span class="check">✓</span> Up to 20 quotes per month</div>
+      <div class="feature"><span class="check">✓</span> Professional PDF download</div>
+      <div class="feature"><span class="check">✓</span> Email support included</div>
     `;
   }
   const isClean = planName.toLowerCase().includes("pulito") || planName.toLowerCase().includes("clean");
   if (isClean) {
     return `
-      <div class="feature"><span class="check">✓</span> 1 preventivo PDF senza filigrana</div>
-      <div class="feature"><span class="check">✓</span> Design professionale e pulito</div>
-      <div class="feature"><span class="check">✓</span> Download immediato</div>
+      <div class="feature"><span class="check">✓</span> 1 PDF quote with no watermark</div>
+      <div class="feature"><span class="check">✓</span> Clean, professional design</div>
+      <div class="feature"><span class="check">✓</span> Instant download</div>
     `;
   }
   return `
-    <div class="feature"><span class="check">✓</span> 1 preventivo PDF</div>
-    <div class="feature"><span class="check">✓</span> Download immediato</div>
+    <div class="feature"><span class="check">✓</span> 1 PDF quote</div>
+    <div class="feature"><span class="check">✓</span> Instant download</div>
   `;
 }
 
@@ -65,39 +67,39 @@ function buildSubscriptionEmail(params: {
   const { userName, planName, planPrice, planInterval } = params;
   const tier = getPlanTier(planName);
   const isRecurring = !!planInterval;
-  const date = new Date().toLocaleDateString("it-IT", { day: "2-digit", month: "long", year: "numeric" });
-  const intervalLabel = planInterval === "month" ? "mese" : planInterval === "year" ? "anno" : null;
-  const priceLabel = intervalLabel ? `€${planPrice}/${intervalLabel}` : `€${planPrice} (una tantum)`;
+  const date = new Date().toLocaleDateString("en-CA", { day: "2-digit", month: "long", year: "numeric" });
+  const intervalLabel = planInterval === "month" ? "month" : planInterval === "year" ? "year" : null;
+  const priceLabel = intervalLabel ? `${planPrice} CAD/${intervalLabel}` : `${planPrice} CAD (one-time)`;
   const renewalRow = isRecurring
     ? `<div class="receipt-row">
-        <span class="receipt-label">Rinnovo</span>
-        <span>${planInterval === "month" ? "Mensile automatico" : "Annuale automatico"}</span>
+        <span class="receipt-label">Renewal</span>
+        <span>${planInterval === "month" ? "Automatic monthly" : "Automatic yearly"}</span>
        </div>`
     : `<div class="receipt-row">
-        <span class="receipt-label">Tipo</span>
-        <span>Acquisto singolo</span>
+        <span class="receipt-label">Type</span>
+        <span>One-time purchase</span>
        </div>`;
 
   const headline = tier === "oneshot"
-    ? `🎉 Preventivo ${planName} sbloccato!`
-    : `🎉 Piano ${planName} attivato!`;
+    ? `🎉 ${planName} quote unlocked!`
+    : `🎉 ${planName} plan activated!`;
 
   const subline = tier === "oneshot"
-    ? `Il tuo PDF è pronto. Accedi alla dashboard per scaricarlo.`
-    : `Il tuo abbonamento è attivo da oggi, ${date}`;
+    ? `Your PDF is ready. Head to the dashboard to download it.`
+    : `Your subscription has been active since today, ${date}`;
 
   const bodyIntro = tier === "oneshot"
-    ? `Ciao ${userName},<br/><br/>il tuo acquisto <strong>Prevai ${planName}</strong> è andato a buon fine. Puoi accedere alla dashboard e scaricare il PDF del tuo preventivo.`
-    : `Ciao ${userName},<br/><br/>il tuo abbonamento <strong>Prevai ${planName}</strong> è stato attivato con successo. Puoi già iniziare a creare preventivi professionali${tier === "pro" ? " illimitati" : ""}.`;
+    ? `Hi ${userName},<br/><br/>your <strong>QuoteAI ${planName}</strong> purchase went through successfully. You can go to the dashboard and download the PDF of your quote.`
+    : `Hi ${userName},<br/><br/>your <strong>QuoteAI ${planName}</strong> subscription has been activated. You can start creating${tier === "pro" ? " unlimited" : ""} professional quotes right away.`;
 
   const features = getPlanFeatures(planName, tier);
 
   return `<!DOCTYPE html>
-<html lang="it">
+<html lang="en">
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>${headline} – Prevai</title>
+<title>${headline} – QuoteAI</title>
 <style>
   body { margin:0; padding:0; background:#f5f3ff; font-family:system-ui,-apple-system,sans-serif; }
   .wrapper { max-width:560px; margin:32px auto; background:#ffffff; border-radius:16px; overflow:hidden; box-shadow:0 4px 24px rgba(124,58,237,0.08); }
@@ -122,7 +124,7 @@ function buildSubscriptionEmail(params: {
 <body>
 <div class="wrapper">
   <div class="header">
-    <img src="${LOGO_URL}" alt="Prevai" />
+    <img src="${LOGO_URL}" alt="QuoteAI" />
     <h1>${headline}</h1>
     <p>${subline}</p>
   </div>
@@ -131,16 +133,16 @@ function buildSubscriptionEmail(params: {
 
     <div class="receipt-box">
       <div class="receipt-row">
-        <span class="receipt-label">Piano</span>
-        <span><strong>Prevai ${planName}</strong></span>
+        <span class="receipt-label">Plan</span>
+        <span><strong>QuoteAI ${planName}</strong></span>
       </div>
       <div class="receipt-row">
-        <span class="receipt-label">Data</span>
+        <span class="receipt-label">Date</span>
         <span>${date}</span>
       </div>
       ${renewalRow}
       <div class="receipt-row">
-        <span class="receipt-label">Importo</span>
+        <span class="receipt-label">Amount</span>
         <span>${priceLabel}</span>
       </div>
     </div>
@@ -150,15 +152,15 @@ function buildSubscriptionEmail(params: {
     </div>
 
     <div class="cta">
-      <a href="https://prevai.it/dashboard" class="btn">Vai alla dashboard →</a>
+      <a href="https://quoteai.ca/dashboard" class="btn">Go to dashboard →</a>
     </div>
 
-    <p style="font-size:13px;color:#6b7280;text-align:center;">Hai domande? Scrivici su <a href="mailto:supporto@prevai.it" style="color:#7c3aed;">supporto@prevai.it</a></p>
+    <p style="font-size:13px;color:#6b7280;text-align:center;">Questions? Reach us at <a href="mailto:support@quoteai.ca" style="color:#7c3aed;">support@quoteai.ca</a></p>
   </div>
   <div class="footer">
-    Prevai · Preventivi professionali con l'AI<br/>
-    Hai ricevuto questa email perché hai effettuato un acquisto su Prevai.<br/>
-    ${isRecurring ? "Per gestire o disdire l'abbonamento accedi alla dashboard → Impostazioni → Piano." : ""}
+    QuoteAI · Professional AI-powered quotes<br/>
+    You received this email because you made a purchase on QuoteAI.<br/>
+    ${isRecurring ? "To manage or cancel your subscription, go to Dashboard → Settings → Plan." : ""}
   </div>
 </div>
 </body>
@@ -166,13 +168,13 @@ function buildSubscriptionEmail(params: {
 }
 
 function buildWelcomeEmail(name: string): string {
-  const firstName = name?.split(" ")[0] || name || "Benvenuto";
+  const firstName = name?.split(" ")[0] || name || "there";
   return `<!DOCTYPE html>
-<html lang="it">
+<html lang="en">
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Benvenuto su Prevai!</title>
+<title>Welcome to QuoteAI!</title>
 <style>
   body { margin:0; padding:0; background:#f5f3ff; font-family:system-ui,-apple-system,sans-serif; }
   .wrapper { max-width:560px; margin:32px auto; background:#ffffff; border-radius:16px; overflow:hidden; box-shadow:0 4px 24px rgba(124,58,237,0.08); }
@@ -199,45 +201,45 @@ function buildWelcomeEmail(name: string): string {
 <body>
 <div class="wrapper">
   <div class="header">
-    <img src="${LOGO_URL}" alt="Prevai" />
-    <h1>Benvenuto su Prevai! 🎉</h1>
-    <p>Il tuo account è pronto — inizia subito a creare preventivi</p>
+    <img src="${LOGO_URL}" alt="QuoteAI" />
+    <h1>Welcome to QuoteAI! 🎉</h1>
+    <p>Your account is ready — start creating quotes right away</p>
   </div>
   <div class="body">
-    <p class="greeting">Ciao ${firstName},<br/><br/>sei ora registrato su <strong>Prevai</strong>, il tool che trasforma la descrizione di un lavoro in un preventivo professionale in pochi secondi. Siamo felici di averti con noi!</p>
+    <p class="greeting">Hi ${escapeHtml(firstName)},<br/><br/>you're now registered on <strong>QuoteAI</strong>, the tool that turns a job description into a professional quote in seconds. We're glad to have you with us!</p>
 
     <div class="trial-box">
-      <h2>🎁 La tua prova gratuita include:</h2>
-      <div class="feature"><span class="check">✓</span> <span>Crea <strong>preventivi illimitati</strong> con l'AI</span></div>
-      <div class="feature"><span class="check">✓</span> <span>Anteprima completa di ogni preventivo</span></div>
-      <div class="feature"><span class="check">✓</span> <span><strong>3 download PDF gratuiti</strong> per provare il servizio</span></div>
-      <div class="feature"><span class="check">✓</span> <span>Nessuna carta di credito richiesta per iniziare</span></div>
+      <h2>🎁 Your free trial includes:</h2>
+      <div class="feature"><span class="check">✓</span> <span>Create <strong>unlimited quotes</strong> with AI</span></div>
+      <div class="feature"><span class="check">✓</span> <span>Full preview of every quote</span></div>
+      <div class="feature"><span class="check">✓</span> <span><strong>3 free PDF downloads</strong> to try the service</span></div>
+      <div class="feature"><span class="check">✓</span> <span>No credit card required to get started</span></div>
     </div>
 
     <div class="steps">
       <div class="step">
         <div class="step-num">1</div>
-        <div class="step-text"><strong>Completa il profilo aziendale</strong><br/>Aggiungi nome, P.IVA e logo per personalizzare i PDF.</div>
+        <div class="step-text"><strong>Complete your business profile</strong><br/>Add your company name, GST/HST number, and logo to personalize your PDFs.</div>
       </div>
       <div class="step">
         <div class="step-num">2</div>
-        <div class="step-text"><strong>Descrivi il lavoro da preventivare</strong><br/>Scrivi (o parla) e l'AI genera il preventivo in pochi secondi.</div>
+        <div class="step-text"><strong>Describe the job you want to quote</strong><br/>Type it (or speak it) and the AI generates the quote in seconds.</div>
       </div>
       <div class="step">
         <div class="step-num">3</div>
-        <div class="step-text"><strong>Scarica e invia al cliente</strong><br/>PDF professionale pronto, subito. Poi scegli un piano per continuare.</div>
+        <div class="step-text"><strong>Download and send it to your client</strong><br/>A professional PDF, ready instantly. Then choose a plan to keep going.</div>
       </div>
     </div>
 
     <div class="cta">
-      <a href="https://prevai.it/dashboard" class="btn">Crea il primo preventivo →</a>
+      <a href="https://quoteai.ca/dashboard" class="btn">Create your first quote →</a>
     </div>
 
-    <p style="font-size:13px;color:#6b7280;text-align:center;">Hai domande? Scrivici su <a href="mailto:supporto@prevai.it" style="color:#7c3aed;">supporto@prevai.it</a></p>
+    <p style="font-size:13px;color:#6b7280;text-align:center;">Questions? Reach us at <a href="mailto:support@quoteai.ca" style="color:#7c3aed;">support@quoteai.ca</a></p>
   </div>
   <div class="footer">
-    Prevai · Preventivi professionali con l'AI<br/>
-    Hai ricevuto questa email perché ti sei appena registrato su <a href="https://prevai.it" style="color:#7c3aed;">prevai.it</a>.
+    QuoteAI · Professional AI-powered quotes<br/>
+    You received this email because you just signed up on <a href="https://quoteai.ca" style="color:#7c3aed;">quoteai.ca</a>.
   </div>
 </div>
 </body>
@@ -256,9 +258,9 @@ export async function sendWelcomeEmail(params: {
   try {
     const resend = new Resend(apiKey);
     await resend.emails.send({
-      from: "Prevai <no-reply@prevai.it>",
+      from: "QuoteAI <no-reply@quoteai.ca>",
       to: [params.toEmail],
-      subject: "Benvenuto su Prevai — il tuo account è pronto 🎉",
+      subject: "Welcome to QuoteAI — your account is ready 🎉",
       html: buildWelcomeEmail(params.toName),
     });
     logger.info({ to: params.toEmail }, "Welcome email sent");
@@ -282,13 +284,13 @@ export async function sendSubscriptionEmail(params: {
 
   const tier = getPlanTier(params.planName);
   const subject = tier === "oneshot"
-    ? `🎉 Preventivo ${params.planName} sbloccato – Prevai`
-    : `🎉 Piano ${params.planName} attivato – Benvenuto su Prevai!`;
+    ? `🎉 ${params.planName} quote unlocked – QuoteAI`
+    : `🎉 ${params.planName} plan activated – Welcome to QuoteAI!`;
 
   try {
     const resend = new Resend(apiKey);
     await resend.emails.send({
-      from: "Prevai <no-reply@prevai.it>",
+      from: "QuoteAI <no-reply@quoteai.ca>",
       to: [params.toEmail],
       subject,
       html: buildSubscriptionEmail({
@@ -304,21 +306,61 @@ export async function sendSubscriptionEmail(params: {
   }
 }
 
+const QUOTE_EMAIL_COPY = {
+  en: {
+    view: "View &amp; accept online",
+    viewHint: "You can review the full quote in your browser and accept it in one click.",
+    title: (c: string) => `Quote from ${c}`,
+    ready: "Your quote is ready",
+    sent: (c: string) => `${c} has sent you a professional quote`,
+    greeting: (n: string, c: string) => `Hi ${n || "there"},<br/><br/>attached you'll find the quote from <strong>${c}</strong>. If you have any questions, feel free to reach out.`,
+    quote: "Quote",
+    total: "Total amount",
+    generated: "Document generated with",
+    footer: "You received this email because you were listed as the recipient of this quote.",
+    subject: (n: string, c: string) => `Quote ${n} – ${c}`,
+    money: (t: string) => `$ ${t}`,
+  },
+  fr: {
+    view: "Consulter et accepter en ligne",
+    viewHint: "Vous pouvez consulter la soumission complète dans votre navigateur et l'accepter en un clic.",
+    title: (c: string) => `Soumission de ${c}`,
+    ready: "Votre soumission est prête",
+    sent: (c: string) => `${c} vous a envoyé une soumission professionnelle`,
+    greeting: (n: string, c: string) => `Bonjour ${n || ""},<br/><br/>vous trouverez ci-joint la soumission de <strong>${c}</strong>. N'hésitez pas à nous écrire pour toute question.`,
+    quote: "Soumission",
+    total: "Montant total",
+    generated: "Document généré avec",
+    footer: "Vous recevez ce courriel parce que vous êtes le destinataire de cette soumission.",
+    subject: (n: string, c: string) => `Soumission ${n} – ${c}`,
+    money: (t: string) => `${t} $`,
+  },
+} as const;
+
 function buildQuoteEmailHtml(params: {
+  lang?: "en" | "fr";
   companyName: string;
   clientName: string;
   quoteNumber: string;
   totale: string;
+  publicUrl?: string | null;
+  logoUrl?: string | null;
 }): string {
   const companyName = escapeHtml(params.companyName);
   const clientName = escapeHtml(params.clientName);
-  const { quoteNumber, totale } = params;
+  const { quoteNumber, totale, publicUrl } = params;
+  const c = QUOTE_EMAIL_COPY[params.lang ?? "en"];
+  const logoUrl = params.logoUrl || LOGO_URL;
+  const ctaHtml = publicUrl
+    ? `<div class="cta"><a class="btn" href="${publicUrl}">${c.view}</a></div>
+    <p style="font-size:13px;color:#6b7280;text-align:center;margin-top:-12px;">${c.viewHint}</p>`
+    : "";
   return `<!DOCTYPE html>
-<html lang="it">
+<html lang="${params.lang === "fr" ? "fr-CA" : "en-CA"}">
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Preventivo da ${companyName}</title>
+<title>${c.title(companyName)}</title>
 <style>
   body { margin:0; padding:0; background:#f5f3ff; font-family:system-ui,-apple-system,sans-serif; }
   .wrapper { max-width:560px; margin:32px auto; background:#ffffff; border-radius:16px; overflow:hidden; box-shadow:0 4px 24px rgba(124,58,237,0.08); }
@@ -340,29 +382,30 @@ function buildQuoteEmailHtml(params: {
 <body>
 <div class="wrapper">
   <div class="header">
-    <img src="${LOGO_URL}" alt="Prevai" />
-    <h1>Il tuo preventivo è pronto</h1>
-    <p>${companyName} ti ha inviato un preventivo professionale</p>
+    <img src="${logoUrl}" alt="${companyName}" />
+    <h1>${c.ready}</h1>
+    <p>${c.sent(companyName)}</p>
   </div>
   <div class="body">
-    <p class="greeting">Ciao ${clientName || "Cliente"},<br/><br/>in allegato trovi il preventivo di <strong>${companyName}</strong>. Per qualsiasi domanda, non esitare a contattarci.</p>
+    <p class="greeting">${c.greeting(clientName, companyName)}</p>
 
     <div class="quote-box">
       <div class="quote-row">
-        <span class="quote-label">Preventivo</span>
+        <span class="quote-label">${c.quote}</span>
         <span><strong>${quoteNumber}</strong></span>
       </div>
       <div class="quote-row">
-        <span class="quote-label">Importo totale</span>
-        <span>\u20ac ${totale}</span>
+        <span class="quote-label">${c.total}</span>
+        <span>${c.money(totale)}</span>
       </div>
     </div>
+    ${ctaHtml}
 
-    <p style="font-size:13px;color:#6b7280;text-align:center;">Documento generato con <a href="https://prevai.it" style="color:#7c3aed;">Prevai</a></p>
+    <p style="font-size:13px;color:#6b7280;text-align:center;">${c.generated} <a href="https://quoteai.ca" style="color:#7c3aed;">QuoteAI</a></p>
   </div>
   <div class="footer">
     ${companyName}<br/>
-    Hai ricevuto questa email perché sei stato indicato come destinatario del preventivo.
+    ${c.footer}
   </div>
 </div>
 </body>
@@ -376,19 +419,17 @@ function buildWidgetClientConfirmationEmail(params: {
   companyEmail: string | null;
   prezzoMinimo: string;
   prezzoMassimo: string;
-  incentivesSummary?: string;
+  logoUrl?: string | null;
 }): string {
-  const { clientName, companyName, companyPhone, companyEmail, prezzoMinimo, prezzoMassimo, incentivesSummary } = params;
+  const { clientName, companyName, companyPhone, companyEmail, prezzoMinimo, prezzoMassimo } = params;
+  const logoUrl = params.logoUrl || LOGO_URL;
   const contactLine = [companyPhone, companyEmail].filter(Boolean).join(" · ");
-  const incentivesBlock = incentivesSummary
-    ? `<div class="incentives-box"><strong>🎁 Agevolazioni potenzialmente applicabili</strong><br/>${incentivesSummary.replace(/\n/g, "<br/>")}</div>`
-    : "";
   return `<!DOCTYPE html>
-<html lang="it">
+<html lang="en-CA">
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>La tua richiesta è stata ricevuta – ${companyName}</title>
+<title>Your request has been received – ${companyName}</title>
 <style>
   body { margin:0; padding:0; background:#f5f3ff; font-family:system-ui,-apple-system,sans-serif; }
   .wrapper { max-width:560px; margin:32px auto; background:#ffffff; border-radius:16px; overflow:hidden; box-shadow:0 4px 24px rgba(124,58,237,0.08); }
@@ -408,25 +449,23 @@ function buildWidgetClientConfirmationEmail(params: {
 <body>
 <div class="wrapper">
   <div class="header">
-    <img src="${LOGO_URL}" alt="Prevai" />
-    <h1>Richiesta ricevuta ✓</h1>
-    <p>${companyName} ha ricevuto la tua richiesta di preventivo</p>
+    <img src="${logoUrl}" alt="${escapeHtml(companyName)}" />
+    <h1>Request received ✓</h1>
+    <p>${companyName} has received your quote request</p>
   </div>
   <div class="body">
-    <p class="greeting">Ciao ${clientName},<br/><br/>grazie per aver richiesto una stima a <strong>${companyName}</strong>. Il team ti ricontatterà a breve per fissare un sopralluogo e definire il preventivo definitivo.</p>
+    <p class="greeting">Hi ${clientName},<br/><br/>thanks for requesting an estimate from <strong>${companyName}</strong>. Their team will get back to you shortly to schedule a site visit and finalize the quote.</p>
 
     <div class="price-box">
-      <div class="label">Stima indicativa</div>
-      <div class="range">€${prezzoMinimo} – €${prezzoMassimo}</div>
+      <div class="label">Estimated range</div>
+      <div class="range">${prezzoMinimo} – ${prezzoMassimo} CAD</div>
     </div>
 
-    ${incentivesBlock}
-
-    <p style="font-size:13px;color:#6b7280;text-align:center;">Questa è una stima automatica generata dall'AI e potrebbe variare dopo un sopralluogo tecnico.${incentivesSummary ? " Anche le agevolazioni indicate sono una stima preliminare, da confermare in sede di sopralluogo tecnico e fiscale." : ""}${contactLine ? ` Per qualsiasi domanda puoi contattare direttamente ${companyName}: ${contactLine}.` : ""}</p>
+    <p style="font-size:13px;color:#6b7280;text-align:center;">This is an automatic AI-generated estimate and may change after an on-site visit.${contactLine ? ` For any questions you can contact ${companyName} directly: ${contactLine}.` : ""}</p>
   </div>
   <div class="footer">
-    Stima calcolata con tecnologia <a href="https://prevai.it" style="color:#7c3aed;">Prevai</a><br/>
-    Hai ricevuto questa email perché hai richiesto un preventivo tramite il sito di ${companyName}.
+    Estimate calculated with <a href="https://quoteai.ca" style="color:#7c3aed;">QuoteAI</a> technology<br/>
+    You received this email because you requested a quote through ${companyName}'s website.
   </div>
 </div>
 </body>
@@ -435,13 +474,14 @@ function buildWidgetClientConfirmationEmail(params: {
 
 export async function sendWidgetClientConfirmationEmail(params: {
   toEmail: string;
+  userId: string;
   clientName: string;
   companyName: string;
   companyPhone: string | null;
   companyEmail: string | null;
   prezzoMinimo: string;
   prezzoMassimo: string;
-  incentivesSummary?: string;
+  companyLogoUrl?: string | null;
 }): Promise<void> {
   const apiKey = process.env.RESEND_API_KEY;
   if (!apiKey) {
@@ -449,11 +489,12 @@ export async function sendWidgetClientConfirmationEmail(params: {
     return;
   }
   try {
-    const resend = new Resend(apiKey);
-    await resend.emails.send({
-      from: "Prevai <no-reply@prevai.it>",
-      to: [params.toEmail],
-      subject: `La tua richiesta a ${params.companyName} è stata ricevuta`,
+    await sendCustomerEmail({
+      userId: params.userId,
+      toEmail: params.toEmail,
+      fromDisplayName: params.companyName,
+      replyTo: params.companyEmail,
+      subject: `Your request to ${params.companyName} has been received`,
       html: buildWidgetClientConfirmationEmail({
         clientName: escapeHtml(params.clientName),
         companyName: escapeHtml(params.companyName),
@@ -461,7 +502,7 @@ export async function sendWidgetClientConfirmationEmail(params: {
         companyEmail: params.companyEmail,
         prezzoMinimo: params.prezzoMinimo,
         prezzoMassimo: params.prezzoMassimo,
-        incentivesSummary: params.incentivesSummary ? escapeHtml(params.incentivesSummary) : undefined,
+        logoUrl: params.companyLogoUrl ?? null,
       }),
     });
     logger.info({ to: params.toEmail }, "Widget client confirmation email sent");
@@ -472,29 +513,38 @@ export async function sendWidgetClientConfirmationEmail(params: {
 
 export async function sendQuotePdfEmail(params: {
   toEmail: string;
+  userId: string;
   companyName: string;
   clientName: string;
   quoteNumber: string;
   totale: string;
   pdfBuffer: Buffer;
   filename: string;
+  publicUrl?: string | null;
+  companyLogoUrl?: string | null;
+  replyTo?: string | null;
+  lang?: "en" | "fr";
 }): Promise<void> {
   const apiKey = process.env.RESEND_API_KEY;
   if (!apiKey) {
     logger.warn("RESEND_API_KEY not set — skipping quote email");
-    throw new Error("Servizio email non configurato");
+    throw new Error("Email service not configured");
   }
   try {
-    const resend = new Resend(apiKey);
-    await resend.emails.send({
-      from: "Prevai <no-reply@prevai.it>",
-      to: [params.toEmail],
-      subject: `Preventivo ${params.quoteNumber} – ${params.companyName}`,
+    await sendCustomerEmail({
+      userId: params.userId,
+      toEmail: params.toEmail,
+      fromDisplayName: params.companyName,
+      replyTo: params.replyTo,
+      subject: QUOTE_EMAIL_COPY[params.lang ?? "en"].subject(params.quoteNumber, params.companyName),
       html: buildQuoteEmailHtml({
+        lang: params.lang,
         companyName: params.companyName,
         clientName: params.clientName,
         quoteNumber: params.quoteNumber,
         totale: params.totale,
+        publicUrl: params.publicUrl ?? null,
+        logoUrl: params.companyLogoUrl ?? null,
       }),
       attachments: [
         {
@@ -506,7 +556,7 @@ export async function sendQuotePdfEmail(params: {
     logger.info({ to: params.toEmail, quoteNumber: params.quoteNumber }, "Quote PDF email sent");
   } catch (err) {
     logger.error({ err }, "Failed to send quote PDF email");
-    throw new Error("Impossibile inviare l'email con il preventivo");
+    throw new Error("Failed to send the quote email", { cause: err });
   }
 }
 
@@ -520,30 +570,28 @@ export async function sendWidgetLeadNotification(params: {
   totale: string;
   prezzoMinimo: string;
   prezzoMassimo: string;
-  incentivesSummary?: string;
 }): Promise<void> {
   const apiKey = process.env.RESEND_API_KEY;
   if (!apiKey) {
     logger.warn("RESEND_API_KEY not set — skipping widget lead notification email");
     return;
   }
-  const { toEmail, companyName, clientName, clientEmail, clientPhone, rawInput, totale, prezzoMinimo, prezzoMassimo, incentivesSummary } = params;
+  const { toEmail, clientName, clientEmail, clientPhone, rawInput, totale, prezzoMinimo, prezzoMassimo } = params;
   const safeClientName = escapeHtml(clientName);
   const safeClientEmail = escapeHtml(clientEmail);
   const safeClientPhone = escapeHtml(clientPhone);
   const safeRawInput = escapeHtml(rawInput);
-  const safeIncentivesSummary = incentivesSummary ? escapeHtml(incentivesSummary) : incentivesSummary;
   try {
     const resend = new Resend(apiKey);
     await resend.emails.send({
-      from: "Prevai <no-reply@prevai.it>",
+      from: "QuoteAI <no-reply@quoteai.ca>",
       to: [toEmail],
-      subject: `⚡ Nuovo Lead Convertito da Widget — ${clientName}`,
+      subject: `⚡ New Lead Converted from Widget — ${clientName}`,
       html: `<!DOCTYPE html>
-<html lang="it">
+<html lang="en-CA">
 <head>
 <meta charset="UTF-8" />
-<title>Nuovo Lead Widget</title>
+<title>New Widget Lead</title>
 <style>
   body { margin:0; padding:0; background:#f4f4f5; font-family:system-ui,-apple-system,sans-serif; }
   .wrapper { max-width:560px; margin:32px auto; background:#ffffff; border-radius:16px; overflow:hidden; box-shadow:0 4px 24px rgba(0,0,0,0.06); border:1px solid #e4e4e7; }
@@ -564,13 +612,13 @@ export async function sendWidgetLeadNotification(params: {
 <body>
 <div class="wrapper">
   <div class="header">
-    <h1>⚡ Nuovo Lead Convertito</h1>
-    <p>Un utente ha appena completato il preventivatore sul tuo sito web</p>
+    <h1>⚡ New Lead Converted</h1>
+    <p>A visitor just completed the quote tool on your website</p>
   </div>
   <div class="body">
-    <div class="section-title">Contatti del Lead</div>
+    <div class="section-title">Lead Contact Info</div>
     <div class="field">
-      <div class="label">Nome Cliente</div>
+      <div class="label">Client Name</div>
       <div class="val">${safeClientName}</div>
     </div>
     <div class="field">
@@ -578,32 +626,30 @@ export async function sendWidgetLeadNotification(params: {
       <div class="val"><a href="mailto:${safeClientEmail}" style="color:#4f46e5;">${safeClientEmail}</a></div>
     </div>
     <div class="field">
-      <div class="label">Telefono</div>
+      <div class="label">Phone</div>
       <div class="val"><a href="tel:${safeClientPhone}" style="color:#4f46e5;">${safeClientPhone}</a></div>
     </div>
 
-    <div class="section-title">Dettaglio Richiesta</div>
+    <div class="section-title">Request Details</div>
     <div class="field">
-      <div class="label">Descrizione e Parametri</div>
+      <div class="label">Description & Parameters</div>
       <div class="val" style="white-space:pre-wrap; font-size:13px; color:#3f3f46; line-height:1.5;">${safeRawInput}</div>
     </div>
 
     <div class="price-box">
       <div class="price-row">
-        <span>Stima Generata AI:</span>
-        <span style="font-size:16px;">€${prezzoMinimo} – €${prezzoMassimo}</span>
+        <span>AI-Generated Estimate:</span>
+        <span style="font-size:16px;">${prezzoMinimo} – ${prezzoMassimo} CAD</span>
       </div>
-      <div style="font-size:11px; color:#71717a; font-weight:normal; margin-top:4px; text-align:right;">Totale preventivo calcolato: €${totale}</div>
+      <div style="font-size:11px; color:#71717a; font-weight:normal; margin-top:4px; text-align:right;">Calculated quote total: ${totale} CAD</div>
     </div>
 
-    ${safeIncentivesSummary ? `<div class="incentives-box"><strong>🎁 ESITO VERIFICA INCENTIVI & BANDI:</strong>\n${safeIncentivesSummary}</div>` : ""}
-
     <p style="font-size:13px; color:#71717a; line-height:1.5; text-align:center; margin-top:24px;">
-      Ti consigliamo di ricontattare il cliente entro 24 ore per fissare il sopralluogo ed ottimizzare la conversione.
+      We recommend following up with the client within 24 hours to schedule a site visit and improve your conversion rate.
     </p>
   </div>
   <div class="footer">
-    Prevai Widget • Tecnologia di stima istantanea AI per l'edilizia
+    QuoteAI Widget • AI-powered instant estimate technology for trades
   </div>
 </div>
 </body>
@@ -613,4 +659,85 @@ export async function sendWidgetLeadNotification(params: {
   } catch (err) {
     logger.error({ err }, "Failed to send widget lead notification email");
   }
+}
+
+function buildQuoteAcceptedEmail(params: {
+  companyName: string;
+  clientName: string;
+  quoteNumber: string;
+  totale: string;
+  acceptedAt: string;
+  quoteUrl: string;
+}): string {
+  const companyName = escapeHtml(params.companyName);
+  const clientName = escapeHtml(params.clientName);
+  const { quoteNumber, totale, acceptedAt, quoteUrl } = params;
+  return `<!DOCTYPE html>
+<html lang="en-CA">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Quote accepted</title>
+<style>
+  body { margin:0; padding:0; background:#f5f3ff; font-family:system-ui,-apple-system,sans-serif; }
+  .wrapper { max-width:560px; margin:32px auto; background:#ffffff; border-radius:16px; overflow:hidden; box-shadow:0 4px 24px rgba(124,58,237,0.08); }
+  .header { background:linear-gradient(135deg,#059669,#06b6d4); padding:32px 40px; text-align:center; }
+  .header img { height:36px; }
+  .header h1 { color:white; font-size:22px; font-weight:700; margin:16px 0 4px; }
+  .header p { color:rgba(255,255,255,0.9); font-size:14px; margin:0; }
+  .body { padding:32px 40px; }
+  .greeting { font-size:16px; color:#1a1a2e; margin-bottom:20px; line-height:1.6; }
+  .quote-box { background:#ecfdf5; border:1px solid #d1fae5; border-radius:12px; padding:20px 24px; margin:24px 0; }
+  .quote-row { display:flex; justify-content:space-between; align-items:center; padding:8px 0; border-bottom:1px solid #d1fae5; font-size:14px; }
+  .quote-row:last-child { border-bottom:none; font-weight:700; color:#047857; font-size:16px; }
+  .quote-label { color:#6b7280; }
+  .cta { text-align:center; margin:28px 0; }
+  .btn { display:inline-block; background:linear-gradient(135deg,#7c3aed,#06b6d4); color:white; font-size:15px; font-weight:600; padding:13px 32px; border-radius:10px; text-decoration:none; }
+  .footer { background:#f9fafb; padding:20px 40px; text-align:center; font-size:12px; color:#9ca3af; border-top:1px solid #f3f4f6; }
+</style>
+</head>
+<body>
+<div class="wrapper">
+  <div class="header">
+    <img src="${LOGO_URL}" alt="QuoteAI" />
+    <h1>🎉 ${clientName} accepted your quote</h1>
+    <p>Quote ${quoteNumber} is now accepted</p>
+  </div>
+  <div class="body">
+    <p class="greeting">Good news, ${companyName}!<br/><br/><strong>${clientName}</strong> confirmed the quote online on ${acceptedAt}. The next step is turning it into a signed contract and getting the deposit in.</p>
+    <div class="quote-box">
+      <div class="quote-row"><span class="quote-label">Quote</span><span><strong>${quoteNumber}</strong></span></div>
+      <div class="quote-row"><span class="quote-label">Accepted by</span><span>${clientName}</span></div>
+      <div class="quote-row"><span class="quote-label">Total</span><span>$ ${totale}</span></div>
+    </div>
+    <div class="cta"><a class="btn" href="${quoteUrl}">Open the quote</a></div>
+  </div>
+  <div class="footer">You receive this because acceptance notifications are enabled in your QuoteAI settings.</div>
+</div>
+</body>
+</html>`;
+}
+
+export async function sendQuoteAcceptedEmail(params: {
+  toEmail: string;
+  companyName: string;
+  clientName: string;
+  quoteNumber: string;
+  totale: string;
+  acceptedAt: string;
+  quoteUrl: string;
+}): Promise<void> {
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!apiKey) {
+    logger.warn("RESEND_API_KEY not set — skipping quote-accepted email");
+    return;
+  }
+  const resend = new Resend(apiKey);
+  await resend.emails.send({
+    from: "QuoteAI <no-reply@quoteai.ca>",
+    to: [params.toEmail],
+    subject: `${params.clientName} accepted quote ${params.quoteNumber}`,
+    html: buildQuoteAcceptedEmail(params),
+  });
+  logger.info({ to: params.toEmail, quoteNumber: params.quoteNumber }, "Quote accepted email sent");
 }

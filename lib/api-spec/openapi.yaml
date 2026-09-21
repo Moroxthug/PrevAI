@@ -26,6 +26,25 @@ tags:
   - name: documents
     description: Document upload and price intelligence extraction
 paths:
+  /tax-profiles:
+    get:
+      operationId: listTaxProfiles
+      tags: [health]
+      summary: Canadian sales-tax profiles by province (static, public)
+      responses:
+        "200":
+          description: One profile per province/territory
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  profiles:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/TaxProfile"
+                required: [profiles]
+
   /healthz:
     get:
       operationId: healthCheck
@@ -52,7 +71,7 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: "#/components/schemas/Quote"
+                  $ref: "#/components/schemas/QuoteSummary"
     post:
       operationId: createQuote
       tags: [quotes]
@@ -177,6 +196,44 @@ paths:
         "204":
           description: Deleted
 
+  /quotes/{id}/archive:
+    post:
+      operationId: archiveQuote
+      tags: [quotes]
+      summary: Soft-archive a quote (moves it to the Archive view)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Archived quote
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Quote"
+
+  /quotes/{id}/restore:
+    post:
+      operationId: restoreQuote
+      tags: [quotes]
+      summary: Restore an archived quote
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Restored quote
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Quote"
+
   /quotes/{id}/generate-pdf:
     post:
       operationId: generateQuotePdf
@@ -242,6 +299,99 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Quote"
+
+  /quotes/{id}/variants:
+    get:
+      operationId: listQuoteVariants
+      tags: [quotes]
+      summary: List a quote's Good/Better/Best variants
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Variants for the quote
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  variants:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/QuoteVariant"
+    post:
+      operationId: createQuoteVariant
+      tags: [quotes]
+      summary: Add a variant to a quote (clones current pricing, or another variant, by default). A quote can have at most 3.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateQuoteVariantBody"
+      responses:
+        "201":
+          description: Newly created variant
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/QuoteVariant"
+
+  /quotes/{id}/variants/{variantId}:
+    put:
+      operationId: updateQuoteVariant
+      tags: [quotes]
+      summary: Update a quote variant's pricing/content
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: variantId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateQuoteVariantBody"
+      responses:
+        "200":
+          description: Updated variant
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/QuoteVariant"
+    delete:
+      operationId: deleteQuoteVariant
+      tags: [quotes]
+      summary: Remove a quote variant
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: variantId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: Deleted
 
   /quotes/{id}/regenerate:
     post:
@@ -655,6 +805,415 @@ paths:
               schema:
                 $ref: "#/components/schemas/SuccessResult"
 
+  /quickbooks/status:
+    get:
+      operationId: getQuickbooksStatus
+      tags: [quickbooks]
+      summary: Get the QuickBooks Online connection status for the authenticated company
+      responses:
+        "200":
+          description: Connection status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/QuickbooksStatus"
+
+  /quickbooks/connect:
+    get:
+      operationId: getQuickbooksConnectUrl
+      tags: [quickbooks]
+      summary: Get the QuickBooks OAuth authorization URL to redirect the browser to
+      responses:
+        "200":
+          description: Authorization URL
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/QuickbooksConnectUrl"
+
+  /quickbooks/disconnect:
+    delete:
+      operationId: disconnectQuickbooks
+      tags: [quickbooks]
+      summary: Unlink QuickBooks Online from the company account
+      responses:
+        "200":
+          description: Disconnected
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResult"
+
+  /quickbooks/toggle:
+    patch:
+      operationId: toggleQuickbooks
+      tags: [quickbooks]
+      summary: Enable or disable QuickBooks sync
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/QuickbooksToggleBody"
+      responses:
+        "200":
+          description: Toggled
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResult"
+
+  /quickbooks/accounts:
+    get:
+      operationId: getQuickbooksAccounts
+      tags: [quickbooks]
+      summary: List the company's QuickBooks expense and bank/credit-card accounts, for the mapping UI
+      responses:
+        "200":
+          description: Accounts
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/QuickbooksAccounts"
+
+  /quickbooks/mapping:
+    put:
+      operationId: updateQuickbooksMapping
+      tags: [quickbooks]
+      summary: Set the payment (funding) account and cost-category → expense-account mapping
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/QuickbooksMappingBody"
+      responses:
+        "200":
+          description: Saved
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResult"
+
+  /quickbooks/sync-log:
+    get:
+      operationId: getQuickbooksSyncLog
+      tags: [quickbooks]
+      summary: Recent QuickBooks sync attempts (success and failure)
+      responses:
+        "200":
+          description: Sync log
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/QuickbooksSyncLog"
+
+  /quickbooks/sync-log/retry:
+    post:
+      operationId: retryQuickbooksSync
+      tags: [quickbooks]
+      summary: Manually re-run a failed sync for one invoice or cost entry
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/QuickbooksRetryBody"
+      responses:
+        "200":
+          description: Retried
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResult"
+
+  /wave/status:
+    get:
+      operationId: getWaveStatus
+      tags: [wave]
+      summary: Get the Wave accounting connection status for the authenticated company
+      responses:
+        "200":
+          description: Connection status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WaveStatus"
+
+  /wave/connect:
+    get:
+      operationId: getWaveConnectUrl
+      tags: [wave]
+      summary: Get the Wave OAuth authorization URL to redirect the browser to
+      responses:
+        "200":
+          description: Authorization URL
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WaveConnectUrl"
+
+  /wave/disconnect:
+    delete:
+      operationId: disconnectWave
+      tags: [wave]
+      summary: Unlink Wave from the company account
+      responses:
+        "200":
+          description: Disconnected
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResult"
+
+  /wave/toggle:
+    patch:
+      operationId: toggleWave
+      tags: [wave]
+      summary: Enable or disable Wave sync
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/WaveToggleBody"
+      responses:
+        "200":
+          description: Toggled
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResult"
+
+  /wave/accounts:
+    get:
+      operationId: getWaveAccounts
+      tags: [wave]
+      summary: List the company's Wave expense, income, and payment accounts, for the mapping UI
+      responses:
+        "200":
+          description: Accounts
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WaveAccounts"
+
+  /wave/mapping:
+    put:
+      operationId: updateWaveMapping
+      tags: [wave]
+      summary: Set the payment (deposit) account, income account, and cost-category → expense-account mapping
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/WaveMappingBody"
+      responses:
+        "200":
+          description: Saved
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResult"
+
+  /wave/sync-log:
+    get:
+      operationId: getWaveSyncLog
+      tags: [wave]
+      summary: Recent Wave sync attempts (success and failure)
+      responses:
+        "200":
+          description: Sync log
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WaveSyncLog"
+
+  /wave/sync-log/retry:
+    post:
+      operationId: retryWaveSync
+      tags: [wave]
+      summary: Manually re-run a failed sync for one invoice or cost entry
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/WaveRetryBody"
+      responses:
+        "200":
+          description: Retried
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResult"
+
+  /calendar/status:
+    get:
+      operationId: getCalendarStatus
+      tags: [calendar]
+      summary: Get the calendar sync connection status for every provider the company has connected
+      responses:
+        "200":
+          description: Connection status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CalendarStatus"
+
+  /calendar/{provider}/connect:
+    get:
+      operationId: getCalendarConnectUrl
+      tags: [calendar]
+      summary: Get the OAuth authorization URL to redirect the browser to for a calendar provider
+      parameters:
+        - name: provider
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/CalendarProvider"
+      responses:
+        "200":
+          description: Authorization URL
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CalendarConnectUrl"
+
+  /calendar/{provider}/disconnect:
+    delete:
+      operationId: disconnectCalendar
+      tags: [calendar]
+      summary: Unlink a calendar provider from the company account
+      parameters:
+        - name: provider
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/CalendarProvider"
+      responses:
+        "200":
+          description: Disconnected
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResult"
+
+  /calendar/{provider}/toggle:
+    patch:
+      operationId: toggleCalendar
+      tags: [calendar]
+      summary: Enable or disable calendar sync for a connected provider
+      parameters:
+        - name: provider
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/CalendarProvider"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CalendarToggleBody"
+      responses:
+        "200":
+          description: Toggled
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResult"
+
+  /calendar/sync-log:
+    get:
+      operationId: getCalendarSyncLog
+      tags: [calendar]
+      summary: Recent milestone calendar sync attempts (success and failure)
+      responses:
+        "200":
+          description: Sync log
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CalendarSyncLog"
+
+  /email-connections/status:
+    get:
+      operationId: getEmailConnectionsStatus
+      tags: [emailConnections]
+      summary: Get the connected-email-sending status for every provider the company has connected
+      responses:
+        "200":
+          description: Connection status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EmailConnectionsStatus"
+
+  /email-connections/{provider}/connect:
+    get:
+      operationId: getEmailConnectionConnectUrl
+      tags: [emailConnections]
+      summary: Get the OAuth authorization URL to redirect the browser to for connected email sending
+      parameters:
+        - name: provider
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/EmailProvider"
+      responses:
+        "200":
+          description: Authorization URL
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EmailConnectionUrl"
+
+  /email-connections/{provider}/disconnect:
+    delete:
+      operationId: disconnectEmailConnection
+      tags: [emailConnections]
+      summary: Unlink a connected email account from the company account
+      parameters:
+        - name: provider
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/EmailProvider"
+      responses:
+        "200":
+          description: Disconnected
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResult"
+
+  /email-connections/{provider}/toggle:
+    patch:
+      operationId: toggleEmailConnection
+      tags: [emailConnections]
+      summary: Enable or disable connected email sending for a connected provider
+      parameters:
+        - name: provider
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/EmailProvider"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EmailConnectionToggleBody"
+      responses:
+        "200":
+          description: Toggled
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResult"
+
   /documents:
     get:
       operationId: listDocuments
@@ -707,6 +1266,53 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/PriceSummary"
+
+  /documents/price-alerts:
+    get:
+      operationId: getPriceAlerts
+      tags: [documents]
+      summary: List active (undismissed) price-trend alerts for the authenticated user
+      responses:
+        "200":
+          description: Active price-trend alerts
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/PriceAlert"
+
+  /documents/price-alerts/{id}/dismiss:
+    post:
+      operationId: dismissPriceAlert
+      tags: [documents]
+      summary: Dismiss a price-trend alert
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Alert dismissed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PriceAlert"
+
+  /documents/price-comparison:
+    get:
+      operationId: getPriceComparison
+      tags: [documents]
+      summary: Cross-supplier price comparison for work types seen from 2+ vendors
+      responses:
+        "200":
+          description: Cross-supplier comparison groups
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PriceComparisonResult"
 
   /documents/{id}/extract:
     post:
@@ -922,15 +1528,15 @@ components:
           type: string
         phone:
           type: string
-        codiceFiscale:
+        businessNumber:
           type: string
         partitaIva:
           type: string
-        citta:
+        city:
           type: string
-        cap:
+        postalCode:
           type: string
-        provincia:
+        province:
           type: string
       required:
         - nome
@@ -977,6 +1583,142 @@ components:
         - fileUrl
         - createdAt
 
+    QuoteTaxLine:
+      type: object
+      properties:
+        code:
+          type: string
+          enum: [GST, HST, PST, QST, RST, TAX]
+        label:
+          type: string
+        rate:
+          type: number
+        amount:
+          type: number
+      required: [code, label, rate, amount]
+
+    TaxProfile:
+      type: object
+      properties:
+        province:
+          type: string
+        totalRate:
+          type: number
+        components:
+          type: array
+          items:
+            type: object
+            properties:
+              code:
+                type: string
+              label:
+                type: string
+              rate:
+                type: number
+            required: [code, label, rate]
+      required: [province, totalRate, components]
+
+    QuoteVariant:
+      type: object
+      properties:
+        id:
+          type: string
+        quoteId:
+          type: string
+        label:
+          type: string
+        description:
+          type: string
+        position:
+          type: number
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/QuoteItem"
+        capitoli:
+          type: array
+          items:
+            $ref: "#/components/schemas/QuoteChapter"
+        sconto:
+          $ref: "#/components/schemas/QuoteDiscount"
+          nullable: true
+        condizioniPagamento:
+          type: array
+          items:
+            type: string
+        subtotale:
+          type: number
+        ivaPercentuale:
+          type: number
+        ivaValore:
+          type: number
+        taxLines:
+          description: Phase 71 — statutory components (GST/QST, GST/PST, HST) or one generic "Tax" line; amounts sum to ivaValore.
+          type: array
+          items:
+            $ref: "#/components/schemas/QuoteTaxLine"
+        totale:
+          type: number
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+      required:
+        - id
+        - quoteId
+        - label
+        - items
+        - capitoli
+        - condizioniPagamento
+        - subtotale
+        - ivaPercentuale
+        - ivaValore
+        - totale
+        - createdAt
+        - updatedAt
+
+    CreateQuoteVariantBody:
+      type: object
+      properties:
+        label:
+          type: string
+        description:
+          type: string
+        cloneFromVariantId:
+          type: string
+          description: Clone an existing variant's pricing instead of the parent quote's current pricing.
+
+    UpdateQuoteVariantBody:
+      type: object
+      properties:
+        label:
+          type: string
+        description:
+          type: string
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/QuoteItem"
+        capitoli:
+          type: array
+          items:
+            $ref: "#/components/schemas/QuoteChapter"
+        sconto:
+          $ref: "#/components/schemas/QuoteDiscount"
+          nullable: true
+        condizioniPagamento:
+          type: array
+          items:
+            type: string
+        subtotale:
+          type: number
+        ivaPercentuale:
+          type: number
+        ivaValore:
+          type: number
+        totale:
+          type: number
+
     Quote:
       type: object
       properties:
@@ -1021,13 +1763,29 @@ components:
           type: number
         ivaValore:
           type: number
+        taxLines:
+          description: Phase 71 — statutory components (GST/QST, GST/PST, HST) or one generic "Tax" line; amounts sum to ivaValore.
+          type: array
+          items:
+            $ref: "#/components/schemas/QuoteTaxLine"
+        documentLanguage:
+          description: Language of the customer-facing documents (client preference, else French in Québec).
+          type: string
+          enum: [en, fr]
         totale:
           type: number
         note:
           type: string
         status:
           type: string
-          enum: [draft, unlocked, pending_payment]
+          enum: [draft, unlocked, pending_payment, accepted]
+        acceptedByName:
+          type: string
+          nullable: true
+        acceptedAt:
+          type: string
+          format: date-time
+          nullable: true
         pdfUrl:
           type: string
           nullable: true
@@ -1048,10 +1806,20 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/QuoteAttachment'
+        acceptedVariantId:
+          type: string
+          nullable: true
+        variants:
+          type: array
+          items:
+            $ref: "#/components/schemas/QuoteVariant"
         createdAt:
           type: string
         updatedAt:
           type: string
+        archivedAt:
+          type: string
+          nullable: true
       required:
         - id
         - userId
@@ -1071,6 +1839,66 @@ components:
         - createdAt
         - updatedAt
 
+    # Phase 68: the list endpoint returns this instead of the full Quote —
+    # 500 quotes with their chapters, line items, raw input and company
+    # snapshot were 1.5 MB and 1.7 s; the list pages only read these fields.
+    QuoteSummary:
+      type: object
+      properties:
+        id:
+          type: string
+        clientId:
+          type: string
+          nullable: true
+        province:
+          type: string
+          nullable: true
+        clientData:
+          $ref: "#/components/schemas/QuoteClientData"
+        descrizioneGenerale:
+          type: string
+        lineItemCount:
+          type: integer
+        subtotale:
+          type: number
+        ivaValore:
+          type: number
+        totale:
+          type: number
+        status:
+          type: string
+          enum: [draft, unlocked, pending_payment, accepted]
+        acceptedAt:
+          type: string
+          nullable: true
+        pdfUrl:
+          type: string
+          nullable: true
+        capitolatoPro:
+          type: boolean
+        templateId:
+          type: string
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+        archivedAt:
+          type: string
+          nullable: true
+      required:
+        - id
+        - clientData
+        - descrizioneGenerale
+        - lineItemCount
+        - subtotale
+        - ivaValore
+        - totale
+        - status
+        - capitolatoPro
+        - templateId
+        - createdAt
+        - updatedAt
+
     QuoteStats:
       type: object
       properties:
@@ -1079,6 +1907,8 @@ components:
         draft:
           type: number
         unlocked:
+          type: number
+        accepted:
           type: number
         pendingPayment:
           type: number
@@ -1173,7 +2003,7 @@ components:
           type: string
         status:
           type: string
-          enum: [draft, unlocked, pending_payment]
+          enum: [draft, unlocked, pending_payment, accepted]
         templateId:
           type: string
           enum: [standard, arosio, mariagrazia]
@@ -1294,7 +2124,7 @@ components:
       properties:
         status:
           type: string
-          enum: [draft, unlocked, pending_payment]
+          enum: [draft, unlocked, pending_payment, accepted]
       required:
         - status
 
@@ -1384,6 +2214,10 @@ components:
           type: string
         ivaPercentuale:
           type: number
+        province:
+          description: Province the work is performed in; drives the tax components. Defaults to the client's, then the company's.
+          type: string
+          nullable: true
         condizioniPagamento:
           type: array
           items:
@@ -1536,6 +2370,9 @@ components:
       properties:
         connected:
           type: boolean
+        available:
+          type: boolean
+          description: False when the server-side app registration for this integration is missing (Phase 65) — the UI shows "not available yet" instead of a Connect button.
         phoneNumber:
           type: string
           nullable: true
@@ -1607,6 +2444,454 @@ components:
           type: boolean
       required:
         - success
+
+    QuickbooksStatus:
+      type: object
+      properties:
+        connected:
+          type: boolean
+        available:
+          type: boolean
+          description: False when the server-side app registration for this integration is missing (Phase 65) — the UI shows "not available yet" instead of a Connect button.
+        companyName:
+          type: string
+          nullable: true
+        environment:
+          type: string
+          nullable: true
+        isEnabled:
+          type: boolean
+          nullable: true
+        connectedAt:
+          type: string
+          nullable: true
+        lastSyncedAt:
+          type: string
+          nullable: true
+        hasPaymentAccount:
+          type: boolean
+          nullable: true
+        paymentAccountName:
+          type: string
+          nullable: true
+        categoryMap:
+          type: object
+          additionalProperties:
+            type: string
+            nullable: true
+          nullable: true
+      required:
+        - connected
+
+    QuickbooksConnectUrl:
+      type: object
+      properties:
+        url:
+          type: string
+      required:
+        - url
+
+    QuickbooksToggleBody:
+      type: object
+      properties:
+        isEnabled:
+          type: boolean
+      required:
+        - isEnabled
+
+    QuickbooksAccount:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+      required:
+        - id
+        - name
+
+    QuickbooksAccounts:
+      type: object
+      properties:
+        expenseAccounts:
+          type: array
+          items:
+            $ref: "#/components/schemas/QuickbooksAccount"
+        paymentAccounts:
+          type: array
+          items:
+            $ref: "#/components/schemas/QuickbooksAccount"
+      required:
+        - expenseAccounts
+        - paymentAccounts
+
+    QuickbooksMappingBody:
+      type: object
+      properties:
+        paymentAccount:
+          anyOf:
+            - $ref: "#/components/schemas/QuickbooksAccount"
+            - type: "null"
+        categoryMap:
+          type: object
+          additionalProperties:
+            anyOf:
+              - $ref: "#/components/schemas/QuickbooksAccount"
+              - type: "null"
+
+    QuickbooksSyncLogEntry:
+      type: object
+      properties:
+        id:
+          type: string
+        entityType:
+          type: string
+        entityId:
+          type: string
+        qboId:
+          type: string
+          nullable: true
+        status:
+          type: string
+        error:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+      required:
+        - id
+        - entityType
+        - entityId
+        - status
+        - createdAt
+
+    QuickbooksSyncLog:
+      type: object
+      properties:
+        entries:
+          type: array
+          items:
+            $ref: "#/components/schemas/QuickbooksSyncLogEntry"
+      required:
+        - entries
+
+    QuickbooksRetryBody:
+      type: object
+      properties:
+        entityType:
+          type: string
+          enum: [invoice, cost_entry]
+        entityId:
+          type: string
+      required:
+        - entityType
+        - entityId
+
+    WaveStatus:
+      type: object
+      properties:
+        connected:
+          type: boolean
+        available:
+          type: boolean
+          description: False when the server-side app registration for this integration is missing (Phase 65) — the UI shows "not available yet" instead of a Connect button.
+        businessName:
+          type: string
+          nullable: true
+        isEnabled:
+          type: boolean
+          nullable: true
+        connectedAt:
+          type: string
+          nullable: true
+        lastSyncedAt:
+          type: string
+          nullable: true
+        hasPaymentAccount:
+          type: boolean
+          nullable: true
+        paymentAccountName:
+          type: string
+          nullable: true
+        hasIncomeAccount:
+          type: boolean
+          nullable: true
+        incomeAccountName:
+          type: string
+          nullable: true
+        categoryMap:
+          type: object
+          additionalProperties:
+            type: string
+            nullable: true
+          nullable: true
+      required:
+        - connected
+
+    WaveConnectUrl:
+      type: object
+      properties:
+        url:
+          type: string
+      required:
+        - url
+
+    WaveToggleBody:
+      type: object
+      properties:
+        isEnabled:
+          type: boolean
+      required:
+        - isEnabled
+
+    WaveAccount:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+      required:
+        - id
+        - name
+
+    WaveAccounts:
+      type: object
+      properties:
+        expenseAccounts:
+          type: array
+          items:
+            $ref: "#/components/schemas/WaveAccount"
+        incomeAccounts:
+          type: array
+          items:
+            $ref: "#/components/schemas/WaveAccount"
+        paymentAccounts:
+          type: array
+          items:
+            $ref: "#/components/schemas/WaveAccount"
+      required:
+        - expenseAccounts
+        - incomeAccounts
+        - paymentAccounts
+
+    WaveMappingBody:
+      type: object
+      properties:
+        paymentAccount:
+          anyOf:
+            - $ref: "#/components/schemas/WaveAccount"
+            - type: "null"
+        incomeAccount:
+          anyOf:
+            - $ref: "#/components/schemas/WaveAccount"
+            - type: "null"
+        categoryMap:
+          type: object
+          additionalProperties:
+            anyOf:
+              - $ref: "#/components/schemas/WaveAccount"
+              - type: "null"
+
+    WaveSyncLogEntry:
+      type: object
+      properties:
+        id:
+          type: string
+        entityType:
+          type: string
+        entityId:
+          type: string
+        waveId:
+          type: string
+          nullable: true
+        status:
+          type: string
+        error:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+      required:
+        - id
+        - entityType
+        - entityId
+        - status
+        - createdAt
+
+    WaveSyncLog:
+      type: object
+      properties:
+        entries:
+          type: array
+          items:
+            $ref: "#/components/schemas/WaveSyncLogEntry"
+      required:
+        - entries
+
+    WaveRetryBody:
+      type: object
+      properties:
+        entityType:
+          type: string
+          enum: [invoice, cost_entry]
+        entityId:
+          type: string
+      required:
+        - entityType
+        - entityId
+
+    CalendarProvider:
+      type: string
+      enum: [google, outlook]
+
+    CalendarConnectionStatus:
+      type: object
+      properties:
+        provider:
+          $ref: "#/components/schemas/CalendarProvider"
+        accountEmail:
+          type: string
+        isEnabled:
+          type: boolean
+        connectedAt:
+          type: string
+        lastSyncedAt:
+          type: string
+          nullable: true
+      required:
+        - provider
+        - accountEmail
+        - isEnabled
+        - connectedAt
+
+    CalendarStatus:
+      type: object
+      properties:
+        available:
+          type: object
+          description: Per-provider app-registration presence (Phase 65).
+          properties:
+            google:
+              type: boolean
+            outlook:
+              type: boolean
+          required: [google, outlook]
+        connections:
+          type: array
+          items:
+            $ref: "#/components/schemas/CalendarConnectionStatus"
+      required:
+        - connections
+
+    CalendarConnectUrl:
+      type: object
+      properties:
+        url:
+          type: string
+      required:
+        - url
+
+    CalendarToggleBody:
+      type: object
+      properties:
+        isEnabled:
+          type: boolean
+      required:
+        - isEnabled
+
+    CalendarSyncLogEntry:
+      type: object
+      properties:
+        id:
+          type: string
+        provider:
+          $ref: "#/components/schemas/CalendarProvider"
+        milestoneId:
+          type: string
+        status:
+          type: string
+        error:
+          type: string
+          nullable: true
+        updatedAt:
+          type: string
+      required:
+        - id
+        - provider
+        - milestoneId
+        - status
+        - updatedAt
+
+    CalendarSyncLog:
+      type: object
+      properties:
+        entries:
+          type: array
+          items:
+            $ref: "#/components/schemas/CalendarSyncLogEntry"
+      required:
+        - entries
+
+    EmailProvider:
+      type: string
+      enum: [google]
+
+    EmailConnectionStatus:
+      type: object
+      properties:
+        provider:
+          $ref: "#/components/schemas/EmailProvider"
+        accountEmail:
+          type: string
+        isEnabled:
+          type: boolean
+        connectedAt:
+          type: string
+        lastSendAt:
+          type: string
+          nullable: true
+        lastSendError:
+          type: string
+          nullable: true
+      required:
+        - provider
+        - accountEmail
+        - isEnabled
+        - connectedAt
+
+    EmailConnectionsStatus:
+      type: object
+      properties:
+        available:
+          type: object
+          description: Per-provider app-registration presence (Phase 65).
+          properties:
+            google:
+              type: boolean
+          required: [google]
+        connections:
+          type: array
+          items:
+            $ref: "#/components/schemas/EmailConnectionStatus"
+      required:
+        - connections
+
+    EmailConnectionUrl:
+      type: object
+      properties:
+        url:
+          type: string
+      required:
+        - url
+
+    EmailConnectionToggleBody:
+      type: object
+      properties:
+        isEnabled:
+          type: boolean
+      required:
+        - isEnabled
 
     TrialStatus:
       type: object
@@ -1748,6 +3033,80 @@ components:
         - maxPrice
         - count
 
+    PriceAlert:
+      type: object
+      properties:
+        id:
+          type: string
+        workType:
+          type: string
+        zone:
+          type: string
+          nullable: true
+        previousAvgPrice:
+          type: number
+        currentAvgPrice:
+          type: number
+        percentChange:
+          type: number
+        direction:
+          type: string
+          enum: [up, down]
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - workType
+        - previousAvgPrice
+        - currentAvgPrice
+        - percentChange
+        - direction
+        - createdAt
+
+    PriceComparisonVendor:
+      type: object
+      properties:
+        vendor:
+          type: string
+        avgPrice:
+          type: number
+        count:
+          type: number
+      required:
+        - vendor
+        - avgPrice
+        - count
+
+    PriceComparisonGroup:
+      type: object
+      properties:
+        workType:
+          type: string
+        zone:
+          type: string
+          nullable: true
+        unit:
+          type: string
+          nullable: true
+        vendors:
+          type: array
+          items:
+            $ref: "#/components/schemas/PriceComparisonVendor"
+      required:
+        - workType
+        - vendors
+
+    PriceComparisonResult:
+      type: object
+      properties:
+        comparisons:
+          type: array
+          items:
+            $ref: "#/components/schemas/PriceComparisonGroup"
+      required:
+        - comparisons
+
     Client:
       type: object
       properties:
@@ -1774,16 +3133,19 @@ components:
         indirizzo:
           type: string
           nullable: true
-        citta:
+        city:
           type: string
           nullable: true
-        provincia:
+        province:
           type: string
           nullable: true
         partitaIva:
           type: string
           nullable: true
-        codiceFiscale:
+        businessNumber:
+          type: string
+          nullable: true
+        postalCode:
           type: string
           nullable: true
       required:

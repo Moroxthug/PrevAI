@@ -1,5 +1,6 @@
 import { ArrowRight, Mic, FileText } from "lucide-react";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
+import { useLanguage } from "@/i18n/LanguageContext";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -22,41 +23,45 @@ type Phase = {
 
 // ── Data ──────────────────────────────────────────────────────────────────────
 
-const PREVIEW_DATA = {
-  title: "Tinteggiatura App. 90mq – Milano",
-  chapters: [
-    { label: "A. Preparazione superfici", amt: "€ 450,00" },
-    { label: "B. Tinteggiatura pareti", amt: "€ 980,00" },
-    { label: "C. Smaltatura 3 porte", amt: "€ 390,00" },
-  ],
-  subtotale: "€ 1.820,00",
-  iva: "€ 400,40",
-  totale: "€ 2.220,40",
-};
-
-function t(h: number, m: number) {
+function formatTime(h: number, m: number) {
   return `${h.toString().padStart(2, "0")}:${m.toString().padStart(2, "0")}`;
 }
 
-const PHASES: Phase[] = [
-  { action: "addMsg", delay: 400, msg: { id: "u1", from: "user", kind: "voice", text: "0:08", time: t(9, 41) } },
-  { action: "setTyping", delay: 500 },
-  { action: "addMsg", delay: 1100, msg: { id: "b1", from: "bot", kind: "text", text: "⏳ Sto generando il tuo preventivo, attendi qualche secondo...", time: t(9, 41) } },
-  { action: "setTyping", delay: 600 },
-  { action: "addMsg", delay: 2800, msg: { id: "b2", from: "bot", kind: "preview", time: t(9, 42) } },
-  { action: "clearTyping", delay: 0 },
-  { action: "addMsg", delay: 700, msg: { id: "b3", from: "bot", kind: "text", text: "✅ Ecco la tua anteprima!\n\n📝 Rispondi con correzioni (es. \"aggiungi pulizia finale\") oppure scrivi *OK* per procedere.", time: t(9, 42) } },
-  { action: "addMsg", delay: 2000, msg: { id: "u2", from: "user", kind: "text", text: "ok", time: t(9, 42) } },
-  { action: "setTyping", delay: 600 },
-  { action: "addMsg", delay: 1000, msg: { id: "b4", from: "bot", kind: "text", text: "👤 Ho trovato un cliente già salvato:\n\n*Mario Rossi* — Via Garibaldi 12, Milano\n\nConfermi? Oppure inserisci altri dati.", time: t(9, 43) } },
-  { action: "clearTyping", delay: 0 },
-  { action: "addMsg", delay: 1600, msg: { id: "u3", from: "user", kind: "text", text: "Mario Rossi va bene", time: t(9, 43) } },
-  { action: "setTyping", delay: 600 },
-  { action: "addMsg", delay: 1800, msg: { id: "b5", from: "bot", kind: "text", text: "✅ *Preventivo salvato!*\n\n📋 Tinteggiatura App. 90mq\n💶 Totale: *€ 2.220,40* (IVA 22%)\n\n👉 prevai.it/dashboard/quotes/...", time: t(9, 43) } },
-  { action: "clearTyping", delay: 0 },
-  { action: "addMsg", delay: 600, msg: { id: "b6", from: "bot", kind: "pdf", text: "preventivo-tinteggiatura-app-90mq.pdf", time: t(9, 43) } },
-  { action: "reset", delay: 4000 },
-];
+function buildPreviewData(t: (key: string) => string) {
+  return {
+    title: t("waDemo.preview.title"),
+    chapters: [
+      { label: t("waDemo.preview.chapter1"), amt: "$ 450.00" },
+      { label: t("waDemo.preview.chapter2"), amt: "$ 980.00" },
+      { label: t("waDemo.preview.chapter3"), amt: "$ 390.00" },
+    ],
+    subtotale: "$ 1,820.00",
+    iva: "$ 236.60",
+    totale: "$ 2,056.60",
+  };
+}
+
+function buildPhases(t: (key: string) => string): Phase[] {
+  return [
+    { action: "addMsg", delay: 400, msg: { id: "u1", from: "user", kind: "voice", text: "0:08", time: formatTime(9, 41) } },
+    { action: "setTyping", delay: 500 },
+    { action: "addMsg", delay: 1100, msg: { id: "b1", from: "bot", kind: "text", text: t("waDemo.msg.generating"), time: formatTime(9, 41) } },
+    { action: "setTyping", delay: 600 },
+    { action: "addMsg", delay: 2800, msg: { id: "b2", from: "bot", kind: "preview", time: formatTime(9, 42) } },
+    { action: "clearTyping", delay: 0 },
+    { action: "addMsg", delay: 700, msg: { id: "b3", from: "bot", kind: "text", text: t("waDemo.msg.hereIsPreview"), time: formatTime(9, 42) } },
+    { action: "addMsg", delay: 2000, msg: { id: "u2", from: "user", kind: "text", text: t("waDemo.msg.ok"), time: formatTime(9, 42) } },
+    { action: "setTyping", delay: 600 },
+    { action: "addMsg", delay: 1000, msg: { id: "b4", from: "bot", kind: "text", text: t("waDemo.msg.foundClient"), time: formatTime(9, 43) } },
+    { action: "clearTyping", delay: 0 },
+    { action: "addMsg", delay: 1600, msg: { id: "u3", from: "user", kind: "text", text: t("waDemo.msg.clientConfirmed"), time: formatTime(9, 43) } },
+    { action: "setTyping", delay: 600 },
+    { action: "addMsg", delay: 1800, msg: { id: "b5", from: "bot", kind: "text", text: t("waDemo.msg.quoteSaved"), time: formatTime(9, 43) } },
+    { action: "clearTyping", delay: 0 },
+    { action: "addMsg", delay: 600, msg: { id: "b6", from: "bot", kind: "pdf", text: "quote-interior-painting-90sqm.pdf", time: formatTime(9, 43) } },
+    { action: "reset", delay: 4000 },
+  ];
+}
 
 // ── Sub-components ─────────────────────────────────────────────────────────────
 
@@ -74,8 +79,8 @@ function Waveform() {
 function BotAvatar({ size = 8 }: { size?: number }) {
   return (
     <img
-      src="/prevai-icon.png"
-      alt="PrevAI"
+      src="/quoteai-icon.png"
+      alt="QuoteAI"
       className="rounded-full object-cover shrink-0 shadow-sm"
       style={{ width: `${size * 4}px`, height: `${size * 4}px` }}
     />
@@ -99,17 +104,17 @@ function TypingIndicator() {
   );
 }
 
-function PreviewCard() {
+function PreviewCard({ data, t }: { data: ReturnType<typeof buildPreviewData>; t: (key: string) => string }) {
   return (
     <div className="bg-white rounded-xl shadow-md overflow-hidden w-[200px] text-[8px]">
-      <div className="bg-violet-700 px-2 py-1.5 text-white font-bold text-[9px] flex items-center gap-1">
+      <div className="bg-navy-700 px-2 py-1.5 text-white font-bold text-[9px] flex items-center gap-1">
         <FileText className="w-2.5 h-2.5 shrink-0" />
-        PREVENTIVO
+        {t("waDemo.preview.quoteLabel")}
       </div>
       <div className="px-2 py-1.5 space-y-1">
-        <p className="font-semibold text-gray-800 text-[8px] leading-tight">{PREVIEW_DATA.title}</p>
+        <p className="font-semibold text-gray-800 text-[8px] leading-tight">{data.title}</p>
         <div className="border-t border-gray-100 pt-1 space-y-0.5">
-          {PREVIEW_DATA.chapters.map((c, i) => (
+          {data.chapters.map((c, i) => (
             <div key={i} className="flex justify-between text-gray-600">
               <span className="truncate flex-1 pr-1">{c.label}</span>
               <span className="font-mono font-semibold text-gray-800 shrink-0">{c.amt}</span>
@@ -118,18 +123,18 @@ function PreviewCard() {
         </div>
         <div className="border-t border-gray-200 pt-1 space-y-0.5">
           <div className="flex justify-between text-gray-500">
-            <span>Imponibile</span><span className="font-mono">{PREVIEW_DATA.subtotale}</span>
+            <span>{t("waDemo.preview.subtotal")}</span><span className="font-mono">{data.subtotale}</span>
           </div>
           <div className="flex justify-between text-gray-500">
-            <span>IVA 22%</span><span className="font-mono">{PREVIEW_DATA.iva}</span>
+            <span>{t("waDemo.preview.tax")}</span><span className="font-mono">{data.iva}</span>
           </div>
           <div className="flex justify-between font-bold text-gray-900 text-[9px] pt-0.5">
-            <span>TOTALE</span><span className="font-mono">{PREVIEW_DATA.totale}</span>
+            <span>{t("waDemo.preview.total")}</span><span className="font-mono">{data.totale}</span>
           </div>
         </div>
       </div>
       <div className="bg-gray-50 px-2 py-1 text-[7px] text-gray-400 text-center">
-        Generato con Prevai · prevai.it
+        {t("waDemo.preview.generatedWith")}
       </div>
     </div>
   );
@@ -147,8 +152,8 @@ function PdfBubble({ filename }: { filename: string }) {
         <p className="text-[8px] font-semibold text-gray-800 truncate">{filename}</p>
         <p className="text-[7px] text-gray-400">48 KB · PDF</p>
       </div>
-      <div className="w-5 h-5 rounded-full bg-violet-100 flex items-center justify-center shrink-0">
-        <ArrowRight className="w-2.5 h-2.5 text-violet-600" />
+      <div className="w-5 h-5 rounded-full bg-navy-100 flex items-center justify-center shrink-0">
+        <ArrowRight className="w-2.5 h-2.5 text-navy-600" />
       </div>
     </div>
   );
@@ -170,7 +175,7 @@ function formatChatText(text: string) {
   });
 }
 
-function ChatBubble({ msg }: { msg: ChatMsg }) {
+function ChatBubble({ msg, previewData, t }: { msg: ChatMsg; previewData: ReturnType<typeof buildPreviewData>; t: (key: string) => string }) {
   const isBot = msg.from === "bot";
 
   if (isBot && msg.kind === "preview") {
@@ -178,7 +183,7 @@ function ChatBubble({ msg }: { msg: ChatMsg }) {
       <div className="flex items-end gap-1.5 mb-2 animate-in fade-in slide-in-from-bottom-2 duration-300">
         <BotAvatar size={6} />
         <div>
-          <PreviewCard />
+          <PreviewCard data={previewData} t={t} />
           {msg.time && <p className="text-[7px] text-gray-400 mt-0.5 ml-1">{msg.time}</p>}
         </div>
       </div>
@@ -190,7 +195,7 @@ function ChatBubble({ msg }: { msg: ChatMsg }) {
       <div className="flex items-end gap-1.5 mb-2 animate-in fade-in slide-in-from-bottom-2 duration-300">
         <BotAvatar size={6} />
         <div>
-          <PdfBubble filename={msg.text ?? "preventivo.pdf"} />
+          <PdfBubble filename={msg.text ?? "quote.pdf"} />
           {msg.time && <p className="text-[7px] text-gray-400 mt-0.5 ml-1">{msg.time}</p>}
         </div>
       </div>
@@ -201,13 +206,13 @@ function ChatBubble({ msg }: { msg: ChatMsg }) {
     return (
       <div className="flex flex-col items-end mb-2 animate-in fade-in slide-in-from-bottom-2 duration-300">
         <div className="bg-[#d9fdd3] rounded-2xl rounded-br-sm px-2.5 py-1.5 shadow-sm flex items-center gap-2 max-w-[160px]">
-          <div className="w-6 h-6 rounded-full bg-violet-600 flex items-center justify-center shrink-0">
+          <div className="w-6 h-6 rounded-full bg-navy-600 flex items-center justify-center shrink-0">
             <Mic className="w-3 h-3 text-white" />
           </div>
           <div className="text-[#075e54]">
             <Waveform />
           </div>
-          <span className="text-[8px] font-mono text-gray-500 shrink-0">{msg.text}</span>
+          <span className="text-[8px] font-mono text-gray-700 shrink-0">{msg.text}</span>
         </div>
         {msg.time && <p className="text-[7px] text-gray-400 mt-0.5 mr-1">{msg.time}</p>}
       </div>
@@ -238,14 +243,17 @@ function ChatBubble({ msg }: { msg: ChatMsg }) {
 // ── Main exported component ────────────────────────────────────────────────────
 
 export function WhatsAppChatDemo() {
+  const { t } = useLanguage();
+  const phases = useMemo(() => buildPhases(t), [t]);
+  const previewData = useMemo(() => buildPreviewData(t), [t]);
   const [messages, setMessages] = useState<ChatMsg[]>([]);
   const [botTyping, setBotTyping] = useState(false);
   const [phase, setPhase] = useState(0);
   const chatContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (phase < 0 || phase >= PHASES.length) return;
-    const p = PHASES[phase]!;
+    if (phase < 0 || phase >= phases.length) return;
+    const p = phases[phase]!;
 
     const timer = setTimeout(() => {
       if (p.action === "addMsg" && p.msg) {
@@ -265,7 +273,7 @@ export function WhatsAppChatDemo() {
     }, p.delay);
 
     return () => clearTimeout(timer);
-  }, [phase]);
+  }, [phase, phases]);
 
   useEffect(() => {
     if (phase !== -1) return;
@@ -283,7 +291,8 @@ export function WhatsAppChatDemo() {
   return (
     <>
       <style>{`@keyframes wa-bounce{0%,60%,100%{transform:translateY(0)}30%{transform:translateY(-4px)}}`}</style>
-      <div className="relative mx-auto" style={{ width: 280 }}>
+      {/* A scripted, decorative phone mock-up — hidden from assistive tech; the copy beside it carries the meaning. */}
+      <div className="relative mx-auto" style={{ width: 280 }} aria-hidden="true">
         <div className="relative bg-gray-900 rounded-[36px] p-[10px] shadow-2xl border border-gray-700">
           <div className="absolute top-[10px] left-1/2 -translate-x-1/2 w-16 h-4 bg-gray-900 rounded-b-xl z-20 flex items-center justify-center">
             <div className="w-10 h-2 bg-black rounded-full" />
@@ -292,11 +301,11 @@ export function WhatsAppChatDemo() {
           <div className="bg-white rounded-[28px] overflow-hidden" style={{ height: 520 }}>
             <div className="bg-[#075e54] px-3 pt-7 pb-2 flex items-center gap-2.5">
               <div className="w-8 h-8 rounded-full overflow-hidden border-2 border-white/20 shrink-0">
-                <img src="/prevai-icon.png" alt="PrevAI" className="w-full h-full object-cover" />
+                <img src="/quoteai-icon.png" alt="QuoteAI" className="w-full h-full object-cover" />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-white font-semibold text-[12px] leading-tight">PrevAI</p>
-                <p className="text-white/60 text-[9px]">Bot WhatsApp · online</p>
+                <p className="text-white font-semibold text-[12px] leading-tight">QuoteAI</p>
+                <p className="text-white/80 text-[9px]">{t("waDemo.botOnline")}</p>
               </div>
               <div className="flex gap-3">
                 <div className="w-1 h-1 rounded-full bg-white/40" />
@@ -314,14 +323,14 @@ export function WhatsAppChatDemo() {
               }}
             >
               {messages.map(msg => (
-                <ChatBubble key={msg.id} msg={msg} />
+                <ChatBubble key={msg.id} msg={msg} previewData={previewData} t={t} />
               ))}
               {botTyping && <TypingIndicator />}
             </div>
 
             <div className="bg-[#f0f2f5] px-2 py-1.5 flex items-center gap-1.5 border-t border-gray-200">
-              <div className="flex-1 bg-white rounded-full px-2.5 py-1.5 text-[9px] text-gray-400">
-                Scrivi un messaggio...
+              <div className="flex-1 bg-white rounded-full px-2.5 py-1.5 text-[9px] text-gray-500">
+                {t("waDemo.typeMessage")}
               </div>
               <div className="w-6 h-6 rounded-full bg-[#075e54] flex items-center justify-center shrink-0">
                 <Mic className="w-3 h-3 text-white" />

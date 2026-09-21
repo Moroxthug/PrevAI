@@ -32,7 +32,7 @@ import { fileURLToPath } from "node:url";
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const distDir = join(__dirname, "../dist/public");
 const sitemapPath = join(__dirname, "../public/sitemap.xml");
-const BASE_URL = "https://prevai.it";
+const BASE_URL = "https://quoteai.ca";
 
 /**
  * Explicit allowlist of paths that are intentionally served by the SPA shell

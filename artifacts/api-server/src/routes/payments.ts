@@ -1,12 +1,12 @@
 import { Router } from "express";
 import { requireAuth, getUserId } from "../middlewares/authMiddleware";
+import { requirePermission } from "../middlewares/requirePermission";
 import { getBaseUrl } from "../lib/baseUrl";
 import { db, quotesTable, businessProfilesTable, authUsersTable } from "@workspace/db";
 import { eq, sql } from "drizzle-orm";
 import { CreateCheckoutSessionBody } from "@workspace/api-zod";
 import { getUncachableStripeClient } from "../stripeClient";
 import { logger } from "../lib/logger";
-import Stripe from "stripe";
 
 const TRIAL_DAYS = 7;
 const TRIAL_DOWNLOAD_LIMIT = 3;
@@ -45,18 +45,18 @@ const router = Router();
 export const PLANS = [
   {
     id: "monthly_starter",
-    stripePriceId: "price_1TUdJjCaDBaDETvnCGbjTgIq",
+    stripePriceId: "price_1UEgdQEI5cvpdr6NMQIPKpao",
     name: "Starter",
     price: 19,
-    currency: "eur",
+    currency: "cad",
     interval: "month",
     features: [
-      "10 preventivi al mese",
-      "PDF con logo aziendale",
-      "Riga 'Fatto con prevai.it' in calce",
-      "Template Standard incluso",
-      "Upload appunti (2 preventivi/mese)",
-      "Registrazione vocale (1 preventivo/mese)",
+      "10 quotes per month",
+      "PDF with company logo",
+      "'Made with quoteai.ca' footer line",
+      "Standard template included",
+      "Notes upload (2 quotes/month)",
+      "Voice recording (1 quote/month)",
     ],
     hasWatermark: true,
     quotaPerMonth: 10,
@@ -64,19 +64,19 @@ export const PLANS = [
   },
   {
     id: "monthly_pro",
-    stripePriceId: "price_1TUdJjCaDBaDETvnfBv37ryF",
+    stripePriceId: "price_1UEgdSEI5cvpdr6Nx6dNesfl",
     name: "Pro",
     price: 49,
-    currency: "eur",
+    currency: "cad",
     interval: "month",
     features: [
-      "60 preventivi al mese",
-      "PDF puliti — nessun watermark",
-      "Logo aziendale personalizzato",
-      "Tutti i template PDF disponibili",
-      "Upload appunti (30 preventivi/mese)",
-      "Registrazione vocale (30 preventivi/mese)",
-      "Priorità generazione AI",
+      "60 quotes per month",
+      "Clean PDFs — no watermark",
+      "Custom company logo",
+      "All PDF templates available",
+      "Notes upload (30 quotes/month)",
+      "Voice recording (30 quotes/month)",
+      "Priority AI generation",
     ],
     hasWatermark: false,
     quotaPerMonth: 60,
@@ -84,20 +84,20 @@ export const PLANS = [
   },
   {
     id: "monthly_elite",
-    stripePriceId: "price_1TUdJjCaDBaDETvnCo3JKGJ7",
+    stripePriceId: "price_1UEgdVEI5cvpdr6NHbrrdO88",
     name: "Elite",
     price: 59,
-    currency: "eur",
+    currency: "cad",
     interval: "month",
     features: [
-      "Preventivi illimitati",
-      "PDF puliti — nessun watermark",
-      "Logo aziendale personalizzato",
-      "Tutti i template PDF disponibili",
-      "Upload appunti illimitato",
-      "Registrazione vocale illimitata",
-      "Priorità massima generazione AI",
-      "Supporto dedicato",
+      "Unlimited quotes",
+      "Clean PDFs — no watermark",
+      "Custom company logo",
+      "All PDF templates available",
+      "Unlimited notes upload",
+      "Unlimited voice recording",
+      "Maximum priority AI generation",
+      "Dedicated support",
     ],
     hasWatermark: false,
     quotaPerMonth: null,
@@ -105,24 +105,24 @@ export const PLANS = [
   },
   {
     id: "oneshot_watermark",
-    stripePriceId: "price_1TUdJjCaDBaDETvnRnYfWJWh",
-    name: "Singolo con Watermark",
-    price: 3,
-    currency: "eur",
+    stripePriceId: "price_1UEgdiEI5cvpdr6NTlQf5eJK",
+    name: "Single with Watermark",
+    price: 5,
+    currency: "cad",
     interval: null,
-    features: ["1 preventivo PDF", "Riga prevai.it in calce", "Download immediato"],
+    features: ["1 PDF quote", "quoteai.ca footer line", "Instant download"],
     hasWatermark: true,
     quotaPerMonth: 1,
     tier: "oneshot",
   },
   {
     id: "oneshot_clean",
-    stripePriceId: "price_1TUdJkCaDBaDETvnVsY6ZWec",
-    name: "Singolo Pulito",
-    price: 9,
-    currency: "eur",
+    stripePriceId: "price_1UEgdkEI5cvpdr6NbbRfMtsd",
+    name: "Single Clean",
+    price: 13,
+    currency: "cad",
     interval: null,
-    features: ["1 preventivo PDF pulito", "Logo aziendale", "Nessun watermark", "Download immediato"],
+    features: ["1 clean PDF quote", "Company logo", "No watermark", "Instant download"],
     hasWatermark: false,
     quotaPerMonth: 1,
     tier: "oneshot",
@@ -154,7 +154,7 @@ router.get("/payments/trial-status", requireAuth, async (req, res) => {
   }
 });
 
-router.post("/payments/checkout", requireAuth, async (req, res) => {
+router.post("/payments/checkout", requireAuth, requirePermission("settings", "full"), async (req, res) => {
   try {
     const userId = getUserId(res);
     const parsed = CreateCheckoutSessionBody.safeParse(req.body);
@@ -210,7 +210,7 @@ router.post("/payments/checkout", requireAuth, async (req, res) => {
     if (profile?.stripeCustomerId) {
       sessionParams.customer = profile.stripeCustomerId;
     } else if (authUser?.email) {
-      // Pre-fill email so the Stripe customer is created with the correct prevai email
+      // Pre-fill email so the Stripe customer is created with the correct quoteai email
       sessionParams.customer_email = authUser.email;
     }
 
@@ -282,7 +282,10 @@ router.get("/payments/subscription", requireAuth, async (req, res) => {
   }
 });
 
-router.post("/payments/unlock-quote", requireAuth, async (req, res) => {
+// Phase 66: any member who can edit quotes may unlock one with the org's
+// subscription (the quote page calls this on open — `settings:full` made it
+// 403 for every non-owner and left their quotes un-sendable).
+router.post("/payments/unlock-quote", requireAuth, requirePermission("quotes", "edit"), async (req, res) => {
   try {
     const userId = getUserId(res);
     const { quoteId } = req.body as { quoteId: string };
@@ -312,22 +315,27 @@ router.post("/payments/unlock-quote", requireAuth, async (req, res) => {
       return;
     }
 
-    if (quote.status !== "unlocked") {
+    // Only a draft (or an abandoned one-shot checkout) is unlocked. This used
+    // to be `!== "unlocked"`, which silently reverted every *accepted* quote
+    // to "unlocked" the moment a subscriber opened it (Phase 66).
+    if (quote.status === "draft" || quote.status === "pending_payment") {
       await db
         .update(quotesTable)
         .set({ status: "unlocked", unlockedWithPlan: profile.subscriptionPlan ?? null })
         .where(eq(quotesTable.id, quoteId));
       logger.info({ quoteId, userId, plan: profile.subscriptionPlan }, "Quote unlocked via subscription");
+      res.json({ status: "unlocked" });
+      return;
     }
 
-    res.json({ status: "unlocked" });
+    res.json({ status: quote.status });
   } catch (err) {
     logger.error({ err }, "Error unlocking quote with subscription");
     res.status(500).json({ error: "Internal server error" });
   }
 });
 
-router.post("/payments/portal", requireAuth, async (req, res) => {
+router.post("/payments/portal", requireAuth, requirePermission("settings", "full"), async (req, res) => {
   try {
     const userId = getUserId(res);
     const [profile] = await db
@@ -355,7 +363,7 @@ router.post("/payments/portal", requireAuth, async (req, res) => {
   }
 });
 
-router.post("/payments/sync-subscription", requireAuth, async (req, res) => {
+router.post("/payments/sync-subscription", requireAuth, requirePermission("settings", "full"), async (req, res) => {
   try {
     const userId = getUserId(res);
     const stripe = await getUncachableStripeClient();
@@ -381,7 +389,7 @@ router.post("/payments/sync-subscription", requireAuth, async (req, res) => {
     }
 
     if (!customerId) {
-      res.json({ synced: false, message: "Nessun customer Stripe trovato per questo account" });
+      res.json({ synced: false, message: "No Stripe customer found for this account" });
       return;
     }
 
@@ -408,7 +416,7 @@ router.post("/payments/sync-subscription", requireAuth, async (req, res) => {
           set: { stripeCustomerId: customerId, subscriptionStatus: cancelledSubs.data.length > 0 ? "cancelled" : null, subscriptionPlan: null },
         });
 
-      res.json({ synced: true, active: false, message: "Nessun abbonamento attivo trovato" });
+      res.json({ synced: true, active: false, message: "No active subscription found" });
       return;
     }
 
@@ -417,14 +425,14 @@ router.post("/payments/sync-subscription", requireAuth, async (req, res) => {
     const planType = priceId ? PRICE_TO_PLAN[priceId] : null;
 
     if (!planType) {
-      res.json({ synced: false, message: `Price ID sconosciuto: ${priceId ?? "N/A"}` });
+      res.json({ synced: false, message: `Unknown price ID: ${priceId ?? "N/A"}` });
       return;
     }
 
-    // Dalla v22 dell'SDK Stripe, current_period_end/start vivono sul singolo
-    // subscription item (non più sull'oggetto Subscription): senza questo,
-    // periodEnd risultava sempre null e subscriptionPeriodEnd non veniva
-    // mai sincronizzato correttamente in fase di risincronizzazione manuale.
+    // As of Stripe SDK v22, current_period_end/start live on the individual
+    // subscription item (no longer on the Subscription object): without this,
+    // periodEnd always came out null and subscriptionPeriodEnd never got
+    // synced correctly during a manual re-sync.
     const currentPeriodEnd = sub.items.data[0]?.current_period_end;
     const periodEnd = currentPeriodEnd ? new Date(currentPeriodEnd * 1000) : null;
 

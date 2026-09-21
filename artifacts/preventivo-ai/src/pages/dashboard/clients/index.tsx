@@ -1,126 +1,128 @@
 import { useListClients } from "@workspace/api-client-react";
-import { Card, CardContent } from "@/components/ui/card";
+import { rowLink } from "@/lib/row-link";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Link } from "wouter";
-import { Users, ChevronRight, Euro, FileText, Clock, MapPin, Mail, Phone, CheckCircle2 } from "lucide-react";
-import { format } from "date-fns";
-import { it } from "date-fns/locale";
+import { Link, useLocation } from "wouter";
+import { Users, Search, Plus, ChevronRight } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { useState } from "react";
+import { useLanguage } from "@/i18n/LanguageContext";
 
-const formatCurrency = (v: number) =>
-  new Intl.NumberFormat("it-IT", { style: "currency", currency: "EUR", maximumFractionDigits: 0 }).format(v);
+const formatCurrency = (v: number, lang: string) =>
+  new Intl.NumberFormat(lang === "fr" ? "fr-CA" : "en-CA", { style: "currency", currency: "CAD", maximumFractionDigits: 0 }).format(v);
 
 export default function ClientsPage() {
   const { data: clients, isLoading } = useListClients();
+  const [search, setSearch] = useState("");
+  const [, navigate] = useLocation();
+  const { t, lang } = useLanguage();
+
+  const filtered = (clients ?? []).filter(c => {
+    if (!search) return true;
+    const q = search.toLowerCase();
+    return c.clientName.toLowerCase().includes(q) || (c.email ?? "").toLowerCase().includes(q);
+  });
+
+  const totalQuotes = (clients ?? []).reduce((sum, c) => sum + c.quoteCount, 0);
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-500">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">Clienti</h1>
-        <p className="text-muted-foreground mt-1">
-          Tutti i clienti estratti dai tuoi preventivi.
-        </p>
+    <div className="animate-in fade-in duration-500">
+      <div className="page-head">
+        <div>
+          <h1>{t("clients.title")}</h1>
+          <p className="sub">{t("clients.subtitle")}</p>
+        </div>
+        <div className="head-actions">
+          <Link href="/dashboard/new" className="btn btn-navy">
+            <Plus className="h-4 w-4" />
+            {t("clients.add")}
+          </Link>
+        </div>
       </div>
 
-      {isLoading ? (
-        <div className="space-y-3">
-          {[1, 2, 3, 4].map((i) => (
-            <Card key={i}>
-              <CardContent className="p-4">
-                <Skeleton className="h-5 w-48 mb-2" />
-                <Skeleton className="h-4 w-64" />
-              </CardContent>
-            </Card>
-          ))}
+      <div className="card">
+        <div className="toolbar">
+          <label className="search sm">
+            <Search className="h-4 w-4" />
+            <input
+              type="search"
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              placeholder={t("clients.search")}
+              aria-label={t("clients.search")}
+            />
+          </label>
         </div>
-      ) : !clients || clients.length === 0 ? (
-        <Card>
-          <CardContent className="py-16 flex flex-col items-center justify-center gap-3 text-center">
-            <div className="h-14 w-14 rounded-full bg-violet-50 flex items-center justify-center">
-              <Users className="h-6 w-6 text-violet-400" />
-            </div>
-            <div>
-              <p className="font-semibold text-gray-800">Nessun cliente ancora</p>
-              <p className="text-sm text-muted-foreground mt-1">
-                I clienti appariranno qui non appena crei preventivi con un nome cliente.
-              </p>
-            </div>
-            <Link href="/dashboard/new" className="btn-gradient inline-flex h-9 items-center px-4 text-sm font-semibold mt-2">
-              Crea il tuo primo preventivo
-            </Link>
-          </CardContent>
-        </Card>
-      ) : (
-        <div className="space-y-2">
-          {clients.map((client) => (
-            <Link
-              key={client.id}
-              href={`/dashboard/clients/${client.id}`}
-              className="block"
-            >
-              <Card className="hover:shadow-sm hover:border-violet-200 transition-all cursor-pointer">
-                <CardContent className="p-4">
-                  <div className="flex items-center gap-4">
-                    <div className="h-10 w-10 rounded-full bg-violet-100 flex items-center justify-center shrink-0">
-                      <span className="text-sm font-bold text-violet-700 uppercase">
-                        {client.clientName.slice(0, 2)}
-                      </span>
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="font-semibold text-gray-900 truncate">{client.clientName}</div>
-                      <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 mt-0.5">
-                        {client.email && (
-                          <span className="flex items-center gap-1 text-xs text-muted-foreground truncate">
-                            <Mail className="h-3 w-3 shrink-0" />
-                            {client.email}
+
+        {isLoading ? (
+          <div className="p-5 space-y-3">
+            {[1, 2, 3, 4].map(i => <Skeleton key={i} className="h-10 w-full rounded-[var(--radius-sm)]" />)}
+          </div>
+        ) : filtered.length === 0 ? (
+          <div className="text-center py-14 px-5">
+            <Users className="mx-auto h-10 w-10 text-muted-foreground mb-3 opacity-20" />
+            <p className="font-semibold text-foreground">{t("clients.empty.title")}</p>
+            <p className="text-sm text-muted-foreground mt-1 mb-3">
+              {t("clients.empty.desc")}
+            </p>
+            <Link href="/dashboard/new" className="btn btn-navy btn-sm">{t("clients.empty.cta")}</Link>
+          </div>
+        ) : (
+          <div className="tbl-wrap">
+            <table className="tbl">
+              <thead>
+                <tr>
+                  <th>{t("clients.col.client")}</th>
+                  <th>{t("clients.col.contact")}</th>
+                  <th>{t("clients.col.quotes")}</th>
+                  <th>{t("clients.col.lifetime")}</th>
+                  <th>{t("clients.col.status")}</th>
+                  <th>{t("clients.col.lastActivity")}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filtered.map(client => {
+                  const status = client.unlockedCount > 0
+                    ? { cls: "chip-green", label: t("clients.status.active") }
+                    : { cls: "chip-teal", label: t("clients.status.prospect") };
+                  return (
+                    <tr key={client.id} {...rowLink(() => navigate(`/dashboard/clients/${client.id}`))}>
+                      <td>
+                        <span className="cell-flex">
+                          <span className="avat">{client.clientName.slice(0, 2)}</span>
+                          <span>
+                            <span className="t-strong">{client.clientName}</span>
+                            <span className="t-sub">
+                              {client.city ? client.city + (client.province ? ` (${client.province})` : "") : (client.indirizzo || "—")}
+                            </span>
                           </span>
-                        )}
-                        {client.phone && (
-                          <span className="flex items-center gap-1 text-xs text-muted-foreground">
-                            <Phone className="h-3 w-3 shrink-0" />
-                            {client.phone}
-                          </span>
-                        )}
-                        {!client.email && (client.citta || client.indirizzo) && (
-                          <span className="flex items-center gap-1 text-xs text-muted-foreground truncate">
-                            <MapPin className="h-3 w-3 shrink-0" />
-                            {client.citta
-                              ? client.citta + (client.provincia ? ` (${client.provincia})` : "")
-                              : client.indirizzo}
-                          </span>
-                        )}
-                        {client.partitaIva && (
-                          <span className="text-xs text-muted-foreground">P.IVA {client.partitaIva}</span>
-                        )}
-                      </div>
-                      <div className="flex items-center gap-4 mt-1.5">
-                        <span className="flex items-center gap-1 text-xs text-muted-foreground">
-                          <FileText className="h-3 w-3" />
-                          {client.quoteCount} {client.quoteCount === 1 ? "preventivo" : "preventivi"}
                         </span>
-                        {client.unlockedCount > 0 && (
-                          <span className="flex items-center gap-1 text-xs text-violet-600">
-                            <CheckCircle2 className="h-3 w-3" />
-                            {client.unlockedCount} {client.unlockedCount === 1 ? "accettato" : "accettati"}
-                          </span>
-                        )}
-                        <span className="flex items-center gap-1 text-xs text-muted-foreground">
-                          <Euro className="h-3 w-3" />
-                          {formatCurrency(client.totalValue)}
+                      </td>
+                      <td>{client.email || client.phone || "—"}</td>
+                      <td>{client.quoteCount}</td>
+                      <td className="t-amt">{formatCurrency(client.totalValue, lang)}</td>
+                      <td><span className={cn("chip", status.cls)}>{status.label}</span></td>
+                      <td>
+                        <span className="flex items-center gap-2 justify-between">
+                          {new Date(client.lastQuoteDate).toLocaleDateString(lang === "fr" ? "fr-CA" : "en-CA")}
+                          <ChevronRight className="chev" style={{ color: "var(--faint)" }} />
                         </span>
-                        <span className="flex items-center gap-1 text-xs text-muted-foreground">
-                          <Clock className="h-3 w-3" />
-                          {format(new Date(client.lastQuoteDate), "dd MMM yyyy", { locale: it })}
-                        </span>
-                      </div>
-                    </div>
-                    <ChevronRight className="h-4 w-4 text-gray-300 shrink-0" />
-                  </div>
-                </CardContent>
-              </Card>
-            </Link>
-          ))}
-        </div>
-      )}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        {!isLoading && filtered.length > 0 && (
+          <div className="card-foot">
+            <span className="foot-note">
+              {t("clients.foot").replace("{clients}", filtered.length === 1 ? t("clients.count.one") : t("clients.count.many").replace("{n}", String(filtered.length))).replace("{quotes}", String(totalQuotes))}
+            </span>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

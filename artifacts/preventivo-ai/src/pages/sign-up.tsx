@@ -2,7 +2,9 @@ import { useState, useEffect } from "react";
 import { Link, useSearch } from "wouter";
 import { Logo } from "@/components/logo";
 import { authClient } from "@/lib/auth-client";
-import { Eye, EyeOff, Loader2, AlertCircle } from "lucide-react";
+import { Eye, EyeOff, AlertCircle, Lock, Mail } from "lucide-react";
+import { useLanguage } from "@/i18n/LanguageContext";
+import { useDocumentTitle } from "@/hooks/use-document-title";
 
 function safeLocalPath(raw: string | null, fallback: string): string {
   if (!raw) return fallback;
@@ -14,6 +16,8 @@ function safeLocalPath(raw: string | null, fallback: string): string {
 }
 
 export default function SignUpPage() {
+  const { t } = useLanguage();
+  useDocumentTitle(`${t("signUp.title")} · QuoteAI`);
   const search = useSearch();
   const nextPath = safeLocalPath(new URLSearchParams(search).get("next"), "/onboarding");
   const [registrationOpen, setRegistrationOpen] = useState<boolean | null>(null);
@@ -37,7 +41,7 @@ export default function SignUpPage() {
     e.preventDefault();
     setError(null);
     if (password.length < 8) {
-      setError("La password deve avere almeno 8 caratteri.");
+      setError(t("signUp.errorPasswordLength"));
       return;
     }
     setIsLoading(true);
@@ -51,15 +55,15 @@ export default function SignUpPage() {
       if (result.error) {
         const msg = result.error.message ?? "";
         if (msg.toLowerCase().includes("already")) {
-          setError("Questa email è già registrata. Prova ad accedere.");
+          setError(t("signUp.errorAlreadyRegistered"));
         } else {
-          setError(msg || "Errore durante la registrazione. Riprova.");
+          setError(msg || t("signUp.errorSignUpFailed"));
         }
       } else {
         setVerificationSent(true);
       }
     } catch {
-      setError("Errore di connessione. Riprova tra qualche secondo.");
+      setError(t("signUp.errorConnection"));
     } finally {
       setIsLoading(false);
     }
@@ -67,153 +71,143 @@ export default function SignUpPage() {
 
   if (registrationOpen === null) {
     return (
-      <div className="flex-1 flex items-center justify-center py-12 px-4">
-        <div className="h-8 w-8 rounded-full border-2 border-violet-400 border-t-transparent animate-spin" />
+      <div className="auth-shell">
+        <span className="auth-spin" style={{ width: 28, height: 28, borderColor: "var(--line)", borderTopColor: "var(--navy)" }} />
       </div>
     );
   }
 
   if (!registrationOpen) {
     return (
-      <div className="flex-1 flex items-center justify-center py-12 px-4 bg-muted/30">
-        <div className="bg-white rounded-3xl border border-gray-100 shadow-lg p-10 max-w-sm w-full text-center">
-          <div className="flex justify-center mb-6">
-            <Logo />
+      <div className="auth-shell">
+        <div className="auth-card" style={{ maxWidth: 420 }}>
+          <div className="auth-card-body" style={{ textAlign: "center" }}>
+            <div className="flex justify-center mb-6">
+              <Logo />
+            </div>
+            <div className="flex justify-center mb-4"><Lock className="h-9 w-9" style={{ color: "var(--faint)" }} /></div>
+            <h1 className="auth-title">{t("signUp.betaClosedTitle")}</h1>
+            <p className="auth-sub" style={{ marginBottom: 20 }}>
+              {t("signUp.betaClosedBody")}
+            </p>
+            <p className="auth-sub" style={{ marginBottom: 20 }}>
+              {t("signUp.alreadyInvited")}{" "}
+              <Link href="/sign-in/" className="auth-link">
+                {t("signUp.loginHere")}
+              </Link>
+            </p>
+            <a
+              href="mailto:support@quoteai.ca?subject=Beta%20access%20request"
+              className="btn w-full"
+              style={{ background: "#25D366", color: "#fff" }}
+            >
+              {t("signUp.requestAccessWhatsapp")}
+            </a>
           </div>
-          <div className="text-4xl mb-4">🔒</div>
-          <h1 className="text-xl font-bold text-gray-900 mb-2">Beta chiusa</h1>
-          <p className="text-sm text-gray-500 mb-6">
-            Stiamo raccogliendo i feedback dei nostri beta tester. Le registrazioni pubbliche apriranno presto.
-          </p>
-          <p className="text-sm text-gray-500 mb-6">
-            Hai già un invito?{" "}
-            <Link href="/sign-in/" className="text-violet-600 font-semibold hover:underline">
-              Accedi qui
-            </Link>
-          </p>
-          <a
-            href="https://wa.me/393791059492"
-            target="_blank"
-            rel="noopener noreferrer nofollow"
-            className="inline-flex items-center gap-2 w-full justify-center h-10 rounded-xl font-semibold text-sm text-white transition-all hover:opacity-90"
-            style={{ background: "#25D366" }}
-          >
-            Richiedi accesso via WhatsApp
-          </a>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="flex-1 flex items-center justify-center py-12 px-4 bg-muted/30">
-      <div className="w-full max-w-sm">
-        <div className="bg-white rounded-3xl border border-gray-100 shadow-lg overflow-hidden">
-          <div className="px-8 pt-8 pb-6">
-            <div className="flex justify-center mb-6">
-              <Logo />
-            </div>
-
-            {verificationSent ? (
-              <div className="text-center py-4">
-                <div className="text-4xl mb-3">📧</div>
-                <h2 className="text-lg font-bold text-gray-900 mb-2">Controlla la tua email</h2>
-                <p className="text-sm text-gray-500 mb-6">
-                  Ti abbiamo inviato un link di verifica a <strong>{email}</strong>. Clicca sul link per attivare il tuo account e accedere alla dashboard.
-                </p>
-                <Link href="/sign-in" className="text-sm text-violet-600 hover:underline font-medium">
-                  Torna al login
-                </Link>
-              </div>
-            ) : (
-              <>
-                <h1 className="text-xl font-bold text-gray-900 text-center mb-1">Crea il tuo account</h1>
-                <p className="text-sm text-gray-400 text-center mb-6">Preventivi professionali in 30 secondi</p>
-
-                {error && (
-                  <div className="flex items-center gap-2 text-sm text-red-600 bg-red-50 border border-red-100 rounded-xl px-3 py-2.5 mb-4">
-                    <AlertCircle className="h-4 w-4 shrink-0" />
-                    <span>{error}</span>
-                  </div>
-                )}
-
-                <form onSubmit={handleSignUp} className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1.5">Nome e cognome</label>
-                    <input
-                      type="text"
-                      required
-                      autoComplete="name"
-                      value={name}
-                      onChange={e => setName(e.target.value)}
-                      placeholder="Mario Rossi"
-                      className="w-full rounded-xl border border-gray-200 bg-gray-50 px-3.5 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-violet-400 focus:border-transparent transition-all"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1.5">Email</label>
-                    <input
-                      type="email"
-                      required
-                      autoComplete="email"
-                      value={email}
-                      onChange={e => setEmail(e.target.value)}
-                      placeholder="mario@esempio.it"
-                      className="w-full rounded-xl border border-gray-200 bg-gray-50 px-3.5 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-violet-400 focus:border-transparent transition-all"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1.5">Password</label>
-                    <div className="relative">
-                      <input
-                        type={showPassword ? "text" : "password"}
-                        required
-                        minLength={8}
-                        autoComplete="new-password"
-                        value={password}
-                        onChange={e => setPassword(e.target.value)}
-                        placeholder="Min. 8 caratteri"
-                        className="w-full rounded-xl border border-gray-200 bg-gray-50 px-3.5 py-2.5 pr-10 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-violet-400 focus:border-transparent transition-all"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowPassword(v => !v)}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                      >
-                        {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                      </button>
-                    </div>
-                  </div>
-
-                  <button
-                    type="submit"
-                    disabled={isLoading}
-                    className="btn-gradient w-full h-11 flex items-center justify-center gap-2 text-sm font-semibold disabled:opacity-60"
-                  >
-                    {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-                    {isLoading ? "Registrazione..." : "Crea account gratuito"}
-                  </button>
-
-                  <p className="text-[11px] text-gray-400 text-center leading-relaxed">
-                    Registrandoti accetti i nostri{" "}
-                    <Link href="/termini/" className="underline hover:text-gray-600">Termini di Servizio</Link>{" "}
-                    e la{" "}
-                    <Link href="/privacy/" className="underline hover:text-gray-600">Privacy Policy</Link>.
-                  </p>
-                </form>
-              </>
-            )}
+    <div className="auth-shell">
+      <div className="auth-card">
+        <div className="auth-card-body">
+          <div className="flex justify-center mb-6">
+            <Logo />
           </div>
 
-          {!verificationSent && (
-            <div className="px-8 py-4 bg-gray-50 border-t border-gray-100 text-center">
-              <span className="text-sm text-gray-500">Hai già un account? </span>
-              <Link href={nextPath !== "/onboarding" ? `/sign-in?next=${encodeURIComponent(nextPath)}` : "/sign-in"} className="text-sm text-violet-600 font-semibold hover:underline">
-                Accedi
+          {verificationSent ? (
+            <div className="auth-center">
+              <div className="flex justify-center mb-3"><Mail className="h-9 w-9" style={{ color: "var(--navy)" }} /></div>
+              <h2 className="auth-title" style={{ marginBottom: 8 }}>{t("signUp.checkEmailTitle")}</h2>
+              <p className="auth-sub" style={{ marginBottom: 24 }}>
+                {t("signUp.checkEmailBodyPrefix")} <strong style={{ color: "var(--ink)" }}>{email}</strong>. {t("signUp.checkEmailBodySuffix")}
+              </p>
+              <Link href="/sign-in" className="auth-link">
+                {t("signUp.backToLogin")}
               </Link>
             </div>
+          ) : (
+            <>
+              <h1 className="auth-title">{t("signUp.title")}</h1>
+              <p className="auth-sub">{t("signUp.subtitle")}</p>
+
+              {error && (
+                <div className="auth-error">
+                  <AlertCircle className="h-4 w-4 shrink-0" />
+                  <span>{error}</span>
+                </div>
+              )}
+
+              <form onSubmit={handleSignUp}>
+                <div className="auth-field">
+                  <label htmlFor="name">{t("signUp.fullName")}</label>
+                  <input
+                    id="name"
+                    type="text"
+                    required
+                    autoComplete="name"
+                    value={name}
+                    onChange={e => setName(e.target.value)}
+                    placeholder={t("signUp.fullNamePlaceholder")}
+                  />
+                </div>
+                <div className="auth-field">
+                  <label htmlFor="email">{t("signUp.email")}</label>
+                  <input
+                    id="email"
+                    type="email"
+                    required
+                    autoComplete="email"
+                    value={email}
+                    onChange={e => setEmail(e.target.value)}
+                    placeholder="jane@example.com"
+                  />
+                </div>
+                <div className="auth-field">
+                  <label htmlFor="password">{t("signUp.password")}</label>
+                  <div className="input-wrap">
+                    <input
+                      id="password"
+                      type={showPassword ? "text" : "password"}
+                      required
+                      minLength={8}
+                      autoComplete="new-password"
+                      value={password}
+                      onChange={e => setPassword(e.target.value)}
+                      placeholder={t("signUp.passwordPlaceholder")}
+                    />
+                    <button type="button" onClick={() => setShowPassword(v => !v)} className="auth-pw-toggle" aria-label={showPassword ? t("a11y.hidePassword") : t("a11y.showPassword")} aria-pressed={showPassword}>
+                      {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </button>
+                  </div>
+                </div>
+
+                <button type="submit" disabled={isLoading} className="btn btn-navy w-full gap-2">
+                  {isLoading ? <span className="auth-spin" /> : null}
+                  {isLoading ? t("signUp.signingUp") : t("signUp.createFreeAccount")}
+                </button>
+
+                <p className="auth-fine">
+                  {t("signUp.agreeToPrefix")}{" "}
+                  <Link href="/termini/">{t("signUp.termsOfService")}</Link>{" "}
+                  {t("signUp.andThe")}{" "}
+                  <Link href="/privacy/">{t("signUp.privacyPolicy")}</Link>.
+                </p>
+              </form>
+            </>
           )}
         </div>
+
+        {!verificationSent && (
+          <div className="auth-card-foot">
+            <span>{t("signUp.alreadyHaveAccount")} </span>
+            <Link href={nextPath !== "/onboarding" ? `/sign-in?next=${encodeURIComponent(nextPath)}` : "/sign-in"}>
+              {t("signUp.signInLink")}
+            </Link>
+          </div>
+        )}
       </div>
     </div>
   );

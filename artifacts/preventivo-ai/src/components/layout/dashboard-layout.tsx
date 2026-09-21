@@ -1,28 +1,42 @@
+import "@/i18n/dashboard";
 import { Link, useLocation } from "wouter";
-import { LayoutDashboard, FileText, Menu, BarChart3, Settings, ChevronLeft, ChevronRight, Plus, LogOut, User, CreditCard, Building2, ChevronDown, BookOpen, Users, Receipt, Briefcase, FolderOpen, ArrowUpRight } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Sheet, SheetContent, SheetTrigger, SheetTitle } from "@/components/ui/sheet";
+import { LayoutDashboard, FileText, Menu, BarChart3, Settings, ChevronLeft, ChevronRight, Plus, LogOut, User, CreditCard, Building2, ChevronDown, BookOpen, Users, Receipt, Briefcase, FolderOpen, FileSignature, HardHat, Sparkles, Check, Target, UploadCloud, Search, Archive } from "lucide-react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { teamMembersApi } from "@/lib/team-members-api";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Badge } from "@/components/ui/badge";
+import { CommandDialog, CommandInput, CommandList, CommandEmpty, CommandGroup, CommandItem, CommandShortcut } from "@/components/ui/command";
 import { useState, useEffect, useRef, useCallback } from "react";
 import { cn } from "@/lib/utils";
 import { Logo } from "@/components/logo";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useGetSubscription } from "@workspace/api-client-react";
 import { useAuth } from "@/hooks/use-auth";
 import { authClient } from "@/lib/auth-client";
+import { useLanguage } from "@/i18n/LanguageContext";
+import { NotificationsBell } from "@/components/notifications-bell";
 
-const BASE_NAV_ITEMS = [
-  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard, exact: true, proOnly: false, comingSoon: false },
-  { href: "/dashboard/quotes", label: "Preventivi", icon: FileText, exact: false, proOnly: false, comingSoon: false },
-  { href: "/dashboard/clients", label: "Clienti", icon: Users, exact: false, proOnly: false, comingSoon: false },
-  { href: "/dashboard/analytics", label: "Analytics", icon: BarChart3, exact: false, proOnly: false, comingSoon: false },
-  { href: "/dashboard/catalog", label: "Listino", icon: BookOpen, exact: false, proOnly: true, comingSoon: false },
-  { href: "/dashboard/invoices", label: "Fatture", icon: Receipt, exact: false, proOnly: false, comingSoon: true },
-  { href: "/crm", label: "CRM", icon: Briefcase, exact: false, proOnly: false, comingSoon: false, external: true },
-  { href: "/dashboard/documents", label: "Archivio", icon: FolderOpen, exact: false, proOnly: false, comingSoon: false },
-  { href: "/dashboard/settings", label: "Impostazioni", icon: Settings, exact: false, proOnly: false, comingSoon: false },
-];
+/** Section groupings for the sidebar rail — purely presentational, doesn't affect routing or access. */
+const NAV_GROUPS = ["overview", "sales", "delivery", "insights", "workspace"] as const;
+
+function useNavItems() {
+  const { t } = useLanguage();
+  return [
+    { href: "/dashboard", labelKey: "dashboard.nav.dashboard", icon: LayoutDashboard, exact: true, proOnly: false, comingSoon: false, group: "overview" },
+    { href: "/dashboard/quotes", labelKey: "dashboard.nav.quotes", icon: FileText, exact: false, proOnly: false, comingSoon: false, group: "sales" },
+    { href: "/dashboard/clients", labelKey: "dashboard.nav.clients", icon: Users, exact: false, proOnly: false, comingSoon: false, group: "sales" },
+    { href: "/dashboard/leads", labelKey: "dashboard.nav.leads", icon: Target, exact: false, proOnly: false, comingSoon: false, group: "sales" },
+    { href: "/dashboard/contracts", labelKey: "dashboard.nav.contracts", icon: FileSignature, exact: false, proOnly: true, comingSoon: false, group: "sales" },
+    { href: "/dashboard/jobs", labelKey: "dashboard.nav.jobs", icon: Briefcase, exact: false, proOnly: true, comingSoon: false, group: "delivery" },
+    { href: "/dashboard/team", labelKey: "dashboard.nav.team", icon: HardHat, exact: false, proOnly: true, comingSoon: false, group: "delivery" },
+    { href: "/dashboard/catalog", labelKey: "dashboard.nav.catalog", icon: BookOpen, exact: false, proOnly: true, comingSoon: false, group: "delivery" },
+    { href: "/dashboard/invoices", labelKey: "dashboard.nav.invoices", icon: Receipt, exact: false, proOnly: true, comingSoon: false, group: "delivery" },
+    { href: "/dashboard/analytics", labelKey: "dashboard.nav.analytics", icon: BarChart3, exact: false, proOnly: false, comingSoon: false, group: "insights" },
+    { href: "/dashboard/assistant", labelKey: "dashboard.nav.assistant", icon: Sparkles, exact: false, proOnly: true, comingSoon: false, group: "insights" },
+    { href: "/dashboard/documents", labelKey: "dashboard.nav.documents", icon: FolderOpen, exact: false, proOnly: false, comingSoon: false, group: "workspace" },
+    { href: "/dashboard/archive", labelKey: "dashboard.nav.archive", icon: Archive, exact: false, proOnly: false, comingSoon: false, group: "workspace" },
+    { href: "/dashboard/imports", labelKey: "dashboard.nav.imports", icon: UploadCloud, exact: false, proOnly: false, comingSoon: false, group: "workspace" },
+    { href: "/dashboard/settings", labelKey: "dashboard.nav.settings", icon: Settings, exact: false, proOnly: false, comingSoon: false, group: "workspace" },
+  ].map(item => ({ ...item, label: t(item.labelKey), groupLabel: t(`dashboard.nav.group.${item.group}`) }));
+}
 
 /**
  * Attaches touch listeners to a div ref and calls `onClose` when the user
@@ -79,11 +93,33 @@ function isActive(navHref: string, location: string, exact: boolean) {
   return location === navHref || location.startsWith(navHref + "/") || location.startsWith(navHref + "?");
 }
 
-function AccountMenu({ collapsed = false }: { collapsed?: boolean }) {
-  const { user } = useAuth();
-  const name = user?.name || user?.email?.split("@")[0] || "Account";
-  const email = user?.email ?? "";
-  const initials = name.slice(0, 2).toUpperCase();
+function OrgSwitcherItems() {
+  const { t } = useLanguage();
+  const queryClient = useQueryClient();
+  const { data } = useQuery({ queryKey: ["team-orgs"], queryFn: teamMembersApi.orgs, staleTime: 60_000 });
+  const switchOrg = useMutation({
+    mutationFn: (orgId: string) => teamMembersApi.switchOrg(orgId),
+    onSuccess: () => { queryClient.clear(); window.location.href = "/dashboard"; },
+  });
+  const orgs = data?.items ?? [];
+  if (orgs.length < 2) return null;
+  return (
+    <>
+      <div className="px-2 py-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">{t("team.switcher.switch")}</div>
+      {orgs.map((o) => (
+        <DropdownMenuItem key={o.orgId} className="cursor-pointer flex items-center gap-2" onClick={() => o.orgId !== data?.activeOrgId && switchOrg.mutate(o.orgId)}>
+          {o.orgId === data?.activeOrgId ? <Check className="h-3.5 w-3.5 text-[var(--navy)] shrink-0" /> : <span className="w-3.5 shrink-0" />}
+          <span className="truncate flex-1">{o.isOwn ? (o.companyName || t("team.switcher.myCompany")) : o.companyName}</span>
+        </DropdownMenuItem>
+      ))}
+      <DropdownMenuSeparator />
+    </>
+  );
+}
+
+/** Renders the sb-user block; the dropdown itself carries account/org actions. */
+function AccountMenu({ trigger }: { trigger: React.ReactNode }) {
+  const { t } = useLanguage();
 
   async function handleSignOut() {
     await authClient.signOut();
@@ -92,66 +128,95 @@ function AccountMenu({ collapsed = false }: { collapsed?: boolean }) {
 
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        {collapsed ? (
-          <Tooltip delayDuration={0}>
-            <TooltipTrigger asChild>
-              <button className="h-9 w-9 mx-auto flex items-center justify-center rounded-lg hover:bg-gray-100 transition-colors shrink-0">
-                <div className="h-7 w-7 rounded-full bg-violet-100 text-violet-700 text-xs font-bold flex items-center justify-center uppercase">
-                  {initials || <User className="h-3.5 w-3.5" />}
-                </div>
-              </button>
-            </TooltipTrigger>
-            <TooltipContent side="right" className="text-xs">{name}</TooltipContent>
-          </Tooltip>
-        ) : (
-          <button className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-gray-50 transition-colors group text-left">
-            <div className="h-7 w-7 rounded-full bg-violet-100 text-violet-700 text-xs font-bold flex items-center justify-center uppercase shrink-0">
-              {initials || <User className="h-3.5 w-3.5" />}
-            </div>
-            <div className="flex-1 min-w-0">
-              <div className="text-xs font-medium text-gray-700 truncate leading-tight">{name}</div>
-              {email && <div className="text-[10px] text-gray-400 truncate leading-tight">{email}</div>}
-            </div>
-            <ChevronDown className="h-3 w-3 text-gray-400 group-hover:text-gray-600 shrink-0" />
-          </button>
-        )}
-      </DropdownMenuTrigger>
+      <DropdownMenuTrigger asChild>{trigger}</DropdownMenuTrigger>
       <DropdownMenuContent align="end" side="top" className="w-48 mb-1">
-        <div className="px-2 py-1">
-          <div className="text-xs font-semibold text-gray-800 truncate">{name}</div>
-          {email && <div className="text-[10px] text-gray-400 truncate">{email}</div>}
-        </div>
-        <DropdownMenuSeparator />
+        <OrgSwitcherItems />
         <DropdownMenuItem asChild>
           <Link href="/dashboard/settings?tab=account" className="cursor-pointer flex items-center gap-2">
-            <Building2 className="h-3.5 w-3.5 text-gray-400" /> Profilo Aziendale
+            <Building2 className="h-3.5 w-3.5 text-muted-foreground" /> {t("dashboard.account.companyProfile")}
           </Link>
         </DropdownMenuItem>
         <DropdownMenuItem asChild>
           <Link href="/dashboard/settings?tab=billing" className="cursor-pointer flex items-center gap-2">
-            <CreditCard className="h-3.5 w-3.5 text-gray-400" /> Piano & Fatturazione
+            <CreditCard className="h-3.5 w-3.5 text-muted-foreground" /> {t("dashboard.account.planBilling")}
           </Link>
         </DropdownMenuItem>
         <DropdownMenuItem asChild>
           <Link href="/dashboard/settings" className="cursor-pointer flex items-center gap-2">
-            <Settings className="h-3.5 w-3.5 text-gray-400" /> Impostazioni
+            <Settings className="h-3.5 w-3.5 text-muted-foreground" /> {t("dashboard.account.settings")}
           </Link>
         </DropdownMenuItem>
         <DropdownMenuSeparator />
-        <DropdownMenuItem
-          onClick={handleSignOut}
-          className="cursor-pointer text-red-600 focus:text-red-600 gap-2"
-        >
-          <LogOut className="h-3.5 w-3.5" /> Esci
+        <DropdownMenuItem onClick={handleSignOut} className="cursor-pointer text-red-600 focus:text-red-600 gap-2">
+          <LogOut className="h-3.5 w-3.5" /> {t("dashboard.account.signOut")}
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
   );
 }
 
+type NavItem = ReturnType<typeof useNavItems>[number];
+
+/** Cmd/Ctrl+K palette for jumping to a nav page or firing a quick action; styled as the mockup's `.search` pill. */
+function QuickSearch({ navItems }: { navItems: NavItem[] }) {
+  const { t } = useLanguage();
+  const [, navigate] = useLocation();
+  const [open, setOpen] = useState(false);
+  const isMac = typeof navigator !== "undefined" && /mac/i.test(navigator.platform);
+
+  useEffect(() => {
+    function onKeyDown(e: KeyboardEvent) {
+      if (e.key.toLowerCase() === "k" && (e.metaKey || e.ctrlKey)) {
+        e.preventDefault();
+        setOpen((v) => !v);
+      }
+    }
+    document.addEventListener("keydown", onKeyDown);
+    return () => document.removeEventListener("keydown", onKeyDown);
+  }, []);
+
+  function go(href: string) {
+    setOpen(false);
+    navigate(href);
+  }
+
+  return (
+    <>
+      <button type="button" onClick={() => setOpen(true)} className="search">
+        <Search className="ic" style={{ width: 17, height: 17 }} />
+        <span className="flex-1 text-left truncate">{t("dashboard.search.placeholder")}</span>
+        <kbd className="text-[10px] font-semibold px-1.5 py-0.5 rounded-md bg-[var(--soft-2)] text-[var(--muted-mk)] shrink-0">
+          {isMac ? "⌘K" : "Ctrl K"}
+        </kbd>
+      </button>
+      <CommandDialog open={open} onOpenChange={setOpen} title={t("dashboard.search.placeholder")}>
+        <CommandInput placeholder={t("dashboard.search.placeholder")} />
+        <CommandList>
+          <CommandEmpty>{t("dashboard.search.empty")}</CommandEmpty>
+          <CommandGroup heading={t("dashboard.search.groupActions")}>
+            <CommandItem value={t("dashboard.nav.newQuote")} onSelect={() => go("/dashboard/new")}>
+              <Plus className="text-[var(--navy)]" />
+              {t("dashboard.nav.newQuote")}
+            </CommandItem>
+          </CommandGroup>
+          <CommandGroup heading={t("dashboard.search.groupPages")}>
+            {navItems.map((item) => (
+              <CommandItem key={item.href} value={`${item.label} ${item.groupLabel}`} onSelect={() => go(item.href)}>
+                <item.icon className="text-muted-foreground" />
+                {item.label}
+                <CommandShortcut>{item.groupLabel}</CommandShortcut>
+              </CommandItem>
+            ))}
+          </CommandGroup>
+        </CommandList>
+      </CommandDialog>
+    </>
+  );
+}
+
 export function DashboardLayout({ children }: { children: React.ReactNode }) {
-  const { isLoaded, isSignedIn } = useAuth();
+  const { t } = useLanguage();
+  const { isLoaded, isSignedIn, isError, user } = useAuth();
   const [location] = useLocation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const closeMenu = useCallback(() => setIsMobileMenuOpen(false), []);
@@ -161,16 +226,54 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
   });
 
   const { data: subscription } = useGetSubscription();
-  const isPro = subscription?.isActive && subscription?.plan === "monthly_pro";
+  const isPro = subscription?.isActive && (subscription?.plan === "monthly_pro" || subscription?.plan === "monthly_elite");
+  // Hooks must run on every render — keep this above the early returns below.
+  const allNavItems = useNavItems();
+
+  // Every dashboard route used to keep the marketing homepage <title> (Phase 66):
+  // name the tab after the section the user is in.
+  const navLabelsKey = allNavItems.map((item) => item.label).join("|"); // useNavItems returns a fresh array each render
+  useEffect(() => {
+    const section = allNavItems
+      .filter((item) => (item.exact ? location === item.href : location.startsWith(item.href)))
+      .sort((a, b) => b.href.length - a.href.length)[0];
+    const previous = document.title;
+    document.title = section ? `${section.label} · QuoteAI` : "QuoteAI";
+    return () => {
+      document.title = previous;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location, navLabelsKey]);
 
   useEffect(() => {
     try { localStorage.setItem("sidebar-collapsed", String(isCollapsed)); } catch {}
   }, [isCollapsed]);
 
+  // Lock body scroll while the mobile drawer is open.
+  useEffect(() => {
+    if (!isMobileMenuOpen) return;
+    document.body.style.overflow = "hidden";
+    return () => { document.body.style.overflow = ""; };
+  }, [isMobileMenuOpen]);
+
   if (!isLoaded) {
     return (
-      <div className="min-h-[100dvh] flex items-center justify-center bg-white">
-        <div className="w-7 h-7 rounded-full border-[3px] border-violet-400 border-t-transparent animate-spin" />
+      <div className="min-h-[100dvh] flex items-center justify-center bg-background">
+        <div className="w-7 h-7 rounded-full border-[3px] border-navy-400 border-t-transparent animate-spin" />
+      </div>
+    );
+  }
+
+  // A failed session check (API down, cold 502) is not a sign-out: bouncing the
+  // user to /sign-in loses their place and their unsaved work (Phase 66).
+  if (!isSignedIn && isError) {
+    return (
+      <div className="min-h-screen flex items-center justify-center p-6" style={{ background: "var(--bg)" }}>
+        <div className="card" style={{ maxWidth: 420, padding: 28, textAlign: "center" }}>
+          <h1 style={{ fontSize: 18, fontWeight: 800, color: "var(--navy)" }}>{t("dashboard.offline.title")}</h1>
+          <p className="sub" style={{ marginTop: 8 }}>{t("dashboard.offline.body")}</p>
+          <button type="button" className="btn btn-navy" style={{ marginTop: 18 }} onClick={() => window.location.reload()}>{t("dashboard.offline.retry")}</button>
+        </div>
       </div>
     );
   }
@@ -180,175 +283,101 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
     return null;
   }
 
-  const NAV_ITEMS = BASE_NAV_ITEMS.filter(item => !item.proOnly || isPro);
+  const NAV_ITEMS = allNavItems.filter(item => !item.proOnly || isPro);
+  const name = user?.name || user?.email?.split("@")[0] || "Account";
+  const email = user?.email ?? "";
+  const initials = name.slice(0, 2).toUpperCase();
 
-  const NavLinks = ({ collapsed = false, onClick }: { collapsed?: boolean; onClick?: () => void }) => (
-    <nav className="flex flex-col gap-0.5">
-      {NAV_ITEMS.map((item) => {
-        const active = isActive(item.href, location, item.exact);
-        const link = item.external ? (
-          <a
-            key={item.href}
-            href={item.href}
-            target="_blank"
-            rel="noopener noreferrer"
-            onClick={onClick}
-            className={cn(
-              "flex items-center rounded-lg transition-all",
-              collapsed ? "justify-center h-9 w-9 mx-auto" : "gap-2.5 px-2.5 py-2",
-              "text-sm font-medium text-gray-500 hover:bg-gray-50 hover:text-gray-900"
-            )}
-          >
-            <item.icon className="h-4 w-4 shrink-0 text-gray-400" />
-            {!collapsed && (
-              <span className="flex-1 text-sm">{item.label}</span>
-            )}
-            {!collapsed && (
-              <ArrowUpRight className="h-3.5 w-3.5 text-gray-400 shrink-0 ml-1 opacity-70" />
-            )}
-          </a>
-        ) : (
-          <Link
-            key={item.href}
-            href={item.href}
-            onClick={onClick}
-            className={cn(
-              "flex items-center rounded-lg transition-all",
-              collapsed ? "justify-center h-9 w-9 mx-auto" : "gap-2.5 px-2.5 py-2",
-              "text-sm font-medium",
-              active
-                ? "text-violet-700 bg-violet-50 font-semibold"
-                : "text-gray-500 hover:bg-gray-50 hover:text-gray-900"
-            )}
-          >
-            <item.icon className={cn("h-4 w-4 shrink-0", active ? "text-violet-600" : "text-gray-400")} />
-            {!collapsed && (
-              <span className="flex-1 text-sm">{item.label}</span>
-            )}
-            {!collapsed && item.proOnly && (
-              <Badge className="text-[10px] px-1 py-0 h-4 bg-violet-100 text-violet-700 border-0 font-semibold">Pro</Badge>
-            )}
-            {!collapsed && item.comingSoon && (
-              <Badge className="text-[10px] px-1 py-0 h-4 bg-amber-100 text-amber-600 border-0 font-semibold">In arrivo</Badge>
-            )}
-          </Link>
-        );
+  const NavLinks = () => (
+    <>
+      {NAV_GROUPS.flatMap((group) => {
+        const items = NAV_ITEMS.filter((item) => item.group === group);
+        if (items.length === 0) return [];
 
-        if (collapsed) {
+        const header = <p key={`${group}-heading`} className="sb-group">{items[0]!.groupLabel}</p>;
+
+        const links = items.map((item) => {
+          const active = isActive(item.href, location, item.exact);
           return (
-            <Tooltip key={item.href} delayDuration={0}>
-              <TooltipTrigger asChild>{link}</TooltipTrigger>
-              <TooltipContent side="right" className="text-xs">{item.label}</TooltipContent>
-            </Tooltip>
+            <Link
+              key={item.href}
+              href={item.href}
+              onClick={closeMenu}
+              className={cn("sb-link", active && "active")}
+              title={item.label}
+            >
+              <item.icon className="ic" />
+              <span className="sb-txt">{item.label}</span>
+              {item.proOnly && <span className="badge-pro">{t("dashboard.nav.pro")}</span>}
+              {item.comingSoon && <span className="badge-pro">{t("dashboard.nav.comingSoon")}</span>}
+            </Link>
           );
-        }
-        return link;
+        });
+
+        return [header, ...links];
       })}
-    </nav>
+    </>
   );
 
   return (
-    <div className="min-h-[100dvh] flex bg-white">
-      {/* Desktop Sidebar */}
-      <aside
-        className={cn(
-          "hidden md:flex flex-col border-r border-gray-100 bg-white shadow-sm transition-all duration-200 shrink-0",
-          isCollapsed ? "w-14" : "w-56"
-        )}
-      >
-        {/* Logo + toggle */}
-        <div className={cn("h-14 flex items-center border-b border-gray-100", isCollapsed ? "justify-center px-2" : "px-4 justify-between")}>
-          {!isCollapsed && (
-            <Link href="/dashboard" className="flex items-center">
-              <Logo />
-            </Link>
-          )}
+    <div className={cn("app", isCollapsed && "rail")}>
+      {/* Sidebar (desktop: rail-collapsible; mobile: slide-in drawer) */}
+      <aside ref={swipeRef} className={cn("sidebar", isMobileMenuOpen && "open")} aria-label={t("dashboard.nav.navMenu")}>
+        <div className="sb-top">
+          <span className="sb-mark">q</span>
+          <Link href="/dashboard" className="sb-logo" onClick={closeMenu}>
+            <Logo style={{ height: 28 }} />
+          </Link>
           <button
             onClick={() => setIsCollapsed(v => !v)}
-            className="h-6 w-6 rounded-md flex items-center justify-center text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors shrink-0"
-            title={isCollapsed ? "Espandi sidebar" : "Comprimi sidebar"}
+            className="sb-collapse"
+            aria-label={isCollapsed ? t("dashboard.nav.expandSidebar") : t("dashboard.nav.collapseSidebar")}
+            aria-expanded={!isCollapsed}
           >
-            {isCollapsed ? <ChevronRight className="h-3.5 w-3.5" /> : <ChevronLeft className="h-3.5 w-3.5" />}
+            {isCollapsed ? <ChevronRight className="chev" /> : <ChevronLeft className="chev" />}
           </button>
         </div>
 
-        <div className={cn("flex-1 flex flex-col gap-3 py-3", isCollapsed ? "px-2" : "px-3")}>
-          {/* New quote button */}
-          {isCollapsed ? (
-            <Tooltip delayDuration={0}>
-              <TooltipTrigger asChild>
-                <Link
-                  href="/dashboard/new"
-                  className="btn-gradient h-9 w-9 mx-auto flex items-center justify-center rounded-lg"
-                >
-                  <Plus className="h-4 w-4" />
-                </Link>
-              </TooltipTrigger>
-              <TooltipContent side="right" className="text-xs">Nuovo Preventivo</TooltipContent>
-            </Tooltip>
-          ) : (
-            <Link
-              href="/dashboard/new"
-              className="btn-gradient inline-flex w-full h-9 items-center justify-center gap-2 text-sm font-semibold"
-            >
-              <Plus className="h-3.5 w-3.5" />
-              Nuovo Preventivo
-            </Link>
-          )}
+        <Link href="/dashboard/new" onClick={closeMenu} className="btn btn-white sb-new">
+          <Plus className="ic" style={{ width: 16, height: 16 }} />
+          <span className="btn-txt">{t("dashboard.nav.newQuote")}</span>
+        </Link>
 
-          <NavLinks collapsed={isCollapsed} />
-        </div>
+        <NavLinks />
 
-        {/* Account section */}
-        <div className={cn("border-t border-gray-100 py-2", isCollapsed ? "px-2" : "px-2")}>
-          <AccountMenu collapsed={isCollapsed} />
+        <div className="sb-bottom">
+          <NotificationsBell variant="sidebar" side="right" />
+          <AccountMenu
+            trigger={
+              <button className="sb-user" type="button">
+                <span className="sb-avatar">{initials || <User className="h-3.5 w-3.5" />}</span>
+                <span className="sb-userinfo">
+                  <b>{name}</b>
+                  <span>{email}</span>
+                </span>
+                <ChevronDown className="h-3.5 w-3.5 text-[#8f91a6] shrink-0" />
+              </button>
+            }
+          />
         </div>
       </aside>
 
-      {/* Mobile Layout */}
-      <div className="flex-1 flex flex-col min-w-0">
-        <header className="md:hidden h-14 flex items-center justify-between px-4 border-b border-gray-100 bg-white">
-          <div className="flex items-center gap-2">
-            <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
-              <SheetTrigger asChild>
-                <Button variant="ghost" size="icon" className="-ml-2 h-8 w-8">
-                  <Menu className="h-4 w-4" />
-                  <span className="sr-only">Toggle menu</span>
-                </Button>
-              </SheetTrigger>
-              <SheetContent ref={swipeRef} side="left" className="w-64 p-0 bg-white flex flex-col">
-                <SheetTitle className="sr-only">Menu di navigazione</SheetTitle>
-                <div className="h-14 flex items-center px-5 border-b border-gray-100">
-                  <Link href="/dashboard" className="flex items-center" onClick={() => setIsMobileMenuOpen(false)}>
-                    <Logo />
-                  </Link>
-                </div>
-                <div className="flex-1 p-3 flex flex-col gap-3">
-                  <Link
-                    href="/dashboard/new"
-                    onClick={() => setIsMobileMenuOpen(false)}
-                    className="btn-gradient inline-flex w-full h-9 items-center justify-center gap-2 text-sm font-semibold"
-                  >
-                    <Plus className="h-3.5 w-3.5" />
-                    Nuovo Preventivo
-                  </Link>
-                  <NavLinks onClick={() => setIsMobileMenuOpen(false)} />
-                </div>
-                <div className="border-t border-gray-100 p-2">
-                  <AccountMenu />
-                </div>
-              </SheetContent>
-            </Sheet>
-            <Link href="/dashboard" className="flex items-center">
-              <Logo style={{ height: 26 }} />
-            </Link>
+      {isMobileMenuOpen && <div className="scrim show" onClick={closeMenu} />}
+
+      {/* Main column */}
+      <div className="main">
+        <header className="topbar">
+          <button type="button" className="tb-menu" onClick={() => setIsMobileMenuOpen(true)} aria-label={t("dashboard.nav.toggleMenu")}>
+            <Menu className="ic" style={{ width: 22, height: 22 }} />
+          </button>
+          <QuickSearch navItems={NAV_ITEMS} />
+          <div className="tb-right">
+            <NotificationsBell variant="topbar" side="bottom" align="end" />
+            <AccountMenu trigger={<button className="tb-avatar" type="button" aria-label={name}>{initials || <User className="h-3.5 w-3.5" />}</button>} />
           </div>
-          <AccountMenu />
         </header>
 
-        <main className="flex-1 overflow-auto p-4 md:p-6">
-          <div className="mx-auto max-w-5xl">{children}</div>
-        </main>
+        <main className="content">{children}</main>
       </div>
     </div>
   );

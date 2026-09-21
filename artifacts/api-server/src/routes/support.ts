@@ -8,6 +8,31 @@ import { ipRateLimiter } from "../lib/rateLimit.js";
 import { moderateSupportMessage } from "../lib/moderation.js";
 import crypto from "crypto";
 
+// Phase 70: the help centre's ten guides (artifacts/preventivo-ai/src/data/help-articles.ts).
+// Kept as a plain list here so the support bot can point visitors at the
+// right page instead of improvising product behaviour. Update both when a
+// guide is added or renamed.
+const HELP_GUIDES: ReadonlyArray<[slug: string, topic: string]> = [
+  ["getting-started", "account creation, business profile (taxes, licence, e-Transfer email, logo), plans and billing"],
+  ["create-a-quote", "creating a quote from text, voice or photos; editing; catalog; Good/Better/Best options; PDF templates"],
+  ["send-a-quote-and-get-it-accepted", "emailing or sharing a quote, online acceptance, automatic follow-ups on days 2/5/10"],
+  ["contracts-and-e-signature", "province contract templates (ON/BC/AB/QC), review, sending for signature, email-code e-signature, signed PDF and audit certificate"],
+  ["jobs-milestones-and-change-orders", "job setup review, milestones, schedule, calendar sync, change orders, holdback release"],
+  ["invoices-and-getting-paid", "deposit/progress/final invoices, Interac e-Transfer, card payments via Stripe, recording payments, overdue reminders 3/7/14 days"],
+  ["costs-receipts-and-time", "receipt scanning, cost tracking, worker time-entry links, GPS clock-in, payroll CSV export"],
+  ["team-accounts-and-roles", "inviting team members, roles (admin/office/foreman/viewer), seats per plan"],
+  ["leads-and-follow-ups", "lead sources (website widget, WhatsApp, Meta Lead Ads, Google LSA), pipeline, CASL consent and unsubscribe, review requests"],
+  ["integrations-and-imports", "Gmail sending, Google/Outlook calendar, QuickBooks and Wave, Stripe Connect, importing old quotes from CSV/Excel/PDF, public API and Zapier"],
+];
+
+const SUPPORT_SYSTEM_PROMPT = [
+  "You are QuoteAI's AI support assistant. QuoteAI is a web platform for tradespeople and construction businesses in Canada that turns a plain-language job description into a detailed quote, then handles contracts and e-signature, jobs, invoices and payments.",
+  "Reply kindly, professionally and concisely, in the language the user writes in (English or French).",
+  "When a question is covered by a help-centre guide, answer briefly and link the guide as https://quoteai.ca/help/<slug>/ . Do not invent product behaviour that is not in the guide list; if unsure, say so and offer a human agent.",
+  "Guides (slug — topics): " + HELP_GUIDES.map(([slug, topic]) => `${slug} — ${topic}`).join("; ") + ".",
+  "If the user explicitly asks to speak with an agent or a person, or asks about payments, their account, legal questions or technical bugs, tell them they can request a human agent by clicking the button in the chat, or that typing 'talk to an agent' will put them in the queue for human follow-up.",
+].join(" ");
+
 const router = Router();
 
 const MAX_MESSAGE_LENGTH = 4000;
@@ -74,13 +99,13 @@ async function requireConversationAccess(
 const createConversationLimiter = ipRateLimiter({
   windowMs: 15 * 60 * 1000,
   max: 15,
-  message: "Troppe richieste. Riprova tra qualche minuto.",
+  message: "Too many requests. Please try again in a few minutes.",
 });
 
 const sendMessageLimiter = ipRateLimiter({
   windowMs: 10 * 60 * 1000,
   max: 30,
-  message: "Troppi messaggi inviati. Riprova più tardi.",
+  message: "Too many messages sent. Please try again later.",
 });
 
 // --- Admin status endpoints ---
@@ -129,7 +154,7 @@ router.post("/support/conversations", createConversationLimiter, async (req, res
     if (typeof visitorEmail === "string") visitorEmail = visitorEmail.slice(0, MAX_VISITOR_FIELD_LENGTH);
     if (typeof visitorPhone === "string") visitorPhone = visitorPhone.slice(0, MAX_VISITOR_FIELD_LENGTH);
 
-    const dateStr = new Date().toLocaleDateString("it-IT", {
+    const dateStr = new Date().toLocaleDateString("en-CA", {
       day: "2-digit",
       month: "2-digit",
       year: "numeric",
@@ -140,7 +165,7 @@ router.post("/support/conversations", createConversationLimiter, async (req, res
     const [newConv] = await db
       .insert(conversations)
       .values({
-        title: `Chat ${visitorName || "Visitatore"} (${dateStr})`,
+        title: `Chat ${visitorName || "Visitor"} (${dateStr})`,
         visitorName: visitorName || null,
         visitorEmail: visitorEmail || null,
         visitorPhone: visitorPhone || null,
@@ -213,7 +238,7 @@ router.post("/support/conversations/:id/messages", sendMessageLimiter, requireCo
       return;
     }
     if (typeof content !== "string" || content.length > MAX_MESSAGE_LENGTH) {
-      res.status(400).json({ error: `Messaggio troppo lungo (massimo ${MAX_MESSAGE_LENGTH} caratteri).` });
+      res.status(400).json({ error: `Message too long (maximum ${MAX_MESSAGE_LENGTH} characters).` });
       return;
     }
 
@@ -263,7 +288,7 @@ router.post("/support/conversations/:id/messages", sendMessageLimiter, requireCo
           .values({
             conversationId: convId,
             role: "assistant",
-            content: "Ho inoltrato la tua richiesta per parlare con un operatore umano. Non appena un operatore sarà online ti risponderà qui.",
+            content: "I've forwarded your request to speak with a human agent. As soon as one is online, they'll reply here.",
           })
           .returning();
 
@@ -281,7 +306,7 @@ router.post("/support/conversations/:id/messages", sendMessageLimiter, requireCo
           .values({
             conversationId: convId,
             role: "assistant",
-            content: "Il tuo messaggio non rispetta le linee guida della chat e non può essere elaborato. Riformula la richiesta oppure richiedi un operatore umano.",
+            content: "Your message doesn't comply with the chat guidelines and can't be processed. Please rephrase your request or ask for a human agent.",
           })
           .returning();
         res.json({ userMessage: userMsg, aiMessage: blockedMsg, status: "ai" });
@@ -300,7 +325,7 @@ router.post("/support/conversations/:id/messages", sendMessageLimiter, requireCo
         const formattedMessages = [
           {
             role: "system" as const,
-            content: "Sei l'assistente AI di supporto di PrevAI. PrevAI è una piattaforma web all'avanguardia per artigiani e imprese edili in Italia per creare preventivi e computi metrici dettagliati partendo da descrizioni testuali. Rispondi in modo gentile, professionale e conciso in italiano. Se l'utente chiede esplicitamente di parlare con un operatore, con una persona, o se fa domande complesse su pagamenti, account o bug tecnici, digli che può richiedere un operatore umano cliccando sul pulsante nella chat, o che se scrive 'parla con operatore' provvederai a metterlo in attesa per l'intervento umano.",
+            content: SUPPORT_SYSTEM_PROMPT,
           },
           ...history.map(m => ({
             role: (m.role === "user" ? "user" : "assistant") as "user" | "assistant",
@@ -315,7 +340,7 @@ router.post("/support/conversations/:id/messages", sendMessageLimiter, requireCo
           temperature: 0.7,
         });
 
-        const aiContent = aiResponse.choices[0]?.message?.content || "Siamo spiacenti, si è verificato un errore nella risposta.";
+        const aiContent = aiResponse.choices[0]?.message?.content || "Sorry, something went wrong generating a response.";
 
         const [aiMsg] = await db
           .insert(messages)
@@ -334,7 +359,7 @@ router.post("/support/conversations/:id/messages", sendMessageLimiter, requireCo
           .values({
             conversationId: convId,
             role: "assistant",
-            content: "Al momento ho qualche difficoltà a rispondere. Se hai bisogno di assistenza immediata puoi richiedere il supporto di un operatore umano cliccando sul tasto in alto.",
+            content: "I'm having some trouble responding right now. If you need immediate help, you can request a human agent by clicking the button above.",
           })
           .returning();
         res.json({ userMessage: userMsg, aiMessage: fallbackMsg, status: "ai" });
@@ -376,7 +401,7 @@ router.post("/support/conversations/:id/request-human", requireConversationAcces
       .values({
         conversationId: convId,
         role: "assistant",
-        content: "Richiesta operatore umano inoltrata. Rimani in attesa, un operatore si collegherà appena possibile.",
+        content: "Human agent requested. Please stay put, an agent will join as soon as possible.",
       })
       .returning();
 
@@ -406,7 +431,7 @@ router.post("/support/conversations/:id/join", requireAdmin, async (req, res) =>
       .values({
         conversationId: convId,
         role: "assistant",
-        content: "Un operatore di PrevAI è entrato in chat e prenderà in carico la tua richiesta.",
+        content: "A QuoteAI agent has joined the chat and will take care of your request.",
       })
       .returning();
 
@@ -436,7 +461,7 @@ router.post("/support/conversations/:id/close", requireConversationAccess, async
       .values({
         conversationId: convId,
         role: "assistant",
-        content: "La sessione di chat è stata chiusa. Grazie per averci contattato!",
+        content: "This chat session has been closed. Thanks for reaching out!",
       })
       .returning();
 

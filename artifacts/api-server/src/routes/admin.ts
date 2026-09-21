@@ -1,7 +1,7 @@
 import { Router, type Request, type Response, type NextFunction } from "express";
 import { fromNodeHeaders } from "better-auth/node";
 import { auth } from "../lib/auth";
-import { db, quotesTable, businessProfilesTable, settingsTable, authUsersTable, emailEventsTable } from "@workspace/db";
+import { db, quotesTable, businessProfilesTable, settingsTable, authUsersTable, emailEventsTable, usageDailySummaryTable, incentivesCatalogTable, insertIncentivesCatalogSchema, cronTicksTable, automationRunsTable } from "@workspace/db";
 import { eq, sql, desc, count, inArray } from "drizzle-orm";
 import { logger } from "../lib/logger";
 import { getUncachableStripeClient } from "../stripeClient";
@@ -10,6 +10,8 @@ import { readFileSync, existsSync } from "fs";
 import path from "path";
 
 import { PRICE_TO_PLAN } from "./payments.js";
+import { opsHealth } from "../lib/ops.js";
+import { retryAutomationNow } from "../lib/automation.js";
 
 const router = Router();
 
@@ -28,9 +30,9 @@ export async function isAdmin<P = Record<string, string>>(req: Request<P>): Prom
   }
 }
 
-// Generico su P per non far collassare req.params a string | string[] nelle
-// rotte che usano requireAdmin come middleware prima dell'handler vero e
-// proprio (vedi commento analogo su requireAuth in middlewares/authMiddleware.ts).
+// Generic over P so req.params doesn't collapse to string | string[] on
+// routes that use requireAdmin as middleware before the real handler
+// (see the analogous comment on requireAuth in middlewares/authMiddleware.ts).
 export async function requireAdmin<P = Record<string, string>>(req: Request<P>, res: Response, next: NextFunction): Promise<void> {
   const ok = await isAdmin(req);
   if (!ok) {
@@ -133,7 +135,7 @@ router.get("/admin/users", async (_req, res) => {
       .limit(200);
 
     const userIds = profiles.map(p => p.userId);
-    let authUsers: Record<string, { email: string; name: string }> = {};
+    const authUsers: Record<string, { email: string; name: string }> = {};
 
     if (userIds.length > 0) {
       try {
@@ -226,7 +228,7 @@ router.post("/admin/users/:userId/apikey", async (req, res) => {
     
     let newApiKey = apiKey;
     if (!newApiKey) {
-      newApiKey = `prevai_pk_${crypto.randomBytes(24).toString("hex")}`;
+      newApiKey = `quoteai_pk_${crypto.randomBytes(24).toString("hex")}`;
     }
 
     const [updated] = await db
@@ -236,7 +238,7 @@ router.post("/admin/users/:userId/apikey", async (req, res) => {
       .returning();
 
     if (!updated) {
-      res.status(404).json({ error: "Profilo aziendale non trovato per questo utente." });
+      res.status(404).json({ error: "Business profile not found for this user." });
       return;
     }
 
@@ -394,7 +396,7 @@ router.post("/admin/sync-subscription", async (req, res) => {
   }
 });
 
-// Force-link a Stripe customer to a prevai user (useful when emails don't match)
+// Force-link a Stripe customer to a quoteai user (useful when emails don't match)
 router.post("/admin/sync-by-customer", requireAdmin, async (req, res) => {
   try {
     const { stripeCustomerId, userEmail } = req.body as { stripeCustomerId?: string; userEmail?: string };
@@ -403,7 +405,7 @@ router.post("/admin/sync-by-customer", requireAdmin, async (req, res) => {
       return;
     }
 
-    // Find prevai user by email
+    // Find quoteai user by email
     const [authUser] = await db
       .select({ id: authUsersTable.id })
       .from(authUsersTable)
@@ -539,36 +541,36 @@ function parseHtmlSeo(html: string) {
 
   if (!title) {
     score -= 20;
-    issues.push("Tag <title> mancante");
+    issues.push("Missing <title> tag");
   } else if (title.length < 30 || title.length > 65) {
     score -= 10;
-    issues.push(`Lunghezza titolo non ottimale (${title.length} caratteri). Consigliato 30-65.`);
+    issues.push(`Suboptimal title length (${title.length} characters). Recommended 30-65.`);
   }
 
   if (!description) {
     score -= 20;
-    issues.push("Meta description mancante");
+    issues.push("Missing meta description");
   } else if (description.length < 120 || description.length > 160) {
     score -= 10;
-    issues.push(`Lunghezza descrizione non ottimale (${description.length} caratteri). Consigliato 120-160.`);
+    issues.push(`Suboptimal description length (${description.length} characters). Recommended 120-160.`);
   }
 
   if (h1Matches.length === 0) {
     score -= 15;
-    issues.push("Tag <h1> mancante");
+    issues.push("Missing <h1> tag");
   } else if (h1Matches.length > 1) {
     score -= 10;
-    issues.push(`Rilevati multipli tag <h1> (${h1Matches.length}). Consigliato solo uno.`);
+    issues.push(`Multiple <h1> tags detected (${h1Matches.length}). Only one is recommended.`);
   }
 
   if (missingAlt > 0) {
     score -= Math.min(15, missingAlt * 3);
-    issues.push(`${missingAlt} immagini senza attributo 'alt' compilato`);
+    issues.push(`${missingAlt} images missing an 'alt' attribute`);
   }
 
   if (!ogTitle || !ogImage) {
     score -= 5;
-    issues.push("Tag OpenGraph per social media incompleti o mancanti");
+    issues.push("Incomplete or missing OpenGraph tags for social media");
   }
 
   return {
@@ -585,12 +587,12 @@ router.get("/admin/seo-audit", async (req, res) => {
     const auditPages = [
       { url: "/", name: "Homepage" },
       { url: "/blog", name: "Blog Index" },
-      { url: "/preventivi/imbianchino", name: "Land. Imbianchini" },
-      { url: "/preventivi/elettricista", name: "Land. Elettricisti" },
-      { url: "/preventivi/idraulico", name: "Land. Idraulici" },
-      { url: "/preventivi/muratore", name: "Land. Muratori" },
-      { url: "/preventivi/ristrutturazione/roma", name: "Roma Ristrutturazioni" },
-      { url: "/preventivi/ristrutturazione/milano", name: "Milano Ristrutturazioni" },
+      { url: "/preventivi/imbianchino", name: "Land. Painters" },
+      { url: "/preventivi/elettricista", name: "Land. Electricians" },
+      { url: "/preventivi/idraulico", name: "Land. Plumbers" },
+      { url: "/preventivi/muratore", name: "Land. General Contractors" },
+      { url: "/preventivi/ristrutturazione/roma", name: "Roma Renovations" },
+      { url: "/preventivi/ristrutturazione/milano", name: "Milano Renovations" },
     ];
 
     const origin = `${req.protocol}://${req.headers.host}`;
@@ -609,10 +611,10 @@ router.get("/admin/seo-audit", async (req, res) => {
             url: page.url,
             name: page.name,
             score: 0,
-            title: "Errore di lettura",
+            title: "Read error",
             description: "",
             h1: "",
-            issues: [`Impossibile leggere la pagina: ${e.message}`],
+            issues: [`Unable to read the page: ${e.message}`],
           };
         }
       })
@@ -676,7 +678,7 @@ async function getGoogleAccessToken(serviceAccountJson: string): Promise<string>
 
 router.get("/admin/search-console", async (req, res) => {
   let gscKey = process.env.GSC_SERVICE_ACCOUNT_KEY;
-  const siteUrl = process.env.GSC_SITE_URL || "https://www.prevai.it/";
+  const siteUrl = process.env.GSC_SITE_URL || "https://quoteai.ca/";
 
   if (!gscKey) {
     const possiblePaths = [
@@ -697,7 +699,7 @@ router.get("/admin/search-console", async (req, res) => {
             gscKey = content;
             break;
           }
-        } catch (e) {
+        } catch {
           // ignore
         }
       }
@@ -708,11 +710,11 @@ router.get("/admin/search-console", async (req, res) => {
     if (!gscKey) {
       // Fallback fallback simulated dashboard if variables are not yet configured on Vercel
       const keywords = [
-        { query: "preventivo idraulico roma (Demo)", clicks: 342, impressions: 4500, ctr: 0.076, position: 2.1 },
-        { query: "modello preventivo excel (Demo)", clicks: 289, impressions: 5800, ctr: 0.049, position: 3.4 },
-        { query: "creare preventivo pdf (Demo)", clicks: 210, impressions: 3200, ctr: 0.065, position: 1.8 },
-        { query: "preventivo elettricista milano (Demo)", clicks: 195, impressions: 2900, ctr: 0.067, position: 2.5 },
-        { query: "modello preventivo muratore (Demo)", clicks: 140, impressions: 2100, ctr: 0.066, position: 3.0 },
+        { query: "plumber quote toronto (Demo)", clicks: 342, impressions: 4500, ctr: 0.076, position: 2.1 },
+        { query: "quote template excel (Demo)", clicks: 289, impressions: 5800, ctr: 0.049, position: 3.4 },
+        { query: "create quote pdf (Demo)", clicks: 210, impressions: 3200, ctr: 0.065, position: 1.8 },
+        { query: "electrician quote vancouver (Demo)", clicks: 195, impressions: 2900, ctr: 0.067, position: 2.5 },
+        { query: "contractor quote template (Demo)", clicks: 140, impressions: 2100, ctr: 0.066, position: 3.0 },
       ];
 
       const clicks = keywords.reduce((sum, k) => sum + k.clicks, 0);
@@ -854,20 +856,20 @@ router.get("/admin/search-console", async (req, res) => {
   }
 });
 
-// GET /api/admin/widget/stats - Statistiche d'uso globali e per singolo cliente dei widget
+// GET /api/admin/widget/stats - Global and per-client widget usage statistics
 router.get("/admin/widget/stats", async (_req, res) => {
   try {
-    // 1. Metriche globali del widget
+    // 1. Global widget metrics
     const [globalStats] = await db
       .select({
         totalQuotes: count(),
-        totalCost: sql<string>`COALESCE(SUM(prompt_tokens * 0.00000015 + completion_tokens * 0.00000060), 0)`, // Stima costo Groq Llama 3.3
+        totalCost: sql<string>`COALESCE(SUM(prompt_tokens * 0.00000015 + completion_tokens * 0.00000060), 0)`, // Estimated Groq Llama 3.3 cost
         totalTokens: sql<string>`COALESCE(SUM(prompt_tokens + completion_tokens), 0)`,
       })
       .from(quotesTable)
       .where(eq(quotesTable.source, "widget"));
 
-    // 2. Statistiche per cliente/impresa
+    // 2. Statistics per client/company
     const clientUsageRows = await db
       .select({
         userId: businessProfilesTable.userId,
@@ -886,7 +888,7 @@ router.get("/admin/widget/stats", async (_req, res) => {
       )
       .orderBy(desc(count(quotesTable.id)));
 
-    // 3. Ultime chiamate effettuate dai widget
+    // 3. Most recent calls made by widgets
     const recentCalls = await db
       .select({
         quoteId: quotesTable.id,
@@ -927,16 +929,16 @@ router.get("/admin/widget/stats", async (_req, res) => {
   }
 });
 
-// POST /api/admin/widget/create-client - Crea un'impresa/cliente virtuale (non registrato) e assegna API Key
+// POST /api/admin/widget/create-client - Creates a virtual (unregistered) client/company and assigns an API key
 router.post("/admin/widget/create-client", async (req, res) => {
   try {
     const { companyName, email, phone, address, vatNumber } = req.body;
     if (!companyName || !companyName.trim()) {
-      res.status(400).json({ error: "Il nome dell'azienda è obbligatorio." });
+      res.status(400).json({ error: "Company name is required." });
       return;
     }
     const tempUserId = `temp_widget_${crypto.randomBytes(12).toString("hex")}`;
-    const apiKey = `prevai_pk_${crypto.randomBytes(24).toString("hex")}`;
+    const apiKey = `quoteai_pk_${crypto.randomBytes(24).toString("hex")}`;
 
     const [profile] = await db
       .insert(businessProfilesTable)
@@ -958,9 +960,80 @@ router.post("/admin/widget/create-client", async (req, res) => {
   }
 });
 
-// GET /api/admin/email-events - Storico eventi Resend (delivery/bounce/complaint)
-// persistiti dal webhook in app.ts, per capire da qui quando l'email di un
-// partner smette di ricevere le notifiche lead invece di dover leggere i log.
+// GET /api/admin/margin — per-org AI/WhatsApp cost vs. subscription revenue
+// (Phase 8 §4a). Cost comes from usage_daily_summary (rolled up nightly by
+// the cron tick); revenue is the plan's flat monthly price as a proxy for
+// what the account pays — flags accounts running at a loss before it's a
+// pattern, so pricing/allowances (plans.ts MONTHLY_USAGE_ALLOWANCE) can be
+// corrected.
+const PLAN_MONTHLY_PRICE_CAD: Record<string, number> = {
+  monthly_starter: 19,
+  monthly_pro: 49,
+  monthly_elite: 59,
+};
+
+router.get("/admin/margin", async (req, res) => {
+  try {
+    const days = Math.min(Number(req.query.days) || 30, 90);
+    const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+
+    const costRows = await db
+      .select({
+        userId: usageDailySummaryTable.userId,
+        kind: usageDailySummaryTable.kind,
+        costCents: sql<string>`SUM(${usageDailySummaryTable.costCents})`,
+        quantity: sql<string>`SUM(${usageDailySummaryTable.quantity})`,
+      })
+      .from(usageDailySummaryTable)
+      .where(sql`${usageDailySummaryTable.date} >= ${since}`)
+      .groupBy(usageDailySummaryTable.userId, usageDailySummaryTable.kind);
+
+    const byUser = new Map<string, { costCentsTotal: number; byKind: Record<string, { costCents: number; quantity: number }> }>();
+    for (const row of costRows) {
+      const entry = byUser.get(row.userId) ?? { costCentsTotal: 0, byKind: {} };
+      const costCents = Number(row.costCents);
+      entry.byKind[row.kind] = { costCents, quantity: Number(row.quantity) };
+      entry.costCentsTotal += costCents;
+      byUser.set(row.userId, entry);
+    }
+
+    const userIds = [...byUser.keys()];
+    const profiles = userIds.length
+      ? await db
+          .select({ userId: businessProfilesTable.userId, companyName: businessProfilesTable.companyName, subscriptionPlan: businessProfilesTable.subscriptionPlan, subscriptionStatus: businessProfilesTable.subscriptionStatus })
+          .from(businessProfilesTable)
+          .where(inArray(businessProfilesTable.userId, userIds))
+      : [];
+    const profileByUser = new Map(profiles.map((p) => [p.userId, p]));
+
+    const rows = userIds
+      .map((userId) => {
+        const entry = byUser.get(userId)!;
+        const profile = profileByUser.get(userId);
+        const plan = profile?.subscriptionStatus === "active" ? (profile?.subscriptionPlan ?? null) : null;
+        const revenueCents = (plan ? PLAN_MONTHLY_PRICE_CAD[plan] ?? 0 : 0) * 100;
+        return {
+          userId,
+          companyName: profile?.companyName ?? null,
+          plan,
+          costCents: entry.costCentsTotal,
+          revenueCents,
+          marginCents: revenueCents - entry.costCentsTotal,
+          byKind: entry.byKind,
+        };
+      })
+      .sort((a, b) => a.marginCents - b.marginCents);
+
+    res.json({ days, rows });
+  } catch (err) {
+    logger.error({ err }, "Admin margin error");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// GET /api/admin/email-events - History of Resend events (delivery/bounce/complaint)
+// persisted by the webhook in app.ts, so we can tell from here when a
+// partner's email stops receiving lead notifications instead of having to read the logs.
 router.get("/admin/email-events", requireAdmin, async (req, res) => {
   try {
     const limit = Math.min(Number(req.query.limit) || 100, 500);
@@ -976,4 +1049,128 @@ router.get("/admin/email-events", requireAdmin, async (req, res) => {
   }
 });
 
+// ── Incentives catalog CRUD (Phase 17) ──────────────────────────────────────
+// System-wide catalog only (userId null) — a contractor's own custom program
+// isn't manageable from here yet, so this always filters to platform entries.
+router.get("/admin/incentives", async (_req, res) => {
+  try {
+    const rows = await db
+      .select()
+      .from(incentivesCatalogTable)
+      .orderBy(desc(incentivesCatalogTable.updatedAt));
+    res.json({ success: true, incentives: rows });
+  } catch (err) {
+    logger.error({ err }, "Error fetching incentives catalog");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+router.post("/admin/incentives", async (req, res) => {
+  try {
+    const parsed = insertIncentivesCatalogSchema.safeParse({ ...req.body, userId: null });
+    if (!parsed.success) {
+      res.status(400).json({ error: "Invalid incentive data", details: parsed.error.issues });
+      return;
+    }
+    const [row] = await db.insert(incentivesCatalogTable).values(parsed.data).returning();
+    res.json({ success: true, incentive: row });
+  } catch (err) {
+    logger.error({ err }, "Error creating incentive");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+router.put("/admin/incentives/:id", async (req, res) => {
+  try {
+    const parsed = insertIncentivesCatalogSchema.partial().safeParse(req.body);
+    if (!parsed.success) {
+      res.status(400).json({ error: "Invalid incentive data", details: parsed.error.issues });
+      return;
+    }
+    const [row] = await db
+      .update(incentivesCatalogTable)
+      .set({ ...parsed.data, updatedAt: new Date() })
+      .where(eq(incentivesCatalogTable.id, req.params.id as string))
+      .returning();
+    if (!row) {
+      res.status(404).json({ error: "Not found" });
+      return;
+    }
+    res.json({ success: true, incentive: row });
+  } catch (err) {
+    logger.error({ err }, "Error updating incentive");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+router.delete("/admin/incentives/:id", async (req, res) => {
+  try {
+    const [row] = await db
+      .delete(incentivesCatalogTable)
+      .where(eq(incentivesCatalogTable.id, req.params.id as string))
+      .returning();
+    if (!row) {
+      res.status(404).json({ error: "Not found" });
+      return;
+    }
+    res.json({ success: true });
+  } catch (err) {
+    logger.error({ err }, "Error deleting incentive");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
 export default router;
+
+// ── Ops (Phase 69) ───────────────────────────────────────────────────────────
+// What the on-call needs without a database client: is the scheduler alive,
+// what did the last ticks do, which automation runs are stuck, retry one.
+// Unauthenticated summary of the same health lives at GET /api/healthz/ops
+// for the external uptime monitor.
+
+router.get("/admin/ops", async (_req, res) => {
+  try {
+    const health = await opsHealth();
+    const ticks = await db.select().from(cronTicksTable).orderBy(desc(cronTicksTable.startedAt)).limit(30);
+    res.json({ ...health, ticks });
+  } catch (err) {
+    logger.error({ err }, "Error building ops report");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+router.get("/admin/automations", async (req, res) => {
+  try {
+    const status = typeof req.query.status === "string" ? req.query.status.split(",") : ["failed", "dead"];
+    const limit = Math.min(Number(req.query.limit) || 100, 500);
+    const runs = await db
+      .select()
+      .from(automationRunsTable)
+      .where(inArray(automationRunsTable.status, status as ("pending" | "running" | "succeeded" | "failed" | "dead")[]))
+      .orderBy(desc(automationRunsTable.updatedAt))
+      .limit(limit);
+    res.json({ count: runs.length, runs });
+  } catch (err) {
+    logger.error({ err }, "Error listing automation runs");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// One manual attempt right now, backoff and (for dead runs) the attempt cap
+// bypassed. The handler is idempotent by contract, so retrying a run whose
+// previous attempt half-succeeded is safe.
+router.post("/admin/automations/:id/retry", async (req, res) => {
+  try {
+    const [run] = await db.select({ idempotencyKey: automationRunsTable.idempotencyKey }).from(automationRunsTable).where(eq(automationRunsTable.id, req.params.id));
+    if (!run) {
+      res.status(404).json({ error: "Not found" });
+      return;
+    }
+    const result = await retryAutomationNow(run.idempotencyKey);
+    const [after] = await db.select().from(automationRunsTable).where(eq(automationRunsTable.id, req.params.id));
+    res.json({ ...result, run: after });
+  } catch (err) {
+    logger.error({ err }, "Error retrying automation run");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});

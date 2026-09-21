@@ -1,8 +1,8 @@
 import { useEffect } from "react";
-import { useParams, Link } from "wouter";
+import { useParams, useLocation, Link } from "wouter";
 import { ArrowRight, CheckCircle2, MapPin, BarChart2, BookOpen } from "lucide-react";
-import { SECTORS, DEFAULT_SECTOR, CITIES_BY_SLUG, getCityTitle, getCityDesc } from "@/data/seo-data";
-import { BLOG_ARTICLES, SECTOR_ARTICLES } from "@/data/blog-data";
+import { SECTORS, DEFAULT_SECTOR, CITIES_BY_SLUG, SECTOR_KEY_BY_FR_SLUG, getCityTitle, getCityDesc } from "@/data/seo-data";
+import { BLOG_INDEX, SECTOR_ARTICLES } from "@/data/blog-index";
 import {
   getCityIntro,
   getCityFaqItems,
@@ -18,35 +18,65 @@ import {
   buildCityJsonLd,
   verifyCityContentInDev,
   getOgImagePath,
+  getSectorFrContent,
+  cityBasePath,
+  type Lang as EngineLang,
 } from "@/data/seo-render-engine";
 import { SeoHead } from "@/components/seo-head";
+import { isFrenchPath } from "@/i18n/LanguageContext";
+import { useLanguage } from "@/i18n/LanguageContext";
+
+const FI_COLORS = ["g", "t", "p"] as const;
 
 export default function SeoCityLanding() {
+  const { t } = useLanguage();
+  const [pathname] = useLocation();
+  const isFr = isFrenchPath(pathname);
+  const engineLang: EngineLang = isFr ? "fr-CA" : "en-CA";
+  const base = cityBasePath(engineLang);
   const params = useParams() as { type?: string; city?: string };
-  const sectorSlug = params.type ?? "";
+  const rawSlug = params.type ?? "";
+  const sectorSlug = isFr ? (SECTOR_KEY_BY_FR_SLUG[rawSlug] ?? rawSlug) : rawSlug;
   const citySlug = params.city ?? "";
 
   const s = SECTORS[sectorSlug] ?? DEFAULT_SECTOR;
+  const sSlugForLang = isFr ? s.frSlug : s.slug;
   const city = CITIES_BY_SLUG[citySlug];
   const cityName = city?.name ?? citySlug.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
-  const regionName = city?.region ?? "Italia";
+  const regionName = city?.region ?? "Canada";
 
-  const titleTag = getCityTitle(s, cityName, citySlug);
-  const metaDesc = getCityDesc(s, cityName, citySlug, regionName);
-  const canonical = `https://prevai.it/preventivi/${s.slug}/${citySlug}/`;
+  // City-page chrome (h1/benefits/useCases) reuses the sector's own
+  // fields for English, and the generic French sector-page templates
+  // for French (sector.fr only carries titleTag/metaDescription/useCases).
+  const frSectorContent = isFr ? getSectorFrContent(s) : null;
+  const h1 = frSectorContent?.h1 ?? s.h1;
+  const h1Highlight = frSectorContent?.h1Highlight ?? s.h1Highlight;
+  const benefits = frSectorContent?.benefits ?? s.benefits;
+  const useCases = isFr ? s.fr.useCases : s.useCases;
+  const sectorLabel = isFr ? s.fr.label : s.label;
+  const sectorLabelPlural = isFr ? s.fr.labelPlural : s.labelPlural;
 
-  const intro = city ? getCityIntro(s, city) : "";
-  const faqItems = city ? getCityFaqItems(s, city) : [];
-  const howItWorksSteps = getCityHowItWorksSteps(cityName);
+  const titleTag = getCityTitle(s, cityName, citySlug, engineLang);
+  const metaDesc = getCityDesc(s, cityName, citySlug, regionName, engineLang);
+  const canonical = `https://quoteai.ca${base}/${sSlugForLang}/${citySlug}/`;
+  const frCanonical = `https://quoteai.ca/fr/soumissions/${s.frSlug}/${citySlug}/`;
+
+  const intro = city ? getCityIntro(s, city, engineLang) : "";
+  const faqItems = city ? getCityFaqItems(s, city, engineLang) : [];
+  const howItWorksSteps = getCityHowItWorksSteps(cityName, engineLang);
   const layout = city ? getCityLayout(s, city) : 0;
   const ctaVariant = city ? getCityCtaVariant(s, city) : 0;
-  const cta = getCityCtaTexts(ctaVariant, cityName);
-  const nearbyAnchors = city ? getNearbyAnchors(s, city) : [];
+  const cta = getCityCtaTexts(ctaVariant, cityName, engineLang);
+  const nearbyAnchors = city ? getNearbyAnchors(s, city, engineLang) : [];
   const osservatorio = city ? getOsservatorioData(city.slug) : null;
-  const contextText = city ? getCityContextText(city.slug) : null;
-  const relatedSectors = getCityRelatedSectors(s.slug);
-  const sameCityOtherSectors = city ? getSameCityOtherSectors(s.slug, city.slug) : [];
-  const jsonLd = city ? buildCityJsonLd(s, city) : [];
+  const contextText = city ? getCityContextText(city.slug, engineLang) : null;
+  const relatedSectorKeys = getCityRelatedSectors(s.slug);
+  const relatedSectors = relatedSectorKeys.map((r) => ({
+    slug: r.slug,
+    label: isFr ? (SECTORS[r.slug]?.fr.label ?? r.label) : r.label,
+  }));
+  const sameCityOtherSectors = city ? getSameCityOtherSectors(s.slug, city.slug, 6, engineLang) : [];
+  const jsonLd = city ? buildCityJsonLd(s, city, engineLang) : [];
 
   useEffect(() => {
     if (city) {
@@ -59,24 +89,21 @@ export default function SeoCityLanding() {
   }, [s, city, intro, faqItems, cta.button]);
 
   const sBenefits = (
-    <section className="py-20 bg-gray-50" key="benefits">
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center mb-14">
-          <h2 className="text-3xl font-bold text-gray-900">
-            Perché i {s.labelPlural} di {cityName} scelgono prevai
+    <section className="sec soft" key="benefits">
+      <div className="wrap">
+        <div className="sec-head" style={{ display: "block", textAlign: "center" }}>
+          <h2 className="h2">
+            {t("seo.city.whyChooseHeading").replace("{trade}", sectorLabelPlural).replace("{city}", cityName)}
           </h2>
         </div>
-        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          {s.benefits.map((b) => (
-            <div key={b.title} className="card-soft bg-white p-7 rounded-2xl flex flex-col">
-              <div
-                className="h-10 w-10 rounded-xl flex items-center justify-center mb-5 text-white shrink-0"
-                style={{ background: "linear-gradient(135deg, #7C3AED, #06B6D4)" }}
-              >
+        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {benefits.map((b, i) => (
+            <div key={b.title} className="dd-feat" style={{ flexDirection: "column", alignItems: "flex-start" }}>
+              <span className={`fi ${FI_COLORS[i % FI_COLORS.length]}`}>
                 <CheckCircle2 className="h-5 w-5" />
-              </div>
-              <h3 className="text-base font-semibold text-gray-900 mb-2">{b.title}</h3>
-              <p className="text-sm text-gray-500 leading-relaxed">{b.desc}</p>
+              </span>
+              <b>{b.title}</b>
+              <p>{b.desc}</p>
             </div>
           ))}
         </div>
@@ -85,24 +112,19 @@ export default function SeoCityLanding() {
   );
 
   const sHowItWorks = (
-    <section className="py-20 bg-white" key="howitworks">
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-4xl">
-        <div className="text-center mb-14">
-          <h2 className="text-3xl font-bold text-gray-900">
-            Preventivo professionale a {cityName} in 3 passi
+    <section className="sec" key="howitworks">
+      <div className="wrap" style={{ maxWidth: 960 }}>
+        <div className="sec-head" style={{ display: "block", textAlign: "center" }}>
+          <h2 className="h2">
+            {t("seo.city.howToHeading").replace("{city}", cityName)}
           </h2>
         </div>
-        <div className="grid md:grid-cols-3 gap-10">
+        <div className="steps3">
           {howItWorksSteps.map((item) => (
-            <div key={item.n}>
-              <div
-                className="h-10 w-10 rounded-full flex items-center justify-center text-white font-bold text-sm mb-5"
-                style={{ background: "linear-gradient(135deg, #7C3AED, #06B6D4)" }}
-              >
-                {item.n}
-              </div>
-              <h3 className="text-base font-semibold text-gray-900 mb-2">{item.title}</h3>
-              <p className="text-sm text-gray-500 leading-relaxed">{item.desc}</p>
+            <div key={item.n} className="step">
+              <span className="n">{item.n}</span>
+              <b>{item.title}</b>
+              <p>{item.desc}</p>
             </div>
           ))}
         </div>
@@ -111,18 +133,18 @@ export default function SeoCityLanding() {
   );
 
   const sUseCases = (
-    <section className={`py-20 ${layout === 2 ? "bg-white" : "bg-gray-50"}`} key="usecases">
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-3xl">
-        <div className="text-center mb-12">
-          <h2 className="text-3xl font-bold text-gray-900">
-            Preventivi per questi lavori a {cityName}
+    <section className={`sec ${layout === 2 ? "" : "soft"}`} key="usecases">
+      <div className="wrap" style={{ maxWidth: 760 }}>
+        <div className="sec-head" style={{ display: "block", textAlign: "center" }}>
+          <h2 className="h2">
+            {t("seo.city.useCasesHeading").replace("{city}", cityName)}
           </h2>
         </div>
         <div className="grid sm:grid-cols-2 gap-3">
-          {s.useCases.map((uc) => (
-            <div key={uc} className="flex items-center gap-3 bg-white rounded-xl px-5 py-3.5 card-soft">
-              <CheckCircle2 className="h-4 w-4 text-violet-500 shrink-0" />
-              <span className="text-sm text-gray-700">{uc}</span>
+          {useCases.map((uc) => (
+            <div key={uc} className="card" style={{ display: "flex", alignItems: "center", gap: 10, padding: "13px 18px" }}>
+              <CheckCircle2 className="h-4 w-4 shrink-0" style={{ color: "var(--green)" }} />
+              <span style={{ fontSize: 14, color: "var(--ink)" }}>{uc}</span>
             </div>
           ))}
         </div>
@@ -131,16 +153,16 @@ export default function SeoCityLanding() {
   );
 
   const sFaq = (
-    <section className="py-20 bg-gray-50" key="faq">
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-3xl">
-        <div className="text-center mb-12">
-          <h2 className="text-3xl font-bold text-gray-900">Domande frequenti</h2>
+    <section className="sec soft" key="faq">
+      <div className="wrap" style={{ maxWidth: 760 }}>
+        <div className="sec-head" style={{ display: "block", textAlign: "center" }}>
+          <h2 className="h2">{t("seo.city.faqHeading")}</h2>
         </div>
-        <div className="space-y-4">
+        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
           {faqItems.map((f) => (
-            <div key={f.q} className="bg-white rounded-2xl p-6 card-soft">
-              <h3 className="text-base font-semibold text-gray-900 mb-2">{f.q}</h3>
-              <p className="text-sm text-gray-500 leading-relaxed">{f.a}</p>
+            <div key={f.q} className="card" style={{ padding: 22 }}>
+              <h3 style={{ fontSize: 15.5, fontWeight: 700, color: "var(--navy)", marginBottom: 8 }}>{f.q}</h3>
+              <p style={{ fontSize: 14, color: "var(--muted-mk)", lineHeight: 1.6 }}>{f.a}</p>
             </div>
           ))}
         </div>
@@ -157,104 +179,94 @@ export default function SeoCityLanding() {
 
   return (
     <div className="flex flex-col min-h-screen bg-white">
-      <SeoHead title={titleTag} description={metaDesc} canonical={canonical} jsonLd={jsonLd} ogImage={getOgImagePath(s.slug)} />
+      <SeoHead
+        title={titleTag}
+        description={metaDesc}
+        canonical={canonical}
+        jsonLd={jsonLd}
+        ogImage={getOgImagePath(s.slug)}
+        lang={engineLang}
+        frCanonical={frCanonical}
+      />
 
       {/* ── Breadcrumb ───────────────────────────────────────── */}
-      <nav aria-label="Percorso di navigazione" className="bg-white border-b border-gray-100">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-3">
-          <ol className="flex items-center text-sm text-gray-500 flex-wrap">
-            <li><Link href="/" className="hover:text-violet-600 transition-colors">Home</Link></li>
-            <li aria-hidden="true" className="mx-1.5 text-gray-300 select-none">/</li>
-            <li><Link href={`/preventivi/${s.slug}/`} className="hover:text-violet-600 transition-colors">{s.label}</Link></li>
-            <li aria-hidden="true" className="mx-1.5 text-gray-300 select-none">/</li>
-            <li className="text-gray-900 font-medium truncate max-w-[200px]" aria-current="page">{cityName}</li>
-          </ol>
-        </div>
-      </nav>
+      <div className="wrap">
+        <nav aria-label={t("seo.city.breadcrumbAria")} className="crumbs">
+          <Link href={isFr ? "/fr" : "/"}>{t("blog.breadcrumbHome")}</Link>
+          <span className="crumb-sep" aria-hidden="true">/</span>
+          <Link href={`${base}/${sSlugForLang}/`}>{sectorLabel}</Link>
+          <span className="crumb-sep" aria-hidden="true">/</span>
+          <span className="crumb-current" aria-current="page">{cityName}</span>
+        </nav>
+      </div>
 
-      {/* ── Hero ─────────────────────────────────────────────── */}
-      <section className="relative overflow-hidden bg-white pt-24 pb-20" aria-label="Hero">
-        <div
-          className="absolute inset-0 opacity-30 pointer-events-none"
-          aria-hidden="true"
-          style={{ background: "radial-gradient(ellipse 80% 60% at 50% -10%, rgba(124,58,237,0.12) 0%, transparent 70%)" }}
-        />
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8 text-center max-w-4xl relative z-10">
-          <div className="inline-flex items-center gap-2 rounded-full bg-violet-50 border border-violet-100 px-4 py-1.5 text-sm font-medium text-violet-700 mb-8">
+      {/* ── Hero (lightweight — no per-page media, this route is the
+          highest page count on the site: every trade × every city) ── */}
+      <section className="hero on-dark" id="hero">
+        <div className="wrap" style={{ textAlign: "center", maxWidth: 760, margin: "0 auto", padding: "clamp(48px, 6vw, 84px) 0" }}>
+          <p className="eyebrow on-dark" style={{ marginBottom: 20, display: "inline-flex", alignItems: "center", gap: 8, justifyContent: "center" }}>
             <MapPin className="h-3.5 w-3.5" />
             {regionName}
-          </div>
-          <h1 className="text-4xl font-extrabold tracking-tight text-gray-900 sm:text-5xl lg:text-6xl mb-6 leading-[1.1]">
-            {s.h1}{" "}
-            <span className="gradient-text">{s.h1Highlight}</span>
+          </p>
+          <h1 style={{ fontSize: "clamp(2rem, 3.6vw, 3rem)" }}>
+            {h1} <em style={{ fontStyle: "normal", color: "#8ef07f" }}>{h1Highlight}</em>
             <br />
-            <span className="text-gray-500 text-3xl sm:text-4xl font-bold">a {cityName}</span>
+            <span style={{ color: "#c9cad6", fontSize: "0.6em", fontWeight: 700 }}>{t("seo.city.inCityConnector")} {cityName}</span>
           </h1>
-          <p className="text-xl text-gray-500 mb-10 max-w-2xl mx-auto leading-relaxed">{intro}</p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <a
-              href="/sign-up/"
-              className="btn-gradient inline-flex h-14 items-center justify-center px-8 text-lg font-semibold"
-            >
-              Crea il tuo preventivo gratis
-              <ArrowRight className="ml-2 h-5 w-5" />
+          <p className="lead" style={{ margin: "16px auto 0" }}>{intro}</p>
+          <div className="hero-cta" style={{ justifyContent: "center" }}>
+            <a href="/sign-up/" className="btn btn-white">
+              {t("seo.city.heroCta1")}
+              <ArrowRight className="chev h-4 w-4" />
             </a>
-            <a
-              href={`/preventivi/${s.slug}/`}
-              className="btn-gradient-outline inline-flex h-14 items-center justify-center px-8 text-lg font-semibold"
-            >
-              Scopri come funziona
+            <a href={`${base}/${sSlugForLang}/`} className="btn btn-outline-light">
+              {t("seo.city.heroCta2")}
             </a>
           </div>
-          <p className="text-sm text-gray-400 mt-5">Nessuna carta di credito · Preventivo pronto in 30 secondi</p>
+          <p className="hero-note">{t("seo.city.heroCaption")}</p>
         </div>
       </section>
 
-      {/* ── Osservatorio prezzi e domanda ─────────────────────── */}
+      {/* ── Price & demand observatory ────────────────────────── */}
       {osservatorio && (
-        <section
-          className="py-10 bg-white border-b border-gray-100"
-          aria-label={`Osservatorio prezzi e domanda ${cityName}`}
-        >
-          <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-4xl">
-            <div className="rounded-2xl border border-violet-100 bg-gradient-to-br from-violet-50/40 to-cyan-50/20 p-6 md:p-8">
-              <div className="flex items-center gap-3 mb-6">
-                <div className="h-8 w-8 rounded-lg bg-violet-100 flex items-center justify-center shrink-0" aria-hidden="true">
-                  <BarChart2 className="h-4 w-4 text-violet-600" />
-                </div>
-                <h2 className="text-base font-bold text-gray-900">
-                  Osservatorio Prezzi e Domanda: {cityName}
+        <section className="sec" style={{ paddingBlock: "clamp(28px, 3vw, 44px)" }} aria-label={`${t("seo.city.observatoryAria")} ${cityName}`}>
+          <div className="wrap" style={{ maxWidth: 960 }}>
+            <div className="card" style={{ padding: "clamp(22px, 3vw, 32px)" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 22 }}>
+                <span className="fi t"><BarChart2 className="h-4 w-4" /></span>
+                <h2 style={{ fontSize: 16, fontWeight: 700, color: "var(--navy)" }}>
+                  {t("seo.city.observatoryHeading")} {cityName}
                 </h2>
               </div>
-              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-5">
-                <div className="bg-white rounded-xl p-4 border border-gray-100 text-center">
-                  <div className="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-1">Indice prezzi</div>
-                  <div className={`text-2xl font-bold ${osservatorio.priceColorClass}`}>{osservatorio.priceLabel}</div>
-                  <div className="text-xs text-gray-400 mt-1">vs. media nazionale</div>
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3" style={{ marginBottom: 18 }}>
+                <div className="card" style={{ padding: 16, textAlign: "center" }}>
+                  <div style={{ fontSize: 11, fontWeight: 800, textTransform: "uppercase", letterSpacing: ".06em", color: "var(--faint)", marginBottom: 4 }}>{t("seo.city.priceIndex")}</div>
+                  <div style={{ fontSize: 22, fontWeight: 800, color: "var(--navy)" }}>{osservatorio.priceLabel}</div>
+                  <div style={{ fontSize: 11, color: "var(--faint)", marginTop: 4 }}>{t("seo.city.vsNationalAvg")}</div>
                 </div>
-                <div className="bg-white rounded-xl p-4 border border-gray-100 text-center">
-                  <div className="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-1">Domanda</div>
-                  <div className={`text-base font-bold ${osservatorio.demandColorClass}`}>{osservatorio.demandLabel}</div>
-                  <div className="text-xs text-gray-400 mt-1">{regionName}</div>
+                <div className="card" style={{ padding: 16, textAlign: "center" }}>
+                  <div style={{ fontSize: 11, fontWeight: 800, textTransform: "uppercase", letterSpacing: ".06em", color: "var(--faint)", marginBottom: 4 }}>{t("seo.city.demand")}</div>
+                  <div style={{ fontSize: 15, fontWeight: 800, color: "var(--navy)" }}>{osservatorio.demandLabel}</div>
+                  <div style={{ fontSize: 11, color: "var(--faint)", marginTop: 4 }}>{regionName}</div>
                 </div>
-                <div className="bg-white rounded-xl p-4 border border-gray-100 text-center">
-                  <div className="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-1">Lead time</div>
-                  <div className="text-base font-bold text-gray-800">{osservatorio.avgLeadTime}</div>
-                  <div className="text-xs text-gray-400 mt-1">risposta stimata</div>
+                <div className="card" style={{ padding: 16, textAlign: "center" }}>
+                  <div style={{ fontSize: 11, fontWeight: 800, textTransform: "uppercase", letterSpacing: ".06em", color: "var(--faint)", marginBottom: 4 }}>{t("seo.city.leadTime")}</div>
+                  <div style={{ fontSize: 15, fontWeight: 800, color: "var(--navy)" }}>{osservatorio.avgLeadTime}</div>
+                  <div style={{ fontSize: 11, color: "var(--faint)", marginTop: 4 }}>{t("seo.city.estimatedResponse")}</div>
                 </div>
-                <div className="bg-white rounded-xl p-4 border border-gray-100">
-                  <div className="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-2">Servizi top</div>
-                  <ul className="space-y-1.5">
+                <div className="card" style={{ padding: 16 }}>
+                  <div style={{ fontSize: 11, fontWeight: 800, textTransform: "uppercase", letterSpacing: ".06em", color: "var(--faint)", marginBottom: 8 }}>{t("seo.city.topServices")}</div>
+                  <ul style={{ display: "flex", flexDirection: "column", gap: 6 }}>
                     {osservatorio.topServices.map((sv) => (
-                      <li key={sv} className="flex items-start gap-1 text-xs text-gray-600">
-                        <span className="text-violet-400 shrink-0 font-bold" aria-hidden="true">›</span>
+                      <li key={sv} style={{ display: "flex", gap: 6, fontSize: 12, color: "var(--muted-mk)" }}>
+                        <span style={{ color: "var(--navy)", fontWeight: 700 }} aria-hidden="true">›</span>
                         {sv}
                       </li>
                     ))}
                   </ul>
                 </div>
               </div>
-              <p className="text-sm text-gray-500 leading-relaxed border-t border-violet-100 pt-4">
+              <p style={{ fontSize: 14, color: "var(--muted-mk)", lineHeight: 1.6, borderTop: "1px solid var(--soft-2)", paddingTop: 16 }}>
                 {osservatorio.localInsight}
               </p>
             </div>
@@ -267,40 +279,31 @@ export default function SeoCityLanding() {
 
       {/* ── City context ─────────────────────────────────────── */}
       {contextText && (
-        <section className="py-10 bg-violet-50/50 border-y border-violet-100/60">
-          <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-3xl">
-            <div className="flex gap-4 items-start">
-              <div
-                className="shrink-0 mt-0.5 h-8 w-8 rounded-lg bg-violet-100 flex items-center justify-center"
-                aria-hidden="true"
-              >
-                <MapPin className="h-4 w-4 text-violet-600" />
-              </div>
+        <section className="sec soft" style={{ paddingBlock: "clamp(28px, 3vw, 44px)" }}>
+          <div className="wrap" style={{ maxWidth: 760 }}>
+            <div style={{ display: "flex", gap: 14, alignItems: "flex-start" }}>
+              <span className="fi t" style={{ flexShrink: 0 }}><MapPin className="h-4 w-4" /></span>
               <div>
-                <h2 className="text-sm font-semibold text-violet-700 mb-1.5">
-                  {s.label} a {cityName} — mercato locale
+                <h2 style={{ fontSize: 14, fontWeight: 700, color: "var(--navy)", marginBottom: 6 }}>
+                  {t("seo.city.contextHeading").replace("{trade}", sectorLabel).replace("{city}", cityName)}
                 </h2>
-                <p className="text-sm text-gray-600 leading-relaxed">{contextText}</p>
+                <p style={{ fontSize: 14, color: "var(--muted-mk)", lineHeight: 1.6 }}>{contextText}</p>
               </div>
             </div>
           </div>
         </section>
       )}
 
-      {/* ── Città vicine ──────────────────────────────────────── */}
+      {/* ── Nearby cities ─────────────────────────────────────── */}
       {nearbyAnchors.length > 0 && (
-        <section className="py-16 bg-white border-t border-gray-100">
-          <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-4xl">
-            <h2 className="text-base font-semibold text-gray-500 mb-5 text-center">
-              Preventivi per {s.labelPlural} nelle città vicine
+        <section className="sec">
+          <div className="wrap" style={{ maxWidth: 960 }}>
+            <h2 style={{ fontSize: 15, fontWeight: 700, color: "var(--muted-mk)", marginBottom: 18, textAlign: "center" }}>
+              {t("seo.city.nearbyHeading").replace("{trade}", sectorLabelPlural)}
             </h2>
-            <div className="flex flex-wrap gap-2 justify-center">
+            <div className="blog-links" style={{ justifyContent: "center" }}>
               {nearbyAnchors.map(({ slug, anchorText }) => (
-                <a
-                  key={slug}
-                  href={`/preventivi/${s.slug}/${slug}/`}
-                  className="inline-flex items-center gap-1.5 rounded-full border border-gray-200 px-3.5 py-1.5 text-sm text-gray-500 hover:border-violet-300 hover:text-violet-600 transition-colors"
-                >
+                <a key={slug} href={`${base}/${sSlugForLang}/${slug}/`} className="blog-link-pill">
                   {anchorText}
                 </a>
               ))}
@@ -309,22 +312,23 @@ export default function SeoCityLanding() {
         </section>
       )}
 
-      {/* ── Altri servizi nella stessa città ──────────────────── */}
+      {/* ── Other services in the same city ───────────────────── */}
       {sameCityOtherSectors.length > 0 && (
-        <section className="py-14 bg-gray-50 border-t border-gray-100">
-          <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-4xl">
-            <h2 className="text-base font-semibold text-gray-500 mb-5 text-center">
-              Altri servizi a {cityName}
+        <section className="sec soft">
+          <div className="wrap" style={{ maxWidth: 960 }}>
+            <h2 style={{ fontSize: 15, fontWeight: 700, color: "var(--muted-mk)", marginBottom: 18, textAlign: "center" }}>
+              {t("seo.city.otherServicesHeading").replace("{city}", cityName)}
             </h2>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
               {sameCityOtherSectors.map((r) => (
                 <a
                   key={r.slug}
-                  href={`/preventivi/${r.slug}/${citySlug}/`}
-                  className="flex items-center gap-2 bg-white border border-gray-100 hover:border-violet-200 rounded-xl px-4 py-3 text-sm font-medium text-gray-700 hover:text-violet-700 transition-colors"
+                  href={`${base}/${isFr ? (SECTORS[r.slug]?.frSlug ?? r.slug) : r.slug}/${citySlug}/`}
+                  className="card"
+                  style={{ display: "flex", alignItems: "center", gap: 8, padding: "12px 16px", fontSize: 13.5, fontWeight: 600, color: "var(--ink)" }}
                 >
-                  <span className="text-violet-400 font-bold" aria-hidden="true">→</span>
-                  {r.label} a {cityName}
+                  <span style={{ color: "var(--navy)", fontWeight: 700 }} aria-hidden="true">→</span>
+                  {r.label} {t("seo.city.inCityConnector")} {cityName}
                 </a>
               ))}
             </div>
@@ -334,19 +338,20 @@ export default function SeoCityLanding() {
 
       {/* ── Related sectors ───────────────────────────────────── */}
       {relatedSectors.length > 0 && (
-        <section className="py-14 bg-white border-t border-gray-100">
-          <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-4xl">
-            <h2 className="text-base font-semibold text-gray-500 mb-5 text-center">
-              Scopri anche: preventivi per
+        <section className="sec">
+          <div className="wrap" style={{ maxWidth: 960 }}>
+            <h2 style={{ fontSize: 15, fontWeight: 700, color: "var(--muted-mk)", marginBottom: 18, textAlign: "center" }}>
+              {t("seo.city.relatedSectorsHeading")}
             </h2>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
               {relatedSectors.map((r) => (
                 <a
                   key={r.slug}
-                  href={`/preventivi/${r.slug}/`}
-                  className="flex items-center gap-2 bg-white border border-gray-100 hover:border-violet-200 rounded-xl px-4 py-3 text-sm font-medium text-gray-700 hover:text-violet-700 transition-colors"
+                  href={`${base}/${isFr ? (SECTORS[r.slug]?.frSlug ?? r.slug) : r.slug}/`}
+                  className="card"
+                  style={{ display: "flex", alignItems: "center", gap: 8, padding: "12px 16px", fontSize: 13.5, fontWeight: 600, color: "var(--ink)" }}
                 >
-                  <span className="text-violet-400 font-bold" aria-hidden="true">→</span>
+                  <span style={{ color: "var(--navy)", fontWeight: 700 }} aria-hidden="true">→</span>
                   {r.label}
                 </a>
               ))}
@@ -355,44 +360,33 @@ export default function SeoCityLanding() {
         </section>
       )}
 
-      {/* ── Approfondimenti ──────────────────────────────────── */}
+      {/* ── Insights ───────────────────────────────────────────── */}
       {(() => {
         const slugs = SECTOR_ARTICLES[s.slug];
         if (!slugs || slugs.length === 0) return null;
         const articles = slugs
-          .map((slug) => BLOG_ARTICLES.find((a) => a.slug === slug))
-          .filter((a): a is (typeof BLOG_ARTICLES)[number] => a !== undefined)
+          .map((slug) => BLOG_INDEX.find((a) => a.slug === slug))
+          .filter((a): a is (typeof BLOG_INDEX)[number] => a !== undefined)
           .slice(0, 3);
         if (articles.length === 0) return null;
         return (
-          <section className="py-14 bg-gray-50 border-t border-gray-100">
-            <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-4xl">
-              <div className="flex items-center justify-between mb-6">
-                <div className="flex items-center gap-3">
-                  <div
-                    className="h-9 w-9 rounded-xl flex items-center justify-center text-white shrink-0"
-                    style={{ background: "linear-gradient(135deg, #7C3AED, #06B6D4)" }}
-                  >
-                    <BookOpen className="h-4 w-4" />
-                  </div>
-                  <h2 className="text-base font-semibold text-gray-900">Approfondimenti</h2>
+          <section className="sec soft">
+            <div className="wrap" style={{ maxWidth: 960 }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 22 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                  <span className="fi g"><BookOpen className="h-4 w-4" /></span>
+                  <h2 style={{ fontSize: 16, fontWeight: 700, color: "var(--navy)" }}>{t("seo.insights.heading")}</h2>
                 </div>
-                <Link href="/blog/" className="text-xs font-semibold text-violet-600 hover:text-violet-700 transition-colors">
-                  Tutti gli articoli →
+                <Link href="/blog/" className="cta-link" style={{ fontSize: 13 }}>
+                  {t("seo.city.viewAllArticles")}
                 </Link>
               </div>
               <div className="grid sm:grid-cols-3 gap-4">
                 {articles.map((a) => (
-                  <a
-                    key={a.slug}
-                    href={`/blog/${a.slug}/`}
-                    className="group flex flex-col bg-white rounded-xl border border-gray-100 hover:border-violet-200 hover:shadow-sm transition-all duration-200 p-5"
-                  >
-                    <span className="text-xs font-semibold text-violet-700 mb-2">{a.category}</span>
-                    <span className="text-sm font-semibold text-gray-900 group-hover:text-violet-700 transition-colors leading-snug mb-3">
-                      {a.title}
-                    </span>
-                    <span className="text-xs text-gray-400 mt-auto">{a.readingTimeMin} min di lettura</span>
+                  <a key={a.slug} href={`/blog/${a.slug}/`} className="card" style={{ padding: 20, display: "flex", flexDirection: "column", gap: 8 }}>
+                    <span className="chip chip-teal" style={{ alignSelf: "flex-start" }}>{a.category}</span>
+                    <span style={{ fontSize: 14.5, fontWeight: 700, color: "var(--navy)", lineHeight: 1.4 }}>{a.title}</span>
+                    <span style={{ fontSize: 12.5, color: "var(--faint)", marginTop: "auto" }}>{a.readingTimeMin} {t("blog.readingTimeSuffix")}</span>
                   </a>
                 ))}
               </div>
@@ -401,24 +395,21 @@ export default function SeoCityLanding() {
         );
       })()}
 
-      {/* ── CTA finale ───────────────────────────────────────── */}
-      <section className="py-24 bg-gray-50">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8 text-center max-w-2xl">
-          <h2 className="text-3xl font-bold text-gray-900 mb-4">
+      {/* ── Final CTA ──────────────────────────────────────────── */}
+      <section className="cta on-dark">
+        <div className="wrap cta-in">
+          <h2>
             {cta.headingPrefix}
-            <span className="gradient-text">{cta.headingGradient}</span>
+            <em style={{ fontStyle: "normal", color: "#8ef07f" }}>{cta.headingGradient}</em>
           </h2>
-          <p className="text-lg text-gray-500 mb-10">
-            Nessuna carta di credito richiesta. Il tuo primo preventivo professionale è gratis.
-          </p>
-          <a
-            href="/sign-up/"
-            className="btn-gradient inline-flex h-14 items-center justify-center px-10 text-lg font-semibold"
-          >
-            {cta.button}
-            <ArrowRight className="ml-2 h-5 w-5" />
-          </a>
-          <p className="text-sm text-gray-400 mt-4">Preventivo pronto in 30 secondi · Nessun impegno</p>
+          <p>{t("seo.city.finalCtaBody")}</p>
+          <div className="cta-actions">
+            <a href="/sign-up/" className="btn btn-white">
+              {cta.button}
+              <ArrowRight className="chev h-4 w-4" />
+            </a>
+          </div>
+          <p className="cta-fine">{t("seo.city.finalCtaCaption")}</p>
         </div>
       </section>
     </div>

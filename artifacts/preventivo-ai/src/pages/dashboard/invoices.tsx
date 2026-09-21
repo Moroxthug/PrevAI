@@ -1,244 +1,221 @@
-import React, { useState } from "react";
-import { Card, CardContent } from "@/components/ui/card";
-import {
-  Receipt,
-  Search,
-  Filter,
-  ArrowUpRight,
-  Download,
-  CheckCircle2,
-  AlertCircle,
-  ExternalLink,
-  Plus
-} from "lucide-react";
+﻿import { useMemo, useState } from "react";
+import { rowLink } from "@/lib/row-link";
+import { Link, useLocation } from "wouter";
+import { useQuery } from "@tanstack/react-query";
+import { format } from "date-fns";
+import { enCA, frCA } from "date-fns/locale";
+import { Receipt, Search, ChevronRight, Plus, AlertTriangle, Clock } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
+import { cn } from "@/lib/utils";
+import { useLanguage } from "@/i18n/LanguageContext";
+import { useGetBusinessProfile } from "@workspace/api-client-react";
+import { hasFeature } from "@/lib/plans";
+import { formatCents } from "@/lib/jobs-api";
+import { invoicesApi, isOpenInvoice, type InvoiceDto, type AgingDto, type InvoiceStatus } from "@/lib/invoices-api";
+import { InvoiceStatusBadge, InvoiceTypeBadge } from "@/components/jobs/badges";
+import { NewInvoiceDialog } from "@/components/invoices/invoice-dialogs";
 
-interface Invoice {
-  id: string;
-  number: string;
-  clientName: string;
-  amount: number;
-  date: string;
-  dueDate: string;
-  status: "pagata" | "in_attesa" | "scaduta";
-  provider: "Fatture in Cloud";
+const FILTERS = ["all", "draft", "open", "overdue", "paid", "void"] as const;
+type Filter = (typeof FILTERS)[number];
+
+function statusChip(status: InvoiceStatus): string {
+  if (status === "paid") return "chip-green";
+  if (status === "overdue") return "chip-red";
+  if (status === "void") return "chip-grey";
+  if (status === "draft") return "chip-grey";
+  return "chip-yellow";
 }
 
-const INITIAL_INVOICES: Invoice[] = [
-  {
-    id: "inv1",
-    number: "FAT-2026-104",
-    clientName: "Isolamento Termico Cappotto - Residenza Verde",
-    amount: 68000,
-    date: "2026-06-15",
-    dueDate: "2026-07-15",
-    status: "in_attesa",
-    provider: "Fatture in Cloud",
-  },
-  {
-    id: "inv2",
-    number: "FAT-2026-101",
-    clientName: "Condominio Aurora (Acconto Rifacimento Tetto)",
-    amount: 12600,
-    date: "2026-05-10",
-    dueDate: "2026-06-10",
-    status: "pagata",
-    provider: "Fatture in Cloud",
-  },
-  {
-    id: "inv3",
-    number: "FAT-2026-098",
-    clientName: "Studio Tecnico Rossi (Consulenza Progettazione)",
-    amount: 3200,
-    date: "2026-04-05",
-    dueDate: "2026-05-05",
-    status: "scaduta",
-    provider: "Fatture in Cloud",
-  },
-];
-
 export default function InvoicesPage() {
-  const [invoices, setInvoices] = useState<Invoice[]>(INITIAL_INVOICES);
+  const { t, lang } = useLanguage();
+  const locale = lang === "fr" ? frCA : enCA;
+  const { data: profile } = useGetBusinessProfile();
+  const gated = profile ? !hasFeature(profile as never, "invoicing") : false;
+  const { data, isLoading, error } = useQuery({ queryKey: ["invoices"], queryFn: invoicesApi.list, enabled: !gated, retry: false });
+  const [filter, setFilter] = useState<Filter>("all");
   const [search, setSearch] = useState("");
-  const [filterStatus, setFilterStatus] = useState<"all" | "pagata" | "in_attesa" | "scaduta">("all");
+  const [newOpen, setNewOpen] = useState(false);
 
-  const filtered = invoices.filter((inv) => {
-    const matchesSearch = inv.number.toLowerCase().includes(search.toLowerCase()) || 
-                          inv.clientName.toLowerCase().includes(search.toLowerCase());
-    const matchesStatus = filterStatus === "all" || inv.status === filterStatus;
-    return matchesSearch && matchesStatus;
-  });
-
-  const getStatusBadge = (status: Invoice["status"]) => {
-    switch (status) {
-      case "pagata":
-        return (
-          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-100">
-            <CheckCircle2 className="h-3 w-3" /> Pagata
-          </span>
-        );
-      case "in_attesa":
-        return (
-          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-50 text-amber-700 border border-amber-100">
-            <ClockIcon className="h-3 w-3" /> In Attesa
-          </span>
-        );
-      case "scaduta":
-        return (
-          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-red-50 text-red-700 border border-red-100">
-            <AlertCircle className="h-3 w-3" /> Scaduta
-          </span>
-        );
-    }
-  };
+  const items = useMemo(() => {
+    const all = data?.items ?? [];
+    const q = search.trim().toLowerCase();
+    return all.filter((i) => {
+      const inFilter =
+        filter === "all" ? true
+        : filter === "open" ? isOpenInvoice(i.status)
+        : i.status === filter;
+      const inSearch = !q || i.number.toLowerCase().includes(q) || (i.clientName ?? "").toLowerCase().includes(q) || (i.projectName ?? "").toLowerCase().includes(q);
+      return inFilter && inSearch;
+    });
+  }, [data, filter, search]);
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-300">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+    <div className="animate-in fade-in duration-300">
+      <div className="page-head">
         <div>
-          <h1 className="text-3xl font-extrabold tracking-tight text-slate-900 flex items-center gap-2">
-            <Receipt className="h-8 w-8 text-blue-600" />
-            Fatture Elettroniche
-          </h1>
-          <p className="text-slate-500 mt-1">
-            Visualizza e sincronizza le tue fatture elettroniche con il tuo account Fatture in Cloud.
-          </p>
+          <h1>{t("invoices.title")}</h1>
+          <p className="sub">{t("invoices.subtitle")}</p>
         </div>
-
-        <a
-          href="https://mock.fattureincloud.it"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="flex items-center gap-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-lg shadow-sm transition"
-        >
-          Apri Pannello Fatture in Cloud
-          <ExternalLink className="h-3.5 w-3.5" />
-        </a>
-      </div>
-
-      {/* KPI Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <Card className="border-none shadow-sm bg-gradient-to-br from-emerald-50 to-teal-50/50">
-          <CardContent className="p-5">
-            <p className="text-xs font-semibold text-emerald-600 uppercase">Fatturato Incassato</p>
-            <h3 className="text-2xl font-bold mt-1 text-slate-800">
-              €{invoices.filter(i => i.status === "pagata").reduce((acc, i) => acc + i.amount, 0).toLocaleString("it-IT")}
-            </h3>
-          </CardContent>
-        </Card>
-
-        <Card className="border-none shadow-sm bg-gradient-to-br from-amber-50 to-orange-50/50">
-          <CardContent className="p-5">
-            <p className="text-xs font-semibold text-amber-600 uppercase">Pendenze Attive</p>
-            <h3 className="text-2xl font-bold mt-1 text-slate-800">
-              €{invoices.filter(i => i.status === "in_attesa").reduce((acc, i) => acc + i.amount, 0).toLocaleString("it-IT")}
-            </h3>
-          </CardContent>
-        </Card>
-
-        <Card className="border-none shadow-sm bg-gradient-to-br from-red-50 to-pink-50/50">
-          <CardContent className="p-5">
-            <p className="text-xs font-semibold text-red-600 uppercase">Scadute / Insolute</p>
-            <h3 className="text-2xl font-bold mt-1 text-slate-800">
-              €{invoices.filter(i => i.status === "scaduta").reduce((acc, i) => acc + i.amount, 0).toLocaleString("it-IT")}
-            </h3>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Filtri */}
-      <div className="flex flex-col sm:flex-row gap-4 bg-white p-4 rounded-xl border border-slate-200">
-        <div className="flex-1 relative">
-          <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
-          <input
-            type="text"
-            placeholder="Cerca per numero fattura o cantiere..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-9 pr-4 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
-          />
-        </div>
-
-        <div className="flex gap-2">
-          <select
-            value={filterStatus}
-            onChange={(e) => setFilterStatus(e.target.value as any)}
-            className="border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
-          >
-            <option value="all">Tutti gli stati</option>
-            <option value="pagata">Pagate</option>
-            <option value="in_attesa">In Attesa</option>
-            <option value="scaduta">Scadute</option>
-          </select>
+        <div className="head-actions">
+          <button type="button" className="btn btn-navy" onClick={() => setNewOpen(true)} disabled={gated}><Plus className="h-4 w-4" /> {t("invoices.new")}</button>
         </div>
       </div>
 
-      {/* Invoice List */}
-      <Card className="border-slate-200">
-        <CardContent className="p-0">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse text-sm">
-              <thead>
-                <tr className="border-b border-slate-200 bg-slate-50/75 text-slate-500 font-semibold">
-                  <th className="p-4">Numero</th>
-                  <th className="p-4">Cantiere / Cliente</th>
-                  <th className="p-4">Importo</th>
-                  <th className="p-4">Scadenza</th>
-                  <th className="p-4">Stato</th>
-                  <th className="p-4 text-right">Azioni</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {filtered.map((inv) => (
-                  <tr key={inv.id} className="hover:bg-slate-50/50 transition">
-                    <td className="p-4 font-bold text-slate-700">{inv.number}</td>
-                    <td className="p-4 text-slate-600 font-medium">{inv.clientName}</td>
-                    <td className="p-4 font-bold text-slate-800">€{inv.amount.toLocaleString("it-IT")}</td>
-                    <td className="p-4 text-slate-500">{inv.dueDate}</td>
-                    <td className="p-4">{getStatusBadge(inv.status)}</td>
-                    <td className="p-4 text-right">
-                      <div className="flex items-center justify-end gap-2">
-                        <button className="p-1.5 rounded hover:bg-slate-100 text-slate-500 hover:text-slate-700 transition" title="Scarica PDF">
-                          <Download className="h-4 w-4" />
-                        </button>
-                        <a
-                          href={`https://mock.fattureincloud.it/documenti/fatture`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="p-1.5 rounded hover:bg-slate-100 text-slate-500 hover:text-blue-600 transition"
-                          title="Visualizza in Fatture in Cloud"
-                        >
-                          <ExternalLink className="h-4 w-4" />
-                        </a>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+      {gated || (error as Error & { code?: string } | null)?.code === "PLAN_REQUIRED" ? (
+        <div className="card" style={{ padding: "40px 22px", textAlign: "center" }}>
+          <Receipt className="h-10 w-10 text-navy-300 mx-auto mb-3" />
+          <h2 className="text-lg font-semibold text-slate-800">{t("invoices.gatedTitle")}</h2>
+          <p className="text-slate-600 text-sm mt-1 max-w-md mx-auto">{t("invoices.gatedDesc")}</p>
+          <Link href="/dashboard/billing" className="cta-link" style={{ justifyContent: "center", marginTop: 16 }}>{t("invoices.upgrade")}</Link>
+        </div>
+      ) : (
+        <>
+          <div className="stat-grid">
+            <Stat label={t("invoices.stat.outstanding")} value={formatCents(data?.stats.outstandingCents ?? 0)} />
+            <Stat label={t("invoices.stat.overdue")} value={formatCents(data?.stats.overdueCents ?? 0)} sub={data?.stats.overdueCount ? `${data.stats.overdueCount} ${t("invoices.stat.invoices")}` : undefined} neg={!!data?.stats.overdueCents} />
+            <Stat label={t("invoices.stat.paidMonth")} value={formatCents(data?.stats.paidThisMonthCents ?? 0)} />
+            <Stat label={t("invoices.stat.drafts")} value={String(data?.stats.drafts ?? 0)} />
           </div>
-        </CardContent>
-      </Card>
+
+          {data && data.aging.totalCents > 0 && <Aging aging={data.aging} />}
+
+          <div className="card" style={{ marginTop: 16 }}>
+            <div className="toolbar">
+              <div className="pills">
+                {FILTERS.map((f) => (
+                  <button key={f} type="button" className={cn("pill", filter === f && "on")} onClick={() => setFilter(f)}>{t(`invoices.filter.${f}`)}</button>
+                ))}
+              </div>
+              <label className="search sm grow">
+                <Search className="h-4 w-4" />
+                <input type="search" value={search} onChange={(e) => setSearch(e.target.value)} placeholder={t("invoices.searchPlaceholder")} aria-label={t("invoices.searchPlaceholder")} />
+              </label>
+            </div>
+
+            {isLoading ? (
+              <div className="p-5 space-y-3">{[0, 1, 2].map((i) => <Skeleton key={i} className="h-10 w-full rounded-[var(--radius-sm)]" />)}</div>
+            ) : items.length === 0 ? (
+              <div className="text-center py-14 px-5">
+                <Receipt className="mx-auto h-10 w-10 text-muted-foreground mb-3 opacity-20" />
+                <h3 className="text-base font-medium text-foreground mb-1">{t("invoices.emptyTitle")}</h3>
+                <p className="text-sm text-muted-foreground">{t("invoices.emptyDesc")}</p>
+              </div>
+            ) : (
+              <div className="tbl-wrap">
+                <table className="tbl">
+                  <thead>
+                    <tr>
+                      <th>{t("invoices.col.invoice")}</th>
+                      <th>{t("invoices.col.client")}</th>
+                      <th>{t("invoices.col.issued")}</th>
+                      <th>{t("invoices.col.due")}</th>
+                      <th style={{ textAlign: "right" }}>{t("invoices.col.amount")}</th>
+                      <th>{t("invoices.col.status")}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {items.map((inv) => <InvoiceTableRow key={inv.id} inv={inv} locale={locale} />)}
+                  </tbody>
+                </table>
+              </div>
+            )}
+            <div className="card-foot">
+              <span className="foot-note">{t("invoices.showingCount").replace("{shown}", String(items.length)).replace("{total}", String(data?.items.length ?? 0))}</span>
+            </div>
+          </div>
+        </>
+      )}
+
+      <NewInvoiceDialog open={newOpen} onOpenChange={setNewOpen} />
     </div>
   );
 }
 
-function ClockIcon(props: React.SVGProps<SVGSVGElement>) {
+function InvoiceTableRow({ inv, locale }: { inv: InvoiceDto; locale: typeof enCA }) {
+  const { t } = useLanguage();
+  const [, navigate] = useLocation();
   return (
-    <svg
-      {...props}
-      xmlns="http://www.w3.org/2000/svg"
-      width="24"
-      height="24"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <circle cx="12" cy="12" r="10" />
-      <polyline points="12 6 12 12 16 14" />
-    </svg>
+    <tr {...rowLink(() => navigate(`/dashboard/invoices/${inv.id}`))}>
+      <td className="t-strong">{inv.number}</td>
+      <td>{inv.clientName}{inv.projectName ? <span className="t-sub">{inv.projectName}</span> : null}</td>
+      <td>{format(new Date(inv.issueDate), "PP", { locale })}</td>
+      <td>{format(new Date(inv.dueDate), "PP", { locale })}</td>
+      <td className="t-amt" style={{ textAlign: "right" }}>{formatCents(inv.totalCents)}</td>
+      <td><span className={cn("chip", statusChip(inv.status))}>{t(`invoices.status.${inv.status}`)}</span></td>
+    </tr>
+  );
+}
+
+function Stat({ label, value, sub, neg }: { label: string; value: string; sub?: string; neg?: boolean }) {
+  return (
+    <div className="card stat-card">
+      <p className="lbl">{label}</p>
+      <p className="val">{value}</p>
+      {sub && <p className={cn("delta", neg ? "neg" : "flat")}>{sub}</p>}
+    </div>
+  );
+}
+
+const BUCKETS: { key: keyof Omit<AgingDto, "totalCents" | "overdueCents">; color: string }[] = [
+  { key: "current", color: "#34d399" },
+  { key: "d1_30", color: "#fbbf24" },
+  { key: "d31_60", color: "#f97316" },
+  { key: "d61_90", color: "#f43f5e" },
+  { key: "d90_plus", color: "#9f1239" },
+];
+
+function Aging({ aging }: { aging: AgingDto }) {
+  const { t } = useLanguage();
+  return (
+    <section className="card" style={{ marginTop: 16, padding: "18px 22px" }}>
+      <div className="flex items-center justify-between mb-2">
+        <h2 className="text-sm font-bold text-slate-900 inline-flex items-center gap-2"><Clock className="h-4 w-4 text-slate-400" /> {t("invoices.aging.title")}</h2>
+        <span className="text-sm text-slate-600">{t("invoices.aging.total")} <span className="font-semibold text-slate-900">{formatCents(aging.totalCents)}</span></span>
+      </div>
+      <div className="h-3 rounded-full bg-slate-100 overflow-hidden flex">
+        {BUCKETS.map((b) => (aging[b.key] > 0 ? <div key={b.key} className="h-full" style={{ width: `${(aging[b.key] / aging.totalCents) * 100}%`, background: b.color }} title={`${t(`invoices.aging.${b.key}`)}: ${formatCents(aging[b.key])}`} /> : null))}
+      </div>
+      <div className="grid grid-cols-5 gap-2 mt-2">
+        {BUCKETS.map((b) => (
+          <div key={b.key} className="min-w-0">
+            <div className="flex items-center gap-1.5 text-[11px] text-slate-500 truncate"><span className="h-2 w-2 rounded-full shrink-0" style={{ background: b.color }} /> {t(`invoices.aging.${b.key}`)}</div>
+            <div className={cn("text-sm font-semibold tabular-nums", aging[b.key] > 0 ? "text-slate-900" : "text-slate-500")}>{formatCents(aging[b.key])}</div>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+export function InvoiceRow({ inv, locale, compact }: { inv: InvoiceDto; locale: typeof enCA; compact?: boolean }) {
+  const { t } = useLanguage();
+  const overdue = inv.status === "overdue";
+  const scheduled = inv.status === "draft" && !!inv.scheduledFor && new Date(inv.scheduledFor) > new Date();
+  const when = inv.status === "paid" && inv.paidAt ? `${t("invoices.paidOn")} ${format(new Date(inv.paidAt), "PP", { locale })}`
+    : isOpenInvoice(inv.status) ? `${inv.paidCents > 0 ? `${formatCents(inv.balanceCents)} ${t("invoices.due")} · ` : ""}${t("invoices.dueOn")} ${format(new Date(inv.dueDate), "PP", { locale })}`
+    : scheduled ? `${t("invoices.sendableOn")} ${format(new Date(inv.scheduledFor!), "PP", { locale })}`
+    : format(new Date(inv.issueDate), "PP", { locale });
+  return (
+    <Link href={`/dashboard/invoices/${inv.id}`} className="q-row">
+      <span className={cn("q-ic", overdue && "bg-[var(--red-t)] text-[var(--red)]", inv.status === "paid" && "bg-[var(--green-t)] text-[var(--green-dark)]")}>
+        {overdue ? <AlertTriangle className="h-4 w-4" /> : <Receipt className="h-4 w-4" />}
+      </span>
+      <div className="q-body">
+        <div className="flex items-center gap-2 flex-wrap">
+          <p className="q-title">{inv.number}</p>
+          <InvoiceStatusBadge status={inv.status} scheduled={scheduled} />
+          {!compact && <InvoiceTypeBadge type={inv.type} />}
+          {inv.autoSendAt && inv.status === "draft" && <span className="chip chip-yellow">{t("invoices.autoSendAt")} {format(new Date(inv.autoSendAt), "PPp", { locale })}</span>}
+        </div>
+        <div className="q-meta">
+          <span className="q-date truncate">{inv.clientName}{inv.projectName ? ` · ${inv.projectName}` : ""}{inv.paymentTermLabel && !compact ? ` · ${inv.paymentTermLabel}` : ""}</span>
+        </div>
+      </div>
+      <div className="text-right shrink-0">
+        <div className={cn("q-amt", inv.type === "credit_note" && "text-[var(--red)]")}>{formatCents(inv.totalCents)}</div>
+        <div className="q-date" style={overdue ? { color: "var(--red)" } : undefined}>{when}</div>
+      </div>
+      <ChevronRight className="chev" />
+    </Link>
   );
 }

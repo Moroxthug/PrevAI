@@ -1,7 +1,9 @@
 import { Router } from "express";
 import { requireAuth, getUserId } from "../middlewares/authMiddleware";
+import { requirePermission } from "../middlewares/requirePermission.js";
 import multer from "multer";
-import { db, businessProfilesTable } from "@workspace/db";
+import { db, businessProfilesTable, normalizeProvince, getTaxProfile, paymentScheduleSchema, DEFAULT_AUTOMATION_SETTINGS, effectivePlan, hasFeature, PRODUCT_FEATURES, type BusinessProfile } from "@workspace/db";
+import { z } from "zod";
 import { eq } from "drizzle-orm";
 import { UpdateBusinessProfileBody } from "@workspace/api-zod";
 import { ObjectStorageService } from "../lib/objectStorage.js";
@@ -22,6 +24,51 @@ const uploadLogo = upload.fields([
 
 const ALLOWED_LOGO_MIMES = ["image/svg+xml", "image/png", "image/jpeg"];
 
+// Phase 0 fields (Canadian identity, automation prefs, entitlements) are
+// appended to the legacy shape so existing clients keep working.
+function serializeProfileExtras(profile: BusinessProfile | undefined) {
+  const province = normalizeProvince(profile?.province) ?? null;
+  const features = Object.fromEntries(PRODUCT_FEATURES.map((f) => [f, hasFeature(profile, f)])) as Record<string, boolean>;
+  return {
+    province,
+    taxProfile: province ? getTaxProfile(province) : null,
+    gstHstNumber: profile?.gstHstNumber ?? null,
+    qstNumber: profile?.qstNumber ?? null,
+    pstNumber: profile?.pstNumber ?? null,
+    licenceNumber: profile?.licenceNumber ?? null,
+    etransferEmail: profile?.etransferEmail ?? null,
+    defaultPaymentSchedule: profile?.defaultPaymentSchedule ?? null,
+    googleReviewUrl: profile?.googleReviewUrl ?? null,
+    homeStarsProfileUrl: profile?.homeStarsProfileUrl ?? null,
+    sendReviewRequests: profile?.sendReviewRequests ?? true,
+    automationSettings: { ...DEFAULT_AUTOMATION_SETTINGS, ...(profile?.automationSettings ?? {}) },
+    plan: effectivePlan(profile),
+    features,
+  };
+}
+
+const ProfileExtrasBody = z.object({
+  province: z.string().nullable().optional(),
+  gstHstNumber: z.string().max(40).nullable().optional(),
+  qstNumber: z.string().max(40).nullable().optional(),
+  pstNumber: z.string().max(40).nullable().optional(),
+  licenceNumber: z.string().max(80).nullable().optional(),
+  etransferEmail: z.string().email().max(200).nullable().optional(),
+  googleReviewUrl: z.string().url().max(500).nullable().optional(),
+  homeStarsProfileUrl: z.string().url().max(500).nullable().optional(),
+  sendReviewRequests: z.boolean().optional(),
+  defaultPaymentSchedule: z.unknown().nullable().optional(),
+  automationSettings: z
+    .object({
+      notifyOnQuoteAccepted: z.boolean().optional(),
+      autoDraftContract: z.boolean().optional(),
+      autoSendInvoices: z.boolean().optional(),
+      invoiceAutoSendAfterHours: z.number().int().min(0).max(168).optional(),
+      invoiceReminders: z.boolean().optional(),
+    })
+    .optional(),
+});
+
 router.get("/business-profile", requireAuth, async (req, res) => {
   try {
     const userId = getUserId(res);
@@ -39,6 +86,7 @@ router.get("/business-profile", requireAuth, async (req, res) => {
         logoUrl: null,
         phone: null,
         email: null,
+        ...serializeProfileExtras(undefined),
       });
       return;
     }
@@ -52,6 +100,7 @@ router.get("/business-profile", requireAuth, async (req, res) => {
       phone: profile.phone ?? null,
       email: profile.email ?? null,
       apiKey: profile.apiKey ?? null,
+      ...serializeProfileExtras(profile),
     });
   } catch (err) {
     req.log.error({ err }, "Error fetching business profile");
@@ -59,7 +108,7 @@ router.get("/business-profile", requireAuth, async (req, res) => {
   }
 });
 
-router.put("/business-profile", requireAuth, async (req, res) => {
+router.put("/business-profile", requireAuth, requirePermission("settings", "edit"), async (req, res) => {
   try {
     const userId = getUserId(res);
     const parsed = UpdateBusinessProfileBody.safeParse(req.body);
@@ -69,6 +118,39 @@ router.put("/business-profile", requireAuth, async (req, res) => {
     }
 
     const body = parsed.data;
+    const extrasParsed = ProfileExtrasBody.safeParse(req.body);
+    if (!extrasParsed.success) {
+      res.status(400).json({ error: "Invalid request", details: extrasParsed.error });
+      return;
+    }
+    const extras = extrasParsed.data;
+
+    const [existing] = await db
+      .select()
+      .from(businessProfilesTable)
+      .where(eq(businessProfilesTable.userId, userId));
+
+    let province: string | null | undefined = undefined;
+    if (extras.province !== undefined) {
+      province = extras.province === null || extras.province === "" ? null : normalizeProvince(extras.province);
+      if (extras.province && !province) {
+        res.status(400).json({ error: "Invalid province code" });
+        return;
+      }
+    }
+    let defaultPaymentSchedule: typeof existing extends undefined ? never : BusinessProfile["defaultPaymentSchedule"] | undefined = undefined;
+    if (extras.defaultPaymentSchedule !== undefined) {
+      if (extras.defaultPaymentSchedule === null) defaultPaymentSchedule = null;
+      else {
+        const ps = paymentScheduleSchema.safeParse(extras.defaultPaymentSchedule);
+        if (!ps.success) {
+          res.status(400).json({ error: "Invalid default payment schedule", details: ps.error });
+          return;
+        }
+        defaultPaymentSchedule = { ...ps.data, derived: false };
+      }
+    }
+
     const updates = {
       userId,
       ...(body.companyName !== undefined && { companyName: body.companyName }),
@@ -77,12 +159,20 @@ router.put("/business-profile", requireAuth, async (req, res) => {
       ...(body.logoUrl !== undefined && { logoUrl: body.logoUrl }),
       ...(body.phone !== undefined && { phone: body.phone }),
       ...(body.email !== undefined && { email: body.email }),
+      ...(province !== undefined && { province }),
+      ...(extras.gstHstNumber !== undefined && { gstHstNumber: extras.gstHstNumber?.trim() || null }),
+      ...(extras.qstNumber !== undefined && { qstNumber: extras.qstNumber?.trim() || null }),
+      ...(extras.pstNumber !== undefined && { pstNumber: extras.pstNumber?.trim() || null }),
+      ...(extras.licenceNumber !== undefined && { licenceNumber: extras.licenceNumber?.trim() || null }),
+      ...(extras.etransferEmail !== undefined && { etransferEmail: extras.etransferEmail?.trim() || null }),
+      ...(extras.googleReviewUrl !== undefined && { googleReviewUrl: extras.googleReviewUrl?.trim() || null }),
+      ...(extras.homeStarsProfileUrl !== undefined && { homeStarsProfileUrl: extras.homeStarsProfileUrl?.trim() || null }),
+      ...(extras.sendReviewRequests !== undefined && { sendReviewRequests: extras.sendReviewRequests }),
+      ...(defaultPaymentSchedule !== undefined && { defaultPaymentSchedule }),
+      ...(extras.automationSettings !== undefined && {
+        automationSettings: { ...(existing?.automationSettings ?? {}), ...extras.automationSettings },
+      }),
     };
-
-    const [existing] = await db
-      .select()
-      .from(businessProfilesTable)
-      .where(eq(businessProfilesTable.userId, userId));
 
     let profile;
     if (existing) {
@@ -107,6 +197,7 @@ router.put("/business-profile", requireAuth, async (req, res) => {
       phone: profile!.phone ?? null,
       email: profile!.email ?? null,
       apiKey: profile!.apiKey ?? null,
+      ...serializeProfileExtras(profile),
     });
   } catch (err) {
     req.log.error({ err }, "Error updating business profile");
@@ -117,6 +208,7 @@ router.put("/business-profile", requireAuth, async (req, res) => {
 router.post(
   "/business-profile/logo",
   requireAuth,
+  requirePermission("settings", "edit"),
   uploadLogo,
   async (req, res) => {
     try {
@@ -178,10 +270,10 @@ router.post(
   }
 );
 
-router.post("/business-profile/apikey", requireAuth, async (req, res) => {
+router.post("/business-profile/apikey", requireAuth, requirePermission("settings", "edit"), async (req, res) => {
   try {
     const userId = getUserId(res);
-    const newApiKey = `prevai_pk_${randomBytes(24).toString("hex")}`;
+    const newApiKey = `quoteai_pk_${randomBytes(24).toString("hex")}`;
 
     const [existing] = await db
       .select()

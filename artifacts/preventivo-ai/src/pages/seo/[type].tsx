@@ -1,89 +1,97 @@
-import { useParams, Link } from "wouter";
+import { useParams, useLocation, Link } from "wouter";
 import { ArrowRight, CheckCircle2, Clock, FileText, Shield, TrendingUp, Star, Building2, BookOpen, X, MapPin } from "lucide-react";
 import { SeoHead } from "@/components/seo-head";
-import { SECTORS, DEFAULT_SECTOR, RELATED_SECTORS, CITY_SECTORS, ACTIVE_CITIES } from "@/data/seo-data";
-import { BLOG_ARTICLES, SECTOR_ARTICLES } from "@/data/blog-data";
-import { getOgImagePath } from "@/data/seo-render-engine";
+import { SECTORS, DEFAULT_SECTOR, RELATED_SECTORS, SECTOR_KEY_BY_FR_SLUG, CITY_SECTORS, ACTIVE_CITIES } from "@/data/seo-data";
+import { BLOG_INDEX, SECTOR_ARTICLES } from "@/data/blog-index";
+import { getOgImagePath, getSectorFrContent, cityBasePath, type Lang as EngineLang } from "@/data/seo-render-engine";
 import { QuotePreviewMockup } from "@/components/quote-preview-mockup";
+import { useLanguage, isFrenchPath } from "@/i18n/LanguageContext";
 
 // Highlighted cities on the sector hub page — must stay within ACTIVE_CITIES,
 // the only cities actually prerendered/sitemapped right now (see seo-data.ts).
 const TIER1_CITIES = ACTIVE_CITIES;
 
-// Tutte le città raggruppate per regione, in ordine alfabetico di regione e città.
-// Serve a garantire che ogni pagina città riceva almeno un link interno dalla
-// hub di settore (altrimenti resta orfana e Google non la scopre/indicizza).
+// All cities grouped by region, sorted alphabetically by region then city.
+// Ensures every city page gets at least one internal link from the sector
+// hub (otherwise it stays orphaned and Google never discovers/indexes it).
 // Scoped to ACTIVE_CITIES so this hub never links toward un-prerendered pages.
 const CITIES_BY_REGION = ACTIVE_CITIES.reduce<Record<string, typeof ACTIVE_CITIES>>((acc, city) => {
   (acc[city.region] ??= []).push(city);
   return acc;
 }, {});
-const REGION_NAMES_SORTED = Object.keys(CITIES_BY_REGION).sort((a, b) => a.localeCompare(b, "it"));
+const REGION_NAMES_SORTED = Object.keys(CITIES_BY_REGION).sort((a, b) => a.localeCompare(b, "en-CA"));
 for (const region of REGION_NAMES_SORTED) {
-  CITIES_BY_REGION[region].sort((a, b) => a.name.localeCompare(b.name, "it"));
+  CITIES_BY_REGION[region].sort((a, b) => a.name.localeCompare(b.name, "en-CA"));
 }
 
+const FI_COLORS = ["g", "t", "p"] as const;
+
 function ExcelWordComparisonBlock({ tool }: { tool: "Excel" | "Word" }) {
+  const { t } = useLanguage();
   const rows = tool === "Excel"
     ? [
-        { label: "Calcola IVA e totali", old: false, new: true },
-        { label: "Nessuna formula da impostare", old: false, new: true },
-        { label: "Funziona da smartphone", old: false, new: true },
-        { label: "PDF professionale immediato", old: false, new: true },
-        { label: "Archivio preventivi sempre accessibile", old: false, new: true },
-        { label: "Logo aziendale automatico", old: false, new: true },
-        { label: "Prezzi di mercato suggeriti dall'AI", old: false, new: true },
-        { label: "Si può usare offline", old: true, new: false },
+        { label: t("seo.compare.excelRow1"), old: false, new: true },
+        { label: t("seo.compare.excelRow2"), old: false, new: true },
+        { label: t("seo.compare.excelRow3"), old: false, new: true },
+        { label: t("seo.compare.excelRow4"), old: false, new: true },
+        { label: t("seo.compare.excelRow5"), old: false, new: true },
+        { label: t("seo.compare.excelRow6"), old: false, new: true },
+        { label: t("seo.compare.excelRow7"), old: false, new: true },
+        { label: t("seo.compare.excelRow8"), old: true, new: false },
       ]
     : [
-        { label: "Formattazione automatica", old: false, new: true },
-        { label: "Calcola IVA e totali", old: false, new: true },
-        { label: "Funziona da smartphone", old: false, new: true },
-        { label: "PDF senza conversioni .docx", old: false, new: true },
-        { label: "Struttura professionale predefinita", old: false, new: true },
-        { label: "Logo aziendale automatico", old: false, new: true },
-        { label: "Genera testo in automatico", old: false, new: true },
-        { label: "Editing manuale libero", old: true, new: true },
+        { label: t("seo.compare.wordRow1"), old: false, new: true },
+        { label: t("seo.compare.wordRow2"), old: false, new: true },
+        { label: t("seo.compare.wordRow3"), old: false, new: true },
+        { label: t("seo.compare.wordRow4"), old: false, new: true },
+        { label: t("seo.compare.wordRow5"), old: false, new: true },
+        { label: t("seo.compare.wordRow6"), old: false, new: true },
+        { label: t("seo.compare.wordRow7"), old: false, new: true },
+        { label: t("seo.compare.wordRow8"), old: true, new: true },
       ];
 
   return (
-    <section className="py-20 bg-white">
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-3xl">
-        <div className="text-center mb-10">
-          <h2 className="text-3xl font-bold text-gray-900">
-            Modello {tool} vs <span className="gradient-text">prevai</span>: confronto diretto
+    <section className="sec soft">
+      <div className="wrap" style={{ maxWidth: 760 }}>
+        <div className="sec-head" style={{ display: "block", textAlign: "center" }}>
+          <span className="eyebrow grey">{t("seo.compare.headingPrefix").replace("{tool}", tool)}</span>
+          <h2 className="h2">
+            quoteai {t("seo.compare.headingSuffix")}
           </h2>
-          <p className="text-gray-500 mt-3 text-base">Cosa riesci a fare con un template {tool} e cosa con prevai</p>
+          <p className="lead" style={{ margin: "0 auto" }}>{t("seo.compare.subtitle").replace("{tool}", tool)}</p>
         </div>
-        <div className="rounded-2xl overflow-hidden border border-gray-100 shadow-sm">
-          <div className="grid grid-cols-3 bg-gray-50 border-b border-gray-100">
-            <div className="py-3 px-5 text-sm font-semibold text-gray-500">Funzionalità</div>
-            <div className="py-3 px-5 text-sm font-semibold text-gray-600 text-center border-l border-gray-100">Template {tool}</div>
-            <div className="py-3 px-5 text-sm font-semibold text-center border-l border-gray-100" style={{ color: "#7C3AED" }}>prevai AI</div>
-          </div>
-          {rows.map((r, i) => (
-            <div key={i} className={`grid grid-cols-3 border-b border-gray-50 ${i % 2 === 0 ? "bg-white" : "bg-gray-50/40"}`}>
-              <div className="py-3.5 px-5 text-sm text-gray-700 flex items-center">{r.label}</div>
-              <div className="py-3.5 px-5 flex items-center justify-center border-l border-gray-100">
-                {r.old
-                  ? <CheckCircle2 className="h-5 w-5 text-green-400" />
-                  : <X className="h-5 w-5 text-red-300" />}
-              </div>
-              <div className="py-3.5 px-5 flex items-center justify-center border-l border-gray-100">
-                {r.new
-                  ? <CheckCircle2 className="h-5 w-5 text-violet-500" />
-                  : <X className="h-5 w-5 text-red-300" />}
-              </div>
-            </div>
-          ))}
+        <div className="card cmp-wrap" tabIndex={0}>
+          <table className="cmp">
+            <thead>
+              <tr>
+                <th>{t("seo.compare.featureCol")}</th>
+                <th>{t("seo.compare.templateCol").replace("{tool}", tool)}</th>
+                <th className="q">quoteai AI</th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((r) => (
+                <tr key={r.label}>
+                  <td>{r.label}</td>
+                  <td style={{ textAlign: "center" }}>
+                    {r.old
+                      ? <CheckCircle2 className="h-4 w-4" style={{ color: "var(--green)", display: "inline-block" }} />
+                      : <X className="h-4 w-4" style={{ color: "var(--red)", display: "inline-block" }} />}
+                  </td>
+                  <td className="q" style={{ textAlign: "center" }}>
+                    {r.new
+                      ? <CheckCircle2 className="h-4 w-4" style={{ color: "var(--green-dark)", display: "inline-block" }} />
+                      : <X className="h-4 w-4" style={{ color: "var(--red)", display: "inline-block" }} />}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
-        <div className="mt-8 text-center">
-          <Link
-            href="/sign-up/"
-            className="btn-gradient inline-flex h-12 items-center justify-center px-8 text-base font-semibold"
-          >
-            Prova prevai gratis — niente carta di credito
-            <ArrowRight className="ml-2 h-4 w-4" />
+        <div className="cmp-cta">
+          <Link href="/sign-up/" className="btn btn-navy">
+            {t("seo.compare.cta")}
+            <ArrowRight className="chev h-4 w-4" />
           </Link>
         </div>
       </div>
@@ -92,57 +100,29 @@ function ExcelWordComparisonBlock({ tool }: { tool: "Excel" | "Word" }) {
 }
 
 function ComeFareGuideBlock() {
+  const { t } = useLanguage();
   const steps = [
-    {
-      n: "1",
-      h: "Raccogli le informazioni sul lavoro",
-      body: "Prima di iniziare, verifica di avere: il tipo di intervento, le dimensioni approssimative (mq, ml, pezzi), i materiali richiesti dal cliente, i dati del committente (nome, indirizzo, email). Con prevai puoi raccogliere tutto direttamente durante il sopralluogo dal telefono.",
-    },
-    {
-      n: "2",
-      h: "Definisci le voci di costo",
-      body: "Un preventivo professionale separa manodopera e materiali. Ogni voce deve avere: descrizione dettagliata, unità di misura (mq, ml, ore, corpo), quantità, prezzo unitario e importo. L'AI di prevai genera questa struttura automaticamente dalla tua descrizione in italiano.",
-    },
-    {
-      n: "3",
-      h: "Applica l'aliquota IVA corretta",
-      body: "In Italia l'IVA varia per categoria: 4% per lavori di edilizia agevolata, 10% per ristrutturazioni edilizie, 22% per la maggior parte degli altri lavori. Un errore sull'IVA può costare caro. prevai applica l'aliquota giusta in automatico in base al tipo di lavoro descritto.",
-    },
-    {
-      n: "4",
-      h: "Aggiungi le condizioni di pagamento",
-      body: "Scrivi sempre le condizioni: acconto richiesto (es. 30% all'accettazione), saldo a fine lavori, modalità di pagamento accettate (bonifico, contanti entro €2.000), tempi di esecuzione previsti e validità dell'offerta (tipicamente 30 giorni).",
-    },
-    {
-      n: "5",
-      h: "Invia il preventivo al cliente",
-      body: "Il formato migliore è il PDF: non può essere modificato accidentalmente e si apre su qualsiasi dispositivo. Invialo via email o WhatsApp. Con prevai scarichi il PDF con un clic, già formattato con la tua intestazione aziendale e logo.",
-    },
+    { n: "1", h: t("seo.guide.step1Title"), body: t("seo.guide.step1Body") },
+    { n: "2", h: t("seo.guide.step2Title"), body: t("seo.guide.step2Body") },
+    { n: "3", h: t("seo.guide.step3Title"), body: t("seo.guide.step3Body") },
+    { n: "4", h: t("seo.guide.step4Title"), body: t("seo.guide.step4Body") },
+    { n: "5", h: t("seo.guide.step5Title"), body: t("seo.guide.step5Body") },
   ];
 
   return (
-    <section className="py-20 bg-gray-50/60">
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-3xl">
-        <div className="text-center mb-12">
-          <h2 className="text-3xl font-bold text-gray-900">
-            Guida completa: come fare un preventivo professionale
-          </h2>
-          <p className="text-gray-500 mt-3 text-base">Segui questi 5 passi per creare un preventivo che il cliente firmerà subito</p>
+    <section className="sec">
+      <div className="wrap" style={{ maxWidth: 760 }}>
+        <div className="sec-head" style={{ display: "block", textAlign: "center" }}>
+          <h2 className="h2">{t("seo.guide.heading")}</h2>
+          <p className="lead" style={{ margin: "0 auto" }}>{t("seo.guide.subtitle")}</p>
         </div>
-        <div className="space-y-6">
+        <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
           {steps.map((s) => (
-            <div key={s.n} className="bg-white rounded-2xl p-6 card-soft">
-              <div className="flex items-start gap-4">
-                <div
-                  className="h-9 w-9 rounded-full flex items-center justify-center text-white font-bold text-sm shrink-0 mt-0.5"
-                  style={{ background: "linear-gradient(135deg, #7C3AED, #06B6D4)" }}
-                >
-                  {s.n}
-                </div>
-                <div>
-                  <h3 className="text-base font-semibold text-gray-900 mb-2">{s.h}</h3>
-                  <p className="text-sm text-gray-500 leading-relaxed">{s.body}</p>
-                </div>
+            <div key={s.n} className="card" style={{ padding: 22, display: "flex", gap: 16, alignItems: "flex-start" }}>
+              <span style={{ width: 32, height: 32, borderRadius: "50%", background: "var(--navy)", color: "#fff", fontSize: 14, fontWeight: 800, display: "grid", placeItems: "center", flexShrink: 0 }}>{s.n}</span>
+              <div>
+                <h3 style={{ fontSize: 16, fontWeight: 700, color: "var(--navy)", marginBottom: 6 }}>{s.h}</h3>
+                <p style={{ fontSize: 14, color: "var(--muted-mk)", lineHeight: 1.6 }}>{s.body}</p>
               </div>
             </div>
           ))}
@@ -153,143 +133,174 @@ function ComeFareGuideBlock() {
 }
 
 function PreventiviGratisPlansBlock() {
+  const { t } = useLanguage();
   const plans = [
     {
-      name: "Piano Starter",
-      price: "29€",
-      period: "/mese",
+      name: t("seo.plans.starterName"),
+      price: "$19",
+      period: t("seo.plans.perMonth"),
       highlight: false,
       badge: null,
       features: [
-        "20 preventivi al mese",
-        "PDF professionale scaricabile",
-        "Logo e intestazione aziendale",
-        "IVA calcolata automaticamente",
-        "Archivio preventivi digitale",
+        t("seo.plans.starterFeature1"),
+        t("seo.plans.starterFeature2"),
+        t("seo.plans.starterFeature3"),
+        t("seo.plans.starterFeature4"),
+        t("seo.plans.starterFeature5"),
       ],
-      cta: "Inizia con Starter",
+      cta: t("seo.plans.starterCta"),
       href: "/sign-up",
     },
     {
-      name: "Piano Pro",
-      price: "79€",
-      period: "/mese",
+      name: t("seo.plans.proName"),
+      price: "$49",
+      period: t("seo.plans.perMonth"),
       highlight: true,
-      badge: "Più scelto",
+      badge: t("seo.plans.mostChosen"),
       features: [
-        "Preventivi illimitati",
-        "Tutto di Starter, incluso",
-        "Capitolato dettagliato AI",
-        "Listino prezzi personalizzato",
-        "Priorità nella generazione AI",
+        t("seo.plans.proFeature1"),
+        t("seo.plans.proFeature2"),
+        t("seo.plans.proFeature3"),
+        t("seo.plans.proFeature4"),
+        t("seo.plans.proFeature5"),
       ],
-      cta: "Passa a Pro",
+      cta: t("seo.plans.proCta"),
       href: "/sign-up",
     },
     {
-      name: "Preventivo Singolo",
-      price: "29€",
-      period: " una tantum",
+      name: t("seo.plans.singleName"),
+      price: "$13",
+      period: ` ${t("seo.plans.oneTime")}`,
       highlight: false,
       badge: null,
       features: [
-        "1 preventivo PDF",
-        "Nessun abbonamento",
-        "Stesso output del piano Starter",
-        "Ideale per chi ha raramente clienti",
-        "Pagamento sicuro via Stripe",
+        t("seo.plans.singleFeature1"),
+        t("seo.plans.singleFeature2"),
+        t("seo.plans.singleFeature3"),
+        t("seo.plans.singleFeature4"),
+        t("seo.plans.singleFeature5"),
       ],
-      cta: "Acquista singolo",
+      cta: t("seo.plans.singleCta"),
       href: "/sign-up",
     },
   ];
 
   return (
-    <section className="py-20 bg-gray-50/60">
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-4xl">
-        <div className="text-center mb-12">
-          <h2 className="text-3xl font-bold text-gray-900">
-            Quanto costa il software preventivi?
-          </h2>
-          <p className="text-gray-500 mt-3 text-base">Inizia gratis, poi scegli il piano più adatto alla tua attività</p>
+    <section className="sec soft">
+      <div className="wrap" style={{ maxWidth: 980 }}>
+        <div className="sec-head" style={{ display: "block", textAlign: "center" }}>
+          <h2 className="h2">{t("seo.plans.heading")}</h2>
+          <p className="lead" style={{ margin: "0 auto" }}>{t("seo.plans.subtitle")}</p>
         </div>
         <div className="grid md:grid-cols-3 gap-5">
           {plans.map((p) => (
             <div
               key={p.name}
-              className={`relative rounded-2xl p-6 flex flex-col ${p.highlight ? "shadow-lg border-2 border-violet-400 bg-white" : "border border-gray-100 bg-white card-soft"}`}
+              className="card"
+              style={{
+                position: "relative",
+                padding: 26,
+                display: "flex",
+                flexDirection: "column",
+                borderColor: p.highlight ? "var(--navy)" : undefined,
+                borderWidth: p.highlight ? 2 : undefined,
+                boxShadow: p.highlight ? "var(--shadow-card)" : undefined,
+              }}
             >
               {p.badge && (
-                <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                  <span className="inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold text-white"
-                    style={{ background: "linear-gradient(135deg, #7C3AED, #06B6D4)" }}>
-                    {p.badge}
-                  </span>
-                </div>
+                <span className="chip chip-new" style={{ position: "absolute", top: -12, left: "50%", transform: "translateX(-50%)" }}>
+                  {p.badge}
+                </span>
               )}
-              <div className="mb-5">
-                <h3 className="text-base font-semibold text-gray-900 mb-1">{p.name}</h3>
-                <div className="flex items-baseline gap-0.5">
-                  <span className="text-3xl font-extrabold text-gray-900">{p.price}</span>
-                  <span className="text-sm text-gray-500">{p.period}</span>
+              <div style={{ marginBottom: 20 }}>
+                <h3 style={{ fontSize: 16, fontWeight: 700, color: "var(--navy)", marginBottom: 4 }}>{p.name}</h3>
+                <div style={{ display: "flex", alignItems: "baseline", gap: 2 }}>
+                  <span style={{ fontSize: 30, fontWeight: 800, color: "var(--navy)" }}>{p.price}</span>
+                  <span style={{ fontSize: 14, color: "var(--muted-mk)" }}>{p.period}</span>
                 </div>
               </div>
-              <ul className="space-y-2.5 mb-6 flex-1">
+              <ul style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 24, flex: 1 }}>
                 {p.features.map((f) => (
-                  <li key={f} className="flex items-center gap-2 text-sm text-gray-600">
-                    <CheckCircle2 className="h-4 w-4 text-violet-500 shrink-0" />
+                  <li key={f} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13.5, color: "var(--muted-mk)" }}>
+                    <CheckCircle2 className="h-4 w-4 shrink-0" style={{ color: "var(--green)" }} />
                     {f}
                   </li>
                 ))}
               </ul>
-              <Link
-                href={p.href}
-                className={`inline-flex h-10 items-center justify-center px-5 rounded-lg text-sm font-semibold transition-colors ${p.highlight ? "btn-gradient" : "btn-gradient-outline"}`}
-              >
+              <Link href={p.href} className={`btn btn-sm ${p.highlight ? "btn-navy" : "btn-outline-navy"}`}>
                 {p.cta}
-                <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
+                <ArrowRight className="chev h-4 w-4" />
               </Link>
             </div>
           ))}
         </div>
-        <p className="text-center text-sm text-gray-400 mt-6">Registrazione gratuita · Nessuna carta di credito richiesta per iniziare</p>
+        <p style={{ textAlign: "center", fontSize: 13, color: "var(--faint)", marginTop: 24 }}>{t("seo.plans.footerNote")}</p>
       </div>
     </section>
   );
 }
 
 export default function SeoLanding() {
+  const { t } = useLanguage();
+  const [pathname] = useLocation();
+  const isFr = isFrenchPath(pathname);
+  const engineLang: EngineLang = isFr ? "fr-CA" : "en-CA";
+  const base = cityBasePath(engineLang);
   const params = useParams();
-  const slug = (params as { type?: string }).type ?? "professionista";
+  const rawSlug = (params as { type?: string }).type ?? "contractor";
+  const slug = isFr ? (SECTOR_KEY_BY_FR_SLUG[rawSlug] ?? rawSlug) : rawSlug;
   const s = SECTORS[slug] ?? DEFAULT_SECTOR;
+  const sSlugForLang = isFr ? s.frSlug : s.slug;
 
-  const canonical = `https://prevai.it/preventivi/${s.slug}/`;
+  // French sector-page copy: titleTag/metaDescription/jsonLdDescription/useCases
+  // are hand-authored per sector (SectorData.fr); h1/intro/benefits/howItWorks/faq
+  // come from the generic French templates in seo-render-engine.ts.
+  const frContent = isFr ? getSectorFrContent(s) : null;
+  const titleTag = isFr ? s.fr.titleTag : s.titleTag;
+  const metaDescription = isFr ? s.fr.metaDescription : s.metaDescription;
+  const jsonLdDescription = isFr ? s.fr.jsonLdDescription : s.jsonLdDescription;
+  const h1 = frContent?.h1 ?? s.h1;
+  const h1Highlight = frContent?.h1Highlight ?? s.h1Highlight;
+  const intro = frContent?.intro ?? s.intro;
+  const h2Benefits = frContent?.h2Benefits ?? s.h2Benefits;
+  const benefits = frContent?.benefits ?? s.benefits;
+  const h2HowItWorks = frContent?.h2HowItWorks ?? s.h2HowItWorks;
+  const howItWorks = frContent?.howItWorks ?? s.howItWorks;
+  const h2UseCases = frContent?.h2UseCases ?? s.h2UseCases;
+  const useCases = isFr ? s.fr.useCases : s.useCases;
+  const h2Faq = frContent?.h2Faq ?? s.h2Faq;
+  const faq = frContent?.faq ?? s.faq;
+  const labelPlural = isFr ? s.fr.labelPlural : s.labelPlural;
+  const label = isFr ? s.fr.label : s.label;
+
+  const canonical = `https://quoteai.ca${base}/${sSlugForLang}/`;
+  const frCanonical = `https://quoteai.ca/fr/soumissions/${s.frSlug}/`;
   const jsonLd = [
     {
       "@context": "https://schema.org",
       "@type": "SoftwareApplication" as const,
-      name: "prevai",
-      description: s.jsonLdDescription,
+      name: "quoteai",
+      description: jsonLdDescription,
       url: canonical,
       applicationCategory: "BusinessApplication",
       operatingSystem: "Web",
-      inLanguage: "it",
-      offers: { "@type": "Offer", price: "0", priceCurrency: "EUR", availability: "https://schema.org/InStock" },
+      inLanguage: isFr ? "fr" : "en",
+      offers: { "@type": "Offer", price: "0", priceCurrency: "CAD", availability: "https://schema.org/InStock" },
     },
     {
       "@context": "https://schema.org",
       "@type": "BreadcrumbList" as const,
       itemListElement: [
-        { "@type": "ListItem", position: 1, name: "Home", item: "https://prevai.it/" },
-        { "@type": "ListItem", position: 2, name: s.h1Highlight, item: canonical },
+        { "@type": "ListItem", position: 1, name: isFr ? "Accueil" : "Home", item: isFr ? "https://quoteai.ca/fr/" : "https://quoteai.ca/" },
+        { "@type": "ListItem", position: 2, name: h1Highlight, item: canonical },
       ],
     },
-    ...(s.faq.length > 0
+    ...(faq.length > 0
       ? [
           {
             "@context": "https://schema.org",
             "@type": "FAQPage" as const,
-            mainEntity: s.faq.map((f) => ({
+            mainEntity: faq.map((f) => ({
               "@type": "Question",
               name: f.q,
               acceptedAnswer: { "@type": "Answer", text: f.a },
@@ -302,77 +313,66 @@ export default function SeoLanding() {
   return (
     <div className="flex flex-col min-h-screen bg-white">
       <SeoHead
-        title={s.titleTag}
-        description={s.metaDescription}
+        title={titleTag}
+        description={metaDescription}
         canonical={canonical}
         jsonLd={jsonLd}
         ogImage={getOgImagePath(s.slug)}
+        lang={engineLang}
+        frCanonical={frCanonical}
       />
+
+      <div className="wrap">
+        <nav aria-label={t("seo.city.breadcrumbAria")} className="crumbs">
+          <Link href={isFr ? "/fr" : "/"}>{t("blog.breadcrumbHome")}</Link>
+          <span className="crumb-sep" aria-hidden="true">/</span>
+          <span className="crumb-current" aria-current="page">{h1Highlight}</span>
+        </nav>
+      </div>
+
       {/* ── Hero ─────────────────────────────────────────── */}
-      <section className="relative overflow-hidden bg-white pt-24 pb-20" aria-label="Hero">
-        <div
-          className="absolute inset-0 opacity-30 pointer-events-none"
-          aria-hidden="true"
-          style={{
-            background:
-              "radial-gradient(ellipse 80% 60% at 50% -10%, rgba(124,58,237,0.12) 0%, transparent 70%)",
-          }}
-        />
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-6xl relative z-10">
-          <div className="grid lg:grid-cols-2 gap-14 items-center">
-            <div className="text-center lg:text-left">
-              <div className="inline-flex items-center gap-2 rounded-full bg-violet-50 border border-violet-100 px-4 py-1.5 text-sm font-medium text-violet-700 mb-8">
-                <Star className="h-3.5 w-3.5 fill-current" />
-                Pensato per il mercato italiano
-              </div>
-              <h1 className="text-4xl font-extrabold tracking-tight text-gray-900 sm:text-5xl lg:text-6xl mb-6 leading-[1.1]">
-                {s.h1}{" "}
-                <span className="gradient-text">{s.h1Highlight}</span>
-              </h1>
-              <p className="text-xl text-gray-500 mb-10 max-w-2xl mx-auto lg:mx-0 leading-relaxed">
-                {s.intro}
-              </p>
-              <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
-                <Link
-                  href="/sign-up/"
-                  className="btn-gradient inline-flex h-14 items-center justify-center px-8 text-lg font-semibold"
-                >
-                  Crea il tuo preventivo in 60 secondi
-                  <ArrowRight className="ml-2 h-5 w-5" />
-                </Link>
-                <Link
-                  href="#come-funziona"
-                  className="btn-gradient-outline inline-flex h-14 items-center justify-center px-8 text-lg font-semibold"
-                >
-                  Come funziona
-                </Link>
-              </div>
-              <p className="text-sm text-gray-400 mt-5">Nessuna carta di credito richiesta · Preventivo pronto in 30 secondi</p>
+      <section className="hero on-dark" id="hero">
+        <div className="wrap hero-grid" style={{ padding: "clamp(36px, 5vw, 64px) 0 clamp(64px, 8vw, 96px)" }}>
+          <div>
+            <p className="eyebrow on-dark" style={{ marginBottom: 20, display: "inline-flex", alignItems: "center", gap: 8 }}>
+              <Star className="h-3.5 w-3.5" style={{ fill: "currentColor" }} />
+              {t("seo.builtForMarket")}
+            </p>
+            <h1>
+              {h1} <em style={{ fontStyle: "normal", color: "#8ef07f" }}>{h1Highlight}</em>
+            </h1>
+            <p className="lead">{intro}</p>
+            <div className="hero-cta">
+              <Link href="/sign-up/" className="btn btn-white">
+                {t("seo.heroCtaPrimary")}
+                <ArrowRight className="chev h-4 w-4" />
+              </Link>
+              <Link href="#how-it-works" className="btn btn-outline-light">
+                {t("seo.heroCtaSecondary")}
+              </Link>
             </div>
-            <div className="hidden lg:block">
-              <QuotePreviewMockup sector={s} />
-            </div>
+            <p className="hero-note">{t("seo.heroCaption")}</p>
+          </div>
+          <div className="hidden lg:block">
+            <QuotePreviewMockup sector={s} />
           </div>
         </div>
       </section>
 
       {/* ── Benefits ─────────────────────────────────────── */}
-      <section className="py-20 bg-gray-50/60">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-14">
-            <h2 className="text-3xl font-bold text-gray-900">{s.h2Benefits}</h2>
+      <section className="sec soft">
+        <div className="wrap">
+          <div className="sec-head" style={{ display: "block", textAlign: "center" }}>
+            <h2 className="h2">{h2Benefits}</h2>
           </div>
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {s.benefits.map((b) => (
-              <div key={b.title} className="card-soft bg-white p-7 rounded-2xl flex flex-col">
-                <div
-                  className="h-10 w-10 rounded-xl flex items-center justify-center mb-5 text-white shrink-0"
-                  style={{ background: "linear-gradient(135deg, #7C3AED, #06B6D4)" }}
-                >
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {benefits.map((b, i) => (
+              <div key={b.title} className="dd-feat" style={{ flexDirection: "column", alignItems: "flex-start" }}>
+                <span className={`fi ${FI_COLORS[i % FI_COLORS.length]}`}>
                   <CheckCircle2 className="h-5 w-5" />
-                </div>
-                <h3 className="text-base font-semibold text-gray-900 mb-2">{b.title}</h3>
-                <p className="text-sm text-gray-500 leading-relaxed">{b.desc}</p>
+                </span>
+                <b>{b.title}</b>
+                <p>{b.desc}</p>
               </div>
             ))}
           </div>
@@ -380,22 +380,17 @@ export default function SeoLanding() {
       </section>
 
       {/* ── How it works ─────────────────────────────────── */}
-      <section id="come-funziona" className="py-20 bg-white">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-4xl">
-          <div className="text-center mb-14">
-            <h2 className="text-3xl font-bold text-gray-900">{s.h2HowItWorks}</h2>
+      <section id="how-it-works" className="sec">
+        <div className="wrap" style={{ maxWidth: 960 }}>
+          <div className="sec-head" style={{ display: "block", textAlign: "center" }}>
+            <h2 className="h2">{h2HowItWorks}</h2>
           </div>
-          <div className="grid md:grid-cols-3 gap-8">
-            {s.howItWorks.map((step, i) => (
-              <div key={i} className="relative">
-                <div
-                  className="h-10 w-10 rounded-full flex items-center justify-center text-white font-bold text-sm mb-5"
-                  style={{ background: "linear-gradient(135deg, #7C3AED, #06B6D4)" }}
-                >
-                  {i + 1}
-                </div>
-                <h3 className="text-base font-semibold text-gray-900 mb-2">{step.step}</h3>
-                <p className="text-sm text-gray-500 leading-relaxed">{step.desc}</p>
+          <div className="steps3">
+            {howItWorks.map((step, i) => (
+              <div key={i} className="step">
+                <span className="n">{i + 1}</span>
+                <b>{step.step}</b>
+                <p>{step.desc}</p>
               </div>
             ))}
           </div>
@@ -403,16 +398,16 @@ export default function SeoLanding() {
       </section>
 
       {/* ── Use cases ────────────────────────────────────── */}
-      <section className="py-20 bg-gray-50/60">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-3xl">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold text-gray-900">{s.h2UseCases}</h2>
+      <section className="sec soft">
+        <div className="wrap" style={{ maxWidth: 760 }}>
+          <div className="sec-head" style={{ display: "block", textAlign: "center" }}>
+            <h2 className="h2">{h2UseCases}</h2>
           </div>
           <div className="grid sm:grid-cols-2 gap-3">
-            {s.useCases.map((uc) => (
-              <div key={uc} className="flex items-center gap-3 bg-white rounded-xl px-5 py-3.5 card-soft">
-                <CheckCircle2 className="h-4 w-4 text-violet-500 shrink-0" />
-                <span className="text-sm text-gray-700">{uc}</span>
+            {useCases.map((uc) => (
+              <div key={uc} className="card" style={{ display: "flex", alignItems: "center", gap: 10, padding: "13px 18px" }}>
+                <CheckCircle2 className="h-4 w-4 shrink-0" style={{ color: "var(--green)" }} />
+                <span style={{ fontSize: 14, color: "var(--ink)" }}>{uc}</span>
               </div>
             ))}
           </div>
@@ -420,43 +415,37 @@ export default function SeoLanding() {
       </section>
 
       {/* ── Guide-specific blocks ────────────────────────── */}
-      {slug === "modello-excel" && <ExcelWordComparisonBlock tool="Excel" />}
-      {slug === "modello-word" && <ExcelWordComparisonBlock tool="Word" />}
-      {slug === "come-fare-preventivo" && <ComeFareGuideBlock />}
-      {slug === "preventivi-gratis" && <PreventiviGratisPlansBlock />}
+      {slug === "excel-template" && <ExcelWordComparisonBlock tool="Excel" />}
+      {slug === "word-template" && <ExcelWordComparisonBlock tool="Word" />}
+      {slug === "how-to-quote" && <ComeFareGuideBlock />}
+      {slug === "free-quote" && <PreventiviGratisPlansBlock />}
 
-      {/* ── "Pensato per il mercato italiano" ────────────── */}
-      <section className="py-20 bg-white">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-4xl">
-          <div className="rounded-2xl p-10 md:p-14 relative overflow-hidden"
-            style={{ background: "linear-gradient(135deg, rgba(124,58,237,0.06), rgba(6,182,212,0.06))" }}>
-            <div className="relative z-10">
-              <div className="flex items-center gap-3 mb-6">
-                <div className="h-10 w-10 rounded-xl flex items-center justify-center text-white shrink-0"
-                  style={{ background: "linear-gradient(135deg, #7C3AED, #06B6D4)" }}>
-                  <Building2 className="h-5 w-5" />
+      {/* ── "Built for the Canadian market" ──────────────── */}
+      <section className="sec">
+        <div className="wrap" style={{ maxWidth: 980 }}>
+          <div className="card" style={{ padding: "clamp(28px, 4vw, 48px)" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 24 }}>
+              <span className="fi p"><Building2 className="h-5 w-5" /></span>
+              <h2 className="h2" style={{ fontSize: 22 }}>{t("seo.builtForMarket")}</h2>
+            </div>
+            <div className="grid md:grid-cols-3 gap-6">
+              <div>
+                <div style={{ fontWeight: 700, color: "var(--navy)", marginBottom: 6, display: "flex", alignItems: "center", gap: 8, fontSize: 14 }}>
+                  <TrendingUp className="h-4 w-4" style={{ color: "var(--navy)" }} /> {t("seo.marketSection.taxTitle")}
                 </div>
-                <h2 className="text-2xl font-bold text-gray-900">Pensato per il mercato italiano</h2>
+                <p style={{ fontSize: 14, color: "var(--muted-mk)", lineHeight: 1.6 }}>{t("seo.marketSection.taxBody")}</p>
               </div>
-              <div className="grid md:grid-cols-3 gap-6 text-sm text-gray-600 leading-relaxed">
-                <div>
-                  <div className="font-semibold text-gray-900 mb-1.5 flex items-center gap-2">
-                    <TrendingUp className="h-4 w-4 text-violet-500" /> IVA italiana integrata
-                  </div>
-                  <p>Il calcolo dell'IVA al 4%, 10% o 22% è automatico. prevai conosce le aliquote per ogni categoria di lavoro nel contesto normativo italiano.</p>
+              <div>
+                <div style={{ fontWeight: 700, color: "var(--navy)", marginBottom: 6, display: "flex", alignItems: "center", gap: 8, fontSize: 14 }}>
+                  <Shield className="h-4 w-4" style={{ color: "var(--navy)" }} /> {t("seo.marketSection.businessTitle")}
                 </div>
-                <div>
-                  <div className="font-semibold text-gray-900 mb-1.5 flex items-center gap-2">
-                    <Shield className="h-4 w-4 text-violet-500" /> Dati aziendali italiani
-                  </div>
-                  <p>Partita IVA, Codice Fiscale, REA: tutti i campi dell'intestazione rispettano il formato dei documenti commerciali italiani.</p>
+                <p style={{ fontSize: 14, color: "var(--muted-mk)", lineHeight: 1.6 }}>{t("seo.marketSection.businessBody")}</p>
+              </div>
+              <div>
+                <div style={{ fontWeight: 700, color: "var(--navy)", marginBottom: 6, display: "flex", alignItems: "center", gap: 8, fontSize: 14 }}>
+                  <FileText className="h-4 w-4" style={{ color: "var(--navy)" }} /> {t("seo.marketSection.lexiconTitle")}
                 </div>
-                <div>
-                  <div className="font-semibold text-gray-900 mb-1.5 flex items-center gap-2">
-                    <FileText className="h-4 w-4 text-violet-500" /> Lessico tecnico in italiano
-                  </div>
-                  <p>L'AI è addestrata sul lessico tecnico delle PMI italiane. Capisce il dialetto del tuo mestiere, non devi usare un linguaggio formale.</p>
-                </div>
+                <p style={{ fontSize: 14, color: "var(--muted-mk)", lineHeight: 1.6 }}>{t("seo.marketSection.lexiconBody")}</p>
               </div>
             </div>
           </div>
@@ -464,45 +453,42 @@ export default function SeoLanding() {
       </section>
 
       {/* ── FAQ ──────────────────────────────────────────── */}
-      <section className="py-20 bg-gray-50/60">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-3xl">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold text-gray-900">{s.h2Faq}</h2>
+      <section className="sec soft">
+        <div className="wrap" style={{ maxWidth: 760 }}>
+          <div className="sec-head" style={{ display: "block", textAlign: "center" }}>
+            <h2 className="h2">{h2Faq}</h2>
           </div>
-          <div className="space-y-4">
-            {s.faq.map((f) => (
-              <div key={f.q} className="bg-white rounded-2xl p-6 card-soft">
-                <h3 className="text-base font-semibold text-gray-900 mb-2">{f.q}</h3>
-                <p className="text-sm text-gray-500 leading-relaxed">{f.a}</p>
+          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+            {faq.map((f) => (
+              <div key={f.q} className="card" style={{ padding: 22 }}>
+                <h3 style={{ fontSize: 15.5, fontWeight: 700, color: "var(--navy)", marginBottom: 8 }}>{f.q}</h3>
+                <p style={{ fontSize: 14, color: "var(--muted-mk)", lineHeight: 1.6 }}>{f.a}</p>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* ── Preventivi nelle principali città ─────────────── */}
+      {/* ── Quotes in major cities ─────────────────────────── */}
       {CITY_SECTORS.includes(slug) && TIER1_CITIES.length > 0 && (
-        <section className="py-16 bg-gray-50/60">
-          <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-4xl">
-            <div className="text-center mb-10">
-              <h2 className="text-2xl font-bold text-gray-900">
-                Preventivi {s.labelPlural} nelle principali città
+        <section className="sec">
+          <div className="wrap" style={{ maxWidth: 980 }}>
+            <div className="sec-head" style={{ display: "block", textAlign: "center" }}>
+              <h2 className="h2" style={{ fontSize: 26 }}>
+                {t("seo.cityHub.heading").replace("{trade}", labelPlural)}
               </h2>
-              <p className="text-sm text-gray-500 mt-2">
-                Seleziona la tua città per un preventivo personalizzato con tariffe locali
-              </p>
+              <p className="lead" style={{ margin: "0 auto" }}>{t("seo.cityHub.subtitle")}</p>
             </div>
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
               {TIER1_CITIES.map((city) => (
                 <Link
                   key={city.slug}
-                  href={`/preventivi/${slug}/${city.slug}/`}
-                  className="flex items-center gap-2.5 bg-white hover:bg-violet-50 border border-gray-100 hover:border-violet-200 rounded-xl px-4 py-3 transition-colors group"
+                  href={`${base}/${sSlugForLang}/${city.slug}/`}
+                  className="card"
+                  style={{ display: "flex", alignItems: "center", gap: 10, padding: "13px 16px", fontSize: 14, fontWeight: 600, color: "var(--ink)" }}
                 >
-                  <MapPin className="h-3.5 w-3.5 text-violet-400 group-hover:text-violet-600 shrink-0" />
-                  <span className="text-sm font-medium text-gray-700 group-hover:text-violet-700 truncate">
-                    {city.name}
-                  </span>
+                  <MapPin className="h-4 w-4 shrink-0" style={{ color: "var(--navy)" }} />
+                  <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{city.name}</span>
                 </Link>
               ))}
             </div>
@@ -510,36 +496,33 @@ export default function SeoLanding() {
         </section>
       )}
 
-      {/* ── Tutte le città (link interni per indicizzazione) ──── */}
+      {/* ── All cities (internal links for indexing) ──────── */}
       {CITY_SECTORS.includes(slug) && (
-        <section className="py-16 bg-white border-t border-gray-100">
-          <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-5xl">
-            <div className="text-center mb-8">
-              <h2 className="text-xl font-bold text-gray-900">
-                Preventivi {s.labelPlural} in tutte le città
+        <section className="sec soft">
+          <div className="wrap" style={{ maxWidth: 1080 }}>
+            <div className="sec-head" style={{ display: "block", textAlign: "center" }}>
+              <h2 className="h2" style={{ fontSize: 22 }}>
+                {t("seo.allCities.heading").replace("{trade}", labelPlural)}
               </h2>
-              <p className="text-sm text-gray-500 mt-2">
-                Trova il tuo comune per un preventivo con tariffe locali aggiornate
-              </p>
+              <p className="lead" style={{ margin: "0 auto" }}>{t("seo.allCities.subtitle")}</p>
             </div>
             <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-8">
               {REGION_NAMES_SORTED.map((region) => (
                 <div key={region}>
-                  <h3 className="text-xs font-semibold uppercase tracking-wider text-violet-600 mb-2.5">
+                  <h3 style={{ fontSize: 12, fontWeight: 800, textTransform: "uppercase", letterSpacing: ".08em", color: "var(--navy)", marginBottom: 10 }}>
                     {region}
                   </h3>
-                  <ul className="space-y-1.5">
+                  <div className="blog-links" style={{ flexDirection: "column", gap: 6, alignItems: "flex-start" }}>
                     {CITIES_BY_REGION[region].map((city) => (
-                      <li key={city.slug}>
-                        <Link
-                          href={`/preventivi/${slug}/${city.slug}/`}
-                          className="text-sm text-gray-500 hover:text-violet-600 transition-colors"
-                        >
-                          {s.label} {city.name}
-                        </Link>
-                      </li>
+                      <Link
+                        key={city.slug}
+                        href={`${base}/${sSlugForLang}/${city.slug}/`}
+                        style={{ fontSize: 14, color: "var(--muted-mk)" }}
+                      >
+                        {label} {city.name}
+                      </Link>
                     ))}
-                  </ul>
+                  </div>
                 </div>
               ))}
             </div>
@@ -548,21 +531,22 @@ export default function SeoLanding() {
       )}
 
       {RELATED_SECTORS[slug] && (
-        <section className="py-16 bg-white">
-          <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-4xl">
-            <div className="text-center mb-10">
-              <h2 className="text-2xl font-bold text-gray-900">Vedi anche</h2>
-              <p className="text-sm text-gray-500 mt-2">Altre categorie di preventivi che potrebbero interessarti</p>
+        <section className="sec">
+          <div className="wrap" style={{ maxWidth: 980 }}>
+            <div className="sec-head" style={{ display: "block", textAlign: "center" }}>
+              <h2 className="h2" style={{ fontSize: 24 }}>{t("seo.seeAlso.heading")}</h2>
+              <p className="lead" style={{ margin: "0 auto" }}>{t("seo.seeAlso.subtitle")}</p>
             </div>
             <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
               {RELATED_SECTORS[slug].map((r) => (
                 <Link
                   key={r.slug}
-                  href={`/preventivi/${r.slug}/`}
-                  className="flex items-center gap-3 bg-gray-50 hover:bg-violet-50 border border-gray-100 hover:border-violet-200 rounded-xl px-5 py-3.5 transition-colors group"
+                  href={`${base}/${isFr ? (SECTORS[r.slug]?.frSlug ?? r.slug) : r.slug}/`}
+                  className="card"
+                  style={{ display: "flex", alignItems: "center", gap: 10, padding: "13px 18px", fontSize: 14, fontWeight: 600, color: "var(--ink)" }}
                 >
-                  <ArrowRight className="h-4 w-4 text-violet-400 group-hover:text-violet-600 shrink-0" />
-                  <span className="text-sm font-medium text-gray-700 group-hover:text-violet-700">Preventivi per {r.label}</span>
+                  <ArrowRight className="h-4 w-4 shrink-0" style={{ color: "var(--navy)" }} />
+                  {t("seo.quotesForLink")} {isFr ? (SECTORS[r.slug]?.fr.label ?? r.label) : r.label}
                 </Link>
               ))}
             </div>
@@ -570,43 +554,35 @@ export default function SeoLanding() {
         </section>
       )}
 
-      {/* ── Approfondimenti ──────────────────────────────── */}
+      {/* ── Insights ─────────────────────────────────────── */}
       {SECTOR_ARTICLES[slug] && SECTOR_ARTICLES[slug].length > 0 && (() => {
         const articles = SECTOR_ARTICLES[slug]
-          .map((articleSlug) => BLOG_ARTICLES.find((a) => a.slug === articleSlug))
-          .filter((a): a is (typeof BLOG_ARTICLES)[number] => a !== undefined);
+          .map((articleSlug) => BLOG_INDEX.find((a) => a.slug === articleSlug))
+          .filter((a): a is (typeof BLOG_INDEX)[number] => a !== undefined);
         if (articles.length === 0) return null;
         return (
-          <section className="py-16 bg-gray-50/60">
-            <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-4xl">
-              <div className="flex items-center gap-3 mb-8">
-                <div className="h-9 w-9 rounded-xl flex items-center justify-center text-white shrink-0"
-                  style={{ background: "linear-gradient(135deg, #7C3AED, #06B6D4)" }}>
-                  <BookOpen className="h-4.5 w-4.5" />
-                </div>
+          <section className="sec soft">
+            <div className="wrap" style={{ maxWidth: 1080 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 28 }}>
+                <span className="fi g"><BookOpen className="h-4 w-4" /></span>
                 <div>
-                  <h2 className="text-2xl font-bold text-gray-900">Approfondimenti</h2>
-                  <p className="text-sm text-gray-500 mt-0.5">Guide e consigli pratici per {s.h1Highlight.toLowerCase()}</p>
+                  <h2 className="h2" style={{ fontSize: 22 }}>{t("seo.insights.heading")}</h2>
+                  <p style={{ fontSize: 13.5, color: "var(--muted-mk)", marginTop: 2 }}>{t("seo.insights.subtitlePrefix")} {h1Highlight.toLowerCase()}</p>
                 </div>
               </div>
               <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 {articles.map((a) => (
-                  <Link
-                    key={a.slug}
-                    href={`/blog/${a.slug}/`}
-                    className="group flex flex-col bg-white rounded-xl border border-gray-100 hover:border-violet-200 hover:shadow-sm transition-all p-5"
-                  >
-                    <span className="text-xs font-semibold text-violet-600 mb-2">{a.category}</span>
-                    <span className="text-sm font-semibold text-gray-800 group-hover:text-violet-700 transition-colors leading-snug mb-2">
-                      {a.title}
-                    </span>
-                    <span className="text-xs text-gray-400 mt-auto">{a.readingTimeMin} min di lettura</span>
+                  <Link key={a.slug} href={`/blog/${a.slug}/`} className="card" style={{ padding: 20, display: "flex", flexDirection: "column", gap: 8 }}>
+                    <span className="chip chip-teal" style={{ alignSelf: "flex-start" }}>{a.category}</span>
+                    <span style={{ fontSize: 14.5, fontWeight: 700, color: "var(--navy)", lineHeight: 1.4 }}>{a.title}</span>
+                    <span style={{ fontSize: 12.5, color: "var(--faint)", marginTop: "auto" }}>{a.readingTimeMin} {t("blog.readingTimeSuffix")}</span>
                   </Link>
                 ))}
               </div>
-              <div className="mt-6 text-center">
-                <Link href="/blog/" className="text-sm font-medium text-violet-600 hover:text-violet-800 transition-colors">
-                  Vedi tutte le guide →
+              <div style={{ textAlign: "center", marginTop: 28 }}>
+                <Link href="/blog/" className="cta-link" style={{ display: "inline-flex" }}>
+                  {t("seo.insights.viewAll")}
+                  <ArrowRight className="chev h-4 w-4" />
                 </Link>
               </div>
             </div>
@@ -614,28 +590,27 @@ export default function SeoLanding() {
         );
       })()}
 
-      {/* ── CTA finale ───────────────────────────────────── */}
-      <section className="py-24 bg-white">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8 text-center max-w-2xl">
-          <div className="flex items-center justify-center gap-2 mb-6">
-            <Clock className="h-5 w-5 text-violet-500" />
-            <span className="text-sm font-semibold text-violet-600">Risparmia ore ogni settimana</span>
-          </div>
-          <h2 className="text-3xl font-bold text-gray-900 mb-4">
-            Pronto a creare il tuo primo preventivo{" "}
-            <span className="gradient-text">in 30 secondi</span>?
+      {/* ── Final CTA ────────────────────────────────────── */}
+      <section className="cta on-dark">
+        <div className="cta-bg">
+          <img src={`https://picsum.photos/seed/quoteai-seo-${s.slug}/1800/900`} alt="" aria-hidden="true" loading="lazy" />
+        </div>
+        <div className="wrap cta-in">
+          <span className="eyebrow on-dark" style={{ display: "inline-flex", alignItems: "center", gap: 8, justifyContent: "center" }}>
+            <Clock className="h-3.5 w-3.5" />
+            {t("seo.finalCta.badge")}
+          </span>
+          <h2>
+            {t("seo.finalCta.headingPrefix")}{" "}
+            <em style={{ fontStyle: "normal", color: "#8ef07f" }}>{t("seo.finalCta.headingHighlight")}</em>?
           </h2>
-          <p className="text-lg text-gray-500 mb-10">
-            Unisciti a centinaia di {s.h1Highlight.toLowerCase()} italiani che usano prevai ogni giorno.
-            Nessuna carta di credito. Nessun impegno.
-          </p>
-          <Link
-            href="/sign-up/"
-            className="btn-gradient inline-flex h-14 items-center justify-center px-10 text-lg font-semibold"
-          >
-            Inizia Gratuitamente
-            <ArrowRight className="ml-2 h-5 w-5" />
-          </Link>
+          <p>{t("seo.finalCta.bodyPrefix")} {h1Highlight.toLowerCase()} {t("seo.finalCta.bodySuffix")}</p>
+          <div className="cta-actions">
+            <Link href="/sign-up/" className="btn btn-white">
+              {t("blog.ctaButton")}
+              <ArrowRight className="chev h-4 w-4" />
+            </Link>
+          </div>
         </div>
       </section>
     </div>

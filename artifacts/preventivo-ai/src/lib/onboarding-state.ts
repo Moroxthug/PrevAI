@@ -1,4 +1,4 @@
-const SKIP_KEY = (userId: string) => `prevai_onboarding_skipped_${userId}`;
+const SKIP_KEY = (userId: string) => `quoteai_onboarding_skipped_${userId}`;
 
 export function markOnboardingSkipped(userId: string): void {
   try { localStorage.setItem(SKIP_KEY(userId), "1"); } catch {}

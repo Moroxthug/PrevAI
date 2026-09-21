@@ -1,10 +1,16 @@
 packages:
   - artifacts/api-server
   - artifacts/preventivo-ai
-  - artifacts/mockup-sandbox
   - lib/*
   - lib/integrations/*
   - scripts
+
+allowBuilds:
+  '@google/genai': true
+  core-js: true
+  esbuild: true
+  protobufjs: true
+  puppeteer: set this to true or false
 
 autoInstallPeers: false
 
@@ -19,7 +25,6 @@ catalog:
   class-variance-authority: ^0.7.1
   clsx: ^2.1.1
   drizzle-orm: ^0.45.2
-  framer-motion: ^12.23.24
   lucide-react: ^0.545.0
   react: 19.1.0
   react-dom: 19.1.0
@@ -38,7 +43,6 @@ onlyBuiltDependencies:
   - esbuild
   - msw
   - protobufjs
-  - puppeteer
   - unrs-resolver
 
 overrides:

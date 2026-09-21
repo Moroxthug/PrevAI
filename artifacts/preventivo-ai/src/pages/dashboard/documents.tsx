@@ -1,21 +1,26 @@
 import { useRef, useState, useCallback } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { FolderOpen, Upload, Loader2, CheckCircle2, AlertCircle, Clock, Trash2, Zap, FileText, ImageIcon, TrendingUp, ChevronDown, ChevronUp } from "lucide-react";
+import { FolderOpen, Upload, Loader2, CheckCircle2, AlertCircle, Clock, Trash2, Zap, FileText, ImageIcon, TrendingUp, TrendingDown, ChevronDown, ChevronUp, X, Scale } from "lucide-react";
 import {
   useListDocuments,
   useUploadDocument,
   useExtractDocument,
   useDeleteDocument,
   useGetPriceSummary,
+  useGetPriceAlerts,
+  useDismissPriceAlert,
+  useGetPriceComparison,
   getListDocumentsQueryKey,
   getGetPriceSummaryQueryKey,
+  getGetPriceAlertsQueryKey,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import type { UploadedDocument } from "@workspace/api-client-react";
 import { cn } from "@/lib/utils";
+import { useLanguage } from "@/i18n/LanguageContext";
+
+const fmt = (s: string, vars: Record<string, string | number>) => s.replace(/\{(\w+)\}/g, (_, k) => String(vars[k] ?? ""));
 
 const formatFileSize = (bytes: number | null) => {
   if (!bytes) return "";
@@ -25,35 +30,29 @@ const formatFileSize = (bytes: number | null) => {
 };
 
 const formatCurrency = (v: number) =>
-  new Intl.NumberFormat("it-IT", { style: "currency", currency: "EUR", maximumFractionDigits: 2 }).format(v);
+  new Intl.NumberFormat("en-CA", { style: "currency", currency: "CAD", maximumFractionDigits: 2 }).format(v);
 
 const formatDate = (iso: string) =>
-  new Intl.DateTimeFormat("it-IT", { day: "2-digit", month: "short", year: "numeric" }).format(new Date(iso));
+  new Intl.DateTimeFormat("en-CA", { day: "2-digit", month: "short", year: "numeric" }).format(new Date(iso));
 
-function StatusBadge({ status }: { status: UploadedDocument["status"] }) {
+function StatusChip({ status }: { status: UploadedDocument["status"] }) {
+  const { t } = useLanguage();
   if (status === "done") return (
-    <Badge className="gap-1 bg-green-100 text-green-700 border-0">
-      <CheckCircle2 className="h-3 w-3" /> Elaborato
-    </Badge>
+    <span className="chip chip-green gap-1"><CheckCircle2 className="h-3 w-3" /> {t("documents.status.processed")}</span>
   );
   if (status === "processing") return (
-    <Badge className="gap-1 bg-blue-100 text-blue-700 border-0 animate-pulse">
-      <Loader2 className="h-3 w-3 animate-spin" /> Elaborazione...
-    </Badge>
+    <span className="chip chip-teal gap-1 animate-pulse"><Loader2 className="h-3 w-3 animate-spin" /> {t("documents.status.processing")}</span>
   );
   if (status === "error") return (
-    <Badge className="gap-1 bg-red-100 text-red-700 border-0">
-      <AlertCircle className="h-3 w-3" /> Errore
-    </Badge>
+    <span className="chip chip-red gap-1"><AlertCircle className="h-3 w-3" /> {t("documents.status.error")}</span>
   );
   return (
-    <Badge className="gap-1 bg-gray-100 text-gray-500 border-0">
-      <Clock className="h-3 w-3" /> In coda
-    </Badge>
+    <span className="chip chip-grey gap-1"><Clock className="h-3 w-3" /> {t("documents.status.queued")}</span>
   );
 }
 
 function DocumentRow({ doc }: { doc: UploadedDocument }) {
+  const { t } = useLanguage();
   const qc = useQueryClient();
   const { toast } = useToast();
   const [expanded, setExpanded] = useState(false);
@@ -63,9 +62,9 @@ function DocumentRow({ doc }: { doc: UploadedDocument }) {
       onSuccess: () => {
         qc.invalidateQueries({ queryKey: getListDocumentsQueryKey() });
         qc.invalidateQueries({ queryKey: getGetPriceSummaryQueryKey() });
-        toast({ title: "Elaborazione completata" });
+        toast({ title: t("documents.toast.processed") });
       },
-      onError: () => toast({ title: "Errore durante l'elaborazione", variant: "destructive" }),
+      onError: () => toast({ title: t("documents.toast.processError"), variant: "destructive" }),
     },
   });
 
@@ -75,7 +74,7 @@ function DocumentRow({ doc }: { doc: UploadedDocument }) {
         qc.invalidateQueries({ queryKey: getListDocumentsQueryKey() });
         qc.invalidateQueries({ queryKey: getGetPriceSummaryQueryKey() });
       },
-      onError: () => toast({ title: "Errore durante l'eliminazione", variant: "destructive" }),
+      onError: () => toast({ title: t("documents.toast.deleteError"), variant: "destructive" }),
     },
   });
 
@@ -85,105 +84,204 @@ function DocumentRow({ doc }: { doc: UploadedDocument }) {
   const lavorazioni = (doc.extractedData as { lavorazioni?: Array<{ tipo: string; prezzoUnitario: number; um?: string | null; zona?: string | null }> } | null)?.lavorazioni ?? [];
 
   return (
-    <div className="border border-gray-100 rounded-xl p-4 bg-white hover:shadow-sm transition-shadow">
-      <div className="flex items-start gap-3">
-        <div className="h-9 w-9 rounded-lg bg-gray-50 border border-gray-100 flex items-center justify-center shrink-0">
-          {isPdf ? (
-            <FileText className="h-4 w-4 text-red-500" />
-          ) : isDocx ? (
-            <FileText className="h-4 w-4 text-blue-600" />
-          ) : isXlsx ? (
-            <FileText className="h-4 w-4 text-green-600" />
-          ) : (
-            <ImageIcon className="h-4 w-4 text-blue-500" />
-          )}
+    <div className="set-row" style={{ alignItems: "flex-start" }}>
+      <div className="h-9 w-9 rounded-lg flex items-center justify-center shrink-0" style={{ background: "var(--soft)", border: "1px solid var(--line)" }}>
+        {isPdf ? (
+          <FileText className="h-4 w-4 text-red-500" />
+        ) : isDocx ? (
+          <FileText className="h-4 w-4 text-blue-600" />
+        ) : isXlsx ? (
+          <FileText className="h-4 w-4 text-green-600" />
+        ) : (
+          <ImageIcon className="h-4 w-4 text-blue-500" />
+        )}
+      </div>
+
+      <div className="txt">
+        <div className="flex items-center gap-2 flex-wrap">
+          <b style={{ maxWidth: 280, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{doc.fileName}</b>
+          <StatusChip status={doc.status} />
         </div>
-
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 flex-wrap">
-            <p className="text-sm font-medium text-gray-800 truncate max-w-xs">{doc.fileName}</p>
-            <StatusBadge status={doc.status} />
-          </div>
-          <div className="flex items-center gap-3 mt-0.5">
-            <span className="text-xs text-gray-400">{formatDate(doc.createdAt)}</span>
-            {doc.fileSize && (
-              <span className="text-xs text-gray-400">{formatFileSize(doc.fileSize)}</span>
-            )}
-            {doc.status === "done" && lavorazioni.length > 0 && (
-              <span className="text-xs text-green-600 font-medium">{lavorazioni.length} voci estratte</span>
-            )}
-          </div>
-          {doc.errorMessage && (
-            <p className="text-xs text-red-500 mt-1">{doc.errorMessage}</p>
-          )}
-
+        <div className="flex items-center gap-3 mt-0.5">
+          <span>{formatDate(doc.createdAt)}</span>
+          {doc.fileSize && <span>{formatFileSize(doc.fileSize)}</span>}
           {doc.status === "done" && lavorazioni.length > 0 && (
-            <button
-              className="mt-2 flex items-center gap-1 text-xs text-violet-600 hover:text-violet-800 font-medium"
-              onClick={() => setExpanded(v => !v)}
-            >
-              {expanded ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
-              {expanded ? "Nascondi voci" : "Mostra voci estratte"}
-            </button>
-          )}
-
-          {expanded && lavorazioni.length > 0 && (
-            <div className="mt-2 rounded-lg bg-gray-50 border border-gray-100 overflow-hidden">
-              <table className="w-full text-xs">
-                <thead>
-                  <tr className="border-b border-gray-100 bg-gray-100/60">
-                    <th className="text-left px-3 py-1.5 font-semibold text-gray-600">Lavorazione</th>
-                    <th className="text-right px-3 py-1.5 font-semibold text-gray-600">Prezzo</th>
-                    <th className="text-right px-3 py-1.5 font-semibold text-gray-600">UM</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {lavorazioni.map((l, i) => (
-                    <tr key={i} className="border-b border-gray-50 last:border-0">
-                      <td className="px-3 py-1.5 text-gray-700">{l.tipo}</td>
-                      <td className="px-3 py-1.5 text-right text-gray-700 font-medium">{formatCurrency(l.prezzoUnitario)}</td>
-                      <td className="px-3 py-1.5 text-right text-gray-400">{l.um || "—"}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+            <span style={{ color: "var(--green-dark)", fontWeight: 700 }}>{fmt(t("documents.itemsExtracted"), { n: lavorazioni.length })}</span>
           )}
         </div>
+        {doc.errorMessage && (
+          <p className="text-xs mt-1" style={{ color: "var(--red)" }}>{doc.errorMessage}</p>
+        )}
 
-        <div className="flex items-center gap-1 shrink-0">
-          {(doc.status === "pending" || doc.status === "error") && (
-            <Button
-              size="sm"
-              variant="outline"
-              className="h-7 text-xs gap-1"
-              onClick={() => extractMut.mutate({ id: doc.id })}
-              disabled={extractMut.isPending}
-            >
-              {extractMut.isPending ? (
-                <Loader2 className="h-3 w-3 animate-spin" />
-              ) : (
-                <Zap className="h-3 w-3 text-violet-500" />
-              )}
-              Elabora
-            </Button>
-          )}
-          <Button
-            size="icon"
-            variant="ghost"
-            className="h-7 w-7 text-gray-400 hover:text-red-500"
-            onClick={() => deleteMut.mutate({ id: doc.id })}
-            disabled={deleteMut.isPending}
+        {doc.status === "done" && lavorazioni.length > 0 && (
+          <button
+            className="mt-2 flex items-center gap-1 text-xs font-semibold"
+            style={{ color: "var(--navy)" }}
+            onClick={() => setExpanded(v => !v)}
           >
-            <Trash2 className="h-3.5 w-3.5" />
-          </Button>
-        </div>
+            {expanded ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+            {expanded ? t("documents.hideItems") : t("documents.showItems")}
+          </button>
+        )}
+
+        {expanded && lavorazioni.length > 0 && (
+          <div className="mt-2 rounded-lg overflow-hidden" style={{ background: "var(--soft)", border: "1px solid var(--line)" }}>
+            <table className="w-full text-xs">
+              <thead>
+                <tr className="border-b" style={{ borderColor: "var(--line)" }}>
+                  <th className="text-left px-3 py-1.5 font-semibold" style={{ color: "var(--muted-mk)" }}>{t("documents.col.workItem")}</th>
+                  <th className="text-right px-3 py-1.5 font-semibold" style={{ color: "var(--muted-mk)" }}>{t("documents.col.price")}</th>
+                  <th className="text-right px-3 py-1.5 font-semibold" style={{ color: "var(--muted-mk)" }}>{t("documents.col.unit")}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {lavorazioni.map((l, i) => (
+                  <tr key={i} className="border-b last:border-0" style={{ borderColor: "var(--soft)" }}>
+                    <td className="px-3 py-1.5" style={{ color: "var(--ink)" }}>{l.tipo}</td>
+                    <td className="px-3 py-1.5 text-right font-medium" style={{ color: "var(--ink)" }}>{formatCurrency(l.prezzoUnitario)}</td>
+                    <td className="px-3 py-1.5 text-right" style={{ color: "var(--muted-mk)" }}>{l.um || "—"}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+
+      <div className="flex items-center gap-1 shrink-0">
+        {(doc.status === "pending" || doc.status === "error") && (
+          <button
+            type="button"
+            className="btn btn-outline-navy btn-sm gap-1"
+            onClick={() => extractMut.mutate({ id: doc.id })}
+            disabled={extractMut.isPending}
+          >
+            {extractMut.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : <Zap className="h-3 w-3" />}
+            {t("documents.process")}
+          </button>
+        )}
+        <Button
+          size="icon"
+          variant="ghost"
+          className="h-7 w-7 text-muted-foreground hover:text-red-500"
+          aria-label={t("documents.delete")}
+          title={t("documents.delete")}
+          onClick={() => deleteMut.mutate({ id: doc.id })}
+          disabled={deleteMut.isPending}
+        >
+          <Trash2 className="h-3.5 w-3.5" />
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+function PriceAlerts() {
+  const { t } = useLanguage();
+  const qc = useQueryClient();
+  const { data: alerts = [] } = useGetPriceAlerts();
+
+  const dismissMut = useDismissPriceAlert({
+    mutation: {
+      onSuccess: () => qc.invalidateQueries({ queryKey: getGetPriceAlertsQueryKey() }),
+    },
+  });
+
+  if (alerts.length === 0) return null;
+
+  return (
+    <div className="card" style={{ background: "var(--yellow-t)", borderColor: "var(--yellow-dark)" }}>
+      <div className="card-head">
+        <h2 className="flex items-center gap-2" style={{ color: "var(--yellow-dark)" }}>
+          <TrendingUp className="h-4 w-4" />
+          {t("documents.alerts.title")}
+        </h2>
+      </div>
+      <div style={{ padding: "14px 22px" }} className="space-y-2">
+        {alerts.map((alert) => (
+          <div key={alert.id} className="flex items-center justify-between gap-3 rounded-lg p-3" style={{ background: "#fff", border: "1px solid var(--line)" }}>
+            <div className="flex items-center gap-2 min-w-0">
+              {alert.direction === "up" ? (
+                <TrendingUp className="h-4 w-4 text-red-500 shrink-0" />
+              ) : (
+                <TrendingDown className="h-4 w-4 text-green-600 shrink-0" />
+              )}
+              <p className="text-sm truncate" style={{ color: "var(--ink)" }}>
+                <span className="font-semibold">{alert.workType}</span>
+                {alert.zone && <span style={{ color: "var(--muted-mk)" }}> {fmt(t("documents.alerts.in"), { zone: alert.zone })}</span>} {t("documents.alerts.is")}{" "}
+                <span className={cn("font-semibold", alert.direction === "up" ? "text-red-600" : "text-green-600")}>
+                  {alert.direction === "up" ? t("documents.alerts.up") : t("documents.alerts.down")} {Math.abs(alert.percentChange).toFixed(0)}%
+                </span>{" "}
+                ({formatCurrency(alert.previousAvgPrice)} → {formatCurrency(alert.currentAvgPrice)})
+              </p>
+            </div>
+            <Button
+              size="icon"
+              variant="ghost"
+              className="h-6 w-6 text-muted-foreground hover:text-muted-foreground shrink-0"
+              aria-label={t("documents.alerts.dismiss")}
+              onClick={() => dismissMut.mutate({ id: alert.id })}
+              disabled={dismissMut.isPending}
+            >
+              <X className="h-3.5 w-3.5" />
+            </Button>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function PriceComparison() {
+  const { t } = useLanguage();
+  const { data } = useGetPriceComparison();
+  const comparisons = data?.comparisons ?? [];
+
+  if (comparisons.length === 0) return null;
+
+  return (
+    <div className="card">
+      <div className="card-head">
+        <h2 className="flex items-center gap-2"><Scale className="h-4 w-4" style={{ color: "var(--navy)" }} />{t("documents.comparison.title")}</h2>
+      </div>
+      <div style={{ padding: "14px 22px" }} className="space-y-3">
+        {comparisons.map((group) => {
+          const cheapest = group.vendors[0];
+          return (
+            <div key={`${group.workType}::${group.zone ?? ""}`} className="rounded-lg p-3" style={{ border: "1px solid var(--line)" }}>
+              <p className="text-xs font-semibold" style={{ color: "var(--ink)" }}>
+                {group.workType}
+                {group.zone && <span className="font-normal" style={{ color: "var(--muted-mk)" }}> — {group.zone}</span>}
+              </p>
+              <div className="mt-2 space-y-1">
+                {group.vendors.map((v) => (
+                  <div key={v.vendor} className="flex items-center justify-between text-xs">
+                    <span className={cn(v.vendor === cheapest.vendor && "font-semibold text-green-700")} style={v.vendor === cheapest.vendor ? undefined : { color: "var(--muted-mk)" }}>
+                      {v.vendor}
+                    </span>
+                    <span style={{ color: "var(--muted-mk)" }}>
+                      {formatCurrency(v.avgPrice)}
+                      {group.unit && `/${group.unit}`}
+                      <span className="ml-1">({v.count})</span>
+                    </span>
+                  </div>
+                ))}
+              </div>
+              {group.vendors.length >= 2 && group.vendors[group.vendors.length - 1].avgPrice > cheapest.avgPrice && (
+                <p className="text-[10px] mt-1.5" style={{ color: "var(--navy)" }}>
+                  {fmt(t("documents.comparison.payingMore"), { expensive: group.vendors[group.vendors.length - 1].vendor, cheapest: cheapest.vendor })}
+                </p>
+              )}
+            </div>
+          );
+        })}
       </div>
     </div>
   );
 }
 
 export default function DocumentsPage() {
+  const { t } = useLanguage();
   const { toast } = useToast();
   const qc = useQueryClient();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -196,10 +294,10 @@ export default function DocumentsPage() {
     mutation: {
       onSuccess: () => {
         qc.invalidateQueries({ queryKey: getListDocumentsQueryKey() });
-        toast({ title: "Documento caricato — clicca Elabora per estrarre i prezzi" });
+        toast({ title: t("documents.toast.uploaded") });
       },
       onError: (err) => {
-        const msg = err instanceof Error ? err.message : "Errore caricamento";
+        const msg = err instanceof Error ? err.message : t("documents.toast.uploadError");
         toast({ title: msg, variant: "destructive" });
       },
     },
@@ -223,156 +321,140 @@ export default function DocumentsPage() {
   const hasEnoughForIntelligence = doneCount >= 3;
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-500">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">Archivio Preventivi</h1>
-        <p className="text-muted-foreground mt-1 text-sm">
-          Carica preventivi esistenti per estrarre i tuoi prezzi di mercato e migliorare le stime AI.
-        </p>
+    <div className="animate-in fade-in duration-500">
+      <div className="page-head">
+        <div>
+          <h1 className="flex items-center gap-2"><FolderOpen className="h-6 w-6" style={{ color: "var(--navy)" }} />{t("documents.title")}</h1>
+          <p className="sub">{t("documents.subtitle")}</p>
+        </div>
       </div>
 
-      {/* Upload zone */}
-      <div
-        onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
-        onDragLeave={() => setIsDragging(false)}
-        onDrop={onDrop}
-        className={cn(
-          "border-2 border-dashed rounded-xl p-8 text-center transition-colors cursor-pointer",
-          isDragging ? "border-violet-400 bg-violet-50" : "border-gray-200 bg-gray-50/50 hover:border-violet-300 hover:bg-violet-50/30"
-        )}
-        onClick={() => fileInputRef.current?.click()}
-      >
-        <input
-          ref={fileInputRef}
-          type="file"
-          multiple
-          accept=".pdf,.docx,.xlsx,image/jpeg,image/png,image/webp"
-          className="hidden"
-          onChange={(e) => handleFiles(e.target.files)}
-        />
-        <div className="flex flex-col items-center gap-3">
-          {uploadMut.isPending ? (
-            <Loader2 className="h-8 w-8 text-violet-400 animate-spin" />
-          ) : (
-            <div className="h-12 w-12 rounded-xl bg-violet-100 flex items-center justify-center">
-              <Upload className="h-5 w-5 text-violet-600" />
-            </div>
-          )}
-          <div>
-            <p className="font-semibold text-gray-800 text-sm">
-              {uploadMut.isPending ? "Caricamento in corso..." : "Trascina i file qui o clicca per selezionare"}
-            </p>
-            <p className="text-xs text-muted-foreground mt-1">
-              PDF, DOCX, XLSX, JPG, PNG o WEBP — max 10 MB per file
-            </p>
-          </div>
+      <div className="card">
+        <div
+          className="dropzone"
+          style={isDragging ? { margin: "22px", borderColor: "var(--navy)", background: "var(--soft)" } : { margin: "22px" }}
+          onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
+          onDragLeave={() => setIsDragging(false)}
+          onDrop={onDrop}
+        >
+          <input
+            ref={fileInputRef}
+            type="file"
+            multiple
+            accept=".pdf,.docx,.xlsx,image/jpeg,image/png,image/webp"
+            className="hidden"
+            onChange={(e) => handleFiles(e.target.files)}
+          />
+          <b>{uploadMut.isPending ? t("documents.uploading") : t("documents.dropHere")}</b>
+          <p>{t("documents.formats")}</p>
+          <button type="button" className="btn btn-outline-navy btn-sm gap-1.5" onClick={() => fileInputRef.current?.click()} disabled={uploadMut.isPending}>
+            {uploadMut.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
+            {t("documents.chooseFile")}
+          </button>
         </div>
       </div>
 
       {/* Price intelligence banner */}
       {doneCount > 0 && (
-        <Card className={cn(
-          "border",
-          hasEnoughForIntelligence ? "border-violet-200 bg-violet-50/40" : "border-amber-200 bg-amber-50/40"
-        )}>
-          <CardContent className="py-4 px-5 flex items-center gap-3">
-            <div className={cn(
-              "h-9 w-9 rounded-lg flex items-center justify-center shrink-0",
-              hasEnoughForIntelligence ? "bg-violet-100" : "bg-amber-100"
-            )}>
-              <TrendingUp className={cn("h-4 w-4", hasEnoughForIntelligence ? "text-violet-600" : "text-amber-600")} />
+        <div className="card" style={{ marginTop: 16, background: hasEnoughForIntelligence ? "var(--soft)" : "var(--yellow-t)" }}>
+          <div className="flex items-center gap-3" style={{ padding: "16px 22px" }}>
+            <div className={cn("h-9 w-9 rounded-lg flex items-center justify-center shrink-0")} style={{ background: hasEnoughForIntelligence ? "var(--soft-2)" : "var(--yellow)" }}>
+              <TrendingUp className="h-4 w-4" style={{ color: hasEnoughForIntelligence ? "var(--navy)" : "var(--yellow-dark)" }} />
             </div>
             <div>
               {hasEnoughForIntelligence ? (
                 <>
-                  <p className="text-sm font-semibold text-violet-800">Price intelligence attiva</p>
-                  <p className="text-xs text-violet-600 mt-0.5">
-                    {doneCount} documenti elaborati — i tuoi prezzi medi vengono usati nei nuovi preventivi AI.
+                  <p className="text-sm font-semibold" style={{ color: "var(--navy)" }}>{t("documents.intel.active")}</p>
+                  <p className="text-xs mt-0.5" style={{ color: "var(--muted-mk)" }}>
+                    {fmt(t("documents.intel.activeDesc"), { n: doneCount })}
                   </p>
                 </>
               ) : (
                 <>
-                  <p className="text-sm font-semibold text-amber-800">Quasi pronto ({doneCount}/3 documenti)</p>
-                  <p className="text-xs text-amber-600 mt-0.5">
-                    Elabora almeno 3 documenti per attivare la price intelligence nei preventivi AI.
+                  <p className="text-sm font-semibold" style={{ color: "var(--yellow-dark)" }}>{fmt(t("documents.intel.almost"), { n: doneCount })}</p>
+                  <p className="text-xs mt-0.5" style={{ color: "var(--muted-mk)" }}>
+                    {t("documents.intel.almostDesc")}
                   </p>
                 </>
               )}
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       )}
+
+      <div style={{ marginTop: 16 }}>
+        <PriceAlerts />
+      </div>
+
+      <div style={{ marginTop: 16 }}>
+        <PriceComparison />
+      </div>
 
       {/* Price summary */}
       {priceSummary && priceSummary.items.length > 0 && (
-        <Card>
-          <CardHeader className="pb-2 pt-4 px-5">
-            <CardTitle className="text-base font-semibold flex items-center gap-2">
-              <TrendingUp className="h-4 w-4 text-violet-500" />
-              Prezzi medi estratti
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="px-5 pb-4">
+        <div className="card" style={{ marginTop: 16 }}>
+          <div className="card-head">
+            <h2 className="flex items-center gap-2"><TrendingUp className="h-4 w-4" style={{ color: "var(--navy)" }} />{t("documents.summary.title")}</h2>
+          </div>
+          <div style={{ padding: "14px 22px" }}>
             <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
               {priceSummary.items.slice(0, 12).map((item) => (
-                <div key={item.workType} className="rounded-lg border border-gray-100 bg-gray-50/50 p-3">
-                  <p className="text-xs font-semibold text-gray-700 leading-tight line-clamp-2">{item.workType}</p>
-                  <p className="text-lg font-bold text-violet-700 mt-1">
+                <div key={item.workType} className="rounded-lg p-3" style={{ background: "var(--soft)", border: "1px solid var(--line)" }}>
+                  <p className="text-xs font-semibold leading-tight line-clamp-2" style={{ color: "var(--ink)" }}>{item.workType}</p>
+                  <p className="text-lg font-bold mt-1" style={{ color: "var(--navy)" }}>
                     {formatCurrency(item.avgUnitPrice)}
-                    {item.unit && <span className="text-xs font-normal text-gray-400 ml-1">/{item.unit}</span>}
+                    {item.unit && <span className="text-xs font-normal ml-1" style={{ color: "var(--muted-mk)" }}>/{item.unit}</span>}
                   </p>
                   <div className="flex items-center gap-2 mt-1">
-                    <span className="text-[10px] text-gray-400">
+                    <span className="text-[10px]" style={{ color: "var(--faint)" }}>
                       {formatCurrency(item.minPrice)} – {formatCurrency(item.maxPrice)}
                     </span>
-                    <span className="text-[10px] text-gray-400">({item.count} doc)</span>
+                    <span className="text-[10px]" style={{ color: "var(--faint)" }}>{fmt(t("documents.summary.docs"), { n: item.count })}</span>
                   </div>
                   {item.zones && item.zones.length > 0 && (
-                    <p className="text-[10px] text-gray-400 mt-0.5 truncate">{item.zones.join(", ")}</p>
+                    <p className="text-[10px] mt-0.5 truncate" style={{ color: "var(--faint)" }}>{item.zones.join(", ")}</p>
                   )}
                 </div>
               ))}
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       )}
 
       {/* Document list */}
-      <Card>
-        <CardHeader className="pb-2 pt-4 px-5 flex flex-row items-center justify-between">
-          <CardTitle className="text-base font-semibold flex items-center gap-2">
-            <FolderOpen className="h-4 w-4 text-gray-400" />
-            Documenti caricati
-            {docs.length > 0 && (
-              <Badge className="bg-gray-100 text-gray-500 border-0 text-xs">{docs.length}</Badge>
-            )}
-          </CardTitle>
+      <div className="card" style={{ marginTop: 16 }}>
+        <div className="card-head">
+          <div>
+            <h2 className="flex items-center gap-2">
+              <FolderOpen className="h-4 w-4" style={{ color: "var(--muted-mk)" }} />
+              {t("documents.list.title")}
+              {docs.length > 0 && <span className="chip chip-grey">{docs.length}</span>}
+            </h2>
+          </div>
           {pendingCount > 0 && (
-            <span className="text-xs text-amber-600">{pendingCount} in attesa di elaborazione</span>
+            <span className="sub" style={{ color: "var(--yellow-dark)" }}>{pendingCount} pending processing</span>
           )}
-        </CardHeader>
-        <CardContent className="px-5 pb-5">
-          {isLoading ? (
-            <div className="flex items-center justify-center py-12">
-              <Loader2 className="h-6 w-6 animate-spin text-gray-300" />
-            </div>
-          ) : docs.length === 0 ? (
-            <div className="py-12 text-center">
-              <FolderOpen className="h-10 w-10 text-gray-200 mx-auto mb-3" />
-              <p className="text-sm text-muted-foreground">Nessun documento caricato</p>
-              <p className="text-xs text-muted-foreground mt-1">
-                Carica i tuoi preventivi precedenti per estrarre i prezzi di mercato
-              </p>
-            </div>
-          ) : (
-            <div className="space-y-2">
-              {docs.map((doc) => (
-                <DocumentRow key={doc.id} doc={doc} />
-              ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
+        </div>
+        {isLoading ? (
+          <div className="flex items-center justify-center py-12">
+            <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+          </div>
+        ) : docs.length === 0 ? (
+          <div className="py-12 text-center">
+            <FolderOpen className="h-10 w-10 mx-auto mb-3" style={{ color: "var(--faint)" }} />
+            <p className="text-sm" style={{ color: "var(--muted-mk)" }}>{t("documents.empty.title")}</p>
+            <p className="text-xs mt-1" style={{ color: "var(--faint)" }}>
+              {t("documents.empty.desc")}
+            </p>
+          </div>
+        ) : (
+          <div>
+            {docs.map((doc) => (
+              <DocumentRow key={doc.id} doc={doc} />
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

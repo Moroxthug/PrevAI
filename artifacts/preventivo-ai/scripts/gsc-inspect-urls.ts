@@ -16,7 +16,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const KEY_PATH = path.join(__dirname, "google-indexing-key.json");
 const SITEMAP_PATH = path.join(__dirname, "..", "public", "sitemap.xml");
 
-const SITE_URL = "https://prevai.it/";
+const SITE_URL = "https://quoteai.ca/";
 
 function loadSitemapUrls(): string[] {
   const xml = readFileSync(SITEMAP_PATH, "utf-8");
@@ -26,8 +26,8 @@ function loadSitemapUrls(): string[] {
 function sampleUrls(all: string[]): string[] {
   // Pagine core (sempre incluse) + un campione distribuito di pagine
   // programmatiche citta'/servizio per capire lo stato tipico del template.
-  const core = all.filter((u) => !u.includes("/preventivi/"));
-  const programmatic = all.filter((u) => u.includes("/preventivi/"));
+  const core = all.filter((u) => !u.includes("/quotes/"));
+  const programmatic = all.filter((u) => u.includes("/quotes/"));
   const step = Math.max(1, Math.floor(programmatic.length / 15));
   const sampled = programmatic.filter((_, i) => i % step === 0).slice(0, 15);
   return [...core, ...sampled];

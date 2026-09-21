@@ -17,8 +17,8 @@
 | # | Fase | Piano | Sforzo | Stato | Data | Commit | Note |
 |---|---|---|---|---|---|---|---|
 | 1 | **V2-0** Sicurezza e igiene: revoca PAT, remote puliti, triage 101 file non committati, `pg_dump` baseline, inventario env, tag `v1-final`, branch `v2` | V2 §4 | ½ g | ✅ fatto | 2026-09-21 | `6dbe45de4` (main) | main pulito (7 commit), dump baseline OK, tag `v1-final`, branch `v2` |
-| 2 | **V2-1** Import base QuoteAI nel branch `v2`, rinomina `quote-ai` → `preventivo-ai`, CI e docs | V2 §4 | 1 g | ⬜ da fare | | | **← PROSSIMA** |
-| 3 | **V2-2** Ri-italianizzazione: `lib/config/italy.ts`, locale solo `it`, slug SEO v1 identici, blog v1, prompt AI unificato | V2 §4 | 5–7 g | ⬜ | | | |
+| 2 | **V2-1** Import base QuoteAI nel branch `v2`, rinomina `quote-ai` → `preventivo-ai`, CI e docs | V2 §4 | 1 g | ✅ fatto | 2026-09-21 | commit `V2-1: import base QuoteAI…` su `v2` | base = QuoteAI `5d65f61` (Phase 71); typecheck, build, 65 test verdi; `.gitattributes` LF |
+| 3 | **V2-2** Ri-italianizzazione: `lib/config/italy.ts`, locale solo `it`, slug SEO v1 identici, blog v1, prompt AI unificato | V2 §4 | 5–7 g | ⬜ da fare | | | **← PROSSIMA** (richiede D1) |
 | 4 | **V2-3** Prova generale su `prevai-staging` da dump reale; migrazioni additive; v1 e v2 entrambe funzionanti sul DB migrato | V2 §4 | 2–3 g | ⬜ | | | fase che protegge i dati |
 | 5 | **V2-4** Riconciliazione feature per l'Italia (tabella keep/swap/disable; incentivi v1 ripristinati; fatture pro-forma) | V2 §4 | 5–8 g | ⬜ | | | richiede decisioni D1, D3 |
 | 6 | **V2-5** Migrazione produzione + cutover su Vercel `prevai` (preview → promote), rollback pre-scritto | V2 §4 | 1 g + 48 h monitoraggio | ⬜ | | | richiede D2 |
@@ -51,9 +51,22 @@ Legenda stato: ⬜ da fare · 🟨 in corso · ✅ fatto · ⛔ bloccato (scrive
 | D8 | Intermediario SDI: partire con Openapi.it (prezzi pubblici, no setup) + preventivo A-Cube. Contratto e DPA da firmare dal titolare | A-1 | ⬜ |
 | D9 | Fase 2: unico studio partner vs rete di professionisti convenzionati | A-6 | ⬜ |
 
-## Come iniziare la prossima sessione (V2-1)
+## Come iniziare la prossima sessione (V2-2)
 
-Apri una sessione nella cartella `C:UsersAdminDownloadsPrevAI (2)PrevAI`, `git checkout v2`, e scrivi: **"Leggi docs/PIANO-AZIONE.md ed esegui la fase V2-1"**. Dettagli in `PREVAI-V2-PLAN.md` §4 V2-1. Prerequisiti già soddisfatti: `main` pulito, tag `v1-final`, branch `v2` = `main`, dump baseline in `C:UsersAdminPrevAI-backups` (vedi `RUNBOOKS.md`), binari Postgres in `C:UsersAdminpg17pgsqlin`.
+Apri una sessione nella cartella `C:\Users\Admin\Downloads\PrevAI (2)\PrevAI`, `git checkout v2`, e scrivi: **"Leggi docs/PIANO-AZIONE.md ed esegui la fase V2-2"**. Dettagli in `PREVAI-V2-PLAN.md` §4 V2-2. Prima di iniziare serve la decisione **D1** (design system). Il codice v1 da cui recuperare `seo-data.ts`, blog, prompt AI e incentivi è nel tag `v1-final` (`git show v1-final:artifacts/preventivo-ai/src/…`).
+
+Note operative ereditate da V2-1:
+- I comandi locali vanno lanciati con i filtri per **nome pacchetto** (`--filter @workspace/preventivo-ai`), mai per path (`./artifacts/**`): le parentesi in `PrevAI (2)` rompono il glob di pnpm.
+- Il repo è `eol=lf` via `.gitattributes`: i 3 hash CSP in `vercel.json` sono calcolati sull'`index.html` LF. Dopo aver toccato gli script inline di `index.html`: `pnpm --filter @workspace/api-server csp-hashes`.
+- `.env` locale è ancora quello v1 (Groq ecc.): l'app v2 non gira ancora in locale contro un DB; lo farà su `prevai-staging` in V2-3. Vedi `docs/ENV-INVENTORY.md` (sezione QuoteAI) per le variabili nuove.
+- `.claude/launch.json` locale: `preventivo-ai` (:5173) e `api-server` (:5000).
+
+## Storico: come è stata eseguita V2-1
+
+1. Export di QuoteAI `HEAD` (`5d65f61`, Phase 71) con `git archive` — repo QuoteAI non toccato. I 18 file **non committati** di QuoteAI ("Phase 72": leave-team, 2FA UI, privacy) **non** sono stati importati.
+2. Rinomina `artifacts/quote-ai` → `artifacts/preventivo-ai` e `quote-ai` → `preventivo-ai` in tutti i riferimenti (package name, `vercel.json`, `pnpm-workspace.yaml`, lockfile, `knip.json`, `eslint.config.mjs`, `cspell`, CI `.github/workflows/*`, script, docs).
+3. Albero v1 tolto dal branch (recuperabile dal tag `v1-final`); tree QuoteAI copiato; `docs/RUNBOOKS.md` e `docs/ENV-INVENTORY.md` di PrevAI mantenuti in testa con la versione QuoteAI accodata come sezione; altri docs QuoteAI importati (DESIGN-SYSTEM, ROUTE-MATRIX, QA-VERIFICATION-PLAN, …). I 5 piani PrevAI restano.
+4. `pnpm install --frozen-lockfile`, `pnpm run typecheck` (pulito), build api-server + preventivo-ai (428 pagine prerender, ancora canadesi), `pnpm test` 65/65, lint 0 errori, i18n-audit identico al baseline QuoteAI. Knip non eseguibile in locale senza `DATABASE_URL` (carica `drizzle.config.ts`). E2e non eseguiti (richiedono DB: V2-3).
 
 ## Storico: come è stata eseguita V2-0
 
@@ -70,3 +83,4 @@ Apri una nuova sessione nella cartella `C:\Users\Admin\Downloads\PrevAI (2)\Prev
 
 - **2026-09-21** — Creati `PREVAI-V2-PLAN.md`, `AMMINISTRAZIONE-PLAN.md` e questo file. Nessun codice toccato. Ricerca di mercato/legale/compliance completata (vedi `AMMINISTRAZIONE-PLAN.md` §13 per le fonti). QuoteAI consultato in sola lettura per ricostruire le 70 fasi.
 - **2026-09-21 (V2-0)** — Triage D4: 102 file → 5 commit per tema su `main` (`4265338a5` accettazione pubblica `/p/:id`, `36ad3c965` OCR listino, `063d6f861` home CRM, `d03cf34a8` hero SEO, `dae9d577a` docs); 88 PNG OG scartate (byproduct di build); audit HTML e xlsx Toronto spostati fuori repo. Dump baseline prod (151 KB, 24 tabelle, 106 preventivi, 28 utenti) → `RUNBOOKS.md`. Scoperto che le colonne `accepted_*` erano già in prod. `ENV-INVENTORY.md` creato (13 var su Vercel; Groq è l'unico provider AI). D7 risolta (eu-west-1). Tag `v1-final` = `6dbe45de4`, branch `v2` creato e pushato. Push di `main` ha avviato deploy prod su Vercel.
+- **2026-09-21 (V2-1)** — Base QuoteAI (`5d65f61`) importata su `v2` e rinominata `preventivo-ai`. Due scoperte: (a) i filtri pnpm per path non funzionano nella cartella `PrevAI (2)` → script `typecheck` passato ai filtri per nome; (b) `core.autocrlf=true` sulla macchina rendeva CRLF il working tree e faceva fallire il test degli hash CSP → aggiunto `.gitattributes` `eol=lf`. Build verde con `MARKET` canadese: punto di partenza misurabile per V2-2.

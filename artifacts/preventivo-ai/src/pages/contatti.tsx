@@ -1,129 +1,102 @@
 import { PublicLayout } from "@/components/layout/public-layout";
 import { SeoHead } from "@/components/seo-head";
-import { Mail, MessageCircle, FileText, Clock } from "lucide-react";
+import { Mail, MessageCircle, FileText, Clock, ArrowRight } from "lucide-react";
 import { Link } from "wouter";
+import { useLanguage } from "@/i18n/LanguageContext";
 
 export default function ContattiPage() {
+  const { t } = useLanguage();
   const jsonLd = [
     {
       "@context": "https://schema.org",
       "@type": "ContactPage",
-      name: "Contatti prevai",
-      url: "https://prevai.it/contatti/",
-      description: "Contatta il team prevai per supporto, domande sul prodotto o informazioni commerciali.",
+      name: "QuoteAI Contact",
+      url: "https://quoteai.ca/contatti/",
+      description: "Contact the QuoteAI team for support, product questions, or sales information.",
       mainEntity: {
         "@type": "Organization",
-        name: "prevai",
-        url: "https://prevai.it/",
-        email: "info@prevai.it",
+        name: "QuoteAI",
+        url: "https://quoteai.ca/",
+        email: "info@quoteai.ca",
         contactPoint: [
           {
             "@type": "ContactPoint",
-            email: "info@prevai.it",
+            email: "info@quoteai.ca",
             contactType: "customer support",
-            availableLanguage: "it",
+            availableLanguage: ["en", "fr"],
           },
           {
             "@type": "ContactPoint",
-            email: "privacy@prevai.it",
+            email: "privacy@quoteai.ca",
             contactType: "privacy inquiries",
-            availableLanguage: "it",
+            availableLanguage: ["en", "fr"],
           },
         ],
       },
     },
   ];
 
+  const faqs = [
+    { q: t("contact.faq1Q"), a: t("contact.faq1A") },
+    { q: t("contact.faq2Q"), a: t("contact.faq2A") },
+    { q: t("contact.faq3Q"), a: t("contact.faq3A") },
+    { q: t("contact.faq4Q"), a: t("contact.faq4A") },
+  ];
+
   return (
     <PublicLayout>
       <SeoHead
-        title="Contatti | prevai — Assistenza e Supporto"
-        description="Hai domande su prevai? Contattaci via email o WhatsApp. Siamo qui per aiutarti a generare preventivi professionali più velocemente."
-        canonical="https://prevai.it/contatti/"
+        title={t("contact.seoTitle")}
+        description={t("contact.seoDescription")}
+        canonical="https://quoteai.ca/contatti/"
         jsonLd={jsonLd}
       />
 
-      {/* Hero */}
-      <section className="relative overflow-hidden bg-white pt-24 pb-16">
-        <div
-          className="absolute inset-0 opacity-30 pointer-events-none"
-          aria-hidden="true"
-          style={{
-            background:
-              "radial-gradient(ellipse 80% 60% at 50% -10%, rgba(124,58,237,0.12) 0%, transparent 70%)",
-          }}
-        />
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-3xl relative z-10 text-center">
-          <h1 className="text-4xl sm:text-5xl font-bold tracking-tight text-gray-900 mb-5">
-            Come possiamo{" "}
-            <span
-              style={{
-                background: "linear-gradient(135deg, #7C3AED 0%, #A855F7 100%)",
-                WebkitBackgroundClip: "text",
-                WebkitTextFillColor: "transparent",
-              }}
-            >
-              aiutarti?
-            </span>
-          </h1>
-          <p className="text-xl text-gray-600 leading-relaxed">
-            Il team prevai risponde entro poche ore nei giorni feriali. Scegli il canale che preferisci.
-          </p>
-        </div>
-      </section>
+      {/* Header */}
+      <header className="wrap" style={{ maxWidth: 700, padding: "clamp(48px, 7vw, 88px) 0 clamp(20px, 3vw, 32px)", textAlign: "center" }}>
+        <h1 className="h2" style={{ marginBottom: 16 }}>
+          {t("contact.heroTitlePrefix")} <span style={{ color: "var(--green)" }}>{t("contact.heroTitleHighlight")}</span>
+        </h1>
+        <p className="lead" style={{ margin: "0 auto" }}>{t("contact.heroBody")}</p>
+      </header>
 
       {/* Canali di contatto */}
-      <section className="py-16 bg-gray-50">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-4xl">
-          <div className="grid md:grid-cols-3 gap-6">
+      <section className="sec soft">
+        <div className="wrap" style={{ maxWidth: 900 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 16 }}>
             {/* Email supporto */}
-            <div className="bg-white rounded-2xl p-8 border border-gray-100 shadow-sm">
-              <div className="h-12 w-12 rounded-xl bg-violet-50 flex items-center justify-center mb-5">
-                <Mail className="h-6 w-6 text-violet-600" />
-              </div>
-              <h2 className="text-lg font-bold text-gray-900 mb-2">Supporto prodotto</h2>
-              <p className="text-gray-500 text-sm leading-relaxed mb-4">
-                Problemi tecnici, domande sull'utilizzo, richiesta di funzionalità.
+            <div className="card" style={{ padding: 28 }}>
+              <span className="fi p" style={{ marginBottom: 16 }}><Mail className="h-5 w-5" /></span>
+              <h2 style={{ fontSize: 17, fontWeight: 700, color: "var(--navy)", marginBottom: 8 }}>{t("contact.productSupportTitle")}</h2>
+              <p style={{ fontSize: 14, color: "var(--muted-mk)", lineHeight: 1.6, marginBottom: 16 }}>
+                {t("contact.productSupportBody")}
               </p>
-              <a
-                href="mailto:info@prevai.it"
-                className="text-violet-600 font-semibold text-sm hover:text-violet-800 transition-colors"
-              >
-                info@prevai.it →
+              <a href="mailto:info@quoteai.ca" className="cta-link" style={{ fontSize: 14 }}>
+                info@quoteai.ca <ArrowRight className="chev h-3.5 w-3.5" />
               </a>
             </div>
 
             {/* WhatsApp */}
-            <div className="bg-white rounded-2xl p-8 border border-gray-100 shadow-sm">
-              <div className="h-12 w-12 rounded-xl bg-green-50 flex items-center justify-center mb-5">
-                <MessageCircle className="h-6 w-6 text-green-600" />
-              </div>
-              <h2 className="text-lg font-bold text-gray-900 mb-2">WhatsApp</h2>
-              <p className="text-gray-500 text-sm leading-relaxed mb-4">
-                Vuoi provare il servizio via WhatsApp o hai una domanda rapida? Scrivici direttamente.
+            <div className="card" style={{ padding: 28 }}>
+              <span className="fi g" style={{ marginBottom: 16 }}><MessageCircle className="h-5 w-5" /></span>
+              <h2 style={{ fontSize: 17, fontWeight: 700, color: "var(--navy)", marginBottom: 8 }}>WhatsApp</h2>
+              <p style={{ fontSize: 14, color: "var(--muted-mk)", lineHeight: 1.6, marginBottom: 16 }}>
+                {t("contact.whatsappBody")}
               </p>
-              <Link
-                href="/whatsapp/"
-                className="text-green-600 font-semibold text-sm hover:text-green-800 transition-colors"
-              >
-                Scopri prevai su WhatsApp →
+              <Link href="/whatsapp/" className="cta-link" style={{ fontSize: 14 }}>
+                {t("contact.whatsappLink")} <ArrowRight className="chev h-3.5 w-3.5" />
               </Link>
             </div>
 
             {/* Privacy / legale */}
-            <div className="bg-white rounded-2xl p-8 border border-gray-100 shadow-sm">
-              <div className="h-12 w-12 rounded-xl bg-gray-100 flex items-center justify-center mb-5">
-                <FileText className="h-6 w-6 text-gray-600" />
-              </div>
-              <h2 className="text-lg font-bold text-gray-900 mb-2">Privacy & legale</h2>
-              <p className="text-gray-500 text-sm leading-relaxed mb-4">
-                Richieste GDPR, esercizio dei diritti, questioni legali o contrattuali.
+            <div className="card" style={{ padding: 28 }}>
+              <span className="fi t" style={{ marginBottom: 16 }}><FileText className="h-5 w-5" /></span>
+              <h2 style={{ fontSize: 17, fontWeight: 700, color: "var(--navy)", marginBottom: 8 }}>{t("contact.privacyLegalTitle")}</h2>
+              <p style={{ fontSize: 14, color: "var(--muted-mk)", lineHeight: 1.6, marginBottom: 16 }}>
+                {t("contact.privacyLegalBody")}
               </p>
-              <a
-                href="mailto:privacy@prevai.it"
-                className="text-gray-600 font-semibold text-sm hover:text-gray-900 transition-colors"
-              >
-                privacy@prevai.it →
+              <a href="mailto:privacy@quoteai.ca" className="cta-link" style={{ fontSize: 14 }}>
+                privacy@quoteai.ca <ArrowRight className="chev h-3.5 w-3.5" />
               </a>
             </div>
           </div>
@@ -131,15 +104,14 @@ export default function ContattiPage() {
       </section>
 
       {/* Tempi di risposta */}
-      <section className="py-16 bg-white">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-3xl">
-          <div className="flex items-start gap-4 bg-violet-50 border border-violet-100 rounded-2xl p-6">
-            <Clock className="h-6 w-6 text-violet-600 flex-shrink-0 mt-0.5" />
+      <section className="sec" style={{ paddingBlock: "clamp(24px, 3vw, 40px)" }}>
+        <div className="wrap" style={{ maxWidth: 700 }}>
+          <div className="dd-feat">
+            <span className="fi p"><Clock className="h-5 w-5" /></span>
             <div>
-              <h3 className="font-bold text-gray-900 mb-1">Tempi di risposta</h3>
-              <p className="text-gray-600 text-sm leading-relaxed">
-                Rispondiamo a tutte le email entro <strong>4-8 ore nei giorni feriali</strong> (lunedì–venerdì,
-                9:00–18:00 CET). Per le richieste inviate nel weekend, rispondiamo il lunedì mattina.
+              <b>{t("contact.responseTimeTitle")}</b>
+              <p>
+                {t("contact.responseTimeBodyPrefix")} <strong style={{ color: "var(--navy)" }}>{t("contact.responseTimeBodyStrong")}</strong> {t("contact.responseTimeBodySuffix")}
               </p>
             </div>
           </div>
@@ -147,31 +119,14 @@ export default function ContattiPage() {
       </section>
 
       {/* FAQ rapide */}
-      <section className="py-16 bg-gray-50">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-3xl">
-          <h2 className="text-2xl font-bold text-gray-900 mb-8">Domande frequenti</h2>
-          <div className="space-y-5">
-            {[
-              {
-                q: "Posso cancellare l'abbonamento in qualsiasi momento?",
-                a: "Sì. Puoi cancellare il tuo abbonamento in qualsiasi momento dalle impostazioni del tuo account, senza penali o costi aggiuntivi. Continuerai ad avere accesso fino alla fine del periodo già pagato.",
-              },
-              {
-                q: "Offrite uno sconto per agenzie o team?",
-                a: "Sì. Per utilizzi multi-utente o volumi elevati, contattaci a info@prevai.it e troveremo la soluzione più adatta.",
-              },
-              {
-                q: "I miei dati e i preventivi sono al sicuro?",
-                a: "Sì. Tutti i dati sono cifrati in transito (TLS) e a riposo. Non condividiamo i tuoi dati con terze parti. Leggi la nostra Privacy Policy per i dettagli.",
-              },
-              {
-                q: "Posso importare il mio listino prezzi?",
-                a: "Sì. Dalla sezione Impostazioni → Listino puoi inserire i tuoi prezzi personalizzati che l'AI userà come riferimento per i tuoi preventivi.",
-              },
-            ].map((faq, i) => (
-              <div key={i} className="bg-white rounded-2xl p-6 border border-gray-100">
-                <h3 className="font-semibold text-gray-900 mb-2">{faq.q}</h3>
-                <p className="text-gray-500 text-sm leading-relaxed">{faq.a}</p>
+      <section className="sec soft">
+        <div className="wrap" style={{ maxWidth: 700 }}>
+          <h2 className="h2" style={{ fontSize: "clamp(1.5rem, 2.4vw, 2rem)", marginBottom: 28 }}>{t("contact.faqTitle")}</h2>
+          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+            {faqs.map((faq, i) => (
+              <div key={i} className="card" style={{ padding: 22 }}>
+                <h3 style={{ fontSize: 15.5, fontWeight: 700, color: "var(--navy)", marginBottom: 8 }}>{faq.q}</h3>
+                <p style={{ fontSize: 14, color: "var(--muted-mk)", lineHeight: 1.6 }}>{faq.a}</p>
               </div>
             ))}
           </div>
@@ -179,18 +134,12 @@ export default function ContattiPage() {
       </section>
 
       {/* CTA */}
-      <section className="py-16 bg-white">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-xl text-center">
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">Non hai ancora un account?</h2>
-          <p className="text-gray-500 mb-6">
-            Prova prevai gratis — nessuna carta di credito richiesta.
-          </p>
-          <Link
-            href="/sign-up/"
-            className="inline-flex items-center justify-center gap-2 rounded-xl px-8 py-4 text-base font-semibold text-white"
-            style={{ background: "linear-gradient(135deg, #7C3AED 0%, #A855F7 100%)" }}
-          >
-            Crea account gratuito
+      <section className="sec" style={{ textAlign: "center" }}>
+        <div className="wrap" style={{ maxWidth: 480 }}>
+          <h2 className="h2" style={{ fontSize: "clamp(1.4rem, 2.2vw, 1.8rem)", marginBottom: 12 }}>{t("contact.ctaTitle")}</h2>
+          <p className="lead" style={{ margin: "0 auto 24px" }}>{t("contact.ctaBody")}</p>
+          <Link href="/sign-up/" className="btn btn-navy">
+            {t("contact.ctaButton")}
           </Link>
         </div>
       </section>

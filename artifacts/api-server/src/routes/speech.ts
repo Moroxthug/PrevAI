@@ -1,6 +1,7 @@
 import { Router } from "express";
 import multer from "multer";
 import { requireAuth } from "../middlewares/authMiddleware";
+import { requirePermission } from "../middlewares/requirePermission.js";
 import { openai, toFile } from "@workspace/integrations-openai-ai-server";
 import { logger } from "../lib/logger.js";
 import { userRateLimiter } from "../lib/rateLimit.js";
@@ -8,7 +9,7 @@ import { userRateLimiter } from "../lib/rateLimit.js";
 const speechLimiter = userRateLimiter({
   windowMs: 60 * 60 * 1000,
   max: 60,
-  message: "Hai raggiunto il limite orario di trascrizioni vocali. Riprova più tardi.",
+  message: "You have reached the hourly limit for voice transcriptions. Please try again later.",
 });
 
 const ALLOWED_AUDIO_MIMES = [
@@ -28,7 +29,7 @@ const audioUpload = multer({
     if (ALLOWED_AUDIO_MIMES.includes(file.mimetype)) {
       cb(null, true);
     } else {
-      cb(new Error(`Formato audio non supportato: ${file.mimetype}`));
+      cb(new Error(`Unsupported audio format: ${file.mimetype}`));
     }
   },
 });
@@ -39,6 +40,7 @@ const router = Router();
 router.post(
   "/speech/transcribe",
   requireAuth,
+  requirePermission("quotes", "edit"),
   speechLimiter,
   (req, res, next) => {
     audioUpload.single("audio")(req, res, (err) => {
@@ -64,14 +66,14 @@ router.post(
       const transcription = await openai.audio.transcriptions.create({
         file: uploadable,
         model: "whisper-large-v3-turbo",
-        language: "it",
+        language: "en",
         response_format: "json",
       });
 
       res.json({ text: transcription.text });
     } catch (err) {
       logger.error({ err }, "Error transcribing audio");
-      res.status(500).json({ error: "Trascrizione non riuscita. Riprova." });
+      res.status(500).json({ error: "Transcription failed. Please try again." });
     }
   }
 );

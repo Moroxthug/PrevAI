@@ -1,9 +1,0 @@
-uploads = []
-outputs = []
-
-
-[[generated]]
-id = "Fsl84cJsna2veTxNg6DqZ"
-uri = "file://artifacts/prevai-demo-video/public/images/craftsman-workbench.png"
-type = "image"
-title = "Craftsman hands on workbench"

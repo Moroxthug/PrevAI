@@ -1,17 +1,16 @@
-import { readFileSync, writeFileSync, mkdirSync, existsSync } from "node:fs";
+import { readFileSync, writeFileSync, mkdirSync, existsSync, readdirSync } from "node:fs";
 import { join, dirname } from "node:path";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 
 import {
   SECTORS,
-  CITIES,
   ACTIVE_CITIES,
-  CITIES_BY_SLUG,
   CITY_SECTORS,
   getCityTitle,
   getCityDesc,
   RELATED_SECTORS,
   CITY_CONTEXT,
+  FRENCH_PRIMARY_CITY_SLUGS,
 } from "../src/data/seo-data.js";
 import type { SectorData, CityData } from "../src/data/seo-data.js";
 import { CITY_INTELLIGENCE, DEMAND_TEXT } from "../src/data/seo-intelligence.js";
@@ -26,7 +25,11 @@ import {
   getCityHowItWorksSteps,
   getNearbyAnchors,
   getSameCityOtherSectors,
+  getCityContextText,
+  getSectorFrContent,
+  DEMAND_TEXT_FR,
   buildCityJsonLd as buildCityJsonLdFromEngine,
+  getOgImagePath,
 } from "../src/data/seo-render-engine.js";
 import {
   BLOG_ARTICLES,
@@ -42,6 +45,12 @@ import {
   TESTIMONIALS,
   AGGREGATE_RATING,
 } from "../src/components/testimonials-section.js";
+import { translations } from "../src/i18n/translations.js";
+import { HELP_ARTICLES } from "../src/data/help-articles.js";
+
+function testimonialText(key: string): string {
+  return translations.en[`testimonials.${key}.text`] ?? "";
+}
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const distDir = join(__dirname, "../dist/public");
@@ -52,26 +61,12 @@ if (!existsSync(templatePath)) {
   process.exit(1);
 }
 
-const BASE_URL = "https://prevai.it";
+const BASE_URL = "https://quoteai.ca";
 
-const SECTOR_OG_IMAGES: Record<string, string> = {
-  edilizia: "/og/edilizia.jpg",
-  ristrutturazione: "/og/ristrutturazione.jpg",
-  elettricista: "/og/elettricista.jpg",
-  idraulico: "/og/idraulico.jpg",
-  imbianchino: "/og/imbianchino.jpg",
-  carpentiere: "/og/carpentiere.jpg",
-  falegname: "/og/falegname.jpg",
-  termoidraulico: "/og/termoidraulico.jpg",
-  freelance: "/og/freelance.jpg",
-  geometra: "/og/geometra.jpg",
-};
 
 // ─── Core utilities ────────────────────────────────────────────────────────
 
-function ogImage(sectorSlug: string): string {
-  return SECTOR_OG_IMAGES[sectorSlug] ?? "/opengraph.jpg";
-}
+const ogImage = getOgImagePath; // one map for the engine, the OG generator and this script
 
 function esc(s: string): string {
   return s
@@ -87,17 +82,28 @@ function buildHeadBlock(opts: {
   canonical: string;
   ogImagePath: string;
   jsonLd: object[];
+  /** This page's own language. Defaults to English. */
+  lang?: "en" | "fr";
+  /** URL of the other language's version of this same page, if one exists. */
+  altUrl?: string;
 }): string {
-  const { title, description, canonical, ogImagePath, jsonLd } = opts;
+  const { title, description, canonical, ogImagePath, jsonLd, lang = "en", altUrl } = opts;
   const ogImageUrl = ogImagePath.startsWith("http")
     ? ogImagePath
     : `${BASE_URL}${ogImagePath}`;
+  const enUrl = lang === "en" ? canonical : altUrl;
+  const frUrl = lang === "fr" ? canonical : altUrl;
+  const hreflangLines = [
+    enUrl ? `  <link rel="alternate" hreflang="en-CA" href="${esc(enUrl)}" />` : null,
+    frUrl ? `  <link rel="alternate" hreflang="fr-CA" href="${esc(frUrl)}" />` : null,
+    // English is the site's default/fallback locale.
+    `  <link rel="alternate" hreflang="x-default" href="${esc(enUrl ?? canonical)}" />`,
+  ].filter((l): l is string => l !== null);
   const lines = [
     `  <title>${esc(title)}</title>`,
     `  <meta name="description" content="${esc(description)}" />`,
     `  <link rel="canonical" href="${esc(canonical)}" />`,
-    `  <link rel="alternate" hreflang="it" href="${esc(canonical)}" />`,
-    `  <link rel="alternate" hreflang="x-default" href="${esc(canonical)}" />`,
+    ...hreflangLines,
     `  <meta property="og:title" content="${esc(title)}" />`,
     `  <meta property="og:description" content="${esc(description)}" />`,
     `  <meta property="og:url" content="${esc(canonical)}" />`,
@@ -105,8 +111,8 @@ function buildHeadBlock(opts: {
     `  <meta property="og:image:width" content="1200" />`,
     `  <meta property="og:image:height" content="630" />`,
     `  <meta property="og:type" content="website" />`,
-    `  <meta property="og:locale" content="it_IT" />`,
-    `  <meta property="og:site_name" content="prevai" />`,
+    `  <meta property="og:locale" content="${lang === "fr" ? "fr_CA" : "en_CA"}" />`,
+    `  <meta property="og:site_name" content="quoteai" />`,
     `  <meta name="twitter:card" content="summary_large_image" />`,
     `  <meta name="twitter:title" content="${esc(title)}" />`,
     `  <meta name="twitter:description" content="${esc(description)}" />`,
@@ -119,6 +125,9 @@ function buildHeadBlock(opts: {
 /**
  * Strip dashboard and charts chunk modulepreloads so SEO pages don't
  * eagerly fetch code that is only needed inside the authenticated dashboard.
+ * Since Phase 61 the Vite config no longer emits a "dashboard" manual chunk
+ * (the entry no longer statically reaches it), so this is a no-op guard kept
+ * in case a manual chunk is reintroduced.
  */
 function pruneModulepreload(html: string): string {
   return html.replace(
@@ -127,8 +136,9 @@ function pruneModulepreload(html: string): string {
   );
 }
 
-function injectHead(template: string, headBlock: string): string {
+function injectHead(template: string, headBlock: string, lang: "en" | "fr" = "en"): string {
   let html = template;
+  html = html.replace(/<html lang="[^"]*"/, `<html lang="${lang === "fr" ? "fr-CA" : "en-CA"}"`);
   html = html.replace(/<title>[^<]*<\/title>/, "");
   html = html.replace(/<meta\s+name="description"[^>]*\/?>/i, "");
   html = html.replace(/<link\b[^>]*\brel=["']canonical["'][^>]*\/?>/gi, "");
@@ -137,13 +147,42 @@ function injectHead(template: string, headBlock: string): string {
   html = html.replace(/<meta\s+name="twitter:[^"]*"[^>]*\/?>/gi, "");
   html = html.replace(/<meta\s+name="keywords"[^>]*\/?>/gi, "");
   html = html.replace(/<script\s+type="application\/ld\+json">[\s\S]*?<\/script>/gi, "");
-  html = html.replace("<head>", `<head>\n${headBlock}`);
+  // After <meta charset> + viewport: the charset declaration must stay within
+  // the first 1024 bytes of the document, and a <title> with an en dash was
+  // landing in front of it (Phase 68).
+  const viewport = /<meta\s+name="viewport"[^>]*>/i.exec(html);
+  html = viewport
+    ? html.slice(0, viewport.index + viewport[0].length) + `\n${headBlock}` + html.slice(viewport.index + viewport[0].length)
+    : html.replace("<head>", `<head>\n${headBlock}`);
   return html;
 }
 
 function injectBody(html: string, bodyHtml: string): string {
   if (!bodyHtml) return html;
   return html.replace(/<div id="root"><\/div>/, `<div id="root">${bodyHtml}</div>`);
+}
+
+// main.tsx imports the App on demand (static SEO pages never load it). The
+// build-time-rendered pages hydrate with it, so they preload the chunk — and
+// the chunks it statically pulls in — to avoid a second round trip before
+// hydration. The names carry content hashes, so they are read off dist/.
+const APP_PRELOADS: string[] = (() => {
+  const assets = join(distDir, "assets");
+  const app = readdirSync(assets).find((f) => /^App-[\w-]+\.js$/.test(f));
+  if (!app) return [];
+  const seen = new Set<string>();
+  const walk = (file: string) => {
+    if (seen.has(file)) return;
+    seen.add(file);
+    const src = readFileSync(join(assets, file), "utf8");
+    for (const m of src.matchAll(/(?:^|[^.\w])import\s*["']\.\/([\w-]+\.js)["']|from\s*["']\.\/([\w-]+\.js)["']/g)) walk((m[1] ?? m[2])!);
+  };
+  walk(app);
+  return [...seen];
+})();
+function injectAppPreload(html: string): string {
+  const links = APP_PRELOADS.map((f) => `<link rel="modulepreload" crossorigin href="/assets/${f}">`).join("\n    ");
+  return links ? html.replace("</head>", `    ${links}\n  </head>`) : html;
 }
 
 function writeRoute(relPath: string, html: string): void {
@@ -158,14 +197,14 @@ function writeRoute(relPath: string, html: string): void {
 
 const CURRENT_YEAR = new Date().getFullYear();
 
-const STATIC_LOGO = `<img src="/prevai-logo.png" alt="prevai" width="144" height="72" style="height: 72px; width: auto; object-fit: contain;">`;
+const STATIC_LOGO = `<img src="/quoteai-logo.png" alt="quoteai" width="144" height="72" style="height: 72px; width: auto; object-fit: contain;">`;
 
 const STATIC_HEADER = `<header class="sticky top-0 z-50 w-full transition-all duration-300 bg-transparent border-b border-transparent">
   <div class="container mx-auto flex h-16 items-center justify-between px-4 sm:px-6 lg:px-8">
     <a href="/" class="flex items-center">${STATIC_LOGO}</a>
     <nav class="flex items-center gap-3">
-      <a href="/sign-in/" class="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors px-3 py-1.5 rounded-full">Accedi</a>
-      <a href="/sign-up/" class="btn-gradient inline-flex h-9 items-center justify-center px-5 text-sm font-semibold">Registrati</a>
+      <a href="/sign-in/" class="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors px-3 py-1.5 rounded-full">Sign in</a>
+      <a href="/sign-up/" class="btn-gradient inline-flex h-9 items-center justify-center px-5 text-sm font-semibold">Sign up</a>
     </nav>
   </div>
 </header>`;
@@ -175,56 +214,56 @@ const STATIC_FOOTER = `<footer class="border-t py-12 md:py-16 bg-white">
     <div class="grid grid-cols-1 md:grid-cols-5 gap-8">
       <div class="md:col-span-2">
         <a href="/" class="flex items-center mb-4">${STATIC_LOGO}</a>
-        <p class="text-sm text-muted-foreground max-w-xs leading-relaxed">Il software di preventivazione con AI per artigiani e PMI italiane. Veloce, professionale, pronto in 30 secondi.</p>
+        <p class="text-sm text-muted-foreground max-w-xs leading-relaxed">AI-powered quoting software for Canadian tradespeople and small businesses. Fast, professional, ready in 30 seconds.</p>
       </div>
       <div class="md:col-span-2">
-        <h4 class="font-semibold mb-4 text-sm uppercase tracking-wider text-foreground">Professioni</h4>
+        <h4 class="font-semibold mb-4 text-sm uppercase tracking-wider text-foreground">Trades</h4>
         <ul class="grid grid-cols-2 gap-x-6 gap-y-2 text-sm text-muted-foreground">
-          <li><a href="/preventivi/imbianchino/" class="hover:text-foreground transition-colors">Imbianchino</a></li>
-          <li><a href="/preventivi/muratore/" class="hover:text-foreground transition-colors">Muratore</a></li>
-          <li><a href="/preventivi/elettricista/" class="hover:text-foreground transition-colors">Elettricista</a></li>
-          <li><a href="/preventivi/pittore/" class="hover:text-foreground transition-colors">Pittore</a></li>
-          <li><a href="/preventivi/idraulico/" class="hover:text-foreground transition-colors">Idraulico</a></li>
-          <li><a href="/preventivi/piastrellista/" class="hover:text-foreground transition-colors">Piastrellista</a></li>
-          <li><a href="/preventivi/edilizia/" class="hover:text-foreground transition-colors">Imprese Edili</a></li>
-          <li><a href="/preventivi/giardiniere/" class="hover:text-foreground transition-colors">Giardiniere</a></li>
-          <li><a href="/preventivi/ristrutturazione/" class="hover:text-foreground transition-colors">Ristrutturazioni</a></li>
-          <li><a href="/preventivi/serramentista/" class="hover:text-foreground transition-colors">Serramentista</a></li>
-          <li><a href="/preventivi/carpentiere/" class="hover:text-foreground transition-colors">Carpentieri</a></li>
-          <li><a href="/preventivi/tetto/" class="hover:text-foreground transition-colors">Coperture e Tetti</a></li>
-          <li><a href="/preventivi/falegname/" class="hover:text-foreground transition-colors">Falegnami</a></li>
-          <li><a href="/preventivi/condizionatori/" class="hover:text-foreground transition-colors">Condizionatori</a></li>
-          <li><a href="/preventivi/freelance/" class="hover:text-foreground transition-colors">Freelance</a></li>
-          <li><a href="/preventivi/pavimentista/" class="hover:text-foreground transition-colors">Pavimentista</a></li>
-          <li><a href="/preventivi/geometra/" class="hover:text-foreground transition-colors">Geometri</a></li>
-          <li><a href="/preventivi/termoidraulico/" class="hover:text-foreground transition-colors">Termoidraulico</a></li>
+          <li><a href="/quotes/painter/" class="hover:text-foreground transition-colors">Painter</a></li>
+          <li><a href="/quotes/mason/" class="hover:text-foreground transition-colors">Mason</a></li>
+          <li><a href="/quotes/electrician/" class="hover:text-foreground transition-colors">Electrician</a></li>
+          <li><a href="/quotes/decorative-painter/" class="hover:text-foreground transition-colors">Decorative Painter</a></li>
+          <li><a href="/quotes/plumber/" class="hover:text-foreground transition-colors">Plumber</a></li>
+          <li><a href="/quotes/tile-installer/" class="hover:text-foreground transition-colors">Tile Installer</a></li>
+          <li><a href="/quotes/general-contractor/" class="hover:text-foreground transition-colors">General Contractors</a></li>
+          <li><a href="/quotes/landscaper/" class="hover:text-foreground transition-colors">Landscaper</a></li>
+          <li><a href="/quotes/renovation-contractor/" class="hover:text-foreground transition-colors">Renovation Contractors</a></li>
+          <li><a href="/quotes/window-door-installer/" class="hover:text-foreground transition-colors">Window &amp; Door Installer</a></li>
+          <li><a href="/quotes/welder-fabricator/" class="hover:text-foreground transition-colors">Welders &amp; Fabricators</a></li>
+          <li><a href="/quotes/roofer/" class="hover:text-foreground transition-colors">Roofing</a></li>
+          <li><a href="/quotes/carpenter-cabinetmaker/" class="hover:text-foreground transition-colors">Carpenters</a></li>
+          <li><a href="/quotes/air-conditioning-installer/" class="hover:text-foreground transition-colors">Air Conditioning</a></li>
+          <li><a href="/quotes/freelance/" class="hover:text-foreground transition-colors">Freelancer</a></li>
+          <li><a href="/quotes/flooring-installer/" class="hover:text-foreground transition-colors">Flooring Installer</a></li>
+          <li><a href="/quotes/building-consultant/" class="hover:text-foreground transition-colors">Building Consultants</a></li>
+          <li><a href="/quotes/hvac-technician/" class="hover:text-foreground transition-colors">HVAC &amp; Heating</a></li>
         </ul>
       </div>
       <div>
-        <h4 class="font-semibold mb-4 text-sm uppercase tracking-wider text-foreground">Guide</h4>
+        <h4 class="font-semibold mb-4 text-sm uppercase tracking-wider text-foreground">Guides</h4>
         <ul class="space-y-2 text-sm text-muted-foreground">
-          <li><a href="/blog/" class="hover:text-foreground transition-colors font-medium text-foreground/80">Blog &amp; Approfondimenti</a></li>
-          <li><a href="/preventivi/modello-excel/" class="hover:text-foreground transition-colors">Modello Excel</a></li>
-          <li><a href="/preventivi/modello-word/" class="hover:text-foreground transition-colors">Modello Word</a></li>
-          <li><a href="/preventivi/come-fare-preventivo/" class="hover:text-foreground transition-colors">Come Fare un Preventivo</a></li>
-          <li><a href="/preventivi/preventivi-gratis/" class="hover:text-foreground transition-colors">Preventivi Gratis</a></li>
+          <li><a href="/blog/" class="hover:text-foreground transition-colors font-medium text-foreground/80">Blog &amp; Guides</a></li>
+          <li><a href="/quotes/excel-template/" class="hover:text-foreground transition-colors">Excel Quote Template</a></li>
+          <li><a href="/quotes/word-template/" class="hover:text-foreground transition-colors">Word Quote Template</a></li>
+          <li><a href="/quotes/how-to-quote/" class="hover:text-foreground transition-colors">How to Write a Quote</a></li>
+          <li><a href="/quotes/free-quote/" class="hover:text-foreground transition-colors">Free Quote Software</a></li>
         </ul>
-        <h4 class="font-semibold mt-8 mb-4 text-sm uppercase tracking-wider text-foreground">Azienda</h4>
+        <h4 class="font-semibold mt-8 mb-4 text-sm uppercase tracking-wider text-foreground">Company</h4>
         <ul class="space-y-2 text-sm text-muted-foreground">
-          <li><a href="/chi-siamo/" class="hover:text-foreground transition-colors">Chi Siamo</a></li>
-          <li><a href="/contatti/" class="hover:text-foreground transition-colors">Contatti</a></li>
-          <li><button class="hover:text-foreground transition-colors text-left">Supporto</button></li>
-          <li><a href="/privacy/" class="hover:text-foreground transition-colors">Privacy Policy</a></li>
-          <li><a href="/termini/" class="hover:text-foreground transition-colors">Termini di Servizio</a></li>
-          <li><a href="/mappa-sito/" class="hover:text-foreground transition-colors">Mappa del Sito</a></li>
+          <li><a href="/chi-siamo/" class="hover:text-foreground transition-colors">About Us</a></li>
+          <li><a href="/contatti/" class="hover:text-foreground transition-colors">Contact</a></li>
+          <li><button class="hover:text-foreground transition-colors text-left">Support</button></li>
+          <li><a href="/privacy-policy/" class="hover:text-foreground transition-colors">Privacy Policy</a></li>
+          <li><a href="/terms/" class="hover:text-foreground transition-colors">Terms of Service</a></li>
+          <li><a href="/mappa-sito/" class="hover:text-foreground transition-colors">Site Map</a></li>
         </ul>
       </div>
     </div>
-    <div class="mt-12 pt-8 border-t text-center text-sm text-muted-foreground">© ${CURRENT_YEAR} prevai. Tutti i diritti riservati.</div>
+    <div class="mt-12 pt-8 border-t text-center text-sm text-muted-foreground">© ${CURRENT_YEAR} quoteai. All rights reserved.</div>
   </div>
 </footer>`;
 
-const STATIC_WHATSAPP = `<a href="https://wa.me/393791059492" target="_blank" rel="noopener noreferrer nofollow" aria-label="Chatta con noi su WhatsApp" class="fixed bottom-6 right-6 z-50 flex items-center gap-2.5 rounded-full shadow-lg shadow-green-200/60 transition-all duration-200 hover:scale-105 active:scale-95" style="background:rgb(37,211,102)"><span class="flex h-14 w-14 items-center justify-center rounded-full" style="background:rgb(37,211,102)"><img src="/wa-icon.svg" alt="" width="28" height="28" loading="lazy" decoding="async"></span><span class="pr-5 text-white text-sm font-semibold whitespace-nowrap hidden sm:inline-block">Hai bisogno di aiuto?</span></a>`;
+const STATIC_WHATSAPP = `<a href="/whatsapp/" aria-label="Chat with us on WhatsApp" class="fixed bottom-6 right-6 z-50 flex items-center gap-2.5 rounded-full shadow-lg shadow-green-200/60 transition-all duration-200 hover:scale-105 active:scale-95" style="background:rgb(37,211,102)"><span class="flex h-14 w-14 items-center justify-center rounded-full" style="background:rgb(37,211,102)"><img src="/wa-icon.svg" alt="" width="28" height="28" loading="lazy" decoding="async"></span><span class="pr-5 text-white text-sm font-semibold whitespace-nowrap hidden sm:inline-block">Need help?</span></a>`;
 
 function wrapInPublicLayout(contentHtml: string): string {
   return `<div class="min-h-[100dvh] flex flex-col bg-background text-foreground">
@@ -232,6 +271,71 @@ ${STATIC_HEADER}
 <main class="flex-1 flex flex-col">${contentHtml}</main>
 ${STATIC_FOOTER}
 ${STATIC_WHATSAPP}
+</div>`;
+}
+
+// ─── French shell (header/footer/WhatsApp button) ──────────────────────────
+
+const STATIC_HEADER_FR = `<header class="sticky top-0 z-50 w-full transition-all duration-300 bg-transparent border-b border-transparent">
+  <div class="container mx-auto flex h-16 items-center justify-between px-4 sm:px-6 lg:px-8">
+    <a href="/fr" class="flex items-center">${STATIC_LOGO}</a>
+    <nav class="flex items-center gap-3">
+      <a href="/sign-in/" class="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors px-3 py-1.5 rounded-full">Se connecter</a>
+      <a href="/sign-up/" class="btn-gradient inline-flex h-9 items-center justify-center px-5 text-sm font-semibold">S'inscrire</a>
+    </nav>
+  </div>
+</header>`;
+
+const FR_TRADE_FOOTER_LINKS = Object.entries(SECTORS)
+  .filter(([slug]) => CITY_SECTORS.includes(slug))
+  .map(([, s]) => `<li><a href="/fr/soumissions/${esc(s.frSlug)}/" class="hover:text-foreground transition-colors">${esc(s.fr.label)}</a></li>`)
+  .join("\n          ");
+
+const STATIC_FOOTER_FR = `<footer class="border-t py-12 md:py-16 bg-white">
+  <div class="container mx-auto px-4 md:px-6">
+    <div class="grid grid-cols-1 md:grid-cols-5 gap-8">
+      <div class="md:col-span-2">
+        <a href="/fr" class="flex items-center mb-4">${STATIC_LOGO}</a>
+        <p class="text-sm text-muted-foreground max-w-xs leading-relaxed">Logiciel de soumission par IA pour les artisans et petites entreprises canadiennes. Rapide, professionnel, prêt en 30 secondes.</p>
+      </div>
+      <div class="md:col-span-2">
+        <h4 class="font-semibold mb-4 text-sm uppercase tracking-wider text-foreground">Métiers</h4>
+        <ul class="grid grid-cols-2 gap-x-6 gap-y-2 text-sm text-muted-foreground">
+          ${FR_TRADE_FOOTER_LINKS}
+        </ul>
+      </div>
+      <div>
+        <h4 class="font-semibold mb-4 text-sm uppercase tracking-wider text-foreground">Guides</h4>
+        <ul class="space-y-2 text-sm text-muted-foreground">
+          <li><a href="/blog/" class="hover:text-foreground transition-colors font-medium text-foreground/80">Blogue et guides</a></li>
+          <li><a href="/fr/soumissions/${esc(SECTORS["excel-template"].frSlug)}/" class="hover:text-foreground transition-colors">Modèle Excel</a></li>
+          <li><a href="/fr/soumissions/${esc(SECTORS["word-template"].frSlug)}/" class="hover:text-foreground transition-colors">Modèle Word</a></li>
+          <li><a href="/fr/soumissions/${esc(SECTORS["how-to-quote"].frSlug)}/" class="hover:text-foreground transition-colors">Comment faire une soumission</a></li>
+          <li><a href="/fr/soumissions/${esc(SECTORS["free-quote"].frSlug)}/" class="hover:text-foreground transition-colors">Soumission gratuite</a></li>
+        </ul>
+        <h4 class="font-semibold mt-8 mb-4 text-sm uppercase tracking-wider text-foreground">Entreprise</h4>
+        <ul class="space-y-2 text-sm text-muted-foreground">
+          <li><a href="/chi-siamo/" class="hover:text-foreground transition-colors">À propos</a></li>
+          <li><a href="/contatti/" class="hover:text-foreground transition-colors">Contact</a></li>
+          <li><button class="hover:text-foreground transition-colors text-left">Soutien</button></li>
+          <li><a href="/privacy-policy/" class="hover:text-foreground transition-colors">Politique de confidentialité</a></li>
+          <li><a href="/terms/" class="hover:text-foreground transition-colors">Conditions d'utilisation</a></li>
+          <li><a href="/mappa-sito/" class="hover:text-foreground transition-colors">Plan du site</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="mt-12 pt-8 border-t text-center text-sm text-muted-foreground">© ${CURRENT_YEAR} quoteai. Tous droits réservés.</div>
+  </div>
+</footer>`;
+
+const STATIC_WHATSAPP_FR = `<a href="/whatsapp/" aria-label="Clavarder avec nous sur WhatsApp" class="fixed bottom-6 right-6 z-50 flex items-center gap-2.5 rounded-full shadow-lg shadow-green-200/60 transition-all duration-200 hover:scale-105 active:scale-95" style="background:rgb(37,211,102)"><span class="flex h-14 w-14 items-center justify-center rounded-full" style="background:rgb(37,211,102)"><img src="/wa-icon.svg" alt="" width="28" height="28" loading="lazy" decoding="async"></span><span class="pr-5 text-white text-sm font-semibold whitespace-nowrap hidden sm:inline-block">Besoin d'aide?</span></a>`;
+
+function wrapInPublicLayoutFr(contentHtml: string): string {
+  return `<div class="min-h-[100dvh] flex flex-col bg-background text-foreground">
+${STATIC_HEADER_FR}
+<main class="flex-1 flex flex-col">${contentHtml}</main>
+${STATIC_FOOTER_FR}
+${STATIC_WHATSAPP_FR}
 </div>`;
 }
 
@@ -250,7 +354,7 @@ function buildBreadcrumb(items: { name: string; href: string | null }[]): string
       return sep + content;
     })
     .join("\n      ");
-  return `<nav aria-label="Percorso di navigazione" class="bg-white border-b border-gray-100">
+  return `<nav aria-label="Breadcrumb" class="bg-white border-b border-gray-100">
   <div class="container mx-auto px-4 sm:px-6 lg:px-8 py-3">
     <ol class="flex items-center text-sm text-gray-500 flex-wrap">
       ${crumbs}
@@ -273,7 +377,7 @@ function buildSectorCityGrid(s: SectorData): string {
       const cityLinks = cities
         .map(
           (c) =>
-            `<a href="/preventivi/${esc(s.slug)}/${esc(c.slug)}/" class="inline-flex items-center rounded-full border border-gray-200 bg-white px-3 py-1.5 text-xs font-medium text-gray-600 hover:border-violet-300 hover:text-violet-600 transition-colors">${esc(c.name)}</a>`
+            `<a href="/quotes/${esc(s.slug)}/${esc(c.slug)}/" class="inline-flex items-center rounded-full border border-gray-200 bg-white px-3 py-1.5 text-xs font-medium text-gray-600 hover:border-violet-300 hover:text-violet-600 transition-colors">${esc(c.name)}</a>`
         )
         .join("\n            ");
       return `<div>
@@ -287,8 +391,8 @@ function buildSectorCityGrid(s: SectorData): string {
   return `<section class="py-20 bg-gray-50">
   <div class="container mx-auto px-4 sm:px-6 lg:px-8">
     <div class="text-center mb-12">
-      <h2 class="text-2xl font-bold text-gray-900">Preventivi ${esc(s.label)} nelle principali città</h2>
-      <p class="text-sm text-gray-500 mt-2">Seleziona la tua città per informazioni e prezzi locali</p>
+      <h2 class="text-2xl font-bold text-gray-900">${esc(s.label)} quotes in top cities</h2>
+      <p class="text-sm text-gray-500 mt-2">Select your city for local pricing and information</p>
     </div>
     <div class="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
       ${regionBlocks}
@@ -302,11 +406,11 @@ function buildSectorCityGrid(s: SectorData): string {
 function buildRelatedSectorsSection(s: SectorData, heading?: string): string {
   const related = RELATED_SECTORS[s.slug];
   if (!related || related.length === 0) return "";
-  const h = heading ?? "Servizi correlati";
+  const h = heading ?? "Related services";
   const links = related
     .map(
       (r) =>
-        `<a href="/preventivi/${esc(r.slug)}/" class="flex items-center gap-2 bg-white border border-gray-100 hover:border-violet-200 rounded-xl px-4 py-3 text-sm font-medium text-gray-700 hover:text-violet-700 transition-colors">
+        `<a href="/quotes/${esc(r.slug)}/" class="flex items-center gap-2 bg-white border border-gray-100 hover:border-violet-200 rounded-xl px-4 py-3 text-sm font-medium text-gray-700 hover:text-violet-700 transition-colors">
           <span class="text-violet-400 font-bold" aria-hidden="true">→</span> ${esc(r.label)}
         </a>`
     )
@@ -338,7 +442,7 @@ function buildApprofondimentiSection(sectorSlug: string): string {
         `<a href="/blog/${esc(a.slug)}/" class="group flex flex-col bg-white rounded-xl border border-gray-100 hover:border-violet-200 hover:shadow-sm transition-all duration-200 p-5">
           <span class="text-xs font-semibold text-violet-700 mb-2">${esc(a.category)}</span>
           <span class="text-sm font-semibold text-gray-900 group-hover:text-violet-700 transition-colors leading-snug mb-3">${esc(a.title)}</span>
-          <span class="text-xs text-gray-400 mt-auto">${a.readingTimeMin} min di lettura</span>
+          <span class="text-xs text-gray-400 mt-auto">${a.readingTimeMin} min read</span>
         </a>`
     )
     .join("\n      ");
@@ -346,8 +450,8 @@ function buildApprofondimentiSection(sectorSlug: string): string {
   return `<section class="py-14 bg-gray-50 border-t border-gray-100">
   <div class="container mx-auto px-4 sm:px-6 lg:px-8 max-w-4xl">
     <div class="flex items-center justify-between mb-6">
-      <h2 class="text-base font-semibold text-gray-900">Approfondimenti</h2>
-      <a href="/blog/" class="text-xs font-semibold text-violet-600 hover:text-violet-700 transition-colors">Tutti gli articoli →</a>
+      <h2 class="text-base font-semibold text-gray-900">Related reading</h2>
+      <a href="/blog/" class="text-xs font-semibold text-violet-600 hover:text-violet-700 transition-colors">All articles →</a>
     </div>
     <div class="grid sm:grid-cols-3 gap-4">
       ${cards}
@@ -359,7 +463,10 @@ function buildApprofondimentiSection(sectorSlug: string): string {
 // ─── Phase 4: City context block (max 1 per city page) ─────────────────────
 
 function buildCityContextBlock(city: CityData, s: SectorData): string {
-  const context = CITY_CONTEXT[city.slug];
+  // CITY_CONTEXT entries are lang-aware ({ en, fr? }) — see the note in
+  // seo-data.ts. Only `en` is populated today (no locale routing yet), so
+  // this always renders the English copy.
+  const context = CITY_CONTEXT[city.slug]?.en;
   if (!context) return "";
   return `<section class="py-10 bg-violet-50/50 border-y border-violet-100/60">
   <div class="container mx-auto px-4 sm:px-6 lg:px-8 max-w-3xl">
@@ -368,7 +475,7 @@ function buildCityContextBlock(city: CityData, s: SectorData): string {
         <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-violet-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
       </div>
       <div>
-        <h2 class="text-sm font-semibold text-violet-700 mb-1.5">${esc(s.label)} a ${esc(city.name)} — mercato locale</h2>
+        <h2 class="text-sm font-semibold text-violet-700 mb-1.5">${esc(s.label)} in ${esc(city.name)} — local market</h2>
         <p class="text-sm text-gray-600 leading-relaxed">${esc(context)}</p>
       </div>
     </div>
@@ -379,18 +486,18 @@ function buildCityContextBlock(city: CityData, s: SectorData): string {
 // ─── JSON-LD schema builders ────────────────────────────────────────────────
 
 function buildSectorJsonLd(s: SectorData): object[] {
-  const canonical = `${BASE_URL}/preventivi/${s.slug}/`;
+  const canonical = `${BASE_URL}/quotes/${s.slug}/`;
   const schemas: object[] = [
     {
       "@context": "https://schema.org",
       "@type": "SoftwareApplication",
-      name: "prevai",
+      name: "quoteai",
       description: s.jsonLdDescription,
       url: canonical,
       applicationCategory: "BusinessApplication",
       operatingSystem: "Web",
-      inLanguage: "it",
-      offers: { "@type": "Offer", price: "0", priceCurrency: "EUR", availability: "https://schema.org/InStock" },
+      inLanguage: "en",
+      offers: { "@type": "Offer", price: "0", priceCurrency: "CAD", availability: "https://schema.org/InStock" },
       aggregateRating: {
         "@type": "AggregateRating",
         ratingValue: "4.8",
@@ -422,8 +529,8 @@ function buildSectorJsonLd(s: SectorData): object[] {
   return schemas;
 }
 
-function buildCityJsonLd(s: SectorData, city: CityData): object[] {
-  return buildCityJsonLdFromEngine(s, city);
+function buildCityJsonLd(s: SectorData, city: CityData, lang: "en-CA" | "fr-CA" = "en-CA"): object[] {
+  return buildCityJsonLdFromEngine(s, city, lang);
 }
 
 // ─── Phase 3: Sector body — 2 layout variants ──────────────────────────────
@@ -440,7 +547,7 @@ function buildSectorBodyHtml(s: SectorData): string {
     <div class="container mx-auto px-4 sm:px-6 lg:px-8 text-center max-w-4xl relative z-10">
       <div class="inline-flex items-center gap-2 rounded-full bg-violet-50 border border-violet-100 px-4 py-1.5 text-sm font-medium text-violet-700 mb-8">
         <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="currentColor" stroke="none" aria-hidden="true"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
-        Pensato per il mercato italiano
+        Built for Canadian trades
       </div>
       <h1 class="text-4xl font-extrabold tracking-tight text-gray-900 sm:text-5xl lg:text-6xl mb-6 leading-[1.1]">
         ${esc(s.h1)} <span class="gradient-text">${esc(s.h1Highlight)}</span>
@@ -448,13 +555,13 @@ function buildSectorBodyHtml(s: SectorData): string {
       <p class="text-xl text-gray-500 mb-10 max-w-2xl mx-auto leading-relaxed">${esc(s.intro)}</p>
       <div class="flex flex-col sm:flex-row gap-4 justify-center">
         <a href="/sign-up/" class="btn-gradient inline-flex h-14 items-center justify-center px-8 text-lg font-semibold">
-          Crea il tuo preventivo gratis
+          Create your free quote
         </a>
         <a href="#come-funziona" class="btn-gradient-outline inline-flex h-14 items-center justify-center px-8 text-lg font-semibold">
-          Come funziona
+          How it works
         </a>
       </div>
-      <p class="text-sm text-gray-400 mt-5">Nessuna carta di credito &middot; Preventivo pronto in 30 secondi</p>
+      <p class="text-sm text-gray-400 mt-5">No credit card &middot; Quote ready in 30 seconds</p>
     </div>
   </section>`;
 
@@ -510,29 +617,29 @@ function buildSectorBodyHtml(s: SectorData): string {
             <div class="h-10 w-10 rounded-xl flex items-center justify-center text-white shrink-0" style="background:linear-gradient(135deg,#7C3AED,#06B6D4)" aria-hidden="true">
               <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z"/><path d="M6 12H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2"/><path d="M18 9h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-2"/><path d="M10 6h4"/><path d="M10 10h4"/><path d="M10 14h4"/><path d="M10 18h4"/></svg>
             </div>
-            <h2 class="text-2xl font-bold text-gray-900">Pensato per il mercato italiano</h2>
+            <h2 class="text-2xl font-bold text-gray-900">Built for the Canadian trades market</h2>
           </div>
           <div class="grid md:grid-cols-3 gap-6 text-sm text-gray-600 leading-relaxed">
             <div>
               <div class="font-semibold text-gray-900 mb-2 flex items-center gap-2">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-violet-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>
-                IVA italiana integrata
+                Canadian tax built in
               </div>
-              <p>Il calcolo dell&apos;IVA al 10%, 22% e con regime forfettario è automatico. Nessun errore nella dichiarazione.</p>
+              <p>GST/HST (and PST/QST where it applies) is calculated automatically for the province the work is done in. No mistakes on the total.</p>
             </div>
             <div>
               <div class="font-semibold text-gray-900 mb-2 flex items-center gap-2">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-violet-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-                Dati aziendali italiani
+                Your business details, saved once
               </div>
-              <p>Partita IVA, Codice Fiscale, Codice SDI — tutti i campi obbligatori per la fatturazione italiana.</p>
+              <p>Company name, licence/registration number, address and logo — every field a Canadian quote needs to look professional.</p>
             </div>
             <div>
               <div class="font-semibold text-gray-900 mb-2 flex items-center gap-2">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-violet-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/></svg>
-                Lessico tecnico in italiano
+                Trade terminology built in
               </div>
-              <p>L&apos;AI è addestrata con terminologia edilizia, impiantistica e artigianale italiana per preventivi precisi.</p>
+              <p>The AI is trained on the terms Canadian contractors and tradespeople actually use, for accurate, specific quotes.</p>
             </div>
           </div>
         </div>
@@ -557,18 +664,18 @@ function buildSectorBodyHtml(s: SectorData): string {
   const ctaVariant = strHash(s.slug + "cta") % 3;
   const ctaHeading =
     ctaVariant === 0
-      ? `Pronto a creare il tuo primo preventivo <span class="gradient-text">in 30 secondi</span>?`
+      ? `Ready to create your first quote <span class="gradient-text">in 30 seconds</span>?`
       : ctaVariant === 1
-        ? `Smetti di perdere tempo con Excel. <span class="gradient-text">Inizia gratis</span>.`
-        : `Unisciti a migliaia di ${esc(s.h1Highlight.toLowerCase())} italiani. <span class="gradient-text">È gratis</span>.`;
+        ? `Stop losing time to spreadsheets. <span class="gradient-text">Start free</span>.`
+        : `Join contractors across Canada already using it. <span class="gradient-text">It's free</span>.`;
   const ctaBtn =
-    ctaVariant === 0 ? "Inizia Gratuitamente" : ctaVariant === 1 ? "Crea account gratuito" : "Prova gratis — nessun impegno";
+    ctaVariant === 0 ? "Get Started Free" : ctaVariant === 1 ? "Create free account" : "Try free — no commitment";
 
   const sCta = `<section class="py-24 bg-white">
     <div class="container mx-auto px-4 sm:px-6 lg:px-8 text-center max-w-2xl">
       <h2 class="text-3xl font-bold text-gray-900 mb-4">${ctaHeading}</h2>
       <p class="text-lg text-gray-500 mb-10">
-        Nessuna carta di credito. Nessun impegno. Il tuo primo preventivo è gratis.
+        No credit card. No commitment. Your first quote is free.
       </p>
       <a href="/sign-up/" class="btn-gradient inline-flex h-14 items-center justify-center px-10 text-lg font-semibold">
         ${ctaBtn}
@@ -577,7 +684,7 @@ function buildSectorBodyHtml(s: SectorData): string {
     </div>
   </section>`;
 
-  const sRelated = buildRelatedSectorsSection(s, "Servizi correlati — genera preventivi per");
+  const sRelated = buildRelatedSectorsSection(s, "Related services — generate quotes for");
   const sCityGrid = CITY_SECTORS.includes(s.slug) ? buildSectorCityGrid(s) : "";
   const sApprofondimenti = buildApprofondimentiSection(s.slug);
   const sDeepDive = buildSectorDeepDive(s);
@@ -606,22 +713,22 @@ function buildSectorDeepDive(s: SectorData): string {
   const benefitsP = s.benefits
     .map((b) => `<strong>${esc(b.title)}.</strong> ${esc(b.desc)}`)
     .join(" ");
-  return `<section class="py-20 bg-white" aria-label="Approfondimento ${esc(labelL)}">
+  return `<section class="py-20 bg-white" aria-label="More about ${esc(labelL)} quotes">
     <div class="container mx-auto px-4 sm:px-6 lg:px-8 max-w-3xl">
       <div class="text-center mb-12">
-        <h2 class="text-3xl font-bold text-gray-900">Tutto quello che serve a un ${esc(labelL)} moderno</h2>
+        <h2 class="text-3xl font-bold text-gray-900">Everything a modern ${esc(labelL)} needs to quote fast</h2>
       </div>
       <div class="prose prose-lg max-w-none text-gray-600 leading-relaxed space-y-6">
-        <p>Per un <strong>${esc(labelL)}</strong> in Italia, fare un preventivo professionale è spesso un secondo lavoro: ore sottratte al cantiere, ricerche di prezzi su listini cartacei, calcoli ripetitivi su fogli Excel costruiti negli anni. Il risultato è quasi sempre un documento approssimativo, fuori formato, che fa perdere clienti rispetto a un concorrente con un&apos;offerta più chiara e leggibile. <strong>prevai</strong> nasce proprio per chiudere questa distanza: descrivi il lavoro in italiano, in una manciata di frasi, e in trenta secondi hai un preventivo completo, professionale, pronto da inviare via WhatsApp o email.</p>
-        <p>Il software è pensato per il modo concreto in cui lavorano i <strong>${esc(labelPL)}</strong> italiani. La maggior parte dei preventivi nasce in cantiere o al telefono con il cliente, raramente in ufficio. Per questo prevai funziona perfettamente da smartphone: niente installazioni, niente sincronizzazioni complicate, solo un browser. Apri la pagina, descrivi il lavoro mentre lo stai ancora ispezionando, e quando torni in macchina hai già un PDF da consegnare. La differenza tra inviare un preventivo entro un&apos;ora dal sopralluogo e farlo arrivare due giorni dopo è la differenza tra ottenere il lavoro o vederlo andare a un altro.</p>
-        <p>Tra i casi d&apos;uso più frequenti gestiti dai nostri utenti ci sono ${esc(useCasesText)}. Per ognuno di questi scenari, l&apos;intelligenza artificiale di prevai conosce le voci tipiche, le unità di misura ricorrenti — metri quadri, metri lineari, ore di manodopera, corpo — e i prezzi medi praticati sul mercato italiano. Tu puoi sempre modificare le voci, sostituire i prezzi con i tuoi listini personali, aggiungere o togliere capitoli, ma il punto di partenza non è mai un foglio bianco: è un preventivo già strutturato che ti fa risparmiare il 90% del tempo.</p>
-        <h3 class="text-xl font-semibold text-gray-900 mt-10 mb-3">I vantaggi concreti per chi lavora ogni giorno</h3>
+        <p>For a <strong>${esc(labelL)}</strong> in Canada, putting together a professional quote is often a second job: hours pulled away from the job site, prices looked up from old supplier lists, the same calculations redone on a spreadsheet that's been patched together for years. The result is usually a rough, inconsistently formatted document that loses jobs to a competitor with a clearer, better-presented estimate. <strong>quoteai</strong> exists to close that gap: describe the job in plain English (or French), in a few sentences, and in thirty seconds you have a complete, professional quote ready to send by text, email or WhatsApp.</p>
+        <p>The software is built around how <strong>${esc(labelPL)}</strong> actually work day to day. Most quotes start on site or on the phone with the customer, rarely at a desk. That's why quoteai works entirely from a phone browser: no install, no syncing, nothing to configure. Open the page, describe the job while you're still walking the site, and by the time you're back in the truck the PDF is ready to send. The difference between quoting within the hour and quoting two days later is often the difference between winning the job and losing it to whoever answered first.</p>
+        <p>Common jobs our users quote every day include ${esc(useCasesText)}. For each of these, quoteai's AI already knows the typical line items, the units contractors actually use — square feet, linear feet, labour hours, per-job flat rates — and prices that are in line with the Canadian market. You can always edit line items, swap in your own price list, and add or remove sections, but you never start from a blank page: you start from a quote that's already structured, saving most of the time a quote normally takes.</p>
+        <h3 class="text-xl font-semibold text-gray-900 mt-10 mb-3">Real advantages for people who quote every day</h3>
         <p>${benefitsP}</p>
-        <h3 class="text-xl font-semibold text-gray-900 mt-10 mb-3">Pensato per la fiscalità italiana</h3>
-        <p>A differenza dei software internazionali, prevai è progettato attorno alle regole concrete che un <strong>${esc(labelL)}</strong> italiano incontra ogni giorno. L&apos;IVA al 10% per le ristrutturazioni residenziali, l&apos;IVA al 22% per i nuovi impianti, il regime forfettario senza IVA: tutto è gestito automaticamente in base alla tipologia di intervento e al regime fiscale del professionista. I dati aziendali (partita IVA, codice fiscale, codice destinatario per la fatturazione elettronica) vengono memorizzati una volta e applicati ad ogni preventivo, e ogni documento rispetta il formato che i clienti italiani — privati, condomini, piccole imprese — si aspettano di ricevere.</p>
-        <h3 class="text-xl font-semibold text-gray-900 mt-10 mb-3">Da preventivo a lavoro acquisito</h3>
-        <p>Un preventivo ben fatto non è solo un documento contabile: è uno strumento di vendita. La cura grafica, la chiarezza delle voci, la presenza del logo aziendale e dei dati di contatto raccontano al cliente che ha davanti un professionista serio. Tutti i preventivi generati con prevai includono intestazione personalizzata, suddivisione per capitoli di lavoro, descrizione tecnica per ogni voce, prezzi unitari e subtotali, indicazione dell&apos;IVA e del totale finale, condizioni di pagamento e validità. Il cliente riceve un PDF ordinato, su una pagina sola quando possibile, che può confrontare con quello degli altri ${esc(labelPL)} consultati — e nella maggior parte dei casi la scelta cade su chi ha presentato l&apos;offerta più professionale, anche a parità di prezzo.</p>
-        <p>Iniziare è gratuito: non servono carte di credito né configurazioni complesse. Crei un account in trenta secondi, generi il tuo primo preventivo gratis e decidi solo dopo se attivare uno dei piani in abbonamento (per chi fa preventivi tutti i giorni) o se pagare un preventivo singolo all&apos;occorrenza. Migliaia di <strong>${esc(labelPL)}</strong>, artigiani e piccole imprese italiane usano già prevai ogni settimana. Provalo e scopri perché non si torna più indietro al vecchio modello Excel.</p>
+        <h3 class="text-xl font-semibold text-gray-900 mt-10 mb-3">Built for how Canadian trades actually invoice</h3>
+        <p>Unlike generic international tools, quoteai is designed around the practical details a <strong>${esc(labelL)}</strong> deals with on every job in Canada: GST/HST (and PST or QST where it applies) calculated correctly for the province the work is done in, clear separation between materials and labour, and totals that match what customers expect to see on an estimate before signing off. Your business details — company name, licence or registration number, logo and contact info — are saved once and applied to every quote automatically, so every document looks consistent whether the customer is a homeowner, a property manager or a small business.</p>
+        <h3 class="text-xl font-semibold text-gray-900 mt-10 mb-3">From quote to signed job</h3>
+        <p>A well-made quote isn't just a pricing document — it's a sales tool. Clean formatting, clear line items, your logo and contact information tell the customer they're dealing with a serious professional. Every quote generated with quoteai includes a custom header, sections by phase of work, a technical description for each line item, unit prices and subtotals, tax shown clearly, a final total, and payment terms and validity dates. The customer gets a tidy PDF — one page where possible — that holds up next to quotes from other ${esc(labelPL)} they're comparing, and in most cases the job goes to whoever presented the more professional estimate, even at a similar price.</p>
+        <p>Getting started is free: no credit card, no complicated setup. Create an account in thirty seconds, generate your first quote for free, and only decide afterward whether a subscription plan (for anyone quoting daily) or a one-off quote makes more sense. Contractors, tradespeople and small businesses across Canada already use quoteai every week. Try it and see why nobody goes back to the old spreadsheet.</p>
       </div>
     </div>
   </section>`;
@@ -631,46 +738,87 @@ function buildSectorDeepDive(s: SectorData): string {
 
 // ─── Phase 9: Osservatorio Prezzi e Domanda ────────────────────────────────
 
-function buildOsservatorio(s: SectorData, city: CityData, intel: CityIntelligence): string {
+function buildOsservatorio(s: SectorData, city: CityData, intel: CityIntelligence, lang: "en-CA" | "fr-CA" = "en-CA"): string {
   const pct = Math.round(Math.abs(intel.priceIndex - 1.0) * 100);
   const priceLabel = intel.priceIndex > 1.0 ? `+${pct}%` : intel.priceIndex < 1.0 ? `\u2212${pct}%` : `\u00b10%`;
   const priceColor =
     intel.priceIndex > 1.05 ? "text-amber-600" : intel.priceIndex < 0.95 ? "text-green-600" : "text-gray-800";
-  const demandLabels: Record<CityIntelligence["demandLevel"], string> = {
-    LOW: "Moderata", MEDIUM: "Media", HIGH: "Elevata", CRITICAL: "Molto elevata",
-  };
+  const demandLabels: Record<CityIntelligence["demandLevel"], string> =
+    lang === "fr-CA"
+      ? { LOW: "Mod\u00e9r\u00e9e", MEDIUM: "Moyenne", HIGH: "\u00c9lev\u00e9e", CRITICAL: "Tr\u00e8s \u00e9lev\u00e9e" }
+      : { LOW: "Moderate", MEDIUM: "Average", HIGH: "High", CRITICAL: "Very high" };
   const demandColors: Record<CityIntelligence["demandLevel"], string> = {
     LOW: "text-green-600", MEDIUM: "text-blue-600", HIGH: "text-amber-600", CRITICAL: "text-red-600",
   };
   const [sv1, sv2, sv3] = intel.topServices;
   void s;
-  return `<section class="py-10 bg-white border-b border-gray-100" aria-label="Osservatorio prezzi e domanda ${esc(city.name)}">
+  if (lang === "fr-CA") {
+    return `<section class="py-10 bg-white border-b border-gray-100" aria-label="Observatoire des prix et de la demande ${esc(city.name)}">
   <div class="container mx-auto px-4 sm:px-6 lg:px-8 max-w-4xl">
     <div class="rounded-2xl border border-violet-100 bg-gradient-to-br from-violet-50/40 to-cyan-50/20 p-6 md:p-8">
       <div class="flex items-center gap-3 mb-6">
         <div class="h-8 w-8 rounded-lg bg-violet-100 flex items-center justify-center shrink-0" aria-hidden="true">
           <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-violet-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
         </div>
-        <h2 class="text-base font-bold text-gray-900">Osservatorio Prezzi e Domanda: ${esc(city.name)}</h2>
+        <h2 class="text-base font-bold text-gray-900">Observatoire des prix et de la demande : ${esc(city.name)}</h2>
       </div>
       <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-5">
         <div class="bg-white rounded-xl p-4 border border-gray-100 text-center">
-          <div class="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-1">Indice prezzi</div>
+          <div class="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-1">Indice des prix</div>
           <div class="text-2xl font-bold ${priceColor}">${priceLabel}</div>
-          <div class="text-xs text-gray-400 mt-1">vs. media nazionale</div>
+          <div class="text-xs text-gray-400 mt-1">vs. moyenne nationale</div>
         </div>
         <div class="bg-white rounded-xl p-4 border border-gray-100 text-center">
-          <div class="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-1">Domanda</div>
+          <div class="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-1">Demande</div>
+          <div class="text-base font-bold ${demandColors[intel.demandLevel]}">${demandLabels[intel.demandLevel]}</div>
+          <div class="text-xs text-gray-400 mt-1">${esc(city.region)}</div>
+        </div>
+        <div class="bg-white rounded-xl p-4 border border-gray-100 text-center">
+          <div class="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-1">D\u00e9lai</div>
+          <div class="text-base font-bold text-gray-800">${esc(intel.avgLeadTime)}</div>
+          <div class="text-xs text-gray-400 mt-1">r\u00e9ponse estim\u00e9e</div>
+        </div>
+        <div class="bg-white rounded-xl p-4 border border-gray-100">
+          <div class="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-2">Services les plus demand\u00e9s</div>
+          <ul class="space-y-1.5">
+            <li class="flex items-start gap-1 text-xs text-gray-600"><span class="text-violet-400 shrink-0 font-bold" aria-hidden="true">&rsaquo;</span>${esc(sv1)}</li>
+            <li class="flex items-start gap-1 text-xs text-gray-600"><span class="text-violet-400 shrink-0 font-bold" aria-hidden="true">&rsaquo;</span>${esc(sv2)}</li>
+            <li class="flex items-start gap-1 text-xs text-gray-600"><span class="text-violet-400 shrink-0 font-bold" aria-hidden="true">&rsaquo;</span>${esc(sv3)}</li>
+          </ul>
+        </div>
+      </div>
+      <p class="text-sm text-gray-500 leading-relaxed border-t border-violet-100 pt-4">${esc(intel.localInsight)}</p>
+    </div>
+  </div>
+</section>`;
+  }
+  return `<section class="py-10 bg-white border-b border-gray-100" aria-label="Price and demand observatory ${esc(city.name)}">
+  <div class="container mx-auto px-4 sm:px-6 lg:px-8 max-w-4xl">
+    <div class="rounded-2xl border border-violet-100 bg-gradient-to-br from-violet-50/40 to-cyan-50/20 p-6 md:p-8">
+      <div class="flex items-center gap-3 mb-6">
+        <div class="h-8 w-8 rounded-lg bg-violet-100 flex items-center justify-center shrink-0" aria-hidden="true">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-violet-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+        </div>
+        <h2 class="text-base font-bold text-gray-900">Price &amp; Demand Observatory: ${esc(city.name)}</h2>
+      </div>
+      <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-5">
+        <div class="bg-white rounded-xl p-4 border border-gray-100 text-center">
+          <div class="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-1">Price index</div>
+          <div class="text-2xl font-bold ${priceColor}">${priceLabel}</div>
+          <div class="text-xs text-gray-400 mt-1">vs. national average</div>
+        </div>
+        <div class="bg-white rounded-xl p-4 border border-gray-100 text-center">
+          <div class="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-1">Demand</div>
           <div class="text-base font-bold ${demandColors[intel.demandLevel]}">${demandLabels[intel.demandLevel]}</div>
           <div class="text-xs text-gray-400 mt-1">${esc(city.region)}</div>
         </div>
         <div class="bg-white rounded-xl p-4 border border-gray-100 text-center">
           <div class="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-1">Lead time</div>
           <div class="text-base font-bold text-gray-800">${esc(intel.avgLeadTime)}</div>
-          <div class="text-xs text-gray-400 mt-1">risposta stimata</div>
+          <div class="text-xs text-gray-400 mt-1">estimated response</div>
         </div>
         <div class="bg-white rounded-xl p-4 border border-gray-100">
-          <div class="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-2">Servizi top</div>
+          <div class="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-2">Top services</div>
           <ul class="space-y-1.5">
             <li class="flex items-start gap-1 text-xs text-gray-600"><span class="text-violet-400 shrink-0 font-bold" aria-hidden="true">&rsaquo;</span>${esc(sv1)}</li>
             <li class="flex items-start gap-1 text-xs text-gray-600"><span class="text-violet-400 shrink-0 font-bold" aria-hidden="true">&rsaquo;</span>${esc(sv2)}</li>
@@ -693,7 +841,7 @@ function buildCityBodyHtml(s: SectorData, city: CityData): string {
 
   const breadcrumb = buildBreadcrumb([
     { name: "Home", href: "/" },
-    { name: s.label, href: `/preventivi/${s.slug}/` },
+    { name: s.label, href: `/quotes/${s.slug}/` },
     { name: cityName, href: null },
   ]);
 
@@ -705,18 +853,18 @@ function buildCityBodyHtml(s: SectorData, city: CityData): string {
       </div>
       <h1 class="text-4xl font-extrabold tracking-tight text-gray-900 sm:text-5xl lg:text-6xl mb-6 leading-[1.1]">
         ${esc(s.h1)} <span class="gradient-text">${esc(s.h1Highlight)}</span><br />
-        <span class="text-gray-500 text-3xl sm:text-4xl font-bold">a ${esc(cityName)}</span>
+        <span class="text-gray-500 text-3xl sm:text-4xl font-bold">in ${esc(cityName)}</span>
       </h1>
       <p class="text-xl text-gray-500 mb-10 max-w-2xl mx-auto leading-relaxed">${esc(intro)}</p>
       <div class="flex flex-col sm:flex-row gap-4 justify-center">
         <a href="/sign-up/" class="btn-gradient inline-flex h-14 items-center justify-center px-8 text-lg font-semibold">
-          Crea il tuo preventivo gratis
+          Create your free quote
         </a>
-        <a href="/preventivi/${esc(s.slug)}/" class="btn-gradient-outline inline-flex h-14 items-center justify-center px-8 text-lg font-semibold">
-          Scopri come funziona
+        <a href="/quotes/${esc(s.slug)}/" class="btn-gradient-outline inline-flex h-14 items-center justify-center px-8 text-lg font-semibold">
+          See how it works
         </a>
       </div>
-      <p class="text-sm text-gray-400 mt-5">Nessuna carta di credito &middot; Preventivo pronto in 30 secondi</p>
+      <p class="text-sm text-gray-400 mt-5">No credit card &middot; Quote ready in 30 seconds</p>
     </div>
   </section>`;
 
@@ -725,7 +873,7 @@ function buildCityBodyHtml(s: SectorData, city: CityData): string {
   const sBenefits = `<section class="py-20 bg-gray-50">
     <div class="container mx-auto px-4 sm:px-6 lg:px-8">
       <div class="text-center mb-14">
-        <h2 class="text-3xl font-bold text-gray-900">Perché i ${esc(s.labelPlural)} di ${esc(cityName)} scelgono prevai</h2>
+        <h2 class="text-3xl font-bold text-gray-900">Why ${esc(s.labelPlural)} in ${esc(cityName)} choose quoteai</h2>
       </div>
       <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
         ${s.benefits.map((b) => `<div class="card-soft bg-white p-7 rounded-2xl flex flex-col">
@@ -741,7 +889,7 @@ function buildCityBodyHtml(s: SectorData, city: CityData): string {
   const sHowItWorks = `<section class="py-20 bg-white">
     <div class="container mx-auto px-4 sm:px-6 lg:px-8 max-w-4xl">
       <div class="text-center mb-14">
-        <h2 class="text-3xl font-bold text-gray-900">Preventivo professionale a ${esc(cityName)} in 3 passi</h2>
+        <h2 class="text-3xl font-bold text-gray-900">A professional quote in ${esc(cityName)} in 3 steps</h2>
       </div>
       <div class="grid md:grid-cols-3 gap-10">
         ${howItWorksSteps.map((step) => `<div>
@@ -756,7 +904,7 @@ function buildCityBodyHtml(s: SectorData, city: CityData): string {
   const sUseCases = `<section class="py-20 ${layout === 2 ? "bg-white" : "bg-gray-50"}">
     <div class="container mx-auto px-4 sm:px-6 lg:px-8 max-w-3xl">
       <div class="text-center mb-12">
-        <h2 class="text-3xl font-bold text-gray-900">Preventivi per questi lavori a ${esc(cityName)}</h2>
+        <h2 class="text-3xl font-bold text-gray-900">Quotes for these jobs in ${esc(cityName)}</h2>
       </div>
       <ul class="grid sm:grid-cols-2 gap-3">
         ${s.useCases.map((uc) => `<li class="flex items-center gap-3 bg-white rounded-xl px-5 py-3.5 card-soft">
@@ -772,7 +920,7 @@ function buildCityBodyHtml(s: SectorData, city: CityData): string {
   const sFaq = `<section class="py-20 bg-gray-50">
     <div class="container mx-auto px-4 sm:px-6 lg:px-8 max-w-3xl">
       <div class="text-center mb-12">
-        <h2 class="text-3xl font-bold text-gray-900">Domande frequenti</h2>
+        <h2 class="text-3xl font-bold text-gray-900">Frequently asked questions</h2>
       </div>
       <div class="space-y-4">
         ${cityFaqItems.map((f) => `<div class="bg-white rounded-2xl p-6 card-soft">
@@ -785,7 +933,7 @@ function buildCityBodyHtml(s: SectorData, city: CityData): string {
 
   const nearbyLinks = getNearbyAnchors(s, city)
     .map(({ slug, anchorText }) =>
-      `<a href="/preventivi/${esc(s.slug)}/${esc(slug)}/" class="inline-flex items-center gap-1.5 rounded-full border border-gray-200 px-3.5 py-1.5 text-sm text-gray-500 hover:border-violet-300 hover:text-violet-600 transition-colors">${esc(anchorText)}</a>`
+      `<a href="/quotes/${esc(s.slug)}/${esc(slug)}/" class="inline-flex items-center gap-1.5 rounded-full border border-gray-200 px-3.5 py-1.5 text-sm text-gray-500 hover:border-violet-300 hover:text-violet-600 transition-colors">${esc(anchorText)}</a>`
     )
     .join("\n          ");
 
@@ -793,7 +941,7 @@ function buildCityBodyHtml(s: SectorData, city: CityData): string {
     ? `<section class="py-16 bg-white border-t border-gray-100">
     <div class="container mx-auto px-4 sm:px-6 lg:px-8 max-w-4xl">
       <h2 class="text-base font-semibold text-gray-500 mb-5 text-center">
-        Preventivi per ${esc(s.labelPlural)} nelle città vicine
+        ${esc(s.labelPlural)} quotes in nearby cities
       </h2>
       <div class="flex flex-wrap gap-2 justify-center">
           ${nearbyLinks}
@@ -808,13 +956,13 @@ function buildCityBodyHtml(s: SectorData, city: CityData): string {
   const sSameCityOther = sameCityOtherSectors.length
     ? `<section class="py-14 bg-gray-50 border-t border-gray-100">
     <div class="container mx-auto px-4 sm:px-6 lg:px-8 max-w-4xl">
-      <h2 class="text-base font-semibold text-gray-500 mb-5 text-center">Altri servizi a ${esc(cityName)}</h2>
+      <h2 class="text-base font-semibold text-gray-500 mb-5 text-center">Other services in ${esc(cityName)}</h2>
       <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
         ${sameCityOtherSectors
           .map(
             (r) =>
-              `<a href="/preventivi/${esc(r.slug)}/${esc(city.slug)}/" class="flex items-center gap-2 bg-white border border-gray-100 hover:border-violet-200 rounded-xl px-4 py-3 text-sm font-medium text-gray-700 hover:text-violet-700 transition-colors">
-          <span class="text-violet-400 font-bold" aria-hidden="true">→</span> ${esc(r.label)} a ${esc(cityName)}
+              `<a href="/quotes/${esc(r.slug)}/${esc(city.slug)}/" class="flex items-center gap-2 bg-white border border-gray-100 hover:border-violet-200 rounded-xl px-4 py-3 text-sm font-medium text-gray-700 hover:text-violet-700 transition-colors">
+          <span class="text-violet-400 font-bold" aria-hidden="true">→</span> ${esc(r.label)} in ${esc(cityName)}
         </a>`
           )
           .join("\n        ")}
@@ -822,7 +970,7 @@ function buildCityBodyHtml(s: SectorData, city: CityData): string {
     </div>
   </section>`
     : "";
-  const sRelated = buildRelatedSectorsSection(s, `Scopri anche: preventivi per`);
+  const sRelated = buildRelatedSectorsSection(s, `Also see: quotes for`);
   const sApprofondimenti = buildApprofondimentiSection(s.slug);
 
   const ctaTexts = getCityCtaTexts(getCityCtaVariant(s, city), cityName);
@@ -833,13 +981,13 @@ function buildCityBodyHtml(s: SectorData, city: CityData): string {
     <div class="container mx-auto px-4 sm:px-6 lg:px-8 text-center max-w-2xl">
       <h2 class="text-3xl font-bold text-gray-900 mb-4">${ctaHeading}</h2>
       <p class="text-lg text-gray-500 mb-10">
-        Nessuna carta di credito richiesta. Il tuo primo preventivo professionale è gratis.
+        No credit card required. Your first professional quote is free.
       </p>
       <a href="/sign-up/" class="btn-gradient inline-flex h-14 items-center justify-center px-10 text-lg font-semibold">
         ${esc(ctaTexts.button)}
         <svg xmlns="http://www.w3.org/2000/svg" class="ml-2 h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
       </a>
-      <p class="text-sm text-gray-400 mt-4">Preventivo pronto in 30 secondi &middot; Nessun impegno</p>
+      <p class="text-sm text-gray-400 mt-4">Quote ready in 30 seconds &middot; No commitment</p>
     </div>
   </section>`;
 
@@ -871,29 +1019,19 @@ function buildQuantoCostaBlock(
   s: SectorData,
   city: CityData,
   intel: CityIntelligence | undefined,
+  lang: "en-CA" | "fr-CA" = "en-CA",
 ): string {
   const cityName = city.name;
   const regionName = city.region;
-  const sectorLabel = s.label.toLowerCase();
   const pricePct = intel ? Math.round((intel.priceIndex - 1.0) * 100) : 0;
-  const priceNote = !intel
-    ? `in linea con la media italiana`
-    : pricePct > 5
-      ? `mediamente del <strong>${pricePct}% più alti</strong> rispetto alla media nazionale`
-      : pricePct < -5
-        ? `mediamente del <strong>${Math.abs(pricePct)}% più bassi</strong> rispetto alla media nazionale`
-        : `in linea con la media nazionale (variazione contenuta entro il ±5%)`;
 
-  const demandText = intel ? DEMAND_TEXT[intel.demandLevel] : "stabile";
-
-  const examples = s.useCases.slice(0, 4).map((uc, i) => {
+  const examples = (lang === "fr-CA" ? s.fr.useCases : s.useCases).slice(0, 4).map((uc, i) => {
     const base = 250 + i * 320 + (strHash(city.slug + s.slug + String(i)) % 180);
     const factor = intel ? intel.priceIndex : 1.0;
     const low = Math.round((base * factor) / 10) * 10;
     const high = Math.round((base * factor * 1.7) / 10) * 10;
-    return { label: uc, range: `da ${low}€ a ${high}€` };
+    return { label: uc, range: lang === "fr-CA" ? `${low} $ à ${high} $` : `$${low} to $${high}` };
   });
-
   const examplesList = examples
     .map(
       (e) =>
@@ -904,14 +1042,23 @@ function buildQuantoCostaBlock(
     )
     .join("\n        ");
 
-  const paragraph1 = `A ${esc(cityName)} il costo medio per un servizio di ${esc(sectorLabel)} è ${priceNote}. La domanda nel ${esc(regionName)} è attualmente ${esc(demandText)}, condizione che influisce sui tempi di risposta dei professionisti e sulla negoziazione del prezzo finale. I prezzi indicati qui sotto sono intervalli di mercato medi raccolti da preventivi reali generati con prevai per lavori nella zona di ${esc(cityName)} e nelle località limitrofe.`;
-  const paragraph2 = `Ogni preventivo dipende da fattori specifici: superficie esatta dell'intervento, qualità dei materiali richiesti, accessibilità del cantiere, urgenza dell'esecuzione e personalizzazioni concordate con il committente. Per questo ti consigliamo di richiedere sempre un sopralluogo o di fornire una descrizione dettagliata: con prevai puoi farlo in 30 secondi descrivendo il lavoro in linguaggio naturale e ricevere un documento professionale, modificabile e pronto da inviare al cliente via WhatsApp o email.`;
-
-  return `<section class="py-20 bg-white border-t border-gray-100" aria-label="Quanto costa ${esc(sectorLabel)} a ${esc(cityName)}">
+  if (lang === "fr-CA") {
+    const sectorLabel = s.fr.label.toLowerCase();
+    const priceNote = !intel
+      ? `conforme à la moyenne nationale`
+      : pricePct > 5
+        ? `en moyenne <strong>${pricePct}% plus élevé</strong> que la moyenne nationale`
+        : pricePct < -5
+          ? `en moyenne <strong>${Math.abs(pricePct)}% plus bas</strong> que la moyenne nationale`
+          : `conforme à la moyenne nationale (variation limitée à ±5%)`;
+    const demandText = intel ? DEMAND_TEXT_FR[intel.demandLevel] : "stable";
+    const paragraph1 = `À ${esc(cityName)}, le coût moyen pour des travaux de ${esc(sectorLabel)} est ${priceNote}. La demande au ${esc(regionName)} est actuellement ${esc(demandText.toLowerCase())}, ce qui influence la rapidité de réponse des entrepreneurs et la marge de négociation sur le prix final. Les fourchettes ci-dessous sont des prix de marché moyens tirés de soumissions réelles générées avec quoteai pour des travaux à ${esc(cityName)} et les environs.`;
+    const paragraph2 = `Chaque soumission dépend de facteurs propres au travail : l'ampleur exacte des travaux, la qualité des matériaux demandés, l'accessibilité du site, l'urgence et les conditions particulières convenues avec le client. C'est pourquoi nous recommandons toujours une visite ou une description détaillée : avec quoteai, vous pouvez le faire en 30 secondes en décrivant le travail en langage naturel, et obtenir un document professionnel et modifiable, prêt à envoyer au client par WhatsApp ou courriel.`;
+    return `<section class="py-20 bg-white border-t border-gray-100" aria-label="Combien coûte ${esc(sectorLabel)} à ${esc(cityName)}">
   <div class="container mx-auto px-4 sm:px-6 lg:px-8 max-w-3xl">
     <div class="text-center mb-10">
-      <h2 class="text-2xl font-bold text-gray-900">Quanto costa un ${esc(sectorLabel)} a ${esc(cityName)}</h2>
-      <p class="text-sm text-gray-400 mt-2">Range di prezzo orientativi per i lavori più richiesti</p>
+      <h2 class="text-2xl font-bold text-gray-900">Combien coûte un ${esc(sectorLabel)} à ${esc(cityName)}</h2>
+      <p class="text-sm text-gray-400 mt-2">Fourchettes de prix typiques pour les travaux les plus demandés</p>
     </div>
     <div class="space-y-4 text-gray-600 leading-relaxed text-base mb-8">
       <p>${paragraph1}</p>
@@ -920,257 +1067,466 @@ function buildQuantoCostaBlock(
     <ul class="space-y-2.5">
       ${examplesList}
     </ul>
-    <p class="text-xs text-gray-400 mt-6 text-center">Prezzi medi di mercato a ${esc(cityName)} aggiornati al ${CURRENT_YEAR}. IVA esclusa. Variazioni possibili in base alle caratteristiche specifiche del lavoro.</p>
+    <p class="text-xs text-gray-400 mt-6 text-center">Prix de marché moyens à ${esc(cityName)}, mis à jour pour ${CURRENT_YEAR}. Taxes non incluses. Les prix réels varient selon les particularités du travail.</p>
+  </div>
+</section>`;
+  }
+
+  const sectorLabel = s.label.toLowerCase();
+  const priceNote = !intel
+    ? `in line with the national average`
+    : pricePct > 5
+      ? `on average <strong>${pricePct}% higher</strong> than the national average`
+      : pricePct < -5
+        ? `on average <strong>${Math.abs(pricePct)}% lower</strong> than the national average`
+        : `in line with the national average (a modest variation within ±5%)`;
+
+  const demandText = intel ? DEMAND_TEXT[intel.demandLevel] : "steady";
+
+  const paragraph1 = `In ${esc(cityName)}, the average cost for ${esc(sectorLabel)} work is ${priceNote}. Demand in ${esc(regionName)} is currently ${esc(demandText)}, which affects how quickly contractors respond and how much room there is to negotiate the final price. The ranges below are average market prices drawn from real quotes generated with quoteai for jobs in ${esc(cityName)} and the surrounding area.`;
+  const paragraph2 = `Every quote depends on job-specific factors: the exact scope of work, the quality of materials requested, site accessibility, how urgent the job is, and any custom terms agreed with the client. That's why we always recommend a proper walkthrough or a detailed description: with quoteai you can do that in 30 seconds by describing the job in plain language, and get a professional, editable document ready to send to the client by WhatsApp or email.`;
+
+  return `<section class="py-20 bg-white border-t border-gray-100" aria-label="What ${esc(sectorLabel)} work costs in ${esc(cityName)}">
+  <div class="container mx-auto px-4 sm:px-6 lg:px-8 max-w-3xl">
+    <div class="text-center mb-10">
+      <h2 class="text-2xl font-bold text-gray-900">What does a ${esc(sectorLabel)} cost in ${esc(cityName)}</h2>
+      <p class="text-sm text-gray-400 mt-2">Typical price ranges for the most requested jobs</p>
+    </div>
+    <div class="space-y-4 text-gray-600 leading-relaxed text-base mb-8">
+      <p>${paragraph1}</p>
+      <p>${paragraph2}</p>
+    </div>
+    <ul class="space-y-2.5">
+      ${examplesList}
+    </ul>
+    <p class="text-xs text-gray-400 mt-6 text-center">Average market prices in ${esc(cityName)}, updated for ${CURRENT_YEAR}. Tax not included. Actual prices vary based on the specifics of the job.</p>
   </div>
 </section>`;
 }
 
-// ─── Phase 1: Homepage prerender ────────────────────────────────────────────
+// The homepage (dist/index.html, dist/fr/index.html) gets its SEO <head> only.
+// It used to also get a hand-written static copy of the hero (buildHomepageBodyHtml),
+// which drifted from the real React homepage after the pixel redesign and was served
+// as a stale flash on every cold load of "/" AND of every /dashboard/* route (index.html
+// is the SPA fallback) until the bundle replaced it. The real page is client-rendered;
+// crawlers execute JS. Do not reintroduce a static body here unless it is generated
+// from the React tree (renderToString + hydrateRoot), never hand-copied.
 
-function buildHomepageBodyHtml(): string {
-  const sectorLinks = Object.values(SECTORS)
-    .map(
-      (s) =>
-        `<a href="/preventivi/${esc(s.slug)}/" class="group flex flex-col items-center gap-3 rounded-2xl border border-gray-100 bg-white p-5 text-center hover:border-violet-200 hover:shadow-sm transition-all">
-          <div class="h-10 w-10 rounded-xl flex items-center justify-center font-bold text-sm text-violet-600 bg-violet-50" aria-hidden="true">${esc(s.label.charAt(0))}</div>
-          <span class="text-sm font-medium text-gray-700 group-hover:text-violet-700 transition-colors">${esc(s.label)}</span>
-        </a>`
-    )
-    .join("\n      ");
 
-  // Link the homepage's precious crawl authority only at cities we actually
-  // prerender (see ACTIVE_CITIES) — was TOP20_CITY_SLUGS, most of which
-  // aren't generated right now, so those links pointed at un-prerendered pages.
-  const cityLinks = ACTIVE_CITIES
-    .map(
-      (city) =>
-        `<a href="/preventivi/ristrutturazione/${esc(city.slug)}/" class="inline-flex items-center rounded-full border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-600 hover:border-violet-300 hover:text-violet-600 transition-colors">${esc(city.name)}</a>`
-    )
-    .join("\n      ");
+// ─── French sector page body ────────────────────────────────────────────────
 
-  return `<div class="flex flex-col min-h-screen bg-white">
-  <section class="relative overflow-hidden bg-white pt-28 pb-36">
-    <div class="mesh-blob mesh-blob-1" aria-hidden="true"></div>
-    <div class="mesh-blob mesh-blob-2" aria-hidden="true"></div>
-    <div class="mesh-blob mesh-blob-3" aria-hidden="true"></div>
-    <div class="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10 text-center">
-      <h1 class="mx-auto max-w-4xl text-5xl font-extrabold tracking-tight text-gray-900 sm:text-6xl lg:text-7xl leading-[1.1]">
-        Crea preventivi professionali in <span class="gradient-text">30 secondi</span> con l&apos;AI
+function buildFrBreadcrumb(items: { name: string; href: string | null }[]): string {
+  return buildBreadcrumb(items).replace('aria-label="Breadcrumb"', 'aria-label="Fil d\'Ariane"');
+}
+
+function buildSectorBodyHtmlFr(s: SectorData): string {
+  const c = getSectorFrContent(s);
+  const breadcrumb = buildFrBreadcrumb([
+    { name: "Accueil", href: "/fr" },
+    { name: c.h1Highlight, href: null },
+  ]);
+
+  const sHero = `<section class="relative overflow-hidden bg-white pt-24 pb-20">
+    <div class="container mx-auto px-4 sm:px-6 lg:px-8 text-center max-w-4xl relative z-10">
+      <div class="inline-flex items-center gap-2 rounded-full bg-violet-50 border border-violet-100 px-4 py-1.5 text-sm font-medium text-violet-700 mb-8">
+        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="currentColor" stroke="none" aria-hidden="true"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+        Conçu pour les artisans canadiens
+      </div>
+      <h1 class="text-4xl font-extrabold tracking-tight text-gray-900 sm:text-5xl lg:text-6xl mb-6 leading-[1.1]">
+        ${esc(c.h1)} <span class="gradient-text">${esc(c.h1Highlight)}</span>
       </h1>
-      <p class="mx-auto mt-8 max-w-2xl text-xl text-gray-500 leading-relaxed">
-        Dimentica Excel e i documenti scritti a mano. Descrivi il lavoro a parole tue e prevai genera un documento impeccabile, pronto da inviare al cliente.
-      </p>
-      <div class="mt-12 flex flex-col sm:flex-row justify-center gap-4">
+      <p class="text-xl text-gray-500 mb-10 max-w-2xl mx-auto leading-relaxed">${esc(c.intro)}</p>
+      <div class="flex flex-col sm:flex-row gap-4 justify-center">
         <a href="/sign-up/" class="btn-gradient inline-flex h-14 items-center justify-center px-8 text-lg font-semibold">
-          Inizia Gratuitamente
-          <svg xmlns="http://www.w3.org/2000/svg" class="ml-2 h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+          Créer ma soumission gratuite
         </a>
-        <a href="#come-funziona" class="btn-gradient-outline inline-flex h-14 items-center justify-center px-8 text-lg font-semibold">
-          Vedi come funziona
+        <a href="#comment-ca-marche" class="btn-gradient-outline inline-flex h-14 items-center justify-center px-8 text-lg font-semibold">
+          Comment ça marche
         </a>
       </div>
-      <p class="mt-6 text-sm text-gray-400">
-        ✓ Gratis per iniziare &nbsp;&middot;&nbsp; ✓ Nessuna carta richiesta &nbsp;&middot;&nbsp; ✓ Preventivo in 30 secondi
-      </p>
+      <p class="text-sm text-gray-400 mt-5">Sans carte de crédit &middot; Soumission prête en 30 secondes</p>
     </div>
-  </section>
+  </section>`;
 
-  <section id="come-funziona" class="fade-in-section py-28 bg-gray-50/60">
+  const sBenefits = `<section class="py-20 bg-gray-50">
     <div class="container mx-auto px-4 sm:px-6 lg:px-8">
       <div class="text-center mb-14">
-        <h2 class="text-3xl font-bold text-gray-900 sm:text-4xl">Basta Excel. Basta fogli scritti a mano.</h2>
-        <p class="mt-4 text-lg text-gray-500 max-w-2xl mx-auto">prevai trasforma una descrizione in linguaggio naturale in un preventivo professionale con tutti i calcoli già fatti.</p>
+        <h2 class="text-3xl font-bold text-gray-900">${esc(c.h2Benefits)}</h2>
       </div>
-      <div class="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
-        <div class="card-soft bg-white rounded-2xl p-8">
-          <div class="h-12 w-12 rounded-2xl flex items-center justify-center text-white mb-6" style="background:linear-gradient(135deg,#7C3AED,#06B6D4)" aria-hidden="true">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z"/></svg>
-          </div>
-          <h3 class="text-lg font-bold text-gray-900 mb-3">Scrivi in italiano</h3>
-          <p class="text-sm text-gray-500 leading-relaxed">Nessun campo da compilare. Descrivi il lavoro come lo descriveresti a voce — l&apos;AI capisce e struttura tutto automaticamente.</p>
-        </div>
-        <div class="card-soft bg-white rounded-2xl p-8">
-          <div class="h-12 w-12 rounded-2xl flex items-center justify-center text-white mb-6" style="background:linear-gradient(135deg,#7C3AED,#06B6D4)" aria-hidden="true">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/></svg>
-          </div>
-          <h3 class="text-lg font-bold text-gray-900 mb-3">PDF professionale immediato</h3>
-          <p class="text-sm text-gray-500 leading-relaxed">Voci di costo, quantità, prezzi unitari, IVA e totale — tutto calcolato e formattato. Pronto da inviare via WhatsApp o email.</p>
-        </div>
-        <div class="card-soft bg-white rounded-2xl p-8">
-          <div class="h-12 w-12 rounded-2xl flex items-center justify-center text-white mb-6" style="background:linear-gradient(135deg,#7C3AED,#06B6D4)" aria-hidden="true">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-          </div>
-          <h3 class="text-lg font-bold text-gray-900 mb-3">Correggi quello che vuoi</h3>
-          <p class="text-sm text-gray-500 leading-relaxed">Ogni voce è modificabile direttamente nell&apos;anteprima. Cambia prezzi, aggiungi lavorazioni, personalizza le condizioni di pagamento.</p>
-        </div>
+      <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        ${c.benefits.map((b) => `<div class="card-soft bg-white p-7 rounded-2xl flex flex-col">
+          <div class="h-10 w-10 rounded-xl flex items-center justify-center text-white font-bold text-sm mb-5 shrink-0" style="background:linear-gradient(135deg,#7C3AED,#06B6D4)" aria-hidden="true"></div>
+          <h3 class="text-base font-semibold text-gray-900 mb-2">${esc(b.title)}</h3>
+          <p class="text-sm text-gray-500 leading-relaxed">${esc(b.desc)}</p>
+        </div>`).join("")}
       </div>
     </div>
-  </section>
+  </section>`;
 
-  <section class="fade-in-section py-20 bg-white">
-    <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+  const sHowItWorks = `<section id="comment-ca-marche" class="py-20 bg-white">
+    <div class="container mx-auto px-4 sm:px-6 lg:px-8 max-w-4xl">
+      <div class="text-center mb-14">
+        <h2 class="text-3xl font-bold text-gray-900">${esc(c.h2HowItWorks)}</h2>
+      </div>
+      <div class="grid md:grid-cols-3 gap-8">
+        ${c.howItWorks.map((step, i) => `<div>
+          <div class="h-10 w-10 rounded-full flex items-center justify-center text-white font-bold text-sm mb-5" style="background:linear-gradient(135deg,#7C3AED,#06B6D4)" aria-hidden="true">${i + 1}</div>
+          <h3 class="text-base font-semibold text-gray-900 mb-2">${esc(step.step)}</h3>
+          <p class="text-sm text-gray-500 leading-relaxed">${esc(step.desc)}</p>
+        </div>`).join("")}
+      </div>
+    </div>
+  </section>`;
+
+  const sUseCases = `<section class="py-20 bg-gray-50">
+    <div class="container mx-auto px-4 sm:px-6 lg:px-8 max-w-3xl">
       <div class="text-center mb-12">
-        <h2 class="text-2xl font-bold text-gray-900 sm:text-3xl">Preventivi per ogni professione</h2>
-        <p class="mt-3 text-base text-gray-500">Imbianchini, elettricisti, idraulici, falegnami, muratori e molti altri — prevai funziona per tutti.</p>
+        <h2 class="text-3xl font-bold text-gray-900">${esc(c.h2UseCases)}</h2>
       </div>
-      <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 max-w-5xl mx-auto">
-        ${sectorLinks}
-      </div>
+      <ul class="grid sm:grid-cols-2 gap-3">
+        ${s.fr.useCases.map((uc) => `<li class="flex items-center gap-3 bg-white rounded-xl px-5 py-3.5 card-soft">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-violet-500 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg>
+          <span class="text-sm text-gray-700">${esc(uc)}</span>
+        </li>`).join("")}
+      </ul>
     </div>
-  </section>
+  </section>`;
 
-  <section class="fade-in-section py-20 bg-gray-50/60">
-    <div class="container mx-auto px-4 sm:px-6 lg:px-8 text-center">
-      <div class="mb-10">
-        <h2 class="text-2xl font-bold text-gray-900 sm:text-3xl">Preventivi nelle principali città italiane</h2>
-        <p class="mt-3 text-base text-gray-500">Usato da artigiani e professionisti da Nord a Sud Italia.</p>
-      </div>
-      <div class="flex flex-wrap gap-3 justify-center max-w-3xl mx-auto">
-        ${cityLinks}
-      </div>
-    </div>
-  </section>
-
-  <section class="fade-in-section py-14 bg-white">
-    <div class="container mx-auto px-4 sm:px-6 lg:px-8">
-      <div class="text-center mb-8">
-        <span class="inline-block bg-amber-50 text-amber-600 text-xs font-bold px-3 py-0.5 rounded-full uppercase tracking-wider mb-3">Recensioni verificate</span>
-        <h2 class="text-2xl font-bold tracking-tight text-gray-900 sm:text-3xl">Cosa dicono <span class="gradient-text">di noi</span></h2>
-        <div class="flex items-center justify-center gap-2 mt-3" aria-label="Valutazione media ${AGGREGATE_RATING.ratingValue} su 5">
-          <div class="flex gap-0.5" aria-hidden="true">
-            ${Array.from({ length: 5 }).map(() => `<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-amber-400 fill-amber-400" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>`).join("")}
+  const sMarket = `<section class="py-20 bg-white">
+    <div class="container mx-auto px-4 sm:px-6 lg:px-8 max-w-4xl">
+      <div class="rounded-2xl p-10 md:p-14 relative overflow-hidden" style="background:linear-gradient(135deg,rgba(124,58,237,0.06),rgba(6,182,212,0.06))">
+        <div class="relative z-10">
+          <h2 class="text-2xl font-bold text-gray-900 mb-6">Conçu pour le marché canadien des métiers</h2>
+          <div class="grid md:grid-cols-3 gap-6 text-sm text-gray-600 leading-relaxed">
+            <div><div class="font-semibold text-gray-900 mb-2">Taxes canadiennes intégrées</div><p>La TPS/TVH (et la TVP/TVQ le cas échéant) est calculée automatiquement selon la province où le travail est exécuté.</p></div>
+            <div><div class="font-semibold text-gray-900 mb-2">Vos informations d'entreprise, sauvegardées une fois</div><p>Nom de l'entreprise, numéro de licence ou d'enregistrement, adresse et logo — chaque champ nécessaire pour une soumission professionnelle.</p></div>
+            <div><div class="font-semibold text-gray-900 mb-2">Vocabulaire des métiers intégré</div><p>L'IA est entraînée sur les termes que les entrepreneurs et artisans canadiens utilisent réellement.</p></div>
           </div>
-          <span class="text-sm font-bold text-gray-800">${AGGREGATE_RATING.ratingValue}</span>
-          <span class="text-sm text-gray-400">/5 &middot; ${AGGREGATE_RATING.reviewCount} recensioni</span>
         </div>
-      </div>
-      <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 max-w-5xl mx-auto">
-        ${TESTIMONIALS.map((t) => {
-          const initials = t.name.split(" ").map((n: string) => n[0]).join("").slice(0, 2).toUpperCase();
-          const stars = Array.from({ length: 5 }).map((_, i) =>
-            `<svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 ${i < t.rating ? "text-amber-400 fill-amber-400" : "text-gray-100 fill-gray-100"}" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>`
-          ).join("");
-          return `<div class="bg-white rounded-xl border border-gray-100 p-5 card-soft flex flex-col gap-3">
-            <div class="flex gap-0.5" aria-label="${t.rating} stelle su 5">${stars}</div>
-            <p class="text-sm text-gray-700 leading-relaxed flex-1">&ldquo;${esc(t.text)}&rdquo;</p>
-            <div class="flex items-center gap-3 pt-2 border-t border-gray-50">
-              <div class="h-9 w-9 rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0" style="background:linear-gradient(135deg,#7C3AED,#06B6D4)" aria-hidden="true">${initials}</div>
-              <div>
-                <div class="text-sm font-semibold text-gray-900">${esc(t.name)}</div>
-                <div class="text-xs text-gray-400">${esc(t.website)}</div>
-              </div>
-            </div>
-          </div>`;
-        }).join("\n        ")}
       </div>
     </div>
-  </section>
+  </section>`;
 
-  <section class="fade-in-section py-16 bg-white border-t border-gray-100">
-    <div class="container mx-auto px-4 sm:px-6 lg:px-8">
-      <div class="max-w-3xl mx-auto">
-        <div class="text-center mb-10">
-          <span class="inline-flex items-center gap-1.5 bg-violet-50 border border-violet-100 text-violet-700 text-xs font-semibold px-3 py-1 rounded-full mb-4">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.582a.5.5 0 0 1 0 .962L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z"/></svg>
-            Approfondimento
-          </span>
-          <h2 class="text-2xl font-bold tracking-tight text-gray-900 sm:text-3xl">
-            Cos&#39;è <span class="gradient-text">prevai</span> e a chi serve
-          </h2>
-        </div>
+  const sFaq = `<section class="py-20 bg-gray-50">
+    <div class="container mx-auto px-4 sm:px-6 lg:px-8 max-w-3xl">
+      <div class="text-center mb-12">
+        <h2 class="text-3xl font-bold text-gray-900">${esc(c.h2Faq)}</h2>
+      </div>
+      <div class="space-y-4">
+        ${c.faq.map((f) => `<div class="bg-white rounded-2xl p-6 card-soft">
+          <h3 class="text-base font-semibold text-gray-900 mb-2">${esc(f.q)}</h3>
+          <p class="text-sm text-gray-500 leading-relaxed">${esc(f.a)}</p>
+        </div>`).join("")}
+      </div>
+    </div>
+  </section>`;
 
-        <div class="space-y-5 text-sm sm:text-[15px] text-gray-600 leading-relaxed">
-          <p>
-            <strong class="text-gray-900">prevai</strong> è il primo software italiano che usa l&#39;intelligenza
-            artificiale per trasformare una descrizione in linguaggio naturale in un preventivo professionale
-            completo. È pensato per artigiani, professionisti tecnici e piccole imprese che ogni settimana devono
-            inviare offerte ai clienti — imbianchini, elettricisti, idraulici, muratori, fabbri, falegnami, imprese
-            di ristrutturazione e tutti i mestieri del settore edile e impiantistico. L&#39;obiettivo è semplice:
-            ridurre il tempo per fare un preventivo da 30-60 minuti a 30 secondi, senza rinunciare alla qualità del
-            documento finale.
-          </p>
-
-          <div class="grid sm:grid-cols-3 gap-3 my-8">
-            <div class="rounded-xl bg-gray-50 border border-gray-100 p-4">
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-violet-600 mb-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 10h12"/><path d="M4 14h9"/><path d="M19 6a7.7 7.7 0 0 0-5.2-2A7.9 7.9 0 0 0 6 12c0 4.4 3.5 8 7.8 8 2 0 3.8-.8 5.2-2"/></svg>
-              <div class="font-semibold text-gray-900 text-sm mb-1">IVA italiana integrata</div>
-              <p class="text-xs text-gray-500 leading-relaxed">Calcolo automatico IVA 10%, 22% e regime forfettario.</p>
-            </div>
-            <div class="rounded-xl bg-gray-50 border border-gray-100 p-4">
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-violet-600 mb-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/></svg>
-              <div class="font-semibold text-gray-900 text-sm mb-1">Dati su server europei</div>
-              <p class="text-xs text-gray-500 leading-relaxed">Stripe per i pagamenti, cookie crittografati.</p>
-            </div>
-            <div class="rounded-xl bg-gray-50 border border-gray-100 p-4">
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-violet-600 mb-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/><path d="M15 2v2"/><path d="M15 20v2"/><path d="M2 15h2"/><path d="M2 9h2"/><path d="M20 15h2"/><path d="M20 9h2"/><path d="M9 2v2"/><path d="M9 20v2"/></svg>
-              <div class="font-semibold text-gray-900 text-sm mb-1">AI addestrata in italiano</div>
-              <p class="text-xs text-gray-500 leading-relaxed">Lessico tecnico edile e impiantistico italiano.</p>
-            </div>
+  const sCityGrid = CITY_SECTORS.includes(s.slug) ? (() => {
+    const byRegion = new Map<string, CityData[]>();
+    for (const city of ACTIVE_CITIES) {
+      const arr = byRegion.get(city.region) ?? [];
+      arr.push(city);
+      byRegion.set(city.region, arr);
+    }
+    const regionBlocks = Array.from(byRegion.entries())
+      .map(([region, cities]) => `<div>
+          <h3 class="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-3">${esc(region)}</h3>
+          <div class="flex flex-wrap gap-2">
+            ${cities.map((c2) => `<a href="/fr/soumissions/${esc(s.frSlug)}/${esc(c2.slug)}/" class="inline-flex items-center rounded-full border border-gray-200 bg-white px-3 py-1.5 text-xs font-medium text-gray-600 hover:border-violet-300 hover:text-violet-600 transition-colors">${esc(c2.name)}</a>`).join("\n            ")}
           </div>
-
-          <h3 class="text-lg font-semibold text-gray-900 pt-3">Come funziona davvero</h3>
-          <p>
-            Apri prevai dal tuo smartphone direttamente in cantiere o da casa la sera. Descrivi il lavoro come lo
-            racconteresti a un collega: <em>«Tinteggiatura appartamento 80mq, due mani di lavabile bianca, rasatura
-            parete bagno»</em>. In trenta secondi il motore AI costruisce un preventivo strutturato in capitoli, con
-            voci di costo, unità di misura (metri quadri, ore, corpo), prezzi unitari di mercato italiano e calcolo
-            IVA automatico. Puoi modificare ogni voce, sostituire i prezzi con il tuo listino personale, aggiungere
-            o togliere capitoli. Quando sei pronto scarichi il PDF, lo invii via WhatsApp o email, e il documento
-            viene archiviato nella tua area personale per future modifiche.
-          </p>
-
-          <h3 class="text-lg font-semibold text-gray-900 pt-3">Perché funziona meglio di Excel o dei software tradizionali</h3>
-          <p>
-            I software di preventivazione tradizionali sono pensati per l&#39;ufficio: richiedono installazione,
-            configurazione iniziale di listini e codici, una formazione di ore. Excel è gratuito ma costringe a
-            partire ogni volta da un foglio bianco o da un template costruito anni fa. prevai elimina entrambi i
-            problemi: non c&#39;è nulla da installare (basta un browser), non serve configurare nulla all&#39;inizio
-            (l&#39;AI conosce già i prezzi medi) e ogni preventivo nasce già strutturato. In media i nostri utenti
-            dichiarano un risparmio di 4-6 ore a settimana, tempo che torna in cantiere o in famiglia.
-          </p>
-
-          <h3 class="text-lg font-semibold text-gray-900 pt-3">Sicurezza e fiscalità italiana</h3>
-          <p>
-            Tutti i dati sono ospitati su server europei, le sessioni sono protette da cookie crittografati e i
-            pagamenti passano da Stripe. La gestione fiscale segue le regole italiane: IVA al 10% per
-            ristrutturazioni residenziali, 22% per nuovi impianti, esenzione automatica per il regime forfettario.
-            I dati aziendali (P.IVA, codice fiscale, codice SDI per fatturazione elettronica) vengono memorizzati
-            una volta e applicati ad ogni preventivo.
-          </p>
-
-          <h3 class="text-lg font-semibold text-gray-900 pt-3">Quanto costa iniziare</h3>
-          <p>
-            La registrazione è gratuita e il primo preventivo si genera senza inserire la carta di credito. Da lì
-            puoi scegliere: pago un preventivo singolo (29€) quando serve, oppure attivo un abbonamento mensile
-            (Starter 19€ con 10 preventivi, Pro 49€ con 60 preventivi, Elite 59€ illimitati). Il piano si cambia
-            o si disdice in qualsiasi momento dall&#39;area cliente. Migliaia di professionisti italiani usano già
-            prevai ogni settimana.
-          </p>
-        </div>
-      </div>
+        </div>`)
+      .join("\n        ");
+    return `<section class="py-20 bg-gray-50">
+  <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="text-center mb-12">
+      <h2 class="text-2xl font-bold text-gray-900">Soumissions ${esc(c.h1Highlight.toLowerCase())} dans les principales villes</h2>
+      <p class="text-sm text-gray-500 mt-2">Sélectionnez votre ville pour des prix et informations locales</p>
     </div>
-  </section>
+    <div class="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+      ${regionBlocks}
+    </div>
+  </div>
+</section>`;
+  })() : "";
 
-  <section class="fade-in-section py-28 bg-white">
+  const related = RELATED_SECTORS[s.slug];
+  const sRelated = related && related.length > 0 ? `<section class="py-14 bg-white border-t border-gray-100">
+  <div class="container mx-auto px-4 sm:px-6 lg:px-8 max-w-4xl">
+    <h2 class="text-base font-semibold text-gray-500 mb-5 text-center">Services connexes</h2>
+    <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
+      ${related.map((r) => {
+        const rSector = SECTORS[r.slug];
+        const rLabel = rSector ? rSector.fr.label : r.label;
+        const rSlug = rSector ? rSector.frSlug : r.slug;
+        return `<a href="/fr/soumissions/${esc(rSlug)}/" class="flex items-center gap-2 bg-white border border-gray-100 hover:border-violet-200 rounded-xl px-4 py-3 text-sm font-medium text-gray-700 hover:text-violet-700 transition-colors">
+          <span class="text-violet-400 font-bold" aria-hidden="true">→</span> ${esc(rLabel)}
+        </a>`;
+      }).join("\n      ")}
+    </div>
+  </div>
+</section>` : "";
+
+  const sCta = `<section class="py-24 bg-white">
     <div class="container mx-auto px-4 sm:px-6 lg:px-8 text-center max-w-2xl">
-      <h2 class="text-3xl font-bold text-gray-900 sm:text-4xl mb-4">
-        Pronto a creare il tuo primo preventivo <span class="gradient-text">in 30 secondi</span>?
-      </h2>
+      <h2 class="text-3xl font-bold text-gray-900 mb-4">Prêt à créer votre première soumission <span class="gradient-text">en 30 secondes</span>?</h2>
       <p class="text-lg text-gray-500 mb-10">
-        Unisciti a centinaia di professionisti italiani che usano prevai ogni giorno. Nessuna carta di credito. Nessun impegno.
+        Sans carte de crédit. Sans engagement. Votre première soumission est gratuite.
       </p>
       <a href="/sign-up/" class="btn-gradient inline-flex h-14 items-center justify-center px-10 text-lg font-semibold">
-        Inizia Gratuitamente
+        Commencer gratuitement
         <svg xmlns="http://www.w3.org/2000/svg" class="ml-2 h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
       </a>
     </div>
-  </section>
-</div>`;
+  </section>`;
+
+  return wrapInPublicLayoutFr(`<div class="flex flex-col min-h-screen bg-white">
+  ${breadcrumb}
+  ${sHero}
+  ${sBenefits}
+  ${sHowItWorks}
+  ${sUseCases}
+  ${sMarket}
+  ${sFaq}
+  ${sCityGrid}
+  ${sRelated}
+  ${sCta}
+</div>`);
+}
+
+function buildSectorJsonLdFr(s: SectorData): object[] {
+  const c = getSectorFrContent(s);
+  const canonical = `${BASE_URL}/fr/soumissions/${s.frSlug}/`;
+  const schemas: object[] = [
+    {
+      "@context": "https://schema.org",
+      "@type": "SoftwareApplication",
+      name: "quoteai",
+      description: s.fr.jsonLdDescription,
+      url: canonical,
+      applicationCategory: "BusinessApplication",
+      operatingSystem: "Web",
+      inLanguage: "fr",
+      offers: { "@type": "Offer", price: "0", priceCurrency: "CAD", availability: "https://schema.org/InStock" },
+    },
+    {
+      "@context": "https://schema.org",
+      "@type": "BreadcrumbList",
+      itemListElement: [
+        { "@type": "ListItem", position: 1, name: "Accueil", item: `${BASE_URL}/fr/` },
+        { "@type": "ListItem", position: 2, name: s.fr.label, item: canonical },
+      ],
+    },
+  ];
+  if (c.faq.length > 0) {
+    schemas.push({
+      "@context": "https://schema.org",
+      "@type": "FAQPage",
+      mainEntity: c.faq.map((f) => ({
+        "@type": "Question",
+        name: f.q,
+        acceptedAnswer: { "@type": "Answer", text: f.a },
+      })),
+    });
+  }
+  return schemas;
+}
+
+// ─── French city page body ──────────────────────────────────────────────────
+
+function buildCityBodyHtmlFr(s: SectorData, city: CityData): string {
+  const cityName = city.name;
+  const regionName = city.region;
+  const intel = CITY_INTELLIGENCE[city.slug];
+  const c = getSectorFrContent(s);
+  const intro = getCityIntro(s, city, "fr-CA");
+
+  const breadcrumb = buildFrBreadcrumb([
+    { name: "Accueil", href: "/fr" },
+    { name: s.fr.label, href: `/fr/soumissions/${s.frSlug}/` },
+    { name: cityName, href: null },
+  ]);
+
+  const sHero = `<section class="relative overflow-hidden bg-white pt-24 pb-20">
+    <div class="container mx-auto px-4 sm:px-6 lg:px-8 text-center max-w-4xl relative z-10">
+      <div class="inline-flex items-center gap-2 rounded-full bg-violet-50 border border-violet-100 px-4 py-1.5 text-sm font-medium text-violet-700 mb-8">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
+        ${esc(regionName)}
+      </div>
+      <h1 class="text-4xl font-extrabold tracking-tight text-gray-900 sm:text-5xl lg:text-6xl mb-6 leading-[1.1]">
+        ${esc(c.h1)} <span class="gradient-text">${esc(c.h1Highlight)}</span><br />
+        <span class="text-gray-500 text-3xl sm:text-4xl font-bold">à ${esc(cityName)}</span>
+      </h1>
+      <p class="text-xl text-gray-500 mb-10 max-w-2xl mx-auto leading-relaxed">${esc(intro)}</p>
+      <div class="flex flex-col sm:flex-row gap-4 justify-center">
+        <a href="/sign-up/" class="btn-gradient inline-flex h-14 items-center justify-center px-8 text-lg font-semibold">
+          Créer ma soumission gratuite
+        </a>
+        <a href="/fr/soumissions/${esc(s.frSlug)}/" class="btn-gradient-outline inline-flex h-14 items-center justify-center px-8 text-lg font-semibold">
+          Voir comment ça marche
+        </a>
+      </div>
+      <p class="text-sm text-gray-400 mt-5">Sans carte de crédit &middot; Soumission prête en 30 secondes</p>
+    </div>
+  </section>`;
+
+  const sOsservatorio = intel ? buildOsservatorio(s, city, intel, "fr-CA") : "";
+
+  const sBenefits = `<section class="py-20 bg-gray-50">
+    <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="text-center mb-14">
+        <h2 class="text-3xl font-bold text-gray-900">Pourquoi les ${esc(s.fr.labelPlural)} de ${esc(cityName)} choisissent quoteai</h2>
+      </div>
+      <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        ${c.benefits.map((b) => `<div class="card-soft bg-white p-7 rounded-2xl flex flex-col">
+          <div class="h-10 w-10 rounded-xl flex items-center justify-center text-white font-bold text-sm mb-5 shrink-0" style="background:linear-gradient(135deg,#7C3AED,#06B6D4)" aria-hidden="true"></div>
+          <h3 class="text-base font-semibold text-gray-900 mb-2">${esc(b.title)}</h3>
+          <p class="text-sm text-gray-500 leading-relaxed">${esc(b.desc)}</p>
+        </div>`).join("")}
+      </div>
+    </div>
+  </section>`;
+
+  const howItWorksSteps = getCityHowItWorksSteps(cityName, "fr-CA");
+  const sHowItWorks = `<section class="py-20 bg-white">
+    <div class="container mx-auto px-4 sm:px-6 lg:px-8 max-w-4xl">
+      <div class="text-center mb-14">
+        <h2 class="text-3xl font-bold text-gray-900">Soumission professionnelle à ${esc(cityName)} en 3 étapes</h2>
+      </div>
+      <div class="grid md:grid-cols-3 gap-10">
+        ${howItWorksSteps.map((step) => `<div>
+          <div class="h-10 w-10 rounded-full flex items-center justify-center text-white font-bold text-sm mb-5" style="background:linear-gradient(135deg,#7C3AED,#06B6D4)" aria-hidden="true">${esc(step.n)}</div>
+          <h3 class="text-base font-semibold text-gray-900 mb-2">${esc(step.title)}</h3>
+          <p class="text-sm text-gray-500 leading-relaxed">${esc(step.desc)}</p>
+        </div>`).join("")}
+      </div>
+    </div>
+  </section>`;
+
+  const sUseCases = `<section class="py-20 bg-gray-50">
+    <div class="container mx-auto px-4 sm:px-6 lg:px-8 max-w-3xl">
+      <div class="text-center mb-12">
+        <h2 class="text-3xl font-bold text-gray-900">Soumissions pour ces travaux à ${esc(cityName)}</h2>
+      </div>
+      <ul class="grid sm:grid-cols-2 gap-3">
+        ${s.fr.useCases.map((uc) => `<li class="flex items-center gap-3 bg-white rounded-xl px-5 py-3.5 card-soft">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-violet-500 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg>
+          <span class="text-sm text-gray-700">${esc(uc)}</span>
+        </li>`).join("")}
+      </ul>
+    </div>
+  </section>`;
+
+  const cityFaqItems = getCityFaqItems(s, city, "fr-CA");
+  const sFaq = `<section class="py-20 bg-gray-50">
+    <div class="container mx-auto px-4 sm:px-6 lg:px-8 max-w-3xl">
+      <div class="text-center mb-12">
+        <h2 class="text-3xl font-bold text-gray-900">Questions fréquentes</h2>
+      </div>
+      <div class="space-y-4">
+        ${cityFaqItems.map((f) => `<div class="bg-white rounded-2xl p-6 card-soft">
+          <h3 class="text-base font-semibold text-gray-900 mb-2">${esc(f.q)}</h3>
+          <p class="text-sm text-gray-500 leading-relaxed">${esc(f.a)}</p>
+        </div>`).join("")}
+      </div>
+    </div>
+  </section>`;
+
+  const nearbyLinks = getNearbyAnchors(s, city, "fr-CA")
+    .map(({ slug, anchorText }) => `<a href="/fr/soumissions/${esc(s.frSlug)}/${esc(slug)}/" class="inline-flex items-center gap-1.5 rounded-full border border-gray-200 px-3.5 py-1.5 text-sm text-gray-500 hover:border-violet-300 hover:text-violet-600 transition-colors">${esc(anchorText)}</a>`)
+    .join("\n          ");
+  const sNearby = nearbyLinks ? `<section class="py-16 bg-white border-t border-gray-100">
+    <div class="container mx-auto px-4 sm:px-6 lg:px-8 max-w-4xl">
+      <h2 class="text-base font-semibold text-gray-500 mb-5 text-center">
+        Soumissions ${esc(s.fr.labelPlural)} dans les villes voisines
+      </h2>
+      <div class="flex flex-wrap gap-2 justify-center">
+          ${nearbyLinks}
+      </div>
+    </div>
+  </section>` : "";
+
+  const sQuantoCosta = buildQuantoCostaBlock(s, city, intel, "fr-CA");
+  const contextTextFr = getCityContextText(city.slug, "fr-CA");
+  const sContext = contextTextFr ? `<section class="py-10 bg-violet-50/50 border-y border-violet-100/60">
+  <div class="container mx-auto px-4 sm:px-6 lg:px-8 max-w-3xl">
+    <div class="flex gap-4 items-start">
+      <div class="shrink-0 mt-0.5 h-8 w-8 rounded-lg bg-violet-100 flex items-center justify-center" aria-hidden="true">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-violet-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
+      </div>
+      <div>
+        <h2 class="text-sm font-semibold text-violet-700 mb-1.5">${esc(s.fr.label)} à ${esc(cityName)} — marché local</h2>
+        <p class="text-sm text-gray-600 leading-relaxed">${esc(contextTextFr)}</p>
+      </div>
+    </div>
+  </div>
+</section>` : "";
+
+  const sameCityOtherSectors = getSameCityOtherSectors(s.slug, city.slug, 6, "fr-CA");
+  const sSameCityOther = sameCityOtherSectors.length ? `<section class="py-14 bg-gray-50 border-t border-gray-100">
+    <div class="container mx-auto px-4 sm:px-6 lg:px-8 max-w-4xl">
+      <h2 class="text-base font-semibold text-gray-500 mb-5 text-center">Autres services à ${esc(cityName)}</h2>
+      <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
+        ${sameCityOtherSectors
+          .map((r) => `<a href="/fr/soumissions/${esc(SECTORS[r.slug]?.frSlug ?? r.slug)}/${esc(city.slug)}/" class="flex items-center gap-2 bg-white border border-gray-100 hover:border-violet-200 rounded-xl px-4 py-3 text-sm font-medium text-gray-700 hover:text-violet-700 transition-colors">
+          <span class="text-violet-400 font-bold" aria-hidden="true">→</span> ${esc(r.label)} à ${esc(cityName)}
+        </a>`)
+          .join("\n        ")}
+      </div>
+    </div>
+  </section>` : "";
+
+  const ctaTexts = getCityCtaTexts(getCityCtaVariant(s, city), cityName, "fr-CA");
+  const sCta = `<section class="py-24 bg-gray-50">
+    <div class="container mx-auto px-4 sm:px-6 lg:px-8 text-center max-w-2xl">
+      <h2 class="text-3xl font-bold text-gray-900 mb-4">${esc(ctaTexts.headingPrefix)}<span class="gradient-text">${esc(ctaTexts.headingGradient)}</span></h2>
+      <p class="text-lg text-gray-500 mb-10">
+        Aucune carte de crédit requise. Votre première soumission professionnelle est gratuite.
+      </p>
+      <a href="/sign-up/" class="btn-gradient inline-flex h-14 items-center justify-center px-10 text-lg font-semibold">
+        ${esc(ctaTexts.button)}
+        <svg xmlns="http://www.w3.org/2000/svg" class="ml-2 h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+      </a>
+      <p class="text-sm text-gray-400 mt-4">Soumission prête en 30 secondes &middot; Sans engagement</p>
+    </div>
+  </section>`;
+
+  return wrapInPublicLayoutFr(`<div class="flex flex-col min-h-screen bg-white">
+  ${breadcrumb}
+  ${sHero}
+  ${sOsservatorio}
+  ${sBenefits}
+  ${sHowItWorks}
+  ${sUseCases}
+  ${sFaq}
+  ${sQuantoCosta}
+  ${sContext}
+  ${sNearby}
+  ${sSameCityOther}
+  ${sCta}
+</div>`);
 }
 
 // ─── Main execution ─────────────────────────────────────────────────────────
 
 const template = pruneModulepreload(readFileSync(templatePath, "utf-8"));
+
+// Phase 68: "/", "/fr" and the six static pages (about, contact, privacy,
+// terms, WhatsApp, sitemap) are rendered by the real React tree — built with
+// `vite build --ssr src/entry-server.tsx --outDir dist/server`, see the
+// `build` script — and hydrated by main.tsx, so the hero paints from HTML and
+// crawlers see the same DOM users get (the hand-written bodies this replaced
+// had drifted to the pre-redesign layout). React 19 hoists <title>/<meta>/
+// <link> to the front of the string; the head is authored by buildHeadBlock()
+// here, so those are stripped.
+const ssrEntry = join(__dirname, "../dist/server/entry-server.js");
+if (!existsSync(ssrEntry)) {
+  console.error("dist/server/entry-server.js not found — run `vite build --ssr src/entry-server.tsx --outDir dist/server` first");
+  process.exit(1);
+}
+const { renderPage } = (await import(pathToFileURL(ssrEntry).href)) as { renderPage: (path: string, lang: "en" | "fr") => Promise<string> };
+function stripHoistedHead(html: string): string {
+  return html.replace(/^(?:\s*(?:<(?:link|meta)\b[^>]*\/?>|<title>[^<]*<\/title>))+/, "");
+}
 let count = 0;
 
 console.log("Prerendering SEO pages...");
@@ -1179,15 +1535,15 @@ console.log("Prerendering SEO pages...");
 const homepageWebSiteSchema = {
   "@context": "https://schema.org",
   "@type": "WebSite",
-  name: "prevai",
+  name: "quoteai",
   url: BASE_URL,
-  description: "Software AI per preventivi professionali in 30 secondi. Per artigiani, PMI e freelance italiani.",
-  inLanguage: "it",
+  description: "AI-powered software for professional quotes in 30 seconds. Built for Canadian contractors, small businesses, and freelancers.",
+  inLanguage: "en",
   potentialAction: {
     "@type": "SearchAction",
     target: {
       "@type": "EntryPoint",
-      urlTemplate: `${BASE_URL}/preventivi/{search_term_string}`,
+      urlTemplate: `${BASE_URL}/quotes/{search_term_string}`,
     },
     "query-input": "required name=search_term_string",
   },
@@ -1195,15 +1551,15 @@ const homepageWebSiteSchema = {
 const homepageSoftwareSchema = {
   "@context": "https://schema.org",
   "@type": "SoftwareApplication",
-  name: "prevai",
-  description: "Software di preventivazione con intelligenza artificiale per artigiani, PMI e professionisti italiani.",
+  name: "quoteai",
+  description: "AI-powered quoting software for Canadian contractors, small businesses, and tradespeople.",
   url: `${BASE_URL}/`,
   applicationCategory: "BusinessApplication",
   operatingSystem: "Web",
-  offers: { "@type": "Offer", price: "0", priceCurrency: "EUR", description: "Prova gratuita disponibile" },
-  audience: { "@type": "BusinessAudience", audienceType: "Artigiani, PMI, Professionisti, Freelance" },
-  inLanguage: "it",
-  provider: { "@type": "Organization", name: "prevai", url: BASE_URL },
+  offers: { "@type": "Offer", price: "0", priceCurrency: "CAD", description: "Free trial available" },
+  audience: { "@type": "BusinessAudience", audienceType: "Contractors, Small Businesses, Tradespeople, Freelancers" },
+  inLanguage: "en",
+  provider: { "@type": "Organization", name: "quoteai", url: BASE_URL },
   aggregateRating: {
     "@type": "AggregateRating",
     ratingValue: AGGREGATE_RATING.ratingValue,
@@ -1215,20 +1571,55 @@ const homepageSoftwareSchema = {
     "@type": "Review",
     author: { "@type": "Person", name: t.name },
     reviewRating: { "@type": "Rating", ratingValue: String(t.rating), bestRating: "5", worstRating: "1" },
-    reviewBody: t.text,
+    reviewBody: testimonialText(t.key),
   })),
 };
 const homepageHeadBlock = buildHeadBlock({
-  title: "prevai – Preventivi Online per Artigiani e Aziende | AI in 30s",
-  description: "Crea preventivi professionali in 30 secondi con l'AI. Software di preventivazione per artigiani, PMI e professionisti italiani. Niente Excel, niente errori. Provalo gratis.",
+  title: "quoteai – Online Quotes for Contractors & Trades | AI in 30s",
+  description: "Create professional quotes in 30 seconds with AI. Quoting software for Canadian contractors, small businesses, and tradespeople. No more Excel, no more mistakes. Try it free.",
   canonical: `${BASE_URL}/`,
   ogImagePath: "/opengraph.jpg",
   jsonLd: [homepageWebSiteSchema, homepageSoftwareSchema],
+  lang: "en",
+  altUrl: `${BASE_URL}/fr/`,
 });
-const homepageHtml = injectBody(injectHead(template, homepageHeadBlock), buildHomepageBodyHtml());
+const homepageHtml = injectAppPreload(injectBody(injectHead(template, homepageHeadBlock), stripHoistedHead(await renderPage("/", "en"))));
 writeFileSync(templatePath, homepageHtml, "utf-8");
 count++;
 console.log("  ✓ Homepage prerendered");
+
+// French homepage
+const homepageWebSiteSchemaFr = {
+  ...homepageWebSiteSchema,
+  description: "Logiciel IA pour soumissions professionnelles en 30 secondes. Conçu pour les entrepreneurs, petites entreprises et travailleurs autonomes canadiens.",
+  inLanguage: "fr",
+  potentialAction: {
+    "@type": "SearchAction",
+    target: { "@type": "EntryPoint", urlTemplate: `${BASE_URL}/fr/soumissions/{search_term_string}` },
+    "query-input": "required name=search_term_string",
+  },
+};
+const homepageSoftwareSchemaFr = {
+  ...homepageSoftwareSchema,
+  description: "Logiciel de soumission par IA pour les entrepreneurs, petites entreprises et artisans canadiens.",
+  url: `${BASE_URL}/fr/`,
+  offers: { "@type": "Offer", price: "0", priceCurrency: "CAD", description: "Essai gratuit disponible" },
+  audience: { "@type": "BusinessAudience", audienceType: "Entrepreneurs, petites entreprises, artisans, travailleurs autonomes" },
+  inLanguage: "fr",
+};
+const homepageHeadBlockFr = buildHeadBlock({
+  title: "quoteai – Soumissions en ligne pour entrepreneurs | IA en 30s",
+  description: "Créez des soumissions professionnelles en 30 secondes avec l'IA. Logiciel de soumission pour les entrepreneurs, petites entreprises et artisans canadiens. Essayez gratuitement.",
+  canonical: `${BASE_URL}/fr/`,
+  ogImagePath: "/opengraph.jpg",
+  jsonLd: [homepageWebSiteSchemaFr, homepageSoftwareSchemaFr],
+  lang: "fr",
+  altUrl: `${BASE_URL}/`,
+});
+const homepageHtmlFr = injectAppPreload(injectBody(injectHead(template, homepageHeadBlockFr, "fr"), stripHoistedHead(await renderPage("/fr", "fr"))));
+writeRoute("fr", homepageHtmlFr);
+count++;
+console.log("  ✓ French homepage prerendered");
 
 // Phase 2–8: Sector + city pages
 for (const [sectorSlug, sector] of Object.entries(SECTORS)) {
@@ -1244,20 +1635,38 @@ for (const [sectorSlug, sector] of Object.entries(SECTORS)) {
       ? sector.descriptionVariants[descHash % sector.descriptionVariants.length]
       : sector.metaDescription;
 
-  const canonical = `${BASE_URL}/preventivi/${sectorSlug}/`;
+  const canonical = `${BASE_URL}/quotes/${sectorSlug}/`;
+  const frCanonical = `${BASE_URL}/fr/soumissions/${sector.frSlug}/`;
   const jsonLd = buildSectorJsonLd(sector);
   const ogImagePath = ogImage(sectorSlug);
 
-  const headBlock = buildHeadBlock({ title, description, canonical, ogImagePath, jsonLd });
+  const headBlock = buildHeadBlock({ title, description, canonical, ogImagePath, jsonLd, lang: "en", altUrl: frCanonical });
   const bodyHtml = buildSectorBodyHtml(sector);
   const html = injectBody(injectHead(template, headBlock), bodyHtml);
-  writeRoute(`preventivi/${sectorSlug}`, html);
+  writeRoute(`quotes/${sectorSlug}`, html);
+  count++;
+
+  // French sector page (every sector gets one)
+  const frHeadBlock = buildHeadBlock({
+    title: sector.fr.titleTag,
+    description: sector.fr.metaDescription,
+    canonical: frCanonical,
+    ogImagePath,
+    jsonLd: buildSectorJsonLdFr(sector),
+    lang: "fr",
+    altUrl: canonical,
+  });
+  const frBodyHtml = buildSectorBodyHtmlFr(sector);
+  const frHtml = injectBody(injectHead(template, frHeadBlock, "fr"), frBodyHtml);
+  writeRoute(`fr/soumissions/${sector.frSlug}`, frHtml);
   count++;
 
   if (!CITY_SECTORS.includes(sectorSlug)) continue;
 
   for (const city of ACTIVE_CITIES) {
-    const cityCanonical = `${BASE_URL}/preventivi/${sectorSlug}/${city.slug}/`;
+    const isFrenchPrimaryCity = FRENCH_PRIMARY_CITY_SLUGS.includes(city.slug);
+    const cityCanonical = `${BASE_URL}/quotes/${sectorSlug}/${city.slug}/`;
+    const cityFrCanonical = `${BASE_URL}/fr/soumissions/${sector.frSlug}/${city.slug}/`;
     const cityTitle = getCityTitle(sector, city.name, city.slug);
     const cityDesc = getCityDesc(sector, city.name, city.slug, city.region);
     const cityJsonLd = buildCityJsonLd(sector, city);
@@ -1268,13 +1677,40 @@ for (const [sectorSlug, sector] of Object.entries(SECTORS)) {
       canonical: cityCanonical,
       ogImagePath: ogImage(sectorSlug),
       jsonLd: cityJsonLd,
+      lang: "en",
+      altUrl: isFrenchPrimaryCity ? cityFrCanonical : undefined,
     });
-    const cityBodyHtml = buildCityBodyHtml(sector, city);
+    // Phase 68: the 210 city pages and the 23 blog pages were written without the site header/footer — in production they showed only the (Italian) nav shell and no footer.
+    const cityBodyHtml = wrapInPublicLayout(buildCityBodyHtml(sector, city));
     const cityHtml = injectBody(injectHead(template, cityHeadBlock), cityBodyHtml);
-    writeRoute(`preventivi/${sectorSlug}/${city.slug}`, cityHtml);
+    writeRoute(`quotes/${sectorSlug}/${city.slug}`, cityHtml);
+    count++;
+
+    // French city page — only for the French-primary Quebec cities (see
+    // FRENCH_PRIMARY_CITY_SLUGS in seo-data.ts). Other cities stay
+    // English-only for now; their hreflang tags above correctly omit fr-CA.
+    if (!isFrenchPrimaryCity) continue;
+
+    const cityTitleFr = getCityTitle(sector, city.name, city.slug, "fr-CA");
+    const cityDescFr = getCityDesc(sector, city.name, city.slug, city.region, "fr-CA");
+    const cityJsonLdFr = buildCityJsonLd(sector, city, "fr-CA");
+
+    const cityHeadBlockFr = buildHeadBlock({
+      title: cityTitleFr,
+      description: cityDescFr,
+      canonical: cityFrCanonical,
+      ogImagePath: ogImage(sectorSlug),
+      jsonLd: cityJsonLdFr,
+      lang: "fr",
+      altUrl: cityCanonical,
+    });
+    const cityBodyHtmlFr = buildCityBodyHtmlFr(sector, city);
+    const cityHtmlFr = injectBody(injectHead(template, cityHeadBlockFr, "fr"), cityBodyHtmlFr);
+    writeRoute(`fr/soumissions/${sector.frSlug}/${city.slug}`, cityHtmlFr);
     count++;
   }
 }
+console.log("  ✓ French sector + city pages prerendered");
 
 // ─── Blog JSON-LD builders ───────────────────────────────────────────────────
 
@@ -1286,10 +1722,10 @@ function buildBlogListJsonLd(): object[] {
       name: BLOG_LIST_TITLE,
       description: BLOG_LIST_DESCRIPTION,
       url: `${BASE_URL}/blog/`,
-      inLanguage: "it",
+      inLanguage: "en",
       publisher: {
         "@type": "Organization",
-        name: "prevai",
+        name: "quoteai",
         url: BASE_URL,
         logo: { "@type": "ImageObject", url: `${BASE_URL}/icon-192.png`, width: 192, height: 192 },
       },
@@ -1319,15 +1755,15 @@ function buildArticleJsonLd(article: BlogArticle, imagePath: string): object[] {
       mainEntityOfPage: { "@type": "WebPage", "@id": canonical },
       datePublished: article.publishedAt,
       dateModified: article.publishedAt,
-      inLanguage: "it",
+      inLanguage: "en",
       author: {
         "@type": "Organization",
-        name: "prevai",
+        name: "quoteai",
         url: BASE_URL,
       },
       publisher: {
         "@type": "Organization",
-        name: "prevai",
+        name: "quoteai",
         url: BASE_URL,
         logo: { "@type": "ImageObject", url: `${BASE_URL}/icon-192.png`, width: 192, height: 192 },
       },
@@ -1347,16 +1783,16 @@ function buildArticleJsonLd(article: BlogArticle, imagePath: string): object[] {
 // ─── Blog list page body HTML ─────────────────────────────────────────────────
 
 const BLOG_CATEGORY_STYLE: Record<string, string> = {
-  Professioni: "background:#f5f3ff;color:#6d28d9",
-  Prezzi: "background:#ecfeff;color:#0e7490",
-  Consigli: "background:#fffbeb;color:#d97706",
-  Tool: "background:#f0fdf4;color:#15803d",
-  Innovazione: "background:#eff6ff;color:#1d4ed8",
+  Trades: "background:#f5f3ff;color:#6d28d9",
+  Pricing: "background:#ecfeff;color:#0e7490",
+  Advice: "background:#fffbeb;color:#d97706",
+  Tools: "background:#f0fdf4;color:#15803d",
+  Innovation: "background:#eff6ff;color:#1d4ed8",
   Business: "background:#fff1f2;color:#be123c",
 };
 
 function buildBlogListBodyHtml(): string {
-  const breadcrumb = `<nav aria-label="Percorso di navigazione" class="bg-white border-b border-gray-100">
+  const breadcrumb = `<nav aria-label="Breadcrumb" class="bg-white border-b border-gray-100">
   <div class="container mx-auto px-4 sm:px-6 lg:px-8 py-3">
     <ol class="flex items-center text-sm text-gray-500 flex-wrap">
       <li><a href="/" class="hover:text-violet-600 transition-colors">Home</a></li>
@@ -1369,10 +1805,10 @@ function buildBlogListBodyHtml(): string {
   const hero = `<section class="bg-white pt-16 pb-12 border-b border-gray-100">
   <div class="container mx-auto px-4 sm:px-6 lg:px-8 text-center max-w-3xl">
     <div class="inline-flex items-center gap-2 rounded-full bg-violet-100 border border-violet-200 px-4 py-1.5 text-sm font-medium text-violet-700 mb-6">
-      Approfondimenti
+      Resources
     </div>
     <h1 class="text-4xl font-extrabold tracking-tight text-gray-900 sm:text-5xl mb-4 leading-tight">
-      Guide e consigli per <span class="gradient-text">artigiani e PMI</span>
+      Guides and advice for <span class="gradient-text">Canadian tradespeople</span>
     </h1>
     <p class="text-lg text-gray-500 max-w-2xl mx-auto">${esc(BLOG_LIST_DESCRIPTION)}</p>
   </div>
@@ -1386,7 +1822,7 @@ function buildBlogListBodyHtml(): string {
   const categoryStrip = `<section class="border-b border-gray-100 bg-white py-4">
   <div class="container mx-auto px-4 sm:px-6 lg:px-8 max-w-5xl">
     <div class="flex flex-wrap gap-2 items-center">
-      <span class="text-xs font-semibold uppercase tracking-wider mr-1" style="color:#9ca3af">Categorie:</span>
+      <span class="text-xs font-semibold uppercase tracking-wider mr-1" style="color:#9ca3af">Categories:</span>
       ${categoryLinks}
     </div>
   </div>
@@ -1394,7 +1830,7 @@ function buildBlogListBodyHtml(): string {
 
   const cards = BLOG_ARTICLES.map((a) => {
     const catStyle = BLOG_CATEGORY_STYLE[a.category] ?? "background:#f3f4f6;color:#374151";
-    const dateStr = new Date(a.publishedAt).toLocaleDateString("it-IT", { day: "numeric", month: "long", year: "numeric" });
+    const dateStr = new Date(a.publishedAt).toLocaleDateString("en-CA", { day: "numeric", month: "long", year: "numeric" });
     return `<a href="/blog/${esc(a.slug)}/" class="group flex flex-col bg-white rounded-2xl border border-gray-100 hover:border-violet-200 hover:shadow-md transition-all duration-200 overflow-hidden">
       <div class="p-6 flex flex-col flex-1">
         <div class="flex items-center justify-between mb-4">
@@ -1405,7 +1841,7 @@ function buildBlogListBodyHtml(): string {
         <p class="text-xs text-gray-500 leading-relaxed mb-4">${esc(a.metaDescription.slice(0, 130))}...</p>
         <div class="flex items-center justify-between mt-auto pt-3 border-t border-gray-50">
           <time class="text-xs text-gray-400" datetime="${a.publishedAt}">${dateStr}</time>
-          <span class="text-xs font-semibold text-violet-600">Leggi →</span>
+          <span class="text-xs font-semibold text-violet-600">Read →</span>
         </div>
       </div>
     </a>`;
@@ -1422,11 +1858,11 @@ function buildBlogListBodyHtml(): string {
   const cta = `<section class="py-16 bg-gray-50 border-t border-gray-100">
   <div class="container mx-auto px-4 sm:px-6 lg:px-8 text-center max-w-2xl">
     <h2 class="text-2xl font-bold text-gray-900 mb-3">
-      Pronto a creare preventivi in <span class="gradient-text">30 secondi</span>?
+      Ready to create quotes in <span class="gradient-text">30 seconds</span>?
     </h2>
-    <p class="text-gray-500 mb-8 text-sm">Nessuna carta di credito. Nessun impegno. Il tuo primo preventivo è gratis.</p>
+    <p class="text-gray-500 mb-8 text-sm">No credit card. No commitment. Your first quote is free.</p>
     <a href="/sign-up/" class="btn-gradient inline-flex h-12 items-center justify-center px-8 text-sm font-semibold">
-      Inizia Gratuitamente
+      Get Started Free
     </a>
   </div>
 </section>`;
@@ -1443,7 +1879,7 @@ function buildBlogListBodyHtml(): string {
 // ─── Blog article page body HTML ──────────────────────────────────────────────
 
 function buildBlogArticleBodyHtml(article: BlogArticle): string {
-  const breadcrumb = `<nav aria-label="Percorso di navigazione" class="bg-white border-b border-gray-100">
+  const breadcrumb = `<nav aria-label="Breadcrumb" class="bg-white border-b border-gray-100">
   <div class="container mx-auto px-4 sm:px-6 lg:px-8 py-3">
     <ol class="flex items-center text-sm text-gray-500 flex-wrap">
       <li><a href="/" class="hover:text-violet-600 transition-colors">Home</a></li>
@@ -1456,13 +1892,13 @@ function buildBlogArticleBodyHtml(article: BlogArticle): string {
 </nav>`;
 
   const catStyle = BLOG_CATEGORY_STYLE[article.category] ?? "background:#f3f4f6;color:#374151";
-  const dateStr = new Date(article.publishedAt).toLocaleDateString("it-IT", { day: "numeric", month: "long", year: "numeric" });
+  const dateStr = new Date(article.publishedAt).toLocaleDateString("en-CA", { day: "numeric", month: "long", year: "numeric" });
 
   const header = `<header style="background:linear-gradient(135deg,rgba(124,58,237,0.04),rgba(6,182,212,0.04))" class="pt-14 pb-10 border-b border-gray-100">
   <div class="container mx-auto px-4 sm:px-6 lg:px-8 max-w-3xl">
     <div class="flex items-center gap-3 mb-5">
       <span class="text-xs font-semibold px-2.5 py-1 rounded-full" style="${catStyle}">${esc(article.category)}</span>
-      <span class="text-xs text-gray-400">${article.readingTimeMin} min di lettura</span>
+      <span class="text-xs text-gray-400">${article.readingTimeMin} min read</span>
       <time class="text-xs text-gray-400" datetime="${article.publishedAt}">${dateStr}</time>
     </div>
     <h1 class="text-3xl font-extrabold tracking-tight text-gray-900 sm:text-4xl leading-tight mb-4">${esc(article.title)}</h1>
@@ -1474,8 +1910,8 @@ function buildBlogArticleBodyHtml(article: BlogArticle): string {
   const bodyHtml = injectHeadingIds(article.contentHtml);
 
   const tocHtml = toc.length >= 2
-    ? `<nav aria-label="Sommario" class="mb-10 rounded-xl border border-violet-100 px-6 py-5" style="background:rgba(124,58,237,0.04)">
-  <p class="text-xs font-bold uppercase tracking-wider mb-3" style="color:#7c3aed">Sommario</p>
+    ? `<nav aria-label="Table of contents" class="mb-10 rounded-xl border border-violet-100 px-6 py-5" style="background:rgba(124,58,237,0.04)">
+  <p class="text-xs font-bold uppercase tracking-wider mb-3" style="color:#7c3aed">Table of contents</p>
   <ol class="space-y-1.5">
     ${toc.map((item) => `<li${item.level === 3 ? ' class="pl-4"' : ""}>
       <a href="#${item.id}" class="text-sm text-gray-700 hover:text-violet-700 transition-colors leading-snug">${item.level === 3 ? '<span class="mr-1 text-gray-400">–</span>' : ""}${esc(item.text)}</a>
@@ -1494,14 +1930,14 @@ function buildBlogArticleBodyHtml(article: BlogArticle): string {
   const relatedSectorLinks = article.relatedSectors.map((sectorSlug) => {
     const sector = SECTORS[sectorSlug];
     if (!sector) return "";
-    return `<a href="/preventivi/${esc(sectorSlug)}/" class="inline-flex items-center gap-1.5 rounded-full border border-gray-200 bg-white px-4 py-2 text-xs font-medium text-gray-700 hover:border-violet-300 hover:text-violet-700 transition-colors">
-      <span class="text-violet-400 font-bold">→</span> Preventivi ${esc(sector.label)}
+    return `<a href="/quotes/${esc(sectorSlug)}/" class="inline-flex items-center gap-1.5 rounded-full border border-gray-200 bg-white px-4 py-2 text-xs font-medium text-gray-700 hover:border-violet-300 hover:text-violet-700 transition-colors">
+      <span class="text-violet-400 font-bold">→</span> ${esc(sector.label)} quotes
     </a>`;
   }).filter(Boolean).join("\n    ");
 
   const relatedSectorsSection = relatedSectorLinks ? `<section class="border-t border-gray-100 bg-gray-50 py-10">
   <div class="container mx-auto px-4 sm:px-6 lg:px-8 max-w-3xl">
-    <h2 class="text-sm font-semibold text-gray-500 mb-4 uppercase tracking-wider">Preventivi per settore</h2>
+    <h2 class="text-sm font-semibold text-gray-500 mb-4 uppercase tracking-wider">Quotes by trade</h2>
     <div class="flex flex-wrap gap-3">
       ${relatedSectorLinks}
     </div>
@@ -1512,12 +1948,12 @@ function buildBlogArticleBodyHtml(article: BlogArticle): string {
   const geoSector = geoSectorSlug ? SECTORS[geoSectorSlug] : undefined;
   const citySection = geoSector ? `<section class="border-t border-gray-100 bg-white py-10">
   <div class="container mx-auto px-4 sm:px-6 lg:px-8 max-w-3xl">
-    <h2 class="text-sm font-semibold text-gray-500 mb-4 uppercase tracking-wider">Preventivi ${esc(geoSector.labelPlural)} nella tua città</h2>
+    <h2 class="text-sm font-semibold text-gray-500 mb-4 uppercase tracking-wider">${esc(geoSector.labelPlural)} quotes in your city</h2>
     <div class="flex flex-wrap gap-3">
       ${ACTIVE_CITIES
         .map(
           (city) =>
-            `<a href="/preventivi/${esc(geoSector.slug)}/${esc(city.slug)}/" class="inline-flex items-center gap-1.5 rounded-full border border-gray-200 bg-white px-4 py-2 text-xs font-medium text-gray-700 hover:border-violet-300 hover:text-violet-700 transition-colors">
+            `<a href="/quotes/${esc(geoSector.slug)}/${esc(city.slug)}/" class="inline-flex items-center gap-1.5 rounded-full border border-gray-200 bg-white px-4 py-2 text-xs font-medium text-gray-700 hover:border-violet-300 hover:text-violet-700 transition-colors">
         <span class="text-violet-400 font-bold">→</span> ${esc(city.name)}
       </a>`
         )
@@ -1542,7 +1978,7 @@ function buildBlogArticleBodyHtml(article: BlogArticle): string {
 
   const relatedArticlesSection = relatedCards ? `<section class="py-12 border-t border-gray-100">
   <div class="container mx-auto px-4 sm:px-6 lg:px-8 max-w-3xl">
-    <h2 class="text-lg font-bold text-gray-900 mb-6">Articoli correlati</h2>
+    <h2 class="text-lg font-bold text-gray-900 mb-6">Related articles</h2>
     <div class="grid sm:grid-cols-3 gap-4">
       ${relatedCards}
     </div>
@@ -1552,11 +1988,11 @@ function buildBlogArticleBodyHtml(article: BlogArticle): string {
   const cta = `<section class="py-16 border-t border-violet-100/60" style="background:linear-gradient(135deg,rgba(124,58,237,0.04),rgba(6,182,212,0.04))">
   <div class="container mx-auto px-4 sm:px-6 lg:px-8 text-center max-w-2xl">
     <h2 class="text-2xl font-bold text-gray-900 mb-3">
-      Pronto a creare preventivi in <span class="gradient-text">30 secondi</span>?
+      Ready to create quotes in <span class="gradient-text">30 seconds</span>?
     </h2>
-    <p class="text-gray-500 mb-8 text-sm">Nessuna carta di credito. Nessun impegno. Il tuo primo preventivo è gratis.</p>
+    <p class="text-gray-500 mb-8 text-sm">No credit card. No commitment. Your first quote is free.</p>
     <a href="/sign-up/" class="btn-gradient inline-flex h-12 items-center justify-center px-8 text-sm font-semibold">
-      Inizia Gratuitamente
+      Get Started Free
       <svg xmlns="http://www.w3.org/2000/svg" class="ml-2 h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
     </a>
   </div>
@@ -1583,10 +2019,10 @@ function buildBlogCategoryJsonLd(category: BlogCategory): object[] {
     {
       "@context": "https://schema.org",
       "@type": "CollectionPage",
-      name: `${category.name} — Blog prevai`,
+      name: `${category.name} — Blog quoteai`,
       description: category.description,
       url: canonical,
-      inLanguage: "it",
+      inLanguage: "en",
     },
     {
       "@context": "https://schema.org",
@@ -1603,11 +2039,11 @@ function buildBlogCategoryJsonLd(category: BlogCategory): object[] {
 // ─── Blog category page body HTML ─────────────────────────────────────────────
 
 const BLOG_CATEGORY_COLOR_STYLE: Record<string, string> = {
-  Professioni: "background:#f5f3ff;color:#6d28d9",
-  Prezzi: "background:#ecfeff;color:#0e7490",
-  Consigli: "background:#fffbeb;color:#d97706",
-  Tool: "background:#f0fdf4;color:#15803d",
-  Innovazione: "background:#eff6ff;color:#1d4ed8",
+  Trades: "background:#f5f3ff;color:#6d28d9",
+  Pricing: "background:#ecfeff;color:#0e7490",
+  Advice: "background:#fffbeb;color:#d97706",
+  Tools: "background:#f0fdf4;color:#15803d",
+  Innovation: "background:#eff6ff;color:#1d4ed8",
   Business: "background:#fff1f2;color:#be123c",
 };
 
@@ -1615,7 +2051,7 @@ function buildBlogCategoryBodyHtml(category: BlogCategory): string {
   const articles = getArticlesByCategory(category.name);
   const catStyle = BLOG_CATEGORY_COLOR_STYLE[category.name] ?? "background:#f3f4f6;color:#374151";
 
-  const breadcrumb = `<nav aria-label="Percorso di navigazione" class="bg-white border-b border-gray-100">
+  const breadcrumb = `<nav aria-label="Breadcrumb" class="bg-white border-b border-gray-100">
   <div class="container mx-auto px-4 sm:px-6 lg:px-8 py-3">
     <ol class="flex items-center text-sm text-gray-500 flex-wrap">
       <li><a href="/" class="hover:text-violet-600 transition-colors">Home</a></li>
@@ -1631,16 +2067,16 @@ function buildBlogCategoryBodyHtml(category: BlogCategory): string {
   <div class="container mx-auto px-4 sm:px-6 lg:px-8 max-w-3xl text-center">
     <span class="inline-flex items-center rounded-full px-4 py-1.5 text-sm font-semibold mb-5" style="${catStyle}">${esc(category.name)}</span>
     <h1 class="text-3xl font-extrabold tracking-tight text-gray-900 sm:text-4xl mb-3 leading-tight">
-      Articoli su <span class="gradient-text">${esc(category.name)}</span>
+      Articles on <span class="gradient-text">${esc(category.name)}</span>
     </h1>
     <p class="text-base text-gray-500 leading-relaxed max-w-2xl mx-auto">${esc(category.description)}</p>
-    <p class="text-xs text-gray-400 mt-3">${articles.length} ${articles.length === 1 ? "articolo" : "articoli"}</p>
+    <p class="text-xs text-gray-400 mt-3">${articles.length} ${articles.length === 1 ? "article" : "articles"}</p>
   </div>
 </section>`;
 
   const cards = articles.map((a) => {
     const cs = BLOG_CATEGORY_COLOR_STYLE[a.category] ?? "background:#f3f4f6;color:#374151";
-    const dateStr = new Date(a.publishedAt).toLocaleDateString("it-IT", { day: "numeric", month: "long", year: "numeric" });
+    const dateStr = new Date(a.publishedAt).toLocaleDateString("en-CA", { day: "numeric", month: "long", year: "numeric" });
     return `<a href="/blog/${esc(a.slug)}/" class="group flex flex-col bg-white rounded-2xl border border-gray-100 hover:border-violet-200 hover:shadow-md transition-all duration-200 overflow-hidden">
       <div class="p-6 flex flex-col flex-1">
         <div class="flex items-center justify-between mb-4">
@@ -1651,7 +2087,7 @@ function buildBlogCategoryBodyHtml(category: BlogCategory): string {
         <p class="text-xs text-gray-500 leading-relaxed mb-4">${esc(a.metaDescription.slice(0, 130))}...</p>
         <div class="flex items-center justify-between mt-auto pt-3 border-t border-gray-50">
           <time class="text-xs text-gray-400" datetime="${a.publishedAt}">${dateStr}</time>
-          <span class="text-xs font-semibold text-violet-600">Leggi →</span>
+          <span class="text-xs font-semibold text-violet-600">Read →</span>
         </div>
       </div>
     </a>`;
@@ -1666,8 +2102,8 @@ function buildBlogCategoryBodyHtml(category: BlogCategory): string {
   </div>
 </section>`
     : `<section class="py-20 text-center text-gray-400">
-  <p class="text-lg font-medium">Nessun articolo in questa categoria.</p>
-  <a href="/blog/" class="mt-6 inline-block text-violet-600 text-sm font-semibold">Torna al Blog →</a>
+  <p class="text-lg font-medium">No articles in this category yet.</p>
+  <a href="/blog/" class="mt-6 inline-block text-violet-600 text-sm font-semibold">Back to the Blog →</a>
 </section>`;
 
   const otherCats = BLOG_CATEGORIES.filter((c) => c.slug !== category.slug);
@@ -1678,7 +2114,7 @@ function buildBlogCategoryBodyHtml(category: BlogCategory): string {
 
   const otherCatsSection = `<section class="py-10 bg-gray-50 border-t border-gray-100">
   <div class="container mx-auto px-4 sm:px-6 lg:px-8 max-w-5xl">
-    <h2 class="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-5">Altre categorie</h2>
+    <h2 class="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-5">Other categories</h2>
     <div class="flex flex-wrap gap-3">
       ${catLinks}
     </div>
@@ -1688,11 +2124,11 @@ function buildBlogCategoryBodyHtml(category: BlogCategory): string {
   const cta = `<section class="py-16 bg-white border-t border-gray-100">
   <div class="container mx-auto px-4 sm:px-6 lg:px-8 text-center max-w-2xl">
     <h2 class="text-2xl font-bold text-gray-900 mb-3">
-      Pronto a creare preventivi in <span class="gradient-text">30 secondi</span>?
+      Ready to create quotes in <span class="gradient-text">30 seconds</span>?
     </h2>
-    <p class="text-gray-500 mb-8 text-sm">Nessuna carta di credito. Nessun impegno. Il tuo primo preventivo è gratis.</p>
+    <p class="text-gray-500 mb-8 text-sm">No credit card. No commitment. Your first quote is free.</p>
     <a href="/sign-up/" class="btn-gradient inline-flex h-12 items-center justify-center px-8 text-sm font-semibold">
-      Inizia Gratuitamente
+      Get Started Free
     </a>
   </div>
 </section>`;
@@ -1716,7 +2152,7 @@ const blogListHeadBlock = buildHeadBlock({
   ogImagePath: "/opengraph.jpg",
   jsonLd: buildBlogListJsonLd(),
 });
-const blogListHtml = injectBody(injectHead(template, blogListHeadBlock), buildBlogListBodyHtml());
+const blogListHtml = injectBody(injectHead(template, blogListHeadBlock), wrapInPublicLayout(buildBlogListBodyHtml()));
 writeRoute("blog", blogListHtml);
 count++;
 console.log("  ✓ Blog list page prerendered");
@@ -1725,13 +2161,13 @@ console.log("  ✓ Blog list page prerendered");
 for (const category of BLOG_CATEGORIES) {
   const categoryCanonical = `${BASE_URL}/blog/categoria/${category.slug}/`;
   const categoryHeadBlock = buildHeadBlock({
-    title: `${category.name} — Blog prevai`,
+    title: `${category.name} — Blog quoteai`,
     description: category.description,
     canonical: categoryCanonical,
     ogImagePath: "/opengraph.jpg",
     jsonLd: buildBlogCategoryJsonLd(category),
   });
-  const categoryHtml = injectBody(injectHead(template, categoryHeadBlock), buildBlogCategoryBodyHtml(category));
+  const categoryHtml = injectBody(injectHead(template, categoryHeadBlock), wrapInPublicLayout(buildBlogCategoryBodyHtml(category)));
   writeRoute(`blog/categoria/${category.slug}`, categoryHtml);
   count++;
 }
@@ -1742,19 +2178,19 @@ for (const article of BLOG_ARTICLES) {
   const articleCanonical = `${BASE_URL}/blog/${article.slug}/`;
   const articleOgImage = `/og/blog/${article.slug}.png`;
   const articleHeadBlock = buildHeadBlock({
-    title: `${article.seoTitle ?? article.title} | prevai`,
+    title: `${article.seoTitle ?? article.title} | quoteai`,
     description: article.metaDescription,
     canonical: articleCanonical,
     ogImagePath: articleOgImage,
     jsonLd: buildArticleJsonLd(article, articleOgImage),
   });
-  const articleHtml = injectBody(injectHead(template, articleHeadBlock), buildBlogArticleBodyHtml(article));
+  const articleHtml = injectBody(injectHead(template, articleHeadBlock), wrapInPublicLayout(buildBlogArticleBodyHtml(article)));
   writeRoute(`blog/${article.slug}`, articleHtml);
   count++;
 }
 console.log(`  ✓ ${BLOG_ARTICLES.length} blog articles prerendered`);
 
-// ─── Static SPA pages prerender ─────────────────────────────────────────────
+// ─── Static SPA pages prerender (bodies from entry-server.tsx, see above) ───
 
 function buildBreadcrumbJsonLd(name: string, path: string): object {
   return {
@@ -1774,146 +2210,12 @@ function buildWebPageJsonLd(name: string, description: string, path: string, typ
     name,
     description,
     url: `${BASE_URL}${path}`,
-    inLanguage: "it",
-    isPartOf: { "@type": "WebSite", name: "prevai", url: BASE_URL },
+    inLanguage: "en",
+    isPartOf: { "@type": "WebSite", name: "quoteai", url: BASE_URL },
   };
 }
 
-function buildMappaSitoBodyHtml(): string {
-  const breadcrumb = buildBreadcrumb([
-    { name: "Home", href: "/" },
-    { name: "Mappa del Sito", href: null },
-  ]);
-
-  const mainPages = `
-    <div class="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
-      <div class="flex items-center gap-3 mb-5 pb-3 border-b border-gray-50">
-        <h2 class="text-lg font-bold text-gray-900">Pagine Principali</h2>
-      </div>
-      <ul class="space-y-2.5 text-sm">
-        <li><a href="/" class="text-gray-600 hover:text-violet-600 transition-colors">Home Page</a></li>
-        <li><a href="/whatsapp/" class="text-gray-600 hover:text-violet-600 transition-colors">Preventivi su WhatsApp</a></li>
-        <li><a href="/chi-siamo/" class="text-gray-600 hover:text-violet-600 transition-colors">Chi Siamo</a></li>
-        <li><a href="/contatti/" class="text-gray-600 hover:text-violet-600 transition-colors">Contatti e Assistenza</a></li>
-        <li><a href="/privacy/" class="text-gray-600 hover:text-violet-600 transition-colors">Privacy Policy</a></li>
-        <li><a href="/termini/" class="text-gray-600 hover:text-violet-600 transition-colors">Termini di Servizio</a></li>
-      </ul>
-    </div>
-  `;
-
-  const blogCats = BLOG_CATEGORIES.map((cat) => `
-    <li><a href="/blog/categoria/${cat.slug}/" class="text-gray-600 hover:text-violet-600 transition-colors pl-2">Categoria: ${cat.name}</a></li>
-  `).join("");
-
-  const blogArts = BLOG_ARTICLES.slice(0, 5).map((art) => `
-    <li class="truncate max-w-full"><a href="/blog/${art.slug}/" class="text-gray-500 hover:text-violet-600 text-xs transition-colors pl-2">${esc(art.title)}</a></li>
-  `).join("");
-
-  const blogPages = `
-    <div class="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
-      <div class="flex items-center gap-3 mb-5 pb-3 border-b border-gray-50">
-        <h2 class="text-lg font-bold text-gray-900">Blog e Guide</h2>
-      </div>
-      <ul class="space-y-2.5 text-sm">
-        <li><a href="/blog/" class="font-semibold text-gray-800 hover:text-violet-600 transition-colors">Indice Blog</a></li>
-        ${blogCats}
-        <li class="pt-2 font-semibold text-gray-800 border-t border-gray-50 mt-2">Ultimi Articoli:</li>
-        ${blogArts}
-      </ul>
-    </div>
-  `;
-
-  const sectorLinks = Object.entries(SECTORS).map(([slug, sector]) => `
-    <li><a href="/preventivi/${slug}/" class="text-gray-600 hover:text-violet-600 transition-colors">${esc(sector.label)}</a></li>
-  `).join("");
-
-  const professionsIndex = `
-    <div class="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
-      <div class="flex items-center gap-3 mb-5 pb-3 border-b border-gray-50">
-        <h2 class="text-lg font-bold text-gray-900">Professioni e Servizi</h2>
-      </div>
-      <ul class="space-y-2.5 text-sm">
-        ${sectorLinks}
-      </ul>
-    </div>
-  `;
-
-  const citiesByRegion = new Map<string, typeof CITIES>();
-  for (const city of ACTIVE_CITIES) {
-    const list = citiesByRegion.get(city.region) || [];
-    list.push(city);
-    citiesByRegion.set(city.region, list);
-  }
-
-  const sortedRegions = Array.from(citiesByRegion.keys()).sort();
-
-  const regionBlocks = sortedRegions.map((region) => {
-    const regionCities = citiesByRegion.get(region) || [];
-    const cityItems = regionCities.map((city) => {
-      const sectorLinksForCity = CITY_SECTORS.map((sectorSlug) => {
-        const s = SECTORS[sectorSlug];
-        if (!s) return "";
-        return `<a href="/preventivi/${sectorSlug}/${city.slug}/" class="text-gray-500 hover:text-violet-600 transition-colors truncate" title="Preventivo ${esc(s.label)} a ${esc(city.name)}">${esc(s.label)}</a>`;
-      }).join("\n");
-
-      return `
-        <div class="flex flex-col gap-1">
-          <span class="font-bold text-gray-900 border-b border-gray-50 pb-0.5 mb-1">${esc(city.name)}</span>
-          <div class="flex flex-col gap-1.5 pl-1">
-            ${sectorLinksForCity}
-          </div>
-        </div>
-      `;
-    }).join("");
-
-    return `
-      <div class="border-b border-gray-50 pb-8 last:border-0 last:pb-0">
-        <h3 class="text-sm font-semibold uppercase tracking-wider text-violet-700 mb-4">${esc(region)}</h3>
-        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-y-4 gap-x-2 text-xs">
-          ${cityItems}
-        </div>
-      </div>
-    `;
-  }).join("\n");
-
-  const citiesDirectory = `
-    <div class="mt-12 bg-white rounded-3xl p-8 border border-gray-100 shadow-sm">
-      <div class="flex items-center gap-3 mb-8 pb-4 border-b border-gray-100">
-        <div>
-          <h2 class="text-2xl font-bold text-gray-900">Preventivi Locali per Città</h2>
-          <p class="text-sm text-gray-500 mt-1">Seleziona un settore e la tua città per accedere ai prezzi e alle informazioni territoriali.</p>
-        </div>
-      </div>
-      <div class="space-y-10">
-        ${regionBlocks}
-      </div>
-    </div>
-  `;
-
-  return wrapInPublicLayout(`
-    <div class="flex flex-col min-h-screen bg-white">
-      ${breadcrumb}
-      <section class="relative overflow-hidden bg-white pt-20 pb-12 border-b border-gray-100">
-        <div class="container mx-auto px-4 sm:px-6 lg:px-8 text-center max-w-3xl">
-          <h1 class="text-4xl font-bold tracking-tight text-gray-900 mb-4">Mappa del Sito</h1>
-          <p class="text-lg text-gray-600">Esplora l'indice completo di prevai.it. Trova strumenti di preventivazione specifici, guide fiscali e tutte le pagine locali per regione.</p>
-        </div>
-      </section>
-      <section class="py-16 bg-gray-50/50">
-        <div class="container mx-auto px-4 sm:px-6 lg:px-8 max-w-6xl">
-          <div class="grid md:grid-cols-3 gap-8">
-            ${mainPages}
-            ${blogPages}
-            ${professionsIndex}
-          </div>
-          ${citiesDirectory}
-        </div>
-      </section>
-    </div>
-  `);
-}
-
-function buildStaticPageHtml(opts: {
+async function buildStaticPageHtml(opts: {
   slug: string;
   title: string;
   description: string;
@@ -1921,7 +2223,7 @@ function buildStaticPageHtml(opts: {
   jsonLd: object[];
   bodyHtml: string;
   ogImagePath?: string;
-}): void {
+}): Promise<void> {
   const headBlock = buildHeadBlock({
     title: opts.title,
     description: opts.description,
@@ -1929,7 +2231,7 @@ function buildStaticPageHtml(opts: {
     ogImagePath: opts.ogImagePath ?? "/opengraph.jpg",
     jsonLd: opts.jsonLd,
   });
-  const html = injectBody(injectHead(template, headBlock), opts.bodyHtml);
+  const html = injectAppPreload(injectBody(injectHead(template, headBlock), opts.bodyHtml));
   writeRoute(opts.slug, html);
   count++;
 }
@@ -1938,282 +2240,132 @@ function buildStaticPageHtml(opts: {
 const chiSiamoOrgJsonLd = {
   "@context": "https://schema.org",
   "@type": "Organization",
-  name: "prevai",
+  name: "quoteai",
   url: `${BASE_URL}/`,
   logo: `${BASE_URL}/icon-192.png`,
-  description: "prevai è il software di preventivazione AI per artigiani e liberi professionisti italiani. Genera preventivi professionali in 30 secondi descrivendo il lavoro in italiano.",
+  description: "quoteai is the AI quoting software for Canadian contractors and tradespeople. Generate professional quotes in 30 seconds by describing the job in plain English.",
   foundingDate: "2026",
-  foundingLocation: { "@type": "Place", name: "Italia" },
+  foundingLocation: { "@type": "Place", name: "Canada" },
   contactPoint: {
     "@type": "ContactPoint",
-    email: "info@prevai.it",
+    email: "info@quoteai.ca",
     contactType: "customer service",
-    availableLanguage: "it",
+    availableLanguage: "en",
   },
 };
-buildStaticPageHtml({
+await buildStaticPageHtml({
   slug: "chi-siamo",
-  title: "Chi Siamo | prevai — Software Preventivi AI per Artigiani",
-  description: "prevai nasce per liberare gli artigiani italiani dalla burocrazia. Scopri la nostra missione: preventivi professionali in 30 secondi grazie all'intelligenza artificiale.",
+  title: "About Us | quoteai — AI Quoting Software for Contractors",
+  description: "quoteai exists to free Canadian tradespeople from paperwork. Learn our mission: professional quotes in 30 seconds thanks to AI.",
   path: "/chi-siamo/",
-  jsonLd: [chiSiamoOrgJsonLd, buildBreadcrumbJsonLd("Chi Siamo", "/chi-siamo/")],
-  bodyHtml: wrapInPublicLayout(`<section class="relative overflow-hidden bg-white pt-24 pb-20">
-  <div class="container mx-auto px-4 sm:px-6 lg:px-8 max-w-4xl text-center">
-    <div class="inline-flex items-center gap-2 rounded-full bg-violet-50 border border-violet-100 px-4 py-1.5 text-sm font-medium text-violet-700 mb-8">Fatto in Italia</div>
-    <h1 class="text-4xl sm:text-5xl font-bold tracking-tight text-gray-900 mb-6">Siamo prevai. <span style="background:linear-gradient(135deg,#7C3AED 0%,#A855F7 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent">Liberiamo gli artigiani dalla burocrazia.</span></h1>
-    <p class="text-xl text-gray-600 leading-relaxed max-w-2xl mx-auto">In Italia ci sono oltre 1,2 milioni di artigiani e liberi professionisti. Ognuno di loro perde in media 3-4 ore alla settimana a fare preventivi a mano. Noi l'abbiamo costruito per restituire quel tempo.</p>
-  </div>
-</section>
-<section class="py-20 bg-gray-50">
-  <div class="container mx-auto px-4 sm:px-6 lg:px-8 max-w-3xl">
-    <h2 class="text-3xl font-bold text-gray-900 mb-6">Come è nata l'idea</h2>
-    <div class="space-y-5 text-gray-600 leading-relaxed text-lg">
-      <p>Tutto è cominciato da una frustrazione reale: un imbianchino di Roma che ogni sera, dopo ore di lavoro in cantiere, doveva ancora mettersi al computer ad aggiornare i suoi fogli Excel per mandare preventivi ai clienti. Spesso ci metteva un'ora e mezza per un documento da 200€.</p>
-      <p>Abbiamo pensato: l'intelligenza artificiale sa già come si fa un preventivo professionale. Perché non permettere a un professionista di <em>descrivere il lavoro come lo racconterebbe a voce</em>, e ricevere in 30 secondi un documento pronto da mandare?</p>
-      <p>Così è nato prevai. Un software costruito specificatamente per il mercato italiano, con terminologia di settore italiana, prezzi di mercato italiani, e tutto ciò che serve: logo aziendale, partita IVA, IVA al 22%, condizioni personalizzabili, PDF professionale.</p>
-    </div>
-  </div>
-</section>
-<section class="py-20 bg-white">
-  <div class="container mx-auto px-4 sm:px-6 lg:px-8 max-w-5xl">
-    <div class="text-center mb-14"><h2 class="text-3xl font-bold text-gray-900 mb-4">I nostri valori</h2><p class="text-gray-500 text-lg max-w-xl mx-auto">Ogni decisione che prendiamo parte da tre principi fondamentali.</p></div>
-    <div class="grid md:grid-cols-3 gap-8">
-      <div class="bg-gray-50 rounded-2xl p-8 text-center"><h3 class="text-lg font-bold text-gray-900 mb-3">Velocità reale</h3><p class="text-gray-500 text-sm leading-relaxed">30 secondi non è uno slogan. È il tempo che ci vuole per generare un preventivo completo e professionale. Il tuo tempo vale.</p></div>
-      <div class="bg-gray-50 rounded-2xl p-8 text-center"><h3 class="text-lg font-bold text-gray-900 mb-3">Specificità italiana</h3><p class="text-gray-500 text-sm leading-relaxed">Non un software generico tradotto. Costruito da zero per il mercato italiano: categorie di lavoro, prezzi, normativa fiscale, lingua.</p></div>
-      <div class="bg-gray-50 rounded-2xl p-8 text-center"><h3 class="text-lg font-bold text-gray-900 mb-3">Semplicità prima di tutto</h3><p class="text-gray-500 text-sm leading-relaxed">Non servono corsi o tutorial. Se sai scrivere un messaggio WhatsApp, sai usare prevai. La tecnologia deve sparire, il risultato deve restare.</p></div>
-    </div>
-  </div>
-</section>
-<section class="py-20 bg-gray-50">
-  <div class="container mx-auto px-4 sm:px-6 lg:px-8 max-w-3xl">
-    <h2 class="text-3xl font-bold text-gray-900 mb-6">Per chi è prevai</h2>
-    <div class="space-y-4 text-gray-600 leading-relaxed text-lg">
-      <p>prevai è pensato per <strong>artigiani, imprese edili, tecnici e liberi professionisti italiani</strong> che lavorano su commessa e devono presentare preventivi ai propri clienti.</p>
-      <p>Imbianchini, elettricisti, idraulici, muratori, falegnami, geometri, architetti, piastrellisti, giardinieri, serramentisti, termoidraulici, installatori di condizionatori — e molti altri. Se il tuo lavoro richiede di spiegare a un cliente quanto costerà un intervento prima di eseguirlo, prevai è per te.</p>
-      <p>Siamo già usati da professionisti in tutta Italia: da Milano a Palermo, da Torino a Bari.</p>
-    </div>
-  </div>
-</section>
-<section class="py-20 bg-white">
-  <div class="container mx-auto px-4 sm:px-6 lg:px-8 max-w-2xl text-center">
-    <h2 class="text-3xl font-bold text-gray-900 mb-5">Prova prevai gratuitamente</h2>
-    <p class="text-gray-500 text-lg mb-8">Crea il tuo primo preventivo in 30 secondi. Nessuna carta di credito richiesta.</p>
-    <div class="flex flex-col sm:flex-row gap-4 justify-center">
-      <a href="/sign-up/" class="inline-flex items-center justify-center gap-2 rounded-xl px-8 py-4 text-base font-semibold text-white" style="background:linear-gradient(135deg,#7C3AED 0%,#A855F7 100%)">Inizia gratis</a>
-      <a href="/contatti/" class="inline-flex items-center justify-center gap-2 rounded-xl px-8 py-4 text-base font-semibold text-gray-700 border border-gray-200">Contattaci</a>
-    </div>
-  </div>
-</section>`),
+  jsonLd: [chiSiamoOrgJsonLd, buildBreadcrumbJsonLd("About Us", "/chi-siamo/")],
+  bodyHtml: stripHoistedHead(await renderPage("/chi-siamo", "en")),
 });
 
 // /contatti/
 const contattiJsonLd = {
   "@context": "https://schema.org",
   "@type": "ContactPage",
-  name: "Contatti prevai",
+  name: "Contact quoteai",
   url: `${BASE_URL}/contatti/`,
-  description: "Contatta il team prevai per supporto, domande sul prodotto o informazioni commerciali.",
+  description: "Contact the quoteai team for support, product questions, or sales inquiries.",
   mainEntity: {
     "@type": "Organization",
-    name: "prevai",
+    name: "quoteai",
     url: `${BASE_URL}/`,
-    email: "info@prevai.it",
+    email: "info@quoteai.ca",
     contactPoint: [
-      { "@type": "ContactPoint", email: "info@prevai.it", contactType: "customer support", availableLanguage: "it" },
-      { "@type": "ContactPoint", email: "privacy@prevai.it", contactType: "privacy inquiries", availableLanguage: "it" },
+      { "@type": "ContactPoint", email: "info@quoteai.ca", contactType: "customer support", availableLanguage: "en" },
+      { "@type": "ContactPoint", email: "privacy@quoteai.ca", contactType: "privacy inquiries", availableLanguage: "en" },
     ],
   },
 };
-buildStaticPageHtml({
+await buildStaticPageHtml({
   slug: "contatti",
-  title: "Contatti | prevai — Assistenza e Supporto",
-  description: "Hai domande su prevai? Contattaci via email o WhatsApp. Siamo qui per aiutarti a generare preventivi professionali più velocemente.",
+  title: "Contact | quoteai — Help and Support",
+  description: "Have questions about quoteai? Contact us by email or WhatsApp. We're here to help you generate professional quotes faster.",
   path: "/contatti/",
-  jsonLd: [contattiJsonLd, buildBreadcrumbJsonLd("Contatti", "/contatti/")],
-  bodyHtml: wrapInPublicLayout(`<section class="relative overflow-hidden bg-white pt-24 pb-16">
-  <div class="container mx-auto px-4 sm:px-6 lg:px-8 max-w-3xl text-center">
-    <h1 class="text-4xl sm:text-5xl font-bold tracking-tight text-gray-900 mb-5">Come possiamo <span style="background:linear-gradient(135deg,#7C3AED 0%,#A855F7 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent">aiutarti?</span></h1>
-    <p class="text-xl text-gray-600 leading-relaxed">Il team prevai risponde entro poche ore nei giorni feriali. Scegli il canale che preferisci.</p>
-  </div>
-</section>
-<section class="py-16 bg-gray-50">
-  <div class="container mx-auto px-4 sm:px-6 lg:px-8 max-w-4xl">
-    <div class="grid md:grid-cols-3 gap-6">
-      <div class="bg-white rounded-2xl p-8 border border-gray-100 shadow-sm">
-        <h2 class="text-lg font-bold text-gray-900 mb-2">Supporto prodotto</h2>
-        <p class="text-gray-500 text-sm leading-relaxed mb-4">Problemi tecnici, domande sull'utilizzo, richiesta di funzionalità.</p>
-        <a href="mailto:info@prevai.it" class="text-violet-600 font-semibold text-sm">info@prevai.it →</a>
-      </div>
-      <div class="bg-white rounded-2xl p-8 border border-gray-100 shadow-sm">
-        <h2 class="text-lg font-bold text-gray-900 mb-2">WhatsApp</h2>
-        <p class="text-gray-500 text-sm leading-relaxed mb-4">Vuoi provare il servizio via WhatsApp o hai una domanda rapida? Scrivici direttamente.</p>
-        <a href="/whatsapp/" class="text-green-600 font-semibold text-sm">Scopri prevai su WhatsApp →</a>
-      </div>
-      <div class="bg-white rounded-2xl p-8 border border-gray-100 shadow-sm">
-        <h2 class="text-lg font-bold text-gray-900 mb-2">Privacy &amp; legale</h2>
-        <p class="text-gray-500 text-sm leading-relaxed mb-4">Richieste GDPR, esercizio dei diritti, questioni legali o contrattuali.</p>
-        <a href="mailto:privacy@prevai.it" class="text-gray-600 font-semibold text-sm">privacy@prevai.it →</a>
-      </div>
-    </div>
-  </div>
-</section>
-<section class="py-16 bg-white">
-  <div class="container mx-auto px-4 sm:px-6 lg:px-8 max-w-3xl">
-    <div class="bg-violet-50 border border-violet-100 rounded-2xl p-6">
-      <h3 class="font-bold text-gray-900 mb-1">Tempi di risposta</h3>
-      <p class="text-gray-600 text-sm leading-relaxed">Rispondiamo a tutte le email entro <strong>4-8 ore nei giorni feriali</strong> (lunedì–venerdì, 9:00–18:00 CET). Per le richieste inviate nel weekend, rispondiamo il lunedì mattina.</p>
-    </div>
-  </div>
-</section>
-<section class="py-16 bg-gray-50">
-  <div class="container mx-auto px-4 sm:px-6 lg:px-8 max-w-3xl">
-    <h2 class="text-2xl font-bold text-gray-900 mb-8">Domande frequenti</h2>
-    <div class="space-y-5">
-      <div class="bg-white rounded-2xl p-6 border border-gray-100"><h3 class="font-semibold text-gray-900 mb-2">Posso cancellare l'abbonamento in qualsiasi momento?</h3><p class="text-gray-500 text-sm leading-relaxed">Sì. Puoi cancellare il tuo abbonamento in qualsiasi momento dalle impostazioni del tuo account, senza penali o costi aggiuntivi. Continuerai ad avere accesso fino alla fine del periodo già pagato.</p></div>
-      <div class="bg-white rounded-2xl p-6 border border-gray-100"><h3 class="font-semibold text-gray-900 mb-2">Offrite uno sconto per agenzie o team?</h3><p class="text-gray-500 text-sm leading-relaxed">Sì. Per utilizzi multi-utente o volumi elevati, contattaci a info@prevai.it e troveremo la soluzione più adatta.</p></div>
-      <div class="bg-white rounded-2xl p-6 border border-gray-100"><h3 class="font-semibold text-gray-900 mb-2">I miei dati e i preventivi sono al sicuro?</h3><p class="text-gray-500 text-sm leading-relaxed">Sì. Tutti i dati sono cifrati in transito (TLS) e a riposo. Non condividiamo i tuoi dati con terze parti. Leggi la nostra Privacy Policy per i dettagli.</p></div>
-      <div class="bg-white rounded-2xl p-6 border border-gray-100"><h3 class="font-semibold text-gray-900 mb-2">Posso importare il mio listino prezzi?</h3><p class="text-gray-500 text-sm leading-relaxed">Sì. Dalla sezione Impostazioni → Listino puoi inserire i tuoi prezzi personalizzati che l'AI userà come riferimento per i tuoi preventivi.</p></div>
-    </div>
-  </div>
-</section>
-<section class="py-16 bg-white">
-  <div class="container mx-auto px-4 sm:px-6 lg:px-8 max-w-xl text-center">
-    <h2 class="text-2xl font-bold text-gray-900 mb-4">Non hai ancora un account?</h2>
-    <p class="text-gray-500 mb-6">Prova prevai gratis — nessuna carta di credito richiesta.</p>
-    <a href="/sign-up/" class="inline-flex items-center justify-center gap-2 rounded-xl px-8 py-4 text-base font-semibold text-white" style="background:linear-gradient(135deg,#7C3AED 0%,#A855F7 100%)">Crea account gratuito</a>
-  </div>
-</section>`),
+  jsonLd: [contattiJsonLd, buildBreadcrumbJsonLd("Contact", "/contatti/")],
+  bodyHtml: stripHoistedHead(await renderPage("/contatti", "en")),
 });
 
-// /privacy/
-buildStaticPageHtml({
-  slug: "privacy",
-  title: "Privacy Policy | prevai",
-  description: "Informativa sulla privacy di prevai — come raccogliamo e trattiamo i tuoi dati personali.",
-  path: "/privacy/",
-  jsonLd: [buildWebPageJsonLd("Privacy Policy", "Informativa sulla privacy di prevai — come raccogliamo e trattiamo i tuoi dati personali.", "/privacy/"), buildBreadcrumbJsonLd("Privacy Policy", "/privacy/")],
-  bodyHtml: wrapInPublicLayout(`<div class="container mx-auto px-4 py-16 max-w-3xl">
-  <h1 class="text-3xl font-bold text-gray-900 mb-2">Privacy Policy</h1>
-  <p class="text-sm text-gray-500 mb-10">Ultimo aggiornamento: 6 maggio 2025</p>
-  <div class="prose prose-gray max-w-none space-y-8 text-sm leading-relaxed text-gray-700">
-    <section><h2 class="text-lg font-semibold text-gray-900 mb-3">1. Titolare del trattamento</h2><p>Il titolare del trattamento dei dati personali è <strong>PrevAI</strong> (di seguito "Società" o "noi"), raggiungibile all'indirizzo email <a href="mailto:privacy@prevai.it" class="text-violet-600">privacy@prevai.it</a>.</p></section>
-    <section><h2 class="text-lg font-semibold text-gray-900 mb-3">2. Dati raccolti</h2><p>Raccogliamo le seguenti categorie di dati personali:</p><ul class="list-disc pl-5 mt-2 space-y-1"><li><strong>Dati di registrazione:</strong> nome, cognome, indirizzo email, forniti al momento della creazione dell'account.</li><li><strong>Dati del profilo aziendale:</strong> ragione sociale, partita IVA, indirizzo, telefono, email aziendale, logo aziendale.</li><li><strong>Dati dei preventivi:</strong> descrizioni dei lavori, dati dei clienti (committenti), importi, voci di computo.</li><li><strong>Dati di pagamento:</strong> gestiti direttamente da Stripe Inc. — non accediamo ai dati della carta di credito.</li><li><strong>Dati tecnici:</strong> indirizzo IP, tipo di browser, pagine visitate, durata delle sessioni (tramite log di sistema).</li></ul></section>
-    <section><h2 class="text-lg font-semibold text-gray-900 mb-3">3. Finalità e base giuridica del trattamento</h2><div class="space-y-3"><div><p class="font-medium">a) Erogazione del servizio (art. 6(1)(b) GDPR — esecuzione del contratto)</p><p class="mt-1">Trattamento necessario per creare l'account, generare preventivi tramite AI, gestire abbonamenti e pagamenti.</p></div><div><p class="font-medium">b) Obblighi legali (art. 6(1)(c) GDPR)</p><p class="mt-1">Conservazione dei dati di fatturazione per gli obblighi fiscali previsti dalla normativa italiana.</p></div><div><p class="font-medium">c) Legittimo interesse (art. 6(1)(f) GDPR)</p><p class="mt-1">Analisi aggregate per migliorare il servizio, prevenzione delle frodi, sicurezza della piattaforma.</p></div><div><p class="font-medium">d) Consenso (art. 6(1)(a) GDPR)</p><p class="mt-1">Invio di comunicazioni promozionali e newsletter, previa esplicita accettazione.</p></div></div></section>
-    <section><h2 class="text-lg font-semibold text-gray-900 mb-3">4. Conservazione dei dati</h2><p>I dati vengono conservati per il tempo strettamente necessario alle finalità indicate:</p><ul class="list-disc pl-5 mt-2 space-y-1"><li>Dati dell'account: fino alla cancellazione dell'account, poi 30 giorni per finalità di sicurezza.</li><li>Dati dei preventivi: 10 anni dall'emissione (obblighi fiscali italiani).</li><li>Dati di fatturazione: 10 anni (D.P.R. 633/1972 e D.P.R. 600/1973).</li><li>Log tecnici: 90 giorni.</li></ul></section>
-    <section><h2 class="text-lg font-semibold text-gray-900 mb-3">5. Destinatari dei dati</h2><p>I dati possono essere comunicati alle seguenti categorie di destinatari:</p><ul class="list-disc pl-5 mt-2 space-y-1"><li><strong>Clerk Inc.</strong> — gestione dell'autenticazione e degli account utente (USA, con garanzie adeguate ex art. 46 GDPR).</li><li><strong>Stripe Inc.</strong> — elaborazione dei pagamenti (USA, con garanzie adeguate).</li><li><strong>OpenAI, LLC</strong> — generazione dei preventivi tramite intelligenza artificiale (USA, con garanzie adeguate). I dati inviati sono limitati alla descrizione del lavoro.</li><li><strong>Replit Inc.</strong> — infrastruttura cloud e hosting (USA, con garanzie adeguate).</li><li><strong>Resend Inc.</strong> — invio email transazionali.</li></ul><p class="mt-3">Non vendiamo dati personali a terzi. I trasferimenti extra-UE avvengono con le garanzie previste dagli artt. 44-49 GDPR (clausole contrattuali standard o decisioni di adeguatezza).</p></section>
-    <section><h2 class="text-lg font-semibold text-gray-900 mb-3">6. Diritti dell'interessato</h2><p>Ai sensi degli artt. 15-22 GDPR, hai diritto di:</p><ul class="list-disc pl-5 mt-2 space-y-1"><li><strong>Accesso</strong> — richiedere copia dei dati che trattiamo su di te.</li><li><strong>Rettifica</strong> — correggere dati inesatti o incompleti.</li><li><strong>Cancellazione ("diritto all'oblio")</strong> — richiedere la cancellazione dei dati, salvo obblighi legali di conservazione.</li><li><strong>Limitazione del trattamento</strong> — in determinati casi previsti dall'art. 18 GDPR.</li><li><strong>Portabilità</strong> — ricevere i tuoi dati in formato strutturato e leggibile da macchina.</li><li><strong>Opposizione</strong> — opporti al trattamento basato su legittimo interesse.</li><li><strong>Revoca del consenso</strong> — in qualsiasi momento, senza pregiudizio per la liceità del trattamento precedente.</li></ul><p class="mt-3">Per esercitare i tuoi diritti scrivi a <a href="mailto:privacy@prevai.it" class="text-violet-600">privacy@prevai.it</a>. Risponderemo entro 30 giorni. Hai anche il diritto di proporre reclamo all'Autorità di controllo italiana: Garante per la protezione dei dati personali.</p></section>
-    <section><h2 class="text-lg font-semibold text-gray-900 mb-3">7. Cookie e tecnologie di tracciamento</h2><p>Utilizziamo esclusivamente cookie tecnici necessari al funzionamento del servizio (autenticazione, sessione). Non utilizziamo cookie di profilazione o di terze parti a fini pubblicitari.</p></section>
-    <section><h2 class="text-lg font-semibold text-gray-900 mb-3">8. Sicurezza</h2><p>Adottiamo misure tecniche e organizzative adeguate per proteggere i dati da accesso non autorizzato, perdita o alterazione: connessioni cifrate (TLS/HTTPS), controllo degli accessi, autenticazione sicura.</p></section>
-    <section><h2 class="text-lg font-semibold text-gray-900 mb-3">9. Modifiche alla privacy policy</h2><p>Ci riserviamo il diritto di aggiornare questa informativa. Le modifiche sostanziali saranno comunicate via email o tramite avviso in piattaforma con almeno 14 giorni di anticipo.</p></section>
-    <section><h2 class="text-lg font-semibold text-gray-900 mb-3">10. Contatti</h2><p>Per qualsiasi domanda relativa alla privacy: <a href="mailto:privacy@prevai.it" class="text-violet-600">privacy@prevai.it</a></p></section>
-  </div>
-</div>`),
+// /privacy-policy/ — mirrors src/pages/privacy-policy.tsx (the real live route)
+await buildStaticPageHtml({
+  slug: "privacy-policy",
+  title: "Privacy Policy | QuoteAI",
+  description: "QuoteAI's privacy policy — how we collect, use, and protect your personal information.",
+  path: "/privacy-policy/",
+  jsonLd: [buildWebPageJsonLd("Privacy Policy", "QuoteAI's privacy policy — how we collect, use, and protect your personal information.", "/privacy-policy/"), buildBreadcrumbJsonLd("Privacy Policy", "/privacy-policy/")],
+  bodyHtml: stripHoistedHead(await renderPage("/privacy-policy", "en")),
 });
 
-// /termini/
-buildStaticPageHtml({
-  slug: "termini",
-  title: "Termini di Servizio | prevai",
-  description: "Termini e condizioni di utilizzo della piattaforma prevai per la generazione di preventivi AI.",
-  path: "/termini/",
-  jsonLd: [buildWebPageJsonLd("Termini di Servizio", "Termini e condizioni di utilizzo della piattaforma prevai per la generazione di preventivi AI.", "/termini/"), buildBreadcrumbJsonLd("Termini di Servizio", "/termini/")],
-  bodyHtml: wrapInPublicLayout(`<div class="container mx-auto px-4 py-16 max-w-3xl">
-  <h1 class="text-3xl font-bold text-gray-900 mb-2">Termini di Servizio</h1>
-  <p class="text-sm text-gray-500 mb-10">Ultimo aggiornamento: 6 maggio 2025</p>
-  <div class="prose prose-gray max-w-none space-y-8 text-sm leading-relaxed text-gray-700">
-    <section><h2 class="text-lg font-semibold text-gray-900 mb-3">1. Accettazione dei termini</h2><p>Utilizzando la piattaforma <strong>PrevAI</strong> (di seguito "Servizio"), disponibile all'indirizzo <strong>prevai.it</strong>, l'utente accetta integralmente i presenti Termini di Servizio. Se non accetti questi termini, non puoi utilizzare il Servizio.</p></section>
-    <section><h2 class="text-lg font-semibold text-gray-900 mb-3">2. Descrizione del servizio</h2><p>PrevAI è una piattaforma SaaS che consente a professionisti, artigiani e imprese di generare preventivi professionali tramite intelligenza artificiale. Il Servizio include:</p><ul class="list-disc pl-5 mt-2 space-y-1"><li>Generazione di preventivi tramite AI a partire da una descrizione testuale dei lavori.</li><li>Creazione e download di documenti PDF professionale.</li><li>Gestione del profilo aziendale e archiviazione dei preventivi.</li><li>Piani di abbonamento mensile e acquisti singoli.</li></ul></section>
-    <section><h2 class="text-lg font-semibold text-gray-900 mb-3">3. Account utente</h2><p>Per accedere al Servizio è necessario creare un account fornendo dati veritieri e aggiornati. L'utente è responsabile della riservatezza delle proprie credenziali e di tutte le attività svolte tramite il proprio account. In caso di accesso non autorizzato, l'utente deve notificarlo immediatamente a <a href="mailto:supporto@prevai.it" class="text-violet-600">supporto@prevai.it</a>.</p></section>
-    <section><h2 class="text-lg font-semibold text-gray-900 mb-3">4. Piani e pagamenti</h2><div class="space-y-3"><div><p class="font-medium">4.1 Piani disponibili</p><ul class="list-disc pl-5 mt-1 space-y-1"><li><strong>Starter (€29/mese):</strong> fino a 20 preventivi al mese, PDF con filigrana PrevAI.</li><li><strong>Pro (€79/mese):</strong> preventivi illimitati, PDF senza filigrana, branding personalizzabile.</li><li><strong>Singolo con Watermark (€29):</strong> un singolo preventivo PDF con filigrana.</li><li><strong>Singolo Pulito (€39):</strong> un singolo preventivo PDF senza filigrana.</li></ul></div><div><p class="font-medium">4.2 Fatturazione</p><p class="mt-1">I piani mensili vengono rinnovati automaticamente ogni mese. I pagamenti sono processati tramite Stripe Inc. e sono soggetti ai relativi termini di servizio. I prezzi sono IVA esclusa.</p></div><div><p class="font-medium">4.3 Rimborsi</p><p class="mt-1">Ai sensi dell'art. 59(a) del Codice del Consumo (D.Lgs. 206/2005), il diritto di recesso non si applica ai contenuti digitali forniti immediatamente dopo l'acquisto con esplicito consenso. Per i piani mensili, puoi disdire in qualsiasi momento: il servizio rimane attivo fino alla fine del periodo già pagato. Non sono previsti rimborsi pro-rata per i periodi non utilizzati.</p></div></div></section>
-    <section><h2 class="text-lg font-semibold text-gray-900 mb-3">5. Uso accettabile</h2><p>È vietato utilizzare il Servizio per:</p><ul class="list-disc pl-5 mt-2 space-y-1"><li>Generare documenti falsi, fraudolenti o fuorvianti.</li><li>Violare diritti di terzi, normative applicabili o la presente policy.</li><li>Tentare di accedere a dati di altri utenti o compromettere la sicurezza della piattaforma.</li><li>Uso automatizzato massivo (scraping, bot) senza autorizzazione scritta.</li><li>Rivendere o sublicenziare l'accesso al Servizio a terzi.</li></ul></section>
-    <section><h2 class="text-lg font-semibold text-gray-900 mb-3">6. Proprietà intellettuale</h2><p>PrevAI e i relativi loghi, marchi, interfacce e codice sorgente sono di proprietà esclusiva della Società. I preventivi generati tramite il Servizio sono di proprietà dell'utente che li ha creato. L'utente concede a PrevAI una licenza limitata, non esclusiva, per elaborare i dati inseriti al solo fine di erogare il Servizio.</p></section>
-    <section><h2 class="text-lg font-semibold text-gray-900 mb-3">7. Limitazione di responsabilità</h2><p>I preventivi generati dall'AI sono indicativi e basati su dati statistici. <strong>PrevAI non garantisce l'accuratezza, la completezza o l'adeguatezza dei preventivi per specifici contesti contrattuali.</strong> L'utente è responsabile della verifica e validazione dei contenuti prima di presentarli ai propri clienti. PrevAI non è responsabile per danni indiretti, perdita di dati, lucro cessante o danni derivanti da errori nell'output dell'AI, nei limiti consentiti dalla legge applicabile.</p></section>
-    <section><h2 class="text-lg font-semibold text-gray-900 mb-3">8. Sospensione e cancellazione</h2><p>PrevAI si riserva il diritto di sospendere o terminare l'accesso al Servizio in caso di violazione dei presenti Termini, previo avviso via email salvo casi di grave violazione. L'utente può cancellare il proprio account in qualsiasi momento dalla pagina Impostazioni o contattando <a href="mailto:supporto@prevai.it" class="text-violet-600">supporto@prevai.it</a>.</p></section>
-    <section><h2 class="text-lg font-semibold text-gray-900 mb-3">9. Modifiche ai termini</h2><p>Ci riserviamo il diritto di modificare i presenti Termini con preavviso di almeno 14 giorni via email. L'uso continuato del Servizio dopo la data di efficacia delle modifiche costituisce accettazione dei nuovi Termini.</p></section>
-    <section><h2 class="text-lg font-semibold text-gray-900 mb-3">10. Legge applicabile e foro competente</h2><p>I presenti Termini sono regolati dalla legge italiana. Per qualsiasi controversia è competente in via esclusiva il Tribunale di Milano, salvo i casi in cui l'utente sia un consumatore ai sensi del D.Lgs. 206/2005 (Codice del Consumo), nel qual caso si applicano le disposizioni di legge inderogabili a tutela dei consumatori.</p></section>
-    <section><h2 class="text-lg font-semibold text-gray-900 mb-3">11. Contatti</h2><p>Per qualsiasi domanda sui presenti Termini: <a href="mailto:supporto@prevai.it" class="text-violet-600">supporto@prevai.it</a></p></section>
-  </div>
-</div>`),
+// /terms/ — mirrors src/pages/terms.tsx (the real live route)
+await buildStaticPageHtml({
+  slug: "terms",
+  title: "Terms of Service | QuoteAI",
+  description: "Terms and conditions for using the QuoteAI platform to generate AI-powered quotes.",
+  path: "/terms/",
+  jsonLd: [buildWebPageJsonLd("Terms of Service", "Terms and conditions for using the QuoteAI platform to generate AI-powered quotes.", "/terms/"), buildBreadcrumbJsonLd("Terms of Service", "/terms/")],
+  bodyHtml: stripHoistedHead(await renderPage("/terms", "en")),
 });
 
 // /whatsapp/
-buildStaticPageHtml({
+await buildStaticPageHtml({
   slug: "whatsapp",
-  title: "Preventivi su WhatsApp – prevai | Prima piattaforma italiana",
-  description: "Descrivi il lavoro a voce, per testo o foto su WhatsApp. prevai genera un preventivo professionale con PDF in 60 secondi. Prima piattaforma in Italia.",
+  title: "Quotes on WhatsApp – quoteai | AI-Powered Quoting",
+  description: "Describe the job by voice, text, or photo on WhatsApp. quoteai generates a professional quote with a PDF in 60 seconds.",
   path: "/whatsapp/",
-  jsonLd: [buildWebPageJsonLd("Preventivi su WhatsApp", "Descrivi il lavoro a voce, per testo o foto su WhatsApp. prevai genera un preventivo professionale con PDF in 60 secondi.", "/whatsapp/"), buildBreadcrumbJsonLd("WhatsApp", "/whatsapp/")],
-  bodyHtml: wrapInPublicLayout(`<div class="flex flex-col bg-white">
-<section class="relative overflow-hidden bg-gray-950 pt-20 pb-24">
-  <div class="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10 text-center max-w-3xl">
-    <div class="inline-flex items-center gap-2 bg-green-500/10 border border-green-500/20 text-green-400 text-xs font-bold px-3 py-1.5 rounded-full mb-6">NOVITÀ · Prima in Italia</div>
-    <h1 class="text-4xl sm:text-5xl font-extrabold tracking-tight text-white leading-[1.1] mb-5">I tuoi preventivi, <span class="text-transparent bg-clip-text" style="background-image:linear-gradient(135deg,#a78bfa,#34d399)">direttamente su WhatsApp</span></h1>
-    <p class="text-lg text-gray-400 leading-relaxed mb-4 max-w-2xl mx-auto">Manda un vocale dal cantiere. PrevAI genera il preventivo professionale, te lo mostra in anteprima e ti invia il PDF — senza aprire nessuna app.</p>
-    <p class="text-sm text-gray-600 mb-10 font-medium">Mentre i tuoi concorrenti aprono ancora Excel, i tuoi clienti già ricevono il preventivo.</p>
-    <div class="flex flex-col sm:flex-row justify-center gap-3">
-      <a href="/sign-up/?plan=monthly_pro" class="inline-flex h-12 items-center justify-center gap-2 px-7 rounded-xl text-sm font-bold text-white" style="background:linear-gradient(135deg,#7c3aed,#2563eb)">Attiva WhatsApp Bot</a>
-      <a href="#demo" class="inline-flex h-12 items-center justify-center gap-2 px-7 rounded-xl text-sm font-semibold text-gray-300 border border-gray-700">Guarda la demo</a>
-    </div>
-    <div class="mt-8 flex flex-col sm:flex-row items-center justify-center gap-4 text-xs text-gray-500">
-      <span>Disponibile su Piano Pro ed Elite</span><span class="hidden sm:block text-gray-700">·</span>
-      <span>Attivazione immediata</span><span class="hidden sm:block text-gray-700">·</span>
-      <span>Funziona con qualsiasi smartphone</span>
-    </div>
-  </div>
-</section>
-<section id="demo" class="py-20 bg-gray-50">
-  <div class="container mx-auto px-4 sm:px-6 lg:px-8 max-w-5xl">
-    <span class="inline-block text-violet-600 text-xs font-bold uppercase tracking-wider mb-3">Come funziona</span>
-    <h2 class="text-3xl font-bold tracking-tight text-gray-900 mb-6 leading-snug">Dal vocale al PDF <span class="text-violet-600">senza toccare il computer</span></h2>
-    <div class="space-y-5 max-w-2xl">
-      <div class="flex gap-4"><div class="w-8 h-8 rounded-xl text-sm font-bold shrink-0 flex items-center justify-center text-white" style="background:linear-gradient(135deg,#7c3aed,#2563eb)">1</div><div><p class="font-semibold text-gray-900 text-sm mb-0.5">Manda un vocale, testo o foto</p><p class="text-sm text-gray-500 leading-relaxed">Direttamente su WhatsApp. Descrivi il lavoro come parli con un cliente.</p></div></div>
-      <div class="flex gap-4"><div class="w-8 h-8 rounded-xl text-sm font-bold shrink-0 flex items-center justify-center text-white" style="background:linear-gradient(135deg,#7c3aed,#2563eb)">2</div><div><p class="font-semibold text-gray-900 text-sm mb-0.5">L'AI genera l'anteprima</p><p class="text-sm text-gray-500 leading-relaxed">Capitoli, prezzi e IVA in 60 secondi. Puoi correggere o approvare subito.</p></div></div>
-      <div class="flex gap-4"><div class="w-8 h-8 rounded-xl text-sm font-bold shrink-0 flex items-center justify-center text-white" style="background:linear-gradient(135deg,#7c3aed,#2563eb)">3</div><div><p class="font-semibold text-gray-900 text-sm mb-0.5">Ricevi il PDF in chat</p><p class="text-sm text-gray-500 leading-relaxed">Lo invii al cliente con un tap. Il preventivo viene salvato anche su prevai.it.</p></div></div>
-    </div>
-    <div class="mt-8 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3"><p class="text-sm font-semibold text-amber-900">In arrivo: fatture e solleciti automatici</p><p class="text-xs text-amber-700 mt-0.5">Sempre su WhatsApp. Stai costruendo il futuro prima degli altri.</p></div>
-  </div>
-</section>
-<section class="py-16 bg-white">
-  <div class="container mx-auto px-4 sm:px-6 lg:px-8 max-w-4xl">
-    <div class="text-center mb-10"><h2 class="text-2xl font-bold tracking-tight text-gray-900">Tutto quello che ti serve, in tasca</h2><p class="text-gray-500 mt-2 text-sm">Il potere di prevai.it, disponibile su WhatsApp in qualsiasi momento.</p></div>
-    <div class="grid sm:grid-cols-3 gap-6">
-      <div class="bg-gray-50 rounded-2xl p-5 border border-gray-100"><h3 class="font-semibold text-gray-900 text-sm mb-1.5">Voce, testo o foto</h3><p class="text-gray-500 text-xs leading-relaxed">Manda un vocale dall'auto, scrivi dal cantiere o fotografa gli appunti. L'AI capisce tutto e genera il preventivo.</p></div>
-      <div class="bg-gray-50 rounded-2xl p-5 border border-gray-100"><h3 class="font-semibold text-gray-900 text-sm mb-1.5">Preventivo in 60 secondi</h3><p class="text-gray-500 text-xs leading-relaxed">Capitoli, voci di costo, IVA e totali calcolati istantaneamente. Zero formule, zero Excel.</p></div>
-      <div class="bg-gray-50 rounded-2xl p-5 border border-gray-100"><h3 class="font-semibold text-gray-900 text-sm mb-1.5">PDF consegnato in chat</h3><p class="text-gray-500 text-xs leading-relaxed">Il documento professionale arriva direttamente su WhatsApp. Lo inoltri al cliente con un tap.</p></div>
-    </div>
-  </div>
-</section>
-<section class="py-16 bg-gray-950">
-  <div class="container mx-auto px-4 sm:px-6 lg:px-8 max-w-2xl text-center">
-    <p class="text-gray-500 text-sm mb-4 uppercase tracking-wider font-semibold">La realtà del mercato</p>
-    <h2 class="text-2xl sm:text-3xl font-bold text-white mb-6 leading-snug">I tuoi concorrenti impiegano <span class="line-through text-gray-600">30–40 minuti</span> per fare un preventivo. <span class="text-transparent bg-clip-text" style="background-image:linear-gradient(135deg,#a78bfa,#34d399)">Tu ce ne metti 60 secondi.</span></h2>
-    <p class="text-gray-400 text-sm mb-10 leading-relaxed">Un artigiano che risponde entro un'ora ha il <strong class="text-white">3× più probabilità</strong> di aggiudicarsi il lavoro. Con il bot WhatsApp, rispondi prima ancora di arrivare a casa.</p>
-  </div>
-</section>
-<section class="py-16 bg-white">
-  <div class="container mx-auto px-4 sm:px-6 lg:px-8 text-center max-w-xl">
-    <h2 class="text-2xl font-bold tracking-tight text-gray-900 mb-3">Inizia oggi. Zero configurazione.</h2>
-    <p class="text-gray-500 text-sm mb-7 leading-relaxed">Collega il tuo numero WhatsApp dalle impostazioni in meno di 2 minuti. Il bot è subito attivo.</p>
-    <div class="flex flex-col sm:flex-row justify-center gap-3">
-      <a href="/sign-up/?plan=monthly_pro" class="inline-flex h-11 items-center justify-center gap-2 px-7 rounded-xl text-sm font-bold text-white" style="background:linear-gradient(135deg,#7c3aed,#2563eb)">Prova Gratis 7 Giorni</a>
-      <a href="/#prezzi" class="inline-flex h-11 items-center justify-center px-7 rounded-xl text-sm font-semibold text-gray-700 border border-gray-200">Confronta i piani</a>
-    </div>
-    <p class="text-xs text-gray-400 mt-4">7 giorni gratis · Nessuna carta richiesta · Cancella quando vuoi</p>
-  </div>
-</section>
-</div>`),
+  jsonLd: [buildWebPageJsonLd("Quotes on WhatsApp", "Describe the job by voice, text, or photo on WhatsApp. quoteai generates a professional quote with a PDF in 60 seconds.", "/whatsapp/"), buildBreadcrumbJsonLd("WhatsApp", "/whatsapp/")],
+  bodyHtml: stripHoistedHead(await renderPage("/whatsapp", "en")),
 });
 
 // /mappa-sito/
-buildStaticPageHtml({
+await buildStaticPageHtml({
   slug: "mappa-sito",
-  title: "Mappa del Sito | prevai — Elenco Completo delle Pagine",
-  description: "Mappa del sito completa di prevai. Trova tutte le pagine statiche, gli articoli del blog e le guide per professionisti e artigiani nelle città italiane.",
+  title: "Site Map | quoteai — Full Page Index",
+  description: "The complete site map for quoteai. Find every static page, blog article, and guide for contractors and tradespeople across Canadian cities.",
   path: "/mappa-sito/",
-  jsonLd: [buildWebPageJsonLd("Mappa del Sito", "Mappa del sito completa di prevai.it. Trova tutte le pagine statiche, gli articoli del blog e le guide per professionisti e artigiani nelle città italiane.", "/mappa-sito/"), buildBreadcrumbJsonLd("Mappa del Sito", "/mappa-sito/")],
-  bodyHtml: buildMappaSitoBodyHtml(),
+  jsonLd: [buildWebPageJsonLd("Site Map", "The complete site map for quoteai.ca. Find every static page, blog article, and guide for contractors and tradespeople across Canadian cities.", "/mappa-sito/"), buildBreadcrumbJsonLd("Site Map", "/mappa-sito/")],
+  bodyHtml: stripHoistedHead(await renderPage("/mappa-sito", "en")),
 });
 
-console.log(`  ✓ 6 SPA pages prerendered (chi-siamo, contatti, privacy, termini, whatsapp, mappa-sito)`);
+console.log(`  ✓ 6 SPA pages prerendered (chi-siamo, contatti, privacy-policy, terms, whatsapp, mappa-sito)`);
 
-console.log(`Prerendered ${count} pages total (1 homepage + SEO sector pages + ${BLOG_CATEGORIES.length} category pages + ${BLOG_ARTICLES.length + 1} blog pages + 6 SPA pages).`);
+// Phase 70: help centre — index + one page per article, rendered by the same
+// React tree (the page's own SeoHead title/description are what the head
+// block repeats here; keep them identical so crawler and hydrated DOM agree).
+const helpIndexTitle = translations.en["help.seoTitle"];
+const helpIndexDescription = translations.en["help.seoDescription"];
+await buildStaticPageHtml({
+  slug: "help",
+  title: helpIndexTitle,
+  description: helpIndexDescription,
+  path: "/help/",
+  jsonLd: [buildWebPageJsonLd("Help Centre", helpIndexDescription, "/help/", "CollectionPage"), buildBreadcrumbJsonLd("Help centre", "/help/")],
+  bodyHtml: stripHoistedHead(await renderPage("/help", "en")),
+});
+for (const article of HELP_ARTICLES) {
+  const path = `/help/${article.slug}/`;
+  await buildStaticPageHtml({
+    slug: `help/${article.slug}`,
+    title: `${article.title.en} | quoteai`,
+    description: article.summary.en,
+    path,
+    jsonLd: [
+      buildWebPageJsonLd(article.title.en, article.summary.en, path, "TechArticle"),
+      {
+        "@context": "https://schema.org",
+        "@type": "BreadcrumbList",
+        itemListElement: [
+          { "@type": "ListItem", position: 1, name: "Home", item: `${BASE_URL}/` },
+          { "@type": "ListItem", position: 2, name: "Help centre", item: `${BASE_URL}/help/` },
+          { "@type": "ListItem", position: 3, name: article.title.en, item: `${BASE_URL}${path}` },
+        ],
+      },
+    ],
+    bodyHtml: stripHoistedHead(await renderPage(`/help/${article.slug}`, "en")),
+  });
+}
+console.log(`  ✓ ${HELP_ARTICLES.length + 1} help-centre pages prerendered`);
+
+console.log(`Prerendered ${count} pages total (1 homepage + SEO sector pages + ${BLOG_CATEGORIES.length} category pages + ${BLOG_ARTICLES.length + 1} blog pages + 6 SPA pages + ${HELP_ARTICLES.length + 1} help pages).`);

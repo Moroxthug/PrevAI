@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "hello": "tsx ./src/hello.ts",
+    "env-inventory": "tsx ./src/env-inventory.ts",
     "apply-clerk-email-templates": "tsx ./src/apply-clerk-email-templates.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
@@ -12,7 +13,5 @@
     "@types/node": "catalog:",
     "tsx": "catalog:"
   },
-  "dependencies": {
-    "stripe": "^22.1.0"
-  }
+  "dependencies": {}
 }

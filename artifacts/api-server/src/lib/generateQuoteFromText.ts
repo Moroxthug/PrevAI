@@ -1,62 +1,66 @@
 import { db, quotesTable, businessProfilesTable, priceCatalogItemsTable } from "@workspace/db";
 import { eq, desc, count, sql } from "drizzle-orm";
 import { openai } from "@workspace/integrations-openai-ai-server";
-import { generateNumeroPreventivo } from "./quoteNumber.js";
 import type { QuoteChapter, QuoteDiscount, QuoteCompanySnapshot, QuoteClientData } from "@workspace/db";
 import type { Logger } from "pino";
 import { trackEvent } from "./telemetry.js";
+import { linkQuoteToClient } from "./clients.js";
+import { resolveQuoteTaxRate } from "./tax.js";
+import { recordAiUsage } from "./usage.js";
 
-export const AI_PROMPT = `Sei un consulente esperto di preventivi professionali per il mercato italiano (artigiani, edilizia, impianti, servizi tecnici).
+export const AI_PROMPT = `You are an expert consultant for professional quotes for the Canadian market (tradespeople, construction, building systems, technical services).
 
-Devi trasformare una descrizione libera in un'ANALISI ECONOMICA E COMPUTO METRICO PREZZATO professionale, strutturata a capitoli, coerente con i prezzi di mercato in Italia nel 2026.
+You must turn a free-form description into a professional ECONOMIC ANALYSIS AND PRICED BILL OF QUANTITIES, structured into chapters, consistent with 2026 Canadian market prices.
 
-REGOLE FONDAMENTALI:
-1. Prezzi realistici di mercato italiano 2026:
-   - RISTRUTTURAZIONE COMPLETA "CHIAVI IN MANO" (Intera casa/appartamento):
-     La ristrutturazione completa comprende demolizioni, impianti nuovi, massetti, pavimentazione, tinteggiatura ed eventuali infissi/porte. I costi al mq totali reali sono:
-     * Fascia Economica/Base: 450 - 650 €/mq (es. per 145mq il totale deve essere tra i 65.000€ e i 95.000€)
-     * Fascia Media/Standard: 650 - 950 €/mq (es. per 145mq il totale deve essere tra i 95.000€ e i 138.000€)
-     * Fascia Alta/Lusso: 950 - 1500+ €/mq (es. per 145mq il totale supera i 140.000€)
-     Se l'utente richiede una "ristrutturazione completa" senza specificare la fascia, usa come riferimento la Fascia Media (circa 700-800 €/mq) e genera voci di capitolato dettagliate (demolizioni, opere murarie, impianti, finiture, assistenza muraria) che sommate raggiungano coerentemente questo importo complessivo.
-   - RIFACIMENTO BAGNO COMPLETO: 3.500 - 6.000 € (demolizione, rifacimento impianto idrico, sanitari, rubinetterie, posa piastrelle).
-   - RIFACIMENTO CUCINA COMPLETO: 3.000 - 5.500 € (opere edili ed idrauliche).
-   - IMPIANTO ELETTRICO COMPLETO: 50 - 75 € a punto luce a norma, o circa 4.000 - 8.000 € per una casa media (circa 50-60 €/mq).
-   - IMPIANTO DI RISCALDAMENTO/IDRICO: 5.000 - 10.000 € a seconda della dimensione (tubazioni, collettori, caldaia/pompa di calore).
-   - DEMOLIZIONI E RIMOZIONI: 20 - 45 €/mq (rimozione pavimenti, massetti, pareti divisorie, compreso trasporto a discarica).
-   - POSA PAVIMENTI E RIVESTIMENTI: 25 - 45 €/mq (esclusi materiali). MASSETTO DI SOTTOFONDO: 20 - 30 €/mq.
-   - IMBIANCHINO/PITTORE: 5–12€/mq per tinteggiatura ordinaria a due mani, 15–25€/mq per lavori speciali o rasatura/preparazione pareti.
-   - MANODOPERA IN ECONOMIA (oraria):
-     * muratore: 35–55€/ora
-     * elettricista: 40–70€/ora
-     * idraulico: 45–75€/ora
-     * carpentiere/falegname: 40–65€/ora
-     * imbianchino: 30–45€/ora
-2. Se mancano dati specifici: fai assunzioni realistiche, NON chiedere chiarimenti
-3. Organizza il lavoro in CAPITOLI logici (A, B, C, D, …) con titoli professionali
-4. Ogni capitolo contiene VOCI di lavoro dettagliate con unità di misura professionali (mq, ml, mc, kg, ore, a.c., pezzi, cadauno, kw, etc.)
-5. Calcola subtotale per ogni capitolo.
-6. Applica uno sconto SOLO se l'utente lo richiede esplicitamente; altrimenti percentuale: 0
-7. Condizioni di pagamento tipiche edilizia: 30% acconto firma, 30% SAL intermedio, 30% SAL finale, 10% saldo fine lavori
-8. Sempre IVA 22% salvo indicazione contraria
-9. Il titolo_riga2 deve descrivere l'intervento e il luogo del cantiere
-10. numero_preventivo_data: NON GENERARE — il server assegna il numero automaticamente. Restituisci una stringa vuota.
+FUNDAMENTAL RULES:
+1. Realistic 2026 Canadian market prices:
+   - COMPLETE "TURNKEY" RENOVATION (Whole house/apartment):
+     A complete renovation includes demolition, new building systems (electrical/plumbing), subfloor/screed, flooring, painting, and any windows/doors. Real total costs per sqm are:
+     * Economy/Basic tier: $600 - $850 CAD/sqm (e.g. for 145 sqm the total should be between $87,000 and $123,000)
+     * Mid/Standard tier: $850 - $1,200 CAD/sqm (e.g. for 145 sqm the total should be between $123,000 and $174,000)
+     * High-end/Luxury tier: $1,200 - $1,800+ CAD/sqm (e.g. for 145 sqm the total exceeds $174,000)
+     If the user requests a "complete renovation" without specifying a tier, use the Mid tier as a reference (about $950-1,050 CAD/sqm) and generate detailed line items (demolition, structural/masonry work, building systems, finishes, general labour support) that, added together, consistently reach this overall amount.
+   - COMPLETE BATHROOM REMODEL: $8,000 - $15,000 CAD (demolition, plumbing rework, fixtures, faucets/taps, tile installation).
+   - COMPLETE KITCHEN REMODEL: $8,000 - $16,000 CAD (construction and plumbing work).
+   - COMPLETE ELECTRICAL SYSTEM: $120 - $180 CAD per code-compliant outlet/light point, or roughly $8,000 - $15,000 CAD for an average home (about $90-110 CAD/sqm).
+   - HEATING/PLUMBING SYSTEM: $8,000 - $18,000 CAD depending on size (piping, manifolds, boiler/heat pump).
+   - DEMOLITION AND REMOVAL: $35 - $70 CAD/sqm (removal of flooring, subfloor, partition walls, including disposal/haul-away).
+   - FLOORING AND TILE INSTALLATION: $40 - $70 CAD/sqm (materials excluded). SUBFLOOR/SCREED: $35 - $55 CAD/sqm.
+   - PAINTER: $25-40 CAD/sqm for standard two-coat painting, $45-70 CAD/sqm for specialty work or wall skim-coating/prep.
+   - HOURLY LABOUR RATES:
+     * general labourer/mason: $45-75 CAD/hour
+     * electrician: $65-110 CAD/hour
+     * plumber: $70-120 CAD/hour
+     * carpenter/joiner: $55-95 CAD/hour
+     * painter: $40-65 CAD/hour
+2. If specific details are missing: make realistic assumptions, do NOT ask for clarification
+3. Organize the work into logical CHAPTERS (A, B, C, D, …) with professional titles
+4. Each chapter contains detailed work LINE ITEMS with professional units of measure (sqm, linear m, cubic m, kg, hours, lump sum, pieces, each, kW, etc.)
+5. Calculate a subtotal for each chapter.
+6. Apply a discount ONLY if the user explicitly requests one; otherwise percentage: 0
+7. Payment terms must follow Canadian norms, NOT a large upfront deposit: a small deposit of 10-15% on signing, one or two progress payments tied to milestones (e.g. on material delivery/start of work, and on substantial completion) making up the bulk of the total, and a final holdback of 10-15% released only after the client has inspected and approved the completed work. Never default to a deposit larger than 15% — many provinces (e.g. Ontario, Quebec) treat large upfront deposits as a red flag and some regulate maximum deposits for consumer home-renovation contracts.
+8. Always include applicable sales tax at 13% (Canadian HST) unless otherwise indicated
+9. titolo_riga2 must describe the project and the job-site location
+10. numero_preventivo_data: DO NOT GENERATE — the server assigns the number automatically. Return an empty string.
+11. descrizione_generale must be a real 2-4 sentence plain-English summary of the project scope (what is being done, where, and the general approach) — never a placeholder or a one-line restatement of the title.
+12. note must be a short client-facing closing paragraph that always covers: the quote's validity period (e.g. 30 days), a one-line statement of what is NOT included (permits, unforeseen conditions behind walls/floors, work not explicitly listed above, etc.), and a brief workmanship-warranty statement (e.g. "Workmanship is guaranteed for 1 year from completion; manufacturer warranties apply to materials and fixtures.").
 
-OUTPUT — SOLO JSON VALIDO, nessun testo extra:
+OUTPUT — VALID JSON ONLY, no extra text:
 {
-  "titolo_riga1": "Analisi Economica e Computo Metrico Prezzato",
-  "titolo_riga2": "Intervento di [descrizione breve] – [Comune] ([Prov])",
+  "titolo_riga1": "Project Quote & Itemized Estimate",
+  "titolo_riga2": "Project: [brief description] – [City] ([Province])",
   "numero_preventivo_data": "",
   "cliente": { "nome": "", "indirizzo": "" },
-  "descrizione_generale": "Descrizione sintetica dell'intervento",
+  "descrizione_generale": "2-4 sentence plain-English summary of the project scope, approach, and location.",
   "capitoli": [
     {
       "lettera": "A",
-      "titolo": "Allestimento cantiere",
-      "osservazione": "Voce ordinaria",
+      "titolo": "Site setup",
+      "osservazione": "Standard item",
       "voci": [
         {
-          "descrizione": "Allestimento area di cantiere completo",
-          "um": "a.c.",
+          "descrizione": "Complete job site setup",
+          "um": "lump sum",
           "quantita": 1,
           "prezzo_unitario": 2500.00,
           "totale": 2500.00
@@ -67,45 +71,45 @@ OUTPUT — SOLO JSON VALIDO, nessun testo extra:
   ],
   "sconto": { "percentuale": 0, "importo_scontato": 0 },
   "condizioni_pagamento": [
-    "30% acconto alla firma del contratto",
-    "30% a completamento prima fase lavori",
-    "30% a completamento seconda fase lavori",
-    "10% saldo a fine lavori"
+    "15% deposit upon contract signing",
+    "35% upon delivery of materials and start of work",
+    "35% upon substantial completion",
+    "15% final balance upon completion and client walkthrough"
   ],
   "subtotale": 0,
-  "iva_percentuale": 22,
+  "iva_percentuale": 13,
   "iva_valore": 0,
   "totale": 0,
-  "note": "Preventivo valido 30 giorni dalla data di emissione."
+  "note": "Quote valid for 30 days from the issue date. Excludes permits, unforeseen conditions behind existing walls/floors, and any work not explicitly listed above. Workmanship is guaranteed for 1 year from completion; manufacturer warranties apply to materials and fixtures."
 }
 
-CALCOLI:
-- subtotale = somma di tutti i subtotali capitoli
-- Se sconto = 0: iva_valore = subtotale * iva_percentuale/100; totale = subtotale + iva_valore
+CALCULATIONS:
+- subtotale = sum of all chapter subtotals
+- If sconto = 0: iva_valore = subtotale * iva_percentuale/100; totale = subtotale + iva_valore
 
-IMPORTANTISSIMO: output SOLO JSON puro, nessuna spiegazione, nessun markdown.`;
+VERY IMPORTANT: output ONLY pure JSON, no explanation, no markdown.`;
 
-export const REGIONAL_PRICING_GUIDANCE = `ADEGUAMENTO GEOGRAFICO DEI PREZZI:
-Se dal testo, dall'indirizzo del cliente o dal luogo del cantiere è possibile individuare la regione, provincia o città italiana, adegua i prezzi unitari secondo la reale variazione del costo del lavoro edile/artigianale in Italia:
-- Nord Italia (Lombardia, Piemonte, Veneto, Emilia-Romagna, Liguria, Trentino-Alto Adige, Friuli-Venezia Giulia, Valle d'Aosta): +10/+20% sopra i prezzi medi nazionali indicati nelle regole sopra.
-- Centro Italia (Toscana, Lazio, Umbria, Marche): in linea con i prezzi medi nazionali indicati.
-- Sud Italia e Isole (Campania, Puglia, Calabria, Basilicata, Molise, Abruzzo, Sicilia, Sardegna): -15/-25% sotto i prezzi medi nazionali indicati.
-- Città metropolitane ad alto costo (Milano, Roma, Bologna, Firenze, Venezia): usa la fascia alta dell'intervallo indicato, anche superandola leggermente (fino a +10% oltre il massimo) per la manodopera.
-- Se non è possibile individuare alcuna località, usa i prezzi medi nazionali indicati senza applicare correzioni.
-Applica l'adeguamento in modo coerente a TUTTE le voci del preventivo (manodopera e materiali), non solo al totale finale — i prezzi unitari delle singole voci devono già riflettere la zona.`;
+export const REGIONAL_PRICING_GUIDANCE = `GEOGRAPHIC PRICE ADJUSTMENT:
+If the text, the client's address, or the job-site location makes it possible to identify the Canadian province or city, adjust unit prices according to the real variation in construction/trade labour costs across Canada:
+- High-cost provinces/regions (British Columbia, Ontario — especially the Greater Toronto Area): +10/+20% above the national average prices indicated in the rules above.
+- Mid-range provinces (Quebec, Alberta): in line with the national average prices indicated.
+- Lower-cost provinces/regions (Atlantic Canada, Manitoba, Saskatchewan): -15/-25% below the national average prices indicated.
+- High-cost metropolitan areas (Toronto, Vancouver, Calgary, Ottawa): use the high end of the indicated range, even exceeding it slightly (up to +10% above the maximum) for labour.
+- If no location can be identified, use the national average prices indicated without applying any adjustment.
+Apply the adjustment consistently to ALL line items in the quote (labour and materials), not just to the final total — the unit prices of each line item must already reflect the region.`;
 
-export const DESCRIPTION_QUALITY_GUIDANCE = `QUALITÀ DELLE DESCRIZIONI:
-Ogni voce (campo "descrizione") deve essere specifica e professionale, mai generica: indica con precisione cosa viene fatto, e quando rilevante con quali materiali, tecniche o modalità esecutive (es. "Tinteggiatura pareti e soffitti a due mani con pittura lavabile traspirante, previa stuccatura e carteggiatura" invece di "Pittura"). Evita voci vaghe come "Lavori vari", "Manodopera generica" o "Materiali edili" senza ulteriori dettagli. Se sono allegate immagini, usa i dettagli visibili (stato dei luoghi, superfici, finiture esistenti, misure leggibili) per rendere le voci più precise e per calibrare meglio quantità e prezzi.`;
+export const DESCRIPTION_QUALITY_GUIDANCE = `DESCRIPTION QUALITY:
+Every line item (the "descrizione" field) must be specific and professional, never generic: state precisely what is being done, and when relevant, with which materials, techniques, or execution methods (e.g. "Two-coat painting of walls and ceilings with washable breathable paint, including prior patching and sanding" instead of "Painting"). Avoid vague items such as "Various work", "General labour" or "Building materials" without further detail. If images are attached, use the visible details (condition of the space, surfaces, existing finishes, readable measurements) to make the line items more precise and to better calibrate quantities and prices.`;
 
-export const CAPITOLATO_CONTEXT = `MODALITÀ CAPITOLATO TECNICO PROFESSIONALE:
-Per ogni voce di lavoro, scrivi la descrizione in stile CAPITOLATO SPECIALE D'APPALTO con ALMENO 4-6 linee tecniche in italiano formale:
-- Descrivi con precisione le operazioni eseguite e le modalità esecutive (ciclo lavorativo, tecniche, successione delle fasi)
-- Specifica materiali, prodotti e componenti con caratteristiche tecniche e standard normativi italiani/europei (UNI, CEI, UNI EN, D.Lgs., D.M.)
-- Indica le caratteristiche di qualità, resistenza, classe o certificazione richieste per i materiali
-- Indica esplicitamente cosa è COMPRESO nella voce (forniture, lavorazioni, carico, trasporto, smaltimento)
-- Indica eventuali ESCLUSIONI rilevanti e/o oneri a carico del committente
-- Usa terminologia professionale edilizia/impiantistica italiana
-Esempio: "Demolizione e rimozione di pavimentazione esistente in piastrelle ceramiche compreso il distacco mediante scalpellatura meccanica e la rimozione del massetto di allettamento per uno spessore medio di 5 cm. Compresi il carico, il trasporto e lo smaltimento del materiale di risulta presso discarica autorizzata secondo D.Lgs. 152/2006. Esclusi lavori di ripristino strutturale del sottofondo e impermeabilizzazioni."`;
+export const CAPITOLATO_CONTEXT = `PROFESSIONAL TECHNICAL SPECIFICATION MODE:
+For every work item, write the description in the style of a formal TECHNICAL SPECIFICATION (spec sheet), with AT LEAST 4-6 technical lines in formal English:
+- Precisely describe the operations performed and the execution methods (workflow, techniques, sequence of phases)
+- Specify materials, products, and components with technical characteristics and applicable Canadian/North American standards (National Building Code of Canada, CSA, ULC, ASTM, provincial building codes)
+- State the quality, strength, class, or certification requirements for the materials
+- Explicitly state what is INCLUDED in the item (supply, labour, loading, transport, disposal)
+- State any relevant EXCLUSIONS and/or costs that remain the client's responsibility
+- Use professional Canadian construction/trades terminology
+Example: "Demolition and removal of existing ceramic tile flooring, including detachment by mechanical chipping and removal of the setting bed/screed to an average depth of 5 cm. Includes loading, transport, and disposal of debris at a licensed disposal facility in accordance with applicable provincial waste-disposal regulations. Excludes structural subfloor repair and waterproofing work."`;
 
 // ── Public types ────────────────────────────────────────────────────────────────
 
@@ -183,7 +187,7 @@ function parseAiResponse(content: string, rawInput: string, profile: typeof busi
   }
 
   const imponibile = Number((calculatedSubtotale - importoScontato).toFixed(2));
-  const ivaPercentualeVal = Number(aiData.iva_percentuale ?? 22);
+  const ivaPercentualeVal = resolveQuoteTaxRate(aiData.iva_percentuale, profile?.province);
   const ivaValoreVal = Number((imponibile * ivaPercentualeVal / 100).toFixed(2));
   const totaleVal = Number((imponibile + ivaValoreVal).toFixed(2));
 
@@ -200,7 +204,7 @@ function parseAiResponse(content: string, rawInput: string, profile: typeof busi
 
   return {
     rawInput,
-    titoloPreventivoRiga1: aiData.titolo_riga1 ?? "Analisi Economica e Computo Metrico Prezzato",
+    titoloPreventivoRiga1: aiData.titolo_riga1 ?? "Project Quote & Itemized Estimate",
     titoloPreventivoRiga2: aiData.titolo_riga2 ?? "",
     numeroPreventivoData: aiData.numero_preventivo_data ?? "",
     clientData: { nome: aiData.cliente?.nome ?? "", indirizzo: aiData.cliente?.indirizzo ?? "" },
@@ -209,16 +213,16 @@ function parseAiResponse(content: string, rawInput: string, profile: typeof busi
     capitoli,
     sconto,
     condizioniPagamento: aiData.condizioni_pagamento ?? [
-      "30% acconto alla firma del contratto",
-      "30% a completamento prima fase lavori",
-      "30% a completamento seconda fase lavori",
-      "10% saldo a fine lavori",
+      "15% deposit upon contract signing",
+      "35% upon delivery of materials and start of work",
+      "35% upon substantial completion",
+      "15% final balance upon completion and client walkthrough",
     ],
     subtotale: calculatedSubtotale.toFixed(2),
-    ivaPercentuale: ivaPercentualeVal.toFixed(2),
+    ivaPercentuale: ivaPercentualeVal.toFixed(3),
     ivaValore: ivaValoreVal.toFixed(2),
     totale: totaleVal.toFixed(2),
-    note: aiData.note ?? "Preventivo valido 30 giorni",
+    note: aiData.note ?? "Quote valid for 30 days from the issue date. Excludes permits, unforeseen conditions behind existing walls/floors, and any work not explicitly listed above.",
     capitolatoPro: !!(profile?.subscriptionStatus === "active" && (profile?.subscriptionPlan === "monthly_pro" || profile?.subscriptionPlan === "monthly_elite")),
     templateId,
   };
@@ -327,6 +331,8 @@ export async function buildQuoteFromAI({
       const cCostRate = isMini ? 0.00000060 : isGpt4 ? 0.000015 : 0.00000079;
       result.apiCost = (result.promptTokens * pCostRate) + (result.completionTokens * cCostRate);
 
+      recordAiUsage({ userId, model: result.modelUsed, kind: hasImages ? "ai_vision" : "ai_text", usage, relatedEntityType: "quote_generation" });
+
       flagIfAnomalousTotal(userId, result, log, "generation");
 
       trackEvent(userId, "quote_generation_completed", {
@@ -339,7 +345,7 @@ export async function buildQuoteFromAI({
         totalAmount: result.totale,
       });
       return result;
-    } catch (parseErr) {
+    } catch {
       trackEvent(userId, "quote_generation_failed", {
         latencyMs,
         error: "Failed to parse AI JSON response",
@@ -415,12 +421,12 @@ export async function regenerateWithCorrection({
     note: current.note,
   });
 
-  const correctionPrompt = `Modifica il seguente preventivo applicando questa istruzione: "${correction}"
+  const correctionPrompt = `Modify the following quote by applying this instruction: "${correction}"
 
-PREVENTIVO CORRENTE (JSON):
+CURRENT QUOTE (JSON):
 ${currentJson}
 
-Restituisci il preventivo aggiornato COMPLETO in JSON valido con la stessa struttura. Ricalcola tutti i subtotali, l'IVA e il totale. SOLO JSON puro, nessun testo extra.`;
+Return the COMPLETE updated quote in valid JSON with the same structure. Recalculate all subtotals, the tax, and the total. JSON ONLY, no extra text.`;
 
   const startTime = Date.now();
   trackEvent(userId, "quote_regeneration_started", {
@@ -461,6 +467,8 @@ Restituisci il preventivo aggiornato COMPLETO in JSON valido con la stessa strut
       const cCostRate = isMini ? 0.00000060 : isGpt4 ? 0.000015 : 0.00000079;
       result.apiCost = (result.promptTokens * pCostRate) + (result.completionTokens * cCostRate);
 
+      recordAiUsage({ userId, model: result.modelUsed, kind: "ai_text", usage, relatedEntityType: "quote_regeneration" });
+
       flagIfAnomalousTotal(userId, result, log, "regeneration");
 
       trackEvent(userId, "quote_regeneration_completed", {
@@ -473,7 +481,7 @@ Restituisci il preventivo aggiornato COMPLETO in JSON valido con la stessa strut
         totalAmount: result.totale,
       });
       return result;
-    } catch (parseErr) {
+    } catch {
       trackEvent(userId, "quote_regeneration_failed", {
         latencyMs,
         error: "Failed to parse AI JSON response",
@@ -524,7 +532,7 @@ export async function saveQuoteToDb({
       const today = new Date();
       const dd = String(today.getDate()).padStart(2, "0");
       const mm = String(today.getMonth() + 1).padStart(2, "0");
-      numeroPreventivoData = `N° ${nextNumber}.${year} del ${dd}/${mm}/${year}`;
+      numeroPreventivoData = `No. ${nextNumber}.${year} - ${dd}/${mm}/${year}`;
     }
 
     const [q] = await tx.insert(quotesTable).values({
@@ -574,6 +582,8 @@ export async function saveQuoteToDb({
 
     return q;
   });
+
+  await linkQuoteToClient(quote);
 
   return quote;
 }
@@ -628,17 +638,17 @@ function buildPastContext(quotes: { rawInput: string; capitoli: unknown; totale:
     .map(q => {
       const caps = q.capitoli as QuoteChapter[];
       const voci = caps.flatMap(c => c.voci).slice(0, 6);
-      const lines = voci.map(v => `  - ${v.descrizione} (${v.um}): ${v.prezzoUnitario}€/unità`).join("\n");
-      const tot = new Intl.NumberFormat("it-IT", { style: "currency", currency: "EUR" }).format(Number(q.totale));
-      return `Lavoro: "${q.rawInput.slice(0, 100).replace(/\n/g, " ")}"\nTotale: ${tot}\nPrezzi:\n${lines}`;
+      const lines = voci.map(v => `  - ${v.descrizione} (${v.um}): ${v.prezzoUnitario}$/unit`).join("\n");
+      const tot = new Intl.NumberFormat("en-CA", { style: "currency", currency: "CAD" }).format(Number(q.totale));
+      return `Job: "${q.rawInput.slice(0, 100).replace(/\n/g, " ")}"\nTotal: ${tot}\nPrices:\n${lines}`;
     });
   if (examples.length === 0) return "";
-  return `STORICO PREVENTIVI (usa come riferimento per coerenza prezzi):\n\n${examples.join("\n\n---\n\n")}`;
+  return `QUOTE HISTORY (use as a reference for price consistency):\n\n${examples.join("\n\n---\n\n")}`;
 }
 
 function buildCatalogContext(items: { nome: string; um: string; prezzoUnitario: string; categoria: string | null; note: string | null }[]): string {
   if (items.length === 0) return "";
-  return `LISTINO PREZZI PERSONALIZZATO (usa come riferimento PRIORITARIO):\n${items.map(item => `  - ${item.nome} (${item.um}): ${Number(item.prezzoUnitario).toFixed(2)}€/unità${item.categoria ? ` [${item.categoria}]` : ""}`).join("\n")}`;
+  return `CUSTOM PRICE LIST (use as the PRIORITY reference):\n${items.map(item => `  - ${item.nome} (${item.um}): ${Number(item.prezzoUnitario).toFixed(2)}$/unit${item.categoria ? ` [${item.categoria}]` : ""}`).join("\n")}`;
 }
 
 type AiQuoteData = {

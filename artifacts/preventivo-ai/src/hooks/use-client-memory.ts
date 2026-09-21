@@ -4,15 +4,15 @@ export interface SavedClient {
   id: string;
   nome: string;
   indirizzo?: string;
-  citta?: string;
-  cap?: string;
-  provincia?: string;
-  codiceFiscale?: string;
+  city?: string;
+  postalCode?: string;
+  province?: string;
+  businessNumber?: string;
   partitaIva?: string;
   lastUsed: number;
 }
 
-const STORAGE_KEY = "prevai:clients";
+const STORAGE_KEY = "quoteai:clients";
 const MAX_SAVED = 10;
 
 function loadClients(): SavedClient[] {

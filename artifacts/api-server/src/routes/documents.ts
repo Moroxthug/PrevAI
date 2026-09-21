@@ -1,13 +1,15 @@
 import { Router } from "express";
 import multer from "multer";
 import { requireAuth, getUserId } from "../middlewares/authMiddleware";
+import { requirePermission } from "../middlewares/requirePermission.js";
 import {
   db,
   uploadedDocumentsTable,
   priceIntelligenceTable,
+  priceIntelligenceAlertsTable,
   extractedDocumentDataSchema,
 } from "@workspace/db";
-import { eq, and, desc, avg, min, max, count, sql } from "drizzle-orm";
+import { eq, and, desc, avg, min, max, count, sql, isNull, isNotNull } from "drizzle-orm";
 import { ObjectStorageService } from "../lib/objectStorage.js";
 import { openai } from "@workspace/integrations-openai-ai-server";
 import { randomUUID } from "crypto";
@@ -20,21 +22,12 @@ const _require = createRequire(import.meta.url);
 const documentAiLimiter = userRateLimiter({
   windowMs: 60 * 60 * 1000,
   max: 40,
-  message: "Hai raggiunto il limite orario di elaborazioni AI documenti. Riprova più tardi.",
+  message: "You have reached the hourly limit for AI document processing. Please try again later.",
 });
 
 const objectStorage = new ObjectStorageService();
 
 const ALLOWED_MIME_TYPES = [
-  "application/pdf",
-  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-  "image/jpeg",
-  "image/png",
-  "image/webp",
-];
-
-const EXTRACTION_MIME_TYPES = [
   "application/pdf",
   "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
   "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
@@ -50,7 +43,7 @@ const documentUpload = multer({
     if (ALLOWED_MIME_TYPES.includes(file.mimetype)) {
       cb(null, true);
     } else {
-      cb(new Error(`Tipo file non supportato: ${file.mimetype}. Usa PDF, DOCX, XLSX, JPG, PNG o WEBP.`));
+      cb(new Error(`Unsupported file type: ${file.mimetype}. Use PDF, DOCX, XLSX, JPG, PNG, or WEBP.`));
     }
   },
 });
@@ -73,27 +66,29 @@ function serializeDoc(d: typeof uploadedDocumentsTable.$inferSelect) {
   };
 }
 
-const EXTRACTION_PROMPT = `Sei un esperto di preventivi per il mercato italiano (edilizia, impianti, servizi tecnici).
-Analizza questo documento (preventivo, computo metrico, fattura o offerta) ed estrai le lavorazioni con i prezzi unitari.
+const EXTRACTION_PROMPT = `You are a quote/estimate expert for the Canadian market (construction, building systems, technical services).
+Analyze this document (a quote, bill of quantities, invoice, or proposal) and extract the work items with their unit prices.
 
-REGOLE:
-1. Estrai SOLO le voci di lavoro con un prezzo unitario chiaro (€/mq, €/ora, €/ml, €/cad, etc.)
-2. Normalizza i nomi delle lavorazioni in italiano professionale (es: "Tinteggiatura pareti interne", "Posa pavimento in gres", "Impianto elettrico civile")
-3. Se il documento contiene una zona geografica (città, regione), includila nel campo "zona"
-4. Il campo "totale" è il totale dell'intero documento (se presente)
-5. Includi al massimo 30 voci — scegli le più significative per prezzo
+RULES:
+1. Extract ONLY work items with a clear unit price ($/sqft, $/hour, $/linear ft, $/each, etc.)
+2. Normalize work-item names into professional English (e.g. "Interior wall painting", "Tile flooring installation", "Residential electrical wiring")
+3. If the document mentions a geographic area (city, province), include it in the "zona" field
+4. The "totale" field is the total for the entire document (if present)
+5. Include a maximum of 30 items — choose the most significant ones by price
+6. If the document's letterhead, header, or signature identifies the supplier/vendor/contractor company that issued it, put its name in "fornitore" (just the company name, not an address). If it's not clearly identifiable, use null.
 
-OUTPUT SOLO JSON VALIDO, nessun testo extra:
+OUTPUT VALID JSON ONLY, no extra text:
 {
   "lavorazioni": [
-    { "tipo": "Tinteggiatura pareti interne", "prezzoUnitario": 8.5, "um": "mq", "zona": "Milano" }
+    { "tipo": "Interior wall painting", "prezzoUnitario": 8.5, "um": "sqft", "zona": "Toronto" }
   ],
   "totale": 15000,
-  "zona": "Milano (MI)",
-  "note": "Preventivo per ristrutturazione appartamento"
+  "zona": "Toronto (ON)",
+  "fornitore": "Acme Renovations Inc.",
+  "note": "Quote for apartment renovation"
 }
 
-Se non riesci a trovare prezzi unitari chiari, restituisci: { "lavorazioni": [], "totale": null, "zona": null, "note": "Prezzi unitari non trovati" }`;
+If you can't find clear unit prices, return: { "lavorazioni": [], "totale": null, "zona": null, "fornitore": null, "note": "No unit prices found" }`;
 
 async function extractFromImage(buffer: Buffer, mimeType: string) {
   const base64 = buffer.toString("base64");
@@ -113,7 +108,7 @@ async function extractFromImage(buffer: Buffer, mimeType: string) {
           },
           {
             type: "text",
-            text: "Analizza questo documento ed estrai le lavorazioni con i prezzi unitari.",
+            text: "Analyze this document and extract the work items with their unit prices.",
           },
         ],
       },
@@ -141,7 +136,7 @@ async function extractFromPdf(buffer: Buffer) {
   }
 
   if (!pdfText.trim()) {
-    return JSON.stringify({ lavorazioni: [], totale: null, zona: null, note: "Testo non estraibile dal PDF" });
+    return JSON.stringify({ lavorazioni: [], totale: null, zona: null, note: "No extractable text in the PDF" });
   }
 
   const completion = await openai.chat.completions.create({
@@ -151,7 +146,7 @@ async function extractFromPdf(buffer: Buffer) {
       { role: "system", content: EXTRACTION_PROMPT },
       {
         role: "user",
-        content: `Testo estratto dal documento:\n\n${pdfText}`,
+        content: `Text extracted from the document:\n\n${pdfText}`,
       },
     ],
   });
@@ -172,7 +167,7 @@ async function extractFromDocx(buffer: Buffer) {
   }
 
   if (!docText.trim()) {
-    return JSON.stringify({ lavorazioni: [], totale: null, zona: null, note: "Testo non estraibile dal DOCX" });
+    return JSON.stringify({ lavorazioni: [], totale: null, zona: null, note: "No extractable text in the DOCX" });
   }
 
   const completion = await openai.chat.completions.create({
@@ -182,7 +177,7 @@ async function extractFromDocx(buffer: Buffer) {
       { role: "system", content: EXTRACTION_PROMPT },
       {
         role: "user",
-        content: `Testo estratto dal documento DOCX:\n\n${docText}`,
+        content: `Text extracted from the DOCX document:\n\n${docText}`,
       },
     ],
   });
@@ -216,7 +211,7 @@ async function extractFromXlsx(buffer: Buffer) {
   }
 
   if (!sheetText.trim()) {
-    return JSON.stringify({ lavorazioni: [], totale: null, zona: null, note: "Testo non estraibile dal XLSX" });
+    return JSON.stringify({ lavorazioni: [], totale: null, zona: null, note: "No extractable text in the XLSX" });
   }
 
   const completion = await openai.chat.completions.create({
@@ -226,7 +221,7 @@ async function extractFromXlsx(buffer: Buffer) {
       { role: "system", content: EXTRACTION_PROMPT },
       {
         role: "user",
-        content: `Dati estratti dal file Excel (formato CSV per foglio):\n\n${sheetText}`,
+        content: `Data extracted from the Excel file (CSV format per sheet):\n\n${sheetText}`,
       },
     ],
   });
@@ -241,7 +236,7 @@ router.get("/documents", requireAuth, async (req, res) => {
     const docs = await db
       .select()
       .from(uploadedDocumentsTable)
-      .where(eq(uploadedDocumentsTable.userId, userId))
+      .where(and(eq(uploadedDocumentsTable.userId, userId), eq(uploadedDocumentsTable.purpose, "price_intelligence")))
       .orderBy(desc(uploadedDocumentsTable.createdAt));
     res.json(docs.map(serializeDoc));
   } catch (err) {
@@ -254,6 +249,7 @@ router.get("/documents", requireAuth, async (req, res) => {
 router.post(
   "/documents/upload",
   requireAuth,
+  requirePermission("quotes", "edit"),
   (req, res, next) => {
     documentUpload.single("file")(req, res, (err) => {
       if (err instanceof multer.MulterError || err instanceof Error) {
@@ -364,8 +360,119 @@ router.get("/documents/price-summary", requireAuth, async (req, res) => {
   }
 });
 
+function serializeAlert(a: typeof priceIntelligenceAlertsTable.$inferSelect) {
+  return {
+    id: a.id,
+    workType: a.workType,
+    zone: a.zone ?? null,
+    previousAvgPrice: Number(a.previousAvgPrice),
+    currentAvgPrice: Number(a.currentAvgPrice),
+    percentChange: Number(a.percentChange),
+    direction: a.direction,
+    createdAt: a.createdAt.toISOString(),
+  };
+}
+
+// GET /api/documents/price-alerts
+router.get("/documents/price-alerts", requireAuth, async (req, res) => {
+  try {
+    const userId = getUserId(res);
+    const alerts = await db
+      .select()
+      .from(priceIntelligenceAlertsTable)
+      .where(
+        and(
+          eq(priceIntelligenceAlertsTable.userId, userId),
+          isNull(priceIntelligenceAlertsTable.dismissedAt)
+        )
+      )
+      .orderBy(desc(priceIntelligenceAlertsTable.createdAt));
+    res.json(alerts.map(serializeAlert));
+  } catch (err) {
+    logger.error({ err }, "Error fetching price alerts");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// POST /api/documents/price-alerts/:id/dismiss
+router.post("/documents/price-alerts/:id/dismiss", requireAuth, requirePermission("quotes", "edit"), async (req, res) => {
+  try {
+    const userId = getUserId(res);
+    const alertId = String(req.params.id);
+    const [updated] = await db
+      .update(priceIntelligenceAlertsTable)
+      .set({ dismissedAt: new Date() })
+      .where(
+        and(
+          eq(priceIntelligenceAlertsTable.id, alertId),
+          eq(priceIntelligenceAlertsTable.userId, userId)
+        )
+      )
+      .returning();
+
+    if (!updated) {
+      res.status(404).json({ error: "Alert not found" });
+      return;
+    }
+    res.json(serializeAlert(updated));
+  } catch (err) {
+    logger.error({ err }, "Error dismissing price alert");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// GET /api/documents/price-comparison — cross-supplier comparison for work types
+// seen from 2+ distinct vendors in the same zone.
+router.get("/documents/price-comparison", requireAuth, async (req, res) => {
+  try {
+    const userId = getUserId(res);
+
+    const rows = await db
+      .select({
+        workType: priceIntelligenceTable.workType,
+        zone: priceIntelligenceTable.zone,
+        vendor: priceIntelligenceTable.vendor,
+        avgPrice: avg(sql`${priceIntelligenceTable.unitPrice}::numeric`),
+        cnt: count(),
+        unit: sql<string | null>`max(${priceIntelligenceTable.unit})`,
+      })
+      .from(priceIntelligenceTable)
+      .where(
+        and(
+          eq(priceIntelligenceTable.userId, userId),
+          isNotNull(priceIntelligenceTable.vendor)
+        )
+      )
+      .groupBy(priceIntelligenceTable.workType, priceIntelligenceTable.zone, priceIntelligenceTable.vendor);
+
+    type VendorPrice = { vendor: string; avgPrice: number; count: number };
+    type ComparisonGroup = { workType: string; zone: string | null; unit: string | null; vendors: VendorPrice[] };
+    const groups = new Map<string, ComparisonGroup>();
+
+    for (const r of rows) {
+      if (!r.vendor) continue;
+      const key = `${r.workType}::${r.zone ?? ""}`;
+      let group = groups.get(key);
+      if (!group) {
+        group = { workType: r.workType, zone: r.zone ?? null, unit: r.unit || null, vendors: [] };
+        groups.set(key, group);
+      }
+      group.vendors.push({ vendor: r.vendor, avgPrice: Number(r.avgPrice ?? 0), count: Number(r.cnt) });
+    }
+
+    const comparisons = Array.from(groups.values())
+      .filter((g) => g.vendors.length >= 2)
+      .map((g) => ({ ...g, vendors: g.vendors.sort((a, b) => a.avgPrice - b.avgPrice) }));
+
+    res.json({ comparisons });
+  } catch (err) {
+    logger.error({ err }, "Error fetching price comparison");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
 // POST /api/documents/:id/extract
-router.post("/documents/:id/extract", requireAuth, documentAiLimiter, async (req, res) => {
+router.post("/documents/:id/extract", requireAuth, requirePermission("quotes", "edit"), documentAiLimiter, async (req, res) => {
   try {
     const userId = getUserId(res);
     const docId = String(req.params.id);
@@ -425,7 +532,7 @@ router.post("/documents/:id/extract", requireAuth, documentAiLimiter, async (req
       }
 
       const result = extractedDocumentDataSchema.safeParse(parsed);
-      const extractedData = result.success ? result.data : { lavorazioni: [], totale: null, zona: null, note: "Parsing fallito" };
+      const extractedData = result.success ? result.data : { lavorazioni: [], totale: null, zona: null, fornitore: null, note: "Parsing fallito" };
 
       await db
         .update(uploadedDocumentsTable)
@@ -446,6 +553,7 @@ router.post("/documents/:id/extract", requireAuth, documentAiLimiter, async (req
           unitPrice: String(l.prezzoUnitario),
           unit: l.um ?? null,
           zone: l.zona ?? extractedData.zona ?? null,
+          vendor: extractedData.fornitore ?? null,
           sourceDocumentId: docId,
         }));
 
@@ -485,7 +593,7 @@ router.post("/documents/:id/extract", requireAuth, documentAiLimiter, async (req
 });
 
 // DELETE /api/documents/:id
-router.delete("/documents/:id", requireAuth, async (req, res) => {
+router.delete("/documents/:id", requireAuth, requirePermission("quotes", "edit"), async (req, res) => {
   try {
     const userId = getUserId(res);
     const docId = String(req.params.id);

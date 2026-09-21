@@ -1,21 +1,27 @@
-import { useParams, useSearch } from "wouter";
-import { useGetQuote, useGetBusinessProfile, useGenerateQuotePdf, useGetPlans, useUpdateQuote, useCreateCheckoutSession, useVerifyPayment, useGetSubscription, useUnlockQuoteWithSubscription, useCreateCustomerPortalSession, useRegenerateQuote, useDuplicateQuote, useUpgradeToCapitolatoPro, useGenerateQuotePdfPro, useGetTrialStatus, useListClients, useSendQuotePdfEmail, getGetQuoteQueryKey, getVerifyPaymentQueryKey, getListQuotesQueryKey, getGetTrialStatusQueryKey } from "@workspace/api-client-react";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { localDay } from "@/lib/local-day";
+import { Link, useParams, useSearch } from "wouter";
+import { useGetQuote, useGetBusinessProfile, useGenerateQuotePdf, useGetPlans, useUpdateQuote, useCreateCheckoutSession, useVerifyPayment, useGetSubscription, useUnlockQuoteWithSubscription, useCreateCustomerPortalSession, useRegenerateQuote, useDuplicateQuote, useUpgradeToCapitolatoPro, useGenerateQuotePdfPro, useGetTrialStatus, useListClients, useSendQuotePdfEmail, useListQuoteVariants, useCreateQuoteVariant, useUpdateQuoteVariant, useDeleteQuoteVariant, getGetQuoteQueryKey, getVerifyPaymentQueryKey, getListQuotesQueryKey, getGetTrialStatusQueryKey, getListQuoteVariantsQueryKey } from "@workspace/api-client-react";
+import { Dialog, DialogBody, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Badge } from "@/components/ui/badge";
-import { Textarea } from "@/components/ui/textarea";
-import { Download, Lock, CheckCircle2, Edit2, Save, FileText, FileSpreadsheet, ImageIcon, ChevronDown, ChevronRight, Plus, Trash2, X, Pencil, Sparkles, AlertTriangle, RefreshCw, Loader2, Copy, Star, FileDown, LayoutTemplate, Users, Mail, Hammer } from "lucide-react";
+import { ArrowLeft, Download, Lock, CheckCircle2, Edit2, Save, FileText, FileSpreadsheet, ImageIcon, ChevronDown, ChevronRight, Plus, Trash2, X, Pencil, Sparkles, AlertTriangle, RefreshCw, Loader2, Copy, Star, FileDown, LayoutTemplate, Mail, Hammer } from "lucide-react";
 import { useState, useRef, useEffect, Fragment } from "react";
 import { useLocation } from "wouter";
 import { format } from "date-fns";
-import { it } from "date-fns/locale";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { enCA, frCA } from "date-fns/locale";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
 import { cn } from "@/lib/utils";
+import { taxLineLabel } from "@/lib/tax-display";
+import { useLanguage } from "@/i18n/LanguageContext";
+import { PaymentScheduleCard } from "@/components/payment-schedule-card";
+import { QuoteContractCard } from "@/components/quote-contract-card";
+import { jobsApi } from "@/lib/jobs-api";
+import { hasFeature } from "@/lib/plans";
+import type { PaymentSchedule } from "@/lib/payment-schedule";
+
+function fmt(template: string, vars: Record<string, string | number>): string {
+  return template.replace(/\{(\w+)\}/g, (_, k) => String(vars[k] ?? ""));
+}
 
 type EditVoce = {
   descrizione: string;
@@ -32,6 +38,8 @@ type EditCapitolo = {
 };
 
 export default function QuoteDetail() {
+  const { t, lang } = useLanguage();
+  const dateLocale = lang === "fr" ? frCA : enCA;
   const { id } = useParams();
   const search = useSearch();
   const searchParams = new URLSearchParams(search);
@@ -58,6 +66,13 @@ export default function QuoteDetail() {
   const duplicateQuote = useDuplicateQuote();
   const [, navigate] = useLocation();
 
+  // Phase 22: Good/Better/Best tiered quotes
+  const { data: variantsData } = useListQuoteVariants(id || "");
+  const variants = variantsData?.variants ?? [];
+  const createVariant = useCreateQuoteVariant();
+  const updateVariant = useUpdateQuoteVariant();
+  const deleteVariant = useDeleteQuoteVariant();
+
   // Regen panel state
   const [isRegenOpen, setIsRegenOpen] = useState(false);
   const [regenDescription, setRegenDescription] = useState("");
@@ -66,7 +81,7 @@ export default function QuoteDetail() {
     createPortal.mutate(undefined, {
       onSuccess: (result) => { window.open(result.url, "_blank"); },
       onError: () => {
-        toast({ title: "Errore", description: "Impossibile aprire il portale di gestione", variant: "destructive" });
+        toast({ title: t("dashboard.quoteDetail.error"), description: t("dashboard.quoteDetail.errorOpenPortal"), variant: "destructive" });
       }
     });
   };
@@ -76,7 +91,7 @@ export default function QuoteDetail() {
   useEffect(() => {
     if (
       subscription?.isActive &&
-      quote?.status !== "unlocked" &&
+      (quote?.status === "draft" || quote?.status === "pending_payment") &&
       id &&
       !subUnlockDone
     ) {
@@ -104,7 +119,7 @@ export default function QuoteDetail() {
     if (verifyData?.status === "unlocked" && !verifyDone) {
       setVerifyDone(true);
       queryClient.invalidateQueries({ queryKey: getGetQuoteQueryKey(id || "") });
-      toast({ title: "Pagamento confermato!", description: "Il preventivo è stato sbloccato." });
+      toast({ title: t("dashboard.quoteDetail.paymentConfirmed"), description: t("dashboard.quoteDetail.paymentConfirmedDesc") });
     }
   }, [verifyData, verifyDone, id, queryClient, toast]);
 
@@ -128,9 +143,9 @@ export default function QuoteDetail() {
     const url = `${window.location.origin}/p/${id}`;
     try {
       await navigator.clipboard.writeText(url);
-      toast({ title: "Link copiato", description: "Incollalo in WhatsApp o email: il cliente potrà rivedere e accettare il preventivo." });
+      toast({ title: t("dashboard.quoteDetail.linkCopied"), description: t("dashboard.quoteDetail.linkCopiedDesc") });
     } catch {
-      toast({ title: "Errore", description: "Impossibile copiare il link.", variant: "destructive" });
+      toast({ title: t("dashboard.quoteDetail.error"), description: t("dashboard.quoteDetail.errorCopyLink"), variant: "destructive" });
     }
   };
 
@@ -140,15 +155,15 @@ export default function QuoteDetail() {
   const [editNote, setEditNote] = useState("");
   const [editDescrizioneGenerale, setEditDescrizioneGenerale] = useState("");
   const [editScontoPerc, setEditScontoPerc] = useState(0);
-  const [editIvaPerc, setEditIvaPerc] = useState(22);
+  const [editIvaPerc, setEditIvaPerc] = useState(0);
   const [editCapitoli, setEditCapitoli] = useState<EditCapitolo[]>([]);
   const [editCondizioniPagamento, setEditCondizioniPagamento] = useState<string[]>([]);
   const [editClientNome, setEditClientNome] = useState("");
   const [editClientIndirizzo, setEditClientIndirizzo] = useState("");
-  const [editClientCitta, setEditClientCitta] = useState("");
-  const [editClientCap, setEditClientCap] = useState("");
-  const [editClientProvincia, setEditClientProvincia] = useState("");
-  const [editClientCF, setEditClientCF] = useState("");
+  const [editClientCity, setEditClientCity] = useState("");
+  const [editClientPostalCode, setEditClientPostalCode] = useState("");
+  const [editClientProvince, setEditClientProvince] = useState("");
+  const [editClientBusinessNumber, setEditClientBusinessNumber] = useState("");
   const [editClientPIVA, setEditClientPIVA] = useState("");
 
   const initializedForId = useRef<string | null>(null);
@@ -181,7 +196,7 @@ export default function QuoteDetail() {
     }, {
       onSuccess: (updatedQuote) => {
         setIsEditingClient(false);
-        toast({ title: "Dati cliente aggiornati" });
+        toast({ title: t("dashboard.quoteDetail.clientDataUpdated") });
         queryClient.setQueryData(getGetQuoteQueryKey(id), updatedQuote);
       }
     });
@@ -202,7 +217,7 @@ export default function QuoteDetail() {
       document.body.removeChild(a);
       window.URL.revokeObjectURL(url);
     } catch {
-      toast({ title: "Errore", description: "Impossibile scaricare il PDF", variant: "destructive" });
+      toast({ title: t("dashboard.quoteDetail.error"), description: t("dashboard.quoteDetail.errorDownloadPdf"), variant: "destructive" });
     }
   };
 
@@ -212,12 +227,12 @@ export default function QuoteDetail() {
       onSuccess: (result) => {
         const numero = quote.numeroPreventivoData
           ? quote.numeroPreventivoData.replace(/\//g, "_")
-          : `N\u00b0 ${quote.id.slice(0, 4).toUpperCase()} del ${new Date(quote.createdAt || Date.now()).toLocaleDateString("it-IT").replace(/\//g, "_")}`;
-        const filename = `Preventivo ${numero}.pdf`;
+          : `N\u00b0 ${quote.id.slice(0, 4).toUpperCase()} - ${new Date(quote.createdAt || Date.now()).toLocaleDateString("en-CA").replace(/\//g, "_")}`;
+        const filename = `${t("dashboard.quoteDetail.filenamePrefix")} ${numero}.pdf`;
         if (result.pdfUrl) {
           downloadPdfFromUrl(result.pdfUrl, filename);
         } else {
-          toast({ title: "Errore", description: "Impossibile scaricare il PDF", variant: "destructive" });
+          toast({ title: t("dashboard.quoteDetail.error"), description: t("dashboard.quoteDetail.errorDownloadPdf"), variant: "destructive" });
         }
         queryClient.invalidateQueries({ queryKey: getGetQuoteQueryKey(id) });
         queryClient.invalidateQueries({ queryKey: getGetTrialStatusQueryKey() });
@@ -227,7 +242,7 @@ export default function QuoteDetail() {
         if (status === 402) {
           setIsPaywallOpen(true);
         } else {
-          toast({ title: "Errore", description: "Impossibile generare il PDF", variant: "destructive" });
+          toast({ title: t("dashboard.quoteDetail.error"), description: t("dashboard.quoteDetail.errorGeneratePdf"), variant: "destructive" });
         }
       }
     });
@@ -244,7 +259,10 @@ export default function QuoteDetail() {
       onSuccess: () => {
         setIsEmailDialogOpen(false);
         setEmailTo("");
-        toast({ title: "Email inviata!", description: `Il preventivo \u00e8 stato inviato a ${emailTo.trim()}` });
+        // Sending unlocks a draft (trial or subscription) — refresh status + trial counter.
+        queryClient.invalidateQueries({ queryKey: getGetQuoteQueryKey(id) });
+        queryClient.invalidateQueries({ queryKey: getGetTrialStatusQueryKey() });
+        toast({ title: t("dashboard.quoteDetail.emailSent"), description: fmt(t("dashboard.quoteDetail.emailSentDesc"), { email: emailTo.trim() }) });
       },
       onError: (err: unknown) => {
         const status = (err as { status?: number })?.status;
@@ -253,7 +271,7 @@ export default function QuoteDetail() {
           setIsEmailDialogOpen(false);
           setIsPaywallOpen(true);
         } else {
-          toast({ title: "Errore", description: msg || "Impossibile inviare l'email", variant: "destructive" });
+          toast({ title: t("dashboard.quoteDetail.error"), description: msg || t("dashboard.quoteDetail.errorSendEmail"), variant: "destructive" });
         }
       }
     });
@@ -292,11 +310,11 @@ export default function QuoteDetail() {
       }, {
         onSuccess: (updatedQuote) => {
           queryClient.setQueryData(getGetQuoteQueryKey(id), updatedQuote);
-          toast({ title: "Descrizione aggiornata", description: "La descrizione professionale è stata rigenerata con successo." });
+          toast({ title: t("dashboard.quoteDetail.descriptionUpdated"), description: t("dashboard.quoteDetail.descriptionUpdatedDesc") });
         }
       });
-    } catch (err) {
-      toast({ title: "Errore", description: "Impossibile rigenerare la descrizione", variant: "destructive" });
+    } catch {
+      toast({ title: t("dashboard.quoteDetail.error"), description: t("dashboard.quoteDetail.errorRegenerateDesc"), variant: "destructive" });
     } finally {
       setRegeneratingVoceKey(null);
     }
@@ -307,43 +325,22 @@ export default function QuoteDetail() {
 
   const handleAvviaCantiere = async () => {
     if (!quote || !id || avviandoCantiere) return;
-    const clientName = (quote.clientData as { nome?: string })?.nome || "Cliente Generico";
-    const budget = Number(quote.totale || 0);
-
+    const clientName = (quote.clientData as { nome?: string })?.nome || t("dashboard.quoteDetail.genericClient");
     setAvviandoCantiere(true);
     try {
-      // Il CRM (artifacts/preventivo-ai/src/pages/dashboard/crm.tsx) legge i
-      // cantieri da /api/crm/projects nel backend reale, non più da
-      // localStorage: creiamo il cantiere lì, collegato al preventivo tramite
-      // quoteId così il controllo duplicati è affidabile (non basato sul nome).
-      const existingRes = await fetch("/api/crm/projects", { credentials: "include" });
-      if (!existingRes.ok) throw new Error("Impossibile verificare i cantieri esistenti");
-      const existingProjects: Array<{ quoteId: string | null }> = await existingRes.json();
-
-      if (existingProjects.some((p) => p.quoteId === id)) {
-        toast({ title: "Cantiere già avviato", description: "Esiste già un cantiere collegato a questo preventivo." });
-        window.open("/crm", "_blank");
-        return;
-      }
-
-      const createRes = await fetch("/api/crm/projects", {
-        method: "POST",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: `Cantiere - Ristrutturazione per ${clientName}`,
-          quoteId: id,
-          status: "active",
-          budget: Math.round(budget * 100), // il backend salva il budget in centesimi
-          startDate: new Date().toISOString().split("T")[0],
-        }),
+      // Phase 2: jobs live at /dashboard/jobs. Creating from a quote is
+      // idempotent server-side (one job per quote); signed contracts create
+      // the job automatically with milestones imported from the quote.
+      const res = await jobsApi.create({
+        name: `${quote.titoloPreventivoRiga2 || t("dashboard.quoteDetail.projectNamePrefix")} – ${clientName}`.slice(0, 200),
+        quoteId: id,
+        plannedStart: localDay(),
       });
-      if (!createRes.ok) throw new Error("Errore creazione cantiere");
-
-      toast({ title: "Cantiere avviato!", description: "Il progetto è stato creato nel CRM." });
-      window.open("/crm", "_blank");
+      toast({ title: res.created ? t("dashboard.quoteDetail.projectStarted") : t("dashboard.quoteDetail.projectAlreadyStarted"), description: res.created ? t("dashboard.quoteDetail.projectStartedDesc") : t("dashboard.quoteDetail.projectAlreadyStartedDesc") });
+      navigate(`/dashboard/jobs/${res.job.id}`);
     } catch (err) {
-      toast({ title: "Errore", description: "Impossibile avviare il cantiere. Riprova.", variant: "destructive" });
+      const e = err as Error & { code?: string };
+      toast({ title: e.code === "PLAN_REQUIRED" ? t("jobs.planRequired") : t("dashboard.quoteDetail.error"), description: e.code === "PLAN_REQUIRED" ? e.message : t("dashboard.quoteDetail.errorStartProject"), variant: "destructive" });
     } finally {
       setAvviandoCantiere(false);
     }
@@ -364,10 +361,10 @@ export default function QuoteDetail() {
         setIsEditMode(false);
         initializedForId.current = null; // force re-init of edit state
         queryClient.setQueryData(getGetQuoteQueryKey(id), updatedQuote);
-        toast({ title: "Preventivo rigenerato con AI", description: "Il contenuto è stato aggiornato." });
+        toast({ title: t("dashboard.quoteDetail.quoteRegenerated"), description: t("dashboard.quoteDetail.quoteRegeneratedDesc") });
       },
       onError: () => {
-        toast({ title: "Errore rigenerazione", description: "Impossibile rigenerare il preventivo", variant: "destructive" });
+        toast({ title: t("dashboard.quoteDetail.errorRegenerateTitle"), description: t("dashboard.quoteDetail.errorRegenerateQuote"), variant: "destructive" });
       },
     });
   };
@@ -384,12 +381,12 @@ export default function QuoteDetail() {
       onSuccess: (updatedQuote) => {
         setIsCapitolatoDialogOpen(false);
         queryClient.setQueryData(getGetQuoteQueryKey(id), updatedQuote);
-        toast({ title: "Capitolato Pro attivato!", description: "Le descrizioni sono state arricchite con terminologia professionale." });
+        toast({ title: t("dashboard.quoteDetail.proSpecActivated"), description: t("dashboard.quoteDetail.proSpecActivatedDesc") });
       },
       onError: (err: unknown) => {
         setIsCapitolatoDialogOpen(false);
-        const msg = (err as { data?: { error?: string } })?.data?.error ?? "Impossibile arricchire il preventivo";
-        toast({ title: "Errore", description: msg, variant: "destructive" });
+        const msg = (err as { data?: { error?: string } })?.data?.error ?? t("dashboard.quoteDetail.errorEnrichQuote");
+        toast({ title: t("dashboard.quoteDetail.error"), description: msg, variant: "destructive" });
       },
     });
   };
@@ -401,10 +398,10 @@ export default function QuoteDetail() {
         const pdfFullUrl = result.pdfUrl.startsWith("/api") ? result.pdfUrl : `/api/storage${result.pdfUrl}`;
         window.open(pdfFullUrl, "_blank");
         queryClient.invalidateQueries({ queryKey: getGetQuoteQueryKey(id) });
-        toast({ title: "PDF Pro generato!", description: "Il PDF professionale è pronto per il download." });
+        toast({ title: t("dashboard.quoteDetail.proPdfGenerated"), description: t("dashboard.quoteDetail.proPdfGeneratedDesc") });
       },
       onError: () => {
-        toast({ title: "Errore", description: "Impossibile generare il PDF professionale", variant: "destructive" });
+        toast({ title: t("dashboard.quoteDetail.error"), description: t("dashboard.quoteDetail.errorGenerateProPdf"), variant: "destructive" });
       },
     });
   };
@@ -427,7 +424,7 @@ export default function QuoteDetail() {
     setEditNote(quote.note || "");
     setEditDescrizioneGenerale(quote.descrizioneGenerale || "");
     setEditScontoPerc(quote.sconto?.percentuale ?? 0);
-    setEditIvaPerc(quote.ivaPercentuale ?? 22);
+    setEditIvaPerc(quote.ivaPercentuale ?? 0);
     setEditCapitoli(
       (quote.capitoli ?? []).map(cap => ({
         lettera: cap.lettera,
@@ -446,10 +443,10 @@ export default function QuoteDetail() {
     );
     setEditClientNome(quote.clientData?.nome || "");
     setEditClientIndirizzo(quote.clientData?.indirizzo || "");
-    setEditClientCitta(quote.clientData?.citta || "");
-    setEditClientCap(quote.clientData?.cap || "");
-    setEditClientProvincia(quote.clientData?.provincia || "");
-    setEditClientCF(quote.clientData?.codiceFiscale || "");
+    setEditClientCity(quote.clientData?.city || "");
+    setEditClientPostalCode(quote.clientData?.postalCode || "");
+    setEditClientProvince(quote.clientData?.province || "");
+    setEditClientBusinessNumber(quote.clientData?.businessNumber || "");
     setEditClientPIVA(quote.clientData?.partitaIva || "");
     setIsEditMode(true);
   };
@@ -481,10 +478,10 @@ export default function QuoteDetail() {
     const updatedClientData = {
       nome: editClientNome.trim() || (quote?.clientData?.nome ?? ""),
       indirizzo: editClientIndirizzo.trim() || (quote?.clientData?.indirizzo ?? ""),
-      ...(editClientCitta.trim() && { citta: editClientCitta.trim() }),
-      ...(editClientCap.trim() && { cap: editClientCap.trim() }),
-      ...(editClientProvincia.trim() && { provincia: editClientProvincia.trim() }),
-      ...(editClientCF.trim() && { codiceFiscale: editClientCF.trim() }),
+      ...(editClientCity.trim() && { city: editClientCity.trim() }),
+      ...(editClientPostalCode.trim() && { postalCode: editClientPostalCode.trim() }),
+      ...(editClientProvince.trim() && { province: editClientProvince.trim() }),
+      ...(editClientBusinessNumber.trim() && { businessNumber: editClientBusinessNumber.trim() }),
       ...(editClientPIVA.trim() && { partitaIva: editClientPIVA.trim() }),
     };
 
@@ -507,11 +504,11 @@ export default function QuoteDetail() {
     }, {
       onSuccess: (updatedQuote) => {
         setIsEditMode(false);
-        toast({ title: "Preventivo aggiornato con successo" });
+        toast({ title: t("dashboard.quoteDetail.quoteUpdatedSuccess") });
         queryClient.setQueryData(getGetQuoteQueryKey(id), updatedQuote);
       },
       onError: () => {
-        toast({ title: "Errore", description: "Impossibile salvare le modifiche", variant: "destructive" });
+        toast({ title: t("dashboard.quoteDetail.error"), description: t("dashboard.quoteDetail.errorSaveChanges"), variant: "destructive" });
       }
     });
   };
@@ -556,7 +553,7 @@ export default function QuoteDetail() {
       String(editCapitoli.length + 1);
     setEditCapitoli(prev => [
       ...prev,
-      { lettera: nextLetter, titolo: "Nuovo Capitolo", osservazione: "Voce ordinaria", voci: [] }
+      { lettera: nextLetter, titolo: t("dashboard.quoteDetail.newChapterDefault"), osservazione: t("dashboard.quoteDetail.ordinaryItemDefault"), voci: [] }
     ]);
   };
 
@@ -568,369 +565,317 @@ export default function QuoteDetail() {
     return <div className="p-8 space-y-4"><Skeleton className="h-12 w-64" /><Skeleton className="h-64 w-full" /></div>;
   }
 
-  if (!quote) return <div>Preventivo non trovato</div>;
+  if (!quote) return <div>{t("dashboard.quoteDetail.quoteNotFound")}</div>;
 
   const isPro = subscription?.isActive && (subscription?.plan === "monthly_pro" || subscription?.plan === "monthly_elite");
   const isTrialActive = trialStatus?.isTrialActive ?? false;
   // Pro/Elite subscribers and active trial users can always download
   const isLocked = quote.status !== "unlocked" && !isPro && !isTrialActive;
   // Editing is permanently locked once the PDF has been downloaded
-  const isEditLocked = !!quote.pdfDownloadedAt;
+  // …and once the client has accepted: the accepted amount is what the contract is built on.
+  const isEditLocked = !!quote.pdfDownloadedAt || quote.status === "accepted";
   const formatCurrency = (amount: number) =>
-    new Intl.NumberFormat("it-IT", { style: "currency", currency: "EUR" }).format(amount);
+    new Intl.NumberFormat("en-CA", { style: "currency", currency: "CAD" }).format(amount);
 
   const hasCapitoli = Array.isArray(quote.capitoli) && quote.capitoli.length > 0;
   const capitoli = hasCapitoli ? quote.capitoli : [];
   const sconto = quote.sconto;
   const condizioniPagamento = Array.isArray(quote.condizioniPagamento) ? quote.condizioniPagamento : [];
 
-  const companyName = quote.companySnapshot?.companyName || profile?.companyName || "La Tua Azienda";
+  const companyName = quote.companySnapshot?.companyName || profile?.companyName || t("dashboard.quoteDetail.yourCompanyFallback");
   const companyVat = quote.companySnapshot?.vatNumber || profile?.vatNumber;
   const companyAddress = quote.companySnapshot?.address || profile?.address;
   const companyPhone = quote.companySnapshot?.phone || profile?.phone;
   const companyEmail = quote.companySnapshot?.email || profile?.email;
   const companyLogoUrl = quote.companySnapshot?.logoUrl || profile?.logoUrl || "";
 
+  const templateName = localTemplateId === "arosio"
+    ? t("dashboard.quoteDetail.templateProfessionalName")
+    : localTemplateId === "mariagrazia"
+      ? t("dashboard.quoteDetail.templateElegantName")
+      : t("dashboard.quoteDetail.templateStandardName");
+
+  // Description cell for the two "pro" templates: first line is the brief
+  // title, the rest is the AI-written professional description.
+  const renderProDesc = (ci: number, vi: number, descrizione: string) => {
+    const parts = descrizione.split("\n");
+    const title = parts[0];
+    const professionalDesc = parts.slice(1).join("\n");
+    const isRegenerating = regeneratingVoceKey === `${ci}-${vi}`;
+    return (
+      <>
+        <div className="ttl">
+          <span>{title}</span>
+          <button
+            type="button"
+            className="ic-btn"
+            onClick={() => handleRegenerateSingleVoce(ci, vi, title)}
+            disabled={isRegenerating}
+            title={t("dashboard.quoteDetail.regenerateProDescTitle")}
+            aria-label={t("dashboard.quoteDetail.regenerateProDescTitle")}
+          >
+            {isRegenerating ? <Loader2 className="animate-spin" /> : <RefreshCw />}
+          </button>
+        </div>
+        {professionalDesc ? (
+          <p className="pro">{professionalDesc}</p>
+        ) : (
+          <button type="button" className="text-link" onClick={() => handleRegenerateSingleVoce(ci, vi, title)} disabled={isRegenerating}>
+            <Sparkles /> {t("dashboard.quoteDetail.addAiProDescription")}
+          </button>
+        )}
+      </>
+    );
+  };
+
+  // One editable line-item row, shared by the three edit-mode tables.
+  const renderEditVoceRow = (ci: number, vi: number, voce: EditVoce, num?: string) => {
+    const vTot = Number(voce.quantita) * Number(voce.prezzoUnitario);
+    return (
+      <tr key={vi}>
+        {num !== undefined && <td className="c faint">{num}</td>}
+        <td>
+          <input value={voce.descrizione} onChange={e => updateVoce(ci, vi, "descrizione", e.target.value)} className="inl" placeholder={t("dashboard.quoteDetail.itemDescriptionPlaceholder")} aria-label={t("dashboard.quoteDetail.colDescription")} />
+        </td>
+        <td><input value={voce.um} onChange={e => updateVoce(ci, vi, "um", e.target.value)} className="inl c" aria-label={t("dashboard.quoteDetail.colUnit")} /></td>
+        <td><input type="number" value={voce.quantita} onChange={e => updateVoce(ci, vi, "quantita", e.target.value === "" ? 0 : Number(e.target.value))} className="inl c" min={0} step={0.01} aria-label={t("dashboard.quoteDetail.colQty")} /></td>
+        <td><input type="number" value={voce.prezzoUnitario} onChange={e => updateVoce(ci, vi, "prezzoUnitario", e.target.value === "" ? 0 : Number(e.target.value))} className="inl r" min={0} step={0.01} aria-label={t("dashboard.quoteDetail.colUnitPrice")} /></td>
+        <td className="r amt">{formatCurrency(vTot)}</td>
+        <td>
+          <button type="button" onClick={() => removeVoce(ci, vi)} className="ic-btn danger" title={t("dashboard.quoteDetail.deleteItem")} aria-label={t("dashboard.quoteDetail.deleteItem")}><X /></button>
+        </td>
+      </tr>
+    );
+  };
+
+  const editHeadCells = (withNum: boolean) => (
+    <tr>
+      {withNum && <th className="c w-num">{t("dashboard.quoteDetail.colNo")}</th>}
+      <th>{t("dashboard.quoteDetail.colDescription")}</th>
+      <th className="c w-um">{t("dashboard.quoteDetail.colUnit")}</th>
+      <th className="c w-qty">{t("dashboard.quoteDetail.colQty")}</th>
+      <th className="r w-price">{t("dashboard.quoteDetail.colUnitPrice")}</th>
+      <th className="r w-tot">{t("dashboard.quoteDetail.colTotal")}</th>
+      <th className="w-act"></th>
+    </tr>
+  );
+
+  const templateChoices = [
+    { id: "standard", label: t("dashboard.quoteDetail.templateStandardName"), desc: t("dashboard.quoteDetail.templateStandardDesc"), proOnly: false },
+    { id: "arosio", label: t("dashboard.quoteDetail.templateProfessionalName"), desc: t("dashboard.quoteDetail.templateProfessionalDesc"), proOnly: true },
+    { id: "mariagrazia", label: t("dashboard.quoteDetail.templateElegantName"), desc: t("dashboard.quoteDetail.templateElegantDesc"), proOnly: true },
+  ] as const;
+
   return (
-    <div className="space-y-6 animate-in fade-in duration-500 max-w-5xl mx-auto">
-      {/* Top bar */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Dettaglio Preventivo</h1>
-          <div className="flex items-center gap-3 mt-2 flex-wrap">
+    <div className="animate-in fade-in duration-300" style={{ maxWidth: 1120, marginInline: "auto" }}>
+      <Link href="/dashboard/quotes" className="back-link"><ArrowLeft /> {t("dashboard.quoteDetail.backToList")}</Link>
+
+      {/* Page head */}
+      <div className="page-head">
+        <div className="min-w-0">
+          <div className="title-row">
+            <h1><FileText /> {t("dashboard.quoteDetail.title")}</h1>
             {isLocked ? (
-              <Badge variant="outline" className="text-muted-foreground"><Lock className="h-3 w-3 mr-1" /> Bozza Bloccata</Badge>
+              <span className="chip chip-grey"><Lock className="h-3 w-3 mr-1" /> {t("dashboard.quoteDetail.statusDraftLocked")}</span>
             ) : (
-              <Badge variant="default" className="bg-green-600"><CheckCircle2 className="h-3 w-3 mr-1" /> Sbloccato</Badge>
+              <span className="chip chip-green"><CheckCircle2 className="h-3 w-3 mr-1" /> {t("dashboard.quoteDetail.statusUnlocked")}</span>
             )}
             {quote.status === "accepted" && (
-              <Badge variant="default" className="bg-emerald-600 gap-1">
-                <CheckCircle2 className="h-3 w-3" />
-                Accettato da {quote.acceptedByName}
-              </Badge>
+              <span className="chip chip-green"><CheckCircle2 className="h-3 w-3 mr-1" /> {t("dashboard.quoteDetail.acceptedByPrefix")} {quote.acceptedByName}</span>
             )}
             {quote.capitolatoPro && (
-              <Badge className="bg-violet-600 text-white gap-1">
-                <Star className="h-3 w-3" />
-                Capitolato Pro
-              </Badge>
+              <span className="chip chip-purple"><Star className="h-3 w-3 mr-1" /> {t("dashboard.quoteDetail.proSpecBadge")}</span>
             )}
-            <Badge variant="outline" className="gap-1 text-slate-500">
-              <LayoutTemplate className="h-3 w-3" />
-              {localTemplateId === "arosio" ? "Professionale" : localTemplateId === "mariagrazia" ? "Elegante" : "Standard"}
-            </Badge>
-            <span className="text-sm text-muted-foreground">
-              Creato il {format(new Date(quote.createdAt), "dd MMMM yyyy", { locale: it })}
-            </span>
+            <span className="chip chip-grey"><LayoutTemplate className="h-3 w-3 mr-1" /> {templateName}</span>
+          </div>
+          <div className="meta">
+            <span>{t("dashboard.quoteDetail.createdOnPrefix")} {format(new Date(quote.createdAt), "dd MMMM yyyy", { locale: dateLocale })}</span>
+            {quote.numeroPreventivoData && <span>{quote.numeroPreventivoData}</span>}
           </div>
         </div>
-        <div className="flex flex-wrap gap-2">
+        <div className="head-actions">
           {!isEditLocked && (
-            <Button
-              variant={isEditMode ? "default" : "outline"}
-              className="gap-2"
-              onClick={isEditMode ? () => setIsEditMode(false) : enterEditMode}
-            >
+            <button type="button" className={cn("btn btn-sm", isEditMode ? "btn-navy" : "btn-outline-navy")} onClick={isEditMode ? () => setIsEditMode(false) : enterEditMode}>
               {isEditMode ? <X className="h-4 w-4" /> : <Pencil className="h-4 w-4" />}
-              {isEditMode ? "Chiudi Editor" : "Modifica"}
-            </Button>
+              {isEditMode ? t("dashboard.quoteDetail.closeEditor") : t("dashboard.quoteDetail.edit")}
+            </button>
           )}
           {!isEditLocked && (
-            <Button
-              variant="outline"
-              className="gap-2"
-              onClick={() => setIsRegenOpen(true)}
-            >
-              <Sparkles className="h-4 w-4" />
-              Rigenera
-            </Button>
+            <button type="button" className="btn btn-sm btn-outline-navy" onClick={() => setIsRegenOpen(true)}>
+              <Sparkles className="h-4 w-4" /> {t("dashboard.quoteDetail.regenerate")}
+            </button>
           )}
-          <Button
-            onClick={isLocked ? handleUnlock : handleDownload}
-            disabled={generatePdf.isPending}
-            className="gap-2"
-            variant={isLocked ? "default" : "outline"}
-          >
-            {generatePdf.isPending
-              ? <Loader2 className="h-4 w-4 animate-spin" />
-              : isLocked ? <Lock className="h-4 w-4" /> : <Download className="h-4 w-4" />}
-            Scarica PDF
-          </Button>
-          {!isLocked && quote?.status === "unlocked" && (
-            <Button
-              variant="outline"
-              className="gap-2"
-              onClick={() => setIsEmailDialogOpen(true)}
-              disabled={sendPdfEmail.isPending}
-            >
-              {sendPdfEmail.isPending
-                ? <Loader2 className="h-4 w-4 animate-spin" />
-                : <Mail className="h-4 w-4" />}
-              Invia via email
-            </Button>
+          <button type="button" onClick={isLocked ? handleUnlock : handleDownload} disabled={generatePdf.isPending} className={cn("btn btn-sm", isLocked ? "btn-navy" : "btn-outline-navy")}>
+            {generatePdf.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : isLocked ? <Lock className="h-4 w-4" /> : <Download className="h-4 w-4" />}
+            {t("dashboard.quoteDetail.downloadPdf")}
+          </button>
+          {!isLocked && (
+            <button type="button" className="btn btn-sm btn-outline-navy" onClick={() => setIsEmailDialogOpen(true)} disabled={sendPdfEmail.isPending}>
+              {sendPdfEmail.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Mail className="h-4 w-4" />}
+              {t("dashboard.quoteDetail.sendByEmail")}
+            </button>
           )}
           {!isLocked && (quote?.status === "unlocked" || quote?.status === "accepted") && (
-            <Button
-              variant="outline"
-              className="gap-2"
-              onClick={handleCopyPublicLink}
-            >
-              <Copy className="h-4 w-4" />
-              Copia link per il cliente
-            </Button>
+            <button type="button" className="btn btn-sm btn-outline-navy" onClick={handleCopyPublicLink}>
+              <Copy className="h-4 w-4" /> {t("dashboard.quoteDetail.copyClientLink")}
+            </button>
           )}
           {!isLocked && quote?.status === "unlocked" && (
-            <Button
-              className="gap-2 bg-gradient-to-r from-violet-600 to-indigo-600 text-white font-bold"
-              onClick={handleAvviaCantiere}
-              disabled={avviandoCantiere}
-            >
-              {avviandoCantiere
-                ? <Loader2 className="h-4 w-4 animate-spin" />
-                : <Hammer className="h-4 w-4" />}
-              Avvia Cantiere CRM
-            </Button>
+            <button type="button" className="btn btn-sm btn-navy" style={{ background: "var(--green)" }} onClick={handleAvviaCantiere} disabled={avviandoCantiere}>
+              {avviandoCantiere ? <Loader2 className="h-4 w-4 animate-spin" /> : <Hammer className="h-4 w-4" />}
+              {t("dashboard.quoteDetail.startCrmProject")}
+            </button>
           )}
           {!quote.capitolatoPro && (
-            <Button
-              variant="outline"
-              className="gap-2 border-violet-300 text-violet-700 hover:bg-violet-50"
-              onClick={handleUpgradeToCapitolato}
-              disabled={upgradeToCapitolato.isPending}
-            >
-              {upgradeToCapitolato.isPending
-                ? <Loader2 className="h-4 w-4 animate-spin" />
-                : <Star className="h-4 w-4" />}
-              {isPro ? "Migliora in Capitolato Pro" : "Capitolato Pro"}
-              {!isPro && <Lock className="h-3 w-3 ml-1 opacity-60" />}
-            </Button>
+            <button type="button" className="btn btn-sm btn-outline-navy" onClick={handleUpgradeToCapitolato} disabled={upgradeToCapitolato.isPending}>
+              {upgradeToCapitolato.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Star className="h-4 w-4" />}
+              {isPro ? t("dashboard.quoteDetail.upgradeToProSpec") : t("dashboard.quoteDetail.proSpec")}
+              {!isPro && <Lock className="h-3 w-3 opacity-60" />}
+            </button>
           )}
           {quote.capitolatoPro && isPro && quote.status === "unlocked" && (
-            <Button
-              variant="outline"
-              className="gap-2 border-violet-400 text-violet-800 hover:bg-violet-50"
-              onClick={handleDownloadProPdf}
-              disabled={generatePdfPro.isPending}
-            >
-              {generatePdfPro.isPending
-                ? <Loader2 className="h-4 w-4 animate-spin" />
-                : <FileDown className="h-4 w-4" />}
-              Scarica PDF Professionale
-            </Button>
+            <button type="button" className="btn btn-sm btn-outline-navy" onClick={handleDownloadProPdf} disabled={generatePdfPro.isPending}>
+              {generatePdfPro.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileDown className="h-4 w-4" />}
+              {t("dashboard.quoteDetail.downloadProPdf")}
+            </button>
           )}
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         {/* Main preview card */}
-        <div className="md:col-span-2 relative">
-          <Card className="overflow-hidden bg-white text-black border shadow-lg relative">
-  
+        <div className="lg:col-span-2">
+          <section className="card" style={{ overflow: "hidden" }}>
+
             {/* Edit mode top banner */}
             {isEditMode && !isEditLocked && (
-              <div className="bg-violet-50 border-b-2 border-violet-200 px-5 py-3 flex items-center justify-between gap-4 sticky top-0 z-20">
-                <span className="text-xs font-semibold text-violet-700 flex items-center gap-1.5">
-                  <Pencil className="h-3.5 w-3.5" />
-                  Modalità modifica — clicca su qualsiasi campo per modificarlo
-                </span>
-                <div className="flex gap-2 shrink-0">
-                  <Button size="sm" variant="outline" onClick={() => setIsEditMode(false)} className="h-7 text-xs gap-1">
-                    <X className="h-3 w-3" /> Annulla
-                  </Button>
-                  <Button size="sm" onClick={handleSaveEdit} disabled={updateQuote.isPending} className="h-7 text-xs gap-1">
-                    <Save className="h-3 w-3" />
-                    {updateQuote.isPending ? "Salvataggio..." : "Salva modifiche"}
-                  </Button>
+              <div className="edit-bar">
+                <b><Pencil /> {t("dashboard.quoteDetail.editModeBanner")}</b>
+                <div className="actions">
+                  <button type="button" className="btn btn-sm btn-outline-navy" onClick={() => setIsEditMode(false)}>
+                    <X className="h-3.5 w-3.5" /> {t("dashboard.quoteDetail.cancel")}
+                  </button>
+                  <button type="button" className="btn btn-sm btn-navy" onClick={handleSaveEdit} disabled={updateQuote.isPending}>
+                    <Save className="h-3.5 w-3.5" />
+                    {updateQuote.isPending ? t("dashboard.quoteDetail.saving") : t("dashboard.quoteDetail.saveChanges")}
+                  </button>
                 </div>
               </div>
             )}
 
             {/* Template-reactive preview banner */}
             {localTemplateId !== "standard" && (
-              <div className={cn(
-                "px-5 py-2 flex items-center gap-2 text-xs font-semibold border-b",
-                localTemplateId === "arosio"
-                  ? "bg-slate-900 text-white border-slate-700"
-                  : "bg-amber-50 text-amber-900 border-amber-200"
-              )}>
-                <LayoutTemplate className="h-3.5 w-3.5 shrink-0" />
-                {localTemplateId === "arosio"
-                  ? "Template Professionale — capitolato numerato con subtotali per capitolo"
-                  : "Template Elegante — lista numerata con header OFFERTA"}
-                <span className="ml-auto opacity-60 font-normal">Anteprima • il PDF finale rispecchia questo stile</span>
+              <div className={cn("tpl-bar", localTemplateId === "arosio" ? "pro" : "elegant")}>
+                <LayoutTemplate />
+                {localTemplateId === "arosio" ? t("dashboard.quoteDetail.templateProfessionalPreview") : t("dashboard.quoteDetail.templateElegantPreview")}
+                <small>{t("dashboard.quoteDetail.previewNote")}</small>
               </div>
             )}
 
-            <div className={cn("p-8 sm:p-10", !isEditMode && "pointer-events-none select-none")}>
+            <div className={cn("doc-view paper", !isEditMode && "readonly")}>
               {/* Company header */}
-              <div className={cn(
-                "flex justify-between items-start pb-6 mb-6 border-b-2",
-                localTemplateId === "arosio" ? "border-slate-900" : "border-slate-800"
-              )}>
+              <div className="paper-head">
                 <div>
-                  {companyLogoUrl && (
-                    <img
-                      src={companyLogoUrl}
-                      alt="Logo"
-                      className="max-h-14 max-w-[160px] object-contain mb-2"
-                    />
-                  )}
-                  <h2 className="text-xl font-bold text-slate-800">{companyName}</h2>
-                  {companyVat && <div className="text-slate-500 text-xs mt-1">P.IVA: {companyVat}</div>}
-                  {companyAddress && <div className="text-slate-500 text-xs">{companyAddress}</div>}
-                  {companyPhone && <div className="text-slate-500 text-xs">{companyPhone}</div>}
-                  {companyEmail && <div className="text-slate-500 text-xs">{companyEmail}</div>}
+                  {companyLogoUrl && <img src={companyLogoUrl} alt={t("a11y.companyLogo")} />}
+                  <h2>{companyName}</h2>
+                  {companyVat && <small>{t("dashboard.quoteDetail.taxIdLabel")} {companyVat}</small>}
+                  {companyAddress && <small>{companyAddress}</small>}
+                  {companyPhone && <small>{companyPhone}</small>}
+                  {companyEmail && <small>{companyEmail}</small>}
                 </div>
-                <div className="text-right">
-                  <div className="text-xs font-semibold text-slate-400 uppercase tracking-widest">Preventivo</div>
-                  {quote.numeroPreventivoData && (
-                    <div className="text-sm font-bold text-slate-700 mt-1">{quote.numeroPreventivoData}</div>
-                  )}
-                  <div className="text-xs text-slate-500 mt-1">Data: {format(new Date(quote.createdAt), "dd/MM/yyyy")}</div>
+                <div className="num">
+                  <span className="eyebrow">{t("dashboard.quoteDetail.quoteLabel")}</span>
+                  {quote.numeroPreventivoData && <b>{quote.numeroPreventivoData}</b>}
+                  <small>{t("dashboard.quoteDetail.dateLabel")} {format(new Date(quote.createdAt), "yyyy-MM-dd")}</small>
                 </div>
               </div>
 
               {/* Document title */}
               {isEditMode ? (
-                <div className="text-center mb-2 space-y-1">
-                  <input
-                    value={editTitolo1}
-                    onChange={e => setEditTitolo1(e.target.value)}
-                    className="w-full text-sm font-bold uppercase tracking-wide text-slate-800 text-center bg-transparent border border-transparent rounded px-1 py-0.5 hover:border-violet-300 focus:border-violet-400 focus:outline-none"
-                    placeholder="Titolo documento..."
-                  />
-                  <input
-                    value={editTitolo2}
-                    onChange={e => setEditTitolo2(e.target.value)}
-                    className="w-full text-xs text-slate-500 italic text-center bg-transparent border border-transparent rounded px-1 py-0.5 hover:border-violet-300 focus:border-violet-400 focus:outline-none"
-                    placeholder="Sottotitolo / oggetto..."
-                  />
+                <div className="paper-title">
+                  <input value={editTitolo1} onChange={e => setEditTitolo1(e.target.value)} className="inl t1" placeholder={t("dashboard.quoteDetail.titlePlaceholder")} aria-label={t("dashboard.quoteDetail.titlePlaceholder")} />
+                  <input value={editTitolo2} onChange={e => setEditTitolo2(e.target.value)} className="inl t2" placeholder={t("dashboard.quoteDetail.subtitlePlaceholder")} aria-label={t("dashboard.quoteDetail.subtitlePlaceholder")} />
                 </div>
               ) : (
                 quote.titoloPreventivoRiga1 && (
-                  <div className="text-center mb-1">
-                    <div className="text-sm font-bold uppercase tracking-wide text-slate-800">{quote.titoloPreventivoRiga1}</div>
-                    {quote.titoloPreventivoRiga2 && (
-                      <div className="text-xs text-slate-500 italic mt-0.5">{quote.titoloPreventivoRiga2}</div>
-                    )}
+                  <div className="paper-title">
+                    <b>{quote.titoloPreventivoRiga1}</b>
+                    {quote.titoloPreventivoRiga2 && <i>{quote.titoloPreventivoRiga2}</i>}
                   </div>
                 )
               )}
 
               {/* Client section */}
-              <div className="mt-5 mb-6">
-                <div className="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Spett.le Committente</div>
+              <div className="paper-sec">
+                <span className="eyebrow">{t("dashboard.quoteDetail.billTo")}</span>
                 {isEditMode ? (
-                  <div className="space-y-2 bg-violet-50/60 border border-violet-200 rounded-lg p-3">
+                  <div className="paper-box edit">
                     {/* Saved client selector */}
                     {savedClients && savedClients.length > 0 && (
-                      <div className="flex items-center gap-2 mb-1">
-                        <Users className="h-3.5 w-3.5 text-violet-500 shrink-0" />
-                        <select
-                          value=""
-                          onChange={e => {
-                            const client = savedClients.find(c => c.id === e.target.value);
-                            if (client) {
-                              setEditClientNome(client.clientName || "");
-                              setEditClientIndirizzo(client.indirizzo || "");
-                              setEditClientCitta(client.citta || "");
-                              setEditClientCap("");
-                              setEditClientProvincia(client.provincia || "");
-                              setEditClientCF(client.codiceFiscale || "");
-                              setEditClientPIVA(client.partitaIva || "");
-                            }
-                          }}
-                          className="flex-1 text-xs text-slate-700 bg-white border border-violet-200 rounded px-2 py-1.5 focus:outline-none focus:border-violet-400"
-                        >
-                          <option value="" disabled>Seleziona cliente salvato...</option>
-                          {savedClients.map(c => (
-                            <option key={c.id} value={c.id}>{c.clientName}{c.citta ? ` — ${c.citta}` : ""}</option>
-                          ))}
-                        </select>
-                      </div>
+                      <select
+                        value=""
+                        onChange={e => {
+                          const client = savedClients.find(c => c.id === e.target.value);
+                          if (client) {
+                            setEditClientNome(client.clientName || "");
+                            setEditClientIndirizzo(client.indirizzo || "");
+                            setEditClientCity(client.city || "");
+                            setEditClientPostalCode(client.postalCode || "");
+                            setEditClientProvince(client.province || "");
+                            setEditClientBusinessNumber(client.businessNumber || "");
+                            setEditClientPIVA(client.partitaIva || "");
+                          }
+                        }}
+                        className="inp-sm full"
+                        aria-label={t("dashboard.quoteDetail.selectSavedClient")}
+                      >
+                        <option value="" disabled>{t("dashboard.quoteDetail.selectSavedClient")}</option>
+                        {savedClients.map(c => (
+                          <option key={c.id} value={c.id}>{c.clientName}{c.city ? ` — ${c.city}` : ""}</option>
+                        ))}
+                      </select>
                     )}
-                    <div className="grid grid-cols-2 gap-2">
-                      <input
-                        value={editClientNome}
-                        onChange={e => setEditClientNome(e.target.value)}
-                        placeholder="Nome / Ragione Sociale"
-                        className="col-span-2 text-sm text-slate-800 bg-white border border-violet-200 rounded px-2 py-1.5 focus:outline-none focus:border-violet-400"
-                      />
-                      <input
-                        value={editClientIndirizzo}
-                        onChange={e => setEditClientIndirizzo(e.target.value)}
-                        placeholder="Via / Piazza"
-                        className="col-span-2 text-xs text-slate-700 bg-white border border-violet-200 rounded px-2 py-1.5 focus:outline-none focus:border-violet-400"
-                      />
-                      <input
-                        value={editClientCitta}
-                        onChange={e => setEditClientCitta(e.target.value)}
-                        placeholder="Comune"
-                        className="text-xs text-slate-700 bg-white border border-violet-200 rounded px-2 py-1.5 focus:outline-none focus:border-violet-400"
-                      />
-                      <div className="flex gap-1">
-                        <input
-                          value={editClientCap}
-                          onChange={e => setEditClientCap(e.target.value)}
-                          placeholder="CAP"
-                          maxLength={5}
-                          className="w-20 text-xs text-slate-700 bg-white border border-violet-200 rounded px-2 py-1.5 focus:outline-none focus:border-violet-400"
-                        />
-                        <input
-                          value={editClientProvincia}
-                          onChange={e => setEditClientProvincia(e.target.value.toUpperCase())}
-                          placeholder="Prov"
-                          maxLength={2}
-                          className="w-14 text-xs text-slate-700 bg-white border border-violet-200 rounded px-2 py-1.5 focus:outline-none focus:border-violet-400"
-                        />
-                      </div>
-                      <input
-                        value={editClientCF}
-                        onChange={e => setEditClientCF(e.target.value.toUpperCase())}
-                        placeholder="Codice Fiscale"
-                        maxLength={16}
-                        className="text-xs text-slate-700 bg-white border border-violet-200 rounded px-2 py-1.5 focus:outline-none focus:border-violet-400"
-                      />
-                      <input
-                        value={editClientPIVA}
-                        onChange={e => setEditClientPIVA(e.target.value)}
-                        placeholder="Partita IVA"
-                        maxLength={13}
-                        className="text-xs text-slate-700 bg-white border border-violet-200 rounded px-2 py-1.5 focus:outline-none focus:border-violet-400"
-                      />
+                    <input value={editClientNome} onChange={e => setEditClientNome(e.target.value)} placeholder={t("dashboard.quoteDetail.nameBusinessNamePlaceholder")} className="inp-sm full" aria-label={t("dashboard.quoteDetail.nameBusinessNamePlaceholder")} />
+                    <input value={editClientIndirizzo} onChange={e => setEditClientIndirizzo(e.target.value)} placeholder={t("dashboard.quoteDetail.streetPlaceholder")} className="inp-sm full" aria-label={t("dashboard.quoteDetail.streetPlaceholder")} />
+                    <input value={editClientCity} onChange={e => setEditClientCity(e.target.value)} placeholder={t("dashboard.new.client.city")} className="inp-sm" aria-label={t("dashboard.new.client.city")} />
+                    <div className="two">
+                      <input value={editClientProvince} onChange={e => setEditClientProvince(e.target.value.toUpperCase())} placeholder={t("a11y.provincePlaceholder")} maxLength={2} className="inp-sm" aria-label={t("contracts.detail.province")} />
+                      <input value={editClientPostalCode} onChange={e => setEditClientPostalCode(e.target.value.toUpperCase())} placeholder={t("dashboard.new.client.postalCode")} maxLength={7} className="inp-sm" aria-label={t("dashboard.new.client.postalCode")} />
                     </div>
+                    <input value={editClientBusinessNumber} onChange={e => setEditClientBusinessNumber(e.target.value.toUpperCase())} placeholder={t("dashboard.new.client.businessNumber")} maxLength={16} className="inp-sm" aria-label={t("dashboard.new.client.businessNumber")} />
+                    <input value={editClientPIVA} onChange={e => setEditClientPIVA(e.target.value)} placeholder={t("admin.gstHstNumber")} maxLength={15} className="inp-sm" aria-label={t("admin.gstHstNumber")} />
                   </div>
                 ) : isEditingClient ? (
-                  <div className="space-y-2 bg-slate-50 p-4 rounded border border-slate-200">
-                    <Input value={clientName} onChange={e => setClientName(e.target.value)} placeholder="Nome / Ragione Sociale" className="bg-white" />
-                    <Input value={clientAddress} onChange={e => setClientAddress(e.target.value)} placeholder="Indirizzo" className="bg-white" />
-                    <div className="flex gap-2 justify-end">
-                      <Button variant="outline" size="sm" onClick={() => setIsEditingClient(false)}>Annulla</Button>
-                      <Button size="sm" onClick={handleSaveClient} disabled={updateQuote.isPending}><Save className="h-4 w-4 mr-2" />Salva</Button>
+                  <div className="paper-box">
+                    <div className="stack-sm">
+                      <input value={clientName} onChange={e => setClientName(e.target.value)} placeholder={t("dashboard.quoteDetail.nameBusinessNamePlaceholder")} className="inp-sm" aria-label={t("dashboard.quoteDetail.nameBusinessNamePlaceholder")} />
+                      <input value={clientAddress} onChange={e => setClientAddress(e.target.value)} placeholder={t("dashboard.quoteDetail.addressPlaceholder")} className="inp-sm" aria-label={t("dashboard.quoteDetail.addressPlaceholder")} />
+                    </div>
+                    <div className="actions">
+                      <button type="button" className="btn btn-sm btn-outline-navy" onClick={() => setIsEditingClient(false)}>{t("dashboard.quoteDetail.cancel")}</button>
+                      <button type="button" className="btn btn-sm btn-navy" onClick={handleSaveClient} disabled={updateQuote.isPending}><Save className="h-4 w-4" /> {t("dashboard.quoteDetail.save")}</button>
                     </div>
                   </div>
                 ) : (
-                  <div className="group relative flex items-start gap-2 bg-slate-50 border border-slate-200 rounded px-4 py-3">
-                    <div className="flex-1">
-                      <div className="font-semibold text-slate-800">{quote.clientData?.nome || "——"}</div>
-                      {quote.clientData?.indirizzo && <div className="text-slate-500 text-sm">{quote.clientData.indirizzo}</div>}
-                      {quote.clientData?.citta && (
-                        <div className="text-slate-400 text-xs mt-0.5">
-                          {[quote.clientData.citta, quote.clientData.cap, quote.clientData.provincia].filter(Boolean).join(" ")}
-                        </div>
-                      )}
-                      {(quote.clientData?.codiceFiscale || quote.clientData?.partitaIva) && (
-                        <div className="text-slate-400 text-xs">
-                          {quote.clientData.codiceFiscale && `C.F.: ${quote.clientData.codiceFiscale}`}
-                          {quote.clientData.codiceFiscale && quote.clientData.partitaIva && " · "}
-                          {quote.clientData.partitaIva && `P.IVA: ${quote.clientData.partitaIva}`}
-                        </div>
-                      )}
-                    </div>
+                  <div className="paper-box">
+                    <div className="who">{quote.clientData?.nome || "——"}</div>
+                    {quote.clientData?.indirizzo && <div className="line">{quote.clientData.indirizzo}</div>}
+                    {quote.clientData?.city && (
+                      <div className="line faint">
+                        {[quote.clientData.city, quote.clientData.province, quote.clientData.postalCode].filter(Boolean).join(" ")}
+                      </div>
+                    )}
+                    {(quote.clientData?.businessNumber || quote.clientData?.partitaIva) && (
+                      <div className="line faint">
+                        {quote.clientData.businessNumber && `BN: ${quote.clientData.businessNumber}`}
+                        {quote.clientData.businessNumber && quote.clientData.partitaIva && " · "}
+                        {quote.clientData.partitaIva && `GST/HST: ${quote.clientData.partitaIva}`}
+                      </div>
+                    )}
                     {!isEditLocked && (
-                      <Button variant="ghost" size="icon" className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity shrink-0" onClick={() => setIsEditingClient(true)}>
-                        <Edit2 className="h-3.5 w-3.5" />
-                      </Button>
+                      <button type="button" className="ic-btn hover-act" onClick={() => setIsEditingClient(true)} aria-label={t("dashboard.quoteDetail.edit")}>
+                        <Edit2 />
+                      </button>
                     )}
                   </div>
                 )}
@@ -938,17 +883,13 @@ export default function QuoteDetail() {
 
               {/* Attachments */}
               {quote.attachments && quote.attachments.length > 0 && (
-                <div className="mb-6">
-                  <div className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">Allegati</div>
+                <div className="paper-sec">
+                  <span className="eyebrow">{t("dashboard.quoteDetail.attachments")}</span>
                   <div className="flex flex-wrap gap-2">
                     {quote.attachments.map(att => {
                       const isImage = att.mimeType?.startsWith("image/");
-                      const isPdf = att.mimeType === "application/pdf";
                       const isXlsx = att.mimeType === "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
-                      const icon = isImage ? <ImageIcon className="h-3.5 w-3.5 text-blue-500" /> :
-                        isPdf ? <FileText className="h-3.5 w-3.5 text-red-500" /> :
-                        isXlsx ? <FileSpreadsheet className="h-3.5 w-3.5 text-green-600" /> :
-                        <FileText className="h-3.5 w-3.5 text-blue-600" />;
+                      const icon = isImage ? <ImageIcon className="ic" /> : isXlsx ? <FileSpreadsheet className="ic" /> : <FileText className="ic" />;
                       const sizeLabel = att.fileSize
                         ? att.fileSize < 1024
                           ? `${att.fileSize} B`
@@ -962,12 +903,12 @@ export default function QuoteDetail() {
                           href={`/api/storage/objects/${att.fileUrl.replace(/^\/objects\//, "")}`}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-gray-200 bg-gray-50 text-xs text-gray-700 hover:border-violet-300 hover:text-violet-600 transition-colors shrink-0"
+                          className="att-doc link"
                           title={att.fileName}
                         >
                           {icon}
-                          <span className="truncate max-w-[140px]">{att.fileName}</span>
-                          {sizeLabel && <span className="text-gray-400">{sizeLabel}</span>}
+                          <span>{att.fileName}</span>
+                          {sizeLabel && <small>{sizeLabel}</small>}
                         </a>
                       );
                     })}
@@ -977,140 +918,64 @@ export default function QuoteDetail() {
 
               {/* Quadro Sintetico — shown for Standard template in edit mode or view mode */}
               {localTemplateId === "standard" && (isEditMode ? editCapitoli.length > 0 : hasCapitoli) && (
-                <div className="mb-6">
-                  <div className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">1. Quadro Sintetico</div>
-                  <table className="w-full text-xs">
-                    <thead>
-                      <tr className="bg-slate-800 text-white">
-                        <th className="py-2 px-3 text-left font-semibold">Capitolo</th>
-                        <th className="py-2 px-3 text-right font-semibold">Importo netto</th>
-                        <th className="py-2 px-3 text-left font-semibold hidden sm:table-cell">Osservazione</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {(isEditMode ? editCapitoli : capitoli).map((cap, i) => {
-                        const sub = isEditMode
-                          ? (cap as typeof editCapitoli[0]).voci.reduce((s, v) => s + Number(v.quantita) * Number(v.prezzoUnitario), 0)
-                          : (cap as typeof capitoli[0]).subtotale;
-                        return (
-                          <tr key={cap.lettera} className={i % 2 === 0 ? "bg-white" : "bg-slate-50"}>
-                            <td className="py-2 px-3 text-slate-700">{cap.lettera}. {cap.titolo}</td>
-                            <td className="py-2 px-3 text-right font-medium text-slate-800 whitespace-nowrap">{formatCurrency(sub)}</td>
-                            <td className="py-2 px-3 text-slate-400 italic hidden sm:table-cell">{cap.osservazione ?? "Voce ordinaria"}</td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
+                <div className="paper-sec">
+                  <span className="eyebrow">{t("dashboard.quoteDetail.summaryOverview")}</span>
+                  <div className="paper-tw" tabIndex={0}>
+                    <table className="ptbl">
+                      <thead>
+                        <tr>
+                          <th>{t("dashboard.quoteDetail.chapterCol")}</th>
+                          <th className="r w-tot">{t("dashboard.quoteDetail.netAmountCol")}</th>
+                          <th className="hidden sm:table-cell">{t("dashboard.quoteDetail.noteCol")}</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {(isEditMode ? editCapitoli : capitoli).map((cap) => {
+                          const sub = isEditMode
+                            ? (cap as typeof editCapitoli[0]).voci.reduce((s, v) => s + Number(v.quantita) * Number(v.prezzoUnitario), 0)
+                            : (cap as typeof capitoli[0]).subtotale;
+                          return (
+                            <tr key={cap.lettera}>
+                              <td>{cap.lettera}. {cap.titolo}</td>
+                              <td className="r amt">{formatCurrency(sub)}</td>
+                              <td className="note hidden sm:table-cell">{cap.osservazione ?? t("dashboard.quoteDetail.ordinaryItemDefault")}</td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
               )}
 
               {/* Chapter detail sections — branched by template */}
               {isEditMode && localTemplateId === "arosio" ? (
-                /* ── AROSIO EDITOR: dark navy headers, numbered items, subtotals ── */
-                <div className="mb-6">
-                  <div className="overflow-x-auto border border-slate-200 rounded-lg">
-                    <table className="w-full text-xs border-collapse">
-                      <thead>
-                        <tr className="bg-slate-900 text-white">
-                          <th className="py-2 px-3 text-center w-10 font-semibold">N°</th>
-                          <th className="py-2 px-3 text-left font-semibold">Descrizione</th>
-                          <th className="py-2 px-1 text-center w-12 font-semibold">U.M.</th>
-                          <th className="py-2 px-1 text-center w-12 font-semibold">Q.tà</th>
-                          <th className="py-2 px-1 text-right w-24 font-semibold">P.U. (€)</th>
-                          <th className="py-2 px-3 text-right w-24 font-semibold">Totale</th>
-                          <th className="w-6"></th>
-                        </tr>
-                      </thead>
+                /* ── AROSIO EDITOR: numbered sections, navy headers, subtotals ── */
+                <div className="paper-sec">
+                  <div className="paper-tw" tabIndex={0}>
+                    <table className="ptbl">
+                      <thead>{editHeadCells(true)}</thead>
                       <tbody>
                         {editCapitoli.map((cap, ci) => {
                           const capSub = cap.voci.reduce((s, v) => s + Number(v.quantita) * Number(v.prezzoUnitario), 0);
                           return (
                             <Fragment key={ci}>
-                              <tr>
-                                <td colSpan={7} className="py-0 px-0 bg-slate-800">
-                                  <div className="flex items-center gap-2 px-3 py-1.5">
-                                    <span className="text-white font-bold text-xs whitespace-nowrap">
-                                      {String(ci + 1).padStart(2, "0")}_
-                                    </span>
-                                    <input
-                                      value={cap.titolo}
-                                      onChange={e => updateCapitolo(ci, "titolo", e.target.value)}
-                                      className="flex-1 text-white font-bold text-xs uppercase bg-transparent border border-transparent rounded px-1 py-0.5 hover:border-slate-500 focus:border-slate-300 focus:outline-none placeholder-slate-400 tracking-wider min-w-0"
-                                      placeholder="TITOLO CAPITOLO..."
-                                    />
-                                    <span className="text-slate-300 text-xs whitespace-nowrap shrink-0">{formatCurrency(capSub)}</span>
-                                    <button
-                                      onClick={() => removeCapitolo(ci)}
-                                      className="text-slate-400 hover:text-red-400 p-0.5 rounded transition-colors shrink-0"
-                                      title="Elimina capitolo"
-                                    >
-                                      <Trash2 className="h-3.5 w-3.5" />
-                                    </button>
+                              <tr className="chap">
+                                <td colSpan={7}>
+                                  <div className="row">
+                                    <span>{String(ci + 1).padStart(2, "0")}_</span>
+                                    <input value={cap.titolo} onChange={e => updateCapitolo(ci, "titolo", e.target.value)} className="inl light" placeholder={t("dashboard.quoteDetail.chapterTitlePlaceholder")} aria-label={t("dashboard.quoteDetail.chapterTitlePlaceholder")} />
+                                    <span className="amt">{formatCurrency(capSub)}</span>
+                                    <button type="button" onClick={() => removeCapitolo(ci)} className="ic-btn" title={t("dashboard.quoteDetail.deleteChapter")} aria-label={t("dashboard.quoteDetail.deleteChapter")}><Trash2 /></button>
                                   </div>
                                 </td>
                               </tr>
-                              {cap.voci.map((voce, vi) => {
-                                const vTot = Number(voce.quantita) * Number(voce.prezzoUnitario);
-                                return (
-                                  <tr key={vi} className={vi % 2 === 0 ? "bg-white" : "bg-slate-50"}>
-                                    <td className="py-1 px-3 text-center text-slate-500 font-medium whitespace-nowrap">{ci + 1}.{vi + 1}</td>
-                                    <td className="py-1 px-2">
-                                      <input
-                                        value={voce.descrizione}
-                                        onChange={e => updateVoce(ci, vi, "descrizione", e.target.value)}
-                                        className="w-full bg-transparent border border-transparent rounded px-1 py-0.5 hover:border-violet-200 focus:border-violet-400 focus:outline-none text-slate-700"
-                                        placeholder="Descrizione..."
-                                      />
-                                    </td>
-                                    <td className="py-1 px-1">
-                                      <input
-                                        value={voce.um}
-                                        onChange={e => updateVoce(ci, vi, "um", e.target.value)}
-                                        className="w-full text-center bg-transparent border border-transparent rounded px-1 py-0.5 hover:border-violet-200 focus:border-violet-400 focus:outline-none text-slate-600"
-                                      />
-                                    </td>
-                                    <td className="py-1 px-1">
-                                      <input
-                                        type="number"
-                                        value={voce.quantita}
-                                        onChange={e => updateVoce(ci, vi, "quantita", e.target.value === "" ? 0 : Number(e.target.value))}
-                                        className="w-full text-center bg-transparent border border-transparent rounded px-1 py-0.5 hover:border-violet-200 focus:border-violet-400 focus:outline-none text-slate-600"
-                                        min={0} step={0.01}
-                                      />
-                                    </td>
-                                    <td className="py-1 px-1">
-                                      <input
-                                        type="number"
-                                        value={voce.prezzoUnitario}
-                                        onChange={e => updateVoce(ci, vi, "prezzoUnitario", e.target.value === "" ? 0 : Number(e.target.value))}
-                                        className="w-full text-right bg-transparent border border-transparent rounded px-1 py-0.5 hover:border-violet-200 focus:border-violet-400 focus:outline-none text-slate-600"
-                                        min={0} step={0.01}
-                                      />
-                                    </td>
-                                    <td className="py-1 px-3 text-right font-medium text-slate-800 whitespace-nowrap">{formatCurrency(vTot)}</td>
-                                    <td className="py-1 px-1">
-                                      <button
-                                        onClick={() => removeVoce(ci, vi)}
-                                        className="text-red-300 hover:text-red-500 p-0.5 rounded hover:bg-red-50 transition-colors"
-                                        title="Elimina voce"
-                                      >
-                                        <X className="h-3 w-3" />
-                                      </button>
-                                    </td>
-                                  </tr>
-                                );
-                              })}
-                              <tr className="bg-slate-200 border-t border-slate-300">
-                                <td colSpan={5} className="py-1.5 px-3">
-                                  <button
-                                    onClick={() => addVoce(ci)}
-                                    className="text-xs text-violet-600 hover:text-violet-800 font-medium flex items-center gap-1"
-                                  >
-                                    <Plus className="h-3 w-3" /> Aggiungi voce
-                                  </button>
+                              {cap.voci.map((voce, vi) => renderEditVoceRow(ci, vi, voce, `${ci + 1}.${vi + 1}`))}
+                              <tr className="sum">
+                                <td colSpan={5}>
+                                  <button type="button" onClick={() => addVoce(ci)} className="text-link"><Plus /> {t("dashboard.quoteDetail.addItem")}</button>
                                 </td>
-                                <td className="py-1.5 px-3 text-right font-bold text-slate-900 whitespace-nowrap">{formatCurrency(capSub)}</td>
+                                <td className="r amt">{formatCurrency(capSub)}</td>
                                 <td></td>
                               </tr>
                             </Fragment>
@@ -1119,29 +984,14 @@ export default function QuoteDetail() {
                       </tbody>
                     </table>
                   </div>
-                  <button
-                    onClick={addCapitolo}
-                    className="mt-3 w-full py-2.5 text-xs text-violet-600 hover:text-violet-800 font-medium border-2 border-dashed border-violet-200 hover:border-violet-400 rounded-lg transition-colors flex items-center justify-center gap-1.5"
-                  >
-                    <Plus className="h-3.5 w-3.5" /> Aggiungi capitolo
-                  </button>
+                  <button type="button" onClick={addCapitolo} className="add-dashed"><Plus /> {t("dashboard.quoteDetail.addChapter")}</button>
                 </div>
               ) : isEditMode && localTemplateId === "mariagrazia" ? (
-                /* ── MARIAGRAZIA EDITOR: grouped by chapter, flat table style ── */
-                <div className="mb-6">
-                  <div className="overflow-x-auto border border-slate-200 rounded-lg">
-                    <table className="w-full text-xs border-collapse">
-                      <thead>
-                        <tr className="bg-slate-700 text-white">
-                          <th className="py-2 px-2 text-center w-8 font-semibold">N°</th>
-                          <th className="py-2 px-3 text-left font-semibold">Descrizione</th>
-                          <th className="py-2 px-1 text-center w-12 font-semibold">U.M.</th>
-                          <th className="py-2 px-1 text-center w-12 font-semibold">Q.tà</th>
-                          <th className="py-2 px-1 text-right w-24 font-semibold">P.U. (€)</th>
-                          <th className="py-2 px-3 text-right w-24 font-semibold">Totale</th>
-                          <th className="w-6"></th>
-                        </tr>
-                      </thead>
+                /* ── MARIAGRAZIA EDITOR: grouped by chapter, flat numbering ── */
+                <div className="paper-sec">
+                  <div className="paper-tw" tabIndex={0}>
+                    <table className="ptbl">
+                      <thead>{editHeadCells(true)}</thead>
                       <tbody>
                         {(() => {
                           let globalIdx = 0;
@@ -1149,88 +999,20 @@ export default function QuoteDetail() {
                             const capSub = cap.voci.reduce((s, v) => s + Number(v.quantita) * Number(v.prezzoUnitario), 0);
                             return (
                               <Fragment key={ci}>
-                                <tr>
-                                  <td colSpan={7} className="py-0 px-0 bg-slate-600">
-                                    <div className="flex items-center gap-2 px-3 py-1.5">
-                                      <input
-                                        value={cap.titolo}
-                                        onChange={e => updateCapitolo(ci, "titolo", e.target.value)}
-                                        className="flex-1 text-white font-semibold text-xs bg-transparent border border-transparent rounded px-1 py-0.5 hover:border-slate-400 focus:border-slate-200 focus:outline-none placeholder-slate-300 min-w-0"
-                                        placeholder="Titolo capitolo..."
-                                      />
-                                      <span className="text-slate-200 text-xs whitespace-nowrap shrink-0">{formatCurrency(capSub)}</span>
-                                      <button
-                                        onClick={() => removeCapitolo(ci)}
-                                        className="text-slate-400 hover:text-red-400 p-0.5 rounded transition-colors shrink-0"
-                                        title="Elimina capitolo"
-                                      >
-                                        <Trash2 className="h-3.5 w-3.5" />
-                                      </button>
+                                <tr className="chap soft">
+                                  <td colSpan={7}>
+                                    <div className="row">
+                                      <input value={cap.titolo} onChange={e => updateCapitolo(ci, "titolo", e.target.value)} className="inl" placeholder={t("dashboard.quoteDetail.chapterTitlePlaceholderLower")} aria-label={t("dashboard.quoteDetail.chapterTitlePlaceholderLower")} />
+                                      <span className="amt">{formatCurrency(capSub)}</span>
+                                      <button type="button" onClick={() => removeCapitolo(ci)} className="ic-btn danger" title={t("dashboard.quoteDetail.deleteChapter")} aria-label={t("dashboard.quoteDetail.deleteChapter")}><Trash2 /></button>
                                     </div>
                                   </td>
                                 </tr>
-                                {cap.voci.map((voce, vi) => {
-                                  const rowNum = ++globalIdx;
-                                  const vTot = Number(voce.quantita) * Number(voce.prezzoUnitario);
-                                  return (
-                                    <tr key={vi} className={vi % 2 === 0 ? "bg-white" : "bg-slate-50"}>
-                                      <td className="py-1 px-2 text-center font-semibold text-slate-500">{rowNum}</td>
-                                      <td className="py-1 px-2">
-                                        <input
-                                          value={voce.descrizione}
-                                          onChange={e => updateVoce(ci, vi, "descrizione", e.target.value)}
-                                          className="w-full bg-transparent border border-transparent rounded px-1 py-0.5 hover:border-violet-200 focus:border-violet-400 focus:outline-none text-slate-700"
-                                          placeholder="Descrizione..."
-                                        />
-                                      </td>
-                                      <td className="py-1 px-1">
-                                        <input
-                                          value={voce.um}
-                                          onChange={e => updateVoce(ci, vi, "um", e.target.value)}
-                                          className="w-full text-center bg-transparent border border-transparent rounded px-1 py-0.5 hover:border-violet-200 focus:border-violet-400 focus:outline-none text-slate-600"
-                                        />
-                                      </td>
-                                      <td className="py-1 px-1">
-                                        <input
-                                          type="number"
-                                          value={voce.quantita}
-                                          onChange={e => updateVoce(ci, vi, "quantita", e.target.value === "" ? 0 : Number(e.target.value))}
-                                          className="w-full text-center bg-transparent border border-transparent rounded px-1 py-0.5 hover:border-violet-200 focus:border-violet-400 focus:outline-none text-slate-600"
-                                          min={0} step={0.01}
-                                        />
-                                      </td>
-                                      <td className="py-1 px-1">
-                                        <input
-                                          type="number"
-                                          value={voce.prezzoUnitario}
-                                          onChange={e => updateVoce(ci, vi, "prezzoUnitario", e.target.value === "" ? 0 : Number(e.target.value))}
-                                          className="w-full text-right bg-transparent border border-transparent rounded px-1 py-0.5 hover:border-violet-200 focus:border-violet-400 focus:outline-none text-slate-600"
-                                          min={0} step={0.01}
-                                        />
-                                      </td>
-                                      <td className="py-1 px-3 text-right font-medium text-slate-800 whitespace-nowrap">{formatCurrency(vTot)}</td>
-                                      <td className="py-1 px-1">
-                                        <button
-                                          onClick={() => removeVoce(ci, vi)}
-                                          className="text-red-300 hover:text-red-500 p-0.5 rounded hover:bg-red-50 transition-colors"
-                                          title="Elimina voce"
-                                        >
-                                          <X className="h-3 w-3" />
-                                        </button>
-                                      </td>
-                                    </tr>
-                                  );
-                                })}
-                                <tr className="bg-slate-100 border-t border-slate-200">
-                                  <td colSpan={6} className="py-1.5 px-3">
-                                    <button
-                                      onClick={() => addVoce(ci)}
-                                      className="text-xs text-violet-600 hover:text-violet-800 font-medium flex items-center gap-1"
-                                    >
-                                      <Plus className="h-3 w-3" /> Aggiungi voce
-                                    </button>
+                                {cap.voci.map((voce, vi) => renderEditVoceRow(ci, vi, voce, String(++globalIdx)))}
+                                <tr className="sum">
+                                  <td colSpan={7}>
+                                    <button type="button" onClick={() => addVoce(ci)} className="text-link"><Plus /> {t("dashboard.quoteDetail.addItem")}</button>
                                   </td>
-                                  <td></td>
                                 </tr>
                               </Fragment>
                             );
@@ -1239,214 +1021,94 @@ export default function QuoteDetail() {
                       </tbody>
                     </table>
                   </div>
-                  <button
-                    onClick={addCapitolo}
-                    className="mt-3 w-full py-2.5 text-xs text-violet-600 hover:text-violet-800 font-medium border-2 border-dashed border-violet-200 hover:border-violet-400 rounded-lg transition-colors flex items-center justify-center gap-1.5"
-                  >
-                    <Plus className="h-3.5 w-3.5" /> Aggiungi capitolo
-                  </button>
+                  <button type="button" onClick={addCapitolo} className="add-dashed"><Plus /> {t("dashboard.quoteDetail.addChapter")}</button>
                 </div>
               ) : isEditMode ? (
                 /* ── STANDARD INLINE EDIT MODE ── */
-                <div className="mb-6">
-                  <div className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3">2. Computo Metrico Dettagliato</div>
-                  <div className="space-y-4">
+                <div className="paper-sec">
+                  <span className="eyebrow">{t("dashboard.quoteDetail.detailedBreakdown")}</span>
+                  <div>
                     {editCapitoli.map((cap, capIdx) => {
                       const capSub = cap.voci.reduce((s, v) => s + Number(v.quantita) * Number(v.prezzoUnitario), 0);
                       return (
-                        <div key={capIdx} className="border-2 border-violet-200 rounded-lg overflow-hidden">
+                        <div key={capIdx} className="chap-block edit">
                           {/* Chapter header — editable */}
-                          <div className="bg-violet-50 px-3 py-2 flex items-center gap-2 border-b border-violet-100">
-                            <span className="text-sm font-bold text-slate-400 shrink-0">{cap.lettera}.</span>
-                            <input
-                              value={cap.titolo}
-                              onChange={e => updateCapitolo(capIdx, "titolo", e.target.value)}
-                              className="flex-1 text-sm font-semibold text-slate-800 bg-transparent border border-transparent rounded px-1 py-0.5 hover:border-violet-300 focus:border-violet-400 focus:outline-none min-w-0"
-                              placeholder="Titolo capitolo..."
-                            />
-                            <input
-                              value={cap.osservazione ?? ""}
-                              onChange={e => updateCapitolo(capIdx, "osservazione", e.target.value)}
-                              className="w-28 text-xs text-slate-500 bg-transparent border border-transparent rounded px-1 py-0.5 hover:border-violet-300 focus:border-violet-400 focus:outline-none hidden sm:block"
-                              placeholder="Osservazione"
-                            />
-                            <span className="text-xs font-semibold text-slate-600 whitespace-nowrap shrink-0">{formatCurrency(capSub)}</span>
-                            <button
-                              onClick={() => removeCapitolo(capIdx)}
-                              className="text-red-300 hover:text-red-500 hover:bg-red-50 rounded p-1 transition-colors shrink-0"
-                              title="Elimina capitolo"
-                            >
-                              <Trash2 className="h-3.5 w-3.5" />
-                            </button>
+                          <div className="chap-head">
+                            <span className="let">{cap.lettera}.</span>
+                            <input value={cap.titolo} onChange={e => updateCapitolo(capIdx, "titolo", e.target.value)} className="inl" placeholder={t("dashboard.quoteDetail.chapterTitlePlaceholderLower")} aria-label={t("dashboard.quoteDetail.chapterTitlePlaceholderLower")} />
+                            <input value={cap.osservazione ?? ""} onChange={e => updateCapitolo(capIdx, "osservazione", e.target.value)} className="inl obs" placeholder={t("dashboard.quoteDetail.notePlaceholder")} aria-label={t("dashboard.quoteDetail.notePlaceholder")} />
+                            <span className="amt">{formatCurrency(capSub)}</span>
+                            <button type="button" onClick={() => removeCapitolo(capIdx)} className="ic-btn danger" title={t("dashboard.quoteDetail.deleteChapter")} aria-label={t("dashboard.quoteDetail.deleteChapter")}><Trash2 /></button>
                           </div>
-                          {/* Voci table — fully editable */}
-                          <div className="overflow-x-auto">
-                            <table className="w-full text-xs">
-                              <thead>
-                                <tr className="bg-slate-700 text-white">
-                                  <th className="py-1.5 px-3 text-left font-medium">Descrizione</th>
-                                  <th className="py-1.5 px-1 text-center font-medium w-14">U.M.</th>
-                                  <th className="py-1.5 px-1 text-center font-medium w-16">Q.tà</th>
-                                  <th className="py-1.5 px-1 text-right font-medium w-24">P.u. (€)</th>
-                                  <th className="py-1.5 px-3 text-right font-medium w-20">Totale</th>
-                                  <th className="w-6"></th>
-                                </tr>
-                              </thead>
-                              <tbody className="divide-y divide-slate-100">
-                                {cap.voci.map((voce, vi) => {
-                                  const vTot = Number(voce.quantita) * Number(voce.prezzoUnitario);
-                                  return (
-                                    <tr key={vi} className={vi % 2 === 0 ? "bg-white" : "bg-slate-50/60"}>
-                                      <td className="py-1 px-2">
-                                        <input
-                                          value={voce.descrizione}
-                                          onChange={e => updateVoce(capIdx, vi, "descrizione", e.target.value)}
-                                          className="w-full bg-transparent border border-transparent rounded px-1 py-0.5 hover:border-violet-200 focus:border-violet-400 focus:outline-none text-slate-700"
-                                          placeholder="Descrizione voce..."
-                                        />
-                                      </td>
-                                      <td className="py-1 px-1">
-                                        <input
-                                          value={voce.um}
-                                          onChange={e => updateVoce(capIdx, vi, "um", e.target.value)}
-                                          className="w-full text-center bg-transparent border border-transparent rounded px-1 py-0.5 hover:border-violet-200 focus:border-violet-400 focus:outline-none text-slate-600"
-                                        />
-                                      </td>
-                                      <td className="py-1 px-1">
-                                        <input
-                                          type="number"
-                                          value={voce.quantita}
-                                          onChange={e => updateVoce(capIdx, vi, "quantita", e.target.value === "" ? 0 : Number(e.target.value))}
-                                          className="w-full text-center bg-transparent border border-transparent rounded px-1 py-0.5 hover:border-violet-200 focus:border-violet-400 focus:outline-none text-slate-600"
-                                          min={0} step={0.01}
-                                        />
-                                      </td>
-                                      <td className="py-1 px-1">
-                                        <input
-                                          type="number"
-                                          value={voce.prezzoUnitario}
-                                          onChange={e => updateVoce(capIdx, vi, "prezzoUnitario", e.target.value === "" ? 0 : Number(e.target.value))}
-                                          className="w-full text-right bg-transparent border border-transparent rounded px-1 py-0.5 hover:border-violet-200 focus:border-violet-400 focus:outline-none text-slate-600"
-                                          min={0} step={0.01}
-                                        />
-                                      </td>
-                                      <td className="py-1 px-3 text-right font-medium text-slate-800 whitespace-nowrap">
-                                        {formatCurrency(vTot)}
-                                      </td>
-                                      <td className="py-1 px-1">
-                                        <button
-                                          onClick={() => removeVoce(capIdx, vi)}
-                                          className="text-red-300 hover:text-red-500 p-0.5 rounded hover:bg-red-50 transition-colors"
-                                          title="Elimina voce"
-                                        >
-                                          <X className="h-3 w-3" />
-                                        </button>
-                                      </td>
-                                    </tr>
-                                  );
-                                })}
+                          {/* Voci — stacked cards on phones, table from 640px up */}
+                          <div className="chap-mobile">
+                            {cap.voci.map((voce, vi) => {
+                              const vTot = Number(voce.quantita) * Number(voce.prezzoUnitario);
+                              return (
+                                <div key={vi} className="li">
+                                  <div className="row">
+                                    <input value={voce.descrizione} onChange={e => updateVoce(capIdx, vi, "descrizione", e.target.value)} className="inp-sm" placeholder={t("dashboard.quoteDetail.itemDescriptionPlaceholder")} aria-label={t("dashboard.quoteDetail.colDescription")} />
+                                    <button type="button" onClick={() => removeVoce(capIdx, vi)} className="ic-btn danger" title={t("dashboard.quoteDetail.deleteItem")} aria-label={t("dashboard.quoteDetail.deleteItem")}><X /></button>
+                                  </div>
+                                  <div className="grid3">
+                                    <label>{t("dashboard.quoteDetail.colUnit")}<input value={voce.um} onChange={e => updateVoce(capIdx, vi, "um", e.target.value)} className="inp-sm c" /></label>
+                                    <label>{t("dashboard.quoteDetail.colQty")}<input type="number" value={voce.quantita} onChange={e => updateVoce(capIdx, vi, "quantita", e.target.value === "" ? 0 : Number(e.target.value))} className="inp-sm c" min={0} step={0.01} /></label>
+                                    <label>{t("dashboard.quoteDetail.colUnitPrice")}<input type="number" value={voce.prezzoUnitario} onChange={e => updateVoce(capIdx, vi, "prezzoUnitario", e.target.value === "" ? 0 : Number(e.target.value))} className="inp-sm r" min={0} step={0.01} /></label>
+                                  </div>
+                                  <div className="tot"><span>{t("dashboard.quoteDetail.colTotal")}</span><b>{formatCurrency(vTot)}</b></div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                          <div className="chap-desk paper-tw">
+                            <table className="ptbl soft">
+                              <thead>{editHeadCells(false)}</thead>
+                              <tbody>
+                                {cap.voci.map((voce, vi) => renderEditVoceRow(capIdx, vi, voce))}
                               </tbody>
                             </table>
                           </div>
                           {/* Chapter footer */}
-                          <div className="bg-slate-50 border-t border-slate-100 px-3 py-2 flex items-center justify-between">
-                            <button
-                              onClick={() => addVoce(capIdx)}
-                              className="text-xs text-violet-600 hover:text-violet-800 font-medium flex items-center gap-1 hover:bg-violet-50 rounded px-2 py-1 transition-colors"
-                            >
-                              <Plus className="h-3 w-3" /> Aggiungi voce
-                            </button>
-                            <span className="text-xs font-bold text-slate-700">
-                              Subtotale: {formatCurrency(capSub)}
-                            </span>
+                          <div className="chap-foot">
+                            <button type="button" onClick={() => addVoce(capIdx)} className="text-link"><Plus /> {t("dashboard.quoteDetail.addItem")}</button>
+                            <span>{t("dashboard.quoteDetail.subtotalPrefix")} {formatCurrency(capSub)}</span>
                           </div>
                         </div>
                       );
                     })}
                     {/* Add chapter */}
-                    <button
-                      onClick={addCapitolo}
-                      className="w-full py-2.5 text-xs text-violet-600 hover:text-violet-800 font-medium border-2 border-dashed border-violet-200 hover:border-violet-400 rounded-lg transition-colors flex items-center justify-center gap-1.5"
-                    >
-                      <Plus className="h-3.5 w-3.5" /> Aggiungi capitolo
-                    </button>
+                    <button type="button" onClick={addCapitolo} className="add-dashed" style={{ marginTop: 12 }}><Plus /> {t("dashboard.quoteDetail.addChapter")}</button>
                   </div>
                 </div>
               ) : localTemplateId === "arosio" && hasCapitoli ? (
-                /* ── AROSIO VIEW: numbered sections, dark navy headers, subtotals ── */
-                <div className="mb-6">
-                  <table className="w-full text-xs border-collapse">
+                /* ── AROSIO VIEW: numbered sections, navy headers, subtotals ── */
+                <div className="paper-sec paper-tw">
+                  <table className="ptbl" style={{ minWidth: 560 }}>
                     <thead>
-                      <tr className="bg-slate-900 text-white">
-                        <th className="py-2 px-3 text-center w-10 font-semibold">N°</th>
-                        <th className="py-2 px-3 text-left font-semibold">Descrizione</th>
-                        <th className="py-2 px-2 text-center w-10 font-semibold">U.M.</th>
-                        <th className="py-2 px-2 text-right w-20 font-semibold">P.U.</th>
-                        <th className="py-2 px-3 text-right w-24 font-semibold">Totale</th>
+                      <tr>
+                        <th className="c w-num">{t("dashboard.quoteDetail.colNo")}</th>
+                        <th>{t("dashboard.quoteDetail.colDescription")}</th>
+                        <th className="c w-um">{t("dashboard.quoteDetail.colUnit")}</th>
+                        <th className="r w-price">{t("dashboard.quoteDetail.colUnitPriceShort")}</th>
+                        <th className="r w-tot">{t("dashboard.quoteDetail.colTotal")}</th>
                       </tr>
                     </thead>
                     <tbody>
                       {capitoli.map((cap, ci) => (
                         <Fragment key={cap.lettera}>
-                          <tr>
-                            <td colSpan={5} className="py-2 px-3 font-bold text-white text-xs tracking-wider uppercase bg-slate-800">
-                              {String(ci + 1).padStart(2, "0")}_ {cap.titolo.toUpperCase()}
-                            </td>
-                          </tr>
+                          <tr className="chap"><td colSpan={5}>{String(ci + 1).padStart(2, "0")}_ {cap.titolo.toUpperCase()}</td></tr>
                           {cap.voci.map((voce, vi) => (
-                            <tr key={`${cap.lettera}-${vi}`} className={vi % 2 === 0 ? "bg-white" : "bg-slate-50"}>
-                              <td className="py-2 px-3 text-center text-slate-500 font-medium">{ci + 1}.{vi + 1}</td>
-                              <td className="py-3 px-3 text-slate-750 max-w-[400px]">
-                                {(() => {
-                                  const parts = voce.descrizione.split("\n");
-                                  const title = parts[0];
-                                  const professionalDesc = parts.slice(1).join("\n");
-                                  const isRegenerating = regeneratingVoceKey === `${ci}-${vi}`;
-
-                                  return (
-                                    <div className="space-y-1.5 group relative">
-                                      <div className="font-semibold text-slate-850 flex items-start justify-between gap-2">
-                                        <span>{title}</span>
-                                        <button
-                                          onClick={() => handleRegenerateSingleVoce(ci, vi, title)}
-                                          disabled={isRegenerating}
-                                          className="p-1 rounded bg-slate-100 hover:bg-violet-50 text-slate-400 hover:text-violet-650 transition opacity-0 group-hover:opacity-100 focus:opacity-100 shrink-0"
-                                          title="Rigenera descrizione professionale"
-                                        >
-                                          {isRegenerating ? (
-                                            <Loader2 className="h-3 w-3 animate-spin text-violet-600" />
-                                          ) : (
-                                            <RefreshCw className="h-3 w-3" />
-                                          )}
-                                        </button>
-                                      </div>
-                                      {professionalDesc ? (
-                                        <p className="text-[10px] text-slate-550 leading-relaxed font-normal italic bg-slate-50/50 p-2 rounded border border-slate-100/60">
-                                          {professionalDesc}
-                                        </p>
-                                      ) : (
-                                        <button
-                                          onClick={() => handleRegenerateSingleVoce(ci, vi, title)}
-                                          disabled={isRegenerating}
-                                          className="text-[9px] text-violet-600 hover:text-violet-850 font-semibold flex items-center gap-1 mt-0.5 hover:underline"
-                                        >
-                                          <Sparkles className="h-2.5 w-2.5" /> Aggiungi descrizione professionale AI
-                                        </button>
-                                      )}
-                                    </div>
-                                  );
-                                })()}
-                              </td>
-                              <td className="py-2 px-2 text-center text-slate-500">{voce.um}</td>
-                              <td className="py-2 px-2 text-right text-slate-600 whitespace-nowrap">{formatCurrency(voce.prezzoUnitario)}</td>
-                              <td className="py-2 px-3 text-right font-medium text-slate-800 whitespace-nowrap">{formatCurrency(voce.totale)}</td>
+                            <tr key={`${cap.lettera}-${vi}`}>
+                              <td className="c faint">{ci + 1}.{vi + 1}</td>
+                              <td className="desc">{renderProDesc(ci, vi, voce.descrizione)}</td>
+                              <td className="c faint">{voce.um}</td>
+                              <td className="r">{formatCurrency(voce.prezzoUnitario)}</td>
+                              <td className="r amt">{formatCurrency(voce.totale)}</td>
                             </tr>
                           ))}
-                          <tr className="bg-slate-200 border-t border-slate-300">
-                            <td colSpan={4} className="py-1.5 px-3 text-right font-bold text-slate-700 text-xs">
-                              {String.fromCharCode(65 + ci)}_ TOTALE (IVA esclusa)
-                            </td>
-                            <td className="py-1.5 px-3 text-right font-bold text-slate-900 whitespace-nowrap">{formatCurrency(cap.subtotale)}</td>
+                          <tr className="sum">
+                            <td colSpan={4} className="r">{String.fromCharCode(65 + ci)}{t("dashboard.quoteDetail.totalTaxExcludedSuffix")}</td>
+                            <td className="r amt">{formatCurrency(cap.subtotale)}</td>
                           </tr>
                         </Fragment>
                       ))}
@@ -1455,67 +1117,27 @@ export default function QuoteDetail() {
                 </div>
               ) : localTemplateId === "mariagrazia" && hasCapitoli ? (
                 /* ── MARIAGRAZIA VIEW: flat numbered list across all chapters ── */
-                <div className="mb-6">
-                  <table className="w-full text-xs border-collapse">
+                <div className="paper-sec paper-tw">
+                  <table className="ptbl soft" style={{ minWidth: 600 }}>
                     <thead>
-                      <tr className="bg-slate-700 text-white">
-                        <th className="py-2 px-2 text-center w-8 font-semibold">N°</th>
-                        <th className="py-2 px-3 text-left font-semibold">Descrizione</th>
-                        <th className="py-2 px-2 text-center w-10 font-semibold">U.M.</th>
-                        <th className="py-2 px-2 text-center w-10 font-semibold">Q.tà</th>
-                        <th className="py-2 px-2 text-right w-20 font-semibold">P.U.</th>
-                        <th className="py-2 px-3 text-right w-24 font-semibold">Totale</th>
+                      <tr>
+                        <th className="c w-num">{t("dashboard.quoteDetail.colNo")}</th>
+                        <th>{t("dashboard.quoteDetail.colDescription")}</th>
+                        <th className="c w-um">{t("dashboard.quoteDetail.colUnit")}</th>
+                        <th className="c w-qty">{t("dashboard.quoteDetail.colQty")}</th>
+                        <th className="r w-price">{t("dashboard.quoteDetail.colUnitPriceShort")}</th>
+                        <th className="r w-tot">{t("dashboard.quoteDetail.colTotal")}</th>
                       </tr>
                     </thead>
                     <tbody>
                       {capitoli.flatMap((cap, ci) => cap.voci.map((v, vi) => ({ ...v, chapter: cap.titolo, ci, vi }))).map((row, i) => (
-                        <tr key={i} className={i % 2 === 0 ? "bg-white" : "bg-slate-50"}>
-                          <td className="py-2 px-2 text-center font-semibold text-slate-500">{i + 1}</td>
-                          <td className="py-3 px-3 text-slate-750 max-w-[400px]">
-                            {(() => {
-                              const parts = row.descrizione.split("\n");
-                              const title = parts[0];
-                              const professionalDesc = parts.slice(1).join("\n");
-                              const isRegenerating = regeneratingVoceKey === `${row.ci}-${row.vi}`;
-
-                              return (
-                                <div className="space-y-1.5 group relative">
-                                  <div className="font-semibold text-slate-850 flex items-start justify-between gap-2">
-                                    <span>{title}</span>
-                                    <button
-                                      onClick={() => handleRegenerateSingleVoce(row.ci, row.vi, title)}
-                                      disabled={isRegenerating}
-                                      className="p-1 rounded bg-slate-100 hover:bg-violet-50 text-slate-400 hover:text-violet-650 transition opacity-0 group-hover:opacity-100 focus:opacity-100 shrink-0"
-                                      title="Rigenera descrizione professionale"
-                                    >
-                                      {isRegenerating ? (
-                                        <Loader2 className="h-3 w-3 animate-spin text-violet-600" />
-                                      ) : (
-                                        <RefreshCw className="h-3 w-3" />
-                                      )}
-                                    </button>
-                                  </div>
-                                  {professionalDesc ? (
-                                    <p className="text-[10px] text-slate-550 leading-relaxed font-normal italic bg-slate-50/50 p-2 rounded border border-slate-100/60">
-                                      {professionalDesc}
-                                    </p>
-                                  ) : (
-                                    <button
-                                      onClick={() => handleRegenerateSingleVoce(row.ci, row.vi, title)}
-                                      disabled={isRegenerating}
-                                      className="text-[9px] text-violet-600 hover:text-violet-850 font-semibold flex items-center gap-1 mt-0.5 hover:underline"
-                                    >
-                                      <Sparkles className="h-2.5 w-2.5" /> Aggiungi descrizione professionale AI
-                                    </button>
-                                  )}
-                                </div>
-                              );
-                            })()}
-                          </td>
-                          <td className="py-2 px-2 text-center text-slate-500">{row.um}</td>
-                          <td className="py-2 px-2 text-center text-slate-500">{row.quantita}</td>
-                          <td className="py-2 px-2 text-right text-slate-600 whitespace-nowrap">{formatCurrency(row.prezzoUnitario)}</td>
-                          <td className="py-2 px-3 text-right font-medium text-slate-800 whitespace-nowrap">{formatCurrency(row.totale)}</td>
+                        <tr key={i}>
+                          <td className="c faint">{i + 1}</td>
+                          <td className="desc">{renderProDesc(row.ci, row.vi, row.descrizione)}</td>
+                          <td className="c faint">{row.um}</td>
+                          <td className="c faint">{row.quantita}</td>
+                          <td className="r">{formatCurrency(row.prezzoUnitario)}</td>
+                          <td className="r amt">{formatCurrency(row.totale)}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -1523,50 +1145,47 @@ export default function QuoteDetail() {
                 </div>
               ) : hasCapitoli ? (
                 /* ── STANDARD VIEW: collapsible chapters ── */
-                <div className="mb-6">
-                  <div className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3">2. Computo Metrico Dettagliato</div>
-                  <div className="space-y-4">
+                <div className="paper-sec">
+                  <span className="eyebrow">{t("dashboard.quoteDetail.detailedBreakdown")}</span>
+                  <div>
                     {capitoli.map(cap => {
                       const isExpanded = expandedChapters.has(cap.lettera);
                       return (
-                        <div key={cap.lettera} className="border border-slate-200 rounded overflow-hidden">
-                          <button
-                            className="w-full flex items-center justify-between px-4 py-2.5 bg-slate-100 text-left hover:bg-slate-200 transition-colors"
-                            onClick={() => toggleChapter(cap.lettera)}
-                          >
-                            <span className="font-bold text-slate-800 text-sm">{cap.lettera}. {cap.titolo}</span>
-                            <div className="flex items-center gap-3">
-                              <span className="text-sm font-semibold text-slate-700">{formatCurrency(cap.subtotale)}</span>
-                              {isExpanded ? <ChevronDown className="h-4 w-4 text-slate-400" /> : <ChevronRight className="h-4 w-4 text-slate-400" />}
-                            </div>
+                        <div key={cap.lettera} className="chap-block">
+                          <button type="button" className="chap-head" onClick={() => toggleChapter(cap.lettera)} aria-expanded={isExpanded}>
+                            <b>{cap.lettera}. {cap.titolo}</b>
+                            <span className="amt">{formatCurrency(cap.subtotale)}</span>
+                            {isExpanded ? <ChevronDown className="chev" /> : <ChevronRight className="chev" />}
                           </button>
                           {isExpanded && (
-                            <table className="w-full text-xs">
-                              <thead>
-                                <tr className="bg-slate-700 text-white">
-                                  <th className="py-1.5 px-3 text-left">Descrizione</th>
-                                  <th className="py-1.5 px-2 text-center w-12">U.M.</th>
-                                  <th className="py-1.5 px-2 text-center w-12">Q.tà</th>
-                                  <th className="py-1.5 px-3 text-right w-24">P.u.</th>
-                                  <th className="py-1.5 px-3 text-right w-24">Totale</th>
-                                </tr>
-                              </thead>
-                              <tbody>
-                                {cap.voci.map((voce, vi) => (
-                                  <tr key={vi} className={vi % 2 === 0 ? "bg-white" : "bg-slate-50"}>
-                                    <td className="py-2 px-3 text-slate-700">{voce.descrizione}</td>
-                                    <td className="py-2 px-2 text-center text-slate-500">{voce.um}</td>
-                                    <td className="py-2 px-2 text-center text-slate-500">{voce.quantita}</td>
-                                    <td className="py-2 px-3 text-right text-slate-600 whitespace-nowrap">{formatCurrency(voce.prezzoUnitario)}</td>
-                                    <td className="py-2 px-3 text-right font-medium text-slate-800 whitespace-nowrap">{formatCurrency(voce.totale)}</td>
+                            <div className="paper-tw" tabIndex={0}>
+                              <table className="ptbl soft" style={{ minWidth: 480 }}>
+                                <thead>
+                                  <tr>
+                                    <th>{t("dashboard.quoteDetail.colDescription")}</th>
+                                    <th className="c w-um">{t("dashboard.quoteDetail.colUnit")}</th>
+                                    <th className="c w-qty">{t("dashboard.quoteDetail.colQty")}</th>
+                                    <th className="r w-price">{t("dashboard.quoteDetail.colUnitPriceShort")}</th>
+                                    <th className="r w-tot">{t("dashboard.quoteDetail.colTotal")}</th>
                                   </tr>
-                                ))}
-                                <tr className="bg-slate-200">
-                                  <td colSpan={4} className="py-2 px-3 font-bold text-slate-700 text-right">Subtotale capitolo {cap.lettera}</td>
-                                  <td className="py-2 px-3 text-right font-bold text-slate-800 whitespace-nowrap">{formatCurrency(cap.subtotale)}</td>
-                                </tr>
-                              </tbody>
-                            </table>
+                                </thead>
+                                <tbody>
+                                  {cap.voci.map((voce, vi) => (
+                                    <tr key={vi}>
+                                      <td className="desc">{voce.descrizione}</td>
+                                      <td className="c faint">{voce.um}</td>
+                                      <td className="c faint">{voce.quantita}</td>
+                                      <td className="r">{formatCurrency(voce.prezzoUnitario)}</td>
+                                      <td className="r amt">{formatCurrency(voce.totale)}</td>
+                                    </tr>
+                                  ))}
+                                  <tr className="sum">
+                                    <td colSpan={4} className="r">{t("dashboard.quoteDetail.subtotalChapterPrefix")} {cap.lettera}</td>
+                                    <td className="r amt">{formatCurrency(cap.subtotale)}</td>
+                                  </tr>
+                                </tbody>
+                              </table>
+                            </div>
                           )}
                         </div>
                       );
@@ -1575,33 +1194,35 @@ export default function QuoteDetail() {
                 </div>
               ) : (
                 /* ── LEGACY ITEMS (no chapters, any template) ── */
-                <table className="w-full mb-6 text-sm">
-                  <thead>
-                    <tr className="border-b-2 border-slate-800 text-slate-800">
-                      <th className="py-3 text-left font-semibold">Descrizione</th>
-                      <th className="py-3 text-center font-semibold w-20">U.M.</th>
-                      <th className="py-3 text-right font-semibold w-20">Q.tà</th>
-                      <th className="py-3 text-right font-semibold w-28">P.u.</th>
-                      <th className="py-3 text-right font-semibold w-28">Totale</th>
-                    </tr>
-                  </thead>
-                  <tbody className="text-slate-700 divide-y divide-slate-100">
-                    {quote.items.map((item, i) => (
-                      <tr key={i}>
-                        <td className="py-3 pr-4">{item.descrizione}</td>
-                        <td className="py-3 text-center">{item.unita}</td>
-                        <td className="py-3 text-right">{item.quantita}</td>
-                        <td className="py-3 text-right whitespace-nowrap">{formatCurrency(item.prezzoUnitario)}</td>
-                        <td className="py-3 text-right whitespace-nowrap">{formatCurrency(item.totale)}</td>
+                <div className="paper-sec paper-tw">
+                  <table className="ptbl soft" style={{ minWidth: 520 }}>
+                    <thead>
+                      <tr>
+                        <th>{t("dashboard.quoteDetail.colDescription")}</th>
+                        <th className="c w-um">{t("dashboard.quoteDetail.colUnit")}</th>
+                        <th className="r w-qty">{t("dashboard.quoteDetail.colQty")}</th>
+                        <th className="r w-price">{t("dashboard.quoteDetail.colUnitPriceShort")}</th>
+                        <th className="r w-tot">{t("dashboard.quoteDetail.colTotal")}</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody>
+                      {quote.items.map((item, i) => (
+                        <tr key={i}>
+                          <td className="desc">{item.descrizione}</td>
+                          <td className="c faint">{item.unita}</td>
+                          <td className="r faint">{item.quantita}</td>
+                          <td className="r">{formatCurrency(item.prezzoUnitario)}</td>
+                          <td className="r amt">{formatCurrency(item.totale)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               )}
 
               {/* Totals */}
-              <div className="flex justify-end pt-2 mb-6">
-                <div className="w-72 border border-slate-200 rounded overflow-hidden text-sm">
+              <div className="paper-totals">
+                <div className="box">
                   {isEditMode ? (() => {
                     const editSub = editCapitoli.reduce((s, cap) => s + cap.voci.reduce((cs, v) => cs + Number(v.quantita) * Number(v.prezzoUnitario), 0), 0);
                     const editImponibile = editScontoPerc > 0 ? editSub * (1 - editScontoPerc / 100) : editSub;
@@ -1609,72 +1230,37 @@ export default function QuoteDetail() {
                     const editTot = editImponibile + editIvaVal;
                     return (
                       <>
-                        <div className="flex justify-between px-4 py-2.5 text-slate-600 border-b border-slate-100">
-                          <span>Imponibile totale:</span>
-                          <span className="font-medium">{formatCurrency(editSub)}</span>
-                        </div>
-                        <div className="flex items-center justify-between px-4 py-2 border-b border-slate-100 gap-3">
-                          <label className="text-slate-600 text-xs shrink-0">Sconto (%):</label>
-                          <input
-                            type="number"
-                            value={editScontoPerc}
-                            onChange={e => setEditScontoPerc(Math.max(0, Math.min(100, Number(e.target.value))))}
-                            className="w-16 text-right bg-violet-50 border border-violet-200 rounded px-2 py-0.5 text-sm focus:outline-none focus:border-violet-400"
-                            min={0} max={100} step={1}
-                          />
+                        <div className="kv"><span>{t("dashboard.quoteDetail.taxableTotal")}</span><b>{formatCurrency(editSub)}</b></div>
+                        <div className="kv">
+                          <span>{t("dashboard.quoteDetail.discountPercent")}</span>
+                          <input type="number" value={editScontoPerc} onChange={e => setEditScontoPerc(Math.max(0, Math.min(100, Number(e.target.value))))} className="inp-sm r" min={0} max={100} step={1} aria-label={t("dashboard.quoteDetail.discountPercent")} />
                         </div>
                         {editScontoPerc > 0 && (
-                          <div className="flex justify-between px-4 py-2 text-green-700 border-b border-slate-100">
-                            <span className="text-xs">Imponibile scontato:</span>
-                            <span className="font-medium">{formatCurrency(editImponibile)}</span>
-                          </div>
+                          <div className="kv ok"><span>{t("dashboard.quoteDetail.taxableAfterDiscount")}</span><b>{formatCurrency(editImponibile)}</b></div>
                         )}
-                        <div className="flex items-center justify-between px-4 py-2 border-b border-slate-100 gap-3">
-                          <label className="text-slate-600 text-xs shrink-0">IVA (%):</label>
-                          <input
-                            type="number"
-                            value={editIvaPerc}
-                            onChange={e => setEditIvaPerc(Math.max(0, Number(e.target.value)))}
-                            className="w-16 text-right bg-violet-50 border border-violet-200 rounded px-2 py-0.5 text-sm focus:outline-none focus:border-violet-400"
-                            min={0} step={1}
-                          />
+                        <div className="kv">
+                          <span>{t("dashboard.quoteDetail.taxPercent")}</span>
+                          <input type="number" value={editIvaPerc} onChange={e => setEditIvaPerc(Math.max(0, Number(e.target.value)))} className="inp-sm r" min={0} step={1} aria-label={t("dashboard.quoteDetail.taxPercent")} />
                         </div>
-                        <div className="flex justify-between px-4 py-2 text-slate-600 border-b border-slate-100">
-                          <span className="text-xs">IVA:</span>
-                          <span className="font-medium">{formatCurrency(editIvaVal)}</span>
-                        </div>
-                        <div className="flex justify-between px-4 py-3 bg-slate-800 text-white font-bold text-base">
-                          <span>TOTALE</span>
-                          <span>{formatCurrency(editTot)}</span>
-                        </div>
+                        <div className="kv"><span>{t("dashboard.quoteDetail.taxLabel")}</span><b>{formatCurrency(editIvaVal)}</b></div>
+                        <div className="kv grand"><span>{t("dashboard.quoteDetail.total")}</span><b>{formatCurrency(editTot)}</b></div>
                       </>
                     );
                   })() : (
                     <>
-                      <div className="flex justify-between px-4 py-2.5 text-slate-600 border-b border-slate-100">
-                        <span>Imponibile totale:</span>
-                        <span className="font-medium">{formatCurrency(quote.subtotale)}</span>
-                      </div>
+                      <div className="kv"><span>{t("dashboard.quoteDetail.taxableTotal")}</span><b>{formatCurrency(quote.subtotale)}</b></div>
                       {sconto && sconto.percentuale > 0 && (
                         <>
-                          <div className="flex justify-between px-4 py-2.5 text-slate-600 border-b border-slate-100">
-                            <span>Sconto ({sconto.percentuale}%):</span>
-                            <span className="font-medium text-green-700">−{formatCurrency(quote.subtotale - sconto.importoScontato)}</span>
-                          </div>
-                          <div className="flex justify-between px-4 py-2.5 text-slate-600 border-b border-slate-100">
-                            <span>Imponibile scontato:</span>
-                            <span className="font-medium">{formatCurrency(sconto.importoScontato)}</span>
-                          </div>
+                          <div className="kv ok"><span>{t("dashboard.quoteDetail.discountLabelPrefix")} ({sconto.percentuale}%):</span><b>−{formatCurrency(quote.subtotale - sconto.importoScontato)}</b></div>
+                          <div className="kv"><span>{t("dashboard.quoteDetail.taxableAfterDiscount")}</span><b>{formatCurrency(sconto.importoScontato)}</b></div>
                         </>
                       )}
-                      <div className="flex justify-between px-4 py-2.5 text-slate-600 border-b border-slate-100">
-                        <span>IVA ({quote.ivaPercentuale}%):</span>
-                        <span className="font-medium">{formatCurrency(quote.ivaValore)}</span>
-                      </div>
-                      <div className="flex justify-between px-4 py-3 bg-slate-800 text-white font-bold text-base">
-                        <span>TOTALE</span>
-                        <span>{formatCurrency(quote.totale)}</span>
-                      </div>
+                      {(quote.taxLines ?? []).length === 0 ? (
+                        <div className="kv"><span>{t("dashboard.quoteDetail.taxLabelPrefix")} ({quote.ivaPercentuale}%):</span><b>{formatCurrency(quote.ivaValore)}</b></div>
+                      ) : quote.taxLines!.map((line) => (
+                        <div className="kv" key={line.code}><span>{taxLineLabel(line, lang, t("dashboard.quoteDetail.taxLabelPrefix"))}:</span><b>{formatCurrency(line.amount)}</b></div>
+                      ))}
+                      <div className="kv grand"><span>{t("dashboard.quoteDetail.total")}</span><b>{formatCurrency(quote.totale)}</b></div>
                     </>
                   )}
                 </div>
@@ -1682,202 +1268,237 @@ export default function QuoteDetail() {
 
               {/* Condizioni di pagamento */}
               {isEditMode ? (
-                <div className="mb-6 border-2 border-violet-200 rounded-lg p-4 bg-violet-50/40">
-                  <div className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-3 flex items-center justify-between">
-                    <span>Condizioni di Pagamento</span>
-                    <button
-                      onClick={() => setEditCondizioniPagamento(prev => [...prev, ""])}
-                      className="text-xs text-violet-600 hover:text-violet-800 font-medium flex items-center gap-1 hover:bg-violet-100 rounded px-2 py-1 transition-colors"
-                    >
-                      <Plus className="h-3 w-3" /> Aggiungi
-                    </button>
-                  </div>
-                  <div className="space-y-2">
+                <div className="paper-sec">
+                  <span className="eyebrow row">
+                    {t("dashboard.quoteDetail.paymentTerms")}
+                    <button type="button" onClick={() => setEditCondizioniPagamento(prev => [...prev, ""])} className="text-link"><Plus /> {t("dashboard.quoteDetail.add")}</button>
+                  </span>
+                  <div className="paper-box">
                     {editCondizioniPagamento.map((cond, i) => (
-                      <div key={i} className="flex items-center gap-2">
-                        <input
-                          value={cond}
-                          onChange={e => setEditCondizioniPagamento(prev => prev.map((c, ci) => ci === i ? e.target.value : c))}
-                          placeholder="Es. 30% acconto alla firma del contratto"
-                          className="flex-1 text-xs text-slate-700 bg-white border border-violet-200 rounded px-2 py-1.5 focus:outline-none focus:border-violet-400"
-                        />
-                        <button
-                          onClick={() => setEditCondizioniPagamento(prev => prev.filter((_, ci) => ci !== i))}
-                          className="text-red-300 hover:text-red-500 hover:bg-red-50 rounded p-1 transition-colors"
-                        >
-                          <X className="h-3 w-3" />
-                        </button>
+                      <div key={i} className="term-row">
+                        <input value={cond} onChange={e => setEditCondizioniPagamento(prev => prev.map((c, ci) => ci === i ? e.target.value : c))} placeholder={t("dashboard.quoteDetail.paymentTermPlaceholder")} className="inp-sm" aria-label={t("dashboard.quoteDetail.paymentTermPlaceholder")} />
+                        <button type="button" onClick={() => setEditCondizioniPagamento(prev => prev.filter((_, ci) => ci !== i))} className="ic-btn danger" aria-label={t("dashboard.quoteDetail.deleteItem")}><X /></button>
                       </div>
                     ))}
                     {editCondizioniPagamento.length === 0 && (
-                      <p className="text-xs text-slate-400 italic">Nessuna condizione. Clicca Aggiungi per inserirne una.</p>
+                      <p className="hint">{t("dashboard.quoteDetail.noConditionsHint")}</p>
                     )}
                   </div>
                 </div>
               ) : condizioniPagamento.length > 0 ? (
-                <div className="mb-6 border border-slate-200 rounded p-4">
-                  <div className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-3">Condizioni di Pagamento</div>
-                  <ul className="space-y-1.5">
-                    {condizioniPagamento.map((cond, i) => (
-                      <li key={i} className="flex items-start gap-2 text-xs text-slate-700">
-                        <CheckCircle2 className="h-3.5 w-3.5 text-slate-400 shrink-0 mt-0.5" />
-                        <span className="font-medium uppercase">{cond}</span>
-                      </li>
-                    ))}
-                  </ul>
+                <div className="paper-sec">
+                  <span className="eyebrow">{t("dashboard.quoteDetail.paymentTerms")}</span>
+                  <div className="paper-box">
+                    <ul>
+                      {condizioniPagamento.map((cond, i) => (
+                        <li key={i}><CheckCircle2 /><span>{cond}</span></li>
+                      ))}
+                    </ul>
+                  </div>
                 </div>
               ) : null}
 
               {/* Descrizione Generale / Oggetto */}
               {isEditMode ? (
-                <div className="pt-4 border-t border-violet-100">
-                  <div className="text-xs font-semibold text-slate-400 mb-1.5 uppercase tracking-wider">Descrizione generale / Oggetto</div>
-                  <textarea
-                    value={editDescrizioneGenerale}
-                    onChange={e => setEditDescrizioneGenerale(e.target.value)}
-                    className="w-full text-xs text-slate-500 bg-violet-50/50 border border-violet-200 rounded p-2 focus:outline-none focus:border-violet-400 resize-none min-h-[60px]"
-                    placeholder="Descrizione sintetica dell'intervento..."
-                  />
+                <div className="paper-foot">
+                  <span className="eyebrow">{t("dashboard.quoteDetail.generalDescriptionLabel")}</span>
+                  <textarea value={editDescrizioneGenerale} onChange={e => setEditDescrizioneGenerale(e.target.value)} className="inp-sm" placeholder={t("dashboard.quoteDetail.generalDescriptionPlaceholder")} aria-label={t("dashboard.quoteDetail.generalDescriptionLabel")} />
                 </div>
               ) : (
                 quote.descrizioneGenerale && (
-                  <div className="pt-4 border-t border-slate-100 text-xs text-slate-500 italic">
-                    <strong>Oggetto: </strong>{quote.descrizioneGenerale}
+                  <div className="paper-foot" style={{ fontStyle: "italic" }}>
+                    <b>{t("dashboard.quoteDetail.subjectPrefix")}</b>{quote.descrizioneGenerale}
                   </div>
                 )
               )}
 
               {/* Notes */}
               {isEditMode ? (
-                <div className="pt-4 border-t border-violet-100">
-                  <div className="text-xs font-semibold text-slate-400 mb-1.5 uppercase tracking-wider">Note finali</div>
-                  <textarea
-                    value={editNote}
-                    onChange={e => setEditNote(e.target.value)}
-                    className="w-full text-xs text-slate-500 bg-violet-50/50 border border-violet-200 rounded p-2 focus:outline-none focus:border-violet-400 resize-none min-h-[60px]"
-                    placeholder="Note finali, condizioni aggiuntive..."
-                  />
+                <div className="paper-foot">
+                  <span className="eyebrow">{t("dashboard.quoteDetail.finalNotesLabel")}</span>
+                  <textarea value={editNote} onChange={e => setEditNote(e.target.value)} className="inp-sm" placeholder={t("dashboard.quoteDetail.finalNotesPlaceholder")} aria-label={t("dashboard.quoteDetail.finalNotesLabel")} />
                 </div>
               ) : (
                 quote.note && (
-                  <div className="pt-4 border-t border-slate-100 text-xs text-slate-400">
-                    <strong>Note: </strong>{quote.note}
+                  <div className="paper-foot">
+                    <b>{t("dashboard.quoteDetail.notePrefix")}</b>{quote.note}
                   </div>
                 )
               )}
             </div>
-          </Card>
+          </section>
         </div>
 
         {/* Sidebar */}
-        <div className="space-y-4">
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-lg">Azioni</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2">
-              <Button
-                onClick={isLocked ? handleUnlock : handleDownload}
-                disabled={generatePdf.isPending}
-                className="w-full justify-start gap-2"
-                variant={isLocked ? "default" : "outline"}
-              >
-                {generatePdf.isPending
-                  ? <Loader2 className="h-4 w-4 animate-spin" />
-                  : isLocked ? <Lock className="h-4 w-4" /> : <Download className="h-4 w-4" />}
-                Scarica PDF
-              </Button>
-              {!isLocked && quote?.status === "unlocked" && (
-                <Button
-                  variant="outline"
-                  className="w-full justify-start gap-2"
-                  onClick={() => setIsEmailDialogOpen(true)}
-                  disabled={sendPdfEmail.isPending}
-                >
-                  {sendPdfEmail.isPending
-                    ? <Loader2 className="h-4 w-4 animate-spin" />
-                    : <Mail className="h-4 w-4" />}
-                  Invia via email
-                </Button>
+        <div className="stack">
+          <section className="card">
+            <div className="card-head"><div><h2>{t("dashboard.quoteDetail.actionsTitle")}</h2></div></div>
+            <div className="act-list">
+              <button type="button" onClick={isLocked ? handleUnlock : handleDownload} disabled={generatePdf.isPending} className={cn("btn btn-sm", isLocked ? "btn-navy" : "btn-outline-navy")}>
+                {generatePdf.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : isLocked ? <Lock className="h-4 w-4" /> : <Download className="h-4 w-4" />}
+                {t("dashboard.quoteDetail.downloadPdf")}
+              </button>
+              {!isLocked && (
+                <button type="button" className="btn btn-sm btn-outline-navy" onClick={() => setIsEmailDialogOpen(true)} disabled={sendPdfEmail.isPending}>
+                  {sendPdfEmail.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Mail className="h-4 w-4" />}
+                  {t("dashboard.quoteDetail.sendByEmail")}
+                </button>
               )}
               {!isEditLocked && (
                 <>
-                  <Button
-                    variant="outline"
-                    className="w-full justify-start gap-2"
-                    onClick={isEditMode ? () => setIsEditMode(false) : enterEditMode}
-                  >
+                  <button type="button" className="btn btn-sm btn-outline-navy" onClick={isEditMode ? () => setIsEditMode(false) : enterEditMode}>
                     <Pencil className="h-4 w-4" />
-                    {isEditMode ? "Chiudi Editor" : "Modifica Preventivo"}
-                  </Button>
-                  <Button
-                    variant="outline"
-                    className="w-full justify-start gap-2 text-violet-600 border-violet-200 hover:bg-violet-50"
-                    onClick={() => setIsRegenOpen(true)}
-                  >
+                    {isEditMode ? t("dashboard.quoteDetail.closeEditor") : t("dashboard.quoteDetail.editQuote")}
+                  </button>
+                  <button type="button" className="btn btn-sm btn-outline-navy" onClick={() => setIsRegenOpen(true)}>
                     <Sparkles className="h-4 w-4" />
-                    Rigenera con AI
-                  </Button>
+                    {t("dashboard.quoteDetail.regenerateWithAi")}
+                  </button>
                 </>
               )}
-              <Button
-                variant="outline"
-                className="w-full justify-start gap-2"
+              <button
+                type="button"
+                className="btn btn-sm btn-outline-navy"
                 disabled={duplicateQuote.isPending}
                 onClick={() => {
                   if (!id) return;
                   duplicateQuote.mutate({ id }, {
                     onSuccess: (newQuote) => {
                       queryClient.invalidateQueries({ queryKey: getListQuotesQueryKey() });
-                      toast({ title: "Preventivo duplicato", description: "Reindirizzamento al nuovo preventivo…" });
+                      toast({ title: t("dashboard.quoteDetail.quoteDuplicated"), description: t("dashboard.quoteDetail.quoteDuplicatedDesc") });
                       navigate(`/dashboard/quotes/${newQuote.id}`);
                     },
-                    onError: () => toast({ title: "Errore durante la duplicazione", variant: "destructive" }),
+                    onError: () => toast({ title: t("dashboard.quoteDetail.errorDuplicate"), variant: "destructive" }),
                   });
                 }}
               >
                 {duplicateQuote.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Copy className="h-4 w-4" />}
-                Duplica preventivo
-              </Button>
+                {t("dashboard.quoteDetail.duplicateQuote")}
+              </button>
               {isEditLocked && (
-                <div className="flex items-start gap-2 text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg p-2.5">
-                  <AlertTriangle className="h-3.5 w-3.5 mt-0.5 shrink-0" />
-                  Preventivo scaricato — modifiche disabilitate.
+                <div className="notice warn">
+                  <AlertTriangle />
+                  <span className="grow">{t(quote.status === "accepted" ? "dashboard.quoteDetail.acceptedWarning" : "dashboard.quoteDetail.downloadedWarning")}</span>
                 </div>
               )}
-            </CardContent>
-          </Card>
+            </div>
+          </section>
+
+          {/* Phase 22: Good/Better/Best tiered quotes */}
+          {!isEditLocked && quote?.status !== "accepted" && (
+            <section className="card">
+              <div className="card-head">
+                <div>
+                  <h2 className="flex items-center gap-2"><Star className="h-4 w-4" style={{ color: "var(--faint)" }} /> {t("dashboard.quoteDetail.variants.title")}</h2>
+                  <p className="sub">{t("dashboard.quoteDetail.variants.subtitle")}</p>
+                </div>
+              </div>
+              <div className="act-body">
+                {variants.map((v) => (
+                  <div key={v.id} className="var-block">
+                    <div className="row">
+                      <input
+                        defaultValue={v.label}
+                        placeholder={t("dashboard.quoteDetail.variants.labelPlaceholder")}
+                        className="inp-sm"
+                        aria-label={t("dashboard.quoteDetail.variants.labelPlaceholder")}
+                        onBlur={(e) => {
+                          if (e.target.value === v.label) return;
+                          updateVariant.mutate({ id: id!, variantId: v.id, data: { label: e.target.value } }, {
+                            onSuccess: () => queryClient.invalidateQueries({ queryKey: getListQuoteVariantsQueryKey(id!) }),
+                          });
+                        }}
+                      />
+                      <button
+                        type="button"
+                        className="ic-btn danger"
+                        disabled={deleteVariant.isPending}
+                        aria-label={t("dashboard.quoteDetail.deleteItem")}
+                        onClick={() => {
+                          deleteVariant.mutate({ id: id!, variantId: v.id }, {
+                            onSuccess: () => queryClient.invalidateQueries({ queryKey: getListQuoteVariantsQueryKey(id!) }),
+                            onError: () => toast({ title: t("dashboard.quoteDetail.variants.errorDelete"), variant: "destructive" }),
+                          });
+                        }}
+                      >
+                        <Trash2 />
+                      </button>
+                    </div>
+                    <textarea
+                      defaultValue={v.description}
+                      placeholder={t("dashboard.quoteDetail.variants.descriptionPlaceholder")}
+                      rows={2}
+                      className="inp-sm"
+                      style={{ minHeight: 0 }}
+                      aria-label={t("dashboard.quoteDetail.variants.descriptionPlaceholder")}
+                      onBlur={(e) => {
+                        if (e.target.value === v.description) return;
+                        updateVariant.mutate({ id: id!, variantId: v.id, data: { description: e.target.value } }, {
+                          onSuccess: () => queryClient.invalidateQueries({ queryKey: getListQuoteVariantsQueryKey(id!) }),
+                        });
+                      }}
+                    />
+                    <div className="row">
+                      <span>{t("dashboard.quoteDetail.variants.totalLabel")}</span>
+                      <input
+                        type="number"
+                        step="0.01"
+                        defaultValue={v.totale}
+                        className="inp-sm r"
+                        aria-label={t("dashboard.quoteDetail.variants.totalLabel")}
+                        onBlur={(e) => {
+                          const totale = Number(e.target.value);
+                          if (!Number.isFinite(totale) || totale === Number(v.totale)) return;
+                          const ivaPct = Number(v.ivaPercentuale);
+                          const subtotale = Math.round((totale / (1 + ivaPct / 100)) * 100) / 100;
+                          const ivaValore = Math.round((totale - subtotale) * 100) / 100;
+                          updateVariant.mutate({ id: id!, variantId: v.id, data: { totale, subtotale, ivaValore } }, {
+                            onSuccess: () => queryClient.invalidateQueries({ queryKey: getListQuoteVariantsQueryKey(id!) }),
+                          });
+                        }}
+                      />
+                    </div>
+                  </div>
+                ))}
+                <button
+                  type="button"
+                  className="add-dashed"
+                  style={{ marginTop: variants.length ? 10 : 0 }}
+                  disabled={createVariant.isPending || variants.length >= 3}
+                  onClick={() => {
+                    if (!id) return;
+                    createVariant.mutate({ id, data: {} }, {
+                      onSuccess: () => queryClient.invalidateQueries({ queryKey: getListQuoteVariantsQueryKey(id) }),
+                      onError: () => toast({ title: t("dashboard.quoteDetail.variants.errorCreate"), variant: "destructive" }),
+                    });
+                  }}
+                >
+                  <Plus />
+                  {variants.length >= 3 ? t("dashboard.quoteDetail.variants.maxReached") : t("dashboard.quoteDetail.variants.addOption")}
+                </button>
+              </div>
+            </section>
+          )}
 
           {/* Template picker */}
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-semibold flex items-center gap-2">
-                <LayoutTemplate className="h-4 w-4 text-muted-foreground" />
-                Template PDF
-              </CardTitle>
-              <CardDescription className="text-xs">
-                {isEditLocked ? "Bloccato dopo il primo download" : "Scegli il layout del tuo PDF"}
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-2 pt-0">
-              {(
-                [
-                  { id: "standard", label: "Standard", desc: "Computo metrico con quadro sintetico e blocco firma", proOnly: false },
-                  { id: "arosio", label: "Professionale", desc: "Capitolato numerato con sezioni e subtotali per capitolo", proOnly: true },
-                  { id: "mariagrazia", label: "Elegante", desc: "Lista numerata pulita con header OFFERTA aziendale", proOnly: true },
-                ] as const
-              ).map(tmpl => {
+          <section className="card">
+            <div className="card-head">
+              <div>
+                <h2 className="flex items-center gap-2"><LayoutTemplate className="h-4 w-4" style={{ color: "var(--faint)" }} /> {t("dashboard.quoteDetail.pdfTemplateTitle")}</h2>
+                <p className="sub">{isEditLocked ? t(quote.status === "accepted" ? "dashboard.quoteDetail.acceptedWarning" : "dashboard.quoteDetail.lockedAfterDownload") : t("dashboard.quoteDetail.chooseYourPdfLayout")}</p>
+              </div>
+            </div>
+            <div className="src-list">
+              {templateChoices.map(tmpl => {
                 const isActive = localTemplateId === tmpl.id;
-                const isLockable = isEditLocked;
                 const requiresPro = tmpl.proOnly && !isPro;
-                const isClickable = !isLockable && !requiresPro;
-                const isProClickable = !isLockable && isPro;
                 return (
                   <button
                     key={tmpl.id}
-                    disabled={isLockable}
+                    type="button"
+                    disabled={isEditLocked}
                     onClick={() => {
-                      if (isLockable) return;
+                      if (isEditLocked) return;
                       if (requiresPro) { setIsPaywallOpen(true); return; }
                       if (isActive || !id) return;
                       // Optimistic update
@@ -1885,367 +1506,268 @@ export default function QuoteDetail() {
                       updateQuote.mutate({ id, data: { templateId: tmpl.id } }, {
                         onSuccess: (updated) => {
                           queryClient.setQueryData(getGetQuoteQueryKey(id), updated);
-                          toast({ title: "Template aggiornato", description: `Template "${tmpl.label}" selezionato.` });
+                          toast({ title: t("dashboard.quoteDetail.templateUpdated"), description: `Template "${tmpl.label}" ${t("dashboard.quoteDetail.templateSelected")}` });
                         },
                         onError: () => {
                           // Rollback
                           setLocalTemplateId(quote.templateId ?? "standard");
-                          toast({ title: "Errore", description: "Impossibile cambiare template", variant: "destructive" });
+                          toast({ title: t("dashboard.quoteDetail.error"), description: t("dashboard.quoteDetail.errorChangeTemplate"), variant: "destructive" });
                         },
                       });
                     }}
-                    className={cn(
-                      "w-full text-left px-3 py-2.5 rounded-lg border text-xs transition-all",
-                      isActive
-                        ? "border-violet-400 bg-violet-50 text-violet-900 ring-1 ring-violet-300"
-                        : isClickable || isProClickable
-                          ? "border-slate-200 hover:border-violet-300 hover:bg-slate-50 text-slate-700 cursor-pointer"
-                          : requiresPro
-                            ? "border-slate-200 hover:border-amber-300 hover:bg-amber-50 text-slate-600 cursor-pointer"
-                            : "border-slate-200 opacity-50 text-slate-400 cursor-not-allowed"
-                    )}
+                    className={cn("src sm", isActive && "on")}
                   >
-                    <div className="font-semibold flex items-center gap-1.5">
-                      {isActive && <CheckCircle2 className="h-3 w-3 text-violet-600 shrink-0" />}
+                    <b>
+                      {isActive && <CheckCircle2 />}
                       {tmpl.label}
-                      {tmpl.proOnly && !isPro && (
-                        <span className="ml-auto text-[10px] font-bold text-amber-700 bg-amber-100 border border-amber-300 rounded px-1.5 py-0.5 leading-none">PRO</span>
-                      )}
-                      {isEditLocked && <Lock className="h-3 w-3 ml-auto text-slate-400 shrink-0" />}
-                    </div>
-                    <div className="text-slate-500 mt-0.5 leading-snug">{tmpl.desc}</div>
+                      {requiresPro && <span className="chip chip-yellow">PRO</span>}
+                      {isEditLocked && <Lock className="h-3.5 w-3.5 ml-auto" style={{ color: "var(--faint)" }} />}
+                    </b>
+                    <p>{tmpl.desc}</p>
                   </button>
                 );
               })}
-              {isEditLocked && (
-                <p className="text-xs text-amber-700 bg-amber-50 rounded px-2 py-1.5 border border-amber-200">
-                  Template bloccato dopo il primo download.
-                </p>
-              )}
-            </CardContent>
-          </Card>
+            </div>
+            {isEditLocked && (
+              <div className="card-foot"><span className="foot-note" style={{ color: "var(--yellow-dark)" }}>{t("dashboard.quoteDetail.templateLockedAfterDownload")}</span></div>
+            )}
+          </section>
+
+          {/* Contract (Phase 1) */}
+          <QuoteContractCard quoteId={quote.id} quoteStatus={quote.status} hasContractsFeature={hasFeature(profile as never, "contracts")} />
+
+          {/* Payment schedule (Phase 0: drives contract terms + invoicing) */}
+          <PaymentScheduleCard
+            quoteId={quote.id}
+            schedule={(quote as unknown as { paymentSchedule?: PaymentSchedule | null }).paymentSchedule ?? null}
+            total={quote.totale}
+            locked={isEditMode}
+          />
 
           {/* Summary card */}
           {hasCapitoli && (
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-sm font-medium text-muted-foreground">Riepilogo Capitoli</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-2">
+            <section className="card">
+              <div className="card-head"><div><h2>{t("dashboard.quoteDetail.chapterSummary")}</h2></div></div>
+              <div className="kv-list">
                 {capitoli.map(cap => (
-                  <div key={cap.lettera} className="flex justify-between text-sm">
-                    <span className="text-muted-foreground truncate mr-2">{cap.lettera}. {cap.titolo}</span>
-                    <span className="font-medium shrink-0">{formatCurrency(cap.subtotale)}</span>
-                  </div>
+                  <div key={cap.lettera} className="kv"><span className="truncate">{cap.lettera}. {cap.titolo}</span><b>{formatCurrency(cap.subtotale)}</b></div>
                 ))}
-                <div className="border-t pt-2 mt-2 flex justify-between font-bold text-sm">
-                  <span>Totale</span>
-                  <span>{formatCurrency(quote.totale)}</span>
-                </div>
-              </CardContent>
-            </Card>
+                <div className="kv total"><span>{t("dashboard.quoteDetail.total")}</span><b>{formatCurrency(quote.totale)}</b></div>
+              </div>
+            </section>
           )}
 
-          <Card className="bg-muted/50">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium flex items-center gap-2">
-                <FileText className="h-4 w-4 text-muted-foreground" />
-                Input Originale
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-muted-foreground italic">"{quote.rawInput}"</p>
-            </CardContent>
-          </Card>
+          <section className="card">
+            <div className="card-head"><div><h2 className="flex items-center gap-2"><FileText className="h-4 w-4" style={{ color: "var(--faint)" }} /> {t("dashboard.quoteDetail.originalInput")}</h2></div></div>
+            <div className="act-body">
+              <p className="foot-note" style={{ fontStyle: "italic", fontWeight: 500 }}>"{quote.rawInput}"</p>
+            </div>
+          </section>
         </div>
       </div>
 
       {/* ── CAPITOLATO PRO DIALOG ── */}
       <Dialog open={isCapitolatoDialogOpen} onOpenChange={setIsCapitolatoDialogOpen}>
-        <DialogContent className="sm:max-w-[480px]">
+        <DialogContent>
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Star className="h-5 w-5 text-violet-600" />
-              Migliora in Capitolato Pro
-            </DialogTitle>
-            <DialogDescription>
-              L'AI riscriverà ogni voce del preventivo con terminologia professionale da Capitolato Speciale d'Appalto (3–5 frasi tecniche, materiali con normative UNI/CEI, inclusioni ed esclusioni). Le quantità e i prezzi rimangono invariati.
-            </DialogDescription>
+            <DialogTitle><Star /> {t("dashboard.quoteDetail.upgradeProSpecTitle")}</DialogTitle>
+            <DialogDescription>{t("dashboard.quoteDetail.upgradeProSpecDesc")}</DialogDescription>
           </DialogHeader>
-          <div className="rounded-lg bg-violet-50 border border-violet-200 px-4 py-3 text-sm text-violet-800 space-y-1">
-            <p className="font-semibold">Cosa verrà aggiornato:</p>
-            <ul className="list-disc list-inside space-y-0.5 text-violet-700">
-              <li>Descrizioni di ogni voce in stile capitolato</li>
-              <li>Specifiche tecniche e normative</li>
-              <li>Elenco inclusi/esclusi per ogni voce</li>
-            </ul>
-          </div>
-          <div className="flex gap-2 justify-end pt-2">
-            <Button variant="outline" onClick={() => setIsCapitolatoDialogOpen(false)} disabled={upgradeToCapitolato.isPending}>
-              Annulla
-            </Button>
-            <Button
-              onClick={handleConfirmCapitolatoUpgrade}
-              disabled={upgradeToCapitolato.isPending}
-              className="gap-2 bg-violet-600 hover:bg-violet-700 text-white"
-            >
+          <DialogBody>
+            <div className="notice info" style={{ display: "block" }}>
+              <p>{t("dashboard.quoteDetail.whatWillUpdate")}</p>
+              <ul style={{ listStyle: "disc", paddingLeft: 18, marginTop: 6, fontWeight: 600, color: "var(--muted-mk)" }}>
+                <li>{t("dashboard.quoteDetail.updateItem1")}</li>
+                <li>{t("dashboard.quoteDetail.updateItem2")}</li>
+                <li>{t("dashboard.quoteDetail.updateItem3")}</li>
+              </ul>
+            </div>
+          </DialogBody>
+          <DialogFooter>
+            <button type="button" className="btn btn-sm btn-outline-navy" onClick={() => setIsCapitolatoDialogOpen(false)} disabled={upgradeToCapitolato.isPending}>{t("dashboard.quoteDetail.cancel")}</button>
+            <button type="button" className="btn btn-sm btn-navy" onClick={handleConfirmCapitolatoUpgrade} disabled={upgradeToCapitolato.isPending}>
               {upgradeToCapitolato.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Star className="h-4 w-4" />}
-              {upgradeToCapitolato.isPending ? "Miglioramento in corso..." : "Migliora ora"}
-            </Button>
-          </div>
+              {upgradeToCapitolato.isPending ? t("dashboard.quoteDetail.upgradingInProgress") : t("dashboard.quoteDetail.upgradeNow")}
+            </button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 
       {/* ── AI REGEN DIALOG ── */}
       <Dialog open={isRegenOpen} onOpenChange={setIsRegenOpen}>
-        <DialogContent className="sm:max-w-[520px]">
+        <DialogContent>
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Sparkles className="h-5 w-5 text-violet-500" />
-              Rigenera con AI
-            </DialogTitle>
-            <DialogDescription>
-              L'AI riscriverà il preventivo mantenendo i dati del committente. Puoi descrivere cosa cambiare o lasciare vuoto per rigenerare dalla descrizione originale.
-            </DialogDescription>
+            <DialogTitle><Sparkles /> {t("dashboard.quoteDetail.regenerateWithAiTitle")}</DialogTitle>
+            <DialogDescription>{t("dashboard.quoteDetail.regenerateWithAiDesc")}</DialogDescription>
           </DialogHeader>
-          <div className="space-y-4 pt-2">
-            <div className="rounded-lg bg-muted/50 border px-4 py-3 text-sm text-muted-foreground italic">
-              "{quote.rawInput}"
-            </div>
-            <div className="space-y-1.5">
-              <Label>Nuove istruzioni (opzionale)</Label>
-              <Textarea
+          <DialogBody>
+            <div className="quote-box">"{quote.rawInput}"</div>
+            <div className="field">
+              <label>{t("dashboard.quoteDetail.newInstructions")}</label>
+              <textarea
                 value={regenDescription}
                 onChange={e => setRegenDescription(e.target.value)}
-                placeholder="Es: aggiungi anche la tinteggiatura del soffitto, aumenta la superficie delle pareti a 120mq..."
-                className="resize-none min-h-[90px]"
+                placeholder={t("dashboard.quoteDetail.regenerateExamplePlaceholder")}
+                rows={4}
+                style={{ resize: "none" }}
                 disabled={regenerateQuote.isPending}
               />
-              <p className="text-xs text-muted-foreground">
-                Se vuoti, viene usata la descrizione originale. Se compili, la sostituisce completamente.
-              </p>
+              <div className="field-hint">{t("dashboard.quoteDetail.regenerateHint")}</div>
             </div>
-            <div className="flex gap-2 justify-end pt-1">
-              <Button variant="outline" onClick={() => { setIsRegenOpen(false); setRegenDescription(""); }} disabled={regenerateQuote.isPending}>
-                Annulla
-              </Button>
-              <Button onClick={handleRegenerate} disabled={regenerateQuote.isPending} className="gap-2">
-                {regenerateQuote.isPending ? (
-                  <><Loader2 className="h-4 w-4 animate-spin" /> Generazione in corso...</>
-                ) : (
-                  <><RefreshCw className="h-4 w-4" /> Rigenera</>
-                )}
-              </Button>
-            </div>
-          </div>
+          </DialogBody>
+          <DialogFooter>
+            <button type="button" className="btn btn-sm btn-outline-navy" onClick={() => { setIsRegenOpen(false); setRegenDescription(""); }} disabled={regenerateQuote.isPending}>{t("dashboard.quoteDetail.cancel")}</button>
+            <button type="button" className="btn btn-sm btn-navy" onClick={handleRegenerate} disabled={regenerateQuote.isPending}>
+              {regenerateQuote.isPending ? (
+                <><Loader2 className="h-4 w-4 animate-spin" /> {t("dashboard.quoteDetail.generatingInProgress")}</>
+              ) : (
+                <><RefreshCw className="h-4 w-4" /> {t("dashboard.quoteDetail.regenerate")}</>
+              )}
+            </button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 
 
       {/* Paywall dialog */}
       <Dialog open={isPaywallOpen} onOpenChange={setIsPaywallOpen}>
-        <DialogContent className="sm:max-w-[600px] max-h-[90vh] flex flex-col p-0">
-          <div className="px-6 pt-5 pb-3 border-b shrink-0">
-            <DialogHeader>
-              {subscription?.isActive && subscription?.plan === "monthly_starter" ? (
-                <>
-                  <DialogTitle className="text-lg">Passa al Piano Pro</DialogTitle>
-                  <DialogDescription className="text-sm">
-                    Sei su <strong>Starter</strong> — i tuoi preventivi includono la filigrana PrevAI e il logo PrevAI.<br/>
-                    Passa a <strong>Pro</strong> per PDF puliti con il tuo logo aziendale.
-                  </DialogDescription>
-                </>
-              ) : (
-                <>
-                  <DialogTitle className="text-lg">Sblocca il Preventivo</DialogTitle>
-                  <DialogDescription className="text-sm">
-                    Scegli un piano per scaricare il PDF.
-                  </DialogDescription>
-                </>
-              )}
-            </DialogHeader>
-          </div>
+        <DialogContent size="lg">
+          <DialogHeader>
+            {subscription?.isActive && subscription?.plan === "monthly_starter" ? (
+              <>
+                <DialogTitle>{t("dashboard.quoteDetail.upgradeToProPlanTitle")}</DialogTitle>
+                <DialogDescription>
+                  {t("dashboard.quoteDetail.starterNoticePrefix")} <strong>Starter</strong> {t("dashboard.quoteDetail.starterNoticeMiddle")}<br/>
+                  {t("dashboard.quoteDetail.starterNoticeSuffix")} <strong>Pro</strong> {t("dashboard.quoteDetail.starterNoticeEnd")}
+                </DialogDescription>
+              </>
+            ) : (
+              <>
+                <DialogTitle>{t("dashboard.quoteDetail.unlockQuoteTitle")}</DialogTitle>
+                <DialogDescription>{t("dashboard.quoteDetail.choosePlanToDownload")}</DialogDescription>
+              </>
+            )}
+          </DialogHeader>
 
-          <div className="overflow-y-auto flex-1 px-6 py-4 space-y-4">
+          <DialogBody>
             {/* If user is on Starter → show upgrade options */}
             {subscription?.isActive && subscription?.plan === "monthly_starter" ? (
-              <div className="space-y-4">
-                <div className="grid grid-cols-2 gap-3">
+              <>
+                <div className="plan-grid two" style={{ paddingTop: 10 }}>
                   {[
-                    { id: "monthly_pro", label: "Pro", price: "€49/mese", badge: "⭐ Più Popolare", features: ["60 preventivi/mese", "PDF senza filigrana", "Tutti i template", "Upload foto + voce"], highlight: true },
-                    { id: "monthly_elite", label: "Elite", price: "€59/mese", badge: "👑 Illimitato", features: ["Preventivi illimitati", "PDF senza filigrana", "Tutti i template", "Supporto dedicato"], highlight: false },
+                    { id: "monthly_pro", label: "Pro", price: "$49", badge: t("dashboard.quoteDetail.mostPopular"), features: [t("dashboard.quoteDetail.feature60Quotes"), t("dashboard.quoteDetail.featureNoWatermark"), t("dashboard.quoteDetail.featureAllTemplates"), t("dashboard.quoteDetail.featurePhotoUpload")], highlight: true },
+                    { id: "monthly_elite", label: "Elite", price: "$59", badge: t("dashboard.quoteDetail.unlimited"), features: [t("dashboard.quoteDetail.featureUnlimitedQuotes"), t("dashboard.quoteDetail.featureNoWatermark"), t("dashboard.quoteDetail.featureAllTemplates"), t("dashboard.quoteDetail.featureDedicatedSupport")], highlight: false },
                   ].map((opt) => (
-                    <div key={opt.id} className={`relative rounded-xl border p-4 flex flex-col ${opt.highlight ? "border-primary ring-1 ring-primary shadow-sm bg-gradient-to-br from-violet-50 to-cyan-50" : "border-amber-300 bg-amber-50/30"}`}>
-                      <div className={`absolute -top-2.5 left-1/2 -translate-x-1/2 text-[10px] font-bold px-2 py-0.5 rounded-full text-white whitespace-nowrap ${opt.highlight ? "bg-primary" : "bg-amber-500"}`}>
-                        {opt.badge}
-                      </div>
-                      <div className="font-bold text-sm mb-0.5 mt-1">{opt.label}</div>
-                      <div className="text-base font-extrabold text-gray-900 mb-2">{opt.price}</div>
-                      <ul className="space-y-1 mb-3 flex-1">
-                        {opt.features.map((f, i) => (
-                          <li key={i} className="flex items-center gap-1.5 text-xs text-foreground">
-                            <CheckCircle2 className={`h-3 w-3 shrink-0 ${opt.highlight ? "text-primary" : "text-amber-500"}`} />
-                            {f}
-                          </li>
-                        ))}
+                    <div key={opt.id} className={cn("plan-opt", opt.highlight && "hot")}>
+                      <span className={cn("tag", !opt.highlight && "gold")}>{opt.badge}</span>
+                      <span className="nm">{opt.label}</span>
+                      <span className="pr">{opt.price}<small>{t("dashboard.quoteDetail.perMonth")}</small></span>
+                      <ul>
+                        {opt.features.map((f, i) => <li key={i}><CheckCircle2 /> {f}</li>)}
                       </ul>
-                      <Button size="sm" className={`w-full text-xs h-8 ${opt.highlight ? "" : "bg-amber-500 hover:bg-amber-600 border-0"}`}
-                        onClick={handleUpgrade} disabled={createPortal.isPending}>
-                        {createPortal.isPending ? "..." : `Passa a ${opt.label} →`}
-                      </Button>
+                      <button type="button" className={cn("btn btn-sm", opt.highlight ? "btn-navy" : "btn-outline-navy")} onClick={handleUpgrade} disabled={createPortal.isPending}>
+                        {createPortal.isPending ? "..." : `${t("dashboard.quoteDetail.switchToPrefix")} ${opt.label} →`}
+                      </button>
                     </div>
                   ))}
                 </div>
-                <p className="text-[11px] text-muted-foreground text-center">
-                  Gestito su Stripe • Annulla in qualsiasi momento
-                </p>
+                <p className="foot-note" style={{ textAlign: "center" }}>{t("dashboard.quoteDetail.managedByStripe")}</p>
 
-                <div className="flex items-center gap-3">
-                  <div className="flex-1 h-px bg-border" />
-                  <span className="text-xs text-muted-foreground">oppure acquisto singolo</span>
-                  <div className="flex-1 h-px bg-border" />
-                </div>
+                <div className="or-rule">{t("dashboard.quoteDetail.orSinglePurchase")}</div>
 
-                <div className="grid grid-cols-2 gap-3">
+                <div className="plan-grid two">
                   {(Array.isArray(plans) ? plans : []).filter(p => !p.interval).map((plan) => {
                     const isClean = plan.id === "oneshot_clean";
                     return (
-                      <div key={plan.id} className={`rounded-lg border p-3 flex flex-col hover:bg-muted/40 transition-colors ${isClean ? "border-primary/30" : ""}`}>
-                        <div className="font-medium text-sm mb-0.5">{plan.name}</div>
-                        <div className="text-xs text-muted-foreground mb-2">{plan.features[0]}</div>
-                        <div className="flex items-center justify-between mt-auto">
-                          <span className="font-bold text-sm">€{plan.price}</span>
-                          <Button size="sm" variant={isClean ? "default" : "outline"} className="h-7 text-xs px-3"
-                            onClick={() => handleCheckout(plan.id)} disabled={createCheckout.isPending}>
-                            {createCheckout.isPending ? "..." : "Acquista"}
-                          </Button>
-                        </div>
+                      <div key={plan.id} className={cn("plan-opt flat", isClean && "hot")}>
+                        <div className="txt"><span className="nm">{plan.name}</span><span className="ds">{plan.features[0]}</span></div>
+                        <span className="pr">${plan.price}</span>
+                        <button type="button" className={cn("btn btn-sm", isClean ? "btn-navy" : "btn-outline-navy")} onClick={() => handleCheckout(plan.id)} disabled={createCheckout.isPending}>
+                          {createCheckout.isPending ? "..." : t("dashboard.quoteDetail.buy")}
+                        </button>
                       </div>
                     );
                   })}
                 </div>
-              </div>
+              </>
             ) : (
               <>
                 {/* Subscription plans — 3 columns */}
-                <div className="grid grid-cols-3 gap-2">
-                  {plans?.filter(p => p.interval).map((plan, idx) => {
+                <div className="plan-grid" style={{ paddingTop: 10 }}>
+                  {plans?.filter(p => p.interval).map((plan) => {
                     const isPro = plan.id === "monthly_pro";
                     const isElite = plan.id === "monthly_elite";
                     return (
-                      <div
-                        key={plan.id}
-                        className={`plan-card-enter relative rounded-lg border p-3 flex flex-col ${
-                          isPro ? "border-primary ring-1 ring-primary shadow-sm" : isElite ? "border-amber-300" : ""
-                        }`}
-                        style={{ animationDelay: `${idx * 0.05}s` }}
-                      >
-                        {isPro && (
-                          <div className="absolute -top-2.5 left-1/2 -translate-x-1/2">
-                            <span className="bg-primary text-primary-foreground text-[10px] font-bold px-2 py-0.5 rounded-full">⭐ Pop</span>
-                          </div>
-                        )}
-                        {isElite && (
-                          <div className="absolute -top-2.5 left-1/2 -translate-x-1/2">
-                            <span className="bg-amber-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">👑 ∞</span>
-                          </div>
-                        )}
-                        <div className="font-semibold text-xs mt-1 mb-0.5">{plan.name}</div>
-                        <div className="mb-1.5">
-                          <span className="text-base font-bold">€{plan.price}</span>
-                          <span className="text-muted-foreground text-[10px]">/mese</span>
-                        </div>
-                        <ul className="space-y-0.5 mb-2.5 flex-1">
-                          {plan.features.slice(0, 3).map((feature, i) => (
-                            <li key={i} className="flex items-start gap-1 text-muted-foreground">
-                              <CheckCircle2 className={`h-2.5 w-2.5 shrink-0 mt-0.5 ${isPro ? "text-primary" : isElite ? "text-amber-500" : "text-muted-foreground/60"}`} />
-                              <span className="text-[10px] leading-snug">{feature}</span>
-                            </li>
-                          ))}
+                      <div key={plan.id} className={cn("plan-opt plan-card-enter", isPro && "hot")}>
+                        {isPro && <span className="tag">{t("dashboard.quoteDetail.popBadge")}</span>}
+                        {isElite && <span className="tag gold">{t("dashboard.quoteDetail.infinityBadge")}</span>}
+                        <span className="nm">{plan.name}</span>
+                        <span className="pr">${plan.price}<small>{t("dashboard.quoteDetail.perMonth")}</small></span>
+                        <ul>
+                          {plan.features.slice(0, 3).map((feature, i) => <li key={i}><CheckCircle2 /> {feature}</li>)}
                         </ul>
-                        <Button size="sm" className={`w-full text-[10px] h-7 ${isElite ? "bg-amber-500 hover:bg-amber-600 border-0" : ""}`}
-                          variant={isPro ? "default" : isElite ? "default" : "outline"}
-                          onClick={() => handleCheckout(plan.id)} disabled={createCheckout.isPending}>
-                          {createCheckout.isPending ? "..." : `Scegli ${plan.name}`}
-                        </Button>
+                        <button type="button" className={cn("btn btn-sm", isPro || isElite ? "btn-navy" : "btn-outline-navy")} onClick={() => handleCheckout(plan.id)} disabled={createCheckout.isPending}>
+                          {createCheckout.isPending ? "..." : `${t("dashboard.quoteDetail.choosePrefix")} ${plan.name}`}
+                        </button>
                       </div>
                     );
                   })}
                 </div>
 
-                <div className="flex items-center gap-3">
-                  <div className="flex-1 h-px bg-border" />
-                  <span className="text-xs text-muted-foreground">oppure acquisto singolo</span>
-                  <div className="flex-1 h-px bg-border" />
-                </div>
+                <div className="or-rule">{t("dashboard.quoteDetail.orSinglePurchase")}</div>
 
-                <div className="grid grid-cols-2 gap-3">
-                  {plans?.filter(p => !p.interval).map((plan, idx) => {
+                <div className="plan-grid two">
+                  {plans?.filter(p => !p.interval).map((plan) => {
                     const isClean = plan.id === "oneshot_clean";
                     return (
-                      <div key={plan.id}
-                        className={`plan-card-enter rounded-lg border p-3 flex flex-col hover:bg-muted/40 transition-colors ${isClean ? "border-primary/30" : ""}`}
-                        style={{ animationDelay: `${(idx + 3) * 0.05}s` }}
-                      >
-                        <div className="font-medium text-sm mb-0.5">{plan.name}</div>
-                        <div className="text-xs text-muted-foreground mb-2">{plan.features[0]}</div>
-                        <div className="flex items-center justify-between mt-auto">
-                          <span className="font-bold text-sm">€{plan.price}</span>
-                          <Button size="sm" variant={isClean ? "default" : "outline"} className="h-7 text-xs px-3"
-                            onClick={() => handleCheckout(plan.id)} disabled={createCheckout.isPending}>
-                            {createCheckout.isPending ? "..." : "Acquista"}
-                          </Button>
-                        </div>
+                      <div key={plan.id} className={cn("plan-opt flat plan-card-enter", isClean && "hot")}>
+                        <div className="txt"><span className="nm">{plan.name}</span><span className="ds">{plan.features[0]}</span></div>
+                        <span className="pr">${plan.price}</span>
+                        <button type="button" className={cn("btn btn-sm", isClean ? "btn-navy" : "btn-outline-navy")} onClick={() => handleCheckout(plan.id)} disabled={createCheckout.isPending}>
+                          {createCheckout.isPending ? "..." : t("dashboard.quoteDetail.buy")}
+                        </button>
                       </div>
                     );
                   })}
                 </div>
               </>
             )}
-          </div>
+          </DialogBody>
         </DialogContent>
       </Dialog>
 
       {/* Email send dialog */}
       <Dialog open={isEmailDialogOpen} onOpenChange={setIsEmailDialogOpen}>
-        <DialogContent className="sm:max-w-[420px]">
+        <DialogContent size="sm">
           <DialogHeader>
-            <DialogTitle className="text-lg">Invia preventivo via email</DialogTitle>
-            <DialogDescription className="text-sm">
-              Inserisci l'indirizzo email del committente. Il PDF verr\u00e0 allegato automaticamente.
-            </DialogDescription>
+            <DialogTitle>{t("dashboard.quoteDetail.sendQuoteByEmailTitle")}</DialogTitle>
+            <DialogDescription>{t("dashboard.quoteDetail.sendQuoteByEmailDesc")}</DialogDescription>
           </DialogHeader>
-          <div className="space-y-4 py-2">
-            <div className="space-y-1.5">
-              <Label htmlFor="emailTo">Email del destinatario</Label>
-              <Input
+          <DialogBody>
+            <div className="field">
+              <label htmlFor="emailTo">{t("dashboard.quoteDetail.recipientEmailLabel")}</label>
+              <input
                 id="emailTo"
                 type="email"
-                placeholder="cliente@esempio.it"
+                placeholder="client@example.com"
                 value={emailTo}
                 onChange={e => setEmailTo(e.target.value)}
                 onKeyDown={e => { if (e.key === "Enter") handleSendEmail(); }}
               />
+              {quote?.clientData && (
+                <div className="field-hint">
+                  {t("dashboard.quoteDetail.recipientPrefix")} <b style={{ color: "var(--navy)" }}>{(quote.clientData as { nome?: string })?.nome || t("dashboard.quoteDetail.clientFallback")}</b>
+                </div>
+              )}
             </div>
-            {quote?.clientData && (
-              <div className="text-xs text-muted-foreground">
-                Destinatario: <strong>{(quote.clientData as { nome?: string })?.nome || "Cliente"}</strong>
-              </div>
-            )}
-          </div>
-          <div className="flex justify-end gap-2 pt-2">
-            <Button variant="outline" onClick={() => setIsEmailDialogOpen(false)}>Annulla</Button>
-            <Button
-              onClick={handleSendEmail}
-              disabled={!emailTo.trim().includes("@") || sendPdfEmail.isPending}
-              className="gap-2"
-            >
-              {sendPdfEmail.isPending
-                ? <Loader2 className="h-4 w-4 animate-spin" />
-                : <Mail className="h-4 w-4" />}
-              Invia
-            </Button>
-          </div>
+          </DialogBody>
+          <DialogFooter>
+            <button type="button" className="btn btn-sm btn-outline-navy" onClick={() => setIsEmailDialogOpen(false)}>{t("dashboard.quoteDetail.cancel")}</button>
+            <button type="button" className="btn btn-sm btn-navy" onClick={handleSendEmail} disabled={!emailTo.trim().includes("@") || sendPdfEmail.isPending}>
+              {sendPdfEmail.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Mail className="h-4 w-4" />}
+              {t("dashboard.quoteDetail.send")}
+            </button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>

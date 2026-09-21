@@ -4,18 +4,20 @@ import { useCreateQuote, useGetBusinessProfile, useGetSubscription } from "@work
 import {
   Sparkles, ImagePlus, ArrowRight, Loader2,
   X, User, Lock, Bot, PencilLine, FileText, FileSpreadsheet,
-  LayoutTemplate, CheckCircle2, BookOpen
+  LayoutTemplate, CheckCircle2, BookOpen, Plus
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { useClientMemory } from "@/hooks/use-client-memory";
 import type { SavedClient } from "@/hooks/use-client-memory";
 import ManualQuoteBuilder from "@/components/manual-quote-builder";
 import { PriceCatalogSection } from "@/components/price-catalog-section";
 import { MicButton } from "@/components/mic-button";
+import { useLanguage } from "@/i18n/LanguageContext";
+
+function fmt(template: string, vars: Record<string, string | number>): string {
+  return template.replace(/\{(\w+)\}/g, (_, k) => String(vars[k] ?? ""));
+}
 
 const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp", "image/heic", "image/heif"];
 const ALLOWED_DOC_TYPES = [
@@ -29,13 +31,15 @@ const MAX_SIZE_BYTES = MAX_SIZE_MB * 1024 * 1024;
 const MAX_DOC_SIZE_BYTES = MAX_DOC_SIZE_MB * 1024 * 1024;
 const MAX_ATTACHMENTS = 3;
 
-const EXAMPLES = [
-  { label: "Imbianchino", text: "Tinteggiatura completa appartamento 100mq, inclusa rasatura soffitti e due mani di pittura traspirante. Aggiungere smaltatura 5 infissi." },
-  { label: "Elettricista", text: "Rifacimento completo impianto elettrico appartamento 80mq. 50 punti luce, quadro generale nuovo, certificazione di conformità." },
-  { label: "Idraulico", text: "Sostituzione caldaia a condensazione 24kW inclusa rimozione vecchia, lavaggio impianto e installazione termostato smart." },
-  { label: "Ristrutturazione", text: "Ristrutturazione bagno completo 8mq: rimozione rivestimenti, nuova piastrellatura, sostituzione sanitari e rubinetteria, nuovo box doccia." },
-  { label: "Muratore", text: "Realizzazione muro divisorio in laterizio 15mq, intonaco civile su ambo i lati, rasatura e predisposizione per piastrellatura." },
-];
+function getExamples(t: (key: string) => string) {
+  return [
+    { label: t("dashboard.new.examples.painter.label"), text: t("dashboard.new.examples.painter.text") },
+    { label: t("dashboard.new.examples.electrician.label"), text: t("dashboard.new.examples.electrician.text") },
+    { label: t("dashboard.new.examples.plumber.label"), text: t("dashboard.new.examples.plumber.text") },
+    { label: t("dashboard.new.examples.renovation.label"), text: t("dashboard.new.examples.renovation.text") },
+    { label: t("dashboard.new.examples.mason.label"), text: t("dashboard.new.examples.mason.text") },
+  ];
+}
 
 function getMaxPhotos(plan: string | null | undefined, isActive: boolean): number {
   if (!isActive) return 0;
@@ -48,14 +52,14 @@ function getMaxPhotos(plan: string | null | undefined, isActive: boolean): numbe
 interface ClientForm {
   nome: string;
   indirizzo: string;
-  citta: string;
-  cap: string;
-  provincia: string;
-  codiceFiscale: string;
+  city: string;
+  postalCode: string;
+  province: string;
+  businessNumber: string;
   partitaIva: string;
 }
 const emptyClient: ClientForm = {
-  nome: "", indirizzo: "", citta: "", cap: "", provincia: "", codiceFiscale: "", partitaIva: "",
+  nome: "", indirizzo: "", city: "", postalCode: "", province: "", businessNumber: "", partitaIva: "",
 };
 
 // ─── Shared client selector used in both tabs ───────────────────────────────
@@ -79,144 +83,86 @@ function ClientSelector({
   clientForm, setClientForm, rememberClient, setRememberClient,
   savedClients, selectSavedClient, clearClient, disabled,
 }: ClientSelectorProps) {
+  const { t } = useLanguage();
+  const field = (key: keyof ClientForm, label: string, placeholder: string, opts?: { maxLength?: number; upper?: boolean; full?: boolean }) => (
+    <div className={cn("field", opts?.full && "full")}>
+      <label>{label}</label>
+      <input
+        placeholder={placeholder}
+        value={clientForm[key]}
+        onChange={e => { const v = opts?.upper ? e.target.value.toUpperCase() : e.target.value; setClientForm(f => ({ ...f, [key]: v })); }}
+        disabled={disabled}
+        maxLength={opts?.maxLength}
+      />
+    </div>
+  );
   return (
-    <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
-      <div className="px-4 py-3 flex items-center justify-between border-b border-gray-50">
-        <div className="flex items-center gap-2">
-          <User className="h-4 w-4 text-gray-400" />
-          <span className="text-sm font-medium text-gray-700">Committente</span>
-          {clientForm.nome && (
-            <span className="text-xs font-semibold text-violet-700 bg-violet-50 border border-violet-100 px-2 py-0.5 rounded-full">
-              {clientForm.nome}
-            </span>
-          )}
+    <section className="card">
+      <div className="card-head">
+        <div>
+          <h2 className="flex items-center gap-2"><User className="h-4 w-4" style={{ color: "var(--faint)" }} /> {t("dashboard.new.client.label")}{clientForm.nome && <span className="chip chip-grey">{clientForm.nome}</span>}</h2>
+          <p className="sub">{t("dashboard.new.client.optional")}</p>
         </div>
-        <span className="text-xs text-gray-400">opzionale</span>
       </div>
 
       {savedClients.length > 0 && clientMode !== "new" && (
-        <div className="px-4 pt-3 pb-2 flex flex-wrap gap-2">
+        <div className="pick-row">
           {savedClients.slice(0, 6).map(c => (
-            <button
-              key={c.id}
-              type="button"
-              onClick={() => selectSavedClient(c)}
-              className={cn(
-                "inline-flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded-xl border transition-all",
-                selectedClientId === c.id
-                  ? "border-violet-300 bg-violet-50 text-violet-700 font-semibold shadow-sm"
-                  : "border-gray-200 text-gray-600 hover:border-violet-200 hover:bg-violet-50/50"
-              )}
-            >
-              <User className="h-3 w-3" />
-              {c.nome}
+            <button key={c.id} type="button" onClick={() => selectSavedClient(c)} className={cn("pill", selectedClientId === c.id && "on")}>
+              <User /> {c.nome}
             </button>
           ))}
-          <button
-            type="button"
-            onClick={() => { setClientMode("new"); }}
-            className="inline-flex items-center gap-1 text-xs px-2.5 py-1.5 rounded-xl border border-dashed border-gray-300 text-gray-500 hover:border-violet-300 hover:text-violet-600 transition-all"
-          >
-            + Nuovo
+          <button type="button" onClick={() => setClientMode("new")} className="pill dashed">
+            <Plus /> {t("dashboard.new.client.addNew")}
           </button>
         </div>
       )}
 
       {clientMode === "saved" && selectedClientId && (
-        <div className="px-4 pb-3 flex items-center justify-between">
-          <span className="text-[11px] text-gray-400">
-            {[clientForm.indirizzo, clientForm.citta, clientForm.provincia].filter(Boolean).join(", ") || "Nessun indirizzo salvato"}
-          </span>
-          <button type="button" onClick={clearClient} className="text-[11px] text-gray-400 hover:text-red-500 transition-colors">
-            Rimuovi
-          </button>
+        <div className="pick-sub">
+          <span>{[clientForm.indirizzo, clientForm.city, clientForm.province].filter(Boolean).join(", ") || t("dashboard.new.client.noAddress")}</span>
+          <button type="button" onClick={clearClient} className="text-link danger">{t("dashboard.new.client.remove")}</button>
         </div>
       )}
 
       {savedClients.length === 0 && clientMode === "none" && (
-        <div className="px-4 py-3">
-          <button
-            type="button"
-            onClick={() => setClientMode("new")}
-            className="w-full py-2.5 rounded-xl border border-dashed border-gray-200 text-xs text-gray-500 hover:border-violet-300 hover:text-violet-600 hover:bg-violet-50/30 transition-all"
-          >
-            + Aggiungi dati committente
+        <div style={{ padding: 22 }}>
+          <button type="button" onClick={() => setClientMode("new")} className="add-dashed">
+            <Plus /> {t("dashboard.new.client.addClientData")}
           </button>
         </div>
       )}
 
       {clientMode === "new" && (
-        <div className="px-4 pb-4 pt-3 space-y-2.5 animate-in fade-in slide-in-from-top-1 duration-200 border-t border-gray-50">
-          <div className="space-y-1">
-            <Label className="text-xs font-medium text-gray-600">Nome / Ragione Sociale *</Label>
-            <Input
-              placeholder="Es. Rossi Mario"
-              value={clientForm.nome}
-              onChange={e => setClientForm(f => ({ ...f, nome: e.target.value }))}
-              disabled={disabled}
-              className="h-9 text-sm"
-            />
+        <>
+          <div className="form-grid tight animate-in fade-in slide-in-from-top-1 duration-200" style={{ borderTop: "1px solid var(--soft)" }}>
+            {field("nome", t("dashboard.new.client.nameLabel"), t("dashboard.new.client.namePlaceholder"), { full: true })}
+            {field("indirizzo", t("dashboard.new.client.addressLabel"), t("dashboard.new.client.addressPlaceholder"), { full: true })}
+            {field("city", t("dashboard.new.client.city"), "Toronto")}
+            <div className="grid grid-cols-2 gap-2">
+              {field("province", t("dashboard.new.client.province"), "ON", { maxLength: 2, upper: true })}
+              {field("postalCode", t("dashboard.new.client.postalCode"), "M5H 2N2", { maxLength: 7, upper: true })}
+            </div>
+            {field("businessNumber", t("dashboard.new.client.businessNumber"), "123456789RT0001", { maxLength: 16, upper: true })}
+            {field("partitaIva", t("dashboard.new.client.gstHst"), "123456789RT0001", { maxLength: 15 })}
           </div>
-          <div className="space-y-1">
-            <Label className="text-xs font-medium text-gray-600">Indirizzo</Label>
-            <Input
-              placeholder="Es. Via Garibaldi 10"
-              value={clientForm.indirizzo}
-              onChange={e => setClientForm(f => ({ ...f, indirizzo: e.target.value }))}
-              disabled={disabled}
-              className="h-9 text-sm"
-            />
-          </div>
-          <div className="grid grid-cols-5 gap-2">
-            <div className="col-span-3 space-y-1">
-              <Label className="text-xs font-medium text-gray-600">Comune</Label>
-              <Input placeholder="Milano" value={clientForm.citta} onChange={e => setClientForm(f => ({ ...f, citta: e.target.value }))} disabled={disabled} className="h-9 text-sm" />
-            </div>
-            <div className="col-span-1 space-y-1">
-              <Label className="text-xs font-medium text-gray-600">Prov.</Label>
-              <Input placeholder="MI" value={clientForm.provincia} onChange={e => setClientForm(f => ({ ...f, provincia: e.target.value.toUpperCase() }))} disabled={disabled} className="h-9 text-sm" maxLength={2} />
-            </div>
-            <div className="col-span-1 space-y-1">
-              <Label className="text-xs font-medium text-gray-600">CAP</Label>
-              <Input placeholder="20100" value={clientForm.cap} onChange={e => setClientForm(f => ({ ...f, cap: e.target.value }))} disabled={disabled} className="h-9 text-sm" maxLength={5} />
-            </div>
-          </div>
-          <div className="grid grid-cols-2 gap-2">
-            <div className="space-y-1">
-              <Label className="text-xs font-medium text-gray-600">Codice Fiscale</Label>
-              <Input placeholder="RSSMRA80A01H501Z" value={clientForm.codiceFiscale} onChange={e => setClientForm(f => ({ ...f, codiceFiscale: e.target.value.toUpperCase() }))} disabled={disabled} className="h-9 text-sm" maxLength={16} />
-            </div>
-            <div className="space-y-1">
-              <Label className="text-xs font-medium text-gray-600">P. IVA</Label>
-              <Input placeholder="IT12345678901" value={clientForm.partitaIva} onChange={e => setClientForm(f => ({ ...f, partitaIva: e.target.value }))} disabled={disabled} className="h-9 text-sm" maxLength={13} />
-            </div>
-          </div>
-          <div className="flex items-center justify-between pt-1">
-            <label className="flex items-center gap-2 text-xs text-gray-600 cursor-pointer select-none">
-              <input
-                type="checkbox"
-                checked={rememberClient}
-                onChange={e => setRememberClient(e.target.checked)}
-                className="rounded border-gray-300 text-violet-600 focus:ring-violet-500"
-              />
-              Ricorda questo cliente
+          <div className="card-foot">
+            <label className="chk-row">
+              <input type="checkbox" checked={rememberClient} onChange={e => setRememberClient(e.target.checked)} />
+              {t("dashboard.new.client.remember")}
             </label>
-            <button
-              type="button"
-              onClick={clearClient}
-              className="text-xs text-gray-400 hover:text-gray-600 transition-colors"
-            >
-              Annulla
-            </button>
+            <button type="button" onClick={clearClient} className="text-link">{t("dashboard.new.client.cancel")}</button>
           </div>
-        </div>
+        </>
       )}
-    </div>
+    </section>
   );
 }
 
 // ─── Main page ───────────────────────────────────────────────────────────────
 export default function NewQuote() {
+  const { t } = useLanguage();
+  const EXAMPLES = getExamples(t);
   const [activeTab, setActiveTab] = useState<"ai" | "manual" | "listino">("ai");
 
   const [input, setInput] = useState("");
@@ -244,22 +190,22 @@ export default function NewQuote() {
   const [rememberClient, setRememberClient] = useState(false);
 
   useEffect(() => {
-    const savedPrompt = sessionStorage.getItem("prevai:homepage_prompt");
+    const savedPrompt = sessionStorage.getItem("quoteai:homepage_prompt");
     if (savedPrompt) {
-      sessionStorage.removeItem("prevai:homepage_prompt");
+      sessionStorage.removeItem("quoteai:homepage_prompt");
       setInput(savedPrompt);
     }
-    const savedClient = sessionStorage.getItem("prevai:selected_client");
+    const savedClient = sessionStorage.getItem("quoteai:selected_client");
     if (savedClient) {
-      sessionStorage.removeItem("prevai:selected_client");
+      sessionStorage.removeItem("quoteai:selected_client");
       try {
         const c = JSON.parse(savedClient) as SavedClient;
         setClientMode("saved");
         setSelectedClientId(c.id);
         setClientForm({
-          nome: c.nome, indirizzo: c.indirizzo || "", citta: c.citta || "",
-          cap: c.cap || "", provincia: c.provincia || "",
-          codiceFiscale: c.codiceFiscale || "", partitaIva: c.partitaIva || "",
+          nome: c.nome, indirizzo: c.indirizzo || "", city: c.city || "",
+          postalCode: c.postalCode || "", province: c.province || "",
+          businessNumber: c.businessNumber || "", partitaIva: c.partitaIva || "",
         });
       } catch { /* ignore */ }
     }
@@ -275,7 +221,7 @@ export default function NewQuote() {
     const totalAttachments = photos.length + docs.length;
     const remaining = MAX_ATTACHMENTS - totalAttachments;
     if (remaining <= 0) {
-      toast({ title: `Massimo ${MAX_ATTACHMENTS} allegati`, description: "Rimuovi un file per aggiungerne un altro.", variant: "destructive" });
+      toast({ title: fmt(t("dashboard.new.toast.maxAttachmentsTitle"), { max: MAX_ATTACHMENTS }), description: t("dashboard.new.toast.maxAttachmentsDesc"), variant: "destructive" });
       return;
     }
     const validImages: File[] = [];
@@ -284,15 +230,15 @@ export default function NewQuote() {
       const isImage = ALLOWED_TYPES.includes(file.type) || !!file.name.toLowerCase().match(/\.(heic|heif)$/);
       const isDoc = ALLOWED_DOC_TYPES.includes(file.type);
       if (!isImage && !isDoc) {
-        toast({ title: "Formato non supportato", description: `${file.name}: usa JPG, PNG, WEBP, HEIC, PDF, DOCX o XLSX.`, variant: "destructive" });
+        toast({ title: t("dashboard.new.toast.unsupportedFormatTitle"), description: fmt(t("dashboard.new.toast.unsupportedFormatDesc"), { name: file.name }), variant: "destructive" });
         continue;
       }
       if (isImage && file.size > MAX_SIZE_BYTES) {
-        toast({ title: "File troppo grande", description: `${file.name}: massimo ${MAX_SIZE_MB}MB per le foto.`, variant: "destructive" });
+        toast({ title: t("dashboard.new.toast.fileTooLargeTitle"), description: fmt(t("dashboard.new.toast.fileTooLargePhotoDesc"), { name: file.name, maxSize: MAX_SIZE_MB }), variant: "destructive" });
         continue;
       }
       if (isDoc && file.size > MAX_DOC_SIZE_BYTES) {
-        toast({ title: "File troppo grande", description: `${file.name}: massimo ${MAX_DOC_SIZE_MB}MB per i documenti.`, variant: "destructive" });
+        toast({ title: t("dashboard.new.toast.fileTooLargeTitle"), description: fmt(t("dashboard.new.toast.fileTooLargeDocDesc"), { name: file.name, maxSize: MAX_DOC_SIZE_MB }), variant: "destructive" });
         continue;
       }
       if (isImage) validImages.push(file);
@@ -320,10 +266,10 @@ export default function NewQuote() {
     return {
       nome: f.nome.trim(),
       indirizzo: f.indirizzo.trim(),
-      ...(f.citta.trim() && { citta: f.citta.trim() }),
-      ...(f.cap.trim() && { cap: f.cap.trim() }),
-      ...(f.provincia.trim() && { provincia: f.provincia.trim() }),
-      ...(f.codiceFiscale.trim() && { codiceFiscale: f.codiceFiscale.trim() }),
+      ...(f.city.trim() && { city: f.city.trim() }),
+      ...(f.postalCode.trim() && { postalCode: f.postalCode.trim() }),
+      ...(f.province.trim() && { province: f.province.trim() }),
+      ...(f.businessNumber.trim() && { businessNumber: f.businessNumber.trim() }),
       ...(f.partitaIva.trim() && { partitaIva: f.partitaIva.trim() }),
     };
   };
@@ -362,11 +308,11 @@ export default function NewQuote() {
         onError: (err: unknown) => {
           const e = err as { status?: number; data?: { error?: string; code?: string } };
           if (e.status === 429) {
-            toast({ title: "Quota mensile raggiunta", description: "Hai raggiunto il limite del tuo piano. Passa a Pro per preventivi illimitati.", variant: "destructive" });
+            toast({ title: t("dashboard.new.toast.quotaReachedTitle"), description: t("dashboard.new.toast.quotaReachedDesc"), variant: "destructive" });
           } else if ((e.status === 422 || e.status === 400) && e.data?.error) {
-            toast({ title: "Impossibile generare il preventivo", description: e.data.error, variant: "destructive" });
+            toast({ title: t("dashboard.new.toast.cannotGenerateTitle"), description: e.data.error, variant: "destructive" });
           } else {
-            toast({ title: "Errore nella generazione", description: "Si è verificato un errore. Riprova tra qualche istante.", variant: "destructive" });
+            toast({ title: t("dashboard.new.toast.genericErrorTitle"), description: t("dashboard.new.toast.genericErrorDesc"), variant: "destructive" });
           }
         },
       }
@@ -380,9 +326,9 @@ export default function NewQuote() {
     setSelectedClientId(c.id);
     setClientMode("saved");
     setClientForm({
-      nome: c.nome, indirizzo: c.indirizzo || "", citta: c.citta || "",
-      cap: c.cap || "", provincia: c.provincia || "",
-      codiceFiscale: c.codiceFiscale || "", partitaIva: c.partitaIva || "",
+      nome: c.nome, indirizzo: c.indirizzo || "", city: c.city || "",
+      postalCode: c.postalCode || "", province: c.province || "",
+      businessNumber: c.businessNumber || "", partitaIva: c.partitaIva || "",
     });
   };
 
@@ -395,80 +341,50 @@ export default function NewQuote() {
   const planPhotoLabel = !subscription?.isActive
     ? null
     : subscription.plan === "monthly_starter"
-      ? "1 foto/preventivo · Starter"
+      ? t("dashboard.new.plan.starter")
       : subscription.plan === "monthly_pro"
-        ? "3 foto/preventivo · Pro"
-        : "5 foto/preventivo · Elite";
+        ? t("dashboard.new.plan.pro")
+        : t("dashboard.new.plan.elite");
 
   const clientData = getClientData();
 
+  const attachmentsFull = photos.length + docs.length >= MAX_ATTACHMENTS;
+
   return (
-    <div className="max-w-2xl mx-auto animate-in fade-in duration-500 py-6 space-y-4">
-      {/* Header */}
-      <div className="mb-1">
-        <h1 className="text-2xl font-bold tracking-tight text-gray-900">Nuovo Preventivo</h1>
-        <p className="text-sm text-gray-500 mt-0.5">
-          Genera con AI o costruisci manualmente voce per voce.
-        </p>
+    <div className="animate-in fade-in duration-300" style={{ maxWidth: 760, marginInline: "auto" }}>
+      <div className="page-head">
+        <div>
+          <h1>{t("dashboard.new.title")}</h1>
+          <p className="sub">{t("dashboard.new.subtitle")}</p>
+        </div>
       </div>
 
       {/* ── Tab switcher ── */}
-      <div className="flex gap-1 bg-gray-100 rounded-xl p-1">
-        <button
-          type="button"
-          onClick={() => setActiveTab("ai")}
-          className={cn(
-            "flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-sm font-semibold transition-all",
-            activeTab === "ai"
-              ? "bg-white text-violet-700 shadow-sm"
-              : "text-gray-500 hover:text-gray-700"
-          )}
-        >
-          <Bot className="h-4 w-4" />
-          Genera con AI
+      <div className="pills" style={{ marginBottom: 16 }}>
+        <button type="button" onClick={() => setActiveTab("ai")} className={cn("pill", activeTab === "ai" && "on")}>
+          <Bot /> {t("dashboard.new.tabAi")}
         </button>
-        <button
-          type="button"
-          onClick={() => setActiveTab("manual")}
-          className={cn(
-            "flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-sm font-semibold transition-all",
-            activeTab === "manual"
-              ? "bg-white text-violet-700 shadow-sm"
-              : "text-gray-500 hover:text-gray-700"
-          )}
-        >
-          <PencilLine className="h-4 w-4" />
-          Manuale
+        <button type="button" onClick={() => setActiveTab("manual")} className={cn("pill", activeTab === "manual" && "on")}>
+          <PencilLine /> {t("dashboard.new.tabManual")}
         </button>
-        <button
-          type="button"
-          onClick={() => setActiveTab("listino")}
-          className={cn(
-            "flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-sm font-semibold transition-all",
-            activeTab === "listino"
-              ? "bg-white text-violet-700 shadow-sm"
-              : "text-gray-500 hover:text-gray-700"
-          )}
-        >
-          <BookOpen className="h-4 w-4" />
-          Listino Prezzi
+        <button type="button" onClick={() => setActiveTab("listino")} className={cn("pill", activeTab === "listino" && "on")}>
+          <BookOpen /> {t("dashboard.new.tabCatalog")}
         </button>
       </div>
 
       {/* ══ AI TAB ══════════════════════════════════════════════════════════ */}
       {activeTab === "ai" && (
-        <div className="space-y-3 animate-in fade-in duration-200">
+        <div className="stack animate-in fade-in duration-200">
           {/* Template selector */}
-          <div className="space-y-1">
-            <div className="flex items-center gap-2 px-1">
-              <LayoutTemplate className="h-3.5 w-3.5 text-gray-400" />
-              <span className="text-xs font-medium text-gray-500">Layout del preventivo</span>
-            </div>
-            <div className="grid grid-cols-3 gap-2">
+          <div>
+            <span className="eyebrow flex items-center gap-2" style={{ fontSize: 11, marginBottom: 8 }}>
+              <LayoutTemplate className="h-3.5 w-3.5" /> {t("dashboard.new.layoutLabel")}
+            </span>
+            <div className="src-grid flush">
               {([
-                { id: "standard" as const, label: "Standard", desc: "Computo classico", proOnly: false },
-                { id: "arosio" as const, label: "Professionale", desc: "Capitolato tecnico", proOnly: true },
-                { id: "mariagrazia" as const, label: "Elegante", desc: "Offerta commerciale", proOnly: true },
+                { id: "standard" as const, label: t("dashboard.new.template.standard.label"), desc: t("dashboard.new.template.standard.desc"), proOnly: false },
+                { id: "arosio" as const, label: t("dashboard.new.template.professional.label"), desc: t("dashboard.new.template.professional.desc"), proOnly: true },
+                { id: "mariagrazia" as const, label: t("dashboard.new.template.elegant.label"), desc: t("dashboard.new.template.elegant.desc"), proOnly: true },
               ]).map((tmpl) => {
                 const isActive = templateId === tmpl.id;
                 const isPro = subscription?.isActive && (subscription.plan === "monthly_pro" || subscription.plan === "monthly_elite");
@@ -479,26 +395,19 @@ export default function NewQuote() {
                     type="button"
                     onClick={() => {
                       if (requiresPro) {
-                        toast({ title: "Piano Pro richiesto", description: "Passa a Pro per usare questo template.", variant: "destructive" });
+                        toast({ title: t("dashboard.new.toast.proRequiredTitle"), description: t("dashboard.new.toast.proRequiredDesc"), variant: "destructive" });
                         return;
                       }
                       setTemplateId(tmpl.id);
                     }}
-                    className={cn(
-                      "text-left px-3 py-2 rounded-xl border text-xs transition-all",
-                      isActive
-                        ? "border-violet-400 bg-violet-50 text-violet-900 ring-1 ring-violet-300"
-                        : "border-gray-200 hover:border-violet-300 hover:bg-gray-50 text-gray-700"
-                    )}
+                    className={cn("src sm", isActive && "on")}
                   >
-                    <div className="font-semibold flex items-center gap-1">
-                      {isActive && <CheckCircle2 className="h-3 w-3 text-violet-600" />}
+                    <b>
+                      {isActive && <CheckCircle2 />}
                       {tmpl.label}
-                      {tmpl.proOnly && !isPro && (
-                        <span className="ml-auto text-[10px] font-bold text-amber-700 bg-amber-100 border border-amber-300 rounded px-1.5 py-0.5">PRO</span>
-                      )}
-                    </div>
-                    <div className="text-gray-500 mt-0.5 leading-snug">{tmpl.desc}</div>
+                      {requiresPro && <span className="chip chip-yellow">{t("dashboard.new.template.pro")}</span>}
+                    </b>
+                    <p>{tmpl.desc}</p>
                   </button>
                 );
               })}
@@ -506,50 +415,42 @@ export default function NewQuote() {
           </div>
 
           {/* Target total input */}
-          <div className="flex items-center gap-2 bg-white rounded-xl border border-gray-200 px-3 py-2.5 shadow-sm">
-            <span className="text-xs font-medium text-gray-500 shrink-0">Importo target (€)</span>
-            <input
-              type="text"
-              inputMode="numeric"
-              value={targetTotalEur}
-              onChange={e => {
-                const v = e.target.value.replace(/[^0-9.,]/g, "");
-                setTargetTotalEur(v);
-              }}
-              placeholder="es. 180000"
-              className="flex-1 text-sm outline-none placeholder:text-gray-300 text-gray-800 bg-transparent min-w-0 text-right font-mono"
-              disabled={isAiSubmitting}
-            />
-            <span className="text-xs text-gray-400 shrink-0">IVA incl.</span>
+          <div className="card">
+            <div className="field inline" style={{ padding: "12px 20px" }}>
+              <span>{t("dashboard.new.targetAmount")}</span>
+              <input
+                type="text"
+                inputMode="numeric"
+                value={targetTotalEur}
+                onChange={e => {
+                  const v = e.target.value.replace(/[^0-9.,]/g, "");
+                  setTargetTotalEur(v);
+                }}
+                placeholder={t("dashboard.new.targetPlaceholder")}
+                className="flex-1 min-w-0 text-right"
+                style={{ fontVariantNumeric: "tabular-nums" }}
+                disabled={isAiSubmitting}
+              />
+              <span>{t("dashboard.new.taxIncl")}</span>
+            </div>
           </div>
 
-          {/* AI bar card */}
-          <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+          {/* AI composer card */}
+          <div className="card composer">
             {/* Photo strip */}
             {photos.length > 0 && (
-              <div className="px-3 pt-3 flex gap-2 flex-wrap border-b border-gray-100 pb-3">
+              <div className="att-strip">
                 {photoPreviews.map((src, idx) => (
-                  <div key={idx} className="relative group w-14 h-14 rounded-lg overflow-hidden border border-gray-200 bg-gray-50 shrink-0">
-                    <img src={src} alt={`Foto ${idx + 1}`} className="w-full h-full object-cover" />
-                    <button
-                      type="button"
-                      onClick={() => removePhoto(idx)}
-                      disabled={isAiSubmitting}
-                      className="absolute top-0.5 right-0.5 bg-black/70 hover:bg-black rounded-full p-0.5 opacity-0 group-hover:opacity-100 transition-opacity"
-                    >
-                      <X className="h-2.5 w-2.5 text-white" />
+                  <div key={idx} className="att-thumb">
+                    <img src={src} alt={`${t("dashboard.new.photoAlt")} ${idx + 1}`} />
+                    <button type="button" onClick={() => removePhoto(idx)} disabled={isAiSubmitting} className="att-x" aria-label={t("dashboard.new.client.remove")}>
+                      <X />
                     </button>
                   </div>
                 ))}
-                {photos.length < maxPhotos && photos.length + docs.length < MAX_ATTACHMENTS && (
-                  <button
-                    type="button"
-                    onClick={() => fileInputRef.current?.click()}
-                    disabled={isAiSubmitting}
-                    className="w-14 h-14 rounded-lg border-2 border-dashed border-gray-200 hover:border-violet-300 flex flex-col items-center justify-center gap-0.5 text-gray-400 hover:text-violet-500 transition-colors text-[10px]"
-                  >
-                    <ImagePlus className="h-3.5 w-3.5" />
-                    <span>Aggiungi</span>
+                {photos.length < maxPhotos && !attachmentsFull && (
+                  <button type="button" onClick={() => fileInputRef.current?.click()} disabled={isAiSubmitting} className="att-add">
+                    <span className="grid place-items-center gap-0.5"><ImagePlus />{t("dashboard.new.add")}</span>
                   </button>
                 )}
               </div>
@@ -557,78 +458,47 @@ export default function NewQuote() {
 
             {/* Document strip */}
             {docs.length > 0 && (
-              <div className="px-3 pt-3 flex gap-2 flex-wrap border-b border-gray-100 pb-3">
+              <div className="att-strip">
                 {docs.map((file, idx) => (
-                  <div key={idx} className="relative group flex items-center gap-1.5 px-2 py-1 rounded-lg border border-gray-200 bg-gray-50 text-xs text-gray-700 shrink-0">
-                    {file.type === "application/pdf" ? (
-                      <FileText className="h-3.5 w-3.5 text-red-500" />
-                    ) : file.type === "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" ? (
-                      <FileSpreadsheet className="h-3.5 w-3.5 text-green-600" />
-                    ) : (
-                      <FileText className="h-3.5 w-3.5 text-blue-600" />
-                    )}
-                    <span className="truncate max-w-[120px]">{file.name}</span>
-                    <button
-                      type="button"
-                      onClick={() => removeDoc(idx)}
-                      disabled={isAiSubmitting}
-                      className="ml-0.5 text-gray-400 hover:text-red-500 transition-colors"
-                    >
-                      <X className="h-3 w-3" />
+                  <div key={idx} className="att-doc">
+                    {file.type === "application/pdf" ? <FileText className="ic" />
+                      : file.type === "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" ? <FileSpreadsheet className="ic" />
+                      : <FileText className="ic" />}
+                    <span>{file.name}</span>
+                    <button type="button" onClick={() => removeDoc(idx)} disabled={isAiSubmitting} className="att-x" aria-label={t("dashboard.new.client.remove")}>
+                      <X />
                     </button>
                   </div>
                 ))}
-                {photos.length + docs.length < MAX_ATTACHMENTS && (
-                  <button
-                    type="button"
-                    onClick={() => fileInputRef.current?.click()}
-                    disabled={isAiSubmitting}
-                    className="w-auto px-2 h-7 rounded-lg border-2 border-dashed border-gray-200 hover:border-violet-300 flex items-center gap-0.5 text-gray-400 hover:text-violet-500 transition-colors text-[10px]"
-                  >
-                    <ImagePlus className="h-3 w-3" />
-                    <span>Aggiungi</span>
+                {!attachmentsFull && (
+                  <button type="button" onClick={() => fileInputRef.current?.click()} disabled={isAiSubmitting} className="att-add wide">
+                    <ImagePlus /> {t("dashboard.new.add")}
                   </button>
                 )}
               </div>
             )}
 
             {/* Bar row */}
-            <div className="flex items-center gap-2 px-3 py-3">
-              <div className="group relative shrink-0">
-                {photoAllowed ? (
-                  <button
-                    type="button"
-                    onClick={() => fileInputRef.current?.click()}
-                    disabled={isAiSubmitting || photos.length >= maxPhotos}
-                    title={`Allega foto o documenti (max ${maxPhotos} foto, max ${MAX_ATTACHMENTS} totali)`}
-                    className={cn(
-                      "h-8 w-8 flex items-center justify-center rounded-xl transition-colors",
-                      photos.length > 0
-                        ? "bg-violet-100 text-violet-600 hover:bg-violet-200"
-                        : "text-gray-400 hover:bg-gray-100",
-                      (isAiSubmitting || photos.length >= maxPhotos) && "opacity-40 cursor-not-allowed"
-                    )}
-                  >
-                    <ImagePlus className="h-4 w-4" />
-                  </button>
-                ) : (
-                  <button
-                    type="button"
-                    disabled
-                    className="h-8 w-8 flex items-center justify-center rounded-xl text-gray-300 cursor-not-allowed"
-                  >
-                    <Lock className="h-4 w-4" />
-                  </button>
-                )}
-                {!photoAllowed && (
-                  <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2.5 py-1 bg-gray-900 text-white text-[11px] font-medium rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none shadow-lg z-10">
-                    Disponibile con piano a pagamento
-                    <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-gray-900" />
-                  </div>
-                )}
-              </div>
+            <div className="comp-row">
+              {photoAllowed ? (
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={isAiSubmitting || photos.length >= maxPhotos}
+                  title={fmt(t("dashboard.new.attachTooltip"), { maxPhotos, maxTotal: MAX_ATTACHMENTS })}
+                  aria-label={fmt(t("dashboard.new.attachTooltip"), { maxPhotos, maxTotal: MAX_ATTACHMENTS })}
+                  className="comp-mic"
+                  style={photos.length > 0 ? { background: "var(--soft-2)", color: "var(--navy)" } : undefined}
+                >
+                  <ImagePlus className="h-4 w-4" />
+                </button>
+              ) : (
+                <span className="comp-lock" title={t("dashboard.new.paidPlanOnly")} aria-label={t("dashboard.new.paidPlanOnly")}>
+                  <Lock className="h-4 w-4" />
+                </span>
+              )}
 
-              <Sparkles className="h-4 w-4 text-violet-400 shrink-0" />
+              <span className="comp-ic"><Sparkles className="h-[18px] w-[18px]" /></span>
               <input
                 value={input}
                 onChange={e => setInput(e.target.value)}
@@ -638,8 +508,8 @@ export default function NewQuote() {
                     handleAiSubmit();
                   }
                 }}
-                placeholder="Descrivi il lavoro e ottieni un preventivo in 30 secondi..."
-                className="flex-1 text-sm outline-none placeholder:text-gray-400 text-gray-800 bg-transparent min-w-0"
+                placeholder={t("dashboard.new.inputPlaceholder")}
+                aria-label={t("dashboard.new.inputPlaceholder")}
                 disabled={isAiSubmitting}
               />
 
@@ -648,42 +518,22 @@ export default function NewQuote() {
                 onTranscribed={text => setInput(prev => (prev.trim() ? `${prev.trim()} ${text}` : text))}
               />
 
-              <button
-                onClick={handleAiSubmit}
-                disabled={!canAiSubmit}
-                className={cn(
-                  "h-9 w-9 rounded-full flex items-center justify-center shrink-0 transition-all",
-                  canAiSubmit ? "btn-gradient shadow-sm" : "bg-gray-100 cursor-not-allowed"
-                )}
-              >
-                {isAiSubmitting
-                  ? <Loader2 className="h-4 w-4 animate-spin text-white" />
-                  : <ArrowRight className={cn("h-4 w-4", canAiSubmit ? "text-white" : "text-gray-300")} />
-                }
+              <button type="button" onClick={handleAiSubmit} disabled={!canAiSubmit} className="comp-send" aria-label={t("dashboard.new.tabAi")}>
+                {isAiSubmitting ? <Loader2 className="chev animate-spin" /> : <ArrowRight className="chev" />}
               </button>
             </div>
 
             {photoAllowed && photos.length === 0 && docs.length === 0 && (
-              <div className="px-3 pb-1.5 -mt-1 text-[11px] text-violet-500 font-medium">
-                {planPhotoLabel} — clicca 📎 per foto o documenti PDF/Excel/Word
-              </div>
+              <div className="comp-hint">{planPhotoLabel} {t("dashboard.new.photoHintSuffix")}</div>
             )}
 
-            <div className="px-3 pb-3 border-t border-gray-50 pt-2.5">
-              <div className="flex flex-wrap gap-1.5 items-center">
-                <span className="text-[11px] text-gray-400 font-medium uppercase tracking-wide mr-1">Es:</span>
-                {EXAMPLES.map(ex => (
-                  <button
-                    key={ex.label}
-                    type="button"
-                    onClick={() => setInput(ex.text)}
-                    disabled={isAiSubmitting}
-                    className="text-xs px-2.5 py-1 rounded-full border border-gray-200 text-gray-600 hover:border-violet-300 hover:text-violet-600 hover:bg-violet-50 transition-colors disabled:opacity-40"
-                  >
-                    {ex.label}
-                  </button>
-                ))}
-              </div>
+            <div className="comp-ex">
+              <span className="eyebrow">{t("dashboard.new.examplesLabel")}</span>
+              {EXAMPLES.map(ex => (
+                <button key={ex.label} type="button" onClick={() => setInput(ex.text)} disabled={isAiSubmitting} className="pill">
+                  {ex.label}
+                </button>
+              ))}
             </div>
           </div>
 
@@ -717,7 +567,7 @@ export default function NewQuote() {
 
       {/* ══ MANUAL TAB ══════════════════════════════════════════════════════ */}
       {activeTab === "manual" && (
-        <div className="space-y-4 animate-in fade-in duration-200">
+        <div className="stack animate-in fade-in duration-200">
           {/* Client selector for manual tab */}
           <ClientSelector
             clientMode={clientMode}
@@ -742,10 +592,8 @@ export default function NewQuote() {
 
       {/* ══ LISTINO TAB ═════════════════════════════════════════════════════ */}
       {activeTab === "listino" && (
-        <div className="space-y-4 animate-in fade-in duration-200">
-          <Card className="p-4 border border-violet-105 bg-white shadow-xs">
-            <PriceCatalogSection />
-          </Card>
+        <div className="animate-in fade-in duration-200">
+          <PriceCatalogSection />
         </div>
       )}
     </div>

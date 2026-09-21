@@ -1,16 +1,12 @@
 import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { Plus, Pencil, Trash2, Download, Loader2, BookOpen, Tag, Ruler, Euro, X, Check, Import } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
+import { Plus, Pencil, Trash2, Download, Loader2, BookOpen, Search, Check, Import, AlertTriangle } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   Dialog,
+  DialogBody,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogFooter,
@@ -35,24 +31,28 @@ import {
   useGetSubscription,
 } from "@workspace/api-client-react";
 import { useToast } from "@/hooks/use-toast";
+import { useLanguage } from "@/i18n/LanguageContext";
 import type { CatalogItem } from "@workspace/api-client-react";
 
 const UM_OPTIONS = ["mq", "ml", "mc", "cad", "ore", "kg", "a.c.", "pezzi", "kw", "lt", "t", "m", "%"];
 
-const CATEGORIA_SUGGESTIONS = [
-  "Tinteggiatura",
-  "Demolizioni",
-  "Opere edili",
-  "Impianto elettrico",
-  "Impianto idraulico",
-  "Pavimentazioni",
-  "Rivestimenti",
-  "Infissi",
-  "Coibentazione",
-  "Carpenteria",
-  "Manodopera",
-  "Altro",
-];
+function useCategoriaSuggestions() {
+  const { t } = useLanguage();
+  return [
+    t("dashboard.catalog.category.painting"),
+    t("dashboard.catalog.category.demolition"),
+    t("dashboard.catalog.category.construction"),
+    t("dashboard.catalog.category.electrical"),
+    t("dashboard.catalog.category.plumbing"),
+    t("dashboard.catalog.category.flooring"),
+    t("dashboard.catalog.category.wallCladding"),
+    t("dashboard.catalog.category.doorsWindows"),
+    t("dashboard.catalog.category.insulation"),
+    t("dashboard.catalog.category.carpentry"),
+    t("dashboard.catalog.category.labor"),
+    t("dashboard.catalog.category.other"),
+  ];
+}
 
 interface ItemFormData {
   nome: string;
@@ -71,7 +71,7 @@ const EMPTY_FORM: ItemFormData = {
 };
 
 function formatCurrency(n: number) {
-  return new Intl.NumberFormat("it-IT", { style: "currency", currency: "EUR" }).format(n);
+  return new Intl.NumberFormat("en-CA", { style: "currency", currency: "CAD" }).format(n);
 }
 
 function ItemFormDialog({
@@ -89,6 +89,8 @@ function ItemFormDialog({
   isSaving: boolean;
   title: string;
 }) {
+  const { t } = useLanguage();
+  const CATEGORIA_SUGGESTIONS = useCategoriaSuggestions();
   const [form, setForm] = useState<ItemFormData>(initial);
 
   const set = (k: keyof ItemFormData, v: string) => setForm(f => ({ ...f, [k]: v }));
@@ -101,78 +103,45 @@ function ItemFormDialog({
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent>
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
         </DialogHeader>
-        <div className="space-y-4 py-2">
-          <div className="space-y-1.5">
-            <Label>Descrizione lavorazione *</Label>
-            <Input
-              placeholder="es. Tinteggiatura pareti interne"
-              value={form.nome}
-              onChange={e => set("nome", e.target.value)}
-              autoFocus
-            />
+        <DialogBody>
+          <div className="field">
+            <label>{t("dashboard.catalog.form.descriptionLabel")}</label>
+            <input placeholder={t("dashboard.catalog.form.descriptionPlaceholder")} value={form.nome} onChange={e => set("nome", e.target.value)} autoFocus />
           </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1.5">
-              <Label>Unità di misura *</Label>
-              <Select value={form.um} onValueChange={v => set("um", v)}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {UM_OPTIONS.map(u => (
-                    <SelectItem key={u} value={u}>{u}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+          <div className="form-grid">
+            <div className="field">
+              <label>{t("dashboard.catalog.form.unitLabel")}</label>
+              <select value={form.um} onChange={e => set("um", e.target.value)}>
+                {UM_OPTIONS.map(u => <option key={u} value={u}>{u}</option>)}
+              </select>
             </div>
-            <div className="space-y-1.5">
-              <Label>Prezzo unitario (€) *</Label>
-              <Input
-                type="number"
-                min={0}
-                step={0.01}
-                placeholder="es. 12.50"
-                value={form.prezzoUnitario}
-                onChange={e => set("prezzoUnitario", e.target.value)}
-              />
+            <div className="field">
+              <label>{t("dashboard.catalog.form.unitPriceLabel")}</label>
+              <input type="number" min={0} step={0.01} placeholder={t("dashboard.catalog.form.unitPricePlaceholder")} value={form.prezzoUnitario} onChange={e => set("prezzoUnitario", e.target.value)} />
             </div>
           </div>
-
-          <div className="space-y-1.5">
-            <Label>Categoria</Label>
-            <Select value={form.categoria || "__none__"} onValueChange={v => set("categoria", v === "__none__" ? "" : v)}>
-              <SelectTrigger>
-                <SelectValue placeholder="Seleziona categoria (opzionale)" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="__none__">Nessuna categoria</SelectItem>
-                {CATEGORIA_SUGGESTIONS.map(c => (
-                  <SelectItem key={c} value={c}>{c}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+          <div className="field">
+            <label>{t("dashboard.catalog.form.categoryLabel")}</label>
+            <select value={form.categoria} onChange={e => set("categoria", e.target.value)}>
+              <option value="">{t("dashboard.catalog.form.noCategoryOption")}</option>
+              {CATEGORIA_SUGGESTIONS.map(c => <option key={c} value={c}>{c}</option>)}
+            </select>
           </div>
-
-          <div className="space-y-1.5">
-            <Label>Note (opzionale)</Label>
-            <Input
-              placeholder="es. include materiali"
-              value={form.note}
-              onChange={e => set("note", e.target.value)}
-            />
+          <div className="field">
+            <label>{t("dashboard.catalog.form.notesLabel")}</label>
+            <input placeholder={t("dashboard.catalog.form.notesPlaceholder")} value={form.note} onChange={e => set("note", e.target.value)} />
           </div>
-        </div>
+        </DialogBody>
         <DialogFooter>
-          <Button variant="outline" onClick={onClose} disabled={isSaving}>Annulla</Button>
-          <Button onClick={() => onSave(form)} disabled={!valid || isSaving} className="gap-2">
+          <button type="button" className="btn btn-sm btn-outline-navy" onClick={onClose} disabled={isSaving}>{t("dashboard.catalog.cancel")}</button>
+          <button type="button" className="btn btn-sm btn-navy" onClick={() => onSave(form)} disabled={!valid || isSaving}>
             {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
-            Salva
-          </Button>
+            {t("dashboard.catalog.form.save")}
+          </button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
@@ -197,6 +166,7 @@ function OcrImportDialog({
   onClose: () => void;
   onImported: (count: number) => void;
 }) {
+  const { t } = useLanguage();
   const { toast } = useToast();
   const [file, setFile] = useState<File | null>(null);
   const [isExtracting, setIsExtracting] = useState(false);
@@ -229,13 +199,13 @@ function OcrImportDialog({
       });
       const data = await res.json();
       if (!res.ok) {
-        setError(data.error || "Impossibile leggere il listino da questo file.");
+        setError(data.error || t("dashboard.catalog.ocr.readError"));
         return;
       }
       const items = data.items as Array<{ nome: string; categoria: string | null; um: string; prezzoUnitario: number; note: string | null }>;
       setPreviewItems(items.map(it => ({ ...it, selected: true })));
     } catch {
-      setError("Errore di connessione. Riprova.");
+      setError(t("dashboard.catalog.ocr.connectionError"));
     } finally {
       setIsExtracting(false);
     }
@@ -266,13 +236,13 @@ function OcrImportDialog({
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        toast({ title: "Errore", description: data.error || "Impossibile importare le voci.", variant: "destructive" });
+        toast({ title: t("dashboard.catalog.ocr.errorTitle"), description: data.error || t("dashboard.catalog.ocr.errorImportDesc"), variant: "destructive" });
         return;
       }
       onImported(toImport.length);
       handleClose();
     } catch {
-      toast({ title: "Errore di connessione", variant: "destructive" });
+      toast({ title: t("dashboard.catalog.ocr.errorConnectionTitle"), variant: "destructive" });
     } finally {
       setIsImporting(false);
     }
@@ -280,66 +250,52 @@ function OcrImportDialog({
 
   return (
     <Dialog open={open} onOpenChange={(o) => { if (!o) handleClose(); }}>
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent size="lg">
         <DialogHeader>
-          <DialogTitle>Importa listino da foto o documento</DialogTitle>
+          <DialogTitle>{t("dashboard.catalog.ocr.title")}</DialogTitle>
+          <DialogDescription>{!previewItems ? t("dashboard.catalog.ocr.uploadDesc") : t("dashboard.catalog.ocr.foundItemsDesc").replace("{count}", String(previewItems.length))}</DialogDescription>
         </DialogHeader>
 
         {!previewItems ? (
-          <div className="space-y-4 py-2">
-            <p className="text-sm text-muted-foreground">
-              Carica una foto del tuo listino cartaceo, un PDF o un file Excel: l'AI estrae automaticamente le voci con un prezzo leggibile.
-            </p>
-            <Input
-              type="file"
-              accept="image/jpeg,image/png,image/webp,image/heic,image/heif,application/pdf,.docx,.xlsx"
-              onChange={(e) => setFile(e.target.files?.[0] ?? null)}
-            />
-            {error && <p className="text-sm text-red-500">{error}</p>}
+          <>
+            <DialogBody>
+              <div className="field">
+                <input type="file" accept="image/jpeg,image/png,image/webp,image/heic,image/heif,application/pdf,.docx,.xlsx" onChange={(e) => setFile(e.target.files?.[0] ?? null)} />
+              </div>
+              {error && <div className="notice danger"><AlertTriangle /><span className="grow">{error}</span></div>}
+            </DialogBody>
             <DialogFooter>
-              <Button variant="outline" onClick={handleClose} disabled={isExtracting}>Annulla</Button>
-              <Button onClick={handleExtract} disabled={!file || isExtracting} className="gap-2">
+              <button type="button" className="btn btn-sm btn-outline-navy" onClick={handleClose} disabled={isExtracting}>{t("dashboard.catalog.cancel")}</button>
+              <button type="button" className="btn btn-sm btn-navy" onClick={handleExtract} disabled={!file || isExtracting}>
                 {isExtracting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Import className="h-4 w-4" />}
-                Estrai voci
-              </Button>
+                {t("dashboard.catalog.ocr.extractItems")}
+              </button>
             </DialogFooter>
-          </div>
+          </>
         ) : (
-          <div className="space-y-4 py-2">
-            <p className="text-sm text-muted-foreground">
-              Trovate {previewItems.length} voci. Deseleziona quelle da escludere e correggi i prezzi se necessario.
-            </p>
-            <div className="max-h-80 overflow-y-auto space-y-1 border rounded-lg divide-y">
-              {previewItems.map((it, i) => (
-                <div key={i} className="flex items-center gap-2 px-3 py-2">
-                  <input
-                    type="checkbox"
-                    checked={it.selected}
-                    onChange={() => toggleItem(i)}
-                    className="h-4 w-4 shrink-0 accent-violet-600"
-                  />
-                  <div className="flex-1 min-w-0">
-                    <div className="text-sm font-medium truncate">{it.nome}</div>
-                    <div className="text-xs text-muted-foreground">{it.categoria || "Senza categoria"} · {it.um}</div>
-                  </div>
-                  <Input
-                    type="number"
-                    step={0.01}
-                    value={it.prezzoUnitario}
-                    onChange={(e) => updateItemPrice(i, e.target.value)}
-                    className="w-24 h-8 text-right shrink-0"
-                  />
-                </div>
-              ))}
-            </div>
+          <>
+            <DialogBody className="flush">
+              <div className="ocr-list">
+                {previewItems.map((it, i) => (
+                  <label key={i} className="item-row">
+                    <input type="checkbox" checked={it.selected} onChange={() => toggleItem(i)} />
+                    <div className="grow">
+                      <b className="ttl">{it.nome}</b>
+                      <span className="sub">{it.categoria || t("dashboard.catalog.noCategory")} · {it.um}</span>
+                    </div>
+                    <input className="inp-sm r" style={{ width: 96 }} type="number" step={0.01} value={it.prezzoUnitario} onChange={(e) => updateItemPrice(i, e.target.value)}/>
+                  </label>
+                ))}
+              </div>
+            </DialogBody>
             <DialogFooter>
-              <Button variant="outline" onClick={reset} disabled={isImporting}>Indietro</Button>
-              <Button onClick={handleImport} disabled={selectedCount === 0 || isImporting} className="gap-2">
+              <button type="button" className="btn btn-sm btn-outline-navy" onClick={reset} disabled={isImporting}>{t("dashboard.catalog.ocr.back")}</button>
+              <button type="button" className="btn btn-sm btn-navy" onClick={handleImport} disabled={selectedCount === 0 || isImporting}>
                 {isImporting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
-                Importa {selectedCount} {selectedCount === 1 ? "voce" : "voci"}
-              </Button>
+                {t(selectedCount === 1 ? "dashboard.catalog.ocr.importSingular" : "dashboard.catalog.ocr.importPlural").replace("{count}", String(selectedCount))}
+              </button>
             </DialogFooter>
-          </div>
+          </>
         )}
       </DialogContent>
     </Dialog>
@@ -347,6 +303,7 @@ function OcrImportDialog({
 }
 
 export default function CatalogPage() {
+  const { t } = useLanguage();
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
@@ -363,7 +320,8 @@ export default function CatalogPage() {
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [isOcrOpen, setIsOcrOpen] = useState(false);
 
-  const isPro = subscription?.isActive && subscription?.plan === "monthly_pro";
+  // Elite includes everything Pro does (Phase 66: Elite accounts were shown the "Upgrade to Pro" wall).
+  const isPro = subscription?.isActive && (subscription?.plan === "monthly_pro" || subscription?.plan === "monthly_elite");
 
   const invalidate = () => queryClient.invalidateQueries({ queryKey: getListCatalogItemsQueryKey() });
 
@@ -380,9 +338,9 @@ export default function CatalogPage() {
       onSuccess: () => {
         setIsCreateOpen(false);
         invalidate();
-        toast({ title: "Voce aggiunta al listino" });
+        toast({ title: t("dashboard.catalog.toast.itemAdded") });
       },
-      onError: () => toast({ title: "Errore", description: "Impossibile aggiungere la voce", variant: "destructive" }),
+      onError: () => toast({ title: t("dashboard.catalog.toast.errorTitle"), description: t("dashboard.catalog.toast.errorAddDesc"), variant: "destructive" }),
     });
   };
 
@@ -401,9 +359,9 @@ export default function CatalogPage() {
       onSuccess: () => {
         setEditingItem(null);
         invalidate();
-        toast({ title: "Voce aggiornata" });
+        toast({ title: t("dashboard.catalog.toast.itemUpdated") });
       },
-      onError: () => toast({ title: "Errore", description: "Impossibile aggiornare la voce", variant: "destructive" }),
+      onError: () => toast({ title: t("dashboard.catalog.toast.errorTitle"), description: t("dashboard.catalog.toast.errorUpdateDesc"), variant: "destructive" }),
     });
   };
 
@@ -413,9 +371,9 @@ export default function CatalogPage() {
       onSuccess: () => {
         setDeletingId(null);
         invalidate();
-        toast({ title: "Voce eliminata" });
+        toast({ title: t("dashboard.catalog.toast.itemDeleted") });
       },
-      onError: () => toast({ title: "Errore", description: "Impossibile eliminare la voce", variant: "destructive" }),
+      onError: () => toast({ title: t("dashboard.catalog.toast.errorTitle"), description: t("dashboard.catalog.toast.errorDeleteDesc"), variant: "destructive" }),
     });
   };
 
@@ -424,182 +382,159 @@ export default function CatalogPage() {
       onSuccess: (result) => {
         invalidate();
         if (result.imported === 0) {
-          toast({ title: "Nessuna nuova voce trovata", description: "Tutte le lavorazioni dai tuoi preventivi sono già nel listino." });
+          toast({ title: t("dashboard.catalog.toast.noNewItemsTitle"), description: t("dashboard.catalog.toast.noNewItemsDesc") });
         } else {
           toast({
-            title: `${result.imported} voci importate`,
-            description: result.skipped > 0 ? `${result.skipped} voci già presenti saltate.` : undefined,
+            title: t("dashboard.catalog.toast.itemsImportedTitle").replace("{count}", String(result.imported)),
+            description: result.skipped > 0 ? t("dashboard.catalog.toast.itemsSkippedDesc").replace("{count}", String(result.skipped)) : undefined,
           });
         }
       },
-      onError: () => toast({ title: "Errore durante l'importazione", variant: "destructive" }),
+      onError: () => toast({ title: t("dashboard.catalog.toast.errorImportTitle"), variant: "destructive" }),
     });
   };
 
+  const noCategoryLabel = t("dashboard.catalog.noCategory");
   const groupedByCategory = items.reduce<Record<string, CatalogItem[]>>((acc, item) => {
-    const cat = item.categoria ?? "Senza categoria";
+    const cat = item.categoria ?? noCategoryLabel;
     if (!acc[cat]) acc[cat] = [];
     acc[cat].push(item);
     return acc;
   }, {});
 
   const categories = Object.keys(groupedByCategory).sort((a, b) => {
-    if (a === "Senza categoria") return 1;
-    if (b === "Senza categoria") return -1;
+    if (a === noCategoryLabel) return 1;
+    if (b === noCategoryLabel) return -1;
     return a.localeCompare(b);
   });
 
+  const sortedItems = [...items].sort((a, b) => {
+    const catA = a.categoria ?? noCategoryLabel, catB = b.categoria ?? noCategoryLabel;
+    return catA === catB ? a.nome.localeCompare(b.nome) : catA.localeCompare(catB);
+  });
+  const [search, setSearch] = useState("");
+  const q = search.trim().toLowerCase();
+  const visibleItems = q ? sortedItems.filter(i => i.nome.toLowerCase().includes(q) || (i.categoria ?? "").toLowerCase().includes(q)) : sortedItems;
+
   if (!isPro) {
     return (
-      <div className="flex flex-col items-center justify-center py-24 gap-4 text-center">
-        <BookOpen className="h-12 w-12 text-gray-300" />
-        <h2 className="text-xl font-semibold text-gray-700">Listino Prezzi — Piano Pro</h2>
-        <p className="text-gray-500 max-w-md">
-          Il listino prezzi personalizzato è disponibile nel piano Pro. Attiva il piano Pro per gestire le tue lavorazioni e prezzi unitari, e farli usare dall'AI nei preventivi.
-        </p>
-        <Button onClick={() => window.location.href = "/dashboard/settings?tab=billing"} className="gap-2 mt-2">
-          Scopri il Piano Pro
-        </Button>
+      <div className="card">
+        <div className="card-empty" style={{ padding: "64px 22px" }}>
+          <BookOpen />
+          <h2 style={{ fontSize: 18, fontWeight: 800, color: "var(--navy)", marginBottom: 6 }}>{t("dashboard.catalog.proOnly.title")}</h2>
+          <p style={{ maxWidth: 420, margin: "0 auto 18px" }}>{t("dashboard.catalog.proOnly.desc")}</p>
+          <button type="button" className="btn btn-sm btn-navy" onClick={() => window.location.href = "/dashboard/settings?tab=billing"}>{t("dashboard.catalog.proOnly.cta")}</button>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-500 max-w-5xl mx-auto">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
+    <div className="animate-in fade-in duration-500">
+      <div className="page-head">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Listino Prezzi</h1>
-          <p className="text-muted-foreground mt-1">
-            Gestisci le tue lavorazioni e prezzi unitari. L'AI li usa come riferimento quando genera nuovi preventivi.
-          </p>
+          <h1>{t("dashboard.nav.catalog")}</h1>
+          <p className="sub">{t("dashboard.catalog.header.subtitle")}</p>
         </div>
-        <div className="flex gap-2 flex-wrap">
-          <Button
-            variant="outline"
-            className="gap-2"
-            onClick={handleImport}
-            disabled={importFromQuotes.isPending}
-          >
-            {importFromQuotes.isPending
-              ? <Loader2 className="h-4 w-4 animate-spin" />
-              : <Download className="h-4 w-4" />}
-            Importa dai preventivi
-          </Button>
-          <Button variant="outline" className="gap-2" onClick={() => setIsOcrOpen(true)}>
+        <div className="head-actions">
+          <button type="button" className="btn btn-outline-navy btn-sm" onClick={handleImport} disabled={importFromQuotes.isPending}>
+            {importFromQuotes.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
+            {t("dashboard.catalog.importFromQuotes")}
+          </button>
+          <button type="button" className="btn btn-outline-navy btn-sm" onClick={() => setIsOcrOpen(true)}>
             <Import className="h-4 w-4" />
-            Importa da foto/PDF
-          </Button>
-          <Button className="gap-2" onClick={() => setIsCreateOpen(true)}>
+            {t("dashboard.catalog.importFromPhotoPdf")}
+          </button>
+          <button type="button" className="btn btn-navy" onClick={() => setIsCreateOpen(true)}>
             <Plus className="h-4 w-4" />
-            Aggiungi voce
-          </Button>
+            {t("dashboard.catalog.addItem")}
+          </button>
         </div>
       </div>
 
-      {/* Content */}
       {isLoading ? (
         <div className="space-y-3">
           {[...Array(6)].map((_, i) => <Skeleton key={i} className="h-14 w-full" />)}
         </div>
       ) : items.length === 0 ? (
-        <Card className="border-dashed">
-          <CardContent className="flex flex-col items-center justify-center py-16 gap-4 text-center">
-            <BookOpen className="h-10 w-10 text-gray-300" />
-            <div>
-              <p className="font-medium text-gray-700">Il tuo listino è vuoto</p>
-              <p className="text-sm text-gray-500 mt-1">
-                Aggiungi le tue lavorazioni manualmente oppure importale dai preventivi già creati.
-              </p>
-            </div>
-            <div className="flex gap-2 mt-2">
-              <Button variant="outline" className="gap-2" onClick={handleImport} disabled={importFromQuotes.isPending}>
-                {importFromQuotes.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
-                Importa dai preventivi
-              </Button>
-              <Button variant="outline" className="gap-2" onClick={() => setIsOcrOpen(true)}>
-                <Import className="h-4 w-4" />
-                Importa da foto/PDF
-              </Button>
-              <Button className="gap-2" onClick={() => setIsCreateOpen(true)}>
-                <Plus className="h-4 w-4" />
-                Aggiungi voce
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+        <div className="card" style={{ padding: "40px 22px", textAlign: "center" }}>
+          <BookOpen className="h-10 w-10 text-muted-foreground mx-auto mb-3" />
+          <p className="font-medium text-foreground">{t("dashboard.catalog.empty.title")}</p>
+          <p className="text-sm text-muted-foreground mt-1 mb-4">{t("dashboard.catalog.empty.desc")}</p>
+          <div className="flex gap-2 justify-center flex-wrap">
+            <button type="button" className="btn btn-outline-navy btn-sm" onClick={handleImport} disabled={importFromQuotes.isPending}>
+              {importFromQuotes.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
+              {t("dashboard.catalog.importFromQuotes")}
+            </button>
+            <button type="button" className="btn btn-outline-navy btn-sm" onClick={() => setIsOcrOpen(true)}>
+              <Import className="h-4 w-4" />
+              {t("dashboard.catalog.importFromPhotoPdf")}
+            </button>
+            <button type="button" className="btn btn-navy" onClick={() => setIsCreateOpen(true)}>
+              <Plus className="h-4 w-4" />
+              {t("dashboard.catalog.addItem")}
+            </button>
+          </div>
+        </div>
       ) : (
-        <div className="space-y-6">
-          {/* Summary bar */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-            <Card className="p-4">
-              <div className="text-2xl font-bold">{items.length}</div>
-              <div className="text-sm text-muted-foreground">Voci totali</div>
-            </Card>
-            <Card className="p-4">
-              <div className="text-2xl font-bold">{categories.filter(c => c !== "Senza categoria").length}</div>
-              <div className="text-sm text-muted-foreground">Categorie</div>
-            </Card>
-            <Card className="p-4 col-span-2 sm:col-span-1">
-              <div className="text-2xl font-bold">
-                {formatCurrency(items.reduce((s, i) => s + i.prezzoUnitario, 0) / items.length)}
-              </div>
-              <div className="text-sm text-muted-foreground">Prezzo medio</div>
-            </Card>
+        <>
+          <div className="stat-grid" style={{ gridTemplateColumns: "repeat(3, 1fr)" }}>
+            <div className="card stat-card">
+              <p className="lbl">{t("dashboard.catalog.summary.totalItems")}</p>
+              <p className="val">{items.length}</p>
+            </div>
+            <div className="card stat-card">
+              <p className="lbl">{t("dashboard.catalog.summary.categories")}</p>
+              <p className="val">{categories.filter(c => c !== noCategoryLabel).length}</p>
+            </div>
+            <div className="card stat-card">
+              <p className="lbl">{t("dashboard.catalog.summary.avgPrice")}</p>
+              <p className="val">{formatCurrency(items.reduce((s, i) => s + i.prezzoUnitario, 0) / items.length)}</p>
+            </div>
           </div>
 
-          {/* Items by category */}
-          {categories.map(cat => (
-            <Card key={cat}>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-base flex items-center gap-2">
-                  <Tag className="h-4 w-4 text-violet-500" />
-                  {cat}
-                  <Badge variant="secondary" className="ml-auto">{groupedByCategory[cat].length}</Badge>
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="p-0">
-                <div className="divide-y">
-                  {groupedByCategory[cat].map(item => (
-                    <div key={item.id} className="flex items-center gap-3 px-6 py-3 hover:bg-gray-50 transition-colors group">
-                      <div className="flex-1 min-w-0">
-                        <div className="font-medium text-sm truncate">{item.nome}</div>
-                        {item.note && <div className="text-xs text-muted-foreground truncate">{item.note}</div>}
-                      </div>
-                      <div className="flex items-center gap-2 shrink-0">
-                        <Badge variant="outline" className="text-xs font-mono">
-                          <Ruler className="h-3 w-3 mr-1 opacity-60" />
-                          {item.um}
-                        </Badge>
-                        <span className="text-sm font-semibold text-green-700 min-w-[80px] text-right">
-                          {formatCurrency(item.prezzoUnitario)}
-                        </span>
-                        <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <Button
-                            size="icon"
-                            variant="ghost"
-                            className="h-7 w-7"
-                            onClick={() => setEditingItem(item)}
-                          >
-                            <Pencil className="h-3.5 w-3.5" />
-                          </Button>
-                          <Button
-                            size="icon"
-                            variant="ghost"
-                            className="h-7 w-7 text-red-500 hover:text-red-700 hover:bg-red-50"
-                            onClick={() => setDeletingId(item.id)}
-                          >
-                            <Trash2 className="h-3.5 w-3.5" />
-                          </Button>
+          <div className="card" style={{ marginTop: 16 }}>
+            <div className="toolbar">
+              <label className="search sm grow">
+                <Search className="h-4 w-4" />
+                <input type="search" value={search} onChange={e => setSearch(e.target.value)} placeholder={t("dashboard.catalog.searchPlaceholder")} aria-label={t("dashboard.catalog.searchPlaceholder")} />
+              </label>
+            </div>
+            <div className="tbl-wrap">
+              <table className="tbl">
+                <thead>
+                  <tr>
+                    <th>{t("dashboard.catalog.col.item")}</th>
+                    <th>{t("dashboard.catalog.col.category")}</th>
+                    <th>{t("dashboard.catalog.col.unit")}</th>
+                    <th style={{ textAlign: "right" }}>{t("dashboard.catalog.col.unitPrice")}</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {visibleItems.map(item => (
+                    <tr key={item.id} className="group">
+                      <td>
+                        <span className="t-strong">{item.nome}</span>
+                        {item.note && <span className="t-sub">{item.note}</span>}
+                      </td>
+                      <td>{item.categoria || noCategoryLabel}</td>
+                      <td>{item.um}</td>
+                      <td className="t-amt" style={{ textAlign: "right" }}>{formatCurrency(item.prezzoUnitario)}</td>
+                      <td>
+                        <div className="row-act">
+                          <button type="button" className="ic-btn" aria-label={t("a11y.edit")} onClick={() => setEditingItem(item)}><Pencil /></button>
+                          <button type="button" className="ic-btn danger" aria-label={t("a11y.delete")} onClick={() => setDeletingId(item.id)}><Trash2 /></button>
                         </div>
-                      </div>
-                    </div>
+                      </td>
+                    </tr>
                   ))}
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+                </tbody>
+              </table>
+            </div>
+            <div className="card-foot"><span className="foot-note">{t("dashboard.catalog.itemCount").replace("{count}", String(visibleItems.length))}</span></div>
+          </div>
+        </>
       )}
 
       {/* Create dialog */}
@@ -609,7 +544,7 @@ export default function CatalogPage() {
         initial={EMPTY_FORM}
         onSave={handleCreate}
         isSaving={createItem.isPending}
-        title="Aggiungi voce al listino"
+        title={t("dashboard.catalog.dialog.addTitle")}
       />
 
       {/* Edit dialog */}
@@ -626,7 +561,7 @@ export default function CatalogPage() {
           }}
           onSave={handleUpdate}
           isSaving={updateItem.isPending}
-          title="Modifica voce"
+          title={t("dashboard.catalog.dialog.editTitle")}
         />
       )}
 
@@ -636,7 +571,7 @@ export default function CatalogPage() {
         onClose={() => setIsOcrOpen(false)}
         onImported={(count) => {
           invalidate();
-          toast({ title: `${count} ${count === 1 ? "voce importata" : "voci importate"}` });
+          toast({ title: t(count === 1 ? "dashboard.catalog.ocr.importedSingular" : "dashboard.catalog.ocr.importedPlural").replace("{count}", String(count)) });
         }}
       />
 
@@ -644,20 +579,14 @@ export default function CatalogPage() {
       <AlertDialog open={!!deletingId} onOpenChange={o => { if (!o) setDeletingId(null); }}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Eliminare questa voce?</AlertDialogTitle>
-            <AlertDialogDescription>
-              La voce verrà rimossa dal tuo listino. I preventivi già generati non saranno influenzati.
-            </AlertDialogDescription>
+            <AlertDialogTitle>{t("dashboard.catalog.delete.title")}</AlertDialogTitle>
+            <AlertDialogDescription>{t("dashboard.catalog.delete.desc")}</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Annulla</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleDelete}
-              className="bg-red-600 hover:bg-red-700"
-              disabled={deleteItem.isPending}
-            >
-              {deleteItem.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-              Elimina
+            <AlertDialogCancel>{t("dashboard.catalog.cancel")}</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete} className="btn-red" disabled={deleteItem.isPending}>
+              {deleteItem.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+              {t("dashboard.catalog.delete.confirm")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

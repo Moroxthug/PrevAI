@@ -1,19 +1,21 @@
+import "@/i18n/dashboard";
 import { useState, useEffect, Fragment } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { Link } from "wouter";
 import {
-  Users, TrendingUp, FileText, Euro, ToggleLeft, ToggleRight,
-  RefreshCw, ArrowLeft, Crown, Zap, Calendar, BarChart3,
+  Users, TrendingUp, FileText, DollarSign, ToggleLeft, ToggleRight,
+  RefreshCw, ArrowLeft, Crown, Zap, BarChart3,
   ChevronUp, ChevronDown, Minus, Search, Settings, ShieldAlert,
-  Sparkles, CheckCircle2, AlertTriangle, PlayCircle, Activity,
-  Globe, Search as SearchIcon, Award, HeartHandshake, Eye,
-  MessageSquare, Bot, Send, X, Mail
+  Sparkles, CheckCircle2, AlertTriangle, Activity,
+  Globe, Award, HeartHandshake, Eye,
+  MessageSquare, Bot, Send, Mail
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as ChartTooltip,
-  ResponsiveContainer, AreaChart, Area, BarChart, Bar, Legend
+  ResponsiveContainer, AreaChart, Area
 } from "recharts";
+import { useLanguage } from "@/i18n/LanguageContext";
 
 const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
 
@@ -42,7 +44,51 @@ type AdminUser = {
 };
 
 type Settings = Record<string, string>;
-type Tab = "overview" | "users" | "widget" | "incentives" | "stripe" | "gsc" | "seo" | "settings" | "support" | "email-events";
+type Tab = "overview" | "users" | "widget" | "stripe" | "gsc" | "seo" | "settings" | "support" | "email-events" | "margin" | "incentives";
+
+type IncentiveCatalogRow = {
+  id: string;
+  level: "federal" | "provincial" | "municipal" | "utility";
+  codice: string;
+  titolo: string;
+  descrizione: string;
+  province: string | null;
+  city: string | null;
+  categoriaIntervento: string;
+  tipoAgevolazione: string;
+  massimaleContributo: string | null;
+  incomeTested: boolean;
+  scadenza: string | null;
+  stato: "active" | "expiring_soon" | "closed";
+  fonteUfficialeUrl: string | null;
+  isVerifiedByAi: boolean;
+  humanVerified: boolean;
+  lastCheckedAt: string | null;
+};
+
+const EMPTY_INCENTIVE_FORM = {
+  level: "federal" as const,
+  codice: "",
+  titolo: "",
+  descrizione: "",
+  province: "",
+  city: "",
+  categoriaIntervento: "all",
+  tipoAgevolazione: "rebate",
+  massimaleContributo: "",
+  incomeTested: false,
+  fonteUfficialeUrl: "",
+};
+
+type MarginRow = {
+  userId: string;
+  companyName: string | null;
+  plan: string | null;
+  costCents: number;
+  revenueCents: number;
+  marginCents: number;
+  byKind: Record<string, { costCents: number; quantity: number }>;
+};
 
 type EmailEvent = {
   id: string;
@@ -92,22 +138,24 @@ type SeoAuditResult = {
 };
 
 function Trend({ current, prev }: { current: number; prev: number }) {
+  const { t } = useLanguage();
   if (prev === 0) return null;
   const pct = Math.round(((current - prev) / prev) * 100);
-  if (pct > 0) return <span className="inline-flex items-center gap-0.5 text-xs font-semibold text-emerald-600"><ChevronUp className="h-3 w-3" />{pct}% vs mese scorso</span>;
-  if (pct < 0) return <span className="inline-flex items-center gap-0.5 text-xs font-semibold text-red-500"><ChevronDown className="h-3 w-3" />{Math.abs(pct)}% vs mese scorso</span>;
-  return <span className="inline-flex items-center gap-0.5 text-xs text-gray-400"><Minus className="h-3 w-3" />Stabile</span>;
+  if (pct > 0) return <span className="inline-flex items-center gap-0.5 text-xs font-semibold text-emerald-600"><ChevronUp className="h-3 w-3" />{pct}% {t("admin.vsLastMonth")}</span>;
+  if (pct < 0) return <span className="inline-flex items-center gap-0.5 text-xs font-semibold text-red-500"><ChevronDown className="h-3 w-3" />{Math.abs(pct)}% {t("admin.vsLastMonth")}</span>;
+  return <span className="inline-flex items-center gap-0.5 text-xs text-gray-400"><Minus className="h-3 w-3" />{t("admin.stable")}</span>;
 }
 
 function PlanBadge({ plan, status }: { plan: string | null; status: string | null }) {
-  if (!plan || status !== "active") return <span className="text-xs text-gray-400 font-medium bg-gray-50 border border-gray-200 px-2 py-0.5 rounded-full">Nessun piano</span>;
+  const { t } = useLanguage();
+  if (!plan || status !== "active") return <span className="text-xs text-gray-400 font-medium bg-gray-50 border border-gray-200 px-2 py-0.5 rounded-full">{t("admin.noPlan")}</span>;
   const isPro = plan === "monthly_pro";
   const isElite = plan === "monthly_elite";
   return (
     <span className={`inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full ${
-      isElite ? "bg-cyan-50 text-cyan-700 border border-cyan-200" :
+      isElite ? "bg-teal-50 text-teal-700 border border-teal-200" :
       isPro ? "bg-amber-50 text-amber-700 border border-amber-200" :
-      "bg-violet-50 text-violet-700 border border-violet-200"
+      "bg-navy-50 text-navy-700 border border-navy-200"
     }`}>
       {isPro || isElite ? <Crown className="h-3 w-3" /> : <Zap className="h-3 w-3" />}
       {isElite ? "Elite" : isPro ? "Pro" : "Starter"}
@@ -116,25 +164,27 @@ function PlanBadge({ plan, status }: { plan: string | null; status: string | nul
 }
 
 function WidgetStatusBadge({ active }: { active: boolean }) {
+  const { t } = useLanguage();
   return active ? (
     <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 rounded-full">
       <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
-      Attivo
+      {t("admin.active")}
     </span>
   ) : (
     <span className="inline-flex items-center gap-1 text-[10px] font-bold text-slate-500 bg-slate-50 border border-slate-200 px-2.5 py-0.5 rounded-full">
       <span className="h-1.5 w-1.5 rounded-full bg-slate-300" />
-      Disattivato
+      {t("admin.disabled")}
     </span>
   );
 }
 
 function QuoteSourceBadge({ source }: { source: string }) {
+  const { t } = useLanguage();
   const style =
-    source === "widget" ? "bg-cyan-50 text-cyan-700 border-cyan-200" :
+    source === "widget" ? "bg-teal-50 text-teal-700 border-teal-200" :
     source === "whatsapp" ? "bg-emerald-50 text-emerald-700 border-emerald-200" :
-    "bg-violet-50 text-violet-700 border-violet-200";
-  const label = source === "widget" ? "Widget Funnel" : source === "whatsapp" ? "WhatsApp Bot" : "Web App";
+    "bg-navy-50 text-navy-700 border-navy-200";
+  const label = source === "widget" ? t("admin.widgetFunnel") : source === "whatsapp" ? "WhatsApp Bot" : t("admin.webApp");
   return (
     <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${style}`}>
       {label}
@@ -145,6 +195,7 @@ function QuoteSourceBadge({ source }: { source: string }) {
 export default function AdminPage() {
   const { isLoaded, user } = useAuth();
   const { toast } = useToast();
+  const { t } = useLanguage();
   const [tab, setTab] = useState<Tab>("overview");
   const [metrics, setMetrics] = useState<Metrics | null>(null);
   const [users, setUsers] = useState<AdminUser[]>([]);
@@ -179,7 +230,6 @@ export default function AdminPage() {
   const [selectedConvId, setSelectedConvId] = useState<number | null>(null);
   const [convMessages, setConvMessages] = useState<any[]>([]);
   const [adminReply, setAdminReply] = useState("");
-  const [supportLoading, setSupportLoading] = useState(false);
 
   // Client monitoring / widget control state
   const [expandedUserId, setExpandedUserId] = useState<string | null>(null);
@@ -200,16 +250,31 @@ export default function AdminPage() {
   const [newClientVat, setNewClientVat] = useState("");
   const [creatingClient, setCreatingClient] = useState(false);
 
+  const [marginRows, setMarginRows] = useState<MarginRow[]>([]);
+  const [marginLoading, setMarginLoading] = useState(false);
+
+  async function loadMargin() {
+    setMarginLoading(true);
+    try {
+      const data = await authFetch("/api/admin/margin?days=30");
+      setMarginRows((data as { rows: MarginRow[] }).rows ?? []);
+    } catch {
+      toast({ variant: "destructive", title: t("admin.error"), description: "Failed to load margin data" });
+    } finally {
+      setMarginLoading(false);
+    }
+  }
+
   async function loadWidgetStats() {
     setWidgetStatsLoading(true);
     try {
       const data = await authFetch("/api/admin/widget/stats");
       setWidgetStats(data);
-    } catch (e) {
+    } catch {
       toast({
         variant: "destructive",
-        title: "Errore",
-        description: "Impossibile caricare le statistiche del widget.",
+        title: t("admin.error"),
+        description: t("admin.errorLoadWidgetStats"),
       });
     } finally {
       setWidgetStatsLoading(false);
@@ -225,140 +290,116 @@ export default function AdminPage() {
     try {
       const res = await authFetch("/api/admin/email-events");
       if (res.success) setEmailEvents(res.events || []);
-    } catch (e: any) {
-      toast({ variant: "destructive", title: "Errore", description: "Impossibile caricare lo storico eventi email." });
+    } catch {
+      toast({ variant: "destructive", title: t("admin.error"), description: t("admin.errorLoadEmailEvents") });
     } finally {
       setLoadingEmailEvents(false);
     }
   }
 
-  // Stato e funzioni per la gestione del catalogo incentivi & cron AI quotidiano
-  const [incentivesList, setIncentivesList] = useState<any[]>([]);
+  useEffect(() => {
+    if (tab === "email-events") loadEmailEvents();
+  }, [tab]);
+
+  // Incentives catalog (Phase 17)
+  const [incentives, setIncentives] = useState<IncentiveCatalogRow[]>([]);
   const [loadingIncentives, setLoadingIncentives] = useState(false);
-  const [syncingAi, setSyncingAi] = useState(false);
-  const [newIncCodice, setNewIncCodice] = useState("");
-  const [newIncTitolo, setNewIncTitolo] = useState("");
-  const [newIncDesc, setNewIncDesc] = useState("");
-  const [newIncRegione, setNewIncRegione] = useState("Lombardia");
-  const [newIncLevel, setNewIncLevel] = useState("regionale");
-  const [newIncMassimale, setNewIncMassimale] = useState("5000");
-  const [editingIncentive, setEditingIncentive] = useState<any | null>(null);
-  const [editForm, setEditForm] = useState({
-    titolo: "",
-    descrizione: "",
-    percentualeMassima: "",
-    massimaleContributo: "",
-    stato: "active",
-    fonteUfficialeUrl: "",
-    humanVerified: false,
-  });
+  const [incentiveForm, setIncentiveForm] = useState<Omit<typeof EMPTY_INCENTIVE_FORM, "level"> & { level: IncentiveCatalogRow["level"] }>(EMPTY_INCENTIVE_FORM);
+  const [editingIncentiveId, setEditingIncentiveId] = useState<string | null>(null);
+  const [showIncentiveForm, setShowIncentiveForm] = useState(false);
+  const [savingIncentive, setSavingIncentive] = useState(false);
 
   async function loadIncentives() {
     setLoadingIncentives(true);
     try {
       const res = await authFetch("/api/admin/incentives");
-      if (res.success) setIncentivesList(res.incentives || []);
-    } catch (e: any) {
-      toast({ variant: "destructive", title: "Errore", description: "Impossibile caricare il catalogo incentivi." });
+      if (res.success) setIncentives(res.incentives || []);
+    } catch {
+      toast({ variant: "destructive", title: t("admin.error"), description: t("admin.errorLoadIncentivesCatalog") });
     } finally {
       setLoadingIncentives(false);
     }
   }
 
-  async function runAiSync() {
-    setSyncingAi(true);
-    try {
-      const res = await authFetch("/api/admin/incentives/cron-sync", { method: "POST" });
-      if (res.success) {
-        toast({
-          title: "Controllo euristico AI completato (non è una verifica legale)",
-          description: `${res.summary}${res.disclaimer ? ` — ${res.disclaimer}` : ""}`,
-        });
-        loadIncentives();
-      }
-    } catch (e: any) {
-      toast({ variant: "destructive", title: "Errore", description: e.message || "Errore durante la scansione AI." });
-    } finally {
-      setSyncingAi(false);
-    }
+  useEffect(() => {
+    if (tab === "incentives") loadIncentives();
+  }, [tab]);
+
+  function startEditIncentive(row: IncentiveCatalogRow) {
+    setEditingIncentiveId(row.id);
+    setIncentiveForm({
+      level: row.level,
+      codice: row.codice,
+      titolo: row.titolo,
+      descrizione: row.descrizione,
+      province: row.province || "",
+      city: row.city || "",
+      categoriaIntervento: row.categoriaIntervento,
+      tipoAgevolazione: row.tipoAgevolazione,
+      massimaleContributo: row.massimaleContributo || "",
+      incomeTested: row.incomeTested,
+      fonteUfficialeUrl: row.fonteUfficialeUrl || "",
+    });
+    setShowIncentiveForm(true);
   }
 
-  async function handleCreateIncentive(e: React.FormEvent) {
+  function resetIncentiveForm() {
+    setEditingIncentiveId(null);
+    setIncentiveForm(EMPTY_INCENTIVE_FORM);
+    setShowIncentiveForm(false);
+  }
+
+  async function saveIncentive(e: React.FormEvent) {
     e.preventDefault();
-    if (!newIncCodice || !newIncTitolo) return;
+    setSavingIncentive(true);
     try {
-      const res = await authFetch("/api/admin/incentives", {
-        method: "POST",
-        body: JSON.stringify({
-          level: newIncLevel,
-          codice: newIncCodice,
-          titolo: newIncTitolo,
-          descrizione: newIncDesc || newIncTitolo,
-          regione: newIncLevel === "regionale" || newIncLevel === "comunale" ? newIncRegione : null,
-          massimaleContributo: newIncMassimale,
-          stato: "active"
-        })
-      });
+      const payload = {
+        ...incentiveForm,
+        province: incentiveForm.province.trim() || null,
+        city: incentiveForm.city.trim() || null,
+        fonteUfficialeUrl: incentiveForm.fonteUfficialeUrl.trim() || null,
+        massimaleContributo: incentiveForm.massimaleContributo.trim() || null,
+      };
+      const res = editingIncentiveId
+        ? await authFetch(`/api/admin/incentives/${editingIncentiveId}`, { method: "PUT", body: JSON.stringify(payload) })
+        : await authFetch("/api/admin/incentives", { method: "POST", body: JSON.stringify(payload) });
       if (res.success) {
-        toast({ title: "Incentivo Aggiunto!", description: `Bando ${newIncTitolo} inserito a catalogo.` });
-        setNewIncCodice(""); setNewIncTitolo(""); setNewIncDesc("");
+        resetIncentiveForm();
         loadIncentives();
       }
-    } catch (e: any) {
-      toast({ variant: "destructive", title: "Errore", description: e.message });
+    } catch (err: any) {
+      toast({ variant: "destructive", title: t("admin.error"), description: err.message || t("admin.errorLoadIncentivesCatalog") });
+    } finally {
+      setSavingIncentive(false);
     }
   }
 
-  async function handleDeleteIncentive(id: string) {
-    if (!confirm("Sei sicuro di voler rimuovere questo bando?")) return;
+  async function toggleHumanVerified(row: IncentiveCatalogRow) {
+    try {
+      await authFetch(`/api/admin/incentives/${row.id}`, {
+        method: "PUT",
+        body: JSON.stringify({ humanVerified: !row.humanVerified }),
+      });
+      loadIncentives();
+    } catch {
+      toast({ variant: "destructive", title: t("admin.error"), description: t("admin.errorLoadIncentivesCatalog") });
+    }
+  }
+
+  async function deleteIncentive(id: string) {
+    if (!window.confirm("Delete this incentive program?")) return;
     try {
       await authFetch(`/api/admin/incentives/${id}`, { method: "DELETE" });
       loadIncentives();
-    } catch (e: any) {
-      toast({ variant: "destructive", title: "Errore", description: e.message });
+    } catch {
+      toast({ variant: "destructive", title: t("admin.error"), description: t("admin.errorLoadIncentivesCatalog") });
     }
   }
-
-  function openEditIncentive(inc: any) {
-    setEditingIncentive(inc);
-    setEditForm({
-      titolo: inc.titolo || "",
-      descrizione: inc.descrizione || "",
-      percentualeMassima: inc.percentualeMassima || "",
-      massimaleContributo: inc.massimaleContributo || "",
-      stato: inc.stato || "active",
-      fonteUfficialeUrl: inc.fonteUfficialeUrl || "",
-      humanVerified: !!inc.humanVerified,
-    });
-  }
-
-  async function handleUpdateIncentive(e: React.FormEvent) {
-    e.preventDefault();
-    if (!editingIncentive) return;
-    try {
-      const res = await authFetch(`/api/admin/incentives/${editingIncentive.id}`, {
-        method: "PATCH",
-        body: JSON.stringify(editForm),
-      });
-      if (res.success) {
-        toast({ title: "Bando aggiornato", description: editForm.titolo });
-        setEditingIncentive(null);
-        loadIncentives();
-      }
-    } catch (e: any) {
-      toast({ variant: "destructive", title: "Errore", description: e.message });
-    }
-  }
-
-  useEffect(() => {
-    if (tab === "incentives") loadIncentives();
-    if (tab === "email-events") loadEmailEvents();
-  }, [tab]);
 
   async function handleCreateUnregisteredClient(e: React.FormEvent) {
     e.preventDefault();
     if (!newClientName.trim()) {
-      toast({ variant: "destructive", title: "Errore", description: "Il nome azienda è obbligatorio." });
+      toast({ variant: "destructive", title: t("admin.error"), description: t("admin.errorCompanyNameRequired") });
       return;
     }
     setCreatingClient(true);
@@ -375,16 +416,16 @@ export default function AdminPage() {
         }),
       });
       if (res.success) {
-        toast({ title: "Cliente creato!", description: `Chiave generata per ${newClientName}.` });
+        toast({ title: t("admin.clientCreated"), description: t("admin.clientCreatedDesc").replace("{name}", newClientName) });
         setNewClientName("");
         setNewClientEmail("");
         setNewClientPhone("");
         setNewClientAddress("");
         setNewClientVat("");
-        loadUsers(); // Ricarica la griglia utenti
+        loadUsers(); // Reload the users grid
       }
     } catch (err: any) {
-      toast({ variant: "destructive", title: "Errore", description: err.message || "Impossibile creare il cliente." });
+      toast({ variant: "destructive", title: t("admin.error"), description: err.message || t("admin.errorCreateClient") });
     } finally {
       setCreatingClient(false);
     }
@@ -394,9 +435,12 @@ export default function AdminPage() {
     if (tab === "widget" && widgetSubTab === "analytics") {
       loadWidgetStats();
     }
-    // Evita che una riga espansa in "Utenti" resti aperta (con contenuto
-    // sbagliato) passando a "Clienti & Widget", visto che condividono lo
-    // stesso expandedUserId.
+    if (tab === "margin") {
+      loadMargin();
+    }
+    // Avoid a row expanded in "Users" staying open (with the wrong
+    // content) when switching to "Clients & Widget", since they share
+    // the same expandedUserId.
     setExpandedUserId(null);
   }, [tab, widgetSubTab]);
 
@@ -426,9 +470,9 @@ export default function AdminPage() {
         body: JSON.stringify({ online: newStatus }),
       });
       setAdminOnline(newStatus);
-      toast({ title: "Stato operatore aggiornato", description: `Ora sei ${newStatus ? "online" : "offline"} per il supporto.` });
-    } catch (e) {
-      toast({ variant: "destructive", title: "Errore", description: "Impossibile aggiornare lo stato." });
+      toast({ title: t("admin.operatorStatusUpdated"), description: (newStatus ? t("admin.nowOnlineForSupport") : t("admin.nowOfflineForSupport")) });
+    } catch {
+      toast({ variant: "destructive", title: t("admin.error"), description: t("admin.errorUpdateStatus") });
     }
   }
 
@@ -510,8 +554,8 @@ export default function AdminPage() {
     try {
       const u = await authFetch("/api/admin/users");
       setUsers(u as AdminUser[]);
-    } catch (e: any) {
-      toast({ variant: "destructive", title: "Errore", description: "Impossibile caricare gli utenti." });
+    } catch {
+      toast({ variant: "destructive", title: t("admin.error"), description: t("admin.errorLoadUsers") });
     } finally {
       setLoading(false);
     }
@@ -522,11 +566,11 @@ export default function AdminPage() {
     try {
       const data = await authFetch(`/api/admin/users/${targetUserId}/quotes`);
       setClientQuotes(data);
-    } catch (e) {
+    } catch {
       toast({
         variant: "destructive",
-        title: "Errore",
-        description: "Impossibile caricare i preventivi per questo cliente.",
+        title: t("admin.error"),
+        description: t("admin.errorLoadClientQuotes"),
       });
     } finally {
       setLoadingQuotes(false);
@@ -552,14 +596,14 @@ export default function AdminPage() {
         body: JSON.stringify({ apiKey: customKey }),
       });
       if (res.success) {
-        toast({ title: "Chiave API aggiornata", description: "La chiave API per questo client è stata aggiornata con successo." });
+        toast({ title: t("admin.apiKeyUpdated"), description: t("admin.apiKeyUpdatedDesc") });
         loadUsers();
       }
-    } catch (e) {
+    } catch {
       toast({
         variant: "destructive",
-        title: "Errore",
-        description: "Impossibile aggiornare la chiave API.",
+        title: t("admin.error"),
+        description: t("admin.errorUpdateApiKey"),
       });
     } finally {
       setRotatingKeyId(null);
@@ -573,8 +617,8 @@ export default function AdminPage() {
       setGscSummary(res.summary);
       setGscKeywords(res.keywords);
       setGscTrends(res.trends);
-    } catch (e: any) {
-      toast({ variant: "destructive", title: "Errore", description: "Impossibile caricare i dati di Search Console." });
+    } catch {
+      toast({ variant: "destructive", title: t("admin.error"), description: t("admin.errorLoadSearchConsole") });
     } finally {
       setGscLoading(false);
     }
@@ -587,9 +631,9 @@ export default function AdminPage() {
     try {
       const res = await authFetch("/api/admin/seo-audit");
       setSeoResult(res);
-      toast({ title: "Scansione Completata", description: "SEO Checker ha analizzato tutte le landing page principali." });
-    } catch (e: any) {
-      toast({ variant: "destructive", title: "Errore", description: "Impossibile eseguire il SEO audit." });
+      toast({ title: t("admin.scanComplete"), description: t("admin.scanCompleteDesc") });
+    } catch {
+      toast({ variant: "destructive", title: t("admin.error"), description: t("admin.errorSeoAudit") });
     } finally {
       setSeoScanning(false);
     }
@@ -615,9 +659,9 @@ export default function AdminPage() {
         body: JSON.stringify({ key, value: newValue }),
       });
       setSettings(prev => ({ ...prev, [key]: newValue }));
-      toast({ title: "Impostazione salvata", description: `Configurazione ${key} aggiornata.` });
+      toast({ title: t("admin.settingSaved"), description: t("admin.settingSavedDesc").replace("{key}", key) });
     } catch {
-      toast({ variant: "destructive", title: "Errore", description: "Impossibile salvare l'impostazione." });
+      toast({ variant: "destructive", title: t("admin.error"), description: t("admin.errorSaveSetting") });
     } finally {
       setSavingKey(null);
     }
@@ -636,11 +680,11 @@ export default function AdminPage() {
           days: Number(freeDuration),
         }),
       });
-      toast({ title: "Piano Assegnato con Successo", description: `Abbonamento ${freePlanType} concesso per ${freeDuration} giorni a ${selectedUserEmail}.` });
+      toast({ title: t("admin.planGrantedSuccess"), description: t("admin.planGrantedDesc").replace("{plan}", freePlanType).replace("{days}", freeDuration).replace("{email}", selectedUserEmail) });
       setSelectedUserEmail("");
       loadUsers();
     } catch (err: any) {
-      toast({ variant: "destructive", title: "Errore", description: err.message || "Impossibile assegnare il piano." });
+      toast({ variant: "destructive", title: t("admin.error"), description: err.message || t("admin.errorGrantPlan") });
     } finally {
       setGrantingPlan(false);
     }
@@ -652,10 +696,10 @@ export default function AdminPage() {
         method: "POST",
         body: JSON.stringify({ email }),
       });
-      toast({ title: "Sincronizzazione completata", description: `Abbonamento di ${email} aggiornato da Stripe.` });
+      toast({ title: t("admin.syncComplete"), description: t("admin.syncCompleteDesc").replace("{email}", email) });
       loadUsers();
     } catch (err: any) {
-      toast({ variant: "destructive", title: "Errore di sincronizzazione", description: err.message || "Verifica che l'utente esista su Stripe." });
+      toast({ variant: "destructive", title: t("admin.syncError"), description: err.message || t("admin.errorVerifyStripeUser") });
     }
   }
 
@@ -670,19 +714,19 @@ export default function AdminPage() {
           userEmail: selectedUserEmail,
         }),
       });
-      toast({ title: "Cliente Stripe Collegato", description: `Stripe Customer ${stripeCustomerId} collegato con successo a ${selectedUserEmail}.` });
+      toast({ title: t("admin.stripeCustomerLinked"), description: t("admin.stripeCustomerLinkedDesc").replace("{customerId}", stripeCustomerId).replace("{email}", selectedUserEmail) });
       setStripeCustomerId("");
       setSelectedUserEmail("");
       loadUsers();
     } catch (err: any) {
-      toast({ variant: "destructive", title: "Errore", description: err.message || "Impossibile collegare l'ID cliente." });
+      toast({ variant: "destructive", title: t("admin.error"), description: err.message || t("admin.errorLinkCustomerId") });
     }
   }
 
   if (!isLoaded || loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50/40">
-        <div className="h-9 w-9 rounded-full border-[3px] border-violet-500 border-t-transparent animate-spin" />
+        <div className="h-9 w-9 rounded-full border-[3px] border-navy-500 border-t-transparent animate-spin" />
       </div>
     );
   }
@@ -694,10 +738,10 @@ export default function AdminPage() {
           <div className="h-14 w-14 bg-red-50 text-red-500 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-red-100">
             <ShieldAlert className="h-7 w-7" />
           </div>
-          <h1 className="text-xl font-bold text-slate-900 mb-2">Accesso Riservato</h1>
-          <p className="text-slate-500 text-sm mb-6">Solo gli amministratori del sistema possono accedere a questa console di amministrazione.</p>
+          <h1 className="text-xl font-bold text-slate-900 mb-2">{t("admin.accessRestricted")}</h1>
+          <p className="text-slate-500 text-sm mb-6">{t("admin.accessRestrictedDesc")}</p>
           <Link href="/" className="btn-gradient inline-flex items-center justify-center h-10 px-6 font-semibold w-full">
-            Torna alla Home
+            {t("admin.backToHome")}
           </Link>
         </div>
       </div>
@@ -705,7 +749,7 @@ export default function AdminPage() {
   }
 
   const registrationOpen = (settings["registration_open"] ?? "true") !== "false";
-  const fmt = (n: number) => new Intl.NumberFormat("it-IT", { style: "currency", currency: "EUR", maximumFractionDigits: 0 }).format(n);
+  const fmt = (n: number) => new Intl.NumberFormat("en-CA", { style: "currency", currency: "CAD", maximumFractionDigits: 0 }).format(n);
 
   // Filter users based on search
   const filteredUsers = users.filter(u =>
@@ -724,10 +768,10 @@ export default function AdminPage() {
           </Link>
           <div>
             <div className="flex items-center gap-2">
-              <span className="h-2 w-2 rounded-full bg-violet-600 animate-pulse" />
-              <h1 className="text-base font-bold text-slate-900">Console Admin</h1>
+              <span className="h-2 w-2 rounded-full bg-navy-600 animate-pulse" />
+              <h1 className="text-base font-bold text-slate-900">{t("admin.consoleTitle")}</h1>
             </div>
-            <p className="text-xs text-slate-400">Pannello di controllo globale per {user?.name || user?.email}</p>
+            <p className="text-xs text-slate-400">{t("admin.globalControlPanelFor")} {user?.name || user?.email}</p>
           </div>
         </div>
 
@@ -736,7 +780,7 @@ export default function AdminPage() {
           className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-100 bg-white shadow-sm text-xs text-slate-500 hover:text-slate-800 transition-all font-medium"
         >
           <RefreshCw className="h-3.5 w-3.5" />
-          Aggiorna Dati
+          {t("admin.refreshData")}
         </button>
       </header>
 
@@ -747,27 +791,28 @@ export default function AdminPage() {
         <aside className="w-full md:w-60 shrink-0">
           <div className="bg-white rounded-2xl border border-slate-100 p-2 shadow-sm space-y-1">
             {[
-              { id: "overview", label: "Panoramica", icon: BarChart3 },
-              { id: "users", label: "Utenti Registrati", icon: Users },
-              { id: "widget", label: "Clienti & Widget", icon: Zap },
-              { id: "incentives", label: "Catalogo Bandi (AI Daily)", icon: Award },
-              { id: "stripe", label: "Abbonamenti Stripe", icon: Euro },
+              { id: "overview", label: t("admin.tabOverview"), icon: BarChart3 },
+              { id: "users", label: t("admin.tabUsers"), icon: Users },
+              { id: "widget", label: t("admin.tabWidget"), icon: Zap },
+              { id: "margin", label: "Cost & Margin", icon: TrendingUp },
+              { id: "incentives", label: t("admin.tabIncentives"), icon: Award },
+              { id: "stripe", label: t("admin.tabStripe"), icon: DollarSign },
               { id: "gsc", label: "Search Console", icon: Globe },
               { id: "seo", label: "SEO Checker", icon: Sparkles },
-              { id: "support", label: "Chat Supporto", icon: MessageSquare },
-              { id: "email-events", label: "Eventi Email (Resend)", icon: Mail },
-              { id: "settings", label: "Impostazioni", icon: Settings },
+              { id: "support", label: t("admin.tabSupport"), icon: MessageSquare },
+              { id: "email-events", label: t("admin.tabEmailEvents"), icon: Mail },
+              { id: "settings", label: t("admin.tabSettings"), icon: Settings },
             ].map(item => (
               <button
                 key={item.id}
                 onClick={() => setTab(item.id as Tab)}
                 className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-semibold transition-all ${
                   tab === item.id
-                    ? "bg-violet-50 text-violet-700 font-bold"
+                    ? "bg-navy-50 text-navy-700 font-bold"
                     : "text-slate-500 hover:bg-slate-50 hover:text-slate-800"
                 }`}
               >
-                <item.icon className={`h-4 w-4 ${tab === item.id ? "text-violet-600" : "text-slate-400"}`} />
+                <item.icon className={`h-4 w-4 ${tab === item.id ? "text-navy-600" : "text-slate-400"}`} />
                 {item.label}
               </button>
             ))}
@@ -783,10 +828,10 @@ export default function AdminPage() {
               {/* Premium Stat Cards */}
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                 {[
-                  { label: "Utenti Totali", value: String(metrics.totalUsers), sub: `+${metrics.usersThisMonth} questo mese`, icon: Users, color: "text-violet-500", bg: "bg-violet-50" },
-                  { label: "Stima MRR", value: fmt(metrics.mrr), sub: `${metrics.starterCount} Starter · ${metrics.proCount} Pro`, icon: Euro, color: "text-emerald-500", bg: "bg-emerald-50" },
-                  { label: "Preventivi Totali", value: String(metrics.totalQuotes), sub: `${metrics.quotesThisMonth} questo mese`, trend: true, icon: FileText, color: "text-blue-500", bg: "bg-blue-50" },
-                  { label: "Fatturato Generato", value: fmt(metrics.totalQuoteRevenue), sub: "Valore totale preventivi sbloccati", icon: TrendingUp, color: "text-amber-500", bg: "bg-amber-50" },
+                  { label: t("admin.totalUsers"), value: String(metrics.totalUsers), sub: `+${metrics.usersThisMonth} ${t("admin.thisMonth")}`, icon: Users, color: "text-navy-500", bg: "bg-navy-50" },
+                  { label: t("admin.estimatedMrr"), value: fmt(metrics.mrr), sub: `${metrics.starterCount} Starter · ${metrics.proCount} Pro`, icon: DollarSign, color: "text-emerald-500", bg: "bg-emerald-50" },
+                  { label: t("admin.totalQuotes"), value: String(metrics.totalQuotes), sub: `${metrics.quotesThisMonth} ${t("admin.thisMonth")}`, trend: true, icon: FileText, color: "text-blue-500", bg: "bg-blue-50" },
+                  { label: t("admin.revenueGenerated"), value: fmt(metrics.totalQuoteRevenue), sub: t("admin.totalUnlockedQuoteValue"), icon: TrendingUp, color: "text-amber-500", bg: "bg-amber-50" },
                 ].map(({ label, value, sub, trend, icon: Icon, color, bg }) => (
                   <div key={label} className="bg-white rounded-2xl border border-slate-100 p-5 shadow-sm">
                     <div className="flex items-center justify-between mb-3">
@@ -807,20 +852,20 @@ export default function AdminPage() {
                 {/* Active Subscriptions Details */}
                 <div className="bg-white rounded-2xl border border-slate-100 p-5 shadow-sm space-y-4">
                   <h2 className="text-sm font-bold text-slate-800 flex items-center gap-2">
-                    <Activity className="h-4 w-4 text-violet-500" /> Stato Abbonamenti
+                    <Activity className="h-4 w-4 text-navy-500" /> {t("admin.subscriptionStatus")}
                   </h2>
                   <div className="space-y-3">
-                    <div className="p-3 bg-violet-50/50 border border-violet-100/50 rounded-xl flex items-center justify-between">
+                    <div className="p-3 bg-navy-50/50 border border-navy-100/50 rounded-xl flex items-center justify-between">
                       <div className="flex items-center gap-2">
-                        <Zap className="h-4 w-4 text-violet-600" />
+                        <Zap className="h-4 w-4 text-navy-600" />
                         <div>
-                          <div className="text-xs font-bold text-violet-800">Piano Starter</div>
-                          <div className="text-[10px] text-violet-500">€19/mese</div>
+                          <div className="text-xs font-bold text-navy-800">{t("admin.starterPlan")}</div>
+                          <div className="text-[10px] text-navy-500">$19{t("admin.perMonthShort")}</div>
                         </div>
                       </div>
                       <div className="text-right">
-                        <div className="text-lg font-bold text-violet-900">{metrics.starterCount}</div>
-                        <div className="text-[10px] text-violet-500">{fmt(metrics.starterCount * 19)} MRR</div>
+                        <div className="text-lg font-bold text-navy-900">{metrics.starterCount}</div>
+                        <div className="text-[10px] text-navy-500">{fmt(metrics.starterCount * 19)} MRR</div>
                       </div>
                     </div>
 
@@ -828,8 +873,8 @@ export default function AdminPage() {
                       <div className="flex items-center gap-2">
                         <Crown className="h-4 w-4 text-amber-600" />
                         <div>
-                          <div className="text-xs font-bold text-amber-800">Piano Pro</div>
-                          <div className="text-[10px] text-amber-500">€49/mese</div>
+                          <div className="text-xs font-bold text-amber-800">{t("admin.proPlan")}</div>
+                          <div className="text-[10px] text-amber-500">$49{t("admin.perMonthShort")}</div>
                         </div>
                       </div>
                       <div className="text-right">
@@ -842,13 +887,13 @@ export default function AdminPage() {
                       <div className="flex items-center gap-2">
                         <Users className="h-4 w-4 text-slate-500" />
                         <div>
-                          <div className="text-xs font-bold text-slate-700">Utenti Freemium</div>
-                          <div className="text-[10px] text-slate-400">Piano base gratuito</div>
+                          <div className="text-xs font-bold text-slate-700">{t("admin.freemiumUsers")}</div>
+                          <div className="text-[10px] text-slate-400">{t("admin.freeBasePlan")}</div>
                         </div>
                       </div>
                       <div className="text-right">
                         <div className="text-lg font-bold text-slate-800">{metrics.totalUsers - metrics.activeSubscriptions}</div>
-                        <div className="text-[10px] text-slate-400">senza abbonamento attivo</div>
+                        <div className="text-[10px] text-slate-400">{t("admin.withoutActiveSubscription")}</div>
                       </div>
                     </div>
                   </div>
@@ -857,19 +902,19 @@ export default function AdminPage() {
                 {/* Simulated Chart representation */}
                 <div className="bg-white rounded-2xl border border-slate-100 p-5 shadow-sm lg:col-span-2 space-y-4">
                   <h2 className="text-sm font-bold text-slate-800 flex items-center gap-2">
-                    <TrendingUp className="h-4 w-4 text-emerald-500" /> Crescita Preventivi & Utenti
+                    <TrendingUp className="h-4 w-4 text-emerald-500" /> {t("admin.quotesUsersGrowth")}
                   </h2>
                   <div className="h-48 w-full text-xs">
                     <ResponsiveContainer width="100%" height="100%">
                       <AreaChart
                         data={[
-                          { day: "Giu 1", preventivi: 12, utenti: 5 },
-                          { day: "Giu 5", preventivi: 18, utenti: 8 },
-                          { day: "Giu 10", preventivi: 15, utenti: 11 },
-                          { day: "Giu 15", preventivi: 29, utenti: 15 },
-                          { day: "Giu 20", preventivi: 38, utenti: 22 },
-                          { day: "Giu 25", preventivi: 45, utenti: 30 },
-                          { day: "Giu 30", preventivi: metrics.quotesThisMonth || 52, utenti: metrics.totalUsers || 35 },
+                          { day: "Jun 1", preventivi: 12, utenti: 5 },
+                          { day: "Jun 5", preventivi: 18, utenti: 8 },
+                          { day: "Jun 10", preventivi: 15, utenti: 11 },
+                          { day: "Jun 15", preventivi: 29, utenti: 15 },
+                          { day: "Jun 20", preventivi: 38, utenti: 22 },
+                          { day: "Jun 25", preventivi: 45, utenti: 30 },
+                          { day: "Jun 30", preventivi: metrics.quotesThisMonth || 52, utenti: metrics.totalUsers || 35 },
                         ]}
                       >
                         <defs>
@@ -882,8 +927,8 @@ export default function AdminPage() {
                         <XAxis dataKey="day" stroke="#94A3B8" />
                         <YAxis stroke="#94A3B8" />
                         <ChartTooltip />
-                        <Area type="monotone" dataKey="preventivi" stroke="#7C3AED" strokeWidth={2} fillOpacity={1} fill="url(#colorQuotes)" name="Preventivi" />
-                        <Area type="monotone" dataKey="utenti" stroke="#0EA5E9" strokeWidth={2} fillOpacity={0} name="Utenti Registrati" />
+                        <Area type="monotone" dataKey="preventivi" stroke="#7C3AED" strokeWidth={2} fillOpacity={1} fill="url(#colorQuotes)" name={t("admin.quotes")} />
+                        <Area type="monotone" dataKey="utenti" stroke="#0EA5E9" strokeWidth={2} fillOpacity={0} name={t("admin.registeredUsers")} />
                       </AreaChart>
                     </ResponsiveContainer>
                   </div>
@@ -898,17 +943,17 @@ export default function AdminPage() {
             <div className="space-y-4">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
-                  <h2 className="text-base font-bold text-slate-800">Elenco Utenti Registrati</h2>
-                  <p className="text-xs text-slate-400">Visualizza e gestisci le impostazioni degli account, i preventivi generati, i costi API e gli abbonamenti di ciascun utente.</p>
+                  <h2 className="text-base font-bold text-slate-800">{t("admin.registeredUsersList")}</h2>
+                  <p className="text-xs text-slate-400">{t("admin.registeredUsersListDesc")}</p>
                 </div>
                 <div className="relative">
                   <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
                   <input
                     type="text"
-                    placeholder="Cerca per email, nome, azienda..."
+                    placeholder={t("admin.searchByEmailNameCompany")}
                     value={userSearch}
                     onChange={(e) => setUserSearch(e.target.value)}
-                    className="w-full sm:w-64 pl-9 pr-4 py-2 border border-slate-100 rounded-xl text-sm focus:outline-none focus:border-violet-500 bg-white"
+                    className="w-full sm:w-64 pl-9 pr-4 py-2 border border-slate-100 rounded-xl text-sm focus:outline-none focus:border-navy-500 bg-white"
                   />
                 </div>
               </div>
@@ -918,12 +963,12 @@ export default function AdminPage() {
                   <table className="w-full text-left text-sm border-collapse">
                     <thead>
                       <tr className="border-b border-slate-100 bg-slate-50/50">
-                        <th className="px-5 py-3.5 text-xs font-bold text-slate-400 uppercase tracking-wide">Utente</th>
-                        <th className="px-5 py-3.5 text-xs font-bold text-slate-400 uppercase tracking-wide">Azienda</th>
-                        <th className="px-5 py-3.5 text-xs font-bold text-slate-400 uppercase tracking-wide">Piano Attuale</th>
-                        <th className="px-5 py-3.5 text-xs font-bold text-slate-400 uppercase tracking-wide">Preventivi / Costo API</th>
-                        <th className="px-5 py-3.5 text-xs font-bold text-slate-400 uppercase tracking-wide">Data Iscrizione</th>
-                        <th className="px-5 py-3.5 text-xs font-bold text-slate-400 uppercase tracking-wide text-right">Azioni</th>
+                        <th className="px-5 py-3.5 text-xs font-bold text-slate-400 uppercase tracking-wide">{t("admin.user")}</th>
+                        <th className="px-5 py-3.5 text-xs font-bold text-slate-400 uppercase tracking-wide">{t("admin.company")}</th>
+                        <th className="px-5 py-3.5 text-xs font-bold text-slate-400 uppercase tracking-wide">{t("admin.currentPlan")}</th>
+                        <th className="px-5 py-3.5 text-xs font-bold text-slate-400 uppercase tracking-wide">{t("admin.quotesApiCost")}</th>
+                        <th className="px-5 py-3.5 text-xs font-bold text-slate-400 uppercase tracking-wide">{t("admin.signupDate")}</th>
+                        <th className="px-5 py-3.5 text-xs font-bold text-slate-400 uppercase tracking-wide text-right">{t("admin.actions")}</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-50">
@@ -933,40 +978,40 @@ export default function AdminPage() {
                           <Fragment key={u.userId}>
                             <tr className={`hover:bg-slate-50/40 transition-colors ${isExpanded ? "bg-slate-50/20" : ""}`}>
                               <td className="px-5 py-4">
-                                <div className="font-semibold text-slate-800">{u.firstName || "Senza Nome"}</div>
+                                <div className="font-semibold text-slate-800">{u.firstName || t("admin.noName")}</div>
                                 <div className="text-xs text-slate-400">{u.email || u.userId.slice(0, 16)}</div>
                               </td>
                               <td className="px-5 py-4 text-slate-600 font-medium">{u.companyName || "—"}</td>
                               <td className="px-5 py-4"><PlanBadge plan={u.subscriptionPlan} status={u.subscriptionStatus} /></td>
                               <td className="px-5 py-4">
-                                <div className="font-semibold text-slate-700">{(u as any).quoteCount ?? 0} prev.</div>
-                                <div className="text-xs text-emerald-600 font-bold">{Number((u as any).totalCost ?? 0).toFixed(4)} €</div>
+                                <div className="font-semibold text-slate-700">{(u as any).quoteCount ?? 0} {t("admin.quotesAbbrev")}</div>
+                                <div className="text-xs text-emerald-600 font-bold">{Number((u as any).totalCost ?? 0).toFixed(4)} $</div>
                               </td>
-                              <td className="px-5 py-4 text-xs text-slate-400">{new Date(u.createdAt).toLocaleDateString("it-IT", { day: "numeric", month: "short", year: "numeric" })}</td>
+                              <td className="px-5 py-4 text-xs text-slate-400">{new Date(u.createdAt).toLocaleDateString("en-CA", { day: "numeric", month: "short", year: "numeric" })}</td>
                               <td className="px-5 py-4 text-right">
                                 <div className="inline-flex items-center gap-1">
                                   <button
                                     onClick={() => handleToggleExpandClient(u.userId)}
                                     className={`inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-1.5 rounded-lg transition-colors cursor-pointer ${
-                                      isExpanded ? "text-violet-700 bg-violet-50" : "text-slate-600 hover:text-violet-700 hover:bg-violet-50"
+                                      isExpanded ? "text-navy-700 bg-navy-50" : "text-slate-600 hover:text-navy-700 hover:bg-navy-50"
                                     }`}
                                   >
                                     {isExpanded ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
-                                    Preventivi
+                                    {t("admin.quotes")}
                                   </button>
                                   <button
                                     onClick={() => {
                                       setSelectedUserEmail(u.email);
                                       setTab("stripe");
                                     }}
-                                    className="inline-flex items-center gap-1 text-xs font-semibold text-slate-600 hover:text-violet-700 hover:bg-violet-50 px-2.5 py-1.5 rounded-lg transition-colors cursor-pointer"
+                                    className="inline-flex items-center gap-1 text-xs font-semibold text-slate-600 hover:text-navy-700 hover:bg-navy-50 px-2.5 py-1.5 rounded-lg transition-colors cursor-pointer"
                                   >
                                     <Crown className="h-3.5 w-3.5" />
-                                    Piano
+                                    {t("admin.plan")}
                                   </button>
                                   <button
                                     onClick={() => handleSyncStripe(u.email)}
-                                    title="Sincronizza stato da Stripe"
+                                    title={t("admin.syncStatusFromStripe")}
                                     className="inline-flex items-center text-slate-400 hover:text-slate-700 hover:bg-slate-100 p-1.5 rounded-lg transition-colors cursor-pointer"
                                   >
                                     <RefreshCw className="h-3.5 w-3.5" />
@@ -981,37 +1026,37 @@ export default function AdminPage() {
                                     <div className="flex items-center justify-between">
                                       <div>
                                         <h3 className="text-sm font-bold text-slate-800">
-                                          Cronologia Preventivi Generati — {u.companyName || u.firstName || "Cliente"}
+                                          {t("admin.generatedQuotesHistory")} — {u.companyName || u.firstName || t("admin.client")}
                                         </h3>
-                                        <p className="text-xs text-slate-400">Elenco completo dei preventivi richiesti via Web, WhatsApp e Widget.</p>
+                                        <p className="text-xs text-slate-400">{t("admin.generatedQuotesHistoryDesc")}</p>
                                       </div>
                                       <div className="text-right">
                                         <span className="text-xs font-bold text-slate-500 bg-slate-100 px-2.5 py-1 rounded-full">
-                                          Totale Costo API: <span className="text-emerald-600 font-mono">{Number((u as any).totalCost ?? 0).toFixed(4)} €</span>
+                                          {t("admin.totalApiCost")}: <span className="text-emerald-600 font-mono">{Number((u as any).totalCost ?? 0).toFixed(4)} $</span>
                                         </span>
                                       </div>
                                     </div>
 
                                     {loadingQuotes ? (
                                       <div className="py-12 flex flex-col items-center justify-center gap-2 text-slate-400">
-                                        <RefreshCw className="h-6 w-6 animate-spin text-violet-500" />
-                                        <span className="text-xs">Caricamento preventivi in corso...</span>
+                                        <RefreshCw className="h-6 w-6 animate-spin text-navy-500" />
+                                        <span className="text-xs">{t("admin.loadingQuotes")}</span>
                                       </div>
                                     ) : clientQuotes.length === 0 ? (
                                       <div className="py-12 text-center text-xs text-slate-400 bg-slate-50/50 border border-dashed border-slate-100 rounded-xl">
-                                        Nessun preventivo generato da questo utente.
+                                        {t("admin.noQuotesGeneratedByUser")}
                                       </div>
                                     ) : (
                                       <div className="overflow-hidden border border-slate-100 rounded-xl">
                                         <table className="w-full text-left text-xs border-collapse">
                                           <thead>
                                             <tr className="border-b border-slate-100 bg-slate-50/50">
-                                              <th className="px-4 py-3 font-bold text-slate-500">Preventivo / Cliente</th>
-                                              <th className="px-4 py-3 font-bold text-slate-500">Data Generazione</th>
-                                              <th className="px-4 py-3 font-bold text-slate-500">Canale / Origine</th>
-                                              <th className="px-4 py-3 font-bold text-slate-500">Modello & Token</th>
-                                              <th className="px-4 py-3 font-bold text-slate-500">Importo Totale</th>
-                                              <th className="px-4 py-3 font-bold text-slate-500 text-right">Costo API</th>
+                                              <th className="px-4 py-3 font-bold text-slate-500">{t("admin.quoteClient")}</th>
+                                              <th className="px-4 py-3 font-bold text-slate-500">{t("admin.generationDate")}</th>
+                                              <th className="px-4 py-3 font-bold text-slate-500">{t("admin.channelSource")}</th>
+                                              <th className="px-4 py-3 font-bold text-slate-500">{t("admin.modelAndTokens")}</th>
+                                              <th className="px-4 py-3 font-bold text-slate-500">{t("admin.totalAmount")}</th>
+                                              <th className="px-4 py-3 font-bold text-slate-500 text-right">{t("admin.apiCost")}</th>
                                             </tr>
                                           </thead>
                                           <tbody className="divide-y divide-slate-50">
@@ -1019,14 +1064,14 @@ export default function AdminPage() {
                                               <tr key={q.id} className="hover:bg-slate-50/20">
                                                 <td className="px-4 py-3">
                                                   <div className="font-semibold text-slate-800" title={q.numeroPreventivoData}>
-                                                    {q.numeroPreventivoData || "Preventivo s.n."}
+                                                    {q.numeroPreventivoData || t("admin.unnumberedQuote")}
                                                   </div>
                                                   <div className="text-[10px] text-slate-400">
-                                                    {q.clientData?.nome || "Lead Anonimo"}
+                                                    {q.clientData?.nome || t("admin.anonymousLead")}
                                                   </div>
                                                 </td>
                                                 <td className="px-4 py-3 text-slate-500">
-                                                  {new Date(q.createdAt).toLocaleDateString("it-IT", { day: "numeric", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit" })}
+                                                  {new Date(q.createdAt).toLocaleDateString("en-CA", { day: "numeric", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit" })}
                                                 </td>
                                                 <td className="px-4 py-3">
                                                   <QuoteSourceBadge source={q.source} />
@@ -1042,10 +1087,10 @@ export default function AdminPage() {
                                                   )}
                                                 </td>
                                                 <td className="px-4 py-3 font-semibold text-slate-700">
-                                                  {Number(q.totale || 0).toLocaleString("it-IT", { style: "currency", currency: "EUR" })}
+                                                  {Number(q.totale || 0).toLocaleString("en-CA", { style: "currency", currency: "CAD" })}
                                                 </td>
                                                 <td className="px-4 py-3 text-right font-mono font-semibold text-slate-600">
-                                                  {q.apiCost ? `${Number(q.apiCost).toFixed(4)} €` : "0.0000 €"}
+                                                  {q.apiCost ? `${Number(q.apiCost).toFixed(4)} $` : "0.0000 $"}
                                                 </td>
                                               </tr>
                                             ))}
@@ -1072,8 +1117,8 @@ export default function AdminPage() {
             <div className="space-y-6">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
-                  <h2 className="text-base font-bold text-slate-800">Integrazione & Gestione Widget</h2>
-                  <p className="text-xs text-slate-400">Controlla l'attivazione dei widget di acquisizione lead edili, analizza l'utilizzo di Groq/AI e crea API key per nuovi clienti.</p>
+                  <h2 className="text-base font-bold text-slate-800">{t("admin.widgetIntegrationTitle")}</h2>
+                  <p className="text-xs text-slate-400">{t("admin.widgetIntegrationDesc")}</p>
                 </div>
 
                 {/* Sub-tab Navigation */}
@@ -1084,7 +1129,7 @@ export default function AdminPage() {
                       widgetSubTab === "keys" ? "bg-white text-slate-800 shadow-sm" : "text-slate-500 hover:text-slate-800"
                     }`}
                   >
-                    Gestione Chiavi & Clienti
+                    {t("admin.keysAndClientsMgmt")}
                   </button>
                   <button
                     onClick={() => setWidgetSubTab("analytics")}
@@ -1092,7 +1137,7 @@ export default function AdminPage() {
                       widgetSubTab === "analytics" ? "bg-white text-slate-800 shadow-sm" : "text-slate-500 hover:text-slate-800"
                     }`}
                   >
-                    Analisi & Monitoraggio AI
+                    {t("admin.aiAnalyticsMonitoring")}
                   </button>
                 </div>
               </div>
@@ -1102,86 +1147,86 @@ export default function AdminPage() {
                   {/* Form per la creazione di un cliente virtuale / non registrato */}
                   <div className="bg-white rounded-2xl border border-slate-100 p-6 shadow-sm">
                     <h3 className="text-sm font-bold text-slate-800 mb-1 flex items-center gap-1.5">
-                      <Sparkles className="h-4 w-4 text-violet-500" />
-                      Registra Nuova Impresa / Cliente Virtuale
+                      <Sparkles className="h-4 w-4 text-navy-500" />
+                      {t("admin.registerNewBusiness")}
                     </h3>
-                    <p className="text-xs text-slate-400 mb-4">Crea una configurazione e genera all'istante un'API Key per un'impresa partner non ancora registrata a PrevAI.</p>
+                    <p className="text-xs text-slate-400 mb-4">{t("admin.registerNewBusinessDesc")}</p>
                     <form onSubmit={handleCreateUnregisteredClient} className="grid grid-cols-1 md:grid-cols-3 gap-4">
                       <div>
-                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Nome Impresa/Azienda *</label>
+                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">{t("admin.businessCompanyName")} *</label>
                         <input
                           type="text"
                           required
-                          placeholder="es. Rossi Costruzioni S.r.l."
+                          placeholder={t("admin.businessNamePlaceholder")}
                           value={newClientName}
                           onChange={(e) => setNewClientName(e.target.value)}
-                          className="w-full px-3 py-2 border border-slate-100 rounded-xl text-sm focus:outline-none focus:border-violet-500 bg-white"
+                          className="w-full px-3 py-2 border border-slate-100 rounded-xl text-sm focus:outline-none focus:border-navy-500 bg-white"
                         />
                       </div>
                       <div>
-                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Email Impresa</label>
+                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">{t("admin.businessEmail")}</label>
                         <input
                           type="email"
-                          placeholder="es. info@rossicostruzioni.it"
+                          placeholder="e.g. info@smithbuilders.ca"
                           value={newClientEmail}
                           onChange={(e) => setNewClientEmail(e.target.value)}
-                          className="w-full px-3 py-2 border border-slate-100 rounded-xl text-sm focus:outline-none focus:border-violet-500 bg-white"
+                          className="w-full px-3 py-2 border border-slate-100 rounded-xl text-sm focus:outline-none focus:border-navy-500 bg-white"
                         />
                       </div>
                       <div>
-                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Telefono</label>
+                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">{t("admin.phone")}</label>
                         <input
                           type="text"
-                          placeholder="es. 3331234567"
+                          placeholder="e.g. 4161234567"
                           value={newClientPhone}
                           onChange={(e) => setNewClientPhone(e.target.value)}
-                          className="w-full px-3 py-2 border border-slate-100 rounded-xl text-sm focus:outline-none focus:border-violet-500 bg-white"
+                          className="w-full px-3 py-2 border border-slate-100 rounded-xl text-sm focus:outline-none focus:border-navy-500 bg-white"
                         />
                       </div>
                       <div>
-                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Indirizzo</label>
+                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">{t("admin.address")}</label>
                         <input
                           type="text"
-                          placeholder="es. Via Milano 15, Milano"
+                          placeholder="e.g. 15 Main St, Toronto"
                           value={newClientAddress}
                           onChange={(e) => setNewClientAddress(e.target.value)}
-                          className="w-full px-3 py-2 border border-slate-100 rounded-xl text-sm focus:outline-none focus:border-violet-500 bg-white"
+                          className="w-full px-3 py-2 border border-slate-100 rounded-xl text-sm focus:outline-none focus:border-navy-500 bg-white"
                         />
                       </div>
                       <div>
-                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Partita IVA</label>
+                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">{t("admin.gstHstNumber")}</label>
                         <input
                           type="text"
-                          placeholder="es. IT12345678901"
+                          placeholder="e.g. 123456789RT0001"
                           value={newClientVat}
                           onChange={(e) => setNewClientVat(e.target.value)}
-                          className="w-full px-3 py-2 border border-slate-100 rounded-xl text-sm focus:outline-none focus:border-violet-500 bg-white"
+                          className="w-full px-3 py-2 border border-slate-100 rounded-xl text-sm focus:outline-none focus:border-navy-500 bg-white"
                         />
                       </div>
                       <div className="flex items-end">
                         <button
                           type="submit"
                           disabled={creatingClient}
-                          className="w-full bg-violet-600 hover:bg-violet-700 disabled:bg-violet-300 text-white text-xs font-bold py-2.5 rounded-xl transition-all shadow-sm flex items-center justify-center gap-1.5 cursor-pointer h-[38px]"
+                          className="w-full bg-navy-600 hover:bg-navy-700 disabled:bg-navy-300 text-white text-xs font-bold py-2.5 rounded-xl transition-all shadow-sm flex items-center justify-center gap-1.5 cursor-pointer h-[38px]"
                         >
-                          {creatingClient ? "Generazione..." : "Genera Chiave API e Profilo"}
+                          {creatingClient ? t("admin.generating") : t("admin.generateKeyAndProfile")}
                         </button>
                       </div>
                     </form>
                   </div>
 
-                  {/* Ricerca e tabella delle chiavi */}
+                  {/* Search and key table */}
                   <div className="space-y-4">
                     <div className="flex items-center justify-between">
-                      <h3 className="text-sm font-bold text-slate-800">Elenco Imprese e Integrazioni Attive</h3>
+                      <h3 className="text-sm font-bold text-slate-800">{t("admin.activeBusinessesIntegrations")}</h3>
                       <div className="relative">
                         <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
                         <input
                           type="text"
-                          placeholder="Filtra imprese..."
+                          placeholder={t("admin.filterBusinesses")}
                           value={userSearch}
                           onChange={(e) => setUserSearch(e.target.value)}
-                          className="w-full sm:w-64 pl-9 pr-4 py-2 border border-slate-100 rounded-xl text-sm focus:outline-none focus:border-violet-500 bg-white"
+                          className="w-full sm:w-64 pl-9 pr-4 py-2 border border-slate-100 rounded-xl text-sm focus:outline-none focus:border-navy-500 bg-white"
                         />
                       </div>
                     </div>
@@ -1191,11 +1236,11 @@ export default function AdminPage() {
                         <table className="w-full text-left text-sm border-collapse">
                           <thead>
                             <tr className="border-b border-slate-100 bg-slate-50/50">
-                              <th className="px-5 py-3.5 text-xs font-bold text-slate-400 uppercase tracking-wide">Cliente / ID</th>
-                              <th className="px-5 py-3.5 text-xs font-bold text-slate-400 uppercase tracking-wide">Azienda</th>
-                              <th className="px-5 py-3.5 text-xs font-bold text-slate-400 uppercase tracking-wide">Chiave API Widget</th>
-                              <th className="px-5 py-3.5 text-xs font-bold text-slate-400 uppercase tracking-wide">Stato Widget</th>
-                              <th className="px-5 py-3.5 text-xs font-bold text-slate-400 uppercase tracking-wide text-right">Integrazione</th>
+                              <th className="px-5 py-3.5 text-xs font-bold text-slate-400 uppercase tracking-wide">{t("admin.clientId")}</th>
+                              <th className="px-5 py-3.5 text-xs font-bold text-slate-400 uppercase tracking-wide">{t("admin.company")}</th>
+                              <th className="px-5 py-3.5 text-xs font-bold text-slate-400 uppercase tracking-wide">{t("admin.widgetApiKey")}</th>
+                              <th className="px-5 py-3.5 text-xs font-bold text-slate-400 uppercase tracking-wide">{t("admin.widgetStatus")}</th>
+                              <th className="px-5 py-3.5 text-xs font-bold text-slate-400 uppercase tracking-wide text-right">{t("admin.integration")}</th>
                             </tr>
                           </thead>
                           <tbody className="divide-y divide-slate-50">
@@ -1205,7 +1250,7 @@ export default function AdminPage() {
                                 <Fragment key={u.userId}>
                                   <tr className={`hover:bg-slate-50/40 transition-colors ${isExpanded ? "bg-slate-50/20" : ""}`}>
                                     <td className="px-5 py-4">
-                                      <div className="font-semibold text-slate-800">{u.firstName || "Senza Nome"}</div>
+                                      <div className="font-semibold text-slate-800">{u.firstName || t("admin.noName")}</div>
                                       <div className="text-xs text-slate-400">{u.email || u.userId.slice(0, 16)}</div>
                                     </td>
                                     <td className="px-5 py-4 text-slate-600 font-medium">{u.companyName || "—"}</td>
@@ -1215,7 +1260,7 @@ export default function AdminPage() {
                                           {(u as any).apiKey.slice(0, 15)}...
                                         </span>
                                       ) : (
-                                        <span className="text-red-500 text-xs font-medium bg-red-50 px-2 py-0.5 rounded border border-red-100">Nessuna chiave</span>
+                                        <span className="text-red-500 text-xs font-medium bg-red-50 px-2 py-0.5 rounded border border-red-100">{t("admin.noKey")}</span>
                                       )}
                                     </td>
                                     <td className="px-5 py-4">
@@ -1225,11 +1270,11 @@ export default function AdminPage() {
                                       <button
                                         onClick={() => handleToggleExpandClient(u.userId)}
                                         className={`inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-1.5 rounded-lg transition-colors cursor-pointer ${
-                                          isExpanded ? "text-violet-700 bg-violet-50" : "text-slate-600 hover:text-violet-700 hover:bg-violet-50"
+                                          isExpanded ? "text-navy-700 bg-navy-50" : "text-slate-600 hover:text-navy-700 hover:bg-navy-50"
                                         }`}
                                       >
                                         {isExpanded ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
-                                        {isExpanded ? "Chiudi" : "Configura"}
+                                        {isExpanded ? t("admin.close") : t("admin.configure")}
                                       </button>
                                     </td>
                                   </tr>
@@ -1238,67 +1283,67 @@ export default function AdminPage() {
                                       <td colSpan={5} className="bg-slate-50/40 p-6 border-b border-slate-100">
                                         <div className="bg-white rounded-2xl border border-slate-100 p-6 shadow-sm text-left space-y-5">
                                           <div className="flex items-start gap-4">
-                                            <div className="h-10 w-10 rounded-xl bg-violet-50 text-violet-600 flex items-center justify-center shrink-0">
+                                            <div className="h-10 w-10 rounded-xl bg-navy-50 text-navy-600 flex items-center justify-center shrink-0">
                                               <Zap className="h-5 w-5" />
                                             </div>
                                             <div>
                                               <h3 className="text-sm font-bold text-slate-800">
-                                                Configurazione Funnel Lead — {u.companyName || u.firstName || "Cliente"}
+                                                {t("admin.leadFunnelConfig")} — {u.companyName || u.firstName || t("admin.client")}
                                               </h3>
-                                              <p className="text-xs text-slate-400">Gestisci l'accesso al Widget di acquisizione per questo utente. Puoi impostare chiavi API e prelevare il codice HTML da inserire nel loro sito.</p>
+                                              <p className="text-xs text-slate-400">{t("admin.leadFunnelConfigDesc")}</p>
                                             </div>
                                           </div>
 
                                           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-2">
                                             <div className="md:col-span-1 space-y-4">
                                               <div className="space-y-1.5">
-                                                <label className="text-xs font-bold text-slate-500 block uppercase tracking-wider">Chiave API Attiva</label>
+                                                <label className="text-xs font-bold text-slate-500 block uppercase tracking-wider">{t("admin.activeApiKey")}</label>
                                                 <input
                                                   type="text"
                                                   readOnly
-                                                  value={(u as any).apiKey || "Nessuna chiave configurata"}
+                                                  value={(u as any).apiKey || t("admin.noKeyConfigured")}
                                                   className="font-mono text-xs bg-slate-50 text-slate-700 px-3 py-2 border border-slate-100 rounded-xl w-full focus:outline-none text-center"
                                                 />
                                               </div>
                                               <button
                                                 onClick={() => rotateApiKey(u.userId)}
                                                 disabled={rotatingKeyId === u.userId}
-                                                className="w-full bg-violet-600 hover:bg-violet-700 disabled:bg-violet-300 text-white text-xs font-bold py-2.5 rounded-xl transition-all shadow-sm flex items-center justify-center gap-1.5 cursor-pointer"
+                                                className="w-full bg-navy-600 hover:bg-navy-700 disabled:bg-navy-300 text-white text-xs font-bold py-2.5 rounded-xl transition-all shadow-sm flex items-center justify-center gap-1.5 cursor-pointer"
                                               >
                                                 {rotatingKeyId === u.userId ? <RefreshCw className="h-3 w-3 animate-spin" /> : <RefreshCw className="h-3 w-3" />}
-                                                {(u as any).apiKey ? "Rigenera API Key" : "Genera Chiave API"}
+                                                {(u as any).apiKey ? t("admin.regenerateApiKey") : t("admin.generateApiKey")}
                                               </button>
                                             </div>
 
                                             <div className="md:col-span-2 space-y-2">
-                                              <label className="text-xs font-bold text-slate-500 block uppercase tracking-wider">Codice Script Embed</label>
+                                              <label className="text-xs font-bold text-slate-500 block uppercase tracking-wider">{t("admin.embedScriptCode")}</label>
                                               {(u as any).apiKey ? (
                                                 <div className="relative">
                                                   <pre className="p-4 bg-slate-950 text-slate-200 rounded-xl overflow-x-auto font-mono text-[10px] leading-relaxed max-h-40 whitespace-pre-wrap select-all border border-slate-800">
-{`<!-- PrevAI Widget Funnel -->
-<div id="prevai-widget">
-  <a href="https://prevai.it" rel="noopener">Calcola il tuo preventivo con PrevAI</a>
+{`<!-- QuoteAI Widget Funnel -->
+<div id="quoteai-widget">
+  <a href="https://quoteai.ca" rel="noopener">Get your quote with QuoteAI</a>
 </div>
 <script
-  src="${typeof window !== "undefined" ? window.location.origin : "https://prevai.it"}/widget.js"
+  src="${typeof window !== "undefined" ? window.location.origin : "https://quoteai.ca"}/widget.js"
   data-api-key="${(u as any).apiKey}"
   async
 ></script>`}
                                                   </pre>
                                                   <button
                                                     onClick={() => {
-                                                      const code = `<!-- PrevAI Widget Funnel -->\n<div id="prevai-widget">\n  <a href="https://prevai.it" rel="noopener">Calcola il tuo preventivo con PrevAI</a>\n</div>\n<script\n  src="${typeof window !== "undefined" ? window.location.origin : "https://prevai.it"}/widget.js"\n  data-api-key="${(u as any).apiKey}"\n  async\n></script>`;
+                                                      const code = `<!-- QuoteAI Widget Funnel -->\n<div id="quoteai-widget">\n  <a href="https://quoteai.ca" rel="noopener">Get your quote with QuoteAI</a>\n</div>\n<script\n  src="${typeof window !== "undefined" ? window.location.origin : "https://quoteai.ca"}/widget.js"\n  data-api-key="${(u as any).apiKey}"\n  async\n></script>`;
                                                       navigator.clipboard.writeText(code);
-                                                      toast({ title: "Codice copiato!", description: "Il codice di embed è stato copiato negli appunti." });
+                                                      toast({ title: t("admin.codeCopied"), description: t("admin.codeCopiedDesc") });
                                                     }}
                                                     className="absolute right-3 top-3 bg-slate-900 hover:bg-slate-800 text-slate-200 text-[10px] font-semibold px-2.5 py-1 rounded-md border border-slate-700 transition-all cursor-pointer shadow-sm"
                                                   >
-                                                    Copia Codice
+                                                    {t("admin.copyCode")}
                                                   </button>
                                                 </div>
                                               ) : (
                                                 <div className="bg-slate-50 border border-slate-100 rounded-xl p-6 text-center text-xs text-slate-400">
-                                                  Genera una chiave API per visualizzare e prelevare il codice di embed.
+                                                  {t("admin.generateApiKeyToSeeEmbed")}
                                                 </div>
                                               )}
                                             </div>
@@ -1318,19 +1363,19 @@ export default function AdminPage() {
                 </div>
               ) : (
                 <div className="space-y-6">
-                  {/* Metriche globali */}
+                  {/* Global metrics */}
                   {widgetStatsLoading || !widgetStats ? (
                     <div className="flex items-center justify-center py-12">
-                      <RefreshCw className="h-6 w-6 text-violet-500 animate-spin" />
-                      <span className="ml-2 text-sm text-slate-500">Caricamento statistiche in corso...</span>
+                      <RefreshCw className="h-6 w-6 text-navy-500 animate-spin" />
+                      <span className="ml-2 text-sm text-slate-500">{t("admin.loadingStats")}</span>
                     </div>
                   ) : (
                     <>
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                         {[
-                          { label: "Preventivi Widget Generati", value: String(widgetStats.global.totalQuotes), desc: "Richieste totali dai widget", icon: FileText, color: "text-violet-500", bg: "bg-violet-50" },
-                          { label: "Costo Totale AI (Groq)", value: `€${Number(widgetStats.global.totalCost).toFixed(4)}`, desc: "Costo stimato token Llama 3.3", icon: Euro, color: "text-emerald-500", bg: "bg-emerald-50" },
-                          { label: "Token Complessivi", value: widgetStats.global.totalTokens.toLocaleString("it-IT"), desc: `Prompt + Completion. Media: ${widgetStats.global.totalQuotes > 0 ? Math.round(widgetStats.global.totalTokens / widgetStats.global.totalQuotes) : 0} / chiamata`, icon: Bot, color: "text-blue-500", bg: "bg-blue-50" },
+                          { label: t("admin.widgetQuotesGenerated"), value: String(widgetStats.global.totalQuotes), desc: t("admin.totalWidgetRequests"), icon: FileText, color: "text-navy-500", bg: "bg-navy-50" },
+                          { label: t("admin.totalAiCost"), value: `$${Number(widgetStats.global.totalCost).toFixed(4)}`, desc: t("admin.estimatedTokenCost"), icon: DollarSign, color: "text-emerald-500", bg: "bg-emerald-50" },
+                          { label: t("admin.totalTokens"), value: widgetStats.global.totalTokens.toLocaleString("en-CA"), desc: `${t("admin.promptPlusCompletion")}: ${widgetStats.global.totalQuotes > 0 ? Math.round(widgetStats.global.totalTokens / widgetStats.global.totalQuotes) : 0} / ${t("admin.call")}`, icon: Bot, color: "text-blue-500", bg: "bg-blue-50" },
                         ].map(({ label, value, desc, icon: Icon, color, bg }) => (
                           <div key={label} className="bg-white rounded-2xl border border-slate-100 p-5 shadow-sm">
                             <div className="flex items-center justify-between mb-3">
@@ -1343,28 +1388,28 @@ export default function AdminPage() {
                         ))}
                       </div>
 
-                      {/* Consumo dettagliato per Impresa */}
+                      {/* Detailed usage per business */}
                       <div className="bg-white rounded-2xl border border-slate-100 p-6 shadow-sm">
-                        <h3 className="text-sm font-bold text-slate-800 mb-4">Consumo AI per Impresa Edile</h3>
+                        <h3 className="text-sm font-bold text-slate-800 mb-4">{t("admin.aiUsagePerBusiness")}</h3>
                         <div className="overflow-x-auto">
                           <table className="w-full text-left text-sm border-collapse">
                             <thead>
                               <tr className="border-b border-slate-100 bg-slate-50/50">
-                                <th className="px-5 py-3.5 text-xs font-bold text-slate-400 uppercase">Impresa</th>
-                                <th className="px-5 py-3.5 text-xs font-bold text-slate-400 uppercase">Chiave API</th>
-                                <th className="px-5 py-3.5 text-xs font-bold text-slate-400 uppercase text-center">Richieste Widget</th>
-                                <th className="px-5 py-3.5 text-xs font-bold text-slate-400 uppercase text-right">Token Totali</th>
-                                <th className="px-5 py-3.5 text-xs font-bold text-slate-400 uppercase text-right">Costo AI</th>
+                                <th className="px-5 py-3.5 text-xs font-bold text-slate-400 uppercase">{t("admin.business")}</th>
+                                <th className="px-5 py-3.5 text-xs font-bold text-slate-400 uppercase">{t("admin.apiKey")}</th>
+                                <th className="px-5 py-3.5 text-xs font-bold text-slate-400 uppercase text-center">{t("admin.widgetRequests")}</th>
+                                <th className="px-5 py-3.5 text-xs font-bold text-slate-400 uppercase text-right">{t("admin.totalTokensShort")}</th>
+                                <th className="px-5 py-3.5 text-xs font-bold text-slate-400 uppercase text-right">{t("admin.aiCost")}</th>
                               </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-50">
                               {widgetStats.clientUsage.map((c: any) => (
                                 <tr key={c.userId} className="hover:bg-slate-50/20">
-                                  <td className="px-5 py-3.5 font-semibold text-slate-800">{c.companyName || "Senza Nome (Virtuale)"}</td>
-                                  <td className="px-5 py-3.5 font-mono text-xs text-slate-500">{c.apiKey ? `${c.apiKey.slice(0, 15)}...` : "Nessuna"}</td>
+                                  <td className="px-5 py-3.5 font-semibold text-slate-800">{c.companyName || t("admin.noNameVirtual")}</td>
+                                  <td className="px-5 py-3.5 font-mono text-xs text-slate-500">{c.apiKey ? `${c.apiKey.slice(0, 15)}...` : t("admin.none")}</td>
                                   <td className="px-5 py-3.5 text-center text-slate-700 font-medium">{c.quotesCount}</td>
-                                  <td className="px-5 py-3.5 text-right text-slate-500">{c.totalTokens.toLocaleString("it-IT")}</td>
-                                  <td className="px-5 py-3.5 text-right text-emerald-600 font-semibold">€{c.totalCost.toFixed(5)}</td>
+                                  <td className="px-5 py-3.5 text-right text-slate-500">{c.totalTokens.toLocaleString("en-CA")}</td>
+                                  <td className="px-5 py-3.5 text-right text-emerald-600 font-semibold">${c.totalCost.toFixed(5)}</td>
                                 </tr>
                               ))}
                             </tbody>
@@ -1372,37 +1417,37 @@ export default function AdminPage() {
                         </div>
                       </div>
 
-                      {/* Ultime chiamate API (Log debug) */}
+                      {/* Latest API calls (debug log) */}
                       <div className="bg-white rounded-2xl border border-slate-100 p-6 shadow-sm">
-                        <h3 className="text-sm font-bold text-slate-800 mb-4">Registro Ultime Chiamate AI Widget</h3>
+                        <h3 className="text-sm font-bold text-slate-800 mb-4">{t("admin.recentAiCallsLog")}</h3>
                         <div className="overflow-x-auto">
                           <table className="w-full text-left text-sm border-collapse">
                             <thead>
                               <tr className="border-b border-slate-100 bg-slate-50/50">
-                                <th className="px-5 py-3.5 text-xs font-bold text-slate-400 uppercase">Data</th>
-                                <th className="px-5 py-3.5 text-xs font-bold text-slate-400 uppercase">Impresa Ospite</th>
+                                <th className="px-5 py-3.5 text-xs font-bold text-slate-400 uppercase">{t("admin.date")}</th>
+                                <th className="px-5 py-3.5 text-xs font-bold text-slate-400 uppercase">{t("admin.hostBusiness")}</th>
                                 <th className="px-5 py-3.5 text-xs font-bold text-slate-400 uppercase">Lead</th>
-                                <th className="px-5 py-3.5 text-xs font-bold text-slate-400 uppercase text-center">Modello AI</th>
-                                <th className="px-5 py-3.5 text-xs font-bold text-slate-400 uppercase text-right">Token</th>
-                                <th className="px-5 py-3.5 text-xs font-bold text-slate-400 uppercase text-right">Costo AI</th>
+                                <th className="px-5 py-3.5 text-xs font-bold text-slate-400 uppercase text-center">{t("admin.aiModel")}</th>
+                                <th className="px-5 py-3.5 text-xs font-bold text-slate-400 uppercase text-right">{t("admin.tokens")}</th>
+                                <th className="px-5 py-3.5 text-xs font-bold text-slate-400 uppercase text-right">{t("admin.aiCost")}</th>
                               </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-50">
                               {widgetStats.recentCalls.map((call: any) => (
                                 <tr key={call.quoteId} className="hover:bg-slate-50/20 text-xs">
-                                  <td className="px-5 py-3 text-slate-500">{new Date(call.date).toLocaleString("it-IT")}</td>
-                                  <td className="px-5 py-3 font-semibold text-slate-800">{call.companyName || "Virtuale"}</td>
+                                  <td className="px-5 py-3 text-slate-500">{new Date(call.date).toLocaleString("en-CA")}</td>
+                                  <td className="px-5 py-3 font-semibold text-slate-800">{call.companyName || t("admin.virtual")}</td>
                                   <td className="px-5 py-3">
                                     <div className="font-semibold text-slate-800">{call.clientName}</div>
                                     <div className="text-[10px] text-slate-400">{call.clientEmail}</div>
                                   </td>
                                   <td className="px-5 py-3 text-center">
-                                    <span className="bg-violet-50 text-violet-700 px-2 py-0.5 rounded border border-violet-100 font-medium">
+                                    <span className="bg-navy-50 text-navy-700 px-2 py-0.5 rounded border border-navy-100 font-medium">
                                       Llama 3.3 (Groq)
                                     </span>
                                   </td>
-                                  <td className="px-5 py-3 text-right text-slate-500">{(call.totalTokens || 0).toLocaleString("it-IT")}</td>
-                                  <td className="px-5 py-3 text-right text-emerald-600 font-semibold">€{Number(call.apiCost || 0).toFixed(5)}</td>
+                                  <td className="px-5 py-3 text-right text-slate-500">{(call.totalTokens || 0).toLocaleString("en-CA")}</td>
+                                  <td className="px-5 py-3 text-right text-emerald-600 font-semibold">${Number(call.apiCost || 0).toFixed(5)}</td>
                                 </tr>
                               ))}
                             </tbody>
@@ -1416,286 +1461,45 @@ export default function AdminPage() {
             </div>
           )}
 
-          {/* INCENTIVES & BANDI EDILI CATALOG (AI DAILY UPDATED) */}
-          {tab === "incentives" && (
-            <div className="space-y-6">
-              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white rounded-2xl border border-slate-100 p-6 shadow-sm">
-                <div>
-                  <h2 className="text-base font-bold text-slate-800 flex items-center gap-2">
-                    <Award className="h-5 w-5 text-emerald-500" /> Motore & Catalogo Incentivi Edili (3 Livelli & AI Sync)
-                  </h2>
-                  <p className="text-xs text-slate-400 mt-1">
-                    Gestisce i bandi Statali, Regionali e Comunali verificati dall'Agente AI per alimentare il widget in tempo reale.
-                  </p>
-                </div>
-                <button
-                  onClick={runAiSync}
-                  disabled={syncingAi}
-                  className="inline-flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-semibold rounded-xl shadow-sm text-xs transition-all disabled:opacity-50"
-                >
-                  <RefreshCw className={`h-4 w-4 ${syncingAi ? "animate-spin" : ""}`} />
-                  {syncingAi ? "Scansione AI & Verifica in corso..." : "⚡ Esegui Scansione AI Quotidiana Adesso"}
-                </button>
+          {/* COST & MARGIN TAB (Phase 8 §4a) — cost vs. subscription revenue per org,
+              rolled up nightly from usage_events into usage_daily_summary, so
+              accounts running at a loss surface before it's a pattern. */}
+          {tab === "margin" && (
+            <div className="space-y-4">
+              <div>
+                <h2 className="text-base font-bold text-slate-800">Cost & Margin (last 30 days)</h2>
+                <p className="text-xs text-slate-400">AI (receipt vision + quote text) and WhatsApp cost vs. estimated subscription revenue, per account. Sorted by lowest margin first.</p>
               </div>
-
-              {/* Form Nuova Aggiunta Manuale/Custom */}
-              <div className="bg-white rounded-2xl border border-slate-100 p-6 shadow-sm space-y-4">
-                <h3 className="text-sm font-bold text-slate-800 flex items-center gap-2">
-                  <Sparkles className="h-4 w-4 text-violet-500" /> Aggiungi Nuovo Bando o Incentivo Custom
-                </h3>
-                <form onSubmit={handleCreateIncentive} className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div>
-                    <label className="block text-xs font-bold text-slate-500 mb-1">Livello</label>
-                    <select
-                      value={newIncLevel}
-                      onChange={(e) => setNewIncLevel(e.target.value)}
-                      className="w-full px-3 py-2 border border-slate-100 rounded-xl text-sm focus:outline-none focus:border-violet-500 bg-white"
-                    >
-                      <option value="statale">Statale</option>
-                      <option value="regionale">Regionale</option>
-                      <option value="comunale">Comunale / Locale</option>
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-bold text-slate-500 mb-1">Codice Identificativo</label>
-                    <input
-                      type="text"
-                      required
-                      placeholder="es. LOMBARDIA_ECO_2026"
-                      value={newIncCodice}
-                      onChange={(e) => setNewIncCodice(e.target.value)}
-                      className="w-full px-3 py-2 border border-slate-100 rounded-xl text-sm focus:outline-none focus:border-violet-500 bg-white"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-bold text-slate-500 mb-1">Regione / Comune</label>
-                    <input
-                      type="text"
-                      placeholder="es. Lombardia o Milano"
-                      value={newIncRegione}
-                      onChange={(e) => setNewIncRegione(e.target.value)}
-                      className="w-full px-3 py-2 border border-slate-100 rounded-xl text-sm focus:outline-none focus:border-violet-500 bg-white"
-                    />
-                  </div>
-
-                  <div className="md:col-span-2">
-                    <label className="block text-xs font-bold text-slate-500 mb-1">Titolo Bando</label>
-                    <input
-                      type="text"
-                      required
-                      placeholder="es. Bando Efficienza e Riscaldamento Regione Lombardia"
-                      value={newIncTitolo}
-                      onChange={(e) => setNewIncTitolo(e.target.value)}
-                      className="w-full px-3 py-2 border border-slate-100 rounded-xl text-sm focus:outline-none focus:border-violet-500 bg-white"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-bold text-slate-500 mb-1">Massimale Contributo (€)</label>
-                    <input
-                      type="number"
-                      required
-                      placeholder="5000"
-                      value={newIncMassimale}
-                      onChange={(e) => setNewIncMassimale(e.target.value)}
-                      className="w-full px-3 py-2 border border-slate-100 rounded-xl text-sm focus:outline-none focus:border-violet-500 bg-white"
-                    />
-                  </div>
-
-                  <div className="md:col-span-3 flex justify-end">
-                    <button type="submit" className="px-5 py-2 bg-violet-600 hover:bg-violet-700 text-white font-semibold rounded-xl text-xs transition-all">
-                      + Aggiungi Bando a Catalogo
-                    </button>
-                  </div>
-                </form>
-              </div>
-
-              {/* Tabella Catalogo Incentivi */}
-              <div className="bg-white rounded-2xl border border-slate-100 p-6 shadow-sm space-y-4">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-sm font-bold text-slate-800">Elenco Bandi Attivi & Verificati ({incentivesList.length})</h3>
-                  {loadingIncentives && <span className="text-xs text-slate-400 animate-pulse">Caricamento in corso...</span>}
-                </div>
-
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left text-sm border-collapse">
-                    <thead>
-                      <tr className="border-b border-slate-100 bg-slate-50/50">
-                        <th className="px-4 py-3 text-xs font-bold text-slate-400 uppercase">Livello</th>
-                        <th className="px-4 py-3 text-xs font-bold text-slate-400 uppercase">Codice / Titolo</th>
-                        <th className="px-4 py-3 text-xs font-bold text-slate-400 uppercase">Zona</th>
-                        <th className="px-4 py-3 text-xs font-bold text-slate-400 uppercase text-right">Contributo Max</th>
-                        <th className="px-4 py-3 text-xs font-bold text-slate-400 uppercase text-center">Stato</th>
-                        <th className="px-4 py-3 text-xs font-bold text-slate-400 uppercase text-center">Verifica AI</th>
-                        <th className="px-4 py-3 text-xs font-bold text-slate-400 uppercase text-right">Azioni</th>
+              {marginLoading ? (
+                <div className="text-sm text-slate-400 py-8 text-center">Loading…</div>
+              ) : marginRows.length === 0 ? (
+                <div className="text-sm text-slate-400 py-8 text-center">No metered usage recorded in this window yet.</div>
+              ) : (
+                <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead className="bg-slate-50 text-slate-500 text-xs uppercase">
+                      <tr>
+                        <th className="px-4 py-3 text-left">Company</th>
+                        <th className="px-4 py-3 text-left">Plan</th>
+                        <th className="px-4 py-3 text-right">Cost</th>
+                        <th className="px-4 py-3 text-right">Revenue (est.)</th>
+                        <th className="px-4 py-3 text-right">Margin</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-50">
-                      {incentivesList.map((inc) => (
-                        <tr key={inc.id} className="hover:bg-slate-50/20 text-xs">
-                          <td className="px-4 py-3.5">
-                            <span className={`px-2 py-0.5 rounded-full font-bold uppercase ${
-                              inc.level === "statale" ? "bg-violet-50 text-violet-700 border border-violet-100" :
-                              inc.level === "regionale" ? "bg-emerald-50 text-emerald-700 border border-emerald-100" :
-                              "bg-blue-50 text-blue-700 border border-blue-100"
-                            }`}>
-                              {inc.level}
-                            </span>
-                          </td>
-                          <td className="px-4 py-3.5">
-                            <div className="font-bold text-slate-800">{inc.titolo}</div>
-                            <div className="font-mono text-[10px] text-slate-400">{inc.codice}</div>
-                          </td>
-                          <td className="px-4 py-3.5 font-medium text-slate-600">
-                            {inc.regione || inc.comune || "Nazionale"}
-                          </td>
-                          <td className="px-4 py-3.5 text-right font-bold text-emerald-600">
-                            €{Number(inc.massimaleContributo || 0).toLocaleString("it-IT")}
-                          </td>
-                          <td className="px-4 py-3.5 text-center">
-                            <span className={`px-2 py-0.5 rounded-full font-semibold ${
-                              inc.stato === "active" ? "bg-emerald-100 text-emerald-800" : "bg-amber-100 text-amber-800"
-                            }`}>
-                              {inc.stato === "active" ? "Attivo ✓" : "In Esaurimento"}
-                            </span>
-                          </td>
-                          <td className="px-4 py-3.5 text-center">
-                            <span className={`px-2 py-0.5 rounded-full ${
-                              inc.isVerifiedByAi ? "bg-cyan-50 text-cyan-700 border border-cyan-200 font-semibold" : "bg-slate-100 text-slate-500"
-                            }`}>
-                              {inc.isVerifiedByAi ? "Verificato AI ✓" : "In attesa"}
-                            </span>
-                            {inc.lastCheckedAt && (
-                              <div className="text-[9px] text-slate-400 mt-0.5">
-                                {new Date(inc.lastCheckedAt).toLocaleDateString("it-IT")}
-                              </div>
-                            )}
-                            <div className={`mt-1 px-2 py-0.5 rounded-full inline-block ${
-                              inc.humanVerified ? "bg-emerald-50 text-emerald-700 border border-emerald-200 font-semibold" : "bg-slate-50 text-slate-400 border border-slate-200"
-                            }`}>
-                              {inc.humanVerified ? "Controllato a mano ✓" : "Non controllato a mano"}
-                            </div>
-                          </td>
-                          <td className="px-4 py-3.5 text-right whitespace-nowrap">
-                            <button
-                              onClick={() => openEditIncentive(inc)}
-                              className="text-violet-600 hover:text-violet-800 font-medium px-2 py-1 rounded hover:bg-violet-50 transition-colors mr-1"
-                            >
-                              Modifica
-                            </button>
-                            <button
-                              onClick={() => handleDeleteIncentive(inc.id)}
-                              className="text-red-500 hover:text-red-700 font-medium px-2 py-1 rounded hover:bg-red-50 transition-colors"
-                            >
-                              Elimina
-                            </button>
+                      {marginRows.map((row) => (
+                        <tr key={row.userId} className={row.marginCents < 0 ? "bg-red-50/50" : ""}>
+                          <td className="px-4 py-3 font-medium text-slate-700">{row.companyName || row.userId.slice(0, 8)}</td>
+                          <td className="px-4 py-3 text-slate-500">{row.plan ?? "—"}</td>
+                          <td className="px-4 py-3 text-right font-mono">${(row.costCents / 100).toFixed(2)}</td>
+                          <td className="px-4 py-3 text-right font-mono">${(row.revenueCents / 100).toFixed(2)}</td>
+                          <td className={`px-4 py-3 text-right font-mono font-semibold ${row.marginCents < 0 ? "text-red-600" : "text-emerald-600"}`}>
+                            ${(row.marginCents / 100).toFixed(2)}
                           </td>
                         </tr>
                       ))}
                     </tbody>
                   </table>
-                </div>
-              </div>
-
-              {editingIncentive && (
-                <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
-                  <div className="bg-white border border-slate-200 rounded-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto shadow-2xl p-6 relative">
-                    <button
-                      onClick={() => setEditingIncentive(null)}
-                      className="absolute top-4 right-4 p-1.5 rounded-full hover:bg-slate-100 text-slate-400 hover:text-slate-700 transition"
-                    >
-                      <X className="h-4 w-4" />
-                    </button>
-                    <h3 className="text-sm font-bold text-slate-800 mb-1">Modifica Bando</h3>
-                    <p className="text-xs text-slate-400 mb-4 font-mono">{editingIncentive.codice}</p>
-                    <form onSubmit={handleUpdateIncentive} className="space-y-3">
-                      <div>
-                        <label className="block text-xs font-bold text-slate-500 mb-1">Titolo</label>
-                        <input
-                          type="text"
-                          value={editForm.titolo}
-                          onChange={(e) => setEditForm((f) => ({ ...f, titolo: e.target.value }))}
-                          className="w-full border border-slate-200 rounded-lg p-2 text-sm focus:outline-none focus:ring-1 focus:ring-violet-500"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-xs font-bold text-slate-500 mb-1">Descrizione</label>
-                        <textarea
-                          value={editForm.descrizione}
-                          onChange={(e) => setEditForm((f) => ({ ...f, descrizione: e.target.value }))}
-                          rows={3}
-                          className="w-full border border-slate-200 rounded-lg p-2 text-sm focus:outline-none focus:ring-1 focus:ring-violet-500"
-                        />
-                      </div>
-                      <div className="grid grid-cols-2 gap-3">
-                        <div>
-                          <label className="block text-xs font-bold text-slate-500 mb-1">Percentuale Max (%)</label>
-                          <input
-                            type="number"
-                            step="0.01"
-                            value={editForm.percentualeMassima}
-                            onChange={(e) => setEditForm((f) => ({ ...f, percentualeMassima: e.target.value }))}
-                            className="w-full border border-slate-200 rounded-lg p-2 text-sm focus:outline-none focus:ring-1 focus:ring-violet-500"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-xs font-bold text-slate-500 mb-1">Massimale Contributo (€)</label>
-                          <input
-                            type="number"
-                            value={editForm.massimaleContributo}
-                            onChange={(e) => setEditForm((f) => ({ ...f, massimaleContributo: e.target.value }))}
-                            className="w-full border border-slate-200 rounded-lg p-2 text-sm focus:outline-none focus:ring-1 focus:ring-violet-500"
-                          />
-                        </div>
-                      </div>
-                      <div>
-                        <label className="block text-xs font-bold text-slate-500 mb-1">Stato</label>
-                        <select
-                          value={editForm.stato}
-                          onChange={(e) => setEditForm((f) => ({ ...f, stato: e.target.value }))}
-                          className="w-full border border-slate-200 rounded-lg p-2 text-sm focus:outline-none focus:ring-1 focus:ring-violet-500"
-                        >
-                          <option value="active">Attivo</option>
-                          <option value="expiring_soon">In esaurimento</option>
-                          <option value="closed">Chiuso</option>
-                        </select>
-                      </div>
-                      <div>
-                        <label className="block text-xs font-bold text-slate-500 mb-1">Fonte Ufficiale (URL)</label>
-                        <input
-                          type="text"
-                          value={editForm.fonteUfficialeUrl}
-                          onChange={(e) => setEditForm((f) => ({ ...f, fonteUfficialeUrl: e.target.value }))}
-                          className="w-full border border-slate-200 rounded-lg p-2 text-sm focus:outline-none focus:ring-1 focus:ring-violet-500"
-                        />
-                      </div>
-                      <label className="flex items-center gap-2 text-xs font-semibold text-slate-600 pt-1">
-                        <input
-                          type="checkbox"
-                          checked={editForm.humanVerified}
-                          onChange={(e) => setEditForm((f) => ({ ...f, humanVerified: e.target.checked }))}
-                        />
-                        Ho controllato personalmente questo bando sulla fonte ufficiale
-                      </label>
-                      <div className="flex justify-end gap-2 pt-2">
-                        <button
-                          type="button"
-                          onClick={() => setEditingIncentive(null)}
-                          className="px-4 py-2 text-xs font-bold text-slate-500 hover:bg-slate-50 rounded-lg transition"
-                        >
-                          Annulla
-                        </button>
-                        <button
-                          type="submit"
-                          className="px-4 py-2 bg-violet-600 text-white rounded-lg text-xs font-bold hover:bg-violet-700 transition"
-                        >
-                          Salva Modifiche
-                        </button>
-                      </div>
-                    </form>
-                  </div>
                 </div>
               )}
             </div>
@@ -1705,50 +1509,50 @@ export default function AdminPage() {
           {tab === "stripe" && (
             <div className="space-y-6">
               <div>
-                <h2 className="text-base font-bold text-slate-800">Connessione & Gestione Abbonamenti</h2>
-                <p className="text-xs text-slate-400">Assegna giorni gratuiti di piani premium o associa manualmente ID clienti Stripe.</p>
+                <h2 className="text-base font-bold text-slate-800">{t("admin.subscriptionConnectionMgmt")}</h2>
+                <p className="text-xs text-slate-400">{t("admin.subscriptionConnectionMgmtDesc")}</p>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* Free plan grantor form */}
                 <div className="bg-white rounded-2xl border border-slate-100 p-5 shadow-sm space-y-4">
                   <h3 className="text-sm font-bold text-slate-800 flex items-center gap-2">
-                    <HeartHandshake className="h-4 w-4 text-pink-500" /> Concedi Periodo Gratuito
+                    <HeartHandshake className="h-4 w-4 text-pink-500" /> {t("admin.grantFreePeriod")}
                   </h3>
                   <form onSubmit={handleGrantPlan} className="space-y-4">
                     <div>
-                      <label className="block text-xs font-bold text-slate-500 mb-1.5">Email dell'Utente</label>
+                      <label className="block text-xs font-bold text-slate-500 mb-1.5">{t("admin.userEmail")}</label>
                       <input
                         type="email"
                         required
-                        placeholder="utente@esempio.com"
+                        placeholder="user@example.com"
                         value={selectedUserEmail}
                         onChange={(e) => setSelectedUserEmail(e.target.value)}
-                        className="w-full px-3 py-2 border border-slate-100 rounded-xl text-sm focus:outline-none focus:border-violet-500 bg-white"
+                        className="w-full px-3 py-2 border border-slate-100 rounded-xl text-sm focus:outline-none focus:border-navy-500 bg-white"
                       />
                     </div>
 
                     <div>
-                      <label className="block text-xs font-bold text-slate-500 mb-1.5">Piano da Assegnare</label>
+                      <label className="block text-xs font-bold text-slate-500 mb-1.5">{t("admin.planToGrant")}</label>
                       <select
                         value={freePlanType}
                         onChange={(e) => setFreePlanType(e.target.value)}
-                        className="w-full px-3 py-2 border border-slate-100 rounded-xl text-sm focus:outline-none focus:border-violet-500 bg-white"
+                        className="w-full px-3 py-2 border border-slate-100 rounded-xl text-sm focus:outline-none focus:border-navy-500 bg-white"
                       >
-                        <option value="monthly_starter">Starter (Standard PDF)</option>
-                        <option value="monthly_pro">Pro (PDF senza loghi PrevAI, tutti i template)</option>
-                        <option value="monthly_elite">Elite (Supporto massimo, 5 foto)</option>
+                        <option value="monthly_starter">{t("admin.planStarterDesc")}</option>
+                        <option value="monthly_pro">{t("admin.planProDesc")}</option>
+                        <option value="monthly_elite">{t("admin.planEliteDesc")}</option>
                       </select>
                     </div>
 
                     <div>
-                      <label className="block text-xs font-bold text-slate-500 mb-1.5">Giorni Gratis</label>
+                      <label className="block text-xs font-bold text-slate-500 mb-1.5">{t("admin.freeDays")}</label>
                       <div className="grid grid-cols-4 gap-2 mb-2">
                         {[
-                          { label: "7 giorni", val: "7" },
-                          { label: "1 mese", val: "30" },
-                          { label: "3 mesi", val: "90" },
-                          { label: "1 anno", val: "365" },
+                          { label: t("admin.days7"), val: "7" },
+                          { label: t("admin.month1"), val: "30" },
+                          { label: t("admin.months3"), val: "90" },
+                          { label: t("admin.year1"), val: "365" },
                         ].map(opt => (
                           <button
                             key={opt.val}
@@ -1756,7 +1560,7 @@ export default function AdminPage() {
                             onClick={() => setFreeDuration(opt.val)}
                             className={`py-1.5 border rounded-lg text-xs font-medium transition-all ${
                               freeDuration === opt.val
-                                ? "border-violet-500 bg-violet-50 text-violet-700"
+                                ? "border-navy-500 bg-navy-50 text-navy-700"
                                 : "border-slate-100 hover:bg-slate-50 text-slate-500"
                             }`}
                           >
@@ -1771,7 +1575,7 @@ export default function AdminPage() {
                         max="1000"
                         value={freeDuration}
                         onChange={(e) => setFreeDuration(e.target.value)}
-                        className="w-full px-3 py-2 border border-slate-100 rounded-xl text-sm focus:outline-none focus:border-violet-500 bg-white"
+                        className="w-full px-3 py-2 border border-slate-100 rounded-xl text-sm focus:outline-none focus:border-navy-500 bg-white"
                       />
                     </div>
 
@@ -1780,7 +1584,7 @@ export default function AdminPage() {
                       disabled={grantingPlan}
                       className="w-full btn-gradient h-10 font-semibold text-sm transition-all"
                     >
-                      {grantingPlan ? "Assegnazione in corso..." : "Concedi Piano Gratis"}
+                      {grantingPlan ? t("admin.grantingInProgress") : t("admin.grantFreePlan")}
                     </button>
                   </form>
                 </div>
@@ -1788,18 +1592,18 @@ export default function AdminPage() {
                 {/* Force-link Stripe Customer Form */}
                 <div className="bg-white rounded-2xl border border-slate-100 p-5 shadow-sm space-y-4">
                   <h3 className="text-sm font-bold text-slate-800 flex items-center gap-2">
-                    <Euro className="h-4 w-4 text-emerald-500" /> Collega ID Stripe Customer
+                    <DollarSign className="h-4 w-4 text-emerald-500" /> {t("admin.linkStripeCustomerId")}
                   </h3>
                   <form onSubmit={handleLinkCustomer} className="space-y-4">
                     <div>
-                      <label className="block text-xs font-bold text-slate-500 mb-1.5">Email dell'Utente PrevAI</label>
+                      <label className="block text-xs font-bold text-slate-500 mb-1.5">{t("admin.quoteAiUserEmail")}</label>
                       <input
                         type="email"
                         required
-                        placeholder="utente@esempio.com"
+                        placeholder="user@example.com"
                         value={selectedUserEmail}
                         onChange={(e) => setSelectedUserEmail(e.target.value)}
-                        className="w-full px-3 py-2 border border-slate-100 rounded-xl text-sm focus:outline-none focus:border-violet-500 bg-white"
+                        className="w-full px-3 py-2 border border-slate-100 rounded-xl text-sm focus:outline-none focus:border-navy-500 bg-white"
                       />
                     </div>
 
@@ -1811,7 +1615,7 @@ export default function AdminPage() {
                         placeholder="cus_RzT83..."
                         value={stripeCustomerId}
                         onChange={(e) => setStripeCustomerId(e.target.value)}
-                        className="w-full px-3 py-2 border border-slate-100 rounded-xl text-sm focus:outline-none focus:border-violet-500 bg-white"
+                        className="w-full px-3 py-2 border border-slate-100 rounded-xl text-sm focus:outline-none focus:border-navy-500 bg-white"
                       />
                     </div>
 
@@ -1819,7 +1623,7 @@ export default function AdminPage() {
                       type="submit"
                       className="w-full border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-700 h-10 font-bold rounded-xl text-sm transition-all"
                     >
-                      Associa Cliente Stripe
+                      {t("admin.linkStripeCustomer")}
                     </button>
                   </form>
                 </div>
@@ -1831,13 +1635,13 @@ export default function AdminPage() {
           {tab === "gsc" && (
             <div className="space-y-6">
               <div>
-                <h2 className="text-base font-bold text-slate-800">Connessione Google Search Console</h2>
-                <p className="text-xs text-slate-400">Statistiche live sul posizionamento SEO, clic, impressioni e parole chiave di ricerca.</p>
+                <h2 className="text-base font-bold text-slate-800">{t("admin.gscConnectionTitle")}</h2>
+                <p className="text-xs text-slate-400">{t("admin.gscConnectionDesc")}</p>
               </div>
 
               {gscLoading && (
                 <div className="h-48 flex items-center justify-center bg-white rounded-2xl border border-slate-100">
-                  <div className="h-7 w-7 rounded-full border-2 border-violet-500 border-t-transparent animate-spin" />
+                  <div className="h-7 w-7 rounded-full border-2 border-navy-500 border-t-transparent animate-spin" />
                 </div>
               )}
 
@@ -1846,10 +1650,10 @@ export default function AdminPage() {
                   {/* Summary grid */}
                   <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                     {[
-                      { label: "Clic Totali (GSC)", value: gscSummary.totalClicks, icon: Eye, color: "text-violet-500", bg: "bg-violet-50" },
-                      { label: "Impressioni Totali", value: gscSummary.totalImpressions, icon: Globe, color: "text-blue-500", bg: "bg-blue-50" },
-                      { label: "CTR Medio", value: `${(gscSummary.averageCtr * 100).toFixed(1)}%`, icon: TrendingUp, color: "text-emerald-500", bg: "bg-emerald-50" },
-                      { label: "Posizione Media", value: gscSummary.averagePosition, icon: Award, color: "text-amber-500", bg: "bg-amber-50" },
+                      { label: t("admin.totalClicks"), value: gscSummary.totalClicks, icon: Eye, color: "text-navy-500", bg: "bg-navy-50" },
+                      { label: t("admin.totalImpressions"), value: gscSummary.totalImpressions, icon: Globe, color: "text-blue-500", bg: "bg-blue-50" },
+                      { label: t("admin.averageCtr"), value: `${(gscSummary.averageCtr * 100).toFixed(1)}%`, icon: TrendingUp, color: "text-emerald-500", bg: "bg-emerald-50" },
+                      { label: t("admin.averagePosition"), value: gscSummary.averagePosition, icon: Award, color: "text-amber-500", bg: "bg-amber-50" },
                     ].map(({ label, value, icon: Icon, color, bg }) => (
                       <div key={label} className="bg-white rounded-2xl border border-slate-100 p-4 shadow-sm">
                         <div className="flex items-center justify-between mb-2">
@@ -1863,7 +1667,7 @@ export default function AdminPage() {
 
                   {/* Trend chart */}
                   <div className="bg-white rounded-2xl border border-slate-100 p-5 shadow-sm space-y-4">
-                    <h3 className="text-sm font-bold text-slate-800">Andamento Clic & Impressioni (Ultimi 30 Giorni)</h3>
+                    <h3 className="text-sm font-bold text-slate-800">{t("admin.clicksImpressionsTrend")}</h3>
                     <div className="h-44 w-full text-xs">
                       <ResponsiveContainer width="100%" height="100%">
                         <LineChart data={gscTrends}>
@@ -1872,8 +1676,8 @@ export default function AdminPage() {
                           <YAxis yAxisId="left" stroke="#7C3AED" />
                           <YAxis yAxisId="right" orientation="right" stroke="#0EA5E9" />
                           <ChartTooltip />
-                          <Line yAxisId="left" type="monotone" dataKey="clicks" stroke="#7C3AED" strokeWidth={2} name="Clic" dot={false} />
-                          <Line yAxisId="right" type="monotone" dataKey="impressions" stroke="#0EA5E9" strokeWidth={2} name="Impressioni" dot={false} />
+                          <Line yAxisId="left" type="monotone" dataKey="clicks" stroke="#7C3AED" strokeWidth={2} name={t("admin.clicks")} dot={false} />
+                          <Line yAxisId="right" type="monotone" dataKey="impressions" stroke="#0EA5E9" strokeWidth={2} name={t("admin.impressions")} dot={false} />
                         </LineChart>
                       </ResponsiveContainer>
                     </div>
@@ -1881,16 +1685,16 @@ export default function AdminPage() {
 
                   {/* Keywords performance table */}
                   <div className="bg-white rounded-2xl border border-slate-100 p-5 shadow-sm space-y-3">
-                    <h3 className="text-sm font-bold text-slate-800">Parole Chiave di Ricerca (Keywords)</h3>
+                    <h3 className="text-sm font-bold text-slate-800">{t("admin.searchKeywords")}</h3>
                     <div className="overflow-x-auto">
                       <table className="w-full text-left text-xs">
                         <thead>
                           <tr className="border-b border-slate-100 bg-slate-50/50">
-                            <th className="px-4 py-2 font-bold text-slate-400 uppercase">Query di Ricerca</th>
-                            <th className="px-4 py-2 font-bold text-slate-400 uppercase text-center">Clic</th>
-                            <th className="px-4 py-2 font-bold text-slate-400 uppercase text-center">Impressioni</th>
+                            <th className="px-4 py-2 font-bold text-slate-400 uppercase">{t("admin.searchQuery")}</th>
+                            <th className="px-4 py-2 font-bold text-slate-400 uppercase text-center">{t("admin.clicks")}</th>
+                            <th className="px-4 py-2 font-bold text-slate-400 uppercase text-center">{t("admin.impressions")}</th>
                             <th className="px-4 py-2 font-bold text-slate-400 uppercase text-center">CTR</th>
-                            <th className="px-4 py-2 font-bold text-slate-400 uppercase text-center">Posizione Media</th>
+                            <th className="px-4 py-2 font-bold text-slate-400 uppercase text-center">{t("admin.averagePosition")}</th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-50">
@@ -1918,7 +1722,7 @@ export default function AdminPage() {
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
                   <h2 className="text-base font-bold text-slate-800">SEO Audit & Validator</h2>
-                  <p className="text-xs text-slate-400">Analisi automatica in tempo reale degli header, meta-tag e delle intestazioni delle pagine del tuo sito.</p>
+                  <p className="text-xs text-slate-400">{t("admin.seoAuditDesc")}</p>
                 </div>
                 <button
                   onClick={runSeoScan}
@@ -1926,18 +1730,18 @@ export default function AdminPage() {
                   className="btn-gradient inline-flex items-center gap-1.5 h-9 px-4 text-xs font-bold transition-all"
                 >
                   <RefreshCw className={`h-3.5 w-3.5 ${seoScanning ? "animate-spin" : ""}`} />
-                  Esegui Scansione SEO
+                  {t("admin.runSeoScan")}
                 </button>
               </div>
 
               {seoScanning && (
                 <div className="bg-white rounded-2xl border border-slate-100 p-8 shadow-sm text-center space-y-4">
-                  <div className="h-10 w-10 bg-violet-50 text-violet-500 rounded-full flex items-center justify-center mx-auto border border-violet-100 animate-spin">
+                  <div className="h-10 w-10 bg-navy-50 text-navy-500 rounded-full flex items-center justify-center mx-auto border border-navy-100 animate-spin">
                     <Activity className="h-5 w-5" />
                   </div>
                   <div>
-                    <h3 className="text-sm font-bold text-slate-800">Scansione in Corso</h3>
-                    <p className="text-xs text-slate-400 mt-1">SEO Checker sta analizzando meta description, H1, H2 e keyword density di tutte le landing page...</p>
+                    <h3 className="text-sm font-bold text-slate-800">{t("admin.scanInProgress")}</h3>
+                    <p className="text-xs text-slate-400 mt-1">{t("admin.scanInProgressDesc")}</p>
                   </div>
                 </div>
               )}
@@ -1947,9 +1751,9 @@ export default function AdminPage() {
                   {/* Global Score Panel */}
                   <div className="bg-white rounded-2xl border border-slate-100 p-5 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-6">
                     <div className="space-y-2">
-                      <h3 className="text-sm font-bold text-slate-800">Punteggio SEO Globale del Sito</h3>
-                      <p className="text-xs text-slate-400">Basato sulla corretta implementazione dei meta tag di base, OpenGraph e intestazioni H1/H2.</p>
-                      <div className="text-[10px] text-slate-400">Ultima scansione: {new Date(seoResult.lastChecked).toLocaleTimeString("it-IT")}</div>
+                      <h3 className="text-sm font-bold text-slate-800">{t("admin.globalSeoScore")}</h3>
+                      <p className="text-xs text-slate-400">{t("admin.globalSeoScoreDesc")}</p>
+                      <div className="text-[10px] text-slate-400">{t("admin.lastScan")}: {new Date(seoResult.lastChecked).toLocaleTimeString("en-CA")}</div>
                     </div>
 
                     <div className="flex items-center gap-4">
@@ -1964,8 +1768,8 @@ export default function AdminPage() {
 
                   {/* Scanned Pages breakdown */}
                   <div className="space-y-4">
-                    <h3 className="text-sm font-bold text-slate-800">Risultati Dettagliati per Pagina</h3>
-                    
+                    <h3 className="text-sm font-bold text-slate-800">{t("admin.detailedPageResults")}</h3>
+
                     <div className="space-y-3">
                       {seoResult.pages.map(page => (
                         <div key={page.url} className="bg-white rounded-2xl border border-slate-100 p-5 shadow-sm space-y-3">
@@ -1993,14 +1797,14 @@ export default function AdminPage() {
                               <span className="text-slate-700 font-medium">{page.description || "—"}</span>
                             </div>
                             <div>
-                              <span className="block font-bold text-slate-400 mb-0.5">Intestazione H1</span>
+                              <span className="block font-bold text-slate-400 mb-0.5">{t("admin.h1Heading")}</span>
                               <span className="text-slate-700 font-semibold">{page.h1 || "—"}</span>
                             </div>
                           </div>
 
                           {page.issues.length > 0 ? (
                             <div className="space-y-1.5">
-                              <span className="text-xs font-bold text-slate-500 block">Elementi da sistemare:</span>
+                              <span className="text-xs font-bold text-slate-500 block">{t("admin.itemsToFix")}</span>
                               {page.issues.map((issue, idx) => (
                                 <div key={idx} className="flex items-center gap-1.5 text-xs text-amber-600 font-medium">
                                   <AlertTriangle className="h-3.5 w-3.5 text-amber-500 shrink-0" />
@@ -2011,7 +1815,7 @@ export default function AdminPage() {
                           ) : (
                             <div className="flex items-center gap-1.5 text-xs text-emerald-600 font-medium">
                               <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />
-                              Nessun problema SEO riscontrato. Ottimizzazione al 100%!
+                              {t("admin.noSeoIssues")}
                             </div>
                           )}
                         </div>
@@ -2024,43 +1828,170 @@ export default function AdminPage() {
           )}
 
           {/* RESEND WEBHOOK EVENTS (delivery/bounce/complaint) */}
-          {tab === "email-events" && (
+          {tab === "incentives" && (
             <div className="space-y-6">
               <div className="bg-white rounded-2xl border border-slate-100 p-6 shadow-sm">
                 <h2 className="text-base font-bold text-slate-800 flex items-center gap-2">
-                  <Mail className="h-5 w-5 text-blue-500" /> Eventi Email (Webhook Resend)
+                  <Award className="h-5 w-5 text-emerald-500" /> {t("admin.incentivesEngineTitle")}
                 </h2>
-                <p className="text-xs text-slate-400 mt-1">
-                  Storico degli eventi di delivery/bounce/complaint ricevuti da Resend. Un bounce o complaint
-                  ripetuto sull'email di un partner significa che le notifiche lead del widget non gli arrivano più.
-                </p>
+                <p className="text-xs text-slate-400 mt-1">{t("admin.incentivesEngineDesc")}</p>
               </div>
 
               <div className="bg-white rounded-2xl border border-slate-100 p-6 shadow-sm space-y-4">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-sm font-bold text-slate-800">Ultimi Eventi ({emailEvents.length})</h3>
-                  <button
-                    onClick={loadEmailEvents}
-                    disabled={loadingEmailEvents}
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-100 bg-white shadow-sm text-xs text-slate-500 hover:text-slate-800 transition-all font-medium disabled:opacity-50"
-                  >
-                    <RefreshCw className={`h-3.5 w-3.5 ${loadingEmailEvents ? "animate-spin" : ""}`} />
-                    Aggiorna
-                  </button>
+                <div className="flex items-center justify-between flex-wrap gap-2">
+                  <h3 className="text-sm font-bold text-slate-800">
+                    {t("admin.activeVerifiedIncentives")} ({incentives.filter(i => i.stato !== "closed" && i.humanVerified).length} / {incentives.length})
+                  </h3>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => { resetIncentiveForm(); setShowIncentiveForm(true); }}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-navy-600 text-white text-xs font-semibold hover:bg-navy-700"
+                    >
+                      + Add program
+                    </button>
+                    <button
+                      onClick={loadIncentives}
+                      disabled={loadingIncentives}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-100 bg-white shadow-sm text-xs text-slate-500 hover:text-slate-800 transition-all font-medium disabled:opacity-50"
+                    >
+                      <RefreshCw className={`h-3.5 w-3.5 ${loadingIncentives ? "animate-spin" : ""}`} />
+                      {t("admin.refresh")}
+                    </button>
+                  </div>
                 </div>
 
-                {emailEvents.length === 0 && !loadingEmailEvents && (
-                  <p className="text-xs text-slate-400">Nessun evento ricevuto ancora dal webhook Resend.</p>
+                {showIncentiveForm && (
+                  <form onSubmit={saveIncentive} className="border border-slate-100 rounded-xl p-4 space-y-3 bg-slate-50/50">
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                      <select value={incentiveForm.level} onChange={e => setIncentiveForm(f => ({ ...f, level: e.target.value as any }))} className="text-xs border border-slate-200 rounded-lg px-2 py-1.5">
+                        <option value="federal">Federal</option>
+                        <option value="provincial">Provincial</option>
+                        <option value="municipal">Municipal</option>
+                        <option value="utility">Utility</option>
+                      </select>
+                      <input required placeholder="Code (e.g. CGHAP)" value={incentiveForm.codice} onChange={e => setIncentiveForm(f => ({ ...f, codice: e.target.value }))} className="text-xs border border-slate-200 rounded-lg px-2 py-1.5" />
+                      <input placeholder="Province (ON, QC...)" value={incentiveForm.province} onChange={e => setIncentiveForm(f => ({ ...f, province: e.target.value }))} className="text-xs border border-slate-200 rounded-lg px-2 py-1.5" />
+                      <input placeholder="City (optional)" value={incentiveForm.city} onChange={e => setIncentiveForm(f => ({ ...f, city: e.target.value }))} className="text-xs border border-slate-200 rounded-lg px-2 py-1.5" />
+                    </div>
+                    <input required placeholder="Program title" value={incentiveForm.titolo} onChange={e => setIncentiveForm(f => ({ ...f, titolo: e.target.value }))} className="text-xs border border-slate-200 rounded-lg px-2 py-1.5 w-full" />
+                    <textarea required placeholder="Description" value={incentiveForm.descrizione} onChange={e => setIncentiveForm(f => ({ ...f, descrizione: e.target.value }))} className="text-xs border border-slate-200 rounded-lg px-2 py-1.5 w-full" rows={2} />
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                      <select value={incentiveForm.categoriaIntervento} onChange={e => setIncentiveForm(f => ({ ...f, categoriaIntervento: e.target.value }))} className="text-xs border border-slate-200 rounded-lg px-2 py-1.5">
+                        {["all", "energy_efficiency", "heat_pump", "insulation", "windows_doors", "accessibility", "general_renovation"].map(c => <option key={c} value={c}>{c}</option>)}
+                      </select>
+                      <select value={incentiveForm.tipoAgevolazione} onChange={e => setIncentiveForm(f => ({ ...f, tipoAgevolazione: e.target.value }))} className="text-xs border border-slate-200 rounded-lg px-2 py-1.5">
+                        {["rebate", "direct_grant", "tax_credit", "no_cost_direct_install", "low_interest_loan"].map(c => <option key={c} value={c}>{c}</option>)}
+                      </select>
+                      <input placeholder="Max amount ($)" value={incentiveForm.massimaleContributo} onChange={e => setIncentiveForm(f => ({ ...f, massimaleContributo: e.target.value }))} className="text-xs border border-slate-200 rounded-lg px-2 py-1.5" />
+                      <label className="flex items-center gap-1.5 text-xs text-slate-500">
+                        <input type="checkbox" checked={incentiveForm.incomeTested} onChange={e => setIncentiveForm(f => ({ ...f, incomeTested: e.target.checked }))} />
+                        Income-tested
+                      </label>
+                    </div>
+                    <input placeholder="Official source URL" value={incentiveForm.fonteUfficialeUrl} onChange={e => setIncentiveForm(f => ({ ...f, fonteUfficialeUrl: e.target.value }))} className="text-xs border border-slate-200 rounded-lg px-2 py-1.5 w-full" />
+                    <div className="flex items-center gap-2">
+                      <button type="submit" disabled={savingIncentive} className="px-3 py-1.5 rounded-lg bg-navy-600 text-white text-xs font-semibold hover:bg-navy-700 disabled:opacity-50">
+                        {editingIncentiveId ? "Save changes" : "Create program"}
+                      </button>
+                      <button type="button" onClick={resetIncentiveForm} className="px-3 py-1.5 rounded-lg border border-slate-200 text-xs text-slate-500">
+                        {t("admin.cancel")}
+                      </button>
+                    </div>
+                  </form>
+                )}
+
+                {incentives.length === 0 && !loadingIncentives && (
+                  <p className="text-xs text-slate-400">No incentive programs yet.</p>
                 )}
 
                 <div className="overflow-x-auto">
                   <table className="w-full text-left text-sm border-collapse">
                     <thead>
                       <tr className="border-b border-slate-100 bg-slate-50/50">
-                        <th className="px-4 py-3 text-xs font-bold text-slate-400 uppercase">Tipo</th>
-                        <th className="px-4 py-3 text-xs font-bold text-slate-400 uppercase">Destinatario</th>
-                        <th className="px-4 py-3 text-xs font-bold text-slate-400 uppercase">Oggetto</th>
-                        <th className="px-4 py-3 text-xs font-bold text-slate-400 uppercase text-right">Data</th>
+                        <th className="px-4 py-3 text-xs font-bold text-slate-400 uppercase">Program</th>
+                        <th className="px-4 py-3 text-xs font-bold text-slate-400 uppercase">Level / Region</th>
+                        <th className="px-4 py-3 text-xs font-bold text-slate-400 uppercase">Category</th>
+                        <th className="px-4 py-3 text-xs font-bold text-slate-400 uppercase">Status</th>
+                        <th className="px-4 py-3 text-xs font-bold text-slate-400 uppercase">Verification</th>
+                        <th className="px-4 py-3 text-xs font-bold text-slate-400 uppercase text-right">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-50">
+                      {incentives.map((row) => (
+                        <tr key={row.id} className="hover:bg-slate-50/20 text-xs align-top">
+                          <td className="px-4 py-3.5">
+                            <p className="font-semibold text-slate-700">{row.titolo}</p>
+                            <p className="text-slate-400">{row.codice}</p>
+                          </td>
+                          <td className="px-4 py-3.5 text-slate-600">
+                            {row.level}{row.province ? ` · ${row.province}` : ""}{row.city ? ` · ${row.city}` : ""}
+                          </td>
+                          <td className="px-4 py-3.5 text-slate-600">{row.categoriaIntervento}</td>
+                          <td className="px-4 py-3.5">
+                            <span className={`px-2 py-0.5 rounded-full font-bold ${row.stato === "active" ? "bg-emerald-50 text-emerald-700 border border-emerald-100" : row.stato === "expiring_soon" ? "bg-amber-50 text-amber-700 border border-amber-100" : "bg-slate-100 text-slate-500"}`}>
+                              {row.stato}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3.5">
+                            <button
+                              onClick={() => toggleHumanVerified(row)}
+                              className={`px-2 py-0.5 rounded-full font-bold ${row.humanVerified ? "bg-emerald-100 text-emerald-700" : "bg-slate-100 text-slate-500"}`}
+                            >
+                              {row.humanVerified ? "Human-verified" : "Mark verified"}
+                            </button>
+                            {!row.isVerifiedByAi && (
+                              <span className="ml-1.5 px-2 py-0.5 rounded-full font-bold bg-red-50 text-red-600 border border-red-100">AI check failed</span>
+                            )}
+                          </td>
+                          <td className="px-4 py-3.5 text-right space-x-2">
+                            <button onClick={() => startEditIncentive(row)} className="text-navy-600 hover:underline font-semibold">Edit</button>
+                            <button onClick={() => deleteIncentive(row.id)} className="text-red-500 hover:underline font-semibold">Delete</button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {tab === "email-events" && (
+            <div className="space-y-6">
+              <div className="bg-white rounded-2xl border border-slate-100 p-6 shadow-sm">
+                <h2 className="text-base font-bold text-slate-800 flex items-center gap-2">
+                  <Mail className="h-5 w-5 text-blue-500" /> {t("admin.emailEventsTitle")}
+                </h2>
+                <p className="text-xs text-slate-400 mt-1">
+                  {t("admin.emailEventsDesc")}
+                </p>
+              </div>
+
+              <div className="bg-white rounded-2xl border border-slate-100 p-6 shadow-sm space-y-4">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-sm font-bold text-slate-800">{t("admin.latestEvents")} ({emailEvents.length})</h3>
+                  <button
+                    onClick={loadEmailEvents}
+                    disabled={loadingEmailEvents}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-100 bg-white shadow-sm text-xs text-slate-500 hover:text-slate-800 transition-all font-medium disabled:opacity-50"
+                  >
+                    <RefreshCw className={`h-3.5 w-3.5 ${loadingEmailEvents ? "animate-spin" : ""}`} />
+                    {t("admin.refresh")}
+                  </button>
+                </div>
+
+                {emailEvents.length === 0 && !loadingEmailEvents && (
+                  <p className="text-xs text-slate-400">{t("admin.noEventsYet")}</p>
+                )}
+
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-sm border-collapse">
+                    <thead>
+                      <tr className="border-b border-slate-100 bg-slate-50/50">
+                        <th className="px-4 py-3 text-xs font-bold text-slate-400 uppercase">{t("admin.type")}</th>
+                        <th className="px-4 py-3 text-xs font-bold text-slate-400 uppercase">{t("admin.recipient")}</th>
+                        <th className="px-4 py-3 text-xs font-bold text-slate-400 uppercase">{t("admin.subject")}</th>
+                        <th className="px-4 py-3 text-xs font-bold text-slate-400 uppercase text-right">{t("admin.date")}</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-50">
@@ -2076,7 +2007,7 @@ export default function AdminPage() {
                             <td className="px-4 py-3.5 text-slate-600">{(ev.to || []).join(", ") || "—"}</td>
                             <td className="px-4 py-3.5 text-slate-600">{ev.subject || "—"}</td>
                             <td className="px-4 py-3.5 text-right text-slate-400">
-                              {new Date(ev.createdAt).toLocaleString("it-IT")}
+                              {new Date(ev.createdAt).toLocaleString("en-CA")}
                             </td>
                           </tr>
                         );
@@ -2091,14 +2022,14 @@ export default function AdminPage() {
           {/* PLATFORM CONFIGURATION SETTINGS */}
           {tab === "settings" && (
             <div className="space-y-4 max-w-lg">
-              <h2 className="text-base font-bold text-slate-800">Impostazioni Piattaforma</h2>
-              <p className="text-xs text-slate-400">Modifica la configurazione globale delle registrazioni e dell'accesso.</p>
-              
+              <h2 className="text-base font-bold text-slate-800">{t("admin.platformSettings")}</h2>
+              <p className="text-xs text-slate-400">{t("admin.platformSettingsDesc")}</p>
+
               <div className="bg-white rounded-2xl border border-slate-100 p-5 shadow-sm space-y-4">
                 <div className="flex items-center justify-between gap-4">
                   <div>
-                    <h3 className="text-sm font-semibold text-slate-800">Registrazioni Aperte</h3>
-                    <p className="text-xs text-slate-400 mt-0.5">Disattivando questa opzione, la pagina di registrazione mostrerà un avviso di beta chiusa.</p>
+                    <h3 className="text-sm font-semibold text-slate-800">{t("admin.registrationsOpen")}</h3>
+                    <p className="text-xs text-slate-400 mt-0.5">{t("admin.registrationsOpenDesc")}</p>
                   </div>
                   <button
                     onClick={() => toggleSetting("registration_open", settings["registration_open"] ?? "true")}
@@ -2109,12 +2040,12 @@ export default function AdminPage() {
                   </button>
                 </div>
                 <div className={`inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full ${registrationOpen ? "bg-emerald-100 text-emerald-700" : "bg-red-100 text-red-700"}`}>
-                  {registrationOpen ? "Aperte — Nuovi utenti possono registrarsi liberamente" : "Chiuse — Sign-up disabilitato"}
+                  {registrationOpen ? t("admin.openNewUsersCanRegister") : t("admin.closedSignupDisabled")}
                 </div>
               </div>
 
               <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 text-xs text-amber-700">
-                <strong>Nota:</strong> Le registrazioni chiuse impediscono esclusivamente la creazione di nuovi account. Tutti gli utenti registrati esistenti potranno continuare ad accedere regolarmente alla propria dashboard.
+                <strong>{t("admin.note")}:</strong> {t("admin.closedRegistrationsNote")}
               </div>
             </div>
           )}
@@ -2126,18 +2057,18 @@ export default function AdminPage() {
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between bg-white rounded-2xl border border-slate-100 p-5 shadow-sm gap-4">
                 <div>
                   <h2 className="text-base font-bold text-slate-800 flex items-center gap-2">
-                    <MessageSquare className="h-5 w-5 text-violet-500" /> Supporto Clienti Real-time
+                    <MessageSquare className="h-5 w-5 text-navy-500" /> {t("admin.realtimeSupportTitle")}
                   </h2>
-                  <p className="text-xs text-slate-400 mt-1">Gestisci le chat di supporto, parla con i visitatori e imposta la tua disponibilità.</p>
+                  <p className="text-xs text-slate-400 mt-1">{t("admin.realtimeSupportDesc")}</p>
                 </div>
                 <div className="flex items-center gap-3 shrink-0">
-                  <span className="text-xs font-bold text-slate-500">Stato Operatore:</span>
+                  <span className="text-xs font-bold text-slate-500">{t("admin.operatorStatus")}:</span>
                   <button
                     onClick={toggleAdminOnline}
                     className="flex items-center gap-1 px-3 py-1.5 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 transition-colors text-xs font-bold"
                   >
                     <span className={`h-2.5 w-2.5 rounded-full ${adminOnline ? "bg-emerald-500 animate-pulse" : "bg-slate-300"}`} />
-                    {adminOnline ? "Online (Ricevi chat)" : "Offline (Solo AI)"}
+                    {adminOnline ? t("admin.onlineReceivingChats") : t("admin.offlineAiOnly")}
                   </button>
                 </div>
               </div>
@@ -2147,12 +2078,12 @@ export default function AdminPage() {
                 {/* Conversation List */}
                 <div className="bg-white rounded-2xl border border-slate-100 flex flex-col overflow-hidden shadow-sm lg:col-span-1">
                   <div className="p-4 border-b border-slate-100 bg-slate-50/50">
-                    <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Conversazioni</h3>
+                    <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider">{t("admin.conversations")}</h3>
                   </div>
                   <div className="flex-1 overflow-y-auto divide-y divide-slate-100">
                     {supportConvs.length === 0 ? (
                       <div className="p-8 text-center text-xs text-slate-400">
-                        Nessuna conversazione di supporto registrata.
+                        {t("admin.noSupportConvs")}
                       </div>
                     ) : (
                       supportConvs.map(c => {
@@ -2164,7 +2095,7 @@ export default function AdminPage() {
                             key={c.id}
                             onClick={() => setSelectedConvId(c.id)}
                             className={`w-full text-left p-4 hover:bg-slate-50 transition-colors flex flex-col gap-1.5 ${
-                              isSelected ? "bg-violet-50/50 border-l-4 border-violet-600" : ""
+                              isSelected ? "bg-navy-50/50 border-l-4 border-navy-600" : ""
                             }`}
                           >
                             <div className="flex items-center justify-between gap-2">
@@ -2173,16 +2104,16 @@ export default function AdminPage() {
                                 hasWaiting ? "bg-amber-100 text-amber-700 border border-amber-200" :
                                 isActive ? "bg-emerald-100 text-emerald-700 border border-emerald-200" :
                                 c.status === "closed" ? "bg-slate-100 text-slate-500 border border-slate-200" :
-                                "bg-violet-100 text-violet-700 border border-violet-200"
+                                "bg-navy-100 text-navy-700 border border-navy-200"
                               }`}>
-                                {hasWaiting ? "Attesa" : isActive ? "Attiva" : c.status === "closed" ? "Chiusa" : "AI"}
+                                {hasWaiting ? t("admin.waiting") : isActive ? t("admin.activeStatus") : c.status === "closed" ? t("admin.closedStatus") : "AI"}
                               </span>
                             </div>
                             {c.visitorEmail && (
                               <span className="text-[10px] text-slate-500 truncate">{c.visitorEmail}</span>
                             )}
                             <span className="text-[9px] text-slate-400 self-end">
-                              {new Date(c.updatedAt).toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" })}
+                              {new Date(c.updatedAt).toLocaleTimeString("en-CA", { hour: "2-digit", minute: "2-digit" })}
                             </span>
                           </button>
                         );
@@ -2206,14 +2137,14 @@ export default function AdminPage() {
                                 <span className={`h-2 w-2 rounded-full ${
                                   activeConv?.status === "human_needed" ? "bg-amber-500 animate-ping" :
                                   activeConv?.status === "human_active" ? "bg-emerald-500" :
-                                  activeConv?.status === "closed" ? "bg-slate-400" : "bg-violet-500"
+                                  activeConv?.status === "closed" ? "bg-slate-400" : "bg-navy-500"
                                 }`} />
                               </div>
                               {activeConv && (activeConv.visitorName || activeConv.visitorEmail || activeConv.visitorPhone) && (
                                 <div className="text-[10px] text-slate-400 mt-0.5 flex flex-wrap gap-x-2 gap-y-0.5">
-                                  {activeConv.visitorName && <span>Nome: <strong>{activeConv.visitorName}</strong></span>}
+                                  {activeConv.visitorName && <span>{t("admin.name")}: <strong>{activeConv.visitorName}</strong></span>}
                                   {activeConv.visitorEmail && <span>Email: <strong>{activeConv.visitorEmail}</strong></span>}
-                                  {activeConv.visitorPhone && <span>Tel: <strong>{activeConv.visitorPhone}</strong></span>}
+                                  {activeConv.visitorPhone && <span>{t("admin.telAbbrev")}: <strong>{activeConv.visitorPhone}</strong></span>}
                                 </div>
                               )}
                             </div>
@@ -2224,32 +2155,32 @@ export default function AdminPage() {
                                     try {
                                       await authFetch(`/api/support/conversations/${selectedConvId}/join`, { method: "POST" });
                                       loadSupportConvs();
-                                      toast({ title: "Chat presa in carico", description: "Ora puoi rispondere al visitatore." });
-                                    } catch (e) {
-                                      toast({ variant: "destructive", title: "Errore", description: "Impossibile prendere in carico." });
+                                      toast({ title: t("admin.chatTakenOver"), description: t("admin.chatTakenOverDesc") });
+                                    } catch {
+                                      toast({ variant: "destructive", title: t("admin.error"), description: t("admin.errorTakeOverChat") });
                                     }
                                   }}
                                   className="px-3 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-semibold shadow-sm transition"
                                 >
-                                  Prendi in Carico
+                                  {t("admin.takeOver")}
                                 </button>
                               )}
                               {activeConv?.status !== "closed" && (
                                 <button
                                   onClick={async () => {
-                                    if (confirm("Sei sicuro di voler chiudere questa conversazione?")) {
+                                    if (confirm(t("admin.confirmCloseConversation"))) {
                                       try {
                                         await authFetch(`/api/support/conversations/${selectedConvId}/close`, { method: "POST" });
                                         loadSupportConvs();
-                                        toast({ title: "Chat chiusa", description: "La conversazione è stata contrassegnata come chiusa." });
-                                      } catch (e) {
-                                        toast({ variant: "destructive", title: "Errore", description: "Impossibile chiudere la chat." });
+                                        toast({ title: t("admin.chatClosed"), description: t("admin.chatClosedDesc") });
+                                      } catch {
+                                        toast({ variant: "destructive", title: t("admin.error"), description: t("admin.errorCloseChat") });
                                       }
                                     }
                                   }}
                                   className="px-3 py-1 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-lg text-xs font-semibold transition"
                                 >
-                                  Chiudi Chat
+                                  {t("admin.closeChat")}
                                 </button>
                               )}
                             </div>
@@ -2259,7 +2190,7 @@ export default function AdminPage() {
                           <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-slate-50/30">
                             {convMessages.length === 0 ? (
                               <div className="p-8 text-center text-xs text-slate-400">
-                                In attesa di messaggi...
+                                {t("admin.waitingForMessages")}
                               </div>
                             ) : (
                               convMessages.map((m, idx) => {
@@ -2268,22 +2199,22 @@ export default function AdminPage() {
                                 return (
                                   <div key={m.id || idx} className={`flex gap-2 ${isAdminMsg ? "justify-end" : ""}`}>
                                     {!isAdminMsg && (
-                                      <div className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 text-[10px] font-bold ${isAi ? "bg-violet-100 text-violet-700" : "bg-blue-100 text-blue-700"}`}>
+                                      <div className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 text-[10px] font-bold ${isAi ? "bg-navy-100 text-navy-700" : "bg-blue-100 text-blue-700"}`}>
                                         {isAi ? <Bot className="h-3.5 w-3.5" /> : "U"}
                                       </div>
                                     )}
                                     <div className={`p-3 rounded-2xl text-xs max-w-[70%] shadow-sm ${
-                                      isAdminMsg ? "bg-violet-600 text-white rounded-tr-none" :
+                                      isAdminMsg ? "bg-navy-600 text-white rounded-tr-none" :
                                       isAi ? "bg-white border border-slate-100 text-slate-600 rounded-tl-none italic" :
                                       "bg-white border border-slate-100 text-slate-800 rounded-tl-none font-medium"
                                     }`}>
                                       <div className="leading-relaxed whitespace-pre-wrap">{m.content}</div>
-                                      <div className={`text-[8px] mt-1 text-right ${isAdminMsg ? "text-violet-200" : "text-slate-400"}`}>
-                                        {new Date(m.createdAt).toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" })}
+                                      <div className={`text-[8px] mt-1 text-right ${isAdminMsg ? "text-navy-200" : "text-slate-400"}`}>
+                                        {new Date(m.createdAt).toLocaleTimeString("en-CA", { hour: "2-digit", minute: "2-digit" })}
                                       </div>
                                     </div>
                                     {isAdminMsg && (
-                                      <div className="w-6 h-6 rounded-full bg-violet-100 text-violet-700 flex items-center justify-center shrink-0 text-[10px] font-bold">
+                                      <div className="w-6 h-6 rounded-full bg-navy-100 text-navy-700 flex items-center justify-center shrink-0 text-[10px] font-bold">
                                         OP
                                       </div>
                                     )}
@@ -2309,30 +2240,30 @@ export default function AdminPage() {
                                   // Refresh messages
                                   const msgs = await authFetch(`/api/support/conversations/${selectedConvId}/messages`);
                                   setConvMessages(msgs);
-                                } catch (err) {
-                                  toast({ variant: "destructive", title: "Errore", description: "Impossibile inviare il messaggio." });
+                                } catch {
+                                  toast({ variant: "destructive", title: t("admin.error"), description: t("admin.errorSendMessage") });
                                 }
                               }}
                               className="p-3 border-t border-slate-100 bg-white flex gap-2"
                             >
                               <input
                                 type="text"
-                                placeholder="Digita una risposta..."
+                                placeholder={t("admin.typeReply")}
                                 value={adminReply}
                                 onChange={e => setAdminReply(e.target.value)}
-                                className="flex-1 px-3 py-2 border border-slate-200 bg-slate-50/50 rounded-xl text-xs focus:outline-none focus:border-violet-500"
+                                className="flex-1 px-3 py-2 border border-slate-200 bg-slate-50/50 rounded-xl text-xs focus:outline-none focus:border-navy-500"
                               />
                               <button
                                 type="submit"
                                 disabled={!adminReply.trim()}
-                                className="p-2.5 bg-violet-600 hover:bg-violet-700 text-white rounded-xl transition-all disabled:opacity-50 shrink-0"
+                                className="p-2.5 bg-navy-600 hover:bg-navy-700 text-white rounded-xl transition-all disabled:opacity-50 shrink-0"
                               >
                                 <Send className="h-4 w-4" />
                               </button>
                             </form>
                           ) : (
                             <div className="p-4 text-center text-xs text-slate-400 bg-slate-50 border-t">
-                              Questa chat è chiusa. Non puoi inviare messaggi.
+                              {t("admin.chatIsClosed")}
                             </div>
                           )}
                         </>
@@ -2341,8 +2272,8 @@ export default function AdminPage() {
                   ) : (
                     <div className="flex-1 flex flex-col items-center justify-center text-center p-8 text-slate-400">
                       <MessageSquare className="h-10 w-10 text-slate-300 mb-2" />
-                      <p className="text-xs font-semibold">Nessuna conversazione selezionata</p>
-                      <p className="text-[10px] text-slate-400 mt-1">Seleziona una chat dalla lista a sinistra per iniziare.</p>
+                      <p className="text-xs font-semibold">{t("admin.noConversationSelected")}</p>
+                      <p className="text-[10px] text-slate-400 mt-1">{t("admin.selectChatFromLeft")}</p>
                     </div>
                   )}
                 </div>

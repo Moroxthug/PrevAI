@@ -1,37 +1,40 @@
 import { useParams, Link } from "wouter";
+import { ArrowRight } from "lucide-react";
 import { BLOG_ARTICLES } from "@/data/blog-data";
 import { SECTORS, ACTIVE_CITIES, CITY_SECTORS } from "@/data/seo-data";
 import { extractToc, injectHeadingIds } from "@/data/blog-toc";
 import { SeoHead } from "@/components/seo-head";
+import { useLanguage } from "@/i18n/LanguageContext";
 
-function formatDate(iso: string): string {
+function formatDate(iso: string, lang: "en" | "fr"): string {
   const d = new Date(iso);
-  return d.toLocaleDateString("it-IT", { day: "numeric", month: "long", year: "numeric" });
+  return d.toLocaleDateString(lang === "fr" ? "fr-CA" : "en-CA", { day: "numeric", month: "long", year: "numeric" });
 }
 
-const CATEGORY_COLORS: Record<string, string> = {
-  Professioni: "bg-violet-50 text-violet-700",
-  Prezzi: "bg-cyan-50 text-cyan-700",
-  Consigli: "bg-amber-50 text-amber-700",
-  Tool: "bg-green-50 text-green-700",
-  Innovazione: "bg-blue-50 text-blue-700",
-  Business: "bg-rose-50 text-rose-700",
+const CATEGORY_CHIPS: Record<string, string> = {
+  Trades: "chip-grey",
+  Pricing: "chip-teal",
+  Advice: "chip-yellow",
+  Tools: "chip-green",
+  Innovation: "chip-purple",
+  Business: "chip-red",
 };
 
-const BASE_URL = "https://prevai.it";
+const BASE_URL = "https://quoteai.ca";
 
 export default function BlogArticlePage() {
+  const { t, lang } = useLanguage();
   const params = useParams<{ slug: string }>();
   const slug = params.slug;
   const article = BLOG_ARTICLES.find((a) => a.slug === slug);
 
   if (!article) {
     return (
-      <div className="flex flex-col items-center justify-center py-32 text-center px-4">
-        <h1 className="text-2xl font-bold text-gray-900 mb-3">Articolo non trovato</h1>
-        <p className="text-gray-500 mb-8">L'articolo cercato non esiste o è stato rimosso.</p>
-        <Link href="/blog/" className="btn-gradient inline-flex h-11 items-center justify-center px-7 text-sm font-semibold">
-          Torna al Blog
+      <div className="wrap" style={{ textAlign: "center", padding: "clamp(80px, 10vw, 140px) 0" }}>
+        <h1 className="h2">{t("blog.articleNotFoundTitle")}</h1>
+        <p className="lead" style={{ margin: "16px auto 32px" }}>{t("blog.articleNotFoundBody")}</p>
+        <Link href="/blog/" className="btn btn-navy">
+          {t("blog.backToBlog")}
         </Link>
       </div>
     );
@@ -63,11 +66,11 @@ export default function BlogArticlePage() {
       url: canonical,
       datePublished: article.publishedAt,
       dateModified: article.updatedAt ?? article.publishedAt,
-      inLanguage: "it",
-      author: { "@type": "Organization" as const, name: "prevai", url: BASE_URL },
+      inLanguage: "en",
+      author: { "@type": "Organization" as const, name: "quoteai", url: BASE_URL },
       publisher: {
         "@type": "Organization" as const,
-        name: "prevai",
+        name: "quoteai",
         url: BASE_URL,
         logo: { "@type": "ImageObject" as const, url: `${BASE_URL}/icon-192.png`, width: 192, height: 192 },
       },
@@ -86,63 +89,48 @@ export default function BlogArticlePage() {
   return (
     <div className="flex flex-col min-h-screen bg-white">
       <SeoHead
-        title={`${article.seoTitle ?? article.title} | prevai`}
+        title={`${article.seoTitle ?? article.title} | quoteai`}
         description={article.metaDescription}
         canonical={canonical}
         ogType="article"
         jsonLd={jsonLd}
       />
 
-      <nav aria-label="Percorso di navigazione" className="bg-white border-b border-gray-100">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-3">
-          <ol className="flex items-center text-sm text-gray-500 flex-wrap gap-1">
-            <li><Link href="/" className="hover:text-violet-600 transition-colors">Home</Link></li>
-            <li aria-hidden="true" className="mx-1.5 text-gray-300">/</li>
-            <li><Link href="/blog/" className="hover:text-violet-600 transition-colors">Blog</Link></li>
-            <li aria-hidden="true" className="mx-1.5 text-gray-300">/</li>
-            <li className="text-gray-900 font-medium truncate max-w-[200px]" aria-current="page">{article.title}</li>
-          </ol>
-        </div>
-      </nav>
+      <div className="wrap">
+        <nav aria-label={t("seo.city.breadcrumbAria")} className="crumbs">
+          <Link href="/">{t("blog.breadcrumbHome")}</Link>
+          <span className="crumb-sep" aria-hidden="true">/</span>
+          <Link href="/blog/">{t("blog.breadcrumbBlog")}</Link>
+          <span className="crumb-sep" aria-hidden="true">/</span>
+          <span className="crumb-current" style={{ maxWidth: 260, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }} aria-current="page">{article.title}</span>
+        </nav>
+      </div>
 
       <article className="flex-1">
-        <header className="bg-gradient-to-br from-violet-50/40 to-cyan-50/20 pt-14 pb-10 border-b border-gray-100">
-          <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-3xl">
-            <div className="flex items-center gap-3 mb-5">
-              <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${CATEGORY_COLORS[article.category] ?? "bg-gray-100 text-gray-600"}`}>
-                {article.category}
-              </span>
-              <span className="text-xs text-gray-400">{article.readingTimeMin} min di lettura</span>
-              <time className="text-xs text-gray-400" dateTime={article.publishedAt}>
-                {formatDate(article.publishedAt)}
-              </time>
-            </div>
-            <h1 className="text-3xl font-extrabold tracking-tight text-gray-900 sm:text-4xl leading-tight mb-4">
-              {article.title}
-            </h1>
-            <p className="text-base text-gray-500 leading-relaxed">
-              {article.metaDescription}
-            </p>
+        <header className="wrap" style={{ maxWidth: 780, padding: "clamp(12px, 2vw, 24px) 0 clamp(32px, 4vw, 48px)" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 14, flexWrap: "wrap", marginBottom: 20 }}>
+            <span className={`chip ${CATEGORY_CHIPS[article.category] ?? "chip-grey"}`}>{article.category}</span>
+            <span style={{ fontSize: 13, color: "var(--faint)" }}>{article.readingTimeMin} {t("blog.readingTimeSuffix")}</span>
+            <time style={{ fontSize: 13, color: "var(--faint)" }} dateTime={article.publishedAt}>
+              {formatDate(article.publishedAt, lang)}
+            </time>
           </div>
+          <h1 style={{ fontSize: "clamp(1.9rem, 3.4vw, 2.7rem)", fontWeight: 800, letterSpacing: "-.02em", color: "var(--navy)", lineHeight: 1.15, marginBottom: 16 }}>
+            {article.title}
+          </h1>
+          <p className="lead" style={{ maxWidth: "none" }}>
+            {article.metaDescription}
+          </p>
         </header>
 
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-3xl py-10">
+        <div className="wrap" style={{ maxWidth: 780, paddingBottom: "clamp(40px, 5vw, 64px)" }}>
           {toc.length >= 2 && (
-            <nav
-              aria-label="Sommario"
-              className="mb-10 rounded-xl border border-violet-100 bg-violet-50/40 px-6 py-5"
-            >
-              <p className="text-xs font-bold text-violet-700 uppercase tracking-wider mb-3">Sommario</p>
-              <ol className="space-y-1.5">
+            <nav aria-label={t("blog.toc")} className="blog-toc">
+              <p className="label">{t("blog.toc")}</p>
+              <ol>
                 {toc.map((item) => (
-                  <li key={item.id} className={item.level === 3 ? "pl-4" : ""}>
-                    <a
-                      href={`#${item.id}`}
-                      className="text-sm text-gray-700 hover:text-violet-700 transition-colors leading-snug"
-                    >
-                      {item.level === 3 && <span className="mr-1 text-gray-400">–</span>}
-                      {item.text}
-                    </a>
+                  <li key={item.id} className={item.level === 3 ? "sub" : ""}>
+                    <a href={`#${item.id}`}>{item.text}</a>
                   </li>
                 ))}
               </ol>
@@ -150,24 +138,20 @@ export default function BlogArticlePage() {
           )}
 
           <div
-            className="prose prose-gray prose-headings:font-bold prose-h2:text-xl prose-h3:text-base prose-p:leading-relaxed prose-li:leading-relaxed prose-a:text-violet-600 max-w-none"
+            className="prose blog-prose max-w-none"
             dangerouslySetInnerHTML={{ __html: bodyHtml }}
           />
         </div>
 
         {relatedSectorObjects.length > 0 && (
-          <section className="border-t border-gray-100 bg-gray-50 py-10">
-            <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-3xl">
-              <h2 className="text-sm font-semibold text-gray-500 mb-4 uppercase tracking-wider">Preventivi per settore</h2>
-              <div className="flex flex-wrap gap-3">
+          <section className="sec soft" style={{ paddingBlock: "clamp(36px, 4vw, 56px)" }}>
+            <div className="wrap" style={{ maxWidth: 780 }}>
+              <h2 className="eyebrow grey" style={{ marginBottom: 18 }}>{t("blog.quotesBySector")}</h2>
+              <div className="blog-links">
                 {relatedSectorObjects.map((sector) => (
-                  <Link
-                    key={sector.slug}
-                    href={`/preventivi/${sector.slug}/`}
-                    className="inline-flex items-center gap-1.5 rounded-full border border-gray-200 bg-white px-4 py-2 text-xs font-medium text-gray-700 hover:border-violet-300 hover:text-violet-700 transition-colors"
-                  >
-                    <span className="text-violet-400 font-bold" aria-hidden="true">→</span>
-                    Preventivi {sector.label}
+                  <Link key={sector.slug} href={`/quotes/${sector.slug}/`} className="blog-link-pill">
+                    <ArrowRight className="h-3.5 w-3.5" />
+                    {t("blog.quotesForPrefix")} {sector.label}
                   </Link>
                 ))}
               </div>
@@ -176,19 +160,15 @@ export default function BlogArticlePage() {
         )}
 
         {geoSector && (
-          <section className="border-t border-gray-100 bg-white py-10">
-            <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-3xl">
-              <h2 className="text-sm font-semibold text-gray-500 mb-4 uppercase tracking-wider">
-                Preventivi {geoSector.labelPlural} nella tua città
+          <section className="sec" style={{ paddingBlock: "clamp(36px, 4vw, 56px)" }}>
+            <div className="wrap" style={{ maxWidth: 780 }}>
+              <h2 className="eyebrow grey" style={{ marginBottom: 18 }}>
+                {t("blog.quotesInYourCityPrefix")} {geoSector.labelPlural} {t("blog.quotesInYourCitySuffix")}
               </h2>
-              <div className="flex flex-wrap gap-3">
+              <div className="blog-links">
                 {ACTIVE_CITIES.map((city) => (
-                  <Link
-                    key={city.slug}
-                    href={`/preventivi/${geoSector.slug}/${city.slug}/`}
-                    className="inline-flex items-center gap-1.5 rounded-full border border-gray-200 bg-white px-4 py-2 text-xs font-medium text-gray-700 hover:border-violet-300 hover:text-violet-700 transition-colors"
-                  >
-                    <span className="text-violet-400 font-bold" aria-hidden="true">→</span>
+                  <Link key={city.slug} href={`/quotes/${geoSector.slug}/${city.slug}/`} className="blog-link-pill">
+                    <ArrowRight className="h-3.5 w-3.5" />
                     {city.name}
                   </Link>
                 ))}
@@ -198,20 +178,16 @@ export default function BlogArticlePage() {
         )}
 
         {relatedArticles.length > 0 && (
-          <section className="py-12 border-t border-gray-100">
-            <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-3xl">
-              <h2 className="text-lg font-bold text-gray-900 mb-6">Articoli correlati</h2>
-              <div className="grid sm:grid-cols-3 gap-4">
+          <section className="sec soft" style={{ paddingBlock: "clamp(40px, 5vw, 64px)" }}>
+            <div className="wrap" style={{ maxWidth: 780 }}>
+              <h2 className="h2" style={{ fontSize: "1.5rem", marginBottom: 24 }}>{t("blog.relatedArticles")}</h2>
+              <div className="grid sm:grid-cols-3 gap-5">
                 {relatedArticles.map((a) => (
-                  <Link
-                    key={a.slug}
-                    href={`/blog/${a.slug}/`}
-                    className="group flex flex-col bg-white rounded-xl border border-gray-100 hover:border-violet-200 hover:shadow-sm transition-all p-4"
-                  >
-                    <span className={`text-xs font-semibold px-2 py-0.5 rounded-full self-start mb-2 ${CATEGORY_COLORS[a.category] ?? "bg-gray-100 text-gray-600"}`}>
+                  <Link key={a.slug} href={`/blog/${a.slug}/`} className="card" style={{ padding: 20, display: "flex", flexDirection: "column", gap: 10 }}>
+                    <span className={`chip ${CATEGORY_CHIPS[a.category] ?? "chip-grey"}`} style={{ alignSelf: "flex-start" }}>
                       {a.category}
                     </span>
-                    <span className="text-xs font-semibold text-gray-800 group-hover:text-violet-700 transition-colors leading-snug">
+                    <span style={{ fontSize: 13.5, fontWeight: 700, color: "var(--navy)", lineHeight: 1.4 }}>
                       {a.title}
                     </span>
                   </Link>
@@ -222,21 +198,21 @@ export default function BlogArticlePage() {
         )}
       </article>
 
-      <section className="py-16 bg-gradient-to-br from-violet-50/60 to-cyan-50/20 border-t border-violet-100/60">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8 text-center max-w-2xl">
-          <h2 className="text-2xl font-bold text-gray-900 mb-3">
-            Pronto a creare preventivi in <span className="gradient-text">30 secondi</span>?
+      <section className="cta on-dark" id="trial">
+        <div className="cta-bg">
+          <img src="https://picsum.photos/seed/quoteai-blog-article-cta/1800/900" alt="" aria-hidden="true" loading="lazy" />
+        </div>
+        <div className="wrap cta-in">
+          <h2>
+            {t("blog.ctaTitlePrefix")} <span style={{ color: "#8ef07f" }}>{t("blog.ctaTitleHighlight")}</span>
           </h2>
-          <p className="text-gray-500 mb-8 text-sm">
-            Nessuna carta di credito. Nessun impegno. Il tuo primo preventivo è gratis.
-          </p>
-          <Link
-            href="/sign-up/"
-            className="btn-gradient inline-flex h-12 items-center justify-center px-8 text-sm font-semibold"
-          >
-            Inizia Gratuitamente
-            <svg xmlns="http://www.w3.org/2000/svg" className="ml-2 h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
-          </Link>
+          <p>{t("blog.ctaBody")}</p>
+          <div className="cta-actions">
+            <Link href="/sign-up/" className="btn btn-white">
+              {t("blog.ctaButton")}
+              <ArrowRight className="h-4 w-4" />
+            </Link>
+          </div>
         </div>
       </section>
     </div>
