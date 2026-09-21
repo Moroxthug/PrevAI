@@ -41,7 +41,7 @@ Legenda stato: ⬜ da fare · 🟨 in corso · ✅ fatto · ⛔ bloccato (scrive
 | ID | Decisione | Serve entro | Stato |
 |---|---|---|---|
 | D0 | **Revocare il PAT GitHub** presente nell'URL del remote `origin` del clone PrevAI (GitHub → Settings → Developer settings → Personal access tokens). Azione sull'account, non delegabile | V2-0 | ✅ 2026-09-21 — revocato dal titolare; remote `origin` ripulito, 25 remote Replit + gitsafe rimossi |
-| D1 | Design: prevai.it adotta il design system navy/Figtree di QuoteAI così com'è, o si preservano logo/colori attuali PrevAI? | V2-2 | ⬜ |
+| D1 | Design: prevai.it adotta il design system navy/Figtree di QuoteAI così com'è, o si preservano logo/colori attuali PrevAI? | V2-2 | ✅ 2026-09-21 — **design QuoteAI così com'è** (homepage, dashboard, tutto), per ora; solo brand/testi cambiano |
 | D2 | Finestra di manutenzione per il cutover (proposta: mattina presto, giorno feriale, ora italiana) | V2-5 | ⬜ |
 | D3 | Conferma tabella V2-4: fatture come pro-forma finché non c'è SDI; incentivi v1 ripristinati; integrazioni canadesi disattivate | V2-4 | ⬜ |
 | D4 | Cosa fare dei 101 file non committati su `main` (si decide in V2-0 guardandoli insieme) | V2-0 | ✅ 2026-09-21 — 4 feature committate per tema (accettazione pubblica, OCR listino, home CRM, hero SEO), 88 OG rigenerate scartate, 2 file spuri spostati in Downloads |
