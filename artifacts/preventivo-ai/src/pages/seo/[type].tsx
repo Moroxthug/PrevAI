@@ -4,6 +4,7 @@ import { SeoHead } from "@/components/seo-head";
 import { SECTORS, DEFAULT_SECTOR, RELATED_SECTORS, CITY_SECTORS, ACTIVE_CITIES } from "@/data/seo-data";
 import { BLOG_ARTICLES, SECTOR_ARTICLES } from "@/data/blog-data";
 import { getOgImagePath } from "@/data/seo-render-engine";
+import { QuotePreviewMockup } from "@/components/quote-preview-mockup";
 
 // Highlighted cities on the sector hub page — must stay within ACTIVE_CITIES,
 // the only cities actually prerendered/sitemapped right now (see seo-data.ts).
@@ -317,34 +318,41 @@ export default function SeoLanding() {
               "radial-gradient(ellipse 80% 60% at 50% -10%, rgba(124,58,237,0.12) 0%, transparent 70%)",
           }}
         />
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8 text-center max-w-4xl relative z-10">
-          <div className="inline-flex items-center gap-2 rounded-full bg-violet-50 border border-violet-100 px-4 py-1.5 text-sm font-medium text-violet-700 mb-8">
-            <Star className="h-3.5 w-3.5 fill-current" />
-            Pensato per il mercato italiano
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-6xl relative z-10">
+          <div className="grid lg:grid-cols-2 gap-14 items-center">
+            <div className="text-center lg:text-left">
+              <div className="inline-flex items-center gap-2 rounded-full bg-violet-50 border border-violet-100 px-4 py-1.5 text-sm font-medium text-violet-700 mb-8">
+                <Star className="h-3.5 w-3.5 fill-current" />
+                Pensato per il mercato italiano
+              </div>
+              <h1 className="text-4xl font-extrabold tracking-tight text-gray-900 sm:text-5xl lg:text-6xl mb-6 leading-[1.1]">
+                {s.h1}{" "}
+                <span className="gradient-text">{s.h1Highlight}</span>
+              </h1>
+              <p className="text-xl text-gray-500 mb-10 max-w-2xl mx-auto lg:mx-0 leading-relaxed">
+                {s.intro}
+              </p>
+              <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
+                <Link
+                  href="/sign-up/"
+                  className="btn-gradient inline-flex h-14 items-center justify-center px-8 text-lg font-semibold"
+                >
+                  Crea il tuo preventivo in 60 secondi
+                  <ArrowRight className="ml-2 h-5 w-5" />
+                </Link>
+                <Link
+                  href="#come-funziona"
+                  className="btn-gradient-outline inline-flex h-14 items-center justify-center px-8 text-lg font-semibold"
+                >
+                  Come funziona
+                </Link>
+              </div>
+              <p className="text-sm text-gray-400 mt-5">Nessuna carta di credito richiesta · Preventivo pronto in 30 secondi</p>
+            </div>
+            <div className="hidden lg:block">
+              <QuotePreviewMockup sector={s} />
+            </div>
           </div>
-          <h1 className="text-4xl font-extrabold tracking-tight text-gray-900 sm:text-5xl lg:text-6xl mb-6 leading-[1.1]">
-            {s.h1}{" "}
-            <span className="gradient-text">{s.h1Highlight}</span>
-          </h1>
-          <p className="text-xl text-gray-500 mb-10 max-w-2xl mx-auto leading-relaxed">
-            {s.intro}
-          </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link
-              href="/sign-up/"
-              className="btn-gradient inline-flex h-14 items-center justify-center px-8 text-lg font-semibold"
-            >
-              Crea il tuo preventivo in 60 secondi
-              <ArrowRight className="ml-2 h-5 w-5" />
-            </Link>
-            <Link
-              href="#come-funziona"
-              className="btn-gradient-outline inline-flex h-14 items-center justify-center px-8 text-lg font-semibold"
-            >
-              Come funziona
-            </Link>
-          </div>
-          <p className="text-sm text-gray-400 mt-5">Nessuna carta di credito richiesta · Preventivo pronto in 30 secondi</p>
         </div>
       </section>
 
