@@ -16,8 +16,8 @@
 
 | # | Fase | Piano | Sforzo | Stato | Data | Commit | Note |
 |---|---|---|---|---|---|---|---|
-| 1 | **V2-0** Sicurezza e igiene: revoca PAT, remote puliti, triage 101 file non committati, `pg_dump` baseline, inventario env, tag `v1-final`, branch `v2` | V2 §4 | ½ g | ⬜ da fare | | | **← PROSSIMA** |
-| 2 | **V2-1** Import base QuoteAI nel branch `v2`, rinomina `quote-ai` → `preventivo-ai`, CI e docs | V2 §4 | 1 g | ⬜ | | | |
+| 1 | **V2-0** Sicurezza e igiene: revoca PAT, remote puliti, triage 101 file non committati, `pg_dump` baseline, inventario env, tag `v1-final`, branch `v2` | V2 §4 | ½ g | ✅ fatto | 2026-09-21 | `6dbe45de4` (main) | main pulito (7 commit), dump baseline OK, tag `v1-final`, branch `v2` |
+| 2 | **V2-1** Import base QuoteAI nel branch `v2`, rinomina `quote-ai` → `preventivo-ai`, CI e docs | V2 §4 | 1 g | ⬜ da fare | | | **← PROSSIMA** |
 | 3 | **V2-2** Ri-italianizzazione: `lib/config/italy.ts`, locale solo `it`, slug SEO v1 identici, blog v1, prompt AI unificato | V2 §4 | 5–7 g | ⬜ | | | |
 | 4 | **V2-3** Prova generale su `prevai-staging` da dump reale; migrazioni additive; v1 e v2 entrambe funzionanti sul DB migrato | V2 §4 | 2–3 g | ⬜ | | | fase che protegge i dati |
 | 5 | **V2-4** Riconciliazione feature per l'Italia (tabella keep/swap/disable; incentivi v1 ripristinati; fatture pro-forma) | V2 §4 | 5–8 g | ⬜ | | | richiede decisioni D1, D3 |
@@ -44,14 +44,18 @@ Legenda stato: ⬜ da fare · 🟨 in corso · ✅ fatto · ⛔ bloccato (scrive
 | D1 | Design: prevai.it adotta il design system navy/Figtree di QuoteAI così com'è, o si preservano logo/colori attuali PrevAI? | V2-2 | ⬜ |
 | D2 | Finestra di manutenzione per il cutover (proposta: mattina presto, giorno feriale, ora italiana) | V2-5 | ⬜ |
 | D3 | Conferma tabella V2-4: fatture come pro-forma finché non c'è SDI; incentivi v1 ripristinati; integrazioni canadesi disattivate | V2-4 | ⬜ |
-| D4 | Cosa fare dei 101 file non committati su `main` (si decide in V2-0 guardandoli insieme) | V2-0 | ⬜ |
+| D4 | Cosa fare dei 101 file non committati su `main` (si decide in V2-0 guardandoli insieme) | V2-0 | ✅ 2026-09-21 — 4 feature committate per tema (accettazione pubblica, OCR listino, home CRM, hero SEO), 88 OG rigenerate scartate, 2 file spuri spostati in Downloads |
 | D5 | Nome del modulo ("PrevAI Amministrazione" placeholder) e ok ai prezzi ipotesi: gratis calcolatore/scadenzario; add-on 12 €/mese o 120 €/anno; fase 2 ~420 €/anno IVA incl. | A-5 | ⬜ |
 | D6 | Commercialista partner per revisionare il motore regole 2026 (di fiducia o da cercare) | A-0 | ⬜ |
-| D7 | Regione UE del progetto Supabase PrevAI (verificare; se non UE, valutare) | A-0 | ⬜ |
+| D7 | Regione UE del progetto Supabase PrevAI (verificare; se non UE, valutare) | A-0 | ✅ verificato 2026-09-21: `aws-0-eu-west-1` (Irlanda, UE) |
 | D8 | Intermediario SDI: partire con Openapi.it (prezzi pubblici, no setup) + preventivo A-Cube. Contratto e DPA da firmare dal titolare | A-1 | ⬜ |
 | D9 | Fase 2: unico studio partner vs rete di professionisti convenzionati | A-6 | ⬜ |
 
-## Come iniziare la prossima sessione (V2-0)
+## Come iniziare la prossima sessione (V2-1)
+
+Apri una sessione nella cartella `C:UsersAdminDownloadsPrevAI (2)PrevAI`, `git checkout v2`, e scrivi: **"Leggi docs/PIANO-AZIONE.md ed esegui la fase V2-1"**. Dettagli in `PREVAI-V2-PLAN.md` §4 V2-1. Prerequisiti già soddisfatti: `main` pulito, tag `v1-final`, branch `v2` = `main`, dump baseline in `C:UsersAdminPrevAI-backups` (vedi `RUNBOOKS.md`), binari Postgres in `C:UsersAdminpg17pgsqlin`.
+
+## Storico: come è stata eseguita V2-0
 
 Apri una nuova sessione nella cartella `C:\Users\Admin\Downloads\PrevAI (2)\PrevAI` e scrivi: **"Leggi docs/PIANO-AZIONE.md ed esegui la fase V2-0"**. La fase V2-0, nell'ordine:
 
@@ -65,3 +69,4 @@ Apri una nuova sessione nella cartella `C:\Users\Admin\Downloads\PrevAI (2)\Prev
 ## Diario
 
 - **2026-09-21** — Creati `PREVAI-V2-PLAN.md`, `AMMINISTRAZIONE-PLAN.md` e questo file. Nessun codice toccato. Ricerca di mercato/legale/compliance completata (vedi `AMMINISTRAZIONE-PLAN.md` §13 per le fonti). QuoteAI consultato in sola lettura per ricostruire le 70 fasi.
+- **2026-09-21 (V2-0)** — Triage D4: 102 file → 5 commit per tema su `main` (`4265338a5` accettazione pubblica `/p/:id`, `36ad3c965` OCR listino, `063d6f861` home CRM, `d03cf34a8` hero SEO, `dae9d577a` docs); 88 PNG OG scartate (byproduct di build); audit HTML e xlsx Toronto spostati fuori repo. Dump baseline prod (151 KB, 24 tabelle, 106 preventivi, 28 utenti) → `RUNBOOKS.md`. Scoperto che le colonne `accepted_*` erano già in prod. `ENV-INVENTORY.md` creato (13 var su Vercel; Groq è l'unico provider AI). D7 risolta (eu-west-1). Tag `v1-final` = `6dbe45de4`, branch `v2` creato e pushato. Push di `main` ha avviato deploy prod su Vercel.
