@@ -171,7 +171,7 @@ export function buildVariablesFromQuote(params: {
 
 // ── AI drafting ──────────────────────────────────────────────────────────────
 
-async function draftWithAi(quote: QuoteRow, vars: ContractVariables, lang: Lang): Promise<{ scope: string; schedule: string; durationWeeks: number | null }> {
+async function draftWithAi(quote: QuoteRow, vars: ContractVariables, _lang: Lang): Promise<{ scope: string; schedule: string; durationWeeks: number | null }> {
   const chapters = (Array.isArray(quote.capitoli) ? quote.capitoli : []) as QuoteChapter[];
   const quoteText = chapters
     .map((c) => `${c.lettera}. ${c.titolo}\n${c.voci.map((v) => `  - ${v.descrizione} (${v.quantita} ${v.um})`).join("\n")}${c.osservazione ? `\n  Note: ${c.osservazione}` : ""}`)

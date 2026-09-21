@@ -3,7 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Link, useSearch } from "wouter";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
-import { enCA, frCA } from "date-fns/locale";
+import { it } from "date-fns/locale";
 import { Users, Clock, Wrench, Plus, Trash2, Link2, Copy, Check, X, Download, Loader2, Pencil, UserX, UserCheck, Filter, UserPlus, RotateCw, MapPin } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Dialog, DialogBody, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -27,8 +27,8 @@ const isoDay = (d: Date) => localDay(d);
  * equipment register.
  */
 export default function TeamPage() {
-  const { t, lang } = useLanguage();
-  const locale = lang === "fr" ? frCA : enCA;
+  const { t } = useLanguage();
+  const locale = it;
   const search = useSearch();
   const initial = new URLSearchParams(search).get("tab");
   const [tab, setTab] = useState<Tab>(TABS.includes(initial as Tab) ? (initial as Tab) : "workers");
@@ -214,7 +214,7 @@ function MemberInviteLinkDialog({ invite, onClose }: { invite: { url: string; em
 
 // ── Workers ──────────────────────────────────────────────────────────────────
 
-function WorkersTab({ workers, locale }: { workers: WorkerDto[]; locale: typeof enCA }) {
+function WorkersTab({ workers, locale }: { workers: WorkerDto[]; locale: typeof it }) {
   const { t } = useLanguage();
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -369,7 +369,7 @@ function InviteDialog({ invite, onClose }: { invite: { worker: WorkerDto; url: s
 
 // ── Time entries ─────────────────────────────────────────────────────────────
 
-function TimeTab({ workers, locale }: { workers: WorkerDto[]; locale: typeof enCA }) {
+function TimeTab({ workers, locale }: { workers: WorkerDto[]; locale: typeof it }) {
   const { t } = useLanguage();
   const { toast } = useToast();
   const queryClient = useQueryClient();

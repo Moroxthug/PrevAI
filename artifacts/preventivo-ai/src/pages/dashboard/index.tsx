@@ -679,7 +679,7 @@ export default function DashboardHome() {
   const [period, setPeriod] = useState<Period>("m");
 
   const formatCurrency = (amount: number) =>
-    new Intl.NumberFormat("en-CA", { style: "currency", currency: "CAD", maximumFractionDigits: 0 }).format(amount);
+    new Intl.NumberFormat("it-IT", { style: "currency", currency: "EUR", maximumFractionDigits: 0 }).format(amount);
 
   const recentQuotes = stats?.recentQuotes || [];
   const firstName = user?.name?.split(" ")?.[0] || "";
@@ -708,7 +708,7 @@ export default function DashboardHome() {
     const diffDays = Math.round((startOfDay(d) - startOfDay(now)) / 86400000);
     if (diffDays <= 0) return { label: t("dashboard.index.followUps.today"), cls: "chip-yellow" };
     if (diffDays === 1) return { label: t("dashboard.index.followUps.tomorrow"), cls: "chip-grey" };
-    return { label: d.toLocaleDateString("en-CA"), cls: "chip-grey" };
+    return { label: d.toLocaleDateString("it-IT"), cls: "chip-grey" };
   };
 
   const STAT_CARDS = [
@@ -840,7 +840,7 @@ export default function DashboardHome() {
                         <p className="q-title">{quote.clientData?.nome || t("dashboard.quotesList.clientNotSpecified")}</p>
                         <div className="q-meta">
                           <span className={cn("chip", chip.cls)}>{chip.label}</span>
-                          <span className="q-date">{new Date(quote.createdAt).toLocaleDateString("en-CA")}</span>
+                          <span className="q-date">{new Date(quote.createdAt).toLocaleDateString("it-IT")}</span>
                         </div>
                       </div>
                       <span className="q-amt">{formatCurrency(quote.totale)}</span>

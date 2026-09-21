@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "wouter";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
-import { enCA, frCA } from "date-fns/locale";
+import { it } from "date-fns/locale";
 import {
   ArrowLeft, FileSignature, Send, Download, Ban, Pencil, Save, X, Loader2, CheckCircle2, Clock, AlertTriangle, Lock, Sparkles, RefreshCw, Archive,
 } from "lucide-react";
@@ -15,7 +15,7 @@ import { useLanguage } from "@/i18n/LanguageContext";
 import { contractsApi, type ContractDto } from "@/lib/contracts-api";
 import { SignaturePad, type SignatureValue } from "@/components/signature-pad";
 
-const formatCad = (n: number) => new Intl.NumberFormat("en-CA", { style: "currency", currency: "CAD" }).format(n);
+const formatCad = (n: number) => new Intl.NumberFormat("it-IT", { style: "currency", currency: "EUR" }).format(n);
 
 /** Contract status → locked `.chip-*` colour (Phase 57). */
 export const STATUS_STYLES: Record<ContractDto["status"], string> = {
@@ -35,10 +35,10 @@ export function ContractStatusBadge({ status }: { status: ContractDto["status"] 
 
 export default function ContractDetailPage() {
   const { id } = useParams<{ id: string }>();
-  const { t, lang } = useLanguage();
+  const { t } = useLanguage();
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const locale = lang === "fr" ? frCA : enCA;
+  const locale = it;
 
   const { data, isLoading, error } = useQuery({ queryKey: ["contract", id], queryFn: () => contractsApi.get(id!), enabled: !!id });
   const contract = data?.contract;

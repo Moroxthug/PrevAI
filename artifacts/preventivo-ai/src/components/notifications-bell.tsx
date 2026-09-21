@@ -2,7 +2,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Link } from "wouter";
 import { Bell, CheckCheck } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
-import { enCA, frCA } from "date-fns/locale";
+import { it } from "date-fns/locale";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useLanguage } from "@/i18n/LanguageContext";
 
@@ -30,7 +30,7 @@ async function fetchNotifications(): Promise<{ items: NotificationItem[]; unread
  * same `.pop` popover with the latest in-app notifications.
  */
 export function NotificationsBell({ variant = "topbar", side = "bottom", align = "end" }: { variant?: "topbar" | "sidebar"; side?: "right" | "bottom"; align?: "start" | "end" }) {
-  const { t, lang } = useLanguage();
+  const { t } = useLanguage();
   const queryClient = useQueryClient();
   const { data } = useQuery({ queryKey: QUERY_KEY, queryFn: fetchNotifications, refetchInterval: 60_000, staleTime: 30_000 });
   const markRead = useMutation({
@@ -47,7 +47,7 @@ export function NotificationsBell({ variant = "topbar", side = "bottom", align =
 
   const unread = data?.unread ?? 0;
   const items = data?.items ?? [];
-  const locale = lang === "fr" ? frCA : enCA;
+  const locale = it;
 
   if (variant === "sidebar") {
     return (

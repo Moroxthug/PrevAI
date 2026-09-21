@@ -3,12 +3,12 @@ import { useListClientQuotes, getListClientQuotesQueryKey } from "@workspace/api
 import { Skeleton } from "@/components/ui/skeleton";
 import { ArrowLeft, ArrowRight, FileText, Mail, Phone, MapPin } from "lucide-react";
 import { format } from "date-fns";
-import { enCA, frCA } from "date-fns/locale";
+import { it } from "date-fns/locale";
 import { useLanguage } from "@/i18n/LanguageContext";
 import { cn } from "@/lib/utils";
 
-const formatCurrency = (v: number, lang: string) =>
-  new Intl.NumberFormat(lang === "fr" ? "fr-CA" : "en-CA", { style: "currency", currency: "CAD", maximumFractionDigits: 0 }).format(v);
+const formatCurrency = (v: number, _lang: string) =>
+  new Intl.NumberFormat("it-IT", { style: "currency", currency: "EUR", maximumFractionDigits: 0 }).format(v);
 
 function quoteChip(status: string, t: (k: string) => string): { cls: string; label: string } {
   if (status === "accepted") return { cls: "chip-green", label: t("clients.detail.quoteAccepted") };
@@ -125,7 +125,7 @@ export default function ClientDetailPage() {
                     <div className="q-meta">
                       <span className={cn("chip", chip.cls)}>{chip.label}</span>
                       <span className="q-date">
-                        {format(new Date(q.createdAt), "dd MMM yyyy", { locale: lang === "fr" ? frCA : enCA })}
+                        {format(new Date(q.createdAt), "dd MMM yyyy", { locale: it })}
                         {q.numeroPreventivoData ? ` — ${q.numeroPreventivoData}` : ""}
                       </span>
                     </div>

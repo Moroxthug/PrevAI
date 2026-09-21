@@ -31,23 +31,23 @@ export type { CityIntelligence, SectorData, CityData };
 
 const BASE_URL = "https://quoteai.ca";
 
-export type Lang = "en-CA" | "fr-CA";
+export type Lang = "it-IT" | "it-IT";
 
-/** Sector label/labelPlural for the given lang — "fr-CA" reads sector.fr.*. */
+/** Sector label/labelPlural for the given lang — "it-IT" reads sector.fr.*. */
 function sectorLabel(sector: SectorData, lang: Lang): { label: string; labelPlural: string } {
-  return lang === "fr-CA"
+  return lang === "it-IT"
     ? { label: sector.fr.label, labelPlural: sector.fr.labelPlural }
     : { label: sector.label, labelPlural: sector.labelPlural };
 }
 
 /** City path segment for the given lang: /quotes/ (en) or /fr/soumissions/ (fr). */
 export function cityBasePath(lang: Lang): string {
-  return lang === "fr-CA" ? "/fr/soumissions" : "/quotes";
+  return lang === "it-IT" ? "/fr/soumissions" : "/quotes";
 }
 
 /** Sector slug for the given lang — frSlug under /fr/soumissions/. */
 function sectorPathSlug(sector: SectorData, lang: Lang): string {
-  return lang === "fr-CA" ? sector.frSlug : sector.slug;
+  return lang === "it-IT" ? sector.frSlug : sector.slug;
 }
 
 // ─── Deterministic hash ────────────────────────────────────────────────────
@@ -71,14 +71,14 @@ export function getOgImagePath(sectorSlug: string): string {
 // NOTE (i18n follow-up): these strings are English-only today. There is no
 // locale-prefixed routing yet (see CITIES in seo-data.ts), so every function
 // in this file always renders English. When fr-CA routes are added, the
-// cleanest path is to thread a `lang: "en-CA" | "fr-CA"` argument through
-// each of these generator functions (defaulting to "en-CA") and add a French
+// cleanest path is to thread a `lang: "it-IT" | "it-IT"` argument through
+// each of these generator functions (defaulting to "it-IT") and add a French
 // variant array alongside each English one — the CITY_CONTEXT data shape in
 // seo-data.ts already anticipates this (see CityContextEntry).
 
-export function getCityIntro(sector: SectorData, city: CityData, lang: Lang = "en-CA"): string {
+export function getCityIntro(sector: SectorData, city: CityData, lang: Lang = "it-IT"): string {
   const isService = sector.sectorType === "service";
-  if (lang === "fr-CA") {
+  if (lang === "it-IT") {
     const { label, labelPlural } = sectorLabel(sector, lang);
     const labelL = label.toLowerCase();
     const variantsFr = isService
@@ -126,11 +126,11 @@ export const DEMAND_TEXT_FR: Record<CityIntelligence["demandLevel"], string> = {
   CRITICAL: "très élevée",
 };
 
-export function getCityFaqItems(sector: SectorData, city: CityData, lang: Lang = "en-CA"): CityFaqItem[] {
+export function getCityFaqItems(sector: SectorData, city: CityData, lang: Lang = "it-IT"): CityFaqItem[] {
   const intel = CITY_INTELLIGENCE[city.slug];
   const pricePct = intel ? Math.round(Math.abs(intel.priceIndex - 1.0) * 100) : 0;
 
-  if (lang === "fr-CA") {
+  if (lang === "it-IT") {
     const { label, labelPlural } = sectorLabel(sector, lang);
     const labelL = label.toLowerCase();
     const priceAnswerFr = intel
@@ -217,8 +217,8 @@ export interface HowItWorksStep {
   desc: string;
 }
 
-export function getCityHowItWorksSteps(cityName: string, lang: Lang = "en-CA"): HowItWorksStep[] {
-  if (lang === "fr-CA") {
+export function getCityHowItWorksSteps(cityName: string, lang: Lang = "it-IT"): HowItWorksStep[] {
+  if (lang === "it-IT") {
     return [
       {
         n: "1",
@@ -272,8 +272,8 @@ export interface CtaTexts {
   button: string;
 }
 
-export function getCityCtaTexts(ctaVariant: 0 | 1 | 2, cityName: string, lang: Lang = "en-CA"): CtaTexts {
-  if (lang === "fr-CA") {
+export function getCityCtaTexts(ctaVariant: 0 | 1 | 2, cityName: string, lang: Lang = "it-IT"): CtaTexts {
+  if (lang === "it-IT") {
     switch (ctaVariant) {
       case 1:
         return {
@@ -325,7 +325,7 @@ export interface NearbyAnchor {
   anchorText: string;
 }
 
-export function getNearbyAnchors(sector: SectorData, city: CityData, lang: Lang = "en-CA"): NearbyAnchor[] {
+export function getNearbyAnchors(sector: SectorData, city: CityData, lang: Lang = "it-IT"): NearbyAnchor[] {
   const { label } = sectorLabel(sector, lang);
   return city.nearbySlug
     .map((slug): NearbyAnchor | null => {
@@ -336,7 +336,7 @@ export function getNearbyAnchors(sector: SectorData, city: CityData, lang: Lang 
       if (!ACTIVE_CITY_SLUGS.has(nearbyCity.slug)) return null;
       const nearbyIntel = CITY_INTELLIGENCE[slug];
       const anchorText =
-        lang === "fr-CA"
+        lang === "it-IT"
           ? nearbyIntel
             ? nearbyIntel.priceIndex > 1.05
               ? `Soumissions ${label} à ${nearbyCity.name}`
@@ -405,14 +405,14 @@ export function getOsservatorioData(citySlug: string): OsservatorioData | null {
 
 // ─── City context text ────────────────────────────────────────────────────
 //
-// `lang` defaults to "en-CA" and today always resolves the `en` field —
+// `lang` defaults to "it-IT" and today always resolves the `en` field —
 // CITY_CONTEXT entries don't have `fr` populated yet (see seo-data.ts). The
 // parameter exists so the follow-up i18n pass can wire up fr-CA without
 // changing this function's signature again.
-export function getCityContextText(citySlug: string, lang: "en-CA" | "fr-CA" = "en-CA"): string | null {
+export function getCityContextText(citySlug: string, lang: "it-IT" | "it-IT" = "it-IT"): string | null {
   const entry = CITY_CONTEXT[citySlug];
   if (!entry) return null;
-  return (lang === "fr-CA" ? entry.fr : entry.en) ?? entry.en ?? null;
+  return (lang === "it-IT" ? entry.fr : entry.en) ?? entry.en ?? null;
 }
 
 // ─── Related sectors ─────────────────────────────────────────────────────
@@ -431,7 +431,7 @@ export function getSameCityOtherSectors(
   sectorSlug: string,
   citySlug: string,
   limit = 6,
-  lang: Lang = "en-CA"
+  lang: Lang = "it-IT"
 ): { slug: string; label: string }[] {
   const others = CITY_SECTORS.filter((slug) => slug !== sectorSlug);
   if (others.length === 0) return [];
@@ -439,7 +439,7 @@ export function getSameCityOtherSectors(
   const rotated = [...others.slice(start), ...others.slice(0, start)];
   return rotated.slice(0, limit).map((slug) => ({
     slug,
-    label: lang === "fr-CA" ? SECTORS[slug].fr.label : SECTORS[slug].label,
+    label: lang === "it-IT" ? SECTORS[slug].fr.label : SECTORS[slug].label,
   }));
 }
 
@@ -447,7 +447,7 @@ export function getSameCityOtherSectors(
 
 export type JsonLdSchema = { "@context": string; "@type": string; [key: string]: unknown };
 
-export function buildCityJsonLd(sector: SectorData, city: CityData, lang: Lang = "en-CA"): JsonLdSchema[] {
+export function buildCityJsonLd(sector: SectorData, city: CityData, lang: Lang = "it-IT"): JsonLdSchema[] {
   const base = cityBasePath(lang);
   const sSlug = sectorPathSlug(sector, lang);
   const canonical = `${BASE_URL}${base}/${sSlug}/${city.slug}/`;
@@ -455,7 +455,7 @@ export function buildCityJsonLd(sector: SectorData, city: CityData, lang: Lang =
   const faqItems = getCityFaqItems(sector, city, lang);
   const { label, labelPlural } = sectorLabel(sector, lang);
 
-  if (lang === "fr-CA") {
+  if (lang === "it-IT") {
     return [
       {
         "@context": "https://schema.org",
@@ -466,7 +466,7 @@ export function buildCityJsonLd(sector: SectorData, city: CityData, lang: Lang =
         applicationCategory: "BusinessApplication",
         operatingSystem: "Web",
         inLanguage: "fr",
-        offers: { "@type": "Offer", price: "0", priceCurrency: "CAD", availability: "https://schema.org/InStock" },
+        offers: { "@type": "Offer", price: "0", priceCurrency: "EUR", availability: "https://schema.org/InStock" },
       },
       {
         "@context": "https://schema.org",
@@ -516,7 +516,7 @@ export function buildCityJsonLd(sector: SectorData, city: CityData, lang: Lang =
       offers: {
         "@type": "Offer",
         price: "0",
-        priceCurrency: "CAD",
+        priceCurrency: "EUR",
         availability: "https://schema.org/InStock",
       },
     },

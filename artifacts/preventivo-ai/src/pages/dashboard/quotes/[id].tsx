@@ -7,7 +7,7 @@ import { ArrowLeft, Download, Lock, CheckCircle2, Edit2, Save, FileText, FileSpr
 import { useState, useRef, useEffect, Fragment } from "react";
 import { useLocation } from "wouter";
 import { format } from "date-fns";
-import { enCA, frCA } from "date-fns/locale";
+import { it } from "date-fns/locale";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
 import { cn } from "@/lib/utils";
@@ -39,7 +39,7 @@ type EditCapitolo = {
 
 export default function QuoteDetail() {
   const { t, lang } = useLanguage();
-  const dateLocale = lang === "fr" ? frCA : enCA;
+  const dateLocale = it;
   const { id } = useParams();
   const search = useSearch();
   const searchParams = new URLSearchParams(search);
@@ -227,7 +227,7 @@ export default function QuoteDetail() {
       onSuccess: (result) => {
         const numero = quote.numeroPreventivoData
           ? quote.numeroPreventivoData.replace(/\//g, "_")
-          : `N\u00b0 ${quote.id.slice(0, 4).toUpperCase()} - ${new Date(quote.createdAt || Date.now()).toLocaleDateString("en-CA").replace(/\//g, "_")}`;
+          : `N\u00b0 ${quote.id.slice(0, 4).toUpperCase()} - ${new Date(quote.createdAt || Date.now()).toLocaleDateString("it-IT").replace(/\//g, "_")}`;
         const filename = `${t("dashboard.quoteDetail.filenamePrefix")} ${numero}.pdf`;
         if (result.pdfUrl) {
           downloadPdfFromUrl(result.pdfUrl, filename);
@@ -575,7 +575,7 @@ export default function QuoteDetail() {
   // …and once the client has accepted: the accepted amount is what the contract is built on.
   const isEditLocked = !!quote.pdfDownloadedAt || quote.status === "accepted";
   const formatCurrency = (amount: number) =>
-    new Intl.NumberFormat("en-CA", { style: "currency", currency: "CAD" }).format(amount);
+    new Intl.NumberFormat("it-IT", { style: "currency", currency: "EUR" }).format(amount);
 
   const hasCapitoli = Array.isArray(quote.capitoli) && quote.capitoli.length > 0;
   const capitoli = hasCapitoli ? quote.capitoli : [];

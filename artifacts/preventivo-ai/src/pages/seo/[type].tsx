@@ -19,9 +19,9 @@ const CITIES_BY_REGION = ACTIVE_CITIES.reduce<Record<string, typeof ACTIVE_CITIE
   (acc[city.region] ??= []).push(city);
   return acc;
 }, {});
-const REGION_NAMES_SORTED = Object.keys(CITIES_BY_REGION).sort((a, b) => a.localeCompare(b, "en-CA"));
+const REGION_NAMES_SORTED = Object.keys(CITIES_BY_REGION).sort((a, b) => a.localeCompare(b, "it-IT"));
 for (const region of REGION_NAMES_SORTED) {
-  CITIES_BY_REGION[region].sort((a, b) => a.name.localeCompare(b.name, "en-CA"));
+  CITIES_BY_REGION[region].sort((a, b) => a.name.localeCompare(b.name, "it-IT"));
 }
 
 const FI_COLORS = ["g", "t", "p"] as const;
@@ -244,7 +244,7 @@ export default function SeoLanding() {
   const { t } = useLanguage();
   const [pathname] = useLocation();
   const isFr = isFrenchPath(pathname);
-  const engineLang: EngineLang = isFr ? "fr-CA" : "en-CA";
+  const engineLang: EngineLang = isFr ? "it-IT" : "it-IT";
   const base = cityBasePath(engineLang);
   const params = useParams();
   const rawSlug = (params as { type?: string }).type ?? "contractor";
@@ -285,7 +285,7 @@ export default function SeoLanding() {
       applicationCategory: "BusinessApplication",
       operatingSystem: "Web",
       inLanguage: isFr ? "fr" : "en",
-      offers: { "@type": "Offer", price: "0", priceCurrency: "CAD", availability: "https://schema.org/InStock" },
+      offers: { "@type": "Offer", price: "0", priceCurrency: "EUR", availability: "https://schema.org/InStock" },
     },
     {
       "@context": "https://schema.org",

@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, useParams, useLocation } from "wouter";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
-import { enCA, frCA } from "date-fns/locale";
+import { it } from "date-fns/locale";
 import { ArrowLeft, Receipt, Send, Download, Banknote, Ban, FileMinus, BellRing, Pencil, Check, X, Loader2, Copy, ExternalLink, Trash2, Briefcase, Clock, AlertTriangle, MailQuestion, Archive } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Dialog, DialogBody, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -16,8 +16,8 @@ import { LineEditor, RecordPaymentDialog, CreditNoteDialog, rowsFromLines, toLin
 
 export default function InvoiceDetailPage() {
   const { id } = useParams<{ id: string }>();
-  const { t, lang } = useLanguage();
-  const locale = lang === "fr" ? frCA : enCA;
+  const { t } = useLanguage();
+  const locale = it;
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [, navigate] = useLocation();
@@ -198,7 +198,7 @@ function PendingConfirmationBanner({ invoice, onDone }: { invoice: InvoiceDto; o
   );
 }
 
-function EventRow({ e, locale }: { e: InvoiceEventDto; locale: typeof enCA }) {
+function EventRow({ e, locale }: { e: InvoiceEventDto; locale: typeof it }) {
   const { t } = useLanguage();
   const d = e.detail ?? {};
   const extra = typeof d.to === "string" ? d.to : typeof d.amountCents === "number" ? formatCents(d.amountCents) : typeof d.reason === "string" && d.reason ? d.reason : "";

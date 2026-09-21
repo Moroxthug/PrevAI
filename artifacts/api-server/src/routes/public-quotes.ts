@@ -79,7 +79,7 @@ const financeitApplyLimiter = ipRateLimiter({
 // Public projection of the quote: always excludes userId, Stripe billing
 // data, and internal AI metadata (costs/tokens) — this endpoint is not
 // authenticated, the only "secret" is the quote's UUID itself.
-function toPublicVariant(v: typeof quoteVariantsTable.$inferSelect, province: string | null) {
+function toPublicVariant(v: typeof quoteVariantsTable.$inferSelect, _province: string | null = null) {
   return {
     id: v.id,
     label: v.label,

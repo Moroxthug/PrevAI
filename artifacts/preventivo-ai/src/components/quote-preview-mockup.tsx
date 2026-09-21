@@ -11,7 +11,7 @@ function priceForItem(seed: string): number {
 }
 
 function formatCurrency(amount: number): string {
-  return new Intl.NumberFormat("en-CA", { style: "currency", currency: "CAD" }).format(amount);
+  return new Intl.NumberFormat("it-IT", { style: "currency", currency: "EUR" }).format(amount);
 }
 
 export function QuotePreviewMockup({ sector }: { sector: SectorData }) {

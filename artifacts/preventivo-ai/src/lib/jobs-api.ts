@@ -81,7 +81,7 @@ export type ChangeOrderDto = {
 
 export type CostEntryStatus = "pending_review" | "confirmed";
 export type CostEntrySource = "manual" | "receipt" | "time_entry" | "equipment" | "legacy";
-export type TaxBreakdownDto = { GST?: number; HST?: number; PST?: number; QST?: number };
+export type TaxBreakdownDto = { IVA?: number };
 export type ReceiptExtractionDto = {
   vendor: string | null;
   date: string | null;
@@ -321,5 +321,5 @@ export const jobsApi = {
 
 export { req as apiRequest, json as apiJson };
 
-export const formatCad = (n: number) => new Intl.NumberFormat("en-CA", { style: "currency", currency: "CAD" }).format(n);
+export const formatCad = (n: number) => new Intl.NumberFormat("it-IT", { style: "currency", currency: "EUR" }).format(n);
 export const formatCents = (c: number) => formatCad(c / 100);

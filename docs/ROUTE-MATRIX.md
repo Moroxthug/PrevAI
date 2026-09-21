@@ -494,8 +494,8 @@ Columns — **Auth**: session (`requireAuth`), apiKey (`requireApiKey`), admin (
 | 104 | POST | `/api/sign/:token/otp` | none | — | otpLimiter | none | — | n/a | — | hash-lookup | — |
 | 131 | POST | `/api/sign/:token/verify` | none | — | otpLimiter | zod | — | n/a | — | timing-safe | — |
 | 178 | POST | `/api/sign/:token/complete` | none | — | signLimiter | zod | — | n/a | — | hash-lookup | — |
-| 224 | POST | `/api/sign/:token/decline` | none | — | signLimiter | manual | — | n/a | — | hash-lookup | — |
-| 256 | GET | `/api/sign/:token/pdf` | none | — | viewLimiter | none | — | n/a | — | hash-lookup | — |
+| 223 | POST | `/api/sign/:token/decline` | none | — | signLimiter | manual | — | n/a | — | hash-lookup | — |
+| 255 | GET | `/api/sign/:token/pdf` | none | — | viewLimiter | none | — | n/a | — | hash-lookup | — |
 
 ## artifacts/api-server/src/routes/speech.ts
 

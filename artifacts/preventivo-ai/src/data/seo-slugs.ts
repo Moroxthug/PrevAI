@@ -39,9 +39,8 @@ export const SECTOR_KEY_BY_FR_SLUG: Record<string, string> = Object.fromEntries(
   Object.entries(SECTOR_SLUGS).map(([key, s]) => [s.frSlug, key]),
 );
 
-export function sectorLabel(slug: string, lang: "en" | "fr"): string {
-  const s = SECTOR_SLUGS[slug];
-  return (lang === "fr" ? s?.frLabel : s?.label) ?? slug;
+export function sectorLabel(slug: string, _lang?: string): string {
+  return SECTOR_SLUGS[slug]?.label ?? slug;
 }
 
 /** /quotes/… ↔ /fr/soumissions/… counterpart of a sector or city landing URL (null when there is none). */

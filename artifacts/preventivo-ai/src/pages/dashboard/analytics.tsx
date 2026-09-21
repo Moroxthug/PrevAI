@@ -5,7 +5,7 @@ import { useGetQuoteStats, useListQuotes, useGetBusinessProfile } from "@workspa
 import { Skeleton } from "@/components/ui/skeleton";
 import { Bar, BarChart, CartesianGrid, Cell, ComposedChart, Line, Pie, PieChart, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { format, subMonths, startOfMonth } from "date-fns";
-import { enCA, frCA } from "date-fns/locale";
+import { it } from "date-fns/locale";
 import { FileText, CheckCircle2, AlertTriangle, Sparkles, Briefcase } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useLanguage } from "@/i18n/LanguageContext";
@@ -15,14 +15,14 @@ import { analyticsApi, type CompanyAnalyticsDto, type RiskFlag } from "@/lib/ana
 import { AXIS_TICK, ChartCard, Empty, LegendRow, SERIES, STATUS, TOOLTIP_STYLE, money, moneyShort } from "@/components/charts";
 import { JobStatusBadge } from "@/components/jobs/badges";
 
-const formatCurrency = (v: number) => new Intl.NumberFormat("en-CA", { style: "currency", currency: "CAD", maximumFractionDigits: 0 }).format(v);
+const formatCurrency = (v: number) => new Intl.NumberFormat("it-IT", { style: "currency", currency: "EUR", maximumFractionDigits: 0 }).format(v);
 const QUOTE_STATUS_COLORS: Record<string, string> = { draft: SERIES.neutral, unlocked: SERIES.actual, pending: "#d97706" };
 const PERIODS = [3, 6, 12] as const;
 const PERIOD_SEG: Record<(typeof PERIODS)[number], "m" | "q" | "y"> = { 3: "m", 6: "q", 12: "y" };
 
 export default function AnalyticsPage() {
-  const { t, lang } = useLanguage();
-  const locale = lang === "fr" ? frCA : enCA;
+  const { t } = useLanguage();
+  const locale = it;
   const [months, setMonths] = useState<(typeof PERIODS)[number]>(6);
   const { data: profile } = useGetBusinessProfile();
   const gated = profile ? !hasFeature(profile as never, "analytics_pro") : false;
@@ -67,7 +67,7 @@ function GateCard() {
   );
 }
 
-function BusinessSection({ data, isLoading, locale }: { data: CompanyAnalyticsDto | undefined; isLoading: boolean; locale: typeof enCA }) {
+function BusinessSection({ data, isLoading, locale }: { data: CompanyAnalyticsDto | undefined; isLoading: boolean; locale: typeof it }) {
   const { t } = useLanguage();
   if (isLoading || !data) return <div className="stat-grid six">{Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} className="h-20 rounded-[var(--radius)]" />)}</div>;
   const tot = data.totals;
@@ -222,7 +222,7 @@ function Tile({ label, value, sub, tone }: { label: string; value: string; sub?:
 
 // ── Quotes (all plans) ───────────────────────────────────────────────────────
 
-function QuotesSection({ months, locale }: { months: number; locale: typeof enCA }) {
+function QuotesSection({ months, locale }: { months: number; locale: typeof it }) {
   const { t } = useLanguage();
   const { data: stats, isLoading: isLoadingStats } = useGetQuoteStats();
   const { data: allQuotes, isLoading: isLoadingQuotes } = useListQuotes();

@@ -196,7 +196,7 @@ export async function updateChangeOrder(params: {
   if (!doc || doc.status !== "draft") throw new Error("LOCKED");
   const [parent] = co.contractId ? await db.select().from(contractsTable).where(eq(contractsTable.id, co.contractId)) : [];
   if (!parent) throw new Error("NO_CONTRACT");
-  const [project] = await db.select().from(projectsTable).where(eq(projectsTable.id, co.projectId));
+
 
   const next = {
     title: params.title ?? co.title,

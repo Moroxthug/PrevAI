@@ -8,7 +8,7 @@ import { PaymentScheduleEditor } from "@/components/payment-schedule-editor";
 import { type PaymentSchedule, paymentTermAmount, validateSchedule } from "@/lib/payment-schedule";
 
 const formatCad = (amount: number) =>
-  new Intl.NumberFormat("en-CA", { style: "currency", currency: "CAD" }).format(amount);
+  new Intl.NumberFormat("it-IT", { style: "currency", currency: "EUR" }).format(amount);
 
 /**
  * Sidebar card on the quote detail page: shows the structured payment

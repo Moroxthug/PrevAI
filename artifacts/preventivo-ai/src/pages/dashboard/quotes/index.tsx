@@ -13,7 +13,7 @@ import { cn } from "@/lib/utils";
 type StatusFilter = "all" | "draft" | "unlocked" | "pending_payment";
 
 const formatCurrency = (amount: number) =>
-  new Intl.NumberFormat("en-CA", { style: "currency", currency: "CAD" }).format(amount);
+  new Intl.NumberFormat("it-IT", { style: "currency", currency: "EUR" }).format(amount);
 
 function statusChip(status: string, t: (key: string) => string): { cls: string; label: string } {
   if (status === "unlocked") return { cls: "chip-green", label: t("dashboard.quotesList.statusUnlocked") };
@@ -177,7 +177,7 @@ export default function QuotesList() {
                       </td>
                       <td>{quote.clientData?.nome || t("dashboard.quotesList.clientNotSpecified")}</td>
                       <td><span className={cn("chip", chip.cls)}>{chip.label}</span></td>
-                      <td>{new Date(quote.createdAt).toLocaleDateString("en-CA")}</td>
+                      <td>{new Date(quote.createdAt).toLocaleDateString("it-IT")}</td>
                       <td className="t-amt" style={{ textAlign: "right" }}>
                         {quote.status === "draft" ? "—" : formatCurrency(quote.totale)}
                       </td>

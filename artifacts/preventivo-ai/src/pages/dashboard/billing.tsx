@@ -68,11 +68,11 @@ export default function BillingPage() {
   const planPrice = isPro ? t("dashboard.billing.pricePro") : isStarter ? t("dashboard.billing.priceStarter") : isElite ? t("dashboard.billing.priceElite") : null;
 
   const renewalDate = sub?.periodEnd
-    ? new Date(sub.periodEnd).toLocaleDateString("en-CA", { day: "2-digit", month: "long", year: "numeric" })
+    ? new Date(sub.periodEnd).toLocaleDateString("it-IT", { day: "2-digit", month: "long", year: "numeric" })
     : null;
 
   const resetDate = sub?.quotaResetDate
-    ? new Date(sub.quotaResetDate).toLocaleDateString("en-CA", { day: "2-digit", month: "long" })
+    ? new Date(sub.quotaResetDate).toLocaleDateString("it-IT", { day: "2-digit", month: "long" })
     : null;
 
   const handleChoosePlan = () => {

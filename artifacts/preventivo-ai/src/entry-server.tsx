@@ -22,17 +22,16 @@ import { HELP_ARTICLES } from "./data/help-articles";
 
 /** Routes rendered at build time. Keep in sync with SSR_PAGE_RE in main.tsx. */
 export const SSR_PAGES: ReadonlyArray<{ path: string; lang: Lang }> = [
-  { path: "/", lang: "en" },
-  { path: "/fr", lang: "fr" },
-  { path: "/whatsapp", lang: "en" },
-  { path: "/chi-siamo", lang: "en" },
-  { path: "/contatti", lang: "en" },
-  { path: "/privacy-policy", lang: "en" },
-  { path: "/terms", lang: "en" },
-  { path: "/mappa-sito", lang: "en" },
-  // Phase 70: help centre index + every article (EN; the toggle re-renders FR client-side).
-  { path: "/help", lang: "en" },
-  ...HELP_ARTICLES.map((a) => ({ path: `/help/${a.slug}`, lang: "en" as const })),
+  { path: "/", lang: "it" },
+  { path: "/whatsapp", lang: "it" },
+  { path: "/chi-siamo", lang: "it" },
+  { path: "/contatti", lang: "it" },
+  { path: "/privacy-policy", lang: "it" },
+  { path: "/terms", lang: "it" },
+  { path: "/mappa-sito", lang: "it" },
+  // Phase 70: help centre index + every article.
+  { path: "/help", lang: "it" },
+  ...HELP_ARTICLES.map((a) => ({ path: `/help/${a.slug}`, lang: "it" as const })),
 ];
 
 export async function renderPage(path: string, lang: Lang): Promise<string> {

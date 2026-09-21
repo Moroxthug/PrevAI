@@ -41,7 +41,7 @@ export default function SignPage() {
   useDocumentTitle(data ? `${data.contract.title} · ${data.contract.companyName}` : null);
   // The page follows the contract's language, not the visitor's stored preference.
   useEffect(() => {
-    if (data?.contract.language) setLang(data.contract.language);
+    if (data?.contract.language) setLang("it");
   }, [data?.contract.language, setLang]);
 
   useEffect(() => {
@@ -146,7 +146,7 @@ export default function SignPage() {
   }
 
   const { contract, signer } = data;
-  const formatCad = (n: number) => new Intl.NumberFormat(contract.language === "fr" ? "fr-CA" : "en-CA", { style: "currency", currency: "CAD" }).format(n);
+  const formatCad = (n: number) => new Intl.NumberFormat(contract.language === "fr" ? "it-IT" : "it-IT", { style: "currency", currency: "EUR" }).format(n);
 
   return (
     <div className="doc-shell pb-32">

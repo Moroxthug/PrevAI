@@ -13,11 +13,10 @@ import { cn } from "@/lib/utils";
 // with Italian labels ("Accedi / Registrati") — every sector, city and blog
 // page shipped two headers and a 64 px layout shift.
 const LABELS = {
-  en: { signIn: "Sign in", signUp: "Sign up", home: "/" },
-  fr: { signIn: "Se connecter", signUp: "S'inscrire", home: "/fr" },
+  it: { signIn: "Accedi", signUp: "Registrati", home: "/" },
 } as const;
 
-function SeoHeaderInner({ lang }: { lang: "en" | "fr" }) {
+function SeoHeaderInner({ lang }: { lang: "it" }) {
   const { data: session } = authClient.useSession();
   const isSignedIn = !!session?.user;
   const scrolled = useScrolled(20);
@@ -71,7 +70,7 @@ function SeoHeaderInner({ lang }: { lang: "en" | "fr" }) {
  * `replaceWith(mount)` before render() left a 64 px gap for one frame:
  * CLS 0.16–0.49 on the sector and blog pages).
  */
-export function SeoNavShell({ lang, replaces }: { lang: "en" | "fr"; replaces: HTMLElement }) {
+export function SeoNavShell({ lang, replaces }: { lang: "it"; replaces: HTMLElement }) {
   useLayoutEffect(() => {
     replaces.remove();
   }, [replaces]);

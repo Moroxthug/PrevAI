@@ -8,7 +8,6 @@ import { useAuth } from "@/hooks/use-auth";
 import SupportBot from "@/components/support-bot";
 import { useLanguage } from "@/i18n/LanguageContext";
 import { TRADE_LABELS } from "@/i18n/translations";
-import { getLanguageCounterpartPath } from "@/data/seo-slugs";
 
 const ChevRight = () => (
   <svg className="chev" viewBox="0 0 16 16" fill="none"><path d="M5.5 3l5 5-5 5" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" /></svg>
@@ -92,40 +91,6 @@ function AnnouncementBar() {
   );
 }
 
-function LanguageToggle({ variant = "pill" }: { variant?: "pill" | "dark" }) {
-  const { lang, toggleLang, t } = useLanguage();
-  const [pathname, navigate] = useLocation();
-
-  const handleClick = () => {
-    // Pages with a real French URL (home, sector/city SEO pages) navigate
-    // to the counterpart URL so hreflang/canonical/prerendered content stay
-    // correct. Everything else (dashboard, auth, blog, ...) just flips the
-    // client-side chrome language in place.
-    const counterpart = getLanguageCounterpartPath(pathname);
-    if (counterpart) {
-      navigate(counterpart);
-    } else {
-      toggleLang();
-    }
-  };
-
-  const label = lang === "en" ? "FR" : "EN";
-
-  if (variant === "dark") {
-    return (
-      <button onClick={handleClick} className="locale" aria-label={t("lang.switchTo")}>
-        {label}
-      </button>
-    );
-  }
-
-  return (
-    <button onClick={handleClick} className="hd-fr" aria-label={t("lang.switchTo")}>
-      {label}
-    </button>
-  );
-}
-
 export function PublicLayout({ children }: { children: React.ReactNode }) {
   const { isSignedIn } = useAuth();
   const { t, lang } = useLanguage();
@@ -157,7 +122,6 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
             <Link href="/#guides" className="nav-link">{t("nav.guides")}</Link>
           </nav>
           <div className="hd-r">
-            <LanguageToggle />
             {!isSignedIn ? (
               <>
                 <Link href="/sign-in/" className="signin">{t("nav.signIn")}</Link>
@@ -204,7 +168,6 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
                 <button className="mnav-link" onClick={() => handleMobileNav("/dashboard")}>{t("nav.dashboard")}</button>
               )}
               <div className="pt-3">
-                <LanguageToggle />
               </div>
               {!isSignedIn ? (
                 <button onClick={() => handleMobileNav("/sign-up")} className="btn btn-navy">{t("nav.signUp")}</button>
@@ -274,7 +237,6 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
             <Link href="/terms/">{t("footer.terms")}</Link>
             <Link href="/mappa-sito/">{t("footer.sitemap")}</Link>
           </div>
-          <LanguageToggle variant="dark" />
         </div>
       </footer>
 

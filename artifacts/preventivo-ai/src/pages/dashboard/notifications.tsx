@@ -2,7 +2,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Link } from "wouter";
 import { Bell, CheckCheck } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
-import { enCA, frCA } from "date-fns/locale";
+import { it } from "date-fns/locale";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useLanguage } from "@/i18n/LanguageContext";
 
@@ -32,7 +32,7 @@ function dotColor(type: string): "green" | "teal" | "yellow" | "grey" {
 }
 
 export default function NotificationsPage() {
-  const { t, lang } = useLanguage();
+  const { t } = useLanguage();
   const queryClient = useQueryClient();
   const { data, isLoading } = useQuery({ queryKey: QUERY_KEY, queryFn: fetchNotifications, staleTime: 30_000 });
   const markRead = useMutation({
@@ -52,7 +52,7 @@ export default function NotificationsPage() {
 
   const items = data?.items ?? [];
   const unread = data?.unread ?? 0;
-  const locale = lang === "fr" ? frCA : enCA;
+  const locale = it;
 
   return (
     <div className="animate-in fade-in duration-500">

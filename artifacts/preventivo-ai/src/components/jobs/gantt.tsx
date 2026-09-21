@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import { format, differenceInCalendarDays, addDays, startOfWeek } from "date-fns";
-import { enCA, frCA } from "date-fns/locale";
+import { it } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { useLanguage } from "@/i18n/LanguageContext";
 import type { MilestoneStatus } from "@/lib/jobs-api";
@@ -16,8 +16,8 @@ const parse = (s: string | null) => (s ? new Date(`${s}T00:00:00`) : null);
  * Styled by the `.gantt*` block in mockup-system.css (Phase 59).
  */
 export function Gantt({ rows, onRowClick }: { rows: GanttRow[]; onRowClick?: (id: string) => void }) {
-  const { lang } = useLanguage();
-  const locale = lang === "fr" ? frCA : enCA;
+  const { t } = useLanguage();
+  const locale = it;
 
   const range = useMemo(() => {
     const dates = rows.flatMap((r) => [parse(r.start), parse(r.end)]).filter((d): d is Date => !!d);
@@ -67,7 +67,7 @@ export function Gantt({ rows, onRowClick }: { rows: GanttRow[]; onRowClick?: (id
                 <b>{r.title}</b>
                 <span>
                   {s && e ? `${format(s, "d MMM", { locale })} → ${format(e, "d MMM", { locale })}` : "—"}
-                  {r.paymentAmountCents ? ` · $${(r.paymentAmountCents / 100).toLocaleString("en-CA", { maximumFractionDigits: 0 })}` : ""}
+                  {r.paymentAmountCents ? ` · $${(r.paymentAmountCents / 100).toLocaleString("it-IT", { maximumFractionDigits: 0 })}` : ""}
                 </span>
               </div>
               <div className="gantt-track">
@@ -89,7 +89,7 @@ export function Gantt({ rows, onRowClick }: { rows: GanttRow[]; onRowClick?: (id
         {/* Today marker spans header + rows; the timeline starts after the 224px label column */}
         {todayPct >= 0 && todayPct <= 100 && (
           <div className="gantt-today" style={{ left: `calc(224px + (100% - 224px) * ${todayPct / 100})` }}>
-            <span>{lang === "fr" ? "Aujourd'hui" : "Today"}</span>
+            <span>{t("jobs.gantt.today")}</span>
           </div>
         )}
       </div>

@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useParams } from "wouter";
 import { CheckCircle2, Loader2, FileX, Hammer, Landmark, Gift, ExternalLink } from "lucide-react";
 import { format } from "date-fns";
-import { enCA, frCA } from "date-fns/locale";
+import { it } from "date-fns/locale";
 import { useLanguage } from "@/i18n/LanguageContext";
 import { Logo } from "@/components/logo";
 import { useDocumentTitle } from "@/hooks/use-document-title";
@@ -65,8 +65,8 @@ interface PublicQuote {
   variants: PublicQuoteVariant[];
 }
 
-function euro(value: string | number, lang: "en" | "fr" = "en") {
-  return Number(value).toLocaleString(lang === "fr" ? "fr-CA" : "en-CA", { style: "currency", currency: "CAD" });
+function euro(value: string | number, _lang?: string) {
+  return Number(value).toLocaleString("it-IT", { style: "currency", currency: "EUR" });
 }
 
 type FinanceitEstimate = { monthlyPayment: number; termMonths: number; apr: number };
@@ -288,7 +288,7 @@ function RebatesWidget({ quoteId }: { quoteId: string }) {
 }
 
 export default function PublicQuotePage() {
-  const { t, lang, setLang } = useLanguage();
+  const { t, lang } = useLanguage();
   const { id } = useParams();
   const [quote, setQuote] = useState<PublicQuote | null>(null);
   const [loading, setLoading] = useState(true);
@@ -398,7 +398,6 @@ export default function PublicQuotePage() {
             <div className="text-sm font-semibold truncate" style={{ color: "var(--navy)" }}>{t("publicQuote.quoteFallback")}{quote.numeroPreventivoData ? ` ${quote.numeroPreventivoData}` : ""}</div>
           </div>
           <div className="flex items-center gap-3 shrink-0">
-            <button type="button" className="btn btn-outline-navy btn-sm" onClick={() => setLang(lang === "fr" ? "en" : "fr")} aria-label={lang === "fr" ? "English" : "Français"}>{lang === "fr" ? "EN" : "FR"}</button>
             <Logo className="h-6" />
           </div>
         </div>
@@ -533,8 +532,8 @@ export default function PublicQuotePage() {
               {quote.acceptedAt && (
                 <> {t("publicQuote.confirmedOnPrefix")} {format(
                   new Date(quote.acceptedAt),
-                  lang === "fr" ? `d MMMM yyyy '${t("publicQuote.confirmedAtPrefix")}' HH:mm` : `MMMM d, yyyy '${t("publicQuote.confirmedAtPrefix")}' HH:mm`,
-                  { locale: lang === "fr" ? frCA : enCA }
+                  `d MMMM yyyy '${t("publicQuote.confirmedAtPrefix")}' HH:mm`,
+                  { locale: it }
                 )}</>
               )}.
             </p>

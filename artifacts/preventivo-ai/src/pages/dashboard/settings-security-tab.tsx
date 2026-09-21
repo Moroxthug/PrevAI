@@ -245,7 +245,7 @@ function SessionsCard() {
 }
 
 function AuditLogCard() {
-  const { t, lang } = useLanguage();
+  const { t } = useLanguage();
   const { data, isLoading } = useQuery({ queryKey: ["security-audit-log"], queryFn: securityApi.auditLog });
 
   if (isLoading) return <Skeleton className="h-48 w-full rounded-[var(--radius)]" />;
@@ -269,7 +269,7 @@ function AuditLogCard() {
                   <span className="font-medium text-foreground">{AUDIT_ACTION_LABELS[e.action] ?? e.action}</span>
                   {e.actorEmail && <span className="text-muted-foreground"> — {e.actorName ?? e.actorEmail}</span>}
                 </div>
-                <span className="text-muted-foreground text-xs whitespace-nowrap">{new Date(e.createdAt).toLocaleString(lang === "fr" ? "fr-CA" : "en-CA")}</span>
+                <span className="text-muted-foreground text-xs whitespace-nowrap">{new Date(e.createdAt).toLocaleString("it-IT")}</span>
               </div>
             ))}
           </div>

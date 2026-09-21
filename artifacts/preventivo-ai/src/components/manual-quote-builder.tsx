@@ -5,8 +5,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useCreateManualQuote, useSuggestItemDescription, useListCatalogItems, useListTaxProfiles } from "@workspace/api-client-react";
-import { CANADIAN_PROVINCES } from "@/lib/payment-schedule";
-import { profileSummary, previewTaxLines, taxLineLabel } from "@/lib/tax-display";
+import { previewTaxLines, taxLineLabel } from "@/lib/tax-display";
 import type { CreateManualQuoteBody } from "@workspace/api-client-react";
 import { useToast } from "@/hooks/use-toast";
 import { useLocation } from "wouter";
@@ -98,7 +97,7 @@ function parseNum(v: string): number {
 }
 
 function fmt(n: number): string {
-  return n.toLocaleString("en-CA", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  return n.toLocaleString("it-IT", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
 function computeVoceTotale(v: VoceState): number {
@@ -175,10 +174,10 @@ export default function ManualQuoteBuilder({ clientData, profileData }: ManualQu
   const [titoloRiga1, setTitoloRiga1] = useState(t("manualQuote.defaultDocTitle"));
   const [titoloRiga2, setTitoloRiga2] = useState("");
   const [descrizione, setDescrizione] = useState("");
-  // Phase 71: the province decides the tax components; "EXEMPT" = 0 %.
-  const [taxProvince, setTaxProvince] = useState<string>(() => (clientData?.province || profileData?.province || "ON").toUpperCase());
+  // V2-2: il regime IVA (IVA22/IVA10/IVA4…) decide l'aliquota; "EXEMPT" = 0 %.
+  const [taxCode, setTaxCode] = useState<string>("IVA22");
   const { data: taxProfilesData } = useListTaxProfiles();
-  const taxProfile = taxProvince === TAX_EXEMPT ? null : (taxProfilesData?.profiles.find((p) => p.province === taxProvince) ?? null);
+  const taxProfile = taxCode === TAX_EXEMPT ? null : (taxProfilesData?.profiles.find((p) => p.code === taxCode) ?? null);
   const ivaPercentuale = taxProfile?.totalRate ?? 0;
   const [condizioni, setCondizioni] = useState<string[]>(() => getDefaultCondizioni(t));
   const [newCondizione, setNewCondizione] = useState("");
@@ -283,7 +282,7 @@ export default function ManualQuoteBuilder({ clientData, profileData }: ManualQu
       titoloPreventivoRiga2: titoloRiga2 || undefined,
       descrizioneGenerale: descrizione || undefined,
       ivaPercentuale,
-      province: taxProvince === TAX_EXEMPT ? undefined : taxProvince,
+      province: clientData?.province || profileData?.province || undefined,
       condizioniPagamento: condizioni,
       note: note || undefined,
     };
@@ -382,7 +381,7 @@ export default function ManualQuoteBuilder({ clientData, profileData }: ManualQu
                   className="inl"
                   disabled={isSubmitting}
                 />
-                <span className="amt">$ {fmt(capSubtotale)}</span>
+                <span className="amt">€ {fmt(capSubtotale)}</span>
                 <button
                   type="button"
                   onClick={() => updateChapter(ch.id, { collapsed: !ch.collapsed })}
@@ -547,7 +546,7 @@ export default function ManualQuoteBuilder({ clientData, profileData }: ManualQu
 
                   {/* Chapter subtotal */}
                   <div className="sub">
-                    {t("manualQuote.subtotalPrefix")} {lettera}: <b>$ {fmt(capSubtotale)}</b>
+                    {t("manualQuote.subtotalPrefix")} {lettera}: <b>€ {fmt(capSubtotale)}</b>
                   </div>
                 </div>
               )}
@@ -572,22 +571,21 @@ export default function ManualQuoteBuilder({ clientData, profileData }: ManualQu
       <section className="card">
         <div className="card-head"><div><h2>{t("manualQuote.financialSummary")}</h2></div></div>
 
-        {/* Phase 71: province → statutory components; the picker is the same
-            province list the contract template uses. */}
+        {/* V2-2: regime IVA → aliquota; la lista arriva da GET /api/tax-profiles. */}
         <div className="tax-row">
-          <label htmlFor="manual-quote-tax-province">{t("manualQuote.taxProvince")}</label>
+          <label htmlFor="manual-quote-tax-code">{t("manualQuote.taxProvince")}</label>
           <div className="pills" style={{ alignItems: "center", gap: 8 }}>
             <select
-              id="manual-quote-tax-province"
+              id="manual-quote-tax-code"
               className="inp-sm"
-              value={taxProvince}
-              onChange={(e) => setTaxProvince(e.target.value)}
+              value={taxCode}
+              onChange={(e) => setTaxCode(e.target.value)}
               disabled={isSubmitting}
+              title={taxProfile?.hint}
             >
-              {CANADIAN_PROVINCES.map((p) => {
-                const prof = taxProfilesData?.profiles.find((x) => x.province === p.code);
-                return <option key={p.code} value={p.code}>{p[lang]}{prof ? ` — ${profileSummary(prof, lang)}` : ""}</option>;
-              })}
+              {(taxProfilesData?.profiles ?? []).filter((x) => x.totalRate > 0).map((x) => (
+                <option key={x.code} value={x.code}>{x.name}</option>
+              ))}
               <option value={TAX_EXEMPT}>{t("manualQuote.taxExemptOption")}</option>
             </select>
           </div>
@@ -595,13 +593,13 @@ export default function ManualQuoteBuilder({ clientData, profileData }: ManualQu
 
         {/* Totals breakdown */}
         <div className="kv-list">
-          <div className="kv"><span>{t("manualQuote.taxableAmount")}</span><b>$ {fmt(subtotale)}</b></div>
+          <div className="kv"><span>{t("manualQuote.taxableAmount")}</span><b>€ {fmt(subtotale)}</b></div>
           {taxLinesPreview.length === 0 ? (
-            <div className="kv"><span>{t("manualQuote.taxLabel")} — {t("manualQuote.taxExempt")}</span><b>$ {fmt(0)}</b></div>
+            <div className="kv"><span>{t("manualQuote.taxLabel")} — {t("manualQuote.taxExempt")}</span><b>€ {fmt(0)}</b></div>
           ) : taxLinesPreview.map((line) => (
-            <div className="kv" key={line.code}><span>{taxLineLabel(line, lang, t("manualQuote.taxLabel"))}</span><b>$ {fmt(line.amount)}</b></div>
+            <div className="kv" key={line.code}><span>{taxLineLabel(line, lang, t("manualQuote.taxLabel"))}</span><b>€ {fmt(line.amount)}</b></div>
           ))}
-          <div className="kv total"><span>{t("manualQuote.total")}</span><b>$ {fmt(totale)}</b></div>
+          <div className="kv total"><span>{t("manualQuote.total")}</span><b>€ {fmt(totale)}</b></div>
         </div>
       </section>
 

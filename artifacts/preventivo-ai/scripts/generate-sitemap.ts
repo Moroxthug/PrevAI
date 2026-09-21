@@ -4,7 +4,7 @@ import { fileURLToPath } from "node:url";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
-import { SECTORS, CITIES, ACTIVE_CITIES, CITY_SECTORS, FRENCH_PRIMARY_CITY_SLUGS } from "../src/data/seo-data.js";
+import { SECTORS, CITIES, ACTIVE_CITIES, CITY_SECTORS } from "../src/data/seo-data.js";
 import { BLOG_ARTICLES, BLOG_CATEGORIES } from "../src/data/blog-data.js";
 import { PUBLIC_ROUTES } from "../src/data/sitemap-routes.js";
 import { HELP_ARTICLES } from "../src/data/help-articles.js";
@@ -35,27 +35,17 @@ for (const route of PUBLIC_ROUTES) {
   const loc = route.path === "/" ? `${BASE_URL}/` : `${BASE_URL}${route.path}/`;
   entries.push(url(loc, route.priority, route.changefreq, route.lastmod));
 }
-// French homepage
-entries.push(url(`${BASE_URL}/fr/`, "1.0", "weekly", PUBLIC_ROUTES.find((r) => r.path === "/")!.lastmod));
-
-// SEO sector landing pages (English + French — every sector has a French page)
-for (const [sectorSlug, sector] of Object.entries(SECTORS)) {
+// SEO sector landing pages (V2-2: solo italiano; slug v1 in V2-2b)
+for (const sectorSlug of Object.keys(SECTORS)) {
   entries.push(url(`${BASE_URL}/quotes/${sectorSlug}/`, "0.8", "monthly", "2026-05-01"));
-  entries.push(url(`${BASE_URL}/fr/soumissions/${sector.frSlug}/`, "0.8", "monthly", "2026-05-01"));
 }
 
 // SEO city×sector pages — restricted to ACTIVE_CITIES (see seo-data.ts) to
-// concentrate crawl budget instead of spreading it across 1000+ URLs. French
-// city pages only exist for the French-primary Quebec cities (see
-// FRENCH_PRIMARY_CITY_SLUGS) — everything else stays English-only for now.
+// concentrate crawl budget instead of spreading it across 1000+ URLs.
 for (const sectorSlug of CITY_SECTORS) {
-  const sector = SECTORS[sectorSlug];
   for (const city of ACTIVE_CITIES) {
     const priority = TIER1_CITY_SLUGS.has(city.slug) ? "0.7" : "0.6";
     entries.push(url(`${BASE_URL}/quotes/${sectorSlug}/${city.slug}/`, priority, "monthly", "2026-05-01"));
-    if (FRENCH_PRIMARY_CITY_SLUGS.includes(city.slug)) {
-      entries.push(url(`${BASE_URL}/fr/soumissions/${sector.frSlug}/${city.slug}/`, priority, "monthly", "2026-05-01"));
-    }
   }
 }
 

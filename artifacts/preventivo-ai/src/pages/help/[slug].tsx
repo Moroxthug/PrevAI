@@ -3,7 +3,7 @@
 // prerendered file is EN, the language toggle re-renders in place.
 import { useParams, Link } from "wouter";
 import { ArrowRight, Info } from "lucide-react";
-import { HELP_ARTICLES, HELP_CATEGORIES, findHelpArticle, type HelpBlock, type L } from "@/data/help-articles";
+import { HELP_ARTICLES, HELP_CATEGORIES, findHelpArticle, type HelpBlock, type HelpLang } from "@/data/help-articles";
 import { SeoHead } from "@/components/seo-head";
 import { useLanguage } from "@/i18n/LanguageContext";
 
@@ -13,10 +13,10 @@ function slugify(text: string): string {
   return text.toLowerCase().normalize("NFD").replace(/\p{M}/gu, "").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
 }
 
-function Block({ block, lang }: { block: HelpBlock; lang: keyof L }) {
+function Block({ block, lang }: { block: HelpBlock; lang: HelpLang }) {
   switch (block.type) {
     case "h":
-      return <h2 id={slugify(block.text.en)}>{block.text[lang]}</h2>;
+      return <h2 id={slugify(block.text.it)}>{block.text[lang]}</h2>;
     case "p":
       return <p>{block.text[lang]}</p>;
     case "steps":
@@ -116,7 +116,7 @@ export default function HelpArticlePage() {
               <p className="label">{t("blog.toc")}</p>
               <ol>
                 {headings.map((hd) => (
-                  <li key={hd.text.en}><a href={`#${slugify(hd.text.en)}`}>{hd.text[lang]}</a></li>
+                  <li key={hd.text.it}><a href={`#${slugify(hd.text.it)}`}>{hd.text[lang]}</a></li>
                 ))}
               </ol>
             </nav>

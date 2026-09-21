@@ -228,7 +228,7 @@ export function buildFallbackPlan(params: {
   };
 }
 
-export function budgetFromSplit(expectedCost: number, split: Record<CostCategory, number>, language: "it"): PlannedBudgetLine[] {
+export function budgetFromSplit(expectedCost: number, split: Record<CostCategory, number>, _language?: "it"): PlannedBudgetLine[] {
   const sum = COST_CATEGORIES.reduce((s, c) => s + (split[c] ?? 0), 0) || 1;
   return COST_CATEGORIES
     .map((c) => ({ category: c, label: CATEGORY_LABELS[c], plannedCents: cents((expectedCost * (split[c] ?? 0)) / sum) }))

@@ -122,8 +122,6 @@ function Router() {
     <Switch>
       {/* Public pages — paths from sitemap-routes.ts (shared with generate-sitemap.ts) */}
       <Route path={PATHS.HOME} component={() => <PublicLayout><Home /></PublicLayout>} />
-      {/* French homepage — same component, detects lang from the /fr prefix */}
-      <Route path="/fr" component={() => <PublicLayout><Home /></PublicLayout>} />
       <Route path={PATHS.WHATSAPP} component={() => <PublicLayout><Suspense fallback={null}><WhatsappPage /></Suspense></PublicLayout>} />
       <Route path={PATHS.CHI_SIAMO} component={() => <Suspense fallback={null}><ChiSiamoPage /></Suspense>} />
       <Route path={PATHS.CONTATTI} component={() => <Suspense fallback={null}><ContattiPage /></Suspense>} />
@@ -243,9 +241,6 @@ function Router() {
       {/* SEO landing pages — dynamic, driven by SECTORS / CITIES data */}
       <Route path="/quotes/:type/:city" component={() => <PublicLayout><Suspense fallback={null}><SeoCityLanding /></Suspense></PublicLayout>} />
       <Route path="/quotes/:type" component={() => <PublicLayout><Suspense fallback={null}><SeoLanding /></Suspense></PublicLayout>} />
-      {/* French SEO landing pages — same components, detect lang from the /fr prefix */}
-      <Route path="/fr/soumissions/:type/:city" component={() => <PublicLayout><Suspense fallback={null}><SeoCityLanding /></Suspense></PublicLayout>} />
-      <Route path="/fr/soumissions/:type" component={() => <PublicLayout><Suspense fallback={null}><SeoLanding /></Suspense></PublicLayout>} />
 
       {/* Blog — dynamic, driven by BLOG_ARTICLES / BLOG_CATEGORIES data */}
       <Route path="/blog/categoria/:slug" component={() => <PublicLayout><Suspense fallback={null}><BlogCategoryPage /></Suspense></PublicLayout>} />
@@ -285,7 +280,7 @@ function App({ ssr }: { ssr?: { path: string; lang: Lang } } = {}) {
   return (
     <QueryClientProvider client={queryClient}>
       {/* The wouter Router sits above LanguageProvider because the provider
-          reads useLocation() to sync the language with /fr URLs; under the
+          (V2-2: monolingua) resta sotto il router per il render SSR; under the
           build-time render (ssrPath) that must be the same router. */}
       <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")} ssrPath={ssr?.path}>
         <LanguageProvider initialLang={ssr?.lang}>

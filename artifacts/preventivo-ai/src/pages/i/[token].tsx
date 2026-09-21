@@ -34,7 +34,7 @@ export default function PublicInvoicePage() {
 
   useDocumentTitle(data ? `${data.invoice.type === "credit_note" ? t("invoices.type.credit_note") : t("publicInvoice.invoice")} ${data.invoice.number} · ${data.invoice.companyName}` : null);
   useEffect(() => {
-    if (data?.invoice.language) setLang(data.invoice.language);
+    if (data?.invoice.language) setLang("it");
   }, [data?.invoice.language, setLang]);
 
   if (isLoading) {
@@ -53,8 +53,8 @@ export default function PublicInvoicePage() {
   }
 
   const { invoice } = data;
-  const fmt = (c: number) => new Intl.NumberFormat(invoice.language === "fr" ? "fr-CA" : "en-CA", { style: "currency", currency: "CAD" }).format(c / 100);
-  const day = (s: string) => new Date(s).toLocaleDateString(invoice.language === "fr" ? "fr-CA" : "en-CA", { dateStyle: "long" });
+  const fmt = (c: number) => new Intl.NumberFormat(invoice.language === "fr" ? "it-IT" : "it-IT", { style: "currency", currency: "EUR" }).format(c / 100);
+  const day = (s: string) => new Date(s).toLocaleDateString(invoice.language === "fr" ? "it-IT" : "it-IT", { dateStyle: "long" });
   const paid = invoice.status === "paid";
   const voided = invoice.status === "void";
   const pendingConfirmation = invoice.status === "pending_confirmation";

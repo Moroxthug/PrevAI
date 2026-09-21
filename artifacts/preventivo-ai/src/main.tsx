@@ -13,7 +13,7 @@ initAnalytics();
 // English + French sector/city landing pages and the blog.
 const STATIC_SEO_RE = /^\/(?:quotes\/[^/]+(?:\/[^/]+)?|fr\/soumissions\/[^/]+(?:\/[^/]+)?|blog(?:\/.*)?)\/?$/;
 // Pages rendered at build time by entry-server.tsx (keep in sync with SSR_PAGES there).
-const SSR_PAGE_RE = /^\/(?:fr|whatsapp|chi-siamo|contatti|privacy-policy|terms|mappa-sito|help(?:\/[a-z0-9-]+)?)?\/?$/;
+const SSR_PAGE_RE = /^\/(?:whatsapp|chi-siamo|contatti|privacy-policy|terms|mappa-sito|help(?:\/[a-z0-9-]+)?)?\/?$/;
 
 const rootEl = document.getElementById("root")!;
 const pathname = window.location.pathname;
@@ -29,7 +29,7 @@ if (STATIC_SEO_RE.test(pathname) && hasPrerendered) {
   // CLS 0.79).
   // The site header (sticky, from wrapInPublicLayout) — not an article <header>.
   const staticHeader = rootEl.querySelector<HTMLElement>("header.sticky");
-  const lang = pathname.startsWith("/fr/") ? "fr" : "en";
+  const lang = "it" as const;
   if (staticHeader) {
     const mount = document.createElement("div");
     mount.className = "contents";
@@ -52,7 +52,7 @@ if (STATIC_SEO_RE.test(pathname) && hasPrerendered) {
       </StrictMode>
     );
     if (hydrate) {
-      // "/", "/fr" and the static public pages: server-rendered at build time
+      // "/" and the static public pages: server-rendered at build time
       // (Phase 68) — hydrate so the hero paints from the HTML and nothing
       // shifts. On a mismatch React 19 re-renders the tree client-side, so
       // the worst case is a console warning, never a blank page.

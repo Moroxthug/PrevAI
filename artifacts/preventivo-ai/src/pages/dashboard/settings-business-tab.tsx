@@ -29,7 +29,7 @@ type ProfileExtras = {
 };
 
 const DEFAULT_SCHEDULE: PaymentSchedule = {
-  currency: "CAD",
+  currency: "EUR",
   derived: false,
   holdback: { enabled: false, percent: 10 },
   terms: [
@@ -46,7 +46,7 @@ const DEFAULT_SCHEDULE: PaymentSchedule = {
  * payment schedule new quotes start from.
  */
 export function BusinessTab() {
-  const { t, lang } = useLanguage();
+  const { t } = useLanguage();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { data: profileRaw, isLoading } = useGetBusinessProfile();
@@ -161,7 +161,7 @@ export function BusinessTab() {
             >
               <option value="">{t("dashboard.settings.business.provinceSelect")}</option>
               {CANADIAN_PROVINCES.map((p) => (
-                <option key={p.code} value={p.code}>{lang === "fr" ? p.fr : p.en}</option>
+                <option key={p.code} value={p.code}>{p.name}</option>
               ))}
             </select>
             {taxHint && (

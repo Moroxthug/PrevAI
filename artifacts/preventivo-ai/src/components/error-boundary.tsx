@@ -3,16 +3,9 @@ import { type Lang } from "@/i18n/translations";
 import { lookup } from "@/i18n/registry";
 import { reportError } from "@/lib/error-tracking";
 
-// Class components can't use hooks, so read the persisted language choice
-// directly (mirrors LanguageContext's detection logic) instead of useLanguage().
+// Class components can't use hooks; the site is single-language (V2-2).
 function getLang(): Lang {
-  try {
-    const stored = window.localStorage.getItem("quoteai-lang");
-    if (stored === "en" || stored === "fr") return stored;
-  } catch {
-    // ignore
-  }
-  return typeof navigator !== "undefined" && navigator.language?.toLowerCase().startsWith("fr") ? "fr" : "en";
+  return "it";
 }
 
 function t(key: string): string {

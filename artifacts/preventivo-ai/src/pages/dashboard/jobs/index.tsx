@@ -3,7 +3,7 @@ import { rowLink } from "@/lib/row-link";
 import { Link, useLocation } from "wouter";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
-import { enCA, frCA } from "date-fns/locale";
+import { it } from "date-fns/locale";
 import { Plus, Loader2, Sparkles } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Dialog, DialogBody, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -22,8 +22,8 @@ function statusChip(j: JobSummaryDto, t: (key: string) => string): { cls: string
 }
 
 export default function JobsListPage() {
-  const { t, lang } = useLanguage();
-  const locale = lang === "fr" ? frCA : enCA;
+  const { t } = useLanguage();
+  const locale = it;
   const [, navigate] = useLocation();
   const { data, isLoading } = useQuery({ queryKey: ["jobs"], queryFn: jobsApi.list });
   const [createOpen, setCreateOpen] = useState(false);

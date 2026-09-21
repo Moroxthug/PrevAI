@@ -10,7 +10,6 @@ import {
   getCityDesc,
   RELATED_SECTORS,
   CITY_CONTEXT,
-  FRENCH_PRIMARY_CITY_SLUGS,
 } from "../src/data/seo-data.js";
 import type { SectorData, CityData } from "../src/data/seo-data.js";
 import { CITY_INTELLIGENCE, DEMAND_TEXT } from "../src/data/seo-intelligence.js";
@@ -49,7 +48,7 @@ import { translations } from "../src/i18n/translations.js";
 import { HELP_ARTICLES } from "../src/data/help-articles.js";
 
 function testimonialText(key: string): string {
-  return translations.en[`testimonials.${key}.text`] ?? "";
+  return translations.it[`testimonials.${key}.text`] ?? "";
 }
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -94,8 +93,8 @@ function buildHeadBlock(opts: {
   const enUrl = lang === "en" ? canonical : altUrl;
   const frUrl = lang === "fr" ? canonical : altUrl;
   const hreflangLines = [
-    enUrl ? `  <link rel="alternate" hreflang="en-CA" href="${esc(enUrl)}" />` : null,
-    frUrl ? `  <link rel="alternate" hreflang="fr-CA" href="${esc(frUrl)}" />` : null,
+    enUrl ? `  <link rel="alternate" hreflang="it-IT" href="${esc(enUrl)}" />` : null,
+    frUrl ? `  <link rel="alternate" hreflang="it-IT" href="${esc(frUrl)}" />` : null,
     // English is the site's default/fallback locale.
     `  <link rel="alternate" hreflang="x-default" href="${esc(enUrl ?? canonical)}" />`,
   ].filter((l): l is string => l !== null);
@@ -138,7 +137,7 @@ function pruneModulepreload(html: string): string {
 
 function injectHead(template: string, headBlock: string, lang: "en" | "fr" = "en"): string {
   let html = template;
-  html = html.replace(/<html lang="[^"]*"/, `<html lang="${lang === "fr" ? "fr-CA" : "en-CA"}"`);
+  html = html.replace(/<html lang="[^"]*"/, `<html lang="${"it-IT"}"`);
   html = html.replace(/<title>[^<]*<\/title>/, "");
   html = html.replace(/<meta\s+name="description"[^>]*\/?>/i, "");
   html = html.replace(/<link\b[^>]*\brel=["']canonical["'][^>]*\/?>/gi, "");
@@ -497,7 +496,7 @@ function buildSectorJsonLd(s: SectorData): object[] {
       applicationCategory: "BusinessApplication",
       operatingSystem: "Web",
       inLanguage: "en",
-      offers: { "@type": "Offer", price: "0", priceCurrency: "CAD", availability: "https://schema.org/InStock" },
+      offers: { "@type": "Offer", price: "0", priceCurrency: "EUR", availability: "https://schema.org/InStock" },
       aggregateRating: {
         "@type": "AggregateRating",
         ratingValue: "4.8",
@@ -529,7 +528,7 @@ function buildSectorJsonLd(s: SectorData): object[] {
   return schemas;
 }
 
-function buildCityJsonLd(s: SectorData, city: CityData, lang: "en-CA" | "fr-CA" = "en-CA"): object[] {
+function buildCityJsonLd(s: SectorData, city: CityData, lang: "it-IT" | "it-IT" = "it-IT"): object[] {
   return buildCityJsonLdFromEngine(s, city, lang);
 }
 
@@ -738,13 +737,13 @@ function buildSectorDeepDive(s: SectorData): string {
 
 // ─── Phase 9: Osservatorio Prezzi e Domanda ────────────────────────────────
 
-function buildOsservatorio(s: SectorData, city: CityData, intel: CityIntelligence, lang: "en-CA" | "fr-CA" = "en-CA"): string {
+function buildOsservatorio(s: SectorData, city: CityData, intel: CityIntelligence, lang: "it-IT" | "it-IT" = "it-IT"): string {
   const pct = Math.round(Math.abs(intel.priceIndex - 1.0) * 100);
   const priceLabel = intel.priceIndex > 1.0 ? `+${pct}%` : intel.priceIndex < 1.0 ? `\u2212${pct}%` : `\u00b10%`;
   const priceColor =
     intel.priceIndex > 1.05 ? "text-amber-600" : intel.priceIndex < 0.95 ? "text-green-600" : "text-gray-800";
   const demandLabels: Record<CityIntelligence["demandLevel"], string> =
-    lang === "fr-CA"
+    lang === "it-IT"
       ? { LOW: "Mod\u00e9r\u00e9e", MEDIUM: "Moyenne", HIGH: "\u00c9lev\u00e9e", CRITICAL: "Tr\u00e8s \u00e9lev\u00e9e" }
       : { LOW: "Moderate", MEDIUM: "Average", HIGH: "High", CRITICAL: "Very high" };
   const demandColors: Record<CityIntelligence["demandLevel"], string> = {
@@ -752,7 +751,7 @@ function buildOsservatorio(s: SectorData, city: CityData, intel: CityIntelligenc
   };
   const [sv1, sv2, sv3] = intel.topServices;
   void s;
-  if (lang === "fr-CA") {
+  if (lang === "it-IT") {
     return `<section class="py-10 bg-white border-b border-gray-100" aria-label="Observatoire des prix et de la demande ${esc(city.name)}">
   <div class="container mx-auto px-4 sm:px-6 lg:px-8 max-w-4xl">
     <div class="rounded-2xl border border-violet-100 bg-gradient-to-br from-violet-50/40 to-cyan-50/20 p-6 md:p-8">
@@ -1019,18 +1018,18 @@ function buildQuantoCostaBlock(
   s: SectorData,
   city: CityData,
   intel: CityIntelligence | undefined,
-  lang: "en-CA" | "fr-CA" = "en-CA",
+  lang: "it-IT" | "it-IT" = "it-IT",
 ): string {
   const cityName = city.name;
   const regionName = city.region;
   const pricePct = intel ? Math.round((intel.priceIndex - 1.0) * 100) : 0;
 
-  const examples = (lang === "fr-CA" ? s.fr.useCases : s.useCases).slice(0, 4).map((uc, i) => {
+  const examples = (lang === "it-IT" ? s.fr.useCases : s.useCases).slice(0, 4).map((uc, i) => {
     const base = 250 + i * 320 + (strHash(city.slug + s.slug + String(i)) % 180);
     const factor = intel ? intel.priceIndex : 1.0;
     const low = Math.round((base * factor) / 10) * 10;
     const high = Math.round((base * factor * 1.7) / 10) * 10;
-    return { label: uc, range: lang === "fr-CA" ? `${low} $ à ${high} $` : `$${low} to $${high}` };
+    return { label: uc, range: lang === "it-IT" ? `${low} $ à ${high} $` : `$${low} to $${high}` };
   });
   const examplesList = examples
     .map(
@@ -1042,7 +1041,7 @@ function buildQuantoCostaBlock(
     )
     .join("\n        ");
 
-  if (lang === "fr-CA") {
+  if (lang === "it-IT") {
     const sectorLabel = s.fr.label.toLowerCase();
     const priceNote = !intel
       ? `conforme à la moyenne nationale`
@@ -1306,7 +1305,7 @@ function buildSectorJsonLdFr(s: SectorData): object[] {
       applicationCategory: "BusinessApplication",
       operatingSystem: "Web",
       inLanguage: "fr",
-      offers: { "@type": "Offer", price: "0", priceCurrency: "CAD", availability: "https://schema.org/InStock" },
+      offers: { "@type": "Offer", price: "0", priceCurrency: "EUR", availability: "https://schema.org/InStock" },
     },
     {
       "@context": "https://schema.org",
@@ -1338,7 +1337,7 @@ function buildCityBodyHtmlFr(s: SectorData, city: CityData): string {
   const regionName = city.region;
   const intel = CITY_INTELLIGENCE[city.slug];
   const c = getSectorFrContent(s);
-  const intro = getCityIntro(s, city, "fr-CA");
+  const intro = getCityIntro(s, city, "it-IT");
 
   const breadcrumb = buildFrBreadcrumb([
     { name: "Accueil", href: "/fr" },
@@ -1369,7 +1368,7 @@ function buildCityBodyHtmlFr(s: SectorData, city: CityData): string {
     </div>
   </section>`;
 
-  const sOsservatorio = intel ? buildOsservatorio(s, city, intel, "fr-CA") : "";
+  const sOsservatorio = intel ? buildOsservatorio(s, city, intel, "it-IT") : "";
 
   const sBenefits = `<section class="py-20 bg-gray-50">
     <div class="container mx-auto px-4 sm:px-6 lg:px-8">
@@ -1386,7 +1385,7 @@ function buildCityBodyHtmlFr(s: SectorData, city: CityData): string {
     </div>
   </section>`;
 
-  const howItWorksSteps = getCityHowItWorksSteps(cityName, "fr-CA");
+  const howItWorksSteps = getCityHowItWorksSteps(cityName, "it-IT");
   const sHowItWorks = `<section class="py-20 bg-white">
     <div class="container mx-auto px-4 sm:px-6 lg:px-8 max-w-4xl">
       <div class="text-center mb-14">
@@ -1416,7 +1415,7 @@ function buildCityBodyHtmlFr(s: SectorData, city: CityData): string {
     </div>
   </section>`;
 
-  const cityFaqItems = getCityFaqItems(s, city, "fr-CA");
+  const cityFaqItems = getCityFaqItems(s, city, "it-IT");
   const sFaq = `<section class="py-20 bg-gray-50">
     <div class="container mx-auto px-4 sm:px-6 lg:px-8 max-w-3xl">
       <div class="text-center mb-12">
@@ -1431,7 +1430,7 @@ function buildCityBodyHtmlFr(s: SectorData, city: CityData): string {
     </div>
   </section>`;
 
-  const nearbyLinks = getNearbyAnchors(s, city, "fr-CA")
+  const nearbyLinks = getNearbyAnchors(s, city, "it-IT")
     .map(({ slug, anchorText }) => `<a href="/fr/soumissions/${esc(s.frSlug)}/${esc(slug)}/" class="inline-flex items-center gap-1.5 rounded-full border border-gray-200 px-3.5 py-1.5 text-sm text-gray-500 hover:border-violet-300 hover:text-violet-600 transition-colors">${esc(anchorText)}</a>`)
     .join("\n          ");
   const sNearby = nearbyLinks ? `<section class="py-16 bg-white border-t border-gray-100">
@@ -1445,8 +1444,8 @@ function buildCityBodyHtmlFr(s: SectorData, city: CityData): string {
     </div>
   </section>` : "";
 
-  const sQuantoCosta = buildQuantoCostaBlock(s, city, intel, "fr-CA");
-  const contextTextFr = getCityContextText(city.slug, "fr-CA");
+  const sQuantoCosta = buildQuantoCostaBlock(s, city, intel, "it-IT");
+  const contextTextFr = getCityContextText(city.slug, "it-IT");
   const sContext = contextTextFr ? `<section class="py-10 bg-violet-50/50 border-y border-violet-100/60">
   <div class="container mx-auto px-4 sm:px-6 lg:px-8 max-w-3xl">
     <div class="flex gap-4 items-start">
@@ -1461,7 +1460,7 @@ function buildCityBodyHtmlFr(s: SectorData, city: CityData): string {
   </div>
 </section>` : "";
 
-  const sameCityOtherSectors = getSameCityOtherSectors(s.slug, city.slug, 6, "fr-CA");
+  const sameCityOtherSectors = getSameCityOtherSectors(s.slug, city.slug, 6, "it-IT");
   const sSameCityOther = sameCityOtherSectors.length ? `<section class="py-14 bg-gray-50 border-t border-gray-100">
     <div class="container mx-auto px-4 sm:px-6 lg:px-8 max-w-4xl">
       <h2 class="text-base font-semibold text-gray-500 mb-5 text-center">Autres services à ${esc(cityName)}</h2>
@@ -1475,7 +1474,7 @@ function buildCityBodyHtmlFr(s: SectorData, city: CityData): string {
     </div>
   </section>` : "";
 
-  const ctaTexts = getCityCtaTexts(getCityCtaVariant(s, city), cityName, "fr-CA");
+  const ctaTexts = getCityCtaTexts(getCityCtaVariant(s, city), cityName, "it-IT");
   const sCta = `<section class="py-24 bg-gray-50">
     <div class="container mx-auto px-4 sm:px-6 lg:px-8 text-center max-w-2xl">
       <h2 class="text-3xl font-bold text-gray-900 mb-4">${esc(ctaTexts.headingPrefix)}<span class="gradient-text">${esc(ctaTexts.headingGradient)}</span></h2>
@@ -1523,7 +1522,7 @@ if (!existsSync(ssrEntry)) {
   console.error("dist/server/entry-server.js not found — run `vite build --ssr src/entry-server.tsx --outDir dist/server` first");
   process.exit(1);
 }
-const { renderPage } = (await import(pathToFileURL(ssrEntry).href)) as { renderPage: (path: string, lang: "en" | "fr") => Promise<string> };
+const { renderPage } = (await import(pathToFileURL(ssrEntry).href)) as { renderPage: (path: string, lang: "it") => Promise<string> };
 function stripHoistedHead(html: string): string {
   return html.replace(/^(?:\s*(?:<(?:link|meta)\b[^>]*\/?>|<title>[^<]*<\/title>))+/, "");
 }
@@ -1556,7 +1555,7 @@ const homepageSoftwareSchema = {
   url: `${BASE_URL}/`,
   applicationCategory: "BusinessApplication",
   operatingSystem: "Web",
-  offers: { "@type": "Offer", price: "0", priceCurrency: "CAD", description: "Free trial available" },
+  offers: { "@type": "Offer", price: "0", priceCurrency: "EUR", description: "Free trial available" },
   audience: { "@type": "BusinessAudience", audienceType: "Contractors, Small Businesses, Tradespeople, Freelancers" },
   inLanguage: "en",
   provider: { "@type": "Organization", name: "quoteai", url: BASE_URL },
@@ -1583,43 +1582,13 @@ const homepageHeadBlock = buildHeadBlock({
   lang: "en",
   altUrl: `${BASE_URL}/fr/`,
 });
-const homepageHtml = injectAppPreload(injectBody(injectHead(template, homepageHeadBlock), stripHoistedHead(await renderPage("/", "en"))));
+const homepageHtml = injectAppPreload(injectBody(injectHead(template, homepageHeadBlock), stripHoistedHead(await renderPage("/", "it"))));
 writeFileSync(templatePath, homepageHtml, "utf-8");
 count++;
 console.log("  ✓ Homepage prerendered");
 
 // French homepage
-const homepageWebSiteSchemaFr = {
-  ...homepageWebSiteSchema,
-  description: "Logiciel IA pour soumissions professionnelles en 30 secondes. Conçu pour les entrepreneurs, petites entreprises et travailleurs autonomes canadiens.",
-  inLanguage: "fr",
-  potentialAction: {
-    "@type": "SearchAction",
-    target: { "@type": "EntryPoint", urlTemplate: `${BASE_URL}/fr/soumissions/{search_term_string}` },
-    "query-input": "required name=search_term_string",
-  },
-};
-const homepageSoftwareSchemaFr = {
-  ...homepageSoftwareSchema,
-  description: "Logiciel de soumission par IA pour les entrepreneurs, petites entreprises et artisans canadiens.",
-  url: `${BASE_URL}/fr/`,
-  offers: { "@type": "Offer", price: "0", priceCurrency: "CAD", description: "Essai gratuit disponible" },
-  audience: { "@type": "BusinessAudience", audienceType: "Entrepreneurs, petites entreprises, artisans, travailleurs autonomes" },
-  inLanguage: "fr",
-};
-const homepageHeadBlockFr = buildHeadBlock({
-  title: "quoteai – Soumissions en ligne pour entrepreneurs | IA en 30s",
-  description: "Créez des soumissions professionnelles en 30 secondes avec l'IA. Logiciel de soumission pour les entrepreneurs, petites entreprises et artisans canadiens. Essayez gratuitement.",
-  canonical: `${BASE_URL}/fr/`,
-  ogImagePath: "/opengraph.jpg",
-  jsonLd: [homepageWebSiteSchemaFr, homepageSoftwareSchemaFr],
-  lang: "fr",
-  altUrl: `${BASE_URL}/`,
-});
-const homepageHtmlFr = injectAppPreload(injectBody(injectHead(template, homepageHeadBlockFr, "fr"), stripHoistedHead(await renderPage("/fr", "fr"))));
-writeRoute("fr", homepageHtmlFr);
-count++;
-console.log("  ✓ French homepage prerendered");
+// V2-2: nessuna homepage /fr (sito monolingua).
 
 // Phase 2–8: Sector + city pages
 for (const [sectorSlug, sector] of Object.entries(SECTORS)) {
@@ -1636,37 +1605,20 @@ for (const [sectorSlug, sector] of Object.entries(SECTORS)) {
       : sector.metaDescription;
 
   const canonical = `${BASE_URL}/quotes/${sectorSlug}/`;
-  const frCanonical = `${BASE_URL}/fr/soumissions/${sector.frSlug}/`;
   const jsonLd = buildSectorJsonLd(sector);
   const ogImagePath = ogImage(sectorSlug);
 
-  const headBlock = buildHeadBlock({ title, description, canonical, ogImagePath, jsonLd, lang: "en", altUrl: frCanonical });
+  const headBlock = buildHeadBlock({ title, description, canonical, ogImagePath, jsonLd, lang: "en" });
   const bodyHtml = buildSectorBodyHtml(sector);
   const html = injectBody(injectHead(template, headBlock), bodyHtml);
   writeRoute(`quotes/${sectorSlug}`, html);
   count++;
 
-  // French sector page (every sector gets one)
-  const frHeadBlock = buildHeadBlock({
-    title: sector.fr.titleTag,
-    description: sector.fr.metaDescription,
-    canonical: frCanonical,
-    ogImagePath,
-    jsonLd: buildSectorJsonLdFr(sector),
-    lang: "fr",
-    altUrl: canonical,
-  });
-  const frBodyHtml = buildSectorBodyHtmlFr(sector);
-  const frHtml = injectBody(injectHead(template, frHeadBlock, "fr"), frBodyHtml);
-  writeRoute(`fr/soumissions/${sector.frSlug}`, frHtml);
-  count++;
 
   if (!CITY_SECTORS.includes(sectorSlug)) continue;
 
   for (const city of ACTIVE_CITIES) {
-    const isFrenchPrimaryCity = FRENCH_PRIMARY_CITY_SLUGS.includes(city.slug);
     const cityCanonical = `${BASE_URL}/quotes/${sectorSlug}/${city.slug}/`;
-    const cityFrCanonical = `${BASE_URL}/fr/soumissions/${sector.frSlug}/${city.slug}/`;
     const cityTitle = getCityTitle(sector, city.name, city.slug);
     const cityDesc = getCityDesc(sector, city.name, city.slug, city.region);
     const cityJsonLd = buildCityJsonLd(sector, city);
@@ -1678,7 +1630,6 @@ for (const [sectorSlug, sector] of Object.entries(SECTORS)) {
       ogImagePath: ogImage(sectorSlug),
       jsonLd: cityJsonLd,
       lang: "en",
-      altUrl: isFrenchPrimaryCity ? cityFrCanonical : undefined,
     });
     // Phase 68: the 210 city pages and the 23 blog pages were written without the site header/footer — in production they showed only the (Italian) nav shell and no footer.
     const cityBodyHtml = wrapInPublicLayout(buildCityBodyHtml(sector, city));
@@ -1686,31 +1637,9 @@ for (const [sectorSlug, sector] of Object.entries(SECTORS)) {
     writeRoute(`quotes/${sectorSlug}/${city.slug}`, cityHtml);
     count++;
 
-    // French city page — only for the French-primary Quebec cities (see
-    // FRENCH_PRIMARY_CITY_SLUGS in seo-data.ts). Other cities stay
-    // English-only for now; their hreflang tags above correctly omit fr-CA.
-    if (!isFrenchPrimaryCity) continue;
-
-    const cityTitleFr = getCityTitle(sector, city.name, city.slug, "fr-CA");
-    const cityDescFr = getCityDesc(sector, city.name, city.slug, city.region, "fr-CA");
-    const cityJsonLdFr = buildCityJsonLd(sector, city, "fr-CA");
-
-    const cityHeadBlockFr = buildHeadBlock({
-      title: cityTitleFr,
-      description: cityDescFr,
-      canonical: cityFrCanonical,
-      ogImagePath: ogImage(sectorSlug),
-      jsonLd: cityJsonLdFr,
-      lang: "fr",
-      altUrl: cityCanonical,
-    });
-    const cityBodyHtmlFr = buildCityBodyHtmlFr(sector, city);
-    const cityHtmlFr = injectBody(injectHead(template, cityHeadBlockFr, "fr"), cityBodyHtmlFr);
-    writeRoute(`fr/soumissions/${sector.frSlug}/${city.slug}`, cityHtmlFr);
-    count++;
   }
 }
-console.log("  ✓ French sector + city pages prerendered");
+console.log("  ✓ Sector + city pages prerendered");
 
 // ─── Blog JSON-LD builders ───────────────────────────────────────────────────
 
@@ -1830,7 +1759,7 @@ function buildBlogListBodyHtml(): string {
 
   const cards = BLOG_ARTICLES.map((a) => {
     const catStyle = BLOG_CATEGORY_STYLE[a.category] ?? "background:#f3f4f6;color:#374151";
-    const dateStr = new Date(a.publishedAt).toLocaleDateString("en-CA", { day: "numeric", month: "long", year: "numeric" });
+    const dateStr = new Date(a.publishedAt).toLocaleDateString("it-IT", { day: "numeric", month: "long", year: "numeric" });
     return `<a href="/blog/${esc(a.slug)}/" class="group flex flex-col bg-white rounded-2xl border border-gray-100 hover:border-violet-200 hover:shadow-md transition-all duration-200 overflow-hidden">
       <div class="p-6 flex flex-col flex-1">
         <div class="flex items-center justify-between mb-4">
@@ -1892,7 +1821,7 @@ function buildBlogArticleBodyHtml(article: BlogArticle): string {
 </nav>`;
 
   const catStyle = BLOG_CATEGORY_STYLE[article.category] ?? "background:#f3f4f6;color:#374151";
-  const dateStr = new Date(article.publishedAt).toLocaleDateString("en-CA", { day: "numeric", month: "long", year: "numeric" });
+  const dateStr = new Date(article.publishedAt).toLocaleDateString("it-IT", { day: "numeric", month: "long", year: "numeric" });
 
   const header = `<header style="background:linear-gradient(135deg,rgba(124,58,237,0.04),rgba(6,182,212,0.04))" class="pt-14 pb-10 border-b border-gray-100">
   <div class="container mx-auto px-4 sm:px-6 lg:px-8 max-w-3xl">
@@ -2076,7 +2005,7 @@ function buildBlogCategoryBodyHtml(category: BlogCategory): string {
 
   const cards = articles.map((a) => {
     const cs = BLOG_CATEGORY_COLOR_STYLE[a.category] ?? "background:#f3f4f6;color:#374151";
-    const dateStr = new Date(a.publishedAt).toLocaleDateString("en-CA", { day: "numeric", month: "long", year: "numeric" });
+    const dateStr = new Date(a.publishedAt).toLocaleDateString("it-IT", { day: "numeric", month: "long", year: "numeric" });
     return `<a href="/blog/${esc(a.slug)}/" class="group flex flex-col bg-white rounded-2xl border border-gray-100 hover:border-violet-200 hover:shadow-md transition-all duration-200 overflow-hidden">
       <div class="p-6 flex flex-col flex-1">
         <div class="flex items-center justify-between mb-4">
@@ -2259,7 +2188,7 @@ await buildStaticPageHtml({
   description: "quoteai exists to free Canadian tradespeople from paperwork. Learn our mission: professional quotes in 30 seconds thanks to AI.",
   path: "/chi-siamo/",
   jsonLd: [chiSiamoOrgJsonLd, buildBreadcrumbJsonLd("About Us", "/chi-siamo/")],
-  bodyHtml: stripHoistedHead(await renderPage("/chi-siamo", "en")),
+  bodyHtml: stripHoistedHead(await renderPage("/chi-siamo", "it")),
 });
 
 // /contatti/
@@ -2286,7 +2215,7 @@ await buildStaticPageHtml({
   description: "Have questions about quoteai? Contact us by email or WhatsApp. We're here to help you generate professional quotes faster.",
   path: "/contatti/",
   jsonLd: [contattiJsonLd, buildBreadcrumbJsonLd("Contact", "/contatti/")],
-  bodyHtml: stripHoistedHead(await renderPage("/contatti", "en")),
+  bodyHtml: stripHoistedHead(await renderPage("/contatti", "it")),
 });
 
 // /privacy-policy/ — mirrors src/pages/privacy-policy.tsx (the real live route)
@@ -2296,7 +2225,7 @@ await buildStaticPageHtml({
   description: "QuoteAI's privacy policy — how we collect, use, and protect your personal information.",
   path: "/privacy-policy/",
   jsonLd: [buildWebPageJsonLd("Privacy Policy", "QuoteAI's privacy policy — how we collect, use, and protect your personal information.", "/privacy-policy/"), buildBreadcrumbJsonLd("Privacy Policy", "/privacy-policy/")],
-  bodyHtml: stripHoistedHead(await renderPage("/privacy-policy", "en")),
+  bodyHtml: stripHoistedHead(await renderPage("/privacy-policy", "it")),
 });
 
 // /terms/ — mirrors src/pages/terms.tsx (the real live route)
@@ -2306,7 +2235,7 @@ await buildStaticPageHtml({
   description: "Terms and conditions for using the QuoteAI platform to generate AI-powered quotes.",
   path: "/terms/",
   jsonLd: [buildWebPageJsonLd("Terms of Service", "Terms and conditions for using the QuoteAI platform to generate AI-powered quotes.", "/terms/"), buildBreadcrumbJsonLd("Terms of Service", "/terms/")],
-  bodyHtml: stripHoistedHead(await renderPage("/terms", "en")),
+  bodyHtml: stripHoistedHead(await renderPage("/terms", "it")),
 });
 
 // /whatsapp/
@@ -2316,7 +2245,7 @@ await buildStaticPageHtml({
   description: "Describe the job by voice, text, or photo on WhatsApp. quoteai generates a professional quote with a PDF in 60 seconds.",
   path: "/whatsapp/",
   jsonLd: [buildWebPageJsonLd("Quotes on WhatsApp", "Describe the job by voice, text, or photo on WhatsApp. quoteai generates a professional quote with a PDF in 60 seconds.", "/whatsapp/"), buildBreadcrumbJsonLd("WhatsApp", "/whatsapp/")],
-  bodyHtml: stripHoistedHead(await renderPage("/whatsapp", "en")),
+  bodyHtml: stripHoistedHead(await renderPage("/whatsapp", "it")),
 });
 
 // /mappa-sito/
@@ -2326,7 +2255,7 @@ await buildStaticPageHtml({
   description: "The complete site map for quoteai. Find every static page, blog article, and guide for contractors and tradespeople across Canadian cities.",
   path: "/mappa-sito/",
   jsonLd: [buildWebPageJsonLd("Site Map", "The complete site map for quoteai.ca. Find every static page, blog article, and guide for contractors and tradespeople across Canadian cities.", "/mappa-sito/"), buildBreadcrumbJsonLd("Site Map", "/mappa-sito/")],
-  bodyHtml: stripHoistedHead(await renderPage("/mappa-sito", "en")),
+  bodyHtml: stripHoistedHead(await renderPage("/mappa-sito", "it")),
 });
 
 console.log(`  ✓ 6 SPA pages prerendered (chi-siamo, contatti, privacy-policy, terms, whatsapp, mappa-sito)`);
@@ -2334,36 +2263,36 @@ console.log(`  ✓ 6 SPA pages prerendered (chi-siamo, contatti, privacy-policy,
 // Phase 70: help centre — index + one page per article, rendered by the same
 // React tree (the page's own SeoHead title/description are what the head
 // block repeats here; keep them identical so crawler and hydrated DOM agree).
-const helpIndexTitle = translations.en["help.seoTitle"];
-const helpIndexDescription = translations.en["help.seoDescription"];
+const helpIndexTitle = translations.it["help.seoTitle"];
+const helpIndexDescription = translations.it["help.seoDescription"];
 await buildStaticPageHtml({
   slug: "help",
   title: helpIndexTitle,
   description: helpIndexDescription,
   path: "/help/",
   jsonLd: [buildWebPageJsonLd("Help Centre", helpIndexDescription, "/help/", "CollectionPage"), buildBreadcrumbJsonLd("Help centre", "/help/")],
-  bodyHtml: stripHoistedHead(await renderPage("/help", "en")),
+  bodyHtml: stripHoistedHead(await renderPage("/help", "it")),
 });
 for (const article of HELP_ARTICLES) {
   const path = `/help/${article.slug}/`;
   await buildStaticPageHtml({
     slug: `help/${article.slug}`,
-    title: `${article.title.en} | quoteai`,
-    description: article.summary.en,
+    title: `${article.title.it} | quoteai`,
+    description: article.summary.it,
     path,
     jsonLd: [
-      buildWebPageJsonLd(article.title.en, article.summary.en, path, "TechArticle"),
+      buildWebPageJsonLd(article.title.it, article.summary.it, path, "TechArticle"),
       {
         "@context": "https://schema.org",
         "@type": "BreadcrumbList",
         itemListElement: [
           { "@type": "ListItem", position: 1, name: "Home", item: `${BASE_URL}/` },
           { "@type": "ListItem", position: 2, name: "Help centre", item: `${BASE_URL}/help/` },
-          { "@type": "ListItem", position: 3, name: article.title.en, item: `${BASE_URL}${path}` },
+          { "@type": "ListItem", position: 3, name: article.title.it, item: `${BASE_URL}${path}` },
         ],
       },
     ],
-    bodyHtml: stripHoistedHead(await renderPage(`/help/${article.slug}`, "en")),
+    bodyHtml: stripHoistedHead(await renderPage(`/help/${article.slug}`, "it")),
   });
 }
 console.log(`  ✓ ${HELP_ARTICLES.length + 1} help-centre pages prerendered`);

@@ -8,7 +8,11 @@
 // the same constants the server uses. When one of those changes, change it
 // here too — and bump `updatedAt` so the sitemap lastmod moves.
 
-type HelpLang = "en" | "fr";
+// V2-2: contenuti monolingua. TODO(V2-2c): riscrivere i testi in italiano e
+// per il contesto italiano (IVA, SDI, province) — per ora gli helper tengono
+// il testo inglese e scartano il francese.
+import type { Lang } from "@workspace/config";
+export type HelpLang = Lang;
 export type L = { [K in HelpLang]: string };
 
 export type HelpBlock =
@@ -32,29 +36,28 @@ export interface HelpArticle {
 export type HelpCategory = "start" | "quotes" | "contracts" | "jobs" | "money" | "team" | "growth";
 
 export const HELP_CATEGORIES: Record<HelpCategory, L> = {
-  start: { en: "Getting started", fr: "Premiers pas" },
-  quotes: { en: "Quotes", fr: "Soumissions" },
-  contracts: { en: "Contracts & e-signature", fr: "Contrats et signature électronique" },
-  jobs: { en: "Jobs", fr: "Chantiers" },
-  money: { en: "Invoices & payments", fr: "Factures et paiements" },
-  team: { en: "Team", fr: "Équipe" },
-  growth: { en: "Leads & integrations", fr: "Prospects et intégrations" },
+  start: { it: "Getting started" },
+  quotes: { it: "Quotes" },
+  contracts: { it: "Contracts & e-signature" },
+  jobs: { it: "Jobs" },
+  money: { it: "Invoices & payments" },
+  team: { it: "Team" },
+  growth: { it: "Leads & integrations" },
 };
 
-const p = (en: string, fr: string): HelpBlock => ({ type: "p", text: { en, fr } });
-const h = (en: string, fr: string): HelpBlock => ({ type: "h", text: { en, fr } });
-const note = (en: string, fr: string): HelpBlock => ({ type: "note", text: { en, fr } });
-const steps = (items: Array<[string, string]>): HelpBlock => ({ type: "steps", items: items.map(([en, fr]) => ({ en, fr })) });
-const bullets = (items: Array<[string, string]>): HelpBlock => ({ type: "bullets", items: items.map(([en, fr]) => ({ en, fr })) });
+const p = (it: string, _fr?: string): HelpBlock => ({ type: "p", text: { it } });
+const h = (it: string, _fr?: string): HelpBlock => ({ type: "h", text: { it } });
+const note = (it: string, _fr?: string): HelpBlock => ({ type: "note", text: { it } });
+const steps = (items: Array<[string, string?]>): HelpBlock => ({ type: "steps", items: items.map(([it]) => ({ it })) });
+const bullets = (items: Array<[string, string?]>): HelpBlock => ({ type: "bullets", items: items.map(([it]) => ({ it })) });
 
 export const HELP_ARTICLES: HelpArticle[] = [
   {
     slug: "getting-started",
     category: "start",
-    title: { en: "Set up your business in 10 minutes", fr: "Configurez votre entreprise en 10 minutes" },
+    title: { it: "Set up your business in 10 minutes" },
     summary: {
-      en: "Create your account, fill in the business profile that appears on every quote, contract and invoice, and pick a plan.",
-      fr: "Créez votre compte, remplissez le profil d'entreprise qui apparaît sur chaque soumission, contrat et facture, puis choisissez un forfait.",
+      it: "Create your account, fill in the business profile that appears on every quote, contract and invoice, and pick a plan.",
     },
     updatedAt: "2026-09-21",
     readingTimeMin: 4,
@@ -96,10 +99,9 @@ export const HELP_ARTICLES: HelpArticle[] = [
   {
     slug: "create-a-quote",
     category: "quotes",
-    title: { en: "Create a quote from a description, a voice memo or photos", fr: "Créer une soumission à partir d'une description, d'un mémo vocal ou de photos" },
+    title: { it: "Create a quote from a description, a voice memo or photos" },
     summary: {
-      en: "Describe the job in plain language and get an itemized, taxed quote in about 30 seconds. Then edit it, offer Good/Better/Best options and pick a PDF template.",
-      fr: "Décrivez le travail en langage courant et obtenez une soumission détaillée et taxée en environ 30 secondes. Ensuite, modifiez-la, offrez des options Bon/Meilleur/Excellent et choisissez un modèle de PDF.",
+      it: "Describe the job in plain language and get an itemized, taxed quote in about 30 seconds. Then edit it, offer Good/Better/Best options and pick a PDF template.",
     },
     updatedAt: "2026-09-21",
     readingTimeMin: 5,
@@ -136,10 +138,9 @@ export const HELP_ARTICLES: HelpArticle[] = [
   {
     slug: "send-a-quote-and-get-it-accepted",
     category: "quotes",
-    title: { en: "Send a quote and get it accepted online", fr: "Envoyer une soumission et la faire accepter en ligne" },
+    title: { it: "Send a quote and get it accepted online" },
     summary: {
-      en: "Email the quote or share its link. The customer reviews and accepts on a secure page; automatic follow-ups nudge them on days 2, 5 and 10 until they answer.",
-      fr: "Envoyez la soumission par courriel ou partagez son lien. Le client la consulte et l'accepte sur une page sécurisée; des relances automatiques le rappellent aux jours 2, 5 et 10 jusqu'à sa réponse.",
+      it: "Email the quote or share its link. The customer reviews and accepts on a secure page; automatic follow-ups nudge them on days 2, 5 and 10 until they answer.",
     },
     updatedAt: "2026-09-21",
     readingTimeMin: 4,
@@ -173,10 +174,9 @@ export const HELP_ARTICLES: HelpArticle[] = [
   {
     slug: "contracts-and-e-signature",
     category: "contracts",
-    title: { en: "Contracts and e-signature", fr: "Contrats et signature électronique" },
+    title: { it: "Contracts and e-signature" },
     summary: {
-      en: "An accepted quote becomes a contract built on your province's template. The customer signs online with an email verification code; both of you get the signed PDF and its audit certificate.",
-      fr: "Une soumission acceptée devient un contrat bâti sur le modèle de votre province. Le client signe en ligne avec un code de vérification par courriel; vous recevez tous deux le PDF signé et son certificat d'audit.",
+      it: "An accepted quote becomes a contract built on your province's template. The customer signs online with an email verification code; both of you get the signed PDF and its audit certificate.",
     },
     updatedAt: "2026-09-21",
     readingTimeMin: 6,
@@ -218,10 +218,9 @@ export const HELP_ARTICLES: HelpArticle[] = [
   {
     slug: "jobs-milestones-and-change-orders",
     category: "jobs",
-    title: { en: "Jobs: setup review, milestones and change orders", fr: "Chantiers : révision de la configuration, jalons et avenants" },
+    title: { it: "Jobs: setup review, milestones and change orders" },
     summary: {
-      en: "Every signed contract becomes a job with milestones, a schedule and a budget proposed by the AI. Confirm it in one click, track progress, and handle extras with change orders the customer signs.",
-      fr: "Chaque contrat signé devient un chantier avec des jalons, un calendrier et un budget proposés par l'IA. Confirmez-le en un clic, suivez l'avancement et gérez les extras avec des avenants que le client signe.",
+      it: "Every signed contract becomes a job with milestones, a schedule and a budget proposed by the AI. Confirm it in one click, track progress, and handle extras with change orders the customer signs.",
     },
     updatedAt: "2026-09-21",
     readingTimeMin: 5,
@@ -254,10 +253,9 @@ export const HELP_ARTICLES: HelpArticle[] = [
   {
     slug: "invoices-and-getting-paid",
     category: "money",
-    title: { en: "Invoices, e-Transfer and card payments", fr: "Factures, Virement Interac et paiements par carte" },
+    title: { it: "Invoices, e-Transfer and card payments" },
     summary: {
-      en: "Deposit, progress and final invoices are generated from the contract's payment schedule. Customers pay by Interac e-Transfer or by card; reminders go out at 3, 7 and 14 days past due.",
-      fr: "Les factures de dépôt, d'étape et finale sont générées à partir de l'échéancier du contrat. Les clients paient par Virement Interac ou par carte; des rappels partent 3, 7 et 14 jours après l'échéance.",
+      it: "Deposit, progress and final invoices are generated from the contract's payment schedule. Customers pay by Interac e-Transfer or by card; reminders go out at 3, 7 and 14 days past due.",
     },
     updatedAt: "2026-09-21",
     readingTimeMin: 5,
@@ -300,10 +298,9 @@ export const HELP_ARTICLES: HelpArticle[] = [
   {
     slug: "costs-receipts-and-time",
     category: "jobs",
-    title: { en: "Track costs, scan receipts and log time", fr: "Suivre les coûts, numériser les reçus et enregistrer le temps" },
+    title: { it: "Track costs, scan receipts and log time" },
     summary: {
-      en: "Photograph a receipt and the AI files it against the job. Workers clock in and out from a personal link — no app, no login — and the job's margin updates in real time.",
-      fr: "Photographiez un reçu et l'IA le classe dans le chantier. Les travailleurs pointent depuis un lien personnel — sans application ni connexion — et la marge du chantier se met à jour en temps réel.",
+      it: "Photograph a receipt and the AI files it against the job. Workers clock in and out from a personal link — no app, no login — and the job's margin updates in real time.",
     },
     updatedAt: "2026-09-21",
     readingTimeMin: 4,
@@ -335,10 +332,9 @@ export const HELP_ARTICLES: HelpArticle[] = [
   {
     slug: "team-accounts-and-roles",
     category: "team",
-    title: { en: "Invite your team and set roles", fr: "Inviter votre équipe et définir les rôles" },
+    title: { it: "Invite your team and set roles" },
     summary: {
-      en: "Give office staff, foremen or your accountant their own login with a role that limits what they can see and do. Pro includes 2 seats, Elite 5.",
-      fr: "Donnez au personnel de bureau, aux contremaîtres ou à votre comptable leur propre connexion avec un rôle qui limite ce qu'ils peuvent voir et faire. Pro inclut 2 sièges, Elite 5.",
+      it: "Give office staff, foremen or your accountant their own login with a role that limits what they can see and do. Pro includes 2 seats, Elite 5.",
     },
     updatedAt: "2026-09-21",
     readingTimeMin: 3,
@@ -374,10 +370,9 @@ export const HELP_ARTICLES: HelpArticle[] = [
   {
     slug: "leads-and-follow-ups",
     category: "growth",
-    title: { en: "Leads, follow-ups and review requests", fr: "Prospects, relances et demandes d'avis" },
+    title: { it: "Leads, follow-ups and review requests" },
     summary: {
-      en: "Every quote request lands in the Leads pipeline — from your website widget, WhatsApp, Meta Lead Ads or Google Local Services Ads. Follow up until it is won or lost, within Canada's anti-spam rules.",
-      fr: "Chaque demande de soumission arrive dans le pipeline Prospects — depuis votre widget de site web, WhatsApp, Meta Lead Ads ou Google Local Services Ads. Relancez jusqu'à ce qu'elle soit gagnée ou perdue, dans le respect de la loi anti-pourriel canadienne.",
+      it: "Every quote request lands in the Leads pipeline — from your website widget, WhatsApp, Meta Lead Ads or Google Local Services Ads. Follow up until it is won or lost, within Canada's anti-spam rules.",
     },
     updatedAt: "2026-09-21",
     readingTimeMin: 5,
@@ -409,10 +404,9 @@ export const HELP_ARTICLES: HelpArticle[] = [
   {
     slug: "integrations-and-imports",
     category: "growth",
-    title: { en: "Integrations and importing your old quotes", fr: "Intégrations et importation de vos anciennes soumissions" },
+    title: { it: "Integrations and importing your old quotes" },
     summary: {
-      en: "Send from your own Gmail, sync milestones to Google Calendar or Outlook, post paid invoices to QuickBooks or Wave, take card payments with Stripe, and import years of past quotes from a spreadsheet or old PDFs.",
-      fr: "Envoyez depuis votre propre Gmail, synchronisez les jalons avec Google Agenda ou Outlook, comptabilisez les factures payées dans QuickBooks ou Wave, acceptez les paiements par carte avec Stripe, et importez des années de soumissions depuis un tableur ou d'anciens PDF.",
+      it: "Send from your own Gmail, sync milestones to Google Calendar or Outlook, post paid invoices to QuickBooks or Wave, take card payments with Stripe, and import years of past quotes from a spreadsheet or old PDFs.",
     },
     updatedAt: "2026-09-21",
     readingTimeMin: 5,

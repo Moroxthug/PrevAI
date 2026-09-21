@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useParams } from "wouter";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
-import { enCA, frCA } from "date-fns/locale";
+import { it } from "date-fns/locale";
 import { Clock, Loader2, Trash2, CheckCircle2, AlertTriangle, Minus, Plus, MapPin, Square } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useLanguage } from "@/i18n/LanguageContext";
@@ -38,11 +38,11 @@ function elapsedLabel(sinceIso: string, now: number) {
  */
 export default function WorkerTimePage() {
   const { token } = useParams<{ token: string }>();
-  const { t, lang, setLang } = useLanguage();
-  const locale = lang === "fr" ? frCA : enCA;
+  const { t, setLang } = useLanguage();
+  const locale = it;
   const queryClient = useQueryClient();
   const { data, isLoading, error } = useQuery({ queryKey: ["worker", token], queryFn: () => workerApi.get(token!), enabled: !!token, retry: false });
-  useEffect(() => { if (data?.language) setLang(data.language); }, [data?.language, setLang]);
+  useEffect(() => { if (data?.language) setLang("it"); }, [data?.language, setLang]);
 
   const [projectId, setProjectId] = useState("");
   const [milestoneId, setMilestoneId] = useState("");
@@ -116,7 +116,6 @@ export default function WorkerTimePage() {
         <div className="max-w-lg mx-auto px-4 py-3 flex items-center justify-between gap-3">
           <div className="min-w-0"><div className="font-bold truncate" style={{ color: "var(--navy)" }}>{data.worker.name}</div><div className="text-xs truncate" style={{ color: "var(--muted-mk)" }}>{data.companyName}</div></div>
           <div className="flex items-center gap-3">
-            <button className="text-xs" style={{ color: "var(--muted-mk)" }} onClick={() => setLang(lang === "fr" ? "en" : "fr")}>{lang === "fr" ? "EN" : "FR"}</button>
             <Logo className="h-5" />
           </div>
         </div>

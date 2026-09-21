@@ -32,7 +32,7 @@ export default function SeoCityLanding() {
   const { t } = useLanguage();
   const [pathname] = useLocation();
   const isFr = isFrenchPath(pathname);
-  const engineLang: EngineLang = isFr ? "fr-CA" : "en-CA";
+  const engineLang: EngineLang = isFr ? "it-IT" : "it-IT";
   const base = cityBasePath(engineLang);
   const params = useParams() as { type?: string; city?: string };
   const rawSlug = params.type ?? "";

@@ -346,7 +346,6 @@ export async function draftFinalInvoice(params: { project: Project; source?: "au
   const billed = await invoicedSubtotalCents(project.id);
   const subtotal = finalInvoiceSubtotalCents({ jobSubtotalCents: jobSubtotal, invoicedSubtotalCents: billed });
   if (subtotal <= 0) return null;
-  const lang = ctx.language;
   const lines: InvoiceLine[] = [lineFrom(term?.label ?? "Saldo finale dei lavori", subtotal)];
   const invoice = await createInvoice({
     userId: project.userId,
@@ -378,7 +377,6 @@ export async function draftHoldbackReleaseInvoice(params: { project: Project; so
   const total = withheld.reduce((s, w) => s + w.holdbackCents, 0);
   if (total <= 0) return null;
   const ctx = await buildInvoiceContext({ userId: project.userId, projectId: project.id });
-  const lang = ctx.language;
   const term = ctx.contract?.variables.paymentSchedule.terms.find((t) => t.trigger === "holdback_release") ?? null;
   const completedAt = project.completedAt ?? new Date();
   const scheduledFor = addDays(completedAt, lienPeriodDays(ctx.province));

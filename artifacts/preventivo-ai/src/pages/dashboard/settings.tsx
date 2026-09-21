@@ -450,8 +450,8 @@ function BillingTab() {
   const isActive = sub?.isActive ?? false;
   const planLabel = isElite ? "Elite" : isPro ? "Pro" : isStarter ? "Starter" : null;
   const planPrice = isElite ? t("dashboard.billing.priceElite") : isPro ? t("dashboard.billing.pricePro") : isStarter ? t("dashboard.billing.priceStarter") : null;
-  const renewalDate = sub?.periodEnd ? new Date(sub.periodEnd).toLocaleDateString("en-CA", { day: "2-digit", month: "long", year: "numeric" }) : null;
-  const resetDate = sub?.quotaResetDate ? new Date(sub.quotaResetDate).toLocaleDateString("en-CA", { day: "2-digit", month: "long" }) : null;
+  const renewalDate = sub?.periodEnd ? new Date(sub.periodEnd).toLocaleDateString("it-IT", { day: "2-digit", month: "long", year: "numeric" }) : null;
+  const resetDate = sub?.quotaResetDate ? new Date(sub.quotaResetDate).toLocaleDateString("it-IT", { day: "2-digit", month: "long" }) : null;
   const subscriptionPlans = Array.isArray(plans) ? plans.filter((p) => !!p.interval) : [];
 
   return (
@@ -1844,7 +1844,7 @@ function FlinksTransactionsCard() {
               </div>
               <div className="flex items-center gap-2">
                 <span className={cn("text-sm font-semibold", tx.amountCents < 0 ? "text-red-600" : "text-emerald-600")}>
-                  {(tx.amountCents / 100).toLocaleString(undefined, { style: "currency", currency: "CAD" })}
+                  {(tx.amountCents / 100).toLocaleString(undefined, { style: "currency", currency: "EUR" })}
                 </span>
                 <span
                   className={cn(

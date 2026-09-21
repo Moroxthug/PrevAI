@@ -34,10 +34,11 @@ function walk(dir: string, out: string[] = []): string[] {
 }
 
 const files = walk(ROOT).filter((f) => !/translations(.dashboard)?.ts$/.test(f));
+// TODO(V2-2f): audit invertito (nessuna stringa UI inglese residua); per ora `en`/`fr` puntano entrambi al dizionario `it`.
 // Phase 68: the dictionary is split (core = public entry bundle, dashboard =
 // lazy chunk). Audits run over the union; §4 below checks the split itself.
-const en = { ...translations.en, ...dashboardTranslations.en };
-const fr = { ...translations.fr, ...dashboardTranslations.fr };
+const en = { ...translations.it, ...dashboardTranslations.it };
+const fr = { ...translations.it, ...dashboardTranslations.it };
 
 // 1. keys used in code
 const used = new Map<string, string[]>(); // key → files
@@ -104,9 +105,9 @@ const entryGraph = (() => {
   return seen;
 })();
 const publicFiles = new Set([...entryGraph, ...reachable(PUBLIC_LAZY_ROOTS)]);
-const duplicateKeys = Object.keys(dashboardTranslations.en).filter((k) => k in translations.en);
+const duplicateKeys = Object.keys(dashboardTranslations.it).filter((k) => k in translations.it);
 const dashboardKeyOnPublicPage = [...used.entries()]
-  .filter(([k]) => k in dashboardTranslations.en && !(k in translations.en))
+  .filter(([k]) => k in dashboardTranslations.it && !(k in translations.it))
   .map(([k, where]) => ({ key: k, files: [...new Set(where.map((w) => w.split(sep).join("/")))].filter((w) => publicFiles.has(w)) }))
   .filter((x) => x.files.length > 0);
 

@@ -749,7 +749,7 @@ export default function AdminPage() {
   }
 
   const registrationOpen = (settings["registration_open"] ?? "true") !== "false";
-  const fmt = (n: number) => new Intl.NumberFormat("en-CA", { style: "currency", currency: "CAD", maximumFractionDigits: 0 }).format(n);
+  const fmt = (n: number) => new Intl.NumberFormat("it-IT", { style: "currency", currency: "EUR", maximumFractionDigits: 0 }).format(n);
 
   // Filter users based on search
   const filteredUsers = users.filter(u =>
@@ -987,7 +987,7 @@ export default function AdminPage() {
                                 <div className="font-semibold text-slate-700">{(u as any).quoteCount ?? 0} {t("admin.quotesAbbrev")}</div>
                                 <div className="text-xs text-emerald-600 font-bold">{Number((u as any).totalCost ?? 0).toFixed(4)} $</div>
                               </td>
-                              <td className="px-5 py-4 text-xs text-slate-400">{new Date(u.createdAt).toLocaleDateString("en-CA", { day: "numeric", month: "short", year: "numeric" })}</td>
+                              <td className="px-5 py-4 text-xs text-slate-400">{new Date(u.createdAt).toLocaleDateString("it-IT", { day: "numeric", month: "short", year: "numeric" })}</td>
                               <td className="px-5 py-4 text-right">
                                 <div className="inline-flex items-center gap-1">
                                   <button
@@ -1071,7 +1071,7 @@ export default function AdminPage() {
                                                   </div>
                                                 </td>
                                                 <td className="px-4 py-3 text-slate-500">
-                                                  {new Date(q.createdAt).toLocaleDateString("en-CA", { day: "numeric", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit" })}
+                                                  {new Date(q.createdAt).toLocaleDateString("it-IT", { day: "numeric", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit" })}
                                                 </td>
                                                 <td className="px-4 py-3">
                                                   <QuoteSourceBadge source={q.source} />
@@ -1087,7 +1087,7 @@ export default function AdminPage() {
                                                   )}
                                                 </td>
                                                 <td className="px-4 py-3 font-semibold text-slate-700">
-                                                  {Number(q.totale || 0).toLocaleString("en-CA", { style: "currency", currency: "CAD" })}
+                                                  {Number(q.totale || 0).toLocaleString("it-IT", { style: "currency", currency: "EUR" })}
                                                 </td>
                                                 <td className="px-4 py-3 text-right font-mono font-semibold text-slate-600">
                                                   {q.apiCost ? `${Number(q.apiCost).toFixed(4)} $` : "0.0000 $"}
@@ -1375,7 +1375,7 @@ export default function AdminPage() {
                         {[
                           { label: t("admin.widgetQuotesGenerated"), value: String(widgetStats.global.totalQuotes), desc: t("admin.totalWidgetRequests"), icon: FileText, color: "text-navy-500", bg: "bg-navy-50" },
                           { label: t("admin.totalAiCost"), value: `$${Number(widgetStats.global.totalCost).toFixed(4)}`, desc: t("admin.estimatedTokenCost"), icon: DollarSign, color: "text-emerald-500", bg: "bg-emerald-50" },
-                          { label: t("admin.totalTokens"), value: widgetStats.global.totalTokens.toLocaleString("en-CA"), desc: `${t("admin.promptPlusCompletion")}: ${widgetStats.global.totalQuotes > 0 ? Math.round(widgetStats.global.totalTokens / widgetStats.global.totalQuotes) : 0} / ${t("admin.call")}`, icon: Bot, color: "text-blue-500", bg: "bg-blue-50" },
+                          { label: t("admin.totalTokens"), value: widgetStats.global.totalTokens.toLocaleString("it-IT"), desc: `${t("admin.promptPlusCompletion")}: ${widgetStats.global.totalQuotes > 0 ? Math.round(widgetStats.global.totalTokens / widgetStats.global.totalQuotes) : 0} / ${t("admin.call")}`, icon: Bot, color: "text-blue-500", bg: "bg-blue-50" },
                         ].map(({ label, value, desc, icon: Icon, color, bg }) => (
                           <div key={label} className="bg-white rounded-2xl border border-slate-100 p-5 shadow-sm">
                             <div className="flex items-center justify-between mb-3">
@@ -1408,7 +1408,7 @@ export default function AdminPage() {
                                   <td className="px-5 py-3.5 font-semibold text-slate-800">{c.companyName || t("admin.noNameVirtual")}</td>
                                   <td className="px-5 py-3.5 font-mono text-xs text-slate-500">{c.apiKey ? `${c.apiKey.slice(0, 15)}...` : t("admin.none")}</td>
                                   <td className="px-5 py-3.5 text-center text-slate-700 font-medium">{c.quotesCount}</td>
-                                  <td className="px-5 py-3.5 text-right text-slate-500">{c.totalTokens.toLocaleString("en-CA")}</td>
+                                  <td className="px-5 py-3.5 text-right text-slate-500">{c.totalTokens.toLocaleString("it-IT")}</td>
                                   <td className="px-5 py-3.5 text-right text-emerald-600 font-semibold">${c.totalCost.toFixed(5)}</td>
                                 </tr>
                               ))}
@@ -1435,7 +1435,7 @@ export default function AdminPage() {
                             <tbody className="divide-y divide-slate-50">
                               {widgetStats.recentCalls.map((call: any) => (
                                 <tr key={call.quoteId} className="hover:bg-slate-50/20 text-xs">
-                                  <td className="px-5 py-3 text-slate-500">{new Date(call.date).toLocaleString("en-CA")}</td>
+                                  <td className="px-5 py-3 text-slate-500">{new Date(call.date).toLocaleString("it-IT")}</td>
                                   <td className="px-5 py-3 font-semibold text-slate-800">{call.companyName || t("admin.virtual")}</td>
                                   <td className="px-5 py-3">
                                     <div className="font-semibold text-slate-800">{call.clientName}</div>
@@ -1446,7 +1446,7 @@ export default function AdminPage() {
                                       Llama 3.3 (Groq)
                                     </span>
                                   </td>
-                                  <td className="px-5 py-3 text-right text-slate-500">{(call.totalTokens || 0).toLocaleString("en-CA")}</td>
+                                  <td className="px-5 py-3 text-right text-slate-500">{(call.totalTokens || 0).toLocaleString("it-IT")}</td>
                                   <td className="px-5 py-3 text-right text-emerald-600 font-semibold">${Number(call.apiCost || 0).toFixed(5)}</td>
                                 </tr>
                               ))}
@@ -1753,7 +1753,7 @@ export default function AdminPage() {
                     <div className="space-y-2">
                       <h3 className="text-sm font-bold text-slate-800">{t("admin.globalSeoScore")}</h3>
                       <p className="text-xs text-slate-400">{t("admin.globalSeoScoreDesc")}</p>
-                      <div className="text-[10px] text-slate-400">{t("admin.lastScan")}: {new Date(seoResult.lastChecked).toLocaleTimeString("en-CA")}</div>
+                      <div className="text-[10px] text-slate-400">{t("admin.lastScan")}: {new Date(seoResult.lastChecked).toLocaleTimeString("it-IT")}</div>
                     </div>
 
                     <div className="flex items-center gap-4">
@@ -2007,7 +2007,7 @@ export default function AdminPage() {
                             <td className="px-4 py-3.5 text-slate-600">{(ev.to || []).join(", ") || "—"}</td>
                             <td className="px-4 py-3.5 text-slate-600">{ev.subject || "—"}</td>
                             <td className="px-4 py-3.5 text-right text-slate-400">
-                              {new Date(ev.createdAt).toLocaleString("en-CA")}
+                              {new Date(ev.createdAt).toLocaleString("it-IT")}
                             </td>
                           </tr>
                         );
@@ -2113,7 +2113,7 @@ export default function AdminPage() {
                               <span className="text-[10px] text-slate-500 truncate">{c.visitorEmail}</span>
                             )}
                             <span className="text-[9px] text-slate-400 self-end">
-                              {new Date(c.updatedAt).toLocaleTimeString("en-CA", { hour: "2-digit", minute: "2-digit" })}
+                              {new Date(c.updatedAt).toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" })}
                             </span>
                           </button>
                         );
@@ -2210,7 +2210,7 @@ export default function AdminPage() {
                                     }`}>
                                       <div className="leading-relaxed whitespace-pre-wrap">{m.content}</div>
                                       <div className={`text-[8px] mt-1 text-right ${isAdminMsg ? "text-navy-200" : "text-slate-400"}`}>
-                                        {new Date(m.createdAt).toLocaleTimeString("en-CA", { hour: "2-digit", minute: "2-digit" })}
+                                        {new Date(m.createdAt).toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" })}
                                       </div>
                                     </div>
                                     {isAdminMsg && (

@@ -15,7 +15,7 @@ import {
 const TERM_TYPES: PaymentTermType[] = ["deposit", "milestone", "completion", "holdback_release"];
 
 const formatCad = (amount: number) =>
-  new Intl.NumberFormat("en-CA", { style: "currency", currency: "CAD" }).format(amount);
+  new Intl.NumberFormat("it-IT", { style: "currency", currency: "EUR" }).format(amount);
 
 /**
  * Editable list of payment tranches. `total` is the quote total the

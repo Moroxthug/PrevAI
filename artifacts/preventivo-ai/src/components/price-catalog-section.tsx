@@ -58,7 +58,7 @@ const EMPTY_FORM: ItemFormData = {
 };
 
 function formatCurrency(n: number) {
-  return new Intl.NumberFormat("en-CA", { style: "currency", currency: "CAD" }).format(n);
+  return new Intl.NumberFormat("it-IT", { style: "currency", currency: "EUR" }).format(n);
 }
 
 interface ParsedItem {

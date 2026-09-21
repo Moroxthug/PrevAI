@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Link, useLocation, useParams, useSearch } from "wouter";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
-import { enCA, frCA } from "date-fns/locale";
+import { it } from "date-fns/locale";
 import {
   ArrowLeft, Briefcase, MapPin, FileSignature, Sparkles, Plus, Trash2, CheckCircle2, Circle, PlayCircle, Receipt, Wallet, Users, FolderOpen, CalendarDays, LayoutDashboard, GitBranch, ExternalLink, Download, Pencil, Check, X, Camera, Archive,
 } from "lucide-react";
@@ -31,8 +31,8 @@ const day = (s: string | null) => (s ? new Date(`${s}T00:00:00`) : null);
 
 export default function JobDetailPage() {
   const { id } = useParams<{ id: string }>();
-  const { t, lang } = useLanguage();
-  const locale = lang === "fr" ? frCA : enCA;
+  const { t } = useLanguage();
+  const locale = it;
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [, navigate] = useLocation();
@@ -163,7 +163,7 @@ function EditableName({ id, name }: { id: string; name: string }) {
   );
 }
 
-function OverviewTab({ data, locale, onGoTo }: { data: JobDetailDto; locale: typeof enCA; onGoTo: (t: Tab) => void }) {
+function OverviewTab({ data, locale, onGoTo }: { data: JobDetailDto; locale: typeof it; onGoTo: (t: Tab) => void }) {
   const { t } = useLanguage();
   const { job, milestones, budget, changeOrders } = data;
   const next = milestones.find((m) => m.status === "in_progress") ?? milestones.find((m) => m.status === "planned");
@@ -264,7 +264,7 @@ function OverviewTab({ data, locale, onGoTo }: { data: JobDetailDto; locale: typ
   );
 }
 
-function ScheduleTab({ data, locale }: { data: JobDetailDto; locale: typeof enCA }) {
+function ScheduleTab({ data, locale }: { data: JobDetailDto; locale: typeof it }) {
   const { t } = useLanguage();
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -374,7 +374,7 @@ function TaskList({ tasks, onToggle, onDelete }: { tasks: TaskDto[]; onToggle: (
   );
 }
 
-function ChangesTab({ data, locale, onNew }: { data: JobDetailDto; locale: typeof enCA; onNew: () => void }) {
+function ChangesTab({ data, locale, onNew }: { data: JobDetailDto; locale: typeof it; onNew: () => void }) {
   const { t } = useLanguage();
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -420,7 +420,7 @@ function ChangesTab({ data, locale, onNew }: { data: JobDetailDto; locale: typeo
   );
 }
 
-function DocumentsTab({ data, locale }: { data: JobDetailDto; locale: typeof enCA }) {
+function DocumentsTab({ data, locale }: { data: JobDetailDto; locale: typeof it }) {
   const { t } = useLanguage();
   const { job, changeOrders, costs } = data;
   const receipts = costs.entries.filter((e) => e.source === "receipt" && e.sourceDocumentId);

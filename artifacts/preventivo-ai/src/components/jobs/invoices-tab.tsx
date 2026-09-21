@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useLocation } from "wouter";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { enCA } from "date-fns/locale";
+import { it } from "date-fns/locale";
 import { Plus, Receipt, CheckCircle2, Circle, Loader2, Lock } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
@@ -17,7 +17,7 @@ import { NewInvoiceDialog } from "@/components/invoices/invoice-dialogs";
  * and the list of the job's invoices. Missing invoices can be created with
  * one click; the automations normally create them first.
  */
-export function InvoicesTab({ data, locale }: { data: JobDetailDto; locale: typeof enCA }) {
+export function InvoicesTab({ data, locale }: { data: JobDetailDto; locale: typeof it }) {
   const { t } = useLanguage();
   const { toast } = useToast();
   const queryClient = useQueryClient();

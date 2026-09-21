@@ -7,8 +7,8 @@ import { cn } from "@/lib/utils";
 import { useState } from "react";
 import { useLanguage } from "@/i18n/LanguageContext";
 
-const formatCurrency = (v: number, lang: string) =>
-  new Intl.NumberFormat(lang === "fr" ? "fr-CA" : "en-CA", { style: "currency", currency: "CAD", maximumFractionDigits: 0 }).format(v);
+const formatCurrency = (v: number, _lang: string) =>
+  new Intl.NumberFormat("it-IT", { style: "currency", currency: "EUR", maximumFractionDigits: 0 }).format(v);
 
 export default function ClientsPage() {
   const { data: clients, isLoading } = useListClients();
@@ -103,7 +103,7 @@ export default function ClientsPage() {
                       <td><span className={cn("chip", status.cls)}>{status.label}</span></td>
                       <td>
                         <span className="flex items-center gap-2 justify-between">
-                          {new Date(client.lastQuoteDate).toLocaleDateString(lang === "fr" ? "fr-CA" : "en-CA")}
+                          {new Date(client.lastQuoteDate).toLocaleDateString("it-IT")}
                           <ChevronRight className="chev" style={{ color: "var(--faint)" }} />
                         </span>
                       </td>

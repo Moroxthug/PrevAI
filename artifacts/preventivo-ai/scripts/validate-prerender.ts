@@ -125,7 +125,7 @@ function validateHtml(filePath: string, html: string): string[] {
   if (charsetAt === -1) errors.push("Missing <meta charset>");
   else if (charsetAt !== firstTag) errors.push("<meta charset> is not the first element in <head>");
   const lang = html.match(/<html lang="([^"]*)"/)?.[1];
-  if (rel.startsWith("fr/") ? lang !== "fr-CA" : lang !== "en-CA") errors.push(`<html lang="${lang}"> does not match the route`);
+  if (rel.startsWith("fr/") ? lang !== "it-IT" : lang !== "it-IT") errors.push(`<html lang="${lang}"> does not match the route`);
   return errors;
 }
 

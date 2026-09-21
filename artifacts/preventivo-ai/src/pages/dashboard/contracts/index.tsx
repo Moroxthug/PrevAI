@@ -3,7 +3,7 @@ import { rowLink } from "@/lib/row-link";
 import { Link, useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { format } from "date-fns";
-import { enCA, frCA } from "date-fns/locale";
+import { it } from "date-fns/locale";
 import { FileSignature, ChevronRight } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
@@ -22,8 +22,8 @@ function statusChip(status: ContractDto["status"], t: (key: string) => string): 
 }
 
 export default function ContractsListPage() {
-  const { t, lang } = useLanguage();
-  const locale = lang === "fr" ? frCA : enCA;
+  const { t } = useLanguage();
+  const locale = it;
   const [, navigate] = useLocation();
   const { data, isLoading } = useQuery({ queryKey: ["contracts"], queryFn: contractsApi.list });
   const [filter, setFilter] = useState<Filter>("all");

@@ -1835,9 +1835,9 @@ const CITY_DESC_FORMULAS_FR: Array<(label: string, labelPlural: string, city: st
 // Google truncates titles at ~70 chars; Semrush flags anything longer.
 const MAX_TITLE_LENGTH = 70;
 
-export function getCityTitle(sector: SectorData, cityName: string, citySlug: string, lang: "en-CA" | "fr-CA" = "en-CA"): string {
+export function getCityTitle(sector: SectorData, cityName: string, citySlug: string, lang: "it-IT" | "it-IT" = "it-IT"): string {
   const hash = strHash(sector.slug + citySlug);
-  if (lang === "fr-CA") {
+  if (lang === "it-IT") {
     const formula = CITY_TITLE_FORMULAS_FR[hash % CITY_TITLE_FORMULAS_FR.length];
     const title = formula(sector.fr.label, sector.fr.labelPlural, cityName);
     if (title.length <= MAX_TITLE_LENGTH) return title;
@@ -1849,9 +1849,9 @@ export function getCityTitle(sector: SectorData, cityName: string, citySlug: str
   return `Quotes for ${sector.labelPlural} in ${cityName} | quoteai`;
 }
 
-export function getCityDesc(sector: SectorData, cityName: string, citySlug: string, region: string, lang: "en-CA" | "fr-CA" = "en-CA"): string {
+export function getCityDesc(sector: SectorData, cityName: string, citySlug: string, region: string, lang: "it-IT" | "it-IT" = "it-IT"): string {
   const hash = strHash(sector.slug + citySlug + "d");
-  if (lang === "fr-CA") {
+  if (lang === "it-IT") {
     const formula = CITY_DESC_FORMULAS_FR[hash % CITY_DESC_FORMULAS_FR.length];
     return formula(sector.fr.label, sector.fr.labelPlural, cityName, region);
   }
@@ -2042,7 +2042,7 @@ export const RELATED_SECTORS: Record<string, { slug: string; label: string }[]> 
  * Hand-written "local market" copy per city. Shape is lang-aware ({ en, fr }).
  * `fr` is filled in for the French-primary cities (see
  * FRENCH_PRIMARY_CITY_SLUGS) — getCityContextText() in seo-render-engine.ts
- * resolves it when called with lang="fr-CA". Non-Quebec cities only have
+ * resolves it when called with lang="it-IT". Non-Quebec cities only have
  * `en` populated; getCityContextText() falls back to `en` when `fr` is
  * missing.
  */

@@ -202,7 +202,6 @@ router.post("/sign/:token/complete", signLimiter, async (req, res) => {
       res.status(400).json({ error: "invalid_signature" });
       return;
     }
-    const lang = loaded.contract.language;
     const consentText = "Ho letto il contratto, compreso il mio diritto di recesso, e accetto di firmarlo elettronicamente. La mia firma elettronica ha lo stesso valore di una firma autografa.";
     await db
       .update(contractSignersTable)

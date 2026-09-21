@@ -3,7 +3,7 @@ import { useState } from "react";
 import { Link } from "wouter";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
-import { enCA } from "date-fns/locale";
+import { it } from "date-fns/locale";
 import { Plus, Trash2, Check, X, Clock, Wrench, Users, ExternalLink, MapPin, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
@@ -28,7 +28,7 @@ const tight = { padding: "8px 12px", fontSize: 13.5 } as const;
  * reject / add), and equipment usage. Rates and the worker register live on
  * /dashboard/team.
  */
-export function TeamTab({ data, locale }: { data: JobDetailDto; locale: typeof enCA }) {
+export function TeamTab({ data, locale }: { data: JobDetailDto; locale: typeof it }) {
   const { t } = useLanguage();
   const { toast } = useToast();
   const queryClient = useQueryClient();

@@ -17,7 +17,7 @@ const ALLOWED_TYPES = ["image/svg+xml", "image/png", "image/jpeg", "image/jpg"];
 const MAX_SIZE_MB = 2;
 
 const DEFAULT_SCHEDULE: PaymentSchedule = {
-  currency: "CAD",
+  currency: "EUR",
   derived: false,
   holdback: { enabled: false, percent: 10 },
   terms: [
@@ -29,7 +29,7 @@ const DEFAULT_SCHEDULE: PaymentSchedule = {
 };
 
 export default function OnboardingPage() {
-  const { t, lang } = useLanguage();
+  const { t } = useLanguage();
   useDocumentTitle(`${t("onboarding.title")} · QuoteAI`);
   const { isLoaded, isSignedIn, userId } = useAuth();
   const [, setLocation] = useLocation();
@@ -266,7 +266,7 @@ export default function OnboardingPage() {
                     >
                       <option value="">{t("onboarding.provinceSelect")}</option>
                       {CANADIAN_PROVINCES.map((p) => (
-                        <option key={p.code} value={p.code}>{lang === "fr" ? p.fr : p.en}</option>
+                        <option key={p.code} value={p.code}>{p.name}</option>
                       ))}
                     </select>
                   </div>

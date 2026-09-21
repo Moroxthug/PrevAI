@@ -177,7 +177,7 @@ type AttachmentRow = typeof quoteAttachmentsTable.$inferSelect;
 
 type VariantRow = typeof quoteVariantsTable.$inferSelect;
 
-export function serializeQuoteVariant(v: VariantRow, province: string | null = null) {
+export function serializeQuoteVariant(v: VariantRow, _province: string | null = null) {
   return {
     id: v.id,
     quoteId: v.quoteId,

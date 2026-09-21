@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Link, useLocation, useParams } from "wouter";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { addDays, differenceInCalendarDays, format } from "date-fns";
-import { enCA, frCA } from "date-fns/locale";
+import { it } from "date-fns/locale";
 import { Sparkles, ArrowLeft, Loader2, Plus, Trash2, ChevronUp, ChevronDown, CheckCircle2, RefreshCw, FileSignature, Wand2 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
@@ -27,8 +27,8 @@ function toDrafts(d: JobDetailDto): { milestones: MilestoneDraft[]; budget: Budg
 
 export default function JobSetupPage() {
   const { id } = useParams<{ id: string }>();
-  const { t, lang } = useLanguage();
-  const locale = lang === "fr" ? frCA : enCA;
+  const { t } = useLanguage();
+  const locale = it;
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [, navigate] = useLocation();

@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { format } from "date-fns";
-import { enCA } from "date-fns/locale";
+import { it } from "date-fns/locale";
 import { Bar, BarChart, CartesianGrid, Cell, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { AlertTriangle, CheckCircle2, Clock, TrendingDown, TrendingUp } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -13,7 +13,7 @@ import { AXIS_TICK, ChartCard, Empty, LegendRow, SERIES, STATUS, TOOLTIP_STYLE, 
 const day = (s: string | null) => (s ? new Date(`${s}T00:00:00`) : null);
 
 /** Overview-tab insights: margin & schedule health, budget vs actual, cost curve, milestone slips. */
-export function OverviewCharts({ jobId, locale, jobStatus }: { jobId: string; locale: typeof enCA; jobStatus: string }) {
+export function OverviewCharts({ jobId, locale, jobStatus }: { jobId: string; locale: typeof it; jobStatus: string }) {
   const { data, isLoading } = useQuery({ queryKey: ["job-analytics", jobId], queryFn: () => analyticsApi.job(jobId) });
   if (isLoading || !data) return <div className="grid md:grid-cols-3 gap-4"><Skeleton className="h-24 rounded-[var(--radius-mk)]" /><Skeleton className="h-24 rounded-[var(--radius-mk)]" /><Skeleton className="h-24 rounded-[var(--radius-mk)]" /></div>;
   return (
@@ -28,7 +28,7 @@ export function OverviewCharts({ jobId, locale, jobStatus }: { jobId: string; lo
   );
 }
 
-function HealthStrip({ data, locale, jobStatus }: { data: JobAnalyticsDto; locale: typeof enCA; jobStatus: string }) {
+function HealthStrip({ data, locale, jobStatus }: { data: JobAnalyticsDto; locale: typeof it; jobStatus: string }) {
   const { t } = useLanguage();
   const ev = data.earned;
   const marginTone = ev.projectedMarginPercent === null ? undefined : ev.projectedMarginPercent < 10 ? "bad" : ev.projectedMarginPercent < 20 ? "warn" : "ok";
@@ -99,7 +99,7 @@ function BudgetChart({ data }: { data: JobAnalyticsDto }) {
   );
 }
 
-function CurveChart({ data, locale }: { data: JobAnalyticsDto; locale: typeof enCA }) {
+function CurveChart({ data, locale }: { data: JobAnalyticsDto; locale: typeof it }) {
   const { t } = useLanguage();
   const rows = data.curve.map((p) => ({ ...p, label: format(day(p.week)!, "d MMM", { locale }) }));
   const hasBudget = data.budgetCents > 0;

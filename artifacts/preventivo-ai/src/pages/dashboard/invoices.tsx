@@ -3,7 +3,7 @@ import { rowLink } from "@/lib/row-link";
 import { Link, useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { format } from "date-fns";
-import { enCA, frCA } from "date-fns/locale";
+import { it } from "date-fns/locale";
 import { Receipt, Search, ChevronRight, Plus, AlertTriangle, Clock } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
@@ -27,8 +27,8 @@ function statusChip(status: InvoiceStatus): string {
 }
 
 export default function InvoicesPage() {
-  const { t, lang } = useLanguage();
-  const locale = lang === "fr" ? frCA : enCA;
+  const { t } = useLanguage();
+  const locale = it;
   const { data: profile } = useGetBusinessProfile();
   const gated = profile ? !hasFeature(profile as never, "invoicing") : false;
   const { data, isLoading, error } = useQuery({ queryKey: ["invoices"], queryFn: invoicesApi.list, enabled: !gated, retry: false });
@@ -131,7 +131,7 @@ export default function InvoicesPage() {
   );
 }
 
-function InvoiceTableRow({ inv, locale }: { inv: InvoiceDto; locale: typeof enCA }) {
+function InvoiceTableRow({ inv, locale }: { inv: InvoiceDto; locale: typeof it }) {
   const { t } = useLanguage();
   const [, navigate] = useLocation();
   return (
@@ -187,7 +187,7 @@ function Aging({ aging }: { aging: AgingDto }) {
   );
 }
 
-export function InvoiceRow({ inv, locale, compact }: { inv: InvoiceDto; locale: typeof enCA; compact?: boolean }) {
+export function InvoiceRow({ inv, locale, compact }: { inv: InvoiceDto; locale: typeof it; compact?: boolean }) {
   const { t } = useLanguage();
   const overdue = inv.status === "overdue";
   const scheduled = inv.status === "draft" && !!inv.scheduledFor && new Date(inv.scheduledFor) > new Date();

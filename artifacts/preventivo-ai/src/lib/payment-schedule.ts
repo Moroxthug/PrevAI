@@ -1,3 +1,4 @@
+import { PROVINCE_ITALIANE } from "@workspace/config";
 // Client-side types/helpers for the structured payment schedule. The server
 // (lib/db/src/schema/payment-schedule.ts) is the source of truth; this file
 // mirrors the shape and the arithmetic so the editor can validate live.
@@ -18,27 +19,14 @@ export type PaymentTerm = {
 };
 
 export type PaymentSchedule = {
-  currency: "CAD";
+  currency: "EUR";
   terms: PaymentTerm[];
   holdback: { enabled: boolean; percent: number };
   derived: boolean;
 };
 
-export const CANADIAN_PROVINCES: { code: string; en: string; fr: string }[] = [
-  { code: "AB", en: "Alberta", fr: "Alberta" },
-  { code: "BC", en: "British Columbia", fr: "Colombie-Britannique" },
-  { code: "MB", en: "Manitoba", fr: "Manitoba" },
-  { code: "NB", en: "New Brunswick", fr: "Nouveau-Brunswick" },
-  { code: "NL", en: "Newfoundland and Labrador", fr: "Terre-Neuve-et-Labrador" },
-  { code: "NS", en: "Nova Scotia", fr: "Nouvelle-Écosse" },
-  { code: "NT", en: "Northwest Territories", fr: "Territoires du Nord-Ouest" },
-  { code: "NU", en: "Nunavut", fr: "Nunavut" },
-  { code: "ON", en: "Ontario", fr: "Ontario" },
-  { code: "PE", en: "Prince Edward Island", fr: "Île-du-Prince-Édouard" },
-  { code: "QC", en: "Quebec", fr: "Québec" },
-  { code: "SK", en: "Saskatchewan", fr: "Saskatchewan" },
-  { code: "YT", en: "Yukon", fr: "Yukon" },
-];
+/** Province italiane per i selettori (sigla + nome), da @workspace/config. */
+export const CANADIAN_PROVINCES: { code: string; name: string }[] = PROVINCE_ITALIANE.map((p) => ({ code: p.sigla, name: p.nome }));
 
 export function newTermId(): string {
   return `t${Math.random().toString(36).slice(2, 8)}`;

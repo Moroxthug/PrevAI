@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
-import { enCA, frCA } from "date-fns/locale";
+import { it } from "date-fns/locale";
 import { Archive as ArchiveIcon } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useLanguage } from "@/i18n/LanguageContext";
@@ -26,11 +26,11 @@ async function fetchArchive(): Promise<{ items: ArchiveItem[] }> {
 }
 
 export default function ArchivePage() {
-  const { t, lang } = useLanguage();
+  const { t } = useLanguage();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { data, isLoading } = useQuery({ queryKey: QUERY_KEY, queryFn: fetchArchive, staleTime: 15_000 });
-  const locale = lang === "fr" ? frCA : enCA;
+  const locale = it;
 
   const restore = useMutation({
     mutationFn: async (item: ArchiveItem) => {

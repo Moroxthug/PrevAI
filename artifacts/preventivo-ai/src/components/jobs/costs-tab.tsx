@@ -2,7 +2,7 @@ import { useMemo, useRef, useState } from "react";
 import { Link } from "wouter";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
-import { enCA } from "date-fns/locale";
+import { it } from "date-fns/locale";
 import { Plus, Trash2, Upload, Loader2, Sparkles, Receipt, Clock, Wrench, Pencil, CheckCircle2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
@@ -17,7 +17,7 @@ const SOURCE_ICON: Record<CostEntryDto["source"], typeof Receipt> = { receipt: R
  * Costs tab: receipt dropzone → AI review queue → confirmed entries, with
  * budget-vs-actual by category on the side.
  */
-export function CostsTab({ data, locale }: { data: JobDetailDto; locale: typeof enCA }) {
+export function CostsTab({ data, locale }: { data: JobDetailDto; locale: typeof it }) {
   const { t } = useLanguage();
   const { toast } = useToast();
   const queryClient = useQueryClient();

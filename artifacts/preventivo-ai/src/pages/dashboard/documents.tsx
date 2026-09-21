@@ -30,10 +30,10 @@ const formatFileSize = (bytes: number | null) => {
 };
 
 const formatCurrency = (v: number) =>
-  new Intl.NumberFormat("en-CA", { style: "currency", currency: "CAD", maximumFractionDigits: 2 }).format(v);
+  new Intl.NumberFormat("it-IT", { style: "currency", currency: "EUR", maximumFractionDigits: 2 }).format(v);
 
 const formatDate = (iso: string) =>
-  new Intl.DateTimeFormat("en-CA", { day: "2-digit", month: "short", year: "numeric" }).format(new Date(iso));
+  new Intl.DateTimeFormat("it-IT", { day: "2-digit", month: "short", year: "numeric" }).format(new Date(iso));
 
 function StatusChip({ status }: { status: UploadedDocument["status"] }) {
   const { t } = useLanguage();

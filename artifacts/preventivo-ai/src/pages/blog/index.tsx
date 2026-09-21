@@ -22,9 +22,9 @@ function ScrollSection({
   );
 }
 
-function formatDate(iso: string, lang: "en" | "fr"): string {
+function formatDate(iso: string, _lang?: string): string {
   const d = new Date(iso);
-  return d.toLocaleDateString(lang === "fr" ? "fr-CA" : "en-CA", { day: "numeric", month: "long", year: "numeric" });
+  return d.toLocaleDateString("it-IT", { day: "numeric", month: "long", year: "numeric" });
 }
 
 const CATEGORY_CHIPS: Record<string, string> = {
