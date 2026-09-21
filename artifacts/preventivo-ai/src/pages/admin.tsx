@@ -1322,7 +1322,7 @@ export default function AdminPage() {
                                                   <pre className="p-4 bg-slate-950 text-slate-200 rounded-xl overflow-x-auto font-mono text-[10px] leading-relaxed max-h-40 whitespace-pre-wrap select-all border border-slate-800">
 {`<!-- PrevAI Widget Funnel -->
 <div id="prevai-widget">
-  <a href="https://prevai.it" rel="noopener">Get your quote with PrevAI</a>
+  <a href="https://prevai.it" rel="noopener">Calcola il tuo preventivo con PrevAI</a>
 </div>
 <script
   src="${typeof window !== "undefined" ? window.location.origin : "https://prevai.it"}/widget.js"
@@ -1332,7 +1332,7 @@ export default function AdminPage() {
                                                   </pre>
                                                   <button
                                                     onClick={() => {
-                                                      const code = `<!-- PrevAI Widget Funnel -->\n<div id="prevai-widget">\n  <a href="https://prevai.it" rel="noopener">Get your quote with PrevAI</a>\n</div>\n<script\n  src="${typeof window !== "undefined" ? window.location.origin : "https://prevai.it"}/widget.js"\n  data-api-key="${(u as any).apiKey}"\n  async\n></script>`;
+                                                      const code = `<!-- PrevAI Widget Funnel -->\n<div id="prevai-widget">\n  <a href="https://prevai.it" rel="noopener">Calcola il tuo preventivo con PrevAI</a>\n</div>\n<script\n  src="${typeof window !== "undefined" ? window.location.origin : "https://prevai.it"}/widget.js"\n  data-api-key="${(u as any).apiKey}"\n  async\n></script>`;
                                                       navigator.clipboard.writeText(code);
                                                       toast({ title: t("admin.codeCopied"), description: t("admin.codeCopiedDesc") });
                                                     }}
@@ -1473,7 +1473,7 @@ export default function AdminPage() {
               {marginLoading ? (
                 <div className="text-sm text-slate-400 py-8 text-center">Loading…</div>
               ) : marginRows.length === 0 ? (
-                <div className="text-sm text-slate-400 py-8 text-center">No metered usage recorded in this window yet.</div>
+                <div className="text-sm text-slate-400 py-8 text-center">Nessun utilizzo registrato in questo periodo.</div>
               ) : (
                 <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-x-auto">
                   <table className="w-full text-sm">
@@ -1901,7 +1901,7 @@ export default function AdminPage() {
                 )}
 
                 {incentives.length === 0 && !loadingIncentives && (
-                  <p className="text-xs text-slate-400">No incentive programs yet.</p>
+                  <p className="text-xs text-slate-400">Ancora nessun incentivo.</p>
                 )}
 
                 <div className="overflow-x-auto">

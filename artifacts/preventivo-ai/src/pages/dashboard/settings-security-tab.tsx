@@ -9,11 +9,11 @@ import { authClient } from "@/lib/auth-client";
 import { securityApi } from "@/lib/security-api";
 
 const AUDIT_ACTION_LABELS: Record<string, string> = {
-  login: "Signed in",
-  "two_factor.enabled": "Two-factor authentication enabled",
-  "two_factor.disabled": "Two-factor authentication disabled",
-  "session.revoked": "Signed out of a session",
-  "session.revoked_all": "Signed out of all other sessions",
+  login: "Accesso effettuato",
+  "two_factor.enabled": "Autenticazione a due fattori attivata",
+  "two_factor.disabled": "Autenticazione a due fattori disattivata",
+  "session.revoked": "Disconnesso da una sessione",
+  "session.revoked_all": "Disconnesso da tutte le altre sessioni",
 };
 
 function TwoFactorCard() {

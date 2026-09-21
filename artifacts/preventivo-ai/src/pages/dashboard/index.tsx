@@ -618,19 +618,19 @@ function DashboardComposer() {
               <div className="grid grid-cols-5 gap-2">
                 <div className="col-span-3 space-y-1">
                   <Label className="text-xs font-medium text-muted-foreground">City</Label>
-                  <Input placeholder="Toronto" value={clientForm.city}
+                  <Input placeholder="Milano" value={clientForm.city}
                     onChange={e => setClientForm(f => ({ ...f, city: e.target.value }))}
                     disabled={isSubmitting} className="h-8 text-sm" />
                 </div>
                 <div className="space-y-1">
                   <Label className="text-xs font-medium text-muted-foreground">{t("dashboard.new.client.province")}</Label>
-                  <Input placeholder="ON" value={clientForm.province}
+                  <Input placeholder="MI" value={clientForm.province}
                     onChange={e => setClientForm(f => ({ ...f, province: e.target.value.toUpperCase() }))}
                     disabled={isSubmitting} className="h-8 text-sm" maxLength={2} />
                 </div>
                 <div className="space-y-1">
                   <Label className="text-xs font-medium text-muted-foreground">{t("dashboard.new.client.postalCode")}</Label>
-                  <Input placeholder="M5H 2N2" value={clientForm.postalCode}
+                  <Input placeholder="20121" value={clientForm.postalCode}
                     onChange={e => setClientForm(f => ({ ...f, postalCode: e.target.value.toUpperCase() }))}
                     disabled={isSubmitting} className="h-8 text-sm" maxLength={7} />
                 </div>
@@ -638,13 +638,13 @@ function DashboardComposer() {
               <div className="grid grid-cols-2 gap-2">
                 <div className="space-y-1">
                   <Label className="text-xs font-medium text-muted-foreground">{t("dashboard.new.client.businessNumber")}</Label>
-                  <Input placeholder="123456789RT0001" value={clientForm.businessNumber}
+                  <Input placeholder="RSSMRA80A01F205X" value={clientForm.businessNumber}
                     onChange={e => setClientForm(f => ({ ...f, businessNumber: e.target.value.toUpperCase() }))}
                     disabled={isSubmitting} className="h-8 text-sm" maxLength={16} />
                 </div>
                 <div className="space-y-1">
                   <Label className="text-xs font-medium text-muted-foreground">{t("dashboard.new.client.gstHst")}</Label>
-                  <Input placeholder="123456789RT0001" value={clientForm.partitaIva}
+                  <Input placeholder="01234567890" value={clientForm.partitaIva}
                     onChange={e => setClientForm(f => ({ ...f, partitaIva: e.target.value }))}
                     disabled={isSubmitting} className="h-8 text-sm" maxLength={15} />
                 </div>

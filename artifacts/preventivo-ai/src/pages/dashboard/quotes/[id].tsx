@@ -1749,7 +1749,7 @@ export default function QuoteDetail() {
               <input
                 id="emailTo"
                 type="email"
-                placeholder="client@example.com"
+                placeholder="cliente@esempio.it"
                 value={emailTo}
                 onChange={e => setEmailTo(e.target.value)}
                 onKeyDown={e => { if (e.key === "Enter") handleSendEmail(); }}

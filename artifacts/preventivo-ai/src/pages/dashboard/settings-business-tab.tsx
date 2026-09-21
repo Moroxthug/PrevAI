@@ -33,10 +33,10 @@ const DEFAULT_SCHEDULE: PaymentSchedule = {
   derived: false,
   holdback: { enabled: false, percent: 10 },
   terms: [
-    { id: "t1", type: "deposit", label: "Deposit upon contract signing", trigger: "on_signing", amountType: "percent", value: 15, dueDays: 0 },
-    { id: "t2", type: "milestone", label: "Delivery of materials and start of work", trigger: "milestone", amountType: "percent", value: 35, dueDays: 15 },
-    { id: "t3", type: "milestone", label: "Substantial completion", trigger: "milestone", amountType: "percent", value: 35, dueDays: 15 },
-    { id: "t4", type: "completion", label: "Final balance upon completion and client walkthrough", trigger: "on_completion", amountType: "percent", value: 15, dueDays: 15 },
+    { id: "t1", type: "deposit", label: "Acconto alla firma del contratto", trigger: "on_signing", amountType: "percent", value: 30, dueDays: 0 },
+    { id: "t2", type: "milestone", label: "A completamento prima fase lavori", trigger: "milestone", amountType: "percent", value: 30, dueDays: 15 },
+    { id: "t3", type: "milestone", label: "A completamento seconda fase lavori", trigger: "milestone", amountType: "percent", value: 30, dueDays: 15 },
+    { id: "t4", type: "completion", label: "Saldo a fine lavori", trigger: "on_completion", amountType: "percent", value: 10, dueDays: 15 },
   ],
 };
 
@@ -170,18 +170,18 @@ export function BusinessTab() {
           </div>
           <div className="field">
             <Label htmlFor="gst">{t("dashboard.settings.business.gstHst")}</Label>
-            <Input id="gst" value={gstHstNumber} onChange={(e) => setGstHstNumber(e.target.value)} placeholder="123456789 RT0001" />
+            <Input id="gst" value={gstHstNumber} onChange={(e) => setGstHstNumber(e.target.value)} placeholder="01234567890" />
           </div>
           {province === "QC" && (
             <div className="field">
               <Label htmlFor="qst">{t("dashboard.settings.business.qst")}</Label>
-              <Input id="qst" value={qstNumber} onChange={(e) => setQstNumber(e.target.value)} placeholder="1234567890 TQ0001" />
+              <Input id="qst" value={qstNumber} onChange={(e) => setQstNumber(e.target.value)} placeholder="RSSMRA80A01F205X" />
             </div>
           )}
           {(province === "BC" || province === "SK" || province === "MB") && (
             <div className="field">
               <Label htmlFor="pst">{t("dashboard.settings.business.pst")}</Label>
-              <Input id="pst" value={pstNumber} onChange={(e) => setPstNumber(e.target.value)} placeholder="PST-1234-5678" />
+              <Input id="pst" value={pstNumber} onChange={(e) => setPstNumber(e.target.value)} placeholder="ABCDEFG oppure PEC" />
             </div>
           )}
           <div className="field">
@@ -205,7 +205,7 @@ export function BusinessTab() {
         <div className="form-grid">
           <div className="field full">
             <Label htmlFor="etransfer">{t("dashboard.settings.business.etransferEmail")}</Label>
-            <Input id="etransfer" type="email" value={etransferEmail} onChange={(e) => setEtransferEmail(e.target.value)} placeholder="payments@yourcompany.ca" />
+            <Input id="etransfer" type="email" value={etransferEmail} onChange={(e) => setEtransferEmail(e.target.value)} placeholder="IT60X0542811101000000123456" />
             <span className="text-xs text-muted-foreground mt-1 block">{t("dashboard.settings.business.etransferHint")}</span>
           </div>
         </div>
@@ -229,7 +229,7 @@ export function BusinessTab() {
           </div>
           <div className="field full">
             <Label htmlFor="homeStarsProfileUrl">{t("dashboard.settings.business.homeStarsProfileUrl")}</Label>
-            <Input id="homeStarsProfileUrl" type="url" value={homeStarsProfileUrl} onChange={(e) => setHomeStarsProfileUrl(e.target.value)} placeholder="https://homestars.com/companies/..." />
+            <Input id="homeStarsProfileUrl" type="url" value={homeStarsProfileUrl} onChange={(e) => setHomeStarsProfileUrl(e.target.value)} placeholder="https://..." />
             <span className="text-xs text-muted-foreground mt-1 block">{t("dashboard.settings.business.homeStarsProfileUrlHint")}</span>
           </div>
         </div>

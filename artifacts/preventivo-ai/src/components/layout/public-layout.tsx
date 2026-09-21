@@ -346,7 +346,7 @@ function SupportModal({ onClose }: { onClose: () => void }) {
                 required
                 value={email}
                 onChange={e => setEmail(e.target.value)}
-                placeholder="jane@example.com"
+                placeholder="mario@esempio.it"
                 className="w-full rounded-xl border border-gray-200 bg-gray-50 px-3.5 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-navy-400 focus:border-transparent transition-all"
               />
             </div>

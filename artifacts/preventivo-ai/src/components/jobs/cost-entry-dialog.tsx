@@ -154,7 +154,7 @@ export function CostEntryDialog({
               </div>
               <div className="field">
                 <label>{t("jobs.costs.vendor")}</label>
-                <input value={vendor} onChange={(e) => setVendor(e.target.value)} placeholder="Home Depot" />
+                <input value={vendor} onChange={(e) => setVendor(e.target.value)} placeholder="Leroy Merlin" />
               </div>
               <div className="field">
                 <label>{t("jobs.costs.description")}</label>

@@ -411,7 +411,7 @@ export default function SupportBot() {
                   <input
                     type="email"
                     required
-                    placeholder="jane@example.com"
+                    placeholder="mario@esempio.it"
                     value={visitorEmail}
                     onChange={e => setVisitorEmail(e.target.value)}
                     className="w-full mt-0.5 px-3 py-1.5 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-navy-500"
@@ -421,7 +421,7 @@ export default function SupportBot() {
                   <label className="text-[10px] font-bold text-slate-500 uppercase">{t("supportBot.phoneOptional")}</label>
                   <input
                     type="tel"
-                    placeholder="416 555 0123"
+                    placeholder="333 123 4567"
                     value={visitorPhone}
                     onChange={e => setVisitorPhone(e.target.value)}
                     className="w-full mt-0.5 px-3 py-1.5 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-navy-500"

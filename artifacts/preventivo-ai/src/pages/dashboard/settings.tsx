@@ -955,7 +955,7 @@ function WhatsappTab() {
             <label className="text-sm font-medium">{t("dashboard.settings.whatsapp.yourNumberLabel")}</label>
             <div className="flex gap-2">
               <Input
-                placeholder="+1 416 555 0123"
+                placeholder="+39 333 123 4567"
                 value={phoneInput}
                 onChange={(e) => setPhoneInput(e.target.value)}
                 onKeyDown={(e) => { if (e.key === "Enter" && phoneInput.trim()) handleConnect(); }}
@@ -1739,7 +1739,7 @@ function FlinksConnectDialog({ open, onOpenChange, onConnected }: { open: boolea
     function handleMessage(event: MessageEvent) {
       const data = event.data as { step?: string; loginId?: string; institution?: string } | undefined;
       if (data?.step === "REDIRECT" && data.loginId) {
-        connectMutation.mutate({ loginId: data.loginId, institutionName: data.institution ?? "Bank account" });
+        connectMutation.mutate({ loginId: data.loginId, institutionName: data.institution ?? "Conto bancario" });
       }
     }
     window.addEventListener("message", handleMessage);
