@@ -8,7 +8,7 @@
  *
  * Uso:
  *   npx tsx scripts/submit-to-google.ts
- *   npx tsx scripts/submit-to-google.ts --url=https://quoteai.ca/blog/
+ *   npx tsx scripts/submit-to-google.ts --url=https://prevai.it/blog/
  */
 import { readFileSync, existsSync } from "node:fs";
 import path from "node:path";

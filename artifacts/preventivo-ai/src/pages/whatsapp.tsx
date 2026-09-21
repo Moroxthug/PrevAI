@@ -48,7 +48,7 @@ export default function WhatsappPage() {
       <SeoHead
         title={t("whatsapp.seoTitle")}
         description={t("whatsapp.seoDescription")}
-        canonical="https://quoteai.ca/whatsapp/"
+        canonical="https://prevai.it/whatsapp/"
       />
 
       {/* ── HERO ───────────────────────────────────────────── */}

@@ -113,14 +113,14 @@ function buildOgSvg(article: BlogArticle): string {
     ${article.readingTimeMin} min di lettura
   </text>
 
-  <!-- quoteai brand -->
-  <text x="${W - 80}" y="${H - 40}" text-anchor="end" font-size="30" font-weight="800" fill="#7c3aed" font-family="'Segoe UI', Arial, Helvetica, sans-serif" letter-spacing="-0.5">quoteai</text>
+  <!-- PrevAI brand -->
+  <text x="${W - 80}" y="${H - 40}" text-anchor="end" font-size="30" font-weight="800" fill="#7c3aed" font-family="'Segoe UI', Arial, Helvetica, sans-serif" letter-spacing="-0.5">prevai</text>
 
   <!-- Divider above brand -->
   <line x1="80" y1="${H - 80}" x2="${W - 80}" y2="${H - 80}" stroke="#e5e7eb" stroke-width="1"/>
 
   <!-- Site URL -->
-  <text x="80" y="${H - 40}" font-size="22" fill="#9ca3af" font-family="'Segoe UI', Arial, Helvetica, sans-serif">quoteai.ca/blog</text>
+  <text x="80" y="${H - 40}" font-size="22" fill="#9ca3af" font-family="'Segoe UI', Arial, Helvetica, sans-serif">prevai.it/blog</text>
 </svg>`;
 }
 

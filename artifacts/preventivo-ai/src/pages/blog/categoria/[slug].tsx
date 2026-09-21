@@ -22,7 +22,7 @@ const CATEGORY_CHIPS: Record<string, string> = {
   Business: "chip-red",
 };
 
-const BASE_URL = "https://quoteai.ca";
+const BASE_URL = "https://prevai.it";
 
 export default function BlogCategoryPage() {
   const { t, lang } = useLanguage();

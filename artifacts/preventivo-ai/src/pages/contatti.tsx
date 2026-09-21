@@ -11,23 +11,23 @@ export default function ContattiPage() {
       "@context": "https://schema.org",
       "@type": "ContactPage",
       name: "QuoteAI Contact",
-      url: "https://quoteai.ca/contatti/",
+      url: "https://prevai.it/contatti/",
       description: "Contact the QuoteAI team for support, product questions, or sales information.",
       mainEntity: {
         "@type": "Organization",
         name: "QuoteAI",
-        url: "https://quoteai.ca/",
-        email: "info@quoteai.ca",
+        url: "https://prevai.it/",
+        email: "info@prevai.it",
         contactPoint: [
           {
             "@type": "ContactPoint",
-            email: "info@quoteai.ca",
+            email: "info@prevai.it",
             contactType: "customer support",
             availableLanguage: ["en", "fr"],
           },
           {
             "@type": "ContactPoint",
-            email: "privacy@quoteai.ca",
+            email: "privacy@prevai.it",
             contactType: "privacy inquiries",
             availableLanguage: ["en", "fr"],
           },
@@ -48,7 +48,7 @@ export default function ContattiPage() {
       <SeoHead
         title={t("contact.seoTitle")}
         description={t("contact.seoDescription")}
-        canonical="https://quoteai.ca/contatti/"
+        canonical="https://prevai.it/contatti/"
         jsonLd={jsonLd}
       />
 
@@ -71,8 +71,8 @@ export default function ContattiPage() {
               <p style={{ fontSize: 14, color: "var(--muted-mk)", lineHeight: 1.6, marginBottom: 16 }}>
                 {t("contact.productSupportBody")}
               </p>
-              <a href="mailto:info@quoteai.ca" className="cta-link" style={{ fontSize: 14 }}>
-                info@quoteai.ca <ArrowRight className="chev h-3.5 w-3.5" />
+              <a href="mailto:info@prevai.it" className="cta-link" style={{ fontSize: 14 }}>
+                info@prevai.it <ArrowRight className="chev h-3.5 w-3.5" />
               </a>
             </div>
 
@@ -95,8 +95,8 @@ export default function ContattiPage() {
               <p style={{ fontSize: 14, color: "var(--muted-mk)", lineHeight: 1.6, marginBottom: 16 }}>
                 {t("contact.privacyLegalBody")}
               </p>
-              <a href="mailto:privacy@quoteai.ca" className="cta-link" style={{ fontSize: 14 }}>
-                privacy@quoteai.ca <ArrowRight className="chev h-3.5 w-3.5" />
+              <a href="mailto:privacy@prevai.it" className="cta-link" style={{ fontSize: 14 }}>
+                privacy@prevai.it <ArrowRight className="chev h-3.5 w-3.5" />
               </a>
             </div>
           </div>

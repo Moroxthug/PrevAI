@@ -1,11 +1,15 @@
-import { useParams, useLocation, Link } from "wouter";
+import { useParams, Link } from "wouter";
 import { ArrowRight, CheckCircle2, Clock, FileText, Shield, TrendingUp, Star, Building2, BookOpen, X, MapPin } from "lucide-react";
 import { SeoHead } from "@/components/seo-head";
-import { SECTORS, DEFAULT_SECTOR, RELATED_SECTORS, SECTOR_KEY_BY_FR_SLUG, CITY_SECTORS, ACTIVE_CITIES } from "@/data/seo-data";
+import { SECTORS, DEFAULT_SECTOR, RELATED_SECTORS, CITY_SECTORS, ACTIVE_CITIES } from "@/data/seo-data";
 import { BLOG_INDEX, SECTOR_ARTICLES } from "@/data/blog-index";
-import { getOgImagePath, getSectorFrContent, cityBasePath, type Lang as EngineLang } from "@/data/seo-render-engine";
+import { getOgImagePath } from "@/data/seo-render-engine";
+import { MARKET } from "@workspace/config";
 import { QuotePreviewMockup } from "@/components/quote-preview-mockup";
-import { useLanguage, isFrenchPath } from "@/i18n/LanguageContext";
+import { useLanguage } from "@/i18n/LanguageContext";
+
+/** Base URL delle landing di settore/città — slug v1 identici (/preventivi/:settore). */
+const base = "/preventivi";
 
 // Highlighted cities on the sector hub page — must stay within ACTIVE_CITIES,
 // the only cities actually prerendered/sitemapped right now (see seo-data.ts).
@@ -242,56 +246,45 @@ function PreventiviGratisPlansBlock() {
 
 export default function SeoLanding() {
   const { t } = useLanguage();
-  const [pathname] = useLocation();
-  const isFr = isFrenchPath(pathname);
-  const engineLang: EngineLang = isFr ? "it-IT" : "it-IT";
-  const base = cityBasePath(engineLang);
   const params = useParams();
-  const rawSlug = (params as { type?: string }).type ?? "contractor";
-  const slug = isFr ? (SECTOR_KEY_BY_FR_SLUG[rawSlug] ?? rawSlug) : rawSlug;
+  const slug = (params as { type?: string }).type ?? DEFAULT_SECTOR.slug;
   const s = SECTORS[slug] ?? DEFAULT_SECTOR;
-  const sSlugForLang = isFr ? s.frSlug : s.slug;
 
-  // French sector-page copy: titleTag/metaDescription/jsonLdDescription/useCases
-  // are hand-authored per sector (SectorData.fr); h1/intro/benefits/howItWorks/faq
-  // come from the generic French templates in seo-render-engine.ts.
-  const frContent = isFr ? getSectorFrContent(s) : null;
-  const titleTag = isFr ? s.fr.titleTag : s.titleTag;
-  const metaDescription = isFr ? s.fr.metaDescription : s.metaDescription;
-  const jsonLdDescription = isFr ? s.fr.jsonLdDescription : s.jsonLdDescription;
-  const h1 = frContent?.h1 ?? s.h1;
-  const h1Highlight = frContent?.h1Highlight ?? s.h1Highlight;
-  const intro = frContent?.intro ?? s.intro;
-  const h2Benefits = frContent?.h2Benefits ?? s.h2Benefits;
-  const benefits = frContent?.benefits ?? s.benefits;
-  const h2HowItWorks = frContent?.h2HowItWorks ?? s.h2HowItWorks;
-  const howItWorks = frContent?.howItWorks ?? s.howItWorks;
-  const h2UseCases = frContent?.h2UseCases ?? s.h2UseCases;
-  const useCases = isFr ? s.fr.useCases : s.useCases;
-  const h2Faq = frContent?.h2Faq ?? s.h2Faq;
-  const faq = frContent?.faq ?? s.faq;
-  const labelPlural = isFr ? s.fr.labelPlural : s.labelPlural;
-  const label = isFr ? s.fr.label : s.label;
+  const titleTag = s.titleTag;
+  const metaDescription = s.metaDescription;
+  const jsonLdDescription = s.jsonLdDescription;
+  const h1 = s.h1;
+  const h1Highlight = s.h1Highlight;
+  const intro = s.intro;
+  const h2Benefits = s.h2Benefits;
+  const benefits = s.benefits;
+  const h2HowItWorks = s.h2HowItWorks;
+  const howItWorks = s.howItWorks;
+  const h2UseCases = s.h2UseCases;
+  const useCases = s.useCases;
+  const h2Faq = s.h2Faq;
+  const faq = s.faq;
+  const labelPlural = s.labelPlural;
+  const label = s.label;
 
-  const canonical = `https://quoteai.ca${base}/${sSlugForLang}/`;
-  const frCanonical = `https://quoteai.ca/fr/soumissions/${s.frSlug}/`;
+  const canonical = `${MARKET.siteUrl}${base}/${s.slug}/`;
   const jsonLd = [
     {
       "@context": "https://schema.org",
       "@type": "SoftwareApplication" as const,
-      name: "quoteai",
+      name: MARKET.brand,
       description: jsonLdDescription,
       url: canonical,
       applicationCategory: "BusinessApplication",
       operatingSystem: "Web",
-      inLanguage: isFr ? "fr" : "en",
+      inLanguage: "it",
       offers: { "@type": "Offer", price: "0", priceCurrency: "EUR", availability: "https://schema.org/InStock" },
     },
     {
       "@context": "https://schema.org",
       "@type": "BreadcrumbList" as const,
       itemListElement: [
-        { "@type": "ListItem", position: 1, name: isFr ? "Accueil" : "Home", item: isFr ? "https://quoteai.ca/fr/" : "https://quoteai.ca/" },
+        { "@type": "ListItem", position: 1, name: "Home", item: `${MARKET.siteUrl}/` },
         { "@type": "ListItem", position: 2, name: h1Highlight, item: canonical },
       ],
     },
@@ -318,13 +311,11 @@ export default function SeoLanding() {
         canonical={canonical}
         jsonLd={jsonLd}
         ogImage={getOgImagePath(s.slug)}
-        lang={engineLang}
-        frCanonical={frCanonical}
       />
 
       <div className="wrap">
         <nav aria-label={t("seo.city.breadcrumbAria")} className="crumbs">
-          <Link href={isFr ? "/fr" : "/"}>{t("blog.breadcrumbHome")}</Link>
+          <Link href="/">{t("blog.breadcrumbHome")}</Link>
           <span className="crumb-sep" aria-hidden="true">/</span>
           <span className="crumb-current" aria-current="page">{h1Highlight}</span>
         </nav>
@@ -415,10 +406,10 @@ export default function SeoLanding() {
       </section>
 
       {/* ── Guide-specific blocks ────────────────────────── */}
-      {slug === "excel-template" && <ExcelWordComparisonBlock tool="Excel" />}
-      {slug === "word-template" && <ExcelWordComparisonBlock tool="Word" />}
-      {slug === "how-to-quote" && <ComeFareGuideBlock />}
-      {slug === "free-quote" && <PreventiviGratisPlansBlock />}
+      {slug === "modello-excel" && <ExcelWordComparisonBlock tool="Excel" />}
+      {slug === "modello-word" && <ExcelWordComparisonBlock tool="Word" />}
+      {slug === "come-fare-preventivo" && <ComeFareGuideBlock />}
+      {slug === "preventivi-gratis" && <PreventiviGratisPlansBlock />}
 
       {/* ── "Built for the Canadian market" ──────────────── */}
       <section className="sec">
@@ -483,7 +474,7 @@ export default function SeoLanding() {
               {TIER1_CITIES.map((city) => (
                 <Link
                   key={city.slug}
-                  href={`${base}/${sSlugForLang}/${city.slug}/`}
+                  href={`${base}/${s.slug}/${city.slug}/`}
                   className="card"
                   style={{ display: "flex", alignItems: "center", gap: 10, padding: "13px 16px", fontSize: 14, fontWeight: 600, color: "var(--ink)" }}
                 >
@@ -516,7 +507,7 @@ export default function SeoLanding() {
                     {CITIES_BY_REGION[region].map((city) => (
                       <Link
                         key={city.slug}
-                        href={`${base}/${sSlugForLang}/${city.slug}/`}
+                        href={`${base}/${s.slug}/${city.slug}/`}
                         style={{ fontSize: 14, color: "var(--muted-mk)" }}
                       >
                         {label} {city.name}
@@ -541,12 +532,12 @@ export default function SeoLanding() {
               {RELATED_SECTORS[slug].map((r) => (
                 <Link
                   key={r.slug}
-                  href={`${base}/${isFr ? (SECTORS[r.slug]?.frSlug ?? r.slug) : r.slug}/`}
+                  href={`${base}/${r.slug}/`}
                   className="card"
                   style={{ display: "flex", alignItems: "center", gap: 10, padding: "13px 18px", fontSize: 14, fontWeight: 600, color: "var(--ink)" }}
                 >
                   <ArrowRight className="h-4 w-4 shrink-0" style={{ color: "var(--navy)" }} />
-                  {t("seo.quotesForLink")} {isFr ? (SECTORS[r.slug]?.fr.label ?? r.label) : r.label}
+                  {t("seo.quotesForLink")} {r.label}
                 </Link>
               ))}
             </div>
@@ -593,7 +584,7 @@ export default function SeoLanding() {
       {/* ── Final CTA ────────────────────────────────────── */}
       <section className="cta on-dark">
         <div className="cta-bg">
-          <img src={`https://picsum.photos/seed/quoteai-seo-${s.slug}/1800/900`} alt="" aria-hidden="true" loading="lazy" />
+          <img src={`https://picsum.photos/seed/prevai-seo-${s.slug}/1800/900`} alt="" aria-hidden="true" loading="lazy" />
         </div>
         <div className="wrap cta-in">
           <span className="eyebrow on-dark" style={{ display: "inline-flex", alignItems: "center", gap: 8, justifyContent: "center" }}>

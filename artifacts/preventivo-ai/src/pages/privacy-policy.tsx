@@ -15,7 +15,7 @@ export default function PrivacyPage() {
       <SeoHead
         title="Privacy Policy | QuoteAI"
         description="QuoteAI's privacy policy — how we collect, use, and protect your personal information."
-        canonical="https://quoteai.ca/privacy-policy/"
+        canonical="https://prevai.it/privacy/"
       />
       <div className="wrap">
         <nav aria-label="Breadcrumb" className="crumbs">
@@ -39,7 +39,7 @@ export default function PrivacyPage() {
             <h2 className="text-lg font-semibold text-gray-900 mb-3">1. Who we are</h2>
             <p>
               This Privacy Policy is issued by <strong>QuoteAI</strong> (referred to as "the Company", "we", or "us"),
-              a business operating from Ontario, Canada, reachable at <a href="mailto:privacy@quoteai.ca" className="text-navy-600 hover:underline">privacy@quoteai.ca</a>.
+              a business operating from Ontario, Canada, reachable at <a href="mailto:privacy@prevai.it" className="text-navy-600 hover:underline">privacy@prevai.it</a>.
               We are committed to protecting your personal information in accordance with the
               Personal Information Protection and Electronic Documents Act (PIPEDA) and applicable
               provincial privacy legislation.
@@ -125,7 +125,7 @@ export default function PrivacyPage() {
               <li><strong>Complaint</strong> — file a complaint about how we handle your information.</li>
             </ul>
             <p className="mt-3">
-              To exercise these rights, contact us at <a href="mailto:privacy@quoteai.ca" className="text-navy-600 hover:underline">privacy@quoteai.ca</a>.
+              To exercise these rights, contact us at <a href="mailto:privacy@prevai.it" className="text-navy-600 hover:underline">privacy@prevai.it</a>.
               We will respond within 30 days. You also have the right to file a complaint with the{" "}
               <a href="https://www.priv.gc.ca" target="_blank" rel="noopener noreferrer" className="text-navy-600 hover:underline">Office of the Privacy Commissioner of Canada</a>,
               or with your provincial privacy regulator where applicable.
@@ -160,7 +160,7 @@ export default function PrivacyPage() {
           <section>
             <h2 className="text-lg font-semibold text-gray-900 mb-3">10. Contact us</h2>
             <p>
-              For any questions about this Privacy Policy: <a href="mailto:privacy@quoteai.ca" className="text-navy-600 hover:underline">privacy@quoteai.ca</a>
+              For any questions about this Privacy Policy: <a href="mailto:privacy@prevai.it" className="text-navy-600 hover:underline">privacy@prevai.it</a>
             </p>
           </section>
 

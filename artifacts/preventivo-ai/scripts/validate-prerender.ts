@@ -109,14 +109,14 @@ function validateHtml(filePath: string, html: string): string[] {
   //    dist/public (210 sector/city pages pointed at /og/<slug>.jpg — a 404),
   //    and <meta charset> ahead of everything else in <head>.
   const rel = relative(distDir, filePath).split(sep).join("/").replace(/index\.html$/, "");
-  const expectedCanonical = `https://quoteai.ca/${rel}`;
+  const expectedCanonical = `https://prevai.it/${rel}`;
   const titles = html.match(/<title>/gi) ?? [];
   if (titles.length !== 1) errors.push(`Expected exactly one <title>, found ${titles.length}`);
   const canonicals = [...html.matchAll(/<link\s+rel="canonical"\s+href="([^"]*)"/gi)].map((m) => m[1]);
   if (canonicals.length !== 1) errors.push(`Expected exactly one canonical, found ${canonicals.length}`);
   else if (canonicals[0] !== expectedCanonical) errors.push(`Canonical ${canonicals[0]} ≠ ${expectedCanonical}`);
   if (!/<link\s+rel="alternate"\s+hreflang="x-default"/i.test(html)) errors.push("Missing hreflang x-default");
-  const og = html.match(/<meta\s+property="og:image"\s+content="https:\/\/quoteai\.ca(\/[^"]+)"/i);
+  const og = html.match(/<meta\s+property="og:image"\s+content="https:\/\/prevai\.it(\/[^"]+)"/i);
   if (!og) errors.push("Missing og:image");
   else if (!existsSync(join(distDir, og[1]!))) errors.push(`og:image ${og[1]} does not exist in dist/public`);
   const head = html.slice(html.indexOf("<head>"), html.indexOf("</head>"));

@@ -914,27 +914,26 @@ export const translations: Record<Lang, Record<string, string>> = {
   },
 };
 
-// Trade/profession names shown in the footer sitemap — labels only, the
-// hrefs still point at the existing (unlocalized) /quotes/:slug/ routes.
+// Mestieri mostrati nel footer — solo etichette; gli href puntano a /preventivi/:slug/ (slug v1).
 export const TRADE_LABELS: Record<Lang, Record<string, string>> = {
   it: {
-    painter: "Painter",
-    mason: "Mason",
-    electrician: "Electrician",
-    "decorative-painter": "Painter (Interior/Exterior)",
-    plumber: "Plumber",
-    "tile-installer": "Tiler",
-    "general-contractor": "General Contractors",
-    landscaper: "Landscaper",
-    "renovation-contractor": "Renovations",
-    "window-door-installer": "Windows & Doors",
-    "welder-fabricator": "Carpenters",
-    roofer: "Roofing",
-    "carpenter-cabinetmaker": "Woodworkers",
-    "air-conditioning-installer": "HVAC",
+    imbianchino: "Imbianchini",
+    muratore: "Muratori",
+    elettricista: "Elettricisti",
+    pittore: "Pittori edili",
+    idraulico: "Idraulici",
+    piastrellista: "Piastrellisti",
+    edilizia: "Imprese edili",
+    giardiniere: "Giardinieri",
+    ristrutturazione: "Ristrutturazioni",
+    serramentista: "Serramentisti",
+    carpentiere: "Carpentieri",
+    tetto: "Coperture e tetti",
+    falegname: "Falegnami",
+    condizionatori: "Condizionatori",
     freelance: "Freelance",
-    "flooring-installer": "Flooring",
-    "building-consultant": "Surveyors",
-    "hvac-technician": "HVAC & Plumbing",
+    pavimentista: "Pavimentisti",
+    geometra: "Geometri",
+    termoidraulico: "Termoidraulici",
   },
 };

@@ -571,7 +571,7 @@ export default function PublicQuotePage() {
       )}
 
       <p className="text-center text-xs mt-8" style={{ color: "var(--muted-mk)" }}>
-        <a href="https://quoteai.ca" className="underline">{t("publicQuote.generatedWith")}</a>
+        <a href="https://prevai.it" className="underline">{t("publicQuote.generatedWith")}</a>
       </p>
     </div>
     </div>

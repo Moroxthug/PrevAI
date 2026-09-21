@@ -1322,17 +1322,17 @@ export default function AdminPage() {
                                                   <pre className="p-4 bg-slate-950 text-slate-200 rounded-xl overflow-x-auto font-mono text-[10px] leading-relaxed max-h-40 whitespace-pre-wrap select-all border border-slate-800">
 {`<!-- QuoteAI Widget Funnel -->
 <div id="quoteai-widget">
-  <a href="https://quoteai.ca" rel="noopener">Get your quote with QuoteAI</a>
+  <a href="https://prevai.it" rel="noopener">Get your quote with QuoteAI</a>
 </div>
 <script
-  src="${typeof window !== "undefined" ? window.location.origin : "https://quoteai.ca"}/widget.js"
+  src="${typeof window !== "undefined" ? window.location.origin : "https://prevai.it"}/widget.js"
   data-api-key="${(u as any).apiKey}"
   async
 ></script>`}
                                                   </pre>
                                                   <button
                                                     onClick={() => {
-                                                      const code = `<!-- QuoteAI Widget Funnel -->\n<div id="quoteai-widget">\n  <a href="https://quoteai.ca" rel="noopener">Get your quote with QuoteAI</a>\n</div>\n<script\n  src="${typeof window !== "undefined" ? window.location.origin : "https://quoteai.ca"}/widget.js"\n  data-api-key="${(u as any).apiKey}"\n  async\n></script>`;
+                                                      const code = `<!-- QuoteAI Widget Funnel -->\n<div id="quoteai-widget">\n  <a href="https://prevai.it" rel="noopener">Get your quote with QuoteAI</a>\n</div>\n<script\n  src="${typeof window !== "undefined" ? window.location.origin : "https://prevai.it"}/widget.js"\n  data-api-key="${(u as any).apiKey}"\n  async\n></script>`;
                                                       navigator.clipboard.writeText(code);
                                                       toast({ title: t("admin.codeCopied"), description: t("admin.codeCopiedDesc") });
                                                     }}

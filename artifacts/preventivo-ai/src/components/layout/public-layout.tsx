@@ -192,7 +192,7 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
           <div className="ft-col">
             <h4>{t("footer.trades")}</h4>
             {Object.entries(TRADE_LABELS[lang]).slice(0, 7).map(([slug, label]) => (
-              <Link key={slug} href={`/quotes/${slug}/`}>{label}</Link>
+              <Link key={slug} href={`/preventivi/${slug}/`}>{label}</Link>
             ))}
             <Link href="/#trades">{t("footer.allTrades")}</Link>
           </div>
@@ -208,10 +208,10 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
           <div className="ft-col">
             <h4>{t("footer.guides")}</h4>
             <Link href="/blog/">{t("footer.blog")}</Link>
-            <Link href="/quotes/excel-template/">{t("footer.excelTemplate")}</Link>
-            <Link href="/quotes/word-template/">{t("footer.wordTemplate")}</Link>
-            <Link href="/quotes/how-to-quote/">{t("footer.howToQuote")}</Link>
-            <Link href="/quotes/free-quote/">{t("footer.freeQuotes")}</Link>
+            <Link href="/preventivi/modello-excel/">{t("footer.excelTemplate")}</Link>
+            <Link href="/preventivi/modello-word/">{t("footer.wordTemplate")}</Link>
+            <Link href="/preventivi/come-fare-preventivo/">{t("footer.howToQuote")}</Link>
+            <Link href="/preventivi/preventivi-gratis/">{t("footer.freeQuotes")}</Link>
           </div>
           <div className="ft-col">
             <h4>{t("footer.company")}</h4>
@@ -224,8 +224,8 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
             <h4>{t("footer.support")}</h4>
             <Link href="/help/">{t("footer.helpCenter")}</Link>
             <button onClick={() => setSupportOpen(true)}>{t("support.contactSupport")}</button>
-            <Link href="/privacy-policy/">{t("footer.privacyPolicy")}</Link>
-            <Link href="/terms/">{t("footer.terms")}</Link>
+            <Link href="/privacy/">{t("footer.privacyPolicy")}</Link>
+            <Link href="/termini/">{t("footer.terms")}</Link>
             <Link href="/mappa-sito/">{t("footer.sitemap")}</Link>
           </div>
         </div>
@@ -233,8 +233,8 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
         <div className="wrap ft-bottom">
           <span>&copy; {new Date().getFullYear()} quoteai. {t("footer.rights")}</span>
           <div className="ft-legal">
-            <Link href="/privacy-policy/">{t("footer.privacyPolicy")}</Link>
-            <Link href="/terms/">{t("footer.terms")}</Link>
+            <Link href="/privacy/">{t("footer.privacyPolicy")}</Link>
+            <Link href="/termini/">{t("footer.terms")}</Link>
             <Link href="/mappa-sito/">{t("footer.sitemap")}</Link>
           </div>
         </div>
@@ -264,7 +264,7 @@ function SupportModal({ onClose }: { onClose: () => void }) {
     const body = encodeURIComponent(
       `Issue type: ${problema}\n\nDescription:\n${descrizione}\n\nCustomer email: ${email}`
     );
-    window.location.href = `mailto:support@quoteai.ca?subject=${subject}&body=${body}`;
+    window.location.href = `mailto:support@prevai.it?subject=${subject}&body=${body}`;
     setSent(true);
   }
 

@@ -17,15 +17,15 @@ export default function ChiSiamoPage() {
       "@context": "https://schema.org",
       "@type": "Organization",
       name: "QuoteAI",
-      url: "https://quoteai.ca/",
-      logo: "https://quoteai.ca/icon-192.png",
+      url: "https://prevai.it/",
+      logo: "https://prevai.it/icon-192.png",
       description:
         "QuoteAI is the AI quoting software for Canadian tradespeople and independent professionals. Generate professional quotes in 30 seconds by describing the job in plain language.",
       foundingDate: "2026",
       foundingLocation: { "@type": "Place", name: "Canada" },
       contactPoint: {
         "@type": "ContactPoint",
-        email: "info@quoteai.ca",
+        email: "info@prevai.it",
         contactType: "customer service",
         availableLanguage: ["en", "fr"],
       },
@@ -37,7 +37,7 @@ export default function ChiSiamoPage() {
       <SeoHead
         title={t("about.seoTitle")}
         description={t("about.seoDescription")}
-        canonical="https://quoteai.ca/chi-siamo/"
+        canonical="https://prevai.it/chi-siamo/"
         jsonLd={jsonLd}
       />
 

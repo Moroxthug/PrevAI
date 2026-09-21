@@ -24,9 +24,6 @@ import {
   getCityHowItWorksSteps,
   getNearbyAnchors,
   getSameCityOtherSectors,
-  getCityContextText,
-  getSectorFrContent,
-  DEMAND_TEXT_FR,
   buildCityJsonLd as buildCityJsonLdFromEngine,
   getOgImagePath,
 } from "../src/data/seo-render-engine.js";
@@ -60,7 +57,7 @@ if (!existsSync(templatePath)) {
   process.exit(1);
 }
 
-const BASE_URL = "https://quoteai.ca";
+const BASE_URL = "https://prevai.it";
 
 
 // ─── Core utilities ────────────────────────────────────────────────────────
@@ -111,7 +108,7 @@ function buildHeadBlock(opts: {
     `  <meta property="og:image:height" content="630" />`,
     `  <meta property="og:type" content="website" />`,
     `  <meta property="og:locale" content="${lang === "fr" ? "fr_CA" : "en_CA"}" />`,
-    `  <meta property="og:site_name" content="quoteai" />`,
+    `  <meta property="og:site_name" content="PrevAI" />`,
     `  <meta name="twitter:card" content="summary_large_image" />`,
     `  <meta name="twitter:title" content="${esc(title)}" />`,
     `  <meta name="twitter:description" content="${esc(description)}" />`,
@@ -135,7 +132,7 @@ function pruneModulepreload(html: string): string {
   );
 }
 
-function injectHead(template: string, headBlock: string, lang: "en" | "fr" = "en"): string {
+function injectHead(template: string, headBlock: string, _lang: string = "it"): string {
   let html = template;
   html = html.replace(/<html lang="[^"]*"/, `<html lang="${"it-IT"}"`);
   html = html.replace(/<title>[^<]*<\/title>/, "");
@@ -218,34 +215,34 @@ const STATIC_FOOTER = `<footer class="border-t py-12 md:py-16 bg-white">
       <div class="md:col-span-2">
         <h4 class="font-semibold mb-4 text-sm uppercase tracking-wider text-foreground">Trades</h4>
         <ul class="grid grid-cols-2 gap-x-6 gap-y-2 text-sm text-muted-foreground">
-          <li><a href="/quotes/painter/" class="hover:text-foreground transition-colors">Painter</a></li>
-          <li><a href="/quotes/mason/" class="hover:text-foreground transition-colors">Mason</a></li>
-          <li><a href="/quotes/electrician/" class="hover:text-foreground transition-colors">Electrician</a></li>
-          <li><a href="/quotes/decorative-painter/" class="hover:text-foreground transition-colors">Decorative Painter</a></li>
-          <li><a href="/quotes/plumber/" class="hover:text-foreground transition-colors">Plumber</a></li>
-          <li><a href="/quotes/tile-installer/" class="hover:text-foreground transition-colors">Tile Installer</a></li>
-          <li><a href="/quotes/general-contractor/" class="hover:text-foreground transition-colors">General Contractors</a></li>
-          <li><a href="/quotes/landscaper/" class="hover:text-foreground transition-colors">Landscaper</a></li>
-          <li><a href="/quotes/renovation-contractor/" class="hover:text-foreground transition-colors">Renovation Contractors</a></li>
-          <li><a href="/quotes/window-door-installer/" class="hover:text-foreground transition-colors">Window &amp; Door Installer</a></li>
-          <li><a href="/quotes/welder-fabricator/" class="hover:text-foreground transition-colors">Welders &amp; Fabricators</a></li>
-          <li><a href="/quotes/roofer/" class="hover:text-foreground transition-colors">Roofing</a></li>
-          <li><a href="/quotes/carpenter-cabinetmaker/" class="hover:text-foreground transition-colors">Carpenters</a></li>
-          <li><a href="/quotes/air-conditioning-installer/" class="hover:text-foreground transition-colors">Air Conditioning</a></li>
-          <li><a href="/quotes/freelance/" class="hover:text-foreground transition-colors">Freelancer</a></li>
-          <li><a href="/quotes/flooring-installer/" class="hover:text-foreground transition-colors">Flooring Installer</a></li>
-          <li><a href="/quotes/building-consultant/" class="hover:text-foreground transition-colors">Building Consultants</a></li>
-          <li><a href="/quotes/hvac-technician/" class="hover:text-foreground transition-colors">HVAC &amp; Heating</a></li>
+          <li><a href="/preventivi/imbianchino/" class="hover:text-foreground transition-colors">Painter</a></li>
+          <li><a href="/preventivi/muratore/" class="hover:text-foreground transition-colors">Mason</a></li>
+          <li><a href="/preventivi/elettricista/" class="hover:text-foreground transition-colors">Electrician</a></li>
+          <li><a href="/preventivi/pittore/" class="hover:text-foreground transition-colors">Decorative Painter</a></li>
+          <li><a href="/preventivi/idraulico/" class="hover:text-foreground transition-colors">Plumber</a></li>
+          <li><a href="/preventivi/piastrellista/" class="hover:text-foreground transition-colors">Tile Installer</a></li>
+          <li><a href="/preventivi/edilizia/" class="hover:text-foreground transition-colors">General Contractors</a></li>
+          <li><a href="/preventivi/giardiniere/" class="hover:text-foreground transition-colors">Landscaper</a></li>
+          <li><a href="/preventivi/ristrutturazione/" class="hover:text-foreground transition-colors">Renovation Contractors</a></li>
+          <li><a href="/preventivi/serramentista/" class="hover:text-foreground transition-colors">Window &amp; Door Installer</a></li>
+          <li><a href="/preventivi/carpentiere/" class="hover:text-foreground transition-colors">Welders &amp; Fabricators</a></li>
+          <li><a href="/preventivi/tetto/" class="hover:text-foreground transition-colors">Roofing</a></li>
+          <li><a href="/preventivi/falegname/" class="hover:text-foreground transition-colors">Carpenters</a></li>
+          <li><a href="/preventivi/condizionatori/" class="hover:text-foreground transition-colors">Air Conditioning</a></li>
+          <li><a href="/preventivi/freelance/" class="hover:text-foreground transition-colors">Freelancer</a></li>
+          <li><a href="/preventivi/pavimentista/" class="hover:text-foreground transition-colors">Flooring Installer</a></li>
+          <li><a href="/preventivi/geometra/" class="hover:text-foreground transition-colors">Building Consultants</a></li>
+          <li><a href="/preventivi/termoidraulico/" class="hover:text-foreground transition-colors">HVAC &amp; Heating</a></li>
         </ul>
       </div>
       <div>
         <h4 class="font-semibold mb-4 text-sm uppercase tracking-wider text-foreground">Guides</h4>
         <ul class="space-y-2 text-sm text-muted-foreground">
           <li><a href="/blog/" class="hover:text-foreground transition-colors font-medium text-foreground/80">Blog &amp; Guides</a></li>
-          <li><a href="/quotes/excel-template/" class="hover:text-foreground transition-colors">Excel Quote Template</a></li>
-          <li><a href="/quotes/word-template/" class="hover:text-foreground transition-colors">Word Quote Template</a></li>
-          <li><a href="/quotes/how-to-quote/" class="hover:text-foreground transition-colors">How to Write a Quote</a></li>
-          <li><a href="/quotes/free-quote/" class="hover:text-foreground transition-colors">Free Quote Software</a></li>
+          <li><a href="/preventivi/modello-excel/" class="hover:text-foreground transition-colors">Excel Quote Template</a></li>
+          <li><a href="/preventivi/modello-word/" class="hover:text-foreground transition-colors">Word Quote Template</a></li>
+          <li><a href="/preventivi/come-fare-preventivo/" class="hover:text-foreground transition-colors">How to Write a Quote</a></li>
+          <li><a href="/preventivi/preventivi-gratis/" class="hover:text-foreground transition-colors">Free Quote Software</a></li>
         </ul>
         <h4 class="font-semibold mt-8 mb-4 text-sm uppercase tracking-wider text-foreground">Company</h4>
         <ul class="space-y-2 text-sm text-muted-foreground">
@@ -258,7 +255,7 @@ const STATIC_FOOTER = `<footer class="border-t py-12 md:py-16 bg-white">
         </ul>
       </div>
     </div>
-    <div class="mt-12 pt-8 border-t text-center text-sm text-muted-foreground">© ${CURRENT_YEAR} quoteai. All rights reserved.</div>
+    <div class="mt-12 pt-8 border-t text-center text-sm text-muted-foreground">© ${CURRENT_YEAR} PrevAI. All rights reserved.</div>
   </div>
 </footer>`;
 
@@ -270,71 +267,6 @@ ${STATIC_HEADER}
 <main class="flex-1 flex flex-col">${contentHtml}</main>
 ${STATIC_FOOTER}
 ${STATIC_WHATSAPP}
-</div>`;
-}
-
-// ─── French shell (header/footer/WhatsApp button) ──────────────────────────
-
-const STATIC_HEADER_FR = `<header class="sticky top-0 z-50 w-full transition-all duration-300 bg-transparent border-b border-transparent">
-  <div class="container mx-auto flex h-16 items-center justify-between px-4 sm:px-6 lg:px-8">
-    <a href="/fr" class="flex items-center">${STATIC_LOGO}</a>
-    <nav class="flex items-center gap-3">
-      <a href="/sign-in/" class="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors px-3 py-1.5 rounded-full">Se connecter</a>
-      <a href="/sign-up/" class="btn-gradient inline-flex h-9 items-center justify-center px-5 text-sm font-semibold">S'inscrire</a>
-    </nav>
-  </div>
-</header>`;
-
-const FR_TRADE_FOOTER_LINKS = Object.entries(SECTORS)
-  .filter(([slug]) => CITY_SECTORS.includes(slug))
-  .map(([, s]) => `<li><a href="/fr/soumissions/${esc(s.frSlug)}/" class="hover:text-foreground transition-colors">${esc(s.fr.label)}</a></li>`)
-  .join("\n          ");
-
-const STATIC_FOOTER_FR = `<footer class="border-t py-12 md:py-16 bg-white">
-  <div class="container mx-auto px-4 md:px-6">
-    <div class="grid grid-cols-1 md:grid-cols-5 gap-8">
-      <div class="md:col-span-2">
-        <a href="/fr" class="flex items-center mb-4">${STATIC_LOGO}</a>
-        <p class="text-sm text-muted-foreground max-w-xs leading-relaxed">Logiciel de soumission par IA pour les artisans et petites entreprises canadiennes. Rapide, professionnel, prêt en 30 secondes.</p>
-      </div>
-      <div class="md:col-span-2">
-        <h4 class="font-semibold mb-4 text-sm uppercase tracking-wider text-foreground">Métiers</h4>
-        <ul class="grid grid-cols-2 gap-x-6 gap-y-2 text-sm text-muted-foreground">
-          ${FR_TRADE_FOOTER_LINKS}
-        </ul>
-      </div>
-      <div>
-        <h4 class="font-semibold mb-4 text-sm uppercase tracking-wider text-foreground">Guides</h4>
-        <ul class="space-y-2 text-sm text-muted-foreground">
-          <li><a href="/blog/" class="hover:text-foreground transition-colors font-medium text-foreground/80">Blogue et guides</a></li>
-          <li><a href="/fr/soumissions/${esc(SECTORS["excel-template"].frSlug)}/" class="hover:text-foreground transition-colors">Modèle Excel</a></li>
-          <li><a href="/fr/soumissions/${esc(SECTORS["word-template"].frSlug)}/" class="hover:text-foreground transition-colors">Modèle Word</a></li>
-          <li><a href="/fr/soumissions/${esc(SECTORS["how-to-quote"].frSlug)}/" class="hover:text-foreground transition-colors">Comment faire une soumission</a></li>
-          <li><a href="/fr/soumissions/${esc(SECTORS["free-quote"].frSlug)}/" class="hover:text-foreground transition-colors">Soumission gratuite</a></li>
-        </ul>
-        <h4 class="font-semibold mt-8 mb-4 text-sm uppercase tracking-wider text-foreground">Entreprise</h4>
-        <ul class="space-y-2 text-sm text-muted-foreground">
-          <li><a href="/chi-siamo/" class="hover:text-foreground transition-colors">À propos</a></li>
-          <li><a href="/contatti/" class="hover:text-foreground transition-colors">Contact</a></li>
-          <li><button class="hover:text-foreground transition-colors text-left">Soutien</button></li>
-          <li><a href="/privacy-policy/" class="hover:text-foreground transition-colors">Politique de confidentialité</a></li>
-          <li><a href="/terms/" class="hover:text-foreground transition-colors">Conditions d'utilisation</a></li>
-          <li><a href="/mappa-sito/" class="hover:text-foreground transition-colors">Plan du site</a></li>
-        </ul>
-      </div>
-    </div>
-    <div class="mt-12 pt-8 border-t text-center text-sm text-muted-foreground">© ${CURRENT_YEAR} quoteai. Tous droits réservés.</div>
-  </div>
-</footer>`;
-
-const STATIC_WHATSAPP_FR = `<a href="/whatsapp/" aria-label="Clavarder avec nous sur WhatsApp" class="fixed bottom-6 right-6 z-50 flex items-center gap-2.5 rounded-full shadow-lg shadow-green-200/60 transition-all duration-200 hover:scale-105 active:scale-95" style="background:rgb(37,211,102)"><span class="flex h-14 w-14 items-center justify-center rounded-full" style="background:rgb(37,211,102)"><img src="/wa-icon.svg" alt="" width="28" height="28" loading="lazy" decoding="async"></span><span class="pr-5 text-white text-sm font-semibold whitespace-nowrap hidden sm:inline-block">Besoin d'aide?</span></a>`;
-
-function wrapInPublicLayoutFr(contentHtml: string): string {
-  return `<div class="min-h-[100dvh] flex flex-col bg-background text-foreground">
-${STATIC_HEADER_FR}
-<main class="flex-1 flex flex-col">${contentHtml}</main>
-${STATIC_FOOTER_FR}
-${STATIC_WHATSAPP_FR}
 </div>`;
 }
 
@@ -376,7 +308,7 @@ function buildSectorCityGrid(s: SectorData): string {
       const cityLinks = cities
         .map(
           (c) =>
-            `<a href="/quotes/${esc(s.slug)}/${esc(c.slug)}/" class="inline-flex items-center rounded-full border border-gray-200 bg-white px-3 py-1.5 text-xs font-medium text-gray-600 hover:border-violet-300 hover:text-violet-600 transition-colors">${esc(c.name)}</a>`
+            `<a href="/preventivi/${esc(s.slug)}/${esc(c.slug)}/" class="inline-flex items-center rounded-full border border-gray-200 bg-white px-3 py-1.5 text-xs font-medium text-gray-600 hover:border-violet-300 hover:text-violet-600 transition-colors">${esc(c.name)}</a>`
         )
         .join("\n            ");
       return `<div>
@@ -409,7 +341,7 @@ function buildRelatedSectorsSection(s: SectorData, heading?: string): string {
   const links = related
     .map(
       (r) =>
-        `<a href="/quotes/${esc(r.slug)}/" class="flex items-center gap-2 bg-white border border-gray-100 hover:border-violet-200 rounded-xl px-4 py-3 text-sm font-medium text-gray-700 hover:text-violet-700 transition-colors">
+        `<a href="/preventivi/${esc(r.slug)}/" class="flex items-center gap-2 bg-white border border-gray-100 hover:border-violet-200 rounded-xl px-4 py-3 text-sm font-medium text-gray-700 hover:text-violet-700 transition-colors">
           <span class="text-violet-400 font-bold" aria-hidden="true">→</span> ${esc(r.label)}
         </a>`
     )
@@ -465,7 +397,7 @@ function buildCityContextBlock(city: CityData, s: SectorData): string {
   // CITY_CONTEXT entries are lang-aware ({ en, fr? }) — see the note in
   // seo-data.ts. Only `en` is populated today (no locale routing yet), so
   // this always renders the English copy.
-  const context = CITY_CONTEXT[city.slug]?.en;
+  const context = CITY_CONTEXT[city.slug];
   if (!context) return "";
   return `<section class="py-10 bg-violet-50/50 border-y border-violet-100/60">
   <div class="container mx-auto px-4 sm:px-6 lg:px-8 max-w-3xl">
@@ -485,12 +417,12 @@ function buildCityContextBlock(city: CityData, s: SectorData): string {
 // ─── JSON-LD schema builders ────────────────────────────────────────────────
 
 function buildSectorJsonLd(s: SectorData): object[] {
-  const canonical = `${BASE_URL}/quotes/${s.slug}/`;
+  const canonical = `${BASE_URL}/preventivi/${s.slug}/`;
   const schemas: object[] = [
     {
       "@context": "https://schema.org",
       "@type": "SoftwareApplication",
-      name: "quoteai",
+      name: "PrevAI",
       description: s.jsonLdDescription,
       url: canonical,
       applicationCategory: "BusinessApplication",
@@ -528,8 +460,8 @@ function buildSectorJsonLd(s: SectorData): object[] {
   return schemas;
 }
 
-function buildCityJsonLd(s: SectorData, city: CityData, lang: "it-IT" | "it-IT" = "it-IT"): object[] {
-  return buildCityJsonLdFromEngine(s, city, lang);
+function buildCityJsonLd(s: SectorData, city: CityData): object[] {
+  return buildCityJsonLdFromEngine(s, city);
 }
 
 // ─── Phase 3: Sector body — 2 layout variants ──────────────────────────────
@@ -840,7 +772,7 @@ function buildCityBodyHtml(s: SectorData, city: CityData): string {
 
   const breadcrumb = buildBreadcrumb([
     { name: "Home", href: "/" },
-    { name: s.label, href: `/quotes/${s.slug}/` },
+    { name: s.label, href: `/preventivi/${s.slug}/` },
     { name: cityName, href: null },
   ]);
 
@@ -859,7 +791,7 @@ function buildCityBodyHtml(s: SectorData, city: CityData): string {
         <a href="/sign-up/" class="btn-gradient inline-flex h-14 items-center justify-center px-8 text-lg font-semibold">
           Create your free quote
         </a>
-        <a href="/quotes/${esc(s.slug)}/" class="btn-gradient-outline inline-flex h-14 items-center justify-center px-8 text-lg font-semibold">
+        <a href="/preventivi/${esc(s.slug)}/" class="btn-gradient-outline inline-flex h-14 items-center justify-center px-8 text-lg font-semibold">
           See how it works
         </a>
       </div>
@@ -932,7 +864,7 @@ function buildCityBodyHtml(s: SectorData, city: CityData): string {
 
   const nearbyLinks = getNearbyAnchors(s, city)
     .map(({ slug, anchorText }) =>
-      `<a href="/quotes/${esc(s.slug)}/${esc(slug)}/" class="inline-flex items-center gap-1.5 rounded-full border border-gray-200 px-3.5 py-1.5 text-sm text-gray-500 hover:border-violet-300 hover:text-violet-600 transition-colors">${esc(anchorText)}</a>`
+      `<a href="/preventivi/${esc(s.slug)}/${esc(slug)}/" class="inline-flex items-center gap-1.5 rounded-full border border-gray-200 px-3.5 py-1.5 text-sm text-gray-500 hover:border-violet-300 hover:text-violet-600 transition-colors">${esc(anchorText)}</a>`
     )
     .join("\n          ");
 
@@ -960,7 +892,7 @@ function buildCityBodyHtml(s: SectorData, city: CityData): string {
         ${sameCityOtherSectors
           .map(
             (r) =>
-              `<a href="/quotes/${esc(r.slug)}/${esc(city.slug)}/" class="flex items-center gap-2 bg-white border border-gray-100 hover:border-violet-200 rounded-xl px-4 py-3 text-sm font-medium text-gray-700 hover:text-violet-700 transition-colors">
+              `<a href="/preventivi/${esc(r.slug)}/${esc(city.slug)}/" class="flex items-center gap-2 bg-white border border-gray-100 hover:border-violet-200 rounded-xl px-4 py-3 text-sm font-medium text-gray-700 hover:text-violet-700 transition-colors">
           <span class="text-violet-400 font-bold" aria-hidden="true">→</span> ${esc(r.label)} in ${esc(cityName)}
         </a>`
           )
@@ -1018,19 +950,29 @@ function buildQuantoCostaBlock(
   s: SectorData,
   city: CityData,
   intel: CityIntelligence | undefined,
-  lang: "it-IT" | "it-IT" = "it-IT",
 ): string {
   const cityName = city.name;
   const regionName = city.region;
+  const sectorLabel = s.label.toLowerCase();
   const pricePct = intel ? Math.round((intel.priceIndex - 1.0) * 100) : 0;
+  const priceNote = !intel
+    ? `in linea con la media italiana`
+    : pricePct > 5
+      ? `mediamente del <strong>${pricePct}% più alti</strong> rispetto alla media nazionale`
+      : pricePct < -5
+        ? `mediamente del <strong>${Math.abs(pricePct)}% più bassi</strong> rispetto alla media nazionale`
+        : `in linea con la media nazionale (variazione contenuta entro il ±5%)`;
 
-  const examples = (lang === "it-IT" ? s.fr.useCases : s.useCases).slice(0, 4).map((uc, i) => {
+  const demandText = intel ? DEMAND_TEXT[intel.demandLevel] : "stabile";
+
+  const examples = s.useCases.slice(0, 4).map((uc, i) => {
     const base = 250 + i * 320 + (strHash(city.slug + s.slug + String(i)) % 180);
     const factor = intel ? intel.priceIndex : 1.0;
     const low = Math.round((base * factor) / 10) * 10;
     const high = Math.round((base * factor * 1.7) / 10) * 10;
-    return { label: uc, range: lang === "it-IT" ? `${low} $ à ${high} $` : `$${low} to $${high}` };
+    return { label: uc, range: `da ${low}€ a ${high}€` };
   });
+
   const examplesList = examples
     .map(
       (e) =>
@@ -1041,23 +983,14 @@ function buildQuantoCostaBlock(
     )
     .join("\n        ");
 
-  if (lang === "it-IT") {
-    const sectorLabel = s.fr.label.toLowerCase();
-    const priceNote = !intel
-      ? `conforme à la moyenne nationale`
-      : pricePct > 5
-        ? `en moyenne <strong>${pricePct}% plus élevé</strong> que la moyenne nationale`
-        : pricePct < -5
-          ? `en moyenne <strong>${Math.abs(pricePct)}% plus bas</strong> que la moyenne nationale`
-          : `conforme à la moyenne nationale (variation limitée à ±5%)`;
-    const demandText = intel ? DEMAND_TEXT_FR[intel.demandLevel] : "stable";
-    const paragraph1 = `À ${esc(cityName)}, le coût moyen pour des travaux de ${esc(sectorLabel)} est ${priceNote}. La demande au ${esc(regionName)} est actuellement ${esc(demandText.toLowerCase())}, ce qui influence la rapidité de réponse des entrepreneurs et la marge de négociation sur le prix final. Les fourchettes ci-dessous sont des prix de marché moyens tirés de soumissions réelles générées avec quoteai pour des travaux à ${esc(cityName)} et les environs.`;
-    const paragraph2 = `Chaque soumission dépend de facteurs propres au travail : l'ampleur exacte des travaux, la qualité des matériaux demandés, l'accessibilité du site, l'urgence et les conditions particulières convenues avec le client. C'est pourquoi nous recommandons toujours une visite ou une description détaillée : avec quoteai, vous pouvez le faire en 30 secondes en décrivant le travail en langage naturel, et obtenir un document professionnel et modifiable, prêt à envoyer au client par WhatsApp ou courriel.`;
-    return `<section class="py-20 bg-white border-t border-gray-100" aria-label="Combien coûte ${esc(sectorLabel)} à ${esc(cityName)}">
+  const paragraph1 = `A ${esc(cityName)} il costo medio per un servizio di ${esc(sectorLabel)} è ${priceNote}. La domanda nel ${esc(regionName)} è attualmente ${esc(demandText)}, condizione che influisce sui tempi di risposta dei professionisti e sulla negoziazione del prezzo finale. I prezzi indicati qui sotto sono intervalli di mercato medi raccolti da preventivi reali generati con prevai per lavori nella zona di ${esc(cityName)} e nelle località limitrofe.`;
+  const paragraph2 = `Ogni preventivo dipende da fattori specifici: superficie esatta dell'intervento, qualità dei materiali richiesti, accessibilità del cantiere, urgenza dell'esecuzione e personalizzazioni concordate con il committente. Per questo ti consigliamo di richiedere sempre un sopralluogo o di fornire una descrizione dettagliata: con prevai puoi farlo in 30 secondi descrivendo il lavoro in linguaggio naturale e ricevere un documento professionale, modificabile e pronto da inviare al cliente via WhatsApp o email.`;
+
+  return `<section class="py-20 bg-white border-t border-gray-100" aria-label="Quanto costa ${esc(sectorLabel)} a ${esc(cityName)}">
   <div class="container mx-auto px-4 sm:px-6 lg:px-8 max-w-3xl">
     <div class="text-center mb-10">
-      <h2 class="text-2xl font-bold text-gray-900">Combien coûte un ${esc(sectorLabel)} à ${esc(cityName)}</h2>
-      <p class="text-sm text-gray-400 mt-2">Fourchettes de prix typiques pour les travaux les plus demandés</p>
+      <h2 class="text-2xl font-bold text-gray-900">Quanto costa un ${esc(sectorLabel)} a ${esc(cityName)}</h2>
+      <p class="text-sm text-gray-400 mt-2">Range di prezzo orientativi per i lavori più richiesti</p>
     </div>
     <div class="space-y-4 text-gray-600 leading-relaxed text-base mb-8">
       <p>${paragraph1}</p>
@@ -1066,42 +999,11 @@ function buildQuantoCostaBlock(
     <ul class="space-y-2.5">
       ${examplesList}
     </ul>
-    <p class="text-xs text-gray-400 mt-6 text-center">Prix de marché moyens à ${esc(cityName)}, mis à jour pour ${CURRENT_YEAR}. Taxes non incluses. Les prix réels varient selon les particularités du travail.</p>
-  </div>
-</section>`;
-  }
-
-  const sectorLabel = s.label.toLowerCase();
-  const priceNote = !intel
-    ? `in line with the national average`
-    : pricePct > 5
-      ? `on average <strong>${pricePct}% higher</strong> than the national average`
-      : pricePct < -5
-        ? `on average <strong>${Math.abs(pricePct)}% lower</strong> than the national average`
-        : `in line with the national average (a modest variation within ±5%)`;
-
-  const demandText = intel ? DEMAND_TEXT[intel.demandLevel] : "steady";
-
-  const paragraph1 = `In ${esc(cityName)}, the average cost for ${esc(sectorLabel)} work is ${priceNote}. Demand in ${esc(regionName)} is currently ${esc(demandText)}, which affects how quickly contractors respond and how much room there is to negotiate the final price. The ranges below are average market prices drawn from real quotes generated with quoteai for jobs in ${esc(cityName)} and the surrounding area.`;
-  const paragraph2 = `Every quote depends on job-specific factors: the exact scope of work, the quality of materials requested, site accessibility, how urgent the job is, and any custom terms agreed with the client. That's why we always recommend a proper walkthrough or a detailed description: with quoteai you can do that in 30 seconds by describing the job in plain language, and get a professional, editable document ready to send to the client by WhatsApp or email.`;
-
-  return `<section class="py-20 bg-white border-t border-gray-100" aria-label="What ${esc(sectorLabel)} work costs in ${esc(cityName)}">
-  <div class="container mx-auto px-4 sm:px-6 lg:px-8 max-w-3xl">
-    <div class="text-center mb-10">
-      <h2 class="text-2xl font-bold text-gray-900">What does a ${esc(sectorLabel)} cost in ${esc(cityName)}</h2>
-      <p class="text-sm text-gray-400 mt-2">Typical price ranges for the most requested jobs</p>
-    </div>
-    <div class="space-y-4 text-gray-600 leading-relaxed text-base mb-8">
-      <p>${paragraph1}</p>
-      <p>${paragraph2}</p>
-    </div>
-    <ul class="space-y-2.5">
-      ${examplesList}
-    </ul>
-    <p class="text-xs text-gray-400 mt-6 text-center">Average market prices in ${esc(cityName)}, updated for ${CURRENT_YEAR}. Tax not included. Actual prices vary based on the specifics of the job.</p>
+    <p class="text-xs text-gray-400 mt-6 text-center">Prezzi medi di mercato a ${esc(cityName)} aggiornati al ${CURRENT_YEAR}. IVA esclusa. Variazioni possibili in base alle caratteristiche specifiche del lavoro.</p>
   </div>
 </section>`;
 }
+
 
 // The homepage (dist/index.html, dist/fr/index.html) gets its SEO <head> only.
 // It used to also get a hand-written static copy of the hero (buildHomepageBodyHtml),
@@ -1111,399 +1013,6 @@ function buildQuantoCostaBlock(
 // crawlers execute JS. Do not reintroduce a static body here unless it is generated
 // from the React tree (renderToString + hydrateRoot), never hand-copied.
 
-
-// ─── French sector page body ────────────────────────────────────────────────
-
-function buildFrBreadcrumb(items: { name: string; href: string | null }[]): string {
-  return buildBreadcrumb(items).replace('aria-label="Breadcrumb"', 'aria-label="Fil d\'Ariane"');
-}
-
-function buildSectorBodyHtmlFr(s: SectorData): string {
-  const c = getSectorFrContent(s);
-  const breadcrumb = buildFrBreadcrumb([
-    { name: "Accueil", href: "/fr" },
-    { name: c.h1Highlight, href: null },
-  ]);
-
-  const sHero = `<section class="relative overflow-hidden bg-white pt-24 pb-20">
-    <div class="container mx-auto px-4 sm:px-6 lg:px-8 text-center max-w-4xl relative z-10">
-      <div class="inline-flex items-center gap-2 rounded-full bg-violet-50 border border-violet-100 px-4 py-1.5 text-sm font-medium text-violet-700 mb-8">
-        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="currentColor" stroke="none" aria-hidden="true"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
-        Conçu pour les artisans canadiens
-      </div>
-      <h1 class="text-4xl font-extrabold tracking-tight text-gray-900 sm:text-5xl lg:text-6xl mb-6 leading-[1.1]">
-        ${esc(c.h1)} <span class="gradient-text">${esc(c.h1Highlight)}</span>
-      </h1>
-      <p class="text-xl text-gray-500 mb-10 max-w-2xl mx-auto leading-relaxed">${esc(c.intro)}</p>
-      <div class="flex flex-col sm:flex-row gap-4 justify-center">
-        <a href="/sign-up/" class="btn-gradient inline-flex h-14 items-center justify-center px-8 text-lg font-semibold">
-          Créer ma soumission gratuite
-        </a>
-        <a href="#comment-ca-marche" class="btn-gradient-outline inline-flex h-14 items-center justify-center px-8 text-lg font-semibold">
-          Comment ça marche
-        </a>
-      </div>
-      <p class="text-sm text-gray-400 mt-5">Sans carte de crédit &middot; Soumission prête en 30 secondes</p>
-    </div>
-  </section>`;
-
-  const sBenefits = `<section class="py-20 bg-gray-50">
-    <div class="container mx-auto px-4 sm:px-6 lg:px-8">
-      <div class="text-center mb-14">
-        <h2 class="text-3xl font-bold text-gray-900">${esc(c.h2Benefits)}</h2>
-      </div>
-      <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        ${c.benefits.map((b) => `<div class="card-soft bg-white p-7 rounded-2xl flex flex-col">
-          <div class="h-10 w-10 rounded-xl flex items-center justify-center text-white font-bold text-sm mb-5 shrink-0" style="background:linear-gradient(135deg,#7C3AED,#06B6D4)" aria-hidden="true"></div>
-          <h3 class="text-base font-semibold text-gray-900 mb-2">${esc(b.title)}</h3>
-          <p class="text-sm text-gray-500 leading-relaxed">${esc(b.desc)}</p>
-        </div>`).join("")}
-      </div>
-    </div>
-  </section>`;
-
-  const sHowItWorks = `<section id="comment-ca-marche" class="py-20 bg-white">
-    <div class="container mx-auto px-4 sm:px-6 lg:px-8 max-w-4xl">
-      <div class="text-center mb-14">
-        <h2 class="text-3xl font-bold text-gray-900">${esc(c.h2HowItWorks)}</h2>
-      </div>
-      <div class="grid md:grid-cols-3 gap-8">
-        ${c.howItWorks.map((step, i) => `<div>
-          <div class="h-10 w-10 rounded-full flex items-center justify-center text-white font-bold text-sm mb-5" style="background:linear-gradient(135deg,#7C3AED,#06B6D4)" aria-hidden="true">${i + 1}</div>
-          <h3 class="text-base font-semibold text-gray-900 mb-2">${esc(step.step)}</h3>
-          <p class="text-sm text-gray-500 leading-relaxed">${esc(step.desc)}</p>
-        </div>`).join("")}
-      </div>
-    </div>
-  </section>`;
-
-  const sUseCases = `<section class="py-20 bg-gray-50">
-    <div class="container mx-auto px-4 sm:px-6 lg:px-8 max-w-3xl">
-      <div class="text-center mb-12">
-        <h2 class="text-3xl font-bold text-gray-900">${esc(c.h2UseCases)}</h2>
-      </div>
-      <ul class="grid sm:grid-cols-2 gap-3">
-        ${s.fr.useCases.map((uc) => `<li class="flex items-center gap-3 bg-white rounded-xl px-5 py-3.5 card-soft">
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-violet-500 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg>
-          <span class="text-sm text-gray-700">${esc(uc)}</span>
-        </li>`).join("")}
-      </ul>
-    </div>
-  </section>`;
-
-  const sMarket = `<section class="py-20 bg-white">
-    <div class="container mx-auto px-4 sm:px-6 lg:px-8 max-w-4xl">
-      <div class="rounded-2xl p-10 md:p-14 relative overflow-hidden" style="background:linear-gradient(135deg,rgba(124,58,237,0.06),rgba(6,182,212,0.06))">
-        <div class="relative z-10">
-          <h2 class="text-2xl font-bold text-gray-900 mb-6">Conçu pour le marché canadien des métiers</h2>
-          <div class="grid md:grid-cols-3 gap-6 text-sm text-gray-600 leading-relaxed">
-            <div><div class="font-semibold text-gray-900 mb-2">Taxes canadiennes intégrées</div><p>La TPS/TVH (et la TVP/TVQ le cas échéant) est calculée automatiquement selon la province où le travail est exécuté.</p></div>
-            <div><div class="font-semibold text-gray-900 mb-2">Vos informations d'entreprise, sauvegardées une fois</div><p>Nom de l'entreprise, numéro de licence ou d'enregistrement, adresse et logo — chaque champ nécessaire pour une soumission professionnelle.</p></div>
-            <div><div class="font-semibold text-gray-900 mb-2">Vocabulaire des métiers intégré</div><p>L'IA est entraînée sur les termes que les entrepreneurs et artisans canadiens utilisent réellement.</p></div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </section>`;
-
-  const sFaq = `<section class="py-20 bg-gray-50">
-    <div class="container mx-auto px-4 sm:px-6 lg:px-8 max-w-3xl">
-      <div class="text-center mb-12">
-        <h2 class="text-3xl font-bold text-gray-900">${esc(c.h2Faq)}</h2>
-      </div>
-      <div class="space-y-4">
-        ${c.faq.map((f) => `<div class="bg-white rounded-2xl p-6 card-soft">
-          <h3 class="text-base font-semibold text-gray-900 mb-2">${esc(f.q)}</h3>
-          <p class="text-sm text-gray-500 leading-relaxed">${esc(f.a)}</p>
-        </div>`).join("")}
-      </div>
-    </div>
-  </section>`;
-
-  const sCityGrid = CITY_SECTORS.includes(s.slug) ? (() => {
-    const byRegion = new Map<string, CityData[]>();
-    for (const city of ACTIVE_CITIES) {
-      const arr = byRegion.get(city.region) ?? [];
-      arr.push(city);
-      byRegion.set(city.region, arr);
-    }
-    const regionBlocks = Array.from(byRegion.entries())
-      .map(([region, cities]) => `<div>
-          <h3 class="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-3">${esc(region)}</h3>
-          <div class="flex flex-wrap gap-2">
-            ${cities.map((c2) => `<a href="/fr/soumissions/${esc(s.frSlug)}/${esc(c2.slug)}/" class="inline-flex items-center rounded-full border border-gray-200 bg-white px-3 py-1.5 text-xs font-medium text-gray-600 hover:border-violet-300 hover:text-violet-600 transition-colors">${esc(c2.name)}</a>`).join("\n            ")}
-          </div>
-        </div>`)
-      .join("\n        ");
-    return `<section class="py-20 bg-gray-50">
-  <div class="container mx-auto px-4 sm:px-6 lg:px-8">
-    <div class="text-center mb-12">
-      <h2 class="text-2xl font-bold text-gray-900">Soumissions ${esc(c.h1Highlight.toLowerCase())} dans les principales villes</h2>
-      <p class="text-sm text-gray-500 mt-2">Sélectionnez votre ville pour des prix et informations locales</p>
-    </div>
-    <div class="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
-      ${regionBlocks}
-    </div>
-  </div>
-</section>`;
-  })() : "";
-
-  const related = RELATED_SECTORS[s.slug];
-  const sRelated = related && related.length > 0 ? `<section class="py-14 bg-white border-t border-gray-100">
-  <div class="container mx-auto px-4 sm:px-6 lg:px-8 max-w-4xl">
-    <h2 class="text-base font-semibold text-gray-500 mb-5 text-center">Services connexes</h2>
-    <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
-      ${related.map((r) => {
-        const rSector = SECTORS[r.slug];
-        const rLabel = rSector ? rSector.fr.label : r.label;
-        const rSlug = rSector ? rSector.frSlug : r.slug;
-        return `<a href="/fr/soumissions/${esc(rSlug)}/" class="flex items-center gap-2 bg-white border border-gray-100 hover:border-violet-200 rounded-xl px-4 py-3 text-sm font-medium text-gray-700 hover:text-violet-700 transition-colors">
-          <span class="text-violet-400 font-bold" aria-hidden="true">→</span> ${esc(rLabel)}
-        </a>`;
-      }).join("\n      ")}
-    </div>
-  </div>
-</section>` : "";
-
-  const sCta = `<section class="py-24 bg-white">
-    <div class="container mx-auto px-4 sm:px-6 lg:px-8 text-center max-w-2xl">
-      <h2 class="text-3xl font-bold text-gray-900 mb-4">Prêt à créer votre première soumission <span class="gradient-text">en 30 secondes</span>?</h2>
-      <p class="text-lg text-gray-500 mb-10">
-        Sans carte de crédit. Sans engagement. Votre première soumission est gratuite.
-      </p>
-      <a href="/sign-up/" class="btn-gradient inline-flex h-14 items-center justify-center px-10 text-lg font-semibold">
-        Commencer gratuitement
-        <svg xmlns="http://www.w3.org/2000/svg" class="ml-2 h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
-      </a>
-    </div>
-  </section>`;
-
-  return wrapInPublicLayoutFr(`<div class="flex flex-col min-h-screen bg-white">
-  ${breadcrumb}
-  ${sHero}
-  ${sBenefits}
-  ${sHowItWorks}
-  ${sUseCases}
-  ${sMarket}
-  ${sFaq}
-  ${sCityGrid}
-  ${sRelated}
-  ${sCta}
-</div>`);
-}
-
-function buildSectorJsonLdFr(s: SectorData): object[] {
-  const c = getSectorFrContent(s);
-  const canonical = `${BASE_URL}/fr/soumissions/${s.frSlug}/`;
-  const schemas: object[] = [
-    {
-      "@context": "https://schema.org",
-      "@type": "SoftwareApplication",
-      name: "quoteai",
-      description: s.fr.jsonLdDescription,
-      url: canonical,
-      applicationCategory: "BusinessApplication",
-      operatingSystem: "Web",
-      inLanguage: "fr",
-      offers: { "@type": "Offer", price: "0", priceCurrency: "EUR", availability: "https://schema.org/InStock" },
-    },
-    {
-      "@context": "https://schema.org",
-      "@type": "BreadcrumbList",
-      itemListElement: [
-        { "@type": "ListItem", position: 1, name: "Accueil", item: `${BASE_URL}/fr/` },
-        { "@type": "ListItem", position: 2, name: s.fr.label, item: canonical },
-      ],
-    },
-  ];
-  if (c.faq.length > 0) {
-    schemas.push({
-      "@context": "https://schema.org",
-      "@type": "FAQPage",
-      mainEntity: c.faq.map((f) => ({
-        "@type": "Question",
-        name: f.q,
-        acceptedAnswer: { "@type": "Answer", text: f.a },
-      })),
-    });
-  }
-  return schemas;
-}
-
-// ─── French city page body ──────────────────────────────────────────────────
-
-function buildCityBodyHtmlFr(s: SectorData, city: CityData): string {
-  const cityName = city.name;
-  const regionName = city.region;
-  const intel = CITY_INTELLIGENCE[city.slug];
-  const c = getSectorFrContent(s);
-  const intro = getCityIntro(s, city, "it-IT");
-
-  const breadcrumb = buildFrBreadcrumb([
-    { name: "Accueil", href: "/fr" },
-    { name: s.fr.label, href: `/fr/soumissions/${s.frSlug}/` },
-    { name: cityName, href: null },
-  ]);
-
-  const sHero = `<section class="relative overflow-hidden bg-white pt-24 pb-20">
-    <div class="container mx-auto px-4 sm:px-6 lg:px-8 text-center max-w-4xl relative z-10">
-      <div class="inline-flex items-center gap-2 rounded-full bg-violet-50 border border-violet-100 px-4 py-1.5 text-sm font-medium text-violet-700 mb-8">
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
-        ${esc(regionName)}
-      </div>
-      <h1 class="text-4xl font-extrabold tracking-tight text-gray-900 sm:text-5xl lg:text-6xl mb-6 leading-[1.1]">
-        ${esc(c.h1)} <span class="gradient-text">${esc(c.h1Highlight)}</span><br />
-        <span class="text-gray-500 text-3xl sm:text-4xl font-bold">à ${esc(cityName)}</span>
-      </h1>
-      <p class="text-xl text-gray-500 mb-10 max-w-2xl mx-auto leading-relaxed">${esc(intro)}</p>
-      <div class="flex flex-col sm:flex-row gap-4 justify-center">
-        <a href="/sign-up/" class="btn-gradient inline-flex h-14 items-center justify-center px-8 text-lg font-semibold">
-          Créer ma soumission gratuite
-        </a>
-        <a href="/fr/soumissions/${esc(s.frSlug)}/" class="btn-gradient-outline inline-flex h-14 items-center justify-center px-8 text-lg font-semibold">
-          Voir comment ça marche
-        </a>
-      </div>
-      <p class="text-sm text-gray-400 mt-5">Sans carte de crédit &middot; Soumission prête en 30 secondes</p>
-    </div>
-  </section>`;
-
-  const sOsservatorio = intel ? buildOsservatorio(s, city, intel, "it-IT") : "";
-
-  const sBenefits = `<section class="py-20 bg-gray-50">
-    <div class="container mx-auto px-4 sm:px-6 lg:px-8">
-      <div class="text-center mb-14">
-        <h2 class="text-3xl font-bold text-gray-900">Pourquoi les ${esc(s.fr.labelPlural)} de ${esc(cityName)} choisissent quoteai</h2>
-      </div>
-      <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        ${c.benefits.map((b) => `<div class="card-soft bg-white p-7 rounded-2xl flex flex-col">
-          <div class="h-10 w-10 rounded-xl flex items-center justify-center text-white font-bold text-sm mb-5 shrink-0" style="background:linear-gradient(135deg,#7C3AED,#06B6D4)" aria-hidden="true"></div>
-          <h3 class="text-base font-semibold text-gray-900 mb-2">${esc(b.title)}</h3>
-          <p class="text-sm text-gray-500 leading-relaxed">${esc(b.desc)}</p>
-        </div>`).join("")}
-      </div>
-    </div>
-  </section>`;
-
-  const howItWorksSteps = getCityHowItWorksSteps(cityName, "it-IT");
-  const sHowItWorks = `<section class="py-20 bg-white">
-    <div class="container mx-auto px-4 sm:px-6 lg:px-8 max-w-4xl">
-      <div class="text-center mb-14">
-        <h2 class="text-3xl font-bold text-gray-900">Soumission professionnelle à ${esc(cityName)} en 3 étapes</h2>
-      </div>
-      <div class="grid md:grid-cols-3 gap-10">
-        ${howItWorksSteps.map((step) => `<div>
-          <div class="h-10 w-10 rounded-full flex items-center justify-center text-white font-bold text-sm mb-5" style="background:linear-gradient(135deg,#7C3AED,#06B6D4)" aria-hidden="true">${esc(step.n)}</div>
-          <h3 class="text-base font-semibold text-gray-900 mb-2">${esc(step.title)}</h3>
-          <p class="text-sm text-gray-500 leading-relaxed">${esc(step.desc)}</p>
-        </div>`).join("")}
-      </div>
-    </div>
-  </section>`;
-
-  const sUseCases = `<section class="py-20 bg-gray-50">
-    <div class="container mx-auto px-4 sm:px-6 lg:px-8 max-w-3xl">
-      <div class="text-center mb-12">
-        <h2 class="text-3xl font-bold text-gray-900">Soumissions pour ces travaux à ${esc(cityName)}</h2>
-      </div>
-      <ul class="grid sm:grid-cols-2 gap-3">
-        ${s.fr.useCases.map((uc) => `<li class="flex items-center gap-3 bg-white rounded-xl px-5 py-3.5 card-soft">
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-violet-500 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg>
-          <span class="text-sm text-gray-700">${esc(uc)}</span>
-        </li>`).join("")}
-      </ul>
-    </div>
-  </section>`;
-
-  const cityFaqItems = getCityFaqItems(s, city, "it-IT");
-  const sFaq = `<section class="py-20 bg-gray-50">
-    <div class="container mx-auto px-4 sm:px-6 lg:px-8 max-w-3xl">
-      <div class="text-center mb-12">
-        <h2 class="text-3xl font-bold text-gray-900">Questions fréquentes</h2>
-      </div>
-      <div class="space-y-4">
-        ${cityFaqItems.map((f) => `<div class="bg-white rounded-2xl p-6 card-soft">
-          <h3 class="text-base font-semibold text-gray-900 mb-2">${esc(f.q)}</h3>
-          <p class="text-sm text-gray-500 leading-relaxed">${esc(f.a)}</p>
-        </div>`).join("")}
-      </div>
-    </div>
-  </section>`;
-
-  const nearbyLinks = getNearbyAnchors(s, city, "it-IT")
-    .map(({ slug, anchorText }) => `<a href="/fr/soumissions/${esc(s.frSlug)}/${esc(slug)}/" class="inline-flex items-center gap-1.5 rounded-full border border-gray-200 px-3.5 py-1.5 text-sm text-gray-500 hover:border-violet-300 hover:text-violet-600 transition-colors">${esc(anchorText)}</a>`)
-    .join("\n          ");
-  const sNearby = nearbyLinks ? `<section class="py-16 bg-white border-t border-gray-100">
-    <div class="container mx-auto px-4 sm:px-6 lg:px-8 max-w-4xl">
-      <h2 class="text-base font-semibold text-gray-500 mb-5 text-center">
-        Soumissions ${esc(s.fr.labelPlural)} dans les villes voisines
-      </h2>
-      <div class="flex flex-wrap gap-2 justify-center">
-          ${nearbyLinks}
-      </div>
-    </div>
-  </section>` : "";
-
-  const sQuantoCosta = buildQuantoCostaBlock(s, city, intel, "it-IT");
-  const contextTextFr = getCityContextText(city.slug, "it-IT");
-  const sContext = contextTextFr ? `<section class="py-10 bg-violet-50/50 border-y border-violet-100/60">
-  <div class="container mx-auto px-4 sm:px-6 lg:px-8 max-w-3xl">
-    <div class="flex gap-4 items-start">
-      <div class="shrink-0 mt-0.5 h-8 w-8 rounded-lg bg-violet-100 flex items-center justify-center" aria-hidden="true">
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-violet-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
-      </div>
-      <div>
-        <h2 class="text-sm font-semibold text-violet-700 mb-1.5">${esc(s.fr.label)} à ${esc(cityName)} — marché local</h2>
-        <p class="text-sm text-gray-600 leading-relaxed">${esc(contextTextFr)}</p>
-      </div>
-    </div>
-  </div>
-</section>` : "";
-
-  const sameCityOtherSectors = getSameCityOtherSectors(s.slug, city.slug, 6, "it-IT");
-  const sSameCityOther = sameCityOtherSectors.length ? `<section class="py-14 bg-gray-50 border-t border-gray-100">
-    <div class="container mx-auto px-4 sm:px-6 lg:px-8 max-w-4xl">
-      <h2 class="text-base font-semibold text-gray-500 mb-5 text-center">Autres services à ${esc(cityName)}</h2>
-      <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
-        ${sameCityOtherSectors
-          .map((r) => `<a href="/fr/soumissions/${esc(SECTORS[r.slug]?.frSlug ?? r.slug)}/${esc(city.slug)}/" class="flex items-center gap-2 bg-white border border-gray-100 hover:border-violet-200 rounded-xl px-4 py-3 text-sm font-medium text-gray-700 hover:text-violet-700 transition-colors">
-          <span class="text-violet-400 font-bold" aria-hidden="true">→</span> ${esc(r.label)} à ${esc(cityName)}
-        </a>`)
-          .join("\n        ")}
-      </div>
-    </div>
-  </section>` : "";
-
-  const ctaTexts = getCityCtaTexts(getCityCtaVariant(s, city), cityName, "it-IT");
-  const sCta = `<section class="py-24 bg-gray-50">
-    <div class="container mx-auto px-4 sm:px-6 lg:px-8 text-center max-w-2xl">
-      <h2 class="text-3xl font-bold text-gray-900 mb-4">${esc(ctaTexts.headingPrefix)}<span class="gradient-text">${esc(ctaTexts.headingGradient)}</span></h2>
-      <p class="text-lg text-gray-500 mb-10">
-        Aucune carte de crédit requise. Votre première soumission professionnelle est gratuite.
-      </p>
-      <a href="/sign-up/" class="btn-gradient inline-flex h-14 items-center justify-center px-10 text-lg font-semibold">
-        ${esc(ctaTexts.button)}
-        <svg xmlns="http://www.w3.org/2000/svg" class="ml-2 h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
-      </a>
-      <p class="text-sm text-gray-400 mt-4">Soumission prête en 30 secondes &middot; Sans engagement</p>
-    </div>
-  </section>`;
-
-  return wrapInPublicLayoutFr(`<div class="flex flex-col min-h-screen bg-white">
-  ${breadcrumb}
-  ${sHero}
-  ${sOsservatorio}
-  ${sBenefits}
-  ${sHowItWorks}
-  ${sUseCases}
-  ${sFaq}
-  ${sQuantoCosta}
-  ${sContext}
-  ${sNearby}
-  ${sSameCityOther}
-  ${sCta}
-</div>`);
-}
 
 // ─── Main execution ─────────────────────────────────────────────────────────
 
@@ -1534,7 +1043,7 @@ console.log("Prerendering SEO pages...");
 const homepageWebSiteSchema = {
   "@context": "https://schema.org",
   "@type": "WebSite",
-  name: "quoteai",
+  name: "PrevAI",
   url: BASE_URL,
   description: "AI-powered software for professional quotes in 30 seconds. Built for Canadian contractors, small businesses, and freelancers.",
   inLanguage: "en",
@@ -1542,7 +1051,7 @@ const homepageWebSiteSchema = {
     "@type": "SearchAction",
     target: {
       "@type": "EntryPoint",
-      urlTemplate: `${BASE_URL}/quotes/{search_term_string}`,
+      urlTemplate: `${BASE_URL}/preventivi/{search_term_string}`,
     },
     "query-input": "required name=search_term_string",
   },
@@ -1550,7 +1059,7 @@ const homepageWebSiteSchema = {
 const homepageSoftwareSchema = {
   "@context": "https://schema.org",
   "@type": "SoftwareApplication",
-  name: "quoteai",
+  name: "PrevAI",
   description: "AI-powered quoting software for Canadian contractors, small businesses, and tradespeople.",
   url: `${BASE_URL}/`,
   applicationCategory: "BusinessApplication",
@@ -1558,7 +1067,7 @@ const homepageSoftwareSchema = {
   offers: { "@type": "Offer", price: "0", priceCurrency: "EUR", description: "Free trial available" },
   audience: { "@type": "BusinessAudience", audienceType: "Contractors, Small Businesses, Tradespeople, Freelancers" },
   inLanguage: "en",
-  provider: { "@type": "Organization", name: "quoteai", url: BASE_URL },
+  provider: { "@type": "Organization", name: "PrevAI", url: BASE_URL },
   aggregateRating: {
     "@type": "AggregateRating",
     ratingValue: AGGREGATE_RATING.ratingValue,
@@ -1604,21 +1113,21 @@ for (const [sectorSlug, sector] of Object.entries(SECTORS)) {
       ? sector.descriptionVariants[descHash % sector.descriptionVariants.length]
       : sector.metaDescription;
 
-  const canonical = `${BASE_URL}/quotes/${sectorSlug}/`;
+  const canonical = `${BASE_URL}/preventivi/${sectorSlug}/`;
   const jsonLd = buildSectorJsonLd(sector);
   const ogImagePath = ogImage(sectorSlug);
 
   const headBlock = buildHeadBlock({ title, description, canonical, ogImagePath, jsonLd, lang: "en" });
   const bodyHtml = buildSectorBodyHtml(sector);
   const html = injectBody(injectHead(template, headBlock), bodyHtml);
-  writeRoute(`quotes/${sectorSlug}`, html);
+  writeRoute(`preventivi/${sectorSlug}`, html);
   count++;
 
 
   if (!CITY_SECTORS.includes(sectorSlug)) continue;
 
   for (const city of ACTIVE_CITIES) {
-    const cityCanonical = `${BASE_URL}/quotes/${sectorSlug}/${city.slug}/`;
+    const cityCanonical = `${BASE_URL}/preventivi/${sectorSlug}/${city.slug}/`;
     const cityTitle = getCityTitle(sector, city.name, city.slug);
     const cityDesc = getCityDesc(sector, city.name, city.slug, city.region);
     const cityJsonLd = buildCityJsonLd(sector, city);
@@ -1634,7 +1143,7 @@ for (const [sectorSlug, sector] of Object.entries(SECTORS)) {
     // Phase 68: the 210 city pages and the 23 blog pages were written without the site header/footer — in production they showed only the (Italian) nav shell and no footer.
     const cityBodyHtml = wrapInPublicLayout(buildCityBodyHtml(sector, city));
     const cityHtml = injectBody(injectHead(template, cityHeadBlock), cityBodyHtml);
-    writeRoute(`quotes/${sectorSlug}/${city.slug}`, cityHtml);
+    writeRoute(`preventivi/${sectorSlug}/${city.slug}`, cityHtml);
     count++;
 
   }
@@ -1654,7 +1163,7 @@ function buildBlogListJsonLd(): object[] {
       inLanguage: "en",
       publisher: {
         "@type": "Organization",
-        name: "quoteai",
+        name: "PrevAI",
         url: BASE_URL,
         logo: { "@type": "ImageObject", url: `${BASE_URL}/icon-192.png`, width: 192, height: 192 },
       },
@@ -1687,12 +1196,12 @@ function buildArticleJsonLd(article: BlogArticle, imagePath: string): object[] {
       inLanguage: "en",
       author: {
         "@type": "Organization",
-        name: "quoteai",
+        name: "PrevAI",
         url: BASE_URL,
       },
       publisher: {
         "@type": "Organization",
-        name: "quoteai",
+        name: "PrevAI",
         url: BASE_URL,
         logo: { "@type": "ImageObject", url: `${BASE_URL}/icon-192.png`, width: 192, height: 192 },
       },
@@ -1859,7 +1368,7 @@ function buildBlogArticleBodyHtml(article: BlogArticle): string {
   const relatedSectorLinks = article.relatedSectors.map((sectorSlug) => {
     const sector = SECTORS[sectorSlug];
     if (!sector) return "";
-    return `<a href="/quotes/${esc(sectorSlug)}/" class="inline-flex items-center gap-1.5 rounded-full border border-gray-200 bg-white px-4 py-2 text-xs font-medium text-gray-700 hover:border-violet-300 hover:text-violet-700 transition-colors">
+    return `<a href="/preventivi/${esc(sectorSlug)}/" class="inline-flex items-center gap-1.5 rounded-full border border-gray-200 bg-white px-4 py-2 text-xs font-medium text-gray-700 hover:border-violet-300 hover:text-violet-700 transition-colors">
       <span class="text-violet-400 font-bold">→</span> ${esc(sector.label)} quotes
     </a>`;
   }).filter(Boolean).join("\n    ");
@@ -1882,7 +1391,7 @@ function buildBlogArticleBodyHtml(article: BlogArticle): string {
       ${ACTIVE_CITIES
         .map(
           (city) =>
-            `<a href="/quotes/${esc(geoSector.slug)}/${esc(city.slug)}/" class="inline-flex items-center gap-1.5 rounded-full border border-gray-200 bg-white px-4 py-2 text-xs font-medium text-gray-700 hover:border-violet-300 hover:text-violet-700 transition-colors">
+            `<a href="/preventivi/${esc(geoSector.slug)}/${esc(city.slug)}/" class="inline-flex items-center gap-1.5 rounded-full border border-gray-200 bg-white px-4 py-2 text-xs font-medium text-gray-700 hover:border-violet-300 hover:text-violet-700 transition-colors">
         <span class="text-violet-400 font-bold">→</span> ${esc(city.name)}
       </a>`
         )
@@ -2140,7 +1649,7 @@ function buildWebPageJsonLd(name: string, description: string, path: string, typ
     description,
     url: `${BASE_URL}${path}`,
     inLanguage: "en",
-    isPartOf: { "@type": "WebSite", name: "quoteai", url: BASE_URL },
+    isPartOf: { "@type": "WebSite", name: "PrevAI", url: BASE_URL },
   };
 }
 
@@ -2169,7 +1678,7 @@ async function buildStaticPageHtml(opts: {
 const chiSiamoOrgJsonLd = {
   "@context": "https://schema.org",
   "@type": "Organization",
-  name: "quoteai",
+  name: "PrevAI",
   url: `${BASE_URL}/`,
   logo: `${BASE_URL}/icon-192.png`,
   description: "quoteai is the AI quoting software for Canadian contractors and tradespeople. Generate professional quotes in 30 seconds by describing the job in plain English.",
@@ -2177,7 +1686,7 @@ const chiSiamoOrgJsonLd = {
   foundingLocation: { "@type": "Place", name: "Canada" },
   contactPoint: {
     "@type": "ContactPoint",
-    email: "info@quoteai.ca",
+    email: "info@prevai.it",
     contactType: "customer service",
     availableLanguage: "en",
   },
@@ -2200,12 +1709,12 @@ const contattiJsonLd = {
   description: "Contact the quoteai team for support, product questions, or sales inquiries.",
   mainEntity: {
     "@type": "Organization",
-    name: "quoteai",
+    name: "PrevAI",
     url: `${BASE_URL}/`,
-    email: "info@quoteai.ca",
+    email: "info@prevai.it",
     contactPoint: [
-      { "@type": "ContactPoint", email: "info@quoteai.ca", contactType: "customer support", availableLanguage: "en" },
-      { "@type": "ContactPoint", email: "privacy@quoteai.ca", contactType: "privacy inquiries", availableLanguage: "en" },
+      { "@type": "ContactPoint", email: "info@prevai.it", contactType: "customer support", availableLanguage: "en" },
+      { "@type": "ContactPoint", email: "privacy@prevai.it", contactType: "privacy inquiries", availableLanguage: "en" },
     ],
   },
 };
@@ -2220,22 +1729,22 @@ await buildStaticPageHtml({
 
 // /privacy-policy/ — mirrors src/pages/privacy-policy.tsx (the real live route)
 await buildStaticPageHtml({
-  slug: "privacy-policy",
+  slug: "privacy",
   title: "Privacy Policy | QuoteAI",
   description: "QuoteAI's privacy policy — how we collect, use, and protect your personal information.",
-  path: "/privacy-policy/",
+  path: "/privacy/",
   jsonLd: [buildWebPageJsonLd("Privacy Policy", "QuoteAI's privacy policy — how we collect, use, and protect your personal information.", "/privacy-policy/"), buildBreadcrumbJsonLd("Privacy Policy", "/privacy-policy/")],
-  bodyHtml: stripHoistedHead(await renderPage("/privacy-policy", "it")),
+  bodyHtml: stripHoistedHead(await renderPage("/privacy", "it")),
 });
 
 // /terms/ — mirrors src/pages/terms.tsx (the real live route)
 await buildStaticPageHtml({
-  slug: "terms",
+  slug: "termini",
   title: "Terms of Service | QuoteAI",
   description: "Terms and conditions for using the QuoteAI platform to generate AI-powered quotes.",
-  path: "/terms/",
+  path: "/termini/",
   jsonLd: [buildWebPageJsonLd("Terms of Service", "Terms and conditions for using the QuoteAI platform to generate AI-powered quotes.", "/terms/"), buildBreadcrumbJsonLd("Terms of Service", "/terms/")],
-  bodyHtml: stripHoistedHead(await renderPage("/terms", "it")),
+  bodyHtml: stripHoistedHead(await renderPage("/termini", "it")),
 });
 
 // /whatsapp/
@@ -2254,7 +1763,7 @@ await buildStaticPageHtml({
   title: "Site Map | quoteai — Full Page Index",
   description: "The complete site map for quoteai. Find every static page, blog article, and guide for contractors and tradespeople across Canadian cities.",
   path: "/mappa-sito/",
-  jsonLd: [buildWebPageJsonLd("Site Map", "The complete site map for quoteai.ca. Find every static page, blog article, and guide for contractors and tradespeople across Canadian cities.", "/mappa-sito/"), buildBreadcrumbJsonLd("Site Map", "/mappa-sito/")],
+  jsonLd: [buildWebPageJsonLd("Site Map", "The complete site map for prevai.it. Find every static page, blog article, and guide for contractors and tradespeople across Canadian cities.", "/mappa-sito/"), buildBreadcrumbJsonLd("Site Map", "/mappa-sito/")],
   bodyHtml: stripHoistedHead(await renderPage("/mappa-sito", "it")),
 });
 

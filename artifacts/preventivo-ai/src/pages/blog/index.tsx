@@ -43,7 +43,7 @@ const GUIDE_ICONS: Record<string, typeof ClipboardList> = {
   "word-template": FileText,
 };
 
-const BASE_URL = "https://quoteai.ca";
+const BASE_URL = "https://prevai.it";
 
 export default function BlogPage() {
   const { t, lang } = useLanguage();

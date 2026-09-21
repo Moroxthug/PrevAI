@@ -26,8 +26,8 @@ export const SSR_PAGES: ReadonlyArray<{ path: string; lang: Lang }> = [
   { path: "/whatsapp", lang: "it" },
   { path: "/chi-siamo", lang: "it" },
   { path: "/contatti", lang: "it" },
-  { path: "/privacy-policy", lang: "it" },
-  { path: "/terms", lang: "it" },
+  { path: "/privacy", lang: "it" },
+  { path: "/termini", lang: "it" },
   { path: "/mappa-sito", lang: "it" },
   // Phase 70: help centre index + every article.
   { path: "/help", lang: "it" },

@@ -33,10 +33,10 @@ function ScrollSection({
 
 /** The 18 real trade verticals, in the order they appear on their SEO pages. */
 const TRADE_SLUGS = [
-  "painter", "electrician", "plumber", "general-contractor", "renovation-contractor",
-  "welder-fabricator", "carpenter-cabinetmaker", "hvac-technician", "freelance",
-  "building-consultant", "mason", "landscaper", "tile-installer", "window-door-installer",
-  "roofer", "air-conditioning-installer", "decorative-painter", "flooring-installer",
+  "imbianchino", "elettricista", "idraulico", "edilizia", "ristrutturazione",
+  "carpentiere", "falegname", "termoidraulico", "freelance",
+  "geometra", "muratore", "giardiniere", "piastrellista", "serramentista",
+  "tetto", "condizionatori", "pittore", "pavimentista",
 ];
 
 export default function Home() {
@@ -58,9 +58,9 @@ export default function Home() {
         description={
           "quoteai turns a plain-language job description into a priced, branded, tax-calculated quote in 30 seconds — then runs leads, job sites, contracts and invoices until you're paid. Built for Canadian trades."
         }
-        canonical={"https://quoteai.ca/"}
+        canonical={"https://prevai.it/"}
         lang="it-IT"
-        frCanonical="https://quoteai.ca/fr/"
+        frCanonical="https://prevai.it/fr/"
       />
 
       {/* ── HERO ───────────────────────────────────────────── */}
@@ -271,7 +271,7 @@ export default function Home() {
             <div className="step">
               <span className="n">3</span>
               <b>Get the PDF in chat</b>
-              <p>Send it to your client with a tap. The quote is also saved on quoteai.ca.</p>
+              <p>Send it to your client with a tap. The quote is also saved on prevai.it.</p>
             </div>
           </div>
         </div>
@@ -375,11 +375,11 @@ export default function Home() {
           </div>
           <div className="news-grid">
             {([
-              { slug: "excel-template", chip: "chip-green", badge: "vs Excel", title: "Alternative to an Excel quote", desc: "No formulas. No errors. Just results.", seed: "quoteai-guide-excel" },
-              { slug: "word-template", chip: "chip-teal", badge: "vs Word", title: "Alternative to a Word template", desc: "Professional PDF in one click, no manual formatting.", seed: "quoteai-guide-word" },
-              { slug: "how-to-quote", chip: "chip-purple", badge: "Guide", title: "How to write a quote", desc: "A practical guide for Canadian contractors and small businesses.", seed: "quoteai-guide-howto" },
+              { slug: "modello-excel", chip: "chip-green", badge: "vs Excel", title: "Alternative to an Excel quote", desc: "No formulas. No errors. Just results.", seed: "quoteai-guide-excel" },
+              { slug: "modello-word", chip: "chip-teal", badge: "vs Word", title: "Alternative to a Word template", desc: "Professional PDF in one click, no manual formatting.", seed: "quoteai-guide-word" },
+              { slug: "come-fare-preventivo", chip: "chip-purple", badge: "Guide", title: "How to write a quote", desc: "A practical guide for Canadian contractors and small businesses.", seed: "quoteai-guide-howto" },
             ]).map((g) => (
-              <Link key={g.slug} href={`/quotes/${g.slug}/`} className="card news-card">
+              <Link key={g.slug} href={`/preventivi/${g.slug}/`} className="card news-card">
                 <div className="news-media">
                   <img src={`https://picsum.photos/seed/${g.seed}/840/525`} alt="" loading="lazy" />
                 </div>
@@ -409,7 +409,7 @@ export default function Home() {
         <div className="marquee">
           <div className="mq-track">
             {[...TRADE_SLUGS, ...TRADE_SLUGS].map((slug, i) => (
-              <Link key={`${slug}-${i}`} href={`/quotes/${slug}/`} className="wm">{tradeLabel(slug)}</Link>
+              <Link key={`${slug}-${i}`} href={`/preventivi/${slug}/`} className="wm">{tradeLabel(slug)}</Link>
             ))}
           </div>
         </div>

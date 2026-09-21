@@ -331,16 +331,16 @@ function AccountTab() {
                   <pre className="p-4 bg-slate-950 text-slate-200 rounded-[var(--radius)] overflow-x-auto font-mono text-[10px] leading-relaxed max-h-40 whitespace-pre-wrap select-all border border-slate-800">
 {`<!-- QuoteAI Widget Funnel -->
 <div id="quoteai-widget">
-  <a href="https://quoteai.ca" rel="noopener">${t("dashboard.settings.account.widgetCard.embedAnchorText")}</a>
+  <a href="https://prevai.it" rel="noopener">${t("dashboard.settings.account.widgetCard.embedAnchorText")}</a>
 </div>
 <script
-  src="${typeof window !== "undefined" ? window.location.origin : "https://quoteai.ca"}/widget.js"
+  src="${typeof window !== "undefined" ? window.location.origin : "https://prevai.it"}/widget.js"
   data-api-key="${profile.apiKey}"
   async
 ></script>`}
                   </pre>
                   <button onClick={() => {
-                      const code = `<!-- QuoteAI Widget Funnel -->\n<div id="quoteai-widget">\n  <a href="https://quoteai.ca" rel="noopener">${t("dashboard.settings.account.widgetCard.embedAnchorText")}</a>\n</div>\n<script\n  src="${typeof window !== "undefined" ? window.location.origin : "https://quoteai.ca"}/widget.js"\n  data-api-key="${profile.apiKey}"\n  async\n></script>`;
+                      const code = `<!-- QuoteAI Widget Funnel -->\n<div id="quoteai-widget">\n  <a href="https://prevai.it" rel="noopener">${t("dashboard.settings.account.widgetCard.embedAnchorText")}</a>\n</div>\n<script\n  src="${typeof window !== "undefined" ? window.location.origin : "https://prevai.it"}/widget.js"\n  data-api-key="${profile.apiKey}"\n  async\n></script>`;
                       navigator.clipboard.writeText(code);
                       toast({ title: t("dashboard.settings.account.widgetCard.codeCopiedTitle"), description: t("dashboard.settings.account.widgetCard.codeCopiedDesc") });
                     }}
@@ -2722,11 +2722,11 @@ function WidgetTab() {
     );
   }
 
-  const widgetUrl = typeof window !== "undefined" ? `${window.location.origin}/widget.js` : "https://quoteai.ca/widget.js";
+  const widgetUrl = typeof window !== "undefined" ? `${window.location.origin}/widget.js` : "https://prevai.it/widget.js";
 
   const embedCode = `<!-- QuoteAI Widget Funnel -->
 <div id="quoteai-widget">
-  <a href="https://quoteai.ca" rel="noopener">${t("dashboard.settings.widget.embedAnchorText")}</a>
+  <a href="https://prevai.it" rel="noopener">${t("dashboard.settings.widget.embedAnchorText")}</a>
 </div>
 <script
   src="${widgetUrl}"

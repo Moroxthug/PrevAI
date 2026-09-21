@@ -15,7 +15,7 @@ export default function TermsPage() {
       <SeoHead
         title="Terms of Service | QuoteAI"
         description="Terms and conditions for using the QuoteAI platform to generate AI-powered quotes."
-        canonical="https://quoteai.ca/terms/"
+        canonical="https://prevai.it/termini/"
       />
       <div className="wrap">
         <nav aria-label="Breadcrumb" className="crumbs">
@@ -38,7 +38,7 @@ export default function TermsPage() {
           <section>
             <h2 className="text-lg font-semibold text-gray-900 mb-3">1. Acceptance of terms</h2>
             <p>
-              By using the <strong>QuoteAI</strong> platform (the "Service"), available at <strong>quoteai.ca</strong>,
+              By using the <strong>QuoteAI</strong> platform (the "Service"), available at <strong>prevai.it</strong>,
               you agree to be bound by these Terms of Service in full. If you do not agree to these terms,
               you may not use the Service.
             </p>
@@ -64,7 +64,7 @@ export default function TermsPage() {
               To access the Service you must create an account and provide accurate, up-to-date information.
               You are responsible for keeping your credentials confidential and for all activity that occurs
               under your account. If you become aware of any unauthorized access, notify us immediately at{" "}
-              <a href="mailto:support@quoteai.ca" className="text-navy-600 hover:underline">support@quoteai.ca</a>.
+              <a href="mailto:support@prevai.it" className="text-navy-600 hover:underline">support@prevai.it</a>.
             </p>
           </section>
 
@@ -142,7 +142,7 @@ export default function TermsPage() {
               QuoteAI reserves the right to suspend or terminate access to the Service in the event of a breach
               of these Terms, with notice by email except in cases of serious violations. You may cancel your
               account at any time from the Settings page or by contacting{" "}
-              <a href="mailto:support@quoteai.ca" className="text-navy-600 hover:underline">support@quoteai.ca</a>.
+              <a href="mailto:support@prevai.it" className="text-navy-600 hover:underline">support@prevai.it</a>.
             </p>
           </section>
 
@@ -167,7 +167,7 @@ export default function TermsPage() {
           <section>
             <h2 className="text-lg font-semibold text-gray-900 mb-3">11. Contact us</h2>
             <p>
-              For any questions about these Terms: <a href="mailto:support@quoteai.ca" className="text-navy-600 hover:underline">support@quoteai.ca</a>
+              For any questions about these Terms: <a href="mailto:support@prevai.it" className="text-navy-600 hover:underline">support@prevai.it</a>
             </p>
           </section>
 

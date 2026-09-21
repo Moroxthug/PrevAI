@@ -44,8 +44,8 @@ export class ErrorBoundary extends Component<Props, State> {
           <h1 className="text-2xl font-bold text-foreground mb-3">{t("errorBoundary.title")}</h1>
           <p className="text-muted-foreground max-w-md mb-6">
             {t("errorBoundary.bodyPrefix")}{" "}
-            <a href="mailto:info@quoteai.ca" className="text-navy-600 font-medium">
-              info@quoteai.ca
+            <a href="mailto:info@prevai.it" className="text-navy-600 font-medium">
+              info@prevai.it
             </a>
             .
           </p>

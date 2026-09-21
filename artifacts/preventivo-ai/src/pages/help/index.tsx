@@ -7,7 +7,7 @@ import { HELP_ARTICLES, HELP_CATEGORIES, type HelpCategory } from "@/data/help-a
 import { SeoHead } from "@/components/seo-head";
 import { useLanguage } from "@/i18n/LanguageContext";
 
-const BASE_URL = "https://quoteai.ca";
+const BASE_URL = "https://prevai.it";
 
 const CATEGORY_ICONS: Record<HelpCategory, typeof Rocket> = {
   start: Rocket,

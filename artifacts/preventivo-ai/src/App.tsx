@@ -126,10 +126,10 @@ function Router() {
       <Route path={PATHS.CHI_SIAMO} component={() => <Suspense fallback={null}><ChiSiamoPage /></Suspense>} />
       <Route path={PATHS.CONTATTI} component={() => <Suspense fallback={null}><ContattiPage /></Suspense>} />
       <Route path={PATHS.PRIVACY} component={() => <Suspense fallback={null}><PrivacyPage /></Suspense>} />
-      <Route path={PATHS.TERMS} component={() => <Suspense fallback={null}><TermsPage /></Suspense>} />
-      {/* Old Italian-era paths kept as redirects so existing links/bookmarks keep working */}
-      <Route path="/privacy" component={() => <Redirect to={PATHS.PRIVACY} />} />
-      <Route path="/termini" component={() => <Redirect to={PATHS.TERMS} />} />
+      <Route path={PATHS.TERMINI} component={() => <Suspense fallback={null}><TermsPage /></Suspense>} />
+      {/* Percorsi QuoteAI mantenuti come redirect verso gli URL v1 indicizzati */}
+      <Route path="/privacy-policy" component={() => <Redirect to={PATHS.PRIVACY} />} />
+      <Route path="/terms" component={() => <Redirect to={PATHS.TERMINI} />} />
       <Route path={PATHS.MAPPA_SITO} component={() => <Suspense fallback={null}><MappaSitoPage /></Suspense>} />
       {/* Help centre — Phase 70; articles from HELP_ARTICLES */}
       <Route path="/help/:slug" component={() => <PublicLayout><Suspense fallback={null}><HelpArticlePage /></Suspense></PublicLayout>} />
@@ -239,8 +239,8 @@ function Router() {
       <Route path="/p/:id" component={() => <Suspense fallback={null}><PublicQuotePage /></Suspense>} />
 
       {/* SEO landing pages — dynamic, driven by SECTORS / CITIES data */}
-      <Route path="/quotes/:type/:city" component={() => <PublicLayout><Suspense fallback={null}><SeoCityLanding /></Suspense></PublicLayout>} />
-      <Route path="/quotes/:type" component={() => <PublicLayout><Suspense fallback={null}><SeoLanding /></Suspense></PublicLayout>} />
+      <Route path="/preventivi/:type/:city" component={() => <PublicLayout><Suspense fallback={null}><SeoCityLanding /></Suspense></PublicLayout>} />
+      <Route path="/preventivi/:type" component={() => <PublicLayout><Suspense fallback={null}><SeoLanding /></Suspense></PublicLayout>} />
 
       {/* Blog — dynamic, driven by BLOG_ARTICLES / BLOG_CATEGORIES data */}
       <Route path="/blog/categoria/:slug" component={() => <PublicLayout><Suspense fallback={null}><BlogCategoryPage /></Suspense></PublicLayout>} />

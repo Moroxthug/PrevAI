@@ -97,7 +97,7 @@ export default function SignUpPage() {
               </Link>
             </p>
             <a
-              href="mailto:support@quoteai.ca?subject=Beta%20access%20request"
+              href="mailto:support@prevai.it?subject=Beta%20access%20request"
               className="btn w-full"
               style={{ background: "#25D366", color: "#fff" }}
             >

@@ -4,15 +4,15 @@ import { google } from "googleapis";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const KEY_PATH = path.join(__dirname, "google-indexing-key.json");
-const SITE_URL = "https://quoteai.ca/";
+const SITE_URL = "https://prevai.it/";
 
 const urls = [
-  "https://quoteai.ca/quotes/air-conditioning-installer/",
-  "https://quoteai.ca/quotes/painter/monza/",
-  "https://quoteai.ca/quotes/general-contractor/brescia/",
-  "https://quoteai.ca/blog/privacy/",
-  "https://quoteai.ca/privacy/",
-  "https://quoteai.ca/chi-siamo/",
+  "https://prevai.it/quotes/air-conditioning-installer/",
+  "https://prevai.it/quotes/painter/monza/",
+  "https://prevai.it/quotes/general-contractor/brescia/",
+  "https://prevai.it/blog/privacy/",
+  "https://prevai.it/privacy/",
+  "https://prevai.it/chi-siamo/",
 ];
 
 async function main() {

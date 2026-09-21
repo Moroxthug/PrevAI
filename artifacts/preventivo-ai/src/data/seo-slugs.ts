@@ -1,72 +1,64 @@
-// Phase 68: the light sector index. seo-data.ts is ~150 kB of landing-page
-// copy; the public entry bundle (public-layout's language toggle, the
-// homepage trade chips) only needs slugs and labels, so those live here and
-// seo-data.ts asserts it stays in sync (build fails on drift — the prerender
-// and sitemap scripts import seo-data).
+// Phase 68 (QuoteAI) / V2-2: indice leggero dei settori. seo-data.ts pesa
+// ~150 kB di testi per le landing; il bundle pubblico (chip mestieri in
+// homepage, footer) ha bisogno solo di slug ed etichette, che vivono qui;
+// seo-data.ts verifica che restino allineati (la build fallisce se divergono).
+// Slug = PrevAI v1 (URL indicizzate: /preventivi/<slug>/).
 export interface SectorSlugEntry {
-  /** French URL slug under /fr/soumissions/. */
-  frSlug: string;
   label: string;
-  frLabel: string;
+  labelPlural: string;
 }
 
 export const SECTOR_SLUGS: Record<string, SectorSlugEntry> = {
-  painter: { frSlug: "peintre", label: "Painter", frLabel: "Peintre" },
-  electrician: { frSlug: "electricien", label: "Electrician", frLabel: "Électricien" },
-  plumber: { frSlug: "plombier", label: "Plumber", frLabel: "Plombier" },
-  "general-contractor": { frSlug: "entrepreneur-general", label: "General Contractor", frLabel: "Entrepreneur général" },
-  "renovation-contractor": { frSlug: "entrepreneur-renovation", label: "Renovation Contractor", frLabel: "Entrepreneur en rénovation" },
-  "welder-fabricator": { frSlug: "soudeur-metallier", label: "Welder & Metal Fabricator", frLabel: "Soudeur-métallier" },
-  "carpenter-cabinetmaker": { frSlug: "menuisier-ebeniste", label: "Carpenter & Cabinetmaker", frLabel: "Menuisier-ébéniste" },
-  "hvac-technician": { frSlug: "technicien-cvc", label: "HVAC & Heating Technician", frLabel: "Technicien CVC" },
-  freelance: { frSlug: "travailleur-autonome", label: "Freelancer", frLabel: "Travailleur autonome" },
-  "building-consultant": { frSlug: "expert-batiment", label: "Building Consultant", frLabel: "Expert en bâtiment" },
-  mason: { frSlug: "macon", label: "Mason & Concrete Contractor", frLabel: "Maçon" },
-  landscaper: { frSlug: "paysagiste", label: "Landscaper", frLabel: "Paysagiste" },
-  "tile-installer": { frSlug: "poseur-de-ceramique", label: "Tile Installer", frLabel: "Poseur de céramique" },
-  "window-door-installer": { frSlug: "poseur-portes-fenetres", label: "Window & Door Installer", frLabel: "Poseur de portes et fenêtres" },
-  roofer: { frSlug: "couvreur", label: "Roofer", frLabel: "Couvreur" },
-  "air-conditioning-installer": { frSlug: "installateur-climatisation", label: "Air Conditioning Installer", frLabel: "Installateur de climatisation" },
-  "decorative-painter": { frSlug: "peintre-decorateur", label: "Painter & Decorative Finisher", frLabel: "Peintre-décorateur" },
-  "flooring-installer": { frSlug: "poseur-de-plancher", label: "Flooring Installer", frLabel: "Poseur de revêtements de sol" },
-  "excel-template": { frSlug: "modele-soumission-excel", label: "Excel Quote Template", frLabel: "Modèle Excel" },
-  "word-template": { frSlug: "modele-soumission-word", label: "Word Quote Template", frLabel: "Modèle Word" },
-  "how-to-quote": { frSlug: "comment-faire-une-soumission", label: "Professional Quote", frLabel: "Comment faire une soumission" },
-  "free-quote": { frSlug: "soumission-gratuite", label: "Free Quotes", frLabel: "Soumission gratuite" },
+  imbianchino: { label: "Imbianchino", labelPlural: "imbianchini" },
+  elettricista: { label: "Elettricista", labelPlural: "elettricisti" },
+  idraulico: { label: "Idraulico", labelPlural: "idraulici" },
+  edilizia: { label: "Impresa Edile", labelPlural: "imprese edili" },
+  ristrutturazione: { label: "Ristrutturazione", labelPlural: "ristrutturatori" },
+  carpentiere: { label: "Carpentiere", labelPlural: "carpentieri" },
+  falegname: { label: "Falegname", labelPlural: "falegnami" },
+  termoidraulico: { label: "Termoidraulico", labelPlural: "termoidraulici" },
+  freelance: { label: "Freelance", labelPlural: "freelance e consulenti" },
+  geometra: { label: "Geometra", labelPlural: "geometri" },
+  muratore: { label: "Muratore", labelPlural: "muratori" },
+  giardiniere: { label: "Giardiniere", labelPlural: "giardinieri" },
+  piastrellista: { label: "Piastrellista", labelPlural: "piastrellisti" },
+  serramentista: { label: "Serramentista", labelPlural: "serramentisti" },
+  tetto: { label: "Copertura e Tetto", labelPlural: "imprese di coperture" },
+  condizionatori: { label: "Condizionatore", labelPlural: "installatori di climatizzatori" },
+  pittore: { label: "Pittore Edile", labelPlural: "pittori edili" },
+  pavimentista: { label: "Pavimentista", labelPlural: "pavimentisti" },
+  "modello-excel": { label: "Preventivo Excel", labelPlural: "utenti Excel" },
+  "modello-word": { label: "Preventivo Word", labelPlural: "utenti Word" },
+  "come-fare-preventivo": { label: "Preventivo Professionale", labelPlural: "professionisti" },
+  "preventivi-gratis": { label: "Preventivi Gratis", labelPlural: "artigiani e PMI" },
 };
 
-export const SECTOR_KEY_BY_FR_SLUG: Record<string, string> = Object.fromEntries(
-  Object.entries(SECTOR_SLUGS).map(([key, s]) => [s.frSlug, key]),
-);
+/** Slug QuoteAI → slug v1: usato solo per tradurre riferimenti importati (footer, TRADE_LABELS). */
+export const LEGACY_SECTOR_SLUGS: Record<string, string> = {
+  painter: "imbianchino",
+  electrician: "elettricista",
+  plumber: "idraulico",
+  "general-contractor": "edilizia",
+  "renovation-contractor": "ristrutturazione",
+  "welder-fabricator": "carpentiere",
+  "carpenter-cabinetmaker": "falegname",
+  "hvac-technician": "termoidraulico",
+  freelance: "freelance",
+  "building-consultant": "geometra",
+  mason: "muratore",
+  landscaper: "giardiniere",
+  "tile-installer": "piastrellista",
+  "window-door-installer": "serramentista",
+  roofer: "tetto",
+  "air-conditioning-installer": "condizionatori",
+  "decorative-painter": "pittore",
+  "flooring-installer": "pavimentista",
+  "excel-template": "modello-excel",
+  "word-template": "modello-word",
+  "how-to-quote": "come-fare-preventivo",
+  "free-quote": "preventivi-gratis"
+};
 
 export function sectorLabel(slug: string, _lang?: string): string {
   return SECTOR_SLUGS[slug]?.label ?? slug;
-}
-
-/** /quotes/… ↔ /fr/soumissions/… counterpart of a sector or city landing URL (null when there is none). */
-export function getLanguageCounterpartPath(pathname: string): string | null {
-  if (pathname === "/") return "/fr";
-  if (pathname === "/fr" || pathname === "/fr/") return "/";
-
-  const enCity = pathname.match(/^\/quotes\/([a-z0-9-]+)\/([a-z0-9-]+)\/?$/);
-  if (enCity) {
-    const sector = SECTOR_SLUGS[enCity[1]!];
-    if (sector) return `/fr/soumissions/${sector.frSlug}/${enCity[2]}/`;
-  }
-  const enSector = pathname.match(/^\/quotes\/([a-z0-9-]+)\/?$/);
-  if (enSector) {
-    const sector = SECTOR_SLUGS[enSector[1]!];
-    if (sector) return `/fr/soumissions/${sector.frSlug}/`;
-  }
-  const frCity = pathname.match(/^\/fr\/soumissions\/([a-z0-9-]+)\/([a-z0-9-]+)\/?$/);
-  if (frCity) {
-    const key = SECTOR_KEY_BY_FR_SLUG[frCity[1]!];
-    if (key) return `/quotes/${key}/${frCity[2]}/`;
-  }
-  const frSector = pathname.match(/^\/fr\/soumissions\/([a-z0-9-]+)\/?$/);
-  if (frSector) {
-    const key = SECTOR_KEY_BY_FR_SLUG[frSector[1]!];
-    if (key) return `/quotes/${key}/`;
-  }
-  return null;
 }

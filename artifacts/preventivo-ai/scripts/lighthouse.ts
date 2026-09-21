@@ -4,7 +4,7 @@
 //   pnpm --filter @workspace/preventivo-ai qa:lighthouse                 # default URL set, serves dist/public itself
 //   pnpm --filter @workspace/preventivo-ai qa:lighthouse -- --urls=/,/fr/ --runs=3
 //   pnpm --filter @workspace/preventivo-ai qa:lighthouse -- --api=http://127.0.0.1:5123 --urls=/p/<id>/
-//   pnpm --filter @workspace/preventivo-ai qa:lighthouse -- --base=https://quoteai.ca
+//   pnpm --filter @workspace/preventivo-ai qa:lighthouse -- --base=https://prevai.it
 //
 // Serves dist/public through server/serve.mjs (same headers/compression as
 // the old Node host; Vercel's CDN is only faster), optionally proxying /api
@@ -38,8 +38,8 @@ const DEFAULT_URLS = [
   "/fr/",
   "/whatsapp/",
   "/blog/how-much-does-it-cost-to-paint-an-apartment-in-canada-2026/",
-  "/quotes/painter/",
-  "/quotes/painter/toronto/",
+  "/preventivi/imbianchino/",
+  "/preventivi/imbianchino/toronto/",
   "/fr/soumissions/peintre/montreal/",
 ];
 // Paths may be given without the leading slash (Git Bash rewrites "/x" into a Windows path).

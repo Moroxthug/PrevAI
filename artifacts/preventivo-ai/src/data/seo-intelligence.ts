@@ -9,153 +9,318 @@ export interface CityIntelligence {
   avgLeadTime: string;
 }
 
-// NOTE: with only 15 curated launch cities (see CITIES in seo-data.ts) every
-// one of them gets hand-authored intelligence below — there's no generic
-// cluster-based fallback generator like the original Italian build had for
-// its 100+ inactive cities. If the city list grows significantly, reintroduce
-// a fallback generator here (province-clustered, same idea as before) rather
-// than requiring a hand-written entry for every new city.
+type Cluster = "nord-ovest" | "nord-est" | "centro" | "sud" | "isole";
+
+const REGION_TO_CLUSTER: Record<string, Cluster> = {
+  "Lombardia": "nord-ovest",
+  "Piemonte": "nord-ovest",
+  "Liguria": "nord-ovest",
+  "Valle d'Aosta": "nord-ovest",
+  "Veneto": "nord-est",
+  "Emilia-Romagna": "nord-est",
+  "Friuli-Venezia Giulia": "nord-est",
+  "Trentino-Alto Adige": "nord-est",
+  "Toscana": "centro",
+  "Umbria": "centro",
+  "Marche": "centro",
+  "Lazio": "centro",
+  "Abruzzo": "sud",
+  "Molise": "sud",
+  "Campania": "sud",
+  "Puglia": "sud",
+  "Basilicata": "sud",
+  "Calabria": "sud",
+  "Sicilia": "isole",
+  "Sardegna": "isole",
+};
+
+const MAJOR_CITY_SLUGS = new Set([
+  "milano", "roma", "napoli", "torino", "bologna",
+  "firenze", "genova", "palermo", "bari", "catania", "venezia", "verona",
+]);
+
+interface ClusterProfile {
+  priceIndexBase: number;
+  demandBase: "LOW" | "MEDIUM" | "HIGH";
+  topServicesPool: [string, string, string, string, string, string];
+  insightTemplates: Array<(city: string, pct: number, dir: string, demand: string) => string>;
+  avgLeadTimeBase: string;
+  avgLeadTimeCapital: string;
+}
+
+const CLUSTER_PROFILES: Record<Cluster, ClusterProfile> = {
+  "nord-ovest": {
+    priceIndexBase: 1.15,
+    demandBase: "HIGH",
+    topServicesPool: [
+      "Ristrutturazione completa",
+      "Riqualificazione energetica (Ecobonus)",
+      "Impianti domotici e smart home",
+      "Ristrutturazione uffici e commerciale",
+      "Sostituzione serramenti a taglio termico",
+      "Impianti fotovoltaici",
+    ],
+    insightTemplates: [
+      (city, pct, dir, demand) =>
+        `${city} si colloca nel mercato premium del Nord Ovest: i prezzi medi sono il ${pct}% ${dir} alla media nazionale. Domanda di mercato ${demand}: la velocità di risposta con un preventivo professionale è il fattore competitivo chiave.`,
+      (city, pct, dir, demand) =>
+        `Nel distretto del Nord Ovest, ${city} registra una domanda di servizi edili e artigianali ${demand}. I prezzi — il ${pct}% ${dir} alla media — rispecchiano il potere d'acquisto superiore della clientela locale.`,
+      (city, _p, _d, demand) =>
+        `Il tessuto produttivo e residenziale di ${city} genera domanda ${demand} di interventi su immobili privati e commerciali. In questo mercato, professionalità e rapidità del preventivo sono fattori decisivi per vincere le commesse.`,
+    ],
+    avgLeadTimeBase: "3–5 giorni",
+    avgLeadTimeCapital: "2–4 giorni",
+  },
+  "nord-est": {
+    priceIndexBase: 1.08,
+    demandBase: "HIGH",
+    topServicesPool: [
+      "Ristrutturazione bagno e cucina",
+      "Installazione caldaie a condensazione",
+      "Pavimenti in parquet e gres porcellanato",
+      "Impianti di riscaldamento a pavimento",
+      "Cappotto termico e isolamento",
+      "Arredamento e falegnameria su misura",
+    ],
+    insightTemplates: [
+      (city, pct, dir, demand) =>
+        `${city} appartiene al mercato nord-orientale: alta densità di imprese artigiane, clientela tecnica esigente e prezzi il ${pct}% ${dir} alla media nazionale. Domanda ${demand}.`,
+      (city, pct, dir, demand) =>
+        `Nel Nord Est la domanda a ${city} è ${demand}, con forte attenzione alla qualità tecnica. I prezzi si attestano il ${pct}% ${dir} alla media: il preventivo dettagliato è un fattore di differenziazione competitivo.`,
+      (city, _p, _d, demand) =>
+        `Il sistema manifatturiero e artigianale di ${city} si traduce in una domanda ${demand} e in una clientela che valuta la qualità del preventivo come indicatore della professionalità del fornitore.`,
+    ],
+    avgLeadTimeBase: "4–6 giorni",
+    avgLeadTimeCapital: "3–5 giorni",
+  },
+  "centro": {
+    priceIndexBase: 0.98,
+    demandBase: "MEDIUM",
+    topServicesPool: [
+      "Restauro e ristrutturazione patrimonio storico",
+      "Ristrutturazione appartamenti",
+      "Impianti fotovoltaici",
+      "Tinteggiatura e rifinitura interni",
+      "Rifacimento bagno e sanitari",
+      "Pratiche edilizie e perizie tecniche",
+    ],
+    insightTemplates: [
+      (city, pct, dir, demand) =>
+        `${city} presenta un mix di domanda ${demand}: residenziale privata e interventi su patrimonio storico vincolato. I prezzi si posizionano il ${pct}% ${dir} alla media nazionale.`,
+      (city, _p, _d, demand) =>
+        `Il mercato di ${city} è caratterizzato da domanda ${demand} e da una componente significativa di ristrutturazioni incentivate dai bonus edilizi governativi (Superbonus, Bonus Casa).`,
+      (city, pct, dir, demand) =>
+        `Nel Centro Italia, ${city} registra una domanda ${demand} con picchi primaverili e autunnali. I prezzi — il ${pct}% ${dir} alla media — riflettono il tessuto economico locale e la forte presenza del patrimonio edilizio storico.`,
+    ],
+    avgLeadTimeBase: "5–7 giorni",
+    avgLeadTimeCapital: "3–6 giorni",
+  },
+  "sud": {
+    priceIndexBase: 0.84,
+    demandBase: "MEDIUM",
+    topServicesPool: [
+      "Efficientamento energetico (Ecobonus)",
+      "Ristrutturazione con Superbonus",
+      "Adeguamento sismico",
+      "Installazione impianti di climatizzazione",
+      "Tinteggiatura e rifinitura",
+      "Manutenzione ordinaria edifici",
+    ],
+    insightTemplates: [
+      (city, pct, dir, demand) =>
+        `${city} è un mercato con domanda ${demand} e prezzi mediamente il ${pct}% ${dir} alla media nazionale. Gli incentivi statali (Superbonus, Sismabonus) sono la principale leva della domanda.`,
+      (city, _p, _d, demand) =>
+        `Nel Sud Italia, il mercato di ${city} è sensibile al prezzo con domanda ${demand}. La competizione è alta e il preventivo professionale è lo strumento principale per differenziarsi dalla concorrenza informale.`,
+      (city, pct, dir, demand) =>
+        `La domanda a ${city} è ${demand} e trainata dagli incentivi per efficientamento energetico e adeguamento sismico. Prezzi il ${pct}% ${dir} alla media: il costo-efficienza è il fattore decisivo per il cliente.`,
+    ],
+    avgLeadTimeBase: "7–10 giorni",
+    avgLeadTimeCapital: "5–8 giorni",
+  },
+  "isole": {
+    priceIndexBase: 0.78,
+    demandBase: "LOW",
+    topServicesPool: [
+      "Impermeabilizzazione terrazzi e tetti",
+      "Ristrutturazione residenziale costiera",
+      "Efficientamento energetico",
+      "Installazione condizionatori",
+      "Manutenzione impianti idraulici",
+      "Rifacimento pavimenti e rivestimenti",
+    ],
+    insightTemplates: [
+      (city, pct, dir, demand) =>
+        `${city} presenta caratteristiche di mercato insulare: logistica più complessa e domanda ${demand}, con prezzi il ${pct}% ${dir} alla media nazionale.`,
+      (city, _p, _d, demand) =>
+        `Il mercato edilizio di ${city} è influenzato dalla stagionalità turistica e da costi logistici specifici. La domanda è ${demand} con forte concentrazione nel residenziale privato e nel settore turistico-ricettivo.`,
+      (city, pct, dir, demand) =>
+        `A ${city} i prezzi sono il ${pct}% ${dir} alla media: un mercato accessibile per la clientela privata, con domanda ${demand} e crescente attenzione all'efficientamento energetico.`,
+    ],
+    avgLeadTimeBase: "8–14 giorni",
+    avgLeadTimeCapital: "7–10 giorni",
+  },
+};
 
 export const DEMAND_TEXT: Record<CityIntelligence["demandLevel"], string> = {
-  LOW: "moderate",
-  MEDIUM: "average",
-  HIGH: "high",
-  CRITICAL: "very high",
+  LOW: "moderata",
+  MEDIUM: "media",
+  HIGH: "elevata",
+  CRITICAL: "molto elevata",
 };
 
-// ─── Hand-authored intelligence for the 15 launch cities ──────────────────
-// Matches the bespoke CITY_CONTEXT copy in seo-data.ts. priceIndex is
-// relative to the Canadian national average (1.0 = average); topServices are
-// the 3 most commonly quoted service types for that market; avgLeadTime is a
-// typical quote-to-response window used in FAQ copy.
-export const CITY_INTELLIGENCE: Record<string, CityIntelligence> = {
-  toronto: {
-    priceIndex: 1.22,
+const DEMAND_BUMP: Record<"LOW" | "MEDIUM" | "HIGH", CityIntelligence["demandLevel"]> = {
+  LOW: "MEDIUM",
+  MEDIUM: "HIGH",
+  HIGH: "CRITICAL",
+};
+
+function h(s: string): number {
+  return s.split("").reduce((acc, c) => acc + c.charCodeAt(0), 0);
+}
+
+function generateCityIntelligence(city: CityData): CityIntelligence {
+  const cluster: Cluster = REGION_TO_CLUSTER[city.region] ?? "centro";
+  const profile = CLUSTER_PROFILES[cluster];
+
+  // priceIndex: cluster base ± 0.05 driven by city slug hash
+  const priceOffset = (h(city.slug) % 11 - 5) * 0.01;
+  const priceIndex =
+    Math.round(Math.min(1.25, Math.max(0.75, profile.priceIndexBase + priceOffset)) * 100) / 100;
+
+  // demandLevel: base level, bumped one step for major cities
+  const demandLevel: CityIntelligence["demandLevel"] = MAJOR_CITY_SLUGS.has(city.slug)
+    ? DEMAND_BUMP[profile.demandBase]
+    : profile.demandBase;
+
+  // topServices: rotate pool by hash, take first 3 (unique by construction)
+  const offset = h(city.slug + "s") % 6;
+  const rotated = [
+    ...profile.topServicesPool.slice(offset),
+    ...profile.topServicesPool.slice(0, offset),
+  ];
+  const topServices: [string, string, string] = [rotated[0], rotated[1], rotated[2]];
+
+  // avgLeadTime: capital cities get the faster tier
+  const avgLeadTime = MAJOR_CITY_SLUGS.has(city.slug)
+    ? profile.avgLeadTimeCapital
+    : profile.avgLeadTimeBase;
+
+  // localInsight: price-indexed, demand-aware, template selected by hash
+  const pct = Math.round(Math.abs(priceIndex - 1.0) * 100);
+  const dir = priceIndex > 1.0 ? "superiori" : "inferiori";
+  const demandText = DEMAND_TEXT[demandLevel];
+  const tplIdx = h(city.slug + "i") % profile.insightTemplates.length;
+  const localInsight = profile.insightTemplates[tplIdx](city.name, pct, dir, demandText);
+
+  return { priceIndex, demandLevel, topServices, localInsight, avgLeadTime };
+}
+
+// ─── Hand-authored intelligence for the active Lombardia cities ───────────
+// These 12 cities are the current ACTIVE_REGION (see seo-data.ts) — the only
+// ones actually crawlable/indexable right now. Unlike the generic cluster
+// generator above (still used as a fallback for all other, currently
+// inactive, cities), these entries are written per-city using real economic
+// and market character, matching the bespoke CITY_CONTEXT copy in
+// seo-data.ts rather than a shared "nord-ovest" template with hash noise.
+const LOMBARDIA_CITY_INTELLIGENCE: Record<string, CityIntelligence> = {
+  milano: {
+    priceIndex: 1.2,
     demandLevel: "CRITICAL",
-    topServices: ["Kitchen and bathroom renovation", "Basement and laneway suite conversion", "Electrical panel upgrades"],
-    avgLeadTime: "1–2 days",
+    topServices: ["Riqualificazione energetica (Ecobonus)", "Ristrutturazione condomini anni '60", "Adeguamento sismico"],
+    avgLeadTime: "1–3 giorni",
     localInsight:
-      "Toronto is Canada's most competitive and highest-priced market for trades and renovation work. High demand for condo renovations and basement/laneway suite conversions keeps skilled contractors booked out for weeks, and older pre-1970s housing stock drives steady electrical and plumbing upgrade work. Responding with a professional quote within hours, not days, is often the only way to land the job before a competitor does.",
+      "Milano è il mercato più competitivo della Lombardia per interventi edili e di ristrutturazione: alta densità di condomini da riqualificare energeticamente e una committenza abituata a standard qualitativi elevati. Rispondere per primi con un preventivo professionale è spesso l'unico modo per aggiudicarsi la commessa prima della concorrenza.",
   },
-  ottawa: {
-    priceIndex: 1.05,
+  monza: {
+    priceIndex: 1.12,
     demandLevel: "HIGH",
-    topServices: ["Furnace and heating replacement", "Roofing and eavestrough work", "Kitchen and bathroom renovation"],
-    avgLeadTime: "2–4 days",
+    topServices: ["Riqualificazione energetica condomini", "Restauro aree vincolate (Villa Reale)", "Arredamento su misura (distretto del mobile)"],
+    avgLeadTime: "2–3 giorni",
     localInsight:
-      "Ottawa's steady public-sector and tech employment base supports consistent renovation demand in established neighbourhoods, while new-build suburbs like Barrhaven and Kanata drive framing and finishing work. Long, cold winters push heavy seasonal demand for furnace and insulation work every fall. A bilingual quote is a genuine edge given the large Francophone customer base nearby.",
+      "Monza, ormai parte della conurbazione milanese, vive la stessa pressione del capoluogo ma su scala più contenuta: la vicinanza a Milano e il distretto del mobile della Brianza sostengono una domanda costante di ristrutturazioni e allestimenti su misura. Chi risponde più in fretta al cliente si aggiudica il lavoro.",
   },
-  mississauga: {
-    priceIndex: 1.15,
+  bergamo: {
+    priceIndex: 1.07,
     demandLevel: "HIGH",
-    topServices: ["Kitchen and bathroom renovation", "Basement finishing", "Driveway and exterior work"],
-    avgLeadTime: "2–3 days",
+    topServices: ["Ristrutturazione residenziale hinterland", "Restauro Città Alta (vincoli UNESCO)", "Efficientamento energetico"],
+    avgLeadTime: "2–4 giorni",
     localInsight:
-      "Mississauga's mix of aging 1960s-70s suburban housing and newer high-rise condos keeps demand high for kitchen, bathroom, and basement renovation work. Proximity to Pearson Airport also supports steady commercial and warehouse fit-out demand. Competition among contractors is fierce, and fast, professional quotes stand out.",
+      "Bergamo ha vissuto un'espansione residenziale sostenuta dallo smart working nell'hinterland, con richieste concentrate su Seriate e Dalmine, mentre in Città Alta i vincoli UNESCO rallentano i tempi ma non riducono la domanda. La rapidità nel preventivo è un vantaggio competitivo concreto in un mercato dove i clienti confrontano più artigiani.",
   },
-  hamilton: {
-    priceIndex: 0.95,
-    demandLevel: "HIGH",
-    topServices: ["Full kitchen and bathroom gut renovation", "Electrical rewiring", "Foundation and structural work"],
-    avgLeadTime: "2–4 days",
-    localInsight:
-      "Hamilton has seen a wave of buyers priced out of Toronto move in for more affordable century homes, driving strong demand for full renovations of older housing stock. Knob-and-tube rewiring, foundation repair, and full kitchen/bathroom gut jobs are common. Prices remain below the Toronto core, and a clearly itemized quote is a real differentiator.",
-  },
-  vancouver: {
-    priceIndex: 1.28,
-    demandLevel: "CRITICAL",
-    topServices: ["Roofing and exterior envelope repair", "Laneway house construction", "Heritage character-home renovation"],
-    avgLeadTime: "1–3 days",
-    localInsight:
-      "Vancouver is one of the highest-cost renovation markets in the country, driven by strict permitting, heritage character-home rules, and constant coastal-rain exposure that keeps roofing and exterior envelope work in steady demand. Laneway house construction and secondary-suite conversions remain a major, reliable source of work. Buyers expect a polished, professional quote given the price point.",
-  },
-  surrey: {
-    priceIndex: 1.08,
-    demandLevel: "HIGH",
-    topServices: ["New-home framing and finishing", "Basement suite conversion", "Mechanical rough-ins"],
-    avgLeadTime: "2–4 days",
-    localInsight:
-      "Surrey is one of the fastest-growing municipalities in BC, with large-scale new-home construction driving strong demand for framing, drywall, and mechanical trades, alongside a steady stream of basement-suite conversions in older housing. Prices run somewhat below Vancouver proper, and competition among contractors is intense — speed of response matters.",
-  },
-  victoria: {
-    priceIndex: 1.1,
-    demandLevel: "MEDIUM",
-    topServices: ["Heritage and character-home renovation", "Roofing and exterior repair", "Accessibility upgrades"],
-    avgLeadTime: "3–5 days",
-    localInsight:
-      "Victoria's older, character-home housing stock and mild coastal climate keep roofing and exterior work going nearly year-round. A large share of retirees and seasonal residents invest in renovations and accessibility upgrades. Heritage-district rules apply downtown and in James Bay, affecting material choice and timelines.",
-  },
-  calgary: {
-    priceIndex: 1.02,
-    demandLevel: "HIGH",
-    topServices: ["Basement development", "Post-hail roof and siding repair", "Kitchen and bathroom updates"],
-    avgLeadTime: "2–4 days",
-    localInsight:
-      "Calgary's younger housing stock supports strong demand for basement development and kitchen/bathroom updates, while recurring hailstorms drive a steady, insurance-backed stream of roofing and siding repair work. Demand swings somewhat with the energy-sector business cycle, but fast, professional quotes remain a key differentiator.",
-  },
-  edmonton: {
-    priceIndex: 0.92,
-    demandLevel: "MEDIUM",
-    topServices: ["Furnace replacement", "Insulation upgrades", "Roof and eavestrough work"],
-    avgLeadTime: "3–5 days",
-    localInsight:
-      "Edmonton's mix of mature neighbourhoods needing mechanical and electrical upgrades and fast-growing suburbs in the south and west keeps renovation demand steady. Harsh winters push heavy seasonal demand for furnace replacement and insulation work before freeze-up. Prices are generally more accessible than Calgary or the coasts.",
-  },
-  winnipeg: {
-    priceIndex: 0.8,
-    demandLevel: "MEDIUM",
-    topServices: ["Furnace and window replacement", "Mechanical and structural updates", "Insulation upgrades"],
-    avgLeadTime: "4–6 days",
-    localInsight:
-      "Winnipeg has one of the most affordable housing markets among major Canadian cities, with a large stock of older character homes needing full mechanical and structural updates. Extreme winter cold drives strong demand for furnace, insulation, and window-replacement work, and a less saturated contractor market rewards clear, professional quoting.",
-  },
-  montreal: {
+  brescia: {
     priceIndex: 1.0,
     demandLevel: "HIGH",
-    topServices: ["Kitchen and bathroom remodel", "Mechanical (electrical/plumbing) upgrades", "Energy-efficiency retrofits"],
-    avgLeadTime: "2–4 days",
+    topServices: ["Ristrutturazione capannoni industriali", "Allestimento uffici", "Riqualificazione energetica anni '70"],
+    avgLeadTime: "2–4 giorni",
     localInsight:
-      "Montreal's building stock is dominated by older triplexes and duplexes with exterior staircases, especially in the Plateau and Rosemont, meaning quotes often need to account for older wiring, plaster walls, and party-wall considerations. Demand is strong for kitchen/bathroom remodels and energy-efficiency retrofits, and French is the primary language of business for most residential clients.",
+      "Brescia, seconda città industriale della Lombardia, genera domanda sia dal residenziale sia da capannoni e uffici da riqualificare energeticamente. È un mercato dove il preventivo dettagliato — che distingua chiaramente materiali, manodopera e tempistiche — pesa quanto il prezzo nella scelta del cliente.",
   },
-  "quebec-city": {
-    priceIndex: 0.88,
+  varese: {
+    priceIndex: 1.08,
     demandLevel: "MEDIUM",
-    topServices: ["Roofing and exterior envelope work", "Heritage-compliant renovation", "Insulation upgrades"],
-    avgLeadTime: "3–6 days",
+    topServices: ["Restauro ville liberty", "Riconversione aree ex-industriali", "Ristrutturazioni di pregio"],
+    avgLeadTime: "3–4 giorni",
     localInsight:
-      "Quebec City combines a UNESCO-listed historic core with strict heritage rules around Vieux-Québec and a much larger stock of standard 20th-century housing in the surrounding boroughs. Cold winters and heavy snow loads make roofing and exterior envelope work a major seasonal driver, and French is the default language for nearly all client communication.",
+      "Varese unisce un tessuto di ville liberty da recuperare a una clientela di frontalieri con buona capacità di spesa, oltre alla vicinanza a Malpensa. È un mercato meno affollato di professionisti rispetto a Milano: chi risponde con un preventivo professionale e rapido si distingue facilmente.",
   },
-  gatineau: {
-    priceIndex: 0.94,
+  como: {
+    priceIndex: 1.15,
     demandLevel: "MEDIUM",
-    topServices: ["Kitchen and bathroom renovation", "New-suburb framing and finishing", "Roofing and insulation work"],
-    avgLeadTime: "3–5 days",
+    topServices: ["Ristrutturazione ville di lusso", "Restauro centro storico murato", "Manutenzione seconde case"],
+    avgLeadTime: "3–5 giorni",
     localInsight:
-      "Gatineau sits just across the river from Ottawa and shares much of that region's public-sector-driven demand, while remaining a distinctly French-primary market. Newer suburban development in Aylmer and Hull contrasts with older housing closer to the river, and bilingual quoting is a practical advantage.",
+      "Como ha un mercato polarizzato tra ville di pregio sul lungolago — tra le più costose della regione — e un tessuto più popolare nei quartieri collinari. La componente internazionale e le seconde case generano una domanda costante di ristrutturazioni di alta gamma, dove la professionalità del preventivo è decisiva per la fiducia del cliente.",
   },
-  laval: {
+  lecco: {
     priceIndex: 0.98,
     demandLevel: "MEDIUM",
-    topServices: ["Mechanical and roofing updates", "New-subdivision finishing work", "Kitchen and bathroom renovation"],
-    avgLeadTime: "3–5 days",
+    topServices: ["Riqualificazione ex aree industriali", "Ristrutturazione centro storico", "Cantieri in zone collinari"],
+    avgLeadTime: "3–5 giorni",
     localInsight:
-      "Laval, just north of Montreal, combines 1970s-80s suburban housing now due for major mechanical and roofing updates with newer subdivisions still under active construction. French-primary demand is strong for renovation and finishing trades, with steady overflow work from the tighter, more expensive Montreal core.",
+      "Lecco, stretta tra lago e montagne, ha cantieri spesso più complessi per via degli accessi collinari, mentre l'ex distretto industriale è in piena riqualificazione residenziale. Un preventivo chiaro su tempi e costi di accesso è ciò che distingue i professionisti più affidabili in questo mercato.",
   },
-  halifax: {
-    priceIndex: 0.9,
+  pavia: {
+    priceIndex: 0.92,
     demandLevel: "MEDIUM",
-    topServices: ["Roofing and moisture-control repair", "Exterior painting and siding", "Structural upgrades"],
-    avgLeadTime: "4–6 days",
+    topServices: ["Interventi rapidi bagni e cucine", "Restauro palazzi storici", "Recupero cascine e rustici"],
+    avgLeadTime: "3–5 giorni",
     localInsight:
-      "Halifax's older wood-frame homes in the peninsula core need structural, roofing, and moisture-control attention given the damp Atlantic climate, alongside newer suburban growth in Bedford and Dartmouth. Salt-air exposure accelerates wear on exterior finishes and metal fixtures, keeping steady demand for painting, siding, and roofing work.",
+      "Pavia è una città universitaria con altissima rotazione degli affitti: chi risponde in giornata a una richiesta su bagni, cucine o impianti ha un vantaggio enorme rispetto a chi impiega giorni. Nella Lomellina agricola la domanda è più lenta ma costante, legata al recupero di cascine e rustici.",
+  },
+  lodi: {
+    priceIndex: 0.97,
+    demandLevel: "MEDIUM",
+    topServices: ["Ristrutturazione appartamenti", "Restauro portici del centro storico", "Efficientamento energetico"],
+    avgLeadTime: "3–5 giorni",
+    localInsight:
+      "Lodi cresce grazie alla vicinanza con Milano: molte famiglie si trasferiscono qui cercando prezzi più accessibili, portando con sé una domanda crescente di ristrutturazioni. È ancora un mercato meno competitivo rispetto all'hinterland milanese, dove un preventivo rapido fa davvero la differenza.",
+  },
+  mantova: {
+    priceIndex: 0.9,
+    demandLevel: "LOW",
+    topServices: ["Restauro edifici vincolati", "Ristrutturazione per B&B", "Manutenzione ordinaria"],
+    avgLeadTime: "5–7 giorni",
+    localInsight:
+      "Mantova, patrimonio UNESCO, ha un mercato più contenuto ma qualificato: gli interventi nel centro rinascimentale richiedono materiali tradizionali e tempi più lunghi per via dei vincoli, mentre il turismo culturale in crescita alimenta la domanda di ristrutturazioni per B&B. La professionalità del preventivo pesa più del prezzo in questo segmento.",
+  },
+  cremona: {
+    priceIndex: 0.88,
+    demandLevel: "LOW",
+    topServices: ["Restauro centro storico vincolato", "Efficientamento energetico agroindustria", "Ristrutturazione residenziale"],
+    avgLeadTime: "5–7 giorni",
+    localInsight:
+      "Cremona ha un mercato edilizio più contenuto, diviso tra il centro storico vincolato — legato alla tradizione liutaria — e la bassa cremonese legata all'agroindustria. La domanda è stabile ma meno urgente che nei grandi centri: un preventivo professionale e ben argomentato è ciò che convince un cliente a scegliere un artigiano rispetto a un altro.",
+  },
+  sondrio: {
+    priceIndex: 0.85,
+    demandLevel: "LOW",
+    topServices: ["Recupero baite e rustici in pietra", "Ristrutturazione seconde case", "Manutenzione stagionale di montagna"],
+    avgLeadTime: "6–9 giorni",
+    localInsight:
+      "Sondrio e la Valtellina sono un mercato di nicchia condizionato dalla stagionalità turistica e dalla morfologia montana, con cantieri che richiedono più tempo per accessi e pendenze. La domanda è concentrata su baite, rustici e seconde case: un preventivo chiaro su tempi e costi di accesso è particolarmente apprezzato in questo contesto.",
   },
 };
 
-// Sanity check kept from the original build: every active city should have a
-// hand-authored entry above. If CITIES grows, this throws in dev rather than
-// silently falling back to nothing.
-for (const city of CITIES as CityData[]) {
-  if (!CITY_INTELLIGENCE[city.slug] && typeof console !== "undefined") {
-    console.warn(`[seo-intelligence] Missing CITY_INTELLIGENCE entry for city "${city.slug}" — add one to seo-intelligence.ts.`);
-  }
-}
+export const CITY_INTELLIGENCE: Record<string, CityIntelligence> = Object.fromEntries(
+  CITIES.map((city) => [city.slug, LOMBARDIA_CITY_INTELLIGENCE[city.slug] ?? generateCityIntelligence(city)])
+);

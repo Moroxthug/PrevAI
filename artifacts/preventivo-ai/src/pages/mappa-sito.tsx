@@ -27,7 +27,7 @@ export default function MappaSitoPage() {
       "@type": "WebPage",
       name: "Sitemap | QuoteAI",
       description: "Full sitemap for QuoteAI. Find all static pages, blog articles, and guides for tradespeople and professionals across Canadian cities.",
-      url: "https://quoteai.ca/mappa-sito/",
+      url: "https://prevai.it/mappa-sito/",
     }
   ];
 
@@ -36,7 +36,7 @@ export default function MappaSitoPage() {
       <SeoHead
         title={t("sitemap.seoTitle")}
         description={t("sitemap.seoDescription")}
-        canonical="https://quoteai.ca/mappa-sito/"
+        canonical="https://prevai.it/mappa-sito/"
         jsonLd={jsonLd}
       />
 
@@ -142,7 +142,7 @@ export default function MappaSitoPage() {
               <ul style={{ display: "flex", flexDirection: "column", gap: 10, fontSize: 13.5 }}>
                 {Object.entries(SECTORS).map(([slug, sector]) => (
                   <li key={slug}>
-                    <Link href={`/quotes/${slug}/`} className="cta-link" style={{ fontSize: "inherit", fontWeight: 500 }}>
+                    <Link href={`/preventivi/${slug}/`} className="cta-link" style={{ fontSize: "inherit", fontWeight: 500 }}>
                       {sector.label}
                     </Link>
                   </li>
@@ -179,7 +179,7 @@ export default function MappaSitoPage() {
                               return (
                                 <Link
                                   key={sectorSlug}
-                                  href={`/quotes/${sectorSlug}/${city.slug}/`}
+                                  href={`/preventivi/${sectorSlug}/${city.slug}/`}
                                   style={{ color: "var(--muted-mk)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}
                                   title={`${t("sitemap.quoteFor")} ${s.label} — ${city.name}`}
                                 >

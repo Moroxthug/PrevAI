@@ -20,7 +20,7 @@ const CATEGORY_CHIPS: Record<string, string> = {
   Business: "chip-red",
 };
 
-const BASE_URL = "https://quoteai.ca";
+const BASE_URL = "https://prevai.it";
 
 export default function BlogArticlePage() {
   const { t, lang } = useLanguage();
@@ -149,7 +149,7 @@ export default function BlogArticlePage() {
               <h2 className="eyebrow grey" style={{ marginBottom: 18 }}>{t("blog.quotesBySector")}</h2>
               <div className="blog-links">
                 {relatedSectorObjects.map((sector) => (
-                  <Link key={sector.slug} href={`/quotes/${sector.slug}/`} className="blog-link-pill">
+                  <Link key={sector.slug} href={`/preventivi/${sector.slug}/`} className="blog-link-pill">
                     <ArrowRight className="h-3.5 w-3.5" />
                     {t("blog.quotesForPrefix")} {sector.label}
                   </Link>
@@ -167,7 +167,7 @@ export default function BlogArticlePage() {
               </h2>
               <div className="blog-links">
                 {ACTIVE_CITIES.map((city) => (
-                  <Link key={city.slug} href={`/quotes/${geoSector.slug}/${city.slug}/`} className="blog-link-pill">
+                  <Link key={city.slug} href={`/preventivi/${geoSector.slug}/${city.slug}/`} className="blog-link-pill">
                     <ArrowRight className="h-3.5 w-3.5" />
                     {city.name}
                   </Link>
