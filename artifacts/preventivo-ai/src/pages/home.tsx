@@ -1,6 +1,6 @@
 import { lazy, Suspense, useState, useRef } from "react";
 import { Link, useLocation } from "wouter";
-import { ArrowRight, CheckCircle2, FileText, Zap, Lock, Star, Sparkles, Mic, ImagePlus, Check, X, Loader2, ChevronDown, Shield, Cpu, Euro } from "lucide-react";
+import { ArrowRight, CheckCircle2, FileText, Zap, Lock, Star, Sparkles, Mic, ImagePlus, Check, X, Loader2, ChevronDown, Shield, Cpu, Euro, Hammer, Users, ListChecks, Building2 } from "lucide-react";
 import { SeoHead } from "@/components/seo-head";
 import { TestimonialsSection } from "@/components/testimonials-section";
 import { useGetPlans, useCreateCheckoutSession } from "@workspace/api-client-react";
@@ -506,6 +506,107 @@ export default function Home() {
                   </div>
                 </div>
               </div>
+            </div>
+          </div>
+        </div>
+      </ScrollSection>
+
+      {/* ── SEZIONE 5BIS: Preventivo accettato → Cantiere CRM ────── */}
+      <ScrollSection className="py-14 bg-gray-50">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="max-w-5xl mx-auto">
+            <div className="grid lg:grid-cols-2 gap-14 items-center">
+
+              <div>
+                <div className="inline-flex items-center gap-1.5 text-xs font-bold text-violet-600 uppercase tracking-wider mb-3">
+                  <Hammer className="h-3.5 w-3.5" />
+                  Incluso in tutti i piani
+                </div>
+                <h2 className="text-xl font-semibold tracking-tight text-gray-900 mb-6 leading-snug">
+                  Il preventivo accettato<br />
+                  <span className="text-violet-600">diventa un cantiere</span>
+                </h2>
+
+                <div className="space-y-5 mb-8">
+                  {[
+                    { icon: Hammer, title: "Un click, zero ricopiatura", desc: "Dal preventivo sbloccato apri il cantiere: cliente, importo e voci sono già collegati." },
+                    { icon: ListChecks, title: "Task e stato avanzamento", desc: "Organizza il lavoro in attività con scadenze, senza uscire da prevai." },
+                    { icon: Users, title: "Collaboratori e fornitori", desc: "Assegna il cantiere al tuo team e tieni traccia dei fornitori coinvolti." },
+                    { icon: Building2, title: "Budget e costi extra sotto controllo", desc: "Ogni spesa fuori preventivo resta collegata al cantiere e al budget iniziale." },
+                  ].map((s) => (
+                    <div key={s.title} className="flex gap-4">
+                      <div
+                        className="w-8 h-8 rounded-xl shrink-0 flex items-center justify-center text-white"
+                        style={{ background: "linear-gradient(135deg, #7c3aed, #2563eb)" }}
+                      >
+                        <s.icon className="h-4 w-4" />
+                      </div>
+                      <div>
+                        <p className="font-semibold text-gray-900 text-sm mb-0.5">{s.title}</p>
+                        <p className="text-sm text-gray-500 leading-relaxed">{s.desc}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                <Link
+                  href="/crm"
+                  className="inline-flex items-center gap-2 text-sm font-semibold text-violet-600 hover:text-violet-700 transition-colors group"
+                >
+                  Scopri il CRM cantieri
+                  <ArrowRight className="h-4 w-4 group-hover:translate-x-0.5 transition-transform" />
+                </Link>
+              </div>
+
+              <div className="relative">
+                <div className="bg-white rounded-xl border border-gray-100 shadow-md overflow-hidden">
+                  <div className="border-b bg-gray-50 px-4 py-2.5 flex items-center gap-2">
+                    <div className="flex gap-1.5">
+                      <div className="w-2.5 h-2.5 rounded-full bg-red-400" />
+                      <div className="w-2.5 h-2.5 rounded-full bg-amber-400" />
+                      <div className="w-2.5 h-2.5 rounded-full bg-green-400" />
+                    </div>
+                    <div className="text-xs font-medium text-gray-400 ml-4">Cantiere · Ristrutturazione Mario Rossi</div>
+                  </div>
+
+                  <div className="p-5">
+                    <div className="flex items-center justify-between mb-4">
+                      <div>
+                        <div className="text-xs text-gray-400 uppercase tracking-wide font-semibold">Budget</div>
+                        <div className="text-lg font-bold text-gray-900">€ 1.769,00</div>
+                      </div>
+                      <span className="text-[11px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-full px-2.5 py-1">
+                        In corso
+                      </span>
+                    </div>
+
+                    <div className="space-y-2 mb-4">
+                      {[
+                        { done: true, label: "Sopralluogo e misure" },
+                        { done: true, label: "Ordine materiali (Ferramenta Rossi)" },
+                        { done: false, label: "Tinteggiatura pareti" },
+                        { done: false, label: "Rasatura parete soggiorno" },
+                      ].map((t) => (
+                        <div key={t.label} className="flex items-center gap-2.5 text-sm">
+                          <div className={`w-4 h-4 rounded-md flex items-center justify-center shrink-0 ${t.done ? "bg-violet-600" : "border border-gray-300"}`}>
+                            {t.done && <Check className="h-3 w-3 text-white" />}
+                          </div>
+                          <span className={t.done ? "text-gray-400 line-through" : "text-gray-700"}>{t.label}</span>
+                        </div>
+                      ))}
+                    </div>
+
+                    <div className="flex items-center justify-between pt-3 border-t border-gray-100">
+                      <div className="flex items-center gap-1.5 text-xs text-gray-500">
+                        <Users className="h-3.5 w-3.5" />
+                        2 collaboratori assegnati
+                      </div>
+                      <span className="text-xs font-semibold text-violet-600">Collegato al preventivo</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
             </div>
           </div>
         </div>
