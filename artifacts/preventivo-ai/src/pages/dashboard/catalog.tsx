@@ -179,6 +179,173 @@ function ItemFormDialog({
   );
 }
 
+interface OcrPreviewItem {
+  nome: string;
+  categoria: string | null;
+  um: string;
+  prezzoUnitario: number;
+  note: string | null;
+  selected: boolean;
+}
+
+function OcrImportDialog({
+  open,
+  onClose,
+  onImported,
+}: {
+  open: boolean;
+  onClose: () => void;
+  onImported: (count: number) => void;
+}) {
+  const { toast } = useToast();
+  const [file, setFile] = useState<File | null>(null);
+  const [isExtracting, setIsExtracting] = useState(false);
+  const [isImporting, setIsImporting] = useState(false);
+  const [previewItems, setPreviewItems] = useState<OcrPreviewItem[] | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  const reset = () => {
+    setFile(null);
+    setPreviewItems(null);
+    setError(null);
+  };
+
+  const handleClose = () => {
+    reset();
+    onClose();
+  };
+
+  const handleExtract = async () => {
+    if (!file) return;
+    setIsExtracting(true);
+    setError(null);
+    try {
+      const formData = new FormData();
+      formData.append("files", file);
+      const res = await fetch("/api/catalog/import-ocr", {
+        method: "POST",
+        credentials: "include",
+        body: formData,
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error || "Impossibile leggere il listino da questo file.");
+        return;
+      }
+      const items = data.items as Array<{ nome: string; categoria: string | null; um: string; prezzoUnitario: number; note: string | null }>;
+      setPreviewItems(items.map(it => ({ ...it, selected: true })));
+    } catch {
+      setError("Errore di connessione. Riprova.");
+    } finally {
+      setIsExtracting(false);
+    }
+  };
+
+  const toggleItem = (index: number) => {
+    setPreviewItems(prev => prev ? prev.map((it, i) => i === index ? { ...it, selected: !it.selected } : it) : prev);
+  };
+
+  const updateItemPrice = (index: number, value: string) => {
+    const num = Number(value);
+    setPreviewItems(prev => prev ? prev.map((it, i) => i === index ? { ...it, prezzoUnitario: isNaN(num) ? it.prezzoUnitario : num } : it) : prev);
+  };
+
+  const selectedCount = previewItems?.filter(it => it.selected).length ?? 0;
+
+  const handleImport = async () => {
+    if (!previewItems) return;
+    const toImport = previewItems.filter(it => it.selected);
+    if (toImport.length === 0) return;
+    setIsImporting(true);
+    try {
+      const res = await fetch("/api/catalog/bulk", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(toImport.map(({ selected, ...rest }) => rest)),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        toast({ title: "Errore", description: data.error || "Impossibile importare le voci.", variant: "destructive" });
+        return;
+      }
+      onImported(toImport.length);
+      handleClose();
+    } catch {
+      toast({ title: "Errore di connessione", variant: "destructive" });
+    } finally {
+      setIsImporting(false);
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={(o) => { if (!o) handleClose(); }}>
+      <DialogContent className="sm:max-w-lg">
+        <DialogHeader>
+          <DialogTitle>Importa listino da foto o documento</DialogTitle>
+        </DialogHeader>
+
+        {!previewItems ? (
+          <div className="space-y-4 py-2">
+            <p className="text-sm text-muted-foreground">
+              Carica una foto del tuo listino cartaceo, un PDF o un file Excel: l'AI estrae automaticamente le voci con un prezzo leggibile.
+            </p>
+            <Input
+              type="file"
+              accept="image/jpeg,image/png,image/webp,image/heic,image/heif,application/pdf,.docx,.xlsx"
+              onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+            />
+            {error && <p className="text-sm text-red-500">{error}</p>}
+            <DialogFooter>
+              <Button variant="outline" onClick={handleClose} disabled={isExtracting}>Annulla</Button>
+              <Button onClick={handleExtract} disabled={!file || isExtracting} className="gap-2">
+                {isExtracting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Import className="h-4 w-4" />}
+                Estrai voci
+              </Button>
+            </DialogFooter>
+          </div>
+        ) : (
+          <div className="space-y-4 py-2">
+            <p className="text-sm text-muted-foreground">
+              Trovate {previewItems.length} voci. Deseleziona quelle da escludere e correggi i prezzi se necessario.
+            </p>
+            <div className="max-h-80 overflow-y-auto space-y-1 border rounded-lg divide-y">
+              {previewItems.map((it, i) => (
+                <div key={i} className="flex items-center gap-2 px-3 py-2">
+                  <input
+                    type="checkbox"
+                    checked={it.selected}
+                    onChange={() => toggleItem(i)}
+                    className="h-4 w-4 shrink-0 accent-violet-600"
+                  />
+                  <div className="flex-1 min-w-0">
+                    <div className="text-sm font-medium truncate">{it.nome}</div>
+                    <div className="text-xs text-muted-foreground">{it.categoria || "Senza categoria"} · {it.um}</div>
+                  </div>
+                  <Input
+                    type="number"
+                    step={0.01}
+                    value={it.prezzoUnitario}
+                    onChange={(e) => updateItemPrice(i, e.target.value)}
+                    className="w-24 h-8 text-right shrink-0"
+                  />
+                </div>
+              ))}
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={reset} disabled={isImporting}>Indietro</Button>
+              <Button onClick={handleImport} disabled={selectedCount === 0 || isImporting} className="gap-2">
+                {isImporting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
+                Importa {selectedCount} {selectedCount === 1 ? "voce" : "voci"}
+              </Button>
+            </DialogFooter>
+          </div>
+        )}
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 export default function CatalogPage() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
@@ -194,6 +361,7 @@ export default function CatalogPage() {
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<CatalogItem | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [isOcrOpen, setIsOcrOpen] = useState(false);
 
   const isPro = subscription?.isActive && subscription?.plan === "monthly_pro";
 
@@ -318,6 +486,10 @@ export default function CatalogPage() {
               : <Download className="h-4 w-4" />}
             Importa dai preventivi
           </Button>
+          <Button variant="outline" className="gap-2" onClick={() => setIsOcrOpen(true)}>
+            <Import className="h-4 w-4" />
+            Importa da foto/PDF
+          </Button>
           <Button className="gap-2" onClick={() => setIsCreateOpen(true)}>
             <Plus className="h-4 w-4" />
             Aggiungi voce
@@ -344,6 +516,10 @@ export default function CatalogPage() {
               <Button variant="outline" className="gap-2" onClick={handleImport} disabled={importFromQuotes.isPending}>
                 {importFromQuotes.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
                 Importa dai preventivi
+              </Button>
+              <Button variant="outline" className="gap-2" onClick={() => setIsOcrOpen(true)}>
+                <Import className="h-4 w-4" />
+                Importa da foto/PDF
               </Button>
               <Button className="gap-2" onClick={() => setIsCreateOpen(true)}>
                 <Plus className="h-4 w-4" />
@@ -453,6 +629,16 @@ export default function CatalogPage() {
           title="Modifica voce"
         />
       )}
+
+      {/* OCR import dialog */}
+      <OcrImportDialog
+        open={isOcrOpen}
+        onClose={() => setIsOcrOpen(false)}
+        onImported={(count) => {
+          invalidate();
+          toast({ title: `${count} ${count === 1 ? "voce importata" : "voci importate"}` });
+        }}
+      />
 
       {/* Delete confirmation */}
       <AlertDialog open={!!deletingId} onOpenChange={o => { if (!o) setDeletingId(null); }}>
