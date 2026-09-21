@@ -34,6 +34,47 @@ const quoteApiKeyLimiter = apiKeyRateLimiter({
   message: "Limite orario di preventivi raggiunto per questo account. Riprova più tardi.",
 });
 
+const quoteViewLimiter = ipRateLimiter({
+  windowMs: 60 * 1000,
+  max: 30,
+  message: "Troppe richieste. Riprova tra qualche istante.",
+});
+
+const quoteAcceptLimiter = ipRateLimiter({
+  windowMs: 60 * 60 * 1000,
+  max: 10,
+  message: "Troppi tentativi di accettazione da questo indirizzo IP. Riprova più tardi.",
+});
+
+const MAX_ACCEPTED_NAME_LENGTH = 120;
+
+// Proiezione pubblica del preventivo: esclude sempre userId, dati di
+// fatturazione Stripe e metadati AI interni (costi/token) — questo endpoint
+// non è autenticato, l'unico "segreto" è l'UUID del preventivo stesso.
+function toPublicQuote(quote: typeof quotesTable.$inferSelect) {
+  return {
+    id: quote.id,
+    numeroPreventivoData: quote.numeroPreventivoData,
+    titoloPreventivoRiga1: quote.titoloPreventivoRiga1,
+    titoloPreventivoRiga2: quote.titoloPreventivoRiga2,
+    descrizioneGenerale: quote.descrizioneGenerale,
+    clientData: quote.clientData,
+    companySnapshot: quote.companySnapshot,
+    capitoli: quote.capitoli,
+    sconto: quote.sconto,
+    condizioniPagamento: quote.condizioniPagamento,
+    subtotale: quote.subtotale,
+    ivaPercentuale: quote.ivaPercentuale,
+    ivaValore: quote.ivaValore,
+    totale: quote.totale,
+    note: quote.note,
+    pdfUrl: quote.pdfUrl,
+    status: quote.status,
+    acceptedAt: quote.acceptedAt,
+    acceptedByName: quote.acceptedByName,
+  };
+}
+
 // Helper in-memory semantic search for listino prices
 function findRelevantCatalogItems(
   input: string,
@@ -403,6 +444,87 @@ Usa queste misure esatte per calcolare matematicamente le quantità.`;
     }
   } catch (err) {
     logger.error({ err }, "Error creating public widget quote");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// GET /api/public/quotes/:id — vista pubblica in sola lettura, usata dalla
+// pagina che il cliente finale apre per rivedere e accettare il preventivo.
+// Non richiede autenticazione: l'UUID del preventivo funge da token
+// d'accesso, sul modello già usato per i link ai PDF generati.
+router.get("/public/quotes/:id", quoteViewLimiter, async (req, res) => {
+  try {
+    const id = req.params.id as string;
+
+    const [quote] = await db
+      .select()
+      .from(quotesTable)
+      .where(eq(quotesTable.id, id));
+
+    // I preventivi "draft" o "pending_payment" non sono ancora stati
+    // sbloccati dal titolare: non esporli pubblicamente, nemmeno in lettura.
+    if (!quote || (quote.status !== "unlocked" && quote.status !== "accepted")) {
+      res.status(404).json({ error: "Preventivo non trovato." });
+      return;
+    }
+
+    res.json({ success: true, quote: toPublicQuote(quote) });
+  } catch (err) {
+    logger.error({ err }, "Error fetching public quote view");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// POST /api/public/quotes/:id/accept — il cliente finale conferma il nome e
+// accetta il preventivo. Registriamo timestamp + IP come traccia minima di
+// accettazione (non è una firma elettronica qualificata SPID/CIE, ma rende
+// il consenso verificabile e non ripudiabile in modo ragionevole).
+router.post("/public/quotes/:id/accept", quoteAcceptLimiter, async (req, res) => {
+  try {
+    const id = req.params.id as string;
+    const { nomeConferma } = req.body as { nomeConferma?: string };
+
+    const trimmedName = (nomeConferma || "").trim();
+    if (!trimmedName) {
+      res.status(400).json({ error: "Inserisci nome e cognome per confermare l'accettazione." });
+      return;
+    }
+    if (trimmedName.length > MAX_ACCEPTED_NAME_LENGTH) {
+      res.status(400).json({ error: "Nome troppo lungo." });
+      return;
+    }
+
+    const [quote] = await db
+      .select()
+      .from(quotesTable)
+      .where(eq(quotesTable.id, id));
+
+    if (!quote || (quote.status !== "unlocked" && quote.status !== "accepted")) {
+      res.status(404).json({ error: "Preventivo non trovato." });
+      return;
+    }
+
+    if (quote.status === "accepted") {
+      // Idempotente: se è già stato accettato, restituisci semplicemente lo
+      // stato attuale invece di sovrascrivere chi/quando lo ha accettato.
+      res.json({ success: true, quote: toPublicQuote(quote) });
+      return;
+    }
+
+    const [updated] = await db
+      .update(quotesTable)
+      .set({
+        status: "accepted",
+        acceptedAt: new Date(),
+        acceptedByName: trimmedName,
+        acceptedIp: req.ip || null,
+      })
+      .where(eq(quotesTable.id, id))
+      .returning();
+
+    res.json({ success: true, quote: toPublicQuote(updated) });
+  } catch (err) {
+    logger.error({ err }, "Error accepting public quote");
     res.status(500).json({ error: "Internal server error" });
   }
 });

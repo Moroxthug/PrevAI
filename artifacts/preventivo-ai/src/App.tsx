@@ -33,6 +33,7 @@ const ClientDetailPage = lazy(() => import("@/pages/dashboard/clients/[name]"));
 const InvoicesPage = lazy(() => import("@/pages/dashboard/invoices"));
 const CrmPage = lazy(() => import("@/pages/dashboard/crm"));
 const DocumentsPage = lazy(() => import("@/pages/dashboard/documents"));
+const PublicQuotePage = lazy(() => import("@/pages/p/[id]"));
 
 const SeoLanding = lazy(() => import("@/pages/seo/[type]"));
 const SeoCityLanding = lazy(() => import("@/pages/seo/city-landing"));
@@ -147,6 +148,9 @@ function Router() {
       <Route path="/dashboard/documents" component={() => (
         <OnboardingGuard><DashboardLayout><DashSuspense><DocumentsPage /></DashSuspense></DashboardLayout></OnboardingGuard>
       )} />
+
+      {/* Pagina pubblica: il cliente finale visualizza e accetta il preventivo (link condiviso via WhatsApp/email) */}
+      <Route path="/p/:id" component={() => <PublicLayout><Suspense fallback={null}><PublicQuotePage /></Suspense></PublicLayout>} />
 
       {/* SEO landing pages — dynamic, driven by SECTORS / CITIES data */}
       <Route path="/preventivi/:type/:city" component={() => <PublicLayout><Suspense fallback={null}><SeoCityLanding /></Suspense></PublicLayout>} />

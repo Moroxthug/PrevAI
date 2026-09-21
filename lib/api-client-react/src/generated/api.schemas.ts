@@ -74,6 +74,7 @@ export const QuoteStatus = {
   draft: "draft",
   unlocked: "unlocked",
   pending_payment: "pending_payment",
+  accepted: "accepted",
 } as const;
 
 export type QuoteTemplateId =
@@ -108,6 +109,8 @@ export interface Quote {
   pdfUrl?: string | null;
   rawInput: string;
   pdfDownloadedAt?: string | null;
+  acceptedAt?: string | null;
+  acceptedByName?: string | null;
   capitolatoPro: boolean;
   /** @nullable */
   capitolatoPdfUrl?: string | null;

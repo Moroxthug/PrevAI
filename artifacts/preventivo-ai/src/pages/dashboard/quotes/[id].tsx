@@ -123,6 +123,17 @@ export default function QuoteDetail() {
   const [clientAddress, setClientAddress] = useState("");
   const [expandedChapters, setExpandedChapters] = useState<Set<string>>(new Set());
 
+  const handleCopyPublicLink = async () => {
+    if (!id) return;
+    const url = `${window.location.origin}/p/${id}`;
+    try {
+      await navigator.clipboard.writeText(url);
+      toast({ title: "Link copiato", description: "Incollalo in WhatsApp o email: il cliente potrà rivedere e accettare il preventivo." });
+    } catch {
+      toast({ title: "Errore", description: "Impossibile copiare il link.", variant: "destructive" });
+    }
+  };
+
   const [isEditMode, setIsEditMode] = useState(false);
   const [editTitolo1, setEditTitolo1] = useState("");
   const [editTitolo2, setEditTitolo2] = useState("");
@@ -592,6 +603,12 @@ export default function QuoteDetail() {
             ) : (
               <Badge variant="default" className="bg-green-600"><CheckCircle2 className="h-3 w-3 mr-1" /> Sbloccato</Badge>
             )}
+            {quote.status === "accepted" && (
+              <Badge variant="default" className="bg-emerald-600 gap-1">
+                <CheckCircle2 className="h-3 w-3" />
+                Accettato da {quote.acceptedByName}
+              </Badge>
+            )}
             {quote.capitolatoPro && (
               <Badge className="bg-violet-600 text-white gap-1">
                 <Star className="h-3 w-3" />
@@ -650,6 +667,16 @@ export default function QuoteDetail() {
                 ? <Loader2 className="h-4 w-4 animate-spin" />
                 : <Mail className="h-4 w-4" />}
               Invia via email
+            </Button>
+          )}
+          {!isLocked && (quote?.status === "unlocked" || quote?.status === "accepted") && (
+            <Button
+              variant="outline"
+              className="gap-2"
+              onClick={handleCopyPublicLink}
+            >
+              <Copy className="h-4 w-4" />
+              Copia link per il cliente
             </Button>
           )}
           {!isLocked && quote?.status === "unlocked" && (
