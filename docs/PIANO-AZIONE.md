@@ -18,7 +18,7 @@
 |---|---|---|---|---|---|---|---|
 | 1 | **V2-0** Sicurezza e igiene: revoca PAT, remote puliti, triage 101 file non committati, `pg_dump` baseline, inventario env, tag `v1-final`, branch `v2` | V2 §4 | ½ g | ✅ fatto | 2026-09-21 | `6dbe45de4` (main) | main pulito (7 commit), dump baseline OK, tag `v1-final`, branch `v2` |
 | 2 | **V2-1** Import base QuoteAI nel branch `v2`, rinomina `quote-ai` → `preventivo-ai`, CI e docs | V2 §4 | 1 g | ✅ fatto | 2026-09-21 | commit `V2-1: import base QuoteAI…` su `v2` | base = QuoteAI `5d65f61` (Phase 71); typecheck, build, 65 test verdi; `.gitattributes` LF |
-| 3 | **V2-2** Ri-italianizzazione: `lib/config/italy.ts`, locale solo `it`, slug SEO v1 identici, blog v1, prompt AI unificato | V2 §4 | 5–7 g | ⬜ da fare | | | **← PROSSIMA** (richiede D1) |
+| 3 | **V2-2** Ri-italianizzazione: `@workspace/config`, locale solo `it`, slug SEO v1 identici, blog v1, prompt AI unificato | V2 §4 | 5–7 g | 🟨 in corso | 2026-09-21 | `52c1e6fb7`, `33a06b97a`, `2069b3ca6` su `v2` | **← IN CORSO**. Sotto-tappe: **a** fondamenta ✅ · **b** SEO v1 ✅ · **c** `translations.ts` + pagine pubbliche ⬜ · **d** `translations.dashboard.ts` ⬜ · **e** prompt AI unificato + testi statici prerender ⬜ · **f** audit CI invertito, chiusura ⬜ |
 | 4 | **V2-3** Prova generale su `prevai-staging` da dump reale; migrazioni additive; v1 e v2 entrambe funzionanti sul DB migrato | V2 §4 | 2–3 g | ⬜ | | | fase che protegge i dati |
 | 5 | **V2-4** Riconciliazione feature per l'Italia (tabella keep/swap/disable; incentivi v1 ripristinati; fatture pro-forma) | V2 §4 | 5–8 g | ⬜ | | | richiede decisioni D1, D3 |
 | 6 | **V2-5** Migrazione produzione + cutover su Vercel `prevai` (preview → promote), rollback pre-scritto | V2 §4 | 1 g + 48 h monitoraggio | ⬜ | | | richiede D2 |
@@ -51,7 +51,15 @@ Legenda stato: ⬜ da fare · 🟨 in corso · ✅ fatto · ⛔ bloccato (scrive
 | D8 | Intermediario SDI: partire con Openapi.it (prezzi pubblici, no setup) + preventivo A-Cube. Contratto e DPA da firmare dal titolare | A-1 | ⬜ |
 | D9 | Fase 2: unico studio partner vs rete di professionisti convenzionati | A-6 | ⬜ |
 
-## Come iniziare la prossima sessione (V2-2)
+## Come iniziare la prossima sessione (V2-2, ripresa)
+
+Apri una sessione nella cartella `C:UsersAdminDownloadsPrevAI (2)PrevAI`, `git checkout v2`, e scrivi: **"Leggi docs/PIANO-AZIONE.md e riprendi la fase V2-2 dalla sotto-tappa c"**. Stato al 2026-09-21: sotto-tappe a e b committate (vedi tabella). Cosa resta:
+- **c** — tradurre in italiano `artifacts/preventivo-ai/src/i18n/translations.ts` (1754 chiavi, ora inglesi sotto la chiave `it`), `src/data/help-articles.ts` (testi inglesi, helper già monolingua), `src/pages/home.tsx` e `src/components/stats-bar.tsx` (copy inglese inline, da riscrivere per l’Italia partendo dai testi v1 in `git show v1-final:artifacts/preventivo-ai/src/pages/home.tsx`), pagine `terms.tsx`/`privacy-policy.tsx`/`chi-siamo`/`contatti` (testi legali v1: `git show v1-final:artifacts/preventivo-ai/src/pages/termini.tsx` e `privacy.tsx`).
+- **d** — `src/i18n/translations.dashboard.ts` (4474 chiavi).
+- **e** — unificare i due prompt AI (`api-server/src/lib/generateQuoteFromText.ts` e il duplicato in `routes/quotes.ts`) sulla base del prompt v1 (`git show v1-final:artifacts/api-server/src/lib/generateQuoteFromText.ts`, prezzi regionali/guardrail) esteso con Base/Consigliato/Premium; prompt widget in `routes/public-quotes.ts`; testi statici inglesi in `scripts/prerender-seo.ts` (header/footer statici, corpo pagine settore/città, blog); `cspell.json` (togliere dizionario fr, aggiungere it).
+- **f** — `scripts/i18n-audit.ts` invertito (nessuna stringa inglese residua), `pnpm run typecheck`, build, `pnpm test`, aggiornare tabella e diario, commit `V2-2: …`.
+
+## Come è stata avviata V2-2 (istruzioni originali)
 
 Apri una sessione nella cartella `C:\Users\Admin\Downloads\PrevAI (2)\PrevAI`, `git checkout v2`, e scrivi: **"Leggi docs/PIANO-AZIONE.md ed esegui la fase V2-2"**. Dettagli in `PREVAI-V2-PLAN.md` §4 V2-2. Prima di iniziare serve la decisione **D1** (design system). Il codice v1 da cui recuperare `seo-data.ts`, blog, prompt AI e incentivi è nel tag `v1-final` (`git show v1-final:artifacts/preventivo-ai/src/…`).
 
@@ -80,6 +88,8 @@ Apri una nuova sessione nella cartella `C:\Users\Admin\Downloads\PrevAI (2)\Prev
 6. Aggiornare la tabella di stato qui: riga 1 → ✅ con data e commit. Chiudere la sessione o proseguire con V2-1.
 
 ## Diario
+
+- **2026-09-21 (V2-2 a+b)** — Creato `lib/config` (`@workspace/config`: MARKET EUR/it-IT, regime IVA 22/10/4/RC/SP/esente, bollo, 107 province + regioni, formattazione, riferimenti legali). `lib/db` `tax.ts` ri-esporta da config; enum lingua `it`; default preventivo tornati a v1 (titolo, nota, IVA 22). Backend: documenti, contratto d’appalto italiano (c.c., Cod. Consumo, eIDAS), email, follow-up, prompt assistente/cantiere in italiano; `TaxProfile` per regime in OpenAPI. Frontend: `Lang = "it"`, dizionari `fr` eliminati (testi ancora inglesi sotto `it`), route `/fr` rimosse, toggle lingua tolto, date-fns `it`, province italiane nei selettori, builder manuale con regime IVA. SEO: dati v1 (seo-data, intelligence, engine, blog 78 articoli) rimessi con slug identici; i 330 URL della sitemap v1 sono tutti prerenderizzati (+11 help). Build/typecheck/lint/test verdi a ogni sotto-tappa. Scoperte: (a) gli heredoc bash con `$VAR` non definito bloccano il tool — usare file di script; (b) `it-IT` non raggruppa le migliaia sotto 5 cifre (`1234,50`), è CLDR-corretto; (c) le pagine settore/città prerenderizzate di QuoteAI usano ancora il markup Tailwind v1, quindi le funzioni v1 (`buildQuantoCostaBlock`) si innestano senza adattamenti.
 
 - **2026-09-21** — Creati `PREVAI-V2-PLAN.md`, `AMMINISTRAZIONE-PLAN.md` e questo file. Nessun codice toccato. Ricerca di mercato/legale/compliance completata (vedi `AMMINISTRAZIONE-PLAN.md` §13 per le fonti). QuoteAI consultato in sola lettura per ricostruire le 70 fasi.
 - **2026-09-21 (V2-0)** — Triage D4: 102 file → 5 commit per tema su `main` (`4265338a5` accettazione pubblica `/p/:id`, `36ad3c965` OCR listino, `063d6f861` home CRM, `d03cf34a8` hero SEO, `dae9d577a` docs); 88 PNG OG scartate (byproduct di build); audit HTML e xlsx Toronto spostati fuori repo. Dump baseline prod (151 KB, 24 tabelle, 106 preventivi, 28 utenti) → `RUNBOOKS.md`. Scoperto che le colonne `accepted_*` erano già in prod. `ENV-INVENTORY.md` creato (13 var su Vercel; Groq è l'unico provider AI). D7 risolta (eu-west-1). Tag `v1-final` = `6dbe45de4`, branch `v2` creato e pushato. Push di `main` ha avviato deploy prod su Vercel.
