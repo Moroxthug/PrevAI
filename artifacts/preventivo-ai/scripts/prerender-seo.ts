@@ -650,16 +650,16 @@ function buildSectorDeepDive(s: SectorData): string {
         <h2 class="text-3xl font-bold text-gray-900">Everything a modern ${esc(labelL)} needs to quote fast</h2>
       </div>
       <div class="prose prose-lg max-w-none text-gray-600 leading-relaxed space-y-6">
-        <p>For a <strong>${esc(labelL)}</strong> in Canada, putting together a professional quote is often a second job: hours pulled away from the job site, prices looked up from old supplier lists, the same calculations redone on a spreadsheet that's been patched together for years. The result is usually a rough, inconsistently formatted document that loses jobs to a competitor with a clearer, better-presented estimate. <strong>quoteai</strong> exists to close that gap: describe the job in plain English (or French), in a few sentences, and in thirty seconds you have a complete, professional quote ready to send by text, email or WhatsApp.</p>
-        <p>The software is built around how <strong>${esc(labelPL)}</strong> actually work day to day. Most quotes start on site or on the phone with the customer, rarely at a desk. That's why quoteai works entirely from a phone browser: no install, no syncing, nothing to configure. Open the page, describe the job while you're still walking the site, and by the time you're back in the truck the PDF is ready to send. The difference between quoting within the hour and quoting two days later is often the difference between winning the job and losing it to whoever answered first.</p>
-        <p>Common jobs our users quote every day include ${esc(useCasesText)}. For each of these, quoteai's AI already knows the typical line items, the units contractors actually use — square feet, linear feet, labour hours, per-job flat rates — and prices that are in line with the Canadian market. You can always edit line items, swap in your own price list, and add or remove sections, but you never start from a blank page: you start from a quote that's already structured, saving most of the time a quote normally takes.</p>
+        <p>For a <strong>${esc(labelL)}</strong> in Canada, putting together a professional quote is often a second job: hours pulled away from the job site, prices looked up from old supplier lists, the same calculations redone on a spreadsheet that's been patched together for years. The result is usually a rough, inconsistently formatted document that loses jobs to a competitor with a clearer, better-presented estimate. <strong>prevai</strong> exists to close that gap: describe the job in plain English (or French), in a few sentences, and in thirty seconds you have a complete, professional quote ready to send by text, email or WhatsApp.</p>
+        <p>The software is built around how <strong>${esc(labelPL)}</strong> actually work day to day. Most quotes start on site or on the phone with the customer, rarely at a desk. That's why prevai works entirely from a phone browser: no install, no syncing, nothing to configure. Open the page, describe the job while you're still walking the site, and by the time you're back in the truck the PDF is ready to send. The difference between quoting within the hour and quoting two days later is often the difference between winning the job and losing it to whoever answered first.</p>
+        <p>Common jobs our users quote every day include ${esc(useCasesText)}. For each of these, prevai's AI already knows the typical line items, the units contractors actually use — square feet, linear feet, labour hours, per-job flat rates — and prices that are in line with the Canadian market. You can always edit line items, swap in your own price list, and add or remove sections, but you never start from a blank page: you start from a quote that's already structured, saving most of the time a quote normally takes.</p>
         <h3 class="text-xl font-semibold text-gray-900 mt-10 mb-3">Real advantages for people who quote every day</h3>
         <p>${benefitsP}</p>
         <h3 class="text-xl font-semibold text-gray-900 mt-10 mb-3">Built for how Canadian trades actually invoice</h3>
-        <p>Unlike generic international tools, quoteai is designed around the practical details a <strong>${esc(labelL)}</strong> deals with on every job in Canada: GST/HST (and PST or QST where it applies) calculated correctly for the province the work is done in, clear separation between materials and labour, and totals that match what customers expect to see on an estimate before signing off. Your business details — company name, licence or registration number, logo and contact info — are saved once and applied to every quote automatically, so every document looks consistent whether the customer is a homeowner, a property manager or a small business.</p>
+        <p>Unlike generic international tools, prevai is designed around the practical details a <strong>${esc(labelL)}</strong> deals with on every job in Canada: GST/HST (and PST or QST where it applies) calculated correctly for the province the work is done in, clear separation between materials and labour, and totals that match what customers expect to see on an estimate before signing off. Your business details — company name, licence or registration number, logo and contact info — are saved once and applied to every quote automatically, so every document looks consistent whether the customer is a homeowner, a property manager or a small business.</p>
         <h3 class="text-xl font-semibold text-gray-900 mt-10 mb-3">From quote to signed job</h3>
-        <p>A well-made quote isn't just a pricing document — it's a sales tool. Clean formatting, clear line items, your logo and contact information tell the customer they're dealing with a serious professional. Every quote generated with quoteai includes a custom header, sections by phase of work, a technical description for each line item, unit prices and subtotals, tax shown clearly, a final total, and payment terms and validity dates. The customer gets a tidy PDF — one page where possible — that holds up next to quotes from other ${esc(labelPL)} they're comparing, and in most cases the job goes to whoever presented the more professional estimate, even at a similar price.</p>
-        <p>Getting started is free: no credit card, no complicated setup. Create an account in thirty seconds, generate your first quote for free, and only decide afterward whether a subscription plan (for anyone quoting daily) or a one-off quote makes more sense. Contractors, tradespeople and small businesses across Canada already use quoteai every week. Try it and see why nobody goes back to the old spreadsheet.</p>
+        <p>A well-made quote isn't just a pricing document — it's a sales tool. Clean formatting, clear line items, your logo and contact information tell the customer they're dealing with a serious professional. Every quote generated with prevai includes a custom header, sections by phase of work, a technical description for each line item, unit prices and subtotals, tax shown clearly, a final total, and payment terms and validity dates. The customer gets a tidy PDF — one page where possible — that holds up next to quotes from other ${esc(labelPL)} they're comparing, and in most cases the job goes to whoever presented the more professional estimate, even at a similar price.</p>
+        <p>Getting started is free: no credit card, no complicated setup. Create an account in thirty seconds, generate your first quote for free, and only decide afterward whether a subscription plan (for anyone quoting daily) or a one-off quote makes more sense. Contractors, tradespeople and small businesses across Canada already use prevai every week. Try it and see why nobody goes back to the old spreadsheet.</p>
       </div>
     </div>
   </section>`;
@@ -804,7 +804,7 @@ function buildCityBodyHtml(s: SectorData, city: CityData): string {
   const sBenefits = `<section class="py-20 bg-gray-50">
     <div class="container mx-auto px-4 sm:px-6 lg:px-8">
       <div class="text-center mb-14">
-        <h2 class="text-3xl font-bold text-gray-900">Why ${esc(s.labelPlural)} in ${esc(cityName)} choose quoteai</h2>
+        <h2 class="text-3xl font-bold text-gray-900">Why ${esc(s.labelPlural)} in ${esc(cityName)} choose prevai</h2>
       </div>
       <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
         ${s.benefits.map((b) => `<div class="card-soft bg-white p-7 rounded-2xl flex flex-col">
@@ -1083,7 +1083,7 @@ const homepageSoftwareSchema = {
   })),
 };
 const homepageHeadBlock = buildHeadBlock({
-  title: "quoteai – Online Quotes for Contractors & Trades | AI in 30s",
+  title: "prevai – Online Quotes for Contractors & Trades | AI in 30s",
   description: "Create professional quotes in 30 seconds with AI. Quoting software for Canadian contractors, small businesses, and tradespeople. No more Excel, no more mistakes. Try it free.",
   canonical: `${BASE_URL}/`,
   ogImagePath: "/opengraph.jpg",
@@ -1457,7 +1457,7 @@ function buildBlogCategoryJsonLd(category: BlogCategory): object[] {
     {
       "@context": "https://schema.org",
       "@type": "CollectionPage",
-      name: `${category.name} — Blog quoteai`,
+      name: `${category.name} — Blog prevai`,
       description: category.description,
       url: canonical,
       inLanguage: "en",
@@ -1599,7 +1599,7 @@ console.log("  ✓ Blog list page prerendered");
 for (const category of BLOG_CATEGORIES) {
   const categoryCanonical = `${BASE_URL}/blog/categoria/${category.slug}/`;
   const categoryHeadBlock = buildHeadBlock({
-    title: `${category.name} — Blog quoteai`,
+    title: `${category.name} — Blog prevai`,
     description: category.description,
     canonical: categoryCanonical,
     ogImagePath: "/opengraph.jpg",
@@ -1616,7 +1616,7 @@ for (const article of BLOG_ARTICLES) {
   const articleCanonical = `${BASE_URL}/blog/${article.slug}/`;
   const articleOgImage = `/og/blog/${article.slug}.png`;
   const articleHeadBlock = buildHeadBlock({
-    title: `${article.seoTitle ?? article.title} | quoteai`,
+    title: `${article.seoTitle ?? article.title} | prevai`,
     description: article.metaDescription,
     canonical: articleCanonical,
     ogImagePath: articleOgImage,
@@ -1681,7 +1681,7 @@ const chiSiamoOrgJsonLd = {
   name: "PrevAI",
   url: `${BASE_URL}/`,
   logo: `${BASE_URL}/icon-192.png`,
-  description: "quoteai is the AI quoting software for Canadian contractors and tradespeople. Generate professional quotes in 30 seconds by describing the job in plain English.",
+  description: "prevai is the AI quoting software for Canadian contractors and tradespeople. Generate professional quotes in 30 seconds by describing the job in plain English.",
   foundingDate: "2026",
   foundingLocation: { "@type": "Place", name: "Canada" },
   contactPoint: {
@@ -1693,8 +1693,8 @@ const chiSiamoOrgJsonLd = {
 };
 await buildStaticPageHtml({
   slug: "chi-siamo",
-  title: "About Us | quoteai — AI Quoting Software for Contractors",
-  description: "quoteai exists to free Canadian tradespeople from paperwork. Learn our mission: professional quotes in 30 seconds thanks to AI.",
+  title: "About Us | prevai — AI Quoting Software for Contractors",
+  description: "prevai exists to free Canadian tradespeople from paperwork. Learn our mission: professional quotes in 30 seconds thanks to AI.",
   path: "/chi-siamo/",
   jsonLd: [chiSiamoOrgJsonLd, buildBreadcrumbJsonLd("About Us", "/chi-siamo/")],
   bodyHtml: stripHoistedHead(await renderPage("/chi-siamo", "it")),
@@ -1704,9 +1704,9 @@ await buildStaticPageHtml({
 const contattiJsonLd = {
   "@context": "https://schema.org",
   "@type": "ContactPage",
-  name: "Contact quoteai",
+  name: "Contact prevai",
   url: `${BASE_URL}/contatti/`,
-  description: "Contact the quoteai team for support, product questions, or sales inquiries.",
+  description: "Contact the prevai team for support, product questions, or sales inquiries.",
   mainEntity: {
     "@type": "Organization",
     name: "PrevAI",
@@ -1720,8 +1720,8 @@ const contattiJsonLd = {
 };
 await buildStaticPageHtml({
   slug: "contatti",
-  title: "Contact | quoteai — Help and Support",
-  description: "Have questions about quoteai? Contact us by email or WhatsApp. We're here to help you generate professional quotes faster.",
+  title: "Contact | prevai — Help and Support",
+  description: "Have questions about prevai? Contact us by email or WhatsApp. We're here to help you generate professional quotes faster.",
   path: "/contatti/",
   jsonLd: [contattiJsonLd, buildBreadcrumbJsonLd("Contact", "/contatti/")],
   bodyHtml: stripHoistedHead(await renderPage("/contatti", "it")),
@@ -1730,38 +1730,38 @@ await buildStaticPageHtml({
 // /privacy-policy/ — mirrors src/pages/privacy-policy.tsx (the real live route)
 await buildStaticPageHtml({
   slug: "privacy",
-  title: "Privacy Policy | QuoteAI",
-  description: "QuoteAI's privacy policy — how we collect, use, and protect your personal information.",
+  title: "Privacy Policy | PrevAI",
+  description: "PrevAI's privacy policy — how we collect, use, and protect your personal information.",
   path: "/privacy/",
-  jsonLd: [buildWebPageJsonLd("Privacy Policy", "QuoteAI's privacy policy — how we collect, use, and protect your personal information.", "/privacy-policy/"), buildBreadcrumbJsonLd("Privacy Policy", "/privacy-policy/")],
+  jsonLd: [buildWebPageJsonLd("Privacy Policy", "PrevAI's privacy policy — how we collect, use, and protect your personal information.", "/privacy-policy/"), buildBreadcrumbJsonLd("Privacy Policy", "/privacy-policy/")],
   bodyHtml: stripHoistedHead(await renderPage("/privacy", "it")),
 });
 
 // /terms/ — mirrors src/pages/terms.tsx (the real live route)
 await buildStaticPageHtml({
   slug: "termini",
-  title: "Terms of Service | QuoteAI",
-  description: "Terms and conditions for using the QuoteAI platform to generate AI-powered quotes.",
+  title: "Terms of Service | PrevAI",
+  description: "Terms and conditions for using the PrevAI platform to generate AI-powered quotes.",
   path: "/termini/",
-  jsonLd: [buildWebPageJsonLd("Terms of Service", "Terms and conditions for using the QuoteAI platform to generate AI-powered quotes.", "/terms/"), buildBreadcrumbJsonLd("Terms of Service", "/terms/")],
+  jsonLd: [buildWebPageJsonLd("Terms of Service", "Terms and conditions for using the PrevAI platform to generate AI-powered quotes.", "/terms/"), buildBreadcrumbJsonLd("Terms of Service", "/terms/")],
   bodyHtml: stripHoistedHead(await renderPage("/termini", "it")),
 });
 
 // /whatsapp/
 await buildStaticPageHtml({
   slug: "whatsapp",
-  title: "Quotes on WhatsApp – quoteai | AI-Powered Quoting",
-  description: "Describe the job by voice, text, or photo on WhatsApp. quoteai generates a professional quote with a PDF in 60 seconds.",
+  title: "Quotes on WhatsApp – prevai | AI-Powered Quoting",
+  description: "Describe the job by voice, text, or photo on WhatsApp. prevai generates a professional quote with a PDF in 60 seconds.",
   path: "/whatsapp/",
-  jsonLd: [buildWebPageJsonLd("Quotes on WhatsApp", "Describe the job by voice, text, or photo on WhatsApp. quoteai generates a professional quote with a PDF in 60 seconds.", "/whatsapp/"), buildBreadcrumbJsonLd("WhatsApp", "/whatsapp/")],
+  jsonLd: [buildWebPageJsonLd("Quotes on WhatsApp", "Describe the job by voice, text, or photo on WhatsApp. prevai generates a professional quote with a PDF in 60 seconds.", "/whatsapp/"), buildBreadcrumbJsonLd("WhatsApp", "/whatsapp/")],
   bodyHtml: stripHoistedHead(await renderPage("/whatsapp", "it")),
 });
 
 // /mappa-sito/
 await buildStaticPageHtml({
   slug: "mappa-sito",
-  title: "Site Map | quoteai — Full Page Index",
-  description: "The complete site map for quoteai. Find every static page, blog article, and guide for contractors and tradespeople across Canadian cities.",
+  title: "Site Map | prevai — Full Page Index",
+  description: "The complete site map for prevai. Find every static page, blog article, and guide for contractors and tradespeople across Canadian cities.",
   path: "/mappa-sito/",
   jsonLd: [buildWebPageJsonLd("Site Map", "The complete site map for prevai.it. Find every static page, blog article, and guide for contractors and tradespeople across Canadian cities.", "/mappa-sito/"), buildBreadcrumbJsonLd("Site Map", "/mappa-sito/")],
   bodyHtml: stripHoistedHead(await renderPage("/mappa-sito", "it")),
@@ -1786,7 +1786,7 @@ for (const article of HELP_ARTICLES) {
   const path = `/help/${article.slug}/`;
   await buildStaticPageHtml({
     slug: `help/${article.slug}`,
-    title: `${article.title.it} | quoteai`,
+    title: `${article.title.it} | prevai`,
     description: article.summary.it,
     path,
     jsonLd: [

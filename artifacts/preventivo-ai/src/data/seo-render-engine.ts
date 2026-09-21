@@ -40,7 +40,7 @@ export function strHash(s: string): number {
 // ─── OG image path ────────────────────────────────────────────────────────
 
 // scripts/generate-sector-og-images.ts genera /og/sectors/<slug>.png per ogni
-// voce di SECTORS in build (Phase 68 QuoteAI): niente mappa parziale.
+// voce di SECTORS in build (Phase 68 PrevAI): niente mappa parziale.
 export function getOgImagePath(sectorSlug: string): string {
   return `/og/sectors/${sectorSlug}.png`;
 }

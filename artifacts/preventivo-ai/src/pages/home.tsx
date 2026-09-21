@@ -48,19 +48,15 @@ export default function Home() {
 
   return (
     <div className="flex flex-col min-h-screen bg-white">
-      {/* WebSite + SoftwareApplication JSON-LD for "/" is already baked into
-          the prerendered shell by scripts/prerender-seo.ts — don't duplicate
-          it here via Helmet, or crawlers see two WebSite schemas. */}
+      {/* Il JSON-LD WebSite + SoftwareApplication per "/" è già nel guscio
+          prerenderizzato da scripts/prerender-seo.ts — non duplicarlo qui via
+          Helmet, o i crawler vedono due schemi WebSite. */}
       <SeoHead
-        title={
-          "quoteai – Instant Quotes for Canadian Contractors | AI in 30s"
-        }
+        title={"prevai – Preventivi Online per Artigiani e Aziende | AI in 30s"}
         description={
-          "quoteai turns a plain-language job description into a priced, branded, tax-calculated quote in 30 seconds — then runs leads, job sites, contracts and invoices until you're paid. Built for Canadian trades."
+          "Dimentica Excel e i documenti scritti a mano. Descrivi il lavoro a parole tue e prevai genera un preventivo professionale con IVA, voci di costo e totali in 30 secondi — poi gestisce lead, cantieri, contratti e fatture fino all'incasso."
         }
         canonical={"https://prevai.it/"}
-        lang="it-IT"
-        frCanonical="https://prevai.it/fr/"
       />
 
       {/* ── HERO ───────────────────────────────────────────── */}
@@ -68,118 +64,118 @@ export default function Home() {
         <div className="wrap hero-grid">
           <div>
             <p className="eyebrow on-dark" style={{ marginBottom: 22 }}>
-              The AI-driven expert platform for Canadian trades
+              La piattaforma AI per artigiani e imprese italiane
             </p>
             <h1>
                 <RevealHeading
                   lines={[
-                    [{ text: "Create" }, { text: "professional" }],
-                    [{ text: "quotes" }, { text: "in" }, { text: "30" }, { text: "seconds" }],
-                    [{ text: "with" }, { text: "AI." }],
+                    [{ text: "Crea" }, { text: "preventivi" }],
+                    [{ text: "professionali" }, { text: "in" }, { text: "30" }, { text: "secondi" }],
+                    [{ text: "con" }, { text: "l'AI." }],
                   ]}
                 />
             </h1>
             <p className="lead">
-              Describe the job in your own words — quoteai generates a priced, branded quote with line items, quantities and GST/HST by province. Then it runs the rest of the path: leads, job sites, contracts, invoices, paid.
+              Descrivi il lavoro a parole tue — prevai genera un preventivo con prezzi, logo, voci, quantità e IVA calcolata. Poi segue tutto il resto del percorso: lead, cantieri, contratti, fatture, incasso.
             </p>
             <div className="hero-cta">
               <button onClick={() => navigate(isSignedIn ? "/dashboard/new" : "/sign-up")} className="btn btn-white">
-                Start for free
+                Inizia gratis
               </button>
               <Link href="/#deep-dive" className="btn btn-outline-light">
-                See plans
+                Vedi i piani
               </Link>
             </div>
             <p className="hero-note">
-              7-day free trial · No credit card required · Bilingual FR / EN
+              Prova gratuita di 7 giorni · Nessuna carta di credito · Anche su WhatsApp
             </p>
           </div>
           <div>
             <div className="doc-mock">
-              <div className="dm-bar"><b>Quote_John_Smith.pdf</b><span className="chip chip-grey">PDF</span></div>
+              <div className="dm-bar"><b>Preventivo_Mario_Rossi.pdf</b><span className="chip chip-grey">PDF</span></div>
               <div className="dm-body">
                 <div className="dm-co">
-                  <span><b>Smith Painting Co.</b>GST/HST: 123456789 RT0001</span>
-                  <span style={{ textAlign: "right" }}><b>Quote N. 2024-042</b>Toronto, ON</span>
+                  <span><b>Rossi Tinteggiature</b>P. IVA 01234567890</span>
+                  <span style={{ textAlign: "right" }}><b>Preventivo N. 42/2026</b>Milano (MI)</span>
                 </div>
-                <div className="dm-row"><span>A. Wall painting</span><span className="v">$1,200.00</span></div>
-                <div className="dm-row"><span>B. Skim coating & prep</span><span className="v">$250.00</span></div>
+                <div className="dm-row"><span>A. Tinteggiatura pareti</span><span className="v">€ 1.200,00</span></div>
+                <div className="dm-row"><span>B. Rasatura e preparazione</span><span className="v">€ 250,00</span></div>
                 <div className="dm-tot">
-                  <div className="dm-row"><span>Subtotal</span><span className="v">$1,450.00</span></div>
-                  <div className="dm-row"><span>HST (13%)</span><span className="v">$319.00</span></div>
-                  <div className="dm-grand"><span>Total</span><b>$1,769.00</b></div>
+                  <div className="dm-row"><span>Imponibile</span><span className="v">€ 1.450,00</span></div>
+                  <div className="dm-row"><span>IVA (10 %)</span><span className="v">€ 145,00</span></div>
+                  <div className="dm-grand"><span>Totale</span><b>€ 1.595,00</b></div>
                 </div>
               </div>
               <div className="dm-chips">
-                <span className="chip chip-green">Tax calculated</span>
-                <span className="chip chip-teal">Generated in 30 sec</span>
-                <span className="chip chip-grey">E-signature built in</span>
+                <span className="chip chip-green">IVA calcolata</span>
+                <span className="chip chip-teal">Generato in 30 sec</span>
+                <span className="chip chip-grey">Firma elettronica inclusa</span>
               </div>
             </div>
           </div>
         </div>
       </section>
 
-      {/* ── PRODUCTS ───────────────────────────────────────── */}
+      {/* ── PRODOTTI ───────────────────────────────────────── */}
       <ScrollSection className="sec" id="products">
         <div className="wrap">
           <div className="sec-head">
             <div>
-              <span className="eyebrow">Our products</span>
-              <h2 className="h2">One platform, from lead to paid.</h2>
+              <span className="eyebrow">I nostri prodotti</span>
+              <h2 className="h2">Una piattaforma, dal lead all'incasso.</h2>
             </div>
             <p className="lead">
-              Not a one-trick quote generator. Every step a job actually flows through — lead, quote, job site, contract, invoice, payment — lives in one place, built for Canadian trades.
+              Non un semplice generatore di preventivi. Ogni passaggio che un lavoro attraversa davvero — lead, preventivo, cantiere, contratto, fattura, pagamento — vive in un unico posto, pensato per gli artigiani italiani.
             </p>
           </div>
           <div className="tiles">
             <Link href="#story-quotes" className="tile t-green">
-              <h3>AI Quotes</h3>
+              <h3>Preventivi AI</h3>
               <p>
-                Describe the job in plain language — or send a WhatsApp voice note or photo — and get a priced, branded quote with line items, quantities and GST/HST by province in about 30 seconds. Backed by your price catalog, signed with e-signature.
+                Descrivi il lavoro in italiano — o manda un vocale o una foto su WhatsApp — e ottieni in circa 30 secondi un preventivo con prezzi, logo, voci, quantità e IVA. Basato sul tuo listino, firmato online dal cliente.
               </p>
-              <span className="cta-link">Learn more <ArrowRight className="chev h-4 w-4" /></span>
+              <span className="cta-link">Scopri di più <ArrowRight className="chev h-4 w-4" /></span>
             </Link>
             <Link href="#story-jobs" className="tile t-purple">
-              <h3>CRM & Leads</h3>
+              <h3>CRM e lead</h3>
               <p>
-                Incoming leads land in a kanban pipeline before they become quotes. Score them, follow up, and move them to signed without a spreadsheet in sight.
+                I contatti in arrivo finiscono in una pipeline kanban prima di diventare preventivi. Valutali, fai follow-up e portali alla firma senza un foglio Excel.
               </p>
-              <span className="cta-link">Learn more <ArrowRight className="chev h-4 w-4" /></span>
+              <span className="cta-link">Scopri di più <ArrowRight className="chev h-4 w-4" /></span>
             </Link>
             <Link href="#story-jobs" className="tile t-teal">
-              <h3>Job Sites</h3>
+              <h3>Cantieri</h3>
               <p>
-                An accepted quote becomes a job: tasks with deadlines, team assignment, supplier tracking and budget vs actual — linked to the original quote.
+                Un preventivo accettato diventa un cantiere: attività con scadenze, squadra assegnata, fornitori e budget a confronto con i costi reali — collegato al preventivo originale.
               </p>
-              <span className="cta-link">Learn more <ArrowRight className="chev h-4 w-4" /></span>
+              <span className="cta-link">Scopri di più <ArrowRight className="chev h-4 w-4" /></span>
             </Link>
             <Link href="#story-invoicing" className="tile t-yellow">
-              <h3>Invoicing & Payments</h3>
+              <h3>Fatturazione e pagamenti</h3>
               <p>
-                Invoices generate from accepted quotes or jobs, with a public invoice view for clients. Reminders go out on schedule until it's paid.
+                Le fatture nascono dai preventivi accettati o dai cantieri, con una pagina pubblica per il cliente. I solleciti partono da soli finché non incassi.
               </p>
-              <span className="cta-link">Learn more <ArrowRight className="chev h-4 w-4" /></span>
+              <span className="cta-link">Scopri di più <ArrowRight className="chev h-4 w-4" /></span>
             </Link>
             <Link href="#story-invoicing" className="tile t-green">
-              <h3>Contracts & Documents</h3>
+              <h3>Contratti e documenti</h3>
               <p>
-                Contracts generate from accepted quotes and jobs. Every file, quote, client and invoice stays searchable in one archive — soft-delete included.
+                I contratti d'appalto nascono dai preventivi accettati e dai cantieri. Ogni file, preventivo, cliente e fattura resta cercabile in un unico archivio — cestino incluso.
               </p>
-              <span className="cta-link">Learn more <ArrowRight className="chev h-4 w-4" /></span>
+              <span className="cta-link">Scopri di più <ArrowRight className="chev h-4 w-4" /></span>
             </Link>
             <Link href="#products" className="tile t-purple">
-              <h3>Team, Analytics & Assistant</h3>
+              <h3>Squadra, analisi e assistente</h3>
               <p>
-                Multi-user accounts with roles and invites, dashboards for revenue, win rate and turnaround, an AI assistant inside your dashboard, and imports for your existing price lists and client data.
+                Account multiutente con ruoli e inviti, dashboard su fatturato, tasso di chiusura e tempi di risposta, un assistente AI dentro la dashboard e l'importazione di listini e clienti esistenti.
               </p>
-              <span className="cta-link">Learn more <ArrowRight className="chev h-4 w-4" /></span>
+              <span className="cta-link">Scopri di più <ArrowRight className="chev h-4 w-4" /></span>
             </Link>
           </div>
           <div className="also">
-            <span className="lbl">Also included</span>
+            <span className="lbl">Incluso anche</span>
             {(
-              ["WhatsApp quoting", "E-signature", "Price catalog", "GST/HST by province", "Bilingual FR / EN", "Worker time tracking", "Team invites", "Spreadsheet & PDF imports", "Documents & archive", "AI Assistant"]
+              ["Preventivi da WhatsApp", "Firma elettronica", "Listino prezzi", "IVA 22/10/4 %", "Bonus e incentivi", "Ore degli operai", "Inviti alla squadra", "Import da Excel e PDF", "Documenti e archivio", "Assistente AI"]
             ).map((item) => (
               <span key={item} className="chip chip-grey">{item}</span>
             ))}
@@ -187,51 +183,51 @@ export default function Home() {
         </div>
       </ScrollSection>
 
-      {/* ── STORIES ────────────────────────────────────────── */}
+      {/* ── STORIE ─────────────────────────────────────────── */}
       <ScrollSection className="sec soft">
         <div className="wrap">
           <div className="split" id="story-quotes">
             <div className="split-media">
-              <img src="https://picsum.photos/seed/quoteai-contractor-onsite/980/686" alt={"A contractor reviewing a quote on site"} loading="lazy" />
+              <img src="https://picsum.photos/seed/prevai-contractor-onsite/980/686" alt={"Un artigiano che rivede un preventivo in cantiere"} loading="lazy" />
             </div>
             <div className="split-body">
-              <span className="eyebrow">AI Quotes</span>
-              <h2>From a plain sentence to a signed quote.</h2>
+              <span className="eyebrow">Preventivi AI</span>
+              <h2>Da una frase a un preventivo firmato.</h2>
               <p>
-                The engine reads your description, picks the cost items, estimates quantities and applies your province's tax. You review, the client e-signs, and the deposit request goes out the same day.
+                Il motore legge la tua descrizione, sceglie le voci di costo, stima le quantità e applica l'aliquota IVA giusta. Tu controlli, il cliente firma online e la richiesta di acconto parte lo stesso giorno.
               </p>
               <button onClick={() => navigate(isSignedIn ? "/dashboard/new" : "/sign-up")} className="cta-link">
-                Explore AI Quotes <ArrowRight className="chev h-4 w-4" />
+                Scopri i preventivi AI <ArrowRight className="chev h-4 w-4" />
               </button>
             </div>
           </div>
           <div className="split rev" id="story-jobs">
             <div className="split-media">
-              <img src="https://picsum.photos/seed/quoteai-team-jobsite/980/686" alt={"A crew working on a job site"} loading="lazy" />
+              <img src="https://picsum.photos/seed/prevai-team-jobsite/980/686" alt={"Una squadra al lavoro in cantiere"} loading="lazy" />
             </div>
             <div className="split-body">
-              <span className="eyebrow">Job Sites</span>
-              <h2>An accepted quote becomes a job site.</h2>
+              <span className="eyebrow">Cantieri</span>
+              <h2>Un preventivo accettato diventa un cantiere.</h2>
               <p>
-                Open the job straight from the signed quote — client, amount and line items already linked. Track tasks, assign your team, log suppliers and watch budget vs actual as costs land.
+                Apri il cantiere direttamente dal preventivo firmato — cliente, importo e voci già collegati. Segui le attività, assegna la squadra, registra i fornitori e guarda il budget rispetto ai costi reali man mano che arrivano.
               </p>
               <Link href="/dashboard/jobs" className="cta-link">
-                Explore job sites <ArrowRight className="chev h-4 w-4" />
+                Scopri i cantieri <ArrowRight className="chev h-4 w-4" />
               </Link>
             </div>
           </div>
           <div className="split" id="story-invoicing">
             <div className="split-media">
-              <img src="https://picsum.photos/seed/quoteai-cafe-owner/980/686" alt={"A business owner reviewing an invoice"} loading="lazy" />
+              <img src="https://picsum.photos/seed/prevai-cafe-owner/980/686" alt={"Un titolare d'impresa che controlla una fattura"} loading="lazy" />
             </div>
             <div className="split-body">
-              <span className="eyebrow">Invoicing & Payments</span>
-              <h2>Invoices that chase themselves.</h2>
+              <span className="eyebrow">Fatturazione e pagamenti</span>
+              <h2>Fatture che si sollecitano da sole.</h2>
               <p>
-                Generated from the accepted quote or job, sent with a public client view, reminded politely on schedule, and reconciled when paid. Contracts come from the same source of truth.
+                Generate dal preventivo accettato o dal cantiere, inviate con una pagina pubblica per il cliente, sollecitate con garbo a scadenza e riconciliate quando vengono pagate. I contratti nascono dalla stessa fonte.
               </p>
               <Link href="/dashboard/invoices" className="cta-link">
-                Explore invoicing <ArrowRight className="chev h-4 w-4" />
+                Scopri la fatturazione <ArrowRight className="chev h-4 w-4" />
               </Link>
             </div>
           </div>
@@ -243,70 +239,70 @@ export default function Home() {
         <div className="wrap">
           <div className="split">
             <div>
-              <span className="chip chip-new">New</span>
-              <span className="eyebrow grey" style={{ marginLeft: 10 }}>Straight from your phone</span>
-              <h2 className="h2" style={{ margin: "16px 0 14px" }}>The whole quote flow, on WhatsApp.</h2>
+              <span className="chip chip-new">Novità</span>
+              <span className="eyebrow grey" style={{ marginLeft: 10 }}>Direttamente dal telefono</span>
+              <h2 className="h2" style={{ margin: "16px 0 14px" }}>Tutto il flusso del preventivo, su WhatsApp.</h2>
               <p className="lead">
-                Voice note, text or photo — the assistant drafts the quote, you correct or approve it in chat, and the PDF lands back in the conversation. Saved to your account automatically. No app to open.
+                Vocale, testo o foto — l'assistente prepara il preventivo, tu lo correggi o lo approvi in chat e il PDF torna nella conversazione. Salvato in automatico nel tuo account. Nessuna app da aprire.
               </p>
               <Link href="/whatsapp/" className="cta-link" style={{ marginTop: 22 }}>
-                See the full feature <ArrowRight className="chev h-4 w-4" />
+                Scopri la funzione completa <ArrowRight className="chev h-4 w-4" />
               </Link>
             </div>
             <div className="split-media">
-              <img src="https://picsum.photos/seed/quoteai-whatsapp-phone/980/686" alt={"A tradesperson sending a voice note from a phone"} loading="lazy" />
+              <img src="https://picsum.photos/seed/prevai-whatsapp-phone/980/686" alt={"Un artigiano che manda un vocale dal telefono"} loading="lazy" />
             </div>
           </div>
           <div className="steps3">
             <div className="step">
               <span className="n">1</span>
-              <b>Send a voice note, text, or photo</b>
-              <p>Right on WhatsApp. Describe the job just like you'd talk to a client.</p>
+              <b>Manda un vocale, un testo o una foto</b>
+              <p>Direttamente su WhatsApp. Descrivi il lavoro come lo spiegheresti a un cliente.</p>
             </div>
             <div className="step">
               <span className="n">2</span>
-              <b>The AI generates a preview</b>
-              <p>Sections, prices, and tax in 60 seconds. Correct or approve it right away.</p>
+              <b>L'AI genera l'anteprima</b>
+              <p>Capitoli, prezzi e IVA in 60 secondi. Correggila o approvala subito.</p>
             </div>
             <div className="step">
               <span className="n">3</span>
-              <b>Get the PDF in chat</b>
-              <p>Send it to your client with a tap. The quote is also saved on prevai.it.</p>
+              <b>Ricevi il PDF in chat</b>
+              <p>Invialo al cliente con un tocco. Il preventivo è salvato anche su prevai.it.</p>
             </div>
           </div>
         </div>
       </ScrollSection>
 
-      {/* ── COMPARISON ─────────────────────────────────────── */}
+      {/* ── CONFRONTO ──────────────────────────────────────── */}
       <ScrollSection className="sec soft" id="comparison">
         <div className="wrap">
           <div className="sec-head">
             <div>
-              <span className="eyebrow grey">Comparison</span>
-              <h2 className="h2">Honest side-by-side</h2>
+              <span className="eyebrow grey">Confronto</span>
+              <h2 className="h2">Un confronto onesto</h2>
             </div>
             <p className="lead">
-              Trades buy on one question: does it save me the 30 minutes of paperwork? Here is how quoteai compares to the alternatives you already know.
+              Gli artigiani comprano su una domanda sola: mi fa risparmiare i 30 minuti di burocrazia? Ecco come prevai si confronta con le alternative che già conosci.
             </p>
           </div>
           <div className="card cmp-wrap" tabIndex={0}>
             <table className="cmp">
               <thead>
                 <tr>
-                  <th>Feature</th>
-                  <th className="q">quoteai</th>
-                  <th>Jobber / Housecall Pro</th>
-                  <th>Excel & Word</th>
+                  <th>Funzionalità</th>
+                  <th className="q">prevai</th>
+                  <th>Gestionali tradizionali</th>
+                  <th>Excel e Word</th>
                 </tr>
               </thead>
               <tbody>
                 {([
-                  { f: "Quote from a plain-language description", q: "~30 seconds", j: "Not offered", e: "Manual, 30–60 min" },
-                  { f: "Canadian GST/HST by province", q: "Automatic", j: "Manual tax setup", e: "Manual formulas" },
-                  { f: "Quoting over WhatsApp", q: "Built in", j: "Not offered", e: "Not possible" },
-                  { f: "Bilingual FR / EN", q: "Yes", j: "Limited", e: "Manual" },
-                  { f: "Lead → quote → job → invoice → paid", q: "One platform", j: "Modules & plan gates", e: "Separate files" },
-                  { f: "Time to first quote", q: "30 seconds", j: "Hours of onboarding", e: "Hours per document" },
+                  { f: "Preventivo da una descrizione in italiano", q: "~30 secondi", j: "Non previsto", e: "A mano, 30–60 min" },
+                  { f: "IVA 22/10/4 % per tipo di lavoro", q: "Automatica", j: "Configurazione manuale", e: "Formule a mano" },
+                  { f: "Preventivi da WhatsApp", q: "Incluso", j: "Non previsto", e: "Impossibile" },
+                  { f: "Bonus e incentivi fiscali", q: "Suggeriti in automatico", j: "Non previsti", e: "Da cercare a parte" },
+                  { f: "Lead → preventivo → cantiere → fattura → incasso", q: "Una sola piattaforma", j: "Moduli e piani a parte", e: "File separati" },
+                  { f: "Tempo per il primo preventivo", q: "30 secondi", j: "Ore di configurazione", e: "Ore per documento" },
                 ]).map((row) => (
                   <tr key={row.f}>
                     <td>{row.f}</td>
@@ -320,37 +316,37 @@ export default function Home() {
           </div>
           <div className="cmp-cta">
             <button onClick={() => navigate(isSignedIn ? "/dashboard/new" : "/sign-up")} className="btn btn-navy">
-              Try quoteai for free
+              Prova prevai gratis
             </button>
           </div>
         </div>
       </ScrollSection>
 
-      {/* ── IMPACT (real, live-counted numbers) ───────────────── */}
+      {/* ── IMPATTO (numeri reali, contati dal vivo) ─────────── */}
       <StatsBar />
 
-      {/* ── NEWSROOM (real blog posts) ─────────────────────── */}
+      {/* ── NOVITÀ (articoli reali del blog) ──────────────────── */}
       <ScrollSection className="sec" id="newsroom">
         <div className="wrap">
           <div className="sec-head">
             <div>
-              <span className="eyebrow">Newsroom</span>
-              <h2 className="h2">The latest from quoteai</h2>
+              <span className="eyebrow">Novità</span>
+              <h2 className="h2">Le ultime da prevai</h2>
             </div>
-            <Link href="/blog/" className="cta-link">View all news <ArrowRight className="chev h-4 w-4" /></Link>
+            <Link href="/blog/" className="cta-link">Vedi tutte le novità <ArrowRight className="chev h-4 w-4" /></Link>
           </div>
           <div className="news-grid">
             {[...BLOG_INDEX].sort((a, b) => b.publishedAt.localeCompare(a.publishedAt)).slice(0, 3).map((article, i) => (
               <Link key={article.slug} href={`/blog/${article.slug}/`} className="card news-card">
                 <div className="news-media">
-                  <img src={`https://picsum.photos/seed/quoteai-blog-${i}/840/525`} alt="" loading="lazy" />
+                  <img src={`https://picsum.photos/seed/prevai-blog-${i}/840/525`} alt="" loading="lazy" />
                 </div>
                 <div className="news-body">
                   <p className="news-meta">
                     {article.category} · {new Date(article.publishedAt).toLocaleDateString("it-IT", { year: "numeric", month: "long", day: "numeric" })}
                   </p>
                   <h3>{article.title}</h3>
-                  <span className="cta-link">Read more <ArrowRight className="chev h-4 w-4" /></span>
+                  <span className="cta-link">Leggi <ArrowRight className="chev h-4 w-4" /></span>
                 </div>
               </Link>
             ))}
@@ -358,26 +354,26 @@ export default function Home() {
         </div>
       </ScrollSection>
 
-      {/* ── REVIEWS (real, verified testimonials) ─────────────── */}
+      {/* ── RECENSIONI (testimonianze reali e verificate) ─────── */}
       <TestimonialsSection />
 
-      {/* ── GUIDES ─────────────────────────────────────────── */}
+      {/* ── GUIDE ──────────────────────────────────────────── */}
       <ScrollSection className="sec" id="guides">
         <div className="wrap">
           <div className="sec-head">
             <div>
-              <span className="eyebrow grey">Guides</span>
-              <h2 className="h2">No more spreadsheets. Forget Excel and Word.</h2>
+              <span className="eyebrow grey">Guide</span>
+              <h2 className="h2">Basta fogli di calcolo. Dimentica Excel e Word.</h2>
             </div>
             <p className="lead">
-              Excel templates break. Word documents don't calculate. With quoteai you describe the job in your own words and in 30 seconds you have a professional document ready to send.
+              I modelli Excel si rompono. I documenti Word non calcolano. Con prevai descrivi il lavoro a parole tue e in 30 secondi hai un documento professionale pronto da inviare.
             </p>
           </div>
           <div className="news-grid">
             {([
-              { slug: "modello-excel", chip: "chip-green", badge: "vs Excel", title: "Alternative to an Excel quote", desc: "No formulas. No errors. Just results.", seed: "quoteai-guide-excel" },
-              { slug: "modello-word", chip: "chip-teal", badge: "vs Word", title: "Alternative to a Word template", desc: "Professional PDF in one click, no manual formatting.", seed: "quoteai-guide-word" },
-              { slug: "come-fare-preventivo", chip: "chip-purple", badge: "Guide", title: "How to write a quote", desc: "A practical guide for Canadian contractors and small businesses.", seed: "quoteai-guide-howto" },
+              { slug: "modello-excel", chip: "chip-green", badge: "vs Excel", title: "Alternativa al preventivo in Excel", desc: "Niente formule. Niente errori. Solo risultati.", seed: "prevai-guide-excel" },
+              { slug: "modello-word", chip: "chip-teal", badge: "vs Word", title: "Alternativa al modello Word", desc: "PDF professionale con un clic, senza impaginare a mano.", seed: "prevai-guide-word" },
+              { slug: "come-fare-preventivo", chip: "chip-purple", badge: "Guida", title: "Come fare un preventivo", desc: "Una guida pratica per artigiani e piccole imprese italiane.", seed: "prevai-guide-howto" },
             ]).map((g) => (
               <Link key={g.slug} href={`/preventivi/${g.slug}/`} className="card news-card">
                 <div className="news-media">
@@ -387,7 +383,7 @@ export default function Home() {
                   <p><span className={`chip ${g.chip}`}>{g.badge}</span></p>
                   <h3>{g.title}</h3>
                   <p>{g.desc}</p>
-                  <span className="cta-link">Learn more <ArrowRight className="chev h-4 w-4" /></span>
+                  <span className="cta-link">Scopri di più <ArrowRight className="chev h-4 w-4" /></span>
                 </div>
               </Link>
             ))}
@@ -395,14 +391,14 @@ export default function Home() {
         </div>
       </ScrollSection>
 
-      {/* ── TRADES & CITIES ────────────────────────────────── */}
+      {/* ── MESTIERI E CITTÀ ───────────────────────────────── */}
       <ScrollSection className="sec soft" id="trades">
         <div className="wrap">
           <div className="sec-head" style={{ justifyContent: "center", textAlign: "center", flexDirection: "column", alignItems: "center" }}>
-            <span className="eyebrow grey">Coverage</span>
-            <h2 className="h2">Quotes for every trade and city</h2>
+            <span className="eyebrow grey">Copertura</span>
+            <h2 className="h2">Preventivi per ogni mestiere e città</h2>
             <p className="lead" style={{ marginInline: "auto" }}>
-              Eighteen trade verticals with their own vocabulary, crossed with 15+ Canadian cities for local pages — each applying your province's tax rules automatically.
+              Diciotto mestieri con il loro vocabolario, incrociati con le principali città lombarde per le pagine locali — ognuna con l'aliquota IVA giusta applicata in automatico.
             </p>
           </div>
         </div>
@@ -415,72 +411,72 @@ export default function Home() {
         </div>
         <div className="wrap">
           <div className="cov-note">
-            <span className="chip chip-green">18 trade verticals</span>
-            <span className="chip chip-teal">15+ Canadian cities</span>
-            <span className="chip chip-grey">Bilingual FR / EN</span>
-            <span className="chip chip-grey">GST/HST by province</span>
+            <span className="chip chip-green">18 mestieri</span>
+            <span className="chip chip-teal">30 città</span>
+            <span className="chip chip-grey">Bonus e incentivi</span>
+            <span className="chip chip-grey">IVA 22/10/4 %</span>
           </div>
         </div>
       </ScrollSection>
 
-      {/* ── DEEP DIVE ──────────────────────────────────────── */}
+      {/* ── APPROFONDIMENTO ────────────────────────────────── */}
       <ScrollSection className="sec" id="deep-dive">
         <div className="wrap">
           <div className="split" style={{ paddingTop: 0 }}>
             <div>
-              <span className="eyebrow grey">Deep dive</span>
-              <h2 className="h2" style={{ margin: "14px 0 16px" }}>What is quoteai and who it's for</h2>
+              <span className="eyebrow grey">Approfondimento</span>
+              <h2 className="h2" style={{ margin: "14px 0 16px" }}>Cos'è prevai e a chi serve</h2>
               <p className="lead">
-                quoteai is a Canadian software that uses artificial intelligence to turn a plain-language description into a complete, professional quote. It's built for contractors, skilled tradespeople, and small businesses that send client quotes every week — painters, electricians, plumbers, masons, metalworkers, carpenters, renovation companies, and every trade in construction and mechanical/electrical work. The goal is simple: cut the time it takes to put together a quote from 30-60 minutes down to 30 seconds, without giving up the quality of the final document.
+                prevai è un software italiano che usa l'intelligenza artificiale per trasformare una descrizione in linguaggio naturale in un preventivo completo e professionale. È pensato per artigiani, imprese edili, tecnici e piccole imprese che ogni settimana inviano preventivi ai clienti e non vogliono più perdere serate su Excel.
               </p>
             </div>
             <div className="dd-feats">
               <div className="dd-feat">
                 <span className="fi g"><Receipt className="h-5 w-5" /></span>
                 <div>
-                  <b>Built-in Canadian tax</b>
-                  <p>Automatic GST/HST calculation by province.</p>
+                  <b>IVA italiana integrata</b>
+                  <p>Calcolo automatico al 22 %, 10 % o 4 % in base al lavoro.</p>
                 </div>
               </div>
               <div className="dd-feat">
                 <span className="fi t"><Shield className="h-5 w-5" /></span>
                 <div>
-                  <b>Securely stored data</b>
-                  <p>Stripe handles payments, sessions are protected with encrypted cookies.</p>
+                  <b>Dati al sicuro in Europa</b>
+                  <p>Server nell'UE, pagamenti gestiti da Stripe, sessioni protette da cookie cifrati.</p>
                 </div>
               </div>
               <div className="dd-feat">
                 <span className="fi p"><Zap className="h-5 w-5" /></span>
                 <div>
-                  <b>AI trained for the trades</b>
-                  <p>Technical vocabulary for construction and mechanical trades.</p>
+                  <b>AI addestrata sui mestieri</b>
+                  <p>Vocabolario tecnico dell'edilizia e dell'impiantistica italiana.</p>
                 </div>
               </div>
             </div>
           </div>
           <div className="dd-grid">
             <div className="card dd-card">
-              <h3>How it actually works</h3>
+              <h3>Come funziona davvero</h3>
               <p>
-                Open quoteai on your phone right on the job site, or from home in the evening. Describe the job the way you'd explain it to a coworker: \"Paint an 800 sq ft apartment, two coats of white washable paint, skim-coat the bathroom wall.\" In thirty seconds the AI engine builds a quote organized into sections, with cost items, units of measure, market-rate unit prices, and automatic tax calculation. You can edit every line item, swap in your own price list, and add or remove sections.
+                Apri prevai dal telefono direttamente in cantiere, o da casa la sera. Descrivi il lavoro come lo spiegheresti a un collega: "Tinteggiatura appartamento 90 mq, due mani di pittura lavabile bianca, rasatura parete bagno". In trenta secondi hai un documento con capitoli, voci, quantità stimate, prezzi unitari, imponibile, IVA e totale. Lo controlli, lo correggi se serve e lo invii al cliente in PDF, via email o WhatsApp.
               </p>
             </div>
             <div className="card dd-card">
-              <h3>Why it works better than Excel or traditional software</h3>
+              <h3>Perché funziona meglio di Excel o dei gestionali tradizionali</h3>
               <p>
-                Traditional quoting software is built for the office: it requires installation, an upfront setup of price lists and codes, and hours of training. Excel is free but forces you to start from a blank sheet every single time. quoteai removes both problems: there's nothing to install, nothing to configure up front, and every quote is structured from the start. On average, our users report saving 4-6 hours a week.
+                I gestionali tradizionali sono fatti per l'ufficio: richiedono installazione, una configurazione iniziale di listini e codici e ore di formazione. Excel è gratis ma ti costringe a ripartire da un foglio bianco ogni volta. prevai elimina entrambi i problemi: nessuna configurazione, nessuna formula, e un documento che esce già impaginato con il tuo logo e i tuoi dati.
               </p>
             </div>
             <div className="card dd-card">
-              <h3>Security and Canadian tax compliance</h3>
+              <h3>Sicurezza e conformità fiscale italiana</h3>
               <p>
-                All data is stored on secure, encrypted infrastructure, sessions are protected with encrypted cookies, and payments are processed through Stripe. Tax handling follows Canadian rules: GST/HST is calculated automatically based on your province. Your business details are saved once and applied to every quote automatically.
+                Tutti i dati sono conservati su infrastruttura sicura e cifrata nell'Unione Europea, le sessioni sono protette da cookie cifrati e i pagamenti passano da Stripe. L'IVA segue le regole italiane: 22 % ordinaria, 10 % per manutenzione e ristrutturazione di abitazioni, 4 % per la prima casa, con le diciture di legge per reverse charge e regime forfettario. I tuoi preventivi restano tuoi: li scarichi quando vuoi.
               </p>
             </div>
             <div className="card dd-card" id="plans">
-              <h3>What it costs to get started</h3>
+              <h3>Quanto costa iniziare</h3>
               <p>
-                Signing up is free, and your first quote is generated without entering a credit card. From there you can choose: pay for a single quote ($5 to $13) when you need one, or start a monthly subscription (Starter $19 with 10 quotes, Pro $49 with 60 quotes, Elite $59 unlimited). You can change or cancel your plan at any time from your account.
+                La registrazione è gratuita e il primo preventivo si genera senza inserire la carta di credito. Da lì puoi scegliere: paghi un preventivo singolo quando serve, oppure attivi un abbonamento mensile (Starter con 20 preventivi al mese, Pro con preventivi illimitati, Elite con squadra, cantieri e integrazioni). Disdici quando vuoi dalle impostazioni, senza penali.
               </p>
             </div>
           </div>
@@ -490,24 +486,24 @@ export default function Home() {
       {/* ── CTA ────────────────────────────────────────────── */}
       <ScrollSection className="cta on-dark" id="trial">
         <div className="cta-bg">
-          <img src="https://picsum.photos/seed/quoteai-team-celebration/1800/900" alt="" aria-hidden="true" loading="lazy" />
+          <img src="https://picsum.photos/seed/prevai-team-celebration/1800/900" alt="" aria-hidden="true" loading="lazy" />
         </div>
         <div className="wrap cta-in">
-          <span className="eyebrow on-dark">Get started</span>
-          <h2>Ready to transform your business?</h2>
+          <span className="eyebrow on-dark">Inizia ora</span>
+          <h2>Pronto a trasformare la tua attività?</h2>
           <p>
-            Join hundreds of Canadian contractors and tradespeople who save hours every week.
+            Unisciti a centinaia di artigiani e imprese italiane che risparmiano ore ogni settimana.
           </p>
           <div className="cta-actions">
             <button onClick={() => navigate(isSignedIn ? "/dashboard/new" : "/sign-up")} className="btn btn-white">
-              Create your free account
+              Crea il tuo account gratuito
             </button>
             <Link href="/#plans" className="btn btn-outline-light">
-              See plans
+              Vedi i piani
             </Link>
           </div>
           <p className="cta-fine">
-            7-day free trial · No credit card required · Single quotes from $5
+            Prova gratuita di 7 giorni · Nessuna carta di credito · Preventivi singoli disponibili
           </p>
         </div>
       </ScrollSection>

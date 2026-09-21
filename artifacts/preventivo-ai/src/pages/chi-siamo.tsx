@@ -16,11 +16,11 @@ export default function ChiSiamoPage() {
     {
       "@context": "https://schema.org",
       "@type": "Organization",
-      name: "QuoteAI",
+      name: "PrevAI",
       url: "https://prevai.it/",
       logo: "https://prevai.it/icon-192.png",
       description:
-        "QuoteAI is the AI quoting software for Canadian tradespeople and independent professionals. Generate professional quotes in 30 seconds by describing the job in plain language.",
+        "PrevAI is the AI quoting software for Canadian tradespeople and independent professionals. Generate professional quotes in 30 seconds by describing the job in plain language.",
       foundingDate: "2026",
       foundingLocation: { "@type": "Place", name: "Canada" },
       contactPoint: {

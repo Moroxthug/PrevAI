@@ -14,7 +14,7 @@ function safeLocalPath(raw: string | null, fallback: string): string {
 
 export default function SignInPage() {
   const { t } = useLanguage();
-  useDocumentTitle(`${t("signIn.title")} · QuoteAI`);
+  useDocumentTitle(`${t("signIn.title")} · PrevAI`);
   const [, navigate] = useLocation();
   const search = useSearch();
   const nextPath = safeLocalPath(new URLSearchParams(search).get("next"), "/dashboard");

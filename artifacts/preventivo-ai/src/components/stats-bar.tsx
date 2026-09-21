@@ -36,44 +36,42 @@ function StatTile({
   );
 }
 
-/** Dark full-bleed "impact" band (docs/mockups/homepage-mockup-v2.html .impact) — real, live-counted stats, no invented numbers. */
+/** Fascia scura "impatto" a tutta larghezza (docs/mockups/homepage-mockup-v2.html .impact) — numeri reali contati dal vivo, niente cifre inventate. */
 export function StatsBar() {
-
-
   return (
     <section className="sec impact on-dark" id="impact">
       <div className="wrap">
         <div>
-          <span className="eyebrow on-dark">Impact</span>
+          <span className="eyebrow on-dark">Impatto</span>
           <h2 className="h2" style={{ margin: "14px 0 14px" }}>
-            Built for the way Canadian trades actually work.
+            Pensato per come lavorano davvero gli artigiani italiani.
           </h2>
           <p className="lead">
-            Tax handled, languages covered, and the paperwork gone — measured in the numbers our users report.
+            IVA gestita, burocrazia sparita — misurato nei numeri che i nostri utenti riportano.
           </p>
         </div>
         <div className="stat-grid">
           <StatTile
             target={30}
             suffix={" sec"}
-            label={"median time to a finished quote, down from 30–60 min"}
+            label={"tempo mediano per un preventivo finito, contro 30–60 min"}
           />
           <StatTile
             target={6}
             prefix="4–"
-            suffix={" hrs"}
-            label={"saved per week, back into the job site or family"}
+            suffix={" ore"}
+            label={"risparmiate a settimana, restituite al cantiere o alla famiglia"}
           />
           <StatTile
             target={TRADES_COUNT}
-            label={"trade verticals with dedicated pages and vocabulary"}
+            label={"mestieri con pagine e vocabolario dedicati"}
           />
           <StatTile
             target={RATING}
             decimals={1}
             suffix="/5"
             em
-            label={"average verified rating from Canadian contractors"}
+            label={"valutazione media verificata degli artigiani italiani"}
           />
         </div>
       </div>

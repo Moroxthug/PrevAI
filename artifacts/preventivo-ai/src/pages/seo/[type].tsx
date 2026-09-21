@@ -60,7 +60,7 @@ function ExcelWordComparisonBlock({ tool }: { tool: "Excel" | "Word" }) {
         <div className="sec-head" style={{ display: "block", textAlign: "center" }}>
           <span className="eyebrow grey">{t("seo.compare.headingPrefix").replace("{tool}", tool)}</span>
           <h2 className="h2">
-            quoteai {t("seo.compare.headingSuffix")}
+            prevai {t("seo.compare.headingSuffix")}
           </h2>
           <p className="lead" style={{ margin: "0 auto" }}>{t("seo.compare.subtitle").replace("{tool}", tool)}</p>
         </div>
@@ -70,7 +70,7 @@ function ExcelWordComparisonBlock({ tool }: { tool: "Excel" | "Word" }) {
               <tr>
                 <th>{t("seo.compare.featureCol")}</th>
                 <th>{t("seo.compare.templateCol").replace("{tool}", tool)}</th>
-                <th className="q">quoteai AI</th>
+                <th className="q">prevai AI</th>
               </tr>
             </thead>
             <tbody>

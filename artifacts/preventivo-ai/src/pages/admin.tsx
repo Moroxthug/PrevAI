@@ -1320,9 +1320,9 @@ export default function AdminPage() {
                                               {(u as any).apiKey ? (
                                                 <div className="relative">
                                                   <pre className="p-4 bg-slate-950 text-slate-200 rounded-xl overflow-x-auto font-mono text-[10px] leading-relaxed max-h-40 whitespace-pre-wrap select-all border border-slate-800">
-{`<!-- QuoteAI Widget Funnel -->
-<div id="quoteai-widget">
-  <a href="https://prevai.it" rel="noopener">Get your quote with QuoteAI</a>
+{`<!-- PrevAI Widget Funnel -->
+<div id="prevai-widget">
+  <a href="https://prevai.it" rel="noopener">Get your quote with PrevAI</a>
 </div>
 <script
   src="${typeof window !== "undefined" ? window.location.origin : "https://prevai.it"}/widget.js"
@@ -1332,7 +1332,7 @@ export default function AdminPage() {
                                                   </pre>
                                                   <button
                                                     onClick={() => {
-                                                      const code = `<!-- QuoteAI Widget Funnel -->\n<div id="quoteai-widget">\n  <a href="https://prevai.it" rel="noopener">Get your quote with QuoteAI</a>\n</div>\n<script\n  src="${typeof window !== "undefined" ? window.location.origin : "https://prevai.it"}/widget.js"\n  data-api-key="${(u as any).apiKey}"\n  async\n></script>`;
+                                                      const code = `<!-- PrevAI Widget Funnel -->\n<div id="prevai-widget">\n  <a href="https://prevai.it" rel="noopener">Get your quote with PrevAI</a>\n</div>\n<script\n  src="${typeof window !== "undefined" ? window.location.origin : "https://prevai.it"}/widget.js"\n  data-api-key="${(u as any).apiKey}"\n  async\n></script>`;
                                                       navigator.clipboard.writeText(code);
                                                       toast({ title: t("admin.codeCopied"), description: t("admin.codeCopiedDesc") });
                                                     }}

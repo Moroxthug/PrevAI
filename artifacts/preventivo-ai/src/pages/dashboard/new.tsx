@@ -190,14 +190,14 @@ export default function NewQuote() {
   const [rememberClient, setRememberClient] = useState(false);
 
   useEffect(() => {
-    const savedPrompt = sessionStorage.getItem("quoteai:homepage_prompt");
+    const savedPrompt = sessionStorage.getItem("prevai:homepage_prompt");
     if (savedPrompt) {
-      sessionStorage.removeItem("quoteai:homepage_prompt");
+      sessionStorage.removeItem("prevai:homepage_prompt");
       setInput(savedPrompt);
     }
-    const savedClient = sessionStorage.getItem("quoteai:selected_client");
+    const savedClient = sessionStorage.getItem("prevai:selected_client");
     if (savedClient) {
-      sessionStorage.removeItem("quoteai:selected_client");
+      sessionStorage.removeItem("prevai:selected_client");
       try {
         const c = JSON.parse(savedClient) as SavedClient;
         setClientMode("saved");

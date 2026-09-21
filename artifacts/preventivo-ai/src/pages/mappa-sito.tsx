@@ -25,8 +25,8 @@ export default function MappaSitoPage() {
     {
       "@context": "https://schema.org",
       "@type": "WebPage",
-      name: "Sitemap | QuoteAI",
-      description: "Full sitemap for QuoteAI. Find all static pages, blog articles, and guides for tradespeople and professionals across Canadian cities.",
+      name: "Sitemap | PrevAI",
+      description: "Full sitemap for PrevAI. Find all static pages, blog articles, and guides for tradespeople and professionals across Canadian cities.",
       url: "https://prevai.it/mappa-sito/",
     }
   ];

@@ -17,7 +17,7 @@ function safeLocalPath(raw: string | null, fallback: string): string {
 
 export default function SignUpPage() {
   const { t } = useLanguage();
-  useDocumentTitle(`${t("signUp.title")} · QuoteAI`);
+  useDocumentTitle(`${t("signUp.title")} · PrevAI`);
   const search = useSearch();
   const nextPath = safeLocalPath(new URLSearchParams(search).get("next"), "/onboarding");
   const [registrationOpen, setRegistrationOpen] = useState<boolean | null>(null);
@@ -97,7 +97,7 @@ export default function SignUpPage() {
               </Link>
             </p>
             <a
-              href="mailto:support@prevai.it?subject=Beta%20access%20request"
+              href="mailto:supporto@prevai.it?subject=Beta%20access%20request"
               className="btn w-full"
               style={{ background: "#25D366", color: "#fff" }}
             >

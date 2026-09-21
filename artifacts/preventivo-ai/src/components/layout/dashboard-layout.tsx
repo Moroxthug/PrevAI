@@ -238,7 +238,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
       .filter((item) => (item.exact ? location === item.href : location.startsWith(item.href)))
       .sort((a, b) => b.href.length - a.href.length)[0];
     const previous = document.title;
-    document.title = section ? `${section.label} · QuoteAI` : "QuoteAI";
+    document.title = section ? `${section.label} · PrevAI` : "PrevAI";
     return () => {
       document.title = previous;
     };

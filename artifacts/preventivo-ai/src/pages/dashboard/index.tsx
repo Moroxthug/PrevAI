@@ -188,7 +188,7 @@ function OnboardingView() {
           <div className="mx-auto h-12 w-12 rounded-[var(--radius-sm)] flex items-center justify-center mb-3" style={{ background: "linear-gradient(135deg, rgba(16,16,49,0.12), rgba(15,151,162,0.12))" }}>
             <Sparkles className="h-6 w-6 text-navy-500" />
           </div>
-          <h2 className="text-lg font-bold text-foreground mb-1">{t("dashboard.index.onboarding.welcomePrefix")} <span className="quoteai-word text-lg">QuoteAI</span>!</h2>
+          <h2 className="text-lg font-bold text-foreground mb-1">{t("dashboard.index.onboarding.welcomePrefix")} <span className="prevai-word text-lg">PrevAI</span>!</h2>
           <p className="text-xs text-muted-foreground max-w-md mx-auto mb-5">
             {t("dashboard.index.onboarding.subtitle")}
           </p>

@@ -10,12 +10,12 @@ export default function ContattiPage() {
     {
       "@context": "https://schema.org",
       "@type": "ContactPage",
-      name: "QuoteAI Contact",
+      name: "PrevAI Contact",
       url: "https://prevai.it/contatti/",
-      description: "Contact the QuoteAI team for support, product questions, or sales information.",
+      description: "Contact the PrevAI team for support, product questions, or sales information.",
       mainEntity: {
         "@type": "Organization",
-        name: "QuoteAI",
+        name: "PrevAI",
         url: "https://prevai.it/",
         email: "info@prevai.it",
         contactPoint: [

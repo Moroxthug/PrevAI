@@ -1,5 +1,5 @@
 // Dizionario piatto delle stringhe UI, chiavi con namespace puntato.
-// V2-2: unica lingua (italiano). Le chiavi restano quelle di QuoteAI così
+// V2-2: unica lingua (italiano). Le chiavi restano quelle di PrevAI così
 // i componenti non cambiano; mai stringhe letterali nei componenti, sempre
 // `t("namespace.key")`.
 import type { Lang } from "@workspace/config";
@@ -465,8 +465,8 @@ export const translations: Record<Lang, Record<string, string>> = {
     "testimonials.reviews": "recensioni",
     "testimonials.starRatingLabel": "{rating} stelle su 5",
     "testimonials.verified": "Verificata",
-    "testimonials.rba.text": "Passavo 3-4 ore dopo il lavoro, ogni giorno, a preparare preventivi, gestire i cantieri e avere un quadro chiaro di ogni lavoro. Con PrevAI faccio tutto in pochi minuti, ed è sempre affidabile. Consigliatissimo.",
-    "testimonials.abdul.text": "PrevAI ha risolto il nostro problema dei preventivi: documenti professionali e curati, con il nostro logo. Fantastico.",
+    "testimonials.rba.text": "Ho sempre speso 3/4 ore dopo il lavoro per fare preventivi, gestire i cantieri ed avere un quadro completo su ciascun cantiere. Con PrevAI faccio tutto in pochi minuti, ed è sempre efficiente. Consigliatissimo.",
+    "testimonials.abdul.text": "PrevAI è stata la soluzione al problema dei preventivi, li fa con logo, professionali ed impeccabili, grandissimi.",
 
     "errorBoundary.title": "Qualcosa è andato storto",
     "errorBoundary.bodyPrefix": "Si è verificato un errore imprevisto. Prova a ricaricare la pagina — se il problema persiste, scrivici a",

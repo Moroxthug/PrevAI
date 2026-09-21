@@ -329,8 +329,8 @@ function AccountTab() {
                 <p className="text-xs text-muted-foreground">{t("dashboard.settings.account.widgetCard.embedCodeDesc")}</p>
                 <div className="relative">
                   <pre className="p-4 bg-slate-950 text-slate-200 rounded-[var(--radius)] overflow-x-auto font-mono text-[10px] leading-relaxed max-h-40 whitespace-pre-wrap select-all border border-slate-800">
-{`<!-- QuoteAI Widget Funnel -->
-<div id="quoteai-widget">
+{`<!-- PrevAI Widget Funnel -->
+<div id="prevai-widget">
   <a href="https://prevai.it" rel="noopener">${t("dashboard.settings.account.widgetCard.embedAnchorText")}</a>
 </div>
 <script
@@ -340,7 +340,7 @@ function AccountTab() {
 ></script>`}
                   </pre>
                   <button onClick={() => {
-                      const code = `<!-- QuoteAI Widget Funnel -->\n<div id="quoteai-widget">\n  <a href="https://prevai.it" rel="noopener">${t("dashboard.settings.account.widgetCard.embedAnchorText")}</a>\n</div>\n<script\n  src="${typeof window !== "undefined" ? window.location.origin : "https://prevai.it"}/widget.js"\n  data-api-key="${profile.apiKey}"\n  async\n></script>`;
+                      const code = `<!-- PrevAI Widget Funnel -->\n<div id="prevai-widget">\n  <a href="https://prevai.it" rel="noopener">${t("dashboard.settings.account.widgetCard.embedAnchorText")}</a>\n</div>\n<script\n  src="${typeof window !== "undefined" ? window.location.origin : "https://prevai.it"}/widget.js"\n  data-api-key="${profile.apiKey}"\n  async\n></script>`;
                       navigator.clipboard.writeText(code);
                       toast({ title: t("dashboard.settings.account.widgetCard.codeCopiedTitle"), description: t("dashboard.settings.account.widgetCard.codeCopiedDesc") });
                     }}
@@ -465,7 +465,7 @@ function BillingTab() {
                   {isElite ? <Crown className="h-6 w-6 text-amber-700" /> : isPro ? <Crown className="h-6 w-6 text-amber-600" /> : <Zap className="h-6 w-6 text-navy-500" />}
                 </div>
                 <div>
-                  <h2 className="text-xl">QuoteAI {planLabel}</h2>
+                  <h2 className="text-xl">PrevAI {planLabel}</h2>
                   <p className="text-sm text-muted-foreground mt-0.5">{planPrice}</p>
                 </div>
               </div>
@@ -2724,8 +2724,8 @@ function WidgetTab() {
 
   const widgetUrl = typeof window !== "undefined" ? `${window.location.origin}/widget.js` : "https://prevai.it/widget.js";
 
-  const embedCode = `<!-- QuoteAI Widget Funnel -->
-<div id="quoteai-widget">
+  const embedCode = `<!-- PrevAI Widget Funnel -->
+<div id="prevai-widget">
   <a href="https://prevai.it" rel="noopener">${t("dashboard.settings.widget.embedAnchorText")}</a>
 </div>
 <script

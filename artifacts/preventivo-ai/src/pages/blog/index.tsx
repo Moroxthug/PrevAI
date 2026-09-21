@@ -119,7 +119,7 @@ export default function BlogPage() {
             {BLOG_INDEX.map((article, i) => (
               <Link key={article.slug} href={`/blog/${article.slug}/`} className="card news-card">
                 <div className="news-media">
-                  <img src={`https://picsum.photos/seed/quoteai-blog-${i}/840/525`} alt="" loading="lazy" />
+                  <img src={`https://picsum.photos/seed/prevai-blog-${i}/840/525`} alt="" loading="lazy" />
                 </div>
                 <div className="news-body">
                   <p className="news-meta">
@@ -142,7 +142,7 @@ export default function BlogPage() {
 
       <ScrollSection className="cta on-dark" id="trial">
         <div className="cta-bg">
-          <img src="https://picsum.photos/seed/quoteai-blog-cta/1800/900" alt="" aria-hidden="true" loading="lazy" />
+          <img src="https://picsum.photos/seed/prevai-blog-cta/1800/900" alt="" aria-hidden="true" loading="lazy" />
         </div>
         <div className="wrap cta-in">
           <h2>

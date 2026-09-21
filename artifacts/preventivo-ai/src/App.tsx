@@ -127,7 +127,7 @@ function Router() {
       <Route path={PATHS.CONTATTI} component={() => <Suspense fallback={null}><ContattiPage /></Suspense>} />
       <Route path={PATHS.PRIVACY} component={() => <Suspense fallback={null}><PrivacyPage /></Suspense>} />
       <Route path={PATHS.TERMINI} component={() => <Suspense fallback={null}><TermsPage /></Suspense>} />
-      {/* Percorsi QuoteAI mantenuti come redirect verso gli URL v1 indicizzati */}
+      {/* Percorsi PrevAI mantenuti come redirect verso gli URL v1 indicizzati */}
       <Route path="/privacy-policy" component={() => <Redirect to={PATHS.PRIVACY} />} />
       <Route path="/terms" component={() => <Redirect to={PATHS.TERMINI} />} />
       <Route path={PATHS.MAPPA_SITO} component={() => <Suspense fallback={null}><MappaSitoPage /></Suspense>} />

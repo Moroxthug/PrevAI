@@ -30,7 +30,7 @@ const DEFAULT_SCHEDULE: PaymentSchedule = {
 
 export default function OnboardingPage() {
   const { t } = useLanguage();
-  useDocumentTitle(`${t("onboarding.title")} · QuoteAI`);
+  useDocumentTitle(`${t("onboarding.title")} · PrevAI`);
   const { isLoaded, isSignedIn, userId } = useAuth();
   const [, setLocation] = useLocation();
   const updateProfile = useUpdateBusinessProfile();

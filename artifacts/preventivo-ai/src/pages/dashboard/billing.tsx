@@ -99,7 +99,7 @@ export default function BillingPage() {
               <div className="flex items-center gap-3">
                 <div className="qa-ic navy">{isPro ? <Crown className="h-6 w-6" /> : <Zap className="h-6 w-6" />}</div>
                 <div>
-                  <h2>QuoteAI {planLabel}</h2>
+                  <h2>PrevAI {planLabel}</h2>
                   <p className="sub">{planPrice}</p>
                 </div>
               </div>

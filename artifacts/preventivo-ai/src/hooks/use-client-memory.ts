@@ -12,7 +12,7 @@ export interface SavedClient {
   lastUsed: number;
 }
 
-const STORAGE_KEY = "quoteai:clients";
+const STORAGE_KEY = "prevai:clients";
 const MAX_SAVED = 10;
 
 function loadClients(): SavedClient[] {

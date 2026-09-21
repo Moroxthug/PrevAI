@@ -61,7 +61,7 @@ function AnnouncementBar() {
   const { t } = useLanguage();
   const [dismissed, setDismissed] = useState(() => {
     try {
-      return sessionStorage.getItem("quoteai:annc_dismissed") === "1";
+      return sessionStorage.getItem("prevai:annc_dismissed") === "1";
     } catch {
       return false;
     }
@@ -79,7 +79,7 @@ function AnnouncementBar() {
         onClick={() => {
           setDismissed(true);
           try {
-            sessionStorage.setItem("quoteai:annc_dismissed", "1");
+            sessionStorage.setItem("prevai:annc_dismissed", "1");
           } catch {
             /* sessionStorage unavailable — dismissal just won't persist */
           }
@@ -231,7 +231,7 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
         </div>
         <div className="wrap"><p className="ft-fine">{t("footer.fine")}</p></div>
         <div className="wrap ft-bottom">
-          <span>&copy; {new Date().getFullYear()} quoteai. {t("footer.rights")}</span>
+          <span>&copy; {new Date().getFullYear()} prevai. {t("footer.rights")}</span>
           <div className="ft-legal">
             <Link href="/privacy/">{t("footer.privacyPolicy")}</Link>
             <Link href="/termini/">{t("footer.terms")}</Link>
@@ -260,11 +260,11 @@ function SupportModal({ onClose }: { onClose: () => void }) {
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    const subject = encodeURIComponent(`[QuoteAI Support] ${problema}`);
+    const subject = encodeURIComponent(`[PrevAI Support] ${problema}`);
     const body = encodeURIComponent(
       `Issue type: ${problema}\n\nDescription:\n${descrizione}\n\nCustomer email: ${email}`
     );
-    window.location.href = `mailto:support@prevai.it?subject=${subject}&body=${body}`;
+    window.location.href = `mailto:supporto@prevai.it?subject=${subject}&body=${body}`;
     setSent(true);
   }
 

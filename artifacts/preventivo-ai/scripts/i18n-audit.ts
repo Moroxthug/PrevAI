@@ -57,7 +57,7 @@ const unknownKeys = [...used.entries()].filter(([k]) => !(k in en) && !(k in fr)
 const missingFr = Object.keys(en).filter((k) => !(k in fr));
 const missingEn = Object.keys(fr).filter((k) => !(k in en));
 // identical strings are usually untranslated copy (brand names and numbers are fine)
-const sameInBoth = Object.keys(en).filter((k) => k in fr && en[k] === fr[k] && /[a-z]{4,}\s[a-z]{3,}/i.test(en[k]!) && !/^(QuoteAI|WhatsApp|Stripe|QuickBooks|Google|Gmail|Outlook|Interac|PDF|CSV)/.test(en[k]!));
+const sameInBoth = Object.keys(en).filter((k) => k in fr && en[k] === fr[k] && /[a-z]{4,}\s[a-z]{3,}/i.test(en[k]!) && !/^(PrevAI|WhatsApp|Stripe|QuickBooks|Google|Gmail|Outlook|Interac|PDF|CSV)/.test(en[k]!));
 
 // 4. the core/dashboard split (Phase 68). A dashboard key is only safe when
 //    every file that references it is reachable solely from the dashboard
@@ -117,7 +117,7 @@ const isApp = (f: string) => APP_DIRS.some((d) => relative(ROOT, f).split(sep).j
 // text node between tags: at least two words, starts with a letter, not an expression
 const textRe = />\s*([A-Za-z][A-Za-z'’,.!?&-]*(?:\s+[A-Za-z0-9'’,.!?&%$()-]+){1,})\s*</g;
 const attrRe = /\b(placeholder|title|aria-label|alt)="([A-Za-z][^"{}]{3,})"/g;
-const IGNORE_TEXT = /^(QuoteAI|quoteAI|Stripe|WhatsApp|Interac e-Transfer|Google|Gmail|Outlook|Meta|QuickBooks|Wave|Financeit|Flinks|CAD|HST|GST|QST|PST|N\/A|OK|—|·|Inc\.?|Ltd\.?|Sam Worker)$/;
+const IGNORE_TEXT = /^(PrevAI|PrevAI|Stripe|WhatsApp|Interac e-Transfer|Google|Gmail|Outlook|Meta|QuickBooks|Wave|Financeit|Flinks|CAD|HST|GST|QST|PST|N\/A|OK|—|·|Inc\.?|Ltd\.?|Sam Worker)$/;
 const hardcoded: { file: string; line: number; text: string }[] = [];
 for (const f of files) {
   if (!isApp(f) || !f.endsWith(".tsx")) continue;

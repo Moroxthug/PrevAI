@@ -70,8 +70,8 @@ export default function HelpArticlePage() {
       url: canonical,
       dateModified: article.updatedAt,
       inLanguage: lang,
-      author: { "@type": "Organization" as const, name: "quoteai", url: BASE_URL },
-      publisher: { "@type": "Organization" as const, name: "quoteai", url: BASE_URL, logo: { "@type": "ImageObject" as const, url: `${BASE_URL}/icon-192.png`, width: 192, height: 192 } },
+      author: { "@type": "Organization" as const, name: "prevai", url: BASE_URL },
+      publisher: { "@type": "Organization" as const, name: "prevai", url: BASE_URL, logo: { "@type": "ImageObject" as const, url: `${BASE_URL}/icon-192.png`, width: 192, height: 192 } },
     },
     {
       "@context": "https://schema.org" as const,
@@ -86,7 +86,7 @@ export default function HelpArticlePage() {
 
   return (
     <div className="flex flex-col min-h-screen bg-white">
-      <SeoHead title={`${article.title[lang]} | quoteai`} description={article.summary[lang]} canonical={canonical} ogType="article" jsonLd={jsonLd} />
+      <SeoHead title={`${article.title[lang]} | prevai`} description={article.summary[lang]} canonical={canonical} ogType="article" jsonLd={jsonLd} />
 
       <div className="wrap">
         <nav aria-label={t("seo.city.breadcrumbAria")} className="crumbs">

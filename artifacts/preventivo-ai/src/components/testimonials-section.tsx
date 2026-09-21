@@ -5,16 +5,16 @@ import { useLanguage } from "@/i18n/LanguageContext";
 
 export const TESTIMONIALS = [
   {
-    name: "RBA Construction",
-    website: "rba-construction.ca",
+    name: "RBA Edilizia",
+    website: "rba-edilizia.it",
     initials: "RB",
     rav: "g",
     rating: 5,
     key: "rba",
   },
   {
-    name: "Abdul Contracting",
-    website: "abdulcontracting.ca",
+    name: "Abdul Edilizia",
+    website: "abduledilizia.it",
     initials: "AC",
     rav: "t",
     rating: 5,

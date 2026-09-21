@@ -36,7 +36,7 @@ function TwoFactorCard() {
     e.preventDefault();
     setLoading(true);
     try {
-      const result = await authClient.twoFactor.enable({ password, method: "totp", issuer: "QuoteAI" });
+      const result = await authClient.twoFactor.enable({ password, method: "totp", issuer: "PrevAI" });
       if (result.error) {
         toast({ title: t("dashboard.settings.security.error"), description: result.error.message, variant: "destructive" });
       } else if ("totpURI" in result.data) {

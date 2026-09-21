@@ -1,9 +1,6 @@
 {/*
-  TODO: This page is a template drafted by an AI assistant during the PrevAI -> QuoteAI
-  migration. It has NOT been reviewed by a Canadian lawyer. Have qualified legal counsel
-  review these Terms of Service (consumer protection law in the applicable province,
-  refund/cancellation rules, governing law and venue selection, and accuracy of the
-  pricing listed below) before this page goes live for real users.
+  Testo ripreso da PrevAI v1 (termini.tsx, tag v1-final) nel layout QuoteAI.
+  Piani e prezzi in 4.1 vanno allineati ai price ID Stripe EUR in V2-4 (D3/D5).
 */}
 import { PublicLayout } from "@/components/layout/public-layout";
 import { SeoHead } from "@/components/seo-head";
@@ -13,161 +10,165 @@ export default function TermsPage() {
   return (
     <PublicLayout>
       <SeoHead
-        title="Terms of Service | QuoteAI"
-        description="Terms and conditions for using the QuoteAI platform to generate AI-powered quotes."
+        title="Termini di servizio | PrevAI"
+        description="Termini e condizioni per l'utilizzo della piattaforma PrevAI per la generazione di preventivi con intelligenza artificiale."
         canonical="https://prevai.it/termini/"
       />
       <div className="wrap">
-        <nav aria-label="Breadcrumb" className="crumbs">
+        <nav aria-label="Percorso" className="crumbs">
           <Link href="/">Home</Link>
           <span className="crumb-sep" aria-hidden="true">/</span>
-          <span className="crumb-current" aria-current="page">Terms of Service</span>
+          <span className="crumb-current" aria-current="page">Termini di servizio</span>
         </nav>
       </div>
 
       <header className="wrap" style={{ maxWidth: 780, padding: "clamp(12px, 2vw, 24px) 0 clamp(24px, 3vw, 36px)" }}>
         <h1 style={{ fontSize: "clamp(1.9rem, 3.4vw, 2.5rem)", fontWeight: 800, letterSpacing: "-.02em", color: "var(--navy)", lineHeight: 1.15, marginBottom: 10 }}>
-          Terms of Service
+          Termini di servizio
         </h1>
-        <p style={{ fontSize: 13, color: "var(--faint)" }}>Last updated: September 17, 2026</p>
+        <p style={{ fontSize: 13, color: "var(--faint)" }}>Ultimo aggiornamento: 21 settembre 2026</p>
       </header>
 
       <div className="wrap" style={{ maxWidth: 780, paddingBottom: "clamp(48px, 6vw, 80px)" }}>
         <div className="prose blog-prose max-w-none space-y-8 text-sm leading-relaxed">
 
           <section>
-            <h2 className="text-lg font-semibold text-gray-900 mb-3">1. Acceptance of terms</h2>
+            <h2 className="text-lg font-semibold text-gray-900 mb-3">1. Accettazione dei termini</h2>
             <p>
-              By using the <strong>QuoteAI</strong> platform (the "Service"), available at <strong>prevai.it</strong>,
-              you agree to be bound by these Terms of Service in full. If you do not agree to these terms,
-              you may not use the Service.
+              Utilizzando la piattaforma <strong>PrevAI</strong> (di seguito "Servizio"), disponibile all'indirizzo <strong>prevai.it</strong>,
+              l'utente accetta integralmente i presenti Termini di Servizio. Se non accetti questi termini,
+              non puoi utilizzare il Servizio.
             </p>
           </section>
 
           <section>
-            <h2 className="text-lg font-semibold text-gray-900 mb-3">2. Description of the service</h2>
+            <h2 className="text-lg font-semibold text-gray-900 mb-3">2. Descrizione del servizio</h2>
             <p>
-              QuoteAI is a SaaS platform that helps tradespeople, contractors, and businesses generate
-              professional quotes using artificial intelligence. The Service includes:
+              PrevAI è una piattaforma SaaS che consente a professionisti, artigiani e imprese di generare
+              preventivi professionali tramite intelligenza artificiale e di gestire il lavoro che ne segue. Il Servizio include:
             </p>
             <ul className="list-disc pl-5 mt-2 space-y-1">
-              <li>AI-generated quotes from a text description of the work.</li>
-              <li>Creation and download of professional PDF documents.</li>
-              <li>Business profile management and quote storage.</li>
-              <li>Monthly subscription plans and one-time purchases.</li>
+              <li>Generazione di preventivi tramite AI a partire da una descrizione testuale, vocale o fotografica dei lavori.</li>
+              <li>Creazione e download di documenti PDF professionali; accettazione online da parte del cliente.</li>
+              <li>Contratti d'appalto con firma elettronica, gestione dei cantieri, fatture pro-forma e promemoria.</li>
+              <li>Gestione del profilo aziendale, archiviazione dei documenti e account per la squadra.</li>
+              <li>Piani di abbonamento mensile e acquisti singoli.</li>
             </ul>
           </section>
 
           <section>
-            <h2 className="text-lg font-semibold text-gray-900 mb-3">3. User accounts</h2>
+            <h2 className="text-lg font-semibold text-gray-900 mb-3">3. Account utente</h2>
             <p>
-              To access the Service you must create an account and provide accurate, up-to-date information.
-              You are responsible for keeping your credentials confidential and for all activity that occurs
-              under your account. If you become aware of any unauthorized access, notify us immediately at{" "}
-              <a href="mailto:support@prevai.it" className="text-navy-600 hover:underline">support@prevai.it</a>.
+              Per accedere al Servizio è necessario creare un account fornendo dati veritieri e aggiornati.
+              L'utente è responsabile della riservatezza delle proprie credenziali e di tutte le attività
+              svolte tramite il proprio account. In caso di accesso non autorizzato, l'utente deve
+              notificarlo immediatamente a{" "}
+              <a href="mailto:supporto@prevai.it" className="text-navy-600 hover:underline">supporto@prevai.it</a>.
             </p>
           </section>
 
           <section>
-            <h2 className="text-lg font-semibold text-gray-900 mb-3">4. Plans and payment</h2>
+            <h2 className="text-lg font-semibold text-gray-900 mb-3">4. Piani e pagamenti</h2>
             <div className="space-y-3">
               <div>
-                <p className="font-medium">4.1 Available plans</p>
+                <p className="font-medium">4.1 Piani disponibili</p>
                 <ul className="list-disc pl-5 mt-1 space-y-1">
-                  <li><strong>Starter ($29 CAD/month):</strong> up to 10 quotes per month, PDFs with the QuoteAI watermark.</li>
-                  <li><strong>Pro ($69 CAD/month):</strong> up to 60 quotes per month, PDFs without a watermark, custom branding.</li>
-                  <li><strong>Elite ($79 CAD/month):</strong> unlimited quotes, no watermark, custom branding, priority AI generation.</li>
-                  <li><strong>Single with Watermark ($5 CAD):</strong> one PDF quote with the QuoteAI watermark.</li>
-                  <li><strong>Single Clean ($13 CAD):</strong> one PDF quote without a watermark.</li>
+                  <li><strong>Starter (€29/mese):</strong> fino a 20 preventivi al mese, PDF con filigrana PrevAI.</li>
+                  <li><strong>Pro (€79/mese):</strong> preventivi illimitati, PDF senza filigrana, branding personalizzabile, contratti, cantieri e fatturazione.</li>
+                  <li><strong>Elite:</strong> tutto il Pro più squadra, ore degli operai, analisi, assistente AI e integrazioni avanzate.</li>
+                  <li><strong>Singolo con filigrana (€29):</strong> un singolo preventivo PDF con filigrana.</li>
+                  <li><strong>Singolo pulito (€39):</strong> un singolo preventivo PDF senza filigrana.</li>
                 </ul>
+                <p className="mt-1 text-xs text-gray-500">I prezzi aggiornati e le funzionalità di ciascun piano sono indicati nella pagina Piano e fatturazione al momento dell'acquisto.</p>
               </div>
               <div>
-                <p className="font-medium">4.2 Billing</p>
+                <p className="font-medium">4.2 Fatturazione</p>
                 <p className="mt-1">
-                  Monthly plans renew automatically each month. Payments are processed by Stripe Inc. and are
-                  subject to Stripe's own terms of service. Prices are listed in Canadian dollars (CAD) and are
-                  exclusive of applicable GST/HST, which is added at checkout based on your billing location.
+                  I piani mensili vengono rinnovati automaticamente ogni mese. I pagamenti sono processati
+                  tramite Stripe Inc. e sono soggetti ai relativi termini di servizio. I prezzi sono espressi in euro
+                  e si intendono IVA esclusa; l'IVA viene aggiunta al momento del pagamento.
                 </p>
               </div>
               <div>
-                <p className="font-medium">4.3 Refunds and cancellation</p>
+                <p className="font-medium">4.3 Rimborsi e disdetta</p>
                 <p className="mt-1">
-                  Digital content that has been delivered immediately upon purchase (such as a completed PDF quote)
-                  is generally non-refundable once downloaded, consistent with standard practice for digital goods.
-                  For monthly plans, you may cancel at any time; the Service remains active until the end of the
-                  period already paid for. No pro-rated refunds are provided for unused portions of a billing period.
-                  Nothing in this section limits any non-waivable rights you may have under applicable provincial
-                  consumer protection legislation.
+                  Ai sensi dell'art. 59, lett. o), del Codice del Consumo (D.Lgs. 206/2005), il diritto di recesso
+                  non si applica ai contenuti digitali forniti immediatamente dopo l'acquisto con l'esplicito consenso
+                  dell'utente. Per i piani mensili, puoi disdire in qualsiasi momento: il servizio rimane attivo fino alla
+                  fine del periodo già pagato. Non sono previsti rimborsi pro-rata per i periodi non utilizzati.
+                  Nulla in questa sezione limita i diritti inderogabili riconosciuti ai consumatori dalla legge.
                 </p>
               </div>
             </div>
           </section>
 
           <section>
-            <h2 className="text-lg font-semibold text-gray-900 mb-3">5. Acceptable use</h2>
-            <p>You may not use the Service to:</p>
+            <h2 className="text-lg font-semibold text-gray-900 mb-3">5. Uso accettabile</h2>
+            <p>È vietato utilizzare il Servizio per:</p>
             <ul className="list-disc pl-5 mt-2 space-y-1">
-              <li>Generate false, fraudulent, or misleading documents.</li>
-              <li>Infringe the rights of third parties, violate applicable law, or violate this policy.</li>
-              <li>Attempt to access other users' data or compromise the security of the platform.</li>
-              <li>Engage in large-scale automated use (scraping, bots) without written authorization.</li>
-              <li>Resell or sublicense access to the Service to third parties.</li>
+              <li>Generare documenti falsi, fraudolenti o fuorvianti.</li>
+              <li>Violare diritti di terzi, normative applicabili o la presente policy.</li>
+              <li>Tentare di accedere a dati di altri utenti o compromettere la sicurezza della piattaforma.</li>
+              <li>Uso automatizzato massivo (scraping, bot) senza autorizzazione scritta.</li>
+              <li>Rivendere o sublicenziare l'accesso al Servizio a terzi.</li>
             </ul>
           </section>
 
           <section>
-            <h2 className="text-lg font-semibold text-gray-900 mb-3">6. Intellectual property</h2>
+            <h2 className="text-lg font-semibold text-gray-900 mb-3">6. Proprietà intellettuale</h2>
             <p>
-              QuoteAI and its associated logos, trademarks, interfaces, and source code are the exclusive
-              property of the Company. Quotes generated through the Service belong to the user who created them.
-              The user grants QuoteAI a limited, non-exclusive licence to process submitted data solely for the
-              purpose of providing the Service.
+              PrevAI e i relativi loghi, marchi, interfacce e codice sorgente sono di proprietà esclusiva della Società.
+              I preventivi, i contratti e le fatture generati tramite il Servizio sono di proprietà dell'utente che li ha creati.
+              L'utente concede a PrevAI una licenza limitata, non esclusiva, per elaborare i dati inseriti
+              al solo fine di erogare il Servizio.
             </p>
           </section>
 
           <section>
-            <h2 className="text-lg font-semibold text-gray-900 mb-3">7. Limitation of liability</h2>
+            <h2 className="text-lg font-semibold text-gray-900 mb-3">7. Limitazione di responsabilità</h2>
             <p>
-              Quotes generated by the AI are estimates based on statistical data. <strong>QuoteAI does not
-              guarantee the accuracy, completeness, or suitability of quotes for any specific contractual
-              context.</strong> You are responsible for reviewing and validating all content before presenting
-              it to your own clients. To the extent permitted by applicable law, QuoteAI is not liable for
-              indirect damages, data loss, lost profits, or damages arising from errors in AI output.
+              I preventivi generati dall'AI sono indicativi e basati su dati statistici. <strong>PrevAI non garantisce
+              l'accuratezza, la completezza o l'adeguatezza dei preventivi, dei contratti o degli altri documenti per specifici contesti contrattuali o fiscali.</strong>{" "}
+              L'utente è responsabile della verifica e validazione dei contenuti prima di presentarli ai propri clienti,
+              inclusa l'aliquota IVA applicata. Nei limiti consentiti dalla legge applicabile, PrevAI non è responsabile per danni indiretti,
+              perdita di dati, lucro cessante o danni derivanti da errori nell'output dell'AI.
             </p>
           </section>
 
           <section>
-            <h2 className="text-lg font-semibold text-gray-900 mb-3">8. Suspension and termination</h2>
+            <h2 className="text-lg font-semibold text-gray-900 mb-3">8. Sospensione e cancellazione</h2>
             <p>
-              QuoteAI reserves the right to suspend or terminate access to the Service in the event of a breach
-              of these Terms, with notice by email except in cases of serious violations. You may cancel your
-              account at any time from the Settings page or by contacting{" "}
-              <a href="mailto:support@prevai.it" className="text-navy-600 hover:underline">support@prevai.it</a>.
+              PrevAI si riserva il diritto di sospendere o terminare l'accesso al Servizio in caso di violazione
+              dei presenti Termini, previo avviso via email salvo casi di grave violazione.
+              L'utente può cancellare il proprio account in qualsiasi momento dalla pagina Impostazioni o
+              contattando{" "}
+              <a href="mailto:supporto@prevai.it" className="text-navy-600 hover:underline">supporto@prevai.it</a>.
             </p>
           </section>
 
           <section>
-            <h2 className="text-lg font-semibold text-gray-900 mb-3">9. Changes to these terms</h2>
+            <h2 className="text-lg font-semibold text-gray-900 mb-3">9. Modifiche ai termini</h2>
             <p>
-              We reserve the right to modify these Terms with at least 14 days' notice by email. Continued use
-              of the Service after the effective date of any changes constitutes acceptance of the new Terms.
+              Ci riserviamo il diritto di modificare i presenti Termini con preavviso di almeno 14 giorni
+              via email. L'uso continuato del Servizio dopo la data di efficacia delle modifiche costituisce
+              accettazione dei nuovi Termini.
             </p>
           </section>
 
           <section>
-            <h2 className="text-lg font-semibold text-gray-900 mb-3">10. Governing law and jurisdiction</h2>
+            <h2 className="text-lg font-semibold text-gray-900 mb-3">10. Legge applicabile e foro competente</h2>
             <p>
-              These Terms are governed by the laws of the Province of Ontario and the federal laws of Canada
-              applicable therein. Any dispute arising from these Terms is subject to the exclusive jurisdiction
-              of the courts of Ontario, except where the user is a consumer under applicable provincial consumer
-              protection legislation, in which case any mandatory statutory consumer protections will apply.
+              I presenti Termini sono regolati dalla legge italiana. Per qualsiasi controversia è competente
+              in via esclusiva il Tribunale di Milano, salvo i casi in cui l'utente sia un consumatore ai sensi
+              del D.Lgs. 206/2005 (Codice del Consumo), nel qual caso è competente il foro di residenza o domicilio
+              del consumatore e si applicano le disposizioni di legge inderogabili a sua tutela.
             </p>
           </section>
 
           <section>
-            <h2 className="text-lg font-semibold text-gray-900 mb-3">11. Contact us</h2>
+            <h2 className="text-lg font-semibold text-gray-900 mb-3">11. Contatti</h2>
             <p>
-              For any questions about these Terms: <a href="mailto:support@prevai.it" className="text-navy-600 hover:underline">support@prevai.it</a>
+              Per qualsiasi domanda sui presenti Termini: <a href="mailto:supporto@prevai.it" className="text-navy-600 hover:underline">supporto@prevai.it</a>
             </p>
           </section>
 

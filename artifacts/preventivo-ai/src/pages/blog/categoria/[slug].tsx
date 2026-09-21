@@ -49,7 +49,7 @@ export default function BlogCategoryPage() {
     {
       "@context": "https://schema.org" as const,
       "@type": "CollectionPage" as const,
-      name: `${category.name} — Blog quoteai`,
+      name: `${category.name} — Blog prevai`,
       description: category.description,
       url: canonical,
       inLanguage: "en",
@@ -70,7 +70,7 @@ export default function BlogCategoryPage() {
   return (
     <div className="flex flex-col min-h-screen bg-white">
       <SeoHead
-        title={`${category.name} — Blog quoteai`}
+        title={`${category.name} — Blog prevai`}
         description={category.description}
         canonical={canonical}
         jsonLd={jsonLd}
@@ -117,7 +117,7 @@ export default function BlogCategoryPage() {
               {articles.map((article, i) => (
                 <Link key={article.slug} href={`/blog/${article.slug}/`} className="card news-card">
                   <div className="news-media">
-                    <img src={`https://picsum.photos/seed/quoteai-blog-cat-${category.slug}-${i}/840/525`} alt="" loading="lazy" />
+                    <img src={`https://picsum.photos/seed/prevai-blog-cat-${category.slug}-${i}/840/525`} alt="" loading="lazy" />
                   </div>
                   <div className="news-body">
                     <p className="news-meta">
@@ -156,7 +156,7 @@ export default function BlogCategoryPage() {
 
       <section className="cta on-dark" id="trial">
         <div className="cta-bg">
-          <img src="https://picsum.photos/seed/quoteai-blog-category-cta/1800/900" alt="" aria-hidden="true" loading="lazy" />
+          <img src="https://picsum.photos/seed/prevai-blog-category-cta/1800/900" alt="" aria-hidden="true" loading="lazy" />
         </div>
         <div className="wrap cta-in">
           <h2>

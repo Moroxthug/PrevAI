@@ -4,7 +4,7 @@ import { type Lang } from "./translations";
 import { lookup, subscribeTranslations, getTranslationsVersion } from "./registry";
 
 // V2-2: PrevAI è monolingua (italiano). Il provider conserva la stessa API
-// di QuoteAI (`lang`, `t`, `setLang`, `toggleLang`) così i ~200 consumatori
+// di PrevAI (`lang`, `t`, `setLang`, `toggleLang`) così i ~200 consumatori
 // non cambiano; `setLang`/`toggleLang` sono no-op e `lang` vale sempre "it".
 
 interface LanguageContextValue {

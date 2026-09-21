@@ -1,4 +1,4 @@
-// Phase 68 (QuoteAI) / V2-2: indice leggero dei settori. seo-data.ts pesa
+// Phase 68 (PrevAI) / V2-2: indice leggero dei settori. seo-data.ts pesa
 // ~150 kB di testi per le landing; il bundle pubblico (chip mestieri in
 // homepage, footer) ha bisogno solo di slug ed etichette, che vivono qui;
 // seo-data.ts verifica che restino allineati (la build fallisce se divergono).
@@ -33,7 +33,7 @@ export const SECTOR_SLUGS: Record<string, SectorSlugEntry> = {
   "preventivi-gratis": { label: "Preventivi Gratis", labelPlural: "artigiani e PMI" },
 };
 
-/** Slug QuoteAI → slug v1: usato solo per tradurre riferimenti importati (footer, TRADE_LABELS). */
+/** Slug PrevAI → slug v1: usato solo per tradurre riferimenti importati (footer, TRADE_LABELS). */
 export const LEGACY_SECTOR_SLUGS: Record<string, string> = {
   painter: "imbianchino",
   electrician: "elettricista",

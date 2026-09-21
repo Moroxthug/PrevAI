@@ -67,10 +67,10 @@ export default function BlogArticlePage() {
       datePublished: article.publishedAt,
       dateModified: article.updatedAt ?? article.publishedAt,
       inLanguage: "en",
-      author: { "@type": "Organization" as const, name: "quoteai", url: BASE_URL },
+      author: { "@type": "Organization" as const, name: "prevai", url: BASE_URL },
       publisher: {
         "@type": "Organization" as const,
-        name: "quoteai",
+        name: "prevai",
         url: BASE_URL,
         logo: { "@type": "ImageObject" as const, url: `${BASE_URL}/icon-192.png`, width: 192, height: 192 },
       },
@@ -89,7 +89,7 @@ export default function BlogArticlePage() {
   return (
     <div className="flex flex-col min-h-screen bg-white">
       <SeoHead
-        title={`${article.seoTitle ?? article.title} | quoteai`}
+        title={`${article.seoTitle ?? article.title} | prevai`}
         description={article.metaDescription}
         canonical={canonical}
         ogType="article"
@@ -200,7 +200,7 @@ export default function BlogArticlePage() {
 
       <section className="cta on-dark" id="trial">
         <div className="cta-bg">
-          <img src="https://picsum.photos/seed/quoteai-blog-article-cta/1800/900" alt="" aria-hidden="true" loading="lazy" />
+          <img src="https://picsum.photos/seed/prevai-blog-article-cta/1800/900" alt="" aria-hidden="true" loading="lazy" />
         </div>
         <div className="wrap cta-in">
           <h2>

@@ -1,4 +1,4 @@
-// Phase 68 (QuoteAI) / V2-2: solo i metadati degli articoli (titolo, date,
+// Phase 68 (PrevAI) / V2-2: solo i metadati degli articoli (titolo, date,
 // categoria…) — ciò che servono a homepage, mappa del sito, pagine blog e
 // landing di settore. I corpi stanno in ./blog-data.ts, importato solo dalla
 // pagina articolo e dallo script di prerender, così l'HTML non entra nel

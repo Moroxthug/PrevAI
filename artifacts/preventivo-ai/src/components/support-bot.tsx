@@ -16,11 +16,11 @@ export default function SupportBot() {
   const [isOpen, setIsOpen] = useState(false);
   const [isDismissed, setIsDismissed] = useState(false);
   const [conversationId, setConversationId] = useState<number | null>(() => {
-    const saved = typeof window === "undefined" ? null : localStorage.getItem("quoteai_support_conv_id");
+    const saved = typeof window === "undefined" ? null : localStorage.getItem("prevai_support_conv_id");
     return saved ? parseInt(saved) : null;
   });
   const [conversationToken, setConversationToken] = useState<string | null>(() =>
-    typeof window === "undefined" ? null : localStorage.getItem("quoteai_support_conv_token"),
+    typeof window === "undefined" ? null : localStorage.getItem("prevai_support_conv_token"),
   );
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputText, setInputText] = useState("");
@@ -73,8 +73,8 @@ export default function SupportBot() {
   // Discards a conversation whose token the server no longer accepts (e.g.
   // stale localStorage from before this token was introduced).
   const resetConversation = () => {
-    localStorage.removeItem("quoteai_support_conv_id");
-    localStorage.removeItem("quoteai_support_conv_token");
+    localStorage.removeItem("prevai_support_conv_id");
+    localStorage.removeItem("prevai_support_conv_token");
     setConversationId(null);
     setConversationToken(null);
     setMessages([]);
@@ -130,8 +130,8 @@ export default function SupportBot() {
         setConversationId(data.id);
         setConversationToken(data.token);
         setConvStatus(data.status);
-        localStorage.setItem("quoteai_support_conv_id", data.id.toString());
-        localStorage.setItem("quoteai_support_conv_token", data.token);
+        localStorage.setItem("prevai_support_conv_id", data.id.toString());
+        localStorage.setItem("prevai_support_conv_token", data.token);
         setShowOnboarding(false);
         // Add initial greeting message
         await fetchMessages(data.id, data.token);
@@ -169,8 +169,8 @@ export default function SupportBot() {
           setConversationId(data.id);
           setConversationToken(data.token);
           setConvStatus(data.status);
-          localStorage.setItem("quoteai_support_conv_id", data.id.toString());
-          localStorage.setItem("quoteai_support_conv_token", data.token);
+          localStorage.setItem("prevai_support_conv_id", data.id.toString());
+          localStorage.setItem("prevai_support_conv_token", data.token);
         } else {
           return;
         }

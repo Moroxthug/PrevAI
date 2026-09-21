@@ -54,7 +54,7 @@ export default function WorkerTimePage() {
   const [locationOff, setLocationOff] = useState(false);
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => { if (data && !projectId && data.jobs.length === 1) setProjectId(data.jobs[0]!.id); }, [data, projectId]);
-  useDocumentTitle(`${t("worker.clockInOut")} · ${data?.companyName ?? "QuoteAI"}`);
+  useDocumentTitle(`${t("worker.clockInOut")} · ${data?.companyName ?? "PrevAI"}`);
   useEffect(() => {
     if (!data?.activeEntry) return;
     const id = setInterval(() => setNow(Date.now()), 30_000);
