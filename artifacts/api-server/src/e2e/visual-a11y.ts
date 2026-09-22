@@ -88,6 +88,9 @@ function routes(s: import("./fixtures.js").Showcase): RouteSpec[] {
     dash("/dashboard/leads"), dash("/dashboard/imports"),
     dash("/dashboard/contracts"), dash(`/dashboard/contracts/${s.contractId}`), dash(`/dashboard/contracts/${s.pendingContractId}`),
     dash("/dashboard/invoices"), dash(`/dashboard/invoices/${s.invoiceId}`),
+    // A-1: fattura elettronica trasmessa, pagina Amministrazione, scheda SDI.
+    ...(s.fiscalInvoiceId ? [dash(`/dashboard/invoices/${s.fiscalInvoiceId}`)] : []),
+    dash("/dashboard/amministrazione"), dash("/dashboard/settings?tab=sdi"),
     dash("/dashboard/jobs"), dash(`/dashboard/jobs/${s.jobId}`), dash(`/dashboard/jobs/${s.jobId}/setup`),
     dash("/dashboard/assistant"), dash("/dashboard/team"), dash("/dashboard/documents"), dash("/dashboard/archive"), dash("/dashboard/notifications"),
   ];
@@ -295,7 +298,7 @@ try {
   console.log(`[qa-visual] api ${apiBase} · frontend ${frontend}`);
 
   const org = await createOrg({ province: PROVINCE, companyName: PROVINCE === "NA" ? "Ristrutturazioni Esposito Srl" : "Ristrutturazioni Nord Srl" });
-  const showcase = await seedShowcase(org, { withLogo: true });
+  const showcase = await seedShowcase(org, { withLogo: true, withSdi: true });
   console.log(`[qa-visual] showcase seeded for ${org.email}:`, { ...showcase, invoiceToken: "…", signToken: showcase.signToken ? "…" : null, workerToken: showcase.workerToken ? "…" : null, teamInviteToken: showcase.teamInviteToken ? "…" : null });
 
   rmSync(OUT, { recursive: true, force: true });

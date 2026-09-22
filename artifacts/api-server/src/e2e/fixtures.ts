@@ -7,7 +7,7 @@
 // row it needs is missing). Everything is owned by the org's user, so
 // `cleanupAll()` from the harness removes it.
 
-import { db, quotesTable, contractsTable, contractSignersTable, projectsTable, milestonesTable, costEntriesTable, invoicesTable, clientsTable, priceCatalogItemsTable, businessProfilesTable, getTaxProfile } from "@workspace/db";
+import { db, quotesTable, contractsTable, contractSignersTable, projectsTable, milestonesTable, costEntriesTable, invoicesTable, clientsTable, priceCatalogItemsTable, businessProfilesTable, authUsersTable, sdiSettingsTable, getTaxProfile } from "@workspace/db";
 import { and, eq } from "drizzle-orm";
 import "../automations/index.js";
 import { raiseAutomation } from "../lib/automation.js";
@@ -15,6 +15,9 @@ import { logContractEvent, finalizeContract, sendContractToCustomer } from "../c
 import { buildInvoiceContext, createInvoice, sendInvoice, recordPayment, invoiceToken } from "../invoices/service.js";
 import { TINY_PNG_DATA_URL } from "../lib/pngDataUrl.js";
 import { seedQuote, type TestUser } from "./harness.js";
+import { impostazioniOCrea, inviaAlloSdi } from "../sdi/service.js";
+import { sincronizzaPassive } from "../sdi/passive.js";
+import { accodaPassivaSimulata } from "../sdi/providers/simulato.js";
 
 export type Showcase = {
   province: string;
@@ -38,6 +41,8 @@ export type Showcase = {
   /** Team member invite — `/team-invite/:token`. */
   teamInviteToken: string | null;
   clientId: string | null;
+  /** A-1 (solo con `withSdi`): fattura fiscale già trasmessa allo SdI. */
+  fiscalInvoiceId: string | null;
 };
 
 function need<T>(v: T | null | undefined, what: string): T {
@@ -93,7 +98,7 @@ async function seedLongQuote(userId: string, province: string) {
   return quote!;
 }
 
-export async function seedShowcase(org: TestUser & { province: string }, opts: { withLogo?: boolean } = {}): Promise<Showcase> {
+export async function seedShowcase(org: TestUser & { province: string }, opts: { withLogo?: boolean; withSdi?: boolean } = {}): Promise<Showcase> {
   const { userId, province } = org;
   const language = "it" as const;
 
@@ -176,13 +181,96 @@ export async function seedShowcase(org: TestUser & { province: string }, opts: {
   const clients = await org.api("/api/clients");
   const clientId: string | null = clients.status === 200 && Array.isArray(clients.body) && clients.body[0]?.id ? String(clients.body[0].id) : null;
 
+  // ── A-1: modulo Amministrazione acceso, una fattura elettronica trasmessa e
+  //    una fattura di acquisto in arrivo. Va in fondo apposta: tutto ciò che
+  //    sta sopra resta pro-forma, com'era prima dell'attivazione.
+  const fiscalInvoiceId = opts.withSdi ? await seedSdi(org) : null;
+
   return {
     province, language,
     quoteId: quote.id, longQuoteId: longQuote.id, pendingQuoteId: pending.id,
     contractId: contract.id, pendingContractId: pendingContract.id,
     jobId: project.id, invoiceId: sent.id, invoiceToken: invoiceToken(manualSent),
-    signToken, workerToken, teamInviteToken, clientId,
+    signToken, workerToken, teamInviteToken, clientId, fiscalInvoiceId,
   };
+}
+
+/** Accende il modulo SDI sull'org e lascia dietro documenti veri da guardare. */
+async function seedSdi(org: TestUser & { province: string }): Promise<string | null> {
+  const { userId } = org;
+  const [profile] = await db.select().from(businessProfilesTable).where(eq(businessProfilesTable.userId, userId));
+  await db
+    .update(businessProfilesTable)
+    .set({
+      featureFlags: { ...(profile?.featureFlags ?? {}), sdi_invoicing: true },
+      twoFactorRequired: true,
+      vatNumber: "01234567897",
+      codiceFiscale: "01234567897",
+      address: profile?.address ?? "Via Roma 12",
+      city: "Milano",
+      cap: "20100",
+      province: "MI",
+    })
+    .where(eq(businessProfilesTable.userId, userId));
+  // La policy 2FA è un requisito del modulo: senza, l'org stessa si bloccherebbe.
+  await db.update(authUsersTable).set({ twoFactorEnabled: true }).where(eq(authUsersTable.id, userId));
+  await impostazioniOCrea(userId);
+  await db.update(sdiSettingsTable).set({ delegaFirmataAt: new Date(), regimeFiscale: "RF19", cicloPassivoAttivo: true, cicloPassivoAttivatoAt: new Date() }).where(eq(sdiSettingsTable.userId, userId));
+
+  const [cliente] = await db
+    .insert(clientsTable)
+    .values({
+      userId,
+      type: "individual",
+      name: "Giulia Fiscale",
+      email: `giulia-${userId}@example.invalid`,
+      address: "Via Verdi 3",
+      city: "Milano",
+      province: "MI",
+      postalCode: "20121",
+      codiceFiscale: "RSSMRA80A01H501U",
+      dedupKey: `giulia fiscale|giulia-${userId}@example.invalid|`,
+    })
+    .returning();
+
+  const ctx = await buildInvoiceContext({ userId, clientId: cliente!.id });
+  const fattura = await createInvoice({
+    userId,
+    ctx,
+    type: "manual",
+    source: "manual",
+    actor: "contractor",
+    lines: [{ description: "Rifacimento impianto elettrico appartamento", quantity: 1, unitCents: 180_000, amountCents: 180_000 }],
+    dueDays: 30,
+    title: "Impianto elettrico",
+  });
+  const { invoice: inviata } = await sendInvoice({ invoiceId: fattura.id, userId, actor: "contractor" });
+  try {
+    await inviaAlloSdi({ invoiceId: inviata.id, userId });
+  } catch {
+    // Il pannello va guardato anche quando la trasmissione non parte.
+  }
+
+  accodaPassivaSimulata(userId, fatturaFornitoreXml());
+  await sincronizzaPassive({ userId }).catch(() => undefined);
+  return inviata.id;
+}
+
+/** Una fattura di acquisto come la scriverebbe il gestionale di un fornitore. */
+function fatturaFornitoreXml(): string {
+  return [
+    '<?xml version="1.0" encoding="UTF-8"?>',
+    '<p:FatturaElettronica versione="FPR12" xmlns:p="http://ivaservizi.agenziaentrate.gov.it/docs/xsd/fatture/v1.2">',
+    "<FatturaElettronicaHeader><CedentePrestatore><DatiAnagrafici><IdFiscaleIVA><IdPaese>IT</IdPaese><IdCodice>01234567897</IdCodice></IdFiscaleIVA>",
+    "<Anagrafica><Denominazione>Ferramenta Bianchi Srl</Denominazione></Anagrafica><RegimeFiscale>RF01</RegimeFiscale></DatiAnagrafici>",
+    "<Sede><Indirizzo>Via dei Fornitori 4</Indirizzo><CAP>20100</CAP><Comune>Milano</Comune><Provincia>MI</Provincia><Nazione>IT</Nazione></Sede></CedentePrestatore></FatturaElettronicaHeader>",
+    "<FatturaElettronicaBody><DatiGenerali><DatiGeneraliDocumento><TipoDocumento>TD01</TipoDocumento><Divisa>EUR</Divisa><Data>2026-09-10</Data>",
+    "<Numero>2026/451</Numero><ImportoTotaleDocumento>610.00</ImportoTotaleDocumento></DatiGeneraliDocumento></DatiGenerali>",
+    "<DatiBeniServizi><DettaglioLinee><NumeroLinea>1</NumeroLinea><Descrizione>Materiale elettrico vario</Descrizione><Quantita>1.00</Quantita>",
+    "<PrezzoUnitario>500.00</PrezzoUnitario><PrezzoTotale>500.00</PrezzoTotale><AliquotaIVA>22.00</AliquotaIVA></DettaglioLinee>",
+    "<DatiRiepilogo><AliquotaIVA>22.00</AliquotaIVA><ImponibileImporto>500.00</ImponibileImporto><Imposta>110.00</Imposta><EsigibilitaIVA>I</EsigibilitaIVA></DatiRiepilogo></DatiBeniServizi>",
+    "</FatturaElettronicaBody></p:FatturaElettronica>",
+  ].join("");
 }
 
 /**

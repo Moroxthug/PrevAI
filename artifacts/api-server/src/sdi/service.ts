@@ -215,6 +215,12 @@ export async function inviaAlloSdi(params: { invoiceId: string; userId: string; 
   const { invoice, settings, profile, client, originale } = await contesto(params);
   if (invoice.status === "draft") throw new ErroreSdi("bozza", "La fattura è ancora una bozza: inviala al cliente prima di trasmetterla allo SdI.");
   if (invoice.status === "void") throw new ErroreSdi("annullata", "La fattura è annullata.");
+  // Un documento nato pro-forma dice al cliente, nero su bianco, di non essere
+  // una fattura: trasmetterlo come tale lo smentirebbe. Si emette un documento
+  // nuovo nella serie fiscale.
+  if (!invoice.fiscale) {
+    throw new ErroreSdi("non_fiscale", "Questo documento è una pro-forma emessa prima dell'attivazione del modulo: emetti una fattura nuova al suo posto.");
+  }
 
   const esistente = await trasmissioneCorrente(invoice.id);
   if (esistente && esistente.stato !== "scartata") {
