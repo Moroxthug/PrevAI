@@ -1,6 +1,12 @@
 # Revisione del motore regole 2026 con il commercialista partner — pacchetto per la prima riunione
 
-Versione 1.0 · A-0 · 21 settembre 2026 · Bloccato dalla decisione **D6** (`PIANO-AZIONE.md`): finché il titolare non indica il professionista, questa è la lista di ciò che gli va sottoposto. Le regole sono quelle raccolte in `AMMINISTRAZIONE-PLAN.md` §3 e diventeranno `lib/fiscal/rules/2026.ts` in A-2: **niente va codificato come "verificato" prima della sua firma**.
+Versione 1.1 · A-0, aggiornato in A-2 · 22 settembre 2026 · Bloccato dalla decisione **D6** (`PIANO-AZIONE.md`): finché il titolare non indica il professionista, questa è la lista di ciò che gli va sottoposto. Le regole sono quelle raccolte in `AMMINISTRAZIONE-PLAN.md` §3 e **sono già codificate** in `lib/config/src/fiscale/regole/2026.ts` (A-2), ma tutte con `revisione.stato = "non_revisionata"`: **niente è codificato come "verificato" prima della sua firma**, e il prodotto lo dice all'utente in ogni schermata.
+
+> **Cosa è cambiato con A-2 (2026-09-22).** Il motore esiste e gira: ogni regola qui sotto ha un identificatore vivo nel codice, i 5 casi golden sono test veri (`artifacts/api-server/src/fiscale/golden.test.ts`) e il prodotto calcola già, marcando però ogni numero come non verificato. Alla riunione si arriva quindi con i **nostri valori calcolati** accanto a ogni caso, da confrontare con i suoi: è molto più rapido che partire da un foglio bianco. Per ottenerli: `pnpm --filter @workspace/api-server exec vitest run src/fiscale`.
+>
+> Due domande nate scrivendo il motore, da aggiungere alla riunione:
+> - **base INPS vs base fiscale** (F6/F10): abbiamo calcolato i contributi sul reddito forfettario *senza* dedurre i contributi versati, e l'imposta su quello stesso reddito *meno* i contributi versati. Conferma?
+> - **scaglione e massimale INPS 2026** (F10): `55.008 €` e `92.413 €` sono ricavati per proporzione dagli anni precedenti, non letti dalla circolare. Sono i due numeri di cui siamo meno sicuri.
 
 ## Come si svolge
 
@@ -46,4 +52,9 @@ Per ciascuno: imponibile, imposta sostitutiva, contributi INPS dovuti (fissi + e
 
 - Aggiornare la colonna Esito, salvare la email di conferma in `C:\Users\Admin\PrevAI-compliance\`.
 - Annotare nome, data e perimetro nella `DPIA.md` §8.
-- A-2 parte solo con F1–F16 tutte ✅ o con condizione esplicita.
+- **Riportare le risposte nel codice**, regola per regola: in `lib/config/src/fiscale/regole/2026.ts` si cambia `revisione` da `{ stato: "non_revisionata" }` a `{ stato: "confermata" | "con_condizione" | "corretta", da: "<nome, albo>", il: "<AAAA-MM-GG>", nota: "<condizione>" }`. Se un valore va corretto, si corregge il parametro **e** si segna `corretta`.
+- **Compilare i 5 casi golden** in `lib/config/src/fiscale/golden.ts` (`attesi`) con i valori che ha dato lui. Da quel momento il test è un vincolo e ogni modifica futura alle regole deve ripassare da lui.
+- Verifica finale: `pnpm --filter @workspace/api-server exec vitest run src/fiscale` — c'è un test che controlla proprio che le due cose restino allineate (regole confermate ⇒ golden compilati, e viceversa).
+- Quando tutte e 16 sono ✅, `Calcolo.revisionato` diventa `true` da solo e l'avviso "numeri non verificati" sparisce dalla pagina Fisco. Nessun'altra modifica serve.
+
+**Finché la revisione non è chiusa**, il modulo A-2 resta acceso solo per le imprese a cui si mette il flag `fiscal_engine` a mano (RUNBOOKS §7.2): nessun piano lo include e nessuna impresa lo vede.

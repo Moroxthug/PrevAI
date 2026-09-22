@@ -240,6 +240,56 @@ Si scarica qualcosa solo se l'impresa ha **aderito esplicitamente** (`ciclo_pass
 
 `migrations/v2/0003_a1_sdi.sql` è additiva e idempotente e va eseguita **dopo** la 0002 (§5.3): cinque tabelle nuove, `business_profiles.city/cap`, `invoices.fiscale`, cinque colonne su `clients`. I documenti già emessi restano pro-forma (`fiscale = false`), come sono stati consegnati ai clienti. Nessun utente passa a `FT-` finché non accende il modulo e completa l'onboarding.
 
+## 7. Motore fiscale forfettario (A-2)
+
+Calcolo di imposta sostitutiva e contributi, "quanto mettere via", monitor della soglia degli 85.000 € e simulatore. **È uno strumento di calcolo, non una consulenza**: mostra la formula di ogni importo, non versa nulla e non invia dichiarazioni (AMMINISTRAZIONE-PLAN.md §5).
+
+Pezzi: `lib/config/src/fiscale/` (motore puro: `regole/2026.ts`, `ateco.ts`, `calcolo.ts`, `golden.ts`) · `artifacts/api-server/src/fiscale/` (`dati.ts` raccolta, `service.ts`, `maintenance.ts`) · `routes/fiscale.ts` · UI in `pages/dashboard/fisco.tsx` e `lib/fiscale-api.ts` · tabelle `tax_profiles` e `fiscal_payments`.
+
+### 7.1 Lo stato della revisione (D6) — leggere prima di tutto il resto
+
+Le regole vengono dalla ricerca in AMMINISTRAZIONE-PLAN.md §3, **non da un commercialista**. Ogni regola in `regole/2026.ts` porta `revisione.stato`, che oggi è `non_revisionata` per tutte e 16. Conseguenze in codice:
+
+- `Calcolo.revisionato` è `false` e ogni risposta dell'API porta `revisione` con l'elenco regola per regola;
+- la pagina Fisco mostra in cima, sempre, l'avviso "numeri non ancora verificati da un commercialista";
+- i 5 casi golden (`lib/config/src/fiscale/golden.ts`) hanno `attesi: null` e verificano solo la coerenza.
+
+**Per chiudere la revisione**: si compila la colonna Esito di `docs/compliance/REVISIONE-COMMERCIALISTA.md`, si riportano `stato`, `da` e `il` in `regole/2026.ts` regola per regola, si inseriscono i valori attesi nei 5 casi golden. Da quel momento `golden.test.ts` è un vincolo: qualunque modifica alle regole che sposti un centesimo fa saltare il caso. Un test controlla proprio che le due cose restino allineate (regole confermate ⇒ golden compilati).
+
+### 7.2 Attivare il modulo su un'impresa
+
+1. **Add-on**: `update business_profiles set feature_flags = feature_flags || '{"fiscal_engine": true}'::jsonb where user_id = '<org>';` — feature separata da `sdi_invoicing`, perché un'impresa in regime ordinario vuole le fatture elettroniche e non il forfettario. Nessun piano include nessuna delle due.
+2. L'impresa completa l'onboarding fiscale in **Fisco**: codice ATECO (decide il coefficiente), cassa previdenziale, eventuale riduzione contributiva, anno di apertura, requisiti per il 5 %, presa d'atto dell'avviso. Finché manca un passo la pagina mostra il modulo di onboarding e non il calcolo.
+3. Il completamento **non** è un flag: `passiMancanti()` lo ricava dai dati veri a ogni lettura.
+
+### 7.3 Chi vede cosa
+
+`fiscale` è la prima **area di permessi chiusa**: owner `full`, admin `view`, office/foreman/viewer **niente**, nemmeno in lettura. La posizione fiscale del titolare non è un dato di lavoro. Il livello `none` nella matrice di `requirePermission.ts` esiste per questo.
+
+### 7.4 Da dove vengono i numeri
+
+- **Incassi**: `invoice_payments` nell'anno solare, escluse le righe generate da una nota di credito. Criterio di cassa: conta la data dell'incasso, non quella della fattura.
+- **Fatturato non incassato**: fatture aperte emesse nell'anno. Non fa imposta, pesa sulla soglia.
+- **Pipeline**: preventivi accettati nell'anno meno il fatturato dell'anno, con minimo zero. È una stima per differenza, non un aggancio preventivo→fattura: sovrastima apposta, perché il monitor deve avvisare prima e non dopo.
+- **Contributi e acconti versati**: `fiscal_payments`, inseriti a mano dall'impresa. Senza, l'imposta calcolata è **più alta** del vero.
+- **Bollo**: `bollo_periods` dal modulo A-1.
+
+Attenzione a una differenza che non è un refuso: la base dei **contributi** è il reddito forfettario (incassi × coefficiente), quella dell'**imposta** è lo stesso reddito **meno** i contributi versati. Dedurre i contributi anche dalla base INPS sarebbe un errore a favore dell'utente, che se ne accorgerebbe solo a saldo. È la domanda F6/F10 al commercialista.
+
+### 7.5 Monitor della soglia
+
+Gira nel tick del cron (`fiscale/maintenance.ts`), solo sulle imprese con l'onboarding completo e il modulo acceso. Avvisa quando il livello **peggiora** (`ok → attenzione → vicino → superata → fuori_regime`), mai due volte per lo stesso livello: `tax_profiles.soglia_livello_notificato` tiene il punto. L'avviso descrive la conseguenza e si ferma lì — non dice cosa fare, perché quella è una scelta da professionista.
+
+Per rimandare un avviso in prova: `update tax_profiles set soglia_livello_notificato = null where user_id = '<org>';`
+
+### 7.6 L'anno nuovo
+
+A gennaio si scrive `regole/<anno>.ts` e si aggiunge al registro in `regole/index.ts`; **non si modifica l'anno precedente**, perché una dichiarazione si può rifare tre anni dopo e va rifatta con le regole di allora. Se l'anno richiesto non esiste ancora, il motore usa l'ultima versione disponibile e lo dichiara in `Calcolo.annoRegole`, che l'interfaccia mostra.
+
+### 7.7 Cutover e migrazioni
+
+`migrations/v2/0004_a2_fiscale.sql` è additiva e idempotente e va eseguita **dopo** la 0003 (§5.3): due tabelle nuove (`tax_profiles`, `fiscal_payments`), nessuna colonna su tabelle esistenti. Nascono vuote: nessuna impresa ha un profilo fiscale finché non compila l'onboarding, e senza profilo il modulo non calcola niente.
+
 
 ---
 
