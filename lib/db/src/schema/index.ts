@@ -33,3 +33,4 @@ export * from "./publicApi";
 export * from "./meta-lead-ads";
 export * from "./cron-ticks";
 export * from "./sdi";
+export * from "./fiscale";
