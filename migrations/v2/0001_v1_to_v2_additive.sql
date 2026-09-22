@@ -1,16 +1,17 @@
--- PrevAI v2 — migrazione additiva v1 → v2 (fase V2-3, 2026-09-21)
--- Generata con drizzle-kit (introspezione DB v1 → lib/db/src/schema) e rivista a mano.
+-- PrevAI v2 — migrazione additiva v1 → v2 (rigenerata in V2-5 dallo schema finale di V2-4, 2026-09-21)
+-- Origine: 0001 di V2-3 (drizzle-kit pull v1 + generate v2, resa additiva a mano) + modifiche di schema V2-4:
+--   business_profiles: codice_fiscale/codice_sdi/rea_number/iban/secondary_review_url (niente colonne canadesi);
+--   invoices.bank_transfer_self_reported_at, invoice_payments.method default 'bank_transfer';
+--   contract_signers.tax_id; leads senza google_lsa_*; nessuna tabella QuickBooks/Wave/Flinks/Financeit/Google LSA;
+--   incentives_catalog intoccata (schema = prod).
 -- Regole PREVAI-V2-PLAN.md §1: solo statement additivi/idempotenti, nessun DROP/RENAME/SET NOT NULL.
--- Le uniche modifiche a colonne esistenti sono allargamenti (compatibili con il codice v1):
---   * incentives_catalog.percentuale_massima  DROP NOT NULL   (schema v2 la vuole nullable)
---   * quotes.iva_percentuale                  numeric(5,2) -> numeric(6,3)  (QuoteAI Phase 71)
--- Scartati di proposito (v1 resta autorevole finché V2-4 non riallinea lo schema):
---   * DROP COLUMN incentives_catalog.regione / comune
---   * SET/DROP DEFAULT su incentives_catalog.level / categoria_intervento / tipo_agevolazione / percentuale_massima,
---     collaborators.role (default QuoteAI in inglese: 'federal', 'all', 'rebate', 'worker'), quotes.condizioni_pagamento (identico), quotes.iva_percentuale (identico)
+-- Unica modifica a una colonna esistente (allargamento, compatibile con il codice v1):
+--   * quotes.iva_percentuale  numeric(5,2) -> numeric(6,3)  (QuoteAI Phase 71)
+-- Scartati di proposito: SET/DROP DEFAULT su colonne esistenti (quotes.condizioni_pagamento, quotes.iva_percentuale: identici).
 -- quotes.unsubscribe_token: NOT NULL con DEFAULT gen_random_uuid()::text (come QuoteAI 0024), così le INSERT del codice v1 continuano a funzionare.
 -- Esecuzione: psql "<session URL>" -v ON_ERROR_STOP=1 -1 -f migrations/v2/0001_v1_to_v2_additive.sql   (un'unica transazione)
 -- Rieseguibile: ogni statement è IF NOT EXISTS / guardato da duplicate_object.
+-- Verificata su staging (reset dal template prevai_v1_baseline): drift 0, schema identico allo staging V2-4.
 
 DO $$ BEGIN
   CREATE TYPE "public"."price_trend_direction" AS ENUM('up', 'down');
@@ -141,6 +142,7 @@ CREATE TABLE IF NOT EXISTS "contract_signers" (
 	"role" text NOT NULL,
 	"name" text NOT NULL,
 	"email" text NOT NULL,
+	"tax_id" text,
 	"token_hash" text,
 	"token_expires_at" timestamp with time zone,
 	"status" text DEFAULT 'pending' NOT NULL,
@@ -341,7 +343,7 @@ CREATE TABLE IF NOT EXISTS "invoice_payments" (
 	"user_id" text NOT NULL,
 	"date" timestamp with time zone DEFAULT now() NOT NULL,
 	"amount_cents" integer NOT NULL,
-	"method" text DEFAULT 'etransfer' NOT NULL,
+	"method" text DEFAULT 'bank_transfer' NOT NULL,
 	"reference" text DEFAULT '' NOT NULL,
 	"note" text DEFAULT '' NOT NULL,
 	"credit_note_id" uuid,
@@ -393,7 +395,7 @@ CREATE TABLE IF NOT EXISTS "invoices" (
 	"public_token_hash" text,
 	"pdf_url" text,
 	"pdf_hash" text,
-	"etransfer_self_reported_at" timestamp with time zone,
+	"bank_transfer_self_reported_at" timestamp with time zone,
 	"stripe_checkout_session_id" text,
 	"sent_at" timestamp with time zone,
 	"viewed_at" timestamp with time zone,
@@ -516,9 +518,6 @@ CREATE TABLE IF NOT EXISTS "leads" (
 	"meta_campaign_id" text,
 	"meta_campaign_name" text,
 	"meta_ad_id" text,
-	"google_lsa_lead_id" text,
-	"google_lsa_lead_type" text,
-	"google_lsa_category" text,
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
 	"updated_at" timestamp with time zone DEFAULT now() NOT NULL
 );
@@ -536,31 +535,6 @@ CREATE TABLE IF NOT EXISTS "job_photos" (
 	"shared_at" timestamp with time zone,
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
 	"updated_at" timestamp with time zone DEFAULT now() NOT NULL
-);
-CREATE TABLE IF NOT EXISTS "quickbooks_connections" (
-	"user_id" text PRIMARY KEY NOT NULL,
-	"realm_id" text NOT NULL,
-	"environment" text DEFAULT 'production' NOT NULL,
-	"company_name" text DEFAULT '' NOT NULL,
-	"access_token_enc" text NOT NULL,
-	"refresh_token_enc" text NOT NULL,
-	"token_expires_at" timestamp with time zone NOT NULL,
-	"is_enabled" boolean DEFAULT true NOT NULL,
-	"payment_account" jsonb,
-	"category_map" jsonb DEFAULT '{}'::jsonb NOT NULL,
-	"connected_at" timestamp with time zone DEFAULT now() NOT NULL,
-	"last_synced_at" timestamp with time zone
-);
-CREATE TABLE IF NOT EXISTS "quickbooks_sync_log" (
-	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
-	"user_id" text NOT NULL,
-	"entity_type" text NOT NULL,
-	"entity_id" text NOT NULL,
-	"qbo_id" text,
-	"qbo_type" text,
-	"status" text NOT NULL,
-	"error" text,
-	"created_at" timestamp with time zone DEFAULT now() NOT NULL
 );
 CREATE TABLE IF NOT EXISTS "calendar_connections" (
 	"user_id" text NOT NULL,
@@ -633,32 +607,6 @@ CREATE TABLE IF NOT EXISTS "stripe_connect_accounts" (
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
 	"updated_at" timestamp with time zone DEFAULT now() NOT NULL
 );
-CREATE TABLE IF NOT EXISTS "financeit_applications" (
-	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
-	"user_id" text NOT NULL,
-	"quote_id" uuid NOT NULL,
-	"dealer_id" text NOT NULL,
-	"financeit_application_id" text,
-	"application_link" text NOT NULL,
-	"status" text DEFAULT 'sent' NOT NULL,
-	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
-	"updated_at" timestamp with time zone DEFAULT now() NOT NULL
-);
-CREATE TABLE IF NOT EXISTS "financeit_connections" (
-	"user_id" text PRIMARY KEY NOT NULL,
-	"dealer_id" text NOT NULL,
-	"is_enabled" boolean DEFAULT true NOT NULL,
-	"connected_at" timestamp with time zone DEFAULT now() NOT NULL,
-	"last_applied_at" timestamp with time zone
-);
-CREATE TABLE IF NOT EXISTS "financeit_loan_events" (
-	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
-	"application_id" uuid NOT NULL,
-	"event_type" text NOT NULL,
-	"loan_state" text,
-	"raw" jsonb DEFAULT '{}'::jsonb NOT NULL,
-	"created_at" timestamp with time zone DEFAULT now() NOT NULL
-);
 CREATE TABLE IF NOT EXISTS "api_keys" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"user_id" text NOT NULL,
@@ -690,54 +638,6 @@ CREATE TABLE IF NOT EXISTS "webhook_endpoints" (
 	"is_enabled" boolean DEFAULT true NOT NULL,
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL
 );
-CREATE TABLE IF NOT EXISTS "wave_connections" (
-	"user_id" text PRIMARY KEY NOT NULL,
-	"business_id" text NOT NULL,
-	"business_name" text DEFAULT '' NOT NULL,
-	"access_token_enc" text NOT NULL,
-	"refresh_token_enc" text NOT NULL,
-	"token_expires_at" timestamp with time zone NOT NULL,
-	"is_enabled" boolean DEFAULT true NOT NULL,
-	"payment_account" jsonb,
-	"income_account" jsonb,
-	"category_map" jsonb DEFAULT '{}'::jsonb NOT NULL,
-	"connected_at" timestamp with time zone DEFAULT now() NOT NULL,
-	"last_synced_at" timestamp with time zone
-);
-CREATE TABLE IF NOT EXISTS "wave_sync_log" (
-	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
-	"user_id" text NOT NULL,
-	"entity_type" text NOT NULL,
-	"entity_id" text NOT NULL,
-	"wave_id" text,
-	"wave_type" text,
-	"status" text NOT NULL,
-	"error" text,
-	"created_at" timestamp with time zone DEFAULT now() NOT NULL
-);
-CREATE TABLE IF NOT EXISTS "flinks_connections" (
-	"user_id" text PRIMARY KEY NOT NULL,
-	"login_id_enc" text NOT NULL,
-	"institution_name" text DEFAULT '' NOT NULL,
-	"selected_account" jsonb,
-	"is_enabled" boolean DEFAULT true NOT NULL,
-	"connected_at" timestamp with time zone DEFAULT now() NOT NULL,
-	"last_synced_at" timestamp with time zone
-);
-CREATE TABLE IF NOT EXISTS "flinks_transactions" (
-	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
-	"user_id" text NOT NULL,
-	"flinks_transaction_id" text NOT NULL,
-	"date" timestamp with time zone NOT NULL,
-	"description" text DEFAULT '' NOT NULL,
-	"amount_cents" integer NOT NULL,
-	"balance_cents" integer,
-	"match_status" text DEFAULT 'unmatched' NOT NULL,
-	"matched_cost_entry_id" uuid,
-	"auto_matched" boolean DEFAULT false NOT NULL,
-	"raw" jsonb DEFAULT '{}'::jsonb NOT NULL,
-	"created_at" timestamp with time zone DEFAULT now() NOT NULL
-);
 CREATE TABLE IF NOT EXISTS "meta_lead_ads_connections" (
 	"user_id" text PRIMARY KEY NOT NULL,
 	"page_id" text NOT NULL,
@@ -758,25 +658,6 @@ CREATE TABLE IF NOT EXISTS "meta_lead_ads_import_log" (
 	"raw" jsonb DEFAULT '{}'::jsonb NOT NULL,
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL
 );
-CREATE TABLE IF NOT EXISTS "google_lsa_connections" (
-	"user_id" text PRIMARY KEY NOT NULL,
-	"lsa_customer_id" text NOT NULL,
-	"refresh_token_enc" text NOT NULL,
-	"is_enabled" boolean DEFAULT true NOT NULL,
-	"connected_at" timestamp with time zone DEFAULT now() NOT NULL,
-	"last_polled_at" timestamp with time zone,
-	"last_lead_at" timestamp with time zone
-);
-CREATE TABLE IF NOT EXISTS "google_lsa_import_log" (
-	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
-	"user_id" text NOT NULL,
-	"google_lsa_lead_id" text NOT NULL,
-	"lead_type" text,
-	"status" text NOT NULL,
-	"error" text,
-	"raw" jsonb DEFAULT '{}'::jsonb NOT NULL,
-	"created_at" timestamp with time zone DEFAULT now() NOT NULL
-);
 CREATE TABLE IF NOT EXISTS "cron_ticks" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"started_at" timestamp with time zone DEFAULT now() NOT NULL,
@@ -786,24 +667,19 @@ CREATE TABLE IF NOT EXISTS "cron_ticks" (
 	"error" text,
 	"took_ms" integer
 );
-ALTER TABLE "incentives_catalog" ALTER COLUMN "percentuale_massima" DROP NOT NULL;
 ALTER TABLE "quotes" ALTER COLUMN "iva_percentuale" SET DATA TYPE numeric(6, 3);
 ALTER TABLE "business_profiles" ADD COLUMN IF NOT EXISTS "province" text;
-ALTER TABLE "business_profiles" ADD COLUMN IF NOT EXISTS "gst_hst_number" text;
-ALTER TABLE "business_profiles" ADD COLUMN IF NOT EXISTS "qst_number" text;
-ALTER TABLE "business_profiles" ADD COLUMN IF NOT EXISTS "pst_number" text;
-ALTER TABLE "business_profiles" ADD COLUMN IF NOT EXISTS "licence_number" text;
-ALTER TABLE "business_profiles" ADD COLUMN IF NOT EXISTS "etransfer_email" text;
+ALTER TABLE "business_profiles" ADD COLUMN IF NOT EXISTS "codice_fiscale" text;
+ALTER TABLE "business_profiles" ADD COLUMN IF NOT EXISTS "codice_sdi" text;
+ALTER TABLE "business_profiles" ADD COLUMN IF NOT EXISTS "rea_number" text;
+ALTER TABLE "business_profiles" ADD COLUMN IF NOT EXISTS "iban" text;
+ALTER TABLE "business_profiles" ADD COLUMN IF NOT EXISTS "secondary_review_url" text;
 ALTER TABLE "business_profiles" ADD COLUMN IF NOT EXISTS "default_payment_schedule" jsonb;
 ALTER TABLE "business_profiles" ADD COLUMN IF NOT EXISTS "google_review_url" text;
-ALTER TABLE "business_profiles" ADD COLUMN IF NOT EXISTS "homestars_profile_url" text;
 ALTER TABLE "business_profiles" ADD COLUMN IF NOT EXISTS "send_review_requests" boolean DEFAULT true NOT NULL;
 ALTER TABLE "business_profiles" ADD COLUMN IF NOT EXISTS "automation_settings" jsonb DEFAULT '{}'::jsonb NOT NULL;
 ALTER TABLE "business_profiles" ADD COLUMN IF NOT EXISTS "feature_flags" jsonb DEFAULT '{}'::jsonb NOT NULL;
 ALTER TABLE "price_intelligence" ADD COLUMN IF NOT EXISTS "vendor" text;
-ALTER TABLE "incentives_catalog" ADD COLUMN IF NOT EXISTS "province" text;
-ALTER TABLE "incentives_catalog" ADD COLUMN IF NOT EXISTS "city" text;
-ALTER TABLE "incentives_catalog" ADD COLUMN IF NOT EXISTS "income_tested" boolean DEFAULT false NOT NULL;
 ALTER TABLE "collaborators" ADD COLUMN IF NOT EXISTS "worker_type" text DEFAULT 'employee' NOT NULL;
 ALTER TABLE "collaborators" ADD COLUMN IF NOT EXISTS "burden_percent" numeric(5, 2) DEFAULT '15' NOT NULL;
 ALTER TABLE "collaborators" ADD COLUMN IF NOT EXISTS "active" boolean DEFAULT true NOT NULL;
@@ -954,9 +830,6 @@ DO $$ BEGIN
   ALTER TABLE "leads" ADD CONSTRAINT "leads_quote_id_quotes_id_fk" FOREIGN KEY ("quote_id") REFERENCES "public"."quotes"("id") ON DELETE set null ON UPDATE no action;
 EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 DO $$ BEGIN
-  ALTER TABLE "quickbooks_connections" ADD CONSTRAINT "quickbooks_connections_user_id_auth_user_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."auth_user"("id") ON DELETE cascade ON UPDATE no action;
-EXCEPTION WHEN duplicate_object THEN NULL; END $$;
-DO $$ BEGIN
   ALTER TABLE "calendar_connections" ADD CONSTRAINT "calendar_connections_user_id_auth_user_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."auth_user"("id") ON DELETE cascade ON UPDATE no action;
 EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 DO $$ BEGIN
@@ -972,28 +845,10 @@ DO $$ BEGIN
   ALTER TABLE "stripe_connect_accounts" ADD CONSTRAINT "stripe_connect_accounts_user_id_auth_user_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."auth_user"("id") ON DELETE cascade ON UPDATE no action;
 EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 DO $$ BEGIN
-  ALTER TABLE "financeit_connections" ADD CONSTRAINT "financeit_connections_user_id_auth_user_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."auth_user"("id") ON DELETE cascade ON UPDATE no action;
-EXCEPTION WHEN duplicate_object THEN NULL; END $$;
-DO $$ BEGIN
-  ALTER TABLE "financeit_loan_events" ADD CONSTRAINT "financeit_loan_events_application_id_financeit_applications_id_fk" FOREIGN KEY ("application_id") REFERENCES "public"."financeit_applications"("id") ON DELETE cascade ON UPDATE no action;
-EXCEPTION WHEN duplicate_object THEN NULL; END $$;
-DO $$ BEGIN
   ALTER TABLE "webhook_deliveries" ADD CONSTRAINT "webhook_deliveries_webhook_id_webhook_endpoints_id_fk" FOREIGN KEY ("webhook_id") REFERENCES "public"."webhook_endpoints"("id") ON DELETE cascade ON UPDATE no action;
 EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 DO $$ BEGIN
-  ALTER TABLE "wave_connections" ADD CONSTRAINT "wave_connections_user_id_auth_user_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."auth_user"("id") ON DELETE cascade ON UPDATE no action;
-EXCEPTION WHEN duplicate_object THEN NULL; END $$;
-DO $$ BEGIN
-  ALTER TABLE "flinks_connections" ADD CONSTRAINT "flinks_connections_user_id_auth_user_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."auth_user"("id") ON DELETE cascade ON UPDATE no action;
-EXCEPTION WHEN duplicate_object THEN NULL; END $$;
-DO $$ BEGIN
-  ALTER TABLE "flinks_transactions" ADD CONSTRAINT "flinks_transactions_matched_cost_entry_id_cost_entries_id_fk" FOREIGN KEY ("matched_cost_entry_id") REFERENCES "public"."cost_entries"("id") ON DELETE set null ON UPDATE no action;
-EXCEPTION WHEN duplicate_object THEN NULL; END $$;
-DO $$ BEGIN
   ALTER TABLE "meta_lead_ads_connections" ADD CONSTRAINT "meta_lead_ads_connections_user_id_auth_user_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."auth_user"("id") ON DELETE cascade ON UPDATE no action;
-EXCEPTION WHEN duplicate_object THEN NULL; END $$;
-DO $$ BEGIN
-  ALTER TABLE "google_lsa_connections" ADD CONSTRAINT "google_lsa_connections_user_id_auth_user_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."auth_user"("id") ON DELETE cascade ON UPDATE no action;
 EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 CREATE INDEX IF NOT EXISTS "quote_variants_quote_id_idx" ON "quote_variants" USING btree ("quote_id");
 CREATE INDEX IF NOT EXISTS "clients_user_id_idx" ON "clients" USING btree ("user_id");
@@ -1049,30 +904,17 @@ CREATE INDEX IF NOT EXISTS "leads_user_created_idx" ON "leads" USING btree ("use
 CREATE INDEX IF NOT EXISTS "leads_followup_due_idx" ON "leads" USING btree ("status","next_follow_up_at");
 CREATE UNIQUE INDEX IF NOT EXISTS "leads_unsubscribe_token_idx" ON "leads" USING btree ("unsubscribe_token");
 CREATE INDEX IF NOT EXISTS "job_photos_project_idx" ON "job_photos" USING btree ("project_id","sort_order");
-CREATE INDEX IF NOT EXISTS "quickbooks_sync_log_user_idx" ON "quickbooks_sync_log" USING btree ("user_id","created_at");
-CREATE INDEX IF NOT EXISTS "quickbooks_sync_log_entity_idx" ON "quickbooks_sync_log" USING btree ("entity_type","entity_id","created_at");
 CREATE UNIQUE INDEX IF NOT EXISTS "calendar_synced_events_milestone_provider_idx" ON "calendar_synced_events" USING btree ("milestone_id","provider");
 CREATE INDEX IF NOT EXISTS "calendar_synced_events_user_idx" ON "calendar_synced_events" USING btree ("user_id","updated_at");
 CREATE INDEX IF NOT EXISTS "import_batches_user_idx" ON "import_batches" USING btree ("user_id");
 CREATE INDEX IF NOT EXISTS "quote_import_candidates_batch_idx" ON "quote_import_candidates" USING btree ("batch_id");
 CREATE INDEX IF NOT EXISTS "quote_import_candidates_user_status_idx" ON "quote_import_candidates" USING btree ("user_id","status");
-CREATE INDEX IF NOT EXISTS "financeit_applications_user_idx" ON "financeit_applications" USING btree ("user_id","created_at");
-CREATE INDEX IF NOT EXISTS "financeit_applications_quote_idx" ON "financeit_applications" USING btree ("quote_id");
-CREATE INDEX IF NOT EXISTS "financeit_applications_financeit_id_idx" ON "financeit_applications" USING btree ("financeit_application_id");
-CREATE INDEX IF NOT EXISTS "financeit_loan_events_application_idx" ON "financeit_loan_events" USING btree ("application_id","created_at");
 CREATE INDEX IF NOT EXISTS "api_keys_user_idx" ON "api_keys" USING btree ("user_id","created_at");
 CREATE INDEX IF NOT EXISTS "api_keys_hash_idx" ON "api_keys" USING btree ("key_hash");
 CREATE INDEX IF NOT EXISTS "webhook_deliveries_webhook_idx" ON "webhook_deliveries" USING btree ("webhook_id","created_at");
 CREATE INDEX IF NOT EXISTS "webhook_endpoints_user_idx" ON "webhook_endpoints" USING btree ("user_id","created_at");
-CREATE INDEX IF NOT EXISTS "wave_sync_log_user_idx" ON "wave_sync_log" USING btree ("user_id","created_at");
-CREATE INDEX IF NOT EXISTS "wave_sync_log_entity_idx" ON "wave_sync_log" USING btree ("entity_type","entity_id","created_at");
-CREATE INDEX IF NOT EXISTS "flinks_transactions_user_date_idx" ON "flinks_transactions" USING btree ("user_id","date");
-CREATE INDEX IF NOT EXISTS "flinks_transactions_user_status_idx" ON "flinks_transactions" USING btree ("user_id","match_status");
-CREATE INDEX IF NOT EXISTS "flinks_transactions_flinks_id_idx" ON "flinks_transactions" USING btree ("user_id","flinks_transaction_id");
 CREATE INDEX IF NOT EXISTS "meta_lead_ads_import_log_user_idx" ON "meta_lead_ads_import_log" USING btree ("user_id","created_at");
 CREATE INDEX IF NOT EXISTS "meta_lead_ads_import_log_lead_idx" ON "meta_lead_ads_import_log" USING btree ("meta_lead_id");
-CREATE INDEX IF NOT EXISTS "google_lsa_import_log_user_idx" ON "google_lsa_import_log" USING btree ("user_id","created_at");
-CREATE INDEX IF NOT EXISTS "google_lsa_import_log_lead_idx" ON "google_lsa_import_log" USING btree ("google_lsa_lead_id");
 CREATE INDEX IF NOT EXISTS "cron_ticks_started_idx" ON "cron_ticks" USING btree ("started_at");
 DO $$ BEGIN
   ALTER TABLE "quotes" ADD CONSTRAINT "quotes_client_id_clients_id_fk" FOREIGN KEY ("client_id") REFERENCES "public"."clients"("id") ON DELETE set null ON UPDATE no action;

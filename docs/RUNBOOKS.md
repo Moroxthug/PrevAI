@@ -91,11 +91,11 @@ pnpm --filter @workspace/api-server test:e2e            # legge .env.staging
 pnpm --filter @workspace/api-server qa:historic-pdf [quoteId]
 ```
 
-## 4. Migrazione v1 → v2 (runbook per V2-5, provato in V2-3)
+## 4. Migrazione v1 → v2 (runbook per V2-5, provato in V2-3, rigenerata in V2-5)
 
-File: `migrations/v2/0001_v1_to_v2_additive.sql` — generato con `drizzle-kit pull` (introspezione del DB v1) + `drizzle-kit generate` (schema v2) e poi trasformato in additivo/idempotente (`CREATE TABLE IF NOT EXISTS`, `ADD COLUMN IF NOT EXISTS`, `CREATE INDEX IF NOT EXISTS`, `ADD CONSTRAINT` e `CREATE TYPE` guardati da `duplicate_object`). Scartati: `DROP COLUMN incentives_catalog.regione/comune`, tutti i `SET/DROP DEFAULT` (i default QuoteAI in inglese non devono entrare in prod). Uniche modifiche a colonne esistenti: `incentives_catalog.percentuale_massima DROP NOT NULL` e `quotes.iva_percentuale numeric(5,2)→numeric(6,3)` (allargamenti; il codice v1 fa `Number()` su quel campo, verificato). `quotes.unsubscribe_token` ha `DEFAULT gen_random_uuid()::text` così le INSERT v1 continuano a funzionare.
+File: `migrations/v2/0001_v1_to_v2_additive.sql` — generato con `drizzle-kit pull` (introspezione del DB v1) + `drizzle-kit generate` (schema v2) e poi trasformato in additivo/idempotente (`CREATE TABLE IF NOT EXISTS`, `ADD COLUMN IF NOT EXISTS`, `CREATE INDEX IF NOT EXISTS`, `ADD CONSTRAINT` e `CREATE TYPE` guardati da `duplicate_object`). Scartati: tutti i `SET/DROP DEFAULT` su colonne esistenti. Unica modifica a una colonna esistente: `quotes.iva_percentuale numeric(5,2)→numeric(6,3)` (allargamento; il codice v1 fa `Number()` su quel campo, verificato). `incentives_catalog` non viene toccata (schema v2 = prod dopo V2-4). `quotes.unsubscribe_token` ha `DEFAULT gen_random_uuid()::text` così le INSERT v1 continuano a funzionare.
 
-Contenuto: 1 enum, 54 tabelle nuove, 57 colonne nuove su 9 tabelle esistenti, 52 FK, 82 indici. **Durata su staging (copia prod, 13 MB): 342 ms** in una transazione; la seconda esecuzione è un no-op. Finestra di manutenzione V2-5 dimensionata dal dump + promote Vercel, non dalla migrazione.
+Contenuto (versione V2-5, 2026-09-21): 1 enum, **43 tabelle nuove, 53 colonne nuove su 9 tabelle esistenti, 45 FK, 69 indici** (la versione V2-3 aveva 54 tabelle / 57 colonne / 52 FK / 82 indici: in meno le 11 tabelle delle integrazioni canadesi, le colonne `gst_hst_number`/`qst_number`/`pst_number`/`licence_number`/`etransfer_email`/`homestars_profile_url` di `business_profiles`, `province`/`city`/`income_tested` di `incentives_catalog`; in più `codice_fiscale`/`codice_sdi`/`rea_number`/`iban`/`secondary_review_url`; `contract_signers.tax_id`; `invoices.bank_transfer_self_reported_at`; `invoice_payments.method` default `bank_transfer`; `leads` senza `google_lsa_*`). **Durata su staging (copia prod, 13 MB): 409 ms** in una transazione; la seconda esecuzione è un no-op (solo NOTICE "already exists, skipping"; i due NOTICE "identifier … will be truncated" sui vincoli `assistant_*` sono innocui: Postgres tronca a 63 caratteri, stesso nome che drizzle si aspetta). Finestra di manutenzione V2-5 dimensionata dal dump + promote Vercel, non dalla migrazione.
 
 ```bash
 # 1. dump (§1)   2. migrazione in un'unica transazione:
@@ -106,7 +106,65 @@ psql "<url>" -At -c "select md5(string_agg(id::text||subtotale||(iva_percentuale
 ```
 Rollback: promuovere il deployment v1 precedente su Vercel — v1 gira sul DB migrato (provato: sessione, lista, apertura storico, preventivo manuale, generazione AI, sign-up, webhook WhatsApp firmato).
 
-**Da rifare in V2-5:** rigenerare il file dallo schema finale di V2-4 con lo stesso procedimento e confrontarlo con questo. V2-4 (2026-09-22) ha tolto dallo schema le colonne canadesi di `business_profiles` (sostituite da `codice_fiscale`, `codice_sdi`, `rea_number`, `iban`, `secondary_review_url`), le tabelle QuickBooks/Wave/Flinks/Financeit/Google LSA e le colonne `google_lsa_*` di `leads`, ha riportato `incentives_catalog` allo schema v1 (= prod: nessuna modifica attesa) e aggiunto `invoices.bank_transfer_self_reported_at` (al posto di `etransfer_self_reported_at`) e `contract_signers.tax_id`. Lo staging attuale è stato portato su questo schema con `migrations/v2/0002_v2-4_staging_delta.sql` (solo staging: da eliminare quando 0001 è rigenerata). Procedura di reset+rigenerazione: `drop database prevai_staging; create database prevai_staging template prevai_v1_baseline`, poi pull+generate; `drizzle-kit push` non è utilizzabile senza TTY (chiede conferma sulle colonne rinominate anche con `--force`).
+**Rigenerazione V2-5 (2026-09-21):** invece di ripetere pull+generate (prompt interattivo di drizzle-kit sulle rinomine), la 0001 di V2-3 è stata trasformata con uno script deterministico che applica le modifiche di schema di V2-4 (rimozione dei blocchi `CREATE TABLE`/FK/indici delle 11 tabelle canadesi, swap delle colonne di `business_profiles`, `incentives_catalog` intoccata, `leads` senza `google_lsa_*`, e-Transfer → bonifico, `contract_signers.tax_id`). Verifica: staging resettato dal template `prevai_v1_baseline` → nuova 0001 (409 ms) → `pg_dump --schema-only` **identico** allo staging V2-4 (0001+0002) a meno dell'ordine delle colonne → `schema-drift` 0 fatali (67 tabelle, 3 enum; 3 indici PK "extra" informativi, come sempre) → e2e **60/60**. `migrations/v2/0002_v2-4_staging_delta.sql` eliminata.
+
+## 5. Cutover v2 in produzione (fase V2-5)
+
+**Prerequisiti:** D2 decisa (finestra), branch `v2` pushato (aggiorna solo la *preview* Vercel), `main` = v1 in produzione, staging verde (§4). Tutto ciò che tocca la prod si fa nella finestra, nell'ordine sotto; ogni passo ha il suo "come si verifica".
+
+### 5.1 Variabili d'ambiente Vercel (progetto `prevai`) — prima della finestra
+
+Le 13 variabili v1 restano valide (`docs/ENV-INVENTORY.md`). Da **aggiungere** per v2 (Production + Preview), generate/lette dal titolare, mai scritte nei docs:
+
+| Variabile | Valore | Perché |
+|---|---|---|
+| `BETTER_AUTH_URL` | `https://prevai.it` | base dei callback auth (in preview il codice ricade su `PREVAI_BASE_URL`/`VERCEL_URL`) |
+| `TRUSTED_ORIGINS` | `https://prevai.it,https://www.prevai.it` | CORS + better-auth; senza, il login da `www` fallisce |
+| `CRON_SECRET` | `openssl rand -hex 32` | bearer del cron giornaliero `/api/cron/tick` (12:00 UTC, `vercel.json`): incentivi v1, follow-up, promemoria pro-forma |
+| `TOKEN_ENCRYPTION_KEY` | `openssl rand -hex 32` (64 hex) | AES-256-GCM per i token OAuth (calendario/Gmail) a riposo; il modulo lancia un errore alla prima cifratura se manca |
+| `STRIPE_CONNECT_WEBHOOK_SECRET` | da Stripe → Webhooks → endpoint `/api/payments/connect-webhook` | firma del webhook Connect (pagamenti pro-forma con carta). Se Connect non si attiva subito, impostare comunque un valore: l'endpoint rifiuta con 400, nessun crash |
+| `SUPABASE_PUBLIC_BUCKET` / `SUPABASE_PRIVATE_BUCKET` | `public-assets` / `private-assets` | default già uguali a v1: opzionali, impostarle solo per esplicitare |
+| `OPS_ALERT_EMAIL` | email del titolare | alert cron/automazioni (fallback: `ADMIN_EMAIL`) |
+| `SENTRY_DSN`, `VITE_SENTRY_DSN` | opzionali | error tracking (QuoteAI §1); senza, solo log Vercel |
+
+Da **verificare** (già presenti): `STRIPE_WEBHOOK_SECRET` deve corrispondere all'endpoint Stripe `https://prevai.it/api/payments/webhook` (v1 usava lo stesso path: nessun cambio se il path non cambia); `RESEND_WEBHOOK_SECRET` → `/api/webhooks/resend`. **Non impostare** `INCENTIVES_SOURCE_FETCH` (solo locale/e2e). Dopo aver impostato le variabili: `vercel env pull .env.production` locale per il controllo e rigenerare `docs/ENV-INVENTORY.md` (solo nomi).
+
+### 5.2 Preview v2 (fuori finestra, senza toccare il DB)
+
+1. `git push origin v2` → deploy preview. Con le env Production copiate in Preview, la preview **legge il DB di produzione non ancora migrato**: le tabelle v2 mancano, quindi la preview serve solo per frontend, login e lettura preventivi. **Non** creare dati dalla preview prima della migrazione.
+2. Verifica preview: `/api/healthz` 200; homepage e 3 URL SEO v1 (es. `/preventivo-ristrutturazione-bagno`) 200 con canonical `https://prevai.it/...`; login admin reale; lista preventivi; apertura di un preventivo storico; PDF.
+
+### 5.3 Finestra di manutenzione (ordine obbligatorio)
+
+```bash
+PG=/c/Users/Admin/pg17/pgsql/bin; export PGSSLMODE=require
+URL="postgresql://postgres.<ref>:<pw>@aws-0-eu-west-1.pooler.supabase.com:5432/postgres"   # session mode, §1
+# 1. dump fresco + verifica
+"$PG/pg_dump.exe" --dbname="$URL" --format=custom --no-owner --no-privileges --schema=public --file="C:/Users/Admin/PrevAI-backups/prevai-prod-pre-v2-$(date +%Y%m%d-%H%M).dump"
+"$PG/pg_restore.exe" --list C:/Users/Admin/PrevAI-backups/prevai-prod-pre-v2-*.dump | grep -c "TABLE DATA"     # 24
+# 2. conteggi + checksum PRIMA
+"$PG/psql.exe" "$URL" -At -f docs/sql/reconcile.sql > C:/Users/Admin/PrevAI-backups/reconcile-before.txt
+# 3. migrazione (una transazione, ~0,5 s; v1 resta live: è additiva)
+"$PG/psql.exe" "$URL" -v ON_ERROR_STOP=1 -1 -f migrations/v2/0001_v1_to_v2_additive.sql
+# 4. conteggi + checksum DOPO → devono coincidere (iva_percentuale normalizzata nella query)
+"$PG/psql.exe" "$URL" -At -f docs/sql/reconcile.sql > C:/Users/Admin/PrevAI-backups/reconcile-after.txt
+diff C:/Users/Admin/PrevAI-backups/reconcile-before.txt C:/Users/Admin/PrevAI-backups/reconcile-after.txt   # nessuna differenza
+# 5. drift v2 ↔ prod (0 fatali)
+cd lib/db && DATABASE_URL="$URL" pnpm exec tsx scripts/schema-drift.ts
+```
+6. Smoke **v1 ancora live** sul DB migrato (login, lista, apertura preventivo, generazione AI di un preventivo di prova da cancellare poi).
+7. Smoke **preview v2** sul DB migrato: login admin, preventivi storici, PDF, `/p/:id` di un preventivo con incentivi, widget `GET /api/public/incentives`, creazione di un preventivo manuale di prova (poi archiviarlo).
+8. **Promote**: Vercel → Deployments → deployment preview di `v2` → *Promote to Production* (oppure `vercel promote <url>`). Non fare merge in `main`: resta v1 per il rollback finché V2-6 non chiude.
+9. Subito dopo: `https://prevai.it/api/healthz` e `/api/healthz/ops` 200; login; un preventivo storico; `curl -H "Authorization: Bearer $CRON_SECRET" https://prevai.it/api/cron/tick` (idempotente: la prima esecuzione del tick v2 crea la riga `cron_ticks`); Stripe → Webhooks → *Send test event* su entrambi gli endpoint; Vercel → Settings → Cron Jobs mostra `/api/cron/tick`.
+10. Avviso agli utenti (Resend) che la nuova versione è online. Monitoraggio 48 h: Vercel Logs filtrati `level:error`, `/api/healthz/ops`, Sentry se attivo.
+
+### 5.4 Rollback (pre-scritto)
+
+- **Applicazione**: Vercel → Deployments → ultimo deployment di `main` (v1, commit `6dbe45de4` o successivo) → *Promote to Production*. Tempo: < 1 min. v1 gira sul DB migrato (provato in V2-3: sessione, lista, storico, manuale, AI, sign-up, webhook WhatsApp). Le env aggiunte in 5.1 sono ignorate da v1.
+- **Database**: **nessuna azione**. La migrazione è additiva: v1 non vede le tabelle/colonne nuove. Non fare `pg_restore` del dump (perderebbe i dati creati nel frattempo); il dump serve solo per disastro.
+- **Dati creati da v2 durante la finestra** (pro-forma, contratti, cantieri) restano nelle tabelle v2 e riappaiono al prossimo tentativo di cutover.
+- Dopo il rollback: annotare in `PIANO-AZIONE.md` (Diario) cosa è andato storto; il prossimo tentativo riparte da 5.3 punto 7 (la migrazione non va ripetuta, ma rieseguirla è un no-op).
+
 
 
 ---
