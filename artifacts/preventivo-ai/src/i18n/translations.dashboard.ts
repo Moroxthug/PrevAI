@@ -1794,6 +1794,7 @@ export const dashboardTranslations: Record<Lang, Record<string, string>> = {
     "dashboard.settings.tabs.security": "Sicurezza",
     "dashboard.settings.tabs.sdi": "Fatture elettroniche",
     "dashboard.nav.amministrazione": "Amministrazione",
+    "dashboard.nav.fisco": "Fisco",
     "dashboard.settings.security.twoFactorTitle": "Autenticazione a due fattori",
     "dashboard.settings.security.twoFactorDescription": "Aggiungi un livello di protezione in più al tuo account con un'app di autenticazione.",
     "dashboard.settings.security.enable": "Attiva l'autenticazione a due fattori",
