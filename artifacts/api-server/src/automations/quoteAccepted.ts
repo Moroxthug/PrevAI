@@ -18,9 +18,9 @@ registerAutomation("quote.accepted", async (run) => {
   const [owner] = await db.select({ email: authUsersTable.email, name: authUsersTable.name }).from(authUsersTable).where(eq(authUsersTable.id, quote.userId));
 
   const settings = { ...DEFAULT_AUTOMATION_SETTINGS, ...(profile?.automationSettings ?? {}) };
-  const clientName = quote.acceptedByName || (quote.clientData as QuoteClientData)?.nome || "The customer";
-  const quoteNumber = quote.numeroPreventivoData || `No. ${quote.id.slice(0, 4).toUpperCase()}`;
-  const totale = new Intl.NumberFormat("en-CA", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(Number(quote.totale));
+  const clientName = quote.acceptedByName || (quote.clientData as QuoteClientData)?.nome || "Il cliente";
+  const quoteNumber = quote.numeroPreventivoData || `N. ${quote.id.slice(0, 4).toUpperCase()}`;
+  const totale = new Intl.NumberFormat("it-IT", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(Number(quote.totale));
   const quoteUrl = `${getBaseUrl()}/dashboard/quotes/${quote.id}`;
 
   await writeAudit({
@@ -59,8 +59,8 @@ registerAutomation("quote.accepted", async (run) => {
     await createNotification({
       userId: quote.userId,
       type: "quote_accepted",
-      title: `${clientName} accepted quote ${quoteNumber}`,
-      body: result.contractId ? `Total ${totale}. We drafted the contract — review, sign and send it.` : `Total ${totale}. Next: turn it into a signed contract.`,
+      title: `${clientName} ha accettato il preventivo ${quoteNumber}`,
+      body: result.contractId ? `Totale € ${totale}. Abbiamo preparato la bozza del contratto — rivedila, firmala e inviala.` : `Totale € ${totale}. Prossimo passo: trasformalo in un contratto firmato.`,
       link: result.contractId ? `/dashboard/contracts/${result.contractId}` : `/dashboard/quotes/${quote.id}`,
       entityType: "quote",
       entityId: quote.id,
@@ -78,7 +78,7 @@ registerAutomation("quote.accepted", async (run) => {
         clientName,
         quoteNumber,
         totale,
-        acceptedAt: (quote.acceptedAt ?? new Date()).toLocaleString("en-CA", { dateStyle: "long", timeStyle: "short" }),
+        acceptedAt: (quote.acceptedAt ?? new Date()).toLocaleString("it-IT", { dateStyle: "long", timeStyle: "short" }),
         quoteUrl,
       });
       result.emailed = true;

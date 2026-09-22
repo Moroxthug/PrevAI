@@ -313,7 +313,7 @@ export const SECTORS: Record<string, SectorData> = {
     h2UseCases: "Lavori tipici per carpentieri",
     useCases: [
       "Cancelli e recinzioni in ferro e acciaio",
-      "Strutture metalliche e capriati",
+      "Strutture metalliche e capriate",
       "Pensiline e tettoie in ferro",
       "Scale interne ed esterne in ferro",
       "Balconi e ringhiere in acciaio inox",

@@ -1467,7 +1467,7 @@ const BLOG_CONTENT: Record<string, string> = {
 `,
 
   "costo-impianto-idraulico-appartamento": `
-<p>Rifacere l'impianto idraulico di un appartamento è uno degli interventi più invasivi e costosi di una ristrutturazione. Eppure molti proprietari arrivano al preventivo senza un'idea chiara di cosa aspettarsi. Questa guida fornisce dati concreti per orientarsi tra le diverse voci di costo.</p>
+<p>Rifare l'impianto idraulico di un appartamento è uno degli interventi più invasivi e costosi di una ristrutturazione. Eppure molti proprietari arrivano al preventivo senza un'idea chiara di cosa aspettarsi. Questa guida fornisce dati concreti per orientarsi tra le diverse voci di costo.</p>
 
 <h2>Costo rifacimento completo impianto idrico per tipologia di tubo</h2>
 <p>La scelta del materiale incide in modo significativo sul preventivo finale. Esistono tre opzioni principali nel mercato italiano 2026:</p>
@@ -1579,7 +1579,7 @@ const BLOG_CONTENT: Record<string, string> = {
 <p>Se il sottofondo non è a livello o è da costruire, il massetto è indispensabile:</p>
 <ul>
   <li><strong>Massetto tradizionale (sabbia + cemento)</strong>: 15–25 €/mq, spessore 4–6cm, maturazione 28 giorni prima della posa</li>
-  <li><strong>Autolitante (anidrite)</strong>: 18–30 €/mq, più planare, maturazione 14 giorni. Ideale per riscaldamento a pavimento</li>
+  <li><strong>Autolivellante (anidrite)</strong>: 18–30 €/mq, più planare, maturazione 14 giorni. Ideale per riscaldamento a pavimento</li>
   <li><strong>Rasante di livellamento</strong> (max 10mm): 8–15 €/mq, per piccole irregolarità senza demolire il massetto esistente</li>
 </ul>
 
@@ -2460,7 +2460,7 @@ const BLOG_CONTENT: Record<string, string> = {
   <li>Silossanica per esterno: 12–25 €/litro</li>
   <li>Ai silicati: 18–40 €/litro</li>
 </ul>
-<p>Per un imbianchino professionista, la differenza tra un prodotto da 4 €/litro e uno da 12 €/litro può essere 180€ su 100mq di parete. Ma la pittura di qualità dura il doppio — il risparmio è nella mano d'opera non rifatta. Un <a href="/preventivi/imbianchino/">imbianchino esperto</a> sa sempre consigliare il prodotto giusto per ogni superfice.</p>
+<p>Per un imbianchino professionista, la differenza tra un prodotto da 4 €/litro e uno da 12 €/litro può essere 180€ su 100mq di parete. Ma la pittura di qualità dura il doppio — il risparmio è nella mano d'opera non rifatta. Un <a href="/preventivi/imbianchino/">imbianchino esperto</a> sa sempre consigliare il prodotto giusto per ogni superficie.</p>
 `,
 
   "tipi-cavi-elettrici-impianti-civili": `
@@ -2753,7 +2753,7 @@ const BLOG_CONTENT: Record<string, string> = {
 <h2>Lista completa attrezzatura essenziale</h2>
 
 <h3>Rulli e pennelli</h3>
-<p>Il rullo è lo strumento che usa l'80% del tempo di lavoro. Non lesiniare:</p>
+<p>Il rullo è lo strumento che usa l'80% del tempo di lavoro. Non lesinare:</p>
 <ul>
   <li>Rullo in microfibra 25cm (per pitture lisce su cartongesso e intonaco civile): 8–20€ professionale vs 3€ da grande distribuzione. La differenza? Zero pelucchi, resa uniforme</li>
   <li>Rullo in lana (per pitture al quarzo e superfici ruvide): 10–25€</li>

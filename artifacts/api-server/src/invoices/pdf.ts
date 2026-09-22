@@ -135,7 +135,7 @@ export async function buildInvoicePdf(inv: Invoice, payments: InvoicePayment[] =
       ],
       margin: [48, 20, 48, 0],
     }),
-    info: { title: `${invoiceTitle(inv, lang)} ${inv.number}`, author: inv.contractor.name, creator: "QuoteAI" },
+    info: { title: `${invoiceTitle(inv, lang)} ${inv.number}`, author: inv.contractor.name, creator: "PrevAI" },
   };
 
   const buffer = await getPdfmake().createPdf(def).getBuffer();

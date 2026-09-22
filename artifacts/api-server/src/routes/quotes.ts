@@ -18,7 +18,16 @@ import {
   RegenerateQuoteBody,
 } from "@workspace/api-zod";
 import { openai } from "@workspace/integrations-openai-ai-server";
-import { REGIONAL_PRICING_GUIDANCE, DESCRIPTION_QUALITY_GUIDANCE } from "../lib/generateQuoteFromText.js";
+import {
+  AI_PROMPT,
+  REGIONAL_PRICING_GUIDANCE,
+  DESCRIPTION_QUALITY_GUIDANCE,
+  CAPITOLATO_CONTEXT,
+  COMMERCIAL_OFFER_CONTEXT,
+  CAPITOLATO_REWRITE_PROMPT,
+  ENRICH_VOCI_PROMPT,
+  DEFAULT_PAYMENT_TERMS,
+} from "../lib/generateQuoteFromText.js";
 import type { QuoteChapter, QuoteDiscount, QuoteCompanySnapshot, QuoteClientData, QuoteItem } from "@workspace/db";
 import {
   parseComputoMetrico, isComputoMetrico,
@@ -96,81 +105,6 @@ async function tryTrialUnlock(
   return true;
 }
 
-const AI_PROMPT = `You are an expert consultant for professional quotes/estimates in the Canadian market (tradespeople, construction, building systems, technical services).
-
-You must turn a free-text description into a professional ITEMIZED COST ANALYSIS AND ESTIMATE, structured into chapters/sections, consistent with the owner's price catalog and with realistic 2026 Canadian market rates. Write ALL text content (descriptions, titles, notes) in English.
-
-CORE RULES:
-1. Reference and catalog pricing (PRICE LIST):
-   - If a "USER'S CUSTOM PRICE LIST" is provided, you MUST prioritize the unit prices defined there for all matching or related work items.
-   - Do not invent new unit prices if the line item matches something already in the custom price list.
-   - If a work item isn't in the custom price list, use realistic 2026 Canadian market rates (in CAD):
-     * painter: $4–10/sqft for painting, $12–20/sqft for specialty work
-     * electrician: $60–100/hour labour
-     * plumber: $65–110/hour labour
-     * general construction: rates consistent with regional Canadian market pricing
-     * general labourer/mason: $45–70/hour
-     * carpenter/finish carpentry: $55–85/hour
-2. If specific data is missing: make realistic assumptions, do NOT ask clarifying questions. If "PROPERTY MEASUREMENTS AND DIMENSIONS" are provided, use them rigorously and mathematically to calculate quantities (sqft, linear ft, etc.).
-3. Organize the work into logical CHAPTERS/SECTIONS (A, B, C, D, …) with professional titles (e.g. "Site Setup", "Demolition", "New Construction Work", "Electrical System", etc.)
-4. Each chapter contains detailed line ITEMS with professional units of measure (sqft, linear ft, cubic ft, kg, hours, lump sum, each, kW, etc.)
-5. Calculate a subtotal for each chapter. The SUMMARY is derived automatically from the chapters array (letter + title + subtotal + note); no separate field is needed.
-6. Apply a discount ONLY if the user explicitly requests one in their description; otherwise always set percentage: 0
-7. Payment terms must follow Canadian norms, NOT a large upfront deposit: a small deposit of 10-15% on signing, one or two progress payments tied to milestones (e.g. on material delivery/start of work, and on substantial completion) making up the bulk of the total, and a final holdback of 10-15% released only after the client has inspected and approved the completed work. Never default to a deposit larger than 15%.
-8. Do not assume a fixed sales-tax rate — Canadian GST/HST varies by province (roughly 5–15%); leave the tax percentage at 0 unless the user specifies a rate or province
-9. The second title line must describe the project and job-site location
-10. numero_preventivo_data: DO NOT GENERATE — the server assigns the quote number automatically. Return an empty string.
-11. CRITICAL RULE — ZERO OMISSIONS: if the user provides a detailed description with many NUMBERED or BULLETED items, every single item must become its own distinct line in the quote. Do NOT summarize, do NOT merge multiple items into one, do NOT skip or omit items. Create MULTIPLE CHAPTERS if needed to fit everything. Every item the user lists must have its own description, unit of measure, quantity, unit price, and total.
-12. IF the user attaches a document with a bill of quantities or item list: transform the document 1:1. Every line of the document becomes one item. Do NOT invent new items, do NOT merge similar items. Keep the quantities and unit prices from the document.
-13. descrizione_generale must be a real 2-4 sentence plain-English summary of the project scope (what is being done, where, and the general approach) — never a placeholder or a one-line restatement of the title.
-14. note must be a short client-facing closing paragraph that always covers: the quote's validity period (e.g. 30 days), a one-line statement of what is NOT included (permits, unforeseen conditions behind walls/floors, work not explicitly listed above, etc.), and a brief workmanship-warranty statement (e.g. "Workmanship is guaranteed for 1 year from completion; manufacturer warranties apply to materials and fixtures.").
-
-OUTPUT — VALID JSON ONLY, no extra text:
-{
-  "titolo_riga1": "Analisi Economica e Computo Metrico Prezzato",
-  "titolo_riga2": "[Brief description] project – [City] ([Province])",
-  "numero_preventivo_data": "",
-  "cliente": { "nome": "", "indirizzo": "" },
-  "descrizione_generale": "2-4 sentence plain-English summary of the project scope, approach, and location.",
-  "capitoli": [
-    {
-      "lettera": "A",
-      "titolo": "Site Setup",
-      "osservazione": "Standard item",
-      "voci": [
-        {
-          "descrizione": "Complete site setup",
-          "um": "lump sum",
-          "quantita": 1,
-          "prezzo_unitario": 2500.00,
-          "totale": 2500.00
-        }
-      ],
-      "subtotale": 2500.00
-    }
-  ],
-  "sconto": { "percentuale": 0, "importo_scontato": 0 },
-  "condizioni_pagamento": [
-    "15% deposit on contract signing",
-    "35% on delivery of materials and start of work",
-    "35% on substantial completion",
-    "15% final balance on completion and client walkthrough"
-  ],
-  "subtotale": 0,
-  "iva_percentuale": 0,
-  "iva_valore": 0,
-  "totale": 0,
-  "note": "Quote valid for 30 days from the date of issue. Excludes permits, unforeseen conditions behind existing walls/floors, and any work not explicitly listed above. Workmanship is guaranteed for 1 year from completion; manufacturer warranties apply to materials and fixtures."
-}
-
-CALCULATIONS:
-- subtotale = sum of all chapter subtotals
-- If sconto > 0: imponibile_scontato = subtotale * (1 - percentuale/100); iva_valore = imponibile_scontato * iva_percentuale/100; totale = imponibile_scontato + iva_valore
-- If sconto = 0: iva_valore = subtotale * iva_percentuale/100; totale = subtotale + iva_valore
-- sconto.importo_scontato = subtotale after applying the discount (before tax)
-
-VERY IMPORTANT: output PURE JSON ONLY, no explanation, no markdown.`;
-
 type QuoteRow = typeof quotesTable.$inferSelect;
 
 type AttachmentRow = typeof quoteAttachmentsTable.$inferSelect;
@@ -191,7 +125,7 @@ export function serializeQuoteVariant(v: VariantRow, _province: string | null = 
     subtotale: Number(v.subtotale),
     ivaPercentuale: Number(v.ivaPercentuale),
     ivaValore: Number(v.ivaValore),
-    /** Phase 71: statutory components (GST/QST…) or one generic "Tax" line; sums to ivaValore. */
+    /** Righe IVA (IVA22/IVA10/IVA4/RC/SP/ESENTE); la somma coincide con ivaValore. */
     taxLines: quoteTaxLines(v.sconto && typeof (v.sconto as QuoteDiscount).importoScontato === "number" ? (v.sconto as QuoteDiscount).importoScontato : Number(v.subtotale), Number(v.ivaPercentuale), Number(v.ivaValore)),
     totale: Number(v.totale),
     createdAt: v.createdAt.toISOString(),
@@ -223,10 +157,10 @@ export function serializeQuote(q: QuoteRow, attachments?: AttachmentRow[], varia
     subtotale: Number(q.subtotale),
     ivaPercentuale: Number(q.ivaPercentuale),
     ivaValore: Number(q.ivaValore),
-    /** Phase 71: statutory components (GST/QST…) or one generic "Tax" line; sums to ivaValore. */
+    /** Righe IVA (IVA22/IVA10/IVA4/RC/SP/ESENTE); la somma coincide con ivaValore. */
     taxLines: quoteTaxLines((q.sconto as QuoteDiscount | null)?.importoScontato ?? Number(q.subtotale), Number(q.ivaPercentuale), Number(q.ivaValore)),
-    /** Language the customer-facing documents are produced in (client preference, else French in Québec). Phase 71. */
-    documentLanguage: province === "QC" ? "fr" : "en",
+    /** Lingua dei documenti rivolti al cliente: sempre italiano. */
+    documentLanguage: "it",
     totale: tot,
     prezzoMinimo: Math.round(tot * 0.9 * 100) / 100,
     prezzoMassimo: Math.round(tot * 1.25 * 100) / 100,
@@ -431,16 +365,16 @@ function buildPastQuotesContext(
       const caps = q.capitoli as QuoteChapter[];
       const voci = caps.flatMap(c => c.voci).slice(0, 8);
       const prezziLines = voci
-        .map(v => `  - ${v.descrizione} (${v.um}): $${v.prezzoUnitario}/unit`)
+        .map(v => `  - ${v.descrizione} (${v.um}): ${v.prezzoUnitario}€/unità`)
         .join("\n");
-      const totale = new Intl.NumberFormat("en-CA", { style: "currency", currency: "CAD" }).format(Number(q.totale));
-      return `Job: "${q.rawInput.slice(0, 120).replace(/\n/g, " ")}"\nTotal: ${totale}\nPrices applied:\n${prezziLines}`;
+      const totale = new Intl.NumberFormat("it-IT", { style: "currency", currency: "EUR" }).format(Number(q.totale));
+      return `Lavoro: "${q.rawInput.slice(0, 120).replace(/\n/g, " ")}"\nTotale: ${totale}\nPrezzi applicati:\n${prezziLines}`;
     });
 
   if (examples.length === 0) return "";
 
-  return `USER'S PAST QUOTES (use as reference for pricing and style consistency):
-These are the same user's previous quotes. Stay consistent with the unit prices and types of work already used, adapting them to the new job.
+  return `PREVENTIVI PRECEDENTI DELL'UTENTE (usa come riferimento per coerenza di prezzi e stile):
+Questi sono preventivi già emessi dallo stesso utente. Mantieni coerenza con i prezzi unitari e le tipologie di lavorazione già usate, adattandoli al nuovo lavoro.
 
 ${examples.join("\n\n---\n\n")}`;
 }
@@ -598,11 +532,11 @@ Job description: ${rawInput}`;
     }
 
     if (docTexts.length > 0 && !isStructured && !isTabular && !isNumbered) {
-      userMessage += `\n\n\nCONTENT EXTRACTED FROM ATTACHED DOCUMENTS:
+      userMessage += `\n\n\nCONTENUTO ESTRATTO DAI DOCUMENTI ALLEGATI:
 ${docTexts.join("\n\n---\n\n")}
 
-MANDATORY INSTRUCTION ABOUT ATTACHED DOCUMENTS:
-The user has attached a document with a detailed itemized breakdown (bill of quantities). Every single item and every single element listed in the document must become a separate line in the quote. Do NOT summarize, do NOT merge, do NOT omit anything. Transform the document 1:1 into work items: take each element, keep its description, unit of measure, quantity, and unit price, and insert it as a separate item in the appropriate chapter. If necessary, create MULTIPLE CHAPTERS to hold all the items. Do not apply discounts or changes to the unit prices provided in the document. Write all output text in English.`;
+ISTRUZIONE OBBLIGATORIA SUI DOCUMENTI ALLEGATI:
+L'utente ha allegato un documento con un computo metrico dettagliato. Ogni singola voce e ogni singolo elemento elencato nel documento deve diventare una riga distinta nel preventivo. NON riassumere, NON accorpare, NON omettere. Trasforma il documento 1:1 in voci di lavoro: prendi ogni elemento, mantieni descrizione, unità di misura, quantità e prezzo unitario, e inseriscilo come voce separata nel capitolo appropriato. Se necessario, crea PIÙ CAPITOLI per contenere tutte le voci. Non applicare sconti o modifiche ai prezzi unitari forniti nel documento.`;
     }
 
     // Fetch business profile, recent quotes, catalog items, and price intelligence in parallel
@@ -665,84 +599,67 @@ The user has attached a document with a detailed itemized breakdown (bill of qua
     // Build catalog context if user has custom price items
     const relevantCatalogItems = findRelevantCatalogItems(rawInput, catalogItems, 20);
     const catalogContext = relevantCatalogItems.length > 0
-      ? `USER'S CUSTOM PRICE LIST (use these prices as the PRIORITY reference when the work items match — adjust quantities to the requested job):
+      ? `LISTINO PREZZI PERSONALIZZATO DELL'UTENTE (usa questi prezzi come riferimento PRIORITARIO quando le lavorazioni corrispondono — adatta le quantità al lavoro richiesto):
 ${relevantCatalogItems
-  .map(item => `  - ${item.nome} (${item.um}): $${Number(item.prezzoUnitario).toFixed(2)}/unit${item.categoria ? ` [${item.categoria}]` : ""}${item.note ? ` — ${item.note}` : ""}`)
+  .map(item => `  - ${item.nome} (${item.um}): ${Number(item.prezzoUnitario).toFixed(2)}€/unità${item.categoria ? ` [${item.categoria}]` : ""}${item.note ? ` — ${item.note}` : ""}`)
   .join("\n")}
 
-When you use a price-list item, apply the exact unit price or a very close one. For work items not present in the price list, use standard market prices. Write all output text in English.`
+Quando usi una voce del listino, applica il prezzo unitario esatto o molto simile. Per lavorazioni non presenti nel listino, usa i prezzi di mercato standard.`
       : "";
 
     // Build misure context if provided
     let misureContext = "";
     if (misure && typeof misure === "object" && Object.keys(misure).length > 0) {
-      misureContext = `PROPERTY MEASUREMENTS AND DIMENSIONS (binding for quantity calculations):
+      misureContext = `MISURE E DIMENSIONI DELL'IMMOBILE (vincolanti per il calcolo delle quantità):
 ${Object.entries(misure)
   .map(([key, val]) => `  - ${key}: ${val}`)
   .join("\n")}
 
-Use these exact measurements to mathematically calculate the quantities of the individual work items requested in the quote. Do not invent arbitrary quantities that contradict these dimensions.`;
+Usa queste misure esatte per calcolare matematicamente le quantità delle singole lavorazioni richieste nel preventivo. Non inventare quantità arbitrarie che contraddicono queste dimensioni.`;
     }
 
     // Build price intelligence context from user's uploaded documents (activated when ≥3 docs processed)
     const docCount = Number(processedDocCount[0]?.cnt ?? 0);
     const priceIntelContext = docCount >= 3 && priceIntelligenceItems.length > 0
-      ? `PERSONALIZED PRICE INTELLIGENCE (extracted from ${docCount} of the user's real quotes — use these prices as guidance for the user's region and types of work):
+      ? `PRICE INTELLIGENCE PERSONALIZZATA (estratta da ${docCount} preventivi reali dell'utente — usa questi prezzi come guida per la zona e le tipologie di lavoro dell'utente):
 ${priceIntelligenceItems
   .slice(0, 30)
-  .map(item => `  - ${item.workType}${item.zone ? ` [${item.zone}]` : ""}: ${Number(item.avgPrice ?? 0).toFixed(2)}${item.unit ? `/${item.unit}` : ""}`)
+  .map(item => `  - ${item.workType}${item.zone ? ` [${item.zone}]` : ""}: ${Number(item.avgPrice ?? 0).toFixed(2)}€${item.unit ? `/${item.unit}` : ""}`)
   .join("\n")}
 
-These prices reflect the real values applied by the user in their local market. Where available, the geographic zone is shown in square brackets. Use them as the priority reference when the requested work items and zone match.`
+Questi prezzi riflettono i valori reali applicati dall'utente nel suo mercato locale. Dove disponibile, la zona geografica è indicata tra parentesi quadre. Usali come riferimento prioritario quando le lavorazioni e la zona richieste corrispondono.`
       : "";
 
     const hasImages = imageDataUrls.length > 0;
 
     const imagesContext = hasImages
-      ? `INSTRUCTIONS FOR THE ATTACHED IMAGES:
-The user has attached ${imageDataUrls.length === 1 ? "one photo" : `${imageDataUrls.length} photos`} to support the request. You MUST analyze them carefully and extract every piece of information useful for the quote:
-- Handwritten notes (including cursive): TRANSCRIBE AND INTERPRET measurements, quantities, work descriptions, materials, brands, models, addresses, client names
-- Sketches and technical drawings: infer dimensions, layout, type of job
-- Job-site or room photos: identify surfaces, condition of the space, work needed, any issues
-- Product labels/photos: extract brand, model, codes, technical specs
-- Documents, floor plans, itemized breakdowns: use the numbers and line items as a basis
-NEVER REFUSE to read or interpret an image: the tradesperson's notes are the main working tool. If something is illegible, make a reasonable assumption and proceed.
-Always combine the information extracted from the images with the user's text description to generate the most complete and accurate quote possible.
-REMEMBER: the output must be ONLY valid JSON per the given schema — NEVER free text, NEVER refusals, NEVER explanations. Write all output text in English.`
+      ? `ISTRUZIONI PER LE IMMAGINI ALLEGATE:
+L'utente ha allegato ${imageDataUrls.length === 1 ? "una foto" : `${imageDataUrls.length} foto`} a supporto della richiesta. DEVI analizzarle attentamente ed estrarne ogni informazione utile per il preventivo:
+- Appunti scritti a mano (anche in corsivo): TRASCRIVI E INTERPRETA misure, quantità, descrizioni di lavori, materiali, marche, modelli, indirizzi, nomi clienti
+- Schizzi e disegni tecnici: deduci dimensioni, layout, tipologia di intervento
+- Foto di cantiere o di ambienti: identifica superfici, stato dei luoghi, lavorazioni necessarie, eventuali criticità
+- Etichette/foto di prodotti: estrai marca, modello, codici, caratteristiche tecniche
+- Documenti, planimetrie, computi: usa i numeri e le voci come base
+NON RIFIUTARE MAI di leggere o interpretare un'immagine: gli appunti dell'artigiano sono lo strumento principale di lavoro. Se un dato è illeggibile, fai un'assunzione ragionevole e procedi.
+Combina sempre le informazioni estratte dalle immagini con la descrizione testuale dell'utente per generare il preventivo più completo e accurato possibile.
+RICORDA: l'output deve essere SOLO JSON valido secondo lo schema indicato — MAI testo libero, MAI rifiuti, MAI spiegazioni.`
       : "";
 
     const targetTotalContext = targetTotalEur
-      ? `MANDATORY TOTAL AMOUNT:
-The quote MUST have a total (before any provincial/GST-HST sales tax) of APPROXIMATELY ${targetTotalEur.toLocaleString("en-CA")} CAD. This is an absolute constraint.
-Distribute the unit prices of ALL items so their sum respects this amount. Do not ignore this constraint.
-If the attached document has many items, keep them all and adjust prices proportionally to reach the required total.`
+      ? `IMPORTO TOTALE OBBLIGATORIO:
+Il preventivo DEVE avere un totale LORDO (IVA inclusa al 22%) di CIRCA €${targetTotalEur.toLocaleString("it-IT")}. Questo è un vincolo assoluto.
+Il subtotale imponibile deve essere circa €${Math.round(targetTotalEur / 1.22).toLocaleString("it-IT")}.
+Distribuisci i prezzi unitari di TUTTE le voci in modo che la somma rispetti questo importo. Non ignorare questo vincolo.
+Se il documento allegato ha molte voci, mantienile tutte e adegua i prezzi proporzionalmente per arrivare al totale richiesto.`
       : "";
 
     const templateStyleContext =
       templateId === "arosio"
-        ? `PROFESSIONAL TECHNICAL SPECIFICATION MODE:
-For every work item, write the description in DETAILED TECHNICAL SPECIFICATION style with AT LEAST 4-6 technical lines in formal English:
-- Describe precisely the operations performed and the execution methods (work sequence, techniques, order of phases)
-- Specify materials, products, and components with technical characteristics and applicable Canadian/North American standards (CSA, NBC/National Building Code, provincial codes, ULC, etc.)
-- State the quality, strength, class, or certification requirements for the materials
-- Explicitly state what is INCLUDED in the item (supply, labour, loading, transport, disposal)
-- State any relevant EXCLUSIONS and/or costs to be borne by the client
-- Use professional construction/trades terminology
-Example: "Demolition and removal of existing ceramic tile flooring, including detachment by mechanical chipping and removal of the setting bed to an average thickness of 5 cm. Includes loading, transport, and disposal of debris at an authorized landfill in accordance with applicable provincial waste regulations. Excludes structural subfloor repair and waterproofing work."
+        ? `${CAPITOLATO_CONTEXT}
 
-Always set titolo_riga1 = "Detailed Cost Analysis and Itemized Estimate".`
+Imposta sempre titolo_riga1 = "Analisi Economica e Computo Metrico Prezzato".`
         : templateId === "mariagrazia"
-        ? `ELEGANT COMMERCIAL PROPOSAL MODE:
-Write the quote in PROFESSIONAL and PERSUASIVE COMMERCIAL PROPOSAL style:
-- Item descriptions must be CLEAR, CONCISE, and WELL WRITTEN (1-3 lines per item, 4 max)
-- Use a professional yet engaging tone, suited to presenting a commercial offer to a private client
-- Emphasize service QUALITY, EXPERIENCE, and ATTENTION TO DETAIL
-- Organize chapters logically and make them easy to read
-- Use descriptive, commercial chapter titles (e.g. "Site Preparation and Setup", "Main Works", "Quality Finishes", "Cleanup and Handover")
-- Set titolo_riga1 = "Commercial Proposal"
-- Include a closing note highlighting the quality of the service, the company's experience, and the warranty on the work
-- Payment terms: propose 2-3 simple, clear installments (e.g. 50% deposit on signing, 50% balance on completion)
-Write all output text in English.`
+        ? COMMERCIAL_OFFER_CONTEXT
         : null;
 
     let aiData: {
@@ -881,7 +798,7 @@ Write all output text in English.`
       let subTot = chaptersRaw.reduce((sum, c) => sum + c.subtotale, 0);
 
       if (targetTotalEur && subTot > 0) {
-        const ivaRate = 0.13;
+        const ivaRate = 0.22;
         const targetSubtotale = targetTotalEur / (1 + ivaRate);
         const scaleFactor = targetSubtotale / subTot;
         req.log.info({ scaleFactor, rawSubtotale: subTot, targetSubtotale }, "Numbered computo: applying price scaling to hit target total");
@@ -899,24 +816,19 @@ Write all output text in English.`
 
       chapters = await enrichVociDescrizioni(chapters);
 
-      const iva = Math.round(subTot * 13) / 100;
+      const iva = Math.round(subTot * 22) / 100;
       const totale = Math.round((subTot + iva) * 100) / 100;
 
       aiData = {
         capitoli: chapters,
         subtotale: subTot,
-        iva_percentuale: 13,
+        iva_percentuale: 22,
         iva_valore: iva,
         totale,
-        descrizione_generale: "Itemized quote generated from the uploaded price list document.",
+        descrizione_generale: "Preventivo a voci generato dal listino prezzi caricato.",
         note: "Preventivo valido 30 giorni",
         sconto: { percentuale: 0, importo_scontato: 0 },
-        condizioni_pagamento: [
-          "15% deposit upon contract signing",
-          "35% upon delivery of materials and start of work",
-          "35% upon substantial completion",
-          "15% final balance upon completion and client walkthrough",
-        ],
+        condizioni_pagamento: DEFAULT_PAYMENT_TERMS,
         titolo_riga1: "Analisi Economica e Computo Metrico Prezzato",
         titolo_riga2: "",
         numero_preventivo_data: "",
@@ -954,7 +866,7 @@ Write all output text in English.`
       let subTot = chaptersRaw.reduce((sum, c) => sum + c.subtotale, 0);
 
       if (targetTotalEur && subTot > 0) {
-        const ivaRate = 0.13;
+        const ivaRate = 0.22;
         const targetSubtotale = targetTotalEur / (1 + ivaRate);
         const scaleFactor = targetSubtotale / subTot;
         req.log.info({ scaleFactor, rawSubtotale: subTot, targetSubtotale }, "Tabular computo: applying price scaling to hit target total");
@@ -972,24 +884,19 @@ Write all output text in English.`
 
       chapters = await enrichVociDescrizioni(chapters);
 
-      const iva = Math.round(subTot * 13) / 100;
+      const iva = Math.round(subTot * 22) / 100;
       const totale = Math.round((subTot + iva) * 100) / 100;
 
       aiData = {
         capitoli: chapters,
         subtotale: subTot,
-        iva_percentuale: 13,
+        iva_percentuale: 22,
         iva_valore: iva,
         totale,
-        descrizione_generale: "Economic analysis and priced bill of quantities",
+        descrizione_generale: "Analisi economica e computo metrico prezzato",
         note: "Preventivo valido 30 giorni",
         sconto: { percentuale: 0, importo_scontato: 0 },
-        condizioni_pagamento: [
-          "15% deposit upon contract signing",
-          "35% upon delivery of materials and start of work",
-          "35% upon substantial completion",
-          "15% final balance upon completion and client walkthrough",
-        ],
+        condizioni_pagamento: DEFAULT_PAYMENT_TERMS,
         titolo_riga1: "Analisi Economica e Computo Metrico Prezzato",
         titolo_riga2: "",
         numero_preventivo_data: "",
@@ -998,7 +905,7 @@ Write all output text in English.`
     } else {
       const parsedCapitoli = parseComputoMetrico(fullText);
       const subTot = parsedCapitoli?.reduce((sum, c) => sum + c.subtotale, 0) ?? 0;
-      const iva = Math.round(subTot * 13) / 100;
+      const iva = Math.round(subTot * 22) / 100;
       aiData = {
         capitoli: parsedCapitoli?.map(c => ({
           lettera: c.lettera,
@@ -1014,10 +921,10 @@ Write all output text in English.`
           subtotale: c.subtotale,
         })) ?? [],
         subtotale: subTot,
-        iva_percentuale: 13,
+        iva_percentuale: 22,
         iva_valore: iva,
         totale: subTot + iva,
-        descrizione_generale: "Economic analysis and priced bill of quantities",
+        descrizione_generale: "Analisi economica e computo metrico prezzato",
         note: "Preventivo valido 30 giorni",
       };
     }
@@ -1047,7 +954,7 @@ Write all output text in English.`
       return {
         lettera: cap.lettera ?? "A",
         titolo: cap.titolo ?? "",
-        osservazione: cap.osservazione ?? "Standard item",
+        osservazione: cap.osservazione ?? "Voce ordinaria",
         voci,
         subtotale: Number(capSubtotale.toFixed(2)),
       };
@@ -1894,12 +1801,12 @@ Job description: ${inputText}`;
     const pastContext = buildPastQuotesContext(recentQuotes as { rawInput: string; capitoli: unknown; totale: string }[]);
 
     const catalogContext = catalogItems.length > 0
-      ? `USER'S CUSTOM PRICE LIST (use these prices as the PRIORITY reference when the work items match — adjust quantities to the requested job):
+      ? `LISTINO PREZZI PERSONALIZZATO DELL'UTENTE (usa questi prezzi come riferimento PRIORITARIO quando le lavorazioni corrispondono — adatta le quantità al lavoro richiesto):
 ${catalogItems
-  .map(item => `  - ${item.nome} (${item.um}): $${Number(item.prezzoUnitario).toFixed(2)}/unit${item.categoria ? ` [${item.categoria}]` : ""}${item.note ? ` — ${item.note}` : ""}`)
+  .map(item => `  - ${item.nome} (${item.um}): ${Number(item.prezzoUnitario).toFixed(2)}€/unità${item.categoria ? ` [${item.categoria}]` : ""}${item.note ? ` — ${item.note}` : ""}`)
   .join("\n")}
 
-When you use a price-list item, apply the exact unit price or a very close one. For work items not present in the price list, use standard market prices. Write all output text in English.`
+Quando usi una voce del listino, applica il prezzo unitario esatto o molto simile. Per lavorazioni non presenti nel listino, usa i prezzi di mercato standard.`
       : "";
 
     const completion = await openai.chat.completions.create({
@@ -1987,7 +1894,7 @@ When you use a price-list item, apply the exact unit price or a very close one. 
       return {
         lettera: cap.lettera ?? "A",
         titolo: cap.titolo ?? "",
-        osservazione: cap.osservazione ?? "Standard item",
+        osservazione: cap.osservazione ?? "Voce ordinaria",
         voci,
         subtotale: Number(capSubtotale.toFixed(2)),
       };
@@ -2082,37 +1989,7 @@ router.post("/quotes/:id/upgrade-to-capitolato", requireAuth, requirePermission(
       return;
     }
 
-    const capitolatoPrompt = `You are an expert writer of professional DETAILED TECHNICAL SPECIFICATIONS for the Canadian construction and trades sector.
-
-For each item in the quote, rewrite the "descrizione" (description) in professional DETAILED TECHNICAL SPECIFICATION style, with AT LEAST 4-6 technical lines in formal English:
-- Describe precisely the operations performed and the execution methods (work sequence, techniques, order of phases)
-- Specify materials, products, and components with technical characteristics and applicable Canadian/North American standards (CSA, NBC/National Building Code, provincial codes, ULC, etc.)
-- State the quality, strength, class, or certification requirements for the materials
-- Explicitly state what is INCLUDED in the item (e.g. "Includes loading, transport, disposal at an authorized landfill...")
-- State any relevant EXCLUSIONS and/or costs to be borne by the client (e.g. "Excludes work related to...")
-- Keep unchanged: um, quantita, prezzo_unitario, totale, lettera, titolo, osservazione, subtotale
-- Write all output text in English
-
-FUNDAMENTAL RULE: return ONLY valid JSON with this exact structure (no additional text):
-{
-  "capitoli": [
-    {
-      "lettera": "A",
-      "titolo": "...",
-      "osservazione": "...",
-      "voci": [
-        {
-          "descrizione": "Professional technical specification description here...",
-          "um": "...",
-          "quantita": 0,
-          "prezzo_unitario": 0,
-          "totale": 0
-        }
-      ],
-      "subtotale": 0
-    }
-  ]
-}`;
+    const capitolatoPrompt = CAPITOLATO_REWRITE_PROMPT;
 
     const inputCapitoli = JSON.stringify(capitoli.map(cap => ({
       lettera: cap.lettera,
@@ -2133,7 +2010,7 @@ FUNDAMENTAL RULE: return ONLY valid JSON with this exact structure (no additiona
       max_completion_tokens: 8192,
       messages: [
         { role: "system", content: capitolatoPrompt },
-        { role: "user", content: `Here is the quote to enrich in detailed-specification style:\n${inputCapitoli}` },
+        { role: "user", content: `Ecco il preventivo da arricchire in stile capitolato:\n${inputCapitoli}` },
       ],
     });
 
@@ -2320,14 +2197,7 @@ async function enrichVociDescrizioni<T extends {
   }
   if (flat.length === 0) return chapters;
 
-  const ENRICH_PROMPT = `You are a Canadian construction technician expert in detailed technical specifications.
-For each item you receive: index (i), chapter (cap), short title (t), unit of measure (um).
-Generate a professional description in English, in DETAILED TECHNICAL SPECIFICATION style:
-- First line: exact copy of the short title (t)
-- Second line: concise technical description (1-2 lines) of the operations, materials, work included, and applicable standards
-Use "\\n" as the separator between the title and the description.
-OUTPUT: JSON array only, in the format [{"i":0,"d":"Title\\nTechnical description..."},...]
-VERY IMPORTANT: output ONLY pure JSON, no explanation, no markdown.`;
+  const ENRICH_PROMPT = ENRICH_VOCI_PROMPT;
 
   try {
     const completion = await openai.chat.completions.create({
@@ -2354,57 +2224,51 @@ VERY IMPORTANT: output ONLY pure JSON, no explanation, no markdown.`;
   }
 }
 
-// Returns a professional English description for a chapter (capitolo) based on its title.
-// The lookup keys stay in Italian because they're matched against chapter titles parsed
-// from source documents (which may still use Italian terminology); the displayed
-// description values are in English.
-// Used in deterministic paths to populate osservazione instead of the generic "Standard item".
+// Restituisce una descrizione professionale italiana per un capitolo in base al titolo.
+// Usata nei percorsi deterministici per popolare osservazione al posto del generico "Voce ordinaria".
 function getChapterDescription(titolo: string): string {
   const t = titolo.toLowerCase().trim();
   const MAP: Record<string, string> = {
-    demolizioni: "Includes all demolition work, removal of existing structures, and disposal of debris",
-    costruzioni: "Includes construction work, structural framing, reinforced concrete pours, and masonry work",
-    giardino: "Includes landscaping, garden, and surrounding grounds work",
-    muratura: "Includes masonry work, infill walls, closures, and partition walls",
-    generale: "Includes general-purpose work, equipment rentals, temporary works, and incidental costs",
-    finiture: "Includes surface finishing, painting, and touch-up work",
-    pavimentazioni: "Includes installation of flooring, floor coverings, and baseboards",
-    rivestimenti: "Includes installation of vertical and horizontal wall coverings",
-    impianti: "Includes mechanical systems: plumbing, sanitary, and electrical",
-    strutture: "Includes structural work in reinforced concrete and steel",
-    impermeabilizzazioni: "Includes waterproofing and water protection work",
-    isolamenti: "Includes thermal and acoustic insulation work",
-    infissi: "Includes supply and installation of windows, frames, and doors",
-    tinteggiature: "Includes painting, coating, and surface treatment work",
-    verniciature: "Includes painting, coating, and protective surface treatment work",
-    falegnameria: "Includes carpentry work, woodwork, and furnishing accessories",
-    varie: "Includes miscellaneous work and incidental items not classified elsewhere",
-    ponteggi: "Includes installation, rental, and dismantling of scaffolding and temporary works",
-    scavi: "Includes excavation, earthmoving, and site grading work",
-    fondazioni: "Includes foundation work and ground consolidation",
-    intonaci: "Includes plastering and skim-coating of interior and exterior surfaces",
-    coperture: "Includes roofing, roof structure, and waterproofing work",
-    serramenti: "Includes supply and installation of windows/doors and solar shading",
-    controsoffitti: "Includes installation of drop ceilings and furring walls",
-    ripristini: "Includes repair, restoration, and code-compliance upgrade work",
-    noleggi: "Includes rental of machinery, equipment, and work vehicles",
-    cantiere: "Includes job-site setup, fencing, and safety measures",
-    cappotto: "Includes installation of exterior insulation (EIFS) and associated finishing",
-    idraulico: "Includes the plumbing, sanitary, and water distribution system",
-    elettrico: "Includes the electrical system, lighting, and distribution panels",
+    demolizioni: "Comprende tutti i lavori di demolizione, rimozione di strutture esistenti e smaltimento del materiale di risulta",
+    costruzioni: "Comprende i lavori di costruzione, carpenteria strutturale, getti in calcestruzzo armato e opere murarie",
+    giardino: "Comprende i lavori di sistemazione delle aree esterne, giardino e pertinenze",
+    muratura: "Comprende i lavori di muratura, tamponature, chiusure e tramezzi",
+    generale: "Comprende le lavorazioni di carattere generale, noleggi, opere provvisionali e oneri accessori",
+    finiture: "Comprende i lavori di finitura superficiale, tinteggiatura e rifinitura",
+    pavimentazioni: "Comprende la posa in opera di pavimentazioni, rivestimenti e zoccolini",
+    rivestimenti: "Comprende la posa in opera di rivestimenti verticali e orizzontali",
+    impianti: "Comprende gli impianti tecnologici, idraulico-sanitari ed elettrici",
+    strutture: "Comprende le opere strutturali in calcestruzzo armato e acciaio",
+    impermeabilizzazioni: "Comprende le lavorazioni di impermeabilizzazione e protezione dall'acqua",
+    isolamenti: "Comprende i lavori di isolamento termico e acustico",
+    infissi: "Comprende la fornitura e posa in opera di infissi, serramenti e porte",
+    tinteggiature: "Comprende i lavori di tinteggiatura, verniciatura e trattamenti delle superfici",
+    verniciature: "Comprende i lavori di verniciatura, tinteggiatura e trattamenti protettivi delle superfici",
+    falegnameria: "Comprende i lavori di falegnameria, opere in legno e complementi d'arredo",
+    varie: "Comprende le lavorazioni varie e opere accessorie non diversamente classificate",
+    ponteggi: "Comprende l'installazione, il noleggio e lo smontaggio dei ponteggi e delle opere provvisionali",
+    scavi: "Comprende i lavori di scavo, sbancamento e movimentazione terra",
+    fondazioni: "Comprende le opere di fondazione e consolidamento del terreno",
+    intonaci: "Comprende i lavori di intonacatura e rasatura delle superfici interne ed esterne",
+    coperture: "Comprende i lavori di copertura, tetti e impermeabilizzazione",
+    serramenti: "Comprende la fornitura e posa in opera di serramenti e schermature solari",
+    controsoffitti: "Comprende la realizzazione di controsoffitti e contropareti",
+    ripristini: "Comprende i lavori di ripristino, riparazione e messa a norma",
+    noleggi: "Comprende il noleggio di macchine, attrezzature e mezzi d'opera",
+    cantiere: "Comprende le opere di predisposizione cantiere, recinzioni e sicurezza",
+    cappotto: "Comprende la posa di isolamento a cappotto esterno e relativa rasatura",
+    idraulico: "Comprende l'impianto idraulico, sanitario e di distribuzione acqua",
+    elettrico: "Comprende l'impianto elettrico, illuminazione e quadri di distribuzione",
   };
   if (MAP[t]) return MAP[t];
   for (const [key, desc] of Object.entries(MAP)) {
     if (t.includes(key)) return desc;
   }
   const cap = titolo.charAt(0).toUpperCase() + titolo.slice(1).toLowerCase();
-  return `Includes ${cap.toLowerCase()} work as per the attached bill of quantities`;
+  return `Comprende i lavori di ${cap.toLowerCase()} come da computo metrico allegato`;
 }
 
 // Fallback price estimation for tabular computo metrico voci (Brianza/Milano market rates 2026).
-// NOTE: the keyword table below matches against Italian-language line-item descriptions
-// that may still appear in parsed source documents, so the keywords and EUR-calibrated
-// figures are intentionally left as-is (translating them would break the matching).
 // Uses earliest-match strategy: the keyword appearing FIRST in the description wins,
 // preventing secondary words (e.g. "scalini" in a tiling description) from hijacking the price.
 function estimatePriceForVoce(categoria: string, descrizione: string, um: string): number {

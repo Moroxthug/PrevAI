@@ -13,24 +13,24 @@ import crypto from "crypto";
 // right page instead of improvising product behaviour. Update both when a
 // guide is added or renamed.
 const HELP_GUIDES: ReadonlyArray<[slug: string, topic: string]> = [
-  ["getting-started", "account creation, business profile (taxes, licence, e-Transfer email, logo), plans and billing"],
-  ["create-a-quote", "creating a quote from text, voice or photos; editing; catalog; Good/Better/Best options; PDF templates"],
-  ["send-a-quote-and-get-it-accepted", "emailing or sharing a quote, online acceptance, automatic follow-ups on days 2/5/10"],
-  ["contracts-and-e-signature", "province contract templates (ON/BC/AB/QC), review, sending for signature, email-code e-signature, signed PDF and audit certificate"],
-  ["jobs-milestones-and-change-orders", "job setup review, milestones, schedule, calendar sync, change orders, holdback release"],
-  ["invoices-and-getting-paid", "deposit/progress/final invoices, Interac e-Transfer, card payments via Stripe, recording payments, overdue reminders 3/7/14 days"],
-  ["costs-receipts-and-time", "receipt scanning, cost tracking, worker time-entry links, GPS clock-in, payroll CSV export"],
-  ["team-accounts-and-roles", "inviting team members, roles (admin/office/foreman/viewer), seats per plan"],
-  ["leads-and-follow-ups", "lead sources (website widget, WhatsApp, Meta Lead Ads, Google LSA), pipeline, CASL consent and unsubscribe, review requests"],
-  ["integrations-and-imports", "Gmail sending, Google/Outlook calendar, QuickBooks and Wave, Stripe Connect, importing old quotes from CSV/Excel/PDF, public API and Zapier"],
+  ["getting-started", "creazione account, profilo azienda (dati fiscali, P.IVA, IBAN, logo), piani e fatturazione"],
+  ["create-a-quote", "creare un preventivo da testo, voce o foto; modifica; listino; varianti Base/Consigliato/Premium; template PDF"],
+  ["send-a-quote-and-get-it-accepted", "invio via email o link, accettazione online, solleciti automatici ai giorni 2/5/10"],
+  ["contracts-and-e-signature", "contratto d'appalto italiano, revisione, invio per firma, firma elettronica con codice email, PDF firmato e certificato di audit"],
+  ["jobs-milestones-and-change-orders", "impostazione cantiere, SAL/milestone, cronoprogramma, sincronizzazione calendario, varianti in corso d'opera, ritenuta a garanzia"],
+  ["invoices-and-getting-paid", "fatture di acconto/SAL/saldo, bonifico bancario, pagamenti con carta via Stripe, registrazione pagamenti, solleciti scaduti a 3/7/14 giorni"],
+  ["costs-receipts-and-time", "scansione scontrini e fatture fornitori, controllo costi, link ore operai, timbratura GPS, export CSV paghe"],
+  ["team-accounts-and-roles", "invito collaboratori, ruoli (admin/ufficio/capocantiere/visualizzatore), posti per piano"],
+  ["leads-and-follow-ups", "fonti lead (widget sito, WhatsApp, Meta Lead Ads), pipeline, consenso GDPR e disiscrizione, richieste di recensione"],
+  ["integrations-and-imports", "invio da Gmail, calendario Google/Outlook, Stripe Connect, importazione vecchi preventivi da CSV/Excel/PDF, API pubblica e Zapier"],
 ];
 
 const SUPPORT_SYSTEM_PROMPT = [
-  "You are QuoteAI's AI support assistant. QuoteAI is a web platform for tradespeople and construction businesses in Canada that turns a plain-language job description into a detailed quote, then handles contracts and e-signature, jobs, invoices and payments.",
-  "Reply kindly, professionally and concisely, in the language the user writes in (English or French).",
-  "When a question is covered by a help-centre guide, answer briefly and link the guide as https://quoteai.ca/help/<slug>/ . Do not invent product behaviour that is not in the guide list; if unsure, say so and offer a human agent.",
-  "Guides (slug — topics): " + HELP_GUIDES.map(([slug, topic]) => `${slug} — ${topic}`).join("; ") + ".",
-  "If the user explicitly asks to speak with an agent or a person, or asks about payments, their account, legal questions or technical bugs, tell them they can request a human agent by clicking the button in the chat, or that typing 'talk to an agent' will put them in the queue for human follow-up.",
+  "Sei l'assistente di supporto AI di PrevAI. PrevAI è una piattaforma web per artigiani e imprese edili in Italia che trasforma una descrizione in linguaggio naturale in un preventivo dettagliato, e gestisce poi contratti e firma elettronica, cantieri, fatture e pagamenti.",
+  "Rispondi in italiano, con gentilezza, professionalità e concisione.",
+  "Quando una domanda è coperta da una guida del centro assistenza, rispondi brevemente e linka la guida come https://prevai.it/help/<slug>/ . Non inventare comportamenti del prodotto non presenti nella lista delle guide; se non sei sicuro, dillo e proponi un operatore umano.",
+  "Guide (slug — argomenti): " + HELP_GUIDES.map(([slug, topic]) => `${slug} — ${topic}`).join("; ") + ".",
+  "Se l'utente chiede esplicitamente di parlare con un operatore o una persona, oppure chiede di pagamenti, del suo account, di questioni legali o di bug tecnici, digli che può richiedere un operatore umano cliccando il pulsante nella chat, oppure che scrivendo 'parla con un operatore' verrà messo in coda per un follow-up umano.",
 ].join(" ");
 
 const router = Router();
@@ -154,7 +154,7 @@ router.post("/support/conversations", createConversationLimiter, async (req, res
     if (typeof visitorEmail === "string") visitorEmail = visitorEmail.slice(0, MAX_VISITOR_FIELD_LENGTH);
     if (typeof visitorPhone === "string") visitorPhone = visitorPhone.slice(0, MAX_VISITOR_FIELD_LENGTH);
 
-    const dateStr = new Date().toLocaleDateString("en-CA", {
+    const dateStr = new Date().toLocaleDateString("it-IT", {
       day: "2-digit",
       month: "2-digit",
       year: "numeric",
@@ -431,7 +431,7 @@ router.post("/support/conversations/:id/join", requireAdmin, async (req, res) =>
       .values({
         conversationId: convId,
         role: "assistant",
-        content: "A QuoteAI agent has joined the chat and will take care of your request.",
+        content: "Un operatore PrevAI è entrato nella chat e si occuperà della tua richiesta.",
       })
       .returning();
 

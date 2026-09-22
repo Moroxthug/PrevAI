@@ -288,7 +288,7 @@ let browser: Browser | null = null;
 const t0 = Date.now();
 try {
   const apiBase = await startServer();
-  process.env.QUOTEAI_BASE_URL = `http://localhost:${VITE_PORT}`;
+  process.env.PREVAI_BASE_URL = `http://localhost:${VITE_PORT}`;
   const frontend = await startVite(apiBase);
   console.log(`[qa-visual] api ${apiBase} · frontend ${frontend}`);
 

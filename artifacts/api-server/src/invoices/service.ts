@@ -409,7 +409,7 @@ export type DraftOutcome = { invoice: Invoice; action: "sent" | "scheduled_auto_
 export async function applyAutoSendPolicy(invoice: Invoice, profile: BusinessProfile | undefined, opts: { notify: boolean; notificationTitle?: string } = { notify: true }): Promise<DraftOutcome> {
   const settings = automationSettings(profile);
   const lang = invoice.language as Lang;
-  const cad = (c: number) => new Intl.NumberFormat("en-CA", { style: "currency", currency: "CAD" }).format(c / 100);
+  const cad = (c: number) => new Intl.NumberFormat("it-IT", { style: "currency", currency: "EUR" }).format(c / 100);
   let outcome: DraftOutcome = { invoice, action: "draft" };
 
   if (invoice.status !== "draft") return { invoice, action: "draft" };
@@ -434,14 +434,14 @@ export async function applyAutoSendPolicy(invoice: Invoice, profile: BusinessPro
   if (opts.notify) {
     const typeLabel = ti(`type_${invoice.type}` as IKey, lang);
     const body =
-      outcome.action === "sent" ? `${typeLabel} ${invoice.number} (${cad(invoice.totalCents)}) was emailed to ${invoice.customer.name || "the customer"}.`
-      : outcome.action === "scheduled_auto_send" ? `${typeLabel} ${invoice.number} (${cad(invoice.totalCents)}) is ready. It will be sent automatically in ${settings.invoiceAutoSendAfterHours} h unless you edit or send it first.`
-      : outcome.action === "scheduled_release" ? `${typeLabel} ${invoice.number} (${cad(invoice.totalCents)}) is drafted and will become sendable on ${invoice.scheduledFor!.toLocaleDateString("en-CA", { dateStyle: "long" })}, when the lien period ends.`
-      : `${typeLabel} ${invoice.number} (${cad(invoice.totalCents)}) is ready to review and send.${outcome.sendError ? ` Auto-send failed: ${outcome.sendError}.` : ""}`;
+      outcome.action === "sent" ? `${typeLabel} ${invoice.number} (${cad(invoice.totalCents)}) inviata via email a ${invoice.customer.name || "il cliente"}.`
+      : outcome.action === "scheduled_auto_send" ? `${typeLabel} ${invoice.number} (${cad(invoice.totalCents)}) è pronta. Sarà inviata automaticamente tra ${settings.invoiceAutoSendAfterHours} h se non la modifichi o la invii prima.`
+      : outcome.action === "scheduled_release" ? `${typeLabel} ${invoice.number} (${cad(invoice.totalCents)}) è in bozza e diventerà inviabile il ${invoice.scheduledFor!.toLocaleDateString("it-IT", { dateStyle: "long" })}, al termine del periodo di garanzia.`
+      : `${typeLabel} ${invoice.number} (${cad(invoice.totalCents)}) è pronta da rivedere e inviare.${outcome.sendError ? ` Invio automatico non riuscito: ${outcome.sendError}.` : ""}`;
     await createNotification({
       userId: invoice.userId,
       type: outcome.action === "sent" ? "invoice_sent" : "invoice_drafted",
-      title: opts.notificationTitle ?? (outcome.action === "sent" ? `${typeLabel} ${invoice.number} sent` : `${typeLabel} ${invoice.number} ready to send`),
+      title: opts.notificationTitle ?? (outcome.action === "sent" ? `${typeLabel} ${invoice.number} inviata` : `${typeLabel} ${invoice.number} pronta da inviare`),
       body,
       link: `/dashboard/invoices/${invoice.id}`,
       entityType: "invoice",
@@ -605,8 +605,8 @@ export async function reportEtransferSent(params: { invoiceId: string; ip?: stri
   await createNotification({
     userId: inv.userId,
     type: "invoice_payment_reported",
-    title: `${inv.number}: customer says they paid`,
-    body: `${inv.customer.name || "The customer"} marked ${inv.number} (${(inv.totalCents / 100).toLocaleString("en-CA", { style: "currency", currency: "CAD" })}) as sent by e-Transfer. Confirm receipt to mark it paid.`,
+    title: `${inv.number}: il cliente dichiara di aver pagato`,
+    body: `${inv.customer.name || "Il cliente"} ha segnalato ${inv.number} (${(inv.totalCents / 100).toLocaleString("it-IT", { style: "currency", currency: "EUR" })}) come pagata con bonifico. Conferma la ricezione per segnarla come pagata.`,
     link: `/dashboard/invoices/${inv.id}`,
     entityType: "invoice",
     entityId: inv.id,

@@ -460,7 +460,7 @@ router.get("/team/payroll-summary.csv", requireAuth, async (req, res) => {
     const wtype = new Map(workers.map((w) => [w.id, w.workerType]));
     const esc = (v: string | number) => (typeof v === "number" ? v.toString() : `"${v.replace(/"/g, '""')}"`);
     const money = (c: number) => (c / 100).toFixed(2);
-    const lines: string[] = [["Worker", "Type", "Job", "Date", "Hours", "Rate (CAD/h)", "Gross (CAD)", "Burden %", "Burden (CAD)", "Labour cost (CAD)", "Note"].map(esc).join(",")];
+    const lines: string[] = [["Operaio", "Tipo", "Cantiere", "Data", "Ore", "Tariffa (EUR/h)", "Lordo (EUR)", "Oneri %", "Oneri (EUR)", "Costo manodopera (EUR)", "Note"].map(esc).join(",")];
     const totals = new Map<string, { hours: number; gross: number; burden: number; total: number }>();
     for (const r of rows) {
       const hours = Number(r.hours);
@@ -473,7 +473,7 @@ router.get("/team/payroll-summary.csv", requireAuth, async (req, res) => {
       totals.set(r.workerId, t);
     }
     lines.push("");
-    lines.push(["Worker totals", "", "", "", "Hours", "", "Gross (CAD)", "", "Burden (CAD)", "Labour cost (CAD)", ""].map(esc).join(","));
+    lines.push(["Totali operaio", "", "", "", "Ore", "", "Lordo (EUR)", "", "Oneri (EUR)", "Costo manodopera (EUR)", ""].map(esc).join(","));
     for (const [wid, t] of totals) lines.push([names.worker.get(wid) ?? "", wtype.get(wid) ?? "", "", "", t.hours.toFixed(2), "", money(t.gross), "", money(t.burden), money(t.total), ""].map(esc).join(","));
     res.setHeader("Content-Type", "text/csv; charset=utf-8");
     res.setHeader("Content-Disposition", `attachment; filename="payroll-summary-${q.data.from}-${q.data.to}.csv"`);

@@ -19,7 +19,7 @@ process.env.LOG_LEVEL ??= "info";
 bootstrapQaEnv("walkthrough");
 const FRONTEND = process.env.WALKTHROUGH_FRONTEND ?? "http://localhost:5183";
 process.env.NODE_ENV = "development";
-process.env.QUOTEAI_BASE_URL = FRONTEND; // links in emails / PDFs point at the local frontend
+process.env.PREVAI_BASE_URL = FRONTEND; // links in emails / PDFs point at the local frontend
 process.env.BETTER_AUTH_URL = FRONTEND;
 process.env.TRUSTED_ORIGINS = [process.env.TRUSTED_ORIGINS, FRONTEND, "http://localhost:5000"].filter(Boolean).join(",");
 process.env.PORT ??= "5000";

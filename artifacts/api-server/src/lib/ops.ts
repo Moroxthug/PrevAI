@@ -106,9 +106,9 @@ export async function sendOpsAlert(subject: string, lines: string[]): Promise<vo
   try {
     const resend = new Resend(apiKey);
     await resend.emails.send({
-      from: "QuoteAI Ops <no-reply@quoteai.ca>",
+      from: "PrevAI Ops <no-reply@prevai.it>",
       to: to.split(",").map((a) => a.trim()).filter(Boolean),
-      subject: `[QuoteAI ops] ${subject}`,
+      subject: `[PrevAI ops] ${subject}`,
       text: `${text}\n\nRunbooks: docs/RUNBOOKS.md`,
     });
   } catch (err) {

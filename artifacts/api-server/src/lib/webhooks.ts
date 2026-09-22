@@ -60,8 +60,8 @@ export async function dispatchWebhooks(userId: string, event: AutomationEvent, e
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "X-QuoteAI-Signature": signPayload(endpoint.secret, body),
-          "X-QuoteAI-Event": event,
+          "X-PrevAI-Signature": signPayload(endpoint.secret, body),
+          "X-PrevAI-Event": event,
         },
         body,
         signal: AbortSignal.timeout(10_000),

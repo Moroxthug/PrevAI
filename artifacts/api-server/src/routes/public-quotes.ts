@@ -3,7 +3,7 @@ import { db, quotesTable, quoteVariantsTable, businessProfilesTable, priceCatalo
 import { eq, or, isNull } from "drizzle-orm";
 import { inferInterventionCategories, matchIncentivesForQuote } from "../incentives/matching.js";
 import { openai } from "@workspace/integrations-openai-ai-server";
-import { REGIONAL_PRICING_GUIDANCE, DESCRIPTION_QUALITY_GUIDANCE } from "../lib/generateQuoteFromText.js";
+import { AI_PROMPT as BASE_AI_PROMPT, REGIONAL_PRICING_GUIDANCE, DESCRIPTION_QUALITY_GUIDANCE } from "../lib/generateQuoteFromText.js";
 import { generateNumeroPreventivo } from "../lib/quoteNumber.js";
 import { logger } from "../lib/logger.js";
 import type { QuoteChapter, QuoteClientData, QuoteDiscount } from "@workspace/db";
@@ -170,58 +170,14 @@ function findRelevantCatalogItems(
   return filtered.slice(0, limit);
 }
 
-const AI_PROMPT = `You are an expert consultant for professional quotes in the Canadian market (tradespeople, construction, building systems, technical services).
+// Widget pubblico: prompt unificato + vincoli specifici (niente dati cliente inventati, nota fissa).
+const AI_PROMPT = `${BASE_AI_PROMPT}
 
-You must turn a free-text description into a professional DETAILED COST ANALYSIS AND ITEMIZED ESTIMATE, structured into chapters, consistent with the owner's price list and with 2026 Canadian market estimates.
-
-FUNDAMENTAL RULES:
-1. Reference and catalog pricing (PRICE LIST):
-   - If a "USER'S CUSTOM PRICE LIST" is provided, you MUST use the unit prices defined in it as the PRIORITY source for all matching or related work items.
-   - Do not invent new unit prices if the item matches something already in the custom price list.
-   - If a work item is not present in the custom price list, use realistic 2026 Canadian market prices.
-2. If specific data is missing: make realistic assumptions, do NOT ask for clarification. If "PROPERTY MEASUREMENTS AND DIMENSIONS" are provided, you must use them rigorously to mathematically calculate quantities (sq ft, linear ft, etc.).
-3. Organize the work into logical CHAPTERS (A, B, C, D, …) with professional titles (e.g. "Site Setup", "Demolition Work", "New Construction Work", "Electrical System", etc.)
-4. Each chapter contains detailed work ITEMS with professional units of measure (sq ft, linear ft, cu ft, kg, hours, lump sum, pieces, each, kW, etc.)
-5. Calculate a subtotal for each chapter. The SUMMARY TABLE is derived automatically from the capitoli array.
-6. Do not assume a fixed sales tax rate — Canadian GST/HST varies by province (roughly 5-15%). Unless told otherwise, leave iva_percentuale at 0 and let the client-side settings apply the correct rate.
-7. titolo_riga2 must describe the job.
-8. numero_preventivo_data: DO NOT GENERATE — the server assigns the number automatically. Return an empty string.
-9. Write all output text (titles, descriptions, notes) in English.
-
-OUTPUT — ONLY VALID JSON, no extra text:
-{
-  "titolo_riga1": "Detailed Cost Analysis and Itemized Estimate",
-  "titolo_riga2": "[Short job description]",
-  "numero_preventivo_data": "",
-  "cliente": { "nome": "", "indirizzo": "" },
-  "descrizione_generale": "Brief description of the job",
-  "capitoli": [
-    {
-      "lettera": "A",
-      "titolo": "Works",
-      "osservazione": "Standard item",
-      "voci": [
-        {
-          "descrizione": "Item description",
-          "um": "sq ft",
-          "quantita": 10,
-          "prezzo_unitario": 25.00,
-          "totale": 250.00
-        }
-      ],
-      "subtotale": 250.00
-    }
-  ],
-  "sconto": { "percentuale": 0, "importo_scontato": 0 },
-  "condizioni_pagamento": [],
-  "subtotale": 0,
-  "iva_percentuale": 0,
-  "iva_valore": 0,
-  "totale": 0,
-  "note": "Quote generated via Widget"
-}
-
-VERY IMPORTANT: output ONLY pure JSON, no explanation, no markdown.`;
+REGOLE AGGIUNTIVE PER IL WIDGET PUBBLICO:
+- Il richiedente è un potenziale cliente che compila il modulo sul sito dell'impresa: NON inventare nome o indirizzo del cliente, lascia i campi "cliente" vuoti.
+- Se non sono indicati luogo o misure, resta su prezzi medi nazionali e quantità prudenziali.
+- condizioni_pagamento: restituisci un array vuoto (le condizioni le imposta l'impresa).
+- note: "Preventivo indicativo generato tramite widget — soggetto a sopralluogo e conferma dell'impresa."`;
 
 // GET /api/public/config (authenticated with x-api-key or apiKey query param)
 router.get("/public/config", configLimiter, async (req, res) => {
@@ -320,25 +276,25 @@ router.post("/public/quotes", quoteIpLimiter, quoteApiKeyLimiter, async (req, re
 
     const relevantCatalogItems = findRelevantCatalogItems(rawInput, catalogItems, 20);
     const catalogContext = relevantCatalogItems.length > 0
-      ? `USER'S CUSTOM PRICE LIST (use these prices as the PRIORITY reference):
+      ? `LISTINO PREZZI PERSONALIZZATO DELL'UTENTE (usa questi prezzi come riferimento PRIORITARIO):
 ${relevantCatalogItems
-  .map(item => `  - ${item.nome} (${item.um}): $${Number(item.prezzoUnitario).toFixed(2)}/unit${item.categoria ? ` [${item.categoria}]` : ""}`)
+  .map(item => `  - ${item.nome} (${item.um}): ${Number(item.prezzoUnitario).toFixed(2)}€/unità${item.categoria ? ` [${item.categoria}]` : ""}`)
   .join("\n")}`
       : "";
 
     // Property measurements
     let misureContext = "";
     if (misure && typeof misure === "object" && Object.keys(misure).length > 0) {
-      misureContext = `PROPERTY MEASUREMENTS AND DIMENSIONS:
+      misureContext = `MISURE E DIMENSIONI DELL'IMMOBILE:
 ${Object.entries(misure)
   .map(([key, val]) => `  - ${key}: ${val}`)
   .join("\n")}
-Use these exact measurements to mathematically calculate the quantities.`;
+Usa queste misure esatte per calcolare matematicamente le quantità.`;
     }
 
     // Location context (city/province the widget visitor provided) so the AI can price by zone
     const locationContext = clientData?.city || clientData?.province
-      ? `JOB SITE LOCATION: ${[clientData?.city, clientData?.province ? `(${clientData.province})` : ""].filter(Boolean).join(" ")}`
+      ? `LUOGO DEL CANTIERE: ${[clientData?.city, clientData?.province ? `(${clientData.province})` : ""].filter(Boolean).join(" ")}`
       : "";
 
     // Call OpenAI
@@ -504,7 +460,7 @@ Use these exact measurements to mathematically calculate the quantities.`;
     });
 
     // Send an async lead-notification email to the contractor
-    const contractorEmail = profile.email || "notifiche@quoteai.ca";
+    const contractorEmail = profile.email || "notifiche@prevai.it";
     if (contractorEmail) {
       sendWidgetLeadNotification({
         toEmail: contractorEmail,

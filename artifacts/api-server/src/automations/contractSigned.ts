@@ -8,8 +8,8 @@ import { setupJobFromContract } from "../jobs/setup.js";
 import { applySignedChangeOrder } from "../jobs/changeOrders.js";
 import { draftDepositInvoice, applyAutoSendPolicy } from "../invoices/service.js";
 
-const cad = (n: number) => new Intl.NumberFormat("en-CA", { style: "currency", currency: "CAD" }).format(n);
-const longDate = (d: Date | null) => (d ? d.toLocaleDateString("en-CA", { month: "short", day: "numeric", year: "numeric", timeZone: "UTC" }) : null);
+const cad = (n: number) => new Intl.NumberFormat("it-IT", { style: "currency", currency: "EUR" }).format(n);
+const longDate = (d: Date | null) => (d ? d.toLocaleDateString("it-IT", { month: "short", day: "numeric", year: "numeric", timeZone: "UTC" }) : null);
 
 // contract.signed → Phase 2: set up the job (milestones imported from the
 // quote + payment schedule, proposed schedule, cost budget) and send ONE
@@ -33,11 +33,11 @@ registerAutomation("contract.signed", async (run) => {
     const [project] = await db.select().from(projectsTable).where(eq(projectsTable.id, setup.projectId));
     const milestones = await db.select().from(milestonesTable).where(eq(milestonesTable.projectId, setup.projectId));
     const deposit = contract.variables.paymentSchedule.terms.find((t) => t.trigger === "on_signing");
-    const endText = setup.plannedEnd ? ` and a schedule ending ${longDate(setup.plannedEnd)}` : "";
+    const endText = setup.plannedEnd ? ` e un cronoprogramma che termina il ${longDate(setup.plannedEnd)}` : "";
 
     // Phase 4: the deposit invoice is drafted (or sent, per the company's
     // setting) right away and folded into the same single notification.
-    let depositText = deposit ? ` and a ${cad(paymentTermAmount(deposit, contract.variables.total))} deposit due now` : "";
+    let depositText = deposit ? ` e un acconto di ${cad(paymentTermAmount(deposit, contract.variables.total))} dovuto ora` : "";
     let depositInvoiceId: string | null = null;
     let depositAction: string | null = null;
     if (deposit) {
@@ -49,9 +49,9 @@ registerAutomation("contract.signed", async (run) => {
           const outcome = await applyAutoSendPolicy(drafted.invoice, profile, { notify: false });
           depositAction = outcome.action;
           depositText =
-            outcome.action === "sent" ? ` and deposit invoice ${drafted.invoice.number} (${cad(drafted.invoice.totalCents / 100)}) was sent to ${customer}`
-            : outcome.action === "scheduled_auto_send" ? ` and deposit invoice ${drafted.invoice.number} (${cad(drafted.invoice.totalCents / 100)}) will go out automatically unless you edit it first`
-            : ` and deposit invoice ${drafted.invoice.number} (${cad(drafted.invoice.totalCents / 100)}) is ready to send`;
+            outcome.action === "sent" ? ` e la fattura di acconto ${drafted.invoice.number} (${cad(drafted.invoice.totalCents / 100)}) è stata inviata a ${customer}`
+            : outcome.action === "scheduled_auto_send" ? ` e la fattura di acconto ${drafted.invoice.number} (${cad(drafted.invoice.totalCents / 100)}) partirà automaticamente se non la modifichi prima`
+            : ` e la fattura di acconto ${drafted.invoice.number} (${cad(drafted.invoice.totalCents / 100)}) è pronta da inviare`;
         }
       } catch (err) {
         // The job setup is what matters here; the deposit can be created from the Invoices tab.
@@ -62,8 +62,8 @@ registerAutomation("contract.signed", async (run) => {
     await createNotification({
       userId: contract.userId,
       type: "job_setup_ready",
-      title: `${customer} signed ${contract.contractNumber} — job set up`,
-      body: `We set up "${project?.name ?? contract.variables.projectTitle}" with ${milestones.length} milestones${endText}${depositText}. Review the setup to start the job.`,
+      title: `${customer} ha firmato ${contract.contractNumber} — cantiere impostato`,
+      body: `Abbiamo impostato "${project?.name ?? contract.variables.projectTitle}" con ${milestones.length} milestone${endText}${depositText}. Rivedi l'impostazione per avviare il cantiere.`,
       link: `/dashboard/jobs/${setup.projectId}/setup`,
       entityType: "project",
       entityId: setup.projectId,
@@ -78,8 +78,8 @@ registerAutomation("contract.signed", async (run) => {
       await createNotification({
         userId: contract.userId,
         type: "contract_signed",
-        title: `${customer} signed contract ${contract.contractNumber}`,
-        body: `Contract value ${cad(contract.variables.total)}. Signed copy sent to both parties. We'll finish setting up the job shortly.`,
+        title: `${customer} ha firmato il contratto ${contract.contractNumber}`,
+        body: `Valore del contratto ${cad(contract.variables.total)}. Copia firmata inviata a entrambe le parti. A breve completeremo l'impostazione del cantiere.`,
         link: `/dashboard/contracts/${contract.id}`,
         entityType: "contract",
         entityId: contract.id,
@@ -99,8 +99,8 @@ registerAutomation("contract.declined", async (run) => {
     await createNotification({
       userId: loaded.contract.userId,
       type: "contract_declined",
-      title: `${loaded.contract.variables.customer.name} declined ${isCo ? "change order" : "contract"} ${loaded.contract.contractNumber}`,
-      body: reason ? `Reason: ${reason}` : "No reason given. You can edit and resend a new version.",
+      title: `${loaded.contract.variables.customer.name} ha rifiutato ${isCo ? "la variante" : "il contratto"} ${loaded.contract.contractNumber}`,
+      body: reason ? `Motivo: ${reason}` : "Nessun motivo indicato. Puoi modificare e inviare una nuova versione.",
       link: isCo && loaded.contract.projectId ? `/dashboard/jobs/${loaded.contract.projectId}?tab=changes` : `/dashboard/contracts/${loaded.contract.id}`,
       entityType: "contract",
       entityId: loaded.contract.id,

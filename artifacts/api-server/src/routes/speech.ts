@@ -66,7 +66,7 @@ router.post(
       const transcription = await openai.audio.transcriptions.create({
         file: uploadable,
         model: "whisper-large-v3-turbo",
-        language: "en",
+        language: "it",
         response_format: "json",
       });
 

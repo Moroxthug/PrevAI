@@ -82,7 +82,7 @@ export const TOOL_DEFINITIONS: OpenAI.Chat.Completions.ChatCompletionTool[] = [
     function: {
       name: "propose_record_payment",
       description: "Propose recording a payment received against a sent invoice. The user must confirm.",
-      parameters: { type: "object", properties: { invoice_id: { type: "string" }, amount: { type: "number", description: "CAD dollars; defaults to the balance" }, method: { type: "string", enum: PAYMENT_METHODS.filter((m) => m !== "credit_note") }, date: { type: "string", description: "YYYY-MM-DD" }, reference: { type: "string" } }, required: ["invoice_id"], additionalProperties: false },
+      parameters: { type: "object", properties: { invoice_id: { type: "string" }, amount: { type: "number", description: "Importo in euro; predefinito il saldo residuo" }, method: { type: "string", enum: PAYMENT_METHODS.filter((m) => m !== "credit_note") }, date: { type: "string", description: "YYYY-MM-DD" }, reference: { type: "string" } }, required: ["invoice_id"], additionalProperties: false },
     },
   },
 ];
@@ -250,7 +250,7 @@ const ProposeArgs = {
   propose_record_payment: z.object({ invoice_id: z.string(), amount: z.number().positive().optional(), method: z.enum(PAYMENT_METHODS.filter((m) => m !== "credit_note") as [string, ...string[]]).optional(), date: z.string().regex(dateRe).optional(), reference: z.string().max(200).optional() }),
 };
 
-const money = (cents: number) => new Intl.NumberFormat("en-CA", { style: "currency", currency: "CAD" }).format(cents / 100);
+const money = (cents: number) => new Intl.NumberFormat("it-IT", { style: "currency", currency: "EUR" }).format(cents / 100);
 
 /** Validates propose_* arguments against the user's data and returns the proposal to store, or an error string for the model. */
 export async function validateProposal(name: string, rawArgs: unknown, ctx: ToolContext): Promise<{ ok: true; proposal: ValidatedProposal } | { ok: false; error: string }> {

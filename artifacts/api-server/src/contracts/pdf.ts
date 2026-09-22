@@ -123,7 +123,7 @@ function auditPage(params: {
   const { lang } = params;
   const rows: TableCell[][] = params.events.map((e) => {
     const signer = params.signers.find((s) => s.id === e.signerId);
-    const who = e.actor === "system" ? "QuoteAI" : signer?.name ?? tr(e.actor === "customer" ? "customer" : "contractor", lang);
+    const who = e.actor === "system" ? "PrevAI" : signer?.name ?? tr(e.actor === "customer" ? "customer" : "contractor", lang);
     return [
       { text: eventLabel(e, lang), fontSize: 8.5 },
       { text: fmtDate(e.createdAt, lang, true), fontSize: 8.5 },
@@ -219,7 +219,7 @@ export async function buildContractPdf(params: {
       ],
       margin: [48, 20, 48, 0],
     }),
-    info: { title: `${doc.title} — ${v.contractNumber}`, author: v.contractor.name, creator: "QuoteAI" },
+    info: { title: `${doc.title} — ${v.contractNumber}`, author: v.contractor.name, creator: "PrevAI" },
   };
   };
 

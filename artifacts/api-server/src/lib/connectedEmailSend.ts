@@ -6,14 +6,14 @@ import { getValidEmailAccessToken, markEmailSendResult } from "../emailConnectio
 // ── Phase 20: connected email sending ────────────────────────────────────────
 // Every customer-facing send (quote/contract/invoice/lead-followup) routes
 // through here: send via the company's own connected Gmail account if one is
-// enabled, otherwise fall back to the existing Resend/no-reply@quoteai.ca
+// enabled, otherwise fall back to the existing Resend/no-reply@prevai.it
 // path unchanged. A failed connected send falls back rather than dropping
 // the email, and is logged on the connection row so the contractor notices.
 
 export async function sendCustomerEmail(params: {
   userId: string;
   toEmail: string;
-  /** Company name — becomes the display name either way ("<name> via QuoteAI" for the Resend fallback). */
+  /** Company name — becomes the display name either way ("<name> via PrevAI" for the Resend fallback). */
   fromDisplayName: string;
   /** The contractor's real address — set as Reply-To on the Resend fallback path (Gmail sends already reply to the account itself). */
   replyTo?: string | null;
@@ -44,7 +44,7 @@ export async function sendCustomerEmail(params: {
     }
   }
 
-  const from = `${sanitizeForFromHeader(params.fromDisplayName)} via QuoteAI <no-reply@quoteai.ca>`;
+  const from = `${sanitizeForFromHeader(params.fromDisplayName)} via PrevAI <no-reply@prevai.it>`;
   await resendOrThrow().emails.send({
     from,
     to: [params.toEmail],

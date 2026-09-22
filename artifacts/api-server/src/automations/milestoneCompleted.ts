@@ -5,7 +5,7 @@ import { createNotification } from "../lib/notifications.js";
 import { logger } from "../lib/logger.js";
 import { draftMilestoneInvoice, draftFinalInvoice, draftHoldbackReleaseInvoice, applyAutoSendPolicy } from "../invoices/service.js";
 
-const cad = (cents: number) => new Intl.NumberFormat("en-CA", { style: "currency", currency: "CAD" }).format(cents / 100);
+const cad = (cents: number) => new Intl.NumberFormat("it-IT", { style: "currency", currency: "EUR" }).format(cents / 100);
 
 // milestone.completed → Phase 4: draft the progress invoice for the payment
 // term this milestone releases (or leave a plain reminder when the term is
@@ -33,8 +33,8 @@ registerAutomation("milestone.completed", async (run) => {
     await createNotification({
       userId: run.userId,
       type: "milestone_payment_due",
-      title: `"${m.title}" completed — ${cad(m.paymentAmountCents)} now due`,
-      body: `${project?.name ?? "Job"}: payment "${m.paymentTermLabel ?? ""}" is released by this milestone. Create the invoice from the job's Invoices tab.`,
+      title: `"${m.title}" completata — ${cad(m.paymentAmountCents)} ora dovuti`,
+      body: `${project?.name ?? "Cantiere"}: la rata "${m.paymentTermLabel ?? ""}" si sblocca con questa milestone. Crea la fattura dalla scheda Fatture del cantiere.`,
       link: `/dashboard/jobs/${m.projectId}?tab=invoices`,
       entityType: "milestone",
       entityId: m.id,
@@ -95,8 +95,8 @@ registerAutomation("invoice.overdue", async (run) => {
   await createNotification({
     userId: inv.userId,
     type: "invoice_overdue",
-    title: `Invoice ${inv.number} is overdue`,
-    body: `${inv.customer.name || "Customer"} owes ${cad(inv.totalCents - inv.paidCents)} (due ${inv.dueDate.toLocaleDateString("en-CA", { dateStyle: "medium" })}). Reminders go out automatically after 3, 7 and 14 days.`,
+    title: `Fattura ${inv.number} scaduta`,
+    body: `${inv.customer.name || "Il cliente"} deve ${cad(inv.totalCents - inv.paidCents)} (scadenza ${inv.dueDate.toLocaleDateString("it-IT", { dateStyle: "medium" })}). I solleciti partono automaticamente dopo 3, 7 e 14 giorni.`,
     link: `/dashboard/invoices/${inv.id}`,
     entityType: "invoice",
     entityId: inv.id,

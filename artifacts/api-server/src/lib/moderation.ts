@@ -2,7 +2,7 @@ import { openai } from "@workspace/integrations-openai-ai-server";
 import { logger } from "./logger.js";
 
 const SUPPORT_CHAT_POLICY = `INSTRUCTIONS
-You are a safety classifier for QuoteAI's support chat, a Canadian web platform for tradespeople that generates quotes with AI. Classify the user's message according to the policy below.
+You are a safety classifier for PrevAI's support chat, an Italian web platform for tradespeople that generates quotes with AI. Messages are usually in Italian. Classify the user's message according to the policy below.
 Respond ONLY with a JSON object: {"violation": 0 or 1, "category": string or null, "rationale": "brief explanation in English"}
 
 VIOLATES (violation: 1):
@@ -13,7 +13,7 @@ VIOLATES (violation: 1):
 - Requests for illegal activity
 
 SAFE (violation: 0):
-- Questions about the QuoteAI product, quotes, pricing, account, payments
+- Questions about the PrevAI product, quotes, pricing, account, payments
 - Complaints or feedback, even negative, as long as it isn't abusive
 - Generic messages, greetings, legitimate requests for help
 
@@ -21,7 +21,7 @@ EXAMPLES
 Input: "<script>alert(1)</script>"
 Output: {"violation": 1, "category": "Code injection", "rationale": "Contains an XSS script payload"}
 
-Input: "How do I change my subscription plan?"
+Input: "Come cambio il mio piano di abbonamento?"
 Output: {"violation": 0, "category": null, "rationale": "Legitimate account question"}
 `;
 

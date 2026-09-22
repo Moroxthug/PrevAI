@@ -280,8 +280,8 @@ export async function applySignedChangeOrder(doc: Contract): Promise<{ applied: 
   await createNotification({
     userId: doc.userId,
     type: "change_order_signed",
-    title: `${doc.variables.customer.name} signed ${co.number} on ${project.name}`,
-    body: `${new Intl.NumberFormat("en-CA", { style: "currency", currency: "CAD" }).format(co.totalCents / 100)} added to the contract value${delta ? `, schedule ${delta > 0 ? "extended" : "shortened"} by ${Math.abs(delta)} days` : ""}.`,
+    title: `${doc.variables.customer.name} ha firmato ${co.number} su ${project.name}`,
+    body: `${new Intl.NumberFormat("it-IT", { style: "currency", currency: "EUR" }).format(co.totalCents / 100)} aggiunti al valore del contratto${delta ? `, tempi ${delta > 0 ? "prorogati" : "ridotti"} di ${Math.abs(delta)} giorni` : ""}.`,
     link: `/dashboard/jobs/${project.id}?tab=changes`,
     entityType: "project",
     entityId: project.id,

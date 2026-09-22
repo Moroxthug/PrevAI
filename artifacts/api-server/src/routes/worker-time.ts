@@ -37,7 +37,7 @@ async function resolveWorker(rawToken: string) {
   const [profile] = await db.select().from(businessProfilesTable).where(eq(businessProfilesTable.userId, worker.userId));
   // The company must still be on a plan with time tracking.
   if (!hasFeature(profile, "team_time")) return { expired: true as const, worker };
-  return { expired: false as const, worker, companyName: profile?.companyName ?? "", language: profile?.province === "QC" ? "fr" : "en", province: profile?.province ?? null };
+  return { expired: false as const, worker, companyName: profile?.companyName ?? "", language: "it" as const, province: profile?.province ?? null };
 }
 
 /** Jobs the worker may log time on: assigned ones, else every open job of the company. */
@@ -152,7 +152,7 @@ router.post("/t/:token/entries", writeLimiter, async (req, res) => {
     const dayKey = toIsoDate(localDayFor(new Date(), r.province));
     const already = await db.select({ id: timeEntriesTable.id }).from(timeEntriesTable).where(and(eq(timeEntriesTable.workerId, r.worker.id), eq(timeEntriesTable.enteredBy, "worker"), gte(timeEntriesTable.createdAt, new Date(`${dayKey}T00:00:00Z`)))).limit(2);
     if (already.length <= 1) {
-      await createNotification({ userId: r.worker.userId, type: "time_entry_submitted", title: r.language === "fr" ? `${r.worker.name} a saisi des heures` : `${r.worker.name} logged hours`, body: r.language === "fr" ? `${d.hours} h sur ${job.name} — à approuver dans Équipe.` : `${d.hours} h on ${job.name} — approve them under Team.`, link: "/dashboard/team?tab=time", entityType: "time_entry", entityId: entry!.id });
+      await createNotification({ userId: r.worker.userId, type: "time_entry_submitted", title: `${r.worker.name} ha registrato ore`, body: `${d.hours} h su ${job.name} — da approvare in Squadra.`, link: "/dashboard/team?tab=time", entityType: "time_entry", entityId: entry!.id });
     }
     res.status(201).json({ entry: serializeOwnEntry(entry!, job.name, milestoneId ? (job.milestones.find((m) => m.id === milestoneId)?.title ?? null) : null) });
   } catch (err) {
@@ -262,7 +262,7 @@ router.post("/t/:token/entries/:tid/clock-out", writeLimiter, async (req, res) =
     const dayKey = toIsoDate(localDayFor(new Date(), r.province));
     const already = await db.select({ id: timeEntriesTable.id }).from(timeEntriesTable).where(and(eq(timeEntriesTable.workerId, r.worker.id), eq(timeEntriesTable.enteredBy, "worker"), gte(timeEntriesTable.createdAt, new Date(`${dayKey}T00:00:00Z`)))).limit(2);
     if (already.length <= 1) {
-      await createNotification({ userId: r.worker.userId, type: "time_entry_submitted", title: r.language === "fr" ? `${r.worker.name} a saisi des heures` : `${r.worker.name} logged hours`, body: r.language === "fr" ? `${hours.toFixed(2)} h sur ${job?.name ?? ""} — à approuver dans Équipe.` : `${hours.toFixed(2)} h on ${job?.name ?? ""} — approve them under Team.`, link: "/dashboard/team?tab=time", entityType: "time_entry", entityId: updated!.id });
+      await createNotification({ userId: r.worker.userId, type: "time_entry_submitted", title: `${r.worker.name} ha registrato ore`, body: `${hours.toFixed(2)} h su ${job?.name ?? ""} — da approvare in Squadra.`, link: "/dashboard/team?tab=time", entityType: "time_entry", entityId: updated!.id });
     }
     res.json({ entry: serializeOwnEntry(updated!, job?.name ?? null, updated!.milestoneId ? (job?.milestones.find((m) => m.id === updated!.milestoneId)?.title ?? null) : null) });
   } catch (err) {

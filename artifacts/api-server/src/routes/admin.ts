@@ -678,7 +678,7 @@ async function getGoogleAccessToken(serviceAccountJson: string): Promise<string>
 
 router.get("/admin/search-console", async (req, res) => {
   let gscKey = process.env.GSC_SERVICE_ACCOUNT_KEY;
-  const siteUrl = process.env.GSC_SITE_URL || "https://quoteai.ca/";
+  const siteUrl = process.env.GSC_SITE_URL || "https://prevai.it/";
 
   if (!gscKey) {
     const possiblePaths = [
@@ -966,7 +966,7 @@ router.post("/admin/widget/create-client", async (req, res) => {
 // what the account pays — flags accounts running at a loss before it's a
 // pattern, so pricing/allowances (plans.ts MONTHLY_USAGE_ALLOWANCE) can be
 // corrected.
-const PLAN_MONTHLY_PRICE_CAD: Record<string, number> = {
+const PLAN_MONTHLY_PRICE_EUR: Record<string, number> = {
   monthly_starter: 19,
   monthly_pro: 49,
   monthly_elite: 59,
@@ -1011,7 +1011,7 @@ router.get("/admin/margin", async (req, res) => {
         const entry = byUser.get(userId)!;
         const profile = profileByUser.get(userId);
         const plan = profile?.subscriptionStatus === "active" ? (profile?.subscriptionPlan ?? null) : null;
-        const revenueCents = (plan ? PLAN_MONTHLY_PRICE_CAD[plan] ?? 0 : 0) * 100;
+        const revenueCents = (plan ? PLAN_MONTHLY_PRICE_EUR[plan] ?? 0 : 0) * 100;
         return {
           userId,
           companyName: profile?.companyName ?? null,

@@ -22,7 +22,7 @@ const _require = createRequire(import.meta.url);
 const documentAiLimiter = userRateLimiter({
   windowMs: 60 * 60 * 1000,
   max: 40,
-  message: "You have reached the hourly limit for AI document processing. Please try again later.",
+  message: "Hai raggiunto il limite orario di elaborazione documenti AI. Riprova più tardi.",
 });
 
 const objectStorage = new ObjectStorageService();
@@ -66,29 +66,29 @@ function serializeDoc(d: typeof uploadedDocumentsTable.$inferSelect) {
   };
 }
 
-const EXTRACTION_PROMPT = `You are a quote/estimate expert for the Canadian market (construction, building systems, technical services).
-Analyze this document (a quote, bill of quantities, invoice, or proposal) and extract the work items with their unit prices.
+const EXTRACTION_PROMPT = `Sei un esperto di preventivi per il mercato italiano (edilizia, impianti, servizi tecnici).
+Analizza questo documento (preventivo, computo metrico, fattura o offerta) ed estrai le lavorazioni con i prezzi unitari.
 
-RULES:
-1. Extract ONLY work items with a clear unit price ($/sqft, $/hour, $/linear ft, $/each, etc.)
-2. Normalize work-item names into professional English (e.g. "Interior wall painting", "Tile flooring installation", "Residential electrical wiring")
-3. If the document mentions a geographic area (city, province), include it in the "zona" field
-4. The "totale" field is the total for the entire document (if present)
-5. Include a maximum of 30 items — choose the most significant ones by price
-6. If the document's letterhead, header, or signature identifies the supplier/vendor/contractor company that issued it, put its name in "fornitore" (just the company name, not an address). If it's not clearly identifiable, use null.
+REGOLE:
+1. Estrai SOLO le voci di lavoro con un prezzo unitario chiaro (€/mq, €/ora, €/ml, €/cad, etc.)
+2. Normalizza i nomi delle lavorazioni in italiano professionale (es: "Tinteggiatura pareti interne", "Posa pavimento in gres", "Impianto elettrico civile")
+3. Se il documento contiene una zona geografica (città, provincia, regione), includila nel campo "zona"
+4. Il campo "totale" è il totale dell'intero documento (se presente)
+5. Includi al massimo 30 voci — scegli le più significative per prezzo
+6. Se l'intestazione, la carta intestata o la firma del documento identificano il fornitore/impresa che lo ha emesso, indica la ragione sociale in "fornitore" (solo il nome, senza indirizzo). Se non è chiaramente identificabile, usa null.
 
-OUTPUT VALID JSON ONLY, no extra text:
+OUTPUT SOLO JSON VALIDO, nessun testo extra:
 {
   "lavorazioni": [
-    { "tipo": "Interior wall painting", "prezzoUnitario": 8.5, "um": "sqft", "zona": "Toronto" }
+    { "tipo": "Tinteggiatura pareti interne", "prezzoUnitario": 8.5, "um": "mq", "zona": "Milano" }
   ],
   "totale": 15000,
-  "zona": "Toronto (ON)",
-  "fornitore": "Acme Renovations Inc.",
-  "note": "Quote for apartment renovation"
+  "zona": "Milano (MI)",
+  "fornitore": "Edil Rossi S.r.l.",
+  "note": "Preventivo per ristrutturazione appartamento"
 }
 
-If you can't find clear unit prices, return: { "lavorazioni": [], "totale": null, "zona": null, "fornitore": null, "note": "No unit prices found" }`;
+Se non riesci a trovare prezzi unitari chiari, restituisci: { "lavorazioni": [], "totale": null, "zona": null, "fornitore": null, "note": "Prezzi unitari non trovati" }`;
 
 async function extractFromImage(buffer: Buffer, mimeType: string) {
   const base64 = buffer.toString("base64");
@@ -108,7 +108,7 @@ async function extractFromImage(buffer: Buffer, mimeType: string) {
           },
           {
             type: "text",
-            text: "Analyze this document and extract the work items with their unit prices.",
+            text: "Analizza questo documento ed estrai le lavorazioni con i relativi prezzi unitari.",
           },
         ],
       },
@@ -136,7 +136,7 @@ async function extractFromPdf(buffer: Buffer) {
   }
 
   if (!pdfText.trim()) {
-    return JSON.stringify({ lavorazioni: [], totale: null, zona: null, note: "No extractable text in the PDF" });
+    return JSON.stringify({ lavorazioni: [], totale: null, zona: null, note: "Nessun testo estraibile dal PDF" });
   }
 
   const completion = await openai.chat.completions.create({
@@ -146,7 +146,7 @@ async function extractFromPdf(buffer: Buffer) {
       { role: "system", content: EXTRACTION_PROMPT },
       {
         role: "user",
-        content: `Text extracted from the document:\n\n${pdfText}`,
+        content: `Testo estratto dal documento:\n\n${pdfText}`,
       },
     ],
   });
@@ -167,7 +167,7 @@ async function extractFromDocx(buffer: Buffer) {
   }
 
   if (!docText.trim()) {
-    return JSON.stringify({ lavorazioni: [], totale: null, zona: null, note: "No extractable text in the DOCX" });
+    return JSON.stringify({ lavorazioni: [], totale: null, zona: null, note: "Nessun testo estraibile dal DOCX" });
   }
 
   const completion = await openai.chat.completions.create({
@@ -177,7 +177,7 @@ async function extractFromDocx(buffer: Buffer) {
       { role: "system", content: EXTRACTION_PROMPT },
       {
         role: "user",
-        content: `Text extracted from the DOCX document:\n\n${docText}`,
+        content: `Testo estratto dal documento DOCX:\n\n${docText}`,
       },
     ],
   });
@@ -211,7 +211,7 @@ async function extractFromXlsx(buffer: Buffer) {
   }
 
   if (!sheetText.trim()) {
-    return JSON.stringify({ lavorazioni: [], totale: null, zona: null, note: "No extractable text in the XLSX" });
+    return JSON.stringify({ lavorazioni: [], totale: null, zona: null, note: "Nessun testo estraibile dal XLSX" });
   }
 
   const completion = await openai.chat.completions.create({
@@ -221,7 +221,7 @@ async function extractFromXlsx(buffer: Buffer) {
       { role: "system", content: EXTRACTION_PROMPT },
       {
         role: "user",
-        content: `Data extracted from the Excel file (CSV format per sheet):\n\n${sheetText}`,
+        content: `Dati estratti dal file Excel (formato CSV per foglio):\n\n${sheetText}`,
       },
     ],
   });

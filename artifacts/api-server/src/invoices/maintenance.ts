@@ -15,7 +15,7 @@ import { ti, type Lang, type IKey } from "./render.js";
 // 3. Review-then-auto-send drafts whose timer elapsed.
 // 4. Holdback releases whose lien period ended → notify (or auto-send).
 
-const cad = (c: number) => new Intl.NumberFormat("en-CA", { style: "currency", currency: "CAD" }).format(c / 100);
+const cad = (c: number) => new Intl.NumberFormat("it-IT", { style: "currency", currency: "EUR" }).format(c / 100);
 
 async function profilesFor(userIds: string[]): Promise<Map<string, BusinessProfile>> {
   const ids = [...new Set(userIds)];
@@ -87,12 +87,12 @@ export async function runInvoiceMaintenance(now = new Date()): Promise<{ overdue
   for (const inv of toAutoSend) {
     try {
       await sendInvoice({ invoiceId: inv.id, actor: "system" });
-      await createNotification({ userId: inv.userId, type: "invoice_sent", title: `${ti(`type_${inv.type}` as IKey, inv.language as Lang)} ${inv.number} sent automatically`, body: `${cad(inv.totalCents)} — sent to ${inv.customer.name || "the customer"} after the review window elapsed.`, link: `/dashboard/invoices/${inv.id}`, entityType: "invoice", entityId: inv.id });
+      await createNotification({ userId: inv.userId, type: "invoice_sent", title: `${ti(`type_${inv.type}` as IKey, inv.language as Lang)} ${inv.number} inviata automaticamente`, body: `${cad(inv.totalCents)} — inviata a ${inv.customer.name || "il cliente"} allo scadere della finestra di revisione.`, link: `/dashboard/invoices/${inv.id}`, entityType: "invoice", entityId: inv.id });
       autoSent++;
     } catch (err) {
       logger.error({ err, invoiceId: inv.id }, "Auto-send failed");
       await db.update(invoicesTable).set({ autoSendAt: null }).where(eq(invoicesTable.id, inv.id));
-      await createNotification({ userId: inv.userId, type: "invoice_drafted", title: `Could not auto-send ${inv.number}`, body: err instanceof Error ? err.message : "Unknown error", link: `/dashboard/invoices/${inv.id}`, entityType: "invoice", entityId: inv.id });
+      await createNotification({ userId: inv.userId, type: "invoice_drafted", title: `Invio automatico di ${inv.number} non riuscito`, body: err instanceof Error ? err.message : "Errore sconosciuto", link: `/dashboard/invoices/${inv.id}`, entityType: "invoice", entityId: inv.id });
     }
   }
 
@@ -118,8 +118,8 @@ export async function runInvoiceMaintenance(now = new Date()): Promise<{ overdue
     await createNotification({
       userId: inv.userId,
       type: sent ? "invoice_sent" : "invoice_drafted",
-      title: sent ? `Holdback release ${inv.number} sent` : `Holdback of ${cad(inv.totalCents)} is now releasable`,
-      body: sent ? `${cad(inv.totalCents)} — the lien period ended and the release invoice was emailed to ${inv.customer.name || "the customer"}.` : `The lien period for this job has ended. Review and send holdback release invoice ${inv.number}.`,
+      title: sent ? `Svincolo ritenuta ${inv.number} inviato` : `Ritenuta di ${cad(inv.totalCents)} ora svincolabile`,
+      body: sent ? `${cad(inv.totalCents)} — il periodo di garanzia è terminato e la fattura di svincolo è stata inviata a ${inv.customer.name || "il cliente"}.` : `Il periodo di garanzia di questo cantiere è terminato. Rivedi e invia la fattura di svincolo ritenuta ${inv.number}.`,
       link: `/dashboard/invoices/${inv.id}`,
       entityType: "invoice",
       entityId: inv.id,

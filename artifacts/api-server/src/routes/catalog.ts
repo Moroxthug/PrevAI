@@ -37,25 +37,25 @@ const catalogOcrUpload = multer({
 const catalogOcrLimiter = userRateLimiter({
   windowMs: 60 * 60 * 1000,
   max: 15,
-  message: "You have reached the hourly limit for price-list imports. Please try again later.",
+  message: "Hai raggiunto il limite orario di importazioni listino. Riprova più tardi.",
 });
 
-const OCR_PROMPT = `You are an assistant that extracts a PRICE LIST from an image (a photo of a printed or on-screen price list) or from text extracted from a document (PDF, DOCX, XLSX).
+const OCR_PROMPT = `Sei un assistente che estrae un LISTINO PREZZI da un'immagine (foto di un listino cartaceo o a schermo) o da testo estratto da un documento (PDF, DOCX, XLSX).
 
-For each price-list item you find, return an object with:
-- nome: description of the work item or product
-- categoria: general category (e.g. "Painting", "Electrical", "Plumbing", "General Construction"), null if it can't be inferred
-- um: unit of measure, one of sqft, linear ft, cubic ft, each, hours, kg, "lump sum", pieces, kw, litres, tonnes, m, %
-- prezzoUnitario: number (just the CAD figure, no symbol or thousands separators)
-- note: any additional details, empty string if none
+Per ogni voce di listino individuata, restituisci un oggetto con:
+- nome: descrizione della lavorazione o dell'articolo
+- categoria: categoria generale (es. "Tinteggiatura", "Impianto elettrico", "Impianto idraulico", "Opere edili"), null se non deducibile
+- um: unità di misura tra mq, ml, mc, cad, ore, kg, "a.c.", pezzi, kw, lt, t, m, %
+- prezzoUnitario: numero (solo la cifra in euro, senza simbolo né separatori di migliaia)
+- note: eventuali dettagli aggiuntivi, stringa vuota se assenti
 
-CORE RULES:
-1. Extract ONLY items with a unit price that is clearly readable or inferable from context. If a line has no readable price, discard it — do not invent prices.
-2. If a price is given as a range (e.g. "$10-15"), use the average value.
-3. Correct obvious OCR typos only when context makes them unambiguous; when in doubt, discard the item rather than guess.
-4. Maximum 200 items.
+REGOLE FONDAMENTALI:
+1. Estrai SOLO voci con un prezzo unitario chiaramente leggibile o deducibile dal contesto. Se una riga non ha un prezzo leggibile, scartala: non inventare prezzi.
+2. Se un prezzo è indicato come range (es. "10-15€"), usa il valore medio.
+3. Correggi refusi OCR evidenti solo quando il contesto li rende inequivocabili; in caso di dubbio, scarta la voce piuttosto che indovinare.
+4. Massimo 200 voci.
 
-OUTPUT: A valid JSON array ONLY, no extra text or markdown:
+OUTPUT: SOLO un array JSON valido, nessun testo o markdown extra:
 [{ "nome": "...", "categoria": "...", "um": "...", "prezzoUnitario": 0, "note": "" }]`;
 
 function serializeItem(item: typeof priceCatalogItemsTable.$inferSelect) {
@@ -272,13 +272,13 @@ router.post(
 
       const hasImages = imageDataUrls.length > 0;
       if (!hasImages && docTexts.length === 0) {
-        res.status(422).json({ error: "Could not read any content from the uploaded files." });
+        res.status(422).json({ error: "Impossibile leggere contenuto dai file caricati." });
         return;
       }
 
       const userText = docTexts.length > 0
-        ? `Text extracted from the uploaded document(s):\n\n${docTexts.join("\n\n")}`
-        : "Extract the price list from the attached images.";
+        ? `Testo estratto dai documenti caricati:\n\n${docTexts.join("\n\n")}`
+        : "Estrai il listino prezzi dalle immagini allegate.";
 
       const targetModel = hasImages ? "gpt-4o" : "gpt-4o-mini";
       const completion = await openai.chat.completions.create({
