@@ -442,12 +442,12 @@ Columns — **Auth**: session (`requireAuth`), apiKey (`requireApiKey`), admin (
 
 | Line | Method | Path | Auth | Perm | RL | Val | Gate | Scope | Archived | Token | Webhook |
 |---|---|---|---|---|---|---|---|---|---|---|---|
-| 80 | GET | `/api/sign/:token` | none | — | viewLimiter | none | — | n/a | — | hash-lookup | — |
-| 104 | POST | `/api/sign/:token/otp` | none | — | otpLimiter | none | — | n/a | — | hash-lookup | — |
-| 131 | POST | `/api/sign/:token/verify` | none | — | otpLimiter | zod | — | n/a | — | timing-safe | — |
-| 178 | POST | `/api/sign/:token/complete` | none | — | signLimiter | zod | — | n/a | — | hash-lookup | — |
-| 223 | POST | `/api/sign/:token/decline` | none | — | signLimiter | manual | — | n/a | — | hash-lookup | — |
-| 255 | GET | `/api/sign/:token/pdf` | none | — | viewLimiter | none | — | n/a | — | hash-lookup | — |
+| 81 | GET | `/api/sign/:token` | none | — | viewLimiter | none | — | n/a | — | hash-lookup | — |
+| 105 | POST | `/api/sign/:token/otp` | none | — | otpLimiter | none | — | n/a | — | hash-lookup | — |
+| 132 | POST | `/api/sign/:token/verify` | none | — | otpLimiter | zod | — | n/a | — | timing-safe | — |
+| 181 | POST | `/api/sign/:token/complete` | none | — | signLimiter | zod | — | n/a | — | hash-lookup | — |
+| 226 | POST | `/api/sign/:token/decline` | none | — | signLimiter | manual | — | n/a | — | hash-lookup | — |
+| 258 | GET | `/api/sign/:token/pdf` | none | — | viewLimiter | none | — | n/a | — | hash-lookup | — |
 
 ## artifacts/api-server/src/routes/speech.ts
 

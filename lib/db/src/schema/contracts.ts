@@ -152,6 +152,8 @@ export const contractSignersTable = pgTable(
     role: text("role", { enum: ["contractor", "customer"] }).notNull(),
     name: text("name").notNull(),
     email: text("email").notNull(),
+    /** V2-4: codice fiscale o P. IVA dichiarato dal firmatario al momento della firma (identificazione, eIDAS). */
+    taxId: text("tax_id"),
     /** SHA-256 of the raw signing token in the emailed link (customer only). */
     tokenHash: text("token_hash"),
     tokenExpiresAt: timestamp("token_expires_at", { withTimezone: true }),

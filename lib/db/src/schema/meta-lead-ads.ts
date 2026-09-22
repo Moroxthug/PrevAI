@@ -5,7 +5,7 @@ import { authUsersTable } from "./auth";
 // A company connects one Facebook Page via OAuth; QuoteAI subscribes that
 // Page to the `leadgen` webhook field and every new Lead Ads submission is
 // imported into the existing `leads` pipeline (Phase 9) with source
-// "meta_lead_ads" — reuses lead follow-up, CRM, and CASL consent-logging
+// "meta_lead_ads" — reuses lead follow-up, CRM, and GDPR consent-logging
 // entirely. v1 auto-connects the first Page the OAuth grant returns (mirrors
 // Wave's `getFirstBusiness` single-business assumption) — a company managing
 // several Pages can disconnect and reconnect after granting access to only

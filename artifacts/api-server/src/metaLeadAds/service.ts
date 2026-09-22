@@ -83,7 +83,7 @@ async function logImport(userId: string, metaLeadId: string, formId: string | nu
 
 /**
  * Imports one Lead Ads submission after a `leadgen` webhook event: fetches the full lead payload,
- * writes it into the Phase 9 leads pipeline with CASL consent recorded (the customer's own Meta
+ * writes it into the Phase 9 leads pipeline with GDPR consent basis recorded (the customer's own Meta
  * instant-form opt-in is the consent basis), and logs the attempt either way.
  */
 export async function importLeadFromWebhook(pageId: string, leadgenId: string): Promise<void> {

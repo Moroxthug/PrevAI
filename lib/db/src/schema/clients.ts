@@ -24,7 +24,7 @@ export const clientsTable = pgTable(
     notes: text("notes").notNull().default(""),
     /** Stable dedup key: lower(name)|lower(email)|phone — same recipe used by the legacy derived clients list. */
     dedupKey: text("dedup_key").notNull(),
-    // ── Phase 10: CASL opt-out for marketing-type sends (review requests, shared photos) ──
+    // ── Phase 10: opt-out GDPR/art. 130 Codice Privacy per gli invii non transazionali (richieste recensione, foto condivise) ──
     // Never gates transactional messages (quotes/contracts/invoices) — only automated reachout.
     marketingUnsubscribeToken: text("marketing_unsubscribe_token").notNull().$defaultFn(() => randomUUID()),
     marketingUnsubscribedAt: timestamp("marketing_unsubscribed_at", { withTimezone: true }),

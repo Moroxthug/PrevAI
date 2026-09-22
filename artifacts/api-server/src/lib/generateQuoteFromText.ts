@@ -7,6 +7,7 @@ import { trackEvent } from "./telemetry.js";
 import { linkQuoteToClient } from "./clients.js";
 import { resolveQuoteTaxRate } from "./tax.js";
 import { recordAiUsage } from "./usage.js";
+import { stripLocationPlaceholder } from "../quotes/titles.js";
 
 /**
  * Prompt unificato PrevAI v2 (V2-2e).
@@ -50,7 +51,7 @@ REGOLE FONDAMENTALI:
 6. Applica uno sconto SOLO se l'utente lo richiede esplicitamente nella sua descrizione; altrimenti imposta sempre percentuale: 0
 7. Condizioni di pagamento tipiche edilizia: 30% acconto firma, 30% SAL intermedio, 30% SAL finale, 10% saldo fine lavori
 8. Sempre IVA 22% salvo indicazione contraria (es. 10% per ristrutturazioni edilizie su abitazioni, 4% per prima casa; se l'utente indica reverse charge o split payment, imposta iva_percentuale a 0)
-9. Il titolo_riga2 deve descrivere l'intervento e il luogo del cantiere
+9. Il titolo_riga2 deve descrivere l'intervento e, SOLO se noto dai dati forniti, il luogo del cantiere ("Intervento di … – Milano (MI)"). Se il luogo non è indicato, ometti la parte del luogo: mai scrivere segnaposto come "[Comune]" o "(Prov)"
 10. numero_preventivo_data: NON GENERARE — il server assegna il numero automaticamente. Restituisci una stringa vuota.
 11. REGOLA CRITICA — ZERO OMISSIONI: se l'utente fornisce una descrizione dettagliata con molte voci, NUMERATE o PUNTATE, ogni singola voce deve diventare una riga distinta nel preventivo. NON riassumere, NON accorpare più voci in una sola, NON saltare o omettere voci. Se necessario, crea PIÙ CAPITOLI per contenere tutto. Ogni elemento elencato dall'utente deve avere la sua descrizione, unità di misura, quantità, prezzo unitario e totale.
 12. SE l'utente allega un documento con computo metrico o lista voci: trasforma il documento 1:1. Ogni riga del documento diventa una voce. NON inventare nuove voci, NON accorpare voci simili. Mantieni le quantità e i prezzi unitari del documento.
@@ -60,7 +61,7 @@ REGOLE FONDAMENTALI:
 OUTPUT — SOLO JSON VALIDO, nessun testo extra:
 {
   "titolo_riga1": "Analisi Economica e Computo Metrico Prezzato",
-  "titolo_riga2": "Intervento di [descrizione breve] – [Comune] ([Prov])",
+  "titolo_riga2": "Intervento di ristrutturazione bagno – Milano (MI)",
   "numero_preventivo_data": "",
   "cliente": { "nome": "", "indirizzo": "" },
   "descrizione_generale": "Riassunto di 2-4 frasi dell'intervento, dell'approccio e del luogo.",
@@ -286,7 +287,7 @@ function parseAiResponse(content: string, rawInput: string, profile: typeof busi
   return {
     rawInput,
     titoloPreventivoRiga1: aiData.titolo_riga1 ?? "Analisi Economica e Computo Metrico Prezzato",
-    titoloPreventivoRiga2: aiData.titolo_riga2 ?? "",
+    titoloPreventivoRiga2: stripLocationPlaceholder(aiData.titolo_riga2 ?? ""),
     numeroPreventivoData: aiData.numero_preventivo_data ?? "",
     clientData: { nome: aiData.cliente?.nome ?? "", indirizzo: aiData.cliente?.indirizzo ?? "" },
     companySnapshot: resolvedSnapshot,

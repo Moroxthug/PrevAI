@@ -135,7 +135,7 @@ router.patch("/leads/:id", requireAuth, requirePermission("leads", "edit"), asyn
 
 // POST /api/leads/:id/send — manual "send now" outside the automated sequence
 // (e.g. the office wants to nudge a lead today instead of waiting for the
-// next scheduled stage). Uses the same CASL-compliant template as the
+// next scheduled stage). Uses the same GDPR-compliant (unsubscribe link) template as the
 // automated sequence and advances the sequence exactly like an automated send.
 router.post("/leads/:id/send", requireAuth, requirePermission("leads", "edit"), async (req, res) => {
   try {

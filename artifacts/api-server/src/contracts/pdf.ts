@@ -104,7 +104,7 @@ function signatureBlock(role: "contractor" | "customer", v: ContractVariables, s
     } else {
       stack.push({ text: s.signatureData || s.name, italics: true, fontSize: 20, margin: [0, 4, 0, 4] });
     }
-    stack.push({ text: `${tr("signedBy", lang)} ${s.name}`, fontSize: 8.5, color: MUTED, font: "Roboto" });
+    stack.push({ text: `${tr("signedBy", lang)} ${s.name}${s.taxId ? ` — ${tr("taxId", lang)} ${s.taxId}` : ""}`, fontSize: 8.5, color: MUTED, font: "Roboto" });
     stack.push({ text: `${tr("signedOn", lang)} ${fmtDate(s.signedAt, lang, true)}`, fontSize: 8.5, color: MUTED, font: "Roboto" });
   } else {
     stack.push({ text: tr("notYetSigned", lang), italics: true, fontSize: 9, color: "#9ca3af", margin: [0, 18, 0, 0] });

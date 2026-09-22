@@ -29,6 +29,7 @@ export default function SignPage() {
   const [verifying, setVerifying] = useState(false);
   const [otpError, setOtpError] = useState<string | null>(null);
   const [name, setName] = useState("");
+  const [taxId, setTaxId] = useState("");
   const [signature, setSignature] = useState<SignatureValue>(null);
   const [consent, setConsent] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -98,7 +99,7 @@ export default function SignPage() {
     setSubmitting(true);
     setSubmitError(null);
     try {
-      await signApi.complete(token!, { name: name.trim(), signatureType: signature.type, signatureData: signature.data, consent: true });
+      await signApi.complete(token!, { name: name.trim(), taxId: taxId.trim().toUpperCase() || undefined, signatureType: signature.type, signatureData: signature.data, consent: true });
       await refetch();
       setStep("done");
       window.scrollTo({ top: 0, behavior: "smooth" });
@@ -243,6 +244,11 @@ export default function SignPage() {
                 <div className="field">
                   <label htmlFor="sign-full-name">{t("sign.fullName")}</label>
                   <input id="sign-full-name" autoComplete="name" value={name} onChange={(e) => setName(e.target.value)} />
+                </div>
+                <div className="field">
+                  <label htmlFor="sign-tax-id">{t("sign.taxId")}</label>
+                  <input id="sign-tax-id" value={taxId} onChange={(e) => setTaxId(e.target.value)} maxLength={16} placeholder="RSSMRA80A01F205X" style={{ textTransform: "uppercase" }} />
+                  <span className="text-xs mt-1 block" style={{ color: "var(--muted-mk)" }}>{t("sign.taxIdHint")}</span>
                 </div>
                 <SignaturePad value={signature} onChange={setSignature} defaultName={name} />
                 <label className="flex items-start gap-3 rounded-lg p-3 text-sm cursor-pointer" style={{ border: "1px solid var(--line)", color: "var(--ink)" }}>

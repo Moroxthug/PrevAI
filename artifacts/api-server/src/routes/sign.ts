@@ -2,6 +2,7 @@ import { Router } from "express";
 import { z } from "zod";
 import { createHash, randomInt, timingSafeEqual } from "node:crypto";
 import { db, contractsTable, contractSignersTable, authUsersTable } from "@workspace/db";
+import { CODICE_FISCALE_REGEX, PARTITA_IVA_REGEX } from "@workspace/config";
 import { eq } from "drizzle-orm";
 import { ipRateLimiter } from "../lib/rateLimit.js";
 import { getBaseUrl } from "../lib/baseUrl.js";
@@ -169,6 +170,8 @@ router.post("/sign/:token/verify", otpLimiter, async (req, res) => {
 
 const CompleteBody = z.object({
   name: z.string().min(2).max(200),
+  /** C.F. (16 caratteri) o P. IVA (11 cifre); facoltativo ma normalizzato. */
+  taxId: z.string().trim().max(16).transform((v) => v.toUpperCase()).refine((v) => v === "" || CODICE_FISCALE_REGEX.test(v) || PARTITA_IVA_REGEX.test(v), "invalid_tax_id").optional(),
   signatureType: z.enum(["drawn", "typed"]),
   signatureData: z.string().min(1).max(200_000),
   consent: z.literal(true),
@@ -202,10 +205,10 @@ router.post("/sign/:token/complete", signLimiter, async (req, res) => {
       res.status(400).json({ error: "invalid_signature" });
       return;
     }
-    const consentText = "Ho letto il contratto, compreso il mio diritto di recesso, e accetto di firmarlo elettronicamente. La mia firma elettronica ha lo stesso valore di una firma autografa.";
+    const consentText = "Ho letto il contratto, compreso il mio diritto di recesso, e accetto di firmarlo elettronicamente. Riconosco che la firma elettronica apposta tramite questa procedura (identificazione via email con codice monouso, art. 25 Reg. UE 910/2014 eIDAS e art. 20 CAD) ha valore di sottoscrizione ai fini della conclusione del contratto.";
     await db
       .update(contractSignersTable)
-      .set({ status: "signed", name: body.data.name, signatureType: body.data.signatureType, signatureData: body.data.signatureData, consentText, signedAt: new Date(), ip: req.ip ?? null, userAgent: req.headers["user-agent"] ?? null, tokenHash: signer.tokenHash })
+      .set({ status: "signed", name: body.data.name, taxId: body.data.taxId || null, signatureType: body.data.signatureType, signatureData: body.data.signatureData, consentText, signedAt: new Date(), ip: req.ip ?? null, userAgent: req.headers["user-agent"] ?? null, tokenHash: signer.tokenHash })
       .where(eq(contractSignersTable.id, signer.id));
     await logContractEvent({ contractId: loaded.contract.id, type: "signed", actor: "customer", signerId: signer.id, detail: { signatureType: body.data.signatureType, consentText }, ip: req.ip, userAgent: req.headers["user-agent"] });
     await writeAudit({ userId: loaded.contract.userId, actorType: "customer", actorId: signer.id, entityType: "contract", entityId: loaded.contract.id, action: "customer_signed", ip: req.ip, userAgent: req.headers["user-agent"] });

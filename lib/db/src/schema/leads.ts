@@ -9,8 +9,9 @@ import { quotesTable } from "./quotes";
 // See docs/GROWTH-PLATFORM-PLAN.md §Phase 9. A lead is the first-contact
 // record — the widget (and any future "contact us" form) writes here first;
 // quotes.id is linked after generation instead of being the only entry point.
-// CASL requires a recorded consent basis and a working unsubscribe on every
-// lead before any automated follow-up message can be sent (see lead_events).
+// GDPR (artt. 6-7) e art. 130 Codice Privacy: base del consenso registrata e
+// disiscrizione funzionante su ogni lead prima di qualsiasi follow-up automatico
+// (vedi lead_events).
 
 export const LEAD_STATUSES = ["new", "contacted", "quoted", "won", "lost", "unsubscribed"] as const;
 export type LeadStatus = (typeof LEAD_STATUSES)[number];

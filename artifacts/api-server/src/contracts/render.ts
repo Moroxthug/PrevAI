@@ -93,6 +93,7 @@ export const T = {
   signedBy: "Firmato da",
   signedOn: "il",
   notYetSigned: "Non ancora firmato",
+  taxId: "C.F./P. IVA",
   auditTitle: "Certificato di firma elettronica",
   auditIntro: `Il presente certificato registra la sottoscrizione elettronica del contratto che precede. Le firme sono state raccolte tramite ${MARKET.brand} con verifica dell'indirizzo email (firma elettronica ai sensi del Regolamento eIDAS). L'integrità del documento può essere verificata confrontando le impronte SHA-256 riportate sotto con quelle dei file PDF.`,
   event: "Evento",

@@ -302,7 +302,7 @@ router.post("/contracts/:id/sign", requireAuth, requirePermission("contracts", "
       res.status(500).json({ error: "Missing contractor signer" });
       return;
     }
-    const consentText = "Accetto di firmare questo contratto elettronicamente e riconosco che la mia firma elettronica ha lo stesso valore di una firma autografa.";
+    const consentText = "Accetto di firmare questo contratto elettronicamente e riconosco che la firma elettronica apposta tramite questa procedura (art. 25 Reg. UE 910/2014 eIDAS e art. 20 CAD) ha valore di sottoscrizione ai fini della conclusione del contratto.";
     await db
       .update(contractSignersTable)
       .set({ status: "signed", name: parsed.data.name, signatureType: parsed.data.signatureType, signatureData: parsed.data.signatureData, consentText, signedAt: new Date(), ip: req.ip ?? null, userAgent: req.headers["user-agent"] ?? null })

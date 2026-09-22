@@ -7,7 +7,7 @@ import { ipRateLimiter } from "../lib/rateLimit.js";
 const router = Router();
 const unsubscribeLimiter = ipRateLimiter({ windowMs: 60_000, max: 30, message: "Too many requests" });
 
-// CASL requires a working unsubscribe link that takes effect without delay.
+// GDPR art. 21 / art. 130 Codice Privacy: link di disiscrizione funzionante ed efficace subito.
 // No auth — the token itself (a random uuid, never the lead id) is the
 // credential, exactly like an invoice/contract share link.
 router.get("/public/leads/unsubscribe", unsubscribeLimiter, async (req, res) => {

@@ -65,3 +65,6 @@ DROP TABLE IF EXISTS google_lsa_import_log;
 DROP TABLE IF EXISTS google_lsa_connections;
 
 COMMIT;
+
+-- V2-4e: firmatario con C.F./P. IVA
+ALTER TABLE contract_signers ADD COLUMN IF NOT EXISTS tax_id text;

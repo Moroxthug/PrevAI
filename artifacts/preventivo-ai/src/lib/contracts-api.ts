@@ -108,7 +108,7 @@ export const signApi = {
   get: (token: string) => req<PublicSignPayload>(`/api/sign/${token}`),
   otp: (token: string) => req<{ success: true }>(`/api/sign/${token}/otp`, { method: "POST", body: "{}" }),
   verify: (token: string, code: string) => req<{ success: true }>(`/api/sign/${token}/verify`, { method: "POST", body: JSON.stringify({ code }) }),
-  complete: (token: string, body: { name: string; signatureType: "drawn" | "typed"; signatureData: string; consent: true }) =>
+  complete: (token: string, body: { name: string; taxId?: string; signatureType: "drawn" | "typed"; signatureData: string; consent: true }) =>
     req<{ success: true; status: string; signedAt: string | null }>(`/api/sign/${token}/complete`, { method: "POST", body: JSON.stringify(body) }),
   decline: (token: string, reason: string) => req<{ success: true }>(`/api/sign/${token}/decline`, { method: "POST", body: JSON.stringify({ reason }) }),
   pdfUrl: (token: string) => `/api/sign/${token}/pdf`,
