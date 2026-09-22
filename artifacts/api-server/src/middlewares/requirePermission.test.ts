@@ -47,6 +47,19 @@ describe("roleCan", () => {
     }
   });
 
+  // A-2: `fiscale` è la prima area **chiusa**. Incassi, imposte e soglia del
+  // forfettario sono la posizione fiscale del titolare, non un dato di lavoro:
+  // office, foreman e viewer non li vedono nemmeno in lettura.
+  it("only owner and admin can read the fiscal area; nobody else can even view it", () => {
+    expect(roleCan("owner", "fiscale", "full")).toBe(true);
+    expect(roleCan("admin", "fiscale", "view")).toBe(true);
+    expect(roleCan("admin", "fiscale", "full")).toBe(false);
+    for (const role of ["office", "foreman", "viewer"] as const) {
+      expect(roleCan(role, "fiscale", "view")).toBe(false);
+      expect(roleCan(role, "fiscale", "full")).toBe(false);
+    }
+  });
+
   it("rank comparison is monotonic: full implies edit implies view", () => {
     const actions: PermissionAction[] = ["view", "edit", "full"];
     for (const role of TEAM_MEMBER_ROLES) {

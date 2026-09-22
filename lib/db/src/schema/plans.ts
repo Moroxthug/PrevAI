@@ -26,6 +26,7 @@ export const PRODUCT_FEATURES = [
   "gmail_send", // Phase 20: send customer-facing emails from the company's own connected Gmail account
   "meta_lead_ads", // Phase 28: import Facebook/Instagram Lead Ads submissions straight into the leads pipeline
   "sdi_invoicing", // A-1: fatture elettroniche via SdI, ciclo passivo, bollo virtuale — add-on Amministrazione
+  "fiscal_engine", // A-2: calcolo forfettario, "quanto mettere via", monitor soglia, simulatore — add-on Amministrazione
 ] as const;
 export type ProductFeature = (typeof PRODUCT_FEATURES)[number];
 
@@ -101,7 +102,7 @@ export function minimumPlanFor(feature: ProductFeature): PlanId {
  * quindi `minimumPlanFor` non ha una risposta sensata da dare: l'interfaccia
  * deve dire "attiva il modulo", non "passa a Elite".
  */
-export const ADDON_FEATURES: readonly ProductFeature[] = ["sdi_invoicing"];
+export const ADDON_FEATURES: readonly ProductFeature[] = ["sdi_invoicing", "fiscal_engine"];
 
 export function isAddonFeature(feature: ProductFeature): boolean {
   return ADDON_FEATURES.includes(feature);

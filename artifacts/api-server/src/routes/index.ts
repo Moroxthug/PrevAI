@@ -43,6 +43,7 @@ import publicV1Router from "./public-v1";
 import archiveRouter from "./archive";
 import sdiRouter from "./sdi";
 import sdiWebhooksRouter from "./sdi-webhooks";
+import fiscaleRouter from "./fiscale";
 
 const router: IRouter = Router();
 
@@ -89,6 +90,7 @@ router.use(developerApiRouter);
 router.use(archiveRouter);
 router.use(sdiRouter);
 router.use(sdiWebhooksRouter);
+router.use(fiscaleRouter);
 router.use("/v1/public", publicV1Router);
 
 export default router;
