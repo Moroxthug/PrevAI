@@ -22,6 +22,7 @@ export const translations: Record<Lang, Record<string, string>> = {
     "publicInvoice.from": "Emittente",
     "publicInvoice.invoice": "Fattura pro-forma",
     "publicInvoice.proformaNotice": "Documento pro-forma: non costituisce fattura ai sensi dell'art. 21 DPR 633/72 e non ha valore fiscale. La fattura elettronica sarà emessa tramite il Sistema di Interscambio (SDI).",
+    "publicInvoice.fiscalNotice": "Copia di cortesia. L'originale è la fattura elettronica trasmessa al Sistema di Interscambio (SdI) dell'Agenzia delle Entrate: la trovi nel tuo cassetto fiscale o presso il tuo intermediario.",
     "publicInvoice.notFoundTitle": "Documento non trovato",
     "publicInvoice.notFoundDesc": "Questo link non è valido. Usa l'email più recente che hai ricevuto, oppure contatta direttamente l'impresa.",
     "publicInvoice.paidTitle": "Pagata — grazie!",

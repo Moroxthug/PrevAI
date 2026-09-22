@@ -25,6 +25,8 @@ import { useSearch } from "wouter";
 import { useLanguage } from "@/i18n/LanguageContext";
 import { BusinessTab } from "./settings-business-tab";
 import { SecurityTab } from "./settings-security-tab";
+import { SdiTab } from "./settings-sdi-tab";
+import { hasFeature } from "@/lib/plans";
 import { usageApi } from "@/lib/usage-api";
 import { stripeConnectApi, developerApi, metaLeadAdsApi, type AutomationEventName } from "@/lib/invoices-api";
 
@@ -1725,10 +1727,12 @@ export default function SettingsPage() {
   const isAccountPath = typeof window !== "undefined" && window.location.pathname.includes("/account");
   const tabFromParam = params.get("tab");
   const { data: subscription } = useGetSubscription();
+  const { data: settingsProfile } = useGetBusinessProfile();
   const isProOrElite = subscription?.isActive && (subscription?.plan === "monthly_pro" || subscription?.plan === "monthly_elite");
   const isElite = subscription?.isActive && subscription?.plan === "monthly_elite";
-  const defaultTab = (isAccountPath || tabFromParam === "account") ? "account" : tabFromParam === "business" ? "business" : tabFromParam === "whatsapp" ? "whatsapp" : tabFromParam === "widget" ? "widget" : tabFromParam === "usage" ? "usage" : tabFromParam === "integrations" ? "integrations" : tabFromParam === "security" ? "security" : "billing";
-  const [activeTab, setActiveTab] = useState<"account" | "business" | "billing" | "whatsapp" | "widget" | "usage" | "integrations" | "security">(defaultTab as any);
+  const hasSdi = settingsProfile ? hasFeature(settingsProfile as never, "sdi_invoicing") : false;
+  const defaultTab = (isAccountPath || tabFromParam === "account") ? "account" : tabFromParam === "business" ? "business" : tabFromParam === "whatsapp" ? "whatsapp" : tabFromParam === "widget" ? "widget" : tabFromParam === "usage" ? "usage" : tabFromParam === "integrations" ? "integrations" : tabFromParam === "security" ? "security" : tabFromParam === "sdi" ? "sdi" : "billing";
+  const [activeTab, setActiveTab] = useState<"account" | "business" | "billing" | "whatsapp" | "widget" | "usage" | "integrations" | "security" | "sdi">(defaultTab as any);
 
   const TABS = [
     { id: "account" as const, label: t("dashboard.settings.tabs.account") },
@@ -1739,6 +1743,8 @@ export default function SettingsPage() {
     { id: "usage" as const, label: t("dashboard.settings.tabs.usage") },
     ...(isElite ? [{ id: "integrations" as const, label: t("dashboard.settings.tabs.integrations") }] : []),
     { id: "security" as const, label: t("dashboard.settings.tabs.security") },
+    // A-1: la scheda compare solo a chi ha l'add-on Amministrazione.
+    ...(hasSdi ? [{ id: "sdi" as const, label: t("dashboard.settings.tabs.sdi") }] : []),
   ];
 
   return (
@@ -1783,6 +1789,8 @@ export default function SettingsPage() {
         </div>
       ) : activeTab === "security" ? (
         <SecurityTab />
+      ) : activeTab === "sdi" ? (
+        <SdiTab />
       ) : (
         <BillingTab />
       )}

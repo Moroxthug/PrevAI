@@ -10,7 +10,6 @@ import {
   clientsTable,
   progressivoInvio as componiProgressivo,
   nomeFileFattura,
-  normalizzaPartitaIva,
   descrizioneErroreSdi,
   STATI_SDI_FINALI,
   STATI_SDI_LABEL,
@@ -33,6 +32,9 @@ import { intermediarioPer } from "./providers/index.js";
 import type { EventoSdi } from "./providers/types.js";
 import type { FatturaPaInput } from "./types.js";
 import { registraBolloDocumento } from "./bollo.js";
+import { requisitiMancanti, type Requisito } from "./stato.js";
+
+export { requisitiMancanti, moduloAttivo, moduloSdiAttivo, impostazioniSdi, type Requisito } from "./stato.js";
 
 const storage = new ObjectStorageService();
 
@@ -145,29 +147,6 @@ export async function ricalcolaStatoConfigurazione(settings: SdiSettings): Promi
   if (stato === settings.stato) return settings;
   const [aggiornata] = await db.update(sdiSettingsTable).set({ stato }).where(eq(sdiSettingsTable.userId, settings.userId)).returning();
   return aggiornata!;
-}
-
-export type Requisito = { campo: string; messaggio: string };
-
-/** Cosa manca ancora per poter emettere. Lo stesso elenco guida l'onboarding. */
-export function requisitiMancanti(settings: SdiSettings, profile: { vatNumber?: string | null; codiceFiscale?: string | null; companyName?: string | null; address?: string | null; city?: string | null; cap?: string | null; province?: string | null; twoFactorRequired?: boolean | null } | null): Requisito[] {
-  const mancanti: Requisito[] = [];
-  if (!profile?.companyName) mancanti.push({ campo: "profilo.companyName", messaggio: "Manca la ragione sociale dell'impresa." });
-  if (!normalizzaPartitaIva(profile?.vatNumber)) mancanti.push({ campo: "profilo.vatNumber", messaggio: "Manca la partita IVA." });
-  if (!profile?.address || !profile?.city || !profile?.cap || !profile?.province) {
-    mancanti.push({ campo: "profilo.sede", messaggio: "Manca la sede completa (indirizzo, CAP, comune, provincia)." });
-  }
-  if (!settings.regimeFiscale) mancanti.push({ campo: "sdi.regimeFiscale", messaggio: "Scegli il regime fiscale da dichiarare in fattura." });
-  if (settings.provider !== "simulato" && !settings.providerApiKey) {
-    mancanti.push({ campo: "sdi.providerApiKey", messaggio: "Mancano le credenziali dell'intermediario." });
-  }
-  if (!settings.delegaFirmataAt) mancanti.push({ campo: "sdi.delega", messaggio: "Conferma di aver firmato la delega presso l'intermediario." });
-  // A-0/§6.5: chi tiene dati fiscali completi in PrevAI deve avere la verifica
-  // in due passaggi obbligatoria per tutta l'organizzazione.
-  if (!profile?.twoFactorRequired) {
-    mancanti.push({ campo: "profilo.twoFactorRequired", messaggio: "Attiva la verifica in due passaggi obbligatoria per l'organizzazione (Impostazioni → Sicurezza)." });
-  }
-  return mancanti;
 }
 
 // ── Progressivo di invio ─────────────────────────────────────────────────────

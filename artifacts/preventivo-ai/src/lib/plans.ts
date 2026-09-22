@@ -17,7 +17,9 @@ export type ProductFeature =
   | "team_time"
   | "assistant"
   | "analytics_pro"
-  | "team_accounts";
+  | "team_accounts"
+  // A-1: add-on Amministrazione — nessun piano lo include, si accende col flag.
+  | "sdi_invoicing";
 
 const STARTER: ProductFeature[] = ["quotes", "quote_email", "acceptance_notifications"];
 const PRO: ProductFeature[] = [...STARTER, "catalog", "contracts", "jobs", "costs", "invoicing", "team_accounts"];

@@ -43,6 +43,8 @@ router.get("/i/:token", viewLimiter, async (req, res) => {
       invoice: {
         id: inv.id,
         number: inv.number,
+        // A-1: decide l'avviso mostrato al cliente (pro-forma o copia di cortesia).
+        fiscale: inv.fiscale,
         type: inv.type,
         status: inv.status,
         language: inv.language,

@@ -63,6 +63,8 @@ export function serializeInvoice(inv: Invoice, extra: { projectName?: string | n
   return {
     id: inv.id,
     number: inv.number,
+    // A-1: fattura vera (serie FT-, XML allo SdI) o pro-forma.
+    fiscale: inv.fiscale,
     type: inv.type,
     status: inv.status,
     source: inv.source,

@@ -77,7 +77,7 @@ export default function PublicInvoicePage() {
       </header>
 
       <main className="max-w-3xl mx-auto px-4 py-6 space-y-5">
-        <p className="text-[11px] leading-snug" style={{ color: "var(--muted-mk)" }}>{t("publicInvoice.proformaNotice")}</p>
+        <p className="text-[11px] leading-snug" style={{ color: "var(--muted-mk)" }}>{t(invoice.fiscale ? "publicInvoice.fiscalNotice" : "publicInvoice.proformaNotice")}</p>
         {paid && !credit && (
           <div className="doc-banner ok p-5">
             <CheckCircle2 className="h-9 w-9 mx-auto mb-2" style={{ color: "var(--green-dark)" }} />

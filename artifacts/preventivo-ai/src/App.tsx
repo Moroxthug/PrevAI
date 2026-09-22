@@ -38,6 +38,7 @@ const LeadsListPage = lazy(() => import("@/pages/dashboard/leads/index"));
 const ImportsPage = lazy(() => import("@/pages/dashboard/imports/index"));
 const ClientDetailPage = lazy(() => import("@/pages/dashboard/clients/[name]"));
 const InvoicesPage = lazy(() => import("@/pages/dashboard/invoices"));
+const AmministrazionePage = lazy(() => import("@/pages/dashboard/amministrazione"));
 const InvoiceDetailPage = lazy(() => import("@/pages/dashboard/invoices/[id]"));
 const PublicInvoicePage = lazy(() => import("@/pages/i/[token]"));
 const JobsListPage = lazy(() => import("@/pages/dashboard/jobs/index"));
@@ -197,6 +198,9 @@ function Router() {
       )} />
       <Route path="/dashboard/invoices" component={() => (
         <OnboardingGuard><DashboardLayout><DashSuspense><InvoicesPage /></DashSuspense></DashboardLayout></OnboardingGuard>
+      )} />
+      <Route path="/dashboard/amministrazione" component={() => (
+        <OnboardingGuard><DashboardLayout><DashSuspense><AmministrazionePage /></DashSuspense></DashboardLayout></OnboardingGuard>
       )} />
       <Route path="/dashboard/jobs/:id/setup" component={() => (
         <OnboardingGuard><DashboardLayout><DashSuspense><JobSetupPage /></DashSuspense></DashboardLayout></OnboardingGuard>

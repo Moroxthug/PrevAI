@@ -46,6 +46,8 @@ import {
   uploadedDocumentsTable,
   priceIntelligenceAlertsTable,
   organizationMembersTable,
+  eInvoicesTable,
+  supplierEInvoicesTable,
   authSessionsTable,
   authUsersTable,
 } from "@workspace/db";
@@ -139,6 +141,9 @@ async function seedOrgA(): Promise<Fixtures> {
   f.doc = await ins(db.insert(uploadedDocumentsTable).values({ userId, fileName: "receipt.pdf", mimeType: "application/pdf", fileUrl: `/objects/receipts/${userId}/receipt.pdf` } as typeof uploadedDocumentsTable.$inferInsert).returning());
   f.alert = await ins(db.insert(priceIntelligenceAlertsTable).values({ userId, workType: "drywall", previousAvgPrice: "10", currentAvgPrice: "12", percentChange: "20", direction: "up" } as typeof priceIntelligenceAlertsTable.$inferInsert).returning());
   f.member = await ins(db.insert(organizationMembersTable).values({ ownerId: userId, invitedEmail: `invitee-${randomUUID()}@example.invalid`, invitedByUserId: userId, role: "viewer", status: "invited" } as typeof organizationMembersTable.$inferInsert).returning());
+  // A-1: una trasmissione SDI e una fattura di acquisto, per le rotte del modulo.
+  f.trasmissione = await ins(db.insert(eInvoicesTable).values({ userId, invoiceId: invoice!.id, progressivoInvio: `26${Math.floor(Math.random() * 90000 + 10000)}`, fileName: "IT01234567897_2600001.xml" } as typeof eInvoicesTable.$inferInsert).returning());
+  f.passiva = await ins(db.insert(supplierEInvoicesTable).values({ userId, providerDocumentId: `sec_${randomUUID()}`, fornitoreNome: "Ferramenta E2E", numero: "1/2026" } as typeof supplierEInvoicesTable.$inferInsert).returning());
 
   // Clients are virtual (md5 of the quote's client fields) — read the id back the way the UI does.
   const clients = await A.api("/api/clients");
@@ -159,6 +164,9 @@ function resolveParams(route: MatrixRoute, f: Fixtures): { path: string; unseede
     }
     const name = s.slice(1);
     if (name === "token" || name === "provider" || name === "userId") return null; // public token routes, per-user OAuth providers, admin
+    // A-1: anno e trimestre del bollo non sono identificatori di nessuno —
+    // ogni impresa vede i propri, non c'è niente da sottrarre a un'altra.
+    if (name === "anno" || name === "trimestre") return null;
     const prefix = segs.slice(0, i).join("/");
     let id: string | undefined;
     switch (name) {
@@ -170,6 +178,7 @@ function resolveParams(route: MatrixRoute, f: Fixtures): { path: string; unseede
           ["/api/developer/api-keys", "apiKey"], ["/api/developer/webhooks", "webhook"], ["/api/imports/batches", "batch"], ["/api/imports/candidates", "candidate"],
           ["/api/team/members", "member"], ["/api/v1/public/quotes", "quote"], ["/api/v1/public/jobs", "project"],
           ["/api/v1/public/invoices", "invoice"], ["/api/v1/public/clients", "client"],
+          ["/api/sdi/transmissions", "trasmissione"], ["/api/sdi/passive", "passiva"],
         ];
         id = byPrefix.find(([p]) => prefix === p)?.[1];
         break;

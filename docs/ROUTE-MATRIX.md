@@ -246,23 +246,23 @@ Columns — **Auth**: session (`requireAuth`), apiKey (`requireApiKey`), admin (
 
 | Line | Method | Path | Auth | Perm | RL | Val | Gate | Scope | Archived | Token | Webhook |
 |---|---|---|---|---|---|---|---|---|---|---|---|
-| 153 | GET | `/api/invoices` | session | invoicing:view | — | none | hasFeature(invoicing) | n/a | invoices:delegated | — | — |
-| 181 | GET | `/api/invoices/clients` | session | invoicing:view | — | none | — | n/a | clients:MISSING | — | — |
-| 193 | GET | `/api/invoices/:id` | session | invoicing:view | — | none | — | post-check | — | — | — |
-| 234 | POST | `/api/invoices` | session | invoicing:edit | — | zod | hasFeature(invoicing) | n/a | — | — | — |
-| 266 | POST | `/api/jobs/:id/invoices` | session | invoicing:edit | — | zod | hasFeature(invoicing) | predicate | — | — | — |
-| 303 | GET | `/api/jobs/:id/invoices` | session | invoicing:view | — | none | — | predicate | — | — | — |
-| 331 | PUT | `/api/invoices/:id` | session | invoicing:edit | — | zod | — | post-check | — | — | — |
-| 364 | DELETE | `/api/invoices/:id` | session | invoicing:full | — | none | — | post-check | — | — | — |
-| 379 | POST | `/api/invoices/:id/archive` | session | invoicing:full | — | none | — | post-check | — | — | — |
-| 397 | POST | `/api/invoices/:id/restore` | session | invoicing:full | — | none | — | post-check | — | — | — |
-| 417 | POST | `/api/invoices/:id/send` | session | invoicing:edit | sendLimiter | zod | hasFeature(invoicing) | predicate | — | — | — |
-| 439 | POST | `/api/invoices/:id/remind` | session | invoicing:edit | sendLimiter | none | — | predicate | — | — | — |
-| 476 | GET | `/api/invoices/:id/pdf` | session | invoicing:view | — | none | — | post-check | — | — | — |
-| 494 | POST | `/api/invoices/:id/payments` | session | invoicing:edit | — | zod | — | helper | — | — | — |
-| 528 | DELETE | `/api/invoices/:id/payments/:pid` | session | invoicing:full | — | none | — | helper | — | — | — |
-| 542 | POST | `/api/invoices/:id/void` | session | invoicing:full | — | zod | — | helper | — | — | — |
-| 556 | POST | `/api/invoices/:id/credit-note` | session | invoicing:full | sendLimiter | zod | hasFeature(invoicing) | predicate | — | — | — |
+| 155 | GET | `/api/invoices` | session | invoicing:view | — | none | hasFeature(invoicing) | n/a | invoices:delegated | — | — |
+| 183 | GET | `/api/invoices/clients` | session | invoicing:view | — | none | — | n/a | clients:MISSING | — | — |
+| 195 | GET | `/api/invoices/:id` | session | invoicing:view | — | none | — | post-check | — | — | — |
+| 236 | POST | `/api/invoices` | session | invoicing:edit | — | zod | hasFeature(invoicing) | n/a | — | — | — |
+| 268 | POST | `/api/jobs/:id/invoices` | session | invoicing:edit | — | zod | hasFeature(invoicing) | predicate | — | — | — |
+| 305 | GET | `/api/jobs/:id/invoices` | session | invoicing:view | — | none | — | predicate | — | — | — |
+| 333 | PUT | `/api/invoices/:id` | session | invoicing:edit | — | zod | — | post-check | — | — | — |
+| 366 | DELETE | `/api/invoices/:id` | session | invoicing:full | — | none | — | post-check | — | — | — |
+| 381 | POST | `/api/invoices/:id/archive` | session | invoicing:full | — | none | — | post-check | — | — | — |
+| 399 | POST | `/api/invoices/:id/restore` | session | invoicing:full | — | none | — | post-check | — | — | — |
+| 419 | POST | `/api/invoices/:id/send` | session | invoicing:edit | sendLimiter | zod | hasFeature(invoicing) | predicate | — | — | — |
+| 441 | POST | `/api/invoices/:id/remind` | session | invoicing:edit | sendLimiter | none | — | predicate | — | — | — |
+| 478 | GET | `/api/invoices/:id/pdf` | session | invoicing:view | — | none | — | post-check | — | — | — |
+| 496 | POST | `/api/invoices/:id/payments` | session | invoicing:edit | — | zod | — | helper | — | — | — |
+| 530 | DELETE | `/api/invoices/:id/payments/:pid` | session | invoicing:full | — | none | — | helper | — | — | — |
+| 544 | POST | `/api/invoices/:id/void` | session | invoicing:full | — | zod | — | helper | — | — | — |
+| 558 | POST | `/api/invoices/:id/credit-note` | session | invoicing:full | sendLimiter | zod | hasFeature(invoicing) | predicate | — | — | — |
 
 ## artifacts/api-server/src/routes/jobs.ts
 
@@ -343,9 +343,9 @@ Columns — **Auth**: session (`requireAuth`), apiKey (`requireApiKey`), admin (
 | Line | Method | Path | Auth | Perm | RL | Val | Gate | Scope | Archived | Token | Webhook |
 |---|---|---|---|---|---|---|---|---|---|---|---|
 | 28 | GET | `/api/i/:token` | none | — | viewLimiter | none | hasFeature(invoice_card_payments) | n/a | — | hash-lookup | — |
-| 74 | POST | `/api/i/:token/mark-sent` | none | — | actionLimiter | none | — | n/a | — | hash-lookup | — |
-| 89 | POST | `/api/i/:token/pay-link` | none | — | actionLimiter | none | hasFeature(invoice_card_payments) | n/a | — | hash-lookup | — |
-| 106 | GET | `/api/i/:token/pdf` | none | — | viewLimiter | none | — | n/a | — | hash-lookup | — |
+| 76 | POST | `/api/i/:token/mark-sent` | none | — | actionLimiter | none | — | n/a | — | hash-lookup | — |
+| 91 | POST | `/api/i/:token/pay-link` | none | — | actionLimiter | none | hasFeature(invoice_card_payments) | n/a | — | hash-lookup | — |
+| 108 | GET | `/api/i/:token/pdf` | none | — | viewLimiter | none | — | n/a | — | hash-lookup | — |
 
 ## artifacts/api-server/src/routes/public-leads.ts
 
@@ -442,22 +442,22 @@ Columns — **Auth**: session (`requireAuth`), apiKey (`requireApiKey`), admin (
 
 | Line | Method | Path | Auth | Perm | RL | Val | Gate | Scope | Archived | Token | Webhook |
 |---|---|---|---|---|---|---|---|---|---|---|---|
-| 70 | GET | `/api/sdi/settings` | session | settings:view | — | none | hasFeature(sdi_invoicing) | n/a | — | — | — |
-| 102 | PATCH | `/api/sdi/settings` | session | settings:full | — | zod | hasFeature(sdi_invoicing) | n/a | — | — | — |
-| 130 | GET | `/api/sdi/onboarding` | session | settings:view | — | none | hasFeature(sdi_invoicing) | n/a | — | — | — |
-| 159 | GET | `/api/invoices/:id/sdi` | session | invoicing:view | — | none | hasFeature(sdi_invoicing) | predicate | — | — | — |
-| 177 | GET | `/api/invoices/:id/sdi/anteprima` | session | invoicing:view | — | none | hasFeature(sdi_invoicing) | predicate | — | — | — |
-| 195 | POST | `/api/invoices/:id/sdi/invia` | session | invoicing:full | inviiLimiter | manual | hasFeature(sdi_invoicing) | predicate | — | — | — |
-| 209 | POST | `/api/sdi/transmissions/:id/aggiorna` | session | invoicing:view | — | none | hasFeature(sdi_invoicing) | predicate | — | — | — |
-| 220 | GET | `/api/sdi/transmissions/:id/xml` | session | invoicing:view | — | none | hasFeature(sdi_invoicing) | predicate | — | — | — |
-| 235 | GET | `/api/sdi/passive` | session | costs:view | — | none | hasFeature(sdi_invoicing) | n/a | — | — | — |
-| 243 | POST | `/api/sdi/passive/sincronizza` | session | costs:edit | — | none | hasFeature(sdi_invoicing) | n/a | — | — | — |
-| 253 | POST | `/api/sdi/passive/:id/collega` | session | costs:edit | — | zod | hasFeature(sdi_invoicing) | predicate | — | — | — |
-| 277 | POST | `/api/sdi/passive/:id/ignora` | session | costs:edit | — | none | hasFeature(sdi_invoicing) | predicate | — | — | — |
-| 287 | GET | `/api/sdi/passive/:id/xml` | session | costs:view | — | none | hasFeature(sdi_invoicing) | predicate | — | — | — |
-| 302 | GET | `/api/sdi/bollo` | session | invoicing:view | — | none | hasFeature(sdi_invoicing) | n/a | — | — | — |
-| 322 | GET | `/api/sdi/bollo/:anno/:trimestre/f24` | session | invoicing:view | — | none | hasFeature(sdi_invoicing) | predicate | — | — | — |
-| 334 | POST | `/api/sdi/bollo/:anno/:trimestre/versato` | session | invoicing:full | — | manual | hasFeature(sdi_invoicing) | predicate | — | — | — |
+| 71 | GET | `/api/sdi/settings` | session | settings:view | — | none | hasFeature(sdi_invoicing) | n/a | — | — | — |
+| 105 | PATCH | `/api/sdi/settings` | session | settings:full | — | zod | hasFeature(sdi_invoicing) | n/a | — | — | — |
+| 133 | GET | `/api/sdi/onboarding` | session | settings:view | — | none | hasFeature(sdi_invoicing) | n/a | — | — | — |
+| 162 | GET | `/api/invoices/:id/sdi` | session | invoicing:view | — | none | hasFeature(sdi_invoicing) | predicate | — | — | — |
+| 180 | GET | `/api/invoices/:id/sdi/anteprima` | session | invoicing:view | — | none | hasFeature(sdi_invoicing) | predicate | — | — | — |
+| 198 | POST | `/api/invoices/:id/sdi/invia` | session | invoicing:full | inviiLimiter | manual | hasFeature(sdi_invoicing) | predicate | — | — | — |
+| 212 | POST | `/api/sdi/transmissions/:id/aggiorna` | session | invoicing:view | — | none | hasFeature(sdi_invoicing) | predicate | — | — | — |
+| 223 | GET | `/api/sdi/transmissions/:id/xml` | session | invoicing:view | — | none | hasFeature(sdi_invoicing) | predicate | — | — | — |
+| 238 | GET | `/api/sdi/passive` | session | costs:view | — | none | hasFeature(sdi_invoicing) | n/a | — | — | — |
+| 246 | POST | `/api/sdi/passive/sincronizza` | session | costs:edit | — | none | hasFeature(sdi_invoicing) | n/a | — | — | — |
+| 256 | POST | `/api/sdi/passive/:id/collega` | session | costs:edit | — | zod | hasFeature(sdi_invoicing) | predicate | — | — | — |
+| 280 | POST | `/api/sdi/passive/:id/ignora` | session | costs:edit | — | none | hasFeature(sdi_invoicing) | predicate | — | — | — |
+| 290 | GET | `/api/sdi/passive/:id/xml` | session | costs:view | — | none | hasFeature(sdi_invoicing) | predicate | — | — | — |
+| 305 | GET | `/api/sdi/bollo` | session | invoicing:view | — | none | hasFeature(sdi_invoicing) | n/a | — | — | — |
+| 325 | GET | `/api/sdi/bollo/:anno/:trimestre/f24` | session | invoicing:view | — | none | hasFeature(sdi_invoicing) | predicate | — | — | — |
+| 337 | POST | `/api/sdi/bollo/:anno/:trimestre/versato` | session | invoicing:full | — | manual | hasFeature(sdi_invoicing) | predicate | — | — | — |
 
 ## artifacts/api-server/src/routes/security.ts
 

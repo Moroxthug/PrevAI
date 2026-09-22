@@ -24,6 +24,7 @@ import {
   impostazioniOCrea,
   aggiornaImpostazioni,
   requisitiMancanti,
+  ricalcolaStatoConfigurazione,
   serializzaImpostazioni,
   serializzaTrasmissione,
   anteprimaFattura,
@@ -70,7 +71,9 @@ function erroreSdi(err: unknown, res: import("express").Response): void {
 router.get("/sdi/settings", requireAuth, requirePermission("settings", "view"), async (req, res) => {
   const userId = getUserId(res);
   if (!(await moduloOForbidden(userId, res))) return;
-  const settings = await impostazioniOCrea(userId);
+  // Il profilo aziendale può essere cambiato altrove: la cache dello stato si
+  // riallinea alla lettura, non solo quando si salva da questa schermata.
+  const settings = await ricalcolaStatoConfigurazione(await impostazioniOCrea(userId));
   const [profile] = await db.select().from(businessProfilesTable).where(eq(businessProfilesTable.userId, userId));
   res.json({
     settings: serializzaImpostazioni(settings, {
@@ -130,7 +133,7 @@ router.patch("/sdi/settings", requireAuth, requirePermission("settings", "full")
 router.get("/sdi/onboarding", requireAuth, requirePermission("settings", "view"), async (req, res) => {
   const userId = getUserId(res);
   if (!(await moduloOForbidden(userId, res))) return;
-  const settings = await impostazioniOCrea(userId);
+  const settings = await ricalcolaStatoConfigurazione(await impostazioniOCrea(userId));
   const [profile] = await db.select().from(businessProfilesTable).where(eq(businessProfilesTable.userId, userId));
   const codice = intermediarioPer(settings).codiceDestinatarioRicezione();
   res.json({

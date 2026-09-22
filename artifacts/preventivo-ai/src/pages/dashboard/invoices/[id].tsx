@@ -13,6 +13,7 @@ import { formatCents } from "@/lib/jobs-api";
 import { invoicesApi, isOpenInvoice, type InvoiceDetailDto, type InvoiceDto, type InvoiceEventDto } from "@/lib/invoices-api";
 import { InvoiceStatusBadge, InvoiceTypeBadge } from "@/components/jobs/badges";
 import { LineEditor, RecordPaymentDialog, CreditNoteDialog, rowsFromLines, toLineInputs } from "@/components/invoices/invoice-dialogs";
+import { SdiPanel } from "@/components/invoices/sdi-panel";
 
 export default function InvoiceDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -64,7 +65,7 @@ export default function InvoiceDetailPage() {
             {inv.projectId && <Link href={`/dashboard/jobs/${inv.projectId}?tab=invoices`}><Briefcase />{inv.projectName ?? t("invoices.job")}</Link>}
             {inv.creditNoteForId && <Link href={`/dashboard/invoices/${inv.creditNoteForId}`}>{t("invoices.creditFor")}</Link>}
           </div>
-          <p className="text-[11px] mt-1" style={{ color: "var(--muted-mk)" }}>{t("invoices.proformaNotice")}</p>
+          <p className="text-[11px] mt-1" style={{ color: "var(--muted-mk)" }}>{t(inv.fiscale ? "invoices.fiscalNotice" : "invoices.proformaNotice")}</p>
         </div>
         <div className="head-actions">
           <a href={invoicesApi.pdfUrl(inv.id, true)} className="btn btn-sm btn-outline-navy"><Download className="h-4 w-4" /> PDF</a>
@@ -115,6 +116,8 @@ export default function InvoiceDetailPage() {
         </div>
 
         <div className="stack">
+          <SdiPanel invoiceId={inv.id} fiscale={inv.fiscale} inviabile={!isDraft && inv.status !== "void"} />
+
           {data.publicUrl && (
             <section className="card">
               <div className="card-head"><div><h2>{t("invoices.publicLink")}</h2><p className="sub">{t("invoices.publicLinkHint")}</p></div></div>

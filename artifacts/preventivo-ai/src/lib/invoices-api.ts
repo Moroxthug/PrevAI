@@ -26,6 +26,8 @@ export type InvoiceTaxLineDto = { code: string; label: string; rate: number; amo
 export type InvoiceDto = {
   id: string;
   number: string;
+  /** A-1: fattura vera (serie FT-, trasmessa allo SdI) invece di pro-forma. */
+  fiscale: boolean;
   type: InvoiceType;
   status: InvoiceStatus;
   source: "automation" | "manual";
@@ -170,6 +172,8 @@ export type PublicInvoiceDto = {
   invoice: {
     id: string;
     number: string;
+    /** A-1: documento fiscale (fattura elettronica) invece di pro-forma. */
+    fiscale: boolean;
     type: InvoiceType;
     status: InvoiceStatus;
     language: "en" | "fr";

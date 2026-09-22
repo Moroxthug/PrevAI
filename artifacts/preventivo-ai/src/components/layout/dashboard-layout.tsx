@@ -1,6 +1,6 @@
 import "@/i18n/dashboard";
 import { Link, useLocation } from "wouter";
-import { LayoutDashboard, FileText, Menu, BarChart3, Settings, ChevronLeft, ChevronRight, Plus, LogOut, User, CreditCard, Building2, ChevronDown, BookOpen, Users, Receipt, Briefcase, FolderOpen, FileSignature, HardHat, Sparkles, Check, Target, UploadCloud, Search, Archive } from "lucide-react";
+import { LayoutDashboard, FileText, Landmark, Menu, BarChart3, Settings, ChevronLeft, ChevronRight, Plus, LogOut, User, CreditCard, Building2, ChevronDown, BookOpen, Users, Receipt, Briefcase, FolderOpen, FileSignature, HardHat, Sparkles, Check, Target, UploadCloud, Search, Archive } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { teamMembersApi } from "@/lib/team-members-api";
 import { securityApi } from "@/lib/security-api";
@@ -10,7 +10,8 @@ import { CommandDialog, CommandInput, CommandList, CommandEmpty, CommandGroup, C
 import { useState, useEffect, useRef, useCallback } from "react";
 import { cn } from "@/lib/utils";
 import { Logo } from "@/components/logo";
-import { useGetSubscription } from "@workspace/api-client-react";
+import { useGetSubscription, useGetBusinessProfile } from "@workspace/api-client-react";
+import { hasFeature } from "@/lib/plans";
 import { useAuth } from "@/hooks/use-auth";
 import { authClient } from "@/lib/auth-client";
 import { useLanguage } from "@/i18n/LanguageContext";
@@ -31,6 +32,8 @@ function useNavItems() {
     { href: "/dashboard/team", labelKey: "dashboard.nav.team", icon: HardHat, exact: false, proOnly: true, comingSoon: false, group: "delivery" },
     { href: "/dashboard/catalog", labelKey: "dashboard.nav.catalog", icon: BookOpen, exact: false, proOnly: true, comingSoon: false, group: "delivery" },
     { href: "/dashboard/invoices", labelKey: "dashboard.nav.invoices", icon: Receipt, exact: false, proOnly: true, comingSoon: false, group: "delivery" },
+    // A-1: visibile solo con l'add-on Amministrazione (fatture elettroniche, bollo, ciclo passivo).
+    { href: "/dashboard/amministrazione", labelKey: "dashboard.nav.amministrazione", icon: Landmark, exact: false, proOnly: true, addonSdi: true, comingSoon: false, group: "delivery" },
     { href: "/dashboard/analytics", labelKey: "dashboard.nav.analytics", icon: BarChart3, exact: false, proOnly: false, comingSoon: false, group: "insights" },
     { href: "/dashboard/assistant", labelKey: "dashboard.nav.assistant", icon: Sparkles, exact: false, proOnly: true, comingSoon: false, group: "insights" },
     { href: "/dashboard/documents", labelKey: "dashboard.nav.documents", icon: FolderOpen, exact: false, proOnly: false, comingSoon: false, group: "workspace" },
@@ -235,6 +238,8 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
   const { data: securityPolicy } = useQuery({ queryKey: ["security-policy"], queryFn: securityApi.policy, enabled: isSignedIn === true, staleTime: 60_000 });
   const twoFactorGated = Boolean(securityPolicy?.twoFactorRequired) && !user?.twoFactorEnabled;
   const isPro = subscription?.isActive && (subscription?.plan === "monthly_pro" || subscription?.plan === "monthly_elite");
+  const { data: navProfile } = useGetBusinessProfile();
+  const hasSdi = navProfile ? hasFeature(navProfile as never, "sdi_invoicing") : false;
   // Hooks must run on every render — keep this above the early returns below.
   const allNavItems = useNavItems();
 
@@ -291,7 +296,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
     return null;
   }
 
-  const NAV_ITEMS = allNavItems.filter(item => !item.proOnly || isPro);
+  const NAV_ITEMS = allNavItems.filter(item => (!item.proOnly || isPro) && (!("addonSdi" in item && item.addonSdi) || hasSdi));
   const name = user?.name || user?.email?.split("@")[0] || "Account";
   const email = user?.email ?? "";
   const initials = name.slice(0, 2).toUpperCase();
