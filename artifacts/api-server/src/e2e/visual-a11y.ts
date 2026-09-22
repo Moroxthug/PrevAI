@@ -11,8 +11,8 @@
 // and writes .qa/visual/report.{json,md}. Nothing leaves the machine: email
 // is captured at the fetch boundary, other vendors are stubbed, AI falls back.
 //
-//   pnpm --filter @workspace/api-server qa:visual                  # EN at 5 widths, FR at 1280/375
-//   pnpm --filter @workspace/api-server qa:visual -- --lang=fr --widths=375 --routes=quotes,jobs
+//   pnpm --filter @workspace/api-server qa:visual                  # it a 5 larghezze
+//   pnpm --filter @workspace/api-server qa:visual -- --widths=375 --routes=quotes,jobs
 //   pnpm --filter @workspace/api-server qa:visual -- --keep        # leave the account + servers up and print the token
 //   pnpm --filter @workspace/api-server qa:visual -- --screenshots=false --widths=1280,375   # axe-only pass
 //   E2E_NO_PURGE=1 pnpm … qa:visual -- --port=5198 --out=visual-quick --routes=…            # alongside a running sweep
@@ -70,10 +70,12 @@ function routes(s: import("./fixtures.js").Showcase): RouteSpec[] {
   const pub = (path: string): RouteSpec => ({ path, auth: false });
   const dash = (path: string): RouteSpec => ({ path, auth: true });
   const list: RouteSpec[] = [
-    pub("/"), pub("/fr"), pub("/whatsapp"), pub("/blog"), pub("/blog/categoria/advice"),
-    pub("/blog/how-much-does-it-cost-to-paint-an-apartment-in-canada-2026"),
-    pub("/quotes/painter"), pub("/quotes/painter/toronto"), pub("/fr/soumissions/peintre"), pub("/fr/soumissions/peintre/montreal"),
-    pub("/chi-siamo"), pub("/contatti"), pub("/privacy-policy"), pub("/terms"), pub("/mappa-sito"),
+    // V2-6: rotte pubbliche italiane reali (prima c'erano ancora i path canadesi di QuoteAI, che finivano sulla 404).
+    pub("/"), pub("/whatsapp"), pub("/blog"), pub("/blog/categoria/consigli"),
+    pub("/blog/ai-preventivi-artigiani"),
+    pub("/preventivi/imbianchino"), pub("/preventivi/imbianchino/bergamo"), pub("/preventivi/come-fare-preventivo"),
+    pub("/help"), pub("/help/create-a-quote"),
+    pub("/chi-siamo"), pub("/contatti"), pub("/privacy"), pub("/termini"), pub("/mappa-sito"),
     pub("/sign-in"), pub("/sign-up"), pub("/this-route-does-not-exist"),
     pub(`/p/${s.longQuoteId}`), pub(`/i/${s.invoiceToken}`),
     ...(s.signToken ? [pub(`/sign/${s.signToken}`)] : []),

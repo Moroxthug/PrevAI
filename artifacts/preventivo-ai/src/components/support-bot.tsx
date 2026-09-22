@@ -453,6 +453,12 @@ export default function SupportBot() {
                     {t("supportBot.greeting")}
                   </div>
                 </div>
+                {/* AI Act art. 50: disclosure at first contact, kept until a human takes over. */}
+                {convStatus !== "human_active" && (
+                  <p className="text-[10px] leading-snug text-slate-500 text-center px-2" role="note">
+                    {t("supportBot.aiNotice")}
+                  </p>
+                )}
 
                 {/* Status indicator badge */}
                 {convStatus === "human_needed" && (

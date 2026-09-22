@@ -142,6 +142,7 @@ export const dashboardTranslations: Record<Lang, Record<string, string>> = {
     "assistant.failed": "Non riuscito",
     "assistant.includedInElite": "Incluso in Elite",
     "assistant.online": "Online · lavora sui tuoi preventivi, clienti e listino",
+    "assistant.aiNotice": "Assistente basato su intelligenza artificiale: le risposte sono generate automaticamente e possono contenere errori. Nulla viene salvato finché non confermi una scheda.",
     "assistant.threadsTitle": "Conversazioni",
     "assistant.threadCompany": "Assistente aziendale",
     "assistant.threadJob": "Questo cantiere",

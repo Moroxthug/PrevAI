@@ -6,7 +6,7 @@ import { db, quotesTable, quoteAttachmentsTable, quoteVariantsTable, businessPro
 import { getBaseUrl } from "../lib/baseUrl.js";
 import { resolveQuoteTaxRate } from "../lib/tax.js";
 import { quoteLanguageFor, qt, fmtQuoteDate, fmtQty } from "../quotes/i18n.js";
-import { generateQuotePdfBuffer, generateCapitolatoPdfBuffer } from "../quotes/pdf.js";
+import { generateQuotePdfBuffer, generateCapitolatoPdfBuffer, quoteProvenance } from "../quotes/pdf.js";
 import { eq, desc, count, sum, sql, and, avg, isNull } from "drizzle-orm";
 import { getTrialStatus, PLANS } from "./payments.js";
 import {
@@ -1652,6 +1652,7 @@ router.post("/quotes/:id/send-pdf-email", requireAuth, requirePermission("quotes
       companyLogoUrl: profile?.logoUrl ?? null,
       replyTo: profile?.email ?? null,
       publicUrl: quote.status === "unlocked" || quote.status === "accepted" ? `${getBaseUrl()}/p/${quote.id}` : null,
+      aiGenerated: quoteProvenance(quote) === "ai",
     });
 
     // Phase 21: start the follow-up reminder sequence, unless the quote is

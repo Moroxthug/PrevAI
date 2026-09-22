@@ -1,4 +1,4 @@
-import { getPdfmake } from "../lib/pdfmake.js";
+import { getPdfmake, pdfInfo } from "../lib/pdfmake.js";
 import type { TDocumentDefinitions, Content, TableCell } from "pdfmake/interfaces";
 import { createHash } from "node:crypto";
 import type { Invoice, InvoicePayment, InvoiceParty } from "@workspace/db";
@@ -136,7 +136,7 @@ export async function buildInvoicePdf(inv: Invoice, payments: InvoicePayment[] =
       ],
       margin: [48, 20, 48, 0],
     }),
-    info: { title: `${invoiceTitle(inv, lang)} ${inv.number}`, author: inv.contractor.name, creator: "PrevAI" },
+    info: pdfInfo({ title: `${invoiceTitle(inv, lang)} ${inv.number}`, author: inv.contractor.name }, "none"),
   };
 
   const buffer = await getPdfmake().createPdf(def).getBuffer();

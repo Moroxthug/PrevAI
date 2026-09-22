@@ -319,6 +319,8 @@ const QUOTE_EMAIL_COPY = {
   quote: "Preventivo",
   total: "Importo totale",
   generated: "Documento generato con",
+  // AI Act art. 50: il destinatario sa che il preventivo allegato è stato elaborato con IA.
+  aiNotice: "Il preventivo allegato è stato elaborato con l'ausilio di intelligenza artificiale e verificato dall'impresa che te lo invia.",
   footer: "Hai ricevuto questa email perché sei indicato come destinatario di questo preventivo.",
   subject: (n: string, c: string) => `Preventivo ${n} – ${c}`,
   money: (t: string) => `€ ${t}`,
@@ -332,6 +334,7 @@ function buildQuoteEmailHtml(params: {
   totale: string;
   publicUrl?: string | null;
   logoUrl?: string | null;
+  aiGenerated?: boolean;
 }): string {
   const companyName = escapeHtml(params.companyName);
   const clientName = escapeHtml(params.clientName);
@@ -392,7 +395,7 @@ function buildQuoteEmailHtml(params: {
   </div>
   <div class="footer">
     ${companyName}<br/>
-    ${c.footer}
+    ${c.footer}${params.aiGenerated ? `<br/><br/>${c.aiNotice}` : ""}
   </div>
 </div>
 </body>
@@ -626,6 +629,8 @@ export async function sendQuotePdfEmail(params: {
   companyLogoUrl?: string | null;
   replyTo?: string | null;
   lang?: Lang;
+  /** Marcatura AI Act art. 50 nel corpo dell'email (vedi quotes/pdf.ts quoteProvenance). */
+  aiGenerated?: boolean;
 }): Promise<void> {
   const apiKey = process.env.RESEND_API_KEY;
   if (!apiKey) {
@@ -647,6 +652,7 @@ export async function sendQuotePdfEmail(params: {
         totale: params.totale,
         publicUrl: params.publicUrl ?? null,
         logoUrl: params.companyLogoUrl ?? null,
+        aiGenerated: params.aiGenerated ?? false,
       }),
       attachments: [
         {

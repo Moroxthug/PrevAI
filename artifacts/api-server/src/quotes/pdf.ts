@@ -2,7 +2,7 @@
 // the Pro "capitolato" technical specification), extracted from routes/quotes.ts
 // so the WhatsApp bot and the e2e PDF matrix render the same layout as the
 // dashboard instead of a drifting copy. Bilingual via ./i18n.ts.
-import { getPdfmake } from "../lib/pdfmake.js";
+import { getPdfmake, pdfInfo, type PdfProvenance } from "../lib/pdfmake.js";
 import type { TDocumentDefinitions, Content } from "pdfmake/interfaces";
 import type { QuoteChapter, QuoteDiscount, QuoteCompanySnapshot, QuoteClientData } from "@workspace/db";
 import { quotesTable, businessProfilesTable, normalizeProvince, readQuoteClientData } from "@workspace/db";
@@ -13,6 +13,17 @@ const objectStorage = new ObjectStorageService();
 
 export type QuoteRow = typeof quotesTable.$inferSelect;
 export type ProfileRow = typeof businessProfilesTable.$inferSelect | null;
+
+/**
+ * V2-6 — AI Act art. 50. Un preventivo è "generato con IA" a meno che non sia
+ * stato compilato a mano (manualCreate.ts marca `rawInput` con "[Manual quote]").
+ * I preventivi web importati da testo strutturato passano comunque da una
+ * rielaborazione IA delle descrizioni (routes/quotes.ts), quindi la marcatura
+ * resta corretta anche per loro.
+ */
+export function quoteProvenance(quote: Pick<QuoteRow, "rawInput">): PdfProvenance {
+  return (quote.rawInput ?? "").startsWith("[Manual quote]") ? "none" : "ai";
+}
 
 
 function formatDescriptionPdf(descrizione: string, bg: string | null): any {
@@ -321,6 +332,7 @@ export async function generateCapitolatoPdfBuffer(quote: QuoteRow, profile: Prof
   ];
 
   const docDefinition: TDocumentDefinitions = {
+    info: pdfInfo({ title: `${titolo1} — ${numeroData}`, author: companyName }, quoteProvenance(quote)),
     pageSize: "A4",
     pageMargins: [40, 70, 40, 50] as [number, number, number, number],
     defaultStyle: {
@@ -477,7 +489,7 @@ export async function generateCapitolatoPdfBuffer(quote: QuoteRow, profile: Prof
           color: "#aaaaaa",
         },
         {
-          text: isDraft ? qt("provisional", lang) : qt("generatedWith", lang),
+          text: isDraft ? qt("provisional", lang) : qt(quoteProvenance(quote) === "ai" ? "generatedWithAi" : "generatedWith", lang),
           fontSize: 7.5,
           color: isDraft ? "#cc8800" : "#aaaaaa",
           alignment: "right",
@@ -707,6 +719,7 @@ export async function generateQuotePdfBuffer(quote: QuoteRow, profile: ProfileRo
   ];
 
   const docDefinition: TDocumentDefinitions = {
+    info: pdfInfo({ title: `${titolo1} — ${numeroData}`, author: companyName }, quoteProvenance(quote)),
     pageSize: "A4",
     pageMargins: [40, 70, 40, 50] as [number, number, number, number],
     defaultStyle: {
@@ -851,7 +864,7 @@ export async function generateQuotePdfBuffer(quote: QuoteRow, profile: ProfileRo
           color: "#aaaaaa",
         },
         {
-          text: isDraft ? qt("provisional", lang) : qt("generatedWith", lang),
+          text: isDraft ? qt("provisional", lang) : qt(quoteProvenance(quote) === "ai" ? "generatedWithAi" : "generatedWith", lang),
           fontSize: 7.5,
           color: isDraft ? "#cc8800" : "#aaaaaa",
           alignment: "right",

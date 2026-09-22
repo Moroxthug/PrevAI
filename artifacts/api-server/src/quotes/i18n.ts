@@ -57,6 +57,8 @@ const Q = {
   draft: "BOZZA",
   provisional: "DOCUMENTO PROVVISORIO – NON VALIDO AI FINI CONTRATTUALI",
   generatedWith: `Documento generato con ${MARKET.brand}`,
+  // AI Act art. 50: marcatura visibile dei preventivi elaborati dall'IA (i metadati PDF portano la stessa indicazione).
+  generatedWithAi: `Documento generato con ${MARKET.brand} · contenuto elaborato con intelligenza artificiale e verificato dall'impresa`,
   acceptedOnline: "Accettato online da {name} il {date}",
   // capitolato
   specTitle: "CAPITOLATO TECNICO",

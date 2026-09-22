@@ -126,6 +126,7 @@ Per ogni feature QuoteAI: tieni / rietichetta / sostituisci / disattiva. Propost
 - **Stato (2026-09-21):** **a** preparazione ✅ — migrazione finale rigenerata e verificata (RUNBOOKS §4), runbook cutover/rollback in RUNBOOKS §5, `docs/sql/reconcile.sql`. **b/c** (env Vercel, preview, finestra, promote) in attesa di D2.
 
 ### V2-6 — Consolidamento post-cutover (1–2 settimane)
+> Stato 2026-09-22: AI Act art. 50, suite QA e check SEO eseguiti su `v2` prima del cutover (vedi PIANO-AZIONE Diario). Dopo V2-5 restano: copertura GSC, `v2` → `main`, fase contract.
 - **AI Act art. 50 (in vigore dal 2/8/2026, proroga marcatura al 2/12/2026)**: avviso "stai interagendo con un'IA" al primo contatto su assistente, support bot e bot WhatsApp; metadati "contenuto generato con IA" nei PDF/email generati. Dettagli in `AMMINISTRAZIONE-PLAN.md` §7 — va fatto qui, non aspetta il modulo fiscale.
 - Suite QA (fasi 61–70 importate): route matrix, security, sweep a11y, matrice PDF, Lighthouse.
 - SEO: ogni URL v1 indicizzato risponde 200 con lo stesso canonical; controllo copertura GSC; hreflang solo `it-IT`.

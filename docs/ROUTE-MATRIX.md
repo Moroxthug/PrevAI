@@ -363,11 +363,11 @@ Columns — **Auth**: session (`requireAuth`), apiKey (`requireApiKey`), admin (
 
 | Line | Method | Path | Auth | Perm | RL | Val | Gate | Scope | Archived | Token | Webhook |
 |---|---|---|---|---|---|---|---|---|---|---|---|
-| 164 | GET | `/api/public/config` | none | — | configLimiter | none | — | n/a | — | — | — |
-| 213 | POST | `/api/public/quotes` | none | — | quoteIpLimiter, quoteApiKeyLimiter | manual | — | n/a | — | — | — |
-| 488 | GET | `/api/public/quotes/:id` | none | — | quoteViewLimiter | none | — | n/a | — | db-lookup | — |
-| 521 | POST | `/api/public/quotes/:id/accept` | none | — | quoteAcceptLimiter | manual | — | n/a | — | db-lookup | — |
-| 619 | GET | `/api/public/quotes/:id/incentives` | none | — | quoteViewLimiter | none | — | n/a | — | db-lookup | — |
+| 167 | GET | `/api/public/config` | none | — | configLimiter | none | — | n/a | — | — | — |
+| 216 | POST | `/api/public/quotes` | none | — | quoteIpLimiter, quoteApiKeyLimiter | manual | — | n/a | — | — | — |
+| 491 | GET | `/api/public/quotes/:id` | none | — | quoteViewLimiter | none | — | n/a | — | db-lookup | — |
+| 524 | POST | `/api/public/quotes/:id/accept` | none | — | quoteAcceptLimiter | manual | — | n/a | — | db-lookup | — |
+| 622 | GET | `/api/public/quotes/:id/incentives` | none | — | quoteViewLimiter | none | — | n/a | — | db-lookup | — |
 
 ## artifacts/api-server/src/routes/public-reviews.ts
 
@@ -425,12 +425,12 @@ Columns — **Auth**: session (`requireAuth`), apiKey (`requireApiKey`), admin (
 | 1495 | POST | `/api/quotes/:id/restore` | session | quotes:full | — | none | — | post-check | — | — | — |
 | 1515 | POST | `/api/quotes/:id/generate-pdf` | session | quotes:edit | — | none | plan-check | predicate | — | — | — |
 | 1593 | POST | `/api/quotes/:id/send-pdf-email` | session | quotes:edit | — | manual | — | predicate | — | — | — |
-| 1687 | POST | `/api/quotes/:id/duplicate` | session | quotes:edit | — | none | — | post-check | — | — | — |
-| 1749 | POST | `/api/quotes/:id/regenerate` | session | quotes:edit | aiCallLimiter | manual | — | predicate | — | — | — |
-| 1966 | POST | `/api/quotes/:id/upgrade-to-capitolato` | session | quotes:edit | aiCallLimiter | none | plan-check | predicate | — | — | — |
-| 2079 | POST | `/api/quotes/:id/generate-pdf-pro` | session | quotes:edit | — | none | plan-check | predicate | — | — | — |
-| 2130 | POST | `/api/quotes/manual` | session | quotes:edit | — | manual | — | n/a | — | — | — |
-| 2146 | POST | `/api/quotes/suggest-item-description` | session | quotes:edit | aiCallLimiter | manual | — | n/a | — | — | — |
+| 1688 | POST | `/api/quotes/:id/duplicate` | session | quotes:edit | — | none | — | post-check | — | — | — |
+| 1750 | POST | `/api/quotes/:id/regenerate` | session | quotes:edit | aiCallLimiter | manual | — | predicate | — | — | — |
+| 1967 | POST | `/api/quotes/:id/upgrade-to-capitolato` | session | quotes:edit | aiCallLimiter | none | plan-check | predicate | — | — | — |
+| 2080 | POST | `/api/quotes/:id/generate-pdf-pro` | session | quotes:edit | — | none | plan-check | predicate | — | — | — |
+| 2131 | POST | `/api/quotes/manual` | session | quotes:edit | — | manual | — | n/a | — | — | — |
+| 2147 | POST | `/api/quotes/suggest-item-description` | session | quotes:edit | aiCallLimiter | manual | — | n/a | — | — | — |
 
 ## artifacts/api-server/src/routes/security.ts
 
@@ -526,14 +526,14 @@ Columns — **Auth**: session (`requireAuth`), apiKey (`requireApiKey`), admin (
 
 | Line | Method | Path | Auth | Perm | RL | Val | Gate | Scope | Archived | Token | Webhook |
 |---|---|---|---|---|---|---|---|---|---|---|---|
-| 1185 | GET | `/api/whatsapp/webhook` | none | — | — | none | — | n/a | — | — | — |
-| 1199 | POST | `/api/whatsapp/webhook` | none | — | — | manual | plan-check | n/a | — | — | NONE |
-| 1367 | GET | `/api/whatsapp/status` | session | — | — | none | — | n/a | — | — | — |
-| 1379 | GET | `/api/whatsapp/usage` | session | — | — | none | — | n/a | — | — | — |
-| 1404 | POST | `/api/whatsapp/connect` | session | integrations:full | — | manual | — | n/a | — | — | — |
-| 1439 | POST | `/api/whatsapp/verify` | session | integrations:full | — | manual | — | n/a | — | — | — |
-| 1467 | DELETE | `/api/whatsapp/disconnect` | session | integrations:full | — | none | — | n/a | — | — | — |
-| 1478 | PATCH | `/api/whatsapp/toggle` | session | integrations:full | — | manual | — | n/a | — | — | — |
+| 1194 | GET | `/api/whatsapp/webhook` | none | — | — | none | — | n/a | — | — | — |
+| 1208 | POST | `/api/whatsapp/webhook` | none | — | — | manual | plan-check | n/a | — | — | NONE |
+| 1376 | GET | `/api/whatsapp/status` | session | — | — | none | — | n/a | — | — | — |
+| 1388 | GET | `/api/whatsapp/usage` | session | — | — | none | — | n/a | — | — | — |
+| 1413 | POST | `/api/whatsapp/connect` | session | integrations:full | — | manual | — | n/a | — | — | — |
+| 1448 | POST | `/api/whatsapp/verify` | session | integrations:full | — | manual | — | n/a | — | — | — |
+| 1476 | DELETE | `/api/whatsapp/disconnect` | session | integrations:full | — | none | — | n/a | — | — | — |
+| 1487 | PATCH | `/api/whatsapp/toggle` | session | integrations:full | — | manual | — | n/a | — | — | — |
 
 ## artifacts/api-server/src/routes/worker-time.ts
 

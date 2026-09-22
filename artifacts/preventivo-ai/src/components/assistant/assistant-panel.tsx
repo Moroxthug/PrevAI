@@ -112,6 +112,8 @@ export function AssistantPanel({ projectId, className }: { projectId: string | n
             <button type="button" className="chat-clear" onClick={() => clear.mutate()} disabled={clear.isPending}><Trash2 className="h-3.5 w-3.5" /> {t("assistant.clear")}</button>
           )}
         </div>
+        {/* AI Act art. 50: the user is told at first contact that this is an AI. */}
+        <p className="chat-notice" role="note">{t("assistant.aiNotice")}</p>
 
         <div ref={listRef} className="chat-body">
           {isLoading && (

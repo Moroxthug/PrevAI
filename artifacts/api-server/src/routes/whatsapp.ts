@@ -38,6 +38,8 @@ if (!WA_VERIFY_TOKEN) {
 const PREVAI_BASE_URL = getBaseUrl();
 const SESSION_TTL_MS = 30 * 60 * 1000; // 30 minutes
 const MAX_ITERATIONS = 3; // max correction rounds before forcing save-as-draft
+// AI Act art. 50: al primo contatto di ogni sessione l'utente sa che risponde un'IA.
+const AI_DISCLOSURE = "🤖 _Risponde un assistente basato su intelligenza artificiale: i preventivi generati vanno sempre verificati prima dell'invio._";
 
 // ── In-memory deduplication + per-number lock ──────────────────────────────────
 const processedMessageIds = new Set<string>();
@@ -480,6 +482,8 @@ async function handleGreeting(from: string, userId: string, profile: typeof busi
   // Fast-track: both template AND client are pre-set → skip straight to job input
   if (effectiveTemplate && prefs.defaultClient?.nome) {
     await sendWhatsappText(from, [
+      AI_DISCLOSURE,
+      ``,
       `✅ Template: *${templateLabel(effectiveTemplate)}* | Cliente: *${prefs.defaultClient.nome}*`,
       `_(predefiniti — scrivi *menu* per cambiarli)_`,
       ``,
@@ -500,6 +504,8 @@ async function handleGreeting(from: string, userId: string, profile: typeof busi
         .map((c, i) => `*${i + 1}* — ${c.nome}${c.indirizzo ? ` – ${c.indirizzo}` : ""}`)
         .join("\n");
       await sendWhatsappText(from, [
+        AI_DISCLOSURE,
+        ``,
         `✅ Template: *${templateLabel(effectiveTemplate)}* _(predefinito)_`,
         ``,
         `👤 Scegli il cliente:`,
@@ -515,6 +521,8 @@ async function handleGreeting(from: string, userId: string, profile: typeof busi
       }, 0);
     } else {
       await sendWhatsappText(from, [
+        AI_DISCLOSURE,
+        ``,
         `✅ Template: *${templateLabel(effectiveTemplate)}* _(predefinito)_`,
         ``,
         `👤 Inserisci *nome e indirizzo* del cliente (es. "Mario Rossi, Via Roma 1, Milano"), oppure scrivi *salta*.`,
@@ -536,6 +544,7 @@ async function handleGreeting(from: string, userId: string, profile: typeof busi
 
   await sendWhatsappText(from, [
     `👋 Ciao! Sono *PrevAI*, il tuo assistente per preventivi professionali.`,
+    AI_DISCLOSURE,
     ``,
     `Che tipo di preventivo vuoi creare?`,
     ``,
@@ -1358,7 +1367,7 @@ async function handleInboundOtpVerification(phoneNumber: string, otp: string): P
 
   await sendWhatsappText(
     phoneNumber,
-    `✅ *Account collegato!*\n\nCiao ${profile?.companyName ?? ""}! 👋\n\nInviami qualsiasi messaggio per iniziare a creare un preventivo professionale.`
+    `✅ *Account collegato!*\n\nCiao ${profile?.companyName ?? ""}! 👋\n\n${AI_DISCLOSURE}\n\nInviami qualsiasi messaggio per iniziare a creare un preventivo professionale.`
   );
 }
 
@@ -1456,7 +1465,7 @@ router.post("/whatsapp/verify", requireAuth, requirePermission("integrations", "
       .onConflictDoUpdate({ target: whatsappConnectionsTable.userId, set: { phoneNumber: normalized, isEnabled: true, connectedAt: new Date() } });
 
     const [profile] = await db.select({ companyName: businessProfilesTable.companyName }).from(businessProfilesTable).where(eq(businessProfilesTable.userId, userId));
-    await sendWhatsappText(normalized, `✅ *Account collegato con successo!*\n\nCiao ${profile?.companyName ?? ""}! 👋\n\nInviami qualsiasi messaggio per iniziare a creare un preventivo.`);
+    await sendWhatsappText(normalized, `✅ *Account collegato con successo!*\n\nCiao ${profile?.companyName ?? ""}! 👋\n\n${AI_DISCLOSURE}\n\nInviami qualsiasi messaggio per iniziare a creare un preventivo.`);
     res.json({ success: true });
   } catch (err) {
     req.log.error({ err }, "WhatsApp verify error");

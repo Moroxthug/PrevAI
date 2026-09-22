@@ -14,6 +14,7 @@ import { raiseAutomation } from "../lib/automation.js";
 import { linkQuoteToClient } from "../lib/clients.js";
 import { resolveQuoteTaxRate } from "../lib/tax.js";
 import { FOLLOWUP_CADENCE_DAYS } from "../lib/leadMessaging.js";
+import { quoteProvenance } from "../quotes/pdf.js";
 
 const router = Router();
 
@@ -103,6 +104,8 @@ function toPublicQuote(quote: typeof quotesTable.$inferSelect, variants?: (typeo
     acceptedAt: quote.acceptedAt,
     acceptedByName: quote.acceptedByName,
     acceptedVariantId: quote.acceptedVariantId ?? null,
+    // V2-6 — AI Act art. 50: la pagina pubblica dichiara la provenienza IA come il PDF.
+    aiGenerated: quoteProvenance(quote) === "ai",
     variants: variants?.map((v) => toPublicVariant(v, province)) ?? [],
   };
 }

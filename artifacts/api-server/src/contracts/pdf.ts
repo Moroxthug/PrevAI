@@ -1,4 +1,4 @@
-import { getPdfmake } from "../lib/pdfmake.js";
+import { getPdfmake, pdfInfo } from "../lib/pdfmake.js";
 import type { TDocumentDefinitions, Content, TableCell } from "pdfmake/interfaces";
 import { createHash } from "node:crypto";
 import type { ContractDocument, ContractVariables, ContractSigner, ContractEvent } from "@workspace/db";
@@ -219,7 +219,8 @@ export async function buildContractPdf(params: {
       ],
       margin: [48, 20, 48, 0],
     }),
-    info: { title: `${doc.title} — ${v.contractNumber}`, author: v.contractor.name, creator: "PrevAI" },
+    // AI Act art. 50: oggetto e tempi sono bozze IA riviste dall'impresa prima della firma (contracts/service.ts).
+    info: pdfInfo({ title: `${doc.title} — ${v.contractNumber}`, author: v.contractor.name }, "ai_assisted"),
   };
   };
 

@@ -63,6 +63,7 @@ interface PublicQuote {
   acceptedByName: string | null;
   acceptedVariantId: string | null;
   variants: PublicQuoteVariant[];
+  aiGenerated?: boolean;
 }
 
 function euro(value: string | number, _lang?: string) {
@@ -450,6 +451,7 @@ export default function PublicQuotePage() {
 
       <p className="text-center text-xs mt-8" style={{ color: "var(--muted-mk)" }}>
         <a href="https://prevai.it" className="underline">{t("publicQuote.generatedWith")}</a>
+        {quote.aiGenerated && <><br />{t("publicQuote.aiNotice")}</>}
       </p>
     </div>
     </div>

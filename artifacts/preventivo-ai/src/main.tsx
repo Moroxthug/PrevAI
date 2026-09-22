@@ -10,8 +10,11 @@ initErrorTracking();
 initAnalytics();
 
 // Statically prerendered pages (hand-built bodies in scripts/prerender-seo.ts):
-// English + French sector/city landing pages and the blog.
-const STATIC_SEO_RE = /^\/(?:quotes\/[^/]+(?:\/[^/]+)?|fr\/soumissions\/[^/]+(?:\/[^/]+)?|blog(?:\/.*)?)\/?$/;
+// sector + city landing pages under /preventivi/ and the blog. V2-6: the
+// regex still matched the QuoteAI paths (/quotes/…, /fr/soumissions/…), so the
+// Italian landing pages got the whole App rendered over them (CLS 0.82 on
+// the city pages).
+const STATIC_SEO_RE = /^\/(?:preventivi\/[^/]+(?:\/[^/]+)?|blog(?:\/.*)?)\/?$/;
 // Pages rendered at build time by entry-server.tsx (keep in sync with SSR_PAGES there).
 const SSR_PAGE_RE = /^\/(?:whatsapp|chi-siamo|contatti|privacy|termini|mappa-sito|help(?:\/[a-z0-9-]+)?)?\/?$/;
 

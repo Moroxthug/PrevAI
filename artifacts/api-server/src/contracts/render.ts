@@ -179,14 +179,14 @@ export function priceTableHtml(v: ContractVariables, lang: Lang): string {
   const rows = v.priceLines.map((l) => `<tr><td>${esc(l.label)}</td><td class="num">${fmtMoney(l.amount, lang)}</td></tr>`).join("");
   const discount = v.discount ? `<tr><td>${tr("discount", lang)} (${v.discount.percent} %)</td><td class="num">− ${fmtMoney(v.discount.amount, lang)}</td></tr>` : "";
   const taxes = v.taxLines.map((t) => `<tr><td>${esc(taxLabel(t.label, lang))} (${t.rate} %)</td><td class="num">${fmtMoney(t.amount, lang)}</td></tr>`).join("");
-  return `<div class="table-wrap"><table class="grid"><thead><tr><th>${tr("description", lang)}</th><th class="num">${tr("amount", lang)}</th></tr></thead><tbody>${rows}${discount}<tr class="sub"><td>${tr("subtotal", lang)}</td><td class="num">${fmtMoney(v.subtotal, lang)}</td></tr>${taxes}<tr class="total"><td>${tr("total", lang)}</td><td class="num">${fmtMoney(v.total, lang)}</td></tr></tbody></table></div>`;
+  return `<div class="table-wrap" tabindex="0" role="region" aria-label="${tr("description", lang)}"><table class="grid"><thead><tr><th>${tr("description", lang)}</th><th class="num">${tr("amount", lang)}</th></tr></thead><tbody>${rows}${discount}<tr class="sub"><td>${tr("subtotal", lang)}</td><td class="num">${fmtMoney(v.subtotal, lang)}</td></tr>${taxes}<tr class="total"><td>${tr("total", lang)}</td><td class="num">${fmtMoney(v.total, lang)}</td></tr></tbody></table></div>`;
 }
 
 export function paymentTableHtml(v: ContractVariables, lang: Lang): string {
   const rows = v.paymentSchedule.terms
     .map((t, i) => `<tr><td>${i + 1}. ${esc(t.label)}</td><td>${esc(dueLabel(t.trigger, t.dueDays, lang))}</td><td class="num">${t.amountType === "percent" ? `${t.value} %` : ""}</td><td class="num">${fmtMoney(paymentTermAmount(t, v.total), lang)}</td></tr>`)
     .join("");
-  return `<div class="table-wrap"><table class="grid"><thead><tr><th>${tr("payment", lang)}</th><th>${tr("due", lang)}</th><th class="num">%</th><th class="num">${tr("amount", lang)}</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+  return `<div class="table-wrap" tabindex="0" role="region" aria-label="${tr("payment", lang)}"><table class="grid"><thead><tr><th>${tr("payment", lang)}</th><th>${tr("due", lang)}</th><th class="num">%</th><th class="num">${tr("amount", lang)}</th></tr></thead><tbody>${rows}</tbody></table></div>`;
 }
 
 export function signaturesHtml(v: ContractVariables, signers: ContractSigner[], lang: Lang): string {
@@ -228,6 +228,7 @@ export const CONTRACT_CSS = `
 .contract table.grid tr.sub td { font-weight:600; border-top:1px solid #d1d5db; }
 .contract table.grid tr.total td { font-weight:700; font-size:14px; background:#f9fafb; }
 .contract .table-wrap { overflow-x:auto; -webkit-overflow-scrolling:touch; }
+.contract .table-wrap:focus-visible { outline:2px solid #1e3a5f; outline-offset:2px; }
 .contract .signatures { display:grid; grid-template-columns:1fr 1fr; gap:24px; margin-top:16px; }
 @media (max-width: 480px) {
   .contract .parties { grid-template-columns:1fr; }
