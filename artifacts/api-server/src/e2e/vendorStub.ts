@@ -11,7 +11,9 @@
 // accounts (docs/QA-VERIFICATION-PLAN.md Phase 65, user-driven): it proves
 // our side of the contract, not the vendor's.
 
-export type StubbedRequest = { method: string; url: string; headers: Record<string, string>; body: string | null; json: unknown };
+import { STORAGE_STUB_URL, handleStorageRequest } from "./storageStub.js";
+
+export type StubbedRequest = { method: string; url: string; headers: Record<string, string>; body: string | null; json: unknown; raw: BodyInit | null | undefined };
 export type StubHandler = (req: StubbedRequest) => Response | Promise<Response>;
 
 const realFetch = globalThis.fetch;
@@ -44,6 +46,8 @@ let installed = false;
 export function installVendorStubs(): void {
   if (installed) return;
   installed = true;
+  // V2-3: in-memory Supabase Storage when the staging DB has no Storage API.
+  if (process.env.E2E_STORAGE_STUB === "1") handlers.set(`${STORAGE_STUB_URL}/`, handleStorageRequest);
   globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
     const url = typeof input === "string" ? input : input instanceof URL ? input.toString() : input.url;
     for (const [prefix, handler] of handlers) {
@@ -64,7 +68,7 @@ export function installVendorStubs(): void {
       } catch {
         /* form-encoded or multipart */
       }
-      const req: StubbedRequest = { method, url, headers, body, json: parsed };
+      const req: StubbedRequest = { method, url, headers, body, json: parsed, raw: init?.body };
       recorded.push(req);
       return handler(req);
     }

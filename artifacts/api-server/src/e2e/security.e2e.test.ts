@@ -89,7 +89,7 @@ async function seedOrgA(): Promise<Fixtures> {
 
   // Quote → accepted → contract (automation) → both sign → job + milestones +
   // deposit invoice + signed PDF in storage. Same chain the lifecycle test runs.
-  const quote = await seedQuote(userId, { province: "ON" });
+  const quote = await seedQuote(userId, { province: "MI" });
   f.quote = quote.id;
   await db.update(quotesTable).set({ status: "accepted", acceptedAt: new Date(), acceptedByName: "Jordan Client" }).where(eq(quotesTable.id, quote.id));
   await raiseAutomation({ event: "quote.accepted", userId, entityType: "quote", entityId: quote.id, payload: { acceptedByName: "Jordan Client" } });
@@ -100,7 +100,7 @@ async function seedOrgA(): Promise<Fixtures> {
   for (const s of signers) {
     await db
       .update(contractSignersTable)
-      .set({ status: "signed", name: s.role === "contractor" ? "E2E ON Co" : "Jordan Client", signatureType: s.role === "contractor" ? "typed" : "drawn", signatureData: s.role === "contractor" ? "E2E ON Co" : TINY_PNG_DATA_URL, consentText: "test consent", signedAt: new Date() })
+      .set({ status: "signed", name: s.role === "contractor" ? "E2E MI Srl" : "Giulia Cliente", signatureType: s.role === "contractor" ? "typed" : "drawn", signatureData: s.role === "contractor" ? "E2E MI Srl" : TINY_PNG_DATA_URL, consentText: "test consent", signedAt: new Date() })
       .where(eq(contractSignersTable.id, s.id));
     await logContractEvent({ contractId: contract.id, type: s.role === "contractor" ? "contractor_signed" : "signed", actor: s.role, signerId: s.id });
   }
@@ -279,8 +279,8 @@ async function rawPost(path: string, body: string, headers: Record<string, strin
 
 beforeAll(async () => {
   baseUrl = await startServer();
-  A = await createOrg({ province: "ON", companyName: "E2E Org A" });
-  B = await createOrg({ province: "ON", companyName: "E2E Org B" });
+  A = await createOrg({ province: "MI", companyName: "E2E Org A" });
+  B = await createOrg({ province: "MI", companyName: "E2E Org B" });
   fx = await seedOrgA();
 });
 
@@ -464,7 +464,7 @@ describe("better-auth flows", () => {
     expect(blocked.status).toBe(403);
     expect(blocked.token).toBeNull();
 
-    const verifyMail = emailsTo(email).find((m) => /verify/i.test(m.subject));
+    const verifyMail = emailsTo(email).find((m) => /verifica/i.test(m.subject));
     expect(verifyMail, "verification email").toBeTruthy();
     // The name is user-controlled and lands in an HTML email: it must arrive escaped.
     expect(verifyMail!.html).not.toContain("<b>User</b>");
@@ -492,7 +492,7 @@ describe("better-auth flows", () => {
     const before = sentEmails.length;
     const req = await authPost("/api/auth/request-password-reset", { email, redirectTo: "/reset-password" }, new Jar());
     expect(req.status).toBe(200);
-    const mail = sentEmails.slice(before).find((m) => m.to.includes(email) && /reset/i.test(m.subject));
+    const mail = sentEmails.slice(before).find((m) => m.to.includes(email) && /reimposta/i.test(m.subject));
     expect(mail, "reset email").toBeTruthy();
     const link = linksIn(mail!).find((l) => l.includes("/reset-password"));
     expect(link, `reset link in ${JSON.stringify(linksIn(mail!))}`).toBeTruthy();
@@ -521,7 +521,7 @@ describe("better-auth flows", () => {
   test("2FA: once enabled, a correct password alone yields no session; TOTP completes it", async () => {
     const jar = new Jar();
     const newPassword = "E2e-N3w-Passw0rd!!";
-    const enable = await authPost("/api/auth/two-factor/enable", { password: newPassword, issuer: "QuoteAI" }, jar, bearer);
+    const enable = await authPost("/api/auth/two-factor/enable", { password: newPassword, issuer: "PrevAI" }, jar, bearer);
     expect(enable.status).toBe(200);
     const totpURI: string = enable.body.totpURI;
     expect(totpURI).toMatch(/^otpauth:\/\/totp\//);

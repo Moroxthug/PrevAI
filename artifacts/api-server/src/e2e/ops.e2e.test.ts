@@ -80,7 +80,7 @@ describe("ops", () => {
     expect((last.result as Record<string, unknown>)?.automations).toBeTruthy();
     const alerts = emailsTo(opsEmail);
     expect(alerts.length, "one ops alert email").toBeGreaterThanOrEqual(1);
-    expect(alerts[0]!.subject).toMatch(/^\[QuoteAI ops\] \d+ dead/);
+    expect(alerts[0]!.subject).toMatch(/^\[PrevAI ops\] \d+ dead/);
     expect(alerts[0]!.html).toContain(`quote.accepted quote/${quote.id}`);
     expect(alerts[0]!.html).toContain("simulated: handler failed five times");
 

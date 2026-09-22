@@ -30,6 +30,12 @@ export const STAGING_ENV_PATH = resolve(import.meta.dirname, "../../../../.env.s
 
 export function bootstrapQaEnv(label: string): void {
   loadDotenv(STAGING_ENV_PATH);
+  // V2-3: no Supabase project → in-memory storage (see storageStub.ts).
+  if (!process.env.SUPABASE_URL) {
+    process.env.SUPABASE_URL = "http://e2e-storage.local";
+    process.env.SUPABASE_SERVICE_ROLE_KEY ??= "e2e-storage-stub-key";
+    process.env.E2E_STORAGE_STUB = "1";
+  }
   process.env.BETTER_AUTH_SECRET ??= `${label}-secret-not-for-production-0000`;
   process.env.TOKEN_ENCRYPTION_KEY ??= "0".repeat(64);
   process.env.CRON_SECRET ??= `${label}-cron-secret`;

@@ -208,7 +208,7 @@ async function checkPage(ctx: BrowserContext, base: string, r: RouteSpec, lang: 
     result.title = await page.title();
     result.boundary = await page.evaluate(() => {
       const t = document.body.innerText;
-      const m = /Something went wrong|Une erreur est survenue|Can't reach QuoteAI|Impossible de joindre/i.exec(t);
+      const m = /Qualcosa è andato storto|Impossibile raggiungere PrevAI|Something went wrong/i.exec(t);
       return m ? m[0] : null;
     });
     const tokens: string[] = await page.evaluate(() => Array.from(new Set((document.body.innerText.match(/\b[a-z][a-zA-Z0-9]*(?:\.[a-zA-Z0-9_-]+){1,6}\b/g) ?? []))));
@@ -292,7 +292,7 @@ try {
   const frontend = await startVite(apiBase);
   console.log(`[qa-visual] api ${apiBase} · frontend ${frontend}`);
 
-  const org = await createOrg({ province: PROVINCE, companyName: PROVINCE === "QC" ? "Rénovations Tremblay inc." : "Northside Renovations Ltd." });
+  const org = await createOrg({ province: PROVINCE, companyName: PROVINCE === "NA" ? "Ristrutturazioni Esposito Srl" : "Ristrutturazioni Nord Srl" });
   const showcase = await seedShowcase(org, { withLogo: true });
   console.log(`[qa-visual] showcase seeded for ${org.email}:`, { ...showcase, invoiceToken: "…", signToken: showcase.signToken ? "…" : null, workerToken: showcase.workerToken ? "…" : null, teamInviteToken: showcase.teamInviteToken ? "…" : null });
 
@@ -313,7 +313,7 @@ try {
         reducedMotion: "reduce",
         deviceScaleFactor: 1,
       });
-      await ctx.addInitScript((l: string) => { try { localStorage.setItem("quoteai-lang", l); } catch {} }, lang);
+      await ctx.addInitScript((l: string) => { try { localStorage.setItem("prevai-lang", l); } catch {} }, lang);
       for (const width of widths) {
         for (const r of rs) {
           const res = await checkPage(ctx, frontend, r, lang, width);

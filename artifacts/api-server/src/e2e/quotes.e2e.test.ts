@@ -90,7 +90,7 @@ describe("quotes: archive, variants, import", () => {
     const org = await createOrg();
     const csv =
       "Client Name,Email,Phone,Address,City,Province,Postal Code,Quote Date,Status,Description,Quantity,Unit Price,Total,Notes\n" +
-      `Imported Person,imported-${org.userId}@example.invalid,613-555-0100,123 Main St,Ottawa,ON,K1A0B1,2025-03-15,accepted,Bathroom renovation,1,8500,8500,Paid in full\n` +
+      `Persona Importata,imported-${org.userId}@example.invalid,02-1234-5678,Via Roma 123,Milano,MI,20100,2025-03-15,accepted,Ristrutturazione bagno,1,8500,8500,Pagato\n` +
       ",,,,,,,,,No client on this row,1,100,100,\n";
     const form = new FormData();
     form.append("file", new Blob([csv], { type: "text/csv" }), "quotes.csv");
@@ -102,7 +102,7 @@ describe("quotes: archive, variants, import", () => {
     expect(queue.status).toBe(200);
     const candidates = queue.body.candidates as { id: string; status: string; extraction: { clientName?: string } }[];
     expect(candidates.filter((c) => c.status === "pending_review")).toHaveLength(2);
-    const withClient = candidates.find((c) => c.extraction.clientName === "Imported Person")!;
+    const withClient = candidates.find((c) => c.extraction.clientName === "Persona Importata")!;
     const withoutClient = candidates.find((c) => !c.extraction.clientName)!;
 
     // Missing client name blocks confirm; reject works.
@@ -115,7 +115,7 @@ describe("quotes: archive, variants, import", () => {
     expect(quote!.userId).toBe(org.userId);
     expect(Number(quote!.totale)).toBe(8500);
     const [client] = await db.select().from(clientsTable).where(eq(clientsTable.id, confirmed.body.clientId));
-    expect(client!.name).toBe("Imported Person");
+    expect(client!.name).toBe("Persona Importata");
 
     // Confirming twice is refused.
     expect((await org.api(`/api/imports/candidates/${withClient.id}/confirm`, { method: "POST" })).status).toBe(409);
@@ -185,64 +185,67 @@ describe("quotes: unlock + send lifecycle (Phase 66)", () => {
   });
 });
 
-// Phase 71 — Québec quotes: the province decides the tax components and the
-// document language; the customer email follows the PDF.
-describe("quotes: province taxes + bilingual documents (Phase 71)", () => {
+// Phase 71 / V2-2 — regime IVA italiano: l'aliquota del preventivo decide le
+// righe imposta (IVA 22/10/4 o riga generica); i documenti e l'email sono in
+// italiano; la provincia è solo un dato anagrafico.
+describe("quotes: righe IVA + documenti in italiano (Phase 71 / V2-2)", () => {
   beforeAll(startServer);
   afterAll(async () => {
     await cleanupAll();
     await stopServer();
   });
 
-  test("a QC manual quote gets GST + QST, French documents and a French email", async () => {
-    const org = await createOrg({ province: "QC" });
+  test("un preventivo manuale al 10 % ha una riga IVA10, documenti ed email in italiano", async () => {
+    const org = await createOrg({ province: "NA" });
     const created = await org.api("/api/quotes/manual", {
       body: {
-        capitoli: [{ lettera: "A", titolo: "Peinture", voci: [{ descrizione: "Peinture salon", um: "m2", quantita: 100, prezzoUnitario: 12.3456, totale: 0 }], subtotale: 0 }],
-        clientData: { nome: "Marie Tremblay", indirizzo: "12 rue Principale", city: "Québec", province: "QC" },
+        capitoli: [{ lettera: "A", titolo: "Tinteggiatura", voci: [{ descrizione: "Tinteggiatura soggiorno", um: "m2", quantita: 100, prezzoUnitario: 12.3456, totale: 0 }], subtotale: 0 }],
+        clientData: { nome: "Maria Esposito", indirizzo: "Via Toledo 12", city: "Napoli", province: "NA" },
+        ivaPercentuale: 10,
       },
     });
     expect(created.status, JSON.stringify(created.body)).toBe(201);
     const quote = created.body;
-    expect(quote.province).toBe("QC");
-    expect(quote.ivaPercentuale).toBeCloseTo(14.975, 3);
-    expect(quote.documentLanguage).toBe("fr");
-    expect(quote.taxLines.map((l: { code: string }) => l.code)).toEqual(["GST", "QST"]);
+    expect(quote.province).toBe("NA");
+    expect(quote.ivaPercentuale).toBeCloseTo(10, 3);
+    expect(quote.documentLanguage).toBe("it");
+    expect(quote.taxLines.map((l: { code: string }) => l.code)).toEqual(["IVA10"]);
     const taxSum = quote.taxLines.reduce((s: number, l: { amount: number }) => s + l.amount, 0);
     expect(taxSum).toBeCloseTo(quote.ivaValore, 2);
     expect(quote.totale).toBeCloseTo(quote.subtotale + quote.ivaValore, 2);
 
-    // The emailed PDF and the email itself are French.
+    // PDF allegato ed email in italiano.
     sentEmails.length = 0;
-    const sent = await org.api(`/api/quotes/${quote.id}/send-pdf-email`, { method: "POST", body: { toEmail: "marie@example.invalid", clientName: "Marie" } });
+    const sent = await org.api(`/api/quotes/${quote.id}/send-pdf-email`, { method: "POST", body: { toEmail: "maria@example.invalid", clientName: "Maria" } });
     expect(sent.status, JSON.stringify(sent.body)).toBe(200);
-    const mail = sentEmails.find((m) => m.to.includes("marie@example.invalid"));
-    expect(mail?.subject.startsWith("Soumission ")).toBe(true);
-    expect(mail?.html).toContain("Votre soumission est prête");
+    const mail = sentEmails.find((m) => m.to.includes("maria@example.invalid"));
+    expect(mail?.subject.startsWith("Preventivo ")).toBe(true);
+    expect(mail?.html).toContain("in allegato trovi il preventivo");
 
-    // Sending unlocked it: the public page carries the same split.
+    // L'invio lo ha sbloccato: la pagina pubblica mostra la stessa riga IVA.
     const pub = await org.api(`/api/public/quotes/${quote.id}`);
     expect(pub.status).toBe(200);
-    expect(pub.body.quote.taxLines.map((l: { code: string }) => l.code)).toEqual(["GST", "QST"]);
+    expect(pub.body.quote.taxLines.map((l: { code: string }) => l.code)).toEqual(["IVA10"]);
   });
 
-  test("tax-exempt and Ontario quotes keep working; an explicit odd rate shows as one generic line", async () => {
-    const org = await createOrg({ province: "ON" });
-    const cap = [{ lettera: "A", titolo: "Work", voci: [{ descrizione: "Item", um: "ea", quantita: 1, prezzoUnitario: 1000, totale: 0 }], subtotale: 0 }];
-    const on = await org.api("/api/quotes/manual", { body: { capitoli: cap } });
-    expect(on.status).toBe(201);
-    expect(on.body.taxLines).toEqual([{ code: "HST", label: "HST", rate: 13, amount: 130 }]);
-    expect(on.body.documentLanguage).toBe("en");
+  test("senza aliquota vale il 22 %; 0 = nessuna riga; un'aliquota anomala è una riga generica", async () => {
+    const org = await createOrg({ province: "MI" });
+    const cap = [{ lettera: "A", titolo: "Lavori", voci: [{ descrizione: "Voce", um: "cad", quantita: 1, prezzoUnitario: 1000, totale: 0 }], subtotale: 0 }];
+    const std = await org.api("/api/quotes/manual", { body: { capitoli: cap } });
+    expect(std.status).toBe(201);
+    expect(std.body.taxLines).toEqual([{ code: "IVA22", label: "IVA", rate: 22, amount: 220 }]);
+    expect(std.body.documentLanguage).toBe("it");
 
     const exempt = await org.api("/api/quotes/manual", { body: { capitoli: cap, ivaPercentuale: 0 } });
     expect(exempt.body.taxLines).toEqual([]);
     expect(exempt.body.totale).toBe(1000);
 
     const odd = await org.api("/api/quotes/manual", { body: { capitoli: cap, ivaPercentuale: 7 } });
-    expect(odd.body.taxLines).toEqual([{ code: "TAX", label: "Tax", rate: 7, amount: 70 }]);
+    expect(odd.body.taxLines).toEqual([{ code: "TAX", label: "Imposta", rate: 7, amount: 70 }]);
 
     const profiles = await org.api("/api/tax-profiles");
     expect(profiles.status).toBe(200);
-    expect(profiles.body.profiles.find((p: { province: string }) => p.province === "QC").components.map((c: { code: string }) => c.code)).toEqual(["GST", "QST"]);
+    expect(profiles.body.profiles.map((p: { code: string }) => p.code)).toEqual(["IVA22", "IVA10", "IVA4", "RC", "SP", "ESENTE"]);
+    expect(profiles.body.profiles.find((p: { code: string }) => p.code === "RC").components[0].legalNote).toMatch(/art\. 17, comma 6/);
   });
 });

@@ -82,8 +82,10 @@ Ogni fase = typecheck pulito, build verde, e2e verdi, un commit, doc aggiornato.
 - Eseguo su staging → app v2 su staging → e2e + schema-drift check → riconciliazione conteggi.
 - **Deploy anche del codice v1 sullo staging migrato** e smoke (login, apertura preventivo storico, generazione nuovo, replay webhook WhatsApp): prova la regola §1.4 prima di toccare la prod.
 - Misuro la durata della migrazione per dimensionare la finestra di manutenzione.
+- **Esito (2026-09-21):** fatto su **Postgres 17 locale** (decisione titolare: niente terzo progetto Supabase; Storage e preview Vercel rimandati a V2-5). Migrazione unica `migrations/v2/0001_v1_to_v2_additive.sql`: 342 ms, idempotente, drift 0. e2e 63/63 con storage in memoria. v1 e v2 verificate sul DB migrato. Runbook completo in `RUNBOOKS.md` §3–§4. **La migrazione va rigenerata in V2-5** dallo schema finale di V2-4 (le colonne canadesi ancora presenti nello schema — `gst_hst_number`, `qst_number`, `etransfer_email`, `homestars_profile_url`, default `incentives_catalog` — non devono arrivare in prod).
 
 ### V2-4 — Riconciliazione feature per l'Italia (5–8 giorni)
+- **Aggiunto da V2-3:** pulizia dello schema Drizzle dalle colonne/default canadesi (`business_profiles`, `incentives_catalog`, `collaborators.role`) e dalle tabelle delle integrazioni disattivate se si decide di non crearle (QuickBooks, Wave, Flinks, LSA, Financeit, Meta lead ads); poi `schema-drift` + rigenerazione della migrazione in V2-5.
 Per ogni feature QuoteAI: tieni / rietichetta / sostituisci / disattiva. Proposta:
 
 | Feature QuoteAI | Decisione IT |

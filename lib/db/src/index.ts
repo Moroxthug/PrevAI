@@ -10,9 +10,14 @@ if (!process.env.DATABASE_URL) {
   );
 }
 
+// Supabase's pooler needs TLS; a local Postgres (the V2-3 staging rehearsal)
+// refuses it. `?sslmode=disable` in DATABASE_URL turns it off; anything else
+// keeps the previous behaviour.
+const sslMode = new URL(process.env.DATABASE_URL).searchParams.get("sslmode");
+
 export const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
-  ssl: { rejectUnauthorized: false },
+  ssl: sslMode === "disable" ? false : { rejectUnauthorized: false },
   connectionTimeoutMillis: 10000,
   idleTimeoutMillis: 30000,
   max: 3,

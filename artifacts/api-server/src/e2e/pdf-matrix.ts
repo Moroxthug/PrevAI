@@ -1,7 +1,6 @@
 // Phase 67 — render every PDF the product produces across the matrix
-// province (ON/QC) × logo (with/without) × document, plus the language flip
-// (an English contract/invoice in Quebec, a French one in Ontario) and the
-// long 30-line quote that forces page breaks. Files land in
+// provincia (MI/NA) × logo (con/senza) × documento, più il preventivo lungo
+// da 30 righe che forza i salti pagina. Files land in
 // .qa/pdfs/<province>-<logo>/… for eyeballing; the script itself only checks
 // that each renders, is a PDF, and reports the page count.
 //
@@ -65,10 +64,10 @@ async function emit(dir: string, file: string, make: () => Promise<Buffer>) {
 rmSync(OUT, { recursive: true, force: true });
 try {
   await startServer();
-  for (const province of ["ON", "QC"] as const) {
+  for (const province of ["MI", "NA"] as const) {
     for (const withLogo of [true, false]) {
       const dir = `${province}-${withLogo ? "logo" : "nologo"}`;
-      const org = await createOrg({ province, companyName: province === "QC" ? "Rénovations Tremblay inc." : "Northside Renovations Ltd." });
+      const org = await createOrg({ province, companyName: province === "NA" ? "Ristrutturazioni Esposito Srl" : "Ristrutturazioni Nord Srl" });
       const s = await seedShowcase(org, { withLogo });
       const { quote, longQuote, invoice } = await loadShowcaseRows(s);
       const [profile] = await db.select().from(businessProfilesTable).where(eq(businessProfilesTable.userId, org.userId));

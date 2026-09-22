@@ -30,7 +30,7 @@ describe("follow-up sequences", () => {
   test("lead: every cadence stage fires exactly once, then the sequence ends", async () => {
     const org = await createOrg();
     const leadEmail = `lead-${org.userId}@example.invalid`;
-    const created = await org.api("/api/leads", { body: { name: "Sam Prospect", email: leadEmail, preferredLanguage: "en" } });
+    const created = await org.api("/api/leads", { body: { name: "Sam Prospect", email: leadEmail, preferredLanguage: "it" } });
     expect(created.status, JSON.stringify(created.body)).toBe(201);
     const leadId = created.body.lead.id as string;
     expect(new Date(created.body.lead.nextFollowUpAt).getTime()).toBeGreaterThan(Date.now());

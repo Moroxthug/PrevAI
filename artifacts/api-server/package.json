@@ -18,6 +18,7 @@
     "qa:visual": "tsx src/e2e/visual-a11y.ts",
     "qa:pdf": "tsx src/e2e/pdf-matrix.ts",
     "qa:perf": "tsx src/e2e/api-perf.ts",
+    "qa:historic-pdf": "tsx src/e2e/historic-pdf.ts",
     "ops:backup": "tsx scripts/backup.ts",
     "ops:restore": "tsx scripts/restore.ts",
     "ops:rotate-token-key": "tsx scripts/rotate-token-key.ts"

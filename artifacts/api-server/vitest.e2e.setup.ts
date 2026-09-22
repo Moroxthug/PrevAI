@@ -6,8 +6,15 @@ import { vi } from "vitest";
 if (!process.env.DATABASE_URL) {
   throw new Error("E2E: DATABASE_URL is not set. Create .env.staging (see vitest.e2e.config.ts) or export the variables.");
 }
-if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
-  throw new Error("E2E: SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY are required (PDFs are written to storage).");
+// V2-3: without a Supabase project (the staging rehearsal runs on a plain
+// Postgres), PDFs and logos go to an in-memory bucket (src/e2e/storageStub.ts).
+if (!process.env.SUPABASE_URL) {
+  const { STORAGE_STUB_URL } = await import("./src/e2e/storageStub.js");
+  process.env.SUPABASE_URL = STORAGE_STUB_URL;
+  process.env.SUPABASE_SERVICE_ROLE_KEY ??= "e2e-storage-stub-key";
+  process.env.E2E_STORAGE_STUB = "1";
+} else if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
+  throw new Error("E2E: SUPABASE_SERVICE_ROLE_KEY is required with SUPABASE_URL (PDFs are written to storage).");
 }
 
 process.env.BETTER_AUTH_SECRET ??= "e2e-secret-not-for-production-use-0000";

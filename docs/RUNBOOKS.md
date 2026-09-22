@@ -57,6 +57,58 @@ Stesso URL session-mode, con `psql`:
 Regola: solo `SELECT`. Qualunque `ALTER`/`INSERT`/`UPDATE` passa da una migrazione SQL additiva, revisionata, con dump fatto prima (vedi `PREVAI-V2-PLAN.md` §1).
 
 
+## 3. Staging locale per la prova generale (fase V2-3, 2026-09-21)
+
+Decisione del titolare (2026-09-21): lo staging è un **Postgres 17 locale**, non un progetto Supabase (l'org è al limite Free di 2 progetti). Limite accettato: lo Storage Supabase (loghi, PDF caricati) non è testabile in locale — la suite e2e lo sostituisce con un bucket in memoria (`artifacts/api-server/src/e2e/storageStub.ts`, attivo quando `SUPABASE_URL` non è impostata). Il test con Storage reale e preview Vercel si fa in V2-5.
+
+| | |
+|---|---|
+| Cartella | `C:\Users\Admin\PrevAI-staging\` (fuori dal repo, mai committare) |
+| Cluster | `data\` — `initdb -U postgres --auth=trust -E UTF8 --locale=C`, porta **5433**, TLS attivo (cert self-signed `server.crt`/`server.key`, così il codice v1 — che forza `ssl: { rejectUnauthorized: false }` — si connette senza modifiche) |
+| DB | `prevai_staging` (di lavoro) · `prevai_v1_baseline` (copia pristina del dump, template per il reset) |
+| Worktree v1 | `v1\` = `git worktree add … v1-final`, dipendenze installate, `artifacts/api-server/dist` buildato con `node ./build.mjs` |
+| Env | repo: `.env.staging` (api v2, porta 5050, `DATABASE_URL=…5433/prevai_staging?sslmode=disable`, AI puntata a porta chiusa) · `.env.staging-web` (Vite porta 5175, proxy → 5050) · `v1\.env.staging-v1` (api v1, porta 5060, GROQ reale, segreti WhatsApp finti) |
+| Launch | `..\.claude\launch.json` (cartella `PrevAI (2)`): `api-server-staging` (5050), `preventivo-ai-staging` (5175) via `dev-*-staging.cmd` |
+
+```bash
+PG=/c/Users/Admin/pg17/pgsql/bin
+"$PG/pg_ctl.exe" -D "C:/Users/Admin/PrevAI-staging/data" -o "-p 5433" -l "C:/Users/Admin/PrevAI-staging/pg.log" start   # (stop: … stop)
+# Reset dello staging al dump v1 (pochi secondi):
+"$PG/psql.exe" -p 5433 -U postgres -c "drop database prevai_staging" -c "create database prevai_staging template prevai_v1_baseline"
+# Restore da zero (se serve rifare il baseline):
+"$PG/pg_restore.exe" --dbname="postgresql://postgres@127.0.0.1:5433/prevai_staging" --no-owner --no-privileges <file>.dump   # 1 errore atteso: "schema public already exists"
+```
+
+Verifica del restore (2026-09-21): 24 tabelle, conteggi identici al baseline §1 (auth_user 28, quotes 106, conversations 335, messages 190, …). Le sessioni better-auth restano valide: il token di una sessione v1 funziona su v1 e v2 (cookie `better-auth.session_token=<token>.<base64 HMAC-SHA256(secret, token)>`, firmato con il `BETTER_AUTH_SECRET` dello staging).
+
+Comandi di verifica usati in V2-3:
+```bash
+# Drift schema v2 ↔ DB (0 fatali atteso dopo la migrazione):
+cd lib/db && DATABASE_URL="postgresql://postgres@127.0.0.1:5433/prevai_staging" pnpm exec tsx scripts/schema-drift.ts
+# Suite e2e (63 test) contro lo staging, storage in memoria:
+pnpm --filter @workspace/api-server test:e2e            # legge .env.staging
+# PDF di preventivi storici reali con il renderer v2 → artifacts/api-server/.qa/pdfs/historic/
+pnpm --filter @workspace/api-server qa:historic-pdf [quoteId]
+```
+
+## 4. Migrazione v1 → v2 (runbook per V2-5, provato in V2-3)
+
+File: `migrations/v2/0001_v1_to_v2_additive.sql` — generato con `drizzle-kit pull` (introspezione del DB v1) + `drizzle-kit generate` (schema v2) e poi trasformato in additivo/idempotente (`CREATE TABLE IF NOT EXISTS`, `ADD COLUMN IF NOT EXISTS`, `CREATE INDEX IF NOT EXISTS`, `ADD CONSTRAINT` e `CREATE TYPE` guardati da `duplicate_object`). Scartati: `DROP COLUMN incentives_catalog.regione/comune`, tutti i `SET/DROP DEFAULT` (i default QuoteAI in inglese non devono entrare in prod). Uniche modifiche a colonne esistenti: `incentives_catalog.percentuale_massima DROP NOT NULL` e `quotes.iva_percentuale numeric(5,2)→numeric(6,3)` (allargamenti; il codice v1 fa `Number()` su quel campo, verificato). `quotes.unsubscribe_token` ha `DEFAULT gen_random_uuid()::text` così le INSERT v1 continuano a funzionare.
+
+Contenuto: 1 enum, 54 tabelle nuove, 57 colonne nuove su 9 tabelle esistenti, 52 FK, 82 indici. **Durata su staging (copia prod, 13 MB): 342 ms** in una transazione; la seconda esecuzione è un no-op. Finestra di manutenzione V2-5 dimensionata dal dump + promote Vercel, non dalla migrazione.
+
+```bash
+# 1. dump (§1)   2. migrazione in un'unica transazione:
+"$PG/psql.exe" "<session URL>" -v ON_ERROR_STOP=1 -1 -f migrations/v2/0001_v1_to_v2_additive.sql
+# 3. drift check (§3)   4. riconciliazione: conteggi per tabella + checksum
+#    ATTENZIONE: iva_percentuale cambia rappresentazione (22.00 → 22.000): normalizzare con ::numeric(10,2) nel checksum.
+psql "<url>" -At -c "select md5(string_agg(id::text||subtotale||(iva_percentuale::numeric(10,2))||iva_valore||totale||status||coalesce(numero_preventivo_data,'')||coalesce(items::text,'')||coalesce(capitoli::text,'')||coalesce(client_data::text,''), ',' order by id)) from quotes"
+```
+Rollback: promuovere il deployment v1 precedente su Vercel — v1 gira sul DB migrato (provato: sessione, lista, apertura storico, preventivo manuale, generazione AI, sign-up, webhook WhatsApp firmato).
+
+**Da rifare in V2-5:** rigenerare il file dallo schema finale di V2-4 con lo stesso procedimento (V2-4 toglie dallo schema le colonne canadesi `business_profiles.gst_hst_number/pst_number/qst_number/etransfer_email/homestars_profile_url` e rivede `incentives_catalog`: non devono finire in prod). Confrontare il nuovo file con questo.
+
+
 ---
 
 # Riferimento QuoteAI (base importata in V2-1, 2026-09-21)

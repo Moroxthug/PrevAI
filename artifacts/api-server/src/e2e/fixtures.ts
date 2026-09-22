@@ -76,14 +76,14 @@ async function seedLongQuote(userId: string, province: string) {
     .values({
       userId,
       province,
-      clientData: { nome: "Morgan Longlist", indirizzo: "789 Longlist Rd", city: province === "QC" ? "Laval" : "Kanata", province, postalCode: "K2K 1A1", email: "longlist@e2e-test.invalid", phone: "6135550199" },
-      descrizioneGenerale: "Full kitchen and powder-room renovation, two floors, including permit drawings and a temporary kitchen set-up in the garage for the duration of the works.",
+      clientData: { nome: "Marco Listalunga", indirizzo: "Via Lunga 789", city: province === "NA" ? "Pozzuoli" : "Monza", province, postalCode: province === "NA" ? "80078" : "20900", email: "longlist@e2e-test.invalid", phone: "0212345699" },
+      descrizioneGenerale: "Ristrutturazione completa di cucina e bagno di servizio su due piani, comprese le pratiche edilizie e una cucina provvisoria in garage per la durata dei lavori.",
       capitoli,
-      condizioniPagamento: ["30% deposit upon signing", "40% at start of work", "30% upon completion"],
+      condizioniPagamento: ["30% acconto alla firma", "40% all'inizio lavori", "30% a fine lavori"],
       sconto: { percentuale: 5, importoScontato: Math.round(subtotale * 0.95 * 100) / 100 },
       subtotale: String(subtotale),
-      // Phase 71: real province taxes on the long quote so the PDF matrix shows
-      // the GST + QST split (and the discount as the taxable base).
+      // Phase 71 / V2-2: IVA agevolata 10 % sul preventivo lungo, così la matrice
+      // PDF mostra l'aliquota ristrutturazioni (e lo sconto come imponibile).
       ivaPercentuale: String(getTaxProfile("IVA10").totalRate),
       ivaValore: String(Math.round(Math.round(subtotale * 0.95 * 100) / 100 * getTaxProfile("IVA10").totalRate) / 100),
       totale: String(Math.round((Math.round(subtotale * 0.95 * 100) / 100) * (1 + getTaxProfile("IVA10").totalRate / 100) * 100) / 100),
@@ -102,7 +102,7 @@ export async function seedShowcase(org: TestUser & { province: string }, opts: {
   }
 
   // ── Main chain: accepted quote → signed contract → active job → invoices ──
-  const quote = await seedQuote(userId, { province, holdback: province === "ON" });
+  const quote = await seedQuote(userId, { province, holdback: province === "MI" });
   await db.update(quotesTable).set({ status: "accepted", acceptedAt: new Date(), acceptedByName: "Jordan Client" }).where(eq(quotesTable.id, quote.id));
   await raiseOrThrow({ event: "quote.accepted", userId, entityType: "quote", entityId: quote.id, payload: { acceptedByName: "Jordan Client" } });
   const contract = need((await db.select().from(contractsTable).where(eq(contractsTable.quoteId, quote.id)))[0], "auto-drafted contract");
@@ -144,7 +144,7 @@ export async function seedShowcase(org: TestUser & { province: string }, opts: {
   const signToken = captureSignToken?.() ?? null;
 
   // ── A sent manual invoice with a public link (/i/:token) ──
-  const [client] = await db.insert(clientsTable).values({ userId, name: "Pay Client", email: "pay@e2e-test.invalid", phone: "6135550150", city: province === "QC" ? "Québec" : "Ottawa", province, preferredLanguage: "it", dedupKey: `pay-${userId}` }).returning();
+  const [client] = await db.insert(clientsTable).values({ userId, name: "Pay Client", email: "pay@e2e-test.invalid", phone: "6135550150", city: province === "NA" ? "Napoli" : "Milano", province, preferredLanguage: "it", dedupKey: `pay-${userId}` }).returning();
   const ctx = await buildInvoiceContext({ userId, clientId: client!.id });
   const manual = await createInvoice({
     userId, ctx, type: "manual", source: "manual", actor: "contractor", dueDays: 15,

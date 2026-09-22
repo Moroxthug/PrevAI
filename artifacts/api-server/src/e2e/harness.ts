@@ -109,20 +109,18 @@ export type OrgOptions = {
 
 /** A contractor account: user + business profile on the given plan (elite by default — every feature on). */
 export async function createOrg(opts: OrgOptions = {}): Promise<TestUser & { province: string }> {
-  const province = opts.province ?? "ON";
-  const companyName = opts.companyName ?? `E2E ${province} Co`;
+  const province = opts.province ?? "MI";
+  const companyName = opts.companyName ?? `E2E ${province} Srl`;
   const user = await createUser({ name: companyName });
   const plan = opts.plan ?? "monthly_elite";
   await db.insert(businessProfilesTable).values({
     userId: user.userId,
     companyName,
     province,
-    gstHstNumber: "123456789RT0001",
-    qstNumber: province === "QC" ? "1234567890TQ0001" : null,
-    licenceNumber: province === "QC" ? "RBQ 1234-5678-01" : "LIC-0001",
-    etransferEmail: "payments@e2e-test.invalid",
+    vatNumber: "IT01234567890",
+    licenceNumber: "CCIAA MI-1234567",
     email: `owner-${user.userId}@example.invalid`,
-    phone: "6135550100",
+    phone: "0212345678",
     subscriptionPlan: plan === "free" ? null : plan,
     subscriptionStatus: plan === "free" ? null : "active",
     automationSettings: { notifyOnQuoteAccepted: true, autoDraftContract: true, autoSendInvoices: false, invoiceAutoSendAfterHours: 0, invoiceReminders: true },
@@ -143,15 +141,15 @@ export type SeedQuoteOptions = {
 
 /** The same two-chapter $10,000 kitchen quote the Phase 6 lifecycle test used. */
 export async function seedQuote(userId: string, opts: SeedQuoteOptions = {}) {
-  const province = opts.province ?? "ON";
+  const province = opts.province ?? "MI";
   const paymentSchedule: PaymentSchedule = {
-    currency: "CAD",
+    currency: "EUR",
     derived: false,
     holdback: { enabled: opts.holdback ?? false, percent: 10 },
     terms: [
-      { id: "t1", type: "deposit", label: "Deposit", trigger: "on_signing", amountType: "percent", value: 30, dueDays: 0 },
-      { id: "t2", type: "milestone", label: "Start of work", trigger: "milestone", amountType: "percent", value: 40, dueDays: 15 },
-      { id: "t3", type: "completion", label: "Final balance", trigger: "on_completion", amountType: "percent", value: 30, dueDays: 15 },
+      { id: "t1", type: "deposit", label: "Acconto", trigger: "on_signing", amountType: "percent", value: 30, dueDays: 0 },
+      { id: "t2", type: "milestone", label: "Inizio lavori", trigger: "milestone", amountType: "percent", value: 40, dueDays: 15 },
+      { id: "t3", type: "completion", label: "Saldo finale", trigger: "on_completion", amountType: "percent", value: 30, dueDays: 15 },
     ],
   };
   const [quote] = await db
@@ -160,20 +158,20 @@ export async function seedQuote(userId: string, opts: SeedQuoteOptions = {}) {
       userId,
       province,
       clientData: {
-        nome: opts.clientName ?? "Jordan Client",
-        indirizzo: "456 Client Ave",
-        city: province === "QC" ? "Montréal" : "Ottawa",
+        nome: opts.clientName ?? "Giulia Cliente",
+        indirizzo: "Via dei Clienti 456",
+        city: province === "NA" ? "Napoli" : "Milano",
         province,
-        postalCode: "K1A 0B1",
+        postalCode: province === "NA" ? "80100" : "20100",
         email: opts.clientEmail ?? "client@e2e-test.invalid",
-        phone: "6135550100",
+        phone: "0212345678",
       },
-      descrizioneGenerale: "Kitchen renovation",
+      descrizioneGenerale: "Ristrutturazione cucina",
       capitoli: [
-        { lettera: "A", titolo: "Demolition and prep", subtotale: 4000, voci: [{ descrizione: "Demo existing cabinets", quantita: 1, um: "lot", prezzoUnitario: 4000, totale: 4000 }] },
-        { lettera: "B", titolo: "Cabinets and countertops", subtotale: 6000, voci: [{ descrizione: "Install cabinets and counters", quantita: 1, um: "lot", prezzoUnitario: 6000, totale: 6000 }] },
+        { lettera: "A", titolo: "Demolizioni e preparazione", subtotale: 4000, voci: [{ descrizione: "Smontaggio cucina esistente", quantita: 1, um: "a corpo", prezzoUnitario: 4000, totale: 4000 }] },
+        { lettera: "B", titolo: "Mobili e piani di lavoro", subtotale: 6000, voci: [{ descrizione: "Posa mobili e piani", quantita: 1, um: "a corpo", prezzoUnitario: 6000, totale: 6000 }] },
       ],
-      condizioniPagamento: ["30% deposit upon signing", "40% at start of work", "30% upon completion"],
+      condizioniPagamento: ["30% acconto alla firma", "40% all'inizio lavori", "30% a fine lavori"],
       paymentSchedule,
       subtotale: "10000",
       ivaPercentuale: "0", // forces buildVariablesFromQuote to use the real province tax profile

@@ -4,7 +4,7 @@
 // contractor signs -> customer signs -> job set up -> setup confirmed ->
 // cost entry -> milestone completed -> progress invoice drafted -> sent ->
 // paid -> job completed -> final invoice drafted. Runs it twice: once for
-// Ontario in English, once for Quebec in French (holdback on for ON).
+// Milano (ritenuta di garanzia attiva) e una volta per Napoli.
 //
 // WHAT THIS DOES AND DOES NOT COVER
 // - It drives the same service-layer functions the real routes call

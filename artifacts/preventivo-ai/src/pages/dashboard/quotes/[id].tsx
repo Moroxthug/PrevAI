@@ -786,7 +786,7 @@ export default function QuoteDetail() {
                 <div className="num">
                   <span className="eyebrow">{t("dashboard.quoteDetail.quoteLabel")}</span>
                   {quote.numeroPreventivoData && <b>{quote.numeroPreventivoData}</b>}
-                  <small>{t("dashboard.quoteDetail.dateLabel")} {format(new Date(quote.createdAt), "yyyy-MM-dd")}</small>
+                  <small>{t("dashboard.quoteDetail.dateLabel")} {format(new Date(quote.createdAt), "dd/MM/yyyy")}</small>
                 </div>
               </div>
 

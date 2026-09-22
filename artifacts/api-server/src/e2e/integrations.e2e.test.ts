@@ -122,8 +122,8 @@ describe("Phase 65 — integrations", () => {
 
   describe("/api/cron/tick", () => {
     test("every due item kind fires once; a second tick is a no-op", async () => {
-      // QC/FR so the reminder / follow-up / receipt templates render in French here (the rest of the file is EN).
-      const org = await createOrg({ province: "QC", companyName: "Cron QC Inc", profile: { sendReviewRequests: true, googleReviewUrl: "https://g.page/r/e2e/review" } });
+      // Provincia del Sud per variare i dati rispetto al resto del file (MI).
+      const org = await createOrg({ province: "NA", companyName: "Cron NA Srl", profile: { sendReviewRequests: true, googleReviewUrl: "https://g.page/r/e2e/review" } });
       const client = await seedClient(org, { name: "Client Tick", lang: "it" });
 
       // a. Sent invoice 5 days past due → overdue + first (3-day) reminder in the same tick.
@@ -140,7 +140,7 @@ describe("Phase 65 — integrations", () => {
       await db.update(invoicesTable).set({ type: "holdback_release", scheduledFor: daysAgo(1) }).where(eq(invoicesTable.id, release.id));
 
       // d. Contract sent 4 days ago, unsigned → 3-day reminder (re-issued token).
-      const quote = await seedQuote(org.userId, { province: "QC", clientEmail: client.email! });
+      const quote = await seedQuote(org.userId, { province: "NA", clientEmail: client.email! });
       await db.update(quotesTable).set({ status: "accepted", acceptedAt: new Date(), acceptedByName: client.name }).where(eq(quotesTable.id, quote.id));
       const { raiseAutomation } = await import("../lib/automation.js");
       await raiseAutomation({ event: "quote.accepted", userId: org.userId, entityType: "quote", entityId: quote.id, payload: { acceptedByName: client.name } });
@@ -149,12 +149,12 @@ describe("Phase 65 — integrations", () => {
       await db.update(contractsTable).set({ status: "sent", sentAt: daysAgo(4), expiresAt: daysFromNow(10) }).where(eq(contractsTable.id, contract!.id));
 
       // e. Sent quote whose follow-up is due.
-      const followQuote = await seedQuote(org.userId, { province: "QC", clientEmail: `quote-fu-${org.userId}@example.invalid`, status: "unlocked" });
+      const followQuote = await seedQuote(org.userId, { province: "NA", clientEmail: `quote-fu-${org.userId}@example.invalid`, status: "unlocked" });
       await db.update(quotesTable).set({ nextFollowUpAt: daysAgo(0.01) }).where(eq(quotesTable.id, followQuote.id));
 
       // f. Lead whose first follow-up is due.
       const leadEmail = `lead-tick-${org.userId}@example.invalid`;
-      const lead = await org.api("/api/leads", { body: { name: "Lead Tick", email: leadEmail, preferredLanguage: "fr" } });
+      const lead = await org.api("/api/leads", { body: { name: "Lead Tick", email: leadEmail, preferredLanguage: "it" } });
       expect(lead.status).toBe(201);
       await db.update(leadsTable).set({ nextFollowUpAt: daysAgo(0.01) }).where(eq(leadsTable.id, lead.body.lead.id));
 
@@ -205,8 +205,8 @@ describe("Phase 65 — integrations", () => {
       expect(c!.reminderCount).toBe(1);
       const [fq] = await db.select().from(quotesTable).where(eq(quotesTable.id, followQuote.id));
       expect(fq!.followUpStage).toBe(1);
-      // A Quebec quote follows up in French (was hard-wired to English before Phase 65).
-      expect(emailsTo(`quote-fu-${org.userId}@example.invalid`).map((m) => m.subject).join(" | ")).toMatch(/soumission/i);
+      // Il follow-up del preventivo è in italiano (era in inglese fisso prima della Phase 65).
+      expect(emailsTo(`quote-fu-${org.userId}@example.invalid`).map((m) => m.subject).join(" | ")).toMatch(/preventivo/i);
       const [ld] = await db.select().from(leadsTable).where(eq(leadsTable.id, lead.body.lead.id));
       expect(ld!.followUpStage).toBe(1);
       const [p] = await db.select().from(projectsTable).where(eq(projectsTable.id, project!.id));
@@ -252,7 +252,7 @@ describe("Phase 65 — integrations", () => {
       expect(welcome[0]!.subject.toLowerCase()).toContain("pro");
 
       // Plan change from the Stripe dashboard / portal → synced by customer id (no Stripe API call needed).
-      const upgraded = await stripeWebhook(stripeEvent("customer.subscription.updated", { id: "sub_e2e", customer: customerId, status: "active", items: { data: [{ price: { id: "price_1UEgdVEI5cvpdr6NHbrrdO88" } }] } }));
+      const upgraded = await stripeWebhook(stripeEvent("customer.subscription.updated", { id: "sub_e2e", customer: customerId, status: "active", items: { data: [{ price: { id: "price_1TUdJjCaDBaDETvnCo3JKGJ7" } }] } }));
       expect(upgraded.status).toBe(200);
       [profile] = await db.select().from(businessProfilesTable).where(eq(businessProfilesTable.userId, org.userId));
       expect(profile!.subscriptionPlan).toBe("monthly_elite");
@@ -317,7 +317,7 @@ describe("Phase 65 — integrations", () => {
 
       const waCalls = requestsTo(GRAPH);
       expect(waCalls.length, "one template send attempted").toBe(1);
-      expect(waCalls[0]!.json).toMatchObject({ messaging_product: "whatsapp", to: "+16135550101", type: "template", template: { name: process.env.WHATSAPP_REVIEW_REQUEST_TEMPLATE, language: { code: "en_US" } } });
+      expect(waCalls[0]!.json).toMatchObject({ messaging_product: "whatsapp", to: "+16135550101", type: "template", template: { name: process.env.WHATSAPP_REVIEW_REQUEST_TEMPLATE, language: { code: "it" } } });
       const [p1] = await db.select().from(projectsTable).where(eq(projectsTable.id, job1!.id));
       expect(p1!.reviewRequestSentAt, "still marked sent (via email)").not.toBeNull();
       expect(emailsTo(client1.email!)).toHaveLength(1);
@@ -332,7 +332,7 @@ describe("Phase 65 — integrations", () => {
       const [job2] = await db.insert(projectsTable).values({ userId: org.userId, clientId: client2.id, name: "Toiture", status: "completed", completedAt: daysAgo(REVIEW_REQUEST_DELAY_DAYS + 1) }).returning();
       await runJobReviewRequestMaintenance();
       expect(requestsTo(GRAPH)).toHaveLength(1);
-      expect(requestsTo(GRAPH)[0]!.json).toMatchObject({ template: { language: { code: "fr" } } });
+      expect(requestsTo(GRAPH)[0]!.json).toMatchObject({ template: { language: { code: "it" } } });
       expect(emailsTo(client2.email!)).toHaveLength(0);
       const [run2] = await db.select().from(automationRunsTable).where(and(eq(automationRunsTable.entityId, job2!.id), eq(automationRunsTable.event, "job.review_request_due")));
       expect(run2!.result).toMatchObject({ channel: "whatsapp" });
@@ -341,7 +341,7 @@ describe("Phase 65 — integrations", () => {
       resetRecorded();
       stubHost(GRAPH, () => json(400, { error: { code: 132001, message: "Template name does not exist" } }));
       const leadEmail = `wa-lead-${org.userId}@example.invalid`;
-      const lead = await org.api("/api/leads", { body: { name: "WA Lead", email: leadEmail, phone: "+16135550103", preferredChannel: "whatsapp", preferredLanguage: "en" } });
+      const lead = await org.api("/api/leads", { body: { name: "WA Lead", email: leadEmail, phone: "+16135550103", preferredChannel: "whatsapp", preferredLanguage: "it" } });
       expect(lead.status).toBe(201);
       await db.update(leadsTable).set({ nextFollowUpAt: daysAgo(0.01) }).where(eq(leadsTable.id, lead.body.lead.id));
       const { runLeadMaintenance } = await import("../leads/maintenance.js");
@@ -423,7 +423,7 @@ describe("Phase 65 — integrations", () => {
       expect(requestsTo(GMAIL)).toHaveLength(1);
       const fallback = emailsTo(client.email!);
       expect(fallback.length).toBe(emailsBefore + 1);
-      expect(fallback.at(-1)!.from).toMatch(/via QuoteAI <no-reply@quoteai\.ca>$/);
+      expect(fallback.at(-1)!.from).toMatch(/via PrevAI <no-reply@prevai\.it>$/);
       [conn] = await db.select().from(emailConnectionsTable).where(eq(emailConnectionsTable.userId, org.userId));
       expect(conn!.lastSendError).toMatch(/401/);
 
@@ -530,7 +530,7 @@ describe("Phase 65 — integrations", () => {
         if (u.pathname.endsWith("/query")) {
           const q = u.searchParams.get("query") ?? "";
           if (q.includes("from Customer")) return json(200, { QueryResponse: {} }); // not found → create
-          if (q.includes("from Item")) return json(200, { QueryResponse: { Item: [{ Id: "17", Name: "QuoteAI Job Revenue" }] } });
+          if (q.includes("from Item")) return json(200, { QueryResponse: { Item: [{ Id: "17", Name: "PrevAI Job Revenue" }] } });
           return json(200, { QueryResponse: {} });
         }
         if (u.pathname.endsWith("/customer")) return json(200, { Customer: { Id: "58", Name: (req.json as { DisplayName: string }).DisplayName } });
@@ -654,20 +654,22 @@ describe("Phase 65 — integrations", () => {
   // ── 5. Template hygiene ────────────────────────────────────────────────────
 
   describe("transactional emails captured during this run", () => {
-    test("render without leaked placeholders, in both languages", () => {
+    test("render without leaked placeholders, in Italian", () => {
       expect(sentEmails.length).toBeGreaterThan(10);
       const leaks: string[] = [];
       for (const m of sentEmails) {
         const text = `${m.subject}\n${HTML_TEXT(m.html)}`;
         if (/\bundefined\b|\bNaN\b|\[object Object\]|\bnull\b|\{\{|\$\{/.test(text)) leaks.push(`${m.subject} → ${text.match(/.{0,40}(undefined|NaN|\[object Object\]|null|\{\{|\$\{).{0,40}/)?.[0]}`);
-        if (!m.from.includes("<no-reply@quoteai.ca>")) leaks.push(`${m.subject} → unexpected From ${m.from}`);
+        if (!m.from.includes("<no-reply@prevai.it>")) leaks.push(`${m.subject} → unexpected From ${m.from}`);
       }
       expect(leaks, leaks.join("\n")).toEqual([]);
       const subjects = new Set(sentEmails.map((m) => m.subject));
-      const fr = [...subjects].filter((s) => /[àâçéèêëîïôûùüÿœ]|facture|contrat|rappel|devis/i.test(s));
-      const en = [...subjects].filter((s) => /invoice|contract|reminder|quote|receipt|review/i.test(s));
-      expect(fr.length, `French subjects: ${fr.join(" | ")}`).toBeGreaterThan(0);
-      expect(en.length, `English subjects: ${en.join(" | ")}`).toBeGreaterThan(0);
+      // V2-2: una sola lingua. Ogni oggetto deve essere italiano; un oggetto
+      // inglese o francese è un template sfuggito alla ri-italianizzazione.
+      const it = [...subjects].filter((s) => /fattura|contratto|promemoria|preventivo|ricevuta|recensione|pagamento|firma/i.test(s));
+      const foreign = [...subjects].filter((s) => /\binvoice\b|\bcontract\b|\breminder\b|\bquote\b|\breceipt\b|\breview\b|facture|soumission|devis|rappel/i.test(s));
+      expect(it.length, `Italian subjects: ${it.join(" | ")}`).toBeGreaterThan(0);
+      expect(foreign, `non-Italian subjects: ${foreign.join(" | ")}`).toEqual([]);
       console.log(`\n${subjects.size} distinct transactional subjects rendered clean:\n  ${[...subjects].join("\n  ")}`);
     });
   });

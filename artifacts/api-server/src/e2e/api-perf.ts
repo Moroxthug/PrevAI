@@ -64,10 +64,10 @@ async function seed(userId: string) {
     const tax = Math.round(subtotal * 0.13 * 100) / 100;
     return {
       userId,
-      province: "ON" as const,
-      clientData: { nome: name, indirizzo: `${100 + c} Client Ave`, city: "Ottawa", province: "ON", postalCode: "K1A 0B1", email: `client${c}@e2e-test.invalid`, phone: `613555${String(c).padStart(4, "0")}` },
+      province: "MI" as const,
+      clientData: { nome: name, indirizzo: `${100 + c} Client Ave`, city: "Milano", province: "MI", postalCode: "20100", email: `client${c}@e2e-test.invalid`, phone: `613555${String(c).padStart(4, "0")}` },
       descrizioneGenerale: `Renovation job #${i + 1}`,
-      rawInput: `Renovation job #${i + 1}: ${capitoli[0]!.voci.length + capitoli[1]!.voci.length} lines, ON, HST.`,
+      rawInput: `Renovation job #${i + 1}: ${capitoli[0]!.voci.length + capitoli[1]!.voci.length} lines, MI, IVA 22.`,
       capitoli,
       condizioniPagamento: ["30% deposit upon signing", "40% at start of work", "30% upon completion"],
       subtotale: String(subtotal),
@@ -91,7 +91,7 @@ async function seed(userId: string) {
       clientId: clients[j % clients.length]!.id,
       name: `Job ${j + 1} — kitchen`,
       status: (["active", "active", "planning", "completed", "suspended"] as const)[j % 5],
-      address: `${200 + j} Site Rd, Ottawa ON`,
+      address: `Via del Cantiere ${200 + j}, Milano MI`,
       contractValueCents: 1_000_000 + j * 25_000,
       changeOrdersCents: j % 4 === 0 ? 50_000 : 0,
       plannedStart: daysAgo(60 - j),
@@ -122,12 +122,12 @@ async function seed(userId: string) {
     ),
   );
 
-  const party = { name: "Northside Renovations Ltd.", address: "1 Contractor Way", city: "Ottawa", province: "ON", postalCode: "K1A 0B1", email: "owner@e2e-test.invalid" };
+  const party = { name: "Ristrutturazioni Nord Srl", address: "Via dell'Impresa 1", city: "Milano", province: "MI", postalCode: "20100", email: "owner@e2e-test.invalid" };
   const invoices = await db.insert(invoicesTable).values(
     projects.flatMap((p, j) =>
       Array.from({ length: 2 }, (_, k) => ({
         userId, projectId: p.id, clientId: p.clientId, number: `INV-2026-${String(j * 2 + k + 1).padStart(4, "0")}`, type: "progress" as const,
-        status: (["sent", "paid", "overdue", "partially_paid", "draft"] as const)[(j + k) % 5], province: "ON",
+        status: (["sent", "paid", "overdue", "partially_paid", "draft"] as const)[(j + k) % 5], province: "MI",
         issueDate: daysAgo(40 - j), dueDate: daysAgo(10 - j), contractor: party, customer: { name: `Client ${j}`, email: `client${j}@e2e-test.invalid` },
         lines: [{ id: `l${k}`, description: "Progress billing", quantity: 1, unit: "lot", unitCents: 300_000, amountCents: 300_000 }],
         subtotalCents: 300_000, taxableCents: 300_000, taxCents: 39_000, totalCents: 339_000, paidCents: (j + k) % 5 === 1 ? 339_000 : (j + k) % 5 === 3 ? 100_000 : 0,
@@ -167,7 +167,7 @@ mkdirSync(OUT, { recursive: true });
 const t0 = Date.now();
 try {
   await startServer();
-  const org = await createOrg({ province: "ON", companyName: "Northside Renovations Ltd." });
+  const org = await createOrg({ province: "MI", companyName: "Ristrutturazioni Nord Srl" });
   const { projects, seconds } = await seed(org.userId);
   const [contract] = await db.select({ id: contractsTable.id }).from(contractsTable).limit(1);
   console.log(`[qa-perf] seeded ${QUOTES} quotes / ${JOBS} jobs in ${seconds}s — ${SAMPLES} samples per endpoint\n`);
