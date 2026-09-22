@@ -1,7 +1,8 @@
 import { Router } from "express";
-import { db, quotesTable, quoteVariantsTable, businessProfilesTable, priceCatalogItemsTable, leadsTable, leadEventsTable, incentivesCatalogTable, normalizeProvince, quoteTaxLines } from "@workspace/db";
+import { db, quotesTable, quoteVariantsTable, businessProfilesTable, priceCatalogItemsTable, leadsTable, leadEventsTable, incentivesCatalogTable, normalizeProvince, regioneDiProvincia, readQuoteClientData, quoteTaxLines } from "@workspace/db";
 import { eq, or, isNull } from "drizzle-orm";
 import { inferInterventionCategories, matchIncentivesForQuote } from "../incentives/matching.js";
+import { ensureDefaultIncentives } from "../incentives/seed.js";
 import { openai } from "@workspace/integrations-openai-ai-server";
 import { AI_PROMPT as BASE_AI_PROMPT, REGIONAL_PRICING_GUIDANCE, DESCRIPTION_QUALITY_GUIDANCE } from "../lib/generateQuoteFromText.js";
 import { generateNumeroPreventivo } from "../lib/quoteNumber.js";
@@ -611,9 +612,10 @@ router.post("/public/quotes/:id/accept", quoteAcceptLimiter, async (req, res) =>
   }
 });
 
-// GET /api/public/quotes/:id/incentives — rebate/grant programs that could
-// apply to this quote's work and location. Never a guarantee of eligibility;
-// the frontend always renders the accompanying disclaimer.
+// GET /api/public/quotes/:id/incentives — bonus e bandi che potrebbero
+// applicarsi al lavoro e alla zona del preventivo (pagina pubblica /p/:id).
+// Mai una garanzia di ammissibilità: il frontend mostra sempre il disclaimer.
+// Regione dalla provincia del preventivo, comune dalla città del cliente.
 router.get("/public/quotes/:id/incentives", quoteViewLimiter, async (req, res) => {
   try {
     const id = req.params.id as string;
@@ -623,17 +625,21 @@ router.get("/public/quotes/:id/incentives", quoteViewLimiter, async (req, res) =
       return;
     }
 
+    await ensureDefaultIncentives();
     const catalog = await db
       .select()
       .from(incentivesCatalogTable)
       .where(or(isNull(incentivesCatalogTable.userId), eq(incentivesCatalogTable.userId, quote.userId)));
 
+    const cd = readQuoteClientData(quote.clientData as QuoteClientData | null);
     const chapterText = (quote.capitoli ?? [])
       .map((c) => [c.titolo, ...(c.voci ?? []).map((v) => v.descrizione)].join(" "))
       .join(" ");
-    const categories = inferInterventionCategories(`${quote.descrizioneGenerale ?? ""} ${chapterText}`);
+    const categories = inferInterventionCategories(`${quote.descrizioneGenerale ?? ""} ${quote.rawInput ?? ""} ${chapterText}`);
+    const province = normalizeProvince(quote.province) ?? normalizeProvince(cd.province) ?? null;
+    const regione = regioneDiProvincia(province) ?? cd.incentivesData?.regione ?? null;
 
-    const matches = matchIncentivesForQuote(catalog, { province: quote.province, categories })
+    const matches = matchIncentivesForQuote(catalog, { regione, comune: cd.city ?? null, categories })
       .slice(0, 6)
       .map((item) => ({
         id: item.id,
@@ -644,7 +650,8 @@ router.get("/public/quotes/:id/incentives", quoteViewLimiter, async (req, res) =
         percentualeMassima: item.percentualeMassima,
         massimaleContributo: item.massimaleContributo,
         massimaleSpesa: item.massimaleSpesa,
-        incomeTested: item.incomeTested,
+        requisitiIseeMax: item.requisitiIseeMax,
+        scadenza: item.scadenza,
         fonteUfficialeUrl: item.fonteUfficialeUrl,
         humanVerified: item.humanVerified,
       }));

@@ -1,45 +1,27 @@
 import { db, incentivesCatalogTable } from "@workspace/db";
-import { and, asc, eq, isNotNull, ne } from "drizzle-orm";
+import { ne } from "drizzle-orm";
 import { logger } from "../lib/logger.js";
+import { closeExpiredIncentives, ensureDefaultIncentives } from "./seed.js";
+import { runIncentivesVerification } from "./verification.js";
 
-const CHECK_BATCH_SIZE = 25;
-const FETCH_TIMEOUT_MS = 8_000;
-
-// ── Daily incentive freshness check (cron) ──────────────────────────────────
-// Doesn't try to auto-discover new programs (too failure-prone to trust
-// unsupervised) — it only re-fetches each catalog entry's official source URL
-// and flags whether the page still loads, so a human knows which programs to
-// re-check. `humanVerified` is untouched here — only a person can set that.
-export async function runIncentivesFreshnessCheck(now = new Date()): Promise<{ checked: number; flagged: number }> {
-  const due = await db
-    .select()
-    .from(incentivesCatalogTable)
-    .where(and(isNotNull(incentivesCatalogTable.fonteUfficialeUrl), ne(incentivesCatalogTable.stato, "closed")))
-    .orderBy(asc(incentivesCatalogTable.lastCheckedAt))
-    .limit(CHECK_BATCH_SIZE);
-
-  let flagged = 0;
-  for (const item of due) {
-    const stillLive = await urlLooksLive(item.fonteUfficialeUrl!);
-    if (!stillLive) flagged++;
-    await db
-      .update(incentivesCatalogTable)
-      .set({ isVerifiedByAi: stillLive, lastCheckedAt: now })
-      .where(eq(incentivesCatalogTable.id, item.id));
-  }
-  return { checked: due.length, flagged };
-}
-
-async function urlLooksLive(url: string): Promise<boolean> {
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
+// ── Controllo giornaliero del catalogo (cron) ────────────────────────────────
+// È il "Daily AI Incentive Agent" di v1 montato sul tick cron di QuoteAI
+// (`/api/cron/tick`, un giro al giorno) invece del setInterval nel processo:
+// 1) chiude i bandi con scadenza superata; 2) ri-verifica i bandi aperti
+// leggendo la pagina ufficiale e chiedendo al modello se sono ancora attivi
+// o in esaurimento. Non scopre bandi nuovi (troppo inaffidabile senza
+// supervisione) e non tocca mai `humanVerified`: quello lo mette solo una
+// persona. Senza AI raggiungibile (e2e) aggiorna solo il timestamp.
+export async function runIncentivesFreshnessCheck(): Promise<{ checked: number; closed: number; sourcesFetched: number; summary: string }> {
+  const closed = await closeExpiredIncentives();
+  await ensureDefaultIncentives();
+  const open = await db.select().from(incentivesCatalogTable).where(ne(incentivesCatalogTable.stato, "closed"));
+  if (open.length === 0) return { checked: 0, closed, sourcesFetched: 0, summary: "Nessun bando attivo da verificare." };
   try {
-    const res = await fetch(url, { method: "GET", redirect: "follow", signal: controller.signal });
-    return res.ok;
+    const outcome = await runIncentivesVerification(open);
+    return { checked: outcome.updatedCount, closed, sourcesFetched: outcome.sourcesFetched, summary: outcome.summary };
   } catch (err) {
-    logger.warn({ err, url }, "Incentive source URL freshness check failed");
-    return false;
-  } finally {
-    clearTimeout(timeout);
+    logger.error({ err }, "Incentives verification failed");
+    return { checked: 0, closed, sourcesFetched: 0, summary: "Verifica non riuscita (vedi log)." };
   }
 }

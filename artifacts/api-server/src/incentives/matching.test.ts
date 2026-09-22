@@ -1,78 +1,75 @@
-// vitest suite (Phase 61): the assertions below were a plain node:assert script; now run by `pnpm test`.
+// vitest suite (Phase 61 → V2-4): catalogo v1 (statale/regionale/comunale, regione/comune).
 import assert from "node:assert/strict";
-import { inferInterventionCategories, matchIncentivesForQuote } from "./matching.js";
+import { inferInterventionCategories, matchIncentivesForQuote, categoryMatches, placeMatches } from "./matching.js";
 import type { IncentiveCatalogItem } from "@workspace/db";
 import { test } from "vitest";
 
-test("incentives/matching", () => {
+function item(overrides: Partial<IncentiveCatalogItem>): IncentiveCatalogItem {
+  return {
+    id: "id",
+    userId: null,
+    level: "statale",
+    codice: "TEST",
+    titolo: "Programma di prova",
+    descrizione: "desc",
+    regione: null,
+    comune: null,
+    categoriaIntervento: "tutti",
+    tipoAgevolazione: "detrazione_10_anni",
+    percentualeMassima: "50.00",
+    massimaleSpesa: null,
+    massimaleContributo: null,
+    requisitiIseeMax: null,
+    scadenza: null,
+    stato: "active",
+    fonteUfficialeUrl: null,
+    isVerifiedByAi: true,
+    humanVerified: false,
+    lastCheckedAt: null,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+    ...overrides,
+  };
+}
 
-  // Category inference from free text.
-  assert.deepEqual(inferInterventionCategories("Installing a new heat pump and ductwork"), ["heat_pump"]);
-  assert.deepEqual(inferInterventionCategories("New windows and attic insulation upgrade").sort(), ["insulation", "windows_doors"]);
-  assert.deepEqual(inferInterventionCategories("Repainting the fence"), []);
+test("incentives/matching: categorie dal testo", () => {
+  assert.deepEqual(inferInterventionCategories("Installazione pompa di calore e nuovi infissi"), ["efficienza_energetica"]);
+  assert.deepEqual(inferInterventionCategories("Rifacimento bagno con doccia a filo pavimento").sort(), ["bagno", "barriere_architettoniche", "pavimenti", "ristrutturazione"]);
+  assert.deepEqual(inferInterventionCategories("Riparazione della recinzione"), []);
+});
 
-  function item(overrides: Partial<IncentiveCatalogItem>): IncentiveCatalogItem {
-    return {
-      id: "id",
-      userId: null,
-      level: "federal",
-      codice: "TEST",
-      titolo: "Test program",
-      descrizione: "desc",
-      province: null,
-      city: null,
-      categoriaIntervento: "all",
-      tipoAgevolazione: "rebate",
-      percentualeMassima: null,
-      massimaleSpesa: null,
-      massimaleContributo: null,
-      requisitiIseeMax: null,
-      incomeTested: false,
-      scadenza: null,
-      stato: "active",
-      fonteUfficialeUrl: null,
-      isVerifiedByAi: true,
-      humanVerified: false,
-      lastCheckedAt: new Date(),
-      createdAt: new Date(),
-      updatedAt: new Date(),
-      ...overrides,
-    } as IncentiveCatalogItem;
-  }
+test("incentives/matching: compatibilità categoria (regole v1)", () => {
+  assert.equal(categoryMatches("bagno", "tutti"), true);
+  assert.equal(categoryMatches("bagno", "barriere_architettoniche"), true);
+  assert.equal(categoryMatches("elettrico", "efficienza_energetica"), true);
+  assert.equal(categoryMatches("tinteggiatura", "efficienza_energetica"), false);
+  assert.equal(categoryMatches("tinteggiatura", "ristrutturazione"), true);
+});
 
-  const catalog: IncentiveCatalogItem[] = [
-    item({ codice: "FEDERAL_ALL", level: "federal", province: null, categoriaIntervento: "all" }),
-    item({ codice: "ON_HEAT_PUMP", level: "provincial", province: "ON", categoriaIntervento: "heat_pump" }),
-    item({ codice: "QC_INSULATION", level: "provincial", province: "QC", categoriaIntervento: "insulation" }),
-    item({ codice: "ON_ENBRIDGE_CITY", level: "utility", province: "ON", city: "Toronto", categoriaIntervento: "energy_efficiency" }),
-    item({ codice: "CLOSED_PROGRAM", level: "federal", province: null, categoriaIntervento: "all", stato: "closed" }),
-  ];
+test("incentives/matching: regione/comune tolleranti", () => {
+  assert.equal(placeMatches("Emilia-Romagna", "emilia romagna"), true);
+  assert.equal(placeMatches("Milano", "Comune di Milano"), true);
+  assert.equal(placeMatches("Lombardia", "Piemonte"), false);
+  assert.equal(placeMatches(null, "Lombardia"), false);
+});
 
-  // Ontario heat-pump quote: federal (region-less) + ON heat-pump match, QC and closed program excluded.
-  assert.deepEqual(
-    matchIncentivesForQuote(catalog, { province: "ON", categories: ["heat_pump"] }).map((i) => i.codice).sort(),
-    ["FEDERAL_ALL", "ON_HEAT_PUMP"],
-  );
+test("incentives/matching: filtro per preventivo", () => {
+  const statale = item({ id: "statale", codice: "BONUS_CASA_50" });
+  const lombardia = item({ id: "lombardia", level: "regionale", regione: "Lombardia", categoriaIntervento: "efficienza_energetica" });
+  const piemonte = item({ id: "piemonte", level: "regionale", regione: "Piemonte", categoriaIntervento: "efficienza_energetica" });
+  const milano = item({ id: "milano", level: "comunale", regione: "Lombardia", comune: "Milano", categoriaIntervento: "tutti" });
+  const chiuso = item({ id: "chiuso", stato: "closed" });
+  const catalog = [statale, lombardia, piemonte, milano, chiuso];
 
-  // Municipal/utility program only matches when the city also matches.
-  assert.deepEqual(
-    matchIncentivesForQuote(catalog, { province: "ON", city: "Ottawa", categories: ["energy_efficiency"] }).map((i) => i.codice),
-    ["FEDERAL_ALL"],
-  );
-  assert.deepEqual(
-    matchIncentivesForQuote(catalog, { province: "ON", city: "Toronto", categories: ["energy_efficiency"] }).map((i) => i.codice).sort(),
-    ["FEDERAL_ALL", "ON_ENBRIDGE_CITY"],
-  );
-
-  // Quebec quote never sees Ontario-only programs.
-  assert.deepEqual(
-    matchIncentivesForQuote(catalog, { province: "QC", categories: ["insulation"] }).map((i) => i.codice).sort(),
-    ["FEDERAL_ALL", "QC_INSULATION"],
-  );
-
-  // No category match beyond "all" still surfaces the federal catch-all.
-  assert.deepEqual(
-    matchIncentivesForQuote(catalog, { province: "ON", categories: [] }).map((i) => i.codice),
-    ["FEDERAL_ALL"],
-  );
+  // Cantiere a Milano, lavori energetici: statale + regionale Lombardia + comunale Milano; mai Piemonte né chiusi.
+  const ids = (r: IncentiveCatalogItem[]) => r.map((x) => x.id).sort();
+  assert.deepEqual(ids(matchIncentivesForQuote(catalog, { regione: "Lombardia", comune: "Milano", categories: ["efficienza_energetica"] })), ["lombardia", "milano", "statale"]);
+  // Stessa regione, altro comune: il bando comunale di Milano non vale.
+  assert.deepEqual(ids(matchIncentivesForQuote(catalog, { regione: "Lombardia", comune: "Bergamo", categories: ["efficienza_energetica"] })), ["lombardia", "statale"]);
+  // Senza comune noto, i bandi comunali della regione vengono proposti.
+  assert.deepEqual(ids(matchIncentivesForQuote(catalog, { regione: "Lombardia", categories: ["efficienza_energetica"] })), ["lombardia", "milano", "statale"]);
+  // Nessuna categoria dedotta → si considera "ristrutturazione": il bando energetico non vale, quelli "tutti" sì.
+  assert.deepEqual(ids(matchIncentivesForQuote(catalog, { regione: "Lombardia", comune: "Milano", categories: [] })), ["milano", "statale"]);
+  // Regione ignota: solo statali.
+  assert.deepEqual(ids(matchIncentivesForQuote(catalog, { regione: null, categories: ["efficienza_energetica"] })), ["statale"]);
 });

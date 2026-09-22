@@ -15,6 +15,7 @@ import { z } from "zod/v4";
 import { randomUUID } from "crypto";
 import { clientsTable } from "./clients";
 import type { PaymentSchedule } from "./payment-schedule";
+import { quoteIncentivesDataSchema } from "./incentives";
 
 export const quoteItemSchema = z.object({
   descrizione: z.string(),
@@ -24,6 +25,10 @@ export const quoteItemSchema = z.object({
   totale: z.number(),
 });
 
+// Chiavi v2 (city/postalCode/province/businessNumber) + chiavi v1 ancora presenti
+// nei preventivi storici in produzione (citta/cap/provincia/codiceFiscale) e
+// scritte da v1 fino al cutover: chi legge usa `readQuoteClientData` che le
+// riconcilia; chi scrive usa le chiavi v2 (V2-4, regola §1.3 colonne v1 preservate).
 export const quoteClientDataSchema = z.object({
   nome: z.string(),
   indirizzo: z.string(),
@@ -34,7 +39,28 @@ export const quoteClientDataSchema = z.object({
   city: z.string().optional(),
   postalCode: z.string().optional(),
   province: z.string().optional(),
+  // ── chiavi v1 (sola lettura) ──
+  codiceFiscale: z.string().optional(),
+  citta: z.string().optional(),
+  cap: z.string().optional(),
+  provincia: z.string().optional(),
+  incentivesData: quoteIncentivesDataSchema.optional(),
 });
+
+/**
+ * Vista riconciliata del blocco cliente di un preventivo: le chiavi v2 hanno la
+ * precedenza, le chiavi v1 fanno da fallback. Non scrive mai sul DB.
+ */
+export function readQuoteClientData(raw: QuoteClientData | null | undefined): QuoteClientData {
+  const cd = raw ?? { nome: "", indirizzo: "" };
+  return {
+    ...cd,
+    businessNumber: cd.businessNumber || cd.codiceFiscale || undefined,
+    city: cd.city || cd.citta || undefined,
+    postalCode: cd.postalCode || cd.cap || undefined,
+    province: cd.province || cd.provincia || undefined,
+  };
+}
 
 export const quoteChapterItemSchema = z.object({
   descrizione: z.string(),

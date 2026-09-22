@@ -1,24 +1,26 @@
 import type { IncentiveCatalogItem } from "@workspace/db";
 
-// Keyword → categoriaIntervento mapping. Deliberately simple and
-// deterministic (no AI call) — good enough to narrow a quote's free-text
-// description down to the intervention categories the catalog uses, without
-// adding cost/latency to quote generation. Order doesn't matter; a quote can
-// match more than one category (e.g. "new windows and attic insulation").
+// Parole chiave → categoriaIntervento del catalogo (valori v1). Volutamente
+// semplice e deterministico (nessuna chiamata AI): basta a restringere il
+// testo libero di un preventivo alle categorie usate dal catalogo senza
+// aggiungere costo o latenza alla generazione. Un preventivo può ricadere in
+// più categorie ("nuovi infissi e cappotto termico").
 const CATEGORY_KEYWORDS: Record<string, string[]> = {
-  heat_pump: ["heat pump", "heatpump", "geothermal", "hvac", "furnace", "air conditioning", "mini-split", "ductless"],
-  insulation: ["insulation", "insulate", "attic", "basement", "spray foam", "batt insulation", "vapour barrier", "air sealing", "weatherization", "weatherproofing"],
-  windows_doors: ["window", "windows", "door", "doors", "patio door", "glazing"],
-  accessibility: ["accessibility", "wheelchair", "ramp", "grab bar", "stairlift", "walk-in tub", "barrier-free", "mobility"],
-  energy_efficiency: ["energy efficien", "energy audit", "solar panel", "solar pv", "ev charger", "electric vehicle charger", "tankless water heater", "energy star", "net zero", "led lighting", "smart thermostat"],
-  general_renovation: ["renovation", "remodel", "addition", "basement finishing", "kitchen", "bathroom", "roofing", "roof", "siding", "deck", "flooring"],
+  efficienza_energetica: ["pompa di calore", "pompe di calore", "cappotto", "isolamento termico", "coibent", "infissi", "serramenti", "finestre", "caldaia a condensazione", "solare termico", "fotovoltaic", "pannelli solari", "riqualificazione energetica", "efficientamento", "classe energetica", "climatizzazione", "termostato"],
+  barriere_architettoniche: ["barriere architettoniche", "rampa", "montascale", "servoscala", "ascensore", "piattaforma elevatrice", "doccia a filo pavimento", "doccia filo pavimento", "maniglioni", "allargamento porte", "accessibilit", "disabil"],
+  bagno: ["bagno", "sanitari", "box doccia", "vasca"],
+  elettrico: ["impianto elettrico", "quadro elettrico", "punti luce", "cablaggio", "domotica"],
+  idraulico: ["impianto idraulico", "tubazioni", "scarichi", "idraulic"],
+  cartongesso: ["cartongesso", "controsoffitt", "contropareti"],
+  pavimenti: ["pavimento", "pavimenti", "piastrelle", "parquet", "gres", "massetto"],
+  tinteggiatura: ["tinteggiatura", "imbiancatura", "pittura", "rasatura", "verniciatura"],
+  ristrutturazione: ["ristrutturazione", "manutenzione straordinaria", "demolizione", "muratura", "opere murarie", "rifacimento", "tetto", "copertura", "facciata", "cucina", "ampliamento"],
 };
 
 /**
- * Infers which `categoriaIntervento` values a quote's work matches, from its
- * free-text description and chapter/line-item titles. Returns [] (no match
- * beyond "all") when nothing recognizable is found — callers should still
- * include category:"all" incentives in that case.
+ * Deduce le categorie d'intervento di un preventivo dal suo testo (descrizione
+ * generale, titoli dei capitoli, voci). Restituisce [] quando non riconosce
+ * nulla: chi chiama include comunque le voci di catalogo "tutti".
  */
 export function inferInterventionCategories(text: string): string[] {
   const haystack = text.toLowerCase();
@@ -29,39 +31,65 @@ export function inferInterventionCategories(text: string): string[] {
   return matched;
 }
 
+/**
+ * Compatibilità categoria richiesta ↔ categoria di catalogo (regole del
+ * `GET /api/public/incentives` v1): "tutti" e "ristrutturazione" valgono per
+ * ogni lavoro; i lavori impiantistici/completi rientrano nell'efficienza
+ * energetica; bagno e barriere nel bonus barriere architettoniche.
+ */
+export function categoryMatches(requested: string, catalog: string): boolean {
+  if (catalog === "tutti" || catalog === requested) return true;
+  if (["efficienza_energetica", "completa", "elettrico", "idraulico"].includes(requested)) {
+    return catalog === "efficienza_energetica" || catalog === "ristrutturazione";
+  }
+  if (requested === "bagno" || requested === "barriere" || requested === "barriere_architettoniche") {
+    return catalog === "barriere_architettoniche" || catalog === "ristrutturazione";
+  }
+  return catalog === "ristrutturazione";
+}
+
+function norm(v: string | null | undefined): string {
+  return (v ?? "").trim().toLowerCase();
+}
+
+/** Confronto tollerante fra nomi di regione/comune ("Emilia Romagna" ~ "Emilia-Romagna", "comune di Milano" ~ "Milano"). */
+export function placeMatches(a: string | null | undefined, b: string | null | undefined): boolean {
+  const x = norm(a).replace(/[-\s]+/g, " ");
+  const y = norm(b).replace(/[-\s]+/g, " ");
+  if (!x || !y) return false;
+  return x === y || x.includes(y) || y.includes(x);
+}
+
 export interface IncentiveMatchCriteria {
-  province: string | null;
-  city?: string | null;
+  regione: string | null;
+  comune?: string | null;
   categories: string[];
 }
 
 /**
- * Filters an incentives catalog down to programs relevant to a quote: not
- * closed, region-eligible (federal programs have province=null and match
- * everywhere; provincial/utility programs must match the quote's province;
- * municipal programs additionally need a city match), and category-eligible
- * (catalog entries tagged "all" always match; others need a category overlap
- * with the quote's inferred categories).
+ * Filtra il catalogo sui programmi pertinenti a un preventivo: non chiusi,
+ * territorialmente compatibili (statali ovunque; regionali sulla regione del
+ * cantiere; comunali sul comune o, in mancanza, sulla regione) e compatibili
+ * per categoria (le voci "tutti" valgono sempre; le altre devono incrociare
+ * una categoria dedotta dal preventivo).
  */
 export function matchIncentivesForQuote(
   catalog: IncentiveCatalogItem[],
   criteria: IncentiveMatchCriteria,
 ): IncentiveCatalogItem[] {
-  const province = criteria.province?.trim().toUpperCase() || null;
-  const city = criteria.city?.trim().toLowerCase() || null;
-  const categories = new Set(criteria.categories);
+  const categories = criteria.categories.length ? criteria.categories : ["ristrutturazione"];
 
   return catalog.filter((item) => {
     if (item.stato === "closed") return false;
 
-    const itemProvince = item.province?.trim().toUpperCase() || null;
-    if (itemProvince && itemProvince !== province) return false;
+    if (item.level === "regionale") {
+      if (!criteria.regione || !placeMatches(item.regione, criteria.regione)) return false;
+    } else if (item.level === "comunale") {
+      const byComune = criteria.comune ? placeMatches(item.comune, criteria.comune) : false;
+      const byRegione = !criteria.comune && criteria.regione ? placeMatches(item.regione, criteria.regione) : false;
+      if (!byComune && !byRegione) return false;
+    }
 
-    const itemCity = item.city?.trim().toLowerCase() || null;
-    if (itemCity && itemCity !== city) return false;
-
-    if (item.categoriaIntervento !== "all" && !categories.has(item.categoriaIntervento)) return false;
-
-    return true;
+    return categories.some((c) => categoryMatches(c, item.categoriaIntervento));
   });
 }

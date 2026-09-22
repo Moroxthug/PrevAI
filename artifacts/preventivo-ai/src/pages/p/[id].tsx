@@ -71,21 +71,22 @@ function euro(value: string | number, _lang?: string) {
 
 interface MatchedIncentive {
   id: string;
-  level: "federal" | "provincial" | "municipal" | "utility";
+  level: "statale" | "regionale" | "comunale";
   titolo: string;
   descrizione: string;
   tipoAgevolazione: string;
   percentualeMassima: string | null;
   massimaleContributo: string | null;
   massimaleSpesa: string | null;
-  incomeTested: boolean;
+  requisitiIseeMax: string | null;
+  scadenza: string | null;
   fonteUfficialeUrl: string | null;
   humanVerified: boolean;
 }
 
-// Fully self-contained, same pattern as FinancingWidget: fetches its own
-// data on mount and renders nothing if there's no match, so most quotes pay
-// no cost for this widget existing.
+// Card autonoma: carica i bonus/bandi del catalogo v1 che combaciano con il
+// preventivo (regione dalla provincia, comune dalla città, categoria dal
+// testo) e non mostra nulla se non c'è nessuna corrispondenza.
 function RebatesWidget({ quoteId }: { quoteId: string }) {
   const { t } = useLanguage();
   const [checked, setChecked] = useState(false);
@@ -139,8 +140,9 @@ function RebatesWidget({ quoteId }: { quoteId: string }) {
                 </div>
                 <p className="text-xs mt-1" style={{ color: "var(--muted-mk)" }}>{inc.descrizione}</p>
                 <div className="flex items-center gap-3 mt-2">
-                  {inc.incomeTested && (
-                    <span className="text-[11px] font-medium" style={{ color: "var(--yellow-dark)" }}>{t("publicQuote.rebates.incomeTested")}</span>
+                  <span className="text-[11px] font-medium" style={{ color: "var(--muted-mk)" }}>{t(`publicQuote.rebates.level.${inc.level}`)}</span>
+                  {inc.requisitiIseeMax && (
+                    <span className="text-[11px] font-medium" style={{ color: "var(--yellow-dark)" }}>{t("publicQuote.rebates.incomeTested")} {euro(inc.requisitiIseeMax)}</span>
                   )}
                   {inc.fonteUfficialeUrl && (
                     <a

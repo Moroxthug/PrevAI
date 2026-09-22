@@ -1,4 +1,4 @@
-import { db, clientsTable, quotesTable, businessProfilesTable, clientDedupKey, normalizeProvince, paymentScheduleToText, type QuoteClientData } from "@workspace/db";
+import { db, clientsTable, quotesTable, businessProfilesTable, clientDedupKey, normalizeProvince, paymentScheduleToText, type QuoteClientData, readQuoteClientData } from "@workspace/db";
 import { and, eq } from "drizzle-orm";
 import { logger } from "./logger.js";
 
@@ -8,7 +8,8 @@ import { logger } from "./logger.js";
  * from the newer quote (never overwritten). Returns null when the quote has
  * no usable client name.
  */
-export async function ensureClientForQuote(userId: string, clientData: QuoteClientData | null | undefined): Promise<string | null> {
+export async function ensureClientForQuote(userId: string, rawClientData: QuoteClientData | null | undefined): Promise<string | null> {
+  const clientData = readQuoteClientData(rawClientData);
   const name = (clientData?.nome ?? "").trim();
   if (!name) return null;
 

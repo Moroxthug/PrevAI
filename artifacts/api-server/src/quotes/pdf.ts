@@ -5,7 +5,7 @@
 import { getPdfmake } from "../lib/pdfmake.js";
 import type { TDocumentDefinitions, Content } from "pdfmake/interfaces";
 import type { QuoteChapter, QuoteDiscount, QuoteCompanySnapshot, QuoteClientData } from "@workspace/db";
-import { quotesTable, businessProfilesTable, normalizeProvince } from "@workspace/db";
+import { quotesTable, businessProfilesTable, normalizeProvince, readQuoteClientData } from "@workspace/db";
 import { ObjectStorageService } from "../lib/objectStorage.js";
 import { quoteLanguageFor, quoteTaxLinesFor, qt, fmtMoney, fmtQuoteDate, fmtRate, fmtQty } from "./i18n.js";
 
@@ -66,6 +66,40 @@ async function fetchLogoDataUri(logoUrl: string | null | undefined): Promise<str
   }
 }
 
+
+// ── Box incentivi (v1) ────────────────────────────────────────────────────────
+// Quando il cliente ha usato il calcolatore del widget, il preventivo porta in
+// `clientData.incentivesData` la stima di bonus statale / bando locale /
+// IVA agevolata: la stampiamo sotto i totali come faceva il PDF v1. Le
+// etichette v1 contengono già l'importo ("… (~€5689)"); la colonna a destra
+// riporta solo i numeri salvati come tali.
+function incentivesBox(clientData: QuoteClientData, totale: number): Content[] {
+  const d = clientData.incentivesData;
+  if (!d || (!d.bonusStataleApplicato && !d.bandoRegionaleApplicato)) return [];
+  const detrazione = Number(d.detrazioneFiscaleDecennale ?? (d.detrazioneAnnuaStimata ?? 0) * 10) || 0;
+  const bandoLocale = Number(d.contributoRegionaleStimato ?? 0) || 0;
+  const scontoIva = Number(d.scontoIvaStimato ?? 0) || 0;
+  const esborso = Number(d.esborsoImmediatoStimato ?? d.costoNettoStimato ?? totale) || totale;
+  const hasBando = !!d.bandoRegionaleApplicato && !/^Nessun/.test(d.bandoRegionaleApplicato);
+  const rows: Content[][] = [];
+  if (d.bonusStataleApplicato) rows.push([{ text: `Detrazione statale: ${d.bonusStataleApplicato}`, fontSize: 8 }, { text: detrazione ? `- ${fmtMoney(detrazione)} in 10 anni` : "", fontSize: 8, alignment: "right" as const }]);
+  if (hasBando) rows.push([{ text: `Contributo locale: ${d.bandoRegionaleApplicato}`, fontSize: 8 }, { text: bandoLocale ? `- ${fmtMoney(bandoLocale)}` : "", fontSize: 8, alignment: "right" as const, color: "#067D68" }]);
+  if (scontoIva) rows.push([{ text: "Risparmio IVA agevolata 10 %", fontSize: 8 }, { text: `- ${fmtMoney(scontoIva)}`, fontSize: 8, alignment: "right" as const, color: "#067D68" }]);
+  rows.push([
+    { text: "ESBORSO IMMEDIATO STIMATO (detrazione esclusa, recuperata in 10 anni)", bold: true, fontSize: 8.5, fillColor: "#e6f4f1", color: "#067D68" },
+    { text: fmtMoney(esborso), bold: true, fontSize: 9, alignment: "right" as const, fillColor: "#e6f4f1", color: "#067D68" },
+  ]);
+  return [
+    { text: "AGEVOLAZIONI FISCALI STIMATE", style: "sectionHeading", color: "#067D68", margin: [0, 4, 0, 4] as [number, number, number, number] },
+    {
+      table: { widths: ["*", 130], body: rows },
+      layout: { hLineWidth: () => 0.5, vLineWidth: () => 0, hLineColor: () => "#99f6e4", paddingLeft: () => 8, paddingRight: () => 8, paddingTop: () => 4, paddingBottom: () => 4 },
+      margin: [0, 0, 0, 4] as [number, number, number, number],
+    },
+    { text: "Stima preliminare non vincolante, da confermare in sede di sopralluogo tecnico e fiscale. Le detrazioni sono recuperate in dichiarazione dei redditi.", fontSize: 7, color: "#666", margin: [0, 0, 0, 12] as [number, number, number, number] },
+  ] as Content[];
+}
+
 export async function generateCapitolatoPdfBuffer(quote: QuoteRow, profile: ProfileRow): Promise<Buffer> {
   const lang = await quoteLanguageFor(quote);
   const province = normalizeProvince(quote.province) ?? normalizeProvince(((quote.clientData ?? {}) as QuoteClientData).province) ?? normalizeProvince(profile?.province) ?? null;
@@ -74,7 +108,7 @@ export async function generateCapitolatoPdfBuffer(quote: QuoteRow, profile: Prof
   const capitoli: QuoteChapter[] = Array.isArray(quote.capitoli) && quote.capitoli.length > 0
     ? quote.capitoli as QuoteChapter[]
     : [];
-  const clientData = (quote.clientData ?? { nome: "", indirizzo: "" }) as QuoteClientData;
+  const clientData = readQuoteClientData(quote.clientData as QuoteClientData | null);
   const sconto = quote.sconto as QuoteDiscount | null;
   const condizioniPagamento: string[] = Array.isArray(quote.condizioniPagamento) ? quote.condizioniPagamento : [];
   const snap = (quote.companySnapshot as QuoteCompanySnapshot | null) ?? null;
@@ -361,7 +395,7 @@ export async function generateCapitolatoPdfBuffer(quote: QuoteRow, profile: Prof
                 { text: clientData.nome || "——", fontSize: 10, bold: true, color: DARK },
                 ...(clientData.indirizzo ? [{ text: clientData.indirizzo, fontSize: 8.5, color: "#555" }] : []),
                 ...(clientData.city ? [{ text: [clientData.city, clientData.province, clientData.postalCode].filter(Boolean).join(" "), fontSize: 8, color: "#666" }] : []),
-                ...((clientData.businessNumber || clientData.partitaIva) ? [{ text: [clientData.businessNumber ? `BN: ${clientData.businessNumber}` : "", clientData.partitaIva ? `GST/HST: ${clientData.partitaIva}` : ""].filter(Boolean).join("  ·  "), fontSize: 8, color: "#666" }] : []),
+                ...((clientData.businessNumber || clientData.partitaIva) ? [{ text: [clientData.businessNumber ? `C.F.: ${clientData.businessNumber}` : "", clientData.partitaIva ? `P. IVA: ${clientData.partitaIva}` : ""].filter(Boolean).join("  ·  "), fontSize: 8, color: "#666" }] : []),
               ],
               margin: [10, 8, 10, 8] as [number, number, number, number],
               fillColor: LIGHT_BG,
@@ -419,6 +453,9 @@ export async function generateCapitolatoPdfBuffer(quote: QuoteRow, profile: Prof
         margin: [0, 0, 0, 14] as [number, number, number, number],
       } as Content,
 
+      // Incentivi (v1)
+      ...incentivesBox(clientData, totale),
+
       // Payment conditions
       ...condizioniContent,
 
@@ -465,7 +502,7 @@ export async function generateQuotePdfBuffer(quote: QuoteRow, profile: ProfileRo
   const capitoli: QuoteChapter[] = Array.isArray(quote.capitoli) && quote.capitoli.length > 0
     ? quote.capitoli as QuoteChapter[]
     : [];
-  const clientData = (quote.clientData ?? { nome: "", indirizzo: "" }) as QuoteClientData;
+  const clientData = readQuoteClientData(quote.clientData as QuoteClientData | null);
   const sconto = quote.sconto as QuoteDiscount | null;
   const condizioniPagamento: string[] = Array.isArray(quote.condizioniPagamento) ? quote.condizioniPagamento : [];
   const snap = (quote.companySnapshot as QuoteCompanySnapshot | null) ?? null;
@@ -738,7 +775,7 @@ export async function generateQuotePdfBuffer(quote: QuoteRow, profile: ProfileRo
                 { text: clientData.nome || "\u2014\u2014", fontSize: 10, bold: true, color: DARK },
                 ...(clientData.indirizzo ? [{ text: clientData.indirizzo, fontSize: 8.5, color: "#555" }] : []),
                 ...(clientData.city ? [{ text: [clientData.city, clientData.province, clientData.postalCode].filter(Boolean).join(" "), fontSize: 8, color: "#666" }] : []),
-                ...((clientData.businessNumber || clientData.partitaIva) ? [{ text: [clientData.businessNumber ? `BN: ${clientData.businessNumber}` : "", clientData.partitaIva ? `GST/HST: ${clientData.partitaIva}` : ""].filter(Boolean).join("  \u00b7  "), fontSize: 8, color: "#666" }] : []),
+                ...((clientData.businessNumber || clientData.partitaIva) ? [{ text: [clientData.businessNumber ? `C.F.: ${clientData.businessNumber}` : "", clientData.partitaIva ? `P. IVA: ${clientData.partitaIva}` : ""].filter(Boolean).join("  \u00b7  "), fontSize: 8, color: "#666" }] : []),
               ],
               margin: [10, 8, 10, 8] as [number, number, number, number],
               fillColor: LIGHT_BG,
@@ -792,6 +829,9 @@ export async function generateQuotePdfBuffer(quote: QuoteRow, profile: ProfileRo
         ],
         margin: [0, 0, 0, 14] as [number, number, number, number],
       } as Content,
+
+      // Incentivi (v1)
+      ...incentivesBox(clientData, totale),
 
       ...condizioniContent,
 

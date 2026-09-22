@@ -48,16 +48,18 @@ type Tab = "overview" | "users" | "widget" | "stripe" | "gsc" | "seo" | "setting
 
 type IncentiveCatalogRow = {
   id: string;
-  level: "federal" | "provincial" | "municipal" | "utility";
+  level: "statale" | "regionale" | "comunale";
   codice: string;
   titolo: string;
   descrizione: string;
-  province: string | null;
-  city: string | null;
+  regione: string | null;
+  comune: string | null;
   categoriaIntervento: string;
   tipoAgevolazione: string;
+  percentualeMassima: string;
+  massimaleSpesa: string | null;
   massimaleContributo: string | null;
-  incomeTested: boolean;
+  requisitiIseeMax: string | null;
   scadenza: string | null;
   stato: "active" | "expiring_soon" | "closed";
   fonteUfficialeUrl: string | null;
@@ -67,18 +69,24 @@ type IncentiveCatalogRow = {
 };
 
 const EMPTY_INCENTIVE_FORM = {
-  level: "federal" as const,
+  level: "statale" as const,
   codice: "",
   titolo: "",
   descrizione: "",
-  province: "",
-  city: "",
-  categoriaIntervento: "all",
-  tipoAgevolazione: "rebate",
+  regione: "",
+  comune: "",
+  categoriaIntervento: "tutti",
+  tipoAgevolazione: "detrazione_10_anni",
+  percentualeMassima: "50",
+  massimaleSpesa: "",
   massimaleContributo: "",
-  incomeTested: false,
+  requisitiIseeMax: "",
+  scadenza: "",
   fonteUfficialeUrl: "",
 };
+
+const INCENTIVE_CATEGORIES = ["tutti", "ristrutturazione", "efficienza_energetica", "barriere_architettoniche", "bagno", "elettrico", "idraulico", "completa", "cartongesso", "pavimenti", "tinteggiatura"];
+const INCENTIVE_TYPES = ["detrazione_10_anni", "conto_termico_gse", "fondo_perduto", "sconto_fattura", "iva_agevolata"];
 
 type MarginRow = {
   userId: string;
@@ -332,12 +340,15 @@ export default function AdminPage() {
       codice: row.codice,
       titolo: row.titolo,
       descrizione: row.descrizione,
-      province: row.province || "",
-      city: row.city || "",
+      regione: row.regione || "",
+      comune: row.comune || "",
       categoriaIntervento: row.categoriaIntervento,
       tipoAgevolazione: row.tipoAgevolazione,
+      percentualeMassima: row.percentualeMassima ? String(Number(row.percentualeMassima)) : "50",
+      massimaleSpesa: row.massimaleSpesa || "",
       massimaleContributo: row.massimaleContributo || "",
-      incomeTested: row.incomeTested,
+      requisitiIseeMax: row.requisitiIseeMax || "",
+      scadenza: row.scadenza ? row.scadenza.slice(0, 10) : "",
       fonteUfficialeUrl: row.fonteUfficialeUrl || "",
     });
     setShowIncentiveForm(true);
@@ -355,10 +366,14 @@ export default function AdminPage() {
     try {
       const payload = {
         ...incentiveForm,
-        province: incentiveForm.province.trim() || null,
-        city: incentiveForm.city.trim() || null,
+        regione: incentiveForm.regione.trim() || null,
+        comune: incentiveForm.comune.trim() || null,
         fonteUfficialeUrl: incentiveForm.fonteUfficialeUrl.trim() || null,
+        percentualeMassima: String(Number(incentiveForm.percentualeMassima) || 50),
+        massimaleSpesa: incentiveForm.massimaleSpesa.trim() || null,
         massimaleContributo: incentiveForm.massimaleContributo.trim() || null,
+        requisitiIseeMax: incentiveForm.requisitiIseeMax.trim() || null,
+        scadenza: incentiveForm.scadenza ? new Date(`${incentiveForm.scadenza}T23:59:59Z`).toISOString() : null,
       };
       const res = editingIncentiveId
         ? await authFetch(`/api/admin/incentives/${editingIncentiveId}`, { method: "PUT", body: JSON.stringify(payload) })
@@ -1847,7 +1862,7 @@ export default function AdminPage() {
                       onClick={() => { resetIncentiveForm(); setShowIncentiveForm(true); }}
                       className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-navy-600 text-white text-xs font-semibold hover:bg-navy-700"
                     >
-                      + Add program
+                      + Nuovo bando
                     </button>
                     <button
                       onClick={loadIncentives}
@@ -1864,34 +1879,33 @@ export default function AdminPage() {
                   <form onSubmit={saveIncentive} className="border border-slate-100 rounded-xl p-4 space-y-3 bg-slate-50/50">
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                       <select value={incentiveForm.level} onChange={e => setIncentiveForm(f => ({ ...f, level: e.target.value as any }))} className="text-xs border border-slate-200 rounded-lg px-2 py-1.5">
-                        <option value="federal">Federal</option>
-                        <option value="provincial">Provincial</option>
-                        <option value="municipal">Municipal</option>
-                        <option value="utility">Utility</option>
+                        <option value="statale">Statale</option>
+                        <option value="regionale">Regionale</option>
+                        <option value="comunale">Comunale</option>
                       </select>
-                      <input required placeholder="Code (e.g. CGHAP)" value={incentiveForm.codice} onChange={e => setIncentiveForm(f => ({ ...f, codice: e.target.value }))} className="text-xs border border-slate-200 rounded-lg px-2 py-1.5" />
-                      <input placeholder="Province (ON, QC...)" value={incentiveForm.province} onChange={e => setIncentiveForm(f => ({ ...f, province: e.target.value }))} className="text-xs border border-slate-200 rounded-lg px-2 py-1.5" />
-                      <input placeholder="City (optional)" value={incentiveForm.city} onChange={e => setIncentiveForm(f => ({ ...f, city: e.target.value }))} className="text-xs border border-slate-200 rounded-lg px-2 py-1.5" />
+                      <input required placeholder="Codice (es. BONUS_CASA_50)" value={incentiveForm.codice} onChange={e => setIncentiveForm(f => ({ ...f, codice: e.target.value }))} className="text-xs border border-slate-200 rounded-lg px-2 py-1.5" />
+                      <input placeholder="Regione (es. Lombardia)" value={incentiveForm.regione} onChange={e => setIncentiveForm(f => ({ ...f, regione: e.target.value }))} className="text-xs border border-slate-200 rounded-lg px-2 py-1.5" />
+                      <input placeholder="Comune (facoltativo)" value={incentiveForm.comune} onChange={e => setIncentiveForm(f => ({ ...f, comune: e.target.value }))} className="text-xs border border-slate-200 rounded-lg px-2 py-1.5" />
                     </div>
-                    <input required placeholder="Program title" value={incentiveForm.titolo} onChange={e => setIncentiveForm(f => ({ ...f, titolo: e.target.value }))} className="text-xs border border-slate-200 rounded-lg px-2 py-1.5 w-full" />
-                    <textarea required placeholder="Description" value={incentiveForm.descrizione} onChange={e => setIncentiveForm(f => ({ ...f, descrizione: e.target.value }))} className="text-xs border border-slate-200 rounded-lg px-2 py-1.5 w-full" rows={2} />
+                    <input required placeholder="Titolo del bando" value={incentiveForm.titolo} onChange={e => setIncentiveForm(f => ({ ...f, titolo: e.target.value }))} className="text-xs border border-slate-200 rounded-lg px-2 py-1.5 w-full" />
+                    <textarea required placeholder="Descrizione" value={incentiveForm.descrizione} onChange={e => setIncentiveForm(f => ({ ...f, descrizione: e.target.value }))} className="text-xs border border-slate-200 rounded-lg px-2 py-1.5 w-full" rows={2} />
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                       <select value={incentiveForm.categoriaIntervento} onChange={e => setIncentiveForm(f => ({ ...f, categoriaIntervento: e.target.value }))} className="text-xs border border-slate-200 rounded-lg px-2 py-1.5">
-                        {["all", "energy_efficiency", "heat_pump", "insulation", "windows_doors", "accessibility", "general_renovation"].map(c => <option key={c} value={c}>{c}</option>)}
+                        {INCENTIVE_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
                       </select>
                       <select value={incentiveForm.tipoAgevolazione} onChange={e => setIncentiveForm(f => ({ ...f, tipoAgevolazione: e.target.value }))} className="text-xs border border-slate-200 rounded-lg px-2 py-1.5">
-                        {["rebate", "direct_grant", "tax_credit", "no_cost_direct_install", "low_interest_loan"].map(c => <option key={c} value={c}>{c}</option>)}
+                        {INCENTIVE_TYPES.map(c => <option key={c} value={c}>{c}</option>)}
                       </select>
-                      <input placeholder="Max amount ($)" value={incentiveForm.massimaleContributo} onChange={e => setIncentiveForm(f => ({ ...f, massimaleContributo: e.target.value }))} className="text-xs border border-slate-200 rounded-lg px-2 py-1.5" />
-                      <label className="flex items-center gap-1.5 text-xs text-slate-500">
-                        <input type="checkbox" checked={incentiveForm.incomeTested} onChange={e => setIncentiveForm(f => ({ ...f, incomeTested: e.target.checked }))} />
-                        Income-tested
-                      </label>
+                      <input placeholder="% massima (es. 50)" inputMode="decimal" value={incentiveForm.percentualeMassima} onChange={e => setIncentiveForm(f => ({ ...f, percentualeMassima: e.target.value }))} className="text-xs border border-slate-200 rounded-lg px-2 py-1.5" />
+                      <input placeholder="Massimale spesa (€)" inputMode="decimal" value={incentiveForm.massimaleSpesa} onChange={e => setIncentiveForm(f => ({ ...f, massimaleSpesa: e.target.value }))} className="text-xs border border-slate-200 rounded-lg px-2 py-1.5" />
+                      <input placeholder="Massimale contributo (€)" inputMode="decimal" value={incentiveForm.massimaleContributo} onChange={e => setIncentiveForm(f => ({ ...f, massimaleContributo: e.target.value }))} className="text-xs border border-slate-200 rounded-lg px-2 py-1.5" />
+                      <input placeholder="ISEE massimo (€, facoltativo)" inputMode="decimal" value={incentiveForm.requisitiIseeMax} onChange={e => setIncentiveForm(f => ({ ...f, requisitiIseeMax: e.target.value }))} className="text-xs border border-slate-200 rounded-lg px-2 py-1.5" />
+                      <input type="date" title="Scadenza sportello (facoltativa)" value={incentiveForm.scadenza} onChange={e => setIncentiveForm(f => ({ ...f, scadenza: e.target.value }))} className="text-xs border border-slate-200 rounded-lg px-2 py-1.5" />
                     </div>
-                    <input placeholder="Official source URL" value={incentiveForm.fonteUfficialeUrl} onChange={e => setIncentiveForm(f => ({ ...f, fonteUfficialeUrl: e.target.value }))} className="text-xs border border-slate-200 rounded-lg px-2 py-1.5 w-full" />
+                    <input placeholder="URL fonte ufficiale" value={incentiveForm.fonteUfficialeUrl} onChange={e => setIncentiveForm(f => ({ ...f, fonteUfficialeUrl: e.target.value }))} className="text-xs border border-slate-200 rounded-lg px-2 py-1.5 w-full" />
                     <div className="flex items-center gap-2">
                       <button type="submit" disabled={savingIncentive} className="px-3 py-1.5 rounded-lg bg-navy-600 text-white text-xs font-semibold hover:bg-navy-700 disabled:opacity-50">
-                        {editingIncentiveId ? "Save changes" : "Create program"}
+                        {editingIncentiveId ? "Salva modifiche" : "Crea bando"}
                       </button>
                       <button type="button" onClick={resetIncentiveForm} className="px-3 py-1.5 rounded-lg border border-slate-200 text-xs text-slate-500">
                         {t("admin.cancel")}
@@ -1901,19 +1915,19 @@ export default function AdminPage() {
                 )}
 
                 {incentives.length === 0 && !loadingIncentives && (
-                  <p className="text-xs text-slate-400">Ancora nessun incentivo.</p>
+                  <p className="text-xs text-slate-400">Ancora nessun bando.</p>
                 )}
 
                 <div className="overflow-x-auto">
                   <table className="w-full text-left text-sm border-collapse">
                     <thead>
                       <tr className="border-b border-slate-100 bg-slate-50/50">
-                        <th className="px-4 py-3 text-xs font-bold text-slate-400 uppercase">Program</th>
-                        <th className="px-4 py-3 text-xs font-bold text-slate-400 uppercase">Level / Region</th>
-                        <th className="px-4 py-3 text-xs font-bold text-slate-400 uppercase">Category</th>
-                        <th className="px-4 py-3 text-xs font-bold text-slate-400 uppercase">Status</th>
-                        <th className="px-4 py-3 text-xs font-bold text-slate-400 uppercase">Verification</th>
-                        <th className="px-4 py-3 text-xs font-bold text-slate-400 uppercase text-right">Actions</th>
+                        <th className="px-4 py-3 text-xs font-bold text-slate-400 uppercase">Bando</th>
+                        <th className="px-4 py-3 text-xs font-bold text-slate-400 uppercase">Livello / Territorio</th>
+                        <th className="px-4 py-3 text-xs font-bold text-slate-400 uppercase">Categoria</th>
+                        <th className="px-4 py-3 text-xs font-bold text-slate-400 uppercase">Stato</th>
+                        <th className="px-4 py-3 text-xs font-bold text-slate-400 uppercase">Verifica</th>
+                        <th className="px-4 py-3 text-xs font-bold text-slate-400 uppercase text-right">Azioni</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-50">
@@ -1924,7 +1938,7 @@ export default function AdminPage() {
                             <p className="text-slate-400">{row.codice}</p>
                           </td>
                           <td className="px-4 py-3.5 text-slate-600">
-                            {row.level}{row.province ? ` · ${row.province}` : ""}{row.city ? ` · ${row.city}` : ""}
+                            {row.level}{row.regione ? ` · ${row.regione}` : ""}{row.comune ? ` · ${row.comune}` : ""}{row.scadenza ? ` · fino al ${row.scadenza.slice(0, 10)}` : ""}
                           </td>
                           <td className="px-4 py-3.5 text-slate-600">{row.categoriaIntervento}</td>
                           <td className="px-4 py-3.5">
@@ -1937,15 +1951,15 @@ export default function AdminPage() {
                               onClick={() => toggleHumanVerified(row)}
                               className={`px-2 py-0.5 rounded-full font-bold ${row.humanVerified ? "bg-emerald-100 text-emerald-700" : "bg-slate-100 text-slate-500"}`}
                             >
-                              {row.humanVerified ? "Human-verified" : "Mark verified"}
+                              {row.humanVerified ? "Verificato a mano" : "Segna come verificato"}
                             </button>
                             {!row.isVerifiedByAi && (
-                              <span className="ml-1.5 px-2 py-0.5 rounded-full font-bold bg-red-50 text-red-600 border border-red-100">AI check failed</span>
+                              <span className="ml-1.5 px-2 py-0.5 rounded-full font-bold bg-red-50 text-red-600 border border-red-100">Verifica AI fallita</span>
                             )}
                           </td>
                           <td className="px-4 py-3.5 text-right space-x-2">
-                            <button onClick={() => startEditIncentive(row)} className="text-navy-600 hover:underline font-semibold">Edit</button>
-                            <button onClick={() => deleteIncentive(row.id)} className="text-red-500 hover:underline font-semibold">Delete</button>
+                            <button onClick={() => startEditIncentive(row)} className="text-navy-600 hover:underline font-semibold">Modifica</button>
+                            <button onClick={() => deleteIncentive(row.id)} className="text-red-500 hover:underline font-semibold">Elimina</button>
                           </td>
                         </tr>
                       ))}

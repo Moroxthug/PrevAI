@@ -2,7 +2,7 @@ import { Router, type Request, type Response, type NextFunction } from "express"
 import { fromNodeHeaders } from "better-auth/node";
 import { auth } from "../lib/auth";
 import { db, quotesTable, businessProfilesTable, settingsTable, authUsersTable, emailEventsTable, usageDailySummaryTable, incentivesCatalogTable, insertIncentivesCatalogSchema, cronTicksTable, automationRunsTable } from "@workspace/db";
-import { eq, sql, desc, count, inArray } from "drizzle-orm";
+import { eq, ne, sql, desc, count, inArray } from "drizzle-orm";
 import { logger } from "../lib/logger";
 import { getUncachableStripeClient } from "../stripeClient";
 import crypto from "crypto";
@@ -10,6 +10,8 @@ import { readFileSync, existsSync } from "fs";
 import path from "path";
 
 import { PRICE_TO_PLAN } from "./payments.js";
+import { ensureDefaultIncentives } from "../incentives/seed.js";
+import { runIncentivesVerification } from "../incentives/verification.js";
 import { opsHealth } from "../lib/ops.js";
 import { retryAutomationNow } from "../lib/automation.js";
 
@@ -1054,10 +1056,11 @@ router.get("/admin/email-events", requireAdmin, async (req, res) => {
 // isn't manageable from here yet, so this always filters to platform entries.
 router.get("/admin/incentives", async (_req, res) => {
   try {
+    await ensureDefaultIncentives();
     const rows = await db
       .select()
       .from(incentivesCatalogTable)
-      .orderBy(desc(incentivesCatalogTable.updatedAt));
+      .orderBy(incentivesCatalogTable.level, incentivesCatalogTable.titolo);
     res.json({ success: true, incentives: rows });
   } catch (err) {
     logger.error({ err }, "Error fetching incentives catalog");
@@ -1099,6 +1102,19 @@ router.put("/admin/incentives/:id", async (req, res) => {
     res.json({ success: true, incentive: row });
   } catch (err) {
     logger.error({ err }, "Error updating incentive");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// POST /api/admin/incentives/cron-sync — lancia a mano la verifica AI del catalogo (v1)
+router.post("/admin/incentives/cron-sync", async (_req, res) => {
+  try {
+    await ensureDefaultIncentives();
+    const active = await db.select().from(incentivesCatalogTable).where(ne(incentivesCatalogTable.stato, "closed"));
+    const outcome = await runIncentivesVerification(active);
+    res.json({ success: true, verifiedCount: outcome.updatedCount, sourcesFetched: outcome.sourcesFetched, sourcesTotal: outcome.sourcesTotal, summary: outcome.summary, disclaimer: outcome.disclaimer });
+  } catch (err) {
+    logger.error({ err }, "Error running incentives verification");
     res.status(500).json({ error: "Internal server error" });
   }
 });

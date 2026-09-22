@@ -2,7 +2,7 @@ import { Router } from "express";
 import { requireAuth, getUserId, getUserName } from "../middlewares/authMiddleware";
 import { requirePermission } from "../middlewares/requirePermission.js";
 import multer from "multer";
-import { db, quotesTable, quoteAttachmentsTable, quoteVariantsTable, businessProfilesTable, priceCatalogItemsTable, priceIntelligenceTable, uploadedDocumentsTable, quoteClientDataSchema, quoteCompanySnapshotSchema, paymentScheduleSchema, derivePaymentScheduleFromText, validatePaymentSchedule, paymentScheduleToText, normalizeProvince, getTaxProfile, quoteTaxLines } from "@workspace/db";
+import { db, quotesTable, quoteAttachmentsTable, quoteVariantsTable, businessProfilesTable, priceCatalogItemsTable, priceIntelligenceTable, uploadedDocumentsTable, quoteClientDataSchema, quoteCompanySnapshotSchema, paymentScheduleSchema, derivePaymentScheduleFromText, validatePaymentSchedule, paymentScheduleToText, normalizeProvince, getTaxProfile, quoteTaxLines, readQuoteClientData } from "@workspace/db";
 import { getBaseUrl } from "../lib/baseUrl.js";
 import { resolveQuoteTaxRate } from "../lib/tax.js";
 import { quoteLanguageFor, qt, fmtQuoteDate, fmtQty } from "../quotes/i18n.js";
@@ -135,7 +135,8 @@ export function serializeQuoteVariant(v: VariantRow, _province: string | null = 
 
 export function serializeQuote(q: QuoteRow, attachments?: AttachmentRow[], variants?: VariantRow[]) {
   const tot = Number(q.totale);
-  const province = normalizeProvince(q.province) ?? normalizeProvince((q.clientData as QuoteClientData | null)?.province) ?? null;
+  const clientData = readQuoteClientData(q.clientData as QuoteClientData | null);
+  const province = normalizeProvince(q.province) ?? normalizeProvince(clientData.province) ?? null;
   const paymentSchedule = q.paymentSchedule ?? derivePaymentScheduleFromText(q.condizioniPagamento, tot);
   return {
     id: q.id,
@@ -144,7 +145,7 @@ export function serializeQuote(q: QuoteRow, attachments?: AttachmentRow[], varia
     province,
     taxProfile: province ? getTaxProfile(province) : null,
     paymentSchedule,
-    clientData: q.clientData,
+    clientData,
     descrizioneGenerale: q.descrizioneGenerale,
     items: Array.isArray(q.items) ? q.items : [],
     capitoli: Array.isArray(q.capitoli) ? q.capitoli : [],
@@ -289,8 +290,8 @@ router.get("/quotes", requireAuth, async (req, res) => {
       rows.map((q) => ({
         id: q.id,
         clientId: q.clientId ?? null,
-        province: normalizeProvince(q.province) ?? normalizeProvince((q.clientData as QuoteClientData | null)?.province) ?? null,
-        clientData: q.clientData,
+        province: normalizeProvince(q.province) ?? normalizeProvince(readQuoteClientData(q.clientData as QuoteClientData | null).province) ?? null,
+        clientData: readQuoteClientData(q.clientData as QuoteClientData | null),
         descrizioneGenerale: q.descrizioneGenerale,
         lineItemCount: q.lineItemCount,
         subtotale: Number(q.subtotale),

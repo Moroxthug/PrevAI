@@ -21,6 +21,7 @@ import {
   type QuoteClientData,
   type QuoteCompanySnapshot,
   type QuoteDiscount,
+  readQuoteClientData,
 } from "@workspace/db";
 import { and, asc, eq, sql } from "drizzle-orm";
 import { openai } from "@workspace/integrations-openai-ai-server";
@@ -104,7 +105,7 @@ export function buildVariablesFromQuote(params: {
 }): ContractVariables {
   const { quote, profile, client } = params;
   const snap = (quote.companySnapshot as QuoteCompanySnapshot | null) ?? null;
-  const cd = (quote.clientData ?? { nome: "", indirizzo: "" }) as QuoteClientData;
+  const cd = readQuoteClientData(quote.clientData as QuoteClientData | null);
   const chapters = (Array.isArray(quote.capitoli) ? quote.capitoli : []) as QuoteChapter[];
   const discount = quote.sconto as QuoteDiscount | null;
 

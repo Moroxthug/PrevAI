@@ -57,6 +57,8 @@ if (!process.env.E2E_REAL_AI) {
 // single real email leaving. `sentEmails` lets tests assert on what would
 // have gone out.
 process.env.RESEND_API_KEY = "re_e2e_mock";
+// V2-4: la verifica del catalogo incentivi non deve chiamare i siti ufficiali dalla suite.
+process.env.INCENTIVES_SOURCE_FETCH = "off";
 vi.mock("resend", async () => {
   const { sentEmails } = await import("./src/e2e/mailbox.ts");
   class Resend {
