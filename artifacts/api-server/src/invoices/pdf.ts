@@ -2,7 +2,7 @@ import { getPdfmake, pdfInfo } from "../lib/pdfmake.js";
 import type { TDocumentDefinitions, Content, TableCell } from "pdfmake/interfaces";
 import { createHash } from "node:crypto";
 import type { Invoice, InvoicePayment, InvoiceParty } from "@workspace/db";
-import { ti, fmtCents, fmtDay, fmtQty, dueText, invoiceTitle, isCreditNote, partyLines, watermark, taxLabel, type Lang, type IKey } from "./render.js";
+import { ti, tiDoc, fmtCents, fmtDay, fmtQty, dueText, invoiceTitle, isCreditNote, partyLines, watermark, taxLabel, type Lang, type IKey } from "./render.js";
 
 // ── Invoice PDF ──────────────────────────────────────────────────────────────
 // Letter size, sans-serif, same colour system as the contract PDF. The PDF
@@ -42,12 +42,12 @@ export async function buildInvoicePdf(inv: Invoice, payments: InvoicePayment[] =
 
   content.push({
     columns: [
-      { stack: [{ text: invoiceTitle(inv, lang), fontSize: 20, bold: true }, { text: `${credit ? ti("creditNoteNo", lang) : ti("invoiceNo", lang)} ${inv.number}`, fontSize: 10, color: MUTED, margin: [0, 2, 0, 0] }] },
+      { stack: [{ text: invoiceTitle(inv, lang), fontSize: 20, bold: true }, { text: `${credit ? tiDoc(inv, "creditNoteNo", lang) : tiDoc(inv, "invoiceNo", lang)} ${inv.number}`, fontSize: 10, color: MUTED, margin: [0, 2, 0, 0] }] },
       wm ? { text: ti(wm, lang), alignment: "right", fontSize: 11, bold: true, color: WM_COLOR[wm], characterSpacing: 1.2, margin: [0, 6, 0, 0] } : { text: "" },
     ],
     margin: [0, 0, 0, 6],
   });
-  content.push({ text: ti("proformaNotice", lang), fontSize: 7.5, color: MUTED, margin: [0, 0, 0, 14] });
+  content.push({ text: tiDoc(inv, "proformaNotice", lang), fontSize: 7.5, color: MUTED, margin: [0, 0, 0, 14] });
 
   content.push({ columns: [party(ti("from", lang), inv.contractor, lang, true), party(ti("billTo", lang), inv.customer, lang, false)], columnGap: 20, margin: [0, 0, 0, 14] });
 

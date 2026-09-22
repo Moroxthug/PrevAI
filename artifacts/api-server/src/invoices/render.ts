@@ -6,8 +6,10 @@ import { MARKET, fmtEurCents, fmtNumber, type Lang } from "@workspace/config";
 // Il PDF (pdf.ts) e la pagina pubblica / email condividono queste etichette
 // così il cliente vede lo stesso documento ovunque. Requisiti art. 21 DPR
 // 633/72: dati del cedente con P. IVA, data e numero, dati del cessionario,
-// descrizione, imponibile e IVA per aliquota, totale. Finché non c'è SDI la
-// fattura è "pro-forma" (V2-4, D3).
+// descrizione, imponibile e IVA per aliquota, totale. Senza il modulo
+// Amministrazione la fattura è "pro-forma" (V2-4, D3); con l'invio allo SdI
+// attivo (A-1) il documento è una fattura e il PDF una copia di cortesia:
+// le etichette che cambiano stanno in `I_FISCALE`.
 
 export type { Lang };
 
@@ -77,8 +79,30 @@ export const I = {
 
 export type IKey = keyof typeof I;
 
+/**
+ * A-1: le etichette cambiano quando il documento è una fattura vera (serie
+ * FT-, XML trasmesso allo SdI). Il PDF resta una **copia di cortesia**:
+ * l'originale è il file elettronico nel cassetto fiscale del cliente.
+ */
+export const I_FISCALE: Partial<Record<IKey, string>> = {
+  invoice: "Fattura",
+  creditNote: "Nota di credito",
+  invoiceNo: "Fattura n.",
+  creditNoteNo: "Nota di credito n.",
+  proformaNotice:
+    "Copia di cortesia. L'originale è la fattura elettronica trasmessa al Sistema di Interscambio (SdI) dell'Agenzia delle Entrate e disponibile nel cassetto fiscale del destinatario.",
+  refersTo: "Storno della fattura",
+  type_manual: "Fattura",
+  type_credit_note: "Nota di credito",
+};
+
 export function ti(key: IKey, _lang?: Lang): string {
   return I[key];
+}
+
+/** Etichetta del documento: pro-forma o fattura, secondo `invoices.fiscale`. */
+export function tiDoc(inv: { fiscale?: boolean | null }, key: IKey, _lang?: Lang): string {
+  return (inv.fiscale ? I_FISCALE[key] : undefined) ?? I[key];
 }
 
 /** Le etichette IVA sono già italiane ("IVA"); conservata per i chiamanti. */
@@ -108,8 +132,8 @@ export function isCreditNote(inv: Pick<Invoice, "type">): boolean {
   return inv.type === "credit_note";
 }
 
-export function invoiceTitle(inv: Pick<Invoice, "type" | "title">, lang: Lang): string {
-  return inv.title || ti(`type_${inv.type}` as IKey, lang);
+export function invoiceTitle(inv: Pick<Invoice, "type" | "title"> & { fiscale?: boolean | null }, lang: Lang): string {
+  return inv.title || tiDoc(inv, `type_${inv.type}` as IKey, lang);
 }
 
 export function partyLines(p: InvoiceParty, lang: Lang, opts: { registration: boolean }): string[] {
@@ -192,7 +216,7 @@ export function renderInvoiceHtml(inv: Invoice, payments: InvoicePayment[] = [])
   const wm = watermark(inv);
   if (wm) parts.push(`<div class="wm ${inv.status}">${ti(wm, lang)}</div>`);
   parts.push(`<h1>${esc(invoiceTitle(inv, lang))}</h1>`);
-  parts.push(`<div class="sub">${credit ? ti("creditNoteNo", lang) : ti("invoiceNo", lang)} <strong>${esc(inv.number)}</strong> · ${ti("issued", lang)} ${fmtDay(inv.issueDate, lang)}${credit ? "" : ` · ${ti("due", lang)}: ${esc(dueText(inv, lang))}`}</div>`);
+  parts.push(`<div class="sub">${credit ? tiDoc(inv, "creditNoteNo", lang) : tiDoc(inv, "invoiceNo", lang)} <strong>${esc(inv.number)}</strong> · ${ti("issued", lang)} ${fmtDay(inv.issueDate, lang)}${credit ? "" : ` · ${ti("due", lang)}: ${esc(dueText(inv, lang))}`}</div>`);
 
   const party = (label: string, p: InvoiceParty, registration: boolean) =>
     `<div><div class="party-label">${label}</div><div class="party-name">${esc(p.name)}</div>${partyLines(p, lang, { registration }).map((l) => `<div class="party-line">${esc(l)}</div>`).join("")}</div>`;

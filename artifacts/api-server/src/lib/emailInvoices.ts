@@ -38,22 +38,29 @@ function summaryBox(p: Common, t: { invoice: string; due: string; total: string;
 
 /** V2-4 (D3): finché non c'è l'export SDI il documento non è una fattura fiscale — va detto anche nell'email. */
 const PROFORMA_NOTICE = "Si tratta di un documento pro-forma senza valore fiscale: la fattura elettronica sarà emessa tramite il Sistema di Interscambio.";
+/** A-1: col modulo attivo l'originale è l'XML nel cassetto fiscale; il PDF allegato è una cortesia. */
+const FATTURA_NOTICE = "Il PDF allegato è una copia di cortesia: l'originale è la fattura elettronica trasmessa al Sistema di Interscambio e disponibile nel tuo cassetto fiscale.";
 
 const greet = (name: string) => `Gentile ${escapeHtml(name || "cliente")}`;
 
-export async function sendInvoiceEmail(params: Common & { pdfBuffer: Buffer; message?: string; isCreditNote?: boolean; typeLabel: string }): Promise<void> {
+export async function sendInvoiceEmail(params: Common & { pdfBuffer: Buffer; message?: string; isCreditNote?: boolean; typeLabel: string; fiscale?: boolean }): Promise<void> {
   const company = escapeHtml(params.companyName);
   const cn = params.isCreditNote;
+  // A-1: con il modulo Amministrazione il documento è una fattura vera.
+  const doc = params.fiscale ? "fattura" : "fattura pro-forma";
+  const nota = params.fiscale ? "nota di credito" : "nota di credito pro-forma";
+  const Doc = params.fiscale ? "Fattura" : "Fattura pro-forma";
+  const Nota = params.fiscale ? "Nota di credito" : "Nota di credito pro-forma";
   const t = {
-    title: cn ? "Nota di credito pro-forma" : `${params.typeLabel} — ${params.number}`,
+    title: cn ? Nota : `${params.typeLabel} — ${params.number}`,
     sub: `${params.companyName}`,
     body: cn
-      ? `${greet(params.customerName)},<br/><br/><strong>${company}</strong> ti ha emesso una nota di credito pro-forma. Il documento è allegato a questa email e il saldo della tua pro-forma è stato aggiornato di conseguenza.`
-      : `${greet(params.customerName)},<br/><br/><strong>${company}</strong> ti ha inviato una fattura pro-forma per i tuoi lavori. Il PDF è allegato; puoi consultarla anche online insieme alle modalità di pagamento. ${PROFORMA_NOTICE}`,
-    btn: cn ? "Vedi la nota di credito" : "Vedi la pro-forma e paga",
-    footer: `Pro-forma inviata tramite ${MARKET.brand} per conto di ${company}. Domande? Rispondi direttamente a ${company}.`,
-    subject: cn ? `Nota di credito pro-forma ${params.number} di ${params.companyName}` : `Fattura pro-forma ${params.number} di ${params.companyName} — ${eur(params.balanceCents)}`,
-    invoice: cn ? "Nota di credito" : "Pro-forma", due: "Scadenza", total: "Totale", balance: cn ? "Importo" : "Da pagare", bankTransfer: "Bonifico — IBAN",
+      ? `${greet(params.customerName)},<br/><br/><strong>${company}</strong> ti ha emesso una ${nota}. Il documento è allegato a questa email e il saldo è stato aggiornato di conseguenza.`
+      : `${greet(params.customerName)},<br/><br/><strong>${company}</strong> ti ha inviato una ${doc} per i tuoi lavori. Il PDF è allegato; puoi consultarla anche online insieme alle modalità di pagamento. ${params.fiscale ? FATTURA_NOTICE : PROFORMA_NOTICE}`,
+    btn: cn ? "Vedi la nota di credito" : params.fiscale ? "Vedi la fattura e paga" : "Vedi la pro-forma e paga",
+    footer: `${params.fiscale ? "Fattura inviata" : "Pro-forma inviata"} tramite ${MARKET.brand} per conto di ${company}. Domande? Rispondi direttamente a ${company}.`,
+    subject: cn ? `${Nota} ${params.number} di ${params.companyName}` : `${Doc} ${params.number} di ${params.companyName} — ${eur(params.balanceCents)}`,
+    invoice: cn ? "Nota di credito" : params.fiscale ? "Fattura" : "Pro-forma", due: "Scadenza", total: "Totale", balance: cn ? "Importo" : "Da pagare", bankTransfer: "Bonifico — IBAN",
   };
   const html = shell({
     accent: cn ? "linear-gradient(135deg,#0f766e,#06b6d4)" : undefined,

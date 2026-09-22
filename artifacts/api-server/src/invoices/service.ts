@@ -36,9 +36,10 @@ import { getBaseUrl } from "../lib/baseUrl.js";
 import { writeAudit, createNotification } from "../lib/notifications.js";
 import { sendInvoiceEmail, sendPaymentReceiptEmail } from "../lib/emailInvoices.js";
 import { raiseAutomation } from "../lib/automation.js";
+import { moduloSdiAttivo } from "../sdi/stato.js";
 import { computeInvoiceAmounts, termSubtotalCents, finalInvoiceSubtotalCents, lienPeriodDays, addDays, statusAfterPayment, balanceCents, lineFrom } from "./math.js";
 import { buildInvoicePdf } from "./pdf.js";
-import { ti, invoiceTitle, type Lang, type IKey } from "./render.js";
+import { ti, tiDoc, invoiceTitle, type Lang, type IKey } from "./render.js";
 
 const storage = new ObjectStorageService();
 
@@ -59,8 +60,12 @@ export function invoiceToken(inv: Pick<Invoice, "id" | "userId">): string {
   return createHmac("sha256", secret).update(`invoice:${inv.userId}:${inv.id}`).digest("base64url");
 }
 
-/** Sequenziale per impresa × anno × tipo: PF-2026-0042 (pro-forma), NC-2026-0003 (nota di credito pro-forma). */
-export async function nextInvoiceNumber(userId: string, kind: "PF" | "NC" = "PF", now = new Date()): Promise<string> {
+/**
+ * Sequenziale per impresa × anno × serie: PF-2026-0042 (pro-forma),
+ * FT-2026-0042 (fattura elettronica, A-1), NC-2026-0003 (nota di credito).
+ * Le serie sono indipendenti e nessun numero viene riusato.
+ */
+export async function nextInvoiceNumber(userId: string, kind: "PF" | "NC" | "FT" = "PF", now = new Date()): Promise<string> {
   const year = now.getFullYear();
   const [row] = await db
     .insert(invoiceSequencesTable)
@@ -104,6 +109,8 @@ export type InvoiceContext = {
   province: string;
   /** Regime IVA del documento (IVA22/IVA10/…): dal contratto, altrimenti aliquota ordinaria. */
   taxCode: string;
+  /** A-1: il modulo Amministrazione è attivo, quindi si emettono fatture vere e non pro-forma. */
+  fiscale: boolean;
   language: Lang;
   paymentInstructions: PaymentInstructions;
   /** Pre-tax and incl.-tax contract amounts in cents (0 when there is no contract). */
@@ -129,6 +136,8 @@ export async function buildInvoiceContext(params: { userId: string; projectId?: 
     name: v?.contractor.name || profile?.companyName || "",
     address: v?.contractor.address ?? profile?.address ?? null,
     province: normalizeProvince(profile?.province) ?? null,
+    city: profile?.city ?? null,
+    postalCode: profile?.cap ?? null,
     email: v?.contractor.email ?? profile?.email ?? null,
     phone: v?.contractor.phone ?? profile?.phone ?? null,
     vatNumber: profile?.vatNumber ?? v?.contractor.businessNumber ?? null,
@@ -144,7 +153,13 @@ export async function buildInvoiceContext(params: { userId: string; projectId?: 
     email: client?.email ?? v?.customer.email ?? null,
     phone: client?.phone ?? v?.customer.phone ?? null,
     businessNumber: client?.businessNumber ?? v?.customer.businessNumber ?? null,
+    // A-1: recapito elettronico congelato sul documento.
+    codiceSdi: client?.codiceSdi ?? null,
+    pec: client?.pec ?? null,
+    cig: client?.cig ?? null,
+    cup: client?.cup ?? null,
   };
+  const fiscale = await moduloSdiAttivo(params.userId, profile);
   const siteAddress = v?.siteAddress || project?.address || "";
   const paymentInstructions: PaymentInstructions = {
     iban: decryptField(profile?.iban), // A-0: cifrato a riposo
@@ -160,6 +175,7 @@ export async function buildInvoiceContext(params: { userId: string; projectId?: 
     siteAddress,
     province,
     taxCode,
+    fiscale,
     language,
     paymentInstructions,
     contractSubtotalCents: v ? Math.round(v.subtotal * 100) : 0,
@@ -185,6 +201,8 @@ export type CreateInvoiceInput = {
   paymentTermId?: string | null;
   paymentTermLabel?: string | null;
   creditNoteForId?: string | null;
+  /** Una nota di credito segue la natura del documento che corregge, non quella odierna. */
+  fiscale?: boolean;
   scheduledFor?: Date | null;
   issueDate?: Date;
   actor: "contractor" | "system";
@@ -200,7 +218,8 @@ export async function createInvoice(input: CreateInvoiceInput): Promise<Invoice>
     holdbackPercent: input.holdbackPercent ?? 0,
     registration: { vatNumber: ctx.contractor.vatNumber },
   });
-  const number = await nextInvoiceNumber(input.userId, input.type === "credit_note" ? "NC" : "PF", now);
+  const fiscale = input.fiscale ?? ctx.fiscale;
+  const number = await nextInvoiceNumber(input.userId, input.type === "credit_note" ? "NC" : fiscale ? "FT" : "PF", now);
   const [invoice] = await db
     .insert(invoicesTable)
     .values({
@@ -214,6 +233,7 @@ export async function createInvoice(input: CreateInvoiceInput): Promise<Invoice>
       paymentTermLabel: input.paymentTermLabel ?? null,
       creditNoteForId: input.creditNoteForId ?? null,
       number,
+      fiscale,
       type: input.type,
       status: "draft",
       source: input.source,
@@ -518,6 +538,7 @@ export async function sendInvoice(params: { invoiceId: string; userId?: string; 
     message: params.message,
     isCreditNote: inv.type === "credit_note",
     typeLabel: invoiceTitle(inv, lang),
+    fiscale: inv.fiscale,
     replyTo: senderProfile?.email ?? null,
   });
 
@@ -684,10 +705,11 @@ export async function createCreditNote(params: { invoiceId: string; userId: stri
     type: "credit_note",
     source: "manual",
     actor: "contractor",
-    lines: [lineFrom(`${params.description} (${ti("refersTo", lang)} ${inv.number})`, -params.amountCents)],
+    lines: [lineFrom(`${params.description} (${tiDoc(inv, "refersTo", lang)} ${inv.number})`, -params.amountCents)],
     holdbackPercent: 0,
     dueDays: 0,
     creditNoteForId: inv.id,
+    fiscale: inv.fiscale,
     notes: params.reason ?? "",
   });
   // Apply the credit (incl. tax) to the original, capped at its balance.

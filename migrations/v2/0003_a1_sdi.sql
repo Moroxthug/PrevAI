@@ -12,6 +12,9 @@
 ALTER TABLE "business_profiles" ADD COLUMN IF NOT EXISTS "city" text;
 ALTER TABLE "business_profiles" ADD COLUMN IF NOT EXISTS "cap" text;
 
+-- Documenti già emessi: restano pro-forma (false), come sono stati consegnati ai clienti.
+ALTER TABLE "invoices" ADD COLUMN IF NOT EXISTS "fiscale" boolean DEFAULT false NOT NULL;
+
 ALTER TABLE "clients" ADD COLUMN IF NOT EXISTS "codice_fiscale" text;
 ALTER TABLE "clients" ADD COLUMN IF NOT EXISTS "codice_sdi" text;
 ALTER TABLE "clients" ADD COLUMN IF NOT EXISTS "pec" text;

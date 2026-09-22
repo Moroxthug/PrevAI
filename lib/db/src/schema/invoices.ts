@@ -5,6 +5,7 @@ import {
   timestamp,
   jsonb,
   integer,
+  boolean,
   index,
   uniqueIndex,
   primaryKey,
@@ -25,6 +26,10 @@ import { clientsTable } from "./clients";
 // (numerazione PF-anno-n, nota di credito pro-forma NC-anno-n): non è una
 // fattura ai fini dell'art. 21 DPR 633/72 e lo dice in chiaro su PDF, email
 // e pagina pubblica. Il motore (acconto/SAL/saldo/ritenuta) resta intero.
+//
+// A-1: con il modulo Amministrazione attivo il documento diventa una fattura
+// vera (serie FT-anno-n, `fiscale = true`, XML FatturaPA trasmesso allo SdI).
+// Le due serie convivono: chi non ha il modulo continua a emettere pro-forma.
 
 export const INVOICE_TYPES = ["deposit", "progress", "final", "holdback_release", "change_order", "manual", "credit_note"] as const;
 export type InvoiceType = (typeof INVOICE_TYPES)[number];
@@ -102,7 +107,14 @@ export const invoicesTable = pgTable(
     paymentTermLabel: text("payment_term_label"),
     /** For credit notes: the invoice being corrected. */
     creditNoteForId: uuid("credit_note_for_id"),
-    number: text("number").notNull(), // PF-2026-0042 / NC-2026-0003
+    number: text("number").notNull(), // PF-2026-0042 / FT-2026-0042 / NC-2026-0003
+    /**
+     * A-1: il documento è una fattura ai sensi dell'art. 21 DPR 633/72 (serie
+     * FT-, trasmessa allo SdI) e non una pro-forma. Si decide alla creazione,
+     * in base al modulo Amministrazione attivo, e non cambia più: un documento
+     * già consegnato al cliente non può cambiare natura.
+     */
+    fiscale: boolean("fiscale").notNull().default(false),
     type: text("type", { enum: INVOICE_TYPES }).notNull().default("manual"),
     status: text("status", { enum: INVOICE_STATUSES }).notNull().default("draft"),
     source: text("source", { enum: ["automation", "manual"] }).notNull().default("manual"),
