@@ -179,12 +179,66 @@ TOKEN_ENCRYPTION_KEY=<prod, dal password manager> DATABASE_URL=<pooler url> \
   … ops:encrypt-fiscal-fields                                             # → "0 plaintext value(s)"
 ```
 
-La rotazione della chiave (§6) copre anche queste colonne: `rotate-token-key.ts` conosce il prefisso e salta le righe in chiaro. Quando A-1 aggiunge una colonna cifrata: una riga in `COLUMNS` di entrambi gli script.
+La rotazione della chiave copre anche queste colonne: `rotate-token-key.ts` conosce il prefisso e salta le righe in chiaro. **A-1** ha aggiunto le credenziali dell'intermediario SDI (`sdi_settings.provider_api_key`, `provider_account_id`, `webhook_secret`) a `COLUMNS` di entrambi gli script.
 
 ### 5.6 Policy "2FA obbligatoria" per organizzazione (A-0)
 
 `business_profiles.two_factor_required` (default `false`). Il titolare la attiva da Impostazioni → Sicurezza (deve avere già la 2FA lui stesso; owner-only via `security: full`); il modulo Amministrazione la imporrà (A-5). Con la policy attiva, un utente senza 2FA riceve **403 `{ error: "two_factor_required" }`** da ogni rotta dietro `requireAuth` tranne `GET /api/security/policy`, `GET /api/business-profile`, `GET /api/team/orgs`, `POST /api/team/switch` (ciò che serve alla schermata di blocco della dashboard per spiegare e far attivare la 2FA, o cambiare organizzazione). Eventi nell'audit log: `two_factor.policy_enabled` / `two_factor.policy_disabled`. Sblocco d'emergenza di un'org (titolare che ha perso l'app di autenticazione **e** i codici di backup): `update business_profiles set two_factor_required = false where user_id = '<org>'` + `update auth_user set two_factor_enabled = false where id = '<user>'` e cancellare la riga in `two_factor`; annotare nel Diario.
 
+
+## 6. Modulo Fatture SDI (A-1)
+
+Fatturazione elettronica verso il Sistema di Interscambio dell'Agenzia delle Entrate. PrevAI **non** è un canale accreditato: firma e trasmissione le fa un intermediario (Openapi.it di default, adapter unico in `artifacts/api-server/src/sdi/providers/`). Di ogni documento restano da noi l'XML e le ricevute, quindi cambiare intermediario non perde nulla.
+
+Pezzi: `sdi/mapper.ts` (fattura → tracciato) · `sdi/xml.ts` (FatturaPA 1.2.2) · `sdi/validate.ts` (controlli, ognuno col codice di scarto che evita) · `sdi/service.ts` (invio, stati, conservazione) · `sdi/bollo.ts` · `sdi/passive.ts` · `routes/sdi.ts` + `routes/sdi-webhooks.ts` · UI in `settings-sdi-tab.tsx`, `components/invoices/sdi-panel.tsx`, `pages/dashboard/amministrazione.tsx`.
+
+### 6.1 Attivare il modulo su un'impresa
+
+1. **Add-on**: `update business_profiles set feature_flags = feature_flags || '{"sdi_invoicing": true}'::jsonb where user_id = '<org>';` (finché A-5 non lo collega a Stripe). Nessun piano lo include.
+2. L'impresa completa da sola, in **Impostazioni → Fatture elettroniche**: dati fiscali (ragione sociale, P. IVA, sede con CAP/comune/provincia), regime fiscale (RF19 per i forfettari), intermediario + token API, conferma della delega firmata, e la **2FA obbligatoria per l'organizzazione** (§5.6 — è un requisito, non un consiglio).
+3. Finché manca anche solo un requisito lo stato resta `in_configurazione` e le fatture continuano a nascere **pro-forma** (serie `PF-`). Con tutto a posto nascono **fiscali** (serie `FT-`, `invoices.fiscale = true`) e il PDF diventa una copia di cortesia.
+4. Il campo `sdi_settings.stato` è solo una cache per l'interfaccia: la verità si ricalcola dai requisiti a ogni lettura (`sdi/stato.ts`).
+
+Ambiente: `sdi_settings.ambiente` = `sandbox` (default) o `produzione`. In sandbox **nessun documento è valido** e il bollo non entra nei trimestri. Provider `simulato` (default) non manda niente a nessuno: è quello che usano staging ed e2e, e l'esito lo decide il codice destinatario del cliente (`SCARTO1` → scarto 00305, `MANCATA` → mancata consegna).
+
+### 6.2 Notifiche dell'intermediario (webhook)
+
+- URL da registrare presso l'intermediario (in Openapi: `POST /api_configurations`, eventi `customer-notification` e `supplier-invoice`):
+  `https://prevai.it/api/webhooks/sdi/<user_id>?token=<segreto>`
+- Il segreto lo sceglie l'impresa in Impostazioni (≥ 16 caratteri) ed è conservato cifrato. Senza segreto corretto la rotta risponde 401 e non guarda nemmeno il corpo.
+- Il corpo è **dato, non istruzioni**: si leggono solo i campi noti e l'idempotenza è garantita da `e_invoice_events.provider_event_id`.
+- Rete di sicurezza: il tick del cron ripassa le trasmissioni ancora in volo (`sdi/maintenance.ts`), quindi un webhook perso non costa una fattura.
+
+### 6.3 Quando lo SdI scarta una fattura
+
+Una fattura scartata **si considera non emessa** e va corretta e ritrasmessa entro 5 giorni. In dashboard l'impresa vede lo stato rosso, il messaggio tradotto e il pulsante "Rinvia allo SdI"; il rinvio crea una **nuova** trasmissione (nuovo progressivo, nuovo nome file) e lascia la precedente a `scartata` — lo SdI ragiona per trasmissione, non per documento.
+
+Dal lato ops:
+```sql
+select e.stato, e.errore_codice, e.errore_messaggio, e.file_name, i.number
+from e_invoices e join invoices i on i.id = e.invoice_id
+where e.user_id = '<org>' and e.stato = 'scartata' order by e.created_at desc;
+```
+Il dizionario dei codici è in `lib/config/src/fatturapa.ts` (`ERRORI_SDI`): se l'AdE ne aggiunge uno, si aggiunge lì e il messaggio migliora ovunque.
+
+### 6.4 Credenziali e conservazione
+
+- Token API, account id e segreto webhook dell'intermediario sono cifrati a riposo con `enc1:` sotto `TOKEN_ENCRYPTION_KEY` (§5.5). La rotazione della chiave (§6 QuoteAI / "Rotate TOKEN_ENCRYPTION_KEY") deve includere `sdi_settings.provider_api_key`, `provider_account_id`, `webhook_secret`.
+- Le API non restituiscono mai le credenziali: solo `credenzialiPresenti`/`webhookSegretoPresente`.
+- La conservazione a norma (10 anni, art. 2220 c.c.) è delegata all'intermediario quando `conservazione_attiva` è true: l'invio passa dall'endpoint con firma + legal storage. **In ogni caso** l'XML è archiviato anche nel nostro storage privato in `sdi/<user_id>/<anno>/<file>.xml` e l'impresa può scaricarlo (fattura → Scarica XML).
+- Export completo per un'impresa (es. cambio intermediario o richiesta del commercialista): `select file_name, xml_path from e_invoices where user_id = '<org>'` e scaricare i file dal bucket privato.
+
+### 6.5 Bollo virtuale e F24
+
+2 € su ogni fattura **senza IVA** sopra 77,47 € (DPR 642/1972): nel forfettario, praticamente tutte. Il totale del trimestre non si incrementa a mano, si **ricalcola** dalle trasmissioni non scartate (`sdi/bollo.ts`), quindi uno scarto successivo non lascia residui. Codici tributo 2521-2524; scadenze 31/5, 30/9, 30/11, 28/2. L'F24 è **precompilato**, non pagato: il contribuente lo versa da sé (home banking o Fisconline). Il prospetto che fa fede resta quello dell'Agenzia nel portale Fatture e Corrispettivi — l'avviso lo dice in chiaro.
+
+### 6.6 Ciclo passivo
+
+Si scarica qualcosa solo se l'impresa ha **aderito esplicitamente** (`ciclo_passivo_attivo`, con data): è una prescrizione del Garante (Provv. fatturazione elettronica 2018-2019), non una preferenza. Le fatture di acquisto restano `nuova` finché è l'utente a collegarle a un cantiere: nessuna categorizzazione automatica con effetti contabili. Per ricevere davvero le passive l'impresa deve registrare il codice destinatario dell'intermediario nel portale "Fatture e Corrispettivi" (passo guidato nell'onboarding).
+
+### 6.7 Cutover e migrazioni
+
+`migrations/v2/0003_a1_sdi.sql` è additiva e idempotente e va eseguita **dopo** la 0002 (§5.3): cinque tabelle nuove, `business_profiles.city/cap`, `invoices.fiscale`, cinque colonne su `clients`. I documenti già emessi restano pro-forma (`fiscale = false`), come sono stati consegnati ai clienti. Nessun utente passa a `FT-` finché non accende il modulo e completa l'onboarding.
 
 
 ---

@@ -35,6 +35,7 @@ Opzionali o legacy; segnalate per completezza (fonte: grep `process.env.*` in `a
 | `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASS` | solo `scripts/migrate.mjs` (legacy Replit) | |
 | `CLERK_SECRET_KEY` | residuo QuoteAI, non usato | da rimuovere in V2-2 |
 | `VERCEL_URL`, `VERCEL_PROJECT_PRODUCTION_URL` | iniettate da Vercel | |
+| `OPENAPI_SDI_BASE_URL`, `OPENAPI_SDI_SANDBOX_URL`, `OPENAPI_SDI_CODICE_DESTINATARIO` | assenti → default nel codice (`https://sdi.openapi.it`, `https://test.sdi.openapi.it`, `JKKZDGR`) | A-1: servono solo se il proprio contratto Openapi usa host o codice destinatario diversi. **Il token API non è una env**: sta cifrato in `sdi_settings` per impresa (RUNBOOKS §6) |
 
 ## File locali
 

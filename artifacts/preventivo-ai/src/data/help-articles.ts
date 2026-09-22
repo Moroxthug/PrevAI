@@ -73,7 +73,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
       p("Apri Impostazioni → Profilo aziendale. I campi che contano di più:"),
       bullets([
         "Ragione sociale, indirizzo e telefono — stampati su ogni documento e obbligatori in fattura.",
-        "Partita IVA e codice fiscale — devono comparire su ogni fattura (art. 21 DPR 633/72); il codice destinatario SDI o la PEC servono quando la fattura elettronica verrà emessa.",
+        "Partita IVA e codice fiscale — devono comparire su ogni fattura (art. 21 DPR 633/72); il codice destinatario SDI o la PEC del cliente servono per recapitargli la fattura elettronica (per i privati bastano sette zeri: la trovano nel cassetto fiscale).",
         "Numero REA o iscrizione all'albo — inserito nel contratto dove serve.",
         "IBAN — mostrato sulle fatture così i clienti sanno dove fare il bonifico. È il modo in cui la maggior parte dei clienti paga gli artigiani.",
         "Logo — compare sui PDF e sulle pagine cliente di preventivo, firma e fattura.",
@@ -208,7 +208,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
     blocks: [
       h("Da dove nascono le fatture"),
       p("Il piano di pagamento impostato sul preventivo (per esempio 30 % di acconto, 40 % dopo gli impianti al grezzo, 30 % a fine lavori) viene copiato nel contratto, e ogni riga diventa una fattura al momento giusto: l'acconto alla firma del contratto, i SAL al completamento della fase, il saldo quando il cantiere è segnato come completato. Puoi anche creare una fattura manuale da zero."),
-      p("Ogni fattura ha un numero progressivo che non viene mai riutilizzato, la tua partita IVA, i dati del cliente, l'IVA esposta separatamente e la scadenza. Annullare una fattura ne conserva il numero nella sequenza e ti permette di emetterne una corretta. Finché non è collegato il Sistema di Interscambio, i documenti valgono come pro-forma: la fattura elettronica va emessa dal tuo software di fatturazione o dal commercialista."),
+      p("Ogni fattura ha un numero progressivo che non viene mai riutilizzato, la tua partita IVA, i dati del cliente, l'IVA esposta separatamente e la scadenza. Annullare una fattura ne conserva il numero nella sequenza e ti permette di emetterne una corretta. Senza il modulo Amministrazione i documenti valgono come pro-forma e la fattura elettronica va emessa altrove. Con il modulo attivo, invece, PrevAI genera il file XML, lo trasmette al Sistema di Interscambio tramite un intermediario accreditato e ti mostra le ricevute: il PDF che il cliente riceve diventa una copia di cortesia."),
       h("Invia e incassa"),
       p("In Impostazioni → Profilo aziendale → Automazioni scegli se le fatture vengono inviate in automatico (dopo un ritardo che imposti tu) o lasciate in bozza perché sia tu a inviarle. Il cliente riceve un'email con il PDF e un link alla pagina della fattura, che mostra il residuo e come pagare:"),
       bullets([

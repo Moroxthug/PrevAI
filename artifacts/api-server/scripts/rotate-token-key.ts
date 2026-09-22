@@ -29,6 +29,8 @@ const COLUMNS: { table: string; pk: string[]; columns: string[]; prefix?: string
   { table: "email_connections", pk: ["user_id", "provider"], columns: ["access_token_enc", "refresh_token_enc"] },
   { table: "meta_lead_ads_connections", pk: ["user_id"], columns: ["page_access_token_enc"] },
   { table: "business_profiles", pk: ["user_id"], columns: ["iban"], prefix: "enc1:" },
+  // A-1: credenziali dell'intermediario SDI.
+  { table: "sdi_settings", pk: ["user_id"], columns: ["provider_api_key", "provider_account_id", "webhook_secret"], prefix: "enc1:" },
 ];
 
 function key(name: string): Buffer {

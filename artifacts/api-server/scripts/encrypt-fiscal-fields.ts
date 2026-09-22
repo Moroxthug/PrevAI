@@ -19,7 +19,13 @@ const ALGO = "aes-256-gcm";
 const PREFIX = "enc1:";
 
 // Keep in sync with `encryptField(` call sites and rotate-token-key.ts.
-const COLUMNS: { table: string; pk: string; columns: string[] }[] = [{ table: "business_profiles", pk: "user_id", columns: ["iban"] }];
+const COLUMNS: { table: string; pk: string; columns: string[] }[] = [
+  { table: "business_profiles", pk: "user_id", columns: ["iban"] },
+  // A-1: credenziali dell'intermediario SDI. Nascono già cifrate (le scrive
+  // aggiornaImpostazioni), ma restano qui perché una riga scritta a mano in
+  // emergenza non lasci un token in chiaro.
+  { table: "sdi_settings", pk: "user_id", columns: ["provider_api_key", "provider_account_id", "webhook_secret"] },
+];
 
 function key(): Buffer {
   const k = Buffer.from(process.env.TOKEN_ENCRYPTION_KEY ?? "", "hex");
