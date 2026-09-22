@@ -3,6 +3,8 @@ import { Link, useLocation } from "wouter";
 import { LayoutDashboard, FileText, Menu, BarChart3, Settings, ChevronLeft, ChevronRight, Plus, LogOut, User, CreditCard, Building2, ChevronDown, BookOpen, Users, Receipt, Briefcase, FolderOpen, FileSignature, HardHat, Sparkles, Check, Target, UploadCloud, Search, Archive } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { teamMembersApi } from "@/lib/team-members-api";
+import { securityApi } from "@/lib/security-api";
+import { TwoFactorGate } from "@/pages/dashboard/settings-security-tab";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { CommandDialog, CommandInput, CommandList, CommandEmpty, CommandGroup, CommandItem, CommandShortcut } from "@/components/ui/command";
 import { useState, useEffect, useRef, useCallback } from "react";
@@ -226,6 +228,12 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
   });
 
   const { data: subscription } = useGetSubscription();
+  // A-0: an org can require 2FA of everyone acting in it; until this user
+  // enrols, the API refuses everything but the gate's own needs — render the
+  // gate instead of a page full of failed requests. `twoFactorEnabled` comes
+  // from the session so the block lifts as soon as enrolment succeeds.
+  const { data: securityPolicy } = useQuery({ queryKey: ["security-policy"], queryFn: securityApi.policy, enabled: isSignedIn === true, staleTime: 60_000 });
+  const twoFactorGated = Boolean(securityPolicy?.twoFactorRequired) && !user?.twoFactorEnabled;
   const isPro = subscription?.isActive && (subscription?.plan === "monthly_pro" || subscription?.plan === "monthly_elite");
   // Hooks must run on every render — keep this above the early returns below.
   const allNavItems = useNavItems();
@@ -377,7 +385,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
           </div>
         </header>
 
-        <main className="content">{children}</main>
+        <main className="content">{twoFactorGated ? <TwoFactorGate /> : children}</main>
       </div>
     </div>
   );

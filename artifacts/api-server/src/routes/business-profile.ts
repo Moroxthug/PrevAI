@@ -8,6 +8,7 @@ import { eq } from "drizzle-orm";
 import { UpdateBusinessProfileBody } from "@workspace/api-zod";
 import { ObjectStorageService } from "../lib/objectStorage.js";
 import { randomBytes } from "crypto";
+import { decryptField, encryptField } from "../lib/fieldCrypto.js";
 
 const router = Router();
 const objectStorageService = new ObjectStorageService();
@@ -35,7 +36,7 @@ function serializeProfileExtras(profile: BusinessProfile | undefined) {
     codiceFiscale: profile?.codiceFiscale ?? null,
     codiceSdi: profile?.codiceSdi ?? null,
     reaNumber: profile?.reaNumber ?? null,
-    iban: profile?.iban ?? null,
+    iban: decryptField(profile?.iban), // A-0: cifrato a riposo
     defaultPaymentSchedule: profile?.defaultPaymentSchedule ?? null,
     googleReviewUrl: profile?.googleReviewUrl ?? null,
     secondaryReviewUrl: profile?.secondaryReviewUrl ?? null,
@@ -161,7 +162,7 @@ router.put("/business-profile", requireAuth, requirePermission("settings", "edit
       ...(extras.codiceFiscale !== undefined && { codiceFiscale: extras.codiceFiscale?.trim().toUpperCase() || null }),
       ...(extras.codiceSdi !== undefined && { codiceSdi: extras.codiceSdi?.trim() || null }),
       ...(extras.reaNumber !== undefined && { reaNumber: extras.reaNumber?.trim() || null }),
-      ...(extras.iban !== undefined && { iban: extras.iban?.replace(/\s+/g, "").toUpperCase() || null }),
+      ...(extras.iban !== undefined && { iban: encryptField(extras.iban?.replace(/\s+/g, "").toUpperCase()) }), // A-0: cifrato a riposo
       ...(extras.googleReviewUrl !== undefined && { googleReviewUrl: extras.googleReviewUrl?.trim() || null }),
       ...(extras.secondaryReviewUrl !== undefined && { secondaryReviewUrl: extras.secondaryReviewUrl?.trim() || null }),
       ...(extras.sendReviewRequests !== undefined && { sendReviewRequests: extras.sendReviewRequests }),

@@ -68,6 +68,12 @@ export const businessProfilesTable = pgTable("business_profiles", {
   sendReviewRequests: boolean("send_review_requests").notNull().default(true),
   automationSettings: jsonb("automation_settings").$type<Partial<AutomationSettings>>().notNull().default({}),
   featureFlags: jsonb("feature_flags").$type<FeatureFlags>().notNull().default({}),
+  // ── A-0: policy di sicurezza dell'organizzazione. Quando è true ogni utente
+  //    che agisce nell'org (titolare e membri) deve avere la verifica in due
+  //    passaggi attiva: le API rispondono 403 `two_factor_required` finché non
+  //    la attiva. Il modulo Amministrazione (A-5) la imposta a true e non la
+  //    lascia più disattivare (AMMINISTRAZIONE-PLAN §6.5).
+  twoFactorRequired: boolean("two_factor_required").notNull().default(false),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
 });

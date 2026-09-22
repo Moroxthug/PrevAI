@@ -7,6 +7,8 @@ export type AuthUser = {
   name: string;
   email: string;
   image?: string | null;
+  /** Set by better-auth's twoFactor plugin once TOTP is verified (A-0 gate reads it). */
+  twoFactorEnabled?: boolean;
 };
 
 export function useAuth() {

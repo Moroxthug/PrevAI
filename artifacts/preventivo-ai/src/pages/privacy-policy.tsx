@@ -50,7 +50,7 @@ export default function PrivacyPage() {
             <ul className="list-disc pl-5 mt-2 space-y-1">
               <li><strong>Dati di registrazione:</strong> nome, cognome e indirizzo email, forniti al momento della creazione dell'account.</li>
               <li><strong>Dati del profilo aziendale:</strong> ragione sociale, partita IVA / codice fiscale, indirizzo, telefono, email aziendale, IBAN, numero REA e logo.</li>
-              <li><strong>Dati dei documenti:</strong> descrizioni dei lavori, dati dei tuoi clienti (nome, indirizzo, email, telefono, codice fiscale o partita IVA), importi e voci di preventivi, contratti, fatture e cantieri; foto e documenti che alleghi.</li>
+              <li><strong>Dati dei documenti:</strong> descrizioni dei lavori, dati dei tuoi clienti (nome, indirizzo, email, telefono, codice fiscale o partita IVA), importi e voci di preventivi, contratti, fatture e cantieri; foto e documenti che alleghi. Per questi dati tu sei titolare e PrevAI responsabile del trattamento: vale l'accordo dell'art. 9 dei <Link href="/termini/" className="text-navy-600 hover:underline">Termini di servizio</Link>.</li>
               <li><strong>Dati di firma elettronica:</strong> nome del firmatario, indirizzo email verificato, data e ora, indirizzo IP e impronta del documento firmato.</li>
               <li><strong>Dati di pagamento:</strong> gestiti direttamente da Stripe Inc. — non accediamo mai ai dati completi della tua carta.</li>
               <li><strong>Credenziali di autenticazione:</strong> la password è conservata come hash con salt sui nostri sistemi; non viene trasmessa a fornitori di identità terzi.</li>
@@ -139,8 +139,12 @@ export default function PrivacyPage() {
             <h2 className="text-lg font-semibold text-gray-900 mb-3">8. Sicurezza</h2>
             <p>
               Adottiamo misure tecniche e organizzative adeguate per proteggere i dati personali da accessi non autorizzati,
-              perdita o alterazione: connessioni cifrate (TLS/HTTPS), controllo degli accessi, cifratura dei token delle integrazioni,
-              autenticazione a due fattori disponibile per ogni account e conservazione delle credenziali come hash sulla nostra infrastruttura.
+              perdita o alterazione: connessioni cifrate (TLS/HTTPS), controllo degli accessi per ruolo e per organizzazione,
+              cifratura a riposo (AES-256) dei token delle integrazioni e dei campi bancari come l'IBAN, autenticazione a due fattori
+              disponibile per ogni account — che il titolare dell'organizzazione può rendere obbligatoria per tutta la squadra —,
+              registro delle attività di sicurezza consultabile dall'utente, backup cifrati e conservazione delle credenziali come hash sulla nostra infrastruttura.
+              Abbiamo svolto una valutazione d'impatto sulla protezione dei dati (art. 35 GDPR) per i trattamenti di dati economici e fiscali;
+              la sua sintesi è disponibile su richiesta a privacy@prevai.it.
             </p>
           </section>
 

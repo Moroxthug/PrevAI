@@ -21,7 +21,8 @@
     "qa:historic-pdf": "tsx src/e2e/historic-pdf.ts",
     "ops:backup": "tsx scripts/backup.ts",
     "ops:restore": "tsx scripts/restore.ts",
-    "ops:rotate-token-key": "tsx scripts/rotate-token-key.ts"
+    "ops:rotate-token-key": "tsx scripts/rotate-token-key.ts",
+    "ops:encrypt-fiscal-fields": "tsx scripts/encrypt-fiscal-fields.ts"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.49.1",

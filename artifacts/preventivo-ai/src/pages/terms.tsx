@@ -64,6 +64,8 @@ export default function TermsPage() {
               svolte tramite il proprio account. In caso di accesso non autorizzato, l'utente deve
               notificarlo immediatamente a{" "}
               <a href="mailto:supporto@prevai.it" className="text-navy-600 hover:underline">supporto@prevai.it</a>.
+              Il titolare di un'organizzazione può rendere obbligatoria l'autenticazione a due fattori per tutti gli utenti
+              della sua squadra; per le funzioni che trattano dati fiscali e bancari (modulo Amministrazione) essa è sempre obbligatoria.
             </p>
           </section>
 
@@ -133,6 +135,14 @@ export default function TermsPage() {
               inclusa l'aliquota IVA applicata. Nei limiti consentiti dalla legge applicabile, PrevAI non è responsabile per danni indiretti,
               perdita di dati, lucro cessante o danni derivanti da errori nell'output dell'AI.
             </p>
+            <p className="mt-3">
+              <strong>Trasparenza sull'intelligenza artificiale (art. 50 Regolamento (UE) 2024/1689).</strong>{" "}
+              Gli assistenti di PrevAI (assistente in app, bot di supporto, bot WhatsApp) dichiarano al primo contatto di essere sistemi
+              di intelligenza artificiale. I preventivi generati dall'AI e i documenti redatti con la sua assistenza riportano
+              tale indicazione nei metadati del PDF e, per i preventivi, in calce al documento; l'utente non deve rimuoverla.
+              Nessuna decisione con effetti giuridici verso l'utente o i suoi clienti è presa in modo automatico: ogni invio,
+              firma o pagamento richiede una conferma umana.
+            </p>
           </section>
 
           <section>
@@ -147,7 +157,64 @@ export default function TermsPage() {
           </section>
 
           <section>
-            <h2 className="text-lg font-semibold text-gray-900 mb-3">9. Modifiche ai termini</h2>
+            <h2 className="text-lg font-semibold text-gray-900 mb-3">9. Trattamento dei dati per conto dell'utente (accordo ex art. 28 GDPR)</h2>
+            <p>
+              I preventivi, i contratti, le fatture e le anagrafiche che l'utente gestisce con il Servizio contengono
+              dati personali dei <strong>suoi</strong> clienti (nome, indirizzo, codice fiscale, contatti, importi).
+              Per questi dati l'utente è <strong>titolare del trattamento</strong> e PrevAI è <strong>responsabile del trattamento</strong>
+              ai sensi dell'art. 28 del Regolamento (UE) 2016/679. Il presente articolo costituisce l'accordo sul trattamento
+              dei dati tra le parti e prevale, per quanto riguarda tali dati, sulle altre clausole dei Termini.
+            </p>
+            <div className="space-y-3 mt-3">
+              <div>
+                <p className="font-medium">9.1 Oggetto, durata, natura e finalità</p>
+                <p>
+                  PrevAI tratta i dati esclusivamente per fornire il Servizio descritto all'art. 2 (generazione e archiviazione di
+                  documenti, invio ai clienti dell'utente, promemoria, firma elettronica, gestione dei cantieri e della fatturazione)
+                  per tutta la durata dell'account e per il periodo di conservazione indicato nella{" "}
+                  <Link href="/privacy/" className="text-navy-600 hover:underline">Privacy Policy</Link>.
+                  Categorie di interessati: clienti e potenziali clienti dell'utente, loro referenti, firmatari dei contratti, collaboratori dell'utente.
+                  Categorie di dati: identificativi e di contatto, indirizzi dei lavori, codici fiscali e partite IVA, dati economici dei documenti, firme e relativi metadati.
+                  Nessuna categoria particolare di dati (art. 9) è richiesta dal Servizio: l'utente si impegna a non inserirla nei campi liberi.
+                </p>
+              </div>
+              <div>
+                <p className="font-medium">9.2 Istruzioni e obblighi di PrevAI</p>
+                <ul className="list-disc pl-5 mt-1 space-y-1">
+                  <li>tratta i dati solo su istruzione documentata dell'utente, che coincide con l'uso delle funzioni del Servizio, e non per finalità proprie (nessun uso per marketing né per l'addestramento di modelli di intelligenza artificiale);</li>
+                  <li>garantisce che le persone autorizzate al trattamento siano vincolate alla riservatezza;</li>
+                  <li>adotta le misure di sicurezza dell'art. 32 GDPR descritte nella Privacy Policy (cifratura in transito e a riposo dei campi sensibili, controllo degli accessi per ruolo, autenticazione a due fattori, registro delle attività di sicurezza, backup cifrati);</li>
+                  <li>assiste l'utente nel rispondere alle richieste degli interessati (artt. 15–22) tramite le funzioni di esportazione e cancellazione del Servizio e, ove non bastino, su richiesta a privacy@prevai.it;</li>
+                  <li>assiste l'utente negli adempimenti degli artt. 32–36 (sicurezza, violazioni, valutazione d'impatto) e gli notifica senza ingiustificato ritardo, e comunque entro 48 ore dalla scoperta, ogni violazione dei dati personali che riguardi i suoi dati;</li>
+                  <li>mette a disposizione le informazioni necessarie a dimostrare il rispetto degli obblighi dell'art. 28 e consente verifiche, anche tramite la documentazione di sicurezza fornita su richiesta;</li>
+                  <li>alla cessazione del Servizio cancella i dati entro i termini della Privacy Policy, salvo che la legge ne imponga la conservazione (in particolare le fatture per 10 anni), dopo aver consentito all'utente di esportarli.</li>
+                </ul>
+              </div>
+              <div>
+                <p className="font-medium">9.3 Sub-responsabili</p>
+                <p>
+                  L'utente autorizza in via generale il ricorso ai sub-responsabili elencati nella sezione "Destinatari" della Privacy Policy
+                  (hosting e database nell'Unione Europea, invio email, pagamenti, fornitori di intelligenza artificiale, messaggistica).
+                  PrevAI impone loro per contratto gli stessi obblighi qui assunti e resta responsabile del loro operato.
+                  Le modifiche all'elenco sono comunicate con almeno 14 giorni di preavviso; l'utente può opporsi per motivi legittimi
+                  e, in mancanza di soluzione, recedere dal Servizio senza penali.
+                  I trasferimenti extra-UE avvengono sulla base delle clausole contrattuali standard o del Data Privacy Framework.
+                </p>
+              </div>
+              <div>
+                <p className="font-medium">9.4 Obblighi dell'utente</p>
+                <p>
+                  L'utente garantisce di avere una base giuridica per i dati che inserisce, di fornire ai propri clienti l'informativa
+                  dovuta (che può richiamare PrevAI come responsabile), di non inserire nei documenti dati eccedenti rispetto allo scopo
+                  (in particolare nelle descrizioni delle fatture) e di impartire istruzioni compatibili con la legge.
+                  L'utente è responsabile dei documenti generati con l'assistenza dell'intelligenza artificiale una volta che li verifica e li invia.
+                </p>
+              </div>
+            </div>
+          </section>
+
+          <section>
+            <h2 className="text-lg font-semibold text-gray-900 mb-3">10. Modifiche ai termini</h2>
             <p>
               Ci riserviamo il diritto di modificare i presenti Termini con preavviso di almeno 14 giorni
               via email. L'uso continuato del Servizio dopo la data di efficacia delle modifiche costituisce
@@ -156,7 +223,7 @@ export default function TermsPage() {
           </section>
 
           <section>
-            <h2 className="text-lg font-semibold text-gray-900 mb-3">10. Legge applicabile e foro competente</h2>
+            <h2 className="text-lg font-semibold text-gray-900 mb-3">11. Legge applicabile e foro competente</h2>
             <p>
               I presenti Termini sono regolati dalla legge italiana. Per qualsiasi controversia è competente
               in via esclusiva il Tribunale di Milano, salvo i casi in cui l'utente sia un consumatore ai sensi
@@ -166,7 +233,7 @@ export default function TermsPage() {
           </section>
 
           <section>
-            <h2 className="text-lg font-semibold text-gray-900 mb-3">11. Contatti</h2>
+            <h2 className="text-lg font-semibold text-gray-900 mb-3">12. Contatti</h2>
             <p>
               Per qualsiasi domanda sui presenti Termini: <a href="mailto:supporto@prevai.it" className="text-navy-600 hover:underline">supporto@prevai.it</a>
             </p>

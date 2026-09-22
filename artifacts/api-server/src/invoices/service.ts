@@ -30,6 +30,7 @@ import {
 } from "@workspace/db";
 import { and, asc, desc, eq, isNull, ne, sql } from "drizzle-orm";
 import { logger } from "../lib/logger.js";
+import { decryptField } from "../lib/fieldCrypto.js";
 import { ObjectStorageService } from "../lib/objectStorage.js";
 import { getBaseUrl } from "../lib/baseUrl.js";
 import { writeAudit, createNotification } from "../lib/notifications.js";
@@ -146,7 +147,7 @@ export async function buildInvoiceContext(params: { userId: string; projectId?: 
   };
   const siteAddress = v?.siteAddress || project?.address || "";
   const paymentInstructions: PaymentInstructions = {
-    iban: profile?.iban ?? null,
+    iban: decryptField(profile?.iban), // A-0: cifrato a riposo
     chequePayableTo: profile?.companyName || null,
   };
   return {

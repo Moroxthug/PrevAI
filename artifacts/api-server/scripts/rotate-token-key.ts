@@ -21,10 +21,14 @@ import pg from "pg";
 const ALGO = "aes-256-gcm";
 
 // One row per encrypted column — keep in sync with `encryptSecret(` call sites.
-const COLUMNS: { table: string; pk: string[]; columns: string[] }[] = [
+// `prefix` marks A-0 field columns (src/lib/fieldCrypto.ts): the value is
+// `enc1:` + the same payload, and a row without the prefix is legacy plaintext
+// that this script leaves alone (ops:encrypt-fiscal-fields converts those).
+const COLUMNS: { table: string; pk: string[]; columns: string[]; prefix?: string }[] = [
   { table: "calendar_connections", pk: ["user_id", "provider"], columns: ["access_token_enc", "refresh_token_enc"] },
   { table: "email_connections", pk: ["user_id", "provider"], columns: ["access_token_enc", "refresh_token_enc"] },
   { table: "meta_lead_ads_connections", pk: ["user_id"], columns: ["page_access_token_enc"] },
+  { table: "business_profiles", pk: ["user_id"], columns: ["iban"], prefix: "enc1:" },
 ];
 
 function key(name: string): Buffer {
@@ -78,15 +82,17 @@ async function main(): Promise<void> {
   const undecryptable: string[] = [];
   const updates: { table: string; pk: string[]; id: unknown[]; column: string; value: string }[] = [];
   try {
-    for (const { table, pk, columns } of COLUMNS) {
+    for (const { table, pk, columns, prefix = "" } of COLUMNS) {
       const { rows } = await client.query<Record<string, unknown>>(
         `select ${[...pk, ...columns].map((c) => `"${c}"`).join(", ")} from "public"."${table}"${onlyUser ? ' where "user_id" = $1' : ""}`,
         onlyUser ? [onlyUser] : [],
       );
       for (const row of rows) {
         for (const column of columns) {
-          const value = row[column];
-          if (typeof value !== "string" || !value) continue;
+          const raw = row[column];
+          if (typeof raw !== "string" || !raw) continue;
+          if (prefix && !raw.startsWith(prefix)) continue; // legacy plaintext, not ours to touch
+          const value = raw.slice(prefix.length);
           if (decrypt(value, newKey) !== null) {
             alreadyNew++;
             continue;
@@ -96,7 +102,7 @@ async function main(): Promise<void> {
             undecryptable.push(`${table}.${column} ${pk.map((k) => `${k}=${String(row[k])}`).join(" ")}`);
             continue;
           }
-          updates.push({ table, pk, id: pk.map((k) => row[k]), column, value: encrypt(plain, newKey) });
+          updates.push({ table, pk, id: pk.map((k) => row[k]), column, value: prefix + encrypt(plain, newKey) });
           rotated++;
         }
       }

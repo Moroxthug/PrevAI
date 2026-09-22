@@ -22,6 +22,11 @@ async function req<T>(url: string, init?: RequestInit): Promise<T> {
   return body;
 }
 
+/** A-0: the acting org's 2FA policy and whether the current user satisfies it. */
+export type SecurityPolicyDto = { twoFactorRequired: boolean; twoFactorEnabled: boolean; twoFactorLocked: boolean };
+
 export const securityApi = {
   auditLog: () => req<{ events: AuditLogEventDto[] }>("/api/security/audit-log"),
+  policy: () => req<SecurityPolicyDto>("/api/security/policy"),
+  updatePolicy: (twoFactorRequired: boolean) => req<SecurityPolicyDto>("/api/security/policy", { method: "PATCH", body: JSON.stringify({ twoFactorRequired }) }),
 };

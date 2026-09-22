@@ -1,0 +1,49 @@
+# Revisione del motore regole 2026 con il commercialista partner — pacchetto per la prima riunione
+
+Versione 1.0 · A-0 · 21 settembre 2026 · Bloccato dalla decisione **D6** (`PIANO-AZIONE.md`): finché il titolare non indica il professionista, questa è la lista di ciò che gli va sottoposto. Le regole sono quelle raccolte in `AMMINISTRAZIONE-PLAN.md` §3 e diventeranno `lib/fiscal/rules/2026.ts` in A-2: **niente va codificato come "verificato" prima della sua firma**.
+
+## Come si svolge
+
+1. Riunione di 90 minuti (anche da remoto). Al commercialista arriva prima: questo file, `AMMINISTRAZIONE-PLAN.md` §3 e §5, la `DPIA.md` (sezione fiscale), 5 casi di prova (sotto).
+2. Per ogni regola: conferma / correzione / "dipende da" (con la condizione). Le sue risposte finiscono nella colonna **Esito** e nel commit di A-2 come commento con data e nome.
+3. Ci fornisce i **valori attesi** dei 5 casi golden (imposta, INPS, acconti, saldo) → diventano i test `rules/2026.golden.test.ts`.
+4. Accordo scritto (anche una email) sul perimetro: revisione delle regole, non consulenza ai singoli utenti (quella è fase 2, A-6/D9). Compenso a forfait.
+
+## Regole da confermare (una riga = un test)
+
+| # | Regola | Fonte da noi indicata | Domanda specifica | Esito |
+|---|---|---|---|---|
+| F1 | Soglia accesso/permanenza ricavi ≤ 85.000 € (ragguaglio ad anno per attività iniziate in corso d'anno) | L. 190/2014 art. 1 c. 54, come modificato | Il ragguaglio si applica anche all'uscita? Ricavi "incassati" o "fatturati" ai fini della soglia? | ⬜ |
+| F2 | Uscita immediata > 100.000 € (IVA dall'operazione che supera), differita 85.001–100.000 | c. 71 | L'IVA si applica all'intera fattura che fa superare o solo all'eccedenza? Trattamento delle fatture già emesse senza IVA nell'anno | ⬜ |
+| F3 | Spese lavoro dipendente/collaboratori ≤ 20.000 € lordi | c. 54 lett. b | Cosa rientra: solo dipendenti o anche occasionali/prestazioni di terzi con P. IVA? | ⬜ |
+| F4 | Redditi da lavoro dipendente anno precedente ≤ 35.000 € (2025–2026) | L. 207/2024 | Confermare che per il 2026 vale ancora 35.000 e cosa succede se cessato il rapporto | ⬜ |
+| F5 | Coefficienti di redditività: 86% gruppi ATECO 41–43 (costruzioni/impianti); tabella completa e **mappatura ATECO 2025** | allegato 2 L. 145/2018 + ATECO 2025 | Fornire/validare la tabella codice → coefficiente per i codici tipici degli artigiani PrevAI (idraulici, elettricisti, imbianchini, muratori, serramentisti, giardinieri, ecc.) | ⬜ |
+| F6 | Deduzione dei contributi previdenziali **versati** nell'anno (criterio di cassa), inclusi quelli a saldo dell'anno precedente | c. 64 | Vanno dedotti anche i contributi versati per i collaboratori familiari? Eccedenza deducibile dal reddito complessivo? | ⬜ |
+| F7 | Imposta sostitutiva 15%; 5% per i primi 5 anni con le 3 condizioni | c. 65 | Chiarire "mera continuazione" per chi era dipendente dello stesso settore; decorrenza dei 5 anni | ⬜ |
+| F8 | Bollo 2 € su fatture > 77,47 €, assolto virtualmente, F24 trimestrale (scadenze e codici tributo); riaddebito al cliente = ricavo | DPR 642/72; provv. AdE | Confermare scadenze 2026 e la soglia per lo slittamento del versamento del 1°/2° trimestre | ⬜ |
+| F9 | Diciture obbligatorie in fattura forfettaria (operazione senza IVA ex c. 58; non soggetta a ritenuta ex c. 67; bollo) | c. 58, 67 | Testo esatto da stampare; codice natura N2.2 nell'XML | ⬜ |
+| F10 | INPS artigiani 2026: minimale 18.808 €, aliquota 24%, fissi ≈ 4.521 €/anno in 4 rate (16/5, 20/8, 16/11, 16/2), eccedenza oltre il minimale con saldo/acconti | Circ. INPS 14/2026 | Confermare importi, aliquota aggiuntiva oltre 55.008 €, massimale; contributo maternità | ⬜ |
+| F11 | Riduzione 35% (forfettari) vs 50% per 36 mesi (nuovi iscritti dal 2025): esclusive tra loro, effetti sull'accredito | L. 190/2014 c. 77; L. 207/2024 c. 186 | Quale proporre di default nel simulatore e quale disclaimer ("scelta con effetti pensionistici") | ⬜ |
+| F12 | Acconti: 30/6 saldo + 1° acconto (40% o 50% se rateizzato / soggetti ISA), 30/11 2° acconto; metodo storico vs previsionale; soglia sotto cui l'acconto non è dovuto (51,65 €) e unica rata se < 257,52 € | DPR 435/2001 | Confermare percentuali 2026 e regole di rateizzazione; possibilità di rateizzare il saldo fino a dicembre | ⬜ |
+| F13 | Scadenze Redditi PF 2026: 30/10 telematico; quadro LM; precompilata P. IVA | provv. AdE | Confermare che l'utente può inviare da solo via Fisconline e quali quadri il software deve precompilare (LM, RR) | ⬜ |
+| F14 | Fattura elettronica obbligatoria per tutti i forfettari; conservazione a norma 10 anni; decadenza ridotta per chi fattura solo elettronicamente | D.L. 36/2022; DPR 633/72 | Cosa deve contenere il manuale di conservazione se usiamo la conservazione dell'intermediario | ⬜ |
+| F15 | Ciclo passivo: fatture ricevute senza rilevanza IVA, ma il forfettario è debitore d'imposta per acquisti intra-UE/reverse charge (integrazione e versamento entro il 16 del mese successivo) | c. 58–60 | Quali casi gestire nel software e quali segnalare "chiedi al commercialista" | ⬜ |
+| F16 | "Quanto mettere via": formula proposta = (incassi × coeff. − contributi) × aliquota + INPS eccedenza + fissi, ripartita per mese | — | Approvare la formula e i margini di sicurezza da mostrare (es. +10%) | ⬜ |
+
+## 5 casi golden (valori attesi da compilare dal commercialista)
+
+| Caso | Profilo | Incassi 2026 | Contributi versati 2026 | Note |
+|---|---|---|---|---|
+| G1 | Idraulico, ATECO 43.22, 15%, 3° anno | 42.000 € | 4.521 € fissi | caso base |
+| G2 | Elettricista, 43.21, **5%** start-up 1° anno, iscritto INPS 2026 con riduzione 50% | 28.000 € | rate fisse ridotte | verifica 5% + 50% |
+| G3 | Imbianchino, 43.34, 15%, riduzione INPS 35% | 61.000 € | fissi ridotti 35% + eccedenza | eccedenza oltre minimale |
+| G4 | Muratore, 43.99, 15%, supera 85.000 a settembre (fattura da 12.000 che porta a 91.000) | 91.000 € | 4.521 € | F1/F2: uscita differita |
+| G5 | Serramentista, 43.32, 15%, fattura da 30.000 che porta a 104.000 in novembre | 104.000 € | 4.521 € | F2: uscita immediata, IVA |
+
+Per ciascuno: imponibile, imposta sostitutiva, contributi INPS dovuti (fissi + eccedenza), acconti 2027, saldo 2026, bollo stimato, "da mettere via" mensile.
+
+## Dopo la riunione
+
+- Aggiornare la colonna Esito, salvare la email di conferma in `C:\Users\Admin\PrevAI-compliance\`.
+- Annotare nome, data e perimetro nella `DPIA.md` §8.
+- A-2 parte solo con F1–F16 tutte ✅ o con condizione esplicita.

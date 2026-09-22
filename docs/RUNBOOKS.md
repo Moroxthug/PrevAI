@@ -146,6 +146,7 @@ URL="postgresql://postgres.<ref>:<pw>@aws-0-eu-west-1.pooler.supabase.com:5432/p
 "$PG/psql.exe" "$URL" -At -f docs/sql/reconcile.sql > C:/Users/Admin/PrevAI-backups/reconcile-before.txt
 # 3. migrazione (una transazione, ~0,5 s; v1 resta live: è additiva)
 "$PG/psql.exe" "$URL" -v ON_ERROR_STOP=1 -1 -f migrations/v2/0001_v1_to_v2_additive.sql
+"$PG/psql.exe" "$URL" -v ON_ERROR_STOP=1 -1 -f migrations/v2/0002_a0_compliance.sql      # A-0: business_profiles.two_factor_required
 # 4. conteggi + checksum DOPO → devono coincidere (iva_percentuale normalizzata nella query)
 "$PG/psql.exe" "$URL" -At -f docs/sql/reconcile.sql > C:/Users/Admin/PrevAI-backups/reconcile-after.txt
 diff C:/Users/Admin/PrevAI-backups/reconcile-before.txt C:/Users/Admin/PrevAI-backups/reconcile-after.txt   # nessuna differenza
@@ -157,6 +158,7 @@ cd lib/db && DATABASE_URL="$URL" pnpm exec tsx scripts/schema-drift.ts
 8. **Promote**: Vercel → Deployments → deployment preview di `v2` → *Promote to Production* (oppure `vercel promote <url>`). Non fare merge in `main`: resta v1 per il rollback finché V2-6 non chiude.
 9. Subito dopo: `https://prevai.it/api/healthz` e `/api/healthz/ops` 200; login; un preventivo storico; `curl -H "Authorization: Bearer $CRON_SECRET" https://prevai.it/api/cron/tick` (idempotente: la prima esecuzione del tick v2 crea la riga `cron_ticks`); Stripe → Webhooks → *Send test event* su entrambi gli endpoint; Vercel → Settings → Cron Jobs mostra `/api/cron/tick`.
 10. Avviso agli utenti (Resend) che la nuova versione è online. Monitoraggio 48 h: Vercel Logs filtrati `level:error`, `/api/healthz/ops`, Sentry se attivo.
+11. **A-0, dopo il promote** (mai prima: il codice v1 non conosce il prefisso `enc1:`): cifrare gli IBAN scritti in chiaro — `TOKEN_ENCRYPTION_KEY=<prod> DATABASE_URL="$URL" pnpm --filter @workspace/api-server ops:encrypt-fiscal-fields` (dry run), poi `--apply`, poi dry run di nuovo → `0 plaintext`. Vedi §5.5.
 
 ### 5.4 Rollback (pre-scritto)
 
@@ -164,6 +166,24 @@ cd lib/db && DATABASE_URL="$URL" pnpm exec tsx scripts/schema-drift.ts
 - **Database**: **nessuna azione**. La migrazione è additiva: v1 non vede le tabelle/colonne nuove. Non fare `pg_restore` del dump (perderebbe i dati creati nel frattempo); il dump serve solo per disastro.
 - **Dati creati da v2 durante la finestra** (pro-forma, contratti, cantieri) restano nelle tabelle v2 e riappaiono al prossimo tentativo di cutover.
 - Dopo il rollback: annotare in `PIANO-AZIONE.md` (Diario) cosa è andato storto; il prossimo tentativo riparte da 5.3 punto 7 (la migrazione non va ripetuta, ma rieseguirla è un no-op).
+- **A-0, attenzione**: se `ops:encrypt-fiscal-fields --apply` è già stato eseguito, un rollback a v1 mostrerebbe gli IBAN cifrati (`enc1:…`) sulle pro-forma. v1 non stampa `business_profiles.iban` (colonna nata in v2), quindi in pratica non succede; se mai servisse, la decifratura si fa con `decryptField()` di `src/lib/fieldCrypto.ts` e la chiave in password manager.
+
+### 5.5 Cifratura dei campi fiscali (A-0)
+
+`business_profiles.iban` (e in A-1 le credenziali/delega verso l'intermediario SDI) è cifrato a riposo con AES-256-GCM sotto la stessa `TOKEN_ENCRYPTION_KEY` dei token OAuth, in formato `enc1:` + `iv.tag.ciphertext` (`artifacts/api-server/src/lib/fieldCrypto.ts`). Il codice **legge** sia righe cifrate sia righe in chiaro (pre A-0) e **scrive** sempre cifrato, quindi l'ordine di rilascio è: codice → script per il pregresso.
+
+```bash
+TOKEN_ENCRYPTION_KEY=<prod, dal password manager> DATABASE_URL=<pooler url> \
+  pnpm --filter @workspace/api-server ops:encrypt-fiscal-fields          # dry run: conta le righe in chiaro
+  … ops:encrypt-fiscal-fields --apply                                     # una transazione, idempotente
+  … ops:encrypt-fiscal-fields                                             # → "0 plaintext value(s)"
+```
+
+La rotazione della chiave (§6) copre anche queste colonne: `rotate-token-key.ts` conosce il prefisso e salta le righe in chiaro. Quando A-1 aggiunge una colonna cifrata: una riga in `COLUMNS` di entrambi gli script.
+
+### 5.6 Policy "2FA obbligatoria" per organizzazione (A-0)
+
+`business_profiles.two_factor_required` (default `false`). Il titolare la attiva da Impostazioni → Sicurezza (deve avere già la 2FA lui stesso; owner-only via `security: full`); il modulo Amministrazione la imporrà (A-5). Con la policy attiva, un utente senza 2FA riceve **403 `{ error: "two_factor_required" }`** da ogni rotta dietro `requireAuth` tranne `GET /api/security/policy`, `GET /api/business-profile`, `GET /api/team/orgs`, `POST /api/team/switch` (ciò che serve alla schermata di blocco della dashboard per spiegare e far attivare la 2FA, o cambiare organizzazione). Eventi nell'audit log: `two_factor.policy_enabled` / `two_factor.policy_disabled`. Sblocco d'emergenza di un'org (titolare che ha perso l'app di autenticazione **e** i codici di backup): `update business_profiles set two_factor_required = false where user_id = '<org>'` + `update auth_user set two_factor_enabled = false where id = '<user>'` e cancellare la riga in `two_factor`; annotare nel Diario.
 
 
 

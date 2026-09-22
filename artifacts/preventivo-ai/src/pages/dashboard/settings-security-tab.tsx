@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
@@ -7,6 +7,8 @@ import { useLanguage } from "@/i18n/LanguageContext";
 import { ShieldCheck, ShieldOff, Loader2, Monitor, LogOut, Copy, Check } from "lucide-react";
 import { authClient } from "@/lib/auth-client";
 import { securityApi } from "@/lib/security-api";
+import { teamMembersApi } from "@/lib/team-members-api";
+import { MockupToggle } from "@/components/ui/mockup-toggle";
 
 const AUDIT_ACTION_LABELS: Record<string, string> = {
   login: "Accesso effettuato",
@@ -14,9 +16,11 @@ const AUDIT_ACTION_LABELS: Record<string, string> = {
   "two_factor.disabled": "Autenticazione a due fattori disattivata",
   "session.revoked": "Disconnesso da una sessione",
   "session.revoked_all": "Disconnesso da tutte le altre sessioni",
+  "two_factor.policy_enabled": "Autenticazione a due fattori resa obbligatoria per l'organizzazione",
+  "two_factor.policy_disabled": "Obbligo di autenticazione a due fattori rimosso",
 };
 
-function TwoFactorCard() {
+export function TwoFactorCard() {
   const { t } = useLanguage();
   const { toast } = useToast();
   const { data: session, refetch: refetchSession } = authClient.useSession();
@@ -279,10 +283,88 @@ function AuditLogCard() {
   );
 }
 
+/** A-0: org-wide "2FA required" policy. Read for everyone, toggled by the owner only. */
+function TwoFactorPolicyCard() {
+  const { t } = useLanguage();
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const { data: policy, isLoading } = useQuery({ queryKey: ["security-policy"], queryFn: securityApi.policy });
+  const { data: orgs } = useQuery({ queryKey: ["team-orgs"], queryFn: teamMembersApi.orgs, staleTime: 60_000 });
+  const isOwner = orgs ? orgs.items.find((o) => o.orgId === orgs.activeOrgId)?.role === "owner" : false;
+  const update = useMutation({
+    mutationFn: (twoFactorRequired: boolean) => securityApi.updatePolicy(twoFactorRequired),
+    onSuccess: (next) => {
+      queryClient.setQueryData(["security-policy"], next);
+      void queryClient.invalidateQueries({ queryKey: ["security-audit-log"] });
+      toast({ title: t("dashboard.settings.security.policyUpdated") });
+    },
+    onError: (err: Error) => toast({ title: t("dashboard.settings.security.error"), description: err.message, variant: "destructive" }),
+  });
+
+  if (isLoading || !policy) return <Skeleton className="h-32 w-full rounded-[var(--radius)]" />;
+  const canToggle = isOwner && !policy.twoFactorLocked && (policy.twoFactorRequired || policy.twoFactorEnabled);
+  const hint = policy.twoFactorLocked
+    ? t("dashboard.settings.security.policyLocked")
+    : !isOwner
+      ? t("dashboard.settings.security.policyOwnerOnly")
+      : !policy.twoFactorRequired && !policy.twoFactorEnabled
+        ? t("dashboard.settings.security.policyEnableFirst")
+        : null;
+
+  return (
+    <div className="card">
+      <div className="card-head">
+        <div>
+          <h2>{t("dashboard.settings.security.policyTitle")}</h2>
+          <p className="sub">{t("dashboard.settings.security.policyDescription")}</p>
+        </div>
+      </div>
+      <div className="p-5">
+        <div className="set-row">
+          <div className="txt">
+            <b>{t("dashboard.settings.security.policyLabel")}</b>
+            {hint && <span>{hint}</span>}
+          </div>
+          <MockupToggle
+            checked={policy.twoFactorRequired}
+            onCheckedChange={(next) => update.mutate(next)}
+            disabled={!canToggle || update.isPending}
+            label={t("dashboard.settings.security.policyLabel")}
+          />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * A-0: full-page block rendered by DashboardLayout in place of the page when the
+ * acting org requires 2FA and the current user has not enabled it yet (the API
+ * answers 403 `two_factor_required` to everything else in the meantime).
+ */
+export function TwoFactorGate() {
+  const { t } = useLanguage();
+  return (
+    <div className="stack" style={{ maxWidth: 640 }}>
+      <div className="card">
+        <div className="card-head">
+          <div>
+            <h2 className="flex items-center gap-2"><ShieldCheck className="h-5 w-5" style={{ color: "var(--navy)" }} />{t("dashboard.settings.security.gateTitle")}</h2>
+            <p className="sub">{t("dashboard.settings.security.gateDescription")}</p>
+          </div>
+        </div>
+        <div className="p-5 pt-0 text-xs text-muted-foreground">{t("dashboard.settings.security.gateSwitchOrg")}</div>
+      </div>
+      <TwoFactorCard />
+    </div>
+  );
+}
+
 export function SecurityTab() {
   return (
     <div className="stack">
       <TwoFactorCard />
+      <TwoFactorPolicyCard />
       <SessionsCard />
       <AuditLogCard />
     </div>
