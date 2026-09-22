@@ -125,6 +125,7 @@ const MANIFEST: Record<string, Entry> = {
   QA_CHROME_PATH: { kind: "local", note: "qa:visual / qa:lighthouse" },
   WALKTHROUGH_FRONTEND: { kind: "local", note: "walkthrough script" },
   PRERENDER_SAMPLE: { kind: "local", note: "validate-prerender sample size" },
+  INCENTIVES_SOURCE_FETCH: { kind: "local", note: "V2-4: \"off\" disattiva le richieste ai siti ufficiali nella verifica del catalogo incentivi (suite e2e)" },
   BACKUP_PASSPHRASE: { kind: "local", note: "ops:backup encryption (also a GitHub Actions secret for the nightly backup)" },
   BACKUP_DATABASE_URL: { kind: "local", note: "GitHub Actions secret: the nightly backup source" },
   RESTORE_DATABASE_URL: { kind: "local", note: "ops:restore target (or --target)" },

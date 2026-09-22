@@ -106,7 +106,7 @@ psql "<url>" -At -c "select md5(string_agg(id::text||subtotale||(iva_percentuale
 ```
 Rollback: promuovere il deployment v1 precedente su Vercel — v1 gira sul DB migrato (provato: sessione, lista, apertura storico, preventivo manuale, generazione AI, sign-up, webhook WhatsApp firmato).
 
-**Da rifare in V2-5:** rigenerare il file dallo schema finale di V2-4 con lo stesso procedimento (V2-4 toglie dallo schema le colonne canadesi `business_profiles.gst_hst_number/pst_number/qst_number/etransfer_email/homestars_profile_url` e rivede `incentives_catalog`: non devono finire in prod). Confrontare il nuovo file con questo.
+**Da rifare in V2-5:** rigenerare il file dallo schema finale di V2-4 con lo stesso procedimento e confrontarlo con questo. V2-4 (2026-09-22) ha tolto dallo schema le colonne canadesi di `business_profiles` (sostituite da `codice_fiscale`, `codice_sdi`, `rea_number`, `iban`, `secondary_review_url`), le tabelle QuickBooks/Wave/Flinks/Financeit/Google LSA e le colonne `google_lsa_*` di `leads`, ha riportato `incentives_catalog` allo schema v1 (= prod: nessuna modifica attesa) e aggiunto `invoices.bank_transfer_self_reported_at` (al posto di `etransfer_self_reported_at`) e `contract_signers.tax_id`. Lo staging attuale è stato portato su questo schema con `migrations/v2/0002_v2-4_staging_delta.sql` (solo staging: da eliminare quando 0001 è rigenerata). Procedura di reset+rigenerazione: `drop database prevai_staging; create database prevai_staging template prevai_v1_baseline`, poi pull+generate; `drizzle-kit push` non è utilizzabile senza TTY (chiede conferma sulle colonne rinominate anche con `--force`).
 
 
 ---

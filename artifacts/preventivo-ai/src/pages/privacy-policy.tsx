@@ -2,7 +2,7 @@
   Informativa privacy ai sensi degli artt. 13-14 GDPR. Testo derivato dalla
   privacy v1 (tag v1-final) aggiornato ai sub-responsabili della piattaforma v2.
   Da far rivedere a un consulente privacy prima del cutover (A-0 prevede la DPIA);
-  le integrazioni che V2-4 disattiva (QuickBooks, Wave, Financeit, Flinks, Google LSA)
+  le integrazioni che V2-4 disattiva (contabilità, finanziamento POS, feed bancario, Google LSA canadesi)
   non sono elencate.
 */}
 import { PublicLayout } from "@/components/layout/public-layout";

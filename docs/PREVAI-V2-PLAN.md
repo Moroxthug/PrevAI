@@ -113,6 +113,7 @@ Per ogni feature QuoteAI: tieni / rietichetta / sostituisci / disattiva. Propost
 | Piani | riuso dei price ID Stripe EUR live di v1; mappare il gating di `plans.ts` su quelli |
 
 "Disattiva" = fuori dal catalogo integrazioni: sparisce da nav, settings, route e route-matrix guard, non solo nascosto.
+- **Esito (2026-09-22):** fatto come da tabella (D3 ✅). Schema: colonne canadesi di `business_profiles` sostituite da `codice_fiscale`/`codice_sdi`/`rea_number`/`iban`/`secondary_review_url`; tabelle delle integrazioni disattivate rimosse; `incentives_catalog` riportato allo schema v1 (uguale alla prod); `contract_signers.tax_id`; `invoices.bank_transfer_self_reported_at`. Fatture = pro-forma PF-/NC- con avviso art. 21 DPR 633/72. Incentivi: endpoint del widget v1 preservati (`routes/incentives.ts`, `incentives/calc.ts`), matching italiano per `/p/:id`, verifica AI v1 sul cron. Chiavi v1 del JSON cliente lette da `readQuoteClientData()`. Piani: team/cantieri/pro-forma da Pro (già così). Staging: delta `migrations/v2/0002`, drift 0, e2e 60/60. **V2-5 deve rigenerare `0001`** dallo schema finale ed eliminare `0002`.
 
 ### V2-5 — Migrazione produzione + cutover (1 giorno, finestra di manutenzione)
 1. Avviso utenti (Resend + banner) — orario a scelta del titolare; consiglio mattina presto di un giorno feriale.
