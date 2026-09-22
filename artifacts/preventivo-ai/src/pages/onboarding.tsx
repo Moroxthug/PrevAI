@@ -50,8 +50,8 @@ export default function OnboardingPage() {
   const [isSaving, setIsSaving] = useState(false);
 
   const [province, setProvince] = useState("");
-  const [licenceNumber, setLicenceNumber] = useState("");
-  const [etransferEmail, setEtransferEmail] = useState("");
+  const [reaNumber, setReaNumber] = useState("");
+  const [iban, setIban] = useState("");
   const [schedule, setSchedule] = useState<PaymentSchedule>(DEFAULT_SCHEDULE);
 
   if (!isLoaded) {
@@ -112,15 +112,15 @@ export default function OnboardingPage() {
           email: email.trim() || undefined,
         }
       });
-      if (includeStep2 && (province || licenceNumber.trim() || etransferEmail.trim())) {
+      if (includeStep2 && (province || reaNumber.trim() || iban.trim())) {
         const res = await fetch("/api/business-profile", {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
           credentials: "include",
           body: JSON.stringify({
             province: province || null,
-            licenceNumber: licenceNumber.trim() || null,
-            etransferEmail: etransferEmail.trim() || null,
+            reaNumber: reaNumber.trim() || null,
+            iban: iban.replace(/\s+/g, "").toUpperCase() || null,
             defaultPaymentSchedule: schedule,
           }),
         });
@@ -271,15 +271,15 @@ export default function OnboardingPage() {
                     </select>
                   </div>
                   <div className="field">
-                    <label htmlFor="licence">{t("onboarding.licence")}</label>
-                    <input id="licence" placeholder={province === "QC" ? "RBQ 1234-5678-01" : t("onboarding.licencePlaceholder")} value={licenceNumber} onChange={e => setLicenceNumber(e.target.value)} />
+                    <label htmlFor="rea">{t("onboarding.rea")}</label>
+                    <input id="rea" placeholder={t("onboarding.reaPlaceholder")} value={reaNumber} onChange={e => setReaNumber(e.target.value)} />
                   </div>
                   <div className="field full">
-                    <label htmlFor="etransfer" className="flex items-center gap-1.5">
-                      <Landmark className="h-3.5 w-3.5" style={{ color: "var(--faint)" }} /> {t("onboarding.etransferEmail")}
+                    <label htmlFor="iban" className="flex items-center gap-1.5">
+                      <Landmark className="h-3.5 w-3.5" style={{ color: "var(--faint)" }} /> {t("onboarding.iban")}
                     </label>
-                    <input id="etransfer" type="email" placeholder="payments@yourcompany.ca" value={etransferEmail} onChange={e => setEtransferEmail(e.target.value)} />
-                    <span className="text-[11px] mt-1 block" style={{ color: "var(--faint)" }}>{t("onboarding.etransferHint")}</span>
+                    <input id="iban" placeholder="IT60X0542811101000000123456" maxLength={34} value={iban} onChange={e => setIban(e.target.value)} />
+                    <span className="text-[11px] mt-1 block" style={{ color: "var(--faint)" }}>{t("onboarding.ibanHint")}</span>
                   </div>
                   <div className="field full">
                     <label className="flex items-center gap-1.5">

@@ -121,7 +121,7 @@ router.post("/team/workers", requireAuth, requirePermission("team", "full"), asy
       .values({
         userId,
         name: d.name,
-        role: d.role ?? "worker",
+        role: d.role ?? "collaboratore",
         email: d.email ?? null,
         phone: d.phone ?? null,
         hourlyRate: d.hourlyRateCents ?? 0,

@@ -643,7 +643,7 @@ function DashboardComposer() {
                     disabled={isSubmitting} className="h-8 text-sm" maxLength={16} />
                 </div>
                 <div className="space-y-1">
-                  <Label className="text-xs font-medium text-muted-foreground">{t("dashboard.new.client.gstHst")}</Label>
+                  <Label className="text-xs font-medium text-muted-foreground">{t("dashboard.new.client.partitaIva")}</Label>
                   <Input placeholder="01234567890" value={clientForm.partitaIva}
                     onChange={e => setClientForm(f => ({ ...f, partitaIva: e.target.value }))}
                     disabled={isSubmitting} className="h-8 text-sm" maxLength={15} />

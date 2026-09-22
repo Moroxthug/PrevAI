@@ -5,12 +5,11 @@ import { getTaxProfile, type InvoiceLine, type InvoiceTaxLine, type InvoiceStatu
 // province and a holdback percentage into the cents printed on an invoice.
 // Unit-run by `scripts` / the Phase 4 smoke test.
 //
-// Holdback convention (ON Construction Act / BC Builders Lien Act / AB
-// PPCLA + CRA): the statutory holdback is withheld on the PRE-TAX value of
-// the work and GST/HST/QST on the withheld portion only becomes payable when
-// the holdback is released. So a progress invoice charges tax on
-// (subtotal − holdback) and the holdback-release invoice bills the withheld
-// amounts plus the tax on them.
+// Ritenuta a garanzia (art. 1666 c.c., prassi appalti privati): trattenuta
+// sull'IMPONIBILE dei lavori; l'IVA sulla parte trattenuta si applica quando
+// la ritenuta viene svincolata (collaudo / fine garanzia). Quindi un SAL
+// applica l'IVA su (imponibile − ritenuta) e il documento di svincolo fattura
+// gli importi trattenuti più la relativa IVA.
 
 export type InvoiceAmounts = {
   subtotalCents: number;
@@ -22,7 +21,7 @@ export type InvoiceAmounts = {
   totalCents: number;
 };
 
-export type RegistrationNumbers = { gstHstNumber?: string | null; qstNumber?: string | null; pstNumber?: string | null };
+export type RegistrationNumbers = { vatNumber?: string | null };
 
 function round(n: number): number {
   return Math.round(n);
@@ -37,7 +36,7 @@ export function taxLinesFor(taxableCents: number, taxCode: string | null | undef
     rate: c.rate,
     // Rate is a percent (13 → 13%); amounts stay integer cents.
     amountCents: round((taxableCents * c.rate) / 100),
-    registrationNumber: reg.gstHstNumber ?? null,
+    registrationNumber: reg.vatNumber ?? null,
   }));
 }
 
@@ -109,7 +108,7 @@ export function statusAfterPayment(params: { status: InvoiceStatus; totalCents: 
   const now = params.now ?? new Date();
   if (paidCents > 0) return "partially_paid";
   if (now > params.dueDate) return "overdue";
-  // A customer's e-Transfer self-report holds until the contractor confirms
+  // A customer's bank-transfer self-report holds until the contractor confirms
   // or rejects it — it isn't a byproduct of the payment math, only of those
   // two explicit actions (see invoices/service.ts).
   if (status === "pending_confirmation") return "pending_confirmation";

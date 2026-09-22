@@ -458,7 +458,7 @@ router.post("/invoices/:id/remind", requireAuth, requirePermission("invoicing", 
       dueDate: inv.dueDate,
       publicUrl: publicInvoiceUrl(invoiceToken(inv)),
       language: inv.language as "it",
-      etransferEmail: inv.paymentInstructions.etransferEmail ?? null,
+      iban: inv.paymentInstructions.iban ?? null,
       daysOverdue: Math.max(0, Math.floor((Date.now() - inv.dueDate.getTime()) / 86_400_000)),
       pdfBuffer: buffer,
       replyTo: senderProfile?.email ?? null,
@@ -497,7 +497,7 @@ router.post("/invoices/:id/payments", requireAuth, requirePermission("invoicing"
     const body = z
       .object({
         amountCents: z.number().int().min(1).max(1_000_000_000),
-        method: z.enum(PAYMENT_METHODS.filter((m) => m !== "credit_note") as [string, ...string[]]).default("etransfer"),
+        method: z.enum(PAYMENT_METHODS.filter((m) => m !== "credit_note") as [string, ...string[]]).default("bank_transfer"),
         date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
         reference: z.string().max(200).optional(),
         note: z.string().max(1000).optional(),

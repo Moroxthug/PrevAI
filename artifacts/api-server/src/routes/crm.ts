@@ -421,7 +421,7 @@ router.post("/crm/collaborators", requireAuth, requirePermission("jobs", "edit")
       .values({
         userId,
         name: parsed.data.name,
-        role: parsed.data.role ?? "worker",
+        role: parsed.data.role ?? "collaboratore",
         email: parsed.data.email ?? null,
         phone: parsed.data.phone ?? null,
         hourlyRate: parsed.data.hourlyRate ?? 0,

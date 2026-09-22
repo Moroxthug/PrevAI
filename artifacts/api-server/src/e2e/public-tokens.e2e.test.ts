@@ -113,16 +113,16 @@ describe("e-Transfer self-report", () => {
 
     // A different org cannot confirm it.
     const other = await createOrg();
-    expect((await other.api(`/api/invoices/${invoice.id}/confirm-etransfer`, { method: "POST" })).status).toBe(404);
+    expect((await other.api(`/api/invoices/${invoice.id}/confirm-bank-transfer`, { method: "POST" })).status).toBe(404);
 
-    const confirmed = await org.api(`/api/invoices/${invoice.id}/confirm-etransfer`, { method: "POST" });
+    const confirmed = await org.api(`/api/invoices/${invoice.id}/confirm-bank-transfer`, { method: "POST" });
     expect(confirmed.status, JSON.stringify(confirmed.body)).toBe(200);
     expect(confirmed.body.invoice.status).toBe("paid");
     expect(confirmed.body.invoice.paidCents).toBe(invoice.totalCents);
 
     const events = await db.select().from(invoiceEventsTable).where(eq(invoiceEventsTable.invoiceId, invoice.id));
     const types = events.map((e) => e.type);
-    expect(types).toEqual(expect.arrayContaining(["sent", "viewed", "etransfer_reported", "payment_recorded"]));
+    expect(types).toEqual(expect.arrayContaining(["sent", "viewed", "bank_transfer_reported", "payment_recorded"]));
     expect(emailsTo("client@e2e-test.invalid").length).toBeGreaterThanOrEqual(2); // invoice + receipt
   });
 
@@ -131,12 +131,12 @@ describe("e-Transfer self-report", () => {
     const { invoice, token } = await sentInvoice(org);
     await api(`/api/i/${token}/mark-sent`, { body: {} });
 
-    const rejected = await org.api(`/api/invoices/${invoice.id}/reject-etransfer`, { method: "POST" });
+    const rejected = await org.api(`/api/invoices/${invoice.id}/reject-bank-transfer`, { method: "POST" });
     expect(rejected.status, JSON.stringify(rejected.body)).toBe(200);
     expect(["sent", "viewed"]).toContain(rejected.body.invoice.status);
     const [row] = await db.select().from(invoicesTable).where(and(eq(invoicesTable.id, invoice.id)));
     expect(row!.paidCents).toBe(0);
-    expect(row!.etransferSelfReportedAt).toBeNull();
+    expect(row!.bankTransferSelfReportedAt).toBeNull();
     // The customer can report again.
     expect((await api(`/api/i/${token}/mark-sent`, { body: {} })).status).toBe(200);
   });

@@ -139,11 +139,11 @@ export function RecordPaymentDialog({ invoice, open, onOpenChange }: { invoice: 
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [amount, setAmount] = useState("");
-  const [method, setMethod] = useState<Exclude<PaymentMethod, "credit_note">>("etransfer");
+  const [method, setMethod] = useState<Exclude<PaymentMethod, "credit_note">>("bank_transfer");
   const [date, setDate] = useState(localDay());
   const [reference, setReference] = useState("");
   const [receipt, setReceipt] = useState(true);
-  useEffect(() => { if (open) { setAmount((invoice.balanceCents / 100).toFixed(2)); setMethod("etransfer"); setDate(localDay()); setReference(""); setReceipt(!!invoice.customer.email); } }, [open, invoice]);
+  useEffect(() => { if (open) { setAmount((invoice.balanceCents / 100).toFixed(2)); setMethod("bank_transfer"); setDate(localDay()); setReference(""); setReceipt(!!invoice.customer.email); } }, [open, invoice]);
 
   const cents = Math.round((Number(amount) || 0) * 100);
   const record = useMutation({

@@ -58,8 +58,8 @@ export function invoiceToken(inv: Pick<Invoice, "id" | "userId">): string {
   return createHmac("sha256", secret).update(`invoice:${inv.userId}:${inv.id}`).digest("base64url");
 }
 
-/** Sequential per company × year × kind: INV-2026-0042, CN-2026-0003. */
-export async function nextInvoiceNumber(userId: string, kind: "INV" | "CN" = "INV", now = new Date()): Promise<string> {
+/** Sequenziale per impresa × anno × tipo: PF-2026-0042 (pro-forma), NC-2026-0003 (nota di credito pro-forma). */
+export async function nextInvoiceNumber(userId: string, kind: "PF" | "NC" = "PF", now = new Date()): Promise<string> {
   const year = now.getFullYear();
   const [row] = await db
     .insert(invoiceSequencesTable)
@@ -130,10 +130,9 @@ export async function buildInvoiceContext(params: { userId: string; projectId?: 
     province: normalizeProvince(profile?.province) ?? null,
     email: v?.contractor.email ?? profile?.email ?? null,
     phone: v?.contractor.phone ?? profile?.phone ?? null,
-    gstHstNumber: profile?.gstHstNumber ?? v?.contractor.businessNumber ?? profile?.vatNumber ?? null,
-    qstNumber: profile?.qstNumber ?? null,
-    pstNumber: profile?.pstNumber ?? null,
-    licenceNumber: profile?.licenceNumber ?? null,
+    vatNumber: profile?.vatNumber ?? v?.contractor.businessNumber ?? null,
+    codiceFiscale: profile?.codiceFiscale ?? null,
+    reaNumber: profile?.reaNumber ?? null,
   };
   const customer: InvoiceParty = {
     name: client?.name || v?.customer.name || "",
@@ -147,7 +146,7 @@ export async function buildInvoiceContext(params: { userId: string; projectId?: 
   };
   const siteAddress = v?.siteAddress || project?.address || "";
   const paymentInstructions: PaymentInstructions = {
-    etransferEmail: profile?.etransferEmail ?? null,
+    iban: profile?.iban ?? null,
     chequePayableTo: profile?.companyName || null,
   };
   return {
@@ -198,9 +197,9 @@ export async function createInvoice(input: CreateInvoiceInput): Promise<Invoice>
     lines: input.lines,
     taxCode: ctx.taxCode,
     holdbackPercent: input.holdbackPercent ?? 0,
-    registration: { gstHstNumber: ctx.contractor.gstHstNumber, qstNumber: ctx.contractor.qstNumber, pstNumber: ctx.contractor.pstNumber },
+    registration: { vatNumber: ctx.contractor.vatNumber },
   });
-  const number = await nextInvoiceNumber(input.userId, input.type === "credit_note" ? "CN" : "INV", now);
+  const number = await nextInvoiceNumber(input.userId, input.type === "credit_note" ? "NC" : "PF", now);
   const [invoice] = await db
     .insert(invoicesTable)
     .values({
@@ -244,7 +243,7 @@ export function repriceDraft(inv: Invoice, edits: { lines?: InvoiceLine[]; holdb
     lines,
     taxCode: inv.taxLines[0]?.code ?? null,
     holdbackPercent: edits.holdbackPercent ?? inv.holdbackPercent,
-    registration: { gstHstNumber: inv.contractor.gstHstNumber, qstNumber: inv.contractor.qstNumber, pstNumber: inv.contractor.pstNumber },
+    registration: { vatNumber: inv.contractor.vatNumber },
   });
 }
 
@@ -513,7 +512,7 @@ export async function sendInvoice(params: { invoiceId: string; userId?: string; 
     dueDate,
     publicUrl: publicInvoiceUrl(rawToken),
     language: lang,
-    etransferEmail: inv.paymentInstructions.etransferEmail ?? null,
+    iban: inv.paymentInstructions.iban ?? null,
     pdfBuffer: stored.buffer,
     message: params.message,
     isCreditNote: inv.type === "credit_note",
@@ -577,7 +576,7 @@ export async function recordPayment(params: { invoiceId: string; userId: string;
         dueDate: inv.dueDate,
         publicUrl: publicInvoiceUrl(invoiceToken(inv)),
         language: inv.language as Lang,
-        etransferEmail: inv.paymentInstructions.etransferEmail ?? null,
+        iban: inv.paymentInstructions.iban ?? null,
         paidCents: params.amountCents,
         paidOn: date,
         replyTo: senderProfile?.email ?? null,
@@ -590,18 +589,18 @@ export async function recordPayment(params: { invoiceId: string; userId: string;
   return { invoice: updated, payment: payment! };
 }
 
-// ── e-Transfer self-report / confirm / reject (Phase 15) ────────────────────
-// Interac e-Transfer needs no payment-processor integration — it's a
+// ── Bonifico: segnalazione del cliente / conferma / rifiuto (Phase 15) ──────
+// Il bonifico non ha bisogno di un'integrazione con un processore — è un
 // confirmation workflow: the customer tells us they sent it, the contractor
 // confirms receipt (one click) before the invoice becomes paid.
 
-export async function reportEtransferSent(params: { invoiceId: string; ip?: string | null; userAgent?: string | null }): Promise<Invoice> {
+export async function reportBankTransferSent(params: { invoiceId: string; ip?: string | null; userAgent?: string | null }): Promise<Invoice> {
   const loaded = await loadInvoice(params.invoiceId);
   if (!loaded) throw new Error("Invoice not found");
   const inv = loaded.invoice;
   if (!["sent", "viewed", "overdue"].includes(inv.status)) throw new Error("NOT_OPEN");
-  const [updated] = await db.update(invoicesTable).set({ status: "pending_confirmation", etransferSelfReportedAt: new Date() }).where(eq(invoicesTable.id, inv.id)).returning();
-  await logInvoiceEvent({ invoiceId: inv.id, type: "etransfer_reported", actor: "customer", ip: params.ip, userAgent: params.userAgent });
+  const [updated] = await db.update(invoicesTable).set({ status: "pending_confirmation", bankTransferSelfReportedAt: new Date() }).where(eq(invoicesTable.id, inv.id)).returning();
+  await logInvoiceEvent({ invoiceId: inv.id, type: "bank_transfer_reported", actor: "customer", ip: params.ip, userAgent: params.userAgent });
   await createNotification({
     userId: inv.userId,
     type: "invoice_payment_reported",
@@ -614,23 +613,23 @@ export async function reportEtransferSent(params: { invoiceId: string; ip?: stri
   return updated!;
 }
 
-export async function confirmEtransferReceived(params: { invoiceId: string; userId: string; ip?: string | null }): Promise<Invoice> {
+export async function confirmBankTransferReceived(params: { invoiceId: string; userId: string; ip?: string | null }): Promise<Invoice> {
   const loaded = await loadInvoice(params.invoiceId);
   if (!loaded || loaded.invoice.userId !== params.userId) throw new Error("Invoice not found");
   const inv = loaded.invoice;
   const amountCents = balanceCents(inv);
   if (amountCents <= 0) throw new Error("Nothing owing on this invoice");
-  const { invoice } = await recordPayment({ invoiceId: inv.id, userId: params.userId, amountCents, method: "etransfer", note: "Confirmed from the customer's e-Transfer self-report", sendReceipt: true, ip: params.ip });
+  const { invoice } = await recordPayment({ invoiceId: inv.id, userId: params.userId, amountCents, method: "bank_transfer", note: "Confermato dalla segnalazione di bonifico del cliente", sendReceipt: true, ip: params.ip });
   return invoice;
 }
 
-export async function rejectEtransferReport(params: { invoiceId: string; userId: string; ip?: string | null }): Promise<Invoice> {
+export async function rejectBankTransferReport(params: { invoiceId: string; userId: string; ip?: string | null }): Promise<Invoice> {
   const loaded = await loadInvoice(params.invoiceId);
   if (!loaded || loaded.invoice.userId !== params.userId) throw new Error("Invoice not found");
   const inv = loaded.invoice;
   if (inv.status !== "pending_confirmation") throw new Error("Invoice is not awaiting confirmation");
-  const [updated] = await db.update(invoicesTable).set({ status: statusAfterPayment({ status: "sent", totalCents: inv.totalCents, paidCents: inv.paidCents, dueDate: inv.dueDate }), etransferSelfReportedAt: null }).where(eq(invoicesTable.id, inv.id)).returning();
-  await logInvoiceEvent({ invoiceId: inv.id, type: "etransfer_rejected", actor: "contractor", ip: params.ip });
+  const [updated] = await db.update(invoicesTable).set({ status: statusAfterPayment({ status: "sent", totalCents: inv.totalCents, paidCents: inv.paidCents, dueDate: inv.dueDate }), bankTransferSelfReportedAt: null }).where(eq(invoicesTable.id, inv.id)).returning();
+  await logInvoiceEvent({ invoiceId: inv.id, type: "bank_transfer_rejected", actor: "contractor", ip: params.ip });
   return updated!;
 }
 

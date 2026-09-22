@@ -163,7 +163,7 @@ async function runScenario(s: Scenario) {
     const { invoice: sent } = await sendInvoice({ invoiceId: progressInvoice.id, userId, actor: "contractor" });
     assert(sent.status === "sent", `expected invoice sent, got ${sent.status}`);
     assert(sent.pdfUrl, "invoice PDF was not stored");
-    const { invoice: paid } = await recordPayment({ invoiceId: sent.id, userId, amountCents: sent.totalCents, method: "etransfer" });
+    const { invoice: paid } = await recordPayment({ invoiceId: sent.id, userId, amountCents: sent.totalCents, method: "bank_transfer" });
     assert(paid.status === "paid", `expected invoice paid, got ${paid.status}`);
     console.log(`✓ invoice ${paid.number} sent and paid in full via e-Transfer`);
 

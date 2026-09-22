@@ -136,7 +136,7 @@ async function seed(userId: string) {
     ),
   ).returning({ id: invoicesTable.id, paidCents: invoicesTable.paidCents });
   const paid = invoices.filter((i) => i.paidCents > 0);
-  if (paid.length) await db.insert(invoicePaymentsTable).values(paid.map((i) => ({ userId, invoiceId: i.id, amountCents: i.paidCents, method: "etransfer" as const, date: daysAgo(5) })));
+  if (paid.length) await db.insert(invoicePaymentsTable).values(paid.map((i) => ({ userId, invoiceId: i.id, amountCents: i.paidCents, method: "bank_transfer" as const, date: daysAgo(5) })));
 
   return { projects, seconds: Math.round((Date.now() - t0) / 1000) };
 }

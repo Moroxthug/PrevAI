@@ -76,10 +76,10 @@ Columns — **Auth**: session (`requireAuth`), apiKey (`requireApiKey`), admin (
 
 | Line | Method | Path | Auth | Perm | RL | Val | Gate | Scope | Archived | Token | Webhook |
 |---|---|---|---|---|---|---|---|---|---|---|---|
-| 72 | GET | `/api/business-profile` | session | — | — | none | — | n/a | — | — | — |
-| 111 | PUT | `/api/business-profile` | session | settings:edit | — | zod | — | n/a | — | — | — |
-| 208 | POST | `/api/business-profile/logo` | session | settings:edit | — | none | — | n/a | — | — | — |
-| 273 | POST | `/api/business-profile/apikey` | session | settings:edit | — | none | — | n/a | — | — | — |
+| 70 | GET | `/api/business-profile` | session | — | — | none | — | n/a | — | — | — |
+| 109 | PUT | `/api/business-profile` | session | settings:edit | — | zod | — | n/a | — | — | — |
+| 205 | POST | `/api/business-profile/logo` | session | settings:edit | — | none | — | n/a | — | — | — |
+| 270 | POST | `/api/business-profile/apikey` | session | settings:edit | — | none | — | n/a | — | — | — |
 
 ## artifacts/api-server/src/routes/calendar.ts
 
@@ -231,8 +231,8 @@ Columns — **Auth**: session (`requireAuth`), apiKey (`requireApiKey`), admin (
 | 48 | POST | `/api/invoice-payments/connect/onboard` | session | integrations:full | — | none | hasFeature(invoice_card_payments) | n/a | — | — | — |
 | 63 | GET | `/api/invoice-payments/connect/refresh` | session | — | — | none | — | n/a | — | — | — |
 | 75 | GET | `/api/invoice-payments/connect/return` | session | — | — | none | — | n/a | — | — | — |
-| 91 | POST | `/api/invoices/:id/confirm-etransfer` | session | invoicing:edit | — | none | — | helper | — | — | — |
-| 105 | POST | `/api/invoices/:id/reject-etransfer` | session | invoicing:edit | — | none | — | helper | — | — | — |
+| 91 | POST | `/api/invoices/:id/confirm-bank-transfer` | session | invoicing:edit | — | none | — | helper | — | — | — |
+| 105 | POST | `/api/invoices/:id/reject-bank-transfer` | session | invoicing:edit | — | none | — | helper | — | — | — |
 
 ## artifacts/api-server/src/routes/invoices.ts
 

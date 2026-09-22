@@ -821,8 +821,8 @@ async function handleTemplateMenuReply(
 
 // ── Menu: tax rate ────────────────────────────────────────────────────────────
 
-// Common combined GST/HST/PST rates across Canadian provinces: 5% (GST only —
-// AB, territories), 12% (BC), 13% (Ontario HST), 15% (Atlantic HST).
+// Aliquote IVA italiane: 4% (prima casa, super-ridotta), 5%, 10% (ristrutturazioni
+// e manutenzione straordinaria residenziale), 22% (ordinaria).
 const TAX_RATE_OPTIONS = [4, 5, 10, 22];
 
 async function handleIvaMenu(from: string, userId: string, prefs: WhatsappPreferences) {

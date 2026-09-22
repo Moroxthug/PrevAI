@@ -843,7 +843,7 @@ export default function QuoteDetail() {
                       <input value={editClientPostalCode} onChange={e => setEditClientPostalCode(e.target.value.toUpperCase())} placeholder={t("dashboard.new.client.postalCode")} maxLength={7} className="inp-sm" aria-label={t("dashboard.new.client.postalCode")} />
                     </div>
                     <input value={editClientBusinessNumber} onChange={e => setEditClientBusinessNumber(e.target.value.toUpperCase())} placeholder={t("dashboard.new.client.businessNumber")} maxLength={16} className="inp-sm" aria-label={t("dashboard.new.client.businessNumber")} />
-                    <input value={editClientPIVA} onChange={e => setEditClientPIVA(e.target.value)} placeholder={t("admin.gstHstNumber")} maxLength={15} className="inp-sm" aria-label={t("admin.gstHstNumber")} />
+                    <input value={editClientPIVA} onChange={e => setEditClientPIVA(e.target.value)} placeholder={t("admin.partitaIva")} maxLength={15} className="inp-sm" aria-label={t("admin.partitaIva")} />
                   </div>
                 ) : isEditingClient ? (
                   <div className="paper-box">

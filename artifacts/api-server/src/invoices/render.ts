@@ -12,10 +12,12 @@ import { MARKET, fmtEurCents, fmtNumber, type Lang } from "@workspace/config";
 export type { Lang };
 
 export const I = {
-  invoice: "Fattura",
-  creditNote: "Nota di credito",
-  invoiceNo: "Fattura n.",
-  creditNoteNo: "Nota di credito n.",
+  invoice: "Fattura pro-forma",
+  creditNote: "Nota di credito pro-forma",
+  invoiceNo: "Pro-forma n.",
+  creditNoteNo: "Nota di credito pro-forma n.",
+  /** Stampato su PDF, pagina pubblica ed email finché non c'è l'export SDI (V2-4, D3). */
+  proformaNotice: "Documento pro-forma: non costituisce fattura ai sensi dell'art. 21 DPR 633/72 e non ha valore fiscale. La fattura elettronica sarà emessa tramite il Sistema di Interscambio (SDI).",
   issued: "Emessa il",
   due: "Scadenza",
   dueOnReceipt: "Pagamento a vista",
@@ -38,14 +40,14 @@ export const I = {
   balance: "Residuo da pagare",
   payment: "Modalità di pagamento",
   paymentTerm: "Rata",
-  etransfer: "Bonifico bancario — IBAN",
+  bankTransfer: "Bonifico bancario — IBAN",
   cheque: "Assegno intestato a",
   reference: "Indicare il numero del documento nella causale del pagamento.",
   notes: "Note",
-  gstHst: "P. IVA",
-  qst: "C.F.",
-  pst: "Cod. SDI",
-  licence: "N° REA / albo",
+  vat: "P. IVA",
+  cf: "C.F.",
+  rea: "N° REA / albo",
+  customerTaxId: "P. IVA / C.F.",
   email: "Email",
   phone: "Tel.",
   status_draft: "BOZZA",
@@ -54,17 +56,16 @@ export const I = {
   status_overdue: "SCADUTA",
   status_partially_paid: "PARZIALMENTE PAGATA",
   page: "Pagina",
-  refersTo: "Storno della fattura",
+  refersTo: "Storno della pro-forma",
   netDays: "{n} giorni data fattura",
   type_deposit: "Acconto",
   type_progress: "SAL — stato avanzamento lavori",
   type_final: "Saldo finale",
   type_holdback_release: "Svincolo ritenuta a garanzia",
   type_change_order: "Variante in corso d'opera",
-  type_manual: "Fattura",
-  type_credit_note: "Nota di credito",
+  type_manual: "Fattura pro-forma",
+  type_credit_note: "Nota di credito pro-forma",
   paymentsReceived: "Pagamenti ricevuti",
-  method_etransfer: "Bonifico",
   method_cheque: "Assegno",
   method_cash: "Contanti",
   method_card: "Carta",
@@ -119,12 +120,11 @@ export function partyLines(p: InvoiceParty, lang: Lang, opts: { registration: bo
     p.phone ? `${ti("phone", lang)}: ${p.phone}` : "",
   ];
   if (opts.registration) {
-    if (p.gstHstNumber) lines.push(`${ti("gstHst", lang)}: ${p.gstHstNumber}`);
-    if (p.qstNumber) lines.push(`${ti("qst", lang)}: ${p.qstNumber}`);
-    if (p.pstNumber) lines.push(`${ti("pst", lang)}: ${p.pstNumber}`);
-    if (p.licenceNumber) lines.push(`${ti("licence", lang)}: ${p.licenceNumber}`);
+    if (p.vatNumber) lines.push(`${ti("vat", lang)}: ${p.vatNumber}`);
+    if (p.codiceFiscale) lines.push(`${ti("cf", lang)}: ${p.codiceFiscale}`);
+    if (p.reaNumber) lines.push(`${ti("rea", lang)}: ${p.reaNumber}`);
   } else if (p.businessNumber) {
-    lines.push(`${ti("gstHst", lang)}: ${p.businessNumber}`);
+    lines.push(`${ti("customerTaxId", lang)}: ${p.businessNumber}`);
   }
   return lines.filter(Boolean);
 }
@@ -227,7 +227,7 @@ export function renderInvoiceHtml(inv: Invoice, payments: InvoicePayment[] = [])
   if (!credit && inv.status !== "void" && inv.status !== "paid") {
     const pi = inv.paymentInstructions ?? {};
     const lines: string[] = [];
-    if (pi.etransferEmail) lines.push(`<div>${ti("etransfer", lang)} <strong>${esc(pi.etransferEmail)}</strong></div>`);
+    if (pi.iban) lines.push(`<div>${ti("bankTransfer", lang)} <strong>${esc(pi.iban)}</strong></div>`);
     if (pi.chequePayableTo) lines.push(`<div>${ti("cheque", lang)} <strong>${esc(pi.chequePayableTo)}</strong></div>`);
     if (pi.note) lines.push(`<div>${esc(pi.note)}</div>`);
     if (lines.length) parts.push(`<div class="box"><h3>${ti("payment", lang)}</h3>${lines.join("")}<div class="note">${ti("reference", lang)}</div></div>`);

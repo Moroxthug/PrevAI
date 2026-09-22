@@ -263,7 +263,7 @@ function WorkersTab({ workers, locale }: { workers: WorkerDto[]; locale: typeof 
                       <span>
                         <span className="t-strong">{w.name}</span>
                         <span className="t-sub">
-                          {t(`team.type.${w.workerType}`)}{w.role && w.role !== "worker" ? ` · ${w.role}` : ""}{w.email ? ` · ${w.email}` : ""}{!w.active ? ` · ${t("team.workers.inactive")}` : ""}
+                          {t(`team.type.${w.workerType}`)}{w.role && w.role !== "collaboratore" && w.role !== "worker" ? ` · ${w.role}` : ""}{w.email ? ` · ${w.email}` : ""}{!w.active ? ` · ${t("team.workers.inactive")}` : ""}
                         </span>
                       </span>
                     </span>

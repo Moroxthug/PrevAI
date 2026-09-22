@@ -48,8 +48,8 @@ export type ContractParty = {
   postalCode?: string;
   email?: string;
   phone?: string;
-  businessNumber?: string; // GST/HST or BN
-  licenceNumber?: string;
+  businessNumber?: string; // P. IVA o C.F.
+  reaNumber?: string;
 };
 
 export type ContractPriceLine = { label: string; amount: number };

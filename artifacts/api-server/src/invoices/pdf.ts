@@ -45,8 +45,9 @@ export async function buildInvoicePdf(inv: Invoice, payments: InvoicePayment[] =
       { stack: [{ text: invoiceTitle(inv, lang), fontSize: 20, bold: true }, { text: `${credit ? ti("creditNoteNo", lang) : ti("invoiceNo", lang)} ${inv.number}`, fontSize: 10, color: MUTED, margin: [0, 2, 0, 0] }] },
       wm ? { text: ti(wm, lang), alignment: "right", fontSize: 11, bold: true, color: WM_COLOR[wm], characterSpacing: 1.2, margin: [0, 6, 0, 0] } : { text: "" },
     ],
-    margin: [0, 0, 0, 14],
+    margin: [0, 0, 0, 6],
   });
+  content.push({ text: ti("proformaNotice", lang), fontSize: 7.5, color: MUTED, margin: [0, 0, 0, 14] });
 
   content.push({ columns: [party(ti("from", lang), inv.contractor, lang, true), party(ti("billTo", lang), inv.customer, lang, false)], columnGap: 20, margin: [0, 0, 0, 14] });
 
@@ -100,7 +101,7 @@ export async function buildInvoicePdf(inv: Invoice, payments: InvoicePayment[] =
   if (!credit && inv.status !== "void" && inv.status !== "paid") {
     const pi = inv.paymentInstructions ?? {};
     const lines: Content[] = [];
-    if (pi.etransferEmail) lines.push({ text: [{ text: `${ti("etransfer", lang)} ` }, { text: pi.etransferEmail, bold: true }], fontSize: 9.5 });
+    if (pi.iban) lines.push({ text: [{ text: `${ti("bankTransfer", lang)} ` }, { text: pi.iban, bold: true }], fontSize: 9.5 });
     if (pi.chequePayableTo) lines.push({ text: [{ text: `${ti("cheque", lang)} ` }, { text: pi.chequePayableTo, bold: true }], fontSize: 9.5 });
     if (pi.note) lines.push({ text: pi.note, fontSize: 9.5 });
     if (lines.length) {
@@ -124,7 +125,7 @@ export async function buildInvoicePdf(inv: Invoice, payments: InvoicePayment[] =
   content.push({ text: ti("thanks", lang), fontSize: 9.5, color: "#374151", margin: [0, 18, 0, 0] });
 
   const def: TDocumentDefinitions = {
-    pageSize: "LETTER",
+    pageSize: "A4",
     pageMargins: [48, 52, 48, 56],
     defaultStyle: { font: "Roboto", fontSize: 10, color: INK, lineHeight: 1.2 },
     content,

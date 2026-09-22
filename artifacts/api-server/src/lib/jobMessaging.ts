@@ -102,10 +102,10 @@ export async function sendJobReviewRequest(params: {
   client: Client;
   profile: BusinessProfile;
   reviewUrl: string;
-  homeStarsUrl?: string | null;
+  secondaryReviewUrl?: string | null;
   whatsappTemplateName?: string | null;
 }): Promise<JobMessageResult> {
-  const { client, profile, reviewUrl, homeStarsUrl } = params;
+  const { client, profile, reviewUrl, secondaryReviewUrl } = params;
   const { subject, body } = reviewRequestCopy(reviewUrl);
 
   if (client.phone && params.whatsappTemplateName) {
@@ -116,8 +116,8 @@ export async function sendJobReviewRequest(params: {
   }
 
   if (!client.email) return { ok: false, reason: "no_email" };
-  const secondLine = homeStarsUrl
-    ? `<p style="font-size:14px;color:#374151;line-height:1.6;">Preferisci un'altra piattaforma? <a href="${homeStarsUrl}" style="color:#2563eb;">${escapeHtml(homeStarsUrl)}</a></p>`
+  const secondLine = secondaryReviewUrl
+    ? `<p style="font-size:14px;color:#374151;line-height:1.6;">Preferisci un'altra piattaforma? <a href="${secondaryReviewUrl}" style="color:#2563eb;">${escapeHtml(secondaryReviewUrl)}</a></p>`
     : "";
   const bodyHtml = `<p style="font-size:14px;color:#374151;line-height:1.6;">${escapeHtml(body.split(reviewUrl)[0] ?? "")}<a href="${reviewUrl}" style="color:#2563eb;">${escapeHtml(reviewUrl)}</a></p>${secondLine}`;
   const html = wrapEmailHtml({ clientName: client.name, profile, unsubscribeToken: client.marketingUnsubscribeToken, subject, bodyHtml });

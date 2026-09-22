@@ -97,7 +97,7 @@ export const collaboratorsTable = pgTable("collaborators", {
   id: uuid("id").defaultRandom().primaryKey(),
   userId: text("user_id").notNull(),
   name: text("name").notNull(),
-  role: text("role").notNull().default("worker"), // free text shown on the team page ("Carpenter", "Apprentice"…)
+  role: text("role").notNull().default("collaboratore"), // testo libero mostrato nella pagina squadra ("Muratore", "Apprendista"…); default identico alla colonna v1
   email: text("email"),
   phone: text("phone"),
   hourlyRate: integer("hourly_rate").notNull().default(0), // in cents

@@ -2,7 +2,7 @@ import { Router } from "express";
 import { db, invoicesTable, invoicePaymentsTable, businessProfilesTable, hasFeature } from "@workspace/db";
 import { asc, eq } from "drizzle-orm";
 import { ipRateLimiter } from "../lib/rateLimit.js";
-import { hashToken, logInvoiceEvent, reportEtransferSent } from "../invoices/service.js";
+import { hashToken, logInvoiceEvent, reportBankTransferSent } from "../invoices/service.js";
 import { buildInvoicePdf } from "../invoices/pdf.js";
 import { renderInvoiceHtml, INVOICE_CSS } from "../invoices/render.js";
 import { balanceCents } from "../invoices/math.js";
@@ -10,7 +10,7 @@ import { getConnectAccount, createInvoiceCheckoutSession } from "../invoices/str
 
 // Public, token-addressed invoice view (/i/:token). Read-only for the
 // customer: see the invoice, the balance, payment instructions, download the
-// PDF, and (Phase 15) report an e-Transfer as sent or pay online by card.
+// PDF, and (Phase 15) report a bank transfer as sent or pay online by card.
 // Rate-limited by IP; the token is hashed before lookup.
 
 const router = Router();
@@ -70,12 +70,12 @@ router.get("/i/:token", viewLimiter, async (req, res) => {
   }
 });
 
-// POST /api/i/:token/mark-sent — customer self-reports an e-Transfer as sent
+// POST /api/i/:token/mark-sent — customer self-reports a bank transfer as sent
 router.post("/i/:token/mark-sent", actionLimiter, async (req, res) => {
   try {
     const inv = await resolve(req.params.token as string);
     if (!inv) { res.status(404).json({ error: "not_found" }); return; }
-    const updated = await reportEtransferSent({ invoiceId: inv.id, ip: req.ip, userAgent: req.headers["user-agent"] ?? null });
+    const updated = await reportBankTransferSent({ invoiceId: inv.id, ip: req.ip, userAgent: req.headers["user-agent"] ?? null });
     res.json({ status: updated.status });
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);

@@ -44,7 +44,7 @@ const it: Record<string, string> = { ...translations.it, ...dashboardTranslation
 // testo è sospetto se ne contiene almeno una come parola intera. Brand, sigle e
 // termini tecnici accettati in italiano sono esclusi a monte.
 const EN_STOPWORDS = /\b(the|and|your|you|with|for|from|this|that|are|not|will|has|have|been|when|what|new|add|save|delete|edit|send|sent|paid|customer|please|error|could|cannot|can't|couldn't|don't|doesn't|isn't|we|our|of|to|at|by|or|is|be|an|its|was|were|get|any|yes|only|more|less|than|then|now|here|there|about|after|before|again|back|next|previous|first|last|each|every|some|these|those|them|they|their|which|who|whom|how|why|where|while|until|upon|into|onto|over|under|out|down|days|day|month|year|hours)\b/i;
-const IGNORE_TEXT = /^(PrevAI|Stripe|WhatsApp|Google|Gmail|Outlook|Meta|QuickBooks|Wave|Financeit|Flinks|Zapier|Resend|OpenAI|Vercel|Supabase|Groq|PDF|CSV|Excel|Word|IVA|N\/A|OK|—|·|S\.r\.l\.?|S\.p\.A\.?|S\.n\.c\.?|S\.a\.s\.?|Google Business Profile|Meta Lead Ads|Google Local Services Ads|Stripe Connect|Interac e-Transfer|Google Calendar|Outlook Calendar)$/;
+const IGNORE_TEXT = /^(PrevAI|Stripe|WhatsApp|Google|Gmail|Outlook|Meta|Zapier|Resend|OpenAI|Vercel|Supabase|Groq|PDF|CSV|Excel|Word|IVA|N\/A|OK|—|·|S\.r\.l\.?|S\.p\.A\.?|S\.n\.c\.?|S\.a\.s\.?|Google Business Profile|Meta Lead Ads|Google Local Services Ads|Stripe Connect|Interac e-Transfer|Google Calendar|Outlook Calendar)$/;
 // i segnaposto ({days}, {n}) e i composti con trattino (follow-up) non contano come parole
 const looksEnglish = (raw: string) => {
   const text = raw.replace(/\{[^}]*\}/g, " ").replace(/-/g, "");

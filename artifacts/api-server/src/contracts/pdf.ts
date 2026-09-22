@@ -32,7 +32,7 @@ function partyCell(label: string, p: ContractVariables["contractor"], lang: Lang
     p.email ? `${tr("email", lang)}: ${p.email}` : "",
     p.phone ? `${tr("phone", lang)}: ${p.phone}` : "",
     p.businessNumber ? `${tr("bn", lang)}: ${p.businessNumber}` : "",
-    p.licenceNumber ? `${tr("licence", lang)}: ${p.licenceNumber}` : "",
+    p.reaNumber ? `${tr("licence", lang)}: ${p.reaNumber}` : "",
   ].filter(Boolean) as string[];
   return {
     stack: [
@@ -208,7 +208,7 @@ export async function buildContractPdf(params: {
   }
 
   return {
-    pageSize: "LETTER",
+    pageSize: "A4",
     pageMargins: [48, 56, 48, 56],
     defaultStyle: { font: "Serif", fontSize: 10, color: INK, lineHeight: 1.25 },
     content,

@@ -69,7 +69,7 @@ export async function runInvoiceMaintenance(now = new Date()): Promise<{ overdue
         dueDate: inv.dueDate,
         publicUrl: publicInvoiceUrl(invoiceToken(inv)),
         language: inv.language as Lang,
-        etransferEmail: inv.paymentInstructions.etransferEmail ?? null,
+        iban: inv.paymentInstructions.iban ?? null,
         daysOverdue,
         pdfBuffer: buffer,
         replyTo: profiles.get(inv.userId)?.email ?? null,

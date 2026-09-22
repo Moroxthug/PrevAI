@@ -118,7 +118,7 @@ export async function createOrg(opts: OrgOptions = {}): Promise<TestUser & { pro
     companyName,
     province,
     vatNumber: "IT01234567890",
-    licenceNumber: "CCIAA MI-1234567",
+    reaNumber: "CCIAA MI-1234567",
     email: `owner-${user.userId}@example.invalid`,
     phone: "0212345678",
     subscriptionPlan: plan === "free" ? null : plan,

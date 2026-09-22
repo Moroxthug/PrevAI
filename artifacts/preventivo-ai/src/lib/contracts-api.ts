@@ -20,7 +20,7 @@ export type ContractDto = {
   variables: {
     contractNumber: string;
     quoteNumber: string;
-    contractor: { name: string; email?: string; licenceNumber?: string };
+    contractor: { name: string; email?: string; reaNumber?: string };
     customer: { name: string; email?: string };
     siteAddress: string;
     province: string;

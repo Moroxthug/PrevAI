@@ -6,12 +6,12 @@ import { requirePermission } from "../middlewares/requirePermission.js";
 import { isIntegrationConfigured, refuseIfNotConfigured } from "../lib/integrationAvailability.js";
 import { getBaseUrl } from "../lib/baseUrl.js";
 import { getConnectAccount, createOnboardingLink } from "../invoices/stripeConnect.js";
-import { confirmEtransferReceived, rejectEtransferReport } from "../invoices/service.js";
+import { confirmBankTransferReceived, rejectBankTransferReport } from "../invoices/service.js";
 import { serializeInvoice } from "./invoices.js";
 
 // Phase 15: the company side of invoice payment collection — Stripe Connect
 // onboarding/status for the card rail, and the contractor's confirm/reject
-// actions on a customer's e-Transfer self-report.
+// actions on a customer's bank-transfer self-report.
 
 const router = Router();
 
@@ -87,28 +87,28 @@ router.get("/invoice-payments/connect/return", requireAuth, async (req, res) => 
   }
 });
 
-// POST /api/invoices/:id/confirm-etransfer — contractor confirms a customer's "I've sent it" self-report
-router.post("/invoices/:id/confirm-etransfer", requireAuth, requirePermission("invoicing", "edit"), async (req, res) => {
+// POST /api/invoices/:id/confirm-bank-transfer — contractor confirms a customer's "I've sent it" self-report
+router.post("/invoices/:id/confirm-bank-transfer", requireAuth, requirePermission("invoicing", "edit"), async (req, res) => {
   try {
     const userId = getUserId(res);
-    const invoice = await confirmEtransferReceived({ invoiceId: req.params.id as string, userId, ip: req.ip });
+    const invoice = await confirmBankTransferReceived({ invoiceId: req.params.id as string, userId, ip: req.ip });
     res.json({ invoice: serializeInvoice(invoice) });
   } catch (err) {
-    req.log.error({ err }, "Error confirming e-Transfer");
+    req.log.error({ err }, "Error confirming bank transfer");
     const message = err instanceof Error ? err.message : String(err);
     if (message === "Invoice not found") { res.status(404).json({ error: "Not found" }); return; }
     res.status(400).json({ error: "Could not confirm the payment", message });
   }
 });
 
-// POST /api/invoices/:id/reject-etransfer — contractor says the customer's self-report was wrong
-router.post("/invoices/:id/reject-etransfer", requireAuth, requirePermission("invoicing", "edit"), async (req, res) => {
+// POST /api/invoices/:id/reject-bank-transfer — contractor says the customer's self-report was wrong
+router.post("/invoices/:id/reject-bank-transfer", requireAuth, requirePermission("invoicing", "edit"), async (req, res) => {
   try {
     const userId = getUserId(res);
-    const invoice = await rejectEtransferReport({ invoiceId: req.params.id as string, userId, ip: req.ip });
+    const invoice = await rejectBankTransferReport({ invoiceId: req.params.id as string, userId, ip: req.ip });
     res.json({ invoice: serializeInvoice(invoice) });
   } catch (err) {
-    req.log.error({ err }, "Error rejecting e-Transfer self-report");
+    req.log.error({ err }, "Error rejecting bank-transfer self-report");
     const message = err instanceof Error ? err.message : String(err);
     if (message === "Invoice not found") { res.status(404).json({ error: "Not found" }); return; }
     res.status(400).json({ error: "Could not reject the report", message });

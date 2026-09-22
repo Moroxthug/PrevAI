@@ -16,13 +16,12 @@ type TaxProfile = { province: string; components: { code: string; label: string;
 type ProfileExtras = {
   province: string | null;
   taxProfile: TaxProfile | null;
-  gstHstNumber: string | null;
-  qstNumber: string | null;
-  pstNumber: string | null;
-  licenceNumber: string | null;
-  etransferEmail: string | null;
+  codiceFiscale: string | null;
+  codiceSdi: string | null;
+  reaNumber: string | null;
+  iban: string | null;
   googleReviewUrl: string | null;
-  homeStarsProfileUrl: string | null;
+  secondaryReviewUrl: string | null;
   sendReviewRequests: boolean;
   defaultPaymentSchedule: PaymentSchedule | null;
   automationSettings: { notifyOnQuoteAccepted: boolean; autoDraftContract: boolean; autoSendInvoices: boolean; invoiceAutoSendAfterHours: number; invoiceReminders: boolean };
@@ -53,13 +52,12 @@ export function BusinessTab() {
   const profile = profileRaw as unknown as (typeof profileRaw & ProfileExtras) | undefined;
 
   const [province, setProvince] = useState("");
-  const [gstHstNumber, setGstHstNumber] = useState("");
-  const [qstNumber, setQstNumber] = useState("");
-  const [pstNumber, setPstNumber] = useState("");
-  const [licenceNumber, setLicenceNumber] = useState("");
-  const [etransferEmail, setEtransferEmail] = useState("");
+  const [codiceFiscale, setCodiceFiscale] = useState("");
+  const [codiceSdi, setCodiceSdi] = useState("");
+  const [reaNumber, setReaNumber] = useState("");
+  const [iban, setIban] = useState("");
   const [googleReviewUrl, setGoogleReviewUrl] = useState("");
-  const [homeStarsProfileUrl, setHomeStarsProfileUrl] = useState("");
+  const [secondaryReviewUrl, setSecondaryReviewUrl] = useState("");
   const [sendReviewRequests, setSendReviewRequests] = useState(true);
   const [notifyOnQuoteAccepted, setNotifyOnQuoteAccepted] = useState(true);
   const [autoSendInvoices, setAutoSendInvoices] = useState(false);
@@ -71,13 +69,12 @@ export function BusinessTab() {
   useEffect(() => {
     if (!profile) return;
     setProvince(profile.province ?? "");
-    setGstHstNumber(profile.gstHstNumber ?? "");
-    setQstNumber(profile.qstNumber ?? "");
-    setPstNumber(profile.pstNumber ?? "");
-    setLicenceNumber(profile.licenceNumber ?? "");
-    setEtransferEmail(profile.etransferEmail ?? "");
+    setCodiceFiscale(profile.codiceFiscale ?? "");
+    setCodiceSdi(profile.codiceSdi ?? "");
+    setReaNumber(profile.reaNumber ?? "");
+    setIban(profile.iban ?? "");
     setGoogleReviewUrl(profile.googleReviewUrl ?? "");
-    setHomeStarsProfileUrl(profile.homeStarsProfileUrl ?? "");
+    setSecondaryReviewUrl(profile.secondaryReviewUrl ?? "");
     setSendReviewRequests(profile.sendReviewRequests ?? true);
     setNotifyOnQuoteAccepted(profile.automationSettings?.notifyOnQuoteAccepted ?? true);
     setAutoSendInvoices(profile.automationSettings?.autoSendInvoices ?? false);
@@ -105,13 +102,12 @@ export function BusinessTab() {
         credentials: "include",
         body: JSON.stringify({
           province: province || null,
-          gstHstNumber: gstHstNumber || null,
-          qstNumber: qstNumber || null,
-          pstNumber: pstNumber || null,
-          licenceNumber: licenceNumber || null,
-          etransferEmail: etransferEmail || null,
+          codiceFiscale: codiceFiscale || null,
+          codiceSdi: codiceSdi || null,
+          reaNumber: reaNumber || null,
+          iban: iban || null,
           googleReviewUrl: googleReviewUrl || null,
-          homeStarsProfileUrl: homeStarsProfileUrl || null,
+          secondaryReviewUrl: secondaryReviewUrl || null,
           sendReviewRequests,
           automationSettings: { notifyOnQuoteAccepted, autoSendInvoices, invoiceAutoSendAfterHours, invoiceReminders },
           defaultPaymentSchedule: schedule,
@@ -169,25 +165,17 @@ export function BusinessTab() {
             )}
           </div>
           <div className="field">
-            <Label htmlFor="gst">{t("dashboard.settings.business.gstHst")}</Label>
-            <Input id="gst" value={gstHstNumber} onChange={(e) => setGstHstNumber(e.target.value)} placeholder="01234567890" />
+            <Label htmlFor="codiceFiscale">{t("dashboard.settings.business.codiceFiscale")}</Label>
+            <Input id="codiceFiscale" value={codiceFiscale} onChange={(e) => setCodiceFiscale(e.target.value)} placeholder="RSSMRA80A01F205X" maxLength={16} />
           </div>
-          {province === "QC" && (
-            <div className="field">
-              <Label htmlFor="qst">{t("dashboard.settings.business.qst")}</Label>
-              <Input id="qst" value={qstNumber} onChange={(e) => setQstNumber(e.target.value)} placeholder="RSSMRA80A01F205X" />
-            </div>
-          )}
-          {(province === "BC" || province === "SK" || province === "MB") && (
-            <div className="field">
-              <Label htmlFor="pst">{t("dashboard.settings.business.pst")}</Label>
-              <Input id="pst" value={pstNumber} onChange={(e) => setPstNumber(e.target.value)} placeholder="ABCDEFG oppure PEC" />
-            </div>
-          )}
           <div className="field">
-            <Label htmlFor="licence">{t("dashboard.settings.business.licence")}</Label>
-            <Input id="licence" value={licenceNumber} onChange={(e) => setLicenceNumber(e.target.value)} placeholder={province === "QC" ? "RBQ 1234-5678-01" : t("dashboard.settings.business.licencePlaceholder")} />
-            <span className="text-xs text-muted-foreground mt-1 block">{t("dashboard.settings.business.licenceHint")}</span>
+            <Label htmlFor="codiceSdi">{t("dashboard.settings.business.codiceSdi")}</Label>
+            <Input id="codiceSdi" value={codiceSdi} onChange={(e) => setCodiceSdi(e.target.value)} placeholder="ABCDEFG oppure PEC" />
+          </div>
+          <div className="field">
+            <Label htmlFor="rea">{t("dashboard.settings.business.rea")}</Label>
+            <Input id="rea" value={reaNumber} onChange={(e) => setReaNumber(e.target.value)} placeholder={t("dashboard.settings.business.reaPlaceholder")} />
+            <span className="text-xs text-muted-foreground mt-1 block">{t("dashboard.settings.business.reaHint")}</span>
           </div>
         </div>
       </div>
@@ -204,9 +192,9 @@ export function BusinessTab() {
         </div>
         <div className="form-grid">
           <div className="field full">
-            <Label htmlFor="etransfer">{t("dashboard.settings.business.etransferEmail")}</Label>
-            <Input id="etransfer" type="email" value={etransferEmail} onChange={(e) => setEtransferEmail(e.target.value)} placeholder="IT60X0542811101000000123456" />
-            <span className="text-xs text-muted-foreground mt-1 block">{t("dashboard.settings.business.etransferHint")}</span>
+            <Label htmlFor="iban">{t("dashboard.settings.business.iban")}</Label>
+            <Input id="iban" value={iban} onChange={(e) => setIban(e.target.value)} placeholder="IT60X0542811101000000123456" maxLength={34} />
+            <span className="text-xs text-muted-foreground mt-1 block">{t("dashboard.settings.business.ibanHint")}</span>
           </div>
         </div>
       </div>
@@ -228,9 +216,9 @@ export function BusinessTab() {
             <span className="text-xs text-muted-foreground mt-1 block">{t("dashboard.settings.business.googleReviewUrlHint")}</span>
           </div>
           <div className="field full">
-            <Label htmlFor="homeStarsProfileUrl">{t("dashboard.settings.business.homeStarsProfileUrl")}</Label>
-            <Input id="homeStarsProfileUrl" type="url" value={homeStarsProfileUrl} onChange={(e) => setHomeStarsProfileUrl(e.target.value)} placeholder="https://..." />
-            <span className="text-xs text-muted-foreground mt-1 block">{t("dashboard.settings.business.homeStarsProfileUrlHint")}</span>
+            <Label htmlFor="secondaryReviewUrl">{t("dashboard.settings.business.secondaryReviewUrl")}</Label>
+            <Input id="secondaryReviewUrl" type="url" value={secondaryReviewUrl} onChange={(e) => setSecondaryReviewUrl(e.target.value)} placeholder="https://..." />
+            <span className="text-xs text-muted-foreground mt-1 block">{t("dashboard.settings.business.secondaryReviewUrlHint")}</span>
           </div>
         </div>
         <div className="set-row">

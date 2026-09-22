@@ -141,10 +141,10 @@ function ClientSelector({
             {field("city", t("dashboard.new.client.city"), "Milano")}
             <div className="grid grid-cols-2 gap-2">
               {field("province", t("dashboard.new.client.province"), "ON", { maxLength: 2, upper: true })}
-              {field("postalCode", t("dashboard.new.client.postalCode"), "M5H 2N2", { maxLength: 7, upper: true })}
+              {field("postalCode", t("dashboard.new.client.postalCode"), "20121", { maxLength: 5 })}
             </div>
-            {field("businessNumber", t("dashboard.new.client.businessNumber"), "123456789RT0001", { maxLength: 16, upper: true })}
-            {field("partitaIva", t("dashboard.new.client.gstHst"), "123456789RT0001", { maxLength: 15 })}
+            {field("businessNumber", t("dashboard.new.client.businessNumber"), "RSSMRA80A01F205X", { maxLength: 16, upper: true })}
+            {field("partitaIva", t("dashboard.new.client.partitaIva"), "01234567890", { maxLength: 13 })}
           </div>
           <div className="card-foot">
             <label className="chk-row">

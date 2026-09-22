@@ -4,8 +4,8 @@ import { apiRequest as req, apiJson as json } from "@/lib/jobs-api";
 
 export type InvoiceType = "deposit" | "progress" | "final" | "holdback_release" | "change_order" | "manual" | "credit_note";
 export type InvoiceStatus = "draft" | "sent" | "viewed" | "pending_confirmation" | "partially_paid" | "paid" | "overdue" | "void";
-export type PaymentMethod = "etransfer" | "cheque" | "cash" | "card" | "bank_transfer" | "credit_note" | "other";
-export const PAYMENT_METHODS: Exclude<PaymentMethod, "credit_note">[] = ["etransfer", "cheque", "cash", "card", "bank_transfer", "other"];
+export type PaymentMethod = "bank_transfer" | "cheque" | "cash" | "card" | "credit_note" | "other";
+export const PAYMENT_METHODS: Exclude<PaymentMethod, "credit_note">[] = ["bank_transfer", "cheque", "cash", "card", "other"];
 
 export type InvoicePartyDto = {
   name: string;
@@ -15,10 +15,9 @@ export type InvoicePartyDto = {
   postalCode?: string | null;
   email?: string | null;
   phone?: string | null;
-  gstHstNumber?: string | null;
-  qstNumber?: string | null;
-  pstNumber?: string | null;
-  licenceNumber?: string | null;
+  vatNumber?: string | null;
+  codiceFiscale?: string | null;
+  reaNumber?: string | null;
   businessNumber?: string | null;
 };
 export type InvoiceLineDto = { description: string; quantity: number; unitCents: number; amountCents: number };
@@ -59,7 +58,7 @@ export type InvoiceDto = {
   paidCents: number;
   balanceCents: number;
   notes: string;
-  paymentInstructions: { etransferEmail?: string | null; chequePayableTo?: string | null; note?: string | null };
+  paymentInstructions: { iban?: string | null; chequePayableTo?: string | null; note?: string | null };
   hasPdf: boolean;
   sentAt: string | null;
   viewedAt: string | null;
@@ -110,8 +109,8 @@ export const invoicesApi = {
   restore: (id: string) => req<{ invoice: InvoiceDto }>(`/api/invoices/${id}/restore`, { method: "POST", body: "{}" }),
   creditNote: (id: string, body: { amountCents: number; description: string; reason?: string; send?: boolean }) =>
     req<{ creditNote: InvoiceDto; invoice: InvoiceDto }>(`/api/invoices/${id}/credit-note`, { method: "POST", body: json(body) }),
-  confirmEtransfer: (id: string) => req<{ invoice: InvoiceDto }>(`/api/invoices/${id}/confirm-etransfer`, { method: "POST", body: "{}" }),
-  rejectEtransfer: (id: string) => req<{ invoice: InvoiceDto }>(`/api/invoices/${id}/reject-etransfer`, { method: "POST", body: "{}" }),
+  confirmBankTransfer: (id: string) => req<{ invoice: InvoiceDto }>(`/api/invoices/${id}/confirm-bank-transfer`, { method: "POST", body: "{}" }),
+  rejectBankTransfer: (id: string) => req<{ invoice: InvoiceDto }>(`/api/invoices/${id}/reject-bank-transfer`, { method: "POST", body: "{}" }),
   pdfUrl: (id: string, download = false) => `/api/invoices/${id}/pdf${download ? "?download=1" : ""}`,
 };
 
@@ -185,7 +184,7 @@ export type PublicInvoiceDto = {
     companyEmail: string | null;
     companyPhone: string | null;
     customerName: string;
-    paymentInstructions: { etransferEmail?: string | null; chequePayableTo?: string | null; note?: string | null };
+    paymentInstructions: { iban?: string | null; chequePayableTo?: string | null; note?: string | null };
     paidAt: string | null;
     canPayByCard: boolean;
   };

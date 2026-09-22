@@ -137,8 +137,8 @@ export function buildVariablesFromQuote(params: {
       address: snap?.address || profile?.address || undefined,
       email: snap?.email || profile?.email || undefined,
       phone: snap?.phone || profile?.phone || undefined,
-      businessNumber: profile?.gstHstNumber || snap?.vatNumber || profile?.vatNumber || undefined,
-      licenceNumber: profile?.licenceNumber || undefined,
+      businessNumber: snap?.vatNumber || profile?.vatNumber || undefined,
+      reaNumber: profile?.reaNumber || undefined,
       province: normalizeProvince(profile?.province) ?? undefined,
     },
     customer: {

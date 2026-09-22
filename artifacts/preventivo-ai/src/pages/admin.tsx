@@ -1194,7 +1194,7 @@ export default function AdminPage() {
                         />
                       </div>
                       <div>
-                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">{t("admin.gstHstNumber")}</label>
+                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">{t("admin.partitaIva")}</label>
                         <input
                           type="text"
                           placeholder="e.g. 123456789RT0001"

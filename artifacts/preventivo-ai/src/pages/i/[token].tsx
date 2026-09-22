@@ -11,7 +11,7 @@ import { Logo } from "@/components/logo";
 /**
  * Public invoice page (/i/:token). No login: the customer sees the invoice,
  * the balance and how to pay, and can download the PDF. Payments are by
- * e-Transfer / cheque — nothing is collected here.
+ * bonifico / assegno — nothing is collected here.
  */
 export default function PublicInvoicePage() {
   const { token } = useParams<{ token: string }>();
@@ -77,6 +77,7 @@ export default function PublicInvoicePage() {
       </header>
 
       <main className="max-w-3xl mx-auto px-4 py-6 space-y-5">
+        <p className="text-[11px] leading-snug" style={{ color: "var(--muted-mk)" }}>{t("publicInvoice.proformaNotice")}</p>
         {paid && !credit && (
           <div className="doc-banner ok p-5">
             <CheckCircle2 className="h-9 w-9 mx-auto mb-2" style={{ color: "var(--green-dark)" }} />
@@ -116,21 +117,21 @@ export default function PublicInvoicePage() {
               </div>
             )}
 
-            {(pi.etransferEmail || pi.chequePayableTo || pi.note) && (
+            {(pi.iban || pi.chequePayableTo || pi.note) && (
               <div className="mt-4 rounded-xl p-4 space-y-2 text-sm" style={{ background: "rgba(255,255,255,.8)", border: "1px solid #fff" }}>
                 <div className="font-semibold inline-flex items-center gap-2" style={{ color: "var(--navy)" }}><Banknote className="h-4 w-4" style={{ color: "var(--navy)" }} /> {t("publicInvoice.howToPay")}</div>
-                {pi.etransferEmail && (
+                {pi.iban && (
                   <div className="flex flex-wrap items-center gap-2">
                     <Mail className="h-4 w-4" style={{ color: "var(--faint)" }} />
-                    <span style={{ color: "var(--ink)" }}>{t("publicInvoice.etransferTo")}</span>
-                    <code className="rounded px-2 py-0.5 font-semibold" style={{ background: "var(--soft-2)", color: "var(--navy)" }}>{pi.etransferEmail}</code>
-                    <button type="button" aria-label={t("a11y.copyEmail")} style={{ color: "var(--navy)" }} onClick={() => { navigator.clipboard.writeText(pi.etransferEmail!); toast({ title: t("invoices.copied") }); }}><Copy className="h-4 w-4" /></button>
+                    <span style={{ color: "var(--ink)" }}>{t("publicInvoice.bankTransferTo")}</span>
+                    <code className="rounded px-2 py-0.5 font-semibold" style={{ background: "var(--soft-2)", color: "var(--navy)" }}>{pi.iban}</code>
+                    <button type="button" aria-label={t("a11y.copyIban")} style={{ color: "var(--navy)" }} onClick={() => { navigator.clipboard.writeText(pi.iban!); toast({ title: t("invoices.copied") }); }}><Copy className="h-4 w-4" /></button>
                   </div>
                 )}
                 {pi.chequePayableTo && <div style={{ color: "var(--ink)" }}>{t("publicInvoice.chequeTo")} <strong>{pi.chequePayableTo}</strong></div>}
                 {pi.note && <div style={{ color: "var(--ink)" }}>{pi.note}</div>}
                 <div className="text-xs" style={{ color: "var(--muted-mk)" }}>{t("publicInvoice.reference")} <strong>{invoice.number}</strong>.</div>
-                {pi.etransferEmail && !confirming && (
+                {pi.iban && !confirming && (
                   <button className="mt-1 inline-flex items-center gap-1.5 font-medium" style={{ color: "var(--navy)" }} onClick={() => setConfirming(true)}>
                     <Clock className="h-4 w-4" /> {t("publicInvoice.iSentIt")}
                   </button>

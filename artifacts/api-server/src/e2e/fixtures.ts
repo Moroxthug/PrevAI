@@ -129,7 +129,7 @@ export async function seedShowcase(org: TestUser & { province: string }, opts: {
     "progress invoice",
   );
   const { invoice: sent } = await sendInvoice({ invoiceId: progressInvoice.id, userId, actor: "contractor" });
-  await recordPayment({ invoiceId: sent.id, userId, amountCents: Math.round(sent.totalCents / 2), method: "etransfer" });
+  await recordPayment({ invoiceId: sent.id, userId, amountCents: Math.round(sent.totalCents / 2), method: "bank_transfer" });
 
   // ── A second accepted quote whose contract is sent but not signed (/sign/:token) ──
   const pending = await seedQuote(userId, { province, clientName: "Casey Pending", clientEmail: "pending@e2e-test.invalid", status: "accepted" });

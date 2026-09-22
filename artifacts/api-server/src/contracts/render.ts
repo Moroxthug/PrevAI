@@ -164,7 +164,7 @@ function partyHtml(label: string, p: ContractVariables["contractor"], lang: Lang
     p.email ? `${tr("email", lang)}: ${p.email}` : "",
     p.phone ? `${tr("phone", lang)}: ${p.phone}` : "",
     p.businessNumber ? `${tr("bn", lang)}: ${p.businessNumber}` : "",
-    p.licenceNumber ? `${tr("licence", lang)}: ${p.licenceNumber}` : "",
+    p.reaNumber ? `${tr("licence", lang)}: ${p.reaNumber}` : "",
   ].filter(Boolean);
   return `<div class="party"><div class="party-label">${esc(label)}</div><div class="party-name">${esc(p.name)}</div>${lines.map((l) => `<div class="party-line">${esc(l!)}</div>`).join("")}</div>`;
 }

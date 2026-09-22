@@ -53,18 +53,18 @@ export const businessProfilesTable = pgTable("business_profiles", {
   trialStartedAt: timestamp("trial_started_at", { withTimezone: true }),
   trialDownloadsUsed: integer("trial_downloads_used").notNull().default(0),
   apiKey: text("api_key"),
-  // ── Canadian business identity (Phase 0) ─────────────────────────────────
-  province: text("province"), // home province, drives default tax profile + contract template
-  gstHstNumber: text("gst_hst_number"), // e.g. 123456789RT0001 — printed on invoices
-  qstNumber: text("qst_number"), // Quebec only
-  pstNumber: text("pst_number"), // BC / SK / MB
-  licenceNumber: text("licence_number"), // RBQ (QC), HCRA (ON builders), municipal licence, etc.
-  etransferEmail: text("etransfer_email"), // where customers send Interac e-Transfers
+  // ── Identità fiscale italiana (V2-4: le colonne canadesi GST/HST, QST, PST,
+  //    licence, e-Transfer non esistono più; la P. IVA è `vatNumber`) ──────────
+  province: text("province"), // sigla provincia della sede: default IVA/regime e modello di contratto
+  codiceFiscale: text("codice_fiscale"), // C.F. dell'impresa (ditta individuale = quello del titolare); serve alla FatturaPA
+  codiceSdi: text("codice_sdi"), // codice destinatario SDI o PEC dell'impresa (ciclo passivo, A-1)
+  reaNumber: text("rea_number"), // n° REA / iscrizione albo, stampato sui contratti
+  iban: text("iban"), // dove i clienti fanno il bonifico — stampato su pro-forma e pagina pubblica
   defaultPaymentSchedule: jsonb("default_payment_schedule").$type<PaymentSchedule | null>(),
   // ── Phase 10: review requests ────────────────────────────────────────────
   googleReviewUrl: text("google_review_url"), // Google Business Profile "write a review" link, set once in Settings
-  // ── Phase 26: HomeStars link (no public partner API exists, so this is just a second manual review link) ──
-  homeStarsProfileUrl: text("homestars_profile_url"),
+  // ── Phase 26: seconda piattaforma di recensioni (link manuale, es. Trustpilot/ProntoPro) ──
+  secondaryReviewUrl: text("secondary_review_url"),
   sendReviewRequests: boolean("send_review_requests").notNull().default(true),
   automationSettings: jsonb("automation_settings").$type<Partial<AutomationSettings>>().notNull().default({}),
   featureFlags: jsonb("feature_flags").$type<FeatureFlags>().notNull().default({}),

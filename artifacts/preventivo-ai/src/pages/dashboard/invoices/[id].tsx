@@ -64,6 +64,7 @@ export default function InvoiceDetailPage() {
             {inv.projectId && <Link href={`/dashboard/jobs/${inv.projectId}?tab=invoices`}><Briefcase />{inv.projectName ?? t("invoices.job")}</Link>}
             {inv.creditNoteForId && <Link href={`/dashboard/invoices/${inv.creditNoteForId}`}>{t("invoices.creditFor")}</Link>}
           </div>
+          <p className="text-[11px] mt-1" style={{ color: "var(--muted-mk)" }}>{t("invoices.proformaNotice")}</p>
         </div>
         <div className="head-actions">
           <a href={invoicesApi.pdfUrl(inv.id, true)} className="btn btn-sm btn-outline-navy"><Download className="h-4 w-4" /> PDF</a>
@@ -184,8 +185,8 @@ function PendingConfirmationBanner({ invoice, onDone }: { invoice: InvoiceDto; o
   const { t } = useLanguage();
   const { toast } = useToast();
   const onError = (e: Error) => toast({ title: t("jobs.error"), description: e.message, variant: "destructive" });
-  const confirm = useMutation({ mutationFn: () => invoicesApi.confirmEtransfer(invoice.id), onSuccess: () => { onDone(); toast({ title: t("invoices.etransferConfirmed") }); }, onError });
-  const reject = useMutation({ mutationFn: () => invoicesApi.rejectEtransfer(invoice.id), onSuccess: () => { onDone(); toast({ title: t("invoices.etransferRejected") }); }, onError });
+  const confirm = useMutation({ mutationFn: () => invoicesApi.confirmBankTransfer(invoice.id), onSuccess: () => { onDone(); toast({ title: t("invoices.bankTransferConfirmed") }); }, onError });
+  const reject = useMutation({ mutationFn: () => invoicesApi.rejectBankTransfer(invoice.id), onSuccess: () => { onDone(); toast({ title: t("invoices.bankTransferRejected") }); }, onError });
   return (
     <div className="notice warn">
       <MailQuestion />

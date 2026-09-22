@@ -6,7 +6,7 @@ import { test } from "vitest";
 test("invoices/math", () => {
 
   // SAL con ritenuta a garanzia 10 %: IVA sul netto della ritenuta.
-  const sal = computeInvoiceAmounts({ lines: [lineFrom("Opere murarie", 1_000_000)], taxCode: "IVA22", holdbackPercent: 10, registration: { gstHstNumber: "01234567890" } });
+  const sal = computeInvoiceAmounts({ lines: [lineFrom("Opere murarie", 1_000_000)], taxCode: "IVA22", holdbackPercent: 10, registration: { vatNumber: "01234567890" } });
   assert.equal(sal.subtotalCents, 1_000_000);
   assert.equal(sal.holdbackCents, 100_000);
   assert.equal(sal.taxableCents, 900_000);
@@ -14,7 +14,7 @@ test("invoices/math", () => {
   assert.equal(sal.totalCents, 1_098_000);
 
   // Ristrutturazione: IVA 10 %.
-  const rid = computeInvoiceAmounts({ lines: [lineFrom("Idraulica", 250_000)], taxCode: "IVA10", registration: { gstHstNumber: "1234" } });
+  const rid = computeInvoiceAmounts({ lines: [lineFrom("Idraulica", 250_000)], taxCode: "IVA10", registration: { vatNumber: "1234" } });
   assert.deepEqual(rid.taxLines.map((t) => [t.code, t.amountCents, t.registrationNumber]), [["IVA10", 25_000, "1234"]]);
   assert.equal(rid.totalCents, 275_000);
 
@@ -69,6 +69,6 @@ test("invoices/math", () => {
   assert.deepEqual(aging, { current: 1000, d1_30: 750, d31_60: 0, d61_90: 500, d90_plus: 0, totalCents: 2250, overdueCents: 1250 });
 
   // Righe IVA: regime ridotto e P. IVA accanto alla riga; regime sconosciuto → ordinaria.
-  assert.deepEqual(taxLinesFor(10_000, "IVA10", { gstHstNumber: "01234567890" }).map((l) => [l.code, l.amountCents, l.registrationNumber]), [["IVA10", 1000, "01234567890"]]);
+  assert.deepEqual(taxLinesFor(10_000, "IVA10", { vatNumber: "01234567890" }).map((l) => [l.code, l.amountCents, l.registrationNumber]), [["IVA10", 1000, "01234567890"]]);
   assert.equal(taxLinesFor(10_000, null)[0]!.rate, 22);
 });

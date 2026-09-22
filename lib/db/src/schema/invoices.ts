@@ -19,12 +19,17 @@ import { clientsTable } from "./clients";
 // hand, numbered per company and year, and frozen once sent: a sent invoice
 // is never edited — it is voided and reissued, or corrected with a credit
 // note. All money is in integer cents with an explicit tax breakdown and the
-// province on every row (CRA invoice requirements).
+// province on every row.
+//
+// V2-4 (D3): finché non c'è l'export SDI il documento è una FATTURA PRO-FORMA
+// (numerazione PF-anno-n, nota di credito pro-forma NC-anno-n): non è una
+// fattura ai fini dell'art. 21 DPR 633/72 e lo dice in chiaro su PDF, email
+// e pagina pubblica. Il motore (acconto/SAL/saldo/ritenuta) resta intero.
 
 export const INVOICE_TYPES = ["deposit", "progress", "final", "holdback_release", "change_order", "manual", "credit_note"] as const;
 export type InvoiceType = (typeof INVOICE_TYPES)[number];
 
-// "pending_confirmation": the customer self-reported an e-Transfer as sent
+// "pending_confirmation": the customer self-reported a bank transfer as sent
 // (public invoice page) but the contractor hasn't confirmed receipt yet —
 // see Phase 15. Never set by the payment math itself, only by the explicit
 // self-report / confirm / reject actions.
@@ -34,7 +39,7 @@ export type InvoiceStatus = (typeof INVOICE_STATUSES)[number];
 /** Statuses that count towards accounts receivable. */
 export const OPEN_INVOICE_STATUSES: readonly InvoiceStatus[] = ["sent", "viewed", "pending_confirmation", "partially_paid", "overdue"];
 
-export const PAYMENT_METHODS = ["etransfer", "cheque", "cash", "card", "bank_transfer", "credit_note", "other"] as const;
+export const PAYMENT_METHODS = ["bank_transfer", "cheque", "cash", "card", "credit_note", "other"] as const;
 export type PaymentMethod = (typeof PAYMENT_METHODS)[number];
 
 export const invoiceLineSchema = z.object({
@@ -51,7 +56,7 @@ export type InvoiceTaxLine = { code: string; label: string; rate: number; amount
 
 /** Snapshot of how the customer can pay, taken when the invoice is created. */
 export type PaymentInstructions = {
-  etransferEmail?: string | null;
+  iban?: string | null;
   chequePayableTo?: string | null;
   note?: string | null;
 };
@@ -65,10 +70,11 @@ export type InvoiceParty = {
   postalCode?: string | null;
   email?: string | null;
   phone?: string | null;
-  gstHstNumber?: string | null;
-  qstNumber?: string | null;
-  pstNumber?: string | null;
-  licenceNumber?: string | null;
+  /** P. IVA dell'emittente. */
+  vatNumber?: string | null;
+  codiceFiscale?: string | null;
+  reaNumber?: string | null;
+  /** P. IVA o C.F. del cliente. */
   businessNumber?: string | null;
 };
 
@@ -88,7 +94,7 @@ export const invoicesTable = pgTable(
     paymentTermLabel: text("payment_term_label"),
     /** For credit notes: the invoice being corrected. */
     creditNoteForId: uuid("credit_note_for_id"),
-    number: text("number").notNull(), // INV-2026-0042 / CN-2026-0003
+    number: text("number").notNull(), // PF-2026-0042 / NC-2026-0003
     type: text("type", { enum: INVOICE_TYPES }).notNull().default("manual"),
     status: text("status", { enum: INVOICE_STATUSES }).notNull().default("draft"),
     source: text("source", { enum: ["automation", "manual"] }).notNull().default("manual"),
@@ -123,8 +129,8 @@ export const invoicesTable = pgTable(
     publicTokenHash: text("public_token_hash"),
     pdfUrl: text("pdf_url"),
     pdfHash: text("pdf_hash"),
-    /** Set when the customer clicks "I've sent the e-Transfer" on the public invoice page. */
-    etransferSelfReportedAt: timestamp("etransfer_self_reported_at", { withTimezone: true }),
+    /** Set when the customer clicks "Ho fatto il bonifico" on the public invoice page. */
+    bankTransferSelfReportedAt: timestamp("bank_transfer_self_reported_at", { withTimezone: true }),
     /** Latest Stripe Checkout Session created for online card payment (idempotency for the webhook). */
     stripeCheckoutSessionId: text("stripe_checkout_session_id"),
     sentAt: timestamp("sent_at", { withTimezone: true }),
@@ -160,7 +166,7 @@ export const invoicePaymentsTable = pgTable(
     userId: text("user_id").notNull(),
     date: timestamp("date", { withTimezone: true }).notNull().defaultNow(),
     amountCents: integer("amount_cents").notNull(),
-    method: text("method", { enum: PAYMENT_METHODS }).notNull().default("etransfer"),
+    method: text("method", { enum: PAYMENT_METHODS }).notNull().default("bank_transfer"),
     reference: text("reference").notNull().default(""),
     note: text("note").notNull().default(""),
     /** Set when the "payment" is a credit note applied to this invoice. */
