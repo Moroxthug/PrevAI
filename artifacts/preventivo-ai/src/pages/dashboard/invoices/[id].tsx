@@ -52,13 +52,13 @@ export default function InvoiceDetailPage() {
 
   return (
     <div className="animate-in fade-in duration-300">
-      <Link href="/dashboard/invoices" className="back-link"><ArrowLeft /> {t("invoices.backToList")}</Link>
+      <Link href="/dashboard/invoices" className="back-link"><ArrowLeft /> {t(inv.fiscale ? "invoices.backToListFiscal" : "invoices.backToList")}</Link>
       <div className="page-head">
         <div className="min-w-0">
           <div className="title-row">
             <h1><Receipt />{inv.number}</h1>
             <InvoiceStatusBadge status={inv.status} scheduled={scheduled} />
-            <InvoiceTypeBadge type={inv.type} />
+            <InvoiceTypeBadge type={inv.type} fiscale={inv.fiscale} />
           </div>
           <div className="meta">
             <span>{inv.customer.name}{inv.customer.email ? ` · ${inv.customer.email}` : ""}</span>

@@ -63,7 +63,9 @@ export function InvoiceStatusBadge({ status, scheduled }: { status: InvoiceStatu
   return <span className={cn("chip", INVOICE[status])}>{t(`invoices.status.${status}`)}</span>;
 }
 
-export function InvoiceTypeBadge({ type }: { type: InvoiceType }) {
+export function InvoiceTypeBadge({ type, fiscale }: { type: InvoiceType; fiscale?: boolean }) {
   const { t } = useLanguage();
-  return <span className="chip chip-grey" style={{ background: "#fff", border: "1px solid var(--line)" }}>{t(`invoices.type.${type}`)}</span>;
+  // A-1: "manuale" è una pro-forma solo finché il modulo SDI non è attivo.
+  const key = fiscale && (type === "manual" || type === "credit_note") ? `invoices.typeFiscal.${type}` : `invoices.type.${type}`;
+  return <span className="chip chip-grey" style={{ background: "#fff", border: "1px solid var(--line)" }}>{t(key)}</span>;
 }

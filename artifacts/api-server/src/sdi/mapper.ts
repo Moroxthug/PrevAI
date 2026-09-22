@@ -1,6 +1,5 @@
 import {
   rigaIva,
-  regimeSenzaIva,
   dataFattura,
   normalizzaPartitaIva,
   normalizzaCodiceFiscale,
@@ -171,8 +170,12 @@ export function mappaFattura(input: MappaFatturaInput): FatturaPaInput {
   const righeImposta = invoice.taxLines.length > 0 ? invoice.taxLines : [{ code: "ESENTE", label: "IVA", rate: 0, amountCents: 0 }];
   for (const t of righeImposta) {
     const base = rigaIva(t.code, regime);
-    const aliquota = regimeSenzaIva(regime) ? 0 : t.rate;
-    const impostaCents = regimeSenzaIva(regime) ? 0 : segno * t.amountCents;
+    // L'aliquota è quella davvero applicata al documento, **mai** riscritta: un
+    // forfettario che ha esposto IVA per errore deve essere fermato dalla
+    // validazione (scarto 00430), non ritrovarsi un XML con numeri diversi da
+    // quelli che il cliente ha in mano.
+    const aliquota = t.rate;
+    const impostaCents = segno * t.amountCents;
     riepilogo.push({
       aliquota,
       natura: aliquota === 0 ? ((base.natura ?? "N2.2") as Natura) : null,

@@ -12,6 +12,8 @@ import {
   businessProfilesTable,
   normalizeProvince,
   getTaxProfile,
+  regimeSenzaIva,
+  FORFETTARIO_NOTE,
   DEFAULT_AUTOMATION_SETTINGS,
   type Invoice,
   type InvoicePayment,
@@ -36,7 +38,7 @@ import { getBaseUrl } from "../lib/baseUrl.js";
 import { writeAudit, createNotification } from "../lib/notifications.js";
 import { sendInvoiceEmail, sendPaymentReceiptEmail } from "../lib/emailInvoices.js";
 import { raiseAutomation } from "../lib/automation.js";
-import { moduloSdiAttivo } from "../sdi/stato.js";
+import { moduloSdiAttivo, impostazioniSdi } from "../sdi/stato.js";
 import { computeInvoiceAmounts, termSubtotalCents, finalInvoiceSubtotalCents, lienPeriodDays, addDays, statusAfterPayment, balanceCents, lineFrom } from "./math.js";
 import { buildInvoicePdf } from "./pdf.js";
 import { ti, tiDoc, invoiceTitle, type Lang, type IKey } from "./render.js";
@@ -111,6 +113,8 @@ export type InvoiceContext = {
   taxCode: string;
   /** A-1: il modulo Amministrazione è attivo, quindi si emettono fatture vere e non pro-forma. */
   fiscale: boolean;
+  /** Dicitura obbligatoria per le operazioni senza IVA (forfettario). */
+  legalNote: string | null;
   language: Lang;
   paymentInstructions: PaymentInstructions;
   /** Pre-tax and incl.-tax contract amounts in cents (0 when there is no contract). */
@@ -121,6 +125,7 @@ export type InvoiceContext = {
 
 export async function buildInvoiceContext(params: { userId: string; projectId?: string | null; clientId?: string | null; contractId?: string | null; language?: Lang | null; province?: string | null }): Promise<InvoiceContext> {
   const [profile] = await db.select().from(businessProfilesTable).where(eq(businessProfilesTable.userId, params.userId));
+  const fiscale = await moduloSdiAttivo(params.userId, profile);
   const project = params.projectId ? ((await db.select().from(projectsTable).where(and(eq(projectsTable.id, params.projectId), eq(projectsTable.userId, params.userId))))[0] ?? null) : null;
   const contractId = params.contractId ?? project?.contractId ?? null;
   const contract = contractId ? ((await db.select().from(contractsTable).where(eq(contractsTable.id, contractId)))[0] ?? null) : null;
@@ -128,8 +133,12 @@ export async function buildInvoiceContext(params: { userId: string; projectId?: 
   const client = clientId ? ((await db.select().from(clientsTable).where(eq(clientsTable.id, clientId)))[0] ?? null) : null;
 
   const v = contract?.variables ?? null;
+  // A-1: chi emette in regime forfettario non espone IVA, qualunque aliquota
+  // portasse il preventivo. Il documento nasce già coerente con l'XML.
+  const sdi = await impostazioniSdi(params.userId);
+  const senzaIva = fiscale && regimeSenzaIva(sdi?.regimeFiscale ?? "RF19");
   const province = normalizeProvince(params.province) ?? normalizeProvince(contract?.province) ?? normalizeProvince(project?.province) ?? normalizeProvince(client?.province) ?? normalizeProvince(profile?.province) ?? "";
-  const taxCode = v?.taxLines[0]?.code && v.taxLines[0].code !== "TAX" ? v.taxLines[0].code : "IVA22";
+  const taxCode = senzaIva ? "ESENTE" : v?.taxLines[0]?.code && v.taxLines[0].code !== "TAX" ? v.taxLines[0].code : "IVA22";
   const language: Lang = "it";
 
   const contractor: InvoiceParty = {
@@ -159,7 +168,6 @@ export async function buildInvoiceContext(params: { userId: string; projectId?: 
     cig: client?.cig ?? null,
     cup: client?.cup ?? null,
   };
-  const fiscale = await moduloSdiAttivo(params.userId, profile);
   const siteAddress = v?.siteAddress || project?.address || "";
   const paymentInstructions: PaymentInstructions = {
     iban: decryptField(profile?.iban), // A-0: cifrato a riposo
@@ -176,6 +184,8 @@ export async function buildInvoiceContext(params: { userId: string; projectId?: 
     province,
     taxCode,
     fiscale,
+    /** Dicitura di legge da stampare quando l'operazione non porta IVA. */
+    legalNote: senzaIva ? FORFETTARIO_NOTE : null,
     language,
     paymentInstructions,
     contractSubtotalCents: v ? Math.round(v.subtotal * 100) : 0,
@@ -248,7 +258,8 @@ export async function createInvoice(input: CreateInvoiceInput): Promise<Invoice>
       siteAddress: ctx.siteAddress,
       lines: input.lines,
       ...amounts,
-      notes: input.notes ?? "",
+      // La dicitura del regime è parte del documento: si congela con lui.
+      notes: [input.notes ?? "", ctx.legalNote ?? ""].filter(Boolean).join("\n\n"),
       paymentInstructions: ctx.paymentInstructions,
     })
     .returning();
