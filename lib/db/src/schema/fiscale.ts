@@ -1,4 +1,4 @@
-import { pgTable, text, uuid, timestamp, integer, boolean, jsonb, index } from "drizzle-orm/pg-core";
+import { pgTable, text, uuid, timestamp, integer, boolean, jsonb, index, uniqueIndex } from "drizzle-orm/pg-core";
 import { GESTIONI_PREVIDENZIALI, RIDUZIONI_CONTRIBUTIVE, LIVELLI_SOGLIA, type GestionePrevidenziale, type RiduzioneContributiva, type LivelloSoglia } from "@workspace/config";
 
 // ── A-2: profilo fiscale e versamenti ────────────────────────────────────────
@@ -62,6 +62,27 @@ export const taxProfilesTable = pgTable("tax_profiles", {
   /** Monitor soglia: ultimo livello già comunicato, per non ripetere la stessa notifica ogni notte. */
   sogliaLivelloNotificato: text("soglia_livello_notificato", { enum: LIVELLI_SOGLIA }).$type<LivelloSoglia>(),
   sogliaNotificataAt: timestamp("soglia_notificata_at", { withTimezone: true }),
+
+  // ── A-3: modello F24 e promemoria ──────────────────────────────────────────
+  /**
+   * Matricola INPS e codice della sede competente. Stanno sull'estratto conto
+   * contributivo e **non si deducono** da nient'altro: senza, la sezione INPS
+   * del modello resta con due caselle vuote, e il prospetto lo dichiara invece
+   * di inventarle.
+   */
+  matricolaInps: text("matricola_inps").notNull().default(""),
+  sedeInps: text("sede_inps").notNull().default(""),
+  /** Canali del promemoria. L'in-app c'è sempre: queste due sono in più. */
+  promemoriaEmail: boolean("promemoria_email").notNull().default(true),
+  promemoriaWhatsapp: boolean("promemoria_whatsapp").notNull().default(false),
+  /** Numero a cui mandare il promemoria WhatsApp, in formato internazionale. */
+  promemoriaTelefono: text("promemoria_telefono").notNull().default(""),
+  /**
+   * Quanti giorni prima avvisare. Più di uno perché una scadenza fiscale si
+   * prepara (il denaro va trovato) e poi si esegue: il default avvisa a 15
+   * giorni per organizzarsi e a 3 per farlo.
+   */
+  promemoriaGiorni: jsonb("promemoria_giorni").$type<number[]>().notNull().default([15, 3]),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
 });
@@ -94,6 +115,16 @@ export const fiscalPaymentsTable = pgTable(
     riferimento: text("riferimento").notNull().default(""),
     note: text("note").notNull().default(""),
     origine: text("origine", { enum: ORIGINI_VERSAMENTO }).notNull().default("manuale"),
+    /**
+     * A-3: chiave della scadenza pagata, quando il versamento nasce dallo
+     * scadenzario. Resta vuota per i versamenti inseriti a mano fuori
+     * calendario, che esistono eccome (un ravvedimento, un F24 di anni prima).
+     *
+     * Un F24 solo può generare **più** righe qui: la delega del 30 giugno
+     * contiene imposta e contributi, che il motore deve poter contare
+     * separatamente (i contributi sono deducibili per cassa, l'acconto no).
+     */
+    scadenzaChiave: text("scadenza_chiave").notNull().default(""),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
   },
@@ -102,6 +133,64 @@ export const fiscalPaymentsTable = pgTable(
     index("fiscal_payments_tipo_idx").on(t.userId, t.tipo),
   ],
 );
+
+// ── A-3: stato dello scadenzario ─────────────────────────────────────────────
+// Le scadenze **non** si conservano: si ricalcolano ogni volta dal motore e dal
+// bollo trimestrale, perché un incasso di ieri cambia il saldo di giugno e una
+// riga salvata sarebbe già vecchia. Qui sta solo quello che il calcolo non può
+// sapere: se è stata versata, con quale versamento, e quali promemoria sono
+// già partiti.
+//
+// I campi `etichetta`, `data` e `importo_cents` sono una **fotografia** del
+// momento in cui la riga è stata toccata l'ultima volta: servono allo storico
+// ("a giugno avevo un F24 da 1.240 €") e a mostrare qualcosa di sensato se in
+// futuro il motore smette di generare quella scadenza. Non sono la verità:
+// la verità è il ricalcolo.
+
+export const STATI_SCADENZA = ["aperta", "versata", "non_dovuta"] as const;
+export type StatoScadenza = (typeof STATI_SCADENZA)[number];
+
+/** Promemoria già inviati: `{ "15": "2026-06-15", "3": "2026-06-27", "scaduta": "2026-07-01" }`. */
+export type PromemoriaInviati = Record<string, string>;
+
+export const fiscalDeadlinesTable = pgTable(
+  "fiscal_deadlines",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    userId: text("user_id").notNull(),
+    /** Anno d'imposta di competenza, che spesso non è l'anno della data. */
+    anno: integer("anno").notNull(),
+    /** Chiave stabile della scadenza: `saldo_primo_acconto`, `inps_fissi_1`, `bollo_t3`, … */
+    chiave: text("chiave").notNull(),
+    etichetta: text("etichetta").notNull().default(""),
+    data: timestamp("data", { withTimezone: true }).notNull(),
+    importoCents: integer("importo_cents").notNull().default(0),
+    categoria: text("categoria").notNull().default("imposta"),
+    stato: text("stato", { enum: STATI_SCADENZA }).notNull().default("aperta"),
+    versataAt: timestamp("versata_at", { withTimezone: true }),
+    /**
+     * Quietanza: la ricevuta del versamento, caricata dall'impresa (il PDF
+     * dell'home banking o dei servizi telematici). Sta sulla scadenza e non
+     * sul versamento perché **un F24 è uno solo** anche quando genera tre
+     * righe contabili. È la prova che il denaro è uscito, e serve anni dopo
+     * se l'Agenzia contesta il pagamento.
+     */
+    quietanzaUrl: text("quietanza_url").notNull().default(""),
+    quietanzaNome: text("quietanza_nome").notNull().default(""),
+    quietanzaCaricataAt: timestamp("quietanza_caricata_at", { withTimezone: true }),
+    promemoriaInviati: jsonb("promemoria_inviati").$type<PromemoriaInviati>().notNull().default({}),
+    note: text("note").notNull().default(""),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
+  },
+  (t) => [
+    uniqueIndex("fiscal_deadlines_chiave_idx").on(t.userId, t.anno, t.chiave),
+    index("fiscal_deadlines_data_idx").on(t.userId, t.data),
+    index("fiscal_deadlines_stato_idx").on(t.stato, t.data),
+  ],
+);
+
+export type ScadenzaSalvata = typeof fiscalDeadlinesTable.$inferSelect;
 
 // `TaxProfile` in questo repo è già il profilo IVA (`@workspace/config/iva`):
 // questa è la riga del profilo **fiscale** dell'impresa, e porta il nome

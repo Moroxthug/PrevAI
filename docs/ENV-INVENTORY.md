@@ -53,7 +53,7 @@ Per la v2 (QuoteAI port) le variabili aggiuntive richieste vanno elencate in `PR
 
 ### Environment inventory
 
-Generated 2026-09-22 by `pnpm env:inventory` — 81 variables read by the code, 90 in the manifest (Vercel side not checked).
+Generated 2026-09-22 by `pnpm env:inventory` — 85 variables read by the code, 91 in the manifest (Vercel side not checked).
 
 Kinds: **required** (boot/core flows) · **recommended** (launch expectation, degraded without) · **feature** (integration reports "not configured") · **deferred** (partner access pending, intentionally unset) · legacy / build / platform / local.
 
@@ -118,6 +118,7 @@ Kinds: **required** (boot/core flows) · **recommended** (launch expectation, de
 | `WHATSAPP_LEAD_FOLLOWUP_TEMPLATE` | ? | WhatsApp | approved template names | api-server/src/automations/leadFollowup.ts, api-server/src/routes/leads.ts |  |
 | `WHATSAPP_PHONE_NUMBER_ID` | ? | WhatsApp |  | api-server/src/routes/whatsapp.ts |  |
 | `WHATSAPP_PHOTO_SHARE_TEMPLATE` | ? | WhatsApp |  | api-server/src/routes/jobs.ts |  |
+| `WHATSAPP_TEMPLATE_SCADENZA_FISCALE` | ? | WhatsApp | A-3 — promemoria delle scadenze fiscali; senza, il canale WhatsApp resta spento (decisione D10) | api-server/src/fiscale/promemoria.ts |  |
 | `WHATSAPP_REVIEW_REQUEST_TEMPLATE` | ? | WhatsApp |  | api-server/src/automations/jobReviewRequest.ts |  |
 | `WHATSAPP_VERIFY_TOKEN` | ? | WhatsApp |  | api-server/src/routes/whatsapp.ts |  |
 

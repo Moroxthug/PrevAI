@@ -4,6 +4,8 @@ import {
   coefficienteDiAteco,
   gruppoAtecoDi,
   motoreRevisionato,
+  normalizzaGiorniPromemoria,
+  prospettoF24,
   regoleDiAnno,
   simula,
   type IngressoCalcolo,
@@ -192,6 +194,116 @@ describe("scadenze (F12/F13)", () => {
     const minuscolo = calcola({ ...BASE, incassatiCents: 30_000, contributiVersatiCents: 0 });
     expect(minuscolo.impostaCents).toBeLessThan(5_165);
     expect(minuscolo.scadenze.find((s) => s.id === "secondo_acconto")).toBeUndefined();
+  });
+});
+
+// ── A-3 ──────────────────────────────────────────────────────────────────────
+
+describe("righe del modello F24 (F17/F18)", () => {
+  const calcolo = calcola(BASE);
+
+  it("mette saldo, primo acconto ed eccedenza contributiva in un solo F24", () => {
+    const giugno = calcolo.scadenze.find((s) => s.id === "saldo_primo_acconto")!;
+    const codici = giugno.righe.filter((r) => r.sezione === "erario").map((r) => r.codiceTributo);
+    expect(codici).toContain("1792"); // saldo
+    expect(codici).toContain("1790"); // primo acconto
+    // L'impresa di BASE incassa 42.000 €: il reddito supera il minimale, quindi
+    // c'è anche l'eccedenza contributiva, che sta nella sezione INPS.
+    const inps = giugno.righe.find((r) => r.sezione === "inps");
+    expect(inps?.causale).toBe("AP");
+    expect(inps?.periodoDa).toBe("01/2026");
+    expect(inps?.periodoA).toBe("12/2026");
+    expect(giugno.importoCents).toBe(giugno.righe.reduce((s, r) => s + r.importoCents, 0));
+  });
+
+  it("dà al secondo acconto il suo codice, diverso da quello del primo", () => {
+    const novembre = calcolo.scadenze.find((s) => s.id === "secondo_acconto")!;
+    expect(novembre.righe).toHaveLength(1);
+    expect(novembre.righe[0]!.codiceTributo).toBe("1791");
+    // L'anno di riferimento dell'acconto è quello a cui l'acconto si riferisce,
+    // non quello d'imposta appena chiuso: sbagliarlo manda il versamento
+    // sull'anno storto.
+    expect(novembre.righe[0]!.annoRiferimento).toBe(2027);
+  });
+
+  it("dà a ogni rata dei fissi la causale INPS e il suo trimestre di competenza", () => {
+    const rate = calcolo.scadenze.filter((s) => s.id.startsWith("inps_fissi_"));
+    expect(rate.map((r) => r.righe[0]!.causale)).toEqual(["AF", "AF", "AF", "AF"]);
+    expect(rate[0]!.righe[0]!.periodoDa).toBe("01/2026");
+    expect(rate[0]!.righe[0]!.periodoA).toBe("03/2026");
+    expect(rate[3]!.righe[0]!.periodoA).toBe("12/2026");
+  });
+
+  it("usa le causali dei commercianti per chi sta in quella gestione", () => {
+    const commerciante = calcola({ ...BASE, gestione: "commercianti" });
+    const rata = commerciante.scadenze.find((s) => s.id === "inps_fissi_1")!;
+    expect(rata.righe[0]!.causale).toBe("CF");
+  });
+
+  it("lascia la dichiarazione senza righe: è un adempimento, non un versamento", () => {
+    expect(calcolo.scadenze.find((s) => s.id === "dichiarazione")!.righe).toEqual([]);
+  });
+});
+
+describe("prospetto F24 (A-3)", () => {
+  const giugno = calcola(BASE).scadenze.find((s) => s.id === "saldo_primo_acconto")!;
+  const CONTRIBUENTE = {
+    denominazione: "Impianti Rossi",
+    codiceFiscale: "RSSMRA80A01F205X",
+    partitaIva: "12345678903",
+    comune: "Milano",
+    provincia: "MI",
+    matricolaInps: "1234567890",
+    sedeInps: "4700",
+  };
+
+  it("divide le righe fra sezione Erario e sezione INPS", () => {
+    const p = prospettoF24(giugno, CONTRIBUENTE, { revisionato: false });
+    expect(p.sezioni.map((s) => s.sezione)).toEqual(["erario", "inps"]);
+    expect(p.totaleCents).toBe(giugno.importoCents);
+    expect(p.sezioni.reduce((s, sez) => s + sez.totaleCents, 0)).toBe(giugno.importoCents);
+  });
+
+  it("segna i campi INPS mancanti invece di inventarli", () => {
+    const p = prospettoF24(giugno, { ...CONTRIBUENTE, matricolaInps: "", sedeInps: "" }, { revisionato: false });
+    expect(p.campiMancanti).toContain("Matricola INPS");
+    expect(p.campiMancanti).toContain("Codice sede INPS");
+    expect(p.avvertenze.some((a) => a.includes("estratto conto contributivo"))).toBe(true);
+  });
+
+  it("avverte sempre che non è il modello ufficiale, e in più che non è revisionato", () => {
+    const nonRevisionato = prospettoF24(giugno, CONTRIBUENTE, { revisionato: false });
+    expect(nonRevisionato.avvertenze[0]).toContain("non il modello F24 ufficiale");
+    expect(nonRevisionato.avvertenze.some((a) => a.includes("non sono ancora stati verificati"))).toBe(true);
+
+    const revisionato = prospettoF24(giugno, CONTRIBUENTE, { revisionato: true });
+    expect(revisionato.avvertenze.some((a) => a.includes("non sono ancora stati verificati"))).toBe(false);
+  });
+
+  it("non chiede i dati INPS a chi versa solo in sezione Erario", () => {
+    const bollo = {
+      ...giugno,
+      id: "bollo_t1",
+      righe: giugno.righe.filter((r) => r.sezione === "erario"),
+    };
+    const p = prospettoF24(bollo, { ...CONTRIBUENTE, matricolaInps: "", sedeInps: "" }, { revisionato: true });
+    expect(p.campiMancanti).toEqual([]);
+    expect(p.sezioni).toHaveLength(1);
+  });
+});
+
+describe("soglie dei promemoria (A-3)", () => {
+  it("ordina, deduplica e tiene solo valori sensati", () => {
+    expect(normalizzaGiorniPromemoria([3, 15, 3, -2, 500, 7])).toEqual([15, 7, 3]);
+  });
+
+  it("cade sul default quando non resta niente di valido", () => {
+    expect(normalizzaGiorniPromemoria(["x", null])).toEqual([15, 3]);
+    expect(normalizzaGiorniPromemoria(undefined)).toEqual([15, 3]);
+  });
+
+  it("non tiene più di quattro soglie: oltre sono rumore", () => {
+    expect(normalizzaGiorniPromemoria([1, 3, 7, 15, 30, 60])).toHaveLength(4);
   });
 });
 

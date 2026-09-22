@@ -10,6 +10,7 @@ import type {
   ParametriAnno,
   ParametriInps,
   RegolaId,
+  RigaF24,
   Scadenza,
   Spiegazione,
 } from "./types";
@@ -155,10 +156,25 @@ function percentuale75(n: number): number {
   return c(n * 0.75);
 }
 
+/** `MM/AAAA`, il formato dei campi "da" e "a" della sezione INPS del modello F24. */
+function mmAaaa(mese: number, anno: number): string {
+  return `${String(mese).padStart(2, "0")}/${anno}`;
+}
+
+function totale(righe: readonly RigaF24[]): number {
+  return righe.reduce((s, r) => s + r.importoCents, 0);
+}
+
 /**
- * Scadenze generate dal calcolo: saldo, acconti e rate INPS. Il bollo ha il
- * suo calendario trimestrale nel modulo Fatture SDI (A-1) e non viene
- * duplicato qui; A-3 unirà i due in un unico scadenzario.
+ * Scadenze generate dal calcolo: saldo, acconti e rate INPS, ognuna con le
+ * righe del modello F24 che la compongono. Il bollo ha il suo calendario
+ * trimestrale nel modulo Fatture SDI (A-1) e si unisce a queste nello
+ * scadenzario lato server (A-3), che è l'unico posto che conosce i trimestri.
+ *
+ * Una scadenza = **un modello F24**, non un tributo: il 30 giugno si compila
+ * una delega sola che contiene il saldo dell'anno chiuso, il primo acconto di
+ * quello in corso e l'eccedenza contributiva. Tenerle separate farebbe
+ * compilare tre deleghe dove ne basta una.
  */
 function scadenzeDi(ingresso: IngressoCalcolo, p: ParametriAnno, impostaCents: number, contributi: Contributi): Scadenza[] {
   const anno = ingresso.anno;
@@ -173,51 +189,117 @@ function scadenzeDi(ingresso: IngressoCalcolo, p: ParametriAnno, impostaCents: n
   const primoAccontoCents = !dovutiAcconti ? 0 : rataUnica ? 0 : percentuale(base, acconti.primaRatePercent);
   const secondoAccontoCents = !dovutiAcconti ? 0 : rataUnica ? base : percentuale(base, acconti.secondaRatePercent);
 
-  scadenze.push({
-    id: "saldo_primo_acconto",
-    etichetta: rataUnica
-      ? `Saldo imposta sostitutiva ${anno}`
-      : `Saldo imposta sostitutiva ${anno} e primo acconto ${prossimo}`,
-    data: iso(prossimo, acconti.scadenzaSaldoEPrimoAcconto.mese, acconti.scadenzaSaldoEPrimoAcconto.giorno),
-    importoCents: saldoCents + primoAccontoCents,
-    codiceTributo: "1790",
-    regole: ["F7", "F12"],
-  });
+  const parametri = p.inps[ingresso.gestione];
+  const rid = riduzionePercent(ingresso, p);
+  const eccedenzaNetta = parametri ? Math.max(0, contributi.eccedenzaCents - percentuale(contributi.eccedenzaCents, rid)) : 0;
+
+  // ── 30 giugno: saldo + primo acconto + eccedenza contributiva ─────────────
+  const righeGiugno: RigaF24[] = [];
+  if (saldoCents > 0) {
+    righeGiugno.push({
+      sezione: "erario",
+      codiceTributo: acconti.codiceTributoSaldo,
+      descrizione: `Imposta sostitutiva ${anno} — saldo`,
+      annoRiferimento: anno,
+      importoCents: saldoCents,
+      regole: ["F7", "F12", "F17"],
+    });
+  }
+  if (primoAccontoCents > 0) {
+    righeGiugno.push({
+      sezione: "erario",
+      codiceTributo: acconti.codiceTributoPrimoAcconto,
+      descrizione: `Imposta sostitutiva ${prossimo} — primo acconto (${acconti.primaRatePercent} % del dovuto ${anno})`,
+      annoRiferimento: prossimo,
+      importoCents: primoAccontoCents,
+      regole: ["F12", "F17"],
+    });
+  }
+  if (parametri && eccedenzaNetta > 0) {
+    righeGiugno.push({
+      sezione: "inps",
+      causale: parametri.causaleEccedenza,
+      descrizione: `Contributi ${anno} sul reddito oltre il minimale`,
+      annoRiferimento: anno,
+      periodoDa: mmAaaa(1, anno),
+      periodoA: mmAaaa(12, anno),
+      importoCents: eccedenzaNetta,
+      regole: ["F10", "F11", "F18"],
+    });
+  }
+  if (righeGiugno.length > 0) {
+    scadenze.push({
+      id: "saldo_primo_acconto",
+      etichetta: rataUnica
+        ? `Saldo imposta sostitutiva ${anno}`
+        : `Saldo imposta sostitutiva ${anno} e primo acconto ${prossimo}`,
+      data: iso(prossimo, acconti.scadenzaSaldoEPrimoAcconto.mese, acconti.scadenzaSaldoEPrimoAcconto.giorno),
+      importoCents: totale(righeGiugno),
+      categoria: "imposta",
+      descrizione:
+        "Un solo modello F24 con tutto quello che si chiude a giugno: l'imposta dell'anno passato al netto degli acconti già versati, l'acconto del nuovo anno e i contributi sulla parte di reddito oltre il minimale.",
+      righe: righeGiugno,
+      regole: ["F7", "F12"],
+    });
+  }
+
   if (secondoAccontoCents > 0) {
+    const righe: RigaF24[] = [
+      {
+        sezione: "erario",
+        codiceTributo: acconti.codiceTributoSecondoAcconto,
+        descrizione: rataUnica
+          ? `Imposta sostitutiva ${prossimo} — acconto in unica soluzione`
+          : `Imposta sostitutiva ${prossimo} — secondo acconto (${acconti.secondaRatePercent} % del dovuto ${anno})`,
+        annoRiferimento: prossimo,
+        importoCents: secondoAccontoCents,
+        regole: ["F12", "F17"],
+      },
+    ];
     scadenze.push({
       id: "secondo_acconto",
       etichetta: rataUnica ? `Acconto imposta sostitutiva ${prossimo} (rata unica)` : `Secondo acconto imposta sostitutiva ${prossimo}`,
       data: iso(prossimo, acconti.scadenzaSecondoAcconto.mese, acconti.scadenzaSecondoAcconto.giorno),
       importoCents: secondoAccontoCents,
-      codiceTributo: "1791",
+      categoria: "imposta",
+      descrizione: rataUnica
+        ? `L'imposta dovuta è sotto ${fmtEurCents(acconti.sogliaRataUnicaCents)}: l'acconto si versa in una rata sola a novembre.`
+        : "Seconda rata dell'acconto, calcolata col metodo storico sull'imposta dell'anno precedente.",
+      righe,
       regole: ["F12"],
     });
   }
 
-  const parametri = p.inps[ingresso.gestione];
   if (parametri && parametri.rateFisse.length > 0) {
-    const rid = riduzionePercent(ingresso, p);
     const fissiNetti = contributi.fissiCents - percentuale(contributi.fissiCents, rid) + contributi.maternitaCents;
     const perRata = c(fissiNetti / parametri.rateFisse.length);
+    const mesiPerRata = Math.max(1, Math.round(12 / parametri.rateFisse.length));
     parametri.rateFisse.forEach((rata, i) => {
+      const meseDa = i * mesiPerRata + 1;
+      const meseA = Math.min(12, meseDa + mesiPerRata - 1);
       scadenze.push({
         id: `inps_fissi_${i + 1}`,
         etichetta: `${i + 1}ª rata contributi fissi INPS ${anno}`,
         data: iso(rata.annoSuccessivo ? prossimo : anno, rata.mese, rata.giorno),
         importoCents: perRata,
+        categoria: "contributi",
+        descrizione:
+          "I contributi fissi si pagano anche a reddito zero: sono calcolati sul minimale, non sull'incassato. Questa è una delle quattro rate uguali dell'anno.",
+        righe: [
+          {
+            sezione: "inps",
+            causale: parametri.causaleFissi,
+            descrizione: `Contributi fissi ${anno} — ${i + 1}ª rata`,
+            annoRiferimento: anno,
+            periodoDa: mmAaaa(meseDa, anno),
+            periodoA: mmAaaa(meseA, anno),
+            importoCents: perRata,
+            regole: ["F10", "F11", "F18"],
+          },
+        ],
         regole: ["F10", "F11"],
       });
     });
-    const eccedenzaNetta = contributi.eccedenzaCents - percentuale(contributi.eccedenzaCents, rid);
-    if (eccedenzaNetta > 0) {
-      scadenze.push({
-        id: "inps_eccedenza",
-        etichetta: `Contributi INPS ${anno} sul reddito oltre il minimale`,
-        data: iso(prossimo, acconti.scadenzaSaldoEPrimoAcconto.mese, acconti.scadenzaSaldoEPrimoAcconto.giorno),
-        importoCents: eccedenzaNetta,
-        regole: ["F10"],
-      });
-    }
   }
 
   scadenze.push({
@@ -225,6 +307,9 @@ function scadenzeDi(ingresso: IngressoCalcolo, p: ParametriAnno, impostaCents: n
     etichetta: `Invio del modello Redditi PF ${prossimo} (quadro LM, anno d'imposta ${anno})`,
     data: iso(prossimo, p.scadenzaDichiarazione.mese, p.scadenzaDichiarazione.giorno),
     importoCents: 0,
+    categoria: "dichiarazione",
+    descrizione: "Adempimento, non versamento: non c'è nessun F24 da compilare. La dichiarazione la invii tu (o il tuo commercialista) dal portale dell'Agenzia delle Entrate.",
+    righe: [],
     regole: ["F13"],
   });
 

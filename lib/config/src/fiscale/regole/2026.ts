@@ -42,6 +42,10 @@ const REGOLE_2026: Record<RegolaId, Regola> = {
   F14: regola("F14", "Fattura elettronica obbligatoria e conservazione decennale", "D.L. 36/2022 art. 18; DPR 633/1972; art. 2220 c.c."),
   F15: regola("F15", "Ciclo passivo: reverse charge e acquisti intracomunitari del forfettario", "L. 190/2014 art. 1 c. 58-60"),
   F16: regola("F16", "Formula del \"quanto mettere via\" e margine di sicurezza", "Elaborazione PrevAI sulle regole F5, F6, F7, F10, F12"),
+  // ── A-3: compilazione del modello F24 ──────────────────────────────────────
+  F17: regola("F17", "Codici tributo dell'imposta sostitutiva nel modello F24: 1792 saldo, 1790 primo acconto, 1791 secondo acconto", "Ris. AdE 59/E del 2015"),
+  F18: regola("F18", "Sezione INPS del modello F24: causali AF/AP (artigiani), CF/CP (commercianti), codice sede e matricola", "Circolare INPS 98/2001; istruzioni del modello F24"),
+  F19: regola("F19", "Codici tributo e scadenze dell'imposta di bollo virtuale: 2521-2524, versamento trimestrale", "Ris. AdE 42/E del 2019; DM 4/12/2020"),
 };
 
 /**
@@ -80,6 +84,8 @@ export const PARAMETRI_2026: ParametriAnno = {
         { giorno: 16, mese: 11 },
         { giorno: 16, mese: 2, annoSuccessivo: true },
       ],
+      causaleFissi: "AF",
+      causaleEccedenza: "AP",
     },
     commercianti: {
       minimaleCents: 1_880_800,
@@ -94,6 +100,8 @@ export const PARAMETRI_2026: ParametriAnno = {
         { giorno: 16, mese: 11 },
         { giorno: 16, mese: 2, annoSuccessivo: true },
       ],
+      causaleFissi: "CF",
+      causaleEccedenza: "CP",
     },
     // Niente minimale: si versa solo sul reddito effettivo, a saldo e acconto.
     gestione_separata: {
@@ -104,6 +112,10 @@ export const PARAMETRI_2026: ParametriAnno = {
       aliquotaAggiuntivaPercent: 0,
       massimaleCents: 12_060_700,
       rateFisse: [],
+      // La gestione separata non ha fissi: si versa tutto a saldo e acconto,
+      // con la stessa causale in entrambi i casi.
+      causaleFissi: "PXX",
+      causaleEccedenza: "PXX",
     },
     // Le casse private hanno regolamenti propri: non li indoviniamo.
     cassa_professionale: null,
@@ -116,6 +128,9 @@ export const PARAMETRI_2026: ParametriAnno = {
     secondaRatePercent: 60,
     scadenzaSaldoEPrimoAcconto: { giorno: 30, mese: 6 },
     scadenzaSecondoAcconto: { giorno: 30, mese: 11 },
+    codiceTributoSaldo: "1792",
+    codiceTributoPrimoAcconto: "1790",
+    codiceTributoSecondoAcconto: "1791",
   },
   scadenzaDichiarazione: { giorno: 30, mese: 10 },
   margineSicurezzaPercent: 10,

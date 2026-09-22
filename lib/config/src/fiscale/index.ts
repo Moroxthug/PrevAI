@@ -5,4 +5,5 @@ export * from "./types";
 export * from "./ateco";
 export * from "./regole/index";
 export * from "./calcolo";
+export * from "./f24";
 export * from "./golden";

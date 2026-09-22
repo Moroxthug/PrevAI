@@ -166,7 +166,9 @@ function resolveParams(route: MatrixRoute, f: Fixtures): { path: string; unseede
     if (name === "token" || name === "provider" || name === "userId") return null; // public token routes, per-user OAuth providers, admin
     // A-1: anno e trimestre del bollo non sono identificatori di nessuno —
     // ogni impresa vede i propri, non c'è niente da sottrarre a un'altra.
-    if (name === "anno" || name === "trimestre") return null;
+    // A-3: idem per la chiave della scadenza, che è una costante del calendario
+    // fiscale (`saldo_primo_acconto`, `inps_fissi_1`) uguale per tutte.
+    if (name === "anno" || name === "trimestre" || name === "chiave") return null;
     const prefix = segs.slice(0, i).join("/");
     let id: string | undefined;
     switch (name) {

@@ -1,6 +1,6 @@
 # Revisione del motore regole 2026 con il commercialista partner — pacchetto per la prima riunione
 
-Versione 1.1 · A-0, aggiornato in A-2 · 22 settembre 2026 · Bloccato dalla decisione **D6** (`PIANO-AZIONE.md`): finché il titolare non indica il professionista, questa è la lista di ciò che gli va sottoposto. Le regole sono quelle raccolte in `AMMINISTRAZIONE-PLAN.md` §3 e **sono già codificate** in `lib/config/src/fiscale/regole/2026.ts` (A-2), ma tutte con `revisione.stato = "non_revisionata"`: **niente è codificato come "verificato" prima della sua firma**, e il prodotto lo dice all'utente in ogni schermata.
+Versione 1.2 · A-0, aggiornato in A-2 e A-3 · 22 settembre 2026 · Bloccato dalla decisione **D6** (`PIANO-AZIONE.md`): finché il titolare non indica il professionista, questa è la lista di ciò che gli va sottoposto. Le regole sono quelle raccolte in `AMMINISTRAZIONE-PLAN.md` §3 e **sono già codificate** in `lib/config/src/fiscale/regole/2026.ts` (A-2), ma tutte con `revisione.stato = "non_revisionata"`: **niente è codificato come "verificato" prima della sua firma**, e il prodotto lo dice all'utente in ogni schermata.
 
 > **Cosa è cambiato con A-2 (2026-09-22).** Il motore esiste e gira: ogni regola qui sotto ha un identificatore vivo nel codice, i 5 casi golden sono test veri (`artifacts/api-server/src/fiscale/golden.test.ts`) e il prodotto calcola già, marcando però ogni numero come non verificato. Alla riunione si arriva quindi con i **nostri valori calcolati** accanto a ogni caso, da confrontare con i suoi: è molto più rapido che partire da un foglio bianco. Per ottenerli: `pnpm --filter @workspace/api-server exec vitest run src/fiscale`.
 >
@@ -35,6 +35,11 @@ Versione 1.1 · A-0, aggiornato in A-2 · 22 settembre 2026 · Bloccato dalla de
 | F14 | Fattura elettronica obbligatoria per tutti i forfettari; conservazione a norma 10 anni; decadenza ridotta per chi fattura solo elettronicamente | D.L. 36/2022; DPR 633/72 | Cosa deve contenere il manuale di conservazione se usiamo la conservazione dell'intermediario | ⬜ |
 | F15 | Ciclo passivo: fatture ricevute senza rilevanza IVA, ma il forfettario è debitore d'imposta per acquisti intra-UE/reverse charge (integrazione e versamento entro il 16 del mese successivo) | c. 58–60 | Quali casi gestire nel software e quali segnalare "chiedi al commercialista" | ⬜ |
 | F16 | "Quanto mettere via": formula proposta = (incassi × coeff. − contributi) × aliquota + INPS eccedenza + fissi, ripartita per mese | — | Approvare la formula e i margini di sicurezza da mostrare (es. +10%) | ⬜ |
+| F17 | Codici tributo dell'imposta sostitutiva nel modello F24: **1792** saldo, **1790** primo acconto, **1791** secondo acconto o acconto in unica soluzione | Ris. AdE 59/E 2015 | Confermare i tre codici e l'anno di riferimento da scrivere per ciascuno (saldo = anno chiuso, acconti = anno in corso). Esistono codici diversi per la rateazione del saldo? | ⬜ |
+| F18 | Sezione INPS del modello F24: causali **AF**/**AP** (artigiani fissi/percentuale), **CF**/**CP** (commercianti), codice sede a 4 cifre, matricola d'azienda, periodo "da mm/aaaa – a mm/aaaa" per trimestre | Circ. INPS 98/2001 e istruzioni del modello | Confermare causali e il periodo da indicare per ciascuna delle 4 rate e per l'eccedenza (12 mesi?). Gestione separata: causale corretta (PXX?) e come si compila | ⬜ |
+| F19 | Imposta di bollo virtuale: codici tributo **2521-2524** per trimestre, scadenze 31/5, 30/9, 30/11, 28/2 | Ris. AdE 42/E 2019; DM 4/12/2020 | Già toccato da F8: qui serve la conferma dei **codici** e dell'anno di riferimento da scrivere nel modello | ⬜ |
+
+> F17–F19 sono state aggiunte con la fase A-3 (scadenzario e F24 precompilati). Sono fatti della stessa natura degli altri: un codice tributo sbagliato manda il denaro su un altro tributo, e l'imposta risulta non versata anche se il conto è stato addebitato.
 
 ## 5 casi golden (valori attesi da compilare dal commercialista)
 
@@ -55,6 +60,6 @@ Per ciascuno: imponibile, imposta sostitutiva, contributi INPS dovuti (fissi + e
 - **Riportare le risposte nel codice**, regola per regola: in `lib/config/src/fiscale/regole/2026.ts` si cambia `revisione` da `{ stato: "non_revisionata" }` a `{ stato: "confermata" | "con_condizione" | "corretta", da: "<nome, albo>", il: "<AAAA-MM-GG>", nota: "<condizione>" }`. Se un valore va corretto, si corregge il parametro **e** si segna `corretta`.
 - **Compilare i 5 casi golden** in `lib/config/src/fiscale/golden.ts` (`attesi`) con i valori che ha dato lui. Da quel momento il test è un vincolo e ogni modifica futura alle regole deve ripassare da lui.
 - Verifica finale: `pnpm --filter @workspace/api-server exec vitest run src/fiscale` — c'è un test che controlla proprio che le due cose restino allineate (regole confermate ⇒ golden compilati, e viceversa).
-- Quando tutte e 16 sono ✅, `Calcolo.revisionato` diventa `true` da solo e l'avviso "numeri non verificati" sparisce dalla pagina Fisco. Nessun'altra modifica serve.
+- Quando tutte e 19 sono ✅, `Calcolo.revisionato` diventa `true` da solo e l'avviso "numeri non verificati" sparisce dalla pagina Fisco e dallo scadenzario, e il prospetto F24 perde l'avvertenza sui codici. Nessun'altra modifica serve.
 
 **Finché la revisione non è chiusa**, il modulo A-2 resta acceso solo per le imprese a cui si mette il flag `fiscal_engine` a mano (RUNBOOKS §7.2): nessun piano lo include e nessuna impresa lo vede.

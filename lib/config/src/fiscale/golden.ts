@@ -17,7 +17,12 @@ export type ValoriAttesi = {
   imponibileCents: number;
   impostaCents: number;
   contributiTotaliCents: number;
-  /** Saldo + primo acconto alla scadenza di giugno dell'anno successivo. */
+  /**
+   * Saldo + primo acconto alla scadenza di giugno dell'anno successivo.
+   * È la parte **Erario** della delega: dopo A-3 quella scadenza porta nello
+   * stesso F24 anche l'eccedenza contributiva, che qui non si conta perché
+   * la colonna dei contributi è già `contributiTotaliCents`.
+   */
   saldoEPrimoAccontoCents: number;
   secondoAccontoCents: number;
 };

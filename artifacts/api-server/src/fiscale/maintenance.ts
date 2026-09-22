@@ -4,6 +4,8 @@ import { eq, isNotNull } from "drizzle-orm";
 import { logger } from "../lib/logger.js";
 import { createNotification } from "../lib/notifications.js";
 import { calcoloCorrente } from "./service.js";
+import { riconcilia } from "./scadenzario.js";
+import { inviaPromemoria } from "./promemoria.js";
 
 // ── A-2: monitor della soglia, una volta al giorno ───────────────────────────
 // Gira nel tick del cron. Avvisa quando il livello **peggiora**, mai quando
@@ -14,13 +16,24 @@ import { calcoloCorrente } from "./service.js";
 // L'avviso descrive la conseguenza e si ferma lì. Non dice "fattura a gennaio",
 // non dice "conviene uscire": sono scelte con effetti fiscali e patrimoniali
 // che spettano a un professionista (AMMINISTRAZIONE-PLAN.md §5).
+//
+// A-3 ha aggiunto un secondo lavoro nello stesso giro: i promemoria delle
+// scadenze. Sta qui e non in un cron suo perché ha bisogno esattamente degli
+// stessi due filtri — onboarding finito e add-on acceso — e perché lo
+// scadenzario si riconcilia comunque a ogni passaggio.
 
 const GRAVITA: Record<LivelloSoglia, number> = { ok: 0, attenzione: 1, vicino: 2, superata: 3, fuori_regime: 4 };
 
-export type EsitoManutenzioneFiscale = { controllati: number; avvisi: number; errori: number };
+export type EsitoManutenzioneFiscale = {
+  controllati: number;
+  avvisi: number;
+  /** A-3: promemoria delle scadenze partiti stanotte, per canale. */
+  promemoria: { inApp: number; email: number; whatsapp: number };
+  errori: number;
+};
 
 export async function runFiscalMaintenance(now = new Date()): Promise<EsitoManutenzioneFiscale> {
-  const esito: EsitoManutenzioneFiscale = { controllati: 0, avvisi: 0, errori: 0 };
+  const esito: EsitoManutenzioneFiscale = { controllati: 0, avvisi: 0, promemoria: { inApp: 0, email: 0, whatsapp: 0 }, errori: 0 };
   const anno = now.getUTCFullYear();
 
   // Solo chi ha finito l'onboarding fiscale: su un profilo a metà il calcolo
@@ -32,6 +45,22 @@ export async function runFiscalMaintenance(now = new Date()): Promise<EsitoManut
       const [business] = await db.select().from(businessProfilesTable).where(eq(businessProfilesTable.userId, profilo.userId));
       if (!hasFeature(business, "fiscal_engine")) continue;
       esito.controllati++;
+
+      // A-3: promemoria delle scadenze. Si guardano due anni d'imposta perché
+      // le scadenze dell'anno chiuso cadono in quello dopo (il saldo di giugno,
+      // la quarta rata INPS di febbraio, il bollo del quarto trimestre).
+      for (const annoImposta of [anno, anno - 1]) {
+        try {
+          const { voci } = await riconcilia(profilo.userId, annoImposta, now);
+          const inviati = await inviaPromemoria({ userId: profilo.userId, profilo, voci, anno: annoImposta });
+          esito.promemoria.inApp += inviati.inApp;
+          esito.promemoria.email += inviati.email;
+          esito.promemoria.whatsapp += inviati.whatsapp;
+        } catch (err) {
+          esito.errori++;
+          logger.warn({ err, userId: profilo.userId, annoImposta }, "Promemoria delle scadenze fiscali non inviati");
+        }
+      }
 
       const { calcolo } = await calcoloCorrente(profilo.userId, anno);
       const livello = calcolo.soglia.livello;

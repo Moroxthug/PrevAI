@@ -154,7 +154,7 @@ describe("A-1: emissione", () => {
 
     const anteprima = await org.api(`/api/invoices/${fattura.id}/sdi/anteprima`);
     expect(anteprima.status).toBe(200);
-    expect(anteprima.body.validazione.ok).toBe(true);
+    expect(anteprima.body.validazione.ok, JSON.stringify(anteprima.body.validazione)).toBe(true);
     expect(anteprima.body.xml).toContain("<RegimeFiscale>RF19</RegimeFiscale>");
     expect(anteprima.body.xml).toContain("<Natura>N2.2</Natura>");
     // Bollo: 1.000 € senza IVA → 2 €.

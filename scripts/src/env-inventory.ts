@@ -84,6 +84,7 @@ const MANIFEST: Record<string, Entry> = {
   WHATSAPP_LEAD_FOLLOWUP_TEMPLATE: { kind: "feature", feature: "WhatsApp", note: "approved template names" },
   WHATSAPP_REVIEW_REQUEST_TEMPLATE: { kind: "feature", feature: "WhatsApp", note: "" },
   WHATSAPP_PHOTO_SHARE_TEMPLATE: { kind: "feature", feature: "WhatsApp", note: "" },
+  WHATSAPP_TEMPLATE_SCADENZA_FISCALE: { kind: "feature", feature: "WhatsApp", note: "A-3 — promemoria delle scadenze fiscali; senza, il canale WhatsApp resta spento (decisione D10)" },
   META_APP_ID: { kind: "feature", feature: "Meta Lead Ads", note: "Phase 28" },
   META_APP_SECRET: { kind: "feature", feature: "Meta Lead Ads", note: "" },
   META_REDIRECT_URI: { kind: "feature", feature: "Meta Lead Ads", note: "" },

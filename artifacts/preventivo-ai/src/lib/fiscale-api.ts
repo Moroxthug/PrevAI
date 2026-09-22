@@ -28,6 +28,13 @@ export type ProfiloFiscaleDto = {
   redditoDipendenteCents: number;
   impostaAnnoPrecedenteCents: number;
   margineSicurezzaPercent: number;
+  // A-3
+  matricolaInps: string;
+  sedeInps: string;
+  promemoriaEmail: boolean;
+  promemoriaWhatsapp: boolean;
+  promemoriaTelefono: string;
+  promemoriaGiorni: number[];
   onboarding: Record<string, { doneAt: string } | undefined>;
   completatoAt: string | null;
   avvisoAccettato: boolean;
@@ -56,7 +63,32 @@ export type MonitorSogliaDto = {
   conseguenza: string;
 };
 
-export type ScadenzaDto = { id: string; etichetta: string; data: string; importoCents: number; codiceTributo?: string; regole: string[] };
+export type CategoriaScadenza = "imposta" | "contributi" | "bollo" | "dichiarazione";
+export type StatoScadenza = "aperta" | "versata" | "non_dovuta";
+
+/** Una riga del modello F24: il modello ha una riga per tributo, non per scadenza. */
+export type RigaF24Dto = {
+  sezione: "erario" | "inps";
+  codiceTributo?: string;
+  causale?: string;
+  descrizione: string;
+  annoRiferimento: number;
+  periodoDa?: string;
+  periodoA?: string;
+  importoCents: number;
+  regole: string[];
+};
+
+export type ScadenzaDto = {
+  id: string;
+  etichetta: string;
+  data: string;
+  importoCents: number;
+  categoria: CategoriaScadenza;
+  descrizione: string;
+  righe: RigaF24Dto[];
+  regole: string[];
+};
 
 export type CalcoloDto = {
   anno: number;
@@ -125,6 +157,57 @@ export type SimulazioneDto = {
   sogliaDopo: MonitorSogliaDto;
 };
 
+// ── A-3: scadenzario, F24 precompilati, promemoria ───────────────────────────
+
+export type VoceScadenzarioDto = {
+  scadenza: ScadenzaDto;
+  stato: StatoScadenza;
+  giorniAllaScadenza: number;
+  scaduta: boolean;
+  versataAt: string | null;
+  quietanza: { url: string; nome: string; caricataAt: string } | null;
+  promemoriaInviati: Record<string, string>;
+  versatoCents: number;
+  regoleNonRevisionate: string[];
+};
+
+export type PreferenzePromemoriaDto = {
+  email: boolean;
+  whatsapp: boolean;
+  telefono: string;
+  giorni: number[];
+  /** false finché non esiste un template Meta approvato: il canale resta spento. */
+  whatsappDisponibile: boolean;
+};
+
+export type ScadenzarioDto = {
+  anno: number;
+  voci: VoceScadenzarioDto[];
+  prossima: VoceScadenzarioDto | null;
+  totaleApertoCents: number;
+  scaduteCents: number;
+  revisionato: boolean;
+  promemoria: PreferenzePromemoriaDto;
+  revisione: RevisioneDto;
+  avviso: { testo: string; versione: string };
+};
+
+export type CampoF24Dto = { etichetta: string; valore: string; mancante?: boolean };
+export type SezioneProspettoDto = { sezione: "erario" | "inps"; titolo: string; colonne: string[]; righe: string[][]; totaleCents: number };
+
+export type ProspettoF24Dto = {
+  scadenzaId: string;
+  titolo: string;
+  categoria: CategoriaScadenza;
+  scadenza: string;
+  contribuente: CampoF24Dto[];
+  sezioni: SezioneProspettoDto[];
+  totaleCents: number;
+  campiMancanti: string[];
+  regole: string[];
+  avvertenze: string[];
+};
+
 export type VersamentoDto = {
   id: string;
   anno: number;
@@ -169,6 +252,12 @@ export type PatchProfiloFiscale = Partial<{
   margineSicurezzaPercent: number;
   accettaAvviso: boolean;
   passoCompletato: string;
+  matricolaInps: string;
+  sedeInps: string;
+  promemoriaEmail: boolean;
+  promemoriaWhatsapp: boolean;
+  promemoriaTelefono: string;
+  promemoriaGiorni: number[];
 }>;
 
 export const fiscaleApi = {
@@ -183,6 +272,7 @@ export const fiscaleApi = {
         passi: readonly string[];
         mestieri: { codice: string; mestiere: string }[];
         anniRegole: number[];
+        whatsappDisponibile: boolean;
       };
     }>("/api/fiscale/profilo"),
   aggiornaProfilo: (patch: PatchProfiloFiscale) => req<{ profilo: ProfiloFiscaleDto }>("/api/fiscale/profilo", { method: "PATCH", body: JSON.stringify(patch) }),
@@ -196,6 +286,38 @@ export const fiscaleApi = {
   registraVersamento: (body: { anno: number; tipo: TipoVersamento; data: string; importoCents: number; codiceTributo?: string; riferimento?: string; note?: string }) =>
     req<{ id: string }>("/api/fiscale/versamenti", { method: "POST", body: JSON.stringify(body) }),
   eliminaVersamento: (id: string) => req<void>(`/api/fiscale/versamenti/${id}`, { method: "DELETE" }),
+
+  // A-3
+  scadenzario: (anno: number) => req<ScadenzarioDto>(`/api/fiscale/scadenzario?anno=${anno}`),
+  segnaVersata: (chiave: string, body: { anno: number; data: string; importoCents?: number; riferimento?: string; note?: string }) =>
+    req<{ scadenza: string; versamenti: number; importoCents: number }>(`/api/fiscale/scadenzario/${encodeURIComponent(chiave)}/versata`, {
+      method: "POST",
+      body: JSON.stringify(body),
+    }),
+  riapriScadenza: (chiave: string, anno: number) =>
+    req<void>(`/api/fiscale/scadenzario/${encodeURIComponent(chiave)}/riapri?anno=${anno}`, { method: "POST" }),
+  f24: (chiave: string, anno: number) =>
+    req<{ anno: number; prospetto: ProspettoF24Dto; revisione: RevisioneDto }>(`/api/fiscale/scadenzario/${encodeURIComponent(chiave)}/f24?anno=${anno}`),
+  urlF24Pdf: (chiave: string, anno: number) => `/api/fiscale/scadenzario/${encodeURIComponent(chiave)}/f24.pdf?anno=${anno}`,
+  caricaQuietanza: async (chiave: string, anno: number, file: File) => {
+    const fd = new FormData();
+    fd.append("file", file);
+    fd.append("anno", String(anno));
+    const res = await fetch(`/api/fiscale/scadenzario/${encodeURIComponent(chiave)}/quietanza`, { method: "POST", credentials: "include", body: fd });
+    const body = (await res.json().catch(() => ({}))) as { nome?: string; error?: string; message?: string };
+    if (!res.ok) throw new ErroreApiFiscale(body.message || body.error || `Caricamento fallito (${res.status})`, body.error ?? "ERRORE");
+    return body;
+  },
+  urlQuietanza: (chiave: string, anno: number) => `/api/fiscale/scadenzario/${encodeURIComponent(chiave)}/quietanza/file?anno=${anno}`,
+  rimuoviQuietanza: (chiave: string, anno: number) =>
+    req<void>(`/api/fiscale/scadenzario/${encodeURIComponent(chiave)}/quietanza?anno=${anno}`, { method: "DELETE" }),
+};
+
+export const ETICHETTE_CATEGORIA: Record<CategoriaScadenza, string> = {
+  imposta: "Imposta sostitutiva",
+  contributi: "Contributi INPS",
+  bollo: "Imposta di bollo",
+  dichiarazione: "Dichiarazione",
 };
 
 /** Colore del semaforo della soglia. */

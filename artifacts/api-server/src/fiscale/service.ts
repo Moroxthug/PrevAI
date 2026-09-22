@@ -19,12 +19,14 @@ import {
   regoleDiAnno,
   simula,
   fmtEurCents,
+  normalizzaGiorniPromemoria,
   type Calcolo,
   type IngressoCalcolo,
   type Simulazione,
 } from "@workspace/config";
 import { and, desc, eq } from "drizzle-orm";
 import { datiAnno, type DatiAnno } from "./dati.js";
+
 
 // ── A-2: il servizio ─────────────────────────────────────────────────────────
 // Mette insieme tre pezzi che restano separati apposta: il profilo dichiarato
@@ -76,6 +78,13 @@ export type AggiornamentoProfilo = Partial<{
   margineSicurezzaPercent: number;
   accettaAvviso: boolean;
   passoCompletato: FiscoOnboardingStep;
+  // A-3
+  matricolaInps: string;
+  sedeInps: string;
+  promemoriaEmail: boolean;
+  promemoriaWhatsapp: boolean;
+  promemoriaTelefono: string;
+  promemoriaGiorni: number[];
 }>;
 
 export async function aggiornaProfilo(userId: string, patch: AggiornamentoProfilo): Promise<ProfiloFiscale> {
@@ -93,6 +102,14 @@ export async function aggiornaProfilo(userId: string, patch: AggiornamentoProfil
   const annoCorrente = new Date().getUTCFullYear();
   if (patch.annoInizioAttivita != null && (patch.annoInizioAttivita < 1950 || patch.annoInizioAttivita > annoCorrente + 1)) {
     throw new ErroreFiscale("anno_non_valido", "L'anno di inizio attività non è plausibile.");
+  }
+  // A-3: il codice sede INPS è di quattro cifre. Accettarne uno storto
+  // significherebbe stampare un F24 che la banca rifiuta.
+  if (patch.sedeInps !== undefined && patch.sedeInps !== "" && !/^\d{4}$/.test(patch.sedeInps.trim())) {
+    throw new ErroreFiscale("sede_inps_non_valida", "Il codice della sede INPS è di quattro cifre: lo trovi sul tuo estratto conto contributivo.");
+  }
+  if (patch.promemoriaWhatsapp && (patch.promemoriaTelefono ?? attuale.promemoriaTelefono).trim() === "") {
+    throw new ErroreFiscale("telefono_mancante", "Per i promemoria su WhatsApp serve un numero di telefono.");
   }
 
   const onboarding = { ...attuale.onboarding };
@@ -112,6 +129,12 @@ export async function aggiornaProfilo(userId: string, patch: AggiornamentoProfil
     ...(patch.impostaAnnoPrecedenteCents !== undefined ? { impostaAnnoPrecedenteCents: Math.max(0, Math.round(patch.impostaAnnoPrecedenteCents)) } : {}),
     ...(patch.margineSicurezzaPercent !== undefined ? { margineSicurezzaPercent: Math.round(patch.margineSicurezzaPercent) } : {}),
     ...(patch.accettaAvviso ? { avvisoAccettatoAt: new Date(), avvisoVersione: VERSIONE_AVVISO } : {}),
+    ...(patch.matricolaInps !== undefined ? { matricolaInps: patch.matricolaInps.trim().slice(0, 40) } : {}),
+    ...(patch.sedeInps !== undefined ? { sedeInps: patch.sedeInps.trim() } : {}),
+    ...(patch.promemoriaEmail !== undefined ? { promemoriaEmail: patch.promemoriaEmail } : {}),
+    ...(patch.promemoriaWhatsapp !== undefined ? { promemoriaWhatsapp: patch.promemoriaWhatsapp } : {}),
+    ...(patch.promemoriaTelefono !== undefined ? { promemoriaTelefono: patch.promemoriaTelefono.trim().slice(0, 30) } : {}),
+    ...(patch.promemoriaGiorni !== undefined ? { promemoriaGiorni: normalizzaGiorniPromemoria(patch.promemoriaGiorni) } : {}),
     onboarding,
   };
 
@@ -284,6 +307,13 @@ export function serializzaProfilo(profilo: ProfiloFiscale) {
     redditoDipendenteCents: profilo.redditoDipendenteCents,
     impostaAnnoPrecedenteCents: profilo.impostaAnnoPrecedenteCents,
     margineSicurezzaPercent: profilo.margineSicurezzaPercent,
+    // A-3
+    matricolaInps: profilo.matricolaInps,
+    sedeInps: profilo.sedeInps,
+    promemoriaEmail: profilo.promemoriaEmail,
+    promemoriaWhatsapp: profilo.promemoriaWhatsapp,
+    promemoriaTelefono: profilo.promemoriaTelefono,
+    promemoriaGiorni: normalizzaGiorniPromemoria(profilo.promemoriaGiorni),
     onboarding: profilo.onboarding,
     completatoAt: profilo.completatoAt,
     avvisoAccettato: Boolean(profilo.avvisoAccettatoAt) && profilo.avvisoVersione === VERSIONE_AVVISO,

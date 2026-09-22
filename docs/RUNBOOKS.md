@@ -290,6 +290,66 @@ A gennaio si scrive `regole/<anno>.ts` e si aggiunge al registro in `regole/inde
 
 `migrations/v2/0004_a2_fiscale.sql` è additiva e idempotente e va eseguita **dopo** la 0003 (§5.3): due tabelle nuove (`tax_profiles`, `fiscal_payments`), nessuna colonna su tabelle esistenti. Nascono vuote: nessuna impresa ha un profilo fiscale finché non compila l'onboarding, e senza profilo il modulo non calcola niente.
 
+## 8. Scadenzario, F24 precompilati e promemoria (A-3)
+
+Un calendario solo per tutto ciò che ha una data e un importo: imposta sostitutiva, contributi INPS, bollo trimestrale, invio della dichiarazione. Prima di A-3 le prime due stavano nel motore fiscale (A-2) e il bollo nel modulo fatture (A-1), e nessuna delle due schermate sapeva dell'altra.
+
+Pezzi: `lib/config/src/fiscale/f24.ts` (prospetto puro) e `calcolo.ts` (righe del modello) · `artifacts/api-server/src/fiscale/` (`scadenzario.ts` riconciliazione, `f24pdf.ts`, `promemoria.ts`) · rotte in `routes/fiscale.ts` · UI in `pages/dashboard/scadenzario.tsx` (rotta `/dashboard/fisco/scadenzario`) · tabella `fiscal_deadlines`, colonna `fiscal_payments.scadenza_chiave`.
+
+Vale la stessa linea di A-1 e A-2: **PrevAI prepara la delega, non versa**. Non c'è nessun collegamento a conti correnti e nessuna rotta che disponga un pagamento.
+
+### 8.1 Le scadenze non si conservano: si ricalcolano
+
+Ogni lettura dello scadenzario ricalcola le scadenze dal motore fiscale e dal bollo trimestrale, e poi le **riconcilia** con le righe di `fiscal_deadlines`, che tengono solo ciò che il calcolo non può sapere: versata o no, con quale quietanza, quali promemoria sono già partiti. Un incasso di ieri cambia il saldo di giugno, e una riga salvata a gennaio sarebbe una bugia a giugno.
+
+Conseguenze operative:
+- `etichetta`, `data`, `importo_cents` e `categoria` nella tabella sono una **fotografia** dell'ultima riconciliazione, non la verità. Servono allo storico e alle righe che il motore non genera più.
+- Una riga che il motore smette di generare (cambio di gestione previdenziale, trimestre di bollo sceso a zero dopo uno scarto) **sparisce** solo se non è mai stata toccata: se è segnata come versata o ha una quietanza, resta.
+- La chiave (`chiave`) è stabile e non si cambia: `saldo_primo_acconto`, `secondo_acconto`, `inps_fissi_1..4`, `bollo_t1..t4`, `dichiarazione`. Cambiarla scollega lo stato dalla scadenza e fa ripartire i promemoria.
+
+### 8.2 Una scadenza = un modello F24, non un tributo
+
+La delega del 30 giugno contiene **tre righe**: saldo dell'imposta dell'anno chiuso (codice 1792), primo acconto dell'anno in corso (1790) e contributi sul reddito oltre il minimale (sezione INPS, causale AP). Tenerle separate farebbe compilare tre deleghe dove ne basta una.
+
+Per questo `segnaVersata()` scrive **una riga di `fiscal_payments` per ogni riga del modello**, con la stessa `scadenza_chiave`: il motore conta i contributi versati (deducibili per cassa, F6) separatamente dagli acconti d'imposta, e una delega registrata come un versamento solo farebbe sparire una deduzione vera. Se l'impresa versa un importo diverso da quello calcolato si registra il suo, riproporzionando le righe: noi non sappiamo cosa le ha detto il suo commercialista, e la differenza resta visibile nello scadenzario.
+
+Riaprire una scadenza (`POST …/riapri`) cancella i versamenti nati da lì. Per il bollo, entrambe le operazioni allineano anche `bollo_periods` (A-1), altrimenti il pannello della fattura continuerebbe a dire "da versare".
+
+### 8.3 Il prospetto F24 non è il modello F24
+
+Quello che produciamo — in JSON su `GET /api/fiscale/scadenzario/:chiave/f24` e in PDF su `…/f24.pdf` — è un **prospetto**: gli stessi campi, nello stesso ordine, su un foglio nostro, con scritto in testa che va ricopiato nell'home banking o nei servizi telematici dell'Agenzia. Un facsimile del modello ministeriale inviterebbe a presentarlo com'è allo sportello, dove non sarebbe accettato.
+
+Il PDF è marcato `none` ai fini dell'AI Act art. 50 (V2-6a): non c'è niente di generato da un modello: sono i numeri del motore fiscale, calcolati da regole scritte a mano.
+
+**Matricola INPS e codice sede** stanno sull'estratto conto contributivo e non si deducono da nient'altro: l'impresa li inserisce nello scadenzario (salvati in `tax_profiles.matricola_inps` / `sede_inps`). Finché mancano, il prospetto segna le caselle vuote e lo dichiara in un'avvertenza, invece di inventarle. Il codice sede è validato a quattro cifre: uno storto farebbe rifiutare la delega dalla banca.
+
+Finché D6 è aperta (§7.1) il prospetto porta anche l'avvertenza che codici tributo e causali non sono stati verificati da un commercialista. Le regole nuove di A-3 sono **F17** (codici 1790/1791/1792), **F18** (causali INPS AF/AP, CF/CP, sede e matricola) e **F19** (bollo 2521-2524): sono nella checklist come tutte le altre.
+
+### 8.4 Promemoria
+
+Girano nel tick del cron dentro `runFiscalMaintenance()`, sugli stessi due filtri del monitor soglia: onboarding fiscale completo e add-on `fiscal_engine` acceso. Si guardano **due anni d'imposta**, perché le scadenze dell'anno chiuso cadono in quello dopo (il saldo di giugno, la quarta rata INPS di febbraio, il bollo del quarto trimestre).
+
+Regole anti-rumore:
+- un promemoria per soglia e per scadenza, mai due volte (`fiscal_deadlines.promemoria_inviati`);
+- vale la soglia **più stretta fra quelle già aperte**: a 4 giorni dalla scadenza parte quella dei 3, non quella dei 15, e una soglia già passata non si recupera a ritroso;
+- niente promemoria su una scadenza senza importo o già versata; per una scaduta, un solo richiamo e non oltre 30 giorni dopo.
+
+Canali: la notifica in app parte sempre; l'email (Resend, all'indirizzo dell'account) se `tax_profiles.promemoria_email`; WhatsApp solo se `promemoria_whatsapp`, con un numero, **e** con un template Meta approvato.
+
+> **WhatsApp è inerte (decisione D10).** Fuori dalla finestra di 24 ore Meta accetta solo template pre-approvati. Il codice è completo e il canale si accende impostando `WHATSAPP_TEMPLATE_SCADENZA_FISCALE` con il nome del template approvato (tre parametri nel corpo: `{{1}}` cosa scade, `{{2}}` data, `{{3}}` importo). Finché la variabile è vuota, l'interruttore in interfaccia è disattivato e spiega perché.
+
+Per rimandare un promemoria in prova: `update fiscal_deadlines set promemoria_inviati = '{}'::jsonb where user_id = '<org>' and chiave = '<chiave>';`
+
+### 8.5 Quietanze
+
+La ricevuta del versamento (PDF dell'home banking o foto) si carica su `POST /api/fiscale/scadenzario/:chiave/quietanza` come multipart, finisce nello storage privato con lo stesso meccanismo degli scontrini (`routes/costs.ts`) e si rilegge da `…/quietanza/file`. **Non passa dall'IA**: una quietanza è una prova, non un dato da estrarre.
+
+Sta sulla scadenza e non sul versamento perché un F24 è uno solo anche quando genera tre righe contabili. Lo storage non è provabile in locale (§3): questa parte si verifica in preview dopo il cutover.
+
+### 8.6 Cutover e migrazioni
+
+`migrations/v2/0005_a3_scadenzario.sql` è additiva e idempotente e va eseguita **dopo** la 0004 (§5.3): la tabella `fiscal_deadlines`, sei colonne su `tax_profiles` (matricola/sede INPS e preferenze dei promemoria) e una su `fiscal_payments` (`scadenza_chiave`). Nessuna env nuova è obbligatoria. La tabella nasce vuota e si popola da sé alla prima apertura dello scadenzario.
+
 
 ---
 

@@ -14,6 +14,10 @@
 export const REGOLE_ID = [
   "F1", "F2", "F3", "F4", "F5", "F6", "F7", "F8",
   "F9", "F10", "F11", "F12", "F13", "F14", "F15", "F16",
+  // A-3: la compilazione del modello F24. Sono fatti come gli altri — un
+  // codice tributo sbagliato fa finire il denaro su un altro tributo e
+  // l'imposta risulta non versata — quindi nascono anch'essi da revisionare.
+  "F17", "F18", "F19",
 ] as const;
 export type RegolaId = (typeof REGOLE_ID)[number];
 
@@ -64,6 +68,13 @@ export type ParametriInps = {
   massimaleCents: number;
   /** Rate dei fissi: giorno e mese di scadenza. */
   rateFisse: readonly { giorno: number; mese: number; annoSuccessivo?: boolean }[];
+  /**
+   * A-3 — causali contributo del modello F24, sezione INPS. Non sono codici
+   * tributo: stanno in una sezione diversa del modello, con la matricola e il
+   * codice sede al posto del codice tributo (F18).
+   */
+  causaleFissi: string;
+  causaleEccedenza: string;
 };
 
 export type ParametriAnno = {
@@ -96,6 +107,10 @@ export type ParametriAnno = {
     secondaRatePercent: number;
     scadenzaSaldoEPrimoAcconto: { giorno: number; mese: number };
     scadenzaSecondoAcconto: { giorno: number; mese: number };
+    /** A-3 — codici tributo del modello F24, sezione Erario (F17). */
+    codiceTributoSaldo: string;
+    codiceTributoPrimoAcconto: string;
+    codiceTributoSecondoAcconto: string;
   };
   /** Dichiarazione dei redditi: termine telematico (F13). */
   scadenzaDichiarazione: { giorno: number; mese: number };
@@ -197,14 +212,62 @@ export type MonitorSoglia = {
   conseguenza: string;
 };
 
+/**
+ * Categoria della scadenza: decide l'icona, il tipo di versamento da
+ * registrare e, soprattutto, la sezione del modello F24.
+ */
+export const CATEGORIE_SCADENZA = ["imposta", "contributi", "bollo", "dichiarazione"] as const;
+export type CategoriaScadenza = (typeof CATEGORIE_SCADENZA)[number];
+
+/** Sezioni del modello F24 usate dal forfettario. */
+export const SEZIONI_F24 = ["erario", "inps"] as const;
+export type SezioneF24 = (typeof SEZIONI_F24)[number];
+
+/**
+ * Una riga del modello F24. Il modello non ha una riga per scadenza ma una
+ * riga per tributo: il 30 giugno si versa con **un solo** F24 che contiene il
+ * saldo dell'anno scorso, il primo acconto di quest'anno e l'eccedenza
+ * contributiva. Modellarle come tre scadenze separate farebbe compilare tre
+ * deleghe dove ne basta una.
+ */
+export type RigaF24 = {
+  sezione: SezioneF24;
+  /** Sezione Erario: codice tributo (F17, F19). */
+  codiceTributo?: string;
+  /** Sezione INPS: causale contributo (F18). */
+  causale?: string;
+  descrizione: string;
+  /** Campo "anno di riferimento": è l'anno d'imposta, non quello del versamento. */
+  annoRiferimento: number;
+  /** Sezione INPS, campi "da mm/aaaa" e "a mm/aaaa" del periodo di competenza. */
+  periodoDa?: string;
+  periodoA?: string;
+  importoCents: number;
+  regole: readonly RegolaId[];
+};
+
+/**
+ * Una riga dello scadenzario (A-3). È **derivata**: la ricalcoliamo ogni volta
+ * dai numeri dell'anno e non la conserviamo come verità. Quello che si
+ * conserva nel database è solo ciò che il motore non può sapere — se è stata
+ * versata, con quale quietanza, e quali promemoria sono già partiti.
+ *
+ * `id` è la chiave stabile che lega la riga calcolata alla riga di stato:
+ * cambiarlo scollega le due cose e fa ripartire i promemoria, quindi non si
+ * cambia una volta rilasciato.
+ */
 export type Scadenza = {
   id: string;
   etichetta: string;
   /** `YYYY-MM-DD`. */
   data: string;
+  /** Somma delle righe: è l'importo del modello F24. */
   importoCents: number;
-  /** Codice tributo F24 quando esiste (A-3 lo userà per il modello). */
-  codiceTributo?: string;
+  categoria: CategoriaScadenza;
+  /** A che cosa serve questo versamento, a parole. */
+  descrizione: string;
+  /** Le righe del modello. Vuota quando non c'è niente da versare (la dichiarazione). */
+  righe: readonly RigaF24[];
   regole: readonly RegolaId[];
 };
 

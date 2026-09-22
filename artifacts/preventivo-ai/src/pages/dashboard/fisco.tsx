@@ -574,28 +574,37 @@ export default function FiscoPage() {
 
           <Soglia calcolo={c} />
 
+          {/* A-3: il calendario completo (col bollo trimestrale, l'F24 precompilato
+              e i promemoria) sta nello scadenzario. Qui restano le prime tre, per
+              non far uscire da questa pagina chi voleva solo un'occhiata. */}
           <section className="card" style={{ marginTop: 16 }}>
             <div className="card-head">
               <div>
                 <h2 className="flex items-center gap-2">
-                  <CalendarClock className="h-5 w-5" /> Scadenze
+                  <CalendarClock className="h-5 w-5" /> Prossime scadenze
                 </h2>
                 <p className="sub">Gli importi li disponi tu: PrevAI non versa e non invia nulla per tuo conto.</p>
               </div>
+              <Link href="/dashboard/fisco/scadenzario" className="btn btn-sm btn-outline-navy">
+                Scadenzario completo
+              </Link>
             </div>
             <div>
-              {c.scadenze.map((s) => (
-                <div key={s.id} className="item-row flex items-center justify-between gap-3 flex-wrap">
-                  <div className="min-w-0">
-                    <div className="text-sm font-medium">{s.etichetta}</div>
-                    <div className="text-xs" style={{ color: "var(--muted-mk)" }}>
-                      {format(new Date(`${s.data}T12:00:00`), "PP", { locale: it })}
-                      {s.codiceTributo ? ` · codice tributo ${s.codiceTributo}` : ""}
+              {c.scadenze.slice(0, 3).map((s) => {
+                const erario = s.righe.filter((r) => r.sezione === "erario").map((r) => r.codiceTributo);
+                return (
+                  <div key={s.id} className="item-row flex items-center justify-between gap-3 flex-wrap">
+                    <div className="min-w-0">
+                      <div className="text-sm font-medium">{s.etichetta}</div>
+                      <div className="text-xs" style={{ color: "var(--muted-mk)" }}>
+                        {format(new Date(`${s.data}T12:00:00`), "PP", { locale: it })}
+                        {erario.length > 0 ? ` · codice tributo ${erario.join(", ")}` : ""}
+                      </div>
                     </div>
+                    {s.importoCents > 0 && <strong>{euro(s.importoCents)}</strong>}
                   </div>
-                  {s.importoCents > 0 && <strong>{euro(s.importoCents)}</strong>}
-                </div>
-              ))}
+                );
+              })}
             </div>
           </section>
 

@@ -40,7 +40,11 @@ describe("casi golden del regime forfettario", () => {
           expect(calcolo.imponibileCents).toBe(attesi.imponibileCents);
           expect(calcolo.impostaCents).toBe(attesi.impostaCents);
           expect(calcolo.contributi.totaleCents).toBe(attesi.contributiTotaliCents);
-          expect(calcolo.scadenze.find((s) => s.id === "saldo_primo_acconto")?.importoCents).toBe(attesi.saldoEPrimoAccontoCents);
+          // Solo le righe Erario: dopo A-3 quella scadenza è un F24 unico che
+          // contiene anche l'eccedenza contributiva (sezione INPS).
+          const giugno = calcolo.scadenze.find((s) => s.id === "saldo_primo_acconto");
+          const erarioGiugno = (giugno?.righe ?? []).filter((r) => r.sezione === "erario").reduce((s, r) => s + r.importoCents, 0);
+          expect(erarioGiugno).toBe(attesi.saldoEPrimoAccontoCents);
           expect(calcolo.scadenze.find((s) => s.id === "secondo_acconto")?.importoCents ?? 0).toBe(attesi.secondoAccontoCents);
         });
       }

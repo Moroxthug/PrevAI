@@ -1,9 +1,10 @@
 import { describe, expect, it, beforeAll, afterAll } from "vitest";
-import { db, businessProfilesTable, taxProfilesTable, fiscalPaymentsTable, invoicesTable, clientsTable, clientDedupKey } from "@workspace/db";
-import { eq } from "drizzle-orm";
+import { db, businessProfilesTable, taxProfilesTable, fiscalPaymentsTable, fiscalDeadlinesTable, invoicesTable, clientsTable, clientDedupKey } from "@workspace/db";
+import { and, eq } from "drizzle-orm";
 import { startServer, stopServer, createOrg, createUser, cleanupAll, type TestUser } from "./harness.js";
 import { buildInvoiceContext, createInvoice, sendInvoice, recordPayment } from "../invoices/service.js";
 import { runFiscalMaintenance } from "../fiscale/maintenance.js";
+import { promemoriaDaInviare } from "../fiscale/promemoria.js";
 
 // ── A-2: il modulo fiscale dall'esterno ──────────────────────────────────────
 // Il motore ha già i suoi test unitari: qui si prova il giro completo —
@@ -68,7 +69,7 @@ describe("modulo fiscale forfettario", () => {
   it("dichiara sempre se le regole sono state revisionate da un commercialista", async () => {
     const r = await org.api("/api/fiscale/calcolo");
     expect(r.body.revisione.revisionato).toBe(false);
-    expect(r.body.revisione.regole.length).toBe(16);
+    expect(r.body.revisione.regole.length).toBe(19);
     expect(r.body.calcolo.revisionato).toBe(false);
     expect(r.body.avviso.testo).toContain("Non è consulenza fiscale");
   });
@@ -244,6 +245,186 @@ describe("modulo fiscale forfettario", () => {
     expect(tentativo.status).toBe(404);
     const righe = await db.select().from(fiscalPaymentsTable).where(eq(fiscalPaymentsTable.id, creato.body.id));
     expect(righe).toHaveLength(1);
+  });
+
+  // ── A-3: scadenzario, F24 precompilato, promemoria ─────────────────────────
+
+  it("costruisce lo scadenzario dal profilo e non lo conserva come verità", async () => {
+    const anno = new Date().getUTCFullYear();
+    const r = await org.api(`/api/fiscale/scadenzario?anno=${anno}`);
+    expect(r.status).toBe(200);
+    const chiavi = r.body.voci.map((v: { scadenza: { id: string } }) => v.scadenza.id);
+    expect(chiavi).toContain("saldo_primo_acconto");
+    expect(chiavi).toContain("inps_fissi_1");
+    expect(chiavi).toContain("dichiarazione");
+    // Le voci sono in ordine di data e ognuna porta la sua spiegazione.
+    const date = r.body.voci.map((v: { scadenza: { data: string } }) => v.scadenza.data);
+    expect([...date].sort()).toEqual(date);
+    for (const voce of r.body.voci) {
+      expect(voce.scadenza.descrizione).toBeTruthy();
+      expect(voce.scadenza.importoCents).toBe(
+        voce.scadenza.righe.reduce((s: number, x: { importoCents: number }) => s + x.importoCents, 0) || voce.scadenza.importoCents,
+      );
+    }
+    // Lo stato sta nel database, le scadenze no: le righe di stato nascono
+    // alla prima lettura e sono tante quante le scadenze calcolate.
+    const salvate = await db
+      .select()
+      .from(fiscalDeadlinesTable)
+      .where(and(eq(fiscalDeadlinesTable.userId, org.userId), eq(fiscalDeadlinesTable.anno, anno)));
+    expect(salvate.length).toBe(r.body.voci.length);
+  });
+
+  it("prepara l'F24 con i codici tributo e segna i campi INPS mancanti", async () => {
+    const anno = new Date().getUTCFullYear();
+    const r = await org.api(`/api/fiscale/scadenzario/saldo_primo_acconto/f24?anno=${anno}`);
+    expect(r.status).toBe(200);
+    const codici = r.body.prospetto.sezioni
+      .filter((s: { sezione: string }) => s.sezione === "erario")
+      .flatMap((s: { righe: string[][] }) => s.righe.map((riga) => riga[0]));
+    expect(codici).toContain("1792");
+    // Matricola e sede INPS non sono state ancora inserite: il prospetto lo dice.
+    expect(r.body.prospetto.campiMancanti).toContain("Matricola INPS");
+    expect(r.body.prospetto.avvertenze[0]).toContain("non il modello F24 ufficiale");
+
+    await org.api("/api/fiscale/profilo", { method: "PATCH", body: { matricolaInps: "1234567890", sedeInps: "4700" } });
+    const dopo = await org.api(`/api/fiscale/scadenzario/saldo_primo_acconto/f24?anno=${anno}`);
+    expect(dopo.body.prospetto.campiMancanti).not.toContain("Matricola INPS");
+    expect(dopo.body.prospetto.campiMancanti).not.toContain("Codice sede INPS");
+    // Il codice fiscale dell'impresa resta segnalato finché non è nel profilo:
+    // è l'altro campo senza il quale la delega non si può presentare.
+    expect(dopo.body.prospetto.campiMancanti).toContain("Codice fiscale");
+  });
+
+  it("rifiuta un codice sede INPS che non sta nel modello", async () => {
+    const r = await org.api("/api/fiscale/profilo", { method: "PATCH", body: { sedeInps: "47" } });
+    expect(r.status).toBe(400);
+    expect(r.body.error).toBe("SEDE_INPS_NON_VALIDA");
+  });
+
+  it("scarica il prospetto F24 in PDF", async () => {
+    const anno = new Date().getUTCFullYear();
+    const r = await org.api(`/api/fiscale/scadenzario/saldo_primo_acconto/f24.pdf?anno=${anno}`);
+    expect(r.status).toBe(200);
+    expect(r.headers.get("content-type")).toContain("application/pdf");
+    expect(String(r.body).startsWith("%PDF-")).toBe(true);
+    expect(r.headers.get("content-disposition")).toContain("F24-saldo_primo_acconto");
+  });
+
+  it("registra una riga di versamento per ogni tributo del modello", async () => {
+    // La delega di giugno contiene imposta **e** contributi: registrarla come
+    // un versamento solo farebbe sparire una deduzione vera.
+    const anno = new Date().getUTCFullYear();
+    const r = await org.api("/api/fiscale/scadenzario/saldo_primo_acconto/versata", {
+      method: "POST",
+      body: { anno, data: `${anno}-06-30`, riferimento: "CRO 12345" },
+    });
+    expect(r.status, JSON.stringify(r.body)).toBe(200);
+    expect(r.body.versamenti).toBeGreaterThan(1);
+
+    const righe = await db
+      .select()
+      .from(fiscalPaymentsTable)
+      .where(and(eq(fiscalPaymentsTable.userId, org.userId), eq(fiscalPaymentsTable.scadenzaChiave, "saldo_primo_acconto")));
+    const tipi = righe.map((x) => x.tipo);
+    expect(tipi).toContain("imposta_saldo");
+    expect(tipi).toContain("contributi_inps");
+    expect(righe.reduce((s, x) => s + x.importoCents, 0)).toBe(r.body.importoCents);
+
+    const scadenzario = await org.api(`/api/fiscale/scadenzario?anno=${anno}`);
+    const voce = scadenzario.body.voci.find((v: { scadenza: { id: string } }) => v.scadenza.id === "saldo_primo_acconto");
+    expect(voce.stato).toBe("versata");
+
+    // Riaprire toglie di mezzo i versamenti che ne erano nati.
+    const riaperta = await org.api(`/api/fiscale/scadenzario/saldo_primo_acconto/riapri?anno=${anno}`, { method: "POST" });
+    expect(riaperta.status).toBe(204);
+    const dopo = await db
+      .select()
+      .from(fiscalPaymentsTable)
+      .where(and(eq(fiscalPaymentsTable.userId, org.userId), eq(fiscalPaymentsTable.scadenzaChiave, "saldo_primo_acconto")));
+    expect(dopo).toHaveLength(0);
+  });
+
+  it("non lascia registrare un versamento sulla dichiarazione, che non è un versamento", async () => {
+    const anno = new Date().getUTCFullYear();
+    const r = await org.api("/api/fiscale/scadenzario/dichiarazione/versata", {
+      method: "POST",
+      body: { anno, data: `${anno}-10-30` },
+    });
+    expect(r.status).toBe(400);
+    expect(r.body.error).toBe("NON_VERSABILE");
+  });
+
+  it("sceglie la soglia più stretta e non ripete lo stesso promemoria", () => {
+    // Funzione pura: si prova senza database e senza aspettare il calendario.
+    const anno = new Date().getUTCFullYear();
+    const voce = {
+      scadenza: {
+        id: "inps_fissi_1",
+        etichetta: "1ª rata contributi fissi INPS",
+        data: `${anno}-05-16`,
+        importoCents: 120_000,
+        categoria: "contributi" as const,
+        descrizione: "…",
+        righe: [{ sezione: "inps" as const, causale: "AF", descrizione: "Contributi fissi", annoRiferimento: anno, importoCents: 120_000, regole: [] }],
+        regole: [],
+      },
+      stato: "aperta" as const,
+      giorniAllaScadenza: 3,
+      scaduta: false,
+      versataAt: null,
+      quietanza: null,
+      promemoriaInviati: {},
+      versatoCents: 0,
+      regoleNonRevisionate: [],
+    };
+    // A 3 giorni tocca la soglia dei 3, non quella dei 15: chi apre il
+    // prodotto tardi riceve un messaggio, non due nello stesso giorno.
+    expect(promemoriaDaInviare(voce, [15, 3])?.chiave).toBe("3");
+    expect(promemoriaDaInviare({ ...voce, giorniAllaScadenza: 20 }, [15, 3])).toBeNull();
+    expect(promemoriaDaInviare({ ...voce, promemoriaInviati: { "3": "2026-01-01" } }, [15, 3])).toBeNull();
+    expect(promemoriaDaInviare({ ...voce, stato: "versata" }, [15, 3])).toBeNull();
+    // Scaduta: un solo richiamo, e non all'infinito.
+    expect(promemoriaDaInviare({ ...voce, giorniAllaScadenza: -2, scaduta: true }, [15, 3])?.chiave).toBe("scaduta");
+    expect(promemoriaDaInviare({ ...voce, giorniAllaScadenza: -90, scaduta: true }, [15, 3])).toBeNull();
+  });
+
+  it("manda il promemoria dal cron una volta sola", async () => {
+    // Il tempo si passa dall'esterno: la prima rata INPS scade il 16 maggio,
+    // quindi il 13 maggio siamo a tre giorni. Così il test non dipende dal
+    // giorno in cui gira.
+    const anno = new Date().getUTCFullYear();
+    const treGiorniPrima = new Date(Date.UTC(anno, 4, 13, 9, 0, 0));
+
+    const primo = await runFiscalMaintenance(treGiorniPrima);
+    expect(primo.promemoria.inApp).toBeGreaterThanOrEqual(1);
+    // WhatsApp resta a zero: senza template Meta approvato il canale non invia.
+    expect(primo.promemoria.whatsapp).toBe(0);
+
+    const secondo = await runFiscalMaintenance(treGiorniPrima);
+    expect(secondo.promemoria.inApp).toBe(0);
+
+    const [riga] = await db
+      .select()
+      .from(fiscalDeadlinesTable)
+      .where(and(eq(fiscalDeadlinesTable.userId, org.userId), eq(fiscalDeadlinesTable.anno, anno), eq(fiscalDeadlinesTable.chiave, "inps_fissi_1")));
+    expect(Object.keys(riga!.promemoriaInviati)).toContain("3");
+  });
+
+  it("non lascia vedere lo scadenzario di un'altra impresa", async () => {
+    const estranea = await createOrg({ province: "TO", companyName: "Estranea Srl" });
+    const [profile] = await db.select().from(businessProfilesTable).where(eq(businessProfilesTable.userId, estranea.userId));
+    await db
+      .update(businessProfilesTable)
+      .set({ featureFlags: { ...(profile?.featureFlags ?? {}), fiscal_engine: true } })
+      .where(eq(businessProfilesTable.userId, estranea.userId));
+
+    const anno = new Date().getUTCFullYear();
+    const r = await estranea.api(`/api/fiscale/scadenzario?anno=${anno}`);
+    expect(r.status).toBe(200);
+    // Profilo vuoto: nessuna scadenza con importo, e comunque nessuna dell'altra impresa.
+    const righeAltrui = await db.select().from(fiscalDeadlinesTable).where(eq(fiscalDeadlinesTable.userId, estranea.userId));
+    expect(righeAltrui.every((x) => x.userId === estranea.userId)).toBe(true);
   });
 
   it("le fatture restano pro-forma: il modulo fiscale non le rende fiscali", async () => {

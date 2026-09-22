@@ -10,6 +10,7 @@ import {
   CODICE_DESTINATARIO_PRIVATO,
   CODICE_DESTINATARIO_ESTERO,
 } from "@workspace/db";
+import { dataFattura } from "@workspace/config";
 import type { FatturaPaInput, SedeFatturaPa } from "./types.js";
 
 // ── A-1: controlli prima dell'invio ──────────────────────────────────────────
@@ -104,7 +105,10 @@ export function validaFatturaPa(input: FatturaPaInput): EsitoValidazione {
   if (!input.numero?.trim()) errori.push({ campo: "fattura.numero", messaggio: "Manca il numero della fattura." });
   if (!/^\d{4}-\d{2}-\d{2}$/.test(input.data)) {
     errori.push({ campo: "fattura.data", messaggio: "La data della fattura non è nel formato AAAA-MM-GG." });
-  } else if (input.data > new Date().toISOString().slice(0, 10)) {
+    // "Oggi" va letto **in Italia**, con lo stesso fuso con cui `dataFattura()`
+    // ha scritto la data: confrontarla con la data UTC dichiarava nel futuro
+    // ogni fattura emessa fra la mezzanotte e le due del mattino italiane.
+  } else if (input.data > dataFattura(new Date())) {
     errori.push({ campo: "fattura.data", messaggio: "La data della fattura non può essere nel futuro.", codiceSdi: "00403" });
   }
   if (input.tipoDocumento === "TD04" && (input.fattureCollegate ?? []).length === 0) {
