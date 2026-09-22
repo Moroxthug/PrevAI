@@ -1,12 +1,16 @@
 -- PrevAI v2 — A-1 Fatture SDI (2026-09-22). Additiva e idempotente, da eseguire DOPO la 0002.
 --   Nuove tabelle: sdi_settings, e_invoices, e_invoice_events, supplier_e_invoices, bollo_periods.
---   Nuove colonne su clients: codice_fiscale, codice_sdi, pec, cig, cup (dati che la FatturaPA
+--   Nuove colonne: business_profiles.city/cap (sede scomposta per la FatturaPA) e su clients
+--   codice_fiscale, codice_sdi, pec, cig, cup (dati che la FatturaPA
 --   pretende sul cessionario/committente; nessuna di esse è obbligatoria per il codice v1).
 -- Nessun DROP, nessun RENAME, nessun SET NOT NULL su colonne esistenti (PREVAI-V2-PLAN.md §1).
 -- Le credenziali dell'intermediario in sdi_settings sono cifrate dall'applicazione (`enc1:`, A-0):
 --   la colonna è text e la migrazione non le tocca.
 -- Esecuzione: psql "<session URL>" -v ON_ERROR_STOP=1 -1 -f migrations/v2/0003_a1_sdi.sql
 -- Rieseguibile: ogni statement è IF NOT EXISTS / guardato da duplicate_object.
+
+ALTER TABLE "business_profiles" ADD COLUMN IF NOT EXISTS "city" text;
+ALTER TABLE "business_profiles" ADD COLUMN IF NOT EXISTS "cap" text;
 
 ALTER TABLE "clients" ADD COLUMN IF NOT EXISTS "codice_fiscale" text;
 ALTER TABLE "clients" ADD COLUMN IF NOT EXISTS "codice_sdi" text;

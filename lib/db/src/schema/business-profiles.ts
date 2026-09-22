@@ -56,6 +56,11 @@ export const businessProfilesTable = pgTable("business_profiles", {
   // ── Identità fiscale italiana (V2-4: le colonne canadesi GST/HST, QST, PST,
   //    licence, e-Transfer non esistono più; la P. IVA è `vatNumber`) ──────────
   province: text("province"), // sigla provincia della sede: default IVA/regime e modello di contratto
+  // A-1: la FatturaPA vuole la sede dell'emittente scomposta (Indirizzo, CAP,
+  //      Comune, Provincia); `address` resta il testo libero che finisce su
+  //      preventivi e contratti.
+  city: text("city"), // comune della sede
+  cap: text("cap"), // CAP della sede (5 cifre)
   codiceFiscale: text("codice_fiscale"), // C.F. dell'impresa (ditta individuale = quello del titolare); serve alla FatturaPA
   codiceSdi: text("codice_sdi"), // codice destinatario SDI o PEC dell'impresa (ciclo passivo, A-1)
   reaNumber: text("rea_number"), // n° REA / iscrizione albo, stampato sui contratti
