@@ -7,7 +7,7 @@
 // row it needs is missing). Everything is owned by the org's user, so
 // `cleanupAll()` from the harness removes it.
 
-import { db, quotesTable, contractsTable, contractSignersTable, projectsTable, milestonesTable, costEntriesTable, invoicesTable, clientsTable, priceCatalogItemsTable, businessProfilesTable, authUsersTable, sdiSettingsTable, getTaxProfile } from "@workspace/db";
+import { db, quotesTable, contractsTable, contractSignersTable, projectsTable, milestonesTable, costEntriesTable, invoicesTable, clientsTable, priceCatalogItemsTable, businessProfilesTable, authUsersTable, sdiSettingsTable, taxProfilesTable, fiscalPaymentsTable, getTaxProfile } from "@workspace/db";
 import { and, eq } from "drizzle-orm";
 import "../automations/index.js";
 import { raiseAutomation } from "../lib/automation.js";
@@ -16,6 +16,7 @@ import { buildInvoiceContext, createInvoice, sendInvoice, recordPayment, invoice
 import { TINY_PNG_DATA_URL } from "../lib/pngDataUrl.js";
 import { seedQuote, type TestUser } from "./harness.js";
 import { impostazioniOCrea, inviaAlloSdi } from "../sdi/service.js";
+import { VERSIONE_AVVISO } from "../fiscale/service.js";
 import { sincronizzaPassive } from "../sdi/passive.js";
 import { accodaPassivaSimulata } from "../sdi/providers/simulato.js";
 
@@ -202,7 +203,10 @@ async function seedSdi(org: TestUser & { province: string }): Promise<string | n
   await db
     .update(businessProfilesTable)
     .set({
-      featureFlags: { ...(profile?.featureFlags ?? {}), sdi_invoicing: true },
+      // A-2: l'add-on Amministrazione accende entrambi i moduli — fatture
+      //      elettroniche e calcolo fiscale — così la QA visiva copre anche
+      //      la pagina Fisco.
+      featureFlags: { ...(profile?.featureFlags ?? {}), sdi_invoicing: true, fiscal_engine: true },
       twoFactorRequired: true,
       vatNumber: "01234567897",
       codiceFiscale: "01234567897",
@@ -253,6 +257,31 @@ async function seedSdi(org: TestUser & { province: string }): Promise<string | n
 
   accodaPassivaSimulata(userId, fatturaFornitoreXml());
   await sincronizzaPassive({ userId }).catch(() => undefined);
+
+  // A-2: profilo fiscale completo e un versamento, così la pagina Fisco mostra
+  // il calcolo vero invece della schermata di onboarding.
+  await db.delete(taxProfilesTable).where(eq(taxProfilesTable.userId, userId));
+  await db.insert(taxProfilesTable).values({
+    userId,
+    codiceAteco: "43.22.01",
+    gestione: "artigiani",
+    riduzione: "nessuna",
+    annoInizioAttivita: new Date().getUTCFullYear() - 5,
+    ricaviAnnoPrecedenteCents: 5_800_000,
+    impostaAnnoPrecedenteCents: 380_000,
+    avvisoAccettatoAt: new Date(),
+    avvisoVersione: VERSIONE_AVVISO,
+    completatoAt: new Date(),
+  });
+  await db.insert(fiscalPaymentsTable).values({
+    userId,
+    anno: new Date().getUTCFullYear(),
+    tipo: "contributi_inps",
+    data: new Date(Date.UTC(new Date().getUTCFullYear(), 4, 16)),
+    importoCents: 113_034,
+    riferimento: "F24 prima rata",
+  });
+
   return inviata.id;
 }
 

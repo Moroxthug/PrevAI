@@ -91,6 +91,8 @@ function routes(s: import("./fixtures.js").Showcase): RouteSpec[] {
     // A-1: fattura elettronica trasmessa, pagina Amministrazione, scheda SDI.
     ...(s.fiscalInvoiceId ? [dash(`/dashboard/invoices/${s.fiscalInvoiceId}`)] : []),
     dash("/dashboard/amministrazione"), dash("/dashboard/settings?tab=sdi"),
+    // A-2: pagina Fisco (calcolo forfettario, soglia, simulatore).
+    dash("/dashboard/fisco"),
     dash("/dashboard/jobs"), dash(`/dashboard/jobs/${s.jobId}`), dash(`/dashboard/jobs/${s.jobId}/setup`),
     dash("/dashboard/assistant"), dash("/dashboard/team"), dash("/dashboard/documents"), dash("/dashboard/archive"), dash("/dashboard/notifications"),
   ];

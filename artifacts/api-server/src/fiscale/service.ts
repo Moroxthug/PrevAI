@@ -18,6 +18,7 @@ import {
   motoreRevisionato,
   regoleDiAnno,
   simula,
+  fmtEurCents,
   type Calcolo,
   type IngressoCalcolo,
   type Simulazione,
@@ -193,19 +194,19 @@ export async function calcoloCorrente(userId: string, anno: number): Promise<Cal
       id: "F3",
       etichetta: "Spese per lavoro dipendente e collaboratori entro 20.000 € lordi",
       rispettato: profilo.speseLavoroCents <= p.sogliaSpeseLavoroCents,
-      dettaglio: `Hai dichiarato ${(profilo.speseLavoroCents / 100).toFixed(2)} € per l'anno precedente.`,
+      dettaglio: `Hai dichiarato ${fmtEurCents(profilo.speseLavoroCents)} per l'anno precedente.`,
     },
     {
       id: "F4",
       etichetta: "Redditi da lavoro dipendente dell'anno precedente entro 35.000 €",
       rispettato: profilo.redditoDipendenteCents <= p.sogliaRedditoDipendenteCents,
-      dettaglio: `Hai dichiarato ${(profilo.redditoDipendenteCents / 100).toFixed(2)} € per l'anno precedente.`,
+      dettaglio: `Hai dichiarato ${fmtEurCents(profilo.redditoDipendenteCents)} per l'anno precedente.`,
     },
     {
       id: "F1",
       etichetta: "Ricavi dell'anno precedente entro 85.000 €",
       rispettato: profilo.ricaviAnnoPrecedenteCents <= p.sogliaRicaviCents,
-      dettaglio: `Hai dichiarato ${(profilo.ricaviAnnoPrecedenteCents / 100).toFixed(2)} € per l'anno precedente.`,
+      dettaglio: `Hai dichiarato ${fmtEurCents(profilo.ricaviAnnoPrecedenteCents)} per l'anno precedente.`,
     },
   ];
 

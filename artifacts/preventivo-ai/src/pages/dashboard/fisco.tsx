@@ -43,6 +43,11 @@ function euro(cents: number): string {
   return formatCents(cents);
 }
 
+/** "37,8 %" — virgola decimale e spazio prima del simbolo, come si scrive in italiano. */
+function percento(valore: number): string {
+  return `${new Intl.NumberFormat("it-IT", { maximumFractionDigits: 1 }).format(valore)} %`;
+}
+
 /** "Come l'abbiamo calcolato": la formula, i passaggi, la norma. */
 function Perche({ spiegazione }: { spiegazione: SpiegazioneDto }) {
   const [aperto, setAperto] = useState(false);
@@ -263,7 +268,7 @@ function Soglia({ calcolo }: { calcolo: CalcoloDto }) {
         </div>
         <div className="flex items-center justify-between flex-wrap gap-2 text-sm">
           <span>
-            <strong>{euro(s.maturatoCents)}</strong> su {euro(s.sogliaCents)} · {s.percentuale} %
+            <strong>{euro(s.maturatoCents)}</strong> su {euro(s.sogliaCents)} · {percento(s.percentuale)}
           </span>
           <span style={{ color: "var(--muted-mk)" }}>
             Con la pipeline arriveresti a <strong>{euro(s.proiezioneCents)}</strong>
@@ -337,7 +342,7 @@ function Simulatore({ anno }: { anno: number }) {
                   </td>
                   <td className="font-mono">
                     <strong>
-                      {euro(esito.nettoCents)} ({esito.nettoPercent} %)
+                      {euro(esito.nettoCents)} ({percento(esito.nettoPercent)})
                     </strong>
                   </td>
                 </tr>
@@ -550,18 +555,18 @@ export default function FiscoPage() {
               spiegazione={spiegazioni.get("da_mettere_via")}
             />
             <CifraGrande
-              etichetta={`Imposta sostitutiva ${c.aliquotaPercent} %`}
+              etichetta={`Imposta sostitutiva ${percento(c.aliquotaPercent)}`}
               valore={euro(c.impostaCents)}
               nota={c.startupAttiva ? "Aliquota start-up dei primi cinque anni" : undefined}
               spiegazione={spiegazioni.get("imposta")}
             />
             <CifraGrande etichetta="Contributi dell'anno" valore={euro(c.contributi.totaleCents)} nota={`Già versati: ${euro(c.contributi.versatiCents)}`} spiegazione={spiegazioni.get("contributi")} />
-            <CifraGrande etichetta="Imponibile" valore={euro(c.imponibileCents)} nota={`Coefficiente ${c.coefficientePercent} %`} spiegazione={spiegazioni.get("imponibile")} />
+            <CifraGrande etichetta="Imponibile" valore={euro(c.imponibileCents)} nota={`Coefficiente ${percento(c.coefficientePercent)}`} spiegazione={spiegazioni.get("imponibile")} />
           </div>
 
           <section className="card" style={{ marginTop: 16 }}>
             <div className="act-body text-sm">
-              Su ogni euro che incassi da qui in avanti, metti da parte circa <strong>{c.percentualeSuIncassi} %</strong>. Nell'anno hai incassato{" "}
+              Su ogni euro che incassi da qui in avanti, metti da parte circa <strong>{percento(c.percentualeSuIncassi)}</strong>. Nell'anno hai incassato{" "}
               <strong>{euro(risposta.dati.incassatiCents)}</strong> su {risposta.dati.incassiConteggio} pagamenti registrati; conta la data
               dell'incasso, non quella della fattura.
             </div>
