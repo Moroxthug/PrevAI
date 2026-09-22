@@ -139,7 +139,7 @@ export const CreateQuoteResponse = zod.object({
   "ivaPercentuale": zod.number(),
   "ivaValore": zod.number(),
   "taxLines": zod.array(zod.object({
-  "code": zod.enum(['GST', 'HST', 'PST', 'QST', 'RST', 'TAX']),
+  "code": zod.enum(['IVA22', 'IVA10', 'IVA4', 'RC', 'SP', 'ESENTE', 'TAX']),
   "label": zod.string(),
   "rate": zod.number(),
   "amount": zod.number()
@@ -200,7 +200,7 @@ export const CreateQuoteResponse = zod.object({
   "ivaPercentuale": zod.number(),
   "ivaValore": zod.number(),
   "taxLines": zod.array(zod.object({
-  "code": zod.enum(['GST', 'HST', 'PST', 'QST', 'RST', 'TAX']),
+  "code": zod.enum(['IVA22', 'IVA10', 'IVA4', 'RC', 'SP', 'ESENTE', 'TAX']),
   "label": zod.string(),
   "rate": zod.number(),
   "amount": zod.number()
@@ -283,7 +283,7 @@ export const GetQuoteStatsResponse = zod.object({
   "ivaPercentuale": zod.number(),
   "ivaValore": zod.number(),
   "taxLines": zod.array(zod.object({
-  "code": zod.enum(['GST', 'HST', 'PST', 'QST', 'RST', 'TAX']),
+  "code": zod.enum(['IVA22', 'IVA10', 'IVA4', 'RC', 'SP', 'ESENTE', 'TAX']),
   "label": zod.string(),
   "rate": zod.number(),
   "amount": zod.number()
@@ -344,7 +344,7 @@ export const GetQuoteStatsResponse = zod.object({
   "ivaPercentuale": zod.number(),
   "ivaValore": zod.number(),
   "taxLines": zod.array(zod.object({
-  "code": zod.enum(['GST', 'HST', 'PST', 'QST', 'RST', 'TAX']),
+  "code": zod.enum(['IVA22', 'IVA10', 'IVA4', 'RC', 'SP', 'ESENTE', 'TAX']),
   "label": zod.string(),
   "rate": zod.number(),
   "amount": zod.number()
@@ -461,7 +461,7 @@ export const CreateManualQuoteResponse = zod.object({
   "ivaPercentuale": zod.number(),
   "ivaValore": zod.number(),
   "taxLines": zod.array(zod.object({
-  "code": zod.enum(['GST', 'HST', 'PST', 'QST', 'RST', 'TAX']),
+  "code": zod.enum(['IVA22', 'IVA10', 'IVA4', 'RC', 'SP', 'ESENTE', 'TAX']),
   "label": zod.string(),
   "rate": zod.number(),
   "amount": zod.number()
@@ -522,7 +522,7 @@ export const CreateManualQuoteResponse = zod.object({
   "ivaPercentuale": zod.number(),
   "ivaValore": zod.number(),
   "taxLines": zod.array(zod.object({
-  "code": zod.enum(['GST', 'HST', 'PST', 'QST', 'RST', 'TAX']),
+  "code": zod.enum(['IVA22', 'IVA10', 'IVA4', 'RC', 'SP', 'ESENTE', 'TAX']),
   "label": zod.string(),
   "rate": zod.number(),
   "amount": zod.number()
@@ -612,7 +612,7 @@ export const GetQuoteResponse = zod.object({
   "ivaPercentuale": zod.number(),
   "ivaValore": zod.number(),
   "taxLines": zod.array(zod.object({
-  "code": zod.enum(['GST', 'HST', 'PST', 'QST', 'RST', 'TAX']),
+  "code": zod.enum(['IVA22', 'IVA10', 'IVA4', 'RC', 'SP', 'ESENTE', 'TAX']),
   "label": zod.string(),
   "rate": zod.number(),
   "amount": zod.number()
@@ -673,7 +673,7 @@ export const GetQuoteResponse = zod.object({
   "ivaPercentuale": zod.number(),
   "ivaValore": zod.number(),
   "taxLines": zod.array(zod.object({
-  "code": zod.enum(['GST', 'HST', 'PST', 'QST', 'RST', 'TAX']),
+  "code": zod.enum(['IVA22', 'IVA10', 'IVA4', 'RC', 'SP', 'ESENTE', 'TAX']),
   "label": zod.string(),
   "rate": zod.number(),
   "amount": zod.number()
@@ -799,7 +799,7 @@ export const UpdateQuoteResponse = zod.object({
   "ivaPercentuale": zod.number(),
   "ivaValore": zod.number(),
   "taxLines": zod.array(zod.object({
-  "code": zod.enum(['GST', 'HST', 'PST', 'QST', 'RST', 'TAX']),
+  "code": zod.enum(['IVA22', 'IVA10', 'IVA4', 'RC', 'SP', 'ESENTE', 'TAX']),
   "label": zod.string(),
   "rate": zod.number(),
   "amount": zod.number()
@@ -860,7 +860,7 @@ export const UpdateQuoteResponse = zod.object({
   "ivaPercentuale": zod.number(),
   "ivaValore": zod.number(),
   "taxLines": zod.array(zod.object({
-  "code": zod.enum(['GST', 'HST', 'PST', 'QST', 'RST', 'TAX']),
+  "code": zod.enum(['IVA22', 'IVA10', 'IVA4', 'RC', 'SP', 'ESENTE', 'TAX']),
   "label": zod.string(),
   "rate": zod.number(),
   "amount": zod.number()
@@ -947,7 +947,7 @@ export const ArchiveQuoteResponse = zod.object({
   "ivaPercentuale": zod.number(),
   "ivaValore": zod.number(),
   "taxLines": zod.array(zod.object({
-  "code": zod.enum(['GST', 'HST', 'PST', 'QST', 'RST', 'TAX']),
+  "code": zod.enum(['IVA22', 'IVA10', 'IVA4', 'RC', 'SP', 'ESENTE', 'TAX']),
   "label": zod.string(),
   "rate": zod.number(),
   "amount": zod.number()
@@ -1008,7 +1008,7 @@ export const ArchiveQuoteResponse = zod.object({
   "ivaPercentuale": zod.number(),
   "ivaValore": zod.number(),
   "taxLines": zod.array(zod.object({
-  "code": zod.enum(['GST', 'HST', 'PST', 'QST', 'RST', 'TAX']),
+  "code": zod.enum(['IVA22', 'IVA10', 'IVA4', 'RC', 'SP', 'ESENTE', 'TAX']),
   "label": zod.string(),
   "rate": zod.number(),
   "amount": zod.number()
@@ -1085,7 +1085,7 @@ export const RestoreQuoteResponse = zod.object({
   "ivaPercentuale": zod.number(),
   "ivaValore": zod.number(),
   "taxLines": zod.array(zod.object({
-  "code": zod.enum(['GST', 'HST', 'PST', 'QST', 'RST', 'TAX']),
+  "code": zod.enum(['IVA22', 'IVA10', 'IVA4', 'RC', 'SP', 'ESENTE', 'TAX']),
   "label": zod.string(),
   "rate": zod.number(),
   "amount": zod.number()
@@ -1146,7 +1146,7 @@ export const RestoreQuoteResponse = zod.object({
   "ivaPercentuale": zod.number(),
   "ivaValore": zod.number(),
   "taxLines": zod.array(zod.object({
-  "code": zod.enum(['GST', 'HST', 'PST', 'QST', 'RST', 'TAX']),
+  "code": zod.enum(['IVA22', 'IVA10', 'IVA4', 'RC', 'SP', 'ESENTE', 'TAX']),
   "label": zod.string(),
   "rate": zod.number(),
   "amount": zod.number()
@@ -1253,7 +1253,7 @@ export const DuplicateQuoteResponse = zod.object({
   "ivaPercentuale": zod.number(),
   "ivaValore": zod.number(),
   "taxLines": zod.array(zod.object({
-  "code": zod.enum(['GST', 'HST', 'PST', 'QST', 'RST', 'TAX']),
+  "code": zod.enum(['IVA22', 'IVA10', 'IVA4', 'RC', 'SP', 'ESENTE', 'TAX']),
   "label": zod.string(),
   "rate": zod.number(),
   "amount": zod.number()
@@ -1314,7 +1314,7 @@ export const DuplicateQuoteResponse = zod.object({
   "ivaPercentuale": zod.number(),
   "ivaValore": zod.number(),
   "taxLines": zod.array(zod.object({
-  "code": zod.enum(['GST', 'HST', 'PST', 'QST', 'RST', 'TAX']),
+  "code": zod.enum(['IVA22', 'IVA10', 'IVA4', 'RC', 'SP', 'ESENTE', 'TAX']),
   "label": zod.string(),
   "rate": zod.number(),
   "amount": zod.number()
@@ -1372,7 +1372,7 @@ export const ListQuoteVariantsResponse = zod.object({
   "ivaPercentuale": zod.number(),
   "ivaValore": zod.number(),
   "taxLines": zod.array(zod.object({
-  "code": zod.enum(['GST', 'HST', 'PST', 'QST', 'RST', 'TAX']),
+  "code": zod.enum(['IVA22', 'IVA10', 'IVA4', 'RC', 'SP', 'ESENTE', 'TAX']),
   "label": zod.string(),
   "rate": zod.number(),
   "amount": zod.number()
@@ -1432,7 +1432,7 @@ export const CreateQuoteVariantResponse = zod.object({
   "ivaPercentuale": zod.number(),
   "ivaValore": zod.number(),
   "taxLines": zod.array(zod.object({
-  "code": zod.enum(['GST', 'HST', 'PST', 'QST', 'RST', 'TAX']),
+  "code": zod.enum(['IVA22', 'IVA10', 'IVA4', 'RC', 'SP', 'ESENTE', 'TAX']),
   "label": zod.string(),
   "rate": zod.number(),
   "amount": zod.number()
@@ -1520,7 +1520,7 @@ export const UpdateQuoteVariantResponse = zod.object({
   "ivaPercentuale": zod.number(),
   "ivaValore": zod.number(),
   "taxLines": zod.array(zod.object({
-  "code": zod.enum(['GST', 'HST', 'PST', 'QST', 'RST', 'TAX']),
+  "code": zod.enum(['IVA22', 'IVA10', 'IVA4', 'RC', 'SP', 'ESENTE', 'TAX']),
   "label": zod.string(),
   "rate": zod.number(),
   "amount": zod.number()
@@ -1609,7 +1609,7 @@ export const RegenerateQuoteResponse = zod.object({
   "ivaPercentuale": zod.number(),
   "ivaValore": zod.number(),
   "taxLines": zod.array(zod.object({
-  "code": zod.enum(['GST', 'HST', 'PST', 'QST', 'RST', 'TAX']),
+  "code": zod.enum(['IVA22', 'IVA10', 'IVA4', 'RC', 'SP', 'ESENTE', 'TAX']),
   "label": zod.string(),
   "rate": zod.number(),
   "amount": zod.number()
@@ -1670,7 +1670,7 @@ export const RegenerateQuoteResponse = zod.object({
   "ivaPercentuale": zod.number(),
   "ivaValore": zod.number(),
   "taxLines": zod.array(zod.object({
-  "code": zod.enum(['GST', 'HST', 'PST', 'QST', 'RST', 'TAX']),
+  "code": zod.enum(['IVA22', 'IVA10', 'IVA4', 'RC', 'SP', 'ESENTE', 'TAX']),
   "label": zod.string(),
   "rate": zod.number(),
   "amount": zod.number()
@@ -1747,7 +1747,7 @@ export const UpgradeToCapitolatoProResponse = zod.object({
   "ivaPercentuale": zod.number(),
   "ivaValore": zod.number(),
   "taxLines": zod.array(zod.object({
-  "code": zod.enum(['GST', 'HST', 'PST', 'QST', 'RST', 'TAX']),
+  "code": zod.enum(['IVA22', 'IVA10', 'IVA4', 'RC', 'SP', 'ESENTE', 'TAX']),
   "label": zod.string(),
   "rate": zod.number(),
   "amount": zod.number()
@@ -1808,7 +1808,7 @@ export const UpgradeToCapitolatoProResponse = zod.object({
   "ivaPercentuale": zod.number(),
   "ivaValore": zod.number(),
   "taxLines": zod.array(zod.object({
-  "code": zod.enum(['GST', 'HST', 'PST', 'QST', 'RST', 'TAX']),
+  "code": zod.enum(['IVA22', 'IVA10', 'IVA4', 'RC', 'SP', 'ESENTE', 'TAX']),
   "label": zod.string(),
   "rate": zod.number(),
   "amount": zod.number()
@@ -2136,231 +2136,6 @@ export const ToggleWhatsappBody = zod.object({
 })
 
 export const ToggleWhatsappResponse = zod.object({
-  "success": zod.boolean()
-})
-
-
-/**
- * @summary Get the QuickBooks Online connection status for the authenticated company
- */
-export const GetQuickbooksStatusResponse = zod.object({
-  "connected": zod.boolean(),
-  "available": zod.boolean().optional().describe('False when the server-side app registration for this integration is missing (Phase 65) — the UI shows "not available yet" instead of a Connect button.'),
-  "companyName": zod.string().nullish(),
-  "environment": zod.string().nullish(),
-  "isEnabled": zod.boolean().nullish(),
-  "connectedAt": zod.string().nullish(),
-  "lastSyncedAt": zod.string().nullish(),
-  "hasPaymentAccount": zod.boolean().nullish(),
-  "paymentAccountName": zod.string().nullish(),
-  "categoryMap": zod.record(zod.string(), zod.string().nullable()).nullish()
-})
-
-
-/**
- * @summary Get the QuickBooks OAuth authorization URL to redirect the browser to
- */
-export const GetQuickbooksConnectUrlResponse = zod.object({
-  "url": zod.string()
-})
-
-
-/**
- * @summary Unlink QuickBooks Online from the company account
- */
-export const DisconnectQuickbooksResponse = zod.object({
-  "success": zod.boolean()
-})
-
-
-/**
- * @summary Enable or disable QuickBooks sync
- */
-export const ToggleQuickbooksBody = zod.object({
-  "isEnabled": zod.boolean()
-})
-
-export const ToggleQuickbooksResponse = zod.object({
-  "success": zod.boolean()
-})
-
-
-/**
- * @summary List the company's QuickBooks expense and bank/credit-card accounts, for the mapping UI
- */
-export const GetQuickbooksAccountsResponse = zod.object({
-  "expenseAccounts": zod.array(zod.object({
-  "id": zod.string(),
-  "name": zod.string()
-})),
-  "paymentAccounts": zod.array(zod.object({
-  "id": zod.string(),
-  "name": zod.string()
-}))
-})
-
-
-/**
- * @summary Set the payment (funding) account and cost-category → expense-account mapping
- */
-export const UpdateQuickbooksMappingBody = zod.object({
-  "paymentAccount": zod.union([zod.object({
-  "id": zod.string(),
-  "name": zod.string()
-}),zod.null()]).optional(),
-  "categoryMap": zod.record(zod.string(), zod.union([zod.object({
-  "id": zod.string(),
-  "name": zod.string()
-}),zod.null()])).optional()
-})
-
-export const UpdateQuickbooksMappingResponse = zod.object({
-  "success": zod.boolean()
-})
-
-
-/**
- * @summary Recent QuickBooks sync attempts (success and failure)
- */
-export const GetQuickbooksSyncLogResponse = zod.object({
-  "entries": zod.array(zod.object({
-  "id": zod.string(),
-  "entityType": zod.string(),
-  "entityId": zod.string(),
-  "qboId": zod.string().nullish(),
-  "status": zod.string(),
-  "error": zod.string().nullish(),
-  "createdAt": zod.string()
-}))
-})
-
-
-/**
- * @summary Manually re-run a failed sync for one invoice or cost entry
- */
-export const RetryQuickbooksSyncBody = zod.object({
-  "entityType": zod.enum(['invoice', 'cost_entry']),
-  "entityId": zod.string()
-})
-
-export const RetryQuickbooksSyncResponse = zod.object({
-  "success": zod.boolean()
-})
-
-
-/**
- * @summary Get the Wave accounting connection status for the authenticated company
- */
-export const GetWaveStatusResponse = zod.object({
-  "connected": zod.boolean(),
-  "available": zod.boolean().optional().describe('False when the server-side app registration for this integration is missing (Phase 65) — the UI shows "not available yet" instead of a Connect button.'),
-  "businessName": zod.string().nullish(),
-  "isEnabled": zod.boolean().nullish(),
-  "connectedAt": zod.string().nullish(),
-  "lastSyncedAt": zod.string().nullish(),
-  "hasPaymentAccount": zod.boolean().nullish(),
-  "paymentAccountName": zod.string().nullish(),
-  "hasIncomeAccount": zod.boolean().nullish(),
-  "incomeAccountName": zod.string().nullish(),
-  "categoryMap": zod.record(zod.string(), zod.string().nullable()).nullish()
-})
-
-
-/**
- * @summary Get the Wave OAuth authorization URL to redirect the browser to
- */
-export const GetWaveConnectUrlResponse = zod.object({
-  "url": zod.string()
-})
-
-
-/**
- * @summary Unlink Wave from the company account
- */
-export const DisconnectWaveResponse = zod.object({
-  "success": zod.boolean()
-})
-
-
-/**
- * @summary Enable or disable Wave sync
- */
-export const ToggleWaveBody = zod.object({
-  "isEnabled": zod.boolean()
-})
-
-export const ToggleWaveResponse = zod.object({
-  "success": zod.boolean()
-})
-
-
-/**
- * @summary List the company's Wave expense, income, and payment accounts, for the mapping UI
- */
-export const GetWaveAccountsResponse = zod.object({
-  "expenseAccounts": zod.array(zod.object({
-  "id": zod.string(),
-  "name": zod.string()
-})),
-  "incomeAccounts": zod.array(zod.object({
-  "id": zod.string(),
-  "name": zod.string()
-})),
-  "paymentAccounts": zod.array(zod.object({
-  "id": zod.string(),
-  "name": zod.string()
-}))
-})
-
-
-/**
- * @summary Set the payment (deposit) account, income account, and cost-category → expense-account mapping
- */
-export const UpdateWaveMappingBody = zod.object({
-  "paymentAccount": zod.union([zod.object({
-  "id": zod.string(),
-  "name": zod.string()
-}),zod.null()]).optional(),
-  "incomeAccount": zod.union([zod.object({
-  "id": zod.string(),
-  "name": zod.string()
-}),zod.null()]).optional(),
-  "categoryMap": zod.record(zod.string(), zod.union([zod.object({
-  "id": zod.string(),
-  "name": zod.string()
-}),zod.null()])).optional()
-})
-
-export const UpdateWaveMappingResponse = zod.object({
-  "success": zod.boolean()
-})
-
-
-/**
- * @summary Recent Wave sync attempts (success and failure)
- */
-export const GetWaveSyncLogResponse = zod.object({
-  "entries": zod.array(zod.object({
-  "id": zod.string(),
-  "entityType": zod.string(),
-  "entityId": zod.string(),
-  "waveId": zod.string().nullish(),
-  "status": zod.string(),
-  "error": zod.string().nullish(),
-  "createdAt": zod.string()
-}))
-})
-
-
-/**
- * @summary Manually re-run a failed sync for one invoice or cost entry
- */
-export const RetryWaveSyncBody = zod.object({
-  "entityType": zod.enum(['invoice', 'cost_entry']),
-  "entityId": zod.string()
-})
-
-export const RetryWaveSyncResponse = zod.object({
   "success": zod.boolean()
 })
 
@@ -2754,7 +2529,7 @@ export const ListClientQuotesResponseItem = zod.object({
   "ivaPercentuale": zod.number(),
   "ivaValore": zod.number(),
   "taxLines": zod.array(zod.object({
-  "code": zod.enum(['GST', 'HST', 'PST', 'QST', 'RST', 'TAX']),
+  "code": zod.enum(['IVA22', 'IVA10', 'IVA4', 'RC', 'SP', 'ESENTE', 'TAX']),
   "label": zod.string(),
   "rate": zod.number(),
   "amount": zod.number()
@@ -2815,7 +2590,7 @@ export const ListClientQuotesResponseItem = zod.object({
   "ivaPercentuale": zod.number(),
   "ivaValore": zod.number(),
   "taxLines": zod.array(zod.object({
-  "code": zod.enum(['GST', 'HST', 'PST', 'QST', 'RST', 'TAX']),
+  "code": zod.enum(['IVA22', 'IVA10', 'IVA4', 'RC', 'SP', 'ESENTE', 'TAX']),
   "label": zod.string(),
   "rate": zod.number(),
   "amount": zod.number()

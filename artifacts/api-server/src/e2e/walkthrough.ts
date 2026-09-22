@@ -33,15 +33,9 @@ for (const host of [
   "https://oauth2.googleapis.com/",
   "https://graph.microsoft.com/",
   "https://login.microsoftonline.com/",
-  "https://sandbox-quickbooks.api.intuit.com/",
-  "https://quickbooks.api.intuit.com/",
   "https://oauth.platform.intuit.com/",
   "https://developer.api.intuit.com/",
-  "https://api.waveapps.com/",
-  "https://gql.waveapps.com/",
   "https://googleads.googleapis.com/",
-  "https://sandbox.financeit.ca/",
-  "https://financeit.ca/",
 ]) {
   stubHost(host, (req) => json(599, { error: "walkthrough: vendor call blocked", url: req.url }));
 }

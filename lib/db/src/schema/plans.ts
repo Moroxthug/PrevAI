@@ -15,27 +15,22 @@ export const PRODUCT_FEATURES = [
   "contracts", // Phase 1: contracts + e-signature
   "jobs", // Phase 2: job sites, milestones, change orders
   "costs", // Phase 3: cost tracking + receipt AI
-  "invoicing", // Phase 4
+  "invoicing", // Phase 4 — in Italia: pro-forma / avviso di parcella finché non c'è l'export SDI (V2-4)
   "team_time", // Phase 3: workers, time entries, equipment
   "assistant", // Phase 5: job AI assistant
   "analytics_pro", // Phase 5: margin / AR / cash flow
   "team_accounts", // Phase 7: multi-user team accounts (invite logins, roles)
-  "quickbooks_sync", // Phase 11: one-way sync of paid invoices/confirmed costs to QuickBooks Online
   "calendar_sync", // Phase 12: one-way push of job milestones to Google Calendar / Outlook
   "invoice_card_payments", // Phase 15: online card/ACH payment on invoices via the company's own Stripe Connect account
-  "financeit", // Phase 16: point-of-sale financing on quotes via Financeit's hosted application flow
   "public_api", // Phase 19: versioned public API (API keys + webhooks) for Zapier/Make and direct integrations
   "gmail_send", // Phase 20: send customer-facing emails from the company's own connected Gmail account
-  "wave_sync", // Phase 25: one-way sync of paid invoices/confirmed costs to Wave accounting
-  "flinks_bank_feed", // Phase 27: bank-feed reconciliation via Flinks (auto-match bank transactions to cost entries)
   "meta_lead_ads", // Phase 28: import Facebook/Instagram Lead Ads submissions straight into the leads pipeline
-  "google_lsa", // Phase 29: import Google Local Services Ads leads straight into the leads pipeline (engineering track, gated on Google developer-token approval)
 ] as const;
 export type ProductFeature = (typeof PRODUCT_FEATURES)[number];
 
 const STARTER: ProductFeature[] = ["quotes", "quote_email", "acceptance_notifications"];
 const PRO: ProductFeature[] = [...STARTER, "catalog", "contracts", "jobs", "costs", "invoicing", "team_accounts"];
-const ELITE: ProductFeature[] = [...PRO, "team_time", "assistant", "analytics_pro", "quickbooks_sync", "calendar_sync", "invoice_card_payments", "financeit", "public_api", "gmail_send", "wave_sync", "flinks_bank_feed", "meta_lead_ads", "google_lsa"];
+const ELITE: ProductFeature[] = [...PRO, "team_time", "assistant", "analytics_pro", "calendar_sync", "invoice_card_payments", "public_api", "gmail_send", "meta_lead_ads"];
 
 /** Seats included in each plan's base price (Phase 7 §3.5) — extra seats are a plan add-on, enforced at invite time. */
 export const SEATS_INCLUDED: Record<PlanId, number> = {

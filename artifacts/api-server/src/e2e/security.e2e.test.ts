@@ -41,7 +41,6 @@ import {
   leadsTable,
   importBatchesTable,
   quoteImportCandidatesTable,
-  flinksTransactionsTable,
   jobPhotosTable,
   quoteVariantsTable,
   uploadedDocumentsTable,
@@ -135,7 +134,6 @@ async function seedOrgA(): Promise<Fixtures> {
   f.lead = await ins(db.insert(leadsTable).values({ userId, name: "Lead Person" } as typeof leadsTable.$inferInsert).returning());
   f.batch = await ins(db.insert(importBatchesTable).values({ userId, kind: "csv", fileName: "old-quotes.csv" } as typeof importBatchesTable.$inferInsert).returning());
   f.candidate = await ins(db.insert(quoteImportCandidatesTable).values({ batchId: f.batch, userId, extraction: {} } as typeof quoteImportCandidatesTable.$inferInsert).returning());
-  f.flinksTx = await ins(db.insert(flinksTransactionsTable).values({ userId, flinksTransactionId: `e2e-${randomUUID()}`, date: new Date(), amountCents: -5000 } as typeof flinksTransactionsTable.$inferInsert).returning());
   f.photo = await ins(db.insert(jobPhotosTable).values({ userId, projectId: project.id, fileName: "before.png", fileSize: 100, mimeType: "image/png", fileUrl: `/objects/job-photos/${userId}/before.png` } as typeof jobPhotosTable.$inferInsert).returning());
   f.variant = await ins(db.insert(quoteVariantsTable).values({ quoteId: quote.id, userId } as typeof quoteVariantsTable.$inferInsert).returning());
   f.doc = await ins(db.insert(uploadedDocumentsTable).values({ userId, fileName: "receipt.pdf", mimeType: "application/pdf", fileUrl: `/objects/receipts/${userId}/receipt.pdf` } as typeof uploadedDocumentsTable.$inferInsert).returning());
@@ -170,7 +168,7 @@ function resolveParams(route: MatrixRoute, f: Fixtures): { path: string; unseede
           ["/api/clients", "client"], ["/api/catalog", "catalog"], ["/api/crm/projects", "project"], ["/api/documents/price-alerts", "alert"],
           ["/api/documents", "doc"], ["/api/leads", "lead"], ["/api/assistant/conversations", "conversation"], ["/api/assistant/proposals", "proposal"],
           ["/api/developer/api-keys", "apiKey"], ["/api/developer/webhooks", "webhook"], ["/api/imports/batches", "batch"], ["/api/imports/candidates", "candidate"],
-          ["/api/flinks/transactions", "flinksTx"], ["/api/team/members", "member"], ["/api/v1/public/quotes", "quote"], ["/api/v1/public/jobs", "project"],
+          ["/api/team/members", "member"], ["/api/v1/public/quotes", "quote"], ["/api/v1/public/jobs", "project"],
           ["/api/v1/public/invoices", "invoice"], ["/api/v1/public/clients", "client"],
         ];
         id = byPrefix.find(([p]) => prefix === p)?.[1];
@@ -364,13 +362,6 @@ describe("inbound webhooks verify their signatures", () => {
     expect((await rawPost("/api/webhooks/resend", body, {})).status).toBe(400);
     expect((await rawPost("/api/webhooks/resend", body, { "svix-id": id, "svix-timestamp": ts, "svix-signature": sign(Buffer.from("wrong")) })).status).toBe(403);
     expect((await rawPost("/api/webhooks/resend", body, { "svix-id": id, "svix-timestamp": ts, "svix-signature": sign(secretBytes) })).status).toBe(200);
-  });
-
-  test("Financeit (shared token)", async () => {
-    const body = JSON.stringify({ event_type: "loan_state_event", application_id: "none" });
-    expect((await rawPost("/api/webhooks/financeit", body, {})).status).toBe(400);
-    expect((await rawPost("/api/webhooks/financeit", body, { "x-financeit-webhook-token": "wrong" })).status).toBe(401);
-    expect((await rawPost("/api/webhooks/financeit", body, { "x-financeit-webhook-token": process.env.FINANCEIT_WEBHOOK_SECRET! })).status).toBe(200);
   });
 
   test("cron tick needs the exact bearer secret", async () => {

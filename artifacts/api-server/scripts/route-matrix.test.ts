@@ -68,19 +68,12 @@ const FEATURE_ENTRY_ROUTES: [string, string, string][] = [
   ["POST", "/api/assistant/conversations/:id/messages", "assistant"],
   ["GET", "/api/analytics/company", "analytics_pro"],
   ["POST", "/api/team/members/invite", "team_accounts"],
-  ["GET", "/api/quickbooks/connect", "quickbooks_sync"],
   ["GET", "/api/calendar/:provider/connect", "calendar_sync"],
   ["POST", "/api/invoice-payments/connect/onboard", "invoice_card_payments"],
-  ["PUT", "/api/financeit/dealer", "financeit"],
   ["POST", "/api/developer/api-keys", "public_api"],
   ["POST", "/api/developer/webhooks", "public_api"],
   ["GET", "/api/email-connections/:provider/connect", "gmail_send"],
-  ["GET", "/api/wave/connect", "wave_sync"],
-  ["GET", "/api/flinks/connect-url", "flinks_bank_feed"],
-  ["POST", "/api/flinks/connect", "flinks_bank_feed"],
-  ["POST", "/api/flinks/sync", "flinks_bank_feed"],
   ["GET", "/api/meta-lead-ads/connect", "meta_lead_ads"],
-  ["GET", "/api/google-lsa/connect", "google_lsa"],
 ];
 
 // ── Rule 4: every `:param` handler is tied to the acting org ─────────────────
@@ -99,8 +92,8 @@ const ARCHIVE_EXCEPTIONS: Allow[] = [
 
 describe("route matrix (Phase 62)", () => {
   it("parses a sane number of routes", () => {
-    expect(rows.length).toBeGreaterThan(300);
-    expect(new Set(rows.map((r) => r.file)).size).toBeGreaterThan(45);
+    expect(rows.length).toBeGreaterThan(280);
+    expect(new Set(rows.map((r) => r.file)).size).toBeGreaterThan(40);
   });
 
   it("rule 1: every route without auth middleware is on the public allowlist", () => {
@@ -149,7 +142,7 @@ describe("route matrix (Phase 62)", () => {
   it("rule 7: every inbound webhook verifies its signature", () => {
     const byPath = new Map<string, RouteRow[]>();
     for (const r of rows) if (r.webhookVerify !== null) byPath.set(r.path, [...(byPath.get(r.path) ?? []), r]);
-    expect(byPath.size).toBeGreaterThanOrEqual(6);
+    expect(byPath.size).toBeGreaterThanOrEqual(5);
     // app.ts verifies WhatsApp/Meta before express.json() and calls next() into
     // the router's own POST — so at least one registration per path must verify.
     const unverified = [...byPath].filter(([, group]) => !group.some((r) => r.webhookVerify !== "NONE")).map(([p]) => p);

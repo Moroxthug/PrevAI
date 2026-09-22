@@ -15,21 +15,19 @@ import { quotesTable } from "./quotes";
 export const LEAD_STATUSES = ["new", "contacted", "quoted", "won", "lost", "unsubscribed"] as const;
 export type LeadStatus = (typeof LEAD_STATUSES)[number];
 
-export const LEAD_SOURCES = ["widget", "manual", "import", "meta_lead_ads", "google_lsa"] as const;
+export const LEAD_SOURCES = ["widget", "manual", "import", "meta_lead_ads"] as const;
 export type LeadSource = (typeof LEAD_SOURCES)[number];
 
 export const LEAD_CHANNELS = ["email", "sms", "whatsapp"] as const;
 export type LeadChannel = (typeof LEAD_CHANNELS)[number];
 
 /**
- * CASL requires every automated message to have a recorded, honest consent basis.
- * "meta_lead_ads" (Phase 28): consent basis is the customer's own opt-in on Meta's
- * instant-form submission, captured at the moment they submitted the ad.
- * "google_lsa" (Phase 29): consent basis is the customer's own contact through
- * Google's Local Services Ads platform (phone call, message, or booking) — same
- * reasoning as meta_lead_ads, the customer initiated contact through the ad platform.
+ * GDPR (art. 6 e 7) e art. 130 Codice Privacy: ogni messaggio automatico deve
+ * avere una base di consenso registrata e onesta.
+ * "meta_lead_ads" (Phase 28): la base è l'opt-in del cliente sul modulo istantaneo
+ * di Meta, registrato nel momento in cui ha inviato l'inserzione.
  */
-export const LEAD_CONSENT_SOURCES = ["widget_form", "manual_entry", "import", "existing_client", "meta_lead_ads", "google_lsa"] as const;
+export const LEAD_CONSENT_SOURCES = ["widget_form", "manual_entry", "import", "existing_client", "meta_lead_ads"] as const;
 export type LeadConsentSource = (typeof LEAD_CONSENT_SOURCES)[number];
 
 export const leadsTable = pgTable(
@@ -63,10 +61,6 @@ export const leadsTable = pgTable(
     metaCampaignId: text("meta_campaign_id"),
     metaCampaignName: text("meta_campaign_name"),
     metaAdId: text("meta_ad_id"),
-    // ── Phase 29: Google Local Services Ads attribution (all null for every other source) ──
-    googleLsaLeadId: text("google_lsa_lead_id"),
-    googleLsaLeadType: text("google_lsa_lead_type"),
-    googleLsaCategory: text("google_lsa_category"),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
   },

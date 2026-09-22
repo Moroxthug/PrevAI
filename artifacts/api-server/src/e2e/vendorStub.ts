@@ -1,7 +1,7 @@
 // Phase 65 — stub third-party HTTP APIs at the `fetch` boundary.
 //
 // Every vendor client in src/lib (WhatsApp Cloud API, Gmail, Google Calendar,
-// QuickBooks, Wave, Meta, …) is plain `fetch` against the vendor's host, so
+// Google, Microsoft, Meta, …) is plain `fetch` against the vendor's host, so
 // the integration wiring — token lookup + decryption, payload shape, sync
 // log rows, fallbacks — can be exercised end-to-end without credentials by
 // answering for those hosts here. Everything else (our own in-process server

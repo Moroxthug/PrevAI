@@ -32,7 +32,7 @@ const MANIFEST: Record<string, Entry> = {
   DATABASE_URL: { kind: "required", note: "Supabase Postgres via the session pooler (aws-0-us-west-2.pooler.supabase.com:5432)" },
   BETTER_AUTH_SECRET: { kind: "required", note: "session signing; rotating it logs everyone out" },
   BETTER_AUTH_URL: { kind: "required", note: "https://quoteai.ca — auth callback base" },
-  QUOTEAI_BASE_URL: { kind: "required", note: "public origin used in emails/PDF links" },
+  PREVAI_BASE_URL: { kind: "required", note: "public origin used in emails/PDF links" },
   TRUSTED_ORIGINS: { kind: "required", note: "comma list of origins allowed by CORS + better-auth" },
   TOKEN_ENCRYPTION_KEY: { kind: "required", note: "AES-256-GCM key for OAuth tokens at rest — see RUNBOOKS → rotate TOKEN_ENCRYPTION_KEY" },
   CRON_SECRET: { kind: "required", note: "Vercel Cron bearer for /api/cron/tick; nothing scheduled runs without it" },
@@ -70,10 +70,6 @@ const MANIFEST: Record<string, Entry> = {
   INVOICE_LINK_SECRET: { kind: "legacy", note: "HMAC for public invoice links; falls back to BETTER_AUTH_SECRET (set in prod) — only needed to rotate invoice links independently of sessions" },
 
   // ── Feature gates: absent = integration shows 'not configured' ──
-  QUICKBOOKS_CLIENT_ID: { kind: "feature", feature: "QuickBooks", note: "Phase 11" },
-  QUICKBOOKS_CLIENT_SECRET: { kind: "feature", feature: "QuickBooks", note: "" },
-  QUICKBOOKS_REDIRECT_URI: { kind: "feature", feature: "QuickBooks", note: "" },
-  QUICKBOOKS_ENVIRONMENT: { kind: "feature", feature: "QuickBooks", note: "sandbox | production" },
   GOOGLE_CALENDAR_CLIENT_ID: { kind: "feature", feature: "Google Calendar", note: "Phase 12" },
   GOOGLE_CALENDAR_CLIENT_SECRET: { kind: "feature", feature: "Google Calendar", note: "" },
   GOOGLE_CALENDAR_REDIRECT_URI: { kind: "feature", feature: "Google Calendar", note: "" },
@@ -100,21 +96,6 @@ const MANIFEST: Record<string, Entry> = {
   OUTLOOK_CALENDAR_CLIENT_ID: { kind: "deferred", note: "Phase 16 — Entra app registration not done" },
   OUTLOOK_CALENDAR_CLIENT_SECRET: { kind: "deferred", note: "" },
   OUTLOOK_CALENDAR_REDIRECT_URI: { kind: "deferred", note: "" },
-  WAVE_CLIENT_ID: { kind: "deferred", note: "Phase 25 — Wave partner app not granted" },
-  WAVE_CLIENT_SECRET: { kind: "deferred", note: "" },
-  WAVE_REDIRECT_URI: { kind: "deferred", note: "" },
-  FINANCEIT_APP_ID: { kind: "deferred", note: "Phase 27 — Financeit partner credentials not granted" },
-  FINANCEIT_APP_SECRET: { kind: "deferred", note: "" },
-  FINANCEIT_WEBHOOK_SECRET: { kind: "deferred", note: "" },
-  FINANCEIT_ENVIRONMENT: { kind: "deferred", note: "" },
-  FLINKS_CUSTOMER_ID: { kind: "deferred", note: "Phase 29 (bank feed) — Flinks sandbox not granted" },
-  FLINKS_INSTANCE: { kind: "deferred", note: "" },
-  FLINKS_ENVIRONMENT: { kind: "deferred", note: "" },
-  GOOGLE_LSA_CLIENT_ID: { kind: "deferred", note: "Phase 29 (LSA) — Google Ads developer token not applied for" },
-  GOOGLE_LSA_CLIENT_SECRET: { kind: "deferred", note: "" },
-  GOOGLE_LSA_REDIRECT_URI: { kind: "deferred", note: "" },
-  GOOGLE_ADS_DEVELOPER_TOKEN: { kind: "deferred", note: "" },
-  GOOGLE_ADS_LOGIN_CUSTOMER_ID: { kind: "deferred", note: "" },
 
   // ── Aliases / legacy names still read somewhere ──
   OPENAI_API_KEY: { kind: "legacy", note: "alias of the AI key; GROQ_API_KEY wins" },
@@ -146,6 +127,9 @@ const MANIFEST: Record<string, Entry> = {
   PRERENDER_SAMPLE: { kind: "local", note: "validate-prerender sample size" },
   BACKUP_PASSPHRASE: { kind: "local", note: "ops:backup encryption (also a GitHub Actions secret for the nightly backup)" },
   BACKUP_DATABASE_URL: { kind: "local", note: "GitHub Actions secret: the nightly backup source" },
+  RESTORE_DATABASE_URL: { kind: "local", note: "ops:restore target (or --target)" },
+  RESTORE_SUPABASE_URL: { kind: "local", note: "ops:restore --storage target project" },
+  RESTORE_SUPABASE_SERVICE_ROLE_KEY: { kind: "local", note: "" },
 };
 
 // ── Scan ────────────────────────────────────────────────────────────────────

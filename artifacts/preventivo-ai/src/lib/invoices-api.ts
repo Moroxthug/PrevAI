@@ -122,55 +122,6 @@ export const stripeConnectApi = {
   onboard: () => req<{ url: string }>("/api/invoice-payments/connect/onboard", { method: "POST", body: "{}" }),
 };
 
-export type FinanceitStatusDto = { connected: boolean; available?: boolean; dealerId?: string; isEnabled?: boolean; connectedAt?: string; lastAppliedAt?: string | null };
-
-export const financeitApi = {
-  status: () => req<FinanceitStatusDto>("/api/financeit/status"),
-  saveDealer: (dealerId: string) => req<{ connected: boolean; dealerId: string; isEnabled: boolean }>("/api/financeit/dealer", { method: "PUT", body: json({ dealerId }) }),
-  toggle: (isEnabled: boolean) => req<{ success: true }>("/api/financeit/toggle", { method: "PATCH", body: json({ isEnabled }) }),
-  disconnect: () => req<{ success: true }>("/api/financeit/disconnect", { method: "DELETE" }),
-};
-
-// Phase 27: Flinks bank feed reconciliation (engineering track — inert until Flinks accreditation is granted)
-export type FlinksAccountDto = { id: string; name: string; institution: string; last4: string | null };
-export type FlinksStatusDto = {
-  connected: boolean;
-  /** False when the server-side app registration is missing (Phase 65). */
-  available?: boolean;
-  institutionName?: string;
-  selectedAccount?: FlinksAccountDto | null;
-  isEnabled?: boolean;
-  connectedAt?: string;
-  lastSyncedAt?: string | null;
-};
-export type FlinksTransactionDto = {
-  id: string;
-  date: string;
-  description: string;
-  amountCents: number;
-  matchStatus: "unmatched" | "matched" | "ignored";
-  matchedCostEntryId: string | null;
-  autoMatched: boolean;
-};
-export type FlinksCandidateDto = { id: string; vendor: string; description: string; date: string; totalCents: number };
-
-export const flinksApi = {
-  status: () => req<FlinksStatusDto>("/api/flinks/status"),
-  connectUrl: () => req<{ url: string }>("/api/flinks/connect-url"),
-  connect: (loginId: string, institutionName: string) =>
-    req<{ connected: boolean; institutionName: string; accounts: FlinksAccountDto[] }>("/api/flinks/connect", { method: "POST", body: json({ loginId, institutionName }) }),
-  accounts: () => req<{ accounts: FlinksAccountDto[] }>("/api/flinks/accounts"),
-  selectAccount: (account: FlinksAccountDto) => req<{ success: true }>("/api/flinks/account", { method: "PUT", body: json(account) }),
-  toggle: (isEnabled: boolean) => req<{ success: true }>("/api/flinks/toggle", { method: "PATCH", body: json({ isEnabled }) }),
-  disconnect: () => req<{ success: true }>("/api/flinks/disconnect", { method: "DELETE" }),
-  sync: () => req<{ success: true; fetched: number; matched: number }>("/api/flinks/sync", { method: "POST" }),
-  transactions: () => req<{ transactions: FlinksTransactionDto[] }>("/api/flinks/transactions"),
-  candidates: (transactionId: string) => req<{ candidates: FlinksCandidateDto[] }>(`/api/flinks/transactions/${transactionId}/candidates`),
-  match: (transactionId: string, costEntryId: string) => req<{ success: true }>(`/api/flinks/transactions/${transactionId}/match`, { method: "POST", body: json({ costEntryId }) }),
-  unmatch: (transactionId: string) => req<{ success: true }>(`/api/flinks/transactions/${transactionId}/unmatch`, { method: "POST" }),
-  ignore: (transactionId: string) => req<{ success: true }>(`/api/flinks/transactions/${transactionId}/ignore`, { method: "POST" }),
-};
-
 // Phase 28: Meta (Facebook/Instagram) Lead Ads capture
 export type MetaLeadAdsStatusDto = {
   connected: boolean;
@@ -196,35 +147,6 @@ export const metaLeadAdsApi = {
   toggle: (isEnabled: boolean) => req<{ success: true }>("/api/meta-lead-ads/toggle", { method: "PATCH", body: json({ isEnabled }) }),
   disconnect: () => req<{ success: true }>("/api/meta-lead-ads/disconnect", { method: "DELETE" }),
   importLog: () => req<{ entries: MetaLeadAdsImportLogEntryDto[] }>("/api/meta-lead-ads/import-log"),
-};
-
-// Phase 29: Google Local Services Ads (LSA) lead capture — engineering track, gated on Google
-// developer-token approval + manager account setup (see docs/EDGE-FEATURES-PLAN.md §15).
-export type GoogleLsaStatusDto = {
-  connected: boolean;
-  /** False when the server-side app registration is missing (Phase 65). */
-  available?: boolean;
-  lsaCustomerId?: string;
-  isEnabled?: boolean;
-  connectedAt?: string;
-  lastPolledAt?: string | null;
-  lastLeadAt?: string | null;
-};
-export type GoogleLsaImportLogEntryDto = {
-  id: string;
-  googleLsaLeadId: string;
-  leadType: string | null;
-  status: "imported" | "duplicate" | "failed";
-  error: string | null;
-  createdAt: string;
-};
-
-export const googleLsaApi = {
-  status: () => req<GoogleLsaStatusDto>("/api/google-lsa/status"),
-  connectUrl: (lsaCustomerId: string) => req<{ url: string }>(`/api/google-lsa/connect?lsaCustomerId=${encodeURIComponent(lsaCustomerId)}`),
-  toggle: (isEnabled: boolean) => req<{ success: true }>("/api/google-lsa/toggle", { method: "PATCH", body: json({ isEnabled }) }),
-  disconnect: () => req<{ success: true }>("/api/google-lsa/disconnect", { method: "DELETE" }),
-  importLog: () => req<{ entries: GoogleLsaImportLogEntryDto[] }>("/api/google-lsa/import-log"),
 };
 
 // Phase 19: public API keys + webhooks (Settings → Integrations → Developer API)

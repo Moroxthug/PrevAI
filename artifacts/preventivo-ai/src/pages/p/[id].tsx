@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useParams } from "wouter";
-import { CheckCircle2, Loader2, FileX, Hammer, Landmark, Gift, ExternalLink } from "lucide-react";
+import { CheckCircle2, Loader2, FileX, Hammer, Gift, ExternalLink } from "lucide-react";
 import { format } from "date-fns";
 import { it } from "date-fns/locale";
 import { useLanguage } from "@/i18n/LanguageContext";
@@ -67,129 +67,6 @@ interface PublicQuote {
 
 function euro(value: string | number, _lang?: string) {
   return Number(value).toLocaleString("it-IT", { style: "currency", currency: "EUR" });
-}
-
-type FinanceitEstimate = { monthlyPayment: number; termMonths: number; apr: number };
-type FinanceitApplicationStatusDto = { status: string; applicationLink: string };
-
-const FINANCEIT_STATUS_KEYS: Record<string, string> = {
-  sent: "publicQuote.financing.statusSent",
-  in_progress: "publicQuote.financing.statusInProgress",
-  approved: "publicQuote.financing.statusApproved",
-  declined: "publicQuote.financing.statusDeclined",
-  funded: "publicQuote.financing.statusFunded",
-};
-
-// Only rendered once we've confirmed the contractor behind this quote has
-// financing enabled — most quotes never call the Financeit APIs at all.
-function FinancingWidget({ quoteId }: { quoteId: string }) {
-  const { t, lang } = useLanguage();
-  const [checked, setChecked] = useState(false);
-  const [available, setAvailable] = useState(false);
-  const [application, setApplication] = useState<FinanceitApplicationStatusDto | null>(null);
-  const [estimate, setEstimate] = useState<FinanceitEstimate | null>(null);
-  const [loadingEstimate, setLoadingEstimate] = useState(false);
-  const [applying, setApplying] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        const res = await fetch(`/api/public/quotes/${quoteId}/financeit/status`);
-        if (!res.ok) return;
-        const data = await res.json();
-        if (cancelled) return;
-        setAvailable(!!data.available);
-        setApplication(data.application ?? null);
-      } catch {
-        // Financing is a bonus, not core to the accept flow — fail silently.
-      } finally {
-        if (!cancelled) setChecked(true);
-      }
-    })();
-    return () => { cancelled = true; };
-  }, [quoteId]);
-
-  async function handleEstimate() {
-    setLoadingEstimate(true);
-    setError(null);
-    try {
-      const res = await fetch(`/api/public/quotes/${quoteId}/financeit/estimate`, { method: "POST" });
-      const data = await res.json();
-      if (!res.ok) { setError(t("publicQuote.financing.error")); return; }
-      setEstimate(data.estimate);
-    } catch {
-      setError(t("publicQuote.financing.error"));
-    } finally {
-      setLoadingEstimate(false);
-    }
-  }
-
-  async function handleApply() {
-    setApplying(true);
-    setError(null);
-    try {
-      const res = await fetch(`/api/public/quotes/${quoteId}/financeit/apply`, { method: "POST" });
-      const data = await res.json();
-      if (!res.ok) { setError(t("publicQuote.financing.error")); return; }
-      window.location.href = data.applicationLink;
-    } catch {
-      setError(t("publicQuote.financing.error"));
-    } finally {
-      setApplying(false);
-    }
-  }
-
-  if (!checked || !available) return null;
-
-  return (
-    <div className="card mb-6" style={{ borderColor: "var(--yellow-t)", background: "var(--yellow-t)" }}>
-      <div className="p-5 sm:p-6">
-        <div className="flex items-center gap-2 mb-1">
-          <Landmark className="h-4 w-4" style={{ color: "var(--yellow-dark)" }} />
-          <p className="text-sm font-semibold" style={{ color: "var(--navy)" }}>{t("publicQuote.financing.title")}</p>
-        </div>
-        <p className="text-xs mb-4" style={{ color: "var(--muted-mk)" }}>{t("publicQuote.financing.subtitle")}</p>
-
-        {application ? (
-          <div className="space-y-2">
-            {FINANCEIT_STATUS_KEYS[application.status] && (
-              <p className="text-xs" style={{ color: "var(--ink)" }}>{t(FINANCEIT_STATUS_KEYS[application.status])}</p>
-            )}
-            {application.status === "sent" && (
-              <button className="btn btn-outline-navy btn-sm" onClick={() => { window.location.href = application.applicationLink; }}>
-                {t("publicQuote.financing.continueApplication")}
-              </button>
-            )}
-          </div>
-        ) : (
-          <div className="space-y-3">
-            {estimate ? (
-              <div className="text-sm" style={{ color: "var(--ink)" }}>
-                <span className="text-lg font-bold">{euro(estimate.monthlyPayment, lang)}</span>
-                <span style={{ color: "var(--muted-mk)" }}>{t("publicQuote.financing.perMonth")}</span>
-                <span className="text-xs ml-2" style={{ color: "var(--faint)" }}>({estimate.termMonths} {t("publicQuote.financing.termMonths")})</span>
-              </div>
-            ) : (
-              <button className="btn btn-outline-navy btn-sm gap-2" onClick={handleEstimate} disabled={loadingEstimate}>
-                {loadingEstimate ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-                {t("publicQuote.financing.getEstimate")}
-              </button>
-            )}
-            {error && <p className="text-xs" style={{ color: "var(--red)" }}>{error}</p>}
-            <div>
-              <button onClick={handleApply} disabled={applying} className="btn btn-navy btn-sm">
-                {applying ? <Loader2 className="h-4 w-4 animate-spin" /> : <Landmark className="h-4 w-4" />}
-                {t("publicQuote.financing.applyButton")}
-              </button>
-            </div>
-            <p className="text-[11px]" style={{ color: "var(--faint)" }}>{t("publicQuote.financing.disclaimer")}</p>
-          </div>
-        )}
-      </div>
-    </div>
-  );
 }
 
 interface MatchedIncentive {
@@ -520,7 +397,6 @@ export default function PublicQuotePage() {
       </div>
 
       <RebatesWidget quoteId={quote.id} />
-      <FinancingWidget quoteId={quote.id} />
 
       {isAccepted ? (
         <div className="doc-banner ok text-left p-5 sm:p-6 flex items-start gap-3">

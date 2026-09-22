@@ -10,8 +10,7 @@
 //     (src/e2e/vendorStub.ts): WhatsApp template rejected → email fallback and
 //     accepted → WhatsApp channel; Gmail connected send → the contractor's own
 //     address, and Gmail failure → platform sender + lastSendError; Google
-//     Calendar milestone → all-day event, date change → PATCH; QuickBooks
-//     invoice.paid → SalesReceipt and cost.confirmed → Purchase, both logged.
+//     Calendar milestone → all-day event, date change → PATCH.
 //  4. Integrations with no app registration are honest: `available: false`
 //     on status, 503 NOT_CONFIGURED on connect, never a vendor bounce.
 //  5. Every transactional email captured during the run renders clean in the
@@ -39,8 +38,6 @@ import {
   emailConnectionsTable,
   calendarConnectionsTable,
   calendarSyncedEventsTable,
-  quickbooksConnectionsTable,
-  quickbooksSyncLogTable,
   milestonesTable,
 } from "@workspace/db";
 import "../automations/index.js";
@@ -177,7 +174,7 @@ describe("Phase 65 — integrations", () => {
       const t1 = await api("/api/cron/tick", { headers: { authorization: `Bearer ${process.env.CRON_SECRET}` } });
       expect(t1.status, JSON.stringify(t1.body)).toBe(200);
       expect(t1.body.ok).toBe(true);
-      for (const key of ["automations", "contracts", "invoices", "leads", "reviewRequests", "incentives", "priceTrends", "quoteFollowups", "flinksSync", "googleLsaPoll", "usage", "tookMs"]) {
+      for (const key of ["automations", "contracts", "invoices", "leads", "reviewRequests", "incentives", "priceTrends", "quoteFollowups", "usage", "tookMs"]) {
         expect(t1.body, `tick response has ${key}`).toHaveProperty(key);
       }
       expect(t1.body.invoices.overdue).toBeGreaterThanOrEqual(1);
@@ -188,9 +185,6 @@ describe("Phase 65 — integrations", () => {
       expect(t1.body.leads.raised).toBeGreaterThanOrEqual(1);
       expect(t1.body.reviewRequests.raised).toBeGreaterThanOrEqual(1);
       expect(t1.body.quoteFollowups.raised).toBeGreaterThanOrEqual(1);
-      // Flinks / LSA have no connections in this org — they must report a clean skip, not throw.
-      expect(t1.body.flinksSync).toMatchObject({ transactionsFetched: expect.any(Number) });
-      expect(t1.body.googleLsaPoll).toMatchObject({ leadsImported: expect.any(Number) });
 
       // Effects, one per seed.
       const [ov] = await db.select().from(invoicesTable).where(eq(invoicesTable.id, overdue.id));
@@ -506,93 +500,11 @@ describe("Phase 65 — integrations", () => {
     afterAll(() => unstubHost(GCAL));
   });
 
-  describe("QuickBooks (sandbox host)", () => {
-    const QBO = "https://sandbox-quickbooks.api.intuit.com/";
-
-    test("invoice.paid posts one SalesReceipt for the total; cost.confirmed posts one Purchase from the mapped accounts; both land in the sync log", async () => {
-      const org = await createOrg({ companyName: "Books Co" });
-      const realmId = "9130000000000001";
-      await db.insert(quickbooksConnectionsTable).values({
-        userId: org.userId,
-        realmId,
-        environment: "sandbox",
-        companyName: "Books Co Sandbox",
-        accessTokenEnc: encryptSecret("qbo-access"),
-        refreshTokenEnc: encryptSecret("qbo-refresh"),
-        tokenExpiresAt: daysFromNow(1),
-        paymentAccount: { id: "35", name: "Chequing" },
-        categoryMap: { materials: { id: "64", name: "Job Materials" } },
-      });
-      stubHost(QBO, (req) => {
-        const u = new URL(req.url);
-        expect(u.pathname.startsWith(`/v3/company/${realmId}/`)).toBe(true);
-        expect(req.headers.authorization).toBe("Bearer qbo-access");
-        if (u.pathname.endsWith("/query")) {
-          const q = u.searchParams.get("query") ?? "";
-          if (q.includes("from Customer")) return json(200, { QueryResponse: {} }); // not found → create
-          if (q.includes("from Item")) return json(200, { QueryResponse: { Item: [{ Id: "17", Name: "PrevAI Job Revenue" }] } });
-          return json(200, { QueryResponse: {} });
-        }
-        if (u.pathname.endsWith("/customer")) return json(200, { Customer: { Id: "58", Name: (req.json as { DisplayName: string }).DisplayName } });
-        if (u.pathname.endsWith("/salesreceipt")) return json(200, { SalesReceipt: { Id: "SR-1001" } });
-        if (u.pathname.endsWith("/purchase")) return json(200, { Purchase: { Id: "P-2002" } });
-        return json(404, { Fault: { Error: [{ Message: `unscripted ${u.pathname}` }] } });
-      });
-
-      const client = await seedClient(org, { name: "Books Client" });
-      const inv = await createManualInvoice(org, client.id, { unitCents: 123_456 });
-      expect((await org.api(`/api/invoices/${inv.id}/send`, { body: {} })).status).toBe(200);
-      const [sent] = await db.select().from(invoicesTable).where(eq(invoicesTable.id, inv.id));
-      const pay = await org.api(`/api/invoices/${inv.id}/payments`, { body: { amountCents: sent!.totalCents, method: "etransfer" } });
-      expect(pay.status, JSON.stringify(pay.body)).toBe(201);
-
-      const receiptCall = requestsTo(QBO).find((r) => r.url.endsWith("/salesreceipt"))!;
-      expect(receiptCall, "SalesReceipt posted").toBeTruthy();
-      expect(receiptCall.json).toMatchObject({ CustomerRef: { value: "58" }, DocNumber: sent!.number, Line: [{ Amount: sent!.totalCents / 100, DetailType: "SalesItemLineDetail", SalesItemLineDetail: { ItemRef: { value: "17" } } }] });
-      expect(requestsTo(QBO).filter((r) => r.url.endsWith("/customer"))).toHaveLength(1);
-      const invLog = await db.select().from(quickbooksSyncLogTable).where(and(eq(quickbooksSyncLogTable.userId, org.userId), eq(quickbooksSyncLogTable.entityId, inv.id)));
-      expect(invLog).toHaveLength(1);
-      expect(invLog[0]).toMatchObject({ status: "synced", qboId: "SR-1001", qboType: "SalesReceipt" });
-
-      resetRecorded();
-      const job = await org.api("/api/jobs", { body: { name: "Books job" } });
-      expect(job.status).toBe(201);
-      const jobId = job.body.job.id as string;
-      const cost = await org.api(`/api/jobs/${jobId}/costs`, { body: { category: "materials", vendor: "Home Depot", description: "Lumber", totalCents: 54_321, taxCents: 0 } });
-      expect(cost.status, JSON.stringify(cost.body)).toBe(201);
-      const purchase = requestsTo(QBO).find((r) => r.url.endsWith("/purchase"))!;
-      expect(purchase, "Purchase posted").toBeTruthy();
-      expect(purchase.json).toMatchObject({ PaymentType: "Cash", AccountRef: { value: "35" }, Line: [{ Amount: 543.21, DetailType: "AccountBasedExpenseLineDetail", AccountBasedExpenseLineDetail: { AccountRef: { value: "64" } } }] });
-      const costLog = await db.select().from(quickbooksSyncLogTable).where(and(eq(quickbooksSyncLogTable.userId, org.userId), eq(quickbooksSyncLogTable.entityType, "cost_entry")));
-      expect(costLog).toHaveLength(1);
-      expect(costLog[0]).toMatchObject({ status: "synced", qboId: "P-2002", qboType: "Purchase" });
-
-      // Unmapped category → the automation fails loudly into the sync log (retryable from Settings), the cost itself is still saved.
-      resetRecorded();
-      const unmapped = await org.api(`/api/jobs/${jobId}/costs`, { body: { category: "labour", vendor: "Crew", totalCents: 10_000, taxCents: 0 } });
-      expect(unmapped.status).toBe(201);
-      expect(requestsTo(QBO)).toHaveLength(0);
-      const failedLog = await db.select().from(quickbooksSyncLogTable).where(and(eq(quickbooksSyncLogTable.userId, org.userId), eq(quickbooksSyncLogTable.status, "failed")));
-      expect(failedLog).toHaveLength(1);
-      expect(failedLog[0]!.error).toMatch(/labour/);
-      const log = await org.api("/api/quickbooks/sync-log");
-      expect(log.status).toBe(200);
-      expect(JSON.stringify(log.body)).toContain("P-2002");
-    });
-
-    afterAll(() => unstubHost(QBO));
-  });
-
   // ── 4. Honest "not configured" states ──────────────────────────────────────
 
   describe("integrations without an app registration", () => {
     const CASES: { name: IntegrationName; status: string; connect: { method?: "GET" | "POST" | "PUT"; path: string; body?: unknown }; statusPath?: (b: Record<string, unknown>) => unknown }[] = [
-      { name: "wave", status: "/api/wave/status", connect: { path: "/api/wave/connect" } },
-      { name: "quickbooks", status: "/api/quickbooks/status", connect: { path: "/api/quickbooks/connect" } },
       { name: "meta_lead_ads", status: "/api/meta-lead-ads/status", connect: { path: "/api/meta-lead-ads/connect" } },
-      { name: "google_lsa", status: "/api/google-lsa/status", connect: { path: "/api/google-lsa/connect?lsaCustomerId=1234567890" } },
-      { name: "flinks", status: "/api/flinks/status", connect: { path: "/api/flinks/connect-url" } },
-      { name: "financeit", status: "/api/financeit/status", connect: { method: "PUT", path: "/api/financeit/dealer", body: { dealerId: "D-1" } } },
       { name: "whatsapp", status: "/api/whatsapp/status", connect: { method: "POST", path: "/api/whatsapp/connect", body: { phoneNumber: "+16135550199" } } },
       { name: "stripe", status: "/api/invoice-payments/connect/status", connect: { method: "POST", path: "/api/invoice-payments/connect/onboard" } },
       { name: "google_calendar", status: "/api/calendar/status", connect: { path: "/api/calendar/google/connect" }, statusPath: (b) => (b.available as Record<string, unknown>).google },
@@ -624,7 +536,7 @@ describe("Phase 65 — integrations", () => {
       }
     });
 
-    test("with credentials present the same status reports available=true (QuickBooks + Google Calendar are registered in production)", async () => {
+    test("with credentials present the same status reports available=true (Google Calendar is registered in production)", async () => {
       const withEnv = async (name: IntegrationName, fn: () => Promise<void>) => {
         const saved: Record<string, string | undefined> = {};
         for (const k of INTEGRATION_ENV[name]) {
@@ -637,16 +549,9 @@ describe("Phase 65 — integrations", () => {
           for (const [k, v] of Object.entries(saved)) if (v === undefined) delete process.env[k];
         }
       };
-      await withEnv("quickbooks", async () => {
-        expect((await org.api("/api/quickbooks/status")).body.available).toBe(true);
-        expect((await org.api("/api/quickbooks/connect")).status).toBe(200);
-      });
       await withEnv("google_calendar", async () => {
         expect((await org.api("/api/calendar/status")).body.available.google).toBe(true);
         expect((await org.api("/api/calendar/google/connect")).status).toBe(200);
-      });
-      await withEnv("wave", async () => {
-        expect((await org.api("/api/wave/status")).body.available).toBe(true);
       });
     });
   });

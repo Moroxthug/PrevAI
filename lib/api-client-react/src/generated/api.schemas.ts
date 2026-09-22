@@ -72,11 +72,12 @@ export type QuoteTaxLineCode = typeof QuoteTaxLineCode[keyof typeof QuoteTaxLine
 
 
 export const QuoteTaxLineCode = {
-  GST: 'GST',
-  HST: 'HST',
-  PST: 'PST',
-  QST: 'QST',
-  RST: 'RST',
+  IVA22: 'IVA22',
+  IVA10: 'IVA10',
+  IVA4: 'IVA4',
+  RC: 'RC',
+  SP: 'SP',
+  ESENTE: 'ESENTE',
   TAX: 'TAX',
 } as const;
 
@@ -545,145 +546,6 @@ export interface WhatsappToggleBody {
 
 export interface SuccessResult {
   success: boolean;
-}
-
-export type QuickbooksStatusCategoryMap = {[key: string]: string | null} | null;
-
-export interface QuickbooksStatus {
-  connected: boolean;
-  /** False when the server-side app registration for this integration is missing (Phase 65) — the UI shows "not available yet" instead of a Connect button. */
-  available?: boolean;
-  companyName?: string | null;
-  environment?: string | null;
-  isEnabled?: boolean | null;
-  connectedAt?: string | null;
-  lastSyncedAt?: string | null;
-  hasPaymentAccount?: boolean | null;
-  paymentAccountName?: string | null;
-  categoryMap?: QuickbooksStatusCategoryMap;
-}
-
-export interface QuickbooksConnectUrl {
-  url: string;
-}
-
-export interface QuickbooksToggleBody {
-  isEnabled: boolean;
-}
-
-export interface QuickbooksAccount {
-  id: string;
-  name: string;
-}
-
-export interface QuickbooksAccounts {
-  expenseAccounts: QuickbooksAccount[];
-  paymentAccounts: QuickbooksAccount[];
-}
-
-export type QuickbooksMappingBodyCategoryMap = {[key: string]: QuickbooksAccount | null};
-
-export interface QuickbooksMappingBody {
-  paymentAccount?: QuickbooksAccount | null;
-  categoryMap?: QuickbooksMappingBodyCategoryMap;
-}
-
-export interface QuickbooksSyncLogEntry {
-  id: string;
-  entityType: string;
-  entityId: string;
-  qboId?: string | null;
-  status: string;
-  error?: string | null;
-  createdAt: string;
-}
-
-export interface QuickbooksSyncLog {
-  entries: QuickbooksSyncLogEntry[];
-}
-
-export type QuickbooksRetryBodyEntityType = typeof QuickbooksRetryBodyEntityType[keyof typeof QuickbooksRetryBodyEntityType];
-
-
-export const QuickbooksRetryBodyEntityType = {
-  invoice: 'invoice',
-  cost_entry: 'cost_entry',
-} as const;
-
-export interface QuickbooksRetryBody {
-  entityType: QuickbooksRetryBodyEntityType;
-  entityId: string;
-}
-
-export type WaveStatusCategoryMap = {[key: string]: string | null} | null;
-
-export interface WaveStatus {
-  connected: boolean;
-  /** False when the server-side app registration for this integration is missing (Phase 65) — the UI shows "not available yet" instead of a Connect button. */
-  available?: boolean;
-  businessName?: string | null;
-  isEnabled?: boolean | null;
-  connectedAt?: string | null;
-  lastSyncedAt?: string | null;
-  hasPaymentAccount?: boolean | null;
-  paymentAccountName?: string | null;
-  hasIncomeAccount?: boolean | null;
-  incomeAccountName?: string | null;
-  categoryMap?: WaveStatusCategoryMap;
-}
-
-export interface WaveConnectUrl {
-  url: string;
-}
-
-export interface WaveToggleBody {
-  isEnabled: boolean;
-}
-
-export interface WaveAccount {
-  id: string;
-  name: string;
-}
-
-export interface WaveAccounts {
-  expenseAccounts: WaveAccount[];
-  incomeAccounts: WaveAccount[];
-  paymentAccounts: WaveAccount[];
-}
-
-export type WaveMappingBodyCategoryMap = {[key: string]: WaveAccount | null};
-
-export interface WaveMappingBody {
-  paymentAccount?: WaveAccount | null;
-  incomeAccount?: WaveAccount | null;
-  categoryMap?: WaveMappingBodyCategoryMap;
-}
-
-export interface WaveSyncLogEntry {
-  id: string;
-  entityType: string;
-  entityId: string;
-  waveId?: string | null;
-  status: string;
-  error?: string | null;
-  createdAt: string;
-}
-
-export interface WaveSyncLog {
-  entries: WaveSyncLogEntry[];
-}
-
-export type WaveRetryBodyEntityType = typeof WaveRetryBodyEntityType[keyof typeof WaveRetryBodyEntityType];
-
-
-export const WaveRetryBodyEntityType = {
-  invoice: 'invoice',
-  cost_entry: 'cost_entry',
-} as const;
-
-export interface WaveRetryBody {
-  entityType: WaveRetryBodyEntityType;
-  entityId: string;
 }
 
 export type CalendarProvider = typeof CalendarProvider[keyof typeof CalendarProvider];

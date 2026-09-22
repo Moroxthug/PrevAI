@@ -22,13 +22,9 @@ const ALGO = "aes-256-gcm";
 
 // One row per encrypted column — keep in sync with `encryptSecret(` call sites.
 const COLUMNS: { table: string; pk: string[]; columns: string[] }[] = [
-  { table: "quickbooks_connections", pk: ["user_id"], columns: ["access_token_enc", "refresh_token_enc"] },
   { table: "calendar_connections", pk: ["user_id", "provider"], columns: ["access_token_enc", "refresh_token_enc"] },
   { table: "email_connections", pk: ["user_id", "provider"], columns: ["access_token_enc", "refresh_token_enc"] },
-  { table: "wave_connections", pk: ["user_id"], columns: ["access_token_enc", "refresh_token_enc"] },
-  { table: "flinks_connections", pk: ["user_id"], columns: ["login_id_enc"] },
   { table: "meta_lead_ads_connections", pk: ["user_id"], columns: ["page_access_token_enc"] },
-  { table: "google_lsa_connections", pk: ["user_id"], columns: ["refresh_token_enc"] },
 ];
 
 function key(name: string): Buffer {

@@ -1,7 +1,7 @@
 import { createCipheriv, createDecipheriv, randomBytes } from "crypto";
 
-// AES-256-GCM at-rest encryption for third-party OAuth tokens (QuickBooks
-// access/refresh tokens). Never log or return a decrypted secret.
+// AES-256-GCM at-rest encryption for third-party OAuth tokens (calendar,
+// Gmail, Meta access/refresh tokens). Never log or return a decrypted secret.
 
 const ALGO = "aes-256-gcm";
 

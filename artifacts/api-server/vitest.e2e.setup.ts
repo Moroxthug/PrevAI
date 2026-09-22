@@ -36,10 +36,8 @@ process.env.WHATSAPP_PHONE_NUMBER_ID ??= "e2e-phone-id";
 process.env.WHATSAPP_REVIEW_REQUEST_TEMPLATE ??= "quoteai_review_request";
 process.env.WHATSAPP_LEAD_FOLLOWUP_TEMPLATE ??= "quoteai_lead_followup";
 process.env.WHATSAPP_PHOTO_SHARE_TEMPLATE ??= "quoteai_photo_share";
-process.env.QUICKBOOKS_ENVIRONMENT ??= "sandbox";
 process.env.WHATSAPP_APP_SECRET ??= "e2e-whatsapp-app-secret";
 process.env.META_APP_SECRET ??= "e2e-meta-app-secret";
-process.env.FINANCEIT_WEBHOOK_SECRET ??= "e2e-financeit-webhook-secret";
 process.env.RESEND_WEBHOOK_SECRET ??= "whsec_" + Buffer.from("e2e-resend-webhook-secret-bytes").toString("base64");
 
 // Deterministic by default: every AI call path has a fallback on error, and
@@ -86,15 +84,9 @@ vi.mock("resend", async () => {
     "https://oauth2.googleapis.com/",
     "https://graph.microsoft.com/",
     "https://login.microsoftonline.com/",
-    "https://sandbox-quickbooks.api.intuit.com/",
-    "https://quickbooks.api.intuit.com/",
     "https://oauth.platform.intuit.com/",
     "https://developer.api.intuit.com/",
-    "https://api.waveapps.com/",
-    "https://gql.waveapps.com/",
     "https://googleads.googleapis.com/",
-    "https://sandbox.financeit.ca/",
-    "https://financeit.ca/",
   ]) {
     stubHost(host, (req) => json(599, { error: "e2e: unscripted vendor call", url: req.url }));
   }
