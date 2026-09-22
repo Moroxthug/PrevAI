@@ -6,6 +6,7 @@ import { runInvoiceMaintenance } from "../invoices/maintenance.js";
 import { runLeadMaintenance } from "../leads/maintenance.js";
 import { runJobReviewRequestMaintenance } from "../jobs/maintenance.js";
 import { runQuoteFollowupMaintenance } from "../quotes/maintenance.js";
+import { runSdiMaintenance } from "../sdi/maintenance.js";
 import { rollUpUsageForDate } from "../lib/usage.js";
 import { runIncentivesFreshnessCheck } from "../incentives/maintenance.js";
 import { runPriceIntelligenceTrendCheck } from "../priceIntelligence/maintenance.js";
@@ -49,10 +50,12 @@ router.get("/cron/tick", async (req, res) => {
     const incentives = await runIncentivesFreshnessCheck();
     const priceTrends = await runPriceIntelligenceTrendCheck();
     const quoteFollowups = await runQuoteFollowupMaintenance();
+    // A-1: stati SdI non arrivati via webhook, fatture di acquisto, bollo trimestrale.
+    const sdi = await runSdiMaintenance();
     // Roll up yesterday's (and today's, in case cron shifted) usage_events into the daily summary.
     const usage = await rollUpUsageForDate(new Date(Date.now() - 24 * 60 * 60 * 1000));
     await rollUpUsageForDate(new Date());
-    const result = { automations, contracts, invoices, leads, reviewRequests, incentives, priceTrends, quoteFollowups, usage };
+    const result = { automations, contracts, invoices, leads, reviewRequests, incentives, priceTrends, quoteFollowups, sdi, usage };
     const tookMs = Date.now() - startedAt;
     if (tick) await db.update(cronTicksTable).set({ finishedAt: new Date(), ok: true, result, tookMs }).where(eq(cronTicksTable.id, tick.id));
     await db.delete(cronTicksTable).where(lt(cronTicksTable.startedAt, new Date(Date.now() - 90 * 24 * 3_600_000)));

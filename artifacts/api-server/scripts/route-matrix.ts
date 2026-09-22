@@ -241,11 +241,11 @@ function classifyTokenCompare(reach: string, routePath: string): RouteRow["token
 }
 
 /** Inbound provider webhooks only — `/developer/webhooks` is our *outbound* webhook management API. */
-const INBOUND_WEBHOOK_PATH = /webhook$|\/webhooks\/\w+$/;
+const INBOUND_WEBHOOK_PATH = /webhook$|\/webhooks\/[\w:-]+(\/[\w:-]+)?$/;
 
 function classifyWebhook(reach: string, method: string, routePath: string): string | null {
   if (method !== "post" || !INBOUND_WEBHOOK_PATH.test(routePath)) return null;
-  const hits = ["constructEvent", "timingSafeEqual", "createHmac", "x-hub-signature", "verifySignature", "svix", "hub.verify_token"].filter((k) => reach.includes(k));
+  const hits = ["constructEvent", "timingSafeEqual", "createHmac", "x-hub-signature", "verifySignature", "verificaWebhook", "svix", "hub.verify_token"].filter((k) => reach.includes(k));
   return hits.length ? hits.join(", ") : "NONE";
 }
 

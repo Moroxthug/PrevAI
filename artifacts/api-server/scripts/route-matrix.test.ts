@@ -35,6 +35,7 @@ const PUBLIC_ROUTES: Allow[] = [
   { match: /^GET \/api\/team\/invite\/:token$/, reason: "invite preview — hashed token lookup, rate limited" },
   { match: /^(GET|POST|DELETE) \/api\/(i|sign|t)\/:token/, reason: "customer/worker magic links — hashed token lookup, rate limited (Rule 6)" },
   { match: /^(GET|POST) \/api\/public\//, reason: "public quote widget + unsubscribe links — rate limited (Rule 6)" },
+  { match: /^POST \/api\/webhooks\/sdi\/:userId$/, reason: "A-1: notifiche dell'intermediario SdI — segreto per impresa confrontato con timingSafeEqual dentro l'adapter (Rule 7), IP rate limited" },
 ];
 
 // ── Rule 2: every mutating session route names a permission ──────────────────

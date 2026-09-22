@@ -150,7 +150,7 @@ export async function ricalcolaStatoConfigurazione(settings: SdiSettings): Promi
 export type Requisito = { campo: string; messaggio: string };
 
 /** Cosa manca ancora per poter emettere. Lo stesso elenco guida l'onboarding. */
-export function requisitiMancanti(settings: SdiSettings, profile: { vatNumber?: string | null; codiceFiscale?: string | null; companyName?: string | null; address?: string | null; city?: string | null; cap?: string | null; province?: string | null } | null): Requisito[] {
+export function requisitiMancanti(settings: SdiSettings, profile: { vatNumber?: string | null; codiceFiscale?: string | null; companyName?: string | null; address?: string | null; city?: string | null; cap?: string | null; province?: string | null; twoFactorRequired?: boolean | null } | null): Requisito[] {
   const mancanti: Requisito[] = [];
   if (!profile?.companyName) mancanti.push({ campo: "profilo.companyName", messaggio: "Manca la ragione sociale dell'impresa." });
   if (!normalizzaPartitaIva(profile?.vatNumber)) mancanti.push({ campo: "profilo.vatNumber", messaggio: "Manca la partita IVA." });
@@ -162,6 +162,11 @@ export function requisitiMancanti(settings: SdiSettings, profile: { vatNumber?: 
     mancanti.push({ campo: "sdi.providerApiKey", messaggio: "Mancano le credenziali dell'intermediario." });
   }
   if (!settings.delegaFirmataAt) mancanti.push({ campo: "sdi.delega", messaggio: "Conferma di aver firmato la delega presso l'intermediario." });
+  // A-0/§6.5: chi tiene dati fiscali completi in PrevAI deve avere la verifica
+  // in due passaggi obbligatoria per tutta l'organizzazione.
+  if (!profile?.twoFactorRequired) {
+    mancanti.push({ campo: "profilo.twoFactorRequired", messaggio: "Attiva la verifica in due passaggi obbligatoria per l'organizzazione (Impostazioni → Sicurezza)." });
+  }
   return mancanti;
 }
 

@@ -41,6 +41,8 @@ import metaLeadAdsRouter from "./meta-lead-ads";
 import developerApiRouter from "./developer-api";
 import publicV1Router from "./public-v1";
 import archiveRouter from "./archive";
+import sdiRouter from "./sdi";
+import sdiWebhooksRouter from "./sdi-webhooks";
 
 const router: IRouter = Router();
 
@@ -85,6 +87,8 @@ router.use(importsRouter);
 router.use(metaLeadAdsRouter);
 router.use(developerApiRouter);
 router.use(archiveRouter);
+router.use(sdiRouter);
+router.use(sdiWebhooksRouter);
 router.use("/v1/public", publicV1Router);
 
 export default router;
