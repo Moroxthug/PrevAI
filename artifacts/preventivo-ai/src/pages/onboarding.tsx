@@ -213,7 +213,7 @@ export default function OnboardingPage() {
                   </div>
                   <div className="field full">
                     <label htmlFor="address">{t("onboarding.address")}</label>
-                    <input id="address" placeholder="123 Main St, Toronto, ON M5V 2T6" value={address} onChange={e => setAddress(e.target.value)} />
+                    <input id="address" placeholder="Via Roma 15, 20121 Milano (MI)" value={address} onChange={e => setAddress(e.target.value)} />
                   </div>
                   <div className="field full">
                     <label htmlFor="email">{t("onboarding.businessEmail")}</label>

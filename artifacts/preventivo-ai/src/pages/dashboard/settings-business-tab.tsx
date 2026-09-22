@@ -41,7 +41,7 @@ const DEFAULT_SCHEDULE: PaymentSchedule = {
 };
 
 /**
- * "Business" settings tab: Canadian identity (province, tax numbers,
+ * "Business" settings tab: identità fiscale italiana (provincia, P.IVA/CF,
  * licence, e-transfer email), automation preferences and the default
  * payment schedule new quotes start from.
  */

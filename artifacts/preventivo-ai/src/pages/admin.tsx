@@ -387,7 +387,7 @@ export default function AdminPage() {
   }
 
   async function deleteIncentive(id: string) {
-    if (!window.confirm("Delete this incentive program?")) return;
+    if (!window.confirm("Eliminare questo programma di incentivi?")) return;
     try {
       await authFetch(`/api/admin/incentives/${id}`, { method: "DELETE" });
       loadIncentives();
@@ -794,7 +794,7 @@ export default function AdminPage() {
               { id: "overview", label: t("admin.tabOverview"), icon: BarChart3 },
               { id: "users", label: t("admin.tabUsers"), icon: Users },
               { id: "widget", label: t("admin.tabWidget"), icon: Zap },
-              { id: "margin", label: "Cost & Margin", icon: TrendingUp },
+              { id: "margin", label: "Costi e margine", icon: TrendingUp },
               { id: "incentives", label: t("admin.tabIncentives"), icon: Award },
               { id: "stripe", label: t("admin.tabStripe"), icon: DollarSign },
               { id: "gsc", label: "Search Console", icon: Globe },
@@ -1187,7 +1187,7 @@ export default function AdminPage() {
                         <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">{t("admin.address")}</label>
                         <input
                           type="text"
-                          placeholder="e.g. 15 Main St, Toronto"
+                          placeholder="es. Via Roma 15, Milano"
                           value={newClientAddress}
                           onChange={(e) => setNewClientAddress(e.target.value)}
                           className="w-full px-3 py-2 border border-slate-100 rounded-xl text-sm focus:outline-none focus:border-navy-500 bg-white"
@@ -1467,11 +1467,11 @@ export default function AdminPage() {
           {tab === "margin" && (
             <div className="space-y-4">
               <div>
-                <h2 className="text-base font-bold text-slate-800">Cost & Margin (last 30 days)</h2>
-                <p className="text-xs text-slate-400">AI (receipt vision + quote text) and WhatsApp cost vs. estimated subscription revenue, per account. Sorted by lowest margin first.</p>
+                <h2 className="text-base font-bold text-slate-800">Costi e margine (ultimi 30 giorni)</h2>
+                <p className="text-xs text-slate-400">Costo AI (lettura scontrini + testo preventivi) e WhatsApp rispetto al ricavo stimato dell'abbonamento, per account. Ordinato dal margine più basso.</p>
               </div>
               {marginLoading ? (
-                <div className="text-sm text-slate-400 py-8 text-center">Loading…</div>
+                <div className="text-sm text-slate-400 py-8 text-center">Caricamento…</div>
               ) : marginRows.length === 0 ? (
                 <div className="text-sm text-slate-400 py-8 text-center">Nessun utilizzo registrato in questo periodo.</div>
               ) : (
@@ -1479,11 +1479,11 @@ export default function AdminPage() {
                   <table className="w-full text-sm">
                     <thead className="bg-slate-50 text-slate-500 text-xs uppercase">
                       <tr>
-                        <th className="px-4 py-3 text-left">Company</th>
-                        <th className="px-4 py-3 text-left">Plan</th>
-                        <th className="px-4 py-3 text-right">Cost</th>
-                        <th className="px-4 py-3 text-right">Revenue (est.)</th>
-                        <th className="px-4 py-3 text-right">Margin</th>
+                        <th className="px-4 py-3 text-left">Azienda</th>
+                        <th className="px-4 py-3 text-left">Piano</th>
+                        <th className="px-4 py-3 text-right">Costo</th>
+                        <th className="px-4 py-3 text-right">Ricavo (stima)</th>
+                        <th className="px-4 py-3 text-right">Margine</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-50">
@@ -1491,10 +1491,10 @@ export default function AdminPage() {
                         <tr key={row.userId} className={row.marginCents < 0 ? "bg-red-50/50" : ""}>
                           <td className="px-4 py-3 font-medium text-slate-700">{row.companyName || row.userId.slice(0, 8)}</td>
                           <td className="px-4 py-3 text-slate-500">{row.plan ?? "—"}</td>
-                          <td className="px-4 py-3 text-right font-mono">${(row.costCents / 100).toFixed(2)}</td>
-                          <td className="px-4 py-3 text-right font-mono">${(row.revenueCents / 100).toFixed(2)}</td>
+                          <td className="px-4 py-3 text-right font-mono">{(row.costCents / 100).toFixed(2)} €</td>
+                          <td className="px-4 py-3 text-right font-mono">{(row.revenueCents / 100).toFixed(2)} €</td>
                           <td className={`px-4 py-3 text-right font-mono font-semibold ${row.marginCents < 0 ? "text-red-600" : "text-emerald-600"}`}>
-                            ${(row.marginCents / 100).toFixed(2)}
+                            {(row.marginCents / 100).toFixed(2)} €
                           </td>
                         </tr>
                       ))}

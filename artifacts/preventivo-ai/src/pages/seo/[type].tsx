@@ -411,7 +411,7 @@ export default function SeoLanding() {
       {slug === "come-fare-preventivo" && <ComeFareGuideBlock />}
       {slug === "preventivi-gratis" && <PreventiviGratisPlansBlock />}
 
-      {/* ── "Built for the Canadian market" ──────────────── */}
+      {/* ── "Pensato per il mercato italiano" ──────────────── */}
       <section className="sec">
         <div className="wrap" style={{ maxWidth: 980 }}>
           <div className="card" style={{ padding: "clamp(28px, 4vw, 48px)" }}>

@@ -25,8 +25,8 @@ export default function MappaSitoPage() {
     {
       "@context": "https://schema.org",
       "@type": "WebPage",
-      name: "Sitemap | PrevAI",
-      description: "Full sitemap for PrevAI. Find all static pages, blog articles, and guides for tradespeople and professionals across Canadian cities.",
+      name: "Mappa del sito | PrevAI",
+      description: "Mappa completa del sito PrevAI: tutte le pagine statiche, gli articoli del blog e le guide per artigiani e professionisti nelle città italiane.",
       url: "https://prevai.it/mappa-sito/",
     }
   ];

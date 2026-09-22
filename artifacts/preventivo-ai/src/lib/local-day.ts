@@ -1,6 +1,6 @@
 /**
  * "YYYY-MM-DD" for a Date in the browser's own timezone. `toISOString()`
- * gives the UTC day, which is tomorrow every evening in Canada (Phase 66:
+ * gives the UTC day, which differs from the Italian day around midnight (Phase 66:
  * cost, payment and time-entry dates defaulted to the wrong day after ~8 pm).
  */
 export function localDay(d: Date = new Date()): string {

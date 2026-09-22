@@ -1,21 +1,21 @@
-// Phase 66 — i18n audit (docs/QA-VERIFICATION-PLAN.md).
+// V2-2f — audit i18n "invertito" (PrevAI è monolingua: solo `it`).
 //
-//   pnpm --filter @workspace/preventivo-ai i18n-audit          # report, exit 1 on hard failures
-//   pnpm --filter @workspace/preventivo-ai i18n-audit --json   # machine-readable
+//   pnpm --filter @workspace/preventivo-ai i18n-audit            # report, exit 1 sui fallimenti duri
+//   pnpm --filter @workspace/preventivo-ai i18n-audit --json     # output leggibile da macchina
+//   pnpm --filter @workspace/preventivo-ai i18n-audit --verbose  # elenca ogni letterale sospetto
 //
-// Hard failures (exit 1):
-//   1. a `t("…")` key used in src/ that exists in neither `en` nor `fr`
-//      (the UI would show the raw key);
-//   2. an `en` key with no `fr` entry (French users get English) — and the
-//      reverse, which is dead weight;
-//   4. (Phase 68) a key present in both translations.ts and
-//      translations.dashboard.ts, or a dashboard-only key referenced from a
-//      file the public entry (or a public lazy page) can reach — it would
-//      render as the raw key there.
-// Reported, not failing (the number is recorded in the build log):
-//   3. English-looking literal text in JSX outside `t()` under the
-//      dashboard / app pages (marketing pages have their own locale routes
-//      and are excluded).
+// Fallimenti duri (exit 1):
+//   1. una chiave `t("…")` usata in src/ che non esiste nel dizionario `it`
+//      (la UI mostrerebbe la chiave grezza);
+//   2. un valore del dizionario che sembra inglese (residuo della base QuoteAI);
+//   3. (Phase 68) una chiave presente sia in translations.ts sia in
+//      translations.dashboard.ts, oppure una chiave solo-dashboard usata da un
+//      file raggiungibile dall'entry pubblico (renderizzerebbe la chiave grezza);
+//   4. un letterale JSX inglese nelle superfici app (dashboard, firma, portali,
+//      onboarding, componenti condivisi) fuori da `t()`.
+// Segnalato, non bloccante:
+//   5. letterali JSX inglesi nelle pagine pubbliche/marketing (contenuto SEO v1,
+//      nomi di prodotti, ecc.): il numero viene registrato nel log di build.
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join, relative, sep } from "node:path";
 import { translations } from "../src/i18n/translations.ts";
@@ -23,6 +23,7 @@ import { dashboardTranslations } from "../src/i18n/translations.dashboard.ts";
 
 const ROOT = join(import.meta.dirname, "..", "src");
 const json = process.argv.includes("--json");
+const verbose = process.argv.includes("--verbose");
 
 function walk(dir: string, out: string[] = []): string[] {
   for (const name of readdirSync(dir)) {
@@ -34,14 +35,24 @@ function walk(dir: string, out: string[] = []): string[] {
 }
 
 const files = walk(ROOT).filter((f) => !/translations(.dashboard)?.ts$/.test(f));
-// TODO(V2-2f): audit invertito (nessuna stringa UI inglese residua); per ora `en`/`fr` puntano entrambi al dizionario `it`.
-// Phase 68: the dictionary is split (core = public entry bundle, dashboard =
-// lazy chunk). Audits run over the union; §4 below checks the split itself.
-const en = { ...translations.it, ...dashboardTranslations.it };
-const fr = { ...translations.it, ...dashboardTranslations.it };
+// Phase 68: il dizionario è diviso (core = bundle pubblico, dashboard = chunk lazy).
+// Gli audit girano sull'unione; §3 controlla la divisione stessa.
+const it: Record<string, string> = { ...translations.it, ...dashboardTranslations.it };
 
-// 1. keys used in code
-const used = new Map<string, string[]>(); // key → files
+// ── Euristica "sembra inglese" ──────────────────────────────────────────────
+// Parole funzione inglesi che non esistono in italiano (o sono rarissime). Un
+// testo è sospetto se ne contiene almeno una come parola intera. Brand, sigle e
+// termini tecnici accettati in italiano sono esclusi a monte.
+const EN_STOPWORDS = /\b(the|and|your|you|with|for|from|this|that|are|not|will|has|have|been|when|what|new|add|save|delete|edit|send|sent|paid|customer|please|error|could|cannot|can't|couldn't|don't|doesn't|isn't|we|our|of|to|at|by|or|is|be|an|its|was|were|get|any|yes|only|more|less|than|then|now|here|there|about|after|before|again|back|next|previous|first|last|each|every|some|these|those|them|they|their|which|who|whom|how|why|where|while|until|upon|into|onto|over|under|out|down|days|day|month|year|hours)\b/i;
+const IGNORE_TEXT = /^(PrevAI|Stripe|WhatsApp|Google|Gmail|Outlook|Meta|QuickBooks|Wave|Financeit|Flinks|Zapier|Resend|OpenAI|Vercel|Supabase|Groq|PDF|CSV|Excel|Word|IVA|N\/A|OK|—|·|S\.r\.l\.?|S\.p\.A\.?|S\.n\.c\.?|S\.a\.s\.?|Google Business Profile|Meta Lead Ads|Google Local Services Ads|Stripe Connect|Interac e-Transfer|Google Calendar|Outlook Calendar)$/;
+// i segnaposto ({days}, {n}) e i composti con trattino (follow-up) non contano come parole
+const looksEnglish = (raw: string) => {
+  const text = raw.replace(/\{[^}]*\}/g, " ").replace(/-/g, "");
+  return !IGNORE_TEXT.test(raw) && EN_STOPWORDS.test(text) && !/^[\d\s$€%.,:/+@-]+$/.test(text);
+};
+
+// 1. chiavi usate nel codice
+const used = new Map<string, string[]>(); // chiave → file
 const keyRe = /\bt\(\s*"([^"]+)"\s*[,)]/g;
 for (const f of files) {
   const src = readFileSync(f, "utf8");
@@ -51,19 +62,17 @@ for (const f of files) {
     used.set(m[1]!, list);
   }
 }
-const unknownKeys = [...used.entries()].filter(([k]) => !(k in en) && !(k in fr)).map(([k, where]) => ({ key: k, files: [...new Set(where)] }));
+const unknownKeys = [...used.entries()].filter(([k]) => !(k in it)).map(([k, where]) => ({ key: k, files: [...new Set(where)] }));
 
-// 2. en ↔ fr parity
-const missingFr = Object.keys(en).filter((k) => !(k in fr));
-const missingEn = Object.keys(fr).filter((k) => !(k in en));
-// identical strings are usually untranslated copy (brand names and numbers are fine)
-const sameInBoth = Object.keys(en).filter((k) => k in fr && en[k] === fr[k] && /[a-z]{4,}\s[a-z]{3,}/i.test(en[k]!) && !/^(PrevAI|WhatsApp|Stripe|QuickBooks|Google|Gmail|Outlook|Interac|PDF|CSV)/.test(en[k]!));
+// 2. valori del dizionario che sembrano inglesi
+const englishValues = Object.entries(it)
+  .filter(([, v]) => typeof v === "string" && looksEnglish(v))
+  .map(([k, v]) => ({ key: k, value: v }));
 
-// 4. the core/dashboard split (Phase 68). A dashboard key is only safe when
-//    every file that references it is reachable solely from the dashboard
-//    roots (dashboard pages, admin page, dashboard layout). Walk the static
-//    import graph from the public entry plus the public lazy pages; anything
-//    those files can reach must find its keys in translations.ts.
+// 3. divisione core/dashboard (Phase 68). Una chiave dashboard è sicura solo se
+//    ogni file che la usa è raggiungibile unicamente dalle radici dashboard.
+//    Percorriamo il grafo statico degli import dall'entry pubblico più le pagine
+//    pubbliche lazy; tutto ciò che raggiungono deve trovare le chiavi in translations.ts.
 const rel = (f: string) => relative(ROOT, f).split(sep).join("/");
 const byRel = new Map(files.map((f) => [rel(f), f]));
 function resolveImport(fromRel: string, spec: string): string | null {
@@ -88,7 +97,7 @@ function reachable(roots: string[]): Set<string> {
   return seen;
 }
 const PUBLIC_LAZY_ROOTS = [...byRel.keys()].filter((f) => /^pages\/(seo|blog|p|i|sign|t|team-invite)\//.test(f));
-// main.tsx/App.tsx reach the dashboard only through dynamic import(); strip those so the entry graph stays public.
+// main.tsx/App.tsx raggiungono la dashboard solo via import() dinamico; li togliamo così il grafo dell'entry resta pubblico.
 const entryGraph = (() => {
   const seen = new Set<string>();
   const stack = ["main.tsx", "App.tsx"];
@@ -111,66 +120,69 @@ const dashboardKeyOnPublicPage = [...used.entries()]
   .map(([k, where]) => ({ key: k, files: [...new Set(where.map((w) => w.split(sep).join("/")))].filter((w) => publicFiles.has(w)) }))
   .filter((x) => x.files.length > 0);
 
-// 3. hardcoded English in JSX (app surfaces only)
-const APP_DIRS = ["pages/dashboard/", "pages/sign/", "pages/t/", "pages/i/", "pages/p/", "pages/team-invite/", "pages/onboarding.tsx", "pages/sign-in.tsx", "pages/sign-up.tsx", "components/jobs", "components/invoices", "components/contracts", "components/layout", "components/ui"];
-const isApp = (f: string) => APP_DIRS.some((d) => relative(ROOT, f).split(sep).join("/").startsWith(d));
-// text node between tags: at least two words, starts with a letter, not an expression
-const textRe = />\s*([A-Za-z][A-Za-z'’,.!?&-]*(?:\s+[A-Za-z0-9'’,.!?&%$()-]+){1,})\s*</g;
-const attrRe = /\b(placeholder|title|aria-label|alt)="([A-Za-z][^"{}]{3,})"/g;
-const IGNORE_TEXT = /^(PrevAI|PrevAI|Stripe|WhatsApp|Interac e-Transfer|Google|Gmail|Outlook|Meta|QuickBooks|Wave|Financeit|Flinks|CAD|HST|GST|QST|PST|N\/A|OK|—|·|Inc\.?|Ltd\.?|Sam Worker)$/;
-const hardcoded: { file: string; line: number; text: string }[] = [];
+// 4./5. letterali inglesi nel JSX (fuori da t())
+const APP_DIRS = ["pages/dashboard/", "pages/sign/", "pages/t/", "pages/i/", "pages/p/", "pages/team-invite/", "pages/onboarding.tsx", "pages/sign-in.tsx", "pages/sign-up.tsx", "pages/admin", "components/"];
+const isApp = (f: string) => APP_DIRS.some((d) => rel(f).startsWith(d));
+// nodo di testo tra tag: almeno due parole, inizia con una lettera, non è un'espressione
+const textRe = />\s*([A-Za-zÀ-ÿ][A-Za-zÀ-ÿ'’,.!?&-]*(?:\s+[A-Za-zÀ-ÿ0-9'’,.!?&%$€()-]+){1,})\s*</g;
+const attrRe = /\b(placeholder|title|aria-label|alt)="([A-Za-zÀ-ÿ][^"{}]{3,})"/g;
+type Hit = { file: string; line: number; text: string };
+const hardcodedApp: Hit[] = [];
+const hardcodedPublic: Hit[] = [];
 for (const f of files) {
-  if (!isApp(f) || !f.endsWith(".tsx")) continue;
+  if (!f.endsWith(".tsx")) continue;
   const src = readFileSync(f, "utf8");
   const lineOf = (idx: number) => src.slice(0, idx).split("\n").length;
+  const target = isApp(f) ? hardcodedApp : hardcodedPublic;
   for (const m of src.matchAll(textRe)) {
     const text = m[1]!.trim();
-    if (IGNORE_TEXT.test(text) || /^[\d\s$%.,:/+-]+$/.test(text)) continue;
-    // skip pure code-like fragments: "=> x", template pieces, css
+    if (!looksEnglish(text)) continue;
+    // frammenti di codice: "=> x", pezzi di template, css
     if (/=>|\bconst\b|\breturn\b|className=/.test(text)) continue;
-    hardcoded.push({ file: relative(ROOT, f), line: lineOf(m.index!), text });
+    target.push({ file: rel(f), line: lineOf(m.index!), text });
   }
   for (const m of src.matchAll(attrRe)) {
     const text = m[2]!.trim();
-    if (IGNORE_TEXT.test(text) || /^[\d\s$%.,:/+@-]+$/.test(text) || /example\.com|@/.test(text)) continue;
-    hardcoded.push({ file: relative(ROOT, f), line: lineOf(m.index!), text: `${m[1]}="${text}"` });
+    if (!looksEnglish(text) || /esempio\.it|example\.com|@/.test(text)) continue;
+    target.push({ file: rel(f), line: lineOf(m.index!), text: `${m[1]}="${text}"` });
   }
 }
 
 const report = {
-  keys: { en: Object.keys(en).length, fr: Object.keys(fr).length, used: used.size },
+  keys: { it: Object.keys(it).length, used: used.size },
   unknownKeys,
-  missingFr,
-  missingEn,
-  sameInBoth: sameInBoth.length,
-  sameInBothSample: sameInBoth.slice(0, 40),
+  englishValues,
   duplicateKeys,
   dashboardKeyOnPublicPage,
-  hardcoded,
+  hardcodedApp,
+  hardcodedPublic,
+};
+
+const byFile = (hits: Hit[]) => {
+  const m = new Map<string, number>();
+  for (const h of hits) m.set(h.file, (m.get(h.file) ?? 0) + 1);
+  return [...m.entries()].sort((a, b) => b[1] - a[1]);
 };
 
 if (json) {
   console.log(JSON.stringify(report, null, 2));
 } else {
-  console.log(`translations: en=${report.keys.en} fr=${report.keys.fr} · keys referenced in code: ${report.keys.used}`);
-  console.log(`\n1. t("…") keys that exist in neither locale: ${unknownKeys.length}`);
+  console.log(`dizionario it: ${report.keys.it} chiavi · chiavi referenziate nel codice: ${report.keys.used}`);
+  console.log(`\n1. chiavi t("…") assenti dal dizionario: ${unknownKeys.length}`);
   for (const u of unknownKeys) console.log(`   ${u.key}  ← ${u.files.join(", ")}`);
-  console.log(`\n2. en keys without fr: ${missingFr.length}`);
-  for (const k of missingFr) console.log(`   ${k}`);
-  console.log(`   fr keys without en: ${missingEn.length}`);
-  for (const k of missingEn) console.log(`   ${k}`);
-  console.log(`   identical in both (probably untranslated): ${sameInBoth.length}`);
-  for (const k of sameInBoth.slice(0, 40)) console.log(`   ${k} = ${JSON.stringify(en[k])}`);
-  console.log(`\n4. split: keys in both dictionaries: ${duplicateKeys.length}`);
+  console.log(`\n2. valori del dizionario che sembrano inglesi: ${englishValues.length}`);
+  for (const e of englishValues.slice(0, verbose ? Infinity : 40)) console.log(`   ${e.key} = ${JSON.stringify(e.value)}`);
+  console.log(`\n3. split: chiavi in entrambi i dizionari: ${duplicateKeys.length}`);
   for (const k of duplicateKeys) console.log(`   ${k}`);
-  console.log(`   dashboard-only keys used from a public file: ${dashboardKeyOnPublicPage.length}`);
+  console.log(`   chiavi solo-dashboard usate da un file pubblico: ${dashboardKeyOnPublicPage.length}`);
   for (const u of dashboardKeyOnPublicPage) console.log(`   ${u.key}  ← ${u.files.join(", ")}`);
-  console.log(`\n3. English-looking literals in app JSX (outside t()): ${hardcoded.length}`);
-  const byFile = new Map<string, number>();
-  for (const h of hardcoded) byFile.set(h.file, (byFile.get(h.file) ?? 0) + 1);
-  for (const [f, n] of [...byFile.entries()].sort((a, b) => b[1] - a[1])) console.log(`   ${String(n).padStart(3)}  ${f}`);
-  if (process.argv.includes("--verbose")) for (const h of hardcoded) console.log(`   ${h.file}:${h.line}  ${h.text}`);
+  console.log(`\n4. letterali inglesi nel JSX app (fuori da t()): ${hardcodedApp.length}`);
+  for (const [f, n] of byFile(hardcodedApp)) console.log(`   ${String(n).padStart(3)}  ${f}`);
+  if (verbose) for (const h of hardcodedApp) console.log(`   ${h.file}:${h.line}  ${h.text}`);
+  console.log(`\n5. letterali inglesi nel JSX pubblico/marketing (segnalati): ${hardcodedPublic.length}`);
+  for (const [f, n] of byFile(hardcodedPublic)) console.log(`   ${String(n).padStart(3)}  ${f}`);
+  if (verbose) for (const h of hardcodedPublic) console.log(`   ${h.file}:${h.line}  ${h.text}`);
 }
 
-const hard = unknownKeys.length + missingFr.length + missingEn.length + duplicateKeys.length + dashboardKeyOnPublicPage.length;
+const hard = unknownKeys.length + englishValues.length + duplicateKeys.length + dashboardKeyOnPublicPage.length + hardcodedApp.length;
 process.exit(hard > 0 ? 1 : 0);

@@ -20,14 +20,14 @@ export default function ChiSiamoPage() {
       url: "https://prevai.it/",
       logo: "https://prevai.it/icon-192.png",
       description:
-        "PrevAI is the AI quoting software for Canadian tradespeople and independent professionals. Generate professional quotes in 30 seconds by describing the job in plain language.",
+        "PrevAI è il software di preventivi con intelligenza artificiale per artigiani, imprese edili e professionisti italiani. Genera preventivi professionali in 30 secondi descrivendo il lavoro a parole tue.",
       foundingDate: "2026",
-      foundingLocation: { "@type": "Place", name: "Canada" },
+      foundingLocation: { "@type": "Place", name: "Italia" },
       contactPoint: {
         "@type": "ContactPoint",
         email: "info@prevai.it",
         contactType: "customer service",
-        availableLanguage: ["en", "fr"],
+        availableLanguage: ["it"],
       },
     },
   ];

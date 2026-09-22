@@ -138,7 +138,7 @@ function ClientSelector({
           <div className="form-grid tight animate-in fade-in slide-in-from-top-1 duration-200" style={{ borderTop: "1px solid var(--soft)" }}>
             {field("nome", t("dashboard.new.client.nameLabel"), t("dashboard.new.client.namePlaceholder"), { full: true })}
             {field("indirizzo", t("dashboard.new.client.addressLabel"), t("dashboard.new.client.addressPlaceholder"), { full: true })}
-            {field("city", t("dashboard.new.client.city"), "Toronto")}
+            {field("city", t("dashboard.new.client.city"), "Milano")}
             <div className="grid grid-cols-2 gap-2">
               {field("province", t("dashboard.new.client.province"), "ON", { maxLength: 2, upper: true })}
               {field("postalCode", t("dashboard.new.client.postalCode"), "M5H 2N2", { maxLength: 7, upper: true })}
