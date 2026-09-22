@@ -76,6 +76,14 @@ export type InvoiceParty = {
   reaNumber?: string | null;
   /** P. IVA o C.F. del cliente. */
   businessNumber?: string | null;
+  // ── A-1: recapito elettronico, congelato al momento dell'emissione ────────
+  /** Codice destinatario SDI (7 caratteri, 6 per la PA, `0000000` per i privati). */
+  codiceSdi?: string | null;
+  /** PEC, alternativa al codice destinatario. */
+  pec?: string | null;
+  /** Fatture verso PA. */
+  cig?: string | null;
+  cup?: string | null;
 };
 
 export const invoicesTable = pgTable(

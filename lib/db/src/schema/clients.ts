@@ -19,7 +19,17 @@ export const clientsTable = pgTable(
     city: text("city"),
     province: text("province"), // ISO-ish 2-letter code (ON, QC, ...)
     postalCode: text("postal_code"),
-    businessNumber: text("business_number"), // CRA BN / GST-HST number for business clients
+    businessNumber: text("business_number"), // P. IVA del cliente impresa (V2-4: era il CRA BN canadese)
+    // ── A-1: dati che la FatturaPA pretende sul cessionario/committente ──────
+    /** C.F. del cliente: obbligatorio per i privati (che non hanno P. IVA). */
+    codiceFiscale: text("codice_fiscale"),
+    /** Codice destinatario SDI a 7 caratteri (6 per la PA); `0000000` = privato senza canale. */
+    codiceSdi: text("codice_sdi"),
+    /** PEC del cliente, alternativa al codice destinatario. */
+    pec: text("pec"),
+    /** Fatture verso PA: CIG/CUP obbligatori quando l'ente li ha comunicati. */
+    cig: text("cig"),
+    cup: text("cup"),
     preferredLanguage: text("preferred_language", { enum: ["it"] }).notNull().default("it"),
     notes: text("notes").notNull().default(""),
     /** Stable dedup key: lower(name)|lower(email)|phone — same recipe used by the legacy derived clients list. */

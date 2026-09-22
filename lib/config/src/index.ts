@@ -7,3 +7,4 @@ export * from "./iva";
 export * from "./province";
 export * from "./format";
 export * from "./legal";
+export * from "./fatturapa";

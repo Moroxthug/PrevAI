@@ -25,6 +25,7 @@ export const PRODUCT_FEATURES = [
   "public_api", // Phase 19: versioned public API (API keys + webhooks) for Zapier/Make and direct integrations
   "gmail_send", // Phase 20: send customer-facing emails from the company's own connected Gmail account
   "meta_lead_ads", // Phase 28: import Facebook/Instagram Lead Ads submissions straight into the leads pipeline
+  "sdi_invoicing", // A-1: fatture elettroniche via SdI, ciclo passivo, bollo virtuale — add-on Amministrazione
 ] as const;
 export type ProductFeature = (typeof PRODUCT_FEATURES)[number];
 
@@ -92,4 +93,16 @@ export function hasFeature(profile: PlanLike, feature: ProductFeature): boolean 
 export function minimumPlanFor(feature: ProductFeature): PlanId {
   for (const plan of PLAN_IDS) if (PLAN_FEATURES[plan].has(feature)) return plan;
   return "monthly_elite";
+}
+
+/**
+ * A-1: funzioni che nessun piano include perché si vendono a parte (add-on
+ * Amministrazione, prezzo in A-5). Si sbloccano solo con un flag sul profilo,
+ * quindi `minimumPlanFor` non ha una risposta sensata da dare: l'interfaccia
+ * deve dire "attiva il modulo", non "passa a Elite".
+ */
+export const ADDON_FEATURES: readonly ProductFeature[] = ["sdi_invoicing"];
+
+export function isAddonFeature(feature: ProductFeature): boolean {
+  return ADDON_FEATURES.includes(feature);
 }

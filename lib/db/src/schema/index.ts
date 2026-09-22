@@ -32,3 +32,4 @@ export * from "./stripe-connect";
 export * from "./publicApi";
 export * from "./meta-lead-ads";
 export * from "./cron-ticks";
+export * from "./sdi";
