@@ -11,3 +11,4 @@ export * from "./fatturapa";
 export * from "./fiscale/index";
 export * from "./offerta";
 export * from "./piani";
+export * from "./commercialista";

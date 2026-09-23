@@ -49,6 +49,10 @@ const PERMISSIONLESS_MUTATIONS: Allow[] = [
   { match: /^POST \/api\/storage\/uploads\/request-url$/, reason: "signed upload URL scoped to the acting org; the consuming route enforces its own permission" },
   { match: /^POST \/api\/team\/invite\/:token\/accept$/, reason: "the invitee is joining — has no role in the org yet" },
   { match: /^POST \/api\/team\/switch$/, reason: "switches the actor's own active org" },
+  {
+    match: /^POST \/api\/studio\//,
+    reason: "A-6: il professionista agisce come persona, non con un ruolo in un'organizzazione — il middleware `studio` chiede la 2FA sull'account, e ogni rotta su un cliente passa da incaricoPerProfessionista (incarico suo, professionista operativo, incarico attivo)",
+  },
 ];
 
 // ── Rule 3: feature entry points check the plan flag ─────────────────────────
@@ -84,6 +88,10 @@ const FEATURE_ENTRY_ROUTES: [string, string, string][] = [
 // ── Rule 4: every `:param` handler is tied to the acting org ─────────────────
 
 const UNSCOPED_PARAM_ROUTES: Allow[] = [
+  {
+    match: /^(GET|POST) \/api\/studio\/incarichi\/:id/,
+    reason: "A-6: scoping per professionista, non per org — incaricoPerProfessionista filtra su professionista_id dell'utente che agisce e, per i dati, su incarico attivo e servizio ancora acceso per il cliente",
+  },
   { match: /^POST \/api\/team\/invite\/:token\/accept$/, reason: "looked up by hashed invite token and matched against the actor's email — there is no org to scope by yet" },
 ];
 

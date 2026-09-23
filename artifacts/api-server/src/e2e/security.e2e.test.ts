@@ -52,6 +52,7 @@ import {
   bankImportsTable,
   bankMovementsTable,
   accountantSharesTable,
+  incarichiTable,
   authSessionsTable,
   authUsersTable,
 } from "@workspace/db";
@@ -153,6 +154,8 @@ async function seedOrgA(): Promise<Fixtures> {
   f.estratto = await ins(db.insert(bankImportsTable).values({ userId, formato: "csv", nomeFile: "estratto.csv" }).returning());
   f.movBanca = await ins(db.insert(bankMovementsTable).values({ userId, importId: f.estratto, data: new Date(), importoCents: -100, impronta: randomUUID() }).returning());
   f.condivisione = await ins(db.insert(accountantSharesTable).values({ userId, tokenHash: randomUUID(), destinatario: "Studio E2E", anno: 2025, scadeAt: new Date(Date.now() + 86_400_000) }).returning());
+  // A-6: un incarico attivo di A. Le rotte dello studio lo cercano per professionista, quelle dell'impresa per org.
+  f.incarico = await ins(db.insert(incarichiTable).values({ userId, anno: 2025, stato: "attivo" }).returning());
 
   // Clients are virtual (md5 of the quote's client fields) — read the id back the way the UI does.
   const clients = await A.api("/api/clients");
@@ -180,6 +183,11 @@ function resolveParams(route: MatrixRoute, f: Fixtures): { path: string; unseede
     if (name === "anno" || name === "trimestre" || name === "chiave") return null;
     // A-4: il verbo dell'azione sul movimento bancario non è un identificatore:
     // se ne prova uno innocuo, e l'id di A davanti è quello che conta.
+    // A-6: il tipo di file della pratica (bozza/ricevuta) non è un identificatore.
+    if (name === "tipo") {
+      out.push("bozza");
+      continue;
+    }
     if (name === "azione") {
       out.push("ignora");
       continue;
@@ -198,6 +206,7 @@ function resolveParams(route: MatrixRoute, f: Fixtures): { path: string; unseede
           ["/api/sdi/transmissions", "trasmissione"], ["/api/sdi/passive", "passiva"],
           ["/api/fiscale/prima-nota/movimenti", "movimentoPn"], ["/api/fiscale/banca/import", "estratto"], ["/api/fiscale/banca/movimenti", "movBanca"],
           ["/api/fiscale/condivisioni", "condivisione"],
+          ["/api/fiscale/commercialista/incarichi", "incarico"], ["/api/studio/incarichi", "incarico"],
         ];
         id = byPrefix.find(([p]) => prefix === p)?.[1];
         break;

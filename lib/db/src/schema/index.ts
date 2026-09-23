@@ -36,3 +36,4 @@ export * from "./sdi";
 export * from "./fiscale";
 export * from "./primanota";
 export * from "./addons";
+export * from "./commercialista";

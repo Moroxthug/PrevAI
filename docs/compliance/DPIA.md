@@ -95,7 +95,7 @@ Scala: probabilità (P) e gravità (G) 1–4; rischio = P × G (≤4 basso, 5–
 | Motore regole versionato con golden test verificati dal commercialista; ogni numero spiegato; log del calcolo | R-04 | A-2 (D6) | ⬜ — checklist in `REVISIONE-COMMERCIALISTA.md` |
 | Retention differenziata implementata (job di cancellazione post-disdetta che risparmia i documenti fiscali; informativa all'attivazione) | R-10 | A-4 | ⬜ |
 | Pen-test esterno prima del lancio del modulo | R-01, R-02, R-03 | A-5 | ⬜ |
-| Accordo di contitolarità/flussi con lo studio partner, informativa L. 132/2025 | R-12 | A-6 | ⬜ |
+| Professionista titolare autonomo (niente contitolarità: PrevAI comunica per istruzione dell'utente), flussi regolati dalla convenzione §5, informativa L. 132/2025 e informativa privacy del professionista accettate con la lettera d'incarico; accesso ai dati solo con incarico attivo, professionista verificato (Albo, Entratel, polizza RC non scaduta, convenzione) e 2FA; ogni apertura registrata e visibile all'utente; lo staff PrevAI non vede i conti dei clienti; invio della dichiarazione solo dopo conferma dell'utente sull'impronta esatta dei numeri | R-12 | A-6 | ✅ codice (23/9/2026); ⬜ revisione legale dei testi col primo studio (D9) |
 | Formazione documentata sull'IA per chi opera il sistema (AI Act art. 4) | R-09 | A-0 | ⬜ titolare: 2 h, annotare data e contenuti qui sotto |
 
 ## 7. Rischio residuo (dopo le misure della sezione 6)

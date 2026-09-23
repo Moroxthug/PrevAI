@@ -42,6 +42,9 @@ const InvoicesPage = lazy(() => import("@/pages/dashboard/invoices"));
 const AmministrazionePage = lazy(() => import("@/pages/dashboard/amministrazione"));
 const AmministrazioneAttivaPage = lazy(() => import("@/pages/dashboard/amministrazione-attiva"));
 const FiscoPage = lazy(() => import("@/pages/dashboard/fisco"));
+const CommercialistaClientePage = lazy(() => import("@/pages/dashboard/commercialista"));
+const StudioPage = lazy(() => import("@/pages/studio/index"));
+const StudioIncaricoPage = lazy(() => import("@/pages/studio/incarico"));
 const ScadenzarioPage = lazy(() => import("@/pages/dashboard/scadenzario"));
 const PrimaNotaPage = lazy(() => import("@/pages/dashboard/prima-nota"));
 const BancaPage = lazy(() => import("@/pages/dashboard/banca"));
@@ -223,6 +226,9 @@ function Router() {
       <Route path="/dashboard/fisco/chiusura" component={() => (
         <OnboardingGuard><DashboardLayout><DashSuspense><ChiusuraPage /></DashSuspense></DashboardLayout></OnboardingGuard>
       )} />
+      <Route path="/dashboard/fisco/commercialista" component={() => (
+        <OnboardingGuard><DashboardLayout><DashSuspense><CommercialistaClientePage /></DashSuspense></DashboardLayout></OnboardingGuard>
+      )} />
       <Route path="/dashboard/fisco/scadenzario" component={() => (
         <OnboardingGuard><DashboardLayout><DashSuspense><ScadenzarioPage /></DashSuspense></DashboardLayout></OnboardingGuard>
       )} />
@@ -261,6 +267,9 @@ function Router() {
       <Route path="/sign/:token" component={() => <Suspense fallback={null}><SignPage /></Suspense>} />
       {/* Public invoice page: the customer sees the balance + payment instructions from the emailed link */}
       <Route path="/i/:token" component={() => <Suspense fallback={null}><PublicInvoicePage /></Suspense>} />
+      {/* A-6: lo studio del professionista — utente autenticato ma non un'impresa: niente onboarding, niente menu del cantiere */}
+      <Route path="/studio/incarichi/:id" component={() => <Suspense fallback={null}><StudioIncaricoPage /></Suspense>} />
+      <Route path="/studio" component={() => <Suspense fallback={null}><StudioPage /></Suspense>} />
       {/* A-4: pacchetto dell'anno in sola lettura per il commercialista (link con scadenza, revocabile) */}
       <Route path="/commercialista/:token" component={() => <Suspense fallback={null}><CommercialistaPage /></Suspense>} />
       {/* Public worker time-entry page (magic link from the Team page) */}

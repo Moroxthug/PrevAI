@@ -97,6 +97,7 @@ Disallow: /sign/
 Disallow: /t/
 Disallow: /team-invite/
 Disallow: /commercialista/
+Disallow: /studio
 
 # City pages outside the active region (see ACTIVE_CITIES in seo-data.ts)
 ${inactiveCitySlugs.map((slug) => `Disallow: /preventivi/*/${slug}/`).join("\n")}

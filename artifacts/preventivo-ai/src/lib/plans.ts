@@ -23,7 +23,9 @@ export type ProductFeature =
   | "sdi_invoicing"
   | "fiscal_engine"
   // A-5: la parte a pagamento del modulo (F24, prima nota, chiusura, link commercialista).
-  | "admin_suite";
+  | "admin_suite"
+  // A-6: il commercialista convenzionato. Nessun piano, nessun add-on in vendita (D9, D11).
+  | "accountant_service";
 
 const STARTER: ProductFeature[] = ["quotes", "quote_email", "acceptance_notifications"];
 const PRO: ProductFeature[] = [...STARTER, "catalog", "contracts", "jobs", "costs", "invoicing", "team_accounts"];

@@ -154,6 +154,7 @@ URL="postgresql://postgres.<ref>:<pw>@aws-0-eu-west-1.pooler.supabase.com:5432/p
 "$PG/psql.exe" "$URL" -v ON_ERROR_STOP=1 -1 -f migrations/v2/0005_a3_scadenzario.sql     # A-3: scadenzario (§8.6)
 "$PG/psql.exe" "$URL" -v ON_ERROR_STOP=1 -1 -f migrations/v2/0006_a4_prima_nota.sql      # A-4: prima nota e chiusura (§9.7)
 "$PG/psql.exe" "$URL" -v ON_ERROR_STOP=1 -1 -f migrations/v2/0007_a5_addon.sql            # A-5: add-on e test di prezzo (§10.6)
+"$PG/psql.exe" "$URL" -v ON_ERROR_STOP=1 -1 -f migrations/v2/0008_a6_commercialista.sql   # A-6: commercialista nel giro (§11.7)
 # 4. conteggi + checksum DOPO → devono coincidere (iva_percentuale normalizzata nella query)
 "$PG/psql.exe" "$URL" -At -f docs/sql/reconcile.sql > C:/Users/Admin/PrevAI-backups/reconcile-after.txt
 diff C:/Users/Admin/PrevAI-backups/reconcile-before.txt C:/Users/Admin/PrevAI-backups/reconcile-after.txt   # nessuna differenza
@@ -462,6 +463,57 @@ Toglie i flag `sdi_invoicing`/`fiscal_engine`/`admin_suite` a true (i `false` re
 - Prezzi IVA inclusa vs esclusa, Stripe Tax, fattura dell'add-on all'impresa: dipendono da D5 e dalla configurazione fiscale di PrevAI, non dal codice.
 - Cambio di prezzo quando un'impresa passa da/verso Elite: il bundle si applica al checkout, non si ricalcola sugli abbonamenti già attivi.
 - Avviso automatico a chi ha registrato interesse: al lancio si estrae l'elenco da `addon_events` (`tipo = 'interesse'`) e si scrive a mano o con una campagna.
+
+## 11. Commercialista nel giro (A-6, fase 2)
+
+Il commercialista iscritto all'Albo rivede i numeri della chiusura d'anno, prepara la dichiarazione, la fa confermare all'impresa e la trasmette col proprio Entratel. PrevAI fornisce lo strumento e mette in contatto le parti; la prestazione, la responsabilità e la polizza sono del professionista (AMMINISTRAZIONE-PLAN §5). **Stato oggi: codice completo, servizio spento.** Si accende solo con il flag `accountant_service` sul profilo di un'impresa pilota; nessun piano lo include e l'offerta resta in `bozza` finché D9, D11 e un professionista operativo non ci sono.
+
+### 11.1 Dove sta tutto
+
+- **Regole pure** (stato del servizio, operatività del professionista, assegnazione secondo D9, macchina a stati della pratica, testi di convenzione, lettera d'incarico e informative): `lib/config/src/commercialista.ts`. I testi hanno una versione ciascuno; ciò che è stato firmato resta salvato così com'era, con la sua impronta sha256.
+- **Server**: `artifacts/api-server/src/commercialista/service.ts`; rotte dell'impresa in `routes/commercialista.ts` (`/api/fiscale/commercialista…`, area di permessi `fiscale`), dello studio e dello staff in `routes/studio.ts` (`/api/studio…`, `/api/admin/commercialisti…`).
+- **Pagine**: impresa `/dashboard/fisco/commercialista`; professionista `/studio` e `/studio/incarichi/:id` (cornice propria, niente onboarding aziendale, noindex e `Disallow` in robots); staff Admin → "Commercialisti".
+- **Tabelle** (0008): `professionisti`, `incarichi`, `pratiche_dichiarazione`, `consulenze_messaggi`, `incarichi_eventi`, `compensi_professionisti`.
+
+### 11.2 Stato del servizio e decisioni
+
+`statoServizio()` lo calcola come `statoOfferta()` di A-5: per mostrarlo (`interesse`) servono **D9** (studio unico o rete: `SERVIZIO_COMMERCIALISTA.decisioni.D9`), **D11** (prezzo al cliente e compenso per pratica fissati da una convenzione firmata: `decisioni.D11`) e **almeno un professionista operativo**; per venderlo anche D6 e D8, perché il servizio contiene tutto l'add-on. Il prezzo del piano (39 €/mese o 420 €/anno) è un'**ipotesi** e non compare in nessuna schermata. Non c'è checkout: si aggiunge quando D11 è chiusa, sul modello dell'add-on (§10).
+
+- **D9 aperta**: le richieste delle imprese restano `da_assegnare` e le assegna lo staff da Admin → "Commercialisti". **D9 chiusa**: `studio_unico` assegna al professionista meno carico; `rete` preferisce la stessa regione dell'impresa, poi il carico; mai oltre la capienza.
+- Chi ha il servizio ottiene anche tutto l'add-on (`hasFeature` in `lib/db/src/schema/plans.ts`): la pratica parte dalla chiusura d'anno, che è `admin_suite`.
+
+### 11.3 Mettere al lavoro un professionista
+
+1. Il professionista crea un account PrevAI normale, attiva la **verifica in due passaggi** (lo studio non si apre senza) e si candida da `/studio`: identità, iscrizione all'Albo (Ordine, sezione, numero), PEC, Entratel, polizza RC, altri strumenti di IA che usa.
+2. Lo staff controlla sull'albo online dell'Ordine l'iscrizione e l'assenza di sospensioni, vede la polizza e l'abilitazione Entratel, e in Admin → "Commercialisti" spunta polizza ed Entratel, fissa il **compenso per pratica** (D11) e la capienza. Senza compenso la convenzione non si può firmare.
+3. Il professionista legge e firma la convenzione in `/studio`. Da quel momento è **operativo**: `operativita()` lo ricontrolla a ogni richiesta, quindi la polizza scaduta ieri lo ferma oggi senza che nessuno intervenga; una polizza rinnovata dichiarata dal professionista azzera la verifica finché lo staff non la rivede. Identità e iscrizione verificate non si cambiano da `/studio`.
+4. Sospendere o cessare (Admin): gli incarichi non ancora accettati tornano in coda.
+
+### 11.4 Il giro di un incarico
+
+1. L'impresa chiede il servizio per un anno d'imposta → `da_assegnare` (o assegnato subito se D9 è chiusa).
+2. Assegnato → `proposto`: l'impresa legge **lettera d'incarico** (oggetto, esclusioni, compenso, polizza — art. 9 c. 4 DL 1/2012, art. 5 DPR 137/2012 — antiriciclaggio), **informativa sull'IA** (art. 13 L. 132/2025) e **informativa privacy del professionista**, e firma con la 2FA. Si registrano data, IP, user agent e l'impronta del testo esatto.
+3. Il professionista attesta l'**adeguata verifica** (D.Lgs. 231/2007, fatta coi suoi strumenti: PrevAI non raccoglie documenti d'identità) e accetta → `attivo`. Da qui, e solo da qui, vede i dati dell'impresa per quell'anno.
+4. **Pratica**: l'impresa chiude l'anno (§9.4) e la consegna → il professionista rivede → chiede correzioni oppure approva caricando la **bozza della dichiarazione** → l'impresa la **conferma** (con la 2FA) → il professionista trasmette e registra il **protocollo telematico** → carica la ricevuta: accolta (incarico concluso, compenso maturato) o scartata (si torna alla revisione e serve una nuova conferma).
+5. La pratica è legata all'**impronta della chiusura d'anno** consegnata: se l'impresa riapre o richiude l'anno con numeri diversi, conferma e trasmissione vengono rifiutate (409 `NUMERI_CAMBIATI`) finché l'impresa non riconsegna e il professionista non riapprova. Lo stesso per la bozza: si conferma solo quella di cui si è vista l'impronta.
+6. **Chat di consulenza**: solo impresa e professionista, con l'incarico attivo; nessuna IA e nessuno di PrevAI scrive lì.
+7. **Revoca** dell'impresa o **rinuncia** del professionista (con motivo): l'accesso si chiude subito; l'impresa può chiedere di nuovo.
+8. Ogni apertura dei dati da parte del professionista (pacchetto, PDF, CSV, bozza, ricevuta) finisce in `incarichi_eventi` e l'impresa la vede in "Cronologia e accessi".
+
+### 11.5 Compensi
+
+Maturano con la ricevuta di accoglimento, all'importo della convenzione del professionista in quel momento. Lo staff li porta a `fatturato` (numero della fattura del professionista a PrevAI) e poi a `pagato` da Admin → "Commercialisti"; il professionista li vede in `/studio`. PrevAI non fattura per conto del professionista: chi fattura il cliente dipende da D11 (oggi: il canone del servizio, pagato a PrevAI, comprende il compenso — scritto così nella lettera).
+
+### 11.6 Cosa non è fatto (di proposito)
+
+- **Checkout del servizio**: dopo D11, sul modello dell'add-on.
+- **Promemoria di scadenza della polizza**: oggi l'avviso è in `/studio` a 30 giorni e il blocco è automatico alla scadenza; un'email dal cron si aggiunge se serve.
+- **Firma qualificata** di convenzione e lettera: sono accettazioni in app con impronta (firma elettronica semplice, come i contratti di v2). La convenzione vera col primo studio si firma anche fuori da PrevAI; i testi vanno fatti rivedere a un legale prima (D9).
+- **Delega al cassetto fiscale / precompilata**: il professionista la gestisce coi suoi strumenti.
+
+### 11.7 Cutover e migrazioni
+
+`migrations/v2/0008_a6_commercialista.sql` è additiva e idempotente, **dopo** la 0007 (§5.3): sei tabelle nuove, nessuna colonna su tabelle esistenti, tutte vuote. Nessuna env nuova (gli avvisi email usano `RESEND_API_KEY` come il resto). Staging: 0,1 s, rieseguita senza effetti, drift 0 fatali.
 
 
 ---

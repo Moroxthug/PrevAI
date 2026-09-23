@@ -235,7 +235,7 @@ export async function cleanupAll(): Promise<void> {
 // Signed contracts and invoice PDFs land in the private bucket under
 // `<kind>/<userId>/…` (contracts/service.ts, invoices/service.ts), so one
 // prefix listing per kind per user finds everything a run uploaded.
-const STORAGE_KINDS = ["contracts", "invoices", "sdi"];
+const STORAGE_KINDS = ["contracts", "invoices", "sdi", "commercialista"];
 
 async function deleteStorageForUsers(userIds: string[]): Promise<void> {
   const supabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);

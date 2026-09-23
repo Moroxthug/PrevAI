@@ -17,6 +17,7 @@ import {
 } from "recharts";
 import { useLanguage } from "@/i18n/LanguageContext";
 import { AdminTestPrezzo } from "@/components/admin-test-prezzo";
+import { AdminCommercialisti } from "@/components/admin-commercialisti";
 import { PREZZI_PIANI, formatPrezzo } from "@workspace/config";
 
 const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
@@ -46,7 +47,7 @@ type AdminUser = {
 };
 
 type Settings = Record<string, string>;
-type Tab = "overview" | "users" | "widget" | "stripe" | "gsc" | "seo" | "settings" | "support" | "email-events" | "margin" | "incentives" | "addon";
+type Tab = "overview" | "users" | "widget" | "stripe" | "gsc" | "seo" | "settings" | "support" | "email-events" | "margin" | "incentives" | "addon" | "commercialisti";
 
 type IncentiveCatalogRow = {
   id: string;
@@ -815,6 +816,7 @@ export default function AdminPage() {
               { id: "incentives", label: t("admin.tabIncentives"), icon: Award },
               { id: "stripe", label: t("admin.tabStripe"), icon: DollarSign },
               { id: "addon", label: "Test di prezzo", icon: TrendingUp },
+              { id: "commercialisti", label: "Commercialisti", icon: Users },
               { id: "gsc", label: "Search Console", icon: Globe },
               { id: "seo", label: "SEO Checker", icon: Sparkles },
               { id: "support", label: t("admin.tabSupport"), icon: MessageSquare },
@@ -1525,6 +1527,7 @@ export default function AdminPage() {
 
           {/* STRIPE MANAGEMENT TAB */}
           {tab === "addon" && <AdminTestPrezzo />}
+          {tab === "commercialisti" && <AdminCommercialisti />}
 
           {tab === "stripe" && (
             <div className="space-y-6">

@@ -1,7 +1,7 @@
 import { statoOffertaLocale } from "@/lib/addons-api";
 import "@/i18n/dashboard";
 import { Link, useLocation } from "wouter";
-import { LayoutDashboard, FileText, Landmark, Menu, BarChart3, Settings, ChevronLeft, ChevronRight, Plus, LogOut, User, CreditCard, Building2, ChevronDown, BookOpen, Users, Receipt, Briefcase, FolderOpen, FileSignature, HardHat, Sparkles, Check, Target, UploadCloud, Search, Archive, PiggyBank } from "lucide-react";
+import { LayoutDashboard, FileText, Landmark, Menu, BarChart3, Settings, ChevronLeft, ChevronRight, Plus, LogOut, User, CreditCard, Building2, ChevronDown, BookOpen, Users, Receipt, Briefcase, FolderOpen, FileSignature, HardHat, Sparkles, Check, Target, UploadCloud, Search, Archive, PiggyBank, UserRound } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { teamMembersApi } from "@/lib/team-members-api";
 import { securityApi } from "@/lib/security-api";
@@ -39,6 +39,8 @@ function useNavItems() {
     //      ordinario vuole le fatture elettroniche e non il forfettario.
     // A-5: non più riservato a Pro — dopo il lancio il calcolo è gratis in ogni piano, e l'add-on si compra con qualunque piano.
     { href: "/dashboard/fisco", labelKey: "dashboard.nav.fisco", icon: PiggyBank, exact: false, proOnly: false, addonFisco: true, comingSoon: false, group: "delivery" },
+    // A-6: il commercialista convenzionato, solo per chi ha il servizio (oggi le imprese pilota).
+    { href: "/dashboard/fisco/commercialista", labelKey: "dashboard.nav.commercialista", icon: UserRound, exact: false, proOnly: false, addonCommercialista: true, comingSoon: false, group: "delivery" },
     // A-5: chi non ha il modulo, a offerta pubblicata, trova qui la pagina dell'add-on (in bozza non compare).
     { href: "/dashboard/amministrazione/attiva", labelKey: "dashboard.nav.fisco", icon: Landmark, exact: false, proOnly: false, addonOffer: true, comingSoon: false, group: "delivery" },
     { href: "/dashboard/analytics", labelKey: "dashboard.nav.analytics", icon: BarChart3, exact: false, proOnly: false, comingSoon: false, group: "insights" },
@@ -248,6 +250,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
   const { data: navProfile } = useGetBusinessProfile();
   const hasSdi = navProfile ? hasFeature(navProfile as never, "sdi_invoicing") : false;
   const hasFisco = navProfile ? hasFeature(navProfile as never, "fiscal_engine") : false;
+  const hasCommercialista = navProfile ? hasFeature(navProfile as never, "accountant_service") : false;
   const showAddonOffer = Boolean(navProfile) && !hasSdi && !hasFisco && statoOffertaLocale() !== "bozza";
   // Hooks must run on every render — keep this above the early returns below.
   const allNavItems = useNavItems();
@@ -305,7 +308,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
     return null;
   }
 
-  const NAV_ITEMS = allNavItems.filter(item => (!item.proOnly || isPro) && (!("addonSdi" in item && item.addonSdi) || hasSdi) && (!("addonFisco" in item && item.addonFisco) || hasFisco) && (!("addonOffer" in item && item.addonOffer) || showAddonOffer));
+  const NAV_ITEMS = allNavItems.filter(item => (!item.proOnly || isPro) && (!("addonSdi" in item && item.addonSdi) || hasSdi) && (!("addonFisco" in item && item.addonFisco) || hasFisco) && (!("addonCommercialista" in item && item.addonCommercialista) || hasCommercialista) && (!("addonOffer" in item && item.addonOffer) || showAddonOffer));
   const name = user?.name || user?.email?.split("@")[0] || "Account";
   const email = user?.email ?? "";
   const initials = name.slice(0, 2).toUpperCase();

@@ -47,6 +47,8 @@ import fiscaleRouter from "./fiscale";
 import primaNotaRouter from "./primanota";
 import publicCommercialistaRouter from "./public-commercialista";
 import addonsRouter from "./addons";
+import commercialistaRouter from "./commercialista";
+import studioRouter from "./studio";
 
 const router: IRouter = Router();
 
@@ -97,6 +99,8 @@ router.use(fiscaleRouter);
 router.use(primaNotaRouter);
 router.use(publicCommercialistaRouter);
 router.use(addonsRouter);
+router.use(commercialistaRouter);
+router.use(studioRouter);
 router.use("/v1/public", publicV1Router);
 
 export default router;
