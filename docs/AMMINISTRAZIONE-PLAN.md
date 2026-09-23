@@ -26,7 +26,7 @@ Il posizionamento credibile e legalmente sicuro non è "senza commercialista" ma
 
 | Prodotto | Modello | Prezzo forfettari | Cosa include | Limite |
 |---|---|---|---|---|
-| **Fiscozen** | software + commercialista dedicato | **399 €/anno** IVA incl. (forfettari); 999 €/anno + IVA semplificato | dichiarazione, F24, INPS, consulenza umana, fatturazione | non conosce il cantiere; fatturazione basica |
+| **Fiscozen** | software + commercialista dedicato | **499 €/anno** professionisti, **599 €/anno artigiani** (59,90 €/mese), IVA incl. (riletto su fiscozen.it il 2026-09-23; era 399 €) | dichiarazione, F24, INPS, consulenza umana, fatturazione | non conosce il cantiere; fatturazione basica |
 | **Quickfisco** | "commercialista digitale" | **365 €/anno** Standard, **475 €** Premium, IVA incl., no rinnovo automatico | come sopra, solo forfettari | solo forfettari (scelta deliberata) |
 | **FlexTax** | software + commercialista | **366 €/anno** professionisti (319 € dal 2° anno); **560 €** artigiani e commercianti (con Camera di Commercio) | come sopra | prezzo artigiani più alto = segnale che il segmento costa di più da servire |
 | **Fatture in Cloud** (TeamSystem) | solo software | **48 €/anno** piano Forfettari primo anno (poi 96 €), Standard 144 €, Premium 252 €, Complete 612 € | fatturazione SDI, incassi, prima nota; conservazione delegata gratis ad AdE | nessun aiuto fiscale: rimanda al commercialista |
@@ -168,9 +168,9 @@ Moduli 1 + 2 + 3, con **onboarding fiscale** (regime, ATECO, data inizio attivit
 | Pacchetto | Prezzo | Contenuto | Riferimento competitivo |
 |---|---|---|---|
 | **Gratis (in ogni piano PrevAI)** | 0 | calcolatore imposte/INPS, scadenzario, monitor soglia | Fatture in Cloud non lo ha; Fiscozen lo dà solo ai paganti |
-| **Amministrazione** (add-on) | **12 €/mese o 120 €/anno** (+IVA) | Fatture SDI illimitate + conservazione, bollo, F24 precompilati, prima nota, import estratto conto, chiusura d'anno + condivisione col commercialista | sopra Fatture in Cloud (48–96 €, solo fatture), molto sotto Fiscozen (399 €). Costo vivo ≈ 10–30 €/anno SDI → margine > 75% |
+| **PrevAI Fisco** (add-on) — **deciso 2026-09-23 (D5)** | **14,90 €/mese o 149 €/anno IVA inclusa** (test 11,90 / 14,90 / 17,90); fondatori 9,90 / 99 € bloccati, prime 100 imprese entro il 31/3/2027 | Fatture SDI illimitate + conservazione, bollo, F24 precompilati, prima nota, import estratto conto, chiusura d'anno + condivisione col commercialista | sopra Fatture in Cloud (48–96 €, solo fatture), molto sotto Fiscozen (399 €). Costo vivo ≈ 10–30 €/anno SDI → margine > 75% |
 | **Amministrazione + Commercialista** (fase 2) | **39 €/mese o 420 €/anno** IVA incl. (prezzo al consumatore in IVA inclusa come i concorrenti) | tutto il precedente + dichiarazione redditi inviata da commercialista convenzionato + consulenza | Fiscozen 399, Quickfisco 365–475, **FlexTax artigiani 560**: siamo allineati sul prezzo ma con il gestionale cantieri incluso, che loro non hanno |
-| **Bundle "Impresa completa"** | Elite 59 € + Amministrazione a **5 €/mese** invece di 12 | leva per spingere Elite | — |
+| **Bundle "Impresa completa"** | Elite 79 € + PrevAI Fisco a **4,90 €/mese** invece di 14,90 (deciso 2026-09-23) | leva per spingere Elite | — |
 
 Punti di attenzione: (a) **IVA**: gli artigiani forfettari non la detraggono, quindi comunicare prezzi IVA inclusa come fanno Fiscozen/Quickfisco; (b) il piano Commercialista richiede **calcolo dei costi del professionista** prima di fissare il prezzo (80–150 €/dichiarazione + supporto): 420 € regge solo se il software riduce il lavoro del professionista a revisione+invio; (c) test di prezzo con 2–3 varianti su landing dedicata prima del lancio; (d) niente "pacchetto una tantum" per la dichiarazione nella fase 1 (§5).
 

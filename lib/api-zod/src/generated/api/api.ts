@@ -1914,7 +1914,8 @@ export const RequestUploadUrlResponse = zod.object({
  */
 export const CreateCheckoutSessionBody = zod.object({
   "quoteId": zod.string().optional(),
-  "planType": zod.enum(['monthly_starter', 'monthly_pro', 'monthly_elite', 'oneshot_watermark', 'oneshot_clean'])
+  "planType": zod.enum(['monthly_starter', 'monthly_pro', 'monthly_elite', 'oneshot_watermark', 'oneshot_clean']),
+  "billing": zod.enum(['mensile', 'annuale']).optional().describe('A-5 — periodicità dell\'abbonamento (default mensile; ignorata per i preventivi singoli)')
 })
 
 export const CreateCheckoutSessionResponse = zod.object({
@@ -1948,6 +1949,7 @@ export const GetPlansResponseItem = zod.object({
   "id": zod.string(),
   "name": zod.string(),
   "price": zod.number(),
+  "annualPrice": zod.number().nullish().describe('A-5 — prezzo annuale IVA inclusa (dieci mensilità); null per i preventivi singoli'),
   "currency": zod.string(),
   "interval": zod.string().nullish(),
   "features": zod.array(zod.string()),

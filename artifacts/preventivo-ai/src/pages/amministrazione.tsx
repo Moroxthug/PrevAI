@@ -15,7 +15,8 @@ import {
 import { SeoHead } from "@/components/seo-head";
 import { useAuth } from "@/hooks/use-auth";
 import { useNoIndex } from "@/hooks/use-no-index";
-import { ricordaCampagna } from "@/lib/addons-api";
+import { addonsApi, ricordaCampagna, type StatoFondatoriDto } from "@/lib/addons-api";
+import { FondatoriBox } from "@/components/fondatori-box";
 import { FAQ_LANDING_AMMINISTRAZIONE, LANDING_AMMINISTRAZIONE_PATH, LANDING_AMMINISTRAZIONE_SEO, landingAmministrazioneIndicizzabile } from "@/data/amministrazione-landing";
 
 // A-5: landing pubblica dell'add-on Amministrazione, resa al build
@@ -35,6 +36,13 @@ export default function AmministrazioneLandingPage() {
   const stato = statoOfferta({ anno: new Date().getFullYear() });
   const [variante, setVariante] = useState<VariantePrezzo>(variantePredefinita());
   const [intervallo, setIntervallo] = useState<IntervalloAddon>("annuale");
+  const [fondatori, setFondatori] = useState<StatoFondatoriDto | null>(null);
+
+  // Posti fondatori rimasti: solo quando si può comprare, dal conteggio vero.
+  useEffect(() => {
+    if (stato.effettivo !== "vendita") return;
+    addonsApi.offertaPubblica().then((r) => setFondatori(r.fondatori)).catch(() => undefined);
+  }, [stato.effettivo]);
 
   useEffect(() => {
     const v = new URLSearchParams(window.location.search).get("v");
@@ -157,6 +165,9 @@ export default function AmministrazioneLandingPage() {
             <p style={{ fontSize: 14, color: "var(--muted-mk)", marginTop: 6 }}>
               Con il piano Elite: {formatPrezzoOfferta(OFFERTA_AMMINISTRAZIONE.bundleEliteMensileCents)} al mese.
             </p>
+            <div style={{ marginTop: 16 }}>
+              <FondatoriBox stato={stato.effettivo} fondatori={fondatori} compatto />
+            </div>
             <div style={{ marginTop: 18 }}>
               <Link href={cta} className="btn btn-navy">
                 {ctaTesto}

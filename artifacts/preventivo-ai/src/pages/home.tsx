@@ -1,5 +1,7 @@
 import { Link, useLocation } from "wouter";
 import { ArrowRight, Receipt, Shield, Zap } from "lucide-react";
+import { PREZZI_PIANI } from "@workspace/config";
+import { prezzoPianoTesto } from "@/lib/prezzi";
 import { SeoHead } from "@/components/seo-head";
 import { RevealHeading } from "@/components/reveal-heading";
 import { StatsBar } from "@/components/stats-bar";
@@ -476,7 +478,7 @@ export default function Home() {
             <div className="card dd-card" id="plans">
               <h3>Quanto costa iniziare</h3>
               <p>
-                La registrazione è gratuita e il primo preventivo si genera senza inserire la carta di credito. Da lì puoi scegliere: paghi un preventivo singolo quando serve, oppure attivi un abbonamento mensile (Starter con 20 preventivi al mese, Pro con preventivi illimitati, Elite con squadra, cantieri e integrazioni). Disdici quando vuoi dalle impostazioni, senza penali.
+                La registrazione è gratuita e il primo preventivo si genera senza inserire la carta di credito. Da lì puoi scegliere: paghi un preventivo singolo quando serve, oppure attivi un abbonamento, mensile o annuale con due mesi gratis: Starter a {prezzoPianoTesto("monthly_starter")} con {PREZZI_PIANI.monthly_starter.preventiviMese} preventivi al mese, Pro a {prezzoPianoTesto("monthly_pro")} con {PREZZI_PIANI.monthly_pro.preventiviMese}, Elite a {prezzoPianoTesto("monthly_elite")} con preventivi illimitati, squadra, cantieri e integrazioni. Prezzi IVA inclusa. Disdici quando vuoi dalle impostazioni, senza penali.
               </p>
             </div>
           </div>

@@ -81,7 +81,7 @@ async function suiteOForbidden(userId: string, res: import("express").Response):
     return false;
   }
   if (hasFeature(profile, "admin_suite")) return true;
-  res.status(403).json({ error: "ADMIN_SUITE_OFF", message: "Gli F24 precompilati fanno parte dell'add-on Amministrazione." });
+  res.status(403).json({ error: "ADMIN_SUITE_OFF", message: "Gli F24 precompilati fanno parte dell'add-on PrevAI Fisco." });
   return false;
 }
 

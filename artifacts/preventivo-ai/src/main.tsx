@@ -16,7 +16,7 @@ initAnalytics();
 // the city pages).
 const STATIC_SEO_RE = /^\/(?:preventivi\/[^/]+(?:\/[^/]+)?|blog(?:\/.*)?)\/?$/;
 // Pages rendered at build time by entry-server.tsx (keep in sync with SSR_PAGES there).
-const SSR_PAGE_RE = /^\/(?:whatsapp|chi-siamo|contatti|privacy|termini|mappa-sito|amministrazione|help(?:\/[a-z0-9-]+)?)?\/?$/;
+const SSR_PAGE_RE = /^\/(?:whatsapp|chi-siamo|contatti|privacy|termini|mappa-sito|fisco|help(?:\/[a-z0-9-]+)?)?\/?$/;
 
 const rootEl = document.getElementById("root")!;
 const pathname = window.location.pathname;

@@ -17,6 +17,7 @@ import {
 } from "recharts";
 import { useLanguage } from "@/i18n/LanguageContext";
 import { AdminTestPrezzo } from "@/components/admin-test-prezzo";
+import { PREZZI_PIANI, formatPrezzo } from "@workspace/config";
 
 const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
 
@@ -877,7 +878,7 @@ export default function AdminPage() {
                         <Zap className="h-4 w-4 text-navy-600" />
                         <div>
                           <div className="text-xs font-bold text-navy-800">{t("admin.starterPlan")}</div>
-                          <div className="text-[10px] text-navy-500">$19{t("admin.perMonthShort")}</div>
+                          <div className="text-[10px] text-navy-500">{formatPrezzo(PREZZI_PIANI.monthly_starter.mensileCents)}{t("admin.perMonthShort")}</div>
                         </div>
                       </div>
                       <div className="text-right">
@@ -891,7 +892,7 @@ export default function AdminPage() {
                         <Crown className="h-4 w-4 text-amber-600" />
                         <div>
                           <div className="text-xs font-bold text-amber-800">{t("admin.proPlan")}</div>
-                          <div className="text-[10px] text-amber-500">$49{t("admin.perMonthShort")}</div>
+                          <div className="text-[10px] text-amber-500">{formatPrezzo(PREZZI_PIANI.monthly_pro.mensileCents)}{t("admin.perMonthShort")}</div>
                         </div>
                       </div>
                       <div className="text-right">

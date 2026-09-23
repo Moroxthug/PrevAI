@@ -208,7 +208,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
     blocks: [
       h("Da dove nascono le fatture"),
       p("Il piano di pagamento impostato sul preventivo (per esempio 30 % di acconto, 40 % dopo gli impianti al grezzo, 30 % a fine lavori) viene copiato nel contratto, e ogni riga diventa una fattura al momento giusto: l'acconto alla firma del contratto, i SAL al completamento della fase, il saldo quando il cantiere è segnato come completato. Puoi anche creare una fattura manuale da zero."),
-      p("Ogni fattura ha un numero progressivo che non viene mai riutilizzato, la tua partita IVA, i dati del cliente, l'IVA esposta separatamente e la scadenza. Annullare una fattura ne conserva il numero nella sequenza e ti permette di emetterne una corretta. Senza il modulo Amministrazione i documenti valgono come pro-forma e la fattura elettronica va emessa altrove. Con il modulo attivo, invece, PrevAI genera il file XML, lo trasmette al Sistema di Interscambio tramite un intermediario accreditato e ti mostra le ricevute: il PDF che il cliente riceve diventa una copia di cortesia."),
+      p("Ogni fattura ha un numero progressivo che non viene mai riutilizzato, la tua partita IVA, i dati del cliente, l'IVA esposta separatamente e la scadenza. Annullare una fattura ne conserva il numero nella sequenza e ti permette di emetterne una corretta. Senza il modulo PrevAI Fisco i documenti valgono come pro-forma e la fattura elettronica va emessa altrove. Con il modulo attivo, invece, PrevAI genera il file XML, lo trasmette al Sistema di Interscambio tramite un intermediario accreditato e ti mostra le ricevute: il PDF che il cliente riceve diventa una copia di cortesia."),
       h("Invia e incassa"),
       p("In Impostazioni → Profilo aziendale → Automazioni scegli se le fatture vengono inviate in automatico (dopo un ritardo che imposti tu) o lasciate in bozza perché sia tu a inviarle. Il cliente riceve un'email con il PDF e un link alla pagina della fattura, che mostra il residuo e come pagare:"),
       bullets([
@@ -324,7 +324,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
       h("Calendari"),
       p("Collega Google Calendar o Outlook e ogni fase del cantiere diventa un evento. Sposta la data in PrevAI e l'evento si sposta; completa la fase e l'evento viene segnato come fatto."),
       h("Contabilità"),
-      p("L'export delle fatture verso il tuo software di fatturazione elettronica e il commercialista arriverà con il modulo Amministrazione; nel frattempo scarichi i PDF e il CSV dei pagamenti dalla pagina Fatture."),
+      p("L'export delle fatture verso il tuo software di fatturazione elettronica e il commercialista arriverà con il modulo PrevAI Fisco; nel frattempo scarichi i PDF e il CSV dei pagamenti dalla pagina Fatture."),
       h("Pagamenti con carta tramite Stripe"),
       p("Collega Stripe e sulle pagine fattura dei tuoi clienti compare il pulsante Paga con carta. Gli accrediti arrivano sul tuo conto secondo i tempi di Stripe; PrevAI non trattiene mai i soldi. Si applica la commissione Stripe sulla carta; il bonifico resta gratuito."),
       h("Importa il tuo storico"),

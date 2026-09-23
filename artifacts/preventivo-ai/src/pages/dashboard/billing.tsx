@@ -1,5 +1,6 @@
 import { useGetSubscription, useCreateCustomerPortalSession } from "@workspace/api-client-react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { etichettaPiano, isPianoInAbbonamento, preventiviMese } from "@/lib/prezzi";
 import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/i18n/LanguageContext";
 import {
@@ -65,7 +66,10 @@ export default function BillingPage() {
 
   const isElite = sub?.plan === "monthly_elite";
   const planLabel = isPro ? "Pro" : isStarter ? "Starter" : isElite ? "Elite" : null;
-  const planPrice = isPro ? t("dashboard.billing.pricePro") : isStarter ? t("dashboard.billing.priceStarter") : isElite ? t("dashboard.billing.priceElite") : null;
+  // A-5: chi è già abbonato può pagare un prezzo storico (es. Elite a 59 € prima
+  // del listino a 79 €), che non conserviamo: l'importo vero lo mostra il portale
+  // Stripe. Qui si dice solo "Mensile" / "Annuale", mai un listino che potrebbe non essere il suo.
+  const planPrice = isPianoInAbbonamento(sub?.plan) ? "Importo e rinnovo nel portale Stripe" : null;
 
   const renewalDate = sub?.periodEnd
     ? new Date(sub.periodEnd).toLocaleDateString("it-IT", { day: "2-digit", month: "long", year: "numeric" })
@@ -219,12 +223,12 @@ export default function BillingPage() {
                 <div className="space-y-2">
                   <div className="flex items-center gap-2 font-semibold text-sm">
                     <Zap className="h-4 w-4 text-navy-500" />
-                    {t("dashboard.billing.starterPlanLabel")}
+                    {etichettaPiano("monthly_starter")}
                   </div>
                   <ul className="space-y-1.5 text-sm">
                     <li className="flex items-center gap-2 text-muted-foreground">
                       <CheckCircle2 className="h-3.5 w-3.5 text-navy-400 shrink-0" />
-                      {t("dashboard.billing.compare.starterQuotes")}
+                      {t("dashboard.billing.compare.starterQuotes").replace("{count}", String(preventiviMese("monthly_starter")))}
                     </li>
                     <li className="flex items-center gap-2 text-muted-foreground">
                       <CheckCircle2 className="h-3.5 w-3.5 text-navy-400 shrink-0" />
@@ -243,12 +247,12 @@ export default function BillingPage() {
                 <div className="space-y-2 border-l pl-4">
                   <div className="flex items-center gap-2 font-semibold text-sm">
                     <Crown className="h-4 w-4 text-amber-500" />
-                    {t("dashboard.billing.proPlanLabel")}
+                    {etichettaPiano("monthly_pro")}
                   </div>
                   <ul className="space-y-1.5 text-sm">
                     <li className="flex items-center gap-2 text-foreground">
                       <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500 shrink-0" />
-                      {t("dashboard.billing.compare.unlimitedQuotes")}
+                      {t("dashboard.billing.compare.starterQuotes").replace("{count}", String(preventiviMese("monthly_pro")))}
                     </li>
                     <li className="flex items-center gap-2 text-foreground">
                       <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500 shrink-0" />

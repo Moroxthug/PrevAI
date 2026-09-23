@@ -71,10 +71,10 @@ async function moduloOForbidden(userId: string, res: import("express").Response)
   const fiscale = hasFeature(profile, "fiscal_engine");
   if (fiscale && hasFeature(profile, "admin_suite")) return true;
   if (fiscale) {
-    res.status(403).json({ error: "ADMIN_SUITE_OFF", message: "Prima nota, estratto conto e chiusura d'anno fanno parte dell'add-on Amministrazione." });
+    res.status(403).json({ error: "ADMIN_SUITE_OFF", message: "Prima nota, estratto conto e chiusura d'anno fanno parte dell'add-on PrevAI Fisco." });
     return false;
   }
-  res.status(403).json({ error: "FISCAL_MODULE_OFF", message: "Il modulo Amministrazione non è attivo su questo account." });
+  res.status(403).json({ error: "FISCAL_MODULE_OFF", message: "Il modulo PrevAI Fisco non è attivo su questo account." });
   return false;
 }
 

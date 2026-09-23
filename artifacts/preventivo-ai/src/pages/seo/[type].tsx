@@ -1,5 +1,6 @@
 import { useParams, Link } from "wouter";
 import { ArrowRight, CheckCircle2, Clock, FileText, Shield, TrendingUp, Star, Building2, BookOpen, X, MapPin } from "lucide-react";
+import { PREVENTIVI_SINGOLI, PREZZI_PIANI, formatPrezzo } from "@workspace/config";
 import { SeoHead } from "@/components/seo-head";
 import { SECTORS, DEFAULT_SECTOR, RELATED_SECTORS, CITY_SECTORS, ACTIVE_CITIES } from "@/data/seo-data";
 import { BLOG_INDEX, SECTOR_ARTICLES } from "@/data/blog-index";
@@ -141,12 +142,12 @@ function PreventiviGratisPlansBlock() {
   const plans = [
     {
       name: t("seo.plans.starterName"),
-      price: "$19",
+      price: formatPrezzo(PREZZI_PIANI.monthly_starter.mensileCents),
       period: t("seo.plans.perMonth"),
       highlight: false,
       badge: null,
       features: [
-        t("seo.plans.starterFeature1"),
+        t("seo.plans.starterFeature1").replace("{count}", String(PREZZI_PIANI.monthly_starter.preventiviMese)),
         t("seo.plans.starterFeature2"),
         t("seo.plans.starterFeature3"),
         t("seo.plans.starterFeature4"),
@@ -157,12 +158,12 @@ function PreventiviGratisPlansBlock() {
     },
     {
       name: t("seo.plans.proName"),
-      price: "$49",
+      price: formatPrezzo(PREZZI_PIANI.monthly_pro.mensileCents),
       period: t("seo.plans.perMonth"),
       highlight: true,
       badge: t("seo.plans.mostChosen"),
       features: [
-        t("seo.plans.proFeature1"),
+        t("seo.plans.proFeature1").replace("{count}", String(PREZZI_PIANI.monthly_pro.preventiviMese)),
         t("seo.plans.proFeature2"),
         t("seo.plans.proFeature3"),
         t("seo.plans.proFeature4"),
@@ -173,7 +174,7 @@ function PreventiviGratisPlansBlock() {
     },
     {
       name: t("seo.plans.singleName"),
-      price: "$13",
+      price: formatPrezzo(PREVENTIVI_SINGOLI.oneshot_clean.cents),
       period: ` ${t("seo.plans.oneTime")}`,
       highlight: false,
       badge: null,

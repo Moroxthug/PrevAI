@@ -29,8 +29,8 @@ export const SSR_PAGES: ReadonlyArray<{ path: string; lang: Lang }> = [
   { path: "/privacy", lang: "it" },
   { path: "/termini", lang: "it" },
   { path: "/mappa-sito", lang: "it" },
-  // A-5: landing dell'add-on Amministrazione.
-  { path: "/amministrazione", lang: "it" },
+  // A-5: landing dell'add-on PrevAI Fisco.
+  { path: "/fisco", lang: "it" },
   // Phase 70: help centre index + every article.
   { path: "/help", lang: "it" },
   ...HELP_ARTICLES.map((a) => ({ path: `/help/${a.slug}`, lang: "it" as const })),

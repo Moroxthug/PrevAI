@@ -1,4 +1,4 @@
-// A-5: testi della landing dell'add-on Amministrazione (/amministrazione/),
+// A-5: testi della landing dell'add-on PrevAI Fisco (/fisco/),
 // condivisi fra la pagina React e lo script di prerender (JSON-LD FAQPage).
 //
 // Regola di scrittura (AMMINISTRAZIONE-PLAN §5): mai "commercialista
@@ -9,7 +9,7 @@
 
 import { OFFERTA_AMMINISTRAZIONE, statoOfferta } from "@workspace/config";
 
-export const LANDING_AMMINISTRAZIONE_PATH = "/amministrazione/";
+export const LANDING_AMMINISTRAZIONE_PATH = "/fisco/";
 
 export const LANDING_AMMINISTRAZIONE_SEO = {
   title: "Tasse del forfettario e fatture elettroniche per artigiani | PrevAI",

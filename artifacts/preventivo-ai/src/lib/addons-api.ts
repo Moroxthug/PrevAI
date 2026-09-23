@@ -35,7 +35,11 @@ export type RiepilogoAddonDto = {
   };
   funzioni: { fattureSdi: boolean; calcoloFiscale: boolean; suite: boolean };
   interesseRegistrato: boolean;
+  fondatori: StatoFondatoriDto;
 };
+
+/** Prezzo fondatori: `rimasti` è il conteggio vero degli abbonamenti già fatti a quel prezzo. */
+export type StatoFondatoriDto = { posti: number; rimasti: number; finoAl: string; mensileCents: number; annualeCents: number; aperti: boolean };
 
 export type RigaTestPrezzoDto = {
   variante: string;
@@ -86,6 +90,8 @@ export const addonsApi = {
   evento: (tipo: "vista" | "interesse") =>
     req<{ registrato: boolean; variante: string }>("/api/addons/amministrazione/eventi", { method: "POST", body: JSON.stringify({ tipo, campagna: campagnaRicordata() }) }),
   checkout: (intervallo: IntervalloAddon) => req<{ url: string }>("/api/addons/amministrazione/checkout", { method: "POST", body: JSON.stringify({ intervallo }) }),
+  /** Pubblica, senza account: per la landing. */
+  offertaPubblica: () => req<{ stato: StatoOfferta; fondatori: StatoFondatoriDto }>("/api/public/offerta-fisco"),
   testPrezzo: () => req<{ stato: { effettivo: StatoOfferta; richiesto: StatoOfferta }; righe: RigaTestPrezzoDto[] }>("/api/admin/addons/test-prezzo"),
 };
 

@@ -132,7 +132,7 @@ function Router() {
       {/* Public pages — paths from sitemap-routes.ts (shared with generate-sitemap.ts) */}
       <Route path={PATHS.HOME} component={() => <PublicLayout><Home /></PublicLayout>} />
       <Route path={PATHS.WHATSAPP} component={() => <PublicLayout><Suspense fallback={null}><WhatsappPage /></Suspense></PublicLayout>} />
-      <Route path={PATHS.AMMINISTRAZIONE} component={() => <PublicLayout><Suspense fallback={null}><AmministrazioneLandingPage /></Suspense></PublicLayout>} />
+      <Route path={PATHS.FISCO} component={() => <PublicLayout><Suspense fallback={null}><AmministrazioneLandingPage /></Suspense></PublicLayout>} />
       <Route path={PATHS.CHI_SIAMO} component={() => <Suspense fallback={null}><ChiSiamoPage /></Suspense>} />
       <Route path={PATHS.CONTATTI} component={() => <Suspense fallback={null}><ContattiPage /></Suspense>} />
       <Route path={PATHS.PRIVACY} component={() => <Suspense fallback={null}><PrivacyPage /></Suspense>} />

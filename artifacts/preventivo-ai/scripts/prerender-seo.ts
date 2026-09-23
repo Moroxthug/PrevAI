@@ -1733,9 +1733,9 @@ await buildStaticPageHtml({
   bodyHtml: stripHoistedHead(await renderPage("/mappa-sito", "it")),
 });
 
-// /amministrazione/ — A-5, landing dell'add-on. noindex finché l'offerta è in bozza.
+// /fisco/ — A-5, landing dell'add-on PrevAI Fisco. noindex finché l'offerta è in bozza.
 await buildStaticPageHtml({
-  slug: "amministrazione",
+  slug: "fisco",
   title: LANDING_AMMINISTRAZIONE_SEO.title,
   description: LANDING_AMMINISTRAZIONE_SEO.description,
   path: LANDING_AMMINISTRAZIONE_PATH,
@@ -1749,10 +1749,10 @@ await buildStaticPageHtml({
     },
     buildBreadcrumbJsonLd(NOME_OFFERTA, LANDING_AMMINISTRAZIONE_PATH),
   ],
-  bodyHtml: stripHoistedHead(await renderPage("/amministrazione", "it")),
+  bodyHtml: stripHoistedHead(await renderPage("/fisco", "it")),
 });
 
-console.log(`  ✓ 7 SPA pages prerendered (chi-siamo, contatti, privacy, termini, whatsapp, mappa-sito, amministrazione)`);
+console.log(`  ✓ 7 SPA pages prerendered (chi-siamo, contatti, privacy, termini, whatsapp, mappa-sito, fisco)`);
 
 // Phase 70: centro assistenza — indice + una pagina per articolo, resi dallo
 // stesso albero React (title/description del SeoHead della pagina sono quelli

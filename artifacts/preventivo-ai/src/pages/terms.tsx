@@ -1,8 +1,10 @@
 {/*
   Testo ripreso da PrevAI v1 (termini.tsx, tag v1-final) nel layout QuoteAI.
-  Piani e prezzi in 4.1 vanno allineati ai price ID Stripe EUR in V2-4 (D3/D5).
+  Piani e prezzi in 4.1 vengono da @workspace/config (piani.ts, offerta.ts): A-5, D5 del 2026-09-23.
 */}
 import { PublicLayout } from "@/components/layout/public-layout";
+import { OFFERTA_AMMINISTRAZIONE, PREVENTIVI_SINGOLI, PREZZI_PIANI, formatPrezzo } from "@workspace/config";
+import { prezzoPianoTesto } from "@/lib/prezzi";
 import { SeoHead } from "@/components/seo-head";
 import { Link } from "wouter";
 
@@ -26,7 +28,7 @@ export default function TermsPage() {
         <h1 style={{ fontSize: "clamp(1.9rem, 3.4vw, 2.5rem)", fontWeight: 800, letterSpacing: "-.02em", color: "var(--navy)", lineHeight: 1.15, marginBottom: 10 }}>
           Termini di servizio
         </h1>
-        <p style={{ fontSize: 13, color: "var(--faint)" }}>Ultimo aggiornamento: 21 settembre 2026</p>
+        <p style={{ fontSize: 13, color: "var(--faint)" }}>Ultimo aggiornamento: 23 settembre 2026</p>
       </header>
 
       <div className="wrap" style={{ maxWidth: 780, paddingBottom: "clamp(48px, 6vw, 80px)" }}>
@@ -65,7 +67,7 @@ export default function TermsPage() {
               notificarlo immediatamente a{" "}
               <a href="mailto:supporto@prevai.it" className="text-navy-600 hover:underline">supporto@prevai.it</a>.
               Il titolare di un'organizzazione può rendere obbligatoria l'autenticazione a due fattori per tutti gli utenti
-              della sua squadra; per le funzioni che trattano dati fiscali e bancari (modulo Amministrazione) essa è sempre obbligatoria.
+              della sua squadra; per le funzioni che trattano dati fiscali e bancari (modulo PrevAI Fisco) essa è sempre obbligatoria.
             </p>
           </section>
 
@@ -75,20 +77,27 @@ export default function TermsPage() {
               <div>
                 <p className="font-medium">4.1 Piani disponibili</p>
                 <ul className="list-disc pl-5 mt-1 space-y-1">
-                  <li><strong>Starter (€29/mese):</strong> fino a 20 preventivi al mese, PDF con filigrana PrevAI.</li>
-                  <li><strong>Pro (€79/mese):</strong> preventivi illimitati, PDF senza filigrana, branding personalizzabile, contratti, cantieri e fatturazione.</li>
-                  <li><strong>Elite:</strong> tutto il Pro più squadra, ore degli operai, analisi, assistente AI e integrazioni avanzate.</li>
-                  <li><strong>Singolo con filigrana (€29):</strong> un singolo preventivo PDF con filigrana.</li>
-                  <li><strong>Singolo pulito (€39):</strong> un singolo preventivo PDF senza filigrana.</li>
+                  <li><strong>Starter ({prezzoPianoTesto("monthly_starter")} o {prezzoPianoTesto("monthly_starter", "annuale")}):</strong> {PREZZI_PIANI.monthly_starter.preventiviMese} preventivi al mese, PDF con filigrana PrevAI.</li>
+                  <li><strong>Pro ({prezzoPianoTesto("monthly_pro")} o {prezzoPianoTesto("monthly_pro", "annuale")}):</strong> {PREZZI_PIANI.monthly_pro.preventiviMese} preventivi al mese, PDF senza filigrana, branding personalizzabile, contratti, cantieri e fatturazione, {PREZZI_PIANI.monthly_pro.utenti} utenti.</li>
+                  <li><strong>Elite ({prezzoPianoTesto("monthly_elite")} o {prezzoPianoTesto("monthly_elite", "annuale")}):</strong> preventivi illimitati e tutto il Pro, più squadra, ore degli operai, analisi, assistente AI e integrazioni avanzate, {PREZZI_PIANI.monthly_elite.utenti} utenti.</li>
+                  <li><strong>Singolo con filigrana ({formatPrezzo(PREVENTIVI_SINGOLI.oneshot_watermark.cents)}):</strong> un singolo preventivo PDF con filigrana.</li>
+                  <li><strong>Singolo pulito ({formatPrezzo(PREVENTIVI_SINGOLI.oneshot_clean.cents)}):</strong> un singolo preventivo PDF senza filigrana.</li>
+                  <li>
+                    <strong>Add-on {OFFERTA_AMMINISTRAZIONE.nome}:</strong> fatture elettroniche, calcolo fiscale del regime forfettario, scadenzario, F24 precompilati,
+                    prima nota e chiusura d'anno, acquistabile con qualunque piano al prezzo indicato nella pagina dell'add-on al momento dell'acquisto. Il
+                    prezzo fondatori ({formatPrezzo(OFFERTA_AMMINISTRAZIONE.fondatori.mensileCents)} al mese o {formatPrezzo(OFFERTA_AMMINISTRAZIONE.fondatori.annualeCents)} all'anno), riservato alle prime{" "}
+                    {OFFERTA_AMMINISTRAZIONE.fondatori.posti} imprese che si abbonano entro il {new Date(OFFERTA_AMMINISTRAZIONE.fondatori.finoAl).toLocaleDateString("it-IT", { day: "numeric", month: "long", year: "numeric" })}, resta invariato finché
+                    l'abbonamento non viene disdetto.
+                  </li>
                 </ul>
                 <p className="mt-1 text-xs text-gray-500">I prezzi aggiornati e le funzionalità di ciascun piano sono indicati nella pagina Piano e fatturazione al momento dell'acquisto.</p>
               </div>
               <div>
                 <p className="font-medium">4.2 Fatturazione</p>
                 <p className="mt-1">
-                  I piani mensili vengono rinnovati automaticamente ogni mese. I pagamenti sono processati
+                  Gli abbonamenti mensili si rinnovano automaticamente ogni mese, quelli annuali ogni anno. I pagamenti sono processati
                   tramite Stripe Inc. e sono soggetti ai relativi termini di servizio. I prezzi sono espressi in euro
-                  e si intendono IVA esclusa; l'IVA viene aggiunta al momento del pagamento.
+                  e si intendono IVA inclusa.
                 </p>
               </div>
               <div>

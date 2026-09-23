@@ -40,7 +40,7 @@ export function SdiTab() {
   if (settings.isError) {
     return (
       <div className="card card-empty">
-        Il modulo Amministrazione non è attivo su questo account: le fatture restano pro-forma.
+        Il modulo PrevAI Fisco non è attivo su questo account: le fatture restano pro-forma.
         <br />
         <Link href="/dashboard/settings?tab=billing" className="text-link">Vedi i piani</Link>
       </div>

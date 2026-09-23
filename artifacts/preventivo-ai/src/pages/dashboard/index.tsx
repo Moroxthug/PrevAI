@@ -8,6 +8,7 @@ import {
   useListQuotes,
 } from "@workspace/api-client-react";
 import type { QuoteSummary } from "@workspace/api-client-react";
+import { isPianoInAbbonamento, preventiviMese } from "@/lib/prezzi";
 import { useQuery } from "@tanstack/react-query";
 import { Link, useLocation } from "wouter";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -742,7 +743,7 @@ export default function DashboardHome() {
               : subscription?.isActive
                 ? t("dashboard.index.subtitlePlanActive")
                     .replace("{plan}", subscription.plan === "monthly_pro" ? "Pro" : subscription.plan === "monthly_elite" ? "Elite" : "Starter")
-                    .replace("{quotesInfo}", subscription.plan === "monthly_starter" ? t("dashboard.index.quotesPerMonth") : t("dashboard.index.unlimitedQuotes"))
+                    .replace("{quotesInfo}", isPianoInAbbonamento(subscription.plan) && preventiviMese(subscription.plan) !== null ? t("dashboard.index.quotesPerMonth").replace("{count}", String(preventiviMese(subscription.plan))) : t("dashboard.index.unlimitedQuotes"))
                 : t("dashboard.index.subtitleTotalQuotes").replace("{count}", String(stats?.total ?? 0))}
           </p>
         </div>

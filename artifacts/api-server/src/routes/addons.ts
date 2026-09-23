@@ -4,9 +4,9 @@ import { INTERVALLI_ADDON } from "@workspace/config";
 import { requireAuth, getUserId } from "../middlewares/authMiddleware.js";
 import { requirePermission } from "../middlewares/requirePermission.js";
 import { requireAdmin } from "./admin.js";
-import { userRateLimiter } from "../lib/rateLimit.js";
+import { ipRateLimiter, userRateLimiter } from "../lib/rateLimit.js";
 import { logger } from "../lib/logger.js";
-import { ErroreAddon, creaCheckout, registraEventoUtente, riepilogo, risultatiTestPrezzo } from "../addons/amministrazione.js";
+import { ErroreAddon, creaCheckout, offertaCorrente, registraEventoUtente, riepilogo, risultatiTestPrezzo, statoFondatori } from "../addons/amministrazione.js";
 
 // ── A-5: add-on Amministrazione ──────────────────────────────────────────────
 // Paywall, test di prezzo e checkout. Chi vede l'offerta è chi può vedere la
@@ -14,6 +14,7 @@ import { ErroreAddon, creaCheckout, registraEventoUtente, riepilogo, risultatiTe
 // (`settings: full`), come per il piano.
 
 const router = Router();
+const pubblicoLimiter = ipRateLimiter({ windowMs: 60_000, max: 60, message: "Troppe richieste" });
 const checkoutLimiter = userRateLimiter({ windowMs: 60 * 60_000, max: 20, message: "Troppi tentativi di pagamento in un'ora" });
 
 function errore(err: unknown, res: import("express").Response, cosa: string): void {
@@ -64,6 +65,19 @@ router.post("/addons/amministrazione/checkout", requireAuth, requirePermission("
     res.json(await creaCheckout({ userId: getUserId(res), intervallo: parsed.data.intervallo, twoFactorEnabled: Boolean(res.locals.twoFactorEnabled) }));
   } catch (err) {
     errore(err, res, "Errore nel checkout dell'add-on");
+  }
+});
+
+// Pubblica: la landing mostra i posti fondatori rimasti. È il conteggio vero
+// degli abbonamenti fatti a quel prezzo, non un numero di marketing: il
+// contatore di una scarsità finta sarebbe una pratica commerciale scorretta.
+// Nessun dato personale, solo numeri e lo stato dell'offerta.
+router.get("/public/offerta-fisco", pubblicoLimiter, async (_req, res) => {
+  try {
+    res.setHeader("Cache-Control", "public, max-age=60");
+    res.json({ stato: offertaCorrente().effettivo, fondatori: await statoFondatori() });
+  } catch (err) {
+    errore(err, res, "Errore nello stato pubblico dell'offerta");
   }
 });
 

@@ -97,7 +97,7 @@ export function SdiPanel({ invoiceId, fiscale, inviabile }: { invoiceId: string;
       <div className="card-head">
         <div>
           <h2>Fattura elettronica (SdI)</h2>
-          <p className="sub">{fiscale ? "Documento fiscale: l'originale è il file XML trasmesso al Sistema di Interscambio." : "Documento pro-forma: attiva il modulo Amministrazione per emettere fatture elettroniche."}</p>
+          <p className="sub">{fiscale ? "Documento fiscale: l'originale è il file XML trasmesso al Sistema di Interscambio." : "Documento pro-forma: attiva il modulo PrevAI Fisco per emettere fatture elettroniche."}</p>
         </div>
         {corrente && (
           <button type="button" className="ic-btn" aria-label="Aggiorna stato" onClick={() => sincronizza.mutate(corrente.id)} disabled={sincronizza.isPending}>

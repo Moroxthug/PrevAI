@@ -48,43 +48,54 @@ export type Prerequisito = {
 };
 
 export const OFFERTA_AMMINISTRAZIONE = {
+  /** Id interno (chiavi Stripe, jsonb, eventi): resta "amministrazione" anche se il nome commerciale cambia. */
   id: "amministrazione",
-  /** D5: nome di lavoro. Cambiarlo qui lo cambia ovunque, landing compresa. */
-  nome: "PrevAI Amministrazione",
+  /** D5 (2026-09-23): nome commerciale. Cambiarlo qui lo cambia ovunque, landing compresa. */
+  nome: "PrevAI Fisco",
   /**
    * Lo stato che si vorrebbe. Quello effettivo è `statoOfferta().effettivo`:
-   * non supera mai ciò che i prerequisiti consentono.
+   * non supera mai ciò che i prerequisiti consentono (oggi: `interesse`,
+   * perché D6 e D8 sono aperte).
    */
-  statoRichiesto: "bozza" as StatoOfferta,
+  statoRichiesto: "vendita" as StatoOfferta,
   /**
    * Decisioni chiuse a mano, perché non si possono dedurre dal codice.
    * D6 non è qui: si deduce dalle regole del motore (tutte revisionate o no).
    */
   decisioni: {
-    /** Nome e prezzi confermati dal titolare (anche solo come ipotesi da testare). */
-    D5: false,
+    /** Nome e prezzi confermati dal titolare il 2026-09-23. */
+    D5: true,
     /** Contratto, DPA e manuale di conservazione firmati con l'intermediario SdI. */
     D8: false,
   },
+  /** D5: prezzi IVA inclusa, come i piani (PREZZI_IVA_INCLUSA in piani.ts). */
+  ivaInclusa: true,
   /**
-   * AMMINISTRAZIONE-PLAN §9.2 punto (a): i forfettari non detraggono l'IVA, e
-   * i concorrenti comunicano prezzi IVA inclusa. La tabella del piano dice
-   * "+IVA": è una delle due cose da decidere con D5. Finché è false, ogni
-   * prezzo mostrato porta "+ IVA".
-   */
-  ivaInclusa: false,
-  /**
-   * Varianti del test di prezzo. La prima è quella del piano (12 €/mese,
-   * 120 €/anno) e la predefinita; le altre due stanno una sotto e una sopra.
-   * L'annuale vale sempre dieci mensilità: due mesi gratis, come nel piano.
+   * Varianti del test di prezzo, IVA inclusa. La prima è la predefinita (14,90
+   * €/mese, sotto la soglia psicologica dei 15 €); le altre stanno una sotto e
+   * una sopra. L'annuale vale sempre dieci mensilità.
    */
   varianti: [
-    { id: "a", mensileCents: 1200, annualeCents: 12000 },
-    { id: "b", mensileCents: 900, annualeCents: 9000 },
-    { id: "c", mensileCents: 1500, annualeCents: 15000 },
+    { id: "a", mensileCents: 1490, annualeCents: 14900 },
+    { id: "b", mensileCents: 1190, annualeCents: 11900 },
+    { id: "c", mensileCents: 1790, annualeCents: 17900 },
   ] as readonly VariantePrezzo[],
-  /** Bundle "Impresa completa": con il piano Elite l'add-on costa 5 €/mese (solo mensile). */
-  bundleEliteMensileCents: 500,
+  /** Bundle "Impresa completa": con il piano Elite l'add-on costa 4,90 €/mese (solo mensile). */
+  bundleEliteMensileCents: 490,
+  /**
+   * Prezzo fondatori: per le prime `posti` imprese che si abbonano entro
+   * `finoAl`, bloccato finché restano abbonate (è un Price Stripe suo, che non
+   * si migra mai). La scarsità è vera: posti e data li fa rispettare il
+   * checkout contando gli abbonamenti già fatti, e il contatore mostrato è quel
+   * conteggio. Un "ultimi posti" falso sarebbe una pratica commerciale scorretta
+   * (Cod. Consumo art. 21 ss., tutele estese alle microimprese dall'art. 19).
+   */
+  fondatori: {
+    posti: 100,
+    finoAl: "2027-03-31T23:59:59+02:00",
+    mensileCents: 990,
+    annualeCents: 9900,
+  },
 } as const;
 
 // ── Cosa è gratis e cosa si paga ─────────────────────────────────────────────
@@ -228,6 +239,22 @@ export function lookupKeyStripe(variante: VariantePrezzo, intervallo: Intervallo
   return `amministrazione_${variante.id}_${intervallo}`;
 }
 
+export function lookupKeyFondatori(intervallo: IntervalloAddon): string {
+  return `amministrazione_fondatori_${intervallo}`;
+}
+
+export function prezzoFondatoriCents(intervallo: IntervalloAddon): number {
+  const f = OFFERTA_AMMINISTRAZIONE.fondatori;
+  return intervallo === "mensile" ? f.mensileCents : f.annualeCents;
+}
+
+/** Posti fondatori ancora liberi, dato quanti ne sono stati presi. 0 dopo la scadenza. */
+export function postiFondatoriRimasti(presi: number, now: Date = new Date()): number {
+  const f = OFFERTA_AMMINISTRAZIONE.fondatori;
+  if (now.getTime() > Date.parse(f.finoAl)) return 0;
+  return Math.max(0, f.posti - presi);
+}
+
 export const PREFISSO_LOOKUP_ADDON = "amministrazione_";
 
 /** Tutte le lookup key che il titolare deve creare su Stripe prima di passare a `vendita`. */
@@ -237,6 +264,7 @@ export function lookupKeysAttese(): { chiave: string; importoCents: number; inte
     for (const i of INTERVALLI_ADDON) righe.push({ chiave: lookupKeyStripe(v, i), importoCents: prezzoCents(v, i), intervallo: i });
   }
   righe.push({ chiave: lookupKeyStripe(variantePredefinita(), "mensile", true), importoCents: OFFERTA_AMMINISTRAZIONE.bundleEliteMensileCents, intervallo: "mensile" });
+  for (const i of INTERVALLI_ADDON) righe.push({ chiave: lookupKeyFondatori(i), importoCents: prezzoFondatoriCents(i), intervallo: i });
   return righe;
 }
 

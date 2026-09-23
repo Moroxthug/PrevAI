@@ -15,19 +15,19 @@ export type MotivoPaywall = "fiscale" | "suite" | "sdi";
 
 const TESTI: Record<MotivoPaywall, { titolo: string; corpo: string; spento: string }> = {
   fiscale: {
-    titolo: "Il calcolo fiscale fa parte del modulo Amministrazione",
+    titolo: "Il calcolo fiscale fa parte del modulo PrevAI Fisco",
     corpo: "Quanto pagherai di imposta e contributi sul lavoro incassato, quanto mettere via ogni mese, quanto manca alla soglia degli 85.000 € e lo scadenzario completo.",
     spento: "Il calcolo fiscale non è attivo su questo account.",
   },
   suite: {
-    titolo: "Questa parte è inclusa nell'add-on Amministrazione",
+    titolo: "Questa parte è inclusa nell'add-on PrevAI Fisco",
     corpo: "F24 precompilati, prima nota con l'estratto conto della banca, chiusura d'anno col prospetto per la dichiarazione e il link in sola lettura per il commercialista.",
-    spento: "Il modulo Amministrazione non è attivo su questo account.",
+    spento: "Il modulo PrevAI Fisco non è attivo su questo account.",
   },
   sdi: {
-    titolo: "Le fatture elettroniche fanno parte dell'add-on Amministrazione",
+    titolo: "Le fatture elettroniche fanno parte dell'add-on PrevAI Fisco",
     corpo: "Dalla fattura di PrevAI allo SdI in un passaggio, con ricevute, conservazione a norma, bollo virtuale e le fatture dei fornitori che entrano nei costi di cantiere.",
-    spento: "Il modulo Amministrazione non è attivo su questo account.",
+    spento: "Il modulo PrevAI Fisco non è attivo su questo account.",
   },
 };
 

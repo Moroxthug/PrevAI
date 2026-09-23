@@ -378,9 +378,22 @@ export const CreateCheckoutBodyPlanType = {
   oneshot_clean: 'oneshot_clean',
 } as const;
 
+/**
+ * A-5 — periodicità dell'abbonamento (default mensile; ignorata per i preventivi singoli)
+ */
+export type CreateCheckoutBodyBilling = typeof CreateCheckoutBodyBilling[keyof typeof CreateCheckoutBodyBilling];
+
+
+export const CreateCheckoutBodyBilling = {
+  mensile: 'mensile',
+  annuale: 'annuale',
+} as const;
+
 export interface CreateCheckoutBody {
   quoteId?: string;
   planType: CreateCheckoutBodyPlanType;
+  /** A-5 — periodicità dell'abbonamento (default mensile; ignorata per i preventivi singoli) */
+  billing?: CreateCheckoutBodyBilling;
 }
 
 export type PaymentVerifyResultStatus = typeof PaymentVerifyResultStatus[keyof typeof PaymentVerifyResultStatus];
@@ -406,6 +419,8 @@ export interface Plan {
   id: string;
   name: string;
   price: number;
+  /** A-5 — prezzo annuale IVA inclusa (dieci mensilità); null per i preventivi singoli */
+  annualPrice?: number | null;
   currency: string;
   interval?: string | null;
   features: string[];

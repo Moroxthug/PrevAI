@@ -9,6 +9,7 @@ import { formatPrezzoOfferta, type IntervalloAddon } from "@workspace/config";
 import { useToast } from "@/hooks/use-toast";
 import { hasFeature } from "@/lib/plans";
 import { ErroreApiAddon, addonsApi, type RiepilogoAddonDto } from "@/lib/addons-api";
+import { FondatoriBox } from "@/components/fondatori-box";
 
 // A-5: la pagina dell'add-on Amministrazione dentro l'app — paywall, test di
 // prezzo e checkout.
@@ -64,7 +65,13 @@ function Voci({ riepilogo }: { riepilogo: RiepilogoAddonDto }) {
 function Prezzo({ riepilogo, intervallo, onIntervallo }: { riepilogo: RiepilogoAddonDto; intervallo: IntervalloAddon; onIntervallo: (i: IntervalloAddon) => void }) {
   const p = riepilogo.prezzo;
   const mensile = p.mensileEffettivoCents;
-  const importo = intervallo === "mensile" ? mensile : p.annualeCents;
+  const listino = intervallo === "mensile" ? mensile : p.annualeCents;
+  // In vendita, con posti fondatori liberi, si paga il prezzo fondatori se è più
+  // basso (il server fa la stessa scelta al checkout): il listino resta barrato.
+  const f = riepilogo.fondatori;
+  const fondatoriCents = intervallo === "mensile" ? f.mensileCents : f.annualeCents;
+  const daFondatore = riepilogo.offerta.stato === "vendita" && f.aperti && fondatoriCents < listino;
+  const importo = daFondatore ? fondatoriCents : listino;
   const risparmio = p.mensileCents * 12 - p.annualeCents;
   return (
     <div style={{ display: "grid", gap: 10 }}>
@@ -83,6 +90,11 @@ function Prezzo({ riepilogo, intervallo, onIntervallo }: { riepilogo: RiepilogoA
         ))}
       </div>
       <div>
+        {daFondatore && (
+          <span className="text-sm" style={{ textDecoration: "line-through", marginRight: 8, color: "var(--muted-mk)" }}>
+            {formatPrezzoOfferta(listino)}
+          </span>
+        )}
         <span style={{ fontSize: 34, fontWeight: 800, color: "var(--navy)" }}>{formatPrezzoOfferta(importo)}</span>{" "}
         <span className="text-sm">
           {intervallo === "mensile" ? "al mese" : "all'anno"} {riepilogo.offerta.etichettaIva}
@@ -91,7 +103,8 @@ function Prezzo({ riepilogo, intervallo, onIntervallo }: { riepilogo: RiepilogoA
       {intervallo === "mensile" && p.conElite && (
         <p className="text-sm">Prezzo riservato a chi ha il piano Elite (invece di {formatPrezzoOfferta(p.mensileCents)}).</p>
       )}
-      {intervallo === "annuale" && risparmio > 0 && <p className="text-sm">Due mesi gratis rispetto al mensile: risparmi {formatPrezzoOfferta(risparmio)}.</p>}
+      {intervallo === "annuale" && risparmio > 0 && !daFondatore && <p className="text-sm">Due mesi gratis rispetto al mensile: risparmi {formatPrezzoOfferta(risparmio)}.</p>}
+      <FondatoriBox stato={riepilogo.offerta.stato} fondatori={f} compatto />
     </div>
   );
 }

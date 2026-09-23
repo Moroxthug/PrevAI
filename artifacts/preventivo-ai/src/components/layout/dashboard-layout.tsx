@@ -40,7 +40,7 @@ function useNavItems() {
     // A-5: non più riservato a Pro — dopo il lancio il calcolo è gratis in ogni piano, e l'add-on si compra con qualunque piano.
     { href: "/dashboard/fisco", labelKey: "dashboard.nav.fisco", icon: PiggyBank, exact: false, proOnly: false, addonFisco: true, comingSoon: false, group: "delivery" },
     // A-5: chi non ha il modulo, a offerta pubblicata, trova qui la pagina dell'add-on (in bozza non compare).
-    { href: "/dashboard/amministrazione/attiva", labelKey: "dashboard.nav.amministrazione", icon: Landmark, exact: false, proOnly: false, addonOffer: true, comingSoon: false, group: "delivery" },
+    { href: "/dashboard/amministrazione/attiva", labelKey: "dashboard.nav.fisco", icon: Landmark, exact: false, proOnly: false, addonOffer: true, comingSoon: false, group: "delivery" },
     { href: "/dashboard/analytics", labelKey: "dashboard.nav.analytics", icon: BarChart3, exact: false, proOnly: false, comingSoon: false, group: "insights" },
     { href: "/dashboard/assistant", labelKey: "dashboard.nav.assistant", icon: Sparkles, exact: false, proOnly: true, comingSoon: false, group: "insights" },
     { href: "/dashboard/documents", labelKey: "dashboard.nav.documents", icon: FolderOpen, exact: false, proOnly: false, comingSoon: false, group: "workspace" },

@@ -6,7 +6,8 @@ import multer from "multer";
 import { db, quotesTable, businessProfilesTable, authUsersTable, emailEventsTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
 import { auth, getTrustedOrigins } from "./lib/auth";
-import { PRICE_TO_PLAN } from "./routes/payments.js";
+import { pianoDaPrezzo } from "./routes/payments.js";
+import { PREZZI_PIANI } from "@workspace/config";
 import { sendSubscriptionEmail } from "./lib/email";
 import router from "./routes";
 import "./automations";
@@ -182,8 +183,9 @@ app.post(
 
 
     // Shared helper: upsert subscription in DB, resolving user by customerId or email
-    async function syncSubscription(customerId: string, priceId: string | undefined, status: string) {
-      const planType = priceId ? PRICE_TO_PLAN[priceId] : undefined;
+    async function syncSubscription(customerId: string, price: { id?: string; lookup_key?: string | null } | undefined, status: string) {
+      const priceId = price?.id;
+      const planType = pianoDaPrezzo(price);
       if (!planType) {
         logger.warn({ customerId, priceId }, "Unknown price ID in subscription sync — skipping");
         return null;
@@ -319,12 +321,10 @@ app.post(
             const name = authUser?.name || "Customer";
 
             if (email) {
-              const planInfo: Record<string, { name: string; price: number; interval: string | null }> = {
-                monthly_starter: { name: "Starter", price: 19, interval: "month" },
-                monthly_pro: { name: "Pro", price: 49, interval: "month" },
-                monthly_elite: { name: "Elite", price: 59, interval: "month" },
-              };
-              const info = planInfo[planType];
+              // A-5: prezzi da @workspace/config, non più ricopiati qui.
+              const annuale = session.metadata?.billing === "annuale";
+              const piano = PREZZI_PIANI[planType as keyof typeof PREZZI_PIANI];
+              const info = piano ? { name: piano.nome, price: (annuale ? piano.annualeCents : piano.mensileCents) / 100, interval: annuale ? "year" : "month" } : undefined;
               if (info) {
                 await sendSubscriptionEmail({
                   toEmail: email,
@@ -345,10 +345,10 @@ app.post(
       if (event.type === "customer.subscription.created" || event.type === "customer.subscription.updated") {
         const sub = event.data.object;
         const customerId = sub.customer as string;
-        const priceId = sub.items?.data?.[0]?.price?.id;
+        const price = sub.items?.data?.[0]?.price;
         const status = sub.status ?? "";
         if (customerId) {
-          await syncSubscription(customerId, priceId, status);
+          await syncSubscription(customerId, price, status);
         }
       }
 

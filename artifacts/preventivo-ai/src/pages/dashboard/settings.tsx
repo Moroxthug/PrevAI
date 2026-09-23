@@ -1,4 +1,5 @@
 ﻿import { AddonBillingCard } from "@/components/addon-billing-card";
+import { NOTA_IVA, isPianoInAbbonamento, prezzoPianoTesto, type Periodicita } from "@/lib/prezzi";
 import { useState, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -390,6 +391,8 @@ function BillingTab() {
   const { toast } = useToast();
   const [loadingPlanId, setLoadingPlanId] = useState<string | null>(null);
   const [isSyncing, setIsSyncing] = useState(false);
+  // A-5: ogni piano si compra anche annuale (dieci mensilità).
+  const [periodicita, setPeriodicita] = useState<Periodicita>("mensile");
 
   const handleManage = () => {
     createPortal.mutate(undefined, {
@@ -403,7 +406,7 @@ function BillingTab() {
   const handleCheckout = (planId: string) => {
     setLoadingPlanId(planId);
     createCheckout.mutate(
-      { data: { planType: planId as "monthly_starter" | "monthly_pro" | "monthly_elite" | "oneshot_watermark" | "oneshot_clean" } },
+      { data: { planType: planId as "monthly_starter" | "monthly_pro" | "monthly_elite" | "oneshot_watermark" | "oneshot_clean", billing: periodicita } },
       {
         onSuccess: (r) => { window.location.href = r.url; },
         onError: () => {
@@ -441,7 +444,10 @@ function BillingTab() {
   const isElite = sub?.plan === "monthly_elite";
   const isActive = sub?.isActive ?? false;
   const planLabel = isElite ? "Elite" : isPro ? "Pro" : isStarter ? "Starter" : null;
-  const planPrice = isElite ? t("dashboard.billing.priceElite") : isPro ? t("dashboard.billing.pricePro") : isStarter ? t("dashboard.billing.priceStarter") : null;
+  // A-5: chi è già abbonato può pagare un prezzo storico (es. Elite a 59 € prima
+  // del listino a 79 €), che non conserviamo: l'importo vero lo mostra il portale
+  // Stripe. Qui si dice solo "Mensile" / "Annuale", mai un listino che potrebbe non essere il suo.
+  const planPrice = isPianoInAbbonamento(sub?.plan) ? "Importo e rinnovo nel portale Stripe" : null;
   const renewalDate = sub?.periodEnd ? new Date(sub.periodEnd).toLocaleDateString("it-IT", { day: "2-digit", month: "long", year: "numeric" }) : null;
   const resetDate = sub?.quotaResetDate ? new Date(sub.quotaResetDate).toLocaleDateString("it-IT", { day: "2-digit", month: "long" }) : null;
   const subscriptionPlans = Array.isArray(plans) ? plans.filter((p) => !!p.interval) : [];
@@ -527,6 +533,16 @@ function BillingTab() {
           </div>
 
           {subscriptionPlans.length > 0 && (
+            <div role="radiogroup" aria-label="Periodicità" className="flex gap-2 items-center flex-wrap">
+              {(["mensile", "annuale"] as const).map((i) => (
+                <button key={i} type="button" role="radio" aria-checked={periodicita === i} className={cn("btn btn-sm", periodicita === i ? "btn-navy" : "btn-outline-navy")} onClick={() => setPeriodicita(i)}>
+                  {i === "mensile" ? "Mensile" : "Annuale — 2 mesi gratis"}
+                </button>
+              ))}
+              <span className="text-xs text-muted-foreground">Prezzi {NOTA_IVA}</span>
+            </div>
+          )}
+          {subscriptionPlans.length > 0 && (
             <div className="grid sm:grid-cols-3 gap-4">
               {subscriptionPlans.map((plan) => {
                 const isPlanPro = plan.id === "monthly_pro";
@@ -537,7 +553,7 @@ function BillingTab() {
                       {isPlanPro && <span className="text-[10px] font-bold text-navy-600 uppercase tracking-wider">{t("dashboard.settings.billing.mostPopular")}</span>}
                       {isPlanElite && <span className="text-[10px] font-bold text-amber-600 uppercase tracking-wider">{t("dashboard.settings.billing.unlimited")}</span>}
                       <h2 className="text-lg">{plan.name}</h2>
-                      <p className="text-2xl font-extrabold">{plan.price} €<span className="text-sm font-normal text-muted-foreground">{t("dashboard.quoteDetail.perMonth")}</span></p>
+                      <p className="text-2xl font-extrabold">{periodicita === "annuale" && plan.annualPrice ? plan.annualPrice : plan.price} €<span className="text-sm font-normal text-muted-foreground">{periodicita === "annuale" && plan.annualPrice ? "/anno" : t("dashboard.quoteDetail.perMonth")}</span></p>
                     </div>
                     <div className="p-5 flex-1 pb-0">
                       <ul className="space-y-1.5 mb-4">
@@ -643,7 +659,7 @@ function WhatsappUpsellCard() {
               onClick={() => handleCheckout("monthly_pro")}
               disabled={loadingPlanId === "monthly_pro"}>
               {loadingPlanId === "monthly_pro" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Crown className="h-4 w-4" />}
-              {t("dashboard.settings.whatsappUpsell.upgradeToProPrice")}
+              {t("dashboard.settings.whatsappUpsell.upgradeToProPrice").replace("{price}", prezzoPianoTesto("monthly_pro"))}
             </button>
             <button className="btn btn-navy bg-amber-500 hover:bg-amber-600 text-white border-0 gap-2"
               onClick={() => handleCheckout("monthly_elite")}

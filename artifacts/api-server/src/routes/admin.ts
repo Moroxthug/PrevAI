@@ -9,7 +9,7 @@ import crypto from "crypto";
 import { readFileSync, existsSync } from "fs";
 import path from "path";
 
-import { PRICE_TO_PLAN } from "./payments.js";
+import { pianoDaPrezzo } from "./payments.js";
 import { ensureDefaultIncentives } from "../incentives/seed.js";
 import { runIncentivesVerification } from "../incentives/verification.js";
 import { opsHealth } from "../lib/ops.js";
@@ -357,8 +357,7 @@ router.post("/admin/sync-subscription", async (req, res) => {
     for (const customer of customers.data) {
       const subs = await stripe.subscriptions.list({ customer: customer.id, status: "all", limit: 5 });
       for (const sub of subs.data) {
-        const priceId = sub.items.data[0]?.price?.id;
-        const planType = priceId ? PRICE_TO_PLAN[priceId] : undefined;
+        const planType = pianoDaPrezzo(sub.items.data[0]?.price);
         if (!planType) continue;
 
         const isActive = sub.status === "active" || sub.status === "trialing";
@@ -429,11 +428,11 @@ router.post("/admin/sync-by-customer", requireAdmin, async (req, res) => {
     }
 
     const priceId = activeSub.items.data[0]?.price?.id;
-    const planType = priceId ? PRICE_TO_PLAN[priceId] : undefined;
+    const planType = pianoDaPrezzo(activeSub.items.data[0]?.price);
     const isActive = activeSub.status === "active" || activeSub.status === "trialing";
 
     if (!planType) {
-      res.status(400).json({ error: `Unknown price ID: ${priceId} — add to PRICE_TO_PLAN map` });
+      res.status(400).json({ error: `Unknown price ID: ${priceId} — add to PRICE_TO_PLAN map or give the price a piano_* lookup key` });
       return;
     }
 

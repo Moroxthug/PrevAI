@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { formatPrezzoOfferta, lookupKeysAttese, prerequisitiOfferta } from "@workspace/config";
+import { formatPrezzoOfferta, lookupKeysAttese, lookupKeysPianiAttese, prerequisitiOfferta } from "@workspace/config";
 import { addonsApi } from "@/lib/addons-api";
 
 // A-5: pannello staff del test di prezzo dell'add-on Amministrazione.
@@ -22,7 +22,7 @@ export function AdminTestPrezzo() {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-base font-bold text-slate-800">Add-on Amministrazione — test di prezzo</h2>
+        <h2 className="text-base font-bold text-slate-800">Add-on PrevAI Fisco — test di prezzo</h2>
         <p className="text-xs text-slate-500">
           Stato richiesto: <strong>{q.data?.stato.richiesto ?? "…"}</strong> · stato effettivo: <strong>{q.data?.stato.effettivo ?? "…"}</strong>. Le varianti si
           assegnano per impresa (hash dell'id) o dal parametro <code>?v=</code> della landing.
@@ -77,7 +77,7 @@ export function AdminTestPrezzo() {
         <div className="bg-white rounded-2xl border border-slate-100 p-5 shadow-sm space-y-2">
           <h3 className="text-sm font-bold text-slate-800">Price da creare su Stripe (lookup key)</h3>
           <ul className="text-xs font-mono space-y-1">
-            {lookupKeysAttese().map((k) => (
+            {[...lookupKeysPianiAttese(), ...lookupKeysAttese()].map((k) => (
               <li key={k.chiave}>
                 {k.chiave} — {formatPrezzoOfferta(k.importoCents)} / {k.intervallo === "mensile" ? "month" : "year"}
               </li>

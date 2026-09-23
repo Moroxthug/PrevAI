@@ -1,3 +1,13 @@
+import { PREVENTIVI_SINGOLI, PREZZI_PIANI, formatPrezzo } from "@workspace/config";
+
+// A-5: prezzi e limiti dei piani da @workspace/config, non più scritti a mano nei testi.
+const P_STARTER = formatPrezzo(PREZZI_PIANI.monthly_starter.mensileCents);
+const P_PRO = formatPrezzo(PREZZI_PIANI.monthly_pro.mensileCents);
+const P_ELITE = formatPrezzo(PREZZI_PIANI.monthly_elite.mensileCents);
+const P_SINGOLO = formatPrezzo(PREVENTIVI_SINGOLI.oneshot_clean.cents);
+const Q_STARTER = PREZZI_PIANI.monthly_starter.preventiviMese;
+const Q_PRO = PREZZI_PIANI.monthly_pro.preventiviMese;
+
 export interface SectorData {
   slug: string;
   sectorType: "professional" | "service";
@@ -66,7 +76,7 @@ export const SECTORS: Record<string, SectorData> = {
     ],
     h2Faq: "Domande frequenti",
     faq: [
-      { q: "Quanto costa il software di preventivazione per imbianchini?", a: "prevai offre un piano Starter da 29€/mese con 20 preventivi inclusi. Puoi anche acquistare preventivi singoli da 29€ ciascuno senza abbonamento." },
+      { q: "Quanto costa il software di preventivazione per imbianchini?", a: `prevai offre un piano Starter da ${P_STARTER}/mese con ${Q_STARTER} preventivi inclusi, IVA inclusa. Puoi anche acquistare preventivi singoli da ${P_SINGOLO} ciascuno senza abbonamento.` },
       { q: "Posso usarlo dallo smartphone in cantiere?", a: "Sì. prevai è completamente responsive e funziona da qualsiasi smartphone o tablet con connessione internet, senza installare nulla." },
       { q: "Il preventivo include i prezzi di mercato per l'imbianchino?", a: "L'AI suggerisce prezzi tipici di mercato italiano che puoi modificare liberamente. Puoi impostare i tuoi listini nelle impostazioni." },
     ],
@@ -219,7 +229,7 @@ export const SECTORS: Record<string, SectorData> = {
     ],
     h2Faq: "Domande frequenti",
     faq: [
-      { q: "prevai è adatto per imprese edili con più dipendenti?", a: "Sì, il piano Pro (79€/mese) offre preventivi illimitati per tutte le commesse dell'impresa." },
+      { q: "prevai è adatto per imprese edili con più dipendenti?", a: `Sì: il piano Elite (${P_ELITE}/mese) ha preventivi illimitati, 5 utenti e la gestione della squadra e dei cantieri; il Pro (${P_PRO}/mese) include ${Q_PRO} preventivi al mese e 2 utenti.` },
       { q: "Posso allegare planimetrie o file al preventivo?", a: "Il PDF generato contiene il computo metrico completo. Per allegare planimetrie puoi unirlo con qualsiasi PDF editor." },
       { q: "I prezzi suggeriti sono aggiornati al mercato italiano?", a: "L'AI si basa su prezzi tipici del mercato edile italiano. Puoi sempre modificare ogni voce." },
     ],
@@ -1107,17 +1117,17 @@ export const SECTORS: Record<string, SectorData> = {
     metaDescription: "Crea preventivi online gratis con prevai. Software di preventivazione gratuito per artigiani e PMI italiane. Inizia subito senza carta di credito.",
     descriptionVariants: [
       "Crea preventivi online gratis con prevai. Software di preventivazione gratuito per artigiani e PMI italiane. Inizia subito senza carta di credito.",
-      "Software preventivi gratuito per artigiani italiani. Inizia senza carta di credito. Piano Starter da 29€/mese con 20 preventivi.",
+      `Software preventivi gratuito per artigiani italiani. Inizia senza carta di credito. Piano Starter da ${P_STARTER}/mese con ${Q_STARTER} preventivi.`,
       "Preventivi online gratis per artigiani e PMI. prevai AI genera offerte professionali in 30 secondi. Nessuna carta di credito.",
     ],
     h1: "Preventivi Online",
     h1Highlight: "Gratuiti per Iniziare",
-    intro: "Cerchi un software per fare preventivi online gratis? prevai ti permette di iniziare senza carta di credito: crea il tuo account, descrivi il lavoro a parole e genera il tuo primo preventivo professionale in 30 secondi. Il piano Starter da 29€/mese include 20 preventivi al mese — più che sufficienti per piccole attività.",
+    intro: `Cerchi un software per fare preventivi online gratis? prevai ti permette di iniziare senza carta di credito: crea il tuo account, descrivi il lavoro a parole e genera il tuo primo preventivo professionale in 30 secondi. Il piano Starter da ${P_STARTER}/mese include ${Q_STARTER} preventivi al mese — più che sufficienti per piccole attività.`,
     h2Benefits: "Perché prevai è il miglior software preventivi gratuito",
     benefits: [
       { title: "Prova gratuita senza carta di credito", desc: "Registrati, crea il tuo primo preventivo e vedi il risultato prima di qualsiasi pagamento. Nessun impegno, nessuna sorpresa." },
-      { title: "29€/mese per 20 preventivi", desc: "Il piano Starter include 20 preventivi professionali al mese. Per la maggior parte degli artigiani è più che sufficiente per partire." },
-      { title: "Preventivi illimitati con Pro", desc: "Per chi ha un volume alto di preventivi, il piano Pro a 79€/mese offre preventivi illimitati senza restrizioni." },
+      { title: `${P_STARTER}/mese per ${Q_STARTER} preventivi`, desc: `Il piano Starter include ${Q_STARTER} preventivi professionali al mese. Per la maggior parte degli artigiani è più che sufficiente per partire.` },
+      { title: "Preventivi illimitati con Elite", desc: `Per chi ha un volume alto di preventivi, il piano Elite a ${P_ELITE}/mese offre preventivi illimitati, la squadra e i cantieri.` },
       { title: "Nessun software da installare", desc: "prevai funziona direttamente nel browser, da smartphone o computer. Nessuna installazione, nessun aggiornamento manuale." },
     ],
     h2HowItWorks: "Inizia gratis in 3 minuti",
@@ -1137,9 +1147,9 @@ export const SECTORS: Record<string, SectorData> = {
     ],
     h2Faq: "Domande sul piano gratuito di prevai",
     faq: [
-      { q: "prevai è davvero gratuito?", a: "La registrazione è gratuita e puoi creare il tuo primo preventivo senza pagare. Il piano Starter costa 29€/mese e include 20 preventivi. Nessuna carta di credito richiesta per iniziare." },
-      { q: "Quanti preventivi posso fare gratis?", a: "Puoi vedere l'anteprima del preventivo generato gratuitamente. Per scaricare il PDF hai bisogno di un piano a pagamento o di un acquisto singolo da 29€." },
-      { q: "Cosa succede se supero i 20 preventivi mensili del piano Starter?", a: "Il sistema ti avvisa quando sei vicino al limite. Puoi fare upgrade al piano Pro (illimitato) o acquistare preventivi singoli aggiuntivi." },
+      { q: "prevai è davvero gratuito?", a: `La registrazione è gratuita e puoi creare il tuo primo preventivo senza pagare. Il piano Starter costa ${P_STARTER}/mese e include ${Q_STARTER} preventivi. Nessuna carta di credito richiesta per iniziare.` },
+      { q: "Quanti preventivi posso fare gratis?", a: `Puoi vedere l'anteprima del preventivo generato gratuitamente. Per scaricare il PDF hai bisogno di un piano a pagamento o di un acquisto singolo da ${P_SINGOLO}.` },
+      { q: `Cosa succede se supero i ${Q_STARTER} preventivi mensili del piano Starter?`, a: `Il sistema ti avvisa quando sei vicino al limite. Puoi passare al piano Pro (${Q_PRO} al mese) o Elite (illimitati), o acquistare preventivi singoli aggiuntivi.` },
     ],
     jsonLdDescription: "Software di preventivazione online gratuito per artigiani e PMI italiane. Inizia gratis, senza carta di credito.",
   },
@@ -1310,7 +1320,7 @@ export const DEFAULT_SECTOR: SectorData = {
   useCases: ["Artigiani", "Imprese edili", "Imbianchini", "Elettricisti", "Idraulici", "Freelance e consulenti"],
   h2Faq: "Domande frequenti",
   faq: [
-    { q: "Quanto costa prevai?", a: "Il piano Starter costa 29€/mese. Il piano Pro costa 79€/mese con preventivi illimitati. Sono disponibili anche acquisti singoli." },
+    { q: "Quanto costa prevai?", a: `Il piano Starter costa ${P_STARTER}/mese con ${Q_STARTER} preventivi, il Pro ${P_PRO}/mese con ${Q_PRO}, l'Elite ${P_ELITE}/mese con preventivi illimitati e la squadra. Prezzi IVA inclusa; con l'annuale due mesi sono gratis. Sono disponibili anche preventivi singoli.` },
     { q: "Serve una carta di credito per provarlo?", a: "No. Puoi registrarti gratuitamente e creare il tuo primo preventivo senza inserire dati di pagamento." },
   ],
   jsonLdDescription: "Software di preventivazione AI per artigiani e professionisti italiani.",

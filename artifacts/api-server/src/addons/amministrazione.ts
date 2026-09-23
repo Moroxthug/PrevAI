@@ -34,8 +34,11 @@ import {
   PREFISSO_LOOKUP_ADDON,
   VOCI_OFFERTA,
   etichettaIva,
+  lookupKeyFondatori,
   lookupKeyStripe,
   offertaAlmeno,
+  postiFondatoriRimasti,
+  prezzoFondatoriCents,
   prezzoCents,
   statoOfferta,
   varianteDaId,
@@ -169,6 +172,7 @@ export type RiepilogoAddon = {
   };
   funzioni: { fattureSdi: boolean; calcoloFiscale: boolean; suite: boolean };
   interesseRegistrato: boolean;
+  fondatori: StatoFondatori;
 };
 
 export async function riepilogo(userId: string): Promise<RiepilogoAddon> {
@@ -215,7 +219,27 @@ export async function riepilogo(userId: string): Promise<RiepilogoAddon> {
       suite: hasFeature(profile, "admin_suite"),
     },
     interesseRegistrato: Boolean(interesse),
+    fondatori: await statoFondatori(),
   };
+}
+
+// ── Prezzo fondatori ─────────────────────────────────────────────────────────
+
+/** Imprese che hanno preso un posto fondatori (anche se poi hanno disdetto). */
+export async function fondatoriPresi(): Promise<number> {
+  const [riga] = await db
+    .select({ n: sql<number>`count(*)::int` })
+    .from(businessProfilesTable)
+    .where(sql`${businessProfilesTable.addons} -> ${ADDON} ->> 'fondatore' = 'true'`);
+  return riga?.n ?? 0;
+}
+
+export type StatoFondatori = { posti: number; rimasti: number; finoAl: string; mensileCents: number; annualeCents: number; aperti: boolean };
+
+export async function statoFondatori(now: Date = new Date()): Promise<StatoFondatori> {
+  const f = OFFERTA_AMMINISTRAZIONE.fondatori;
+  const rimasti = postiFondatoriRimasti(await fondatoriPresi(), now);
+  return { posti: f.posti, rimasti, finoAl: f.finoAl, mensileCents: f.mensileCents, annualeCents: f.annualeCents, aperti: rimasti > 0 };
 }
 
 // ── Checkout ─────────────────────────────────────────────────────────────────
@@ -260,15 +284,20 @@ export async function creaCheckout(opts: { userId: string; intervallo: Intervall
 
   const variante = await assegnaVariante(userId);
   const conElite = effectivePlan(profile) === "monthly_elite";
-  const importo = prezzoCents(variante, intervallo, conElite);
-  const chiave = lookupKeyStripe(variante, intervallo, conElite);
+  // Si applica il prezzo più basso fra quelli a cui l'impresa ha diritto: il
+  // bundle Elite mensile (4,90) batte i fondatori (9,90), che battono il listino.
+  const listino = prezzoCents(variante, intervallo, conElite);
+  const fondatori = await statoFondatori();
+  const daFondatore = fondatori.aperti && prezzoFondatoriCents(intervallo) < listino;
+  const importo = daFondatore ? prezzoFondatoriCents(intervallo) : listino;
+  const chiave = daFondatore ? lookupKeyFondatori(intervallo) : lookupKeyStripe(variante, intervallo, conElite);
 
   const stripe = await getUncachableStripeClient();
   const price = await prezzoStripe(stripe, chiave, importo, intervallo);
 
   const [authUser] = await db.select({ email: authUsersTable.email }).from(authUsersTable).where(eq(authUsersTable.id, userId));
   const base = getBaseUrl();
-  const metadata = { userId, addon: ADDON, variante: variante.id, intervallo };
+  const metadata = { userId, addon: ADDON, variante: variante.id, intervallo, fondatore: daFondatore ? "1" : "0" };
   const session = await stripe.checkout.sessions.create({
     mode: "subscription",
     line_items: [{ price: price.id, quantity: 1 }],
@@ -350,6 +379,12 @@ export async function sincronizzaAbbonamento(sub: AbbonamentoStripe): Promise<{ 
     finePeriodo: item?.current_period_end ? new Date(item.current_period_end * 1000).toISOString() : prima.finePeriodo ?? null,
     disdettaAFinePeriodo: Boolean(sub.cancel_at_period_end),
     variante: prima.variante ?? sub.metadata?.variante,
+    // Il posto si consuma solo con un abbonamento partito davvero: un checkout
+    // abbandonato o un pagamento mai riuscito ("incomplete") non conta.
+    fondatore:
+      prima.fondatore ||
+      (stato !== "cessato" && (sub.metadata?.fondatore === "1" || (item?.price?.lookup_key ?? "").startsWith("amministrazione_fondatori_"))) ||
+      undefined,
     // Chi era in beta e si abbona passa all'abbonamento vero: la data di fine beta non conta più.
     betaFino: undefined,
   });

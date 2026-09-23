@@ -10,3 +10,4 @@ export * from "./legal";
 export * from "./fatturapa";
 export * from "./fiscale/index";
 export * from "./offerta";
+export * from "./piani";

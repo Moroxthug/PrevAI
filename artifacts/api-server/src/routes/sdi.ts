@@ -52,7 +52,7 @@ async function moduloOForbidden(userId: string, res: import("express").Response)
   if (hasFeature(profile, "sdi_invoicing")) return true;
   res.status(403).json({
     error: "SDI_MODULE_OFF",
-    message: "Il modulo Amministrazione non è attivo su questo account: le fatture restano pro-forma.",
+    message: "Il modulo PrevAI Fisco non è attivo su questo account: le fatture restano pro-forma.",
   });
   return false;
 }

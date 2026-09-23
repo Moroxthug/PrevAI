@@ -44,7 +44,7 @@ router.patch("/security/policy", requireAuth, requirePermission("security", "ful
     return;
   }
   if (!twoFactorRequired && (await twoFactorLocked(orgId))) {
-    res.status(409).json({ error: "two_factor_locked", message: "Con l'add-on Amministrazione attivo la verifica in due passaggi resta obbligatoria per tutta l'organizzazione." });
+    res.status(409).json({ error: "two_factor_locked", message: "Con l'add-on PrevAI Fisco attivo la verifica in due passaggi resta obbligatoria per tutta l'organizzazione." });
     return;
   }
   try {

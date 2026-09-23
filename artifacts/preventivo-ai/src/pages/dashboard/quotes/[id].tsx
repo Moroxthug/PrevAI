@@ -1,5 +1,6 @@
 import { localDay } from "@/lib/local-day";
 import { Link, useParams, useSearch } from "wouter";
+import { PREZZI_PIANI, formatPrezzo } from "@workspace/config";
 import { useGetQuote, useGetBusinessProfile, useGenerateQuotePdf, useGetPlans, useUpdateQuote, useCreateCheckoutSession, useVerifyPayment, useGetSubscription, useUnlockQuoteWithSubscription, useCreateCustomerPortalSession, useRegenerateQuote, useDuplicateQuote, useUpgradeToCapitolatoPro, useGenerateQuotePdfPro, useGetTrialStatus, useListClients, useSendQuotePdfEmail, useListQuoteVariants, useCreateQuoteVariant, useUpdateQuoteVariant, useDeleteQuoteVariant, getGetQuoteQueryKey, getVerifyPaymentQueryKey, getListQuotesQueryKey, getGetTrialStatusQueryKey, getListQuoteVariantsQueryKey } from "@workspace/api-client-react";
 import { Dialog, DialogBody, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -1655,8 +1656,8 @@ export default function QuoteDetail() {
               <>
                 <div className="plan-grid two" style={{ paddingTop: 10 }}>
                   {[
-                    { id: "monthly_pro", label: "Pro", price: "$49", badge: t("dashboard.quoteDetail.mostPopular"), features: [t("dashboard.quoteDetail.feature60Quotes"), t("dashboard.quoteDetail.featureNoWatermark"), t("dashboard.quoteDetail.featureAllTemplates"), t("dashboard.quoteDetail.featurePhotoUpload")], highlight: true },
-                    { id: "monthly_elite", label: "Elite", price: "$59", badge: t("dashboard.quoteDetail.unlimited"), features: [t("dashboard.quoteDetail.featureUnlimitedQuotes"), t("dashboard.quoteDetail.featureNoWatermark"), t("dashboard.quoteDetail.featureAllTemplates"), t("dashboard.quoteDetail.featureDedicatedSupport")], highlight: false },
+                    { id: "monthly_pro", label: "Pro", price: formatPrezzo(PREZZI_PIANI.monthly_pro.mensileCents), badge: t("dashboard.quoteDetail.mostPopular"), features: [t("dashboard.quoteDetail.feature60Quotes").replace("{count}", String(PREZZI_PIANI.monthly_pro.preventiviMese)), t("dashboard.quoteDetail.featureNoWatermark"), t("dashboard.quoteDetail.featureAllTemplates"), t("dashboard.quoteDetail.featurePhotoUpload")], highlight: true },
+                    { id: "monthly_elite", label: "Elite", price: formatPrezzo(PREZZI_PIANI.monthly_elite.mensileCents), badge: t("dashboard.quoteDetail.unlimited"), features: [t("dashboard.quoteDetail.featureUnlimitedQuotes"), t("dashboard.quoteDetail.featureNoWatermark"), t("dashboard.quoteDetail.featureAllTemplates"), t("dashboard.quoteDetail.featureDedicatedSupport")], highlight: false },
                   ].map((opt) => (
                     <div key={opt.id} className={cn("plan-opt", opt.highlight && "hot")}>
                       <span className={cn("tag", !opt.highlight && "gold")}>{opt.badge}</span>

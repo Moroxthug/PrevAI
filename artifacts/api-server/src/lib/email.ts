@@ -1,5 +1,5 @@
 import { Resend } from "resend";
-import { MARKET, type Lang } from "@workspace/config";
+import { MARKET, testoPreventivi, type Lang } from "@workspace/config";
 import { logger } from "./logger.js";
 import { getBaseUrl } from "./baseUrl.js";
 import { sendCustomerEmail } from "./connectedEmailSend.js";
@@ -31,7 +31,7 @@ function getPlanTier(planName: string): PlanTier {
 function getPlanFeatures(planName: string, tier: PlanTier): string {
   if (tier === "pro") {
     return `
-      <div class="feature"><span class="check">✓</span> Preventivi illimitati senza filigrana</div>
+      <div class="feature"><span class="check">✓</span> ${testoPreventivi("monthly_pro")}, senza filigrana</div>
       <div class="feature"><span class="check">✓</span> PDF professionali con il tuo logo aziendale</div>
       <div class="feature"><span class="check">✓</span> Template premium ad alta qualità</div>
       <div class="feature"><span class="check">✓</span> Branding completamente personalizzabile</div>
@@ -41,7 +41,7 @@ function getPlanFeatures(planName: string, tier: PlanTier): string {
   }
   if (tier === "starter") {
     return `
-      <div class="feature"><span class="check">✓</span> Fino a 20 preventivi al mese</div>
+      <div class="feature"><span class="check">✓</span> ${testoPreventivi("monthly_starter")}</div>
       <div class="feature"><span class="check">✓</span> Download PDF professionale</div>
       <div class="feature"><span class="check">✓</span> Supporto email incluso</div>
     `;

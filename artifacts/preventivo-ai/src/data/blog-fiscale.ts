@@ -60,7 +60,7 @@ export const BLOG_FISCALE_CONTENT: Record<string, string> = {
   <li><strong>30 novembre</strong>: secondo acconto</li>
   <li><strong>16 maggio, 20 agosto, 16 novembre, 16 febbraio</strong>: le quattro rate dei contributi INPS fissi</li>
 </ul>
-<p>Un <a href="/amministrazione/">software che tiene insieme preventivi, fatture e tasse</a> fa questo calcolo a ogni incasso e ti dice quanto mettere via, invece di lasciarti la sorpresa a giugno.</p>
+<p>Un <a href="/fisco/">software che tiene insieme preventivi, fatture e tasse</a> fa questo calcolo a ogni incasso e ti dice quanto mettere via, invece di lasciarti la sorpresa a giugno.</p>
 ${FONTI}`,
 
   "soglia-85000-forfettario-calcolo": `
@@ -83,7 +83,7 @@ ${FONTI}`,
 <p>Nel forfettario il momento dell'incasso si può spesso concordare col cliente: sapere a settembre che il cantiere di novembre ti porterebbe oltre la soglia ti lascia il tempo di decidere quando farlo pagare, e di parlarne col commercialista.</p>
 
 <h2>Come tenerla sotto controllo</h2>
-<p>Serve un conto che sommi incassi, fatture aperte e lavoro accettato, aggiornato ogni volta che qualcosa cambia. È il principio del <a href="/amministrazione/">monitor della soglia di PrevAI</a>, che conta anche i preventivi accettati e non ancora fatturati.</p>
+<p>Serve un conto che sommi incassi, fatture aperte e lavoro accettato, aggiornato ogni volta che qualcosa cambia. È il principio del <a href="/fisco/">monitor della soglia di PrevAI</a>, che conta anche i preventivi accettati e non ancora fatturati.</p>
 ${FONTI}`,
 
   "quanto-mettere-da-parte-tasse-forfettario": `
@@ -102,6 +102,6 @@ ${FONTI}`,
   <li><strong>Ricalcolare dopo ogni incasso grosso</strong>: un cantiere importante cambia la percentuale.</li>
   <li><strong>Segnare anche i contributi fissi</strong>: sono quattro rate l'anno, e sono deducibili solo quando le paghi.</li>
 </ul>
-<p>Con il <a href="/amministrazione/">calcolo fiscale di PrevAI</a> la cifra da mettere via si aggiorna da sola a ogni incasso registrato sulle fatture, con la formula di ogni numero.</p>
+<p>Con il <a href="/fisco/">calcolo fiscale di PrevAI</a> la cifra da mettere via si aggiorna da sola a ogni incasso registrato sulle fatture, con la formula di ogni numero.</p>
 ${FONTI}`,
 };

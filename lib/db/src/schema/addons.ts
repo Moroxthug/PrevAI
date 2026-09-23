@@ -38,6 +38,8 @@ export type AbbonamentoAddon = {
   finePeriodo?: string | null;
   disdettaAFinePeriodo?: boolean;
   betaFino?: string;
+  /** A-5: abbonato al prezzo fondatori. Una volta vero resta vero: il posto è consumato anche se poi disdice. */
+  fondatore?: boolean;
   aggiornatoIl?: string;
 };
 

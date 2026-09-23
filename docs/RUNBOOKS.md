@@ -134,6 +134,8 @@ Da **verificare** (già presenti): `STRIPE_WEBHOOK_SECRET` deve corrispondere al
 1. `git push origin v2` → deploy preview. Con le env Production copiate in Preview, la preview **legge il DB di produzione non ancora migrato**: le tabelle v2 mancano, quindi la preview serve solo per frontend, login e lettura preventivi. **Non** creare dati dalla preview prima della migrazione.
 2. Verifica preview: `/api/healthz` 200; homepage e 3 URL SEO v1 (es. `/preventivo-ristrutturazione-bagno`) 200 con canonical `https://prevai.it/...`; login admin reale; lista preventivi; apertura di un preventivo storico; PDF.
 
+3. **Prezzi su Stripe (A-5, prima del promote)**: il checkout di v2 addebita solo Price che coincidono con i prezzi mostrati (`lib/config/src/piani.ts`, IVA inclusa). Senza intervento **Starter e Pro mensili continuano a vendersi** sui Price storici (19 e 49 €), mentre **Elite mensile (79 €) e tutti gli annuali rispondono 503** finché non esistono. Creare nella dashboard Stripe (live), per ogni riga, un Price ricorrente in EUR con la sua **lookup key**: `piano_starter_annuale` 190 €/anno, `piano_pro_annuale` 490 €/anno, `piano_elite_mensile` 79 €/mese, `piano_elite_annuale` 790 €/anno (facoltativi `piano_starter_mensile` 19 € e `piano_pro_mensile` 49 €, che prendono il posto degli storici). L'elenco completo, add-on compreso, è in Admin → "Test di prezzo". **Non** toccare i Price storici: gli abbonati attuali restano al loro prezzo (Elite a 59 € compreso) e il webhook continua a riconoscerli. Prima del promote verificare nella dashboard Stripe che gli importi dei Price storici siano davvero 19 e 49 €: i testi di v1 dicevano "29 €" in più punti, e se Stripe dice 29 il checkout rifiuta invece di addebitare.
+
 ### 5.3 Finestra di manutenzione (ordine obbligatorio)
 
 ```bash
@@ -401,11 +403,15 @@ Prima nota ed estratto conto contengono nomi di clienti e fornitori dell'impresa
 
 `migrations/v2/0006_a4_prima_nota.sql` è additiva e idempotente e va eseguita **dopo** la 0005 (§5.3): sei tabelle nuove (`prima_nota_movimenti`, `bank_imports`, `bank_movements`, `fiscal_year_closings`, `accountant_shares`, `accountant_share_accesses`), nessuna colonna su tabelle esistenti. Nessuna env nuova: l'URL del link usa `PREVAI_BASE_URL` come il resto dei link pubblici. Le tabelle nascono vuote.
 
-## 10. Add-on Amministrazione: offerta, test di prezzo, abbonamento (A-5)
+## 10. Add-on PrevAI Fisco e prezzi dei piani: offerta, test di prezzo, abbonamento (A-5)
+
+**Decisioni del titolare (D5, 2026-09-23)**: nome **PrevAI Fisco**; tutti i prezzi **IVA inclusa**; piani Starter 19, Pro 49, **Elite 79** €/mese, annuale = dieci mensilità per tutti; add-on 14,90 €/mese o 149 €/anno (varianti del test 11,90 / 14,90 / 17,90), bundle Elite 4,90 €/mese; **prezzo fondatori** 9,90 €/mese o 99 €/anno, bloccato finché si resta abbonati, per le prime 100 imprese entro il 31/3/2027. Stato richiesto: `vendita`; stato effettivo oggi: **`interesse`** (D6 e D8 aperte). L'id interno resta `amministrazione` (chiavi Stripe, jsonb, eventi, rotte API).
 
 ### 10.1 Dove sta tutto
 
-- **Nome, prezzi, varianti, stato richiesto**: `lib/config/src/offerta.ts` (`OFFERTA_AMMINISTRAZIONE`). È l'unico posto: landing, paywall, fatturazione, checkout e pannello staff leggono da lì.
+- **Nome, prezzi, varianti, fondatori, stato richiesto dell'add-on**: `lib/config/src/offerta.ts` (`OFFERTA_AMMINISTRAZIONE`). **Prezzi e limiti dei piani**: `lib/config/src/piani.ts` (`PREZZI_PIANI`). Sono gli unici posti: landing, homepage, landing SEO, Termini §4, paywall, fatturazione, email, checkout e pannello staff leggono da lì. Prima di A-5 lo stesso prezzo era scritto in sei posti diversi e discordanti (19/29 €, "$49", 10/20 preventivi).
+- **Prezzo fondatori**: Price Stripe propri (`amministrazione_fondatori_mensile` 9,90 €, `amministrazione_fondatori_annuale` 99 €). Il checkout li usa quando ci sono posti liberi e sono più bassi del listino (il bundle Elite a 4,90 vince). Il posto si consuma quando l'abbonamento parte davvero (`addons.amministrazione.fondatore = true`) e resta consumato anche dopo una disdetta. Il contatore della landing (`GET /api/public/offerta-fisco`) è quel conteggio; compare solo in `vendita`. **Non migrare mai** gli abbonamenti fondatori su altri Price: la promessa è "bloccato finché resti abbonato". Limite noto: due checkout avviati nello stesso istante sull'ultimo posto possono passare entrambi (si conta a pagamento avvenuto).
+- **Piani, periodicità**: `POST /api/payments/checkout` accetta `billing: "mensile" | "annuale"`. Il Price si cerca per lookup key `piano_<nome>_<periodo>`; se manca, per il mensile si usa il Price storico **solo se** ha lo stesso importo; altrimenti 503 `PLAN_PRICE_MISSING`/`PLAN_PRICE_MISMATCH`. Il webhook riconosce il piano dall'id storico o dalla lookup key. Chi è già abbonato vede in app "importo e rinnovo nel portale Stripe" invece del listino, che potrebbe non essere il suo.
 - **Stato effettivo**: `statoOfferta()` lo calcola dai prerequisiti e non supera mai quello che consentono. `bozza` (niente visibile, landing noindex e fuori sitemap, checkout 409) → `interesse` (landing indicizzata, paywall con il prezzo, "avvisami") → `vendita` (checkout Stripe).
   - `interesse` richiede **D5** (`decisioni.D5 = true`).
   - `vendita` richiede anche **D6** (dedotta dalle regole del motore: tutte revisionate) e **D8** (`decisioni.D8 = true`).
@@ -414,19 +420,19 @@ Prima nota ed estratto conto contengono nomi di clienti e fornitori dell'impresa
 - **Stato dell'abbonamento**: `business_profiles.addons.amministrazione` (jsonb). Stati: `attivo`, `prova`, `insoluto` (danno accesso), `beta` (accesso fino a `betaFino`), `cessato`. I flag del profilo restano l'override in entrambi i sensi (un `false` spegne anche un add-on pagato).
 - **Eventi del test di prezzo**: tabella `addon_events` (vista, interesse, checkout, attivato, cessato, beta), con la variante. Risultati per lo staff: Admin → "Test di prezzo" (`GET /api/admin/addons/test-prezzo`).
 
-### 10.2 Passare a `interesse` (serve D5)
+### 10.2 `interesse` (fatto: D5 chiusa il 2026-09-23)
 
-1. Il titolare conferma nome e prezzi (anche solo come ipotesi da testare). Aggiornare in `offerta.ts`: `nome`, `varianti`, `bundleEliteMensileCents`, `ivaInclusa` (il piano dice "+IVA" nella tabella e "IVA inclusa" al punto (a): va scelto).
-2. `decisioni.D5 = true`, `statoRichiesto = "interesse"`. Commit, deploy.
-3. Verifiche: `/amministrazione/` ha `index, follow` ed è in `sitemap.xml`; il menu della dashboard mostra "Amministrazione" a chi non ha il modulo; la pagina `/dashboard/amministrazione/attiva` ha il bottone "Mi interessa".
+1. Nome, prezzi e fondatori sono in `offerta.ts` e `piani.ts`; `decisioni.D5 = true`.
+2. Al primo deploy di v2 l'offerta è pubblica: `/fisco/` ha `index, follow` ed è in `sitemap.xml`; il menu della dashboard mostra "Fisco" a chi non ha il modulo; `/dashboard/amministrazione/attiva` mostra il prezzo e "Mi interessa"; landing e pagina mostrano "Al lancio: prezzo fondatori" senza contatore.
+3. Per tornare indietro (es. prezzi da rivedere): `statoRichiesto = "bozza"` e deploy.
 4. Campagne del test di prezzo: link alla landing con `?v=a|b|c`. La variante resta all'impresa quando si registra (sessionStorage → primo evento). Senza `?v=` la variante è l'hash dell'id dell'impresa.
 
 ### 10.3 Passare a `vendita` (servono D5, D6, D8 e i Price su Stripe)
 
-1. **Price su Stripe** (dashboard Stripe, modalità live): un prodotto "PrevAI Amministrazione" e un Price ricorrente in EUR per ogni riga di `lookupKeysAttese()` — l'elenco esatto, con importi e periodicità, è nel pannello Admin → "Test di prezzo". Ogni Price va creato con la sua **lookup key** (`amministrazione_a_mensile`, `amministrazione_a_annuale`, …, `amministrazione_bundle_elite_mensile`). Nessuna env: il checkout cerca il Price per chiave e **rifiuta** (503 `ADDON_PRICE_MISMATCH`) se importo, valuta o periodicità non coincidono con la configurazione.
+1. **Price su Stripe** (dashboard Stripe, modalità live): un prodotto "PrevAI Fisco" e un Price ricorrente in EUR per ogni riga di `lookupKeysAttese()` — l'elenco esatto, con importi e periodicità, è nel pannello Admin → "Test di prezzo". Ogni Price va creato con la sua **lookup key** (`amministrazione_a_mensile`, `amministrazione_a_annuale`, …, `amministrazione_bundle_elite_mensile`, `amministrazione_fondatori_mensile`, `amministrazione_fondatori_annuale`). Nessuna env: il checkout cerca il Price per chiave e **rifiuta** (503 `ADDON_PRICE_MISMATCH`) se importo, valuta o periodicità non coincidono con la configurazione.
 2. Il **Customer Portal** di Stripe deve permettere la disdetta degli abbonamenti (è lo stesso portale del piano).
 3. D6 si chiude seguendo `docs/compliance/REVISIONE-COMMERCIALISTA.md`: quando tutte le regole non sono più `non_revisionata`, D6 risulta chiusa da sola. D8: `decisioni.D8 = true` dopo la firma di contratto, DPA e manuale di conservazione con l'intermediario.
-4. `statoRichiesto = "vendita"`. Commit, deploy.
+4. `statoRichiesto` è già `"vendita"`: chiusa l'ultima fra D6 e D8, il deploy successivo apre il checkout da solo. Per questo i Price del punto 1 vanno creati **prima**, altrimenti il checkout risponde 503 (nessun addebito sbagliato, ma nessuna vendita). Prima di chiudere D8, pensare anche alla data dei fondatori: se il lancio slitta oltre marzo 2027, spostare `fondatori.finoAl` prima di aprire.
 5. Prova end-to-end in modalità test di Stripe su una preview: checkout → ritorno su `?esito=ok` → webhook → `addons.amministrazione.stato = "attivo"`, `two_factor_required = true`, evento `attivato`; disdetta dal portale → `cessato` e il **piano resta com'era**.
 
 ### 10.4 Utenti beta
@@ -449,7 +455,7 @@ Toglie i flag `sdi_invoicing`/`fiscal_engine`/`admin_suite` a true (i `false` re
 
 ### 10.6 Cutover e migrazioni
 
-`migrations/v2/0007_a5_addon.sql` è additiva e idempotente, **dopo** la 0006 (§5.3): una colonna `business_profiles.addons` (jsonb, default `{}`) e la tabella `addon_events`. Il codice v1 non le vede. Nessuna env nuova. Con l'offerta in bozza nessuno ha l'add-on e nessun evento viene registrato.
+`migrations/v2/0007_a5_addon.sql` è additiva e idempotente, **dopo** la 0006 (§5.3): una colonna `business_profiles.addons` (jsonb, default `{}`) e la tabella `addon_events`. Il codice v1 non le vede. Nessuna env nuova. Nessuno ha l'add-on finché non lo compra. Al cutover va fatto anche il passo §5.2 punto 3 (Price dei piani su Stripe), altrimenti Elite e gli annuali non si vendono.
 
 ### 10.7 Cosa non è fatto (di proposito)
 

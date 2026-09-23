@@ -1876,6 +1876,10 @@ components:
         planType:
           type: string
           enum: [monthly_starter, monthly_pro, monthly_elite, oneshot_watermark, oneshot_clean]
+        billing:
+          type: string
+          enum: [mensile, annuale]
+          description: A-5 — periodicità dell'abbonamento (default mensile; ignorata per i preventivi singoli)
       required:
         - planType
 
@@ -1908,6 +1912,10 @@ components:
           type: string
         price:
           type: number
+        annualPrice:
+          type: number
+          nullable: true
+          description: A-5 — prezzo annuale IVA inclusa (dieci mensilità); null per i preventivi singoli
         currency:
           type: string
         interval:
