@@ -48,6 +48,10 @@ import {
   organizationMembersTable,
   eInvoicesTable,
   supplierEInvoicesTable,
+  primaNotaMovimentiTable,
+  bankImportsTable,
+  bankMovementsTable,
+  accountantSharesTable,
   authSessionsTable,
   authUsersTable,
 } from "@workspace/db";
@@ -144,6 +148,11 @@ async function seedOrgA(): Promise<Fixtures> {
   // A-1: una trasmissione SDI e una fattura di acquisto, per le rotte del modulo.
   f.trasmissione = await ins(db.insert(eInvoicesTable).values({ userId, invoiceId: invoice!.id, progressivoInvio: `26${Math.floor(Math.random() * 90000 + 10000)}`, fileName: "IT01234567897_2600001.xml" } as typeof eInvoicesTable.$inferInsert).returning());
   f.passiva = await ins(db.insert(supplierEInvoicesTable).values({ userId, providerDocumentId: `sec_${randomUUID()}`, fornitoreNome: "Ferramenta E2E", numero: "1/2026" } as typeof supplierEInvoicesTable.$inferInsert).returning());
+  // A-4: prima nota, estratto conto e link del commercialista.
+  f.movimentoPn = await ins(db.insert(primaNotaMovimentiTable).values({ userId, data: new Date(), tipo: "uscita", categoria: "altro", importoCents: 100 }).returning());
+  f.estratto = await ins(db.insert(bankImportsTable).values({ userId, formato: "csv", nomeFile: "estratto.csv" }).returning());
+  f.movBanca = await ins(db.insert(bankMovementsTable).values({ userId, importId: f.estratto, data: new Date(), importoCents: -100, impronta: randomUUID() }).returning());
+  f.condivisione = await ins(db.insert(accountantSharesTable).values({ userId, tokenHash: randomUUID(), destinatario: "Studio E2E", anno: 2025, scadeAt: new Date(Date.now() + 86_400_000) }).returning());
 
   // Clients are virtual (md5 of the quote's client fields) — read the id back the way the UI does.
   const clients = await A.api("/api/clients");
@@ -169,6 +178,12 @@ function resolveParams(route: MatrixRoute, f: Fixtures): { path: string; unseede
     // A-3: idem per la chiave della scadenza, che è una costante del calendario
     // fiscale (`saldo_primo_acconto`, `inps_fissi_1`) uguale per tutte.
     if (name === "anno" || name === "trimestre" || name === "chiave") return null;
+    // A-4: il verbo dell'azione sul movimento bancario non è un identificatore:
+    // se ne prova uno innocuo, e l'id di A davanti è quello che conta.
+    if (name === "azione") {
+      out.push("ignora");
+      continue;
+    }
     const prefix = segs.slice(0, i).join("/");
     let id: string | undefined;
     switch (name) {
@@ -181,6 +196,8 @@ function resolveParams(route: MatrixRoute, f: Fixtures): { path: string; unseede
           ["/api/team/members", "member"], ["/api/v1/public/quotes", "quote"], ["/api/v1/public/jobs", "project"],
           ["/api/v1/public/invoices", "invoice"], ["/api/v1/public/clients", "client"],
           ["/api/sdi/transmissions", "trasmissione"], ["/api/sdi/passive", "passiva"],
+          ["/api/fiscale/prima-nota/movimenti", "movimentoPn"], ["/api/fiscale/banca/import", "estratto"], ["/api/fiscale/banca/movimenti", "movBanca"],
+          ["/api/fiscale/condivisioni", "condivisione"],
         ];
         id = byPrefix.find(([p]) => prefix === p)?.[1];
         break;

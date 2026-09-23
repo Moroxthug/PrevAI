@@ -39,7 +39,11 @@ Versione 1.2 · A-0, aggiornato in A-2 e A-3 · 22 settembre 2026 · Bloccato da
 | F18 | Sezione INPS del modello F24: causali **AF**/**AP** (artigiani fissi/percentuale), **CF**/**CP** (commercianti), codice sede a 4 cifre, matricola d'azienda, periodo "da mm/aaaa – a mm/aaaa" per trimestre | Circ. INPS 98/2001 e istruzioni del modello | Confermare causali e il periodo da indicare per ciascuna delle 4 rate e per l'eccedenza (12 mesi?). Gestione separata: causale corretta (PXX?) e come si compila | ⬜ |
 | F19 | Imposta di bollo virtuale: codici tributo **2521-2524** per trimestre, scadenze 31/5, 30/9, 30/11, 28/2 | Ris. AdE 42/E 2019; DM 4/12/2020 | Già toccato da F8: qui serve la conferma dei **codici** e dell'anno di riferimento da scrivere nel modello | ⬜ |
 
+| F20 | Prospetto per la dichiarazione: ricavi incassati, coefficiente e codice ATECO in **LM22**; reddito lordo **LM34**; contributi dedotti **LM35** (fino a capienza del reddito); reddito netto **LM36**; perdite **LM37** (non gestite, dichiarato 0); **LM38**; imposta sostitutiva **LM39**; acconti **LM45** (solo 1790/1791 dell'anno); debito **LM46** o credito **LM47**; quadro **RR sez. I** per artigiani e commercianti | Istruzioni del modello Redditi PF, fascicolo 3 | Confermare numeri di rigo e colonne sul modello Redditi PF 2027 (anno 2026) appena esce; se LM35 va indicato il versato o il dedotto; se nel quadro RR vanno i contributi del minimale o solo l'eccedenza | ⬜ |
+
 > F17–F19 sono state aggiunte con la fase A-3 (scadenzario e F24 precompilati). Sono fatti della stessa natura degli altri: un codice tributo sbagliato manda il denaro su un altro tributo, e l'imposta risulta non versata anche se il conto è stato addebitato.
+>
+> F20 è stata aggiunta con la fase A-4 (chiusura d'anno). PrevAI non compila né invia la dichiarazione: prepara un prospetto da ricopiare. Ma un importo giusto nel rigo sbagliato è una dichiarazione sbagliata, e i righi cambiano da un modello all'altro: questa regola va riconfermata **ogni anno**, non una volta sola.
 
 ## 5 casi golden (valori attesi da compilare dal commercialista)
 

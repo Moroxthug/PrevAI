@@ -46,6 +46,11 @@ const REGOLE_2026: Record<RegolaId, Regola> = {
   F17: regola("F17", "Codici tributo dell'imposta sostitutiva nel modello F24: 1792 saldo, 1790 primo acconto, 1791 secondo acconto", "Ris. AdE 59/E del 2015"),
   F18: regola("F18", "Sezione INPS del modello F24: causali AF/AP (artigiani), CF/CP (commercianti), codice sede e matricola", "Circolare INPS 98/2001; istruzioni del modello F24"),
   F19: regola("F19", "Codici tributo e scadenze dell'imposta di bollo virtuale: 2521-2524, versamento trimestrale", "Ris. AdE 42/E del 2019; DM 4/12/2020"),
+  // ── A-4: chiusura d'anno ───────────────────────────────────────────────────
+  // Il modello Redditi PF per l'anno d'imposta 2026 esce nella primavera del
+  // 2027: i numeri di rigo qui sono quelli del modello precedente e vanno
+  // riconfrontati col modello vero prima di ogni stagione dichiarativa.
+  F20: regola("F20", "Righi del quadro LM (sezione II, forfettari) e del quadro RR in cui riportare ricavi, contributi, imposta e acconti", "Istruzioni del modello Redditi PF, fascicolo 3, quadri LM e RR"),
 };
 
 /**

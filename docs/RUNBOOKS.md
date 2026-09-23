@@ -147,6 +147,10 @@ URL="postgresql://postgres.<ref>:<pw>@aws-0-eu-west-1.pooler.supabase.com:5432/p
 # 3. migrazione (una transazione, ~0,5 s; v1 resta live: è additiva)
 "$PG/psql.exe" "$URL" -v ON_ERROR_STOP=1 -1 -f migrations/v2/0001_v1_to_v2_additive.sql
 "$PG/psql.exe" "$URL" -v ON_ERROR_STOP=1 -1 -f migrations/v2/0002_a0_compliance.sql      # A-0: business_profiles.two_factor_required
+"$PG/psql.exe" "$URL" -v ON_ERROR_STOP=1 -1 -f migrations/v2/0003_a1_sdi.sql             # A-1: fatture elettroniche (§6.7)
+"$PG/psql.exe" "$URL" -v ON_ERROR_STOP=1 -1 -f migrations/v2/0004_a2_fiscale.sql         # A-2: motore fiscale (§7.7)
+"$PG/psql.exe" "$URL" -v ON_ERROR_STOP=1 -1 -f migrations/v2/0005_a3_scadenzario.sql     # A-3: scadenzario (§8.6)
+"$PG/psql.exe" "$URL" -v ON_ERROR_STOP=1 -1 -f migrations/v2/0006_a4_prima_nota.sql      # A-4: prima nota e chiusura (§9.7)
 # 4. conteggi + checksum DOPO → devono coincidere (iva_percentuale normalizzata nella query)
 "$PG/psql.exe" "$URL" -At -f docs/sql/reconcile.sql > C:/Users/Admin/PrevAI-backups/reconcile-after.txt
 diff C:/Users/Admin/PrevAI-backups/reconcile-before.txt C:/Users/Admin/PrevAI-backups/reconcile-after.txt   # nessuna differenza
@@ -349,6 +353,52 @@ Sta sulla scadenza e non sul versamento perché un F24 è uno solo anche quando 
 ### 8.6 Cutover e migrazioni
 
 `migrations/v2/0005_a3_scadenzario.sql` è additiva e idempotente e va eseguita **dopo** la 0004 (§5.3): la tabella `fiscal_deadlines`, sei colonne su `tax_profiles` (matricola/sede INPS e preferenze dei promemoria) e una su `fiscal_payments` (`scadenza_chiave`). Nessuna env nuova è obbligatoria. La tabella nasce vuota e si popola da sé alla prima apertura dello scadenzario.
+
+## 9. Prima nota, estratto conto, chiusura d'anno e commercialista (A-4)
+
+Stesso modulo e stesso gate di A-2/A-3 (feature `fiscal_engine`, area di permessi `fiscale`: il titolare scrive, l'amministratore legge, gli altri ruoli non vedono nulla). Pagine: `/dashboard/fisco/prima-nota`, `/dashboard/fisco/banca`, `/dashboard/fisco/chiusura`; pagina pubblica `/commercialista/:token`. Codice in `artifacts/api-server/src/primanota/` e `lib/config/src/fiscale/chiusura.ts`.
+
+### 9.1 La prima nota non ricopia nulla
+
+Incassi da `invoice_payments` (escluse le righe da nota di credito), costi da `cost_entries` confermati (**escluse** le ore approvate e l'uso delle attrezzature: sono allocazioni interne ai cantieri, non uscite di cassa), versamenti da `fiscal_payments`. L'unica tabella nuova per i movimenti è `prima_nota_movimenti`, per ciò che non ha un altro posto (commissioni, affitto, prelievi, apporti, giroconti). Se un numero in prima nota è sbagliato, si corregge **dove sta** (la fattura, il costo, il versamento), non qui.
+
+Prelievi, apporti del titolare e giroconti si vedono ma **non contano nell'utile**; neanche i versamenti F24, perché l'utile sottrae già imposta e contributi **di competenza** dell'anno dal motore (contare anche i versamenti di cassa li sottrarrebbe due volte).
+
+### 9.2 Estratto conto
+
+CSV delle banche italiane (colonne cercate per nome: data/data contabile/data operazione, dare/avere o importo con segno, descrizione, causale; `;` o `,`; UTF-8 o Windows-1252; righe di saldo scartate col motivo) e OFX 1.x/2.x. Niente IA: si legge con regole scritte (`primanota/estratto.ts`, test in `estratto.test.ts`). Limite 5 MB e 5000 movimenti per file.
+
+Ogni movimento ha un'**impronta** unica per impresa (FITID dell'OFX, altrimenti data + importo + descrizione + ordinale nel file): ricaricare lo stesso estratto, o due estratti che si sovrappongono, non raddoppia nulla. Se una banca cambia il testo della descrizione fra due export dello stesso periodo, i movimenti rientrano come nuovi: si riconoscono dalla stessa data e importo e si ignorano.
+
+Un movimento finisce **abbinato** (a un incasso, costo, versamento o movimento che esiste già, o creato ora con le funzioni di sempre — `recordPayment` per gli incassi, senza ricevuta al cliente) oppure **ignorato**. "Abbina i sicuri" collega solo i movimenti con **una** corrispondenza già registrata (stesso importo, ±7 giorni per le entrate, ±10 per le uscite) non contesa da un altro movimento, e non crea nulla. Un F24 con più righe (saldo + acconto + contributi) si confronta con la somma della delega. "Scollega" non cancella la riga creata: un incasso resta registrato in fattura.
+
+Un estratto si toglie solo se nessun suo movimento è abbinato (errore `IMPORT_CON_ABBINAMENTI`).
+
+### 9.3 Utile netto
+
+`ricavi incassati − costi pagati − imposta − contributi − bollo` dell'anno, con imposta e contributi **dal motore** (quindi non revisionati finché D6 è aperta, e la pagina lo dice). Accanto: i costi che il coefficiente ATECO dà per scontati (`incassi × (100 − coefficiente)`), perché nel forfettario i costi veri non abbassano l'imposta. La pagina lo mostra senza consigliare nulla sul regime.
+
+### 9.4 Chiusura d'anno
+
+Si chiude un anno finito (`ANNO_APERTO` altrimenti), in regime forfettario e con l'onboarding completo. La chiusura è una **fotografia** in `fiscal_year_closings.fotografia` con impronta sha256, versione, e se le regole erano revisionate: **non blocca** fatture, incassi o costi. Se dopo cambia qualcosa, la pagina mostra la differenza voce per voce (ricavi, contributi dedotti, imposta, saldo, costi, utile); si richiude per fissare una nuova versione. "Riporta" (solo per l'anno appena finito) copia ricavi e imposta nel profilo fiscale come "anno precedente": è ciò su cui il motore calcola acconti e permanenza nel regime dell'anno nuovo. Tutto finisce nell'audit log (`fiscal_year` `closed`/`reopened`).
+
+Il prospetto (`prospettoDichiarazione`) riempie i righi LM22, LM34–LM39, LM45, LM46/LM47 e il quadro RR sez. I. I numeri di rigo sono la **regola F20**, `non_revisionata`: vengono dal modello dell'anno precedente e vanno riconfrontati col modello vero ogni primavera. Per un anno senza regole proprie nel motore (oggi: tutti tranne il 2026) il prospetto dice quali regole ha usato. Perdite pregresse (LM37) non gestite: il prospetto lo dichiara.
+
+PrevAI **non compila né invia** la dichiarazione (AMMINISTRAZIONE-PLAN §5): PDF del pacchetto, CSV della prima nota, guida al fai-da-te con SPID/CIE, link al commercialista.
+
+### 9.5 Link del commercialista
+
+Token casuale di 32 byte, mostrato una volta sola, salvato come sha256. Durata 7, 30 o 90 giorni; revocabile. Il link smette di funzionare anche se l'impresa spegne il modulo. Ogni apertura (pagina, CSV, PDF) va in `accountant_share_accesses` con IP e user agent, e il titolare la vede nella pagina Chiusura. Risposta sempre 404 per token sconosciuto, scaduto o revocato. Intestazioni `Cache-Control: no-store`, `X-Robots-Tag: noindex`, `Referrer-Policy: no-referrer`; `/commercialista/` è in `robots.txt`. Rate limit 30/min per IP.
+
+Se un link finisce nelle mani sbagliate: revocarlo dalla pagina Chiusura (effetto immediato) e controllare il registro degli accessi.
+
+### 9.6 Dati di terzi
+
+Prima nota ed estratto conto contengono nomi di clienti e fornitori dell'impresa (le controparti). Sono trattati come le fatture (registro R7): nessun dato va ai modelli AI, e il commercialista li riceve solo tramite un link che l'impresa crea.
+
+### 9.7 Cutover e migrazioni
+
+`migrations/v2/0006_a4_prima_nota.sql` è additiva e idempotente e va eseguita **dopo** la 0005 (§5.3): sei tabelle nuove (`prima_nota_movimenti`, `bank_imports`, `bank_movements`, `fiscal_year_closings`, `accountant_shares`, `accountant_share_accesses`), nessuna colonna su tabelle esistenti. Nessuna env nuova: l'URL del link usa `PREVAI_BASE_URL` come il resto dei link pubblici. Le tabelle nascono vuote.
 
 
 ---

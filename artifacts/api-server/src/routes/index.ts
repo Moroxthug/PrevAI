@@ -44,6 +44,8 @@ import archiveRouter from "./archive";
 import sdiRouter from "./sdi";
 import sdiWebhooksRouter from "./sdi-webhooks";
 import fiscaleRouter from "./fiscale";
+import primaNotaRouter from "./primanota";
+import publicCommercialistaRouter from "./public-commercialista";
 
 const router: IRouter = Router();
 
@@ -91,6 +93,8 @@ router.use(archiveRouter);
 router.use(sdiRouter);
 router.use(sdiWebhooksRouter);
 router.use(fiscaleRouter);
+router.use(primaNotaRouter);
+router.use(publicCommercialistaRouter);
 router.use("/v1/public", publicV1Router);
 
 export default router;

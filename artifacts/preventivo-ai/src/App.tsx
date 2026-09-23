@@ -41,6 +41,10 @@ const InvoicesPage = lazy(() => import("@/pages/dashboard/invoices"));
 const AmministrazionePage = lazy(() => import("@/pages/dashboard/amministrazione"));
 const FiscoPage = lazy(() => import("@/pages/dashboard/fisco"));
 const ScadenzarioPage = lazy(() => import("@/pages/dashboard/scadenzario"));
+const PrimaNotaPage = lazy(() => import("@/pages/dashboard/prima-nota"));
+const BancaPage = lazy(() => import("@/pages/dashboard/banca"));
+const ChiusuraPage = lazy(() => import("@/pages/dashboard/chiusura"));
+const CommercialistaPage = lazy(() => import("@/pages/commercialista/[token]"));
 const InvoiceDetailPage = lazy(() => import("@/pages/dashboard/invoices/[id]"));
 const PublicInvoicePage = lazy(() => import("@/pages/i/[token]"));
 const JobsListPage = lazy(() => import("@/pages/dashboard/jobs/index"));
@@ -204,6 +208,15 @@ function Router() {
       <Route path="/dashboard/amministrazione" component={() => (
         <OnboardingGuard><DashboardLayout><DashSuspense><AmministrazionePage /></DashSuspense></DashboardLayout></OnboardingGuard>
       )} />
+      <Route path="/dashboard/fisco/prima-nota" component={() => (
+        <OnboardingGuard><DashboardLayout><DashSuspense><PrimaNotaPage /></DashSuspense></DashboardLayout></OnboardingGuard>
+      )} />
+      <Route path="/dashboard/fisco/banca" component={() => (
+        <OnboardingGuard><DashboardLayout><DashSuspense><BancaPage /></DashSuspense></DashboardLayout></OnboardingGuard>
+      )} />
+      <Route path="/dashboard/fisco/chiusura" component={() => (
+        <OnboardingGuard><DashboardLayout><DashSuspense><ChiusuraPage /></DashSuspense></DashboardLayout></OnboardingGuard>
+      )} />
       <Route path="/dashboard/fisco/scadenzario" component={() => (
         <OnboardingGuard><DashboardLayout><DashSuspense><ScadenzarioPage /></DashSuspense></DashboardLayout></OnboardingGuard>
       )} />
@@ -242,6 +255,8 @@ function Router() {
       <Route path="/sign/:token" component={() => <Suspense fallback={null}><SignPage /></Suspense>} />
       {/* Public invoice page: the customer sees the balance + payment instructions from the emailed link */}
       <Route path="/i/:token" component={() => <Suspense fallback={null}><PublicInvoicePage /></Suspense>} />
+      {/* A-4: pacchetto dell'anno in sola lettura per il commercialista (link con scadenza, revocabile) */}
+      <Route path="/commercialista/:token" component={() => <Suspense fallback={null}><CommercialistaPage /></Suspense>} />
       {/* Public worker time-entry page (magic link from the Team page) */}
       <Route path="/t/:token" component={() => <Suspense fallback={null}><WorkerTimePage /></Suspense>} />
       {/* Team member invite accept page (emailed link, Phase 7) */}

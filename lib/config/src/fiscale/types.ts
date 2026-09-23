@@ -18,6 +18,9 @@ export const REGOLE_ID = [
   // codice tributo sbagliato fa finire il denaro su un altro tributo e
   // l'imposta risulta non versata — quindi nascono anch'essi da revisionare.
   "F17", "F18", "F19",
+  // A-4: dove vanno i numeri nella dichiarazione. Un importo giusto nel rigo
+  // sbagliato è una dichiarazione sbagliata, quindi anche questa si revisiona.
+  "F20",
 ] as const;
 export type RegolaId = (typeof REGOLE_ID)[number];
 

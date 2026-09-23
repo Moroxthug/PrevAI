@@ -69,7 +69,7 @@ describe("modulo fiscale forfettario", () => {
   it("dichiara sempre se le regole sono state revisionate da un commercialista", async () => {
     const r = await org.api("/api/fiscale/calcolo");
     expect(r.body.revisione.revisionato).toBe(false);
-    expect(r.body.revisione.regole.length).toBe(19);
+    expect(r.body.revisione.regole.length).toBe(20);
     expect(r.body.calcolo.revisionato).toBe(false);
     expect(r.body.avviso.testo).toContain("Non è consulenza fiscale");
   });

@@ -7,3 +7,4 @@ export * from "./regole/index";
 export * from "./calcolo";
 export * from "./f24";
 export * from "./golden";
+export * from "./chiusura";

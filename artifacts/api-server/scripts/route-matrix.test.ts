@@ -36,6 +36,10 @@ const PUBLIC_ROUTES: Allow[] = [
   { match: /^(GET|POST|DELETE) \/api\/(i|sign|t)\/:token/, reason: "customer/worker magic links — hashed token lookup, rate limited (Rule 6)" },
   { match: /^(GET|POST) \/api\/public\//, reason: "public quote widget + unsubscribe links — rate limited (Rule 6)" },
   { match: /^POST \/api\/webhooks\/sdi\/:userId$/, reason: "A-1: notifiche dell'intermediario SdI — segreto per impresa confrontato con timingSafeEqual dentro l'adapter (Rule 7), IP rate limited" },
+  {
+    match: /^GET \/api\/commercialista\/:token(\/(prima-nota\.csv|pacchetto\.pdf))?$/,
+    reason: "A-4: link in sola lettura per il commercialista — token hashato, scadenza, revoca, modulo acceso, ogni apertura registrata; IP rate limited, no-store e noindex",
+  },
 ];
 
 // ── Rule 2: every mutating session route names a permission ──────────────────

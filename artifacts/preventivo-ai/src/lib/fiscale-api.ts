@@ -348,3 +348,258 @@ export const ETICHETTE_RIDUZIONE: Record<RiduzioneContributiva, string> = {
   forfettari_35: "Riduzione 35 % per forfettari",
   nuovi_iscritti_50: "Riduzione 50 % per i primi 36 mesi (nuovi iscritti)",
 };
+
+// ── A-4: prima nota, estratto conto, chiusura d'anno, commercialista ─────────
+
+export type FonteVoce = "incasso" | "costo" | "versamento" | "movimento";
+export type TipoMovimento = "entrata" | "uscita";
+export type CategoriaMovimento =
+  | "altri_ricavi"
+  | "spese_generali"
+  | "commissioni_bancarie"
+  | "affitto_utenze"
+  | "veicoli_carburante"
+  | "assicurazioni"
+  | "altre_imposte"
+  | "prelievo_titolare"
+  | "apporto_titolare"
+  | "giroconto"
+  | "altro";
+
+export type VocePrimaNotaDto = {
+  chiave: string;
+  fonte: FonteVoce;
+  id: string;
+  data: string;
+  tipo: TipoMovimento;
+  importoCents: number;
+  descrizione: string;
+  controparte: string;
+  categoria: string;
+  incideSulUtile: boolean;
+  inBanca: boolean;
+  collegamento: { tipo: "fattura" | "cantiere"; id: string; etichetta: string } | null;
+};
+
+export type TotaliPrimaNotaDto = {
+  entrateCents: number;
+  usciteCents: number;
+  saldoCents: number;
+  incassiCents: number;
+  altriRicaviCents: number;
+  costiCents: number;
+  versamentiCents: number;
+  movimentiNeutriCents: number;
+  mesi: { mese: number; entrateCents: number; usciteCents: number }[];
+};
+
+export type AvvisoPrimaNotaDto = { id: string; testo: string; conteggio: number; importoCents?: number; link?: string };
+
+export type PrimaNotaDto = {
+  anno: number;
+  voci: VocePrimaNotaDto[];
+  totali: TotaliPrimaNotaDto;
+  avvisi: AvvisoPrimaNotaDto[];
+  categorie: { id: CategoriaMovimento; etichetta: string; neutra: boolean }[];
+};
+
+export type UtileNettoDto = {
+  anno: number;
+  ricaviCents: number;
+  costiCents: number;
+  margineCents: number;
+  impostaCents: number;
+  contributiCents: number;
+  bolloCents: number;
+  caricoFiscaleCents: number;
+  utileNettoCents: number;
+  utileSuRicaviPercent: number;
+  costiPresuntiCents: number;
+  scartoCostiCents: number;
+  revisionato: boolean;
+  regoleNonRevisionate: string[];
+  spiegazioni: SpiegazioneDto[];
+  passiMancanti: string[];
+};
+
+export type StatoMovimentoBanca = "da_abbinare" | "abbinato" | "ignorato";
+export type CategoriaCosto = "materials" | "labour" | "subcontractor" | "permits_fees" | "equipment" | "misc";
+
+export type SuggerimentoDto =
+  | { azione: "abbina"; tipo: FonteVoce; id: string; etichetta: string; certezza: "alta" | "media" }
+  | { azione: "registra_incasso"; invoiceId: string; etichetta: string; certezza: "alta" | "media" }
+  | { azione: "registra_costo"; etichetta: string; categoria: CategoriaCosto }
+  | { azione: "registra_movimento"; etichetta: string; categoria: CategoriaMovimento }
+  | { azione: "scadenzario"; etichetta: string };
+
+export type MovimentoBancaDto = {
+  id: string;
+  importId: string;
+  data: string;
+  dataValuta: string | null;
+  importoCents: number;
+  descrizione: string;
+  controparte: string;
+  riferimento: string;
+  stato: StatoMovimentoBanca;
+  abbinamento: { tipo: FonteVoce; id: string } | null;
+  suggerimenti: SuggerimentoDto[];
+};
+
+type ConteggioBanca = { n: number; entrate: number; uscite: number };
+
+export type BancaDto = {
+  anno: number;
+  movimenti: MovimentoBancaDto[];
+  riepilogo: { daAbbinare: ConteggioBanca; abbinati: ConteggioBanca; ignorati: ConteggioBanca };
+  estratti: {
+    id: string;
+    formato: "csv" | "ofx";
+    nomeFile: string;
+    conto: string;
+    righeLette: number;
+    righeNuove: number;
+    righeDuplicate: number;
+    righeScartate: number;
+    createdAt: string;
+  }[];
+  categorieCosto: CategoriaCosto[];
+};
+
+export type EsitoImportDto = {
+  importId: string;
+  formato: "csv" | "ofx";
+  lette: number;
+  nuove: number;
+  duplicate: number;
+  scartate: { riga: number; motivo: string; testo: string }[];
+  colonne: Record<string, string>;
+  giaCaricato: boolean;
+  periodo: { da: string; a: string } | null;
+};
+
+export type RigoDichiarazioneDto = { quadro: "LM" | "RR"; rigo: string; descrizione: string; valore: string; importoCents?: number; nota?: string };
+
+export type ProspettoDichiarazioneDto = {
+  anno: number;
+  annoPresentazione: number;
+  termineInvio: string;
+  righi: RigoDichiarazioneDto[];
+  saldoCents: number;
+  revisionato: boolean;
+  regole: string[];
+  regoleNonRevisionate: string[];
+  avvertenze: string[];
+};
+
+export type PacchettoDto = {
+  anno: number;
+  generatoAt: string;
+  impresa: { denominazione: string; partitaIva: string; codiceFiscale: string; comune: string; provincia: string };
+  profilo: { regime: string; codiceAteco: string; coefficientePercent: number; gestione: string; riduzione: string };
+  prospetto: ProspettoDichiarazioneDto;
+  utile: Omit<UtileNettoDto, "passiMancanti">;
+  primaNota: { totali: TotaliPrimaNotaDto; avvisi: AvvisoPrimaNotaDto[]; voci: number };
+  versamenti: { data: string; tipo: TipoVersamento; codiceTributo: string; importoCents: number; riferimento: string }[];
+  banca: BancaDto["riepilogo"];
+  passiMancanti: string[];
+  revisione: RevisioneDto;
+  avviso: { testo: string; versione: string };
+};
+
+export type ChiusuraDto = {
+  anno: number;
+  stato: "chiuso" | "riaperto";
+  versione: number;
+  chiusoAt: string;
+  riapertoAt: string | null;
+  impronta: string;
+  regoleRevisionate: boolean;
+  riportatoAt: string | null;
+};
+
+export type PassoGuidaDto = { titolo: string; testo: string };
+
+export type RispostaChiusura = {
+  pacchetto: PacchettoDto;
+  chiusura: ChiusuraDto | null;
+  chiudibile: boolean;
+  differenze: { voce: string; alloraCents: number; oggiCents: number }[];
+  guida: PassoGuidaDto[];
+};
+
+export type CondivisioneDto = {
+  id: string;
+  destinatario: string;
+  email: string;
+  anno: number;
+  scadeAt: string;
+  revocatoAt: string | null;
+  attivo: boolean;
+  accessi: number;
+  ultimoAccessoAt: string | null;
+  createdAt: string;
+};
+
+export type PacchettoPubblicoDto = {
+  destinatario: string;
+  scadeAt: string;
+  pacchetto: PacchettoDto;
+  voci: VocePrimaNotaDto[];
+  chiusura: ChiusuraDto | null;
+  guida: PassoGuidaDto[];
+};
+
+export type AzioneBanca = "abbina" | "incasso" | "costo" | "movimento" | "ignora" | "scollega";
+
+export const primaNotaApi = {
+  primaNota: (anno: number) => req<PrimaNotaDto>(`/api/fiscale/prima-nota?anno=${anno}`),
+  urlCsv: (anno: number) => `/api/fiscale/prima-nota.csv?anno=${anno}`,
+  creaMovimento: (body: { data: string; tipo: TipoMovimento; categoria: CategoriaMovimento; importoCents: number; descrizione?: string; controparte?: string }) =>
+    req<{ id: string }>("/api/fiscale/prima-nota/movimenti", { method: "POST", body: JSON.stringify(body) }),
+  eliminaMovimento: (id: string) => req<void>(`/api/fiscale/prima-nota/movimenti/${id}`, { method: "DELETE" }),
+  utile: (anno: number) => req<{ anno: number; utile: UtileNettoDto; revisione: RevisioneDto }>(`/api/fiscale/utile?anno=${anno}`),
+
+  banca: (anno: number, stato?: StatoMovimentoBanca) => req<BancaDto>(`/api/fiscale/banca?anno=${anno}${stato ? `&stato=${stato}` : ""}`),
+  importa: async (file: File, conto: string) => {
+    const fd = new FormData();
+    fd.append("file", file);
+    fd.append("conto", conto);
+    const res = await fetch("/api/fiscale/banca/import", { method: "POST", credentials: "include", body: fd });
+    const body = (await res.json().catch(() => ({}))) as EsitoImportDto & { error?: string; message?: string };
+    if (!res.ok) throw new ErroreApiFiscale(body.message || body.error || `Caricamento fallito (${res.status})`, body.error ?? "ERRORE");
+    return body;
+  },
+  eliminaImport: (id: string) => req<void>(`/api/fiscale/banca/import/${id}`, { method: "DELETE" }),
+  abbinaSicuri: (anno: number) => req<{ abbinati: number }>("/api/fiscale/banca/abbina-sicuri", { method: "POST", body: JSON.stringify({ anno }) }),
+  azione: (id: string, azione: AzioneBanca, body?: unknown) =>
+    req<unknown>(`/api/fiscale/banca/movimenti/${id}/${azione}`, { method: "POST", body: JSON.stringify(body ?? {}) }),
+
+  chiusura: (anno: number) => req<RispostaChiusura>(`/api/fiscale/chiusura?anno=${anno}`),
+  urlPacchettoPdf: (anno: number) => `/api/fiscale/chiusura/pacchetto.pdf?anno=${anno}`,
+  chiudi: (anno: number, riporta: boolean) =>
+    req<{ chiusura: ChiusuraDto; riportato: boolean }>("/api/fiscale/chiusura/chiudi", { method: "POST", body: JSON.stringify({ anno, riporta }) }),
+  riapri: (anno: number) => req<void>("/api/fiscale/chiusura/riapri", { method: "POST", body: JSON.stringify({ anno }) }),
+
+  condivisioni: () => req<{ condivisioni: CondivisioneDto[]; durate: number[] }>("/api/fiscale/condivisioni"),
+  creaCondivisione: (body: { anno: number; destinatario: string; email?: string; giorni: number }) =>
+    req<{ id: string; url: string; scadeAt: string }>("/api/fiscale/condivisioni", { method: "POST", body: JSON.stringify(body) }),
+  revocaCondivisione: (id: string) => req<void>(`/api/fiscale/condivisioni/${id}`, { method: "DELETE" }),
+  accessi: (id: string) =>
+    req<{ accessi: { at: string; risorsa: string; ip: string | null; userAgent: string | null }[] }>(`/api/fiscale/condivisioni/${id}/accessi`),
+
+  pubblico: (token: string) => req<PacchettoPubblicoDto>(`/api/commercialista/${encodeURIComponent(token)}`),
+  urlPubblicoCsv: (token: string) => `/api/commercialista/${encodeURIComponent(token)}/prima-nota.csv`,
+  urlPubblicoPdf: (token: string) => `/api/commercialista/${encodeURIComponent(token)}/pacchetto.pdf`,
+};
+
+export const ETICHETTE_COSTO: Record<CategoriaCosto, string> = {
+  materials: "Materiali",
+  labour: "Manodopera",
+  subcontractor: "Subappalti",
+  permits_fees: "Permessi e oneri",
+  equipment: "Attrezzature",
+  misc: "Varie",
+};
+
+export const MESI_BREVI = ["gen", "feb", "mar", "apr", "mag", "giu", "lug", "ago", "set", "ott", "nov", "dic"];

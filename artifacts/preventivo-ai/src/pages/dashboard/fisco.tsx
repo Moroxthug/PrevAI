@@ -533,6 +533,12 @@ export default function FiscoPage() {
               </option>
             ))}
           </select>
+          <Link href="/dashboard/fisco/prima-nota" className="btn btn-sm btn-outline-navy">
+            Prima nota
+          </Link>
+          <Link href="/dashboard/fisco/chiusura" className="btn btn-sm btn-outline-navy">
+            Chiusura d'anno
+          </Link>
           <Link href="/dashboard/amministrazione" className="btn btn-sm btn-outline-navy">
             Amministrazione
           </Link>
