@@ -13,6 +13,7 @@ import {
   transizionePratica,
   validaProtocolloTelematico,
   type DatiProfessionista,
+  type StatoPratica,
 } from "@workspace/config";
 import { hasFeature } from "@workspace/db";
 
@@ -134,7 +135,7 @@ describe("scegliProfessionista — D9 decide a chi va un cliente", () => {
 
 describe("transizionePratica — chi fa cosa, e quando", () => {
   it("il giro completo", () => {
-    let stato = null as ReturnType<typeof transizionePratica> extends { a: infer A } ? A | null : never;
+    let stato: StatoPratica | null = null;
     const passi = [
       ["consegna", "cliente"],
       ["prendi_in_carico", "professionista"],
