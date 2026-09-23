@@ -4250,6 +4250,10 @@ const BLOG_CONTENT: Record<string, string> = {
   "prevai-canada-quoteai": `
 <p>PrevAI esce dall'Italia per la prima volta. Lo stesso team che sviluppa PrevAI ha lanciato <a href="https://quoteai.ca/">QuoteAI</a>, la versione del prodotto costruita per le imprese edili e gli artigiani del Canada. Non è una traduzione del sito italiano: è un prodotto pensato per un mercato con altre lingue, altre imposte e altre regole, sulla stessa base tecnica che genera i preventivi di PrevAI.</p>
 <p>In questo articolo spieghiamo perché abbiamo scelto il Canada, che cosa cambia fra i due prodotti e che cosa significa per chi usa PrevAI in Italia o lavora in Canada.</p>
+<figure>
+  <img src="/images/blog/prevai-canada-quoteai.jpg" width="1600" height="1000" loading="lazy" decoding="async" alt="La homepage di QuoteAI: a destra un preventivo di un'impresa di tinteggiatura di Toronto con subtotale di 1.450 dollari, HST al 13 % e totale di 1.769 dollari" />
+  <figcaption>La homepage di QuoteAI: un preventivo per l'Ontario, con l'HST al 13 % calcolata in automatico.</figcaption>
+</figure>
 
 <h2>Perché il Canada</h2>
 <p>Il problema che PrevAI risolve non è solo italiano. Un idraulico di Toronto e un idraulico di Milano perdono lo stesso tempo la sera a scrivere preventivi al computer, e perdono gli stessi lavori quando il documento arriva al cliente due giorni dopo quello del concorrente. Il flusso di lavoro è lo stesso: sopralluogo, descrizione del lavoro, voci, prezzi, imposte, invio, firma.</p>
