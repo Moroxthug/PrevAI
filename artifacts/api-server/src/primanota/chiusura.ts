@@ -347,7 +347,7 @@ export async function apriCondivisione(token: string, risorsa: string, meta: { i
   const [share] = await db.select().from(accountantSharesTable).where(eq(accountantSharesTable.tokenHash, hashToken(token)));
   if (!share || share.revocatoAt || share.scadeAt.getTime() <= Date.now()) return null;
   const [profile] = await db.select().from(businessProfilesTable).where(eq(businessProfilesTable.userId, share.userId));
-  if (!hasFeature(profile, "fiscal_engine")) return null;
+  if (!hasFeature(profile, "fiscal_engine") || !hasFeature(profile, "admin_suite")) return null;
   await db.insert(accountantShareAccessesTable).values({ shareId: share.id, risorsa, ip: meta.ip ?? null, userAgent: (meta.userAgent ?? "").slice(0, 300) || null });
   await db
     .update(accountantSharesTable)

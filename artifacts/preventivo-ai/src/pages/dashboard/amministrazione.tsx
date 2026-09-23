@@ -1,3 +1,4 @@
+import { AddonPaywall } from "@/components/addon-paywall";
 import { useState } from "react";
 import { Link } from "wouter";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -108,13 +109,7 @@ export default function AmministrazionePage() {
   });
 
   if (passive.isError && passive.error instanceof ErroreApiSdi && passive.error.codice === "SDI_MODULE_OFF") {
-    return (
-      <div className="card card-empty">
-        Il modulo Amministrazione non è attivo su questo account.
-        <br />
-        <Link href="/dashboard/settings?tab=billing" className="text-link">Vedi i piani</Link>
-      </div>
-    );
+    return <AddonPaywall motivo="sdi" />;
   }
 
   const nuove = (passive.data?.fatture ?? []).filter((f) => f.stato === "nuova");

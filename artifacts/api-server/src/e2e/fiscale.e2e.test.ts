@@ -46,7 +46,7 @@ describe("modulo fiscale forfettario", () => {
     const [profile] = await db.select().from(businessProfilesTable).where(eq(businessProfilesTable.userId, org.userId));
     await db
       .update(businessProfilesTable)
-      .set({ featureFlags: { ...(profile?.featureFlags ?? {}), fiscal_engine: true } })
+      .set({ featureFlags: { ...(profile?.featureFlags ?? {}), fiscal_engine: true, admin_suite: true } })
       .where(eq(businessProfilesTable.userId, org.userId));
   }
 
@@ -227,7 +227,7 @@ describe("modulo fiscale forfettario", () => {
     const [profile] = await db.select().from(businessProfilesTable).where(eq(businessProfilesTable.userId, altra.userId));
     await db
       .update(businessProfilesTable)
-      .set({ featureFlags: { ...(profile?.featureFlags ?? {}), fiscal_engine: true } })
+      .set({ featureFlags: { ...(profile?.featureFlags ?? {}), fiscal_engine: true, admin_suite: true } })
       .where(eq(businessProfilesTable.userId, altra.userId));
 
     const r = await altra.api("/api/fiscale/calcolo");
@@ -416,7 +416,7 @@ describe("modulo fiscale forfettario", () => {
     const [profile] = await db.select().from(businessProfilesTable).where(eq(businessProfilesTable.userId, estranea.userId));
     await db
       .update(businessProfilesTable)
-      .set({ featureFlags: { ...(profile?.featureFlags ?? {}), fiscal_engine: true } })
+      .set({ featureFlags: { ...(profile?.featureFlags ?? {}), fiscal_engine: true, admin_suite: true } })
       .where(eq(businessProfilesTable.userId, estranea.userId));
 
     const anno = new Date().getUTCFullYear();

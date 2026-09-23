@@ -151,6 +151,7 @@ URL="postgresql://postgres.<ref>:<pw>@aws-0-eu-west-1.pooler.supabase.com:5432/p
 "$PG/psql.exe" "$URL" -v ON_ERROR_STOP=1 -1 -f migrations/v2/0004_a2_fiscale.sql         # A-2: motore fiscale (§7.7)
 "$PG/psql.exe" "$URL" -v ON_ERROR_STOP=1 -1 -f migrations/v2/0005_a3_scadenzario.sql     # A-3: scadenzario (§8.6)
 "$PG/psql.exe" "$URL" -v ON_ERROR_STOP=1 -1 -f migrations/v2/0006_a4_prima_nota.sql      # A-4: prima nota e chiusura (§9.7)
+"$PG/psql.exe" "$URL" -v ON_ERROR_STOP=1 -1 -f migrations/v2/0007_a5_addon.sql            # A-5: add-on e test di prezzo (§10.6)
 # 4. conteggi + checksum DOPO → devono coincidere (iva_percentuale normalizzata nella query)
 "$PG/psql.exe" "$URL" -At -f docs/sql/reconcile.sql > C:/Users/Admin/PrevAI-backups/reconcile-after.txt
 diff C:/Users/Admin/PrevAI-backups/reconcile-before.txt C:/Users/Admin/PrevAI-backups/reconcile-after.txt   # nessuna differenza
@@ -399,6 +400,62 @@ Prima nota ed estratto conto contengono nomi di clienti e fornitori dell'impresa
 ### 9.7 Cutover e migrazioni
 
 `migrations/v2/0006_a4_prima_nota.sql` è additiva e idempotente e va eseguita **dopo** la 0005 (§5.3): sei tabelle nuove (`prima_nota_movimenti`, `bank_imports`, `bank_movements`, `fiscal_year_closings`, `accountant_shares`, `accountant_share_accesses`), nessuna colonna su tabelle esistenti. Nessuna env nuova: l'URL del link usa `PREVAI_BASE_URL` come il resto dei link pubblici. Le tabelle nascono vuote.
+
+## 10. Add-on Amministrazione: offerta, test di prezzo, abbonamento (A-5)
+
+### 10.1 Dove sta tutto
+
+- **Nome, prezzi, varianti, stato richiesto**: `lib/config/src/offerta.ts` (`OFFERTA_AMMINISTRAZIONE`). È l'unico posto: landing, paywall, fatturazione, checkout e pannello staff leggono da lì.
+- **Stato effettivo**: `statoOfferta()` lo calcola dai prerequisiti e non supera mai quello che consentono. `bozza` (niente visibile, landing noindex e fuori sitemap, checkout 409) → `interesse` (landing indicizzata, paywall con il prezzo, "avvisami") → `vendita` (checkout Stripe).
+  - `interesse` richiede **D5** (`decisioni.D5 = true`).
+  - `vendita` richiede anche **D6** (dedotta dalle regole del motore: tutte revisionate) e **D8** (`decisioni.D8 = true`).
+  - Il **livello gratuito** (calcolo, soglia, scadenzario per ogni utente) si accende da solo con offerta almeno in `interesse` **e** D6 chiusa. Gli articoli SEO sulle tasse (`src/data/blog-fiscale*.ts`) escono con lui.
+- **Cosa sblocca l'add-on**: `sdi_invoicing`, `fiscal_engine`, `admin_suite` (`FEATURE_ADDON_AMMINISTRAZIONE`). `admin_suite` è la parte a pagamento: F24 precompilati, prima nota, estratto conto, chiusura, link del commercialista. Col solo `fiscal_engine` quelle rotte rispondono 403 `ADMIN_SUITE_OFF`.
+- **Stato dell'abbonamento**: `business_profiles.addons.amministrazione` (jsonb). Stati: `attivo`, `prova`, `insoluto` (danno accesso), `beta` (accesso fino a `betaFino`), `cessato`. I flag del profilo restano l'override in entrambi i sensi (un `false` spegne anche un add-on pagato).
+- **Eventi del test di prezzo**: tabella `addon_events` (vista, interesse, checkout, attivato, cessato, beta), con la variante. Risultati per lo staff: Admin → "Test di prezzo" (`GET /api/admin/addons/test-prezzo`).
+
+### 10.2 Passare a `interesse` (serve D5)
+
+1. Il titolare conferma nome e prezzi (anche solo come ipotesi da testare). Aggiornare in `offerta.ts`: `nome`, `varianti`, `bundleEliteMensileCents`, `ivaInclusa` (il piano dice "+IVA" nella tabella e "IVA inclusa" al punto (a): va scelto).
+2. `decisioni.D5 = true`, `statoRichiesto = "interesse"`. Commit, deploy.
+3. Verifiche: `/amministrazione/` ha `index, follow` ed è in `sitemap.xml`; il menu della dashboard mostra "Amministrazione" a chi non ha il modulo; la pagina `/dashboard/amministrazione/attiva` ha il bottone "Mi interessa".
+4. Campagne del test di prezzo: link alla landing con `?v=a|b|c`. La variante resta all'impresa quando si registra (sessionStorage → primo evento). Senza `?v=` la variante è l'hash dell'id dell'impresa.
+
+### 10.3 Passare a `vendita` (servono D5, D6, D8 e i Price su Stripe)
+
+1. **Price su Stripe** (dashboard Stripe, modalità live): un prodotto "PrevAI Amministrazione" e un Price ricorrente in EUR per ogni riga di `lookupKeysAttese()` — l'elenco esatto, con importi e periodicità, è nel pannello Admin → "Test di prezzo". Ogni Price va creato con la sua **lookup key** (`amministrazione_a_mensile`, `amministrazione_a_annuale`, …, `amministrazione_bundle_elite_mensile`). Nessuna env: il checkout cerca il Price per chiave e **rifiuta** (503 `ADDON_PRICE_MISMATCH`) se importo, valuta o periodicità non coincidono con la configurazione.
+2. Il **Customer Portal** di Stripe deve permettere la disdetta degli abbonamenti (è lo stesso portale del piano).
+3. D6 si chiude seguendo `docs/compliance/REVISIONE-COMMERCIALISTA.md`: quando tutte le regole non sono più `non_revisionata`, D6 risulta chiusa da sola. D8: `decisioni.D8 = true` dopo la firma di contratto, DPA e manuale di conservazione con l'intermediario.
+4. `statoRichiesto = "vendita"`. Commit, deploy.
+5. Prova end-to-end in modalità test di Stripe su una preview: checkout → ritorno su `?esito=ok` → webhook → `addons.amministrazione.stato = "attivo"`, `two_factor_required = true`, evento `attivato`; disdetta dal portale → `cessato` e il **piano resta com'era**.
+
+### 10.4 Utenti beta
+
+Chi aveva il modulo acceso a mano coi flag va convertito prima del lancio, altrimenti il flag lo tiene dentro per sempre:
+
+```bash
+DATABASE_URL=… pnpm --filter @workspace/api-server ops:addon-beta                       # elenca
+DATABASE_URL=… pnpm --filter @workspace/api-server ops:addon-beta --apply --fino 2027-01-31
+```
+
+Toglie i flag `sdi_invoicing`/`fiscal_engine`/`admin_suite` a true (i `false` restano), scrive `stato: "beta"` con la data, registra l'evento `beta`. Idempotente. Non accende la 2FA obbligatoria (lo fa il webhook quando l'impresa si abbona). Dopo `betaFino` l'impresa vede il paywall; se si abbona prima, la beta è sostituita dall'abbonamento.
+
+### 10.5 Webhook e sincronizzazione
+
+- Gli abbonamenti dell'add-on si riconoscono dai metadati (`addon: "amministrazione"`, ripetuti in `subscription_data`) o dalla lookup key (`amministrazione_…`). Vanno a `sincronizzaAbbonamento()` e **non** al flusso del piano: prima di A-5 qualsiasi `customer.subscription.deleted` riportava l'impresa al piano gratuito.
+- Idempotente: si scrive lo stato che l'oggetto Stripe dice. Un evento di un abbonamento non più corrente che dice "cancellato" non spegne quello attivo.
+- "Verifica abbonamento" in Impostazioni (`POST /api/payments/sync-subscription`) ora sincronizza anche l'add-on e non scambia più l'add-on per il piano.
+- **Insoluto** (`past_due`): l'accesso resta finché Stripe riprova; all'ultimo tentativo fallito Stripe cancella e arriva `deleted`.
+
+### 10.6 Cutover e migrazioni
+
+`migrations/v2/0007_a5_addon.sql` è additiva e idempotente, **dopo** la 0006 (§5.3): una colonna `business_profiles.addons` (jsonb, default `{}`) e la tabella `addon_events`. Il codice v1 non le vede. Nessuna env nuova. Con l'offerta in bozza nessuno ha l'add-on e nessun evento viene registrato.
+
+### 10.7 Cosa non è fatto (di proposito)
+
+- Prezzi IVA inclusa vs esclusa, Stripe Tax, fattura dell'add-on all'impresa: dipendono da D5 e dalla configurazione fiscale di PrevAI, non dal codice.
+- Cambio di prezzo quando un'impresa passa da/verso Elite: il bundle si applica al checkout, non si ricalcola sugli abbonamenti già attivi.
+- Avviso automatico a chi ha registrato interesse: al lancio si estrae l'elenco da `addon_events` (`tipo = 'interesse'`) e si scrive a mano o con una campagna.
 
 
 ---

@@ -73,6 +73,18 @@ async function moduloOForbidden(userId: string, res: import("express").Response)
   return false;
 }
 
+/** A-5: il prospetto F24 è la parte "esecuzione" dello scadenzario, e si paga con l'add-on. */
+async function suiteOForbidden(userId: string, res: import("express").Response): Promise<boolean> {
+  const [profile] = await db.select().from(businessProfilesTable).where(eq(businessProfilesTable.userId, userId));
+  if (!hasFeature(profile, "fiscal_engine")) {
+    res.status(403).json({ error: "FISCAL_MODULE_OFF", message: "Il calcolo fiscale non è attivo su questo account." });
+    return false;
+  }
+  if (hasFeature(profile, "admin_suite")) return true;
+  res.status(403).json({ error: "ADMIN_SUITE_OFF", message: "Gli F24 precompilati fanno parte dell'add-on Amministrazione." });
+  return false;
+}
+
 function erroreFiscale(err: unknown, res: import("express").Response): void {
   if (err instanceof ErroreFiscale) {
     res.status(err.codice === "not_found" ? 404 : 400).json({ error: err.codice.toUpperCase(), message: err.message });
@@ -369,7 +381,7 @@ async function prospettoDi(userId: string, anno: number, chiave: string) {
 
 router.get("/fiscale/scadenzario/:chiave/f24", requireAuth, requirePermission("fiscale", "view"), async (req, res) => {
   const userId = getUserId(res);
-  if (!(await moduloOForbidden(userId, res))) return;
+  if (!(await suiteOForbidden(userId, res))) return;
   const anno = annoDi(req);
   const prospetto = await prospettoDi(userId, anno, req.params.chiave);
   if (!prospetto) {
@@ -381,7 +393,7 @@ router.get("/fiscale/scadenzario/:chiave/f24", requireAuth, requirePermission("f
 
 router.get("/fiscale/scadenzario/:chiave/f24.pdf", requireAuth, requirePermission("fiscale", "view"), async (req, res) => {
   const userId = getUserId(res);
-  if (!(await moduloOForbidden(userId, res))) return;
+  if (!(await suiteOForbidden(userId, res))) return;
   const anno = annoDi(req);
   const prospetto = await prospettoDi(userId, anno, req.params.chiave);
   if (!prospetto) {

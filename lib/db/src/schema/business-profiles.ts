@@ -9,6 +9,7 @@ import {
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 import type { PaymentSchedule } from "./payment-schedule";
+import type { AddonsProfilo } from "./addons";
 
 export type FeatureFlags = Record<string, boolean>;
 
@@ -79,6 +80,10 @@ export const businessProfilesTable = pgTable("business_profiles", {
   //    la attiva. Il modulo Amministrazione (A-5) la imposta a true e non la
   //    lascia più disattivare (AMMINISTRAZIONE-PLAN §6.5).
   twoFactorRequired: boolean("two_factor_required").notNull().default(false),
+  // ── A-5: abbonamenti agli add-on (oggi solo "amministrazione"), accanto al
+  //    piano. Scritto dal webhook Stripe e da `ops:addon-beta`; letto da
+  //    `hasFeature`. Vedi schema/addons.ts.
+  addons: jsonb("addons").$type<AddonsProfilo>().notNull().default({}),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
 });

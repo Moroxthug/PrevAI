@@ -7,6 +7,7 @@ import { eq, sql } from "drizzle-orm";
 import { CreateCheckoutSessionBody } from "@workspace/api-zod";
 import { getUncachableStripeClient } from "../stripeClient";
 import { logger } from "../lib/logger";
+import { eAbbonamentoAddon, sincronizzaAbbonamento, type AbbonamentoStripe } from "../addons/amministrazione.js";
 
 const TRIAL_DAYS = 7;
 const TRIAL_DOWNLOAD_LIMIT = 3;
@@ -395,11 +396,18 @@ router.post("/payments/sync-subscription", requireAuth, requirePermission("setti
 
 
 
-    const subscriptions = await stripe.subscriptions.list({
+    const tutte = await stripe.subscriptions.list({
       customer: customerId,
       status: "active",
       limit: 5,
     });
+    // A-5: l'add-on Amministrazione è un abbonamento a parte. Si sincronizza
+    // per conto suo e non va scambiato per il piano (prima veniva preso
+    // `data[0]` qualunque fosse).
+    const subscriptions = { data: tutte.data.filter((s) => !eAbbonamentoAddon(s as unknown as AbbonamentoStripe)) };
+    for (const s of tutte.data) {
+      if (eAbbonamentoAddon(s as unknown as AbbonamentoStripe)) await sincronizzaAbbonamento(s as unknown as AbbonamentoStripe);
+    }
 
     if (subscriptions.data.length === 0) {
       const cancelledSubs = await stripe.subscriptions.list({

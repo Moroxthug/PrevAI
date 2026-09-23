@@ -4,6 +4,9 @@
 // The frontend keeps a mirror in src/lib/plans.ts (it does not import this
 // package because of the pg dependency).
 
+import { FEATURE_ADDON_AMMINISTRAZIONE, FEATURE_GRATUITE_AMMINISTRAZIONE, statoOfferta } from "@workspace/config";
+import { addonAttivo, type AddonsProfilo } from "./addons";
+
 export const PLAN_IDS = ["free", "monthly_starter", "monthly_pro", "monthly_elite"] as const;
 export type PlanId = (typeof PLAN_IDS)[number];
 
@@ -26,7 +29,8 @@ export const PRODUCT_FEATURES = [
   "gmail_send", // Phase 20: send customer-facing emails from the company's own connected Gmail account
   "meta_lead_ads", // Phase 28: import Facebook/Instagram Lead Ads submissions straight into the leads pipeline
   "sdi_invoicing", // A-1: fatture elettroniche via SdI, ciclo passivo, bollo virtuale — add-on Amministrazione
-  "fiscal_engine", // A-2: calcolo forfettario, "quanto mettere via", monitor soglia, simulatore — add-on Amministrazione
+  "fiscal_engine", // A-2/A-3: calcolo forfettario, "quanto mettere via", soglia, simulatore, scadenzario — gratis dopo il lancio (A-5)
+  "admin_suite", // A-5: F24 precompilati, prima nota, estratto conto, chiusura d'anno, link commercialista — solo add-on
 ] as const;
 export type ProductFeature = (typeof PRODUCT_FEATURES)[number];
 
@@ -72,6 +76,7 @@ export type PlanLike = {
   subscriptionPlan?: string | null;
   subscriptionStatus?: string | null;
   featureFlags?: Record<string, boolean> | null;
+  addons?: AddonsProfilo | null;
 } | null | undefined;
 
 export function effectivePlan(profile: PlanLike): PlanId {
@@ -84,11 +89,20 @@ export function effectivePlan(profile: PlanLike): PlanId {
 /**
  * Feature flags on the profile override the plan in both directions:
  * `{ contracts: true }` grants early access, `{ contracts: false }` kills it.
+ *
+ * A-5: after the plan come the add-on subscriptions (`profile.addons`), then
+ * the free tier of the Amministrazione module — which stays off until the
+ * offer is public **and** the tax rules are reviewed (`statoOfferta`, D5/D6).
  */
-export function hasFeature(profile: PlanLike, feature: ProductFeature): boolean {
+export function hasFeature(profile: PlanLike, feature: ProductFeature, now: Date = new Date()): boolean {
   const override = profile?.featureFlags?.[feature];
   if (typeof override === "boolean") return override;
-  return PLAN_FEATURES[effectivePlan(profile)].has(feature);
+  if (PLAN_FEATURES[effectivePlan(profile)].has(feature)) return true;
+  if ((FEATURE_ADDON_AMMINISTRAZIONE as readonly string[]).includes(feature) && addonAttivo(profile?.addons?.amministrazione, now)) return true;
+  if ((FEATURE_GRATUITE_AMMINISTRAZIONE as readonly string[]).includes(feature)) {
+    return statoOfferta({ anno: now.getUTCFullYear() }).gratuitoAttivo;
+  }
+  return false;
 }
 
 export function minimumPlanFor(feature: ProductFeature): PlanId {
@@ -102,7 +116,7 @@ export function minimumPlanFor(feature: ProductFeature): PlanId {
  * quindi `minimumPlanFor` non ha una risposta sensata da dare: l'interfaccia
  * deve dire "attiva il modulo", non "passa a Elite".
  */
-export const ADDON_FEATURES: readonly ProductFeature[] = ["sdi_invoicing", "fiscal_engine"];
+export const ADDON_FEATURES: readonly ProductFeature[] = ["sdi_invoicing", "fiscal_engine", "admin_suite"];
 
 export function isAddonFeature(feature: ProductFeature): boolean {
   return ADDON_FEATURES.includes(feature);

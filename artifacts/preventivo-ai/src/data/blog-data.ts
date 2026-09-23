@@ -3,6 +3,7 @@
 // articolo e gli script di build. Ogni slug di BLOG_INDEX deve avere un corpo
 // qui — il join lancia un errore al caricamento del modulo (cioè in build).
 import { BLOG_INDEX, type BlogArticleMeta } from "./blog-index.js";
+import { BLOG_FISCALE_CONTENT } from "./blog-fiscale.js";
 
 export * from "./blog-index.js";
 
@@ -4248,7 +4249,7 @@ const BLOG_CONTENT: Record<string, string> = {
 };
 
 export const BLOG_ARTICLES: BlogArticle[] = BLOG_INDEX.map((meta) => {
-  const contentHtml = BLOG_CONTENT[meta.slug];
+  const contentHtml = BLOG_CONTENT[meta.slug] ?? BLOG_FISCALE_CONTENT[meta.slug];
   if (contentHtml === undefined) throw new Error(`blog-data: manca il corpo dell'articolo "${meta.slug}"`);
   return { ...meta, contentHtml };
 });

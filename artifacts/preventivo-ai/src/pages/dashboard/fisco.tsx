@@ -1,3 +1,4 @@
+import { AddonPaywall } from "@/components/addon-paywall";
 import { useMemo, useState } from "react";
 import { Link } from "wouter";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -490,15 +491,7 @@ export default function FiscoPage() {
   }, [calcolo.data]);
 
   if (calcolo.isError && calcolo.error instanceof ErroreApiFiscale && calcolo.error.codice === "FISCAL_MODULE_OFF") {
-    return (
-      <div className="card card-empty">
-        Il calcolo fiscale non è attivo su questo account.
-        <br />
-        <Link href="/dashboard/settings?tab=billing" className="text-link">
-          Vedi i piani
-        </Link>
-      </div>
-    );
+    return <AddonPaywall motivo="fiscale" />;
   }
 
   if (calcolo.isLoading || !calcolo.data) {

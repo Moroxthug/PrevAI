@@ -1,6 +1,6 @@
 # Registro delle attività di trattamento (art. 30 GDPR) — PrevAI
 
-Versione 1.1 · A-1 · 22 settembre 2026 · Da rivedere a ogni fase che aggiunge dati (A-2 motore fiscale, A-4 prima nota, A-6 commercialista).
+Versione 1.2 · A-5 · 23 settembre 2026 · Da rivedere a ogni fase che aggiunge dati (A-2 motore fiscale, A-4 prima nota, A-6 commercialista).
 
 **Titolare:** PrevAI (dati societari da completare dal titolare: ragione sociale, P. IVA, sede) — privacy@prevai.it. **DPO:** non obbligatorio (art. 37: nessun monitoraggio su larga scala di persone fisiche come attività principale, nessun dato art. 9/10 su larga scala); rivalutare in A-6. **Sicurezza:** vedi `docs/QA-VERIFICATION-PLAN.md` (Phase 62–64) e §8 della Privacy Policy.
 
@@ -15,6 +15,7 @@ Versione 1.1 · A-1 · 22 settembre 2026 · Da rivedere a ogni fase che aggiunge
 | T5 | Comunicazioni di servizio e supporto | Utenti | Email, contenuto delle richieste, cronologia del bot di supporto | Assistenza, notifiche transazionali | 6.1.b | Resend, Groq (bot di supporto: testo della conversazione) | USA, SCC/DPF | Durata account; conversazioni bot 12 mesi | Avviso IA al primo contatto (art. 50 AI Act) |
 | T6 | Marketing diretto | Utenti che hanno acconsentito | Email, nome | Newsletter, novità prodotto | 6.1.a | Resend | USA | Fino a revoca | Link di disiscrizione in ogni email |
 | T7 | Lead pubblici (widget, WhatsApp, Meta Lead Ads) — *dati dei potenziali clienti degli utenti, ma raccolti da PrevAI prima dell'assegnazione a un utente* | Potenziali clienti degli artigiani | Nome, telefono/email, descrizione del lavoro, foto, comune | Instradamento della richiesta all'artigiano | 6.1.b (misure precontrattuali su richiesta dell'interessato) | Supabase, Meta (WhatsApp/Lead Ads), Groq (classificazione) | Meta/Groq: USA, SCC/DPF | 24 mesi dall'ultimo contatto se non convertito | Consenso informativa nel widget, avviso IA nel bot WhatsApp |
+| T8 | Test di prezzo dell'add-on Amministrazione (A-5) | Utenti (imprese) | Id dell'impresa, variante di prezzo assegnata, eventi vista/interesse/checkout/attivazione/disdetta con data | Scegliere il prezzo dell'add-on, misurare la conversione | 6.1.f (interesse a fissare un prezzo sostenibile; dati minimi, nessuna profilazione individuale) | Supabase | — | Fino alla chiusura del test + 12 mesi, poi aggregati | Nessun cookie: la variante è un hash dell'id o il parametro della campagna; risultati visti solo in forma aggregata dallo staff |
 
 ## B. Trattamenti in cui PrevAI è **responsabile** per conto dell'utente (art. 28; accordo = Termini §9)
 
@@ -37,3 +38,4 @@ Procedura: rilevazione (Sentry/log/segnalazione) → valutazione entro 24 h dal 
 | Data | Versione | Cosa |
 |---|---|---|
 | 2026-09-21 | 1.0 | Prima stesura (A-0). R7 descritto in anticipo per la DPIA; diventa operativo con A-1. |
+| 2026-09-23 | 1.2 | A-5: aggiunto T8 (test di prezzo dell'add-on, tabella `addon_events`). |

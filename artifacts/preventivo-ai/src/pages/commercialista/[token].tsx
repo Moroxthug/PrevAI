@@ -1,10 +1,11 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useParams } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { it } from "date-fns/locale";
 import { AlertTriangle, Download, Loader2, Lock } from "lucide-react";
 import { useDocumentTitle } from "@/hooks/use-document-title";
+import { useNoIndex } from "@/hooks/use-no-index";
 import { Logo } from "@/components/logo";
 import { formatCents } from "@/lib/jobs-api";
 import { primaNotaApi, type VocePrimaNotaDto } from "@/lib/fiscale-api";
@@ -16,29 +17,6 @@ import { Avvertenze, Guida, Prospetto, Utile, Versamenti } from "@/components/fi
 // finisce nei motori di ricerca (robots.txt, X-Robots-Tag, meta robots).
 
 const euro = formatCents;
-
-/**
- * La shell dell'app ha già un `<meta name="robots" content="index, follow">`:
- * aggiungerne un secondo lascerebbe vincere il primo. Si cambia quello che c'è
- * e lo si rimette com'era all'uscita.
- */
-function useNoIndex() {
-  useEffect(() => {
-    let meta = document.querySelector<HTMLMetaElement>('meta[name="robots"]');
-    const creato = !meta;
-    if (!meta) {
-      meta = document.createElement("meta");
-      meta.name = "robots";
-      document.head.appendChild(meta);
-    }
-    const precedente = meta.content;
-    meta.content = "noindex, nofollow";
-    return () => {
-      if (creato) meta!.remove();
-      else meta!.content = precedente;
-    };
-  }, []);
-}
 
 function Movimenti({ voci }: { voci: VocePrimaNotaDto[] }) {
   const [tutte, setTutte] = useState(false);

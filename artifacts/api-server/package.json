@@ -22,7 +22,8 @@
     "ops:backup": "tsx scripts/backup.ts",
     "ops:restore": "tsx scripts/restore.ts",
     "ops:rotate-token-key": "tsx scripts/rotate-token-key.ts",
-    "ops:encrypt-fiscal-fields": "tsx scripts/encrypt-fiscal-fields.ts"
+    "ops:encrypt-fiscal-fields": "tsx scripts/encrypt-fiscal-fields.ts",
+    "ops:addon-beta": "tsx scripts/addon-beta.ts"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.49.1",

@@ -3,6 +3,8 @@
 // landing di settore. I corpi stanno in ./blog-data.ts, importato solo dalla
 // pagina articolo e dallo script di prerender, così l'HTML non entra nel
 // bundle pubblico. Contenuti: PrevAI v1 (tag v1-final), slug identici.
+import { BLOG_FISCALE_META, blogFiscalePubblicabile } from "./blog-fiscale-index";
+
 export interface BlogArticleMeta {
   slug: string;
   title: string;
@@ -16,7 +18,7 @@ export interface BlogArticleMeta {
   relatedSectors: string[];
 }
 
-export const BLOG_INDEX: BlogArticleMeta[] = [
+const BLOG_INDEX_BASE: BlogArticleMeta[] = [
   {
     slug: "come-fare-preventivo-imbianchino",
     title: "Come fare un preventivo professionale per lavori di imbiancatura",
@@ -776,6 +778,14 @@ export const BLOG_INDEX: BlogArticleMeta[] = [
     relatedSectors: ["idraulico","termoidraulico"],
   },
 ];
+
+/**
+ * A-5: gli articoli sulle tasse del forfettario si aggiungono solo quando il
+ * livello gratuito del modulo è pubblico e le regole sono revisionate (D6).
+ * Tutto il resto (sitemap, prerender, liste, correlati) legge BLOG_INDEX, quindi
+ * il filtro sta in un punto solo.
+ */
+export const BLOG_INDEX: BlogArticleMeta[] = [...BLOG_INDEX_BASE, ...(blogFiscalePubblicabile() ? BLOG_FISCALE_META : [])];
 
 export interface GuideCard {
   slug: string;

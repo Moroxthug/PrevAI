@@ -20,6 +20,7 @@ const ContattiPage = lazy(() => import("@/pages/contatti"));
 const MappaSitoPage = lazy(() => import("@/pages/mappa-sito"));
 const HelpIndexPage = lazy(() => import("@/pages/help/index"));
 const HelpArticlePage = lazy(() => import("@/pages/help/[slug]"));
+const AmministrazioneLandingPage = lazy(() => import("@/pages/amministrazione"));
 
 import { PATHS } from "@/data/sitemap-routes";
 
@@ -39,6 +40,7 @@ const ImportsPage = lazy(() => import("@/pages/dashboard/imports/index"));
 const ClientDetailPage = lazy(() => import("@/pages/dashboard/clients/[name]"));
 const InvoicesPage = lazy(() => import("@/pages/dashboard/invoices"));
 const AmministrazionePage = lazy(() => import("@/pages/dashboard/amministrazione"));
+const AmministrazioneAttivaPage = lazy(() => import("@/pages/dashboard/amministrazione-attiva"));
 const FiscoPage = lazy(() => import("@/pages/dashboard/fisco"));
 const ScadenzarioPage = lazy(() => import("@/pages/dashboard/scadenzario"));
 const PrimaNotaPage = lazy(() => import("@/pages/dashboard/prima-nota"));
@@ -130,6 +132,7 @@ function Router() {
       {/* Public pages — paths from sitemap-routes.ts (shared with generate-sitemap.ts) */}
       <Route path={PATHS.HOME} component={() => <PublicLayout><Home /></PublicLayout>} />
       <Route path={PATHS.WHATSAPP} component={() => <PublicLayout><Suspense fallback={null}><WhatsappPage /></Suspense></PublicLayout>} />
+      <Route path={PATHS.AMMINISTRAZIONE} component={() => <PublicLayout><Suspense fallback={null}><AmministrazioneLandingPage /></Suspense></PublicLayout>} />
       <Route path={PATHS.CHI_SIAMO} component={() => <Suspense fallback={null}><ChiSiamoPage /></Suspense>} />
       <Route path={PATHS.CONTATTI} component={() => <Suspense fallback={null}><ContattiPage /></Suspense>} />
       <Route path={PATHS.PRIVACY} component={() => <Suspense fallback={null}><PrivacyPage /></Suspense>} />
@@ -204,6 +207,9 @@ function Router() {
       )} />
       <Route path="/dashboard/invoices" component={() => (
         <OnboardingGuard><DashboardLayout><DashSuspense><InvoicesPage /></DashSuspense></DashboardLayout></OnboardingGuard>
+      )} />
+      <Route path="/dashboard/amministrazione/attiva" component={() => (
+        <OnboardingGuard><DashboardLayout><DashSuspense><AmministrazioneAttivaPage /></DashSuspense></DashboardLayout></OnboardingGuard>
       )} />
       <Route path="/dashboard/amministrazione" component={() => (
         <OnboardingGuard><DashboardLayout><DashSuspense><AmministrazionePage /></DashSuspense></DashboardLayout></OnboardingGuard>

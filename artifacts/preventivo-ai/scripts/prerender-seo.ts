@@ -43,6 +43,13 @@ import {
 } from "../src/components/testimonials-section.js";
 import { translations } from "../src/i18n/translations.js";
 import { HELP_ARTICLES } from "../src/data/help-articles.js";
+import {
+  FAQ_LANDING_AMMINISTRAZIONE,
+  LANDING_AMMINISTRAZIONE_PATH,
+  LANDING_AMMINISTRAZIONE_SEO,
+  NOME_OFFERTA,
+  landingAmministrazioneIndicizzabile,
+} from "../src/data/amministrazione-landing.js";
 
 function testimonialText(key: string): string {
   return translations.it[`testimonials.${key}.text`] ?? "";
@@ -1609,6 +1616,8 @@ async function buildStaticPageHtml(opts: {
   jsonLd: object[];
   bodyHtml: string;
   ogImagePath?: string;
+  /** A-5: pagine che esistono ma non vanno indicizzate (la landing dell'add-on in bozza). */
+  noIndex?: boolean;
 }): Promise<void> {
   const headBlock = buildHeadBlock({
     title: opts.title,
@@ -1617,7 +1626,14 @@ async function buildStaticPageHtml(opts: {
     ogImagePath: opts.ogImagePath ?? "/opengraph.jpg",
     jsonLd: opts.jsonLd,
   });
-  const html = injectAppPreload(injectBody(injectHead(template, headBlock), opts.bodyHtml));
+  let html = injectAppPreload(injectBody(injectHead(template, headBlock), opts.bodyHtml));
+  if (opts.noIndex) {
+    // Si sostituisce il meta della shell invece di aggiungerne un secondo:
+    // con due meta robots in conflitto non si sa quale legga il crawler (A-4).
+    const prima = html;
+    html = html.replace('<meta name="robots" content="index, follow" />', '<meta name="robots" content="noindex, nofollow" />');
+    if (html === prima) throw new Error(`prerender: meta robots della shell non trovato per ${opts.path}`);
+  }
   writeRoute(opts.slug, html);
   count++;
 }
@@ -1717,7 +1733,26 @@ await buildStaticPageHtml({
   bodyHtml: stripHoistedHead(await renderPage("/mappa-sito", "it")),
 });
 
-console.log(`  ✓ 6 SPA pages prerendered (chi-siamo, contatti, privacy, termini, whatsapp, mappa-sito)`);
+// /amministrazione/ — A-5, landing dell'add-on. noindex finché l'offerta è in bozza.
+await buildStaticPageHtml({
+  slug: "amministrazione",
+  title: LANDING_AMMINISTRAZIONE_SEO.title,
+  description: LANDING_AMMINISTRAZIONE_SEO.description,
+  path: LANDING_AMMINISTRAZIONE_PATH,
+  noIndex: !landingAmministrazioneIndicizzabile(),
+  jsonLd: [
+    buildWebPageJsonLd(NOME_OFFERTA, LANDING_AMMINISTRAZIONE_SEO.description, LANDING_AMMINISTRAZIONE_PATH),
+    {
+      "@context": "https://schema.org",
+      "@type": "FAQPage",
+      mainEntity: FAQ_LANDING_AMMINISTRAZIONE.map((f) => ({ "@type": "Question", name: f.domanda, acceptedAnswer: { "@type": "Answer", text: f.risposta } })),
+    },
+    buildBreadcrumbJsonLd(NOME_OFFERTA, LANDING_AMMINISTRAZIONE_PATH),
+  ],
+  bodyHtml: stripHoistedHead(await renderPage("/amministrazione", "it")),
+});
+
+console.log(`  ✓ 7 SPA pages prerendered (chi-siamo, contatti, privacy, termini, whatsapp, mappa-sito, amministrazione)`);
 
 // Phase 70: centro assistenza — indice + una pagina per articolo, resi dallo
 // stesso albero React (title/description del SeoHead della pagina sono quelli
@@ -1756,4 +1791,4 @@ for (const article of HELP_ARTICLES) {
 }
 console.log(`  ✓ ${HELP_ARTICLES.length + 1} help-centre pages prerendered`);
 
-console.log(`Prerendered ${count} pages total (1 homepage + SEO sector pages + ${BLOG_CATEGORIES.length} category pages + ${BLOG_ARTICLES.length + 1} blog pages + 6 SPA pages + ${HELP_ARTICLES.length + 1} help pages).`);
+console.log(`Prerendered ${count} pages total (1 homepage + SEO sector pages + ${BLOG_CATEGORIES.length} category pages + ${BLOG_ARTICLES.length + 1} blog pages + 7 SPA pages + ${HELP_ARTICLES.length + 1} help pages).`);

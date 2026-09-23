@@ -206,7 +206,7 @@ async function seedSdi(org: TestUser & { province: string }): Promise<string | n
       // A-2: l'add-on Amministrazione accende entrambi i moduli — fatture
       //      elettroniche e calcolo fiscale — così la QA visiva copre anche
       //      la pagina Fisco.
-      featureFlags: { ...(profile?.featureFlags ?? {}), sdi_invoicing: true, fiscal_engine: true },
+      featureFlags: { ...(profile?.featureFlags ?? {}), sdi_invoicing: true, fiscal_engine: true, admin_suite: true },
       twoFactorRequired: true,
       vatNumber: "01234567897",
       codiceFiscale: "01234567897",

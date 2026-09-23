@@ -62,9 +62,18 @@ const estrattoUpload = multer({
   },
 });
 
+// A-5: prima nota, estratto conto, chiusura e link al commercialista sono la
+// parte a pagamento del modulo (`admin_suite`): il calcolo fiscale da solo, che
+// dopo il lancio sarà gratuito, non li sblocca. Due codici diversi perché
+// l'interfaccia mostra due cose diverse: "modulo spento" o "parte dell'add-on".
 async function moduloOForbidden(userId: string, res: import("express").Response): Promise<boolean> {
   const [profile] = await db.select().from(businessProfilesTable).where(eq(businessProfilesTable.userId, userId));
-  if (hasFeature(profile, "fiscal_engine")) return true;
+  const fiscale = hasFeature(profile, "fiscal_engine");
+  if (fiscale && hasFeature(profile, "admin_suite")) return true;
+  if (fiscale) {
+    res.status(403).json({ error: "ADMIN_SUITE_OFF", message: "Prima nota, estratto conto e chiusura d'anno fanno parte dell'add-on Amministrazione." });
+    return false;
+  }
   res.status(403).json({ error: "FISCAL_MODULE_OFF", message: "Il modulo Amministrazione non è attivo su questo account." });
   return false;
 }

@@ -153,14 +153,17 @@ app.post(
       type: string;
       data: {
         object: {
+          id?: string;
           metadata?: Record<string, string>;
           payment_status?: string;
           customer?: string;
           mode?: string;
           status?: string;
+          subscription?: string | null;
+          cancel_at_period_end?: boolean | null;
           current_period_end?: number;
           plan?: { id?: string };
-          items?: { data?: { price?: { id?: string } }[] };
+          items?: { data?: { current_period_end?: number; price?: { id?: string; lookup_key?: string | null; unit_amount?: number | null; recurring?: { interval?: string } | null } }[] };
         };
       };
     };
@@ -237,6 +240,38 @@ app.post(
 
       logger.info({ userId, customerId, planType, status }, "Subscription synced to DB");
       return { userId, planType, isActive };
+    }
+
+    // A-5: l'add-on Amministrazione è un secondo abbonamento dello stesso
+    // cliente. I suoi eventi vanno al proprio flusso e **non** a quello del
+    // piano: prima di A-5 un `customer.subscription.deleted` qualsiasi
+    // riportava l'impresa al piano gratuito.
+    const addons = await import("./addons/amministrazione");
+    if (event.type.startsWith("customer.subscription.") && addons.eAbbonamentoAddon(event.data.object)) {
+      try {
+        await addons.sincronizzaAbbonamento(event.data.object);
+      } catch (addonErr) {
+        logger.error({ err: addonErr }, "Webhook add-on: sincronizzazione fallita (non-fatal)");
+      }
+      res.status(200).json({ received: true });
+      return;
+    }
+    if (event.type === "checkout.session.completed" && event.data.object.metadata?.addon === addons.ADDON) {
+      // Attivazione immediata al ritorno dal pagamento, senza aspettare
+      // `customer.subscription.created` (che arriva comunque ed è idempotente).
+      try {
+        const subscriptionId = event.data.object.subscription;
+        if (subscriptionId) {
+          const { getUncachableStripeClient } = await import("./stripeClient");
+          const stripe = await getUncachableStripeClient();
+          const sub = await stripe.subscriptions.retrieve(subscriptionId);
+          await addons.sincronizzaAbbonamento(sub as unknown as import("./addons/amministrazione").AbbonamentoStripe);
+        }
+      } catch (addonErr) {
+        logger.error({ err: addonErr }, "Webhook add-on: checkout completato ma sincronizzazione fallita (non-fatal)");
+      }
+      res.status(200).json({ received: true });
+      return;
     }
 
     try {

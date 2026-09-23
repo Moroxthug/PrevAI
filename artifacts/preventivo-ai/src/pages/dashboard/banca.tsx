@@ -1,3 +1,4 @@
+import { AddonPaywall } from "@/components/addon-paywall";
 import { useRef, useState } from "react";
 import { Link } from "wouter";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -398,12 +399,8 @@ export default function BancaPage() {
     onError: (err) => toast({ title: "Non è stato tolto", description: err instanceof ErroreApiFiscale ? err.message : "Riprova", variant: "destructive" }),
   });
 
-  if (banca.error instanceof ErroreApiFiscale && banca.error.codice === "FISCAL_MODULE_OFF") {
-    return (
-      <div className="card">
-        <div className="act-body text-sm">Il modulo Amministrazione non è attivo su questo account.</div>
-      </div>
-    );
+  if (banca.error instanceof ErroreApiFiscale && (banca.error.codice === "FISCAL_MODULE_OFF" || banca.error.codice === "ADMIN_SUITE_OFF")) {
+    return <AddonPaywall motivo={banca.error.codice === "ADMIN_SUITE_OFF" ? "suite" : "fiscale"} />;
   }
 
   const b: BancaDto | undefined = banca.data;

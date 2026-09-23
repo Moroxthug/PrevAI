@@ -1681,7 +1681,7 @@ export default function QuoteDetail() {
                     return (
                       <div key={plan.id} className={cn("plan-opt flat", isClean && "hot")}>
                         <div className="txt"><span className="nm">{plan.name}</span><span className="ds">{plan.features[0]}</span></div>
-                        <span className="pr">${plan.price}</span>
+                        <span className="pr">{plan.price} €</span>
                         <button type="button" className={cn("btn btn-sm", isClean ? "btn-navy" : "btn-outline-navy")} onClick={() => handleCheckout(plan.id)} disabled={createCheckout.isPending}>
                           {createCheckout.isPending ? "..." : t("dashboard.quoteDetail.buy")}
                         </button>
@@ -1702,7 +1702,7 @@ export default function QuoteDetail() {
                         {isPro && <span className="tag">{t("dashboard.quoteDetail.popBadge")}</span>}
                         {isElite && <span className="tag gold">{t("dashboard.quoteDetail.infinityBadge")}</span>}
                         <span className="nm">{plan.name}</span>
-                        <span className="pr">${plan.price}<small>{t("dashboard.quoteDetail.perMonth")}</small></span>
+                        <span className="pr">{plan.price} €<small>{t("dashboard.quoteDetail.perMonth")}</small></span>
                         <ul>
                           {plan.features.slice(0, 3).map((feature, i) => <li key={i}><CheckCircle2 /> {feature}</li>)}
                         </ul>
@@ -1722,7 +1722,7 @@ export default function QuoteDetail() {
                     return (
                       <div key={plan.id} className={cn("plan-opt flat plan-card-enter", isClean && "hot")}>
                         <div className="txt"><span className="nm">{plan.name}</span><span className="ds">{plan.features[0]}</span></div>
-                        <span className="pr">${plan.price}</span>
+                        <span className="pr">{plan.price} €</span>
                         <button type="button" className={cn("btn btn-sm", isClean ? "btn-navy" : "btn-outline-navy")} onClick={() => handleCheckout(plan.id)} disabled={createCheckout.isPending}>
                           {createCheckout.isPending ? "..." : t("dashboard.quoteDetail.buy")}
                         </button>

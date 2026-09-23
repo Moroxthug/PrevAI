@@ -61,7 +61,7 @@ describe("prima nota e chiusura d'anno", () => {
 
   it("legge incassi, costi e versamenti da dove già stanno, e tiene fuori le ore dei cantieri", async () => {
     const [profile] = await db.select().from(businessProfilesTable).where(eq(businessProfilesTable.userId, org.userId));
-    await db.update(businessProfilesTable).set({ featureFlags: { ...(profile?.featureFlags ?? {}), fiscal_engine: true } }).where(eq(businessProfilesTable.userId, org.userId));
+    await db.update(businessProfilesTable).set({ featureFlags: { ...(profile?.featureFlags ?? {}), fiscal_engine: true, admin_suite: true } }).where(eq(businessProfilesTable.userId, org.userId));
     const onboarding = await org.api("/api/fiscale/profilo", {
       method: "PATCH",
       body: { codiceAteco: "43.22.01", gestione: "artigiani", riduzione: "nessuna", annoInizioAttivita: 2019, requisitiStartup: false, accettaAvviso: true },
@@ -362,7 +362,7 @@ describe("prima nota e chiusura d'anno", () => {
     const [profile] = await db.select().from(businessProfilesTable).where(eq(businessProfilesTable.userId, org.userId));
     await db.update(businessProfilesTable).set({ featureFlags: { ...(profile?.featureFlags ?? {}), fiscal_engine: false } }).where(eq(businessProfilesTable.userId, org.userId));
     expect((await api(`/api/commercialista/${token}`)).status).toBe(404);
-    await db.update(businessProfilesTable).set({ featureFlags: { ...(profile?.featureFlags ?? {}), fiscal_engine: true } }).where(eq(businessProfilesTable.userId, org.userId));
+    await db.update(businessProfilesTable).set({ featureFlags: { ...(profile?.featureFlags ?? {}), fiscal_engine: true, admin_suite: true } }).where(eq(businessProfilesTable.userId, org.userId));
   });
 
   // ── Permessi e isolamento ──────────────────────────────────────────────────
@@ -391,7 +391,7 @@ describe("prima nota e chiusura d'anno", () => {
   it("un'altra impresa non vede né tocca i movimenti bancari di questa", async () => {
     const altra = await createOrg({ province: "RM", companyName: "Altra Srl" });
     const [profile] = await db.select().from(businessProfilesTable).where(eq(businessProfilesTable.userId, altra.userId));
-    await db.update(businessProfilesTable).set({ featureFlags: { ...(profile?.featureFlags ?? {}), fiscal_engine: true } }).where(eq(businessProfilesTable.userId, altra.userId));
+    await db.update(businessProfilesTable).set({ featureFlags: { ...(profile?.featureFlags ?? {}), fiscal_engine: true, admin_suite: true } }).where(eq(businessProfilesTable.userId, altra.userId));
 
     const lista = await altra.api(`/api/fiscale/banca?anno=${anno}`);
     expect(lista.body.movimenti).toEqual([]);

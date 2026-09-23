@@ -1,3 +1,4 @@
+import { AddonPaywall } from "@/components/addon-paywall";
 import { useMemo, useRef, useState } from "react";
 import { Link } from "wouter";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -122,6 +123,7 @@ function ProspettoDialog({ chiave, anno, aperto, onChiudi }: { chiave: string; a
               <Loader2 className="h-5 w-5 animate-spin" />
             </div>
           )}
+          {query.error instanceof ErroreApiFiscale && query.error.codice === "ADMIN_SUITE_OFF" && <AddonPaywall motivo="suite" />}
           {prospetto && (
             <>
               {prospetto.avvertenze.map((a) => (
@@ -583,11 +585,7 @@ export default function ScadenzarioPage() {
   }, [scadenzario.data]);
 
   if (scadenzario.error instanceof ErroreApiFiscale && scadenzario.error.codice === "FISCAL_MODULE_OFF") {
-    return (
-      <div className="card">
-        <div className="act-body text-sm">Il calcolo fiscale non è attivo su questo account.</div>
-      </div>
-    );
+    return <AddonPaywall motivo="fiscale" />;
   }
 
   if (scadenzario.isLoading || !scadenzario.data) {

@@ -1,4 +1,5 @@
-﻿import { useState, useRef } from "react";
+﻿import { AddonBillingCard } from "@/components/addon-billing-card";
+import { useState, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -536,7 +537,7 @@ function BillingTab() {
                       {isPlanPro && <span className="text-[10px] font-bold text-navy-600 uppercase tracking-wider">{t("dashboard.settings.billing.mostPopular")}</span>}
                       {isPlanElite && <span className="text-[10px] font-bold text-amber-600 uppercase tracking-wider">{t("dashboard.settings.billing.unlimited")}</span>}
                       <h2 className="text-lg">{plan.name}</h2>
-                      <p className="text-2xl font-extrabold">${plan.price}<span className="text-sm font-normal text-muted-foreground">/month</span></p>
+                      <p className="text-2xl font-extrabold">{plan.price} €<span className="text-sm font-normal text-muted-foreground">{t("dashboard.quoteDetail.perMonth")}</span></p>
                     </div>
                     <div className="p-5 flex-1 pb-0">
                       <ul className="space-y-1.5 mb-4">
@@ -581,6 +582,8 @@ function BillingTab() {
           </div>
         </div>
       )}
+
+      <AddonBillingCard />
     </div>
   );
 }

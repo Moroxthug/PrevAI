@@ -1,3 +1,4 @@
+import { AddonPaywall } from "@/components/addon-paywall";
 import { useMemo, useState } from "react";
 import { Link } from "wouter";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -338,12 +339,8 @@ export default function PrimaNotaPage() {
     return tutte.filter((v) => v.tipo === filtro);
   }, [nota.data, filtro]);
 
-  if (nota.error instanceof ErroreApiFiscale && nota.error.codice === "FISCAL_MODULE_OFF") {
-    return (
-      <div className="card">
-        <div className="act-body text-sm">Il modulo Amministrazione non è attivo su questo account.</div>
-      </div>
-    );
+  if (nota.error instanceof ErroreApiFiscale && (nota.error.codice === "FISCAL_MODULE_OFF" || nota.error.codice === "ADMIN_SUITE_OFF")) {
+    return <AddonPaywall motivo={nota.error.codice === "ADMIN_SUITE_OFF" ? "suite" : "fiscale"} />;
   }
   if (nota.isLoading || !nota.data) {
     return (

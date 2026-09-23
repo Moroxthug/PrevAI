@@ -1,3 +1,4 @@
+import { AddonPaywall } from "@/components/addon-paywall";
 import { useState } from "react";
 import { Link } from "wouter";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -315,12 +316,8 @@ export default function ChiusuraPage() {
   const [anno, setAnno] = useState(annoCorrente - 1);
   const risposta = useQuery({ queryKey: ["chiusura", anno], queryFn: () => primaNotaApi.chiusura(anno) });
 
-  if (risposta.error instanceof ErroreApiFiscale && risposta.error.codice === "FISCAL_MODULE_OFF") {
-    return (
-      <div className="card">
-        <div className="act-body text-sm">Il modulo Amministrazione non è attivo su questo account.</div>
-      </div>
-    );
+  if (risposta.error instanceof ErroreApiFiscale && (risposta.error.codice === "FISCAL_MODULE_OFF" || risposta.error.codice === "ADMIN_SUITE_OFF")) {
+    return <AddonPaywall motivo={risposta.error.codice === "ADMIN_SUITE_OFF" ? "suite" : "fiscale"} />;
   }
   if (risposta.isLoading || !risposta.data) {
     return (

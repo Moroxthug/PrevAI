@@ -1,3 +1,4 @@
+import { statoOffertaLocale } from "@/lib/addons-api";
 import "@/i18n/dashboard";
 import { Link, useLocation } from "wouter";
 import { LayoutDashboard, FileText, Landmark, Menu, BarChart3, Settings, ChevronLeft, ChevronRight, Plus, LogOut, User, CreditCard, Building2, ChevronDown, BookOpen, Users, Receipt, Briefcase, FolderOpen, FileSignature, HardHat, Sparkles, Check, Target, UploadCloud, Search, Archive, PiggyBank } from "lucide-react";
@@ -36,7 +37,10 @@ function useNavItems() {
     { href: "/dashboard/amministrazione", labelKey: "dashboard.nav.amministrazione", icon: Landmark, exact: false, proOnly: true, addonSdi: true, comingSoon: false, group: "delivery" },
     // A-2: il calcolo fiscale è un add-on a sé, perché un'impresa in regime
     //      ordinario vuole le fatture elettroniche e non il forfettario.
-    { href: "/dashboard/fisco", labelKey: "dashboard.nav.fisco", icon: PiggyBank, exact: false, proOnly: true, addonFisco: true, comingSoon: false, group: "delivery" },
+    // A-5: non più riservato a Pro — dopo il lancio il calcolo è gratis in ogni piano, e l'add-on si compra con qualunque piano.
+    { href: "/dashboard/fisco", labelKey: "dashboard.nav.fisco", icon: PiggyBank, exact: false, proOnly: false, addonFisco: true, comingSoon: false, group: "delivery" },
+    // A-5: chi non ha il modulo, a offerta pubblicata, trova qui la pagina dell'add-on (in bozza non compare).
+    { href: "/dashboard/amministrazione/attiva", labelKey: "dashboard.nav.amministrazione", icon: Landmark, exact: false, proOnly: false, addonOffer: true, comingSoon: false, group: "delivery" },
     { href: "/dashboard/analytics", labelKey: "dashboard.nav.analytics", icon: BarChart3, exact: false, proOnly: false, comingSoon: false, group: "insights" },
     { href: "/dashboard/assistant", labelKey: "dashboard.nav.assistant", icon: Sparkles, exact: false, proOnly: true, comingSoon: false, group: "insights" },
     { href: "/dashboard/documents", labelKey: "dashboard.nav.documents", icon: FolderOpen, exact: false, proOnly: false, comingSoon: false, group: "workspace" },
@@ -244,6 +248,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
   const { data: navProfile } = useGetBusinessProfile();
   const hasSdi = navProfile ? hasFeature(navProfile as never, "sdi_invoicing") : false;
   const hasFisco = navProfile ? hasFeature(navProfile as never, "fiscal_engine") : false;
+  const showAddonOffer = Boolean(navProfile) && !hasSdi && !hasFisco && statoOffertaLocale() !== "bozza";
   // Hooks must run on every render — keep this above the early returns below.
   const allNavItems = useNavItems();
 
@@ -300,7 +305,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
     return null;
   }
 
-  const NAV_ITEMS = allNavItems.filter(item => (!item.proOnly || isPro) && (!("addonSdi" in item && item.addonSdi) || hasSdi) && (!("addonFisco" in item && item.addonFisco) || hasFisco));
+  const NAV_ITEMS = allNavItems.filter(item => (!item.proOnly || isPro) && (!("addonSdi" in item && item.addonSdi) || hasSdi) && (!("addonFisco" in item && item.addonFisco) || hasFisco) && (!("addonOffer" in item && item.addonOffer) || showAddonOffer));
   const name = user?.name || user?.email?.split("@")[0] || "Account";
   const email = user?.email ?? "";
   const initials = name.slice(0, 2).toUpperCase();

@@ -1,3 +1,5 @@
+import { landingAmministrazioneIndicizzabile } from "./amministrazione-landing";
+
 export interface PublicRoute {
   name: string;
   path: string;
@@ -34,10 +36,15 @@ const _PUBLIC_ROUTES = [
   { name: "PRIVACY",    path: "/privacy",    priority: "0.4", changefreq: "yearly",  lastmod: "2026-09-21" },
   { name: "TERMINI",    path: "/termini",    priority: "0.4", changefreq: "yearly",  lastmod: "2026-09-21" },
   { name: "MAPPA_SITO", path: "/mappa-sito", priority: "0.5", changefreq: "monthly", lastmod: "2026-09-20" },
+  // A-5: landing dell'add-on Amministrazione. Esiste sempre, ma entra nella
+  // sitemap solo quando l'offerta esce dalla bozza (vedi filtro sotto).
+  { name: "AMMINISTRAZIONE", path: "/amministrazione", priority: "0.8", changefreq: "monthly", lastmod: "2026-09-23" },
 ] as const satisfies ReadonlyArray<PublicRoute>;
 
 /** Full route objects used by generate-sitemap.ts */
-export const PUBLIC_ROUTES: ReadonlyArray<PublicRoute> = _PUBLIC_ROUTES;
+export const PUBLIC_ROUTES: ReadonlyArray<PublicRoute> = _PUBLIC_ROUTES.filter(
+  (r) => r.name !== "AMMINISTRAZIONE" || landingAmministrazioneIndicizzabile(),
+);
 
 /**
  * Type-safe path constants for use in App.tsx routing.
