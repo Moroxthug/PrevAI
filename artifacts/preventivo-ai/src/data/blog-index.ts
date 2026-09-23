@@ -777,6 +777,16 @@ const BLOG_INDEX_BASE: BlogArticleMeta[] = [
     readingTimeMin: 4,
     relatedSectors: ["idraulico","termoidraulico"],
   },
+  {
+    slug: "prevai-canada-quoteai",
+    title: "PrevAI arriva in Canada: nasce QuoteAI, i preventivi con l'intelligenza artificiale per le imprese canadesi",
+    seoTitle: "PrevAI arriva in Canada: nasce QuoteAI",
+    metaDescription: "Lo stesso team di PrevAI lancia QuoteAI per il Canada: preventivi AI in inglese e francese, imposte provinciali (GST, HST, PST, QST) e dollari canadesi. Cosa cambia per chi lavora in Italia e in Canada.",
+    category: "Innovazione",
+    publishedAt: "2026-09-22",
+    readingTimeMin: 5,
+    relatedSectors: [],
+  },
 ];
 
 /**
