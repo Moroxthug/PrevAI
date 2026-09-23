@@ -4248,7 +4248,7 @@ const BLOG_CONTENT: Record<string, string> = {
 `,
 
   "prevai-canada-quoteai": `
-<p>PrevAI esce dall'Italia per la prima volta. Lo stesso team che sviluppa PrevAI ha lanciato <a href="https://www.quoteai.ca/">QuoteAI</a>, la versione del prodotto costruita per le imprese edili e gli artigiani del Canada. Non è una traduzione del sito italiano: è un prodotto pensato per un mercato con altre lingue, altre imposte e altre regole, sulla stessa base tecnica che genera i preventivi di PrevAI.</p>
+<p>PrevAI esce dall'Italia per la prima volta. Lo stesso team che sviluppa PrevAI ha lanciato <a href="https://quoteai.ca/">QuoteAI</a>, la versione del prodotto costruita per le imprese edili e gli artigiani del Canada. Non è una traduzione del sito italiano: è un prodotto pensato per un mercato con altre lingue, altre imposte e altre regole, sulla stessa base tecnica che genera i preventivi di PrevAI.</p>
 <p>In questo articolo spieghiamo perché abbiamo scelto il Canada, che cosa cambia fra i due prodotti e che cosa significa per chi usa PrevAI in Italia o lavora in Canada.</p>
 
 <h2>Perché il Canada</h2>
@@ -4282,7 +4282,7 @@ const BLOG_CONTENT: Record<string, string> = {
 </ul>
 
 <h2>Se lavori in Canada, o stai per trasferirti</h2>
-<p>Se la tua impresa lavora in Canada, PrevAI non è lo strumento giusto: IVA, SdI e regime forfettario non si applicano, e un preventivo italiano non è valido per un cliente canadese. In quel caso usa QuoteAI, che parla la lingua dei tuoi clienti e calcola le imposte della loro provincia. Per chi lavora in Québec il sito è anche <a href="https://www.quoteai.ca/fr/">in francese</a>.</p>
+<p>Se la tua impresa lavora in Canada, PrevAI non è lo strumento giusto: IVA, SdI e regime forfettario non si applicano, e un preventivo italiano non è valido per un cliente canadese. In quel caso usa QuoteAI, che parla la lingua dei tuoi clienti e calcola le imposte della loro provincia. Per chi lavora in Québec il sito è anche <a href="https://quoteai.ca/fr/">in francese</a>.</p>
 <p>Se invece lavori in Italia con clienti italiani, anche se sono residenti all'estero, continua a usare PrevAI: il preventivo segue le regole del luogo in cui esegui il lavoro.</p>
 
 <h2>Domande frequenti</h2>
