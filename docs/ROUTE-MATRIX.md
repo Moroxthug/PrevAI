@@ -87,10 +87,10 @@ Columns — **Auth**: session (`requireAuth`), apiKey (`requireApiKey`), admin (
 
 | Line | Method | Path | Auth | Perm | RL | Val | Gate | Scope | Archived | Token | Webhook |
 |---|---|---|---|---|---|---|---|---|---|---|---|
-| 71 | GET | `/api/business-profile` | session | — | — | none | — | n/a | — | — | — |
-| 110 | PUT | `/api/business-profile` | session | settings:edit | — | zod | — | n/a | — | — | — |
-| 206 | POST | `/api/business-profile/logo` | session | settings:edit | — | none | — | n/a | — | — | — |
-| 271 | POST | `/api/business-profile/apikey` | session | settings:edit | — | none | — | n/a | — | — | — |
+| 70 | GET | `/api/business-profile` | session | — | — | none | — | n/a | — | — | — |
+| 109 | PUT | `/api/business-profile` | session | settings:edit | — | zod | — | n/a | — | — | — |
+| 205 | POST | `/api/business-profile/logo` | session | settings:edit | — | none | — | n/a | — | — | — |
+| 270 | POST | `/api/business-profile/apikey` | session | settings:edit | — | none | — | n/a | — | — | — |
 
 ## artifacts/api-server/src/routes/calendar.ts
 
@@ -146,11 +146,11 @@ Columns — **Auth**: session (`requireAuth`), apiKey (`requireApiKey`), admin (
 | 126 | GET | `/api/contracts/by-quote/:quoteId` | session | — | — | none | — | predicate | — | — | — |
 | 143 | POST | `/api/contracts/from-quote/:quoteId` | session | contracts:edit | aiLimiter | zod | hasFeature(contracts) | predicate | — | — | — |
 | 177 | GET | `/api/contracts/:id` | session | — | — | none | — | post-check | — | — | — |
-| 213 | PUT | `/api/contracts/:id` | session | contracts:edit | — | zod | — | post-check | — | — | — |
-| 279 | POST | `/api/contracts/:id/sign` | session | contracts:edit | — | zod | — | post-check | — | — | — |
-| 324 | POST | `/api/contracts/:id/send` | session | contracts:edit | — | zod | — | helper | — | — | — |
-| 351 | POST | `/api/contracts/:id/void` | session | contracts:full | — | manual | — | post-check | — | — | — |
-| 377 | GET | `/api/contracts/:id/pdf` | session | — | — | none | — | post-check | — | — | — |
+| 212 | PUT | `/api/contracts/:id` | session | contracts:edit | — | zod | — | post-check | — | — | — |
+| 278 | POST | `/api/contracts/:id/sign` | session | contracts:edit | — | zod | — | post-check | — | — | — |
+| 323 | POST | `/api/contracts/:id/send` | session | contracts:edit | — | zod | — | helper | — | — | — |
+| 350 | POST | `/api/contracts/:id/void` | session | contracts:full | — | manual | — | post-check | — | — | — |
+| 376 | GET | `/api/contracts/:id/pdf` | session | — | — | none | — | post-check | — | — | — |
 
 ## artifacts/api-server/src/routes/costs.ts
 
@@ -488,26 +488,26 @@ Columns — **Auth**: session (`requireAuth`), apiKey (`requireApiKey`), admin (
 
 | Line | Method | Path | Auth | Perm | RL | Val | Gate | Scope | Archived | Token | Webhook |
 |---|---|---|---|---|---|---|---|---|---|---|---|
-| 195 | GET | `/api/quotes/stats` | session | — | — | none | — | n/a | — | — | — |
-| 263 | GET | `/api/quotes` | session | — | — | none | — | n/a | quotes:ok | — | — |
-| 384 | POST | `/api/quotes` | session | quotes:edit | aiCallLimiter | zod | plan-check | n/a | — | — | — |
-| 1111 | GET | `/api/quotes/:id` | session | — | — | none | — | post-check | — | — | — |
-| 1143 | GET | `/api/quotes/:id/variants` | session | — | — | none | — | post-check | — | — | — |
-| 1172 | POST | `/api/quotes/:id/variants` | session | quotes:edit | — | manual | — | post-check | — | — | — |
-| 1232 | PUT | `/api/quotes/:id/variants/:variantId` | session | quotes:edit | — | manual | — | post-check | — | — | — |
-| 1283 | DELETE | `/api/quotes/:id/variants/:variantId` | session | quotes:edit | — | none | — | post-check | — | — | — |
-| 1329 | PUT | `/api/quotes/:id` | session | quotes:edit | — | zod | plan-check | predicate | — | — | — |
-| 1447 | DELETE | `/api/quotes/:id` | session | quotes:full | — | none | — | post-check | — | — | — |
-| 1475 | POST | `/api/quotes/:id/archive` | session | quotes:full | — | none | — | post-check | — | — | — |
-| 1495 | POST | `/api/quotes/:id/restore` | session | quotes:full | — | none | — | post-check | — | — | — |
-| 1515 | POST | `/api/quotes/:id/generate-pdf` | session | quotes:edit | — | none | plan-check | predicate | — | — | — |
-| 1593 | POST | `/api/quotes/:id/send-pdf-email` | session | quotes:edit | — | manual | — | predicate | — | — | — |
-| 1688 | POST | `/api/quotes/:id/duplicate` | session | quotes:edit | — | none | — | post-check | — | — | — |
-| 1750 | POST | `/api/quotes/:id/regenerate` | session | quotes:edit | aiCallLimiter | manual | — | predicate | — | — | — |
-| 1967 | POST | `/api/quotes/:id/upgrade-to-capitolato` | session | quotes:edit | aiCallLimiter | none | plan-check | predicate | — | — | — |
-| 2080 | POST | `/api/quotes/:id/generate-pdf-pro` | session | quotes:edit | — | none | plan-check | predicate | — | — | — |
-| 2131 | POST | `/api/quotes/manual` | session | quotes:edit | — | manual | — | n/a | — | — | — |
-| 2147 | POST | `/api/quotes/suggest-item-description` | session | quotes:edit | aiCallLimiter | manual | — | n/a | — | — | — |
+| 194 | GET | `/api/quotes/stats` | session | — | — | none | — | n/a | — | — | — |
+| 262 | GET | `/api/quotes` | session | — | — | none | — | n/a | quotes:ok | — | — |
+| 383 | POST | `/api/quotes` | session | quotes:edit | aiCallLimiter | zod | plan-check | n/a | — | — | — |
+| 1110 | GET | `/api/quotes/:id` | session | — | — | none | — | post-check | — | — | — |
+| 1142 | GET | `/api/quotes/:id/variants` | session | — | — | none | — | post-check | — | — | — |
+| 1171 | POST | `/api/quotes/:id/variants` | session | quotes:edit | — | manual | — | post-check | — | — | — |
+| 1231 | PUT | `/api/quotes/:id/variants/:variantId` | session | quotes:edit | — | manual | — | post-check | — | — | — |
+| 1282 | DELETE | `/api/quotes/:id/variants/:variantId` | session | quotes:edit | — | none | — | post-check | — | — | — |
+| 1328 | PUT | `/api/quotes/:id` | session | quotes:edit | — | zod | plan-check | predicate | — | — | — |
+| 1446 | DELETE | `/api/quotes/:id` | session | quotes:full | — | none | — | post-check | — | — | — |
+| 1474 | POST | `/api/quotes/:id/archive` | session | quotes:full | — | none | — | post-check | — | — | — |
+| 1494 | POST | `/api/quotes/:id/restore` | session | quotes:full | — | none | — | post-check | — | — | — |
+| 1514 | POST | `/api/quotes/:id/generate-pdf` | session | quotes:edit | — | none | plan-check | predicate | — | — | — |
+| 1592 | POST | `/api/quotes/:id/send-pdf-email` | session | quotes:edit | — | manual | — | predicate | — | — | — |
+| 1687 | POST | `/api/quotes/:id/duplicate` | session | quotes:edit | — | none | — | post-check | — | — | — |
+| 1749 | POST | `/api/quotes/:id/regenerate` | session | quotes:edit | aiCallLimiter | manual | — | predicate | — | — | — |
+| 1966 | POST | `/api/quotes/:id/upgrade-to-capitolato` | session | quotes:edit | aiCallLimiter | none | plan-check | predicate | — | — | — |
+| 2079 | POST | `/api/quotes/:id/generate-pdf-pro` | session | quotes:edit | — | none | plan-check | predicate | — | — | — |
+| 2130 | POST | `/api/quotes/manual` | session | quotes:edit | — | manual | — | n/a | — | — | — |
+| 2146 | POST | `/api/quotes/suggest-item-description` | session | quotes:edit | aiCallLimiter | manual | — | n/a | — | — | — |
 
 ## artifacts/api-server/src/routes/sdi-webhooks.ts
 

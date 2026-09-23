@@ -165,7 +165,7 @@ async function runScenario(s: Scenario) {
     assert(sent.pdfUrl, "invoice PDF was not stored");
     const { invoice: paid } = await recordPayment({ invoiceId: sent.id, userId, amountCents: sent.totalCents, method: "bank_transfer" });
     assert(paid.status === "paid", `expected invoice paid, got ${paid.status}`);
-    console.log(`✓ invoice ${paid.number} sent and paid in full via e-Transfer`);
+    console.log(`✓ invoice ${paid.number} sent and paid in full via bonifico`);
 
     // ── Complete the job (mirrors PUT /api/jobs/:id with status: completed) ─
     await db.update(projectsTable).set({ status: "completed", completedAt: new Date() }).where(eq(projectsTable.id, project.id));

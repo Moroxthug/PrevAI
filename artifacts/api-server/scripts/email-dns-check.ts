@@ -1,6 +1,6 @@
 // Phase 65 — email deliverability: SPF / DKIM / DMARC for the sending domain.
 //
-//   node scripts/email-dns-check.ts [domain]        (default: quoteai.ca)
+//   node scripts/email-dns-check.ts [domain]        (default: prevai.it)
 //
 // Every transactional email is sent by Resend from `no-reply@<domain>`
 // (src/lib/email*.ts). Resend verifies a domain with three records:
@@ -11,7 +11,7 @@
 
 import { promises as dns } from "node:dns";
 
-const domain = process.argv[2] ?? "quoteai.ca";
+const domain = process.argv[2] ?? "prevai.it";
 
 async function txt(name: string): Promise<string[]> {
   try {

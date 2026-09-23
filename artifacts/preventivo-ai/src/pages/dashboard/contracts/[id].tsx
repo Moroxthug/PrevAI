@@ -45,7 +45,7 @@ export default function ContractDetailPage() {
 
   const [editing, setEditing] = useState(false);
   const [sectionDrafts, setSectionDrafts] = useState<Record<string, string>>({});
-  const [vars, setVars] = useState<{ startDate: string; estimatedDurationWeeks: string; warrantyMonths: string; directAgreement: boolean; englishRequestedInQuebec: boolean; holdbackEnabled: boolean; holdbackPercent: string; customerEmail: string; customerName: string } | null>(null);
+  const [vars, setVars] = useState<{ startDate: string; estimatedDurationWeeks: string; warrantyMonths: string; directAgreement: boolean; holdbackEnabled: boolean; holdbackPercent: string; customerEmail: string; customerName: string } | null>(null);
   const [signOpen, setSignOpen] = useState(false);
   const [signature, setSignature] = useState<SignatureValue>(null);
   const [signName, setSignName] = useState("");
@@ -64,7 +64,6 @@ export default function ContractDetailPage() {
       estimatedDurationWeeks: contract.variables.estimatedDurationWeeks?.toString() ?? "",
       warrantyMonths: String(contract.variables.warrantyMonths ?? 12),
       directAgreement: contract.variables.directAgreement,
-      englishRequestedInQuebec: contract.variables.englishRequestedInQuebec,
       holdbackEnabled: contract.variables.paymentSchedule.holdback.enabled,
       holdbackPercent: String(contract.variables.paymentSchedule.holdback.percent),
       customerEmail: contract.variables.customer.email ?? "",
@@ -91,7 +90,6 @@ export default function ContractDetailPage() {
           estimatedDurationWeeks: vars.estimatedDurationWeeks ? Number(vars.estimatedDurationWeeks) : null,
           warrantyMonths: Number(vars.warrantyMonths) || 0,
           directAgreement: vars.directAgreement,
-          englishRequestedInQuebec: vars.englishRequestedInQuebec,
           holdbackEnabled: vars.holdbackEnabled,
           holdbackPercent: Number(vars.holdbackPercent) || 0,
           ...(vars.customerEmail ? { customerEmail: vars.customerEmail } : {}),
@@ -302,15 +300,6 @@ export default function ContractDetailPage() {
                 </div>
                 <MockupToggle checked={vars.directAgreement} onCheckedChange={(v) => setVars({ ...vars, directAgreement: v })} label={t("contracts.field.directAgreement")} />
               </div>
-              {contract.province === "QC" && contract.language === "en" && (
-                <div className="set-row">
-                  <div className="txt">
-                    <b>{t("contracts.field.englishQc")}</b>
-                    <span>{t("contracts.field.englishQcHint")}</span>
-                  </div>
-                  <MockupToggle checked={vars.englishRequestedInQuebec} onCheckedChange={(v) => setVars({ ...vars, englishRequestedInQuebec: v })} label={t("contracts.field.englishQc")} />
-                </div>
-              )}
 
               <div className="form-grid" style={{ borderTop: "1px solid var(--soft)" }}>
                 {contract.document.sections.filter((s) => s.editable).map((s) => (

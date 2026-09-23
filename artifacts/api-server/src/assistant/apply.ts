@@ -148,7 +148,7 @@ async function execute(proposal: AssistantProposal, userId: string, ip: string |
       return { entityType: "invoice", entityId: invoice.id, link: `/dashboard/invoices/${invoice.id}` };
     }
     case "record_payment": {
-      const { invoice } = await recordPayment({ invoiceId: String(p.invoiceId), userId, amountCents: Number(p.amountCents), method: (p.method as PaymentMethod) ?? "etransfer", date: parseIsoDate((p.date as string | null) ?? null) ?? new Date(), reference: p.reference ? String(p.reference) : undefined, ip });
+      const { invoice } = await recordPayment({ invoiceId: String(p.invoiceId), userId, amountCents: Number(p.amountCents), method: (p.method as PaymentMethod) ?? "bank_transfer", date: parseIsoDate((p.date as string | null) ?? null) ?? new Date(), reference: p.reference ? String(p.reference) : undefined, ip });
       return { entityType: "invoice", entityId: invoice.id, link: `/dashboard/invoices/${invoice.id}` };
     }
     default:

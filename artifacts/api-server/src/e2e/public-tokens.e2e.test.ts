@@ -1,6 +1,6 @@
 // Phase 63 — the two public, token-addressed flows added after Phase 6:
 //  • worker magic link → clock-in with GPS → geofence flag (Phase 23)
-//  • customer self-reports an e-Transfer on the public invoice page →
+//  • customer self-reports a bonifico on the public invoice page →
 //    contractor confirms (or rejects) from the dashboard (Phase 15)
 
 import { describe, test, expect, beforeAll, afterAll } from "vitest";
@@ -73,7 +73,7 @@ describe("worker clock-in", () => {
   });
 });
 
-describe("e-Transfer self-report", () => {
+describe("bonifico self-report", () => {
   beforeAll(startServer);
   afterAll(async () => {
     await cleanupAll();

@@ -14,7 +14,9 @@ const BASE_URL = "https://prevai.it";
 // The half-dozen highest-population metros get a slightly higher priority
 // than the rest of ACTIVE_CITIES.
 const TIER1_CITY_SLUGS = new Set([
-  "toronto", "montreal", "vancouver", "calgary", "ottawa", "edmonton",
+  "roma", "milano", "napoli", "torino", "palermo", "genova", "bologna",
+  "firenze", "bari", "catania", "venezia", "verona", "messina", "padova",
+  "trieste", "brescia", "reggio-calabria", "modena", "parma", "prato",
 ]);
 
 function url(loc: string, priority: string, changefreq: string, lastmod: string): string {

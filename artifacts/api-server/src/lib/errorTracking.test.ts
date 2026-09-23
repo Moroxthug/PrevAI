@@ -45,10 +45,10 @@ describe("parseStack", () => {
     expect(f).toMatchObject({ filename: "C:\\proj\\src\\index.ts", lineno: 3, colno: 7 });
   });
   test("Gecko/WebKit frames", () => {
-    const frames = parseStack("render@https://quoteai.ca/assets/App-abc.js:1:2345\n@https://quoteai.ca/assets/index-def.js:7:89");
+    const frames = parseStack("render@https://prevai.it/assets/App-abc.js:1:2345\n@https://prevai.it/assets/index-def.js:7:89");
     expect(frames).toEqual([
-      { filename: "https://quoteai.ca/assets/index-def.js", lineno: 7, colno: 89, in_app: true },
-      { filename: "https://quoteai.ca/assets/App-abc.js", function: "render", lineno: 1, colno: 2345, in_app: true },
+      { filename: "https://prevai.it/assets/index-def.js", lineno: 7, colno: 89, in_app: true },
+      { filename: "https://prevai.it/assets/App-abc.js", function: "render", lineno: 1, colno: 2345, in_app: true },
     ]);
   });
   test("tolerates missing stacks", () => {
@@ -101,20 +101,20 @@ describe("debug ids", () => {
   test("maps the innermost frame of each registry key to its file and attaches one image per file", () => {
     const g = globalThis as { _sentryDebugIds?: Record<string, string> };
     g._sentryDebugIds = {
-      "Error\n    at https://quoteai.ca/assets/App-abc.js:1:100\n    at https://quoteai.ca/assets/index-def.js:1:1": "11111111-1111-1111-1111-111111111111",
-      "Error\n    at https://quoteai.ca/assets/index-def.js:1:50": "22222222-2222-2222-2222-222222222222",
+      "Error\n    at https://prevai.it/assets/App-abc.js:1:100\n    at https://prevai.it/assets/index-def.js:1:1": "11111111-1111-1111-1111-111111111111",
+      "Error\n    at https://prevai.it/assets/index-def.js:1:50": "22222222-2222-2222-2222-222222222222",
     };
     try {
       const images = debugIdImages([
-        { filename: "https://quoteai.ca/assets/App-abc.js" },
-        { filename: "https://quoteai.ca/assets/App-abc.js" },
-        { filename: "https://quoteai.ca/assets/other.js" },
+        { filename: "https://prevai.it/assets/App-abc.js" },
+        { filename: "https://prevai.it/assets/App-abc.js" },
+        { filename: "https://prevai.it/assets/other.js" },
       ]);
-      expect(images).toEqual([{ type: "sourcemap", code_file: "https://quoteai.ca/assets/App-abc.js", debug_id: "11111111-1111-1111-1111-111111111111" }]);
+      expect(images).toEqual([{ type: "sourcemap", code_file: "https://prevai.it/assets/App-abc.js", debug_id: "11111111-1111-1111-1111-111111111111" }]);
       const err = new Error("x");
-      err.stack = "Error: x\n    at fn (https://quoteai.ca/assets/index-def.js:9:9)";
+      err.stack = "Error: x\n    at fn (https://prevai.it/assets/index-def.js:9:9)";
       expect(buildEvent({ error: err }, "javascript").debug_meta).toEqual({
-        images: [{ type: "sourcemap", code_file: "https://quoteai.ca/assets/index-def.js", debug_id: "22222222-2222-2222-2222-222222222222" }],
+        images: [{ type: "sourcemap", code_file: "https://prevai.it/assets/index-def.js", debug_id: "22222222-2222-2222-2222-222222222222" }],
       });
     } finally {
       delete g._sentryDebugIds;

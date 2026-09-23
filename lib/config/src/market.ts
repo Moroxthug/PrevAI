@@ -21,14 +21,13 @@ export type Lang = typeof MARKET.lang;
 export const LANGS: readonly Lang[] = ["it"] as const;
 
 /**
- * Numerazione preventivi: `N° n/aaaa del gg/mm/aaaa` (stile PrevAI v1).
- * `seq` è progressivo per anno solare.
+ * Numerazione preventivi: `N° n.aaaa del gg/mm/aaaa`, identica a PrevAI v1
+ * (i preventivi già in produzione hanno questo formato). Data in ora italiana.
  */
 export function formatQuoteNumber(seq: number, date: Date = new Date()): string {
-  const yyyy = date.getFullYear();
-  const dd = String(date.getDate()).padStart(2, "0");
-  const mm = String(date.getMonth() + 1).padStart(2, "0");
-  return `N° ${seq}/${yyyy} del ${dd}/${mm}/${yyyy}`;
+  const parti = new Intl.DateTimeFormat(MARKET.locale, { timeZone: MARKET.timeZone, year: "numeric", month: "2-digit", day: "2-digit" }).formatToParts(date);
+  const p = (tipo: string) => parti.find((x) => x.type === tipo)?.value ?? "";
+  return `N° ${seq}.${p("year")} del ${p("day")}/${p("month")}/${p("year")}`;
 }
 
 export type PaymentPresetTerm = { label: string; percent: number };

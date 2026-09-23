@@ -125,7 +125,7 @@ function validateHtml(filePath: string, html: string): string[] {
   if (charsetAt === -1) errors.push("Missing <meta charset>");
   else if (charsetAt !== firstTag) errors.push("<meta charset> is not the first element in <head>");
   const lang = html.match(/<html lang="([^"]*)"/)?.[1];
-  if (rel.startsWith("fr/") ? lang !== "it-IT" : lang !== "it-IT") errors.push(`<html lang="${lang}"> does not match the route`);
+  if (lang !== "it-IT") errors.push(`<html lang="${lang}"> does not match the route`);
   return errors;
 }
 
@@ -139,8 +139,8 @@ if (!existsSync(distDir)) {
 
 console.log(`\nScanning HTML files in ${distDir}…`);
 
-// dist/index.html and dist/fr/index.html are the SPA shell (SEO head only, empty #root by design — see prerender-seo.ts)
-const SPA_SHELLS = new Set([join(distDir, "index.html"), join(distDir, "fr", "index.html")]);
+// dist/index.html is the SPA shell (SEO head only, empty #root by design — see prerender-seo.ts)
+const SPA_SHELLS = new Set([join(distDir, "index.html")]);
 const allFiles = collectHtmlFiles(distDir).filter((f) => !SPA_SHELLS.has(f));
 if (allFiles.length === 0) {
   console.error("✗ No index.html files found in dist/public");

@@ -101,7 +101,7 @@ export function buildVariablesFromQuote(params: {
   contractNumber: string;
   province: string;
   language: Lang;
-  overrides?: Partial<Pick<ContractVariables, "startDate" | "estimatedDurationWeeks" | "warrantyMonths" | "directAgreement" | "englishRequestedInQuebec">>;
+  overrides?: Partial<Pick<ContractVariables, "startDate" | "estimatedDurationWeeks" | "warrantyMonths" | "directAgreement">>;
 }): ContractVariables {
   const { quote, profile, client } = params;
   const snap = (quote.companySnapshot as QuoteCompanySnapshot | null) ?? null;
@@ -130,8 +130,8 @@ export function buildVariablesFromQuote(params: {
 
   return {
     contractNumber: params.contractNumber,
-    // numeroPreventivoData is "No. 3.2026 - 2026-09-20"; the templates add their
-    // own "Quote No." / "n°" label, so strip the prefix (Phase 66: "Quote No. No. 3").
+    // numeroPreventivoData is "N° 3.2026 del 20/09/2026"; the templates add their
+    // own "n°" label, so strip the prefix (otherwise "n° N° 3").
     quoteNumber: (quote.numeroPreventivoData || quote.id.slice(0, 4).toUpperCase()).replace(/^(No\.|N°|n°)\s*/i, ""),
     contractor: {
       name: snap?.companyName || profile?.companyName || "",
@@ -165,7 +165,6 @@ export function buildVariablesFromQuote(params: {
     startDate: params.overrides?.startDate ?? null,
     estimatedDurationWeeks: params.overrides?.estimatedDurationWeeks ?? null,
     warrantyMonths: params.overrides?.warrantyMonths ?? 12,
-    englishRequestedInQuebec: params.overrides?.englishRequestedInQuebec ?? false,
     directAgreement: params.overrides?.directAgreement ?? true,
   };
 }
@@ -284,13 +283,12 @@ export async function createContractFromQuote(params: {
 
 // ── Editing ──────────────────────────────────────────────────────────────────
 
-export function applyVariableEdits(contract: Contract, edits: Partial<Pick<ContractVariables, "startDate" | "estimatedDurationWeeks" | "warrantyMonths" | "directAgreement" | "englishRequestedInQuebec">> & { holdbackEnabled?: boolean; holdbackPercent?: number; customerEmail?: string; customerName?: string }): { variables: ContractVariables; document: ContractDocument } {
+export function applyVariableEdits(contract: Contract, edits: Partial<Pick<ContractVariables, "startDate" | "estimatedDurationWeeks" | "warrantyMonths" | "directAgreement">> & { holdbackEnabled?: boolean; holdbackPercent?: number; customerEmail?: string; customerName?: string }): { variables: ContractVariables; document: ContractDocument } {
   const v: ContractVariables = JSON.parse(JSON.stringify(contract.variables));
   if (edits.startDate !== undefined) v.startDate = edits.startDate;
   if (edits.estimatedDurationWeeks !== undefined) v.estimatedDurationWeeks = edits.estimatedDurationWeeks;
   if (edits.warrantyMonths !== undefined) v.warrantyMonths = edits.warrantyMonths;
   if (edits.directAgreement !== undefined) v.directAgreement = edits.directAgreement;
-  if (edits.englishRequestedInQuebec !== undefined) v.englishRequestedInQuebec = edits.englishRequestedInQuebec;
   if (edits.holdbackEnabled !== undefined) v.paymentSchedule.holdback.enabled = edits.holdbackEnabled;
   if (edits.holdbackPercent !== undefined) v.paymentSchedule.holdback.percent = edits.holdbackPercent;
   if (edits.customerEmail !== undefined) v.customer.email = edits.customerEmail;

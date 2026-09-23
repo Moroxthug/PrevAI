@@ -1,25 +1,17 @@
 import { db, quotesTable } from "@workspace/db";
 import { eq, count } from "drizzle-orm";
+import { formatQuoteNumber } from "@workspace/config";
 
 /**
- * Generates the next progressive quote number for a user.
- * Format: "No. {progressive}.{year} - {yyyy}-{mm}-{dd}" (ISO date, unambiguous for EN/FR Canada)
- * The progressive is count(existing quotes) + 1.
+ * Genera il prossimo numero di preventivo dell'impresa, nel formato di
+ * PrevAI v1: "N° {progressivo}.{anno} del {gg}/{mm}/{anno}".
+ * Il progressivo è count(preventivi esistenti) + 1.
  */
 export async function generateNumeroPreventivo(userId: string): Promise<string> {
-  const year = new Date().getFullYear();
-
   const [result] = await db
     .select({ count: count() })
     .from(quotesTable)
     .where(eq(quotesTable.userId, userId));
 
-  const quoteCount = Number(result?.count ?? 0);
-  const nextNumber = quoteCount + 1;
-
-  const today = new Date();
-  const dd = String(today.getDate()).padStart(2, "0");
-  const mm = String(today.getMonth() + 1).padStart(2, "0");
-
-  return `No. ${nextNumber}.${year} - ${year}-${mm}-${dd}`;
+  return formatQuoteNumber(Number(result?.count ?? 0) + 1);
 }

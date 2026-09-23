@@ -17,7 +17,7 @@ name: Backup
 
 on:
   schedule:
-    - cron: "17 7 * * *" # 07:17 UTC ≈ 03:17 Toronto, after the 12:00 UTC cron tick's day has settled
+    - cron: "17 7 * * *" # 07:17 UTC ≈ 09:17 ora italiana (estate), lontano dal cron tick delle 12:00 UTC
   workflow_dispatch:
 
 permissions:

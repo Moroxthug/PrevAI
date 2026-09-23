@@ -113,16 +113,16 @@ const cents = (dollars: number | null): number => (dollars === null ? 0 : Math.r
 /**
  * Turns the model's answer into a normalised extraction + the cents to store.
  * Pure: no DB, no network. Fills gaps sensibly (total = subtotal + taxes,
- * or subtotal = total − taxes, or taxes from the province rate when the
- * receipt shows only a total) and clamps the suggestions to known values.
+ * or subtotal = total − taxes, or VAT = total − subtotal when the model
+ * did not isolate it) and clamps the suggestions to known values.
  */
 export function normalizeReceipt(raw: unknown, opts: { model: string; candidateIds: string[]; province: string | null }): { extraction: ReceiptExtraction; subtotalCents: number; taxCents: number; totalCents: number; taxBreakdown: TaxBreakdown; date: Date | null } {
   const r = (raw && typeof raw === "object" ? raw : {}) as Record<string, unknown>;
   const taxesRaw = (r.taxes && typeof r.taxes === "object" ? r.taxes : {}) as Record<string, unknown>;
   const taxes: ReceiptExtraction["taxes"] = {};
-  // Accetta anche le chiavi canadesi del vecchio prompt sommandole nell'IVA.
+  // Il prompt chiede "IVA"; "VAT" copre i documenti di fornitori esteri.
   let ivaRaw = 0;
-  for (const k of ["IVA", "VAT", "GST", "HST", "PST", "QST", "RST"]) {
+  for (const k of ["IVA", "VAT"]) {
     const v = num(taxesRaw[k]);
     if (v !== null && v > 0) ivaRaw += v;
   }
@@ -178,5 +178,5 @@ export function normalizeReceipt(raw: unknown, opts: { model: string; candidateI
 export function receiptDescription(x: ReceiptExtraction): string {
   if (x.lines.length === 1) return x.lines[0]!.description.slice(0, 200);
   if (x.lines.length > 1) return `${x.lines[0]!.description.slice(0, 120)} +${x.lines.length - 1}`;
-  return x.vendor ? `Receipt — ${x.vendor}` : "Receipt";
+  return x.vendor ? `Scontrino — ${x.vendor}` : "Scontrino";
 }

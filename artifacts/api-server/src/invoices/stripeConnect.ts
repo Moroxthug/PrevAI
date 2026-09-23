@@ -1,5 +1,6 @@
 import { db, stripeConnectAccountsTable, businessProfilesTable, authUsersTable, type Invoice, type StripeConnectAccount } from "@workspace/db";
 import { eq } from "drizzle-orm";
+import { MARKET } from "@workspace/config";
 import { getUncachableStripeClient } from "../stripeClient.js";
 import { getBaseUrl } from "../lib/baseUrl.js";
 import { publicInvoiceUrl, invoiceToken } from "./service.js";
@@ -8,7 +9,7 @@ import { balanceCents } from "./math.js";
 // ── Phase 15: Stripe Connect for invoice card payments ──────────────────────
 // One Express account per company. Checkout Sessions run directly against the
 // connected account (the `stripeAccount` request option / "direct charge"),
-// so the money never passes through QuoteAI's own Stripe balance.
+// so the money never passes through PrevAI's own Stripe balance.
 
 export async function getConnectAccount(userId: string): Promise<StripeConnectAccount | null> {
   const [row] = await db.select().from(stripeConnectAccountsTable).where(eq(stripeConnectAccountsTable.userId, userId));
@@ -25,7 +26,7 @@ async function ensureConnectAccount(userId: string): Promise<StripeConnectAccoun
 
   const account = await stripe.accounts.create({
     type: "express",
-    country: "CA",
+    country: MARKET.country,
     email: profile?.email ?? authUser?.email ?? undefined,
     business_type: "company",
     capabilities: { card_payments: { requested: true }, transfers: { requested: true } },
@@ -77,7 +78,7 @@ export async function createInvoiceCheckoutSession(inv: Invoice): Promise<{ url:
     {
       mode: "payment",
       payment_method_types: ["card"],
-      line_items: [{ price_data: { currency: "cad", unit_amount: amount, product_data: { name: `Invoice ${inv.number}` } }, quantity: 1 }],
+      line_items: [{ price_data: { currency: MARKET.currency.toLowerCase(), unit_amount: amount, product_data: { name: `Pagamento ${inv.number}` } }, quantity: 1 }],
       success_url: `${returnUrl}?payment=success`,
       cancel_url: `${returnUrl}?payment=cancelled`,
       metadata: { invoiceId: inv.id },

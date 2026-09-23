@@ -48,12 +48,12 @@ function buildOgSvg(label: string, labelPlural: string): string {
   <circle cx="${W - 40}" cy="${H - 40}" r="140" fill="#06b6d4" fill-opacity="0.06"/>
 
   <rect x="80" y="180" width="220" height="40" rx="20" fill="#f5f3ff"/>
-  <text x="190" y="206" text-anchor="middle" font-size="20" font-weight="700" fill="#6d28d9" font-family="'Segoe UI', Arial, Helvetica, sans-serif">AI Quotes</text>
+  <text x="190" y="206" text-anchor="middle" font-size="20" font-weight="700" fill="#6d28d9" font-family="'Segoe UI', Arial, Helvetica, sans-serif">Preventivi AI</text>
 
-  <text x="80" y="300" font-size="58" font-weight="800" fill="#111827" font-family="'Segoe UI', Arial, Helvetica, sans-serif" letter-spacing="-1">${escXml(label)}</text>
-  <text x="80" y="368" font-size="58" font-weight="800" fill="#111827" font-family="'Segoe UI', Arial, Helvetica, sans-serif" letter-spacing="-1">Quotes Online</text>
+  <text x="80" y="300" font-size="58" font-weight="800" fill="#111827" font-family="'Segoe UI', Arial, Helvetica, sans-serif" letter-spacing="-1">Preventivo</text>
+  <text x="80" y="368" font-size="58" font-weight="800" fill="#111827" font-family="'Segoe UI', Arial, Helvetica, sans-serif" letter-spacing="-1">${escXml(label)} Online</text>
 
-  <text x="80" y="420" font-size="24" fill="#6b7280" font-family="'Segoe UI', Arial, Helvetica, sans-serif">For Canadian ${escXml(labelPlural)} — in 30 seconds with AI</text>
+  <text x="80" y="420" font-size="24" fill="#6b7280" font-family="'Segoe UI', Arial, Helvetica, sans-serif">Per ${escXml(labelPlural)} italiani — in 30 secondi con l'AI</text>
 
   <text x="${W - 80}" y="${H - 40}" text-anchor="end" font-size="30" font-weight="800" fill="#7c3aed" font-family="'Segoe UI', Arial, Helvetica, sans-serif" letter-spacing="-0.5">prevai</text>
   <line x1="80" y1="${H - 80}" x2="${W - 80}" y2="${H - 80}" stroke="#e5e7eb" stroke-width="1"/>

@@ -1,6 +1,8 @@
 // Working-day arithmetic for job schedules (Mon–Fri; statutory holidays are
 // not modelled — the company adjusts dates on the review screen).
 
+import { MARKET } from "@workspace/config";
+
 const DAY_MS = 86_400_000;
 
 export function startOfDayUtc(d: Date): Date {
@@ -64,33 +66,14 @@ export function layoutSequential(start: Date, durations: number[]): { start: Dat
 
 // ── Local calendar days ──────────────────────────────────────────────────────
 
-const PROVINCE_TZ: Record<string, string> = {
-  BC: "America/Vancouver",
-  YT: "America/Whitehorse",
-  AB: "America/Edmonton",
-  NT: "America/Yellowknife",
-  SK: "America/Regina",
-  MB: "America/Winnipeg",
-  NU: "America/Iqaluit",
-  ON: "America/Toronto",
-  QC: "America/Toronto",
-  NB: "America/Halifax",
-  NS: "America/Halifax",
-  PE: "America/Halifax",
-  NL: "America/St_Johns",
-};
-
-export function timeZoneForProvince(province: string | null | undefined): string {
-  return PROVINCE_TZ[(province ?? "").toUpperCase()] ?? "America/Toronto";
-}
-
 /**
- * The calendar day an instant falls on in the company's province, as the
- * UTC-midnight Date the `date` columns store. A clock-in at 20:18 in Ottawa
- * is 00:18 UTC the next day; before Phase 66 it was logged on that next day.
+ * Il giorno di calendario in cui cade un istante in Italia (Europe/Rome),
+ * come Date a mezzanotte UTC — la convenzione delle colonne `date`. Una
+ * timbratura alle 00:30 ora italiana è ancora le 22:30 UTC del giorno prima:
+ * senza il fuso finirebbe sul giorno sbagliato.
  */
-export function localDayFor(instant: Date, province: string | null | undefined): Date {
-  const parts = new Intl.DateTimeFormat("en-CA", { timeZone: timeZoneForProvince(province), year: "numeric", month: "2-digit", day: "2-digit" }).formatToParts(instant);
+export function localDayFor(instant: Date): Date {
+  const parts = new Intl.DateTimeFormat("it-IT", { timeZone: MARKET.timeZone, year: "numeric", month: "2-digit", day: "2-digit" }).formatToParts(instant);
   const get = (type: string) => parts.find((p) => p.type === type)?.value ?? "";
   return new Date(`${get("year")}-${get("month")}-${get("day")}T00:00:00Z`);
 }

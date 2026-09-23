@@ -4,7 +4,7 @@ import { authUsersTable } from "./auth";
 // ── Phase 20: connected email sending ────────────────────────────────────────
 // Per-company, send-only Gmail connection used to send customer-facing emails
 // (quotes/contracts/invoices/lead follow-ups) from the contractor's own inbox
-// instead of no-reply@quoteai.ca, so replies land somewhere real. Deliberately
+// instead of the shared PrevAI sender, so replies land somewhere real. Deliberately
 // send-only (gmail.send, not gmail.readonly/modify) — no inbox reading, no
 // CASA security assessment required. Same encrypted-token shape as Phase 12's
 // calendar_connections (lib/crypto.ts).

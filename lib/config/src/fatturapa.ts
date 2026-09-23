@@ -333,7 +333,9 @@ export function quantita(value: number): string {
 
 /** `AAAA-MM-GG` in ora italiana: la data della fattura non deve slittare col fuso. */
 export function dataFattura(date: Date): string {
-  return new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Rome", year: "numeric", month: "2-digit", day: "2-digit" }).format(date);
+  const parti = new Intl.DateTimeFormat("it-IT", { timeZone: "Europe/Rome", year: "numeric", month: "2-digit", day: "2-digit" }).formatToParts(date);
+  const p = (tipo: string) => parti.find((x) => x.type === tipo)?.value ?? "";
+  return `${p("year")}-${p("month")}-${p("day")}`;
 }
 
 // ── Stati SdI ───────────────────────────────────────────────────────────────

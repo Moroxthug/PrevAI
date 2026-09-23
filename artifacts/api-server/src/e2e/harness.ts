@@ -174,7 +174,7 @@ export async function seedQuote(userId: string, opts: SeedQuoteOptions = {}) {
       condizioniPagamento: ["30% acconto alla firma", "40% all'inizio lavori", "30% a fine lavori"],
       paymentSchedule,
       subtotale: "10000",
-      ivaPercentuale: "0", // forces buildVariablesFromQuote to use the real province tax profile
+      ivaPercentuale: "0", // operazione senza IVA: il contratto non ha righe d.imposta
       totale: "10000",
       status: opts.status ?? "unlocked",
     })

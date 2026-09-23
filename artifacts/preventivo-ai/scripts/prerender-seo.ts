@@ -962,7 +962,7 @@ function buildQuantoCostaBlock(
 </section>`;
 }
 
-// The homepage (dist/index.html, dist/fr/index.html) gets its SEO <head> only.
+// The homepage (dist/index.html) gets its SEO <head> only.
 // It used to also get a hand-written static copy of the hero (buildHomepageBodyHtml),
 // which drifted from the real React homepage after the pixel redesign and was served
 // as a stale flash on every cold load of "/" AND of every /dashboard/* route (index.html
@@ -975,7 +975,7 @@ function buildQuantoCostaBlock(
 
 const template = pruneModulepreload(readFileSync(templatePath, "utf-8"));
 
-// Phase 68: "/", "/fr" and the six static pages (about, contact, privacy,
+// Phase 68: "/" and the six static pages (about, contact, privacy,
 // terms, WhatsApp, sitemap) are rendered by the real React tree — built with
 // `vite build --ssr src/entry-server.tsx --outDir dist/server`, see the
 // `build` script — and hydrated by main.tsx, so the hero paints from HTML and

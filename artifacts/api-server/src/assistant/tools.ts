@@ -26,7 +26,7 @@ import { companyAnalytics, jobAnalytics } from "../analytics/service.js";
 
 export type ToolContext = { userId: string; projectId: string | null; province: string | null; now: Date };
 
-const dollars = (cents: number) => Math.round(cents) / 100;
+const euro = (cents: number) => Math.round(cents) / 100;
 const dateRe = /^\d{4}-\d{2}-\d{2}$/;
 
 // ── Definitions (OpenAI function-calling schema) ─────────────────────────────
@@ -48,7 +48,7 @@ export const TOOL_DEFINITIONS: OpenAI.Chat.Completions.ChatCompletionTool[] = [
       description: "Propose adding a cost (material purchase, subcontractor bill, permit…) to a job. The user must confirm before anything is saved.",
       parameters: {
         type: "object",
-        properties: { ...jobIdProp, category: { type: "string", enum: [...COST_CATEGORIES] }, vendor: { type: "string" }, description: { type: "string" }, date: { type: "string", description: "YYYY-MM-DD, defaults to today" }, amount: { type: "number", description: "Amount in CAD dollars" }, tax_included: { type: "boolean", description: "true when the amount already includes sales tax (default true)" }, milestone_id: { type: "string" } },
+        properties: { ...jobIdProp, category: { type: "string", enum: [...COST_CATEGORIES] }, vendor: { type: "string" }, description: { type: "string" }, date: { type: "string", description: "YYYY-MM-DD, defaults to today" }, amount: { type: "number", description: "Importo in euro" }, tax_included: { type: "boolean", description: "true when the amount already includes sales tax (default true)" }, milestone_id: { type: "string" } },
         required: ["category", "amount"],
         additionalProperties: false,
       },
@@ -113,7 +113,7 @@ async function projectNames(userId: string, ids: (string | null)[]): Promise<Map
 }
 
 function invoiceBrief(i: typeof invoicesTable.$inferSelect, projectName?: string | null) {
-  return { id: i.id, number: i.number, type: i.type, status: i.status, job: projectName ?? null, customer: i.customer.name, issue_date: toIsoDate(i.issueDate), due_date: toIsoDate(i.dueDate), total: dollars(i.totalCents), paid: dollars(i.paidCents), balance: dollars(balanceCents(i)), payment_term: i.paymentTermLabel };
+  return { id: i.id, number: i.number, type: i.type, status: i.status, job: projectName ?? null, customer: i.customer.name, issue_date: toIsoDate(i.issueDate), due_date: toIsoDate(i.dueDate), total: euro(i.totalCents), paid: euro(i.paidCents), balance: euro(balanceCents(i)), payment_term: i.paymentTermLabel };
 }
 
 // ── Read tools ───────────────────────────────────────────────────────────────
@@ -147,18 +147,18 @@ export async function runReadTool(name: string, rawArgs: unknown, ctx: ToolConte
         client: client?.name ?? null,
         address: p.address,
         province: p.province,
-        value_incl_tax: dollars(p.contractValueCents + p.changeOrdersCents),
-        value_pre_tax: dollars(an.subtotalCents),
-        change_orders_incl_tax: dollars(p.changeOrdersCents),
+        value_incl_tax: euro(p.contractValueCents + p.changeOrdersCents),
+        value_pre_tax: euro(an.subtotalCents),
+        change_orders_incl_tax: euro(p.changeOrdersCents),
         progress_percent: p.progressPercent,
         planned_start: toIsoDate(p.plannedStart ?? p.startDate),
         planned_end: an.schedule.plannedEnd,
         forecast_end: an.schedule.forecastEnd,
         days_behind: an.schedule.daysBehind,
-        budget: { planned: dollars(an.budgetCents), actual_confirmed: dollars(an.costCents), pending_review: dollars(an.pendingCostCents), by_category: an.categories.map((c) => ({ category: c.category, planned: dollars(c.plannedCents), actual: dollars(c.actualCents), used_percent: c.usedPercent })) },
-        earned_value: { work_done_value: dollars(an.earned.earnedCents), invoiced_pre_tax: dollars(an.earned.invoicedSubtotalCents), unbilled_work: dollars(an.earned.billingGapCents), projected_final_cost: an.earned.projectedFinalCostCents === null ? null : dollars(an.earned.projectedFinalCostCents), projected_margin_percent: an.earned.projectedMarginPercent },
-        invoicing: { invoiced: dollars(an.invoices.invoicedCents), collected: dollars(an.invoices.collectedCents), outstanding: dollars(an.invoices.outstandingCents), overdue: dollars(an.invoices.overdueCents), drafts: an.invoices.draftCount, upcoming_terms: dollars(an.invoices.upcomingCents) },
-        milestones: ms.map((m) => ({ id: m.id, title: m.title, status: m.status, planned_start: toIsoDate(m.plannedStart), planned_end: toIsoDate(m.plannedEnd), actual_end: toIsoDate(m.actualEnd), payment_term: m.paymentTermLabel, payment_amount: m.paymentAmountCents ? dollars(m.paymentAmountCents) : null, open_tasks: tasks.filter((t) => t.milestoneId === m.id && t.status !== "done").length })),
+        budget: { planned: euro(an.budgetCents), actual_confirmed: euro(an.costCents), pending_review: euro(an.pendingCostCents), by_category: an.categories.map((c) => ({ category: c.category, planned: euro(c.plannedCents), actual: euro(c.actualCents), used_percent: c.usedPercent })) },
+        earned_value: { work_done_value: euro(an.earned.earnedCents), invoiced_pre_tax: euro(an.earned.invoicedSubtotalCents), unbilled_work: euro(an.earned.billingGapCents), projected_final_cost: an.earned.projectedFinalCostCents === null ? null : euro(an.earned.projectedFinalCostCents), projected_margin_percent: an.earned.projectedMarginPercent },
+        invoicing: { invoiced: euro(an.invoices.invoicedCents), collected: euro(an.invoices.collectedCents), outstanding: euro(an.invoices.outstandingCents), overdue: euro(an.invoices.overdueCents), drafts: an.invoices.draftCount, upcoming_terms: euro(an.invoices.upcomingCents) },
+        milestones: ms.map((m) => ({ id: m.id, title: m.title, status: m.status, planned_start: toIsoDate(m.plannedStart), planned_end: toIsoDate(m.plannedEnd), actual_end: toIsoDate(m.actualEnd), payment_term: m.paymentTermLabel, payment_amount: m.paymentAmountCents ? euro(m.paymentAmountCents) : null, open_tasks: tasks.filter((t) => t.milestoneId === m.id && t.status !== "done").length })),
         open_tasks: tasks.filter((t) => t.status !== "done").slice(0, 30).map((t) => ({ id: t.id, title: t.title, milestone_id: t.milestoneId, due: toIsoDate(t.dueDate) })),
       };
     }
@@ -172,7 +172,7 @@ export async function runReadTool(name: string, rawArgs: unknown, ctx: ToolConte
       const cname = new Map(clients.map((c) => [c.id, c.name]));
       return rows.map((p) => {
         const next = ms.find((m) => m.projectId === p.id && (m.status === "planned" || m.status === "in_progress"));
-        return { id: p.id, name: p.name, status: p.status, client: p.clientId ? (cname.get(p.clientId) ?? null) : null, value_incl_tax: dollars(p.contractValueCents + p.changeOrdersCents), progress_percent: p.progressPercent, planned_end: toIsoDate(p.plannedEnd ?? p.endDate), next_milestone: next ? { id: next.id, title: next.title, planned_end: toIsoDate(next.plannedEnd) } : null };
+        return { id: p.id, name: p.name, status: p.status, client: p.clientId ? (cname.get(p.clientId) ?? null) : null, value_incl_tax: euro(p.contractValueCents + p.changeOrdersCents), progress_percent: p.progressPercent, planned_end: toIsoDate(p.plannedEnd ?? p.endDate), next_milestone: next ? { id: next.id, title: next.title, planned_end: toIsoDate(next.plannedEnd) } : null };
       });
     }
     case "list_costs": {
@@ -185,7 +185,7 @@ export async function runReadTool(name: string, rawArgs: unknown, ctx: ToolConte
       if (a.status) conds.push(eq(costEntriesTable.status, a.status));
       const rows = await db.select().from(costEntriesTable).where(and(...conds)).orderBy(desc(costEntriesTable.date)).limit(a.limit ?? 40);
       const names = await projectNames(ctx.userId, rows.map((r) => r.projectId));
-      return rows.map((c) => ({ id: c.id, job: c.projectId ? (names.get(c.projectId) ?? null) : null, date: toIsoDate(c.date), category: c.category, vendor: c.vendor, description: c.description, total_incl_tax: dollars(c.totalCents), pre_tax: dollars(c.subtotalCents), status: c.status, source: c.source }));
+      return rows.map((c) => ({ id: c.id, job: c.projectId ? (names.get(c.projectId) ?? null) : null, date: toIsoDate(c.date), category: c.category, vendor: c.vendor, description: c.description, total_incl_tax: euro(c.totalCents), pre_tax: euro(c.subtotalCents), status: c.status, source: c.source }));
     }
     case "list_invoices": {
       const a = ReadArgs.list_invoices.parse(rawArgs);
@@ -208,26 +208,26 @@ export async function runReadTool(name: string, rawArgs: unknown, ctx: ToolConte
       if (a.status) conds.push(eq(timeEntriesTable.status, a.status));
       const rows = await db.select({ e: timeEntriesTable, worker: collaboratorsTable.name }).from(timeEntriesTable).innerJoin(collaboratorsTable, eq(collaboratorsTable.id, timeEntriesTable.workerId)).where(and(...conds)).orderBy(desc(timeEntriesTable.date)).limit(a.limit ?? 40);
       const names = await projectNames(ctx.userId, rows.map((r) => r.e.projectId));
-      return rows.map((r) => ({ id: r.e.id, worker: r.worker, job: names.get(r.e.projectId) ?? null, date: toIsoDate(r.e.date), hours: Number(r.e.hours), status: r.e.status, labour_cost: dollars(Math.round(Number(r.e.hours) * r.e.rateCentsSnapshot * (1 + Number(r.e.burdenPercentSnapshot) / 100))), note: r.e.note }));
+      return rows.map((r) => ({ id: r.e.id, worker: r.worker, job: names.get(r.e.projectId) ?? null, date: toIsoDate(r.e.date), hours: Number(r.e.hours), status: r.e.status, labour_cost: euro(Math.round(Number(r.e.hours) * r.e.rateCentsSnapshot * (1 + Number(r.e.burdenPercentSnapshot) / 100))), note: r.e.note }));
     }
     case "get_schedule_risks": {
       const a = ReadArgs.get_schedule_risks.parse(rawArgs);
       const p = a.job_id || ctx.projectId ? await resolveProject(ctx, a.job_id) : null;
       if (p) {
         const an = await jobAnalytics(p, ctx.now);
-        return { job: p.name, planned_end: an.schedule.plannedEnd, forecast_end: an.schedule.forecastEnd, days_behind: an.schedule.daysBehind, late_milestones: an.schedule.rows.filter((r) => r.slipDays > 0).map((r) => ({ id: r.id, title: r.title, status: r.status, slip_days: r.slipDays, state: r.state })), over_budget_categories: an.categories.filter((c) => c.plannedCents > 0 && c.actualCents > c.plannedCents).map((c) => ({ category: c.category, over_by: dollars(c.actualCents - c.plannedCents) })), unbilled_work: dollars(an.earned.billingGapCents), overdue_invoices: dollars(an.invoices.overdueCents) };
+        return { job: p.name, planned_end: an.schedule.plannedEnd, forecast_end: an.schedule.forecastEnd, days_behind: an.schedule.daysBehind, late_milestones: an.schedule.rows.filter((r) => r.slipDays > 0).map((r) => ({ id: r.id, title: r.title, status: r.status, slip_days: r.slipDays, state: r.state })), over_budget_categories: an.categories.filter((c) => c.plannedCents > 0 && c.actualCents > c.plannedCents).map((c) => ({ category: c.category, over_by: euro(c.actualCents - c.plannedCents) })), unbilled_work: euro(an.earned.billingGapCents), overdue_invoices: euro(an.invoices.overdueCents) };
       }
       const ca = await companyAnalytics(ctx.userId, { months: 3, now: ctx.now });
-      return ca.jobs.risks.map((r) => ({ job_id: r.id, job: r.name, flags: r.flags, over_budget_by: dollars(r.detail.overBudgetCents), days_behind: r.detail.daysBehind, overdue_invoices: dollars(r.detail.overdueCents), unbilled_work: dollars(r.detail.billingGapCents) }));
+      return ca.jobs.risks.map((r) => ({ job_id: r.id, job: r.name, flags: r.flags, over_budget_by: euro(r.detail.overBudgetCents), days_behind: r.detail.daysBehind, overdue_invoices: euro(r.detail.overdueCents), unbilled_work: euro(r.detail.billingGapCents) }));
     }
     case "get_company_overview": {
       const a = ReadArgs.get_company_overview.parse(rawArgs);
       const ca = await companyAnalytics(ctx.userId, { months: a.months ?? 6, now: ctx.now });
       return {
-        months: ca.months.map((m) => ({ month: m.month, invoiced: dollars(m.invoicedCents), collected: dollars(m.collectedCents), costs: dollars(m.costCents), margin_percent: m.marginPercent })),
-        totals: { invoiced: dollars(ca.totals.invoicedCents), collected: dollars(ca.totals.collectedCents), costs: dollars(ca.totals.costCents), margin_percent: ca.totals.marginPercent, outstanding: dollars(ca.totals.outstandingCents), overdue: dollars(ca.totals.overdueCents), upcoming_billings: dollars(ca.totals.pipelineCents) },
-        ar_aging: { not_due: dollars(ca.aging.current), d1_30: dollars(ca.aging.d1_30), d31_60: dollars(ca.aging.d31_60), d61_90: dollars(ca.aging.d61_90), d90_plus: dollars(ca.aging.d90_plus) },
-        cash_flow_weeks: ca.cashFlow.map((w) => ({ week_of: w.week, invoices_due: dollars(w.dueCents + w.overdueCents), expected_billings: dollars(w.expectedCents), planned_costs: dollars(w.outflowCents), net: dollars(w.netCents) })),
+        months: ca.months.map((m) => ({ month: m.month, invoiced: euro(m.invoicedCents), collected: euro(m.collectedCents), costs: euro(m.costCents), margin_percent: m.marginPercent })),
+        totals: { invoiced: euro(ca.totals.invoicedCents), collected: euro(ca.totals.collectedCents), costs: euro(ca.totals.costCents), margin_percent: ca.totals.marginPercent, outstanding: euro(ca.totals.outstandingCents), overdue: euro(ca.totals.overdueCents), upcoming_billings: euro(ca.totals.pipelineCents) },
+        ar_aging: { not_due: euro(ca.aging.current), d1_30: euro(ca.aging.d1_30), d31_60: euro(ca.aging.d31_60), d61_90: euro(ca.aging.d61_90), d90_plus: euro(ca.aging.d90_plus) },
+        cash_flow_weeks: ca.cashFlow.map((w) => ({ week_of: w.week, invoices_due: euro(w.dueCents + w.overdueCents), expected_billings: euro(w.expectedCents), planned_costs: euro(w.outflowCents), net: euro(w.netCents) })),
         jobs_by_status: ca.jobs.byStatus,
         risks: ca.jobs.risks.slice(0, 8).map((r) => ({ job_id: r.id, job: r.name, flags: r.flags })),
       };
@@ -251,6 +251,7 @@ const ProposeArgs = {
 };
 
 const money = (cents: number) => new Intl.NumberFormat("it-IT", { style: "currency", currency: "EUR" }).format(cents / 100);
+const METODO_IT: Record<string, string> = { bank_transfer: "bonifico", cheque: "assegno", cash: "contanti", card: "carta", other: "altro" };
 
 /** Validates propose_* arguments against the user's data and returns the proposal to store, or an error string for the model. */
 export async function validateProposal(name: string, rawArgs: unknown, ctx: ToolContext): Promise<{ ok: true; proposal: ValidatedProposal } | { ok: false; error: string }> {
@@ -284,7 +285,7 @@ export async function validateProposal(name: string, rawArgs: unknown, ctx: Tool
           milestoneId = m?.id ?? null;
         }
         const payload = { projectId: p.id, category: a.category, vendor: a.vendor ?? "", description: a.description ?? "", date: a.date ?? toIsoDate(ctx.now), subtotalCents, taxCents, taxBreakdown: breakdown, totalCents, milestoneId };
-        return { ok: true, proposal: { kind: "cost_entry", projectId: p.id, summary: `${money(totalCents)} ${a.category}${a.vendor ? ` — ${a.vendor}` : ""} on ${p.name}`, payload } };
+        return { ok: true, proposal: { kind: "cost_entry", projectId: p.id, summary: `Costo ${money(totalCents)} (${a.category})${a.vendor ? ` — ${a.vendor}` : ""} su ${p.name}`, payload } };
       }
       case "propose_milestone_update": {
         const a = ProposeArgs.propose_milestone_update.parse(rawArgs);
@@ -294,11 +295,11 @@ export async function validateProposal(name: string, rawArgs: unknown, ctx: Tool
         if (!m) return { ok: false, error: "Milestone not found on that job (use the ids from get_job_summary)." };
         if (!a.status && !a.planned_start && !a.planned_end && !a.title) return { ok: false, error: "Nothing to change." };
         const parts: string[] = [];
-        if (a.status) parts.push(a.status === "completed" ? "mark completed" : a.status === "in_progress" ? "start" : a.status === "skipped" ? "skip" : "reopen");
-        if (a.planned_start || a.planned_end) parts.push(`re-date ${a.planned_start ?? toIsoDate(m.plannedStart) ?? "?"} → ${a.planned_end ?? toIsoDate(m.plannedEnd) ?? "?"}`);
-        if (a.title) parts.push(`rename to "${a.title}"`);
+        if (a.status) parts.push(a.status === "completed" ? "segna completata" : a.status === "in_progress" ? "avvia" : a.status === "skipped" ? "salta" : "riapri");
+        if (a.planned_start || a.planned_end) parts.push(`nuove date ${a.planned_start ?? toIsoDate(m.plannedStart) ?? "?"} → ${a.planned_end ?? toIsoDate(m.plannedEnd) ?? "?"}`);
+        if (a.title) parts.push(`rinomina in "${a.title}"`);
         const payload = { projectId: p.id, milestoneId: m.id, status: a.status ?? null, plannedStart: a.planned_start ?? null, plannedEnd: a.planned_end ?? null, title: a.title ?? null, releasesPaymentTerm: a.status === "completed" && m.paymentTermLabel ? m.paymentTermLabel : null };
-        return { ok: true, proposal: { kind: "milestone_update", projectId: p.id, summary: `${parts.join(", ")}: ${m.title}${payload.releasesPaymentTerm ? ` (releases "${payload.releasesPaymentTerm}")` : ""}`, payload } };
+        return { ok: true, proposal: { kind: "milestone_update", projectId: p.id, summary: `${parts.join(", ")}: ${m.title}${payload.releasesPaymentTerm ? ` (sblocca "${payload.releasesPaymentTerm}")` : ""}`, payload } };
       }
       case "propose_task": {
         const a = ProposeArgs.propose_task.parse(rawArgs);
@@ -309,7 +310,7 @@ export async function validateProposal(name: string, rawArgs: unknown, ctx: Tool
           const [m] = await db.select({ id: milestonesTable.id }).from(milestonesTable).where(and(eq(milestonesTable.id, a.milestone_id), eq(milestonesTable.projectId, p.id)));
           milestoneId = m?.id ?? null;
         }
-        return { ok: true, proposal: { kind: "task", projectId: p.id, summary: `Task "${a.title}"${a.due_date ? ` due ${a.due_date}` : ""} on ${p.name}`, payload: { projectId: p.id, title: a.title, milestoneId, dueDate: a.due_date ?? null } } };
+        return { ok: true, proposal: { kind: "task", projectId: p.id, summary: `Attività "${a.title}"${a.due_date ? ` entro il ${a.due_date}` : ""} su ${p.name}`, payload: { projectId: p.id, title: a.title, milestoneId, dueDate: a.due_date ?? null } } };
       }
       case "propose_invoice": {
         const a = ProposeArgs.propose_invoice.parse(rawArgs);
@@ -324,8 +325,8 @@ export async function validateProposal(name: string, rawArgs: unknown, ctx: Tool
           if (!m.paymentTermId) return { ok: false, error: `Milestone "${m.title}" has no payment term linked; nothing to invoice for it.` };
           milestoneTitle = m.title;
         }
-        const label = a.kind === "deposit" ? "deposit invoice" : a.kind === "final" ? "final invoice" : a.kind === "holdback_release" ? "holdback release invoice" : `progress invoice for "${milestoneTitle}"`;
-        return { ok: true, proposal: { kind: "invoice", projectId: p.id, summary: `Draft the ${label} on ${p.name}`, payload: { projectId: p.id, kind: a.kind, milestoneId: a.milestone_id ?? null } } };
+        const label = a.kind === "deposit" ? "la fattura di acconto" : a.kind === "final" ? "la fattura di saldo" : a.kind === "holdback_release" ? "la fattura di svincolo ritenuta" : `la fattura di SAL per "${milestoneTitle}"`;
+        return { ok: true, proposal: { kind: "invoice", projectId: p.id, summary: `Prepara ${label} su ${p.name}`, payload: { projectId: p.id, kind: a.kind, milestoneId: a.milestone_id ?? null } } };
       }
       case "propose_send_invoice": {
         const a = ProposeArgs.propose_send_invoice.parse(rawArgs);
@@ -333,7 +334,7 @@ export async function validateProposal(name: string, rawArgs: unknown, ctx: Tool
         if (!inv) return { ok: false, error: "Invoice not found." };
         if (inv.status === "void" || inv.status === "paid") return { ok: false, error: `Invoice ${inv.number} is ${inv.status}; it cannot be sent.` };
         if (!inv.customer.email) return { ok: false, error: `Invoice ${inv.number} has no customer email; ask the user to add one on the invoice page.` };
-        return { ok: true, proposal: { kind: "send_invoice", projectId: inv.projectId, summary: `${inv.status === "draft" ? "Send" : "Re-send"} ${inv.number} (${money(inv.totalCents)}) to ${inv.customer.email}`, payload: { invoiceId: inv.id, message: a.message ?? "" } } };
+        return { ok: true, proposal: { kind: "send_invoice", projectId: inv.projectId, summary: `${inv.status === "draft" ? "Invia" : "Invia di nuovo"} ${inv.number} (${money(inv.totalCents)}) a ${inv.customer.email}`, payload: { invoiceId: inv.id, message: a.message ?? "" } } };
       }
       case "propose_record_payment": {
         const a = ProposeArgs.propose_record_payment.parse(rawArgs);
@@ -344,7 +345,7 @@ export async function validateProposal(name: string, rawArgs: unknown, ctx: Tool
         const balance = balanceCents(inv);
         const amountCents = a.amount ? Math.round(a.amount * 100) : balance;
         if (amountCents <= 0) return { ok: false, error: `Invoice ${inv.number} has no balance.` };
-        return { ok: true, proposal: { kind: "record_payment", projectId: inv.projectId, summary: `Record ${money(amountCents)} ${a.method ?? "etransfer"} on ${inv.number}${amountCents < balance ? ` (partial, balance ${money(balance)})` : ""}`, payload: { invoiceId: inv.id, amountCents, method: a.method ?? "etransfer", date: a.date ?? toIsoDate(ctx.now), reference: a.reference ?? "" } } };
+        return { ok: true, proposal: { kind: "record_payment", projectId: inv.projectId, summary: `Registra incasso di ${money(amountCents)} (${METODO_IT[a.method ?? "bank_transfer"] ?? a.method}) su ${inv.number}${amountCents < balance ? ` (parziale, resta ${money(balance)})` : ""}`, payload: { invoiceId: inv.id, amountCents, method: a.method ?? "bank_transfer", date: a.date ?? toIsoDate(ctx.now), reference: a.reference ?? "" } } };
       }
       default:
         return { ok: false, error: `Unknown tool ${name}` };

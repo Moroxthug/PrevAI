@@ -25,8 +25,7 @@ export type CostEntryStatus = (typeof COST_ENTRY_STATUSES)[number];
 export const COST_ENTRY_SOURCES = ["manual", "receipt", "time_entry", "equipment", "legacy", "bank_feed", "supplier_invoice"] as const;
 export type CostEntrySource = (typeof COST_ENTRY_SOURCES)[number];
 
-/** GST/HST/PST/QST split in cents, as read from the receipt (or computed). */
-/** V2-2: in Italia una sola imposta (IVA). Le chiavi canadesi restano solo in eventuali righe storiche. */
+/** IVA in centesimi, letta dallo scontrino o calcolata. */
 export type TaxBreakdown = { IVA?: number };
 
 /** Raw AI reading of a receipt, kept so the review card can show what the model saw. */

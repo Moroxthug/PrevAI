@@ -32,7 +32,6 @@ export type ContractDto = {
     startDate: string | null;
     estimatedDurationWeeks: number | null;
     warrantyMonths: number;
-    englishRequestedInQuebec: boolean;
     directAgreement: boolean;
   };
   contractValueCents: number;

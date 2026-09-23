@@ -26,7 +26,7 @@ export type PaymentSchedule = {
 };
 
 /** Province italiane per i selettori (sigla + nome), da @workspace/config. */
-export const CANADIAN_PROVINCES: { code: string; name: string }[] = PROVINCE_ITALIANE.map((p) => ({ code: p.sigla, name: p.nome }));
+export const PROVINCE_SELECT: { code: string; name: string }[] = PROVINCE_ITALIANE.map((p) => ({ code: p.sigla, name: p.nome }));
 
 export function newTermId(): string {
   return `t${Math.random().toString(36).slice(2, 8)}`;

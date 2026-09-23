@@ -12,8 +12,8 @@ const _require = createRequire(import.meta.url);
 // so both paths land in the same review queue. Nothing is ever written
 // straight to `quotes`; a human confirms every candidate.
 
-const SYSTEM_PROMPT = `You read old quotes/estimates for a small Canadian construction company, to help them import their historical records.
-Extract the quote into JSON. Amounts are in dollars (decimals), never cents.
+const SYSTEM_PROMPT = `You read old quotes (preventivi) of a small Italian construction company, to help them import their historical records.
+The documents are in Italian. Extract the quote into JSON. Amounts are in euro (decimals, taxable amounts before IVA when both are shown), never cents. Italian numbers use "." for thousands and "," for decimals: 1.250,50 = 1250.50.
 
 Return ONLY this JSON object:
 {
@@ -22,8 +22,8 @@ Return ONLY this JSON object:
   "phone": "string or null",
   "address": "string or null",
   "city": "string or null",
-  "province": "2-letter Canadian province code (ON, QC, BC...) or null",
-  "postalCode": "string or null",
+  "province": "2-letter Italian province code (sigla: MI, RM, TO...) or null",
+  "postalCode": "5-digit CAP or null",
   "date": "YYYY-MM-DD or null",
   "status": "accepted if the document shows it was signed/accepted/won, otherwise draft",
   "items": [{ "description": "...", "quantity": 1, "unitPrice": 0.0, "total": 0.0 }],

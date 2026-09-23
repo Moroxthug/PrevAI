@@ -73,8 +73,6 @@ export type ContractVariables = {
   startDate: string | null; // ISO date
   estimatedDurationWeeks: number | null;
   warrantyMonths: number;
-  /** For QC contracts written in English: the customer expressly asked for English. */
-  englishRequestedInQuebec: boolean;
   /** Signed at the customer's home → cooling-off notice applies. */
   directAgreement: boolean;
 };

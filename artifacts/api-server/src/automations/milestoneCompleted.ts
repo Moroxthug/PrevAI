@@ -5,7 +5,7 @@ import { createNotification } from "../lib/notifications.js";
 import { logger } from "../lib/logger.js";
 import { draftMilestoneInvoice, draftFinalInvoice, draftHoldbackReleaseInvoice, applyAutoSendPolicy } from "../invoices/service.js";
 
-const cad = (cents: number) => new Intl.NumberFormat("it-IT", { style: "currency", currency: "EUR" }).format(cents / 100);
+const euro = (cents: number) => new Intl.NumberFormat("it-IT", { style: "currency", currency: "EUR" }).format(cents / 100);
 
 // milestone.completed → Phase 4: draft the progress invoice for the payment
 // term this milestone releases (or leave a plain reminder when the term is
@@ -33,7 +33,7 @@ registerAutomation("milestone.completed", async (run) => {
     await createNotification({
       userId: run.userId,
       type: "milestone_payment_due",
-      title: `"${m.title}" completata — ${cad(m.paymentAmountCents)} ora dovuti`,
+      title: `"${m.title}" completata — ${euro(m.paymentAmountCents)} ora dovuti`,
       body: `${project?.name ?? "Cantiere"}: la rata "${m.paymentTermLabel ?? ""}" si sblocca con questa milestone. Crea la fattura dalla scheda Fatture del cantiere.`,
       link: `/dashboard/jobs/${m.projectId}?tab=invoices`,
       entityType: "milestone",
@@ -96,7 +96,7 @@ registerAutomation("invoice.overdue", async (run) => {
     userId: inv.userId,
     type: "invoice_overdue",
     title: `Fattura ${inv.number} scaduta`,
-    body: `${inv.customer.name || "Il cliente"} deve ${cad(inv.totalCents - inv.paidCents)} (scadenza ${inv.dueDate.toLocaleDateString("it-IT", { dateStyle: "medium" })}). I solleciti partono automaticamente dopo 3, 7 e 14 giorni.`,
+    body: `${inv.customer.name || "Il cliente"} deve ${euro(inv.totalCents - inv.paidCents)} (scadenza ${inv.dueDate.toLocaleDateString("it-IT", { dateStyle: "medium" })}). I solleciti partono automaticamente dopo 3, 7 e 14 giorni.`,
     link: `/dashboard/invoices/${inv.id}`,
     entityType: "invoice",
     entityId: inv.id,

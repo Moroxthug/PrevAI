@@ -440,7 +440,7 @@ export type DraftOutcome = { invoice: Invoice; action: "sent" | "scheduled_auto_
 export async function applyAutoSendPolicy(invoice: Invoice, profile: BusinessProfile | undefined, opts: { notify: boolean; notificationTitle?: string } = { notify: true }): Promise<DraftOutcome> {
   const settings = automationSettings(profile);
   const lang = invoice.language as Lang;
-  const cad = (c: number) => new Intl.NumberFormat("it-IT", { style: "currency", currency: "EUR" }).format(c / 100);
+  const euro = (c: number) => new Intl.NumberFormat("it-IT", { style: "currency", currency: "EUR" }).format(c / 100);
   let outcome: DraftOutcome = { invoice, action: "draft" };
 
   if (invoice.status !== "draft") return { invoice, action: "draft" };
@@ -465,10 +465,10 @@ export async function applyAutoSendPolicy(invoice: Invoice, profile: BusinessPro
   if (opts.notify) {
     const typeLabel = ti(`type_${invoice.type}` as IKey, lang);
     const body =
-      outcome.action === "sent" ? `${typeLabel} ${invoice.number} (${cad(invoice.totalCents)}) inviata via email a ${invoice.customer.name || "il cliente"}.`
-      : outcome.action === "scheduled_auto_send" ? `${typeLabel} ${invoice.number} (${cad(invoice.totalCents)}) è pronta. Sarà inviata automaticamente tra ${settings.invoiceAutoSendAfterHours} h se non la modifichi o la invii prima.`
-      : outcome.action === "scheduled_release" ? `${typeLabel} ${invoice.number} (${cad(invoice.totalCents)}) è in bozza e diventerà inviabile il ${invoice.scheduledFor!.toLocaleDateString("it-IT", { dateStyle: "long" })}, al termine del periodo di garanzia.`
-      : `${typeLabel} ${invoice.number} (${cad(invoice.totalCents)}) è pronta da rivedere e inviare.${outcome.sendError ? ` Invio automatico non riuscito: ${outcome.sendError}.` : ""}`;
+      outcome.action === "sent" ? `${typeLabel} ${invoice.number} (${euro(invoice.totalCents)}) inviata via email a ${invoice.customer.name || "il cliente"}.`
+      : outcome.action === "scheduled_auto_send" ? `${typeLabel} ${invoice.number} (${euro(invoice.totalCents)}) è pronta. Sarà inviata automaticamente tra ${settings.invoiceAutoSendAfterHours} h se non la modifichi o la invii prima.`
+      : outcome.action === "scheduled_release" ? `${typeLabel} ${invoice.number} (${euro(invoice.totalCents)}) è in bozza e diventerà inviabile il ${invoice.scheduledFor!.toLocaleDateString("it-IT", { dateStyle: "long" })}, al termine del periodo di garanzia.`
+      : `${typeLabel} ${invoice.number} (${euro(invoice.totalCents)}) è pronta da rivedere e inviare.${outcome.sendError ? ` Invio automatico non riuscito: ${outcome.sendError}.` : ""}`;
     await createNotification({
       userId: invoice.userId,
       type: outcome.action === "sent" ? "invoice_sent" : "invoice_drafted",

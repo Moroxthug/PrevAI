@@ -8,7 +8,7 @@ import { setupJobFromContract } from "../jobs/setup.js";
 import { applySignedChangeOrder } from "../jobs/changeOrders.js";
 import { draftDepositInvoice, applyAutoSendPolicy } from "../invoices/service.js";
 
-const cad = (n: number) => new Intl.NumberFormat("it-IT", { style: "currency", currency: "EUR" }).format(n);
+const euro = (n: number) => new Intl.NumberFormat("it-IT", { style: "currency", currency: "EUR" }).format(n);
 const longDate = (d: Date | null) => (d ? d.toLocaleDateString("it-IT", { month: "short", day: "numeric", year: "numeric", timeZone: "UTC" }) : null);
 
 // contract.signed → Phase 2: set up the job (milestones imported from the
@@ -37,7 +37,7 @@ registerAutomation("contract.signed", async (run) => {
 
     // Phase 4: the deposit invoice is drafted (or sent, per the company's
     // setting) right away and folded into the same single notification.
-    let depositText = deposit ? ` e un acconto di ${cad(paymentTermAmount(deposit, contract.variables.total))} dovuto ora` : "";
+    let depositText = deposit ? ` e un acconto di ${euro(paymentTermAmount(deposit, contract.variables.total))} dovuto ora` : "";
     let depositInvoiceId: string | null = null;
     let depositAction: string | null = null;
     if (deposit) {
@@ -49,9 +49,9 @@ registerAutomation("contract.signed", async (run) => {
           const outcome = await applyAutoSendPolicy(drafted.invoice, profile, { notify: false });
           depositAction = outcome.action;
           depositText =
-            outcome.action === "sent" ? ` e la fattura di acconto ${drafted.invoice.number} (${cad(drafted.invoice.totalCents / 100)}) è stata inviata a ${customer}`
-            : outcome.action === "scheduled_auto_send" ? ` e la fattura di acconto ${drafted.invoice.number} (${cad(drafted.invoice.totalCents / 100)}) partirà automaticamente se non la modifichi prima`
-            : ` e la fattura di acconto ${drafted.invoice.number} (${cad(drafted.invoice.totalCents / 100)}) è pronta da inviare`;
+            outcome.action === "sent" ? ` e la fattura di acconto ${drafted.invoice.number} (${euro(drafted.invoice.totalCents / 100)}) è stata inviata a ${customer}`
+            : outcome.action === "scheduled_auto_send" ? ` e la fattura di acconto ${drafted.invoice.number} (${euro(drafted.invoice.totalCents / 100)}) partirà automaticamente se non la modifichi prima`
+            : ` e la fattura di acconto ${drafted.invoice.number} (${euro(drafted.invoice.totalCents / 100)}) è pronta da inviare`;
         }
       } catch (err) {
         // The job setup is what matters here; the deposit can be created from the Invoices tab.
@@ -79,7 +79,7 @@ registerAutomation("contract.signed", async (run) => {
         userId: contract.userId,
         type: "contract_signed",
         title: `${customer} ha firmato il contratto ${contract.contractNumber}`,
-        body: `Valore del contratto ${cad(contract.variables.total)}. Copia firmata inviata a entrambe le parti. A breve completeremo l'impostazione del cantiere.`,
+        body: `Valore del contratto ${euro(contract.variables.total)}. Copia firmata inviata a entrambe le parti. A breve completeremo l'impostazione del cantiere.`,
         link: `/dashboard/contracts/${contract.id}`,
         entityType: "contract",
         entityId: contract.id,

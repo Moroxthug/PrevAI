@@ -9,13 +9,11 @@ import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/i18n/LanguageContext";
 import { Loader2, Save, MapPin, Landmark, Zap, CalendarClock, Star } from "lucide-react";
 import { PaymentScheduleEditor } from "@/components/payment-schedule-editor";
-import { CANADIAN_PROVINCES, type PaymentSchedule } from "@/lib/payment-schedule";
+import { PROVINCE_SELECT, type PaymentSchedule } from "@/lib/payment-schedule";
 
-type TaxProfile = { province: string; components: { code: string; label: string; rate: number }[]; totalRate: number };
 
 type ProfileExtras = {
   province: string | null;
-  taxProfile: TaxProfile | null;
   codiceFiscale: string | null;
   codiceSdi: string | null;
   reaNumber: string | null;
@@ -41,7 +39,7 @@ const DEFAULT_SCHEDULE: PaymentSchedule = {
 
 /**
  * "Business" settings tab: identità fiscale italiana (provincia, P.IVA/CF,
- * licence, e-transfer email), automation preferences and the default
+ * codice SDI, REA, IBAN), automation preferences and the default
  * payment schedule new quotes start from.
  */
 export function BusinessTab() {
@@ -82,16 +80,6 @@ export function BusinessTab() {
     setInvoiceReminders(profile.automationSettings?.invoiceReminders ?? true);
     setSchedule(profile.defaultPaymentSchedule ?? DEFAULT_SCHEDULE);
   }, [profile]);
-
-  const taxHint = (() => {
-    const p = CANADIAN_PROVINCES.find((x) => x.code === province);
-    if (!p) return null;
-    const rates: Record<string, string> = {
-      AB: "GST 5%", BC: "GST 5% + PST 7%", MB: "GST 5% + RST 7%", NB: "HST 15%", NL: "HST 15%", NS: "HST 14%",
-      NT: "GST 5%", NU: "GST 5%", ON: "HST 13%", PE: "HST 15%", QC: "GST 5% + QST 9.975%", SK: "GST 5% + PST 6%", YT: "GST 5%",
-    };
-    return rates[province] ?? null;
-  })();
 
   const save = async () => {
     setSaving(true);
@@ -156,13 +144,10 @@ export function BusinessTab() {
               onChange={(e) => setProvince(e.target.value)}
             >
               <option value="">{t("dashboard.settings.business.provinceSelect")}</option>
-              {CANADIAN_PROVINCES.map((p) => (
+              {PROVINCE_SELECT.map((p) => (
                 <option key={p.code} value={p.code}>{p.name}</option>
               ))}
             </select>
-            {taxHint && (
-              <span className="text-xs text-muted-foreground mt-1 block">{t("dashboard.settings.business.taxApplied")}: <strong>{taxHint}</strong></span>
-            )}
           </div>
           <div className="field">
             <Label htmlFor="codiceFiscale">{t("dashboard.settings.business.codiceFiscale")}</Label>

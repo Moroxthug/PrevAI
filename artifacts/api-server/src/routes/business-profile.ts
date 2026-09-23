@@ -2,7 +2,7 @@ import { Router } from "express";
 import { requireAuth, getUserId } from "../middlewares/authMiddleware";
 import { requirePermission } from "../middlewares/requirePermission.js";
 import multer from "multer";
-import { db, businessProfilesTable, normalizeProvince, getTaxProfile, paymentScheduleSchema, DEFAULT_AUTOMATION_SETTINGS, effectivePlan, hasFeature, PRODUCT_FEATURES, type BusinessProfile } from "@workspace/db";
+import { db, businessProfilesTable, normalizeProvince, paymentScheduleSchema, DEFAULT_AUTOMATION_SETTINGS, effectivePlan, hasFeature, PRODUCT_FEATURES, type BusinessProfile } from "@workspace/db";
 import { z } from "zod";
 import { eq } from "drizzle-orm";
 import { UpdateBusinessProfileBody } from "@workspace/api-zod";
@@ -25,14 +25,13 @@ const uploadLogo = upload.fields([
 
 const ALLOWED_LOGO_MIMES = ["image/svg+xml", "image/png", "image/jpeg"];
 
-// Phase 0 fields (Canadian identity, automation prefs, entitlements) are
+// Campi aggiunti in v2 (identità fiscale italiana, automazioni, funzioni) sono
 // appended to the legacy shape so existing clients keep working.
 function serializeProfileExtras(profile: BusinessProfile | undefined) {
   const province = normalizeProvince(profile?.province) ?? null;
   const features = Object.fromEntries(PRODUCT_FEATURES.map((f) => [f, hasFeature(profile, f)])) as Record<string, boolean>;
   return {
     province,
-    taxProfile: province ? getTaxProfile(province) : null,
     codiceFiscale: profile?.codiceFiscale ?? null,
     codiceSdi: profile?.codiceSdi ?? null,
     reaNumber: profile?.reaNumber ?? null,

@@ -2,7 +2,7 @@ import { Router } from "express";
 import { requireAuth, getUserId, getUserName } from "../middlewares/authMiddleware";
 import { requirePermission } from "../middlewares/requirePermission.js";
 import multer from "multer";
-import { db, quotesTable, quoteAttachmentsTable, quoteVariantsTable, businessProfilesTable, priceCatalogItemsTable, priceIntelligenceTable, uploadedDocumentsTable, quoteClientDataSchema, quoteCompanySnapshotSchema, paymentScheduleSchema, derivePaymentScheduleFromText, validatePaymentSchedule, paymentScheduleToText, normalizeProvince, getTaxProfile, quoteTaxLines, readQuoteClientData } from "@workspace/db";
+import { db, quotesTable, quoteAttachmentsTable, quoteVariantsTable, businessProfilesTable, priceCatalogItemsTable, priceIntelligenceTable, uploadedDocumentsTable, quoteClientDataSchema, quoteCompanySnapshotSchema, paymentScheduleSchema, derivePaymentScheduleFromText, validatePaymentSchedule, paymentScheduleToText, normalizeProvince, quoteTaxLines, readQuoteClientData } from "@workspace/db";
 import { getBaseUrl } from "../lib/baseUrl.js";
 import { resolveQuoteTaxRate } from "../lib/tax.js";
 import { quoteLanguageFor, qt, fmtQuoteDate, fmtQty } from "../quotes/i18n.js";
@@ -143,7 +143,6 @@ export function serializeQuote(q: QuoteRow, attachments?: AttachmentRow[], varia
     userId: q.userId,
     clientId: q.clientId ?? null,
     province,
-    taxProfile: province ? getTaxProfile(province) : null,
     paymentSchedule,
     clientData,
     descrizioneGenerale: q.descrizioneGenerale,
@@ -499,7 +498,7 @@ router.post("/quotes", requireAuth, requirePermission("quotes", "edit"), aiCallL
     if (clientDataInput?.nome) {
       userMessage = `Client data (do NOT regenerate, use these exact values):
 - Name/Company Name: ${clientDataInput.nome}
-- Address: ${clientDataInput.indirizzo || ""}${clientDataInput.businessNumber ? `\n- Business Number: ${clientDataInput.businessNumber}` : ""}${clientDataInput.city ? `\n- City: ${clientDataInput.city}` : ""}${clientDataInput.postalCode ? ` Postal Code: ${clientDataInput.postalCode}` : ""}${clientDataInput.province ? ` (${clientDataInput.province})` : ""}
+- Address: ${clientDataInput.indirizzo || ""}${clientDataInput.businessNumber ? `\n- Codice fiscale: ${clientDataInput.businessNumber}` : ""}${clientDataInput.city ? `\n- City: ${clientDataInput.city}` : ""}${clientDataInput.postalCode ? ` CAP: ${clientDataInput.postalCode}` : ""}${clientDataInput.province ? ` (${clientDataInput.province})` : ""}
 
 Job description: ${rawInput}`;
     }

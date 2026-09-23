@@ -697,14 +697,14 @@ async function handleQuoteHistory(from: string, userId: string) {
     return;
   }
 
-  const cad = (v: string | null) =>
+  const euro = (v: string | null) =>
     new Intl.NumberFormat("it-IT", { style: "currency", currency: "EUR" }).format(Number(v ?? 0));
 
   const lines = quotes.map((q, i) => {
     const cd = q.clientData as { nome?: string } | null;
     const clientStr = cd?.nome ? ` — ${cd.nome}` : "";
     const dateStr = q.createdAt.toLocaleDateString("it-IT", { day: "2-digit", month: "2-digit" });
-    const total = cad(q.totale);
+    const total = euro(q.totale);
     return `*${i + 1}.* ${q.titoloPreventivoRiga2 ?? "Quote"}${clientStr}\n    ${total} — ${dateStr}`;
   });
 

@@ -868,9 +868,9 @@ export default function QuoteDetail() {
                     )}
                     {(quote.clientData?.businessNumber || quote.clientData?.partitaIva) && (
                       <div className="line faint">
-                        {quote.clientData.businessNumber && `BN: ${quote.clientData.businessNumber}`}
+                        {quote.clientData.businessNumber && `C.F. ${quote.clientData.businessNumber}`}
                         {quote.clientData.businessNumber && quote.clientData.partitaIva && " · "}
-                        {quote.clientData.partitaIva && `GST/HST: ${quote.clientData.partitaIva}`}
+                        {quote.clientData.partitaIva && `P. IVA ${quote.clientData.partitaIva}`}
                       </div>
                     )}
                     {!isEditLocked && (

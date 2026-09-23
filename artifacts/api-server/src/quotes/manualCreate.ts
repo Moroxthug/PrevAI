@@ -2,7 +2,7 @@
 // API's `POST /v1/public/quotes` — the only two places a quote is created
 // from structured input rather than AI parsing. Extracted so the two never
 // drift on quota enforcement or server-side total recalculation.
-import { db, quotesTable, businessProfilesTable, quoteClientDataSchema, quoteCompanySnapshotSchema, quoteChapterSchema, normalizeProvince, getTaxProfile, type QuoteChapter, type QuoteCompanySnapshot, type QuoteClientData } from "@workspace/db";
+import { db, quotesTable, businessProfilesTable, quoteClientDataSchema, quoteCompanySnapshotSchema, quoteChapterSchema, normalizeProvince, DEFAULT_TAX_RATE, type QuoteChapter, type QuoteCompanySnapshot, type QuoteClientData } from "@workspace/db";
 import { eq, sql } from "drizzle-orm";
 import { PLANS } from "../routes/payments.js";
 import { generateNumeroPreventivo } from "../lib/quoteNumber.js";
@@ -16,9 +16,9 @@ export type ManualQuoteInput = {
   titoloPreventivoRiga1?: string;
   titoloPreventivoRiga2?: string;
   descrizioneGenerale?: string;
-  /** Total sales-tax rate. Omitted → the statutory rate of `province`; 0 → tax-exempt. */
+  /** Aliquota IVA totale. Omessa → IVA ordinaria (22 %); 0 → senza IVA (esente, reverse charge, forfettario). */
   ivaPercentuale?: number;
-  /** Province the work is performed in (drives the tax components and the contract template). Defaults to the client's, then the company's. */
+  /** Provincia (sigla) del cantiere. Predefinita: quella del cliente, poi quella dell'impresa. Non incide sull'IVA. */
   province?: string | null;
   condizioniPagamento?: string[];
   note?: string;
@@ -50,7 +50,7 @@ export async function createManualQuote(userId: string, input: ManualQuoteInput)
         .from(quotesTable)
         .where(sql`${quotesTable.userId} = ${userId} AND ${quotesTable.createdAt} >= ${monthStart.toISOString()} AND ${quotesTable.createdAt} < ${nextMonth.toISOString()}`);
       if (cnt >= plan.quotaPerMonth) {
-        return { ok: false, status: 429, error: `Monthly quota reached. You've used all ${plan.quotaPerMonth} quotes included in the ${plan.name} plan this month.` };
+        return { ok: false, status: 429, error: `Hai raggiunto il limite mensile: il piano ${plan.name} include ${plan.quotaPerMonth} preventivi al mese e li hai già usati tutti.` };
       }
     }
   }
@@ -95,11 +95,10 @@ export async function createManualQuote(userId: string, input: ManualQuoteInput)
   });
 
   const subtotale = recalcCapitoli.reduce((s, c) => s + c.subtotale, 0);
-  // Phase 71: the province decides the taxes (GST+QST in Québec, GST+PST in
-  // BC, HST in Ontario…) unless the caller sends an explicit rate; 0 is
-  // tax-exempt. The old fallback was the Italian 22 %.
+  // L'IVA non dipende dalla provincia (era la logica canadese): aliquota
+  // esplicita se c'è, altrimenti l'ordinaria.
   const province = normalizeProvince(input.province) ?? normalizeProvince(clientDataInput?.province) ?? normalizeProvince(profile?.province) ?? null;
-  const ivaPercentuale = typeof input.ivaPercentuale === "number" && input.ivaPercentuale >= 0 ? input.ivaPercentuale : (province ? getTaxProfile(province).totalRate : 0);
+  const ivaPercentuale = typeof input.ivaPercentuale === "number" && input.ivaPercentuale >= 0 ? input.ivaPercentuale : DEFAULT_TAX_RATE;
   const ivaValore = Math.round(subtotale * (ivaPercentuale / 100) * 100) / 100;
   const totale = Math.round((subtotale + ivaValore) * 100) / 100;
 
@@ -127,7 +126,7 @@ export async function createManualQuote(userId: string, input: ManualQuoteInput)
         ivaValore: ivaValore.toFixed(2),
         totale: totale.toFixed(2),
         province,
-        condizioniPagamento: Array.isArray(input.condizioniPagamento) ? input.condizioniPagamento : ["30% deposit on signing", "40% at mid-project milestone", "30% on completion"],
+        condizioniPagamento: Array.isArray(input.condizioniPagamento) ? input.condizioniPagamento : ["30% di acconto alla firma", "40% a stato avanzamento lavori (SAL)", "30% a saldo a fine lavori"],
         note: input.note ?? "Preventivo valido 30 giorni",
         status: "draft",
       })

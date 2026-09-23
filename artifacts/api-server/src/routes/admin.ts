@@ -711,11 +711,11 @@ router.get("/admin/search-console", async (req, res) => {
     if (!gscKey) {
       // Fallback fallback simulated dashboard if variables are not yet configured on Vercel
       const keywords = [
-        { query: "plumber quote toronto (Demo)", clicks: 342, impressions: 4500, ctr: 0.076, position: 2.1 },
-        { query: "quote template excel (Demo)", clicks: 289, impressions: 5800, ctr: 0.049, position: 3.4 },
-        { query: "create quote pdf (Demo)", clicks: 210, impressions: 3200, ctr: 0.065, position: 1.8 },
-        { query: "electrician quote vancouver (Demo)", clicks: 195, impressions: 2900, ctr: 0.067, position: 2.5 },
-        { query: "contractor quote template (Demo)", clicks: 140, impressions: 2100, ctr: 0.066, position: 3.0 },
+        { query: "preventivo idraulico milano (Demo)", clicks: 342, impressions: 4500, ctr: 0.076, position: 2.1 },
+        { query: "modello preventivo excel (Demo)", clicks: 289, impressions: 5800, ctr: 0.049, position: 3.4 },
+        { query: "come fare un preventivo pdf (Demo)", clicks: 210, impressions: 3200, ctr: 0.065, position: 1.8 },
+        { query: "preventivo elettricista roma (Demo)", clicks: 195, impressions: 2900, ctr: 0.067, position: 2.5 },
+        { query: "preventivo ristrutturazione bagno (Demo)", clicks: 140, impressions: 2100, ctr: 0.066, position: 3.0 },
       ];
 
       const clicks = keywords.reduce((sum, k) => sum + k.clicks, 0);

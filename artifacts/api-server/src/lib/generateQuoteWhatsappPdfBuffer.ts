@@ -1,5 +1,5 @@
 // Phase 71: the WhatsApp bot sends the same document the dashboard produces
-// (quotes/pdf.ts, bilingual, province tax lines). Before, this file carried a
+// (quotes/pdf.ts, righe IVA per regime). Before, this file carried a
 // 330-line copy of the layout that had already drifted (English-only, one
 // "TAX" line) — kept as a named export so routes/whatsapp.ts and the e2e PDF
 // matrix don't change.

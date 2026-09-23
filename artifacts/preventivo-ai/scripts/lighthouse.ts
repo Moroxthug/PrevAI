@@ -2,7 +2,7 @@
 //
 //   pnpm --filter @workspace/preventivo-ai build
 //   pnpm --filter @workspace/preventivo-ai qa:lighthouse                 # default URL set, serves dist/public itself
-//   pnpm --filter @workspace/preventivo-ai qa:lighthouse -- --urls=/,/fr/ --runs=3
+//   pnpm --filter @workspace/preventivo-ai qa:lighthouse -- --urls=/,/whatsapp/ --runs=3
 //   pnpm --filter @workspace/preventivo-ai qa:lighthouse -- --api=http://127.0.0.1:5123 --urls=/p/<id>/
 //   pnpm --filter @workspace/preventivo-ai qa:lighthouse -- --base=https://prevai.it
 //
@@ -35,12 +35,10 @@ const API = args.get("api");
 const BASE = args.get("base");
 const DEFAULT_URLS = [
   "/",
-  "/fr/",
   "/whatsapp/",
-  "/blog/how-much-does-it-cost-to-paint-an-apartment-in-canada-2026/",
+  "/blog/quanto-costa-tinteggiatura-appartamento/",
   "/preventivi/imbianchino/",
-  "/preventivi/imbianchino/toronto/",
-  "/fr/soumissions/peintre/montreal/",
+  "/preventivi/imbianchino/milano/",
 ];
 // Paths may be given without the leading slash (Git Bash rewrites "/x" into a Windows path).
 const URLS = (args.get("urls") ?? DEFAULT_URLS.join(",")).split(",").filter(Boolean).map((p) => (p === "home" ? "/" : p.startsWith("/") ? p : `/${p}`));

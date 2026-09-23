@@ -200,7 +200,6 @@ const UpdateContractBody = z.object({
       estimatedDurationWeeks: z.number().int().min(1).max(260).nullable().optional(),
       warrantyMonths: z.number().int().min(0).max(120).optional(),
       directAgreement: z.boolean().optional(),
-      englishRequestedInQuebec: z.boolean().optional(),
       holdbackEnabled: z.boolean().optional(),
       holdbackPercent: z.number().min(0).max(50).optional(),
       customerEmail: z.string().email().optional(),

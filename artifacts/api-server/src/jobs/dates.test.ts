@@ -1,25 +1,18 @@
 import { describe, expect, test } from "vitest";
-import { localDayFor, timeZoneForProvince, toIsoDate } from "./dates.js";
+import { localDayFor, toIsoDate } from "./dates.js";
 
-describe("localDayFor (Phase 66)", () => {
-  test("an evening clock-in in Ottawa stays on the Ottawa calendar day", () => {
-    // 20:18 EDT on Sept 20 = 00:18 UTC on Sept 21
-    const instant = new Date("2026-09-21T00:18:00Z");
-    expect(toIsoDate(localDayFor(instant, "ON"))).toBe("2026-09-20");
-    expect(toIsoDate(localDayFor(instant, "QC"))).toBe("2026-09-20");
-    expect(toIsoDate(localDayFor(instant, "BC"))).toBe("2026-09-20");
-    // Newfoundland (UTC-2:30 in September) has already crossed midnight? 00:18 UTC = 21:48 NDT → still Sept 20
-    expect(toIsoDate(localDayFor(instant, "NL"))).toBe("2026-09-20");
+describe("localDayFor — giorno di calendario italiano", () => {
+  test("una timbratura dopo mezzanotte ora italiana va sul nuovo giorno", () => {
+    // 00:30 CEST del 21 settembre = 22:30 UTC del 20
+    expect(toIsoDate(localDayFor(new Date("2026-09-20T22:30:00Z")))).toBe("2026-09-21");
   });
 
-  test("returns UTC midnight of that day (the `date` column convention)", () => {
-    const d = localDayFor(new Date("2026-03-01T03:00:00Z"), "AB"); // 20:00 MST Feb 28
-    expect(d.toISOString()).toBe("2026-02-28T00:00:00.000Z");
+  test("una timbratura serale resta sul giorno italiano", () => {
+    // 23:30 CET del 28 febbraio = 22:30 UTC dello stesso giorno
+    expect(toIsoDate(localDayFor(new Date("2026-02-28T22:30:00Z")))).toBe("2026-02-28");
   });
 
-  test("unknown provinces fall back to Toronto", () => {
-    expect(timeZoneForProvince(null)).toBe("America/Toronto");
-    expect(timeZoneForProvince("ZZ")).toBe("America/Toronto");
-    expect(timeZoneForProvince("sk")).toBe("America/Regina");
+  test("restituisce la mezzanotte UTC di quel giorno (convenzione delle colonne `date`)", () => {
+    expect(localDayFor(new Date("2026-03-01T03:00:00Z")).toISOString()).toBe("2026-03-01T00:00:00.000Z");
   });
 });

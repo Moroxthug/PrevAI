@@ -37,8 +37,8 @@ export const paymentTermSchema = z.object({
 });
 
 export const paymentScheduleSchema = z.object({
-  /** V2-2: EUR. "CAD" accettato solo per righe importate da QuoteAI. */
-  currency: z.enum(["EUR", "CAD"]).default("EUR"),
+  /** Sempre EUR. */
+  currency: z.enum(["EUR"]).default("EUR"),
   terms: z.array(paymentTermSchema).min(1).max(20),
   holdback: z
     .object({
@@ -77,7 +77,7 @@ export function defaultPaymentSchedule(): PaymentSchedule {
 }
 
 const PERCENT_RE = /(\d{1,3}(?:[.,]\d+)?)\s*%/;
-const FIXED_RE = /(?:€|EUR\s?|\$|CAD\s?)\s?(\d[\d.,]*)|(\d[\d.,]*)\s?(?:€|EUR\b|euro\b)/i;
+const FIXED_RE = /(?:€|EUR\s?)\s?(\d[\d.,]*)|(\d[\d.,]*)\s?(?:€|EUR\b|euro\b)/i;
 const NET_DAYS_RE = /net\s*(\d{1,3})|(?:within|entro)\s*(\d{1,3})\s*(?:days|giorni)|(\d{1,3})\s*(?:days?|giorni|gg)\s*(?:after|from|of|d\.?f\.?|data|dalla?)\s*(?:the\s*)?(?:invoice|fattura|f\.?m\.?)?/i;
 
 /** "1.234,56" / "1,234.56" / "2.000" / "2000" → numero (separatore decimale = ultimo tra . e , se seguito da 1-2 cifre). */
@@ -148,8 +148,8 @@ export function derivePaymentScheduleFromText(
         dueDays: dueDays ?? (trigger === "on_signing" ? 0 : 15),
       });
     }
-    // Lines like "Payment by e-transfer or cheque" are conditions, not
-    // tranches: they are simply skipped.
+    // Righe come "Pagamento con bonifico o assegno" sono condizioni, non
+    // rate: si saltano.
   });
 
   const percentSum = terms.filter((t) => t.amountType === "percent").reduce((s, t) => s + t.value, 0);

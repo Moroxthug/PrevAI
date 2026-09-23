@@ -39,9 +39,9 @@ router.get("/healthz/ops", opsLimiter, async (_req, res) => {
 });
 
 
-// Phase 71: static, public — the dashboard's manual-quote builder needs every
-// province's components to show "GST 5 % + QST 9.975 %" as the user picks a
-// province, and the rates live in lib/db so no client-side copy can drift.
+// Statico e pubblico: i regimi IVA (22/10/4 %, reverse charge, split payment,
+// esente) per il costruttore di preventivi manuali. Le aliquote stanno in
+// @workspace/config, così nessuna copia lato client può divergere.
 router.get("/tax-profiles", (_req, res) => {
   res.setHeader("Cache-Control", "public, max-age=86400");
   res.json({ profiles: Object.values(TAX_PROFILES) });

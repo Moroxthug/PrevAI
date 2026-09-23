@@ -71,7 +71,7 @@ function readData(rel: string): Buffer {
   const abs = join(backupDir, rel);
   const raw = readFileSync(abs);
   if (!rel.endsWith(".enc")) return raw;
-  if (raw.subarray(0, 5).toString() !== "QAIB1") throw new Error(`${rel}: not a QuoteAI encrypted file`);
+  if (raw.subarray(0, 5).toString() !== "QAIB1") throw new Error(`${rel}: not a PrevAI encrypted backup file`);
   const salt = raw.subarray(5, 21);
   const iv = raw.subarray(21, 33);
   const tag = raw.subarray(33, 49);

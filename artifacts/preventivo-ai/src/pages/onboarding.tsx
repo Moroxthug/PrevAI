@@ -11,7 +11,7 @@ import { markOnboardingSkipped, markOnboardingDone } from "@/lib/onboarding-stat
 import { useLanguage } from "@/i18n/LanguageContext";
 import { useDocumentTitle } from "@/hooks/use-document-title";
 import { PaymentScheduleEditor } from "@/components/payment-schedule-editor";
-import { CANADIAN_PROVINCES, type PaymentSchedule } from "@/lib/payment-schedule";
+import { PROVINCE_SELECT, type PaymentSchedule } from "@/lib/payment-schedule";
 
 const ALLOWED_TYPES = ["image/svg+xml", "image/png", "image/jpeg", "image/jpg"];
 const MAX_SIZE_MB = 2;
@@ -265,7 +265,7 @@ export default function OnboardingPage() {
                       onChange={(e) => setProvince(e.target.value)}
                     >
                       <option value="">{t("onboarding.provinceSelect")}</option>
-                      {CANADIAN_PROVINCES.map((p) => (
+                      {PROVINCE_SELECT.map((p) => (
                         <option key={p.code} value={p.code}>{p.name}</option>
                       ))}
                     </select>

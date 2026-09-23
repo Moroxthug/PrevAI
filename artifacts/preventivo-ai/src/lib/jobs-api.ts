@@ -88,7 +88,7 @@ export type ReceiptExtractionDto = {
   currency: string | null;
   lines: { description: string; quantity: number | null; unitPrice: number | null; total: number | null }[];
   subtotal: number | null;
-  taxes: { GST?: number | null; HST?: number | null; PST?: number | null; QST?: number | null };
+  taxes: { IVA?: number | null };
   total: number | null;
   suggestedCategory: CostCategory | null;
   suggestedProjectId: string | null;
