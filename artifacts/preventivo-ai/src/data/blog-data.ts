@@ -4928,6 +4928,67 @@ export const BLOG_ARTICLES: BlogArticle[] = [
 <p>Per generare rapidamente un documento con questa struttura, sia per lavori programmati che per interventi urgenti, un <a href="/preventivi/idraulico/">generatore di preventivi AI per idraulici</a> permette di ottenere il documento corretto in meno di un minuto, direttamente da smartphone durante il sopralluogo.</p>
 `,
   },
+  {
+    slug: "prevai-canada-quoteai",
+    title: "PrevAI arriva in Canada: nasce QuoteAI, i preventivi con l'intelligenza artificiale per le imprese canadesi",
+    seoTitle: "PrevAI arriva in Canada: nasce QuoteAI",
+    metaDescription: "Lo stesso team di PrevAI lancia QuoteAI per il Canada: preventivi AI in inglese e francese, imposte provinciali (GST, HST, PST, QST) e dollari canadesi. Cosa cambia per chi lavora in Italia e in Canada.",
+    category: "Innovazione",
+    publishedAt: "2026-09-23",
+    readingTimeMin: 5,
+    relatedSectors: [],
+    contentHtml: `
+<p>PrevAI esce dall'Italia per la prima volta. Lo stesso team che sviluppa PrevAI ha lanciato <a href="https://quoteai.ca/">QuoteAI</a>, la versione del prodotto costruita per le imprese edili e gli artigiani del Canada. Non è una traduzione del sito italiano: è un prodotto pensato per un mercato con altre lingue, altre imposte e altre regole.</p>
+<p>In questo articolo spieghiamo perché abbiamo scelto il Canada, che cosa cambia fra i due prodotti e che cosa significa per chi usa PrevAI in Italia o lavora in Canada.</p>
+<figure>
+  <img src="/images/blog/prevai-canada-quoteai.jpg" width="1600" height="1000" loading="lazy" decoding="async" alt="La homepage di QuoteAI: a destra un preventivo di un'impresa di tinteggiatura di Toronto con subtotale di 1.450 dollari, HST al 13 % e totale di 1.769 dollari" />
+  <figcaption>La homepage di QuoteAI: un preventivo per l'Ontario, con l'HST al 13 % calcolata in automatico.</figcaption>
+</figure>
+
+<h2>Perché il Canada</h2>
+<p>Il problema che PrevAI risolve non è solo italiano. Un idraulico di Toronto e un idraulico di Milano perdono lo stesso tempo la sera a scrivere preventivi al computer, e perdono gli stessi lavori quando il documento arriva al cliente due giorni dopo quello del concorrente. Il flusso di lavoro è lo stesso: sopralluogo, descrizione del lavoro, voci, prezzi, imposte, invio, firma.</p>
+<p>Il Canada ha poi un legame particolare con l'Italia. Al censimento 2021 di Statistics Canada circa un milione e mezzo di persone hanno dichiarato origini italiane, con le comunità più grandi nelle aree di Toronto e di Montréal: una presenza storica anche nell'edilizia e nei mestieri. Per molti di loro l'italiano è ancora una lingua di casa, ma i preventivi si scrivono in inglese o in francese.</p>
+
+<h2>Che cosa cambia fra PrevAI e QuoteAI</h2>
+<p>Il principio è lo stesso: descrivi il lavoro a parole e in pochi secondi ottieni un preventivo completo, con voci, quantità, prezzi e imposte, pronto da inviare. Cambia tutto ciò che dipende dal Paese:</p>
+<div class="overflow-x-auto">
+<table>
+  <thead>
+    <tr><th></th><th>PrevAI (Italia)</th><th>QuoteAI (Canada)</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>Lingua</td><td>Italiano</td><td>Inglese e francese (anche per il Québec)</td></tr>
+    <tr><td>Valuta</td><td>Euro</td><td>Dollaro canadese</td></tr>
+    <tr><td>Imposte sul preventivo</td><td>IVA al 22 %, 10 % o 4 % secondo il lavoro, regimi senza IVA per i forfettari</td><td>GST, HST, PST e QST secondo la provincia</td></tr>
+    <tr><td>Fatturazione elettronica</td><td>Obbligatoria, tramite il Sistema di Interscambio (SdI)</td><td>Nessun sistema equivalente: le fatture seguono le regole canadesi</td></tr>
+  </tbody>
+</table>
+</div>
+<p>Le imposte sono l'esempio più chiaro del perché serve un prodotto per ogni mercato. In Italia il problema è scegliere l'aliquota IVA giusta per il tipo di intervento; in Canada è sapere quali imposte si applicano nella provincia del cantiere: la HST unica in Ontario, GST e PST separate in British Columbia, GST e QST in Québec. Un preventivo con l'imposta sbagliata è un preventivo sbagliato, in qualunque lingua sia scritto.</p>
+
+<h2>Che cosa significa per chi usa PrevAI in Italia</h2>
+<p>Per le imprese italiane non cambia nulla nel modo di lavorare, e alcune cose migliorano:</p>
+<ul>
+  <li><strong>Un team che lavora su due mercati.</strong> La prossima versione di PrevAI è costruita sulla stessa base tecnica di QuoteAI: le funzioni nate su un mercato, quando hanno senso anche sull'altro, si portano sull'altro.</li>
+  <li><strong>Account e dati separati.</strong> Un account PrevAI non è un account QuoteAI. I dati delle imprese italiane restano su server nell'Unione europea e sono trattati secondo il GDPR, come sempre.</li>
+  <li><strong>Regole italiane, non adattate.</strong> Tutto ciò che è specifico dell'Italia — IVA, regime forfettario, regole su preventivi e contratti — resta al centro di PrevAI e continua a essere sviluppato qui.</li>
+</ul>
+
+<h2>Se lavori in Canada, o stai per trasferirti</h2>
+<p>Se la tua impresa lavora in Canada, PrevAI non è lo strumento giusto: IVA, SdI e regime forfettario non si applicano, e un preventivo italiano non è valido per un cliente canadese. In quel caso usa QuoteAI, che parla la lingua dei tuoi clienti e calcola le imposte della loro provincia. Per chi lavora in Québec il sito è anche <a href="https://quoteai.ca/fr/">in francese</a>.</p>
+<p>Se invece lavori in Italia con clienti italiani, anche se sono residenti all'estero, continua a usare PrevAI: il preventivo segue le regole del luogo in cui esegui il lavoro.</p>
+
+<h2>Domande frequenti</h2>
+<h3>QuoteAI è un'azienda diversa da PrevAI?</h3>
+<p>No: QuoteAI è sviluppato dallo stesso team di PrevAI. Sono due prodotti distinti, con siti, account e prezzi separati, perché servono due mercati diversi.</p>
+<h3>Posso usare il mio account PrevAI su QuoteAI?</h3>
+<p>No. Gli account sono separati anche per ragioni di protezione dei dati: i dati delle imprese italiane restano nell'Unione europea. Se lavori in entrambi i Paesi ti servono due account.</p>
+<h3>PrevAI diventerà un prodotto in inglese?</h3>
+<p>No. PrevAI resta in italiano e costruito sulle regole italiane. Il Canada ha il suo prodotto proprio perché adattare un solo software a due Paesi avrebbe reso entrambe le versioni peggiori.</p>
+<h3>Le funzioni nuove arriveranno su tutti e due?</h3>
+<p>Quelle che hanno senso in entrambi i mercati sì. Quelle legate alle regole di un Paese — l'IVA e lo SdI in Italia, le imposte provinciali in Canada — restano dove servono.</p>
+`,
+  },
 ];
 
 export interface GuideCard {
