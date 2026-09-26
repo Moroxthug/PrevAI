@@ -118,7 +118,7 @@ Le 13 variabili v1 restano valide (`docs/ENV-INVENTORY.md`). Da **aggiungere** p
 
 | Variabile | Valore | Perché |
 |---|---|---|
-| `BETTER_AUTH_URL` | `https://www.prevai.it` (il dominio canonico: `prevai.it` fa 308 verso www) | base dei callback auth e dei link nelle email (in preview il codice ricade su `PREVAI_BASE_URL`/`VERCEL_URL`) |
+| `BETTER_AUTH_URL` | `https://prevai.it` (dominio canonico dal 2026-09-26: `www.prevai.it` fa 308 verso `prevai.it`, come i canonical delle pagine) | base dei callback auth e dei link nelle email (in preview il codice ricade su `PREVAI_BASE_URL`/`VERCEL_URL`) |
 | `TRUSTED_ORIGINS` | `https://prevai.it,https://www.prevai.it` | CORS + better-auth; senza, il login da `www` fallisce |
 | `CRON_SECRET` | `openssl rand -hex 32` | bearer del cron giornaliero `/api/cron/tick` (12:00 UTC, `vercel.json`): incentivi v1, follow-up, promemoria pro-forma |
 | `TOKEN_ENCRYPTION_KEY` | `openssl rand -hex 32` (64 hex) | AES-256-GCM per i token OAuth (calendario/Gmail) a riposo; il modulo lancia un errore alla prima cifratura se manca |
