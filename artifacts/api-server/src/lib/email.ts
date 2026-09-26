@@ -66,7 +66,8 @@ function buildSubscriptionEmail(params: {
   planPrice: number;
   planInterval: string | null;
 }) {
-  const { userName, planName, planPrice, planInterval } = params;
+  const { planName, planPrice, planInterval } = params;
+  const userName = escapeHtml(params.userName);
   const tier = getPlanTier(planName);
   const isRecurring = !!planInterval;
   const date = new Date().toLocaleDateString("it-IT", { day: "2-digit", month: "long", year: "numeric" });
@@ -170,7 +171,7 @@ function buildSubscriptionEmail(params: {
 }
 
 function buildWelcomeEmail(name: string): string {
-  const firstName = name?.split(" ")[0] || name || "Benvenuto";
+  const firstName = escapeHtml(name?.split(" ")[0] || name || "Benvenuto");
   return `<!DOCTYPE html>
 <html lang="it">
 <head>
