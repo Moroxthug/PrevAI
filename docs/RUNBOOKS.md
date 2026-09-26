@@ -118,7 +118,7 @@ Le 13 variabili v1 restano valide (`docs/ENV-INVENTORY.md`). Da **aggiungere** p
 
 | Variabile | Valore | Perché |
 |---|---|---|
-| `BETTER_AUTH_URL` | `https://prevai.it` | base dei callback auth (in preview il codice ricade su `PREVAI_BASE_URL`/`VERCEL_URL`) |
+| `BETTER_AUTH_URL` | `https://www.prevai.it` (il dominio canonico: `prevai.it` fa 308 verso www) | base dei callback auth e dei link nelle email (in preview il codice ricade su `PREVAI_BASE_URL`/`VERCEL_URL`) |
 | `TRUSTED_ORIGINS` | `https://prevai.it,https://www.prevai.it` | CORS + better-auth; senza, il login da `www` fallisce |
 | `CRON_SECRET` | `openssl rand -hex 32` | bearer del cron giornaliero `/api/cron/tick` (12:00 UTC, `vercel.json`): incentivi v1, follow-up, promemoria pro-forma |
 | `TOKEN_ENCRYPTION_KEY` | `openssl rand -hex 32` (64 hex) | AES-256-GCM per i token OAuth (calendario/Gmail) a riposo; il modulo lancia un errore alla prima cifratura se manca |
@@ -132,7 +132,7 @@ Da **verificare** (già presenti): `STRIPE_WEBHOOK_SECRET` deve corrispondere al
 ### 5.2 Preview v2 (fuori finestra, senza toccare il DB)
 
 1. `git push origin v2` → deploy preview. Con le env Production copiate in Preview, la preview **legge il DB di produzione non ancora migrato**: le tabelle v2 mancano, quindi la preview serve solo per frontend, login e lettura preventivi. **Non** creare dati dalla preview prima della migrazione.
-2. Verifica preview: `/api/healthz` 200; homepage e 3 URL SEO v1 (es. `/preventivo-ristrutturazione-bagno`) 200 con canonical `https://prevai.it/...`; login admin reale; lista preventivi; apertura di un preventivo storico; PDF.
+2. Verifica preview: `/api/healthz` 200; homepage e 3 URL SEO v1 (es. `/preventivi/idraulico/`, `/preventivi/imbianchino/milano/`, un articolo del blog) 200 con canonical `https://prevai.it/...`; login admin reale; lista preventivi; apertura di un preventivo storico; PDF.
 
 3. **Prezzi su Stripe (A-5, prima del promote)**: il checkout di v2 addebita solo Price che coincidono con i prezzi mostrati (`lib/config/src/piani.ts`, IVA inclusa). Senza intervento **Starter e Pro mensili continuano a vendersi** sui Price storici (19 e 49 €), mentre **Elite mensile (79 €) e tutti gli annuali rispondono 503** finché non esistono. Creare nella dashboard Stripe (live), per ogni riga, un Price ricorrente in EUR con la sua **lookup key**: `piano_starter_annuale` 190 €/anno, `piano_pro_annuale` 490 €/anno, `piano_elite_mensile` 79 €/mese, `piano_elite_annuale` 790 €/anno (facoltativi `piano_starter_mensile` 19 € e `piano_pro_mensile` 49 €, che prendono il posto degli storici). L'elenco completo, add-on compreso, è in Admin → "Test di prezzo". **Non** toccare i Price storici: gli abbonati attuali restano al loro prezzo (Elite a 59 € compreso) e il webhook continua a riconoscerli. Prima del promote verificare nella dashboard Stripe che gli importi dei Price storici siano davvero 19 e 49 €: i testi di v1 dicevano "29 €" in più punti, e se Stripe dice 29 il checkout rifiuta invece di addebitare.
 
