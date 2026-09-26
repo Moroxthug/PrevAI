@@ -138,9 +138,11 @@ Da **verificare** (già presenti): `STRIPE_WEBHOOK_SECRET` deve corrispondere al
 
 ### 5.3 Finestra di manutenzione (ordine obbligatorio)
 
+**TLS (prova generale del 2026-09-26):** l'URL porta `sslmode=verify-full&sslrootcert=<CA Supabase>`. Serve al punto 5: con il solo `PGSSLMODE=require` esportato, `schema-drift.ts` (client `pg` di Node) verifica il certificato senza conoscere la CA di Supabase e si ferma; con la CA nell'URL la verifica passa, per `psql`, `pg_dump` e drift allo stesso modo. Provato sullo staging con una CA di prova (connessione TLSv1.3, punti 1–5 verdi) e con la controprova di una CA sbagliata (rifiutata da `psql` e dal drift). **Prima della finestra (lunedì)**: scaricare il certificato da Supabase → Project Settings → Database → SSL Configuration → *Download certificate*, salvarlo in `C:\Users\Admin\PrevAI-backups\supabase-ca.crt` (fuori dal repo) e provare `"$PG/psql.exe" "$URL" -c "select 1"`. Se risponde con un errore di certificato o di nome host (il pooler non coperto da quel certificato), martedì usare `sslmode=require` senza `sslrootcert` per i punti 1–4 e, al punto 5, `sslmode=no-verify` nell'URL del solo drift, annotandolo nel Diario.
+
 ```bash
 PG=/c/Users/Admin/pg17/pgsql/bin; export PGSSLMODE=require
-URL="postgresql://postgres.<ref>:<pw>@aws-0-eu-west-1.pooler.supabase.com:5432/postgres"   # session mode, §1
+URL="postgresql://postgres.<ref>:<pw>@aws-0-eu-west-1.pooler.supabase.com:5432/postgres?sslmode=verify-full&sslrootcert=C:/Users/Admin/PrevAI-backups/supabase-ca.crt"   # session mode, §1
 # 1. dump fresco + verifica
 "$PG/pg_dump.exe" --dbname="$URL" --format=custom --no-owner --no-privileges --schema=public --file="C:/Users/Admin/PrevAI-backups/prevai-prod-pre-v2-$(date +%Y%m%d-%H%M).dump"
 "$PG/pg_restore.exe" --list C:/Users/Admin/PrevAI-backups/prevai-prod-pre-v2-*.dump | grep -c "TABLE DATA"     # 24
