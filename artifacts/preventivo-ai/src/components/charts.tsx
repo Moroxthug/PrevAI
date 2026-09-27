@@ -23,9 +23,9 @@ export const money = (v: number) => formatCents(v);
 export const moneyShort = (v: number) => {
   const d = v / 100;
   const abs = Math.abs(d);
-  if (abs >= 1_000_000) return `${(d / 1_000_000).toFixed(1)}M $`;
-  if (abs >= 1_000) return `${Math.round(d / 1_000)}k $`;
-  return `${Math.round(d)} $`;
+  if (abs >= 1_000_000) return `${(d / 1_000_000).toFixed(1).replace(".", ",")} Mln €`;
+  if (abs >= 1_000) return `${Math.round(d / 1_000)}k €`;
+  return `${Math.round(d)} €`;
 };
 
 export function ChartCard({ title, subtitle, children, right, className }: { title: string; subtitle?: string; children: ReactNode; right?: ReactNode; className?: string }) {

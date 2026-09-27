@@ -288,6 +288,8 @@ export function PhoneNewButton({ hasJobs }: { hasJobs: boolean }) {
   const actions = [
     { key: "quote", label: t("dashboard.nav.newQuote"), icon: FilePlus2, run: () => navigate("/dashboard/new") },
     { key: "lead", label: t("mobile.new.lead"), icon: Target, run: () => navigate("/dashboard/leads?new=1") },
+    // Phase 106: the jobs list's New job button lives here on a phone.
+    hasJobs && { key: "job", label: t("jobs.newJob"), icon: Briefcase, run: () => navigate("/dashboard/jobs?new=1") },
     hasJobs && { key: "receipt", label: t("mobile.new.receipt"), icon: Camera, run: () => { setOpen(false); setIntent("receipt"); } },
   ].filter((a): a is { key: string; label: string; icon: LucideIcon; run: () => void } => !!a);
   if (actions.length === 0) return null;

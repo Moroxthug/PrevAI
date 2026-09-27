@@ -10,6 +10,7 @@ import { jobsApi, type JobDetailDto, type JobPhotoDto } from "@/lib/jobs-api";
  * Photos tab (Phase 10): upload progress photos tied to the job (optionally
  * a milestone), then optionally share a selection with the customer — a
  * time-limited link sent by email/WhatsApp, not a public gallery.
+ * Phase 106: three to a row on a phone, the upload one line.
  */
 export function PhotosTab({ data }: { data: JobDetailDto }) {
   const { t } = useLanguage();
@@ -71,7 +72,7 @@ export function PhotosTab({ data }: { data: JobDetailDto }) {
 
       <div className="act-body stack">
         <div
-          className={cn("dropzone flush", dragging && "on")}
+          className={cn("dropzone flush compact-phone", dragging && "on")}
           onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
           onDragLeave={() => setDragging(false)}
           onDrop={(e) => { e.preventDefault(); setDragging(false); onFiles(e.dataTransfer.files); }}
@@ -90,7 +91,7 @@ export function PhotosTab({ data }: { data: JobDetailDto }) {
             {t("jobs.photos.empty")}
           </div>
         ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+          <div className="photo-grid grid grid-cols-3 md:grid-cols-4 gap-2 sm:gap-3">
             {photos.map((p: JobPhotoDto) => {
               const isSelected = selected.has(p.id);
               const ms = milestoneTitle(p.milestoneId);
@@ -99,7 +100,7 @@ export function PhotosTab({ data }: { data: JobDetailDto }) {
                   <button type="button" className="photo-img" onClick={() => toggle(p.id)}>
                     <img src={jobsApi.photoFileUrl(job.id, p.id)} alt={p.caption || p.fileName} />
                   </button>
-                  <button type="button" className={cn("chk", isSelected && "on")} onClick={() => toggle(p.id)} aria-pressed={isSelected}>
+                  <button type="button" className={cn("chk", isSelected && "on")} onClick={() => toggle(p.id)} aria-pressed={isSelected} aria-label={t("jobs.m.selectPhoto").replace("{name}", p.caption || p.fileName)}>
                     {isSelected && <Check />}
                   </button>
                   <button

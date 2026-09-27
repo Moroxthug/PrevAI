@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { rowLink } from "@/lib/row-link";
-import { Link, useLocation } from "wouter";
+import { Link, useLocation, useSearch } from "wouter";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { it } from "date-fns/locale";
@@ -12,6 +12,9 @@ import { cn } from "@/lib/utils";
 import { useLanguage } from "@/i18n/LanguageContext";
 import { jobsApi, formatCents, type JobSummaryDto } from "@/lib/jobs-api";
 import { ReceiptQueue } from "@/components/jobs/receipt-queue";
+import { ListRow } from "@/components/mobile/list-row";
+import { useMediaQuery } from "@/hooks/use-media-query";
+import { formatEurWhole } from "@/lib/money";
 
 function statusChip(j: JobSummaryDto, t: (key: string) => string): { cls: string; label: string } {
   if (j.setupStatus === "pending_review") return { cls: "chip-yellow", label: t("jobs.status.pending_review") };
@@ -28,15 +31,30 @@ export default function JobsListPage() {
   const { data, isLoading } = useQuery({ queryKey: ["jobs"], queryFn: jobsApi.list });
   const [createOpen, setCreateOpen] = useState(false);
   const items = data?.items ?? [];
-
+  const phone = useMediaQuery("(max-width: 640px)");
+  // Phase 106: on a phone New job is in the top bar's + sheet, which opens this form with ?new=1 (then drops it, so Back does not reopen it).
+  const query = useSearch();
+  useEffect(() => {
+    if (new URLSearchParams(query).get("new") !== "1") return;
+    setCreateOpen(true);
+    navigate("/dashboard/jobs", { replace: true });
+  }, [query, navigate]);
+  const day = (s: string) => new Date(`${s}T00:00:00`);
+  /** The quiet line's "what's next": the next milestone and when it should be done, else the dates. */
+  const nextLine = (j: JobSummaryDto) => {
+    if (j.status === "suspended") return t("jobs.scheduleOnHold");
+    if (j.status === "completed") return j.completedAt ? format(new Date(j.completedAt), "d MMM yyyy", { locale }) : null;
+    if (j.nextMilestone) return t("jobs.m.next").replace("{title}", j.nextMilestone.plannedEnd ? `${j.nextMilestone.title}, ${format(day(j.nextMilestone.plannedEnd), "d MMM", { locale })}` : j.nextMilestone.title);
+    return j.plannedStart && j.plannedEnd ? `${format(day(j.plannedStart), "d MMM", { locale })} – ${format(day(j.plannedEnd), "d MMM", { locale })}` : null;
+  };
   return (
     <div className="animate-in fade-in duration-500">
       <div className="page-head">
         <div>
           <h1>{t("jobs.title")}</h1>
-          <p className="sub">{t("jobs.subtitle")}</p>
+          <p className="sub hide-phone">{t("jobs.subtitle")}</p>
         </div>
-        <div className="head-actions">
+        <div className="head-actions hide-phone">
           <button type="button" className="btn btn-navy" onClick={() => setCreateOpen(true)}>
             <Plus className="h-4 w-4" /> {t("jobs.newJob")}
           </button>
@@ -57,6 +75,30 @@ export default function JobsListPage() {
             <p className="text-sm text-muted-foreground mb-2">{t("jobs.emptyDesc")}</p>
             <Link href="/dashboard/contracts" className="cta-link mx-auto">{t("jobs.goToContracts")}</Link>
           </div>
+        ) : phone ? (
+          // Phase 106: job · client and what's next / how far along / what it's worth.
+          <ul className="lrows jlist" aria-label={t("jobs.title")}>
+            {items.map((j) => {
+              const chip = statusChip(j, t);
+              return (
+                <li key={j.id}>
+                  <ListRow
+                    href={j.setupStatus === "pending_review" ? `/dashboard/jobs/${j.id}/setup` : `/dashboard/jobs/${j.id}`}
+                    title={j.name}
+                    meta={[j.clientName, nextLine(j)]}
+                    below={j.setupStatus === "pending_review" ? undefined : (
+                      <span className="jlist-prog">
+                        <span className="pbar" aria-hidden="true"><i style={{ width: `${j.progressPercent}%` }} /></span>
+                        <span>{j.progressPercent}%</span>
+                      </span>
+                    )}
+                    amount={formatEurWhole(j.totalValueCents / 100)}
+                    end={<span className={cn("chip", chip.cls)}>{chip.label}</span>}
+                  />
+                </li>
+              );
+            })}
+          </ul>
         ) : (
           <div className="tbl-wrap">
             <table className="tbl">

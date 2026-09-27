@@ -9,6 +9,7 @@ import { cn } from "@/lib/utils";
 import { useLanguage } from "@/i18n/LanguageContext";
 import { jobsApi, formatCents, type CostCategory, type CostEntryDto, type JobDetailDto } from "@/lib/jobs-api";
 import { CostEntryDialog, COST_CATEGORY_KEYS } from "./cost-entry-dialog";
+import { RowMore } from "@/components/mobile/row-more";
 
 const day = (s: string | null) => (s ? new Date(`${s}T00:00:00`) : null);
 const SOURCE_ICON: Record<CostEntryDto["source"], typeof Receipt> = { receipt: Receipt, time_entry: Clock, equipment: Wrench, manual: Pencil, legacy: Pencil };
@@ -16,6 +17,9 @@ const SOURCE_ICON: Record<CostEntryDto["source"], typeof Receipt> = { receipt: R
 /**
  * Costs tab: receipt dropzone → AI review queue → confirmed entries, with
  * budget-vs-actual by category on the side.
+ * Phase 106: on a phone the drop zone is one line (there is nothing to drop
+ * from), rows wrap their buttons under the text, and the date joins the quiet
+ * line instead of taking a column.
  */
 export function CostsTab({ data, locale }: { data: JobDetailDto; locale: typeof it }) {
   const { t } = useLanguage();
@@ -59,7 +63,7 @@ export function CostsTab({ data, locale }: { data: JobDetailDto; locale: typeof 
       <div className="lg:col-span-2 stack">
         {/* Dropzone */}
         <div
-          className={cn("dropzone flush", dragging && "on")}
+          className={cn("dropzone flush compact-phone", dragging && "on")}
           onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
           onDragLeave={() => setDragging(false)}
           onDrop={(e) => { e.preventDefault(); setDragging(false); onFiles(e.dataTransfer.files); }}
@@ -79,14 +83,16 @@ export function CostsTab({ data, locale }: { data: JobDetailDto; locale: typeof 
             </div>
             <div>
               {pending.map((e) => (
-                <div key={e.id} className="item-row">
+                <div key={e.id} className="item-row wrap-phone">
                   <button type="button" className="grow text-left" onClick={() => setDialog({ open: true, entry: e })}>
                     <span className="ttl"><b>{e.vendor || t("jobs.costs.unknownVendor")}</b> <span style={{ color: "var(--muted-mk)" }}>· {e.description}</span></span>
                     <span className="sub">{e.date ? format(day(e.date)!, "PP", { locale }) : "—"} · {t(`jobs.cost.${e.category}`)}{e.aiExtraction ? ` · ${t(`jobs.costs.confidence.${e.aiExtraction.confidence}`)}` : ""}</span>
                   </button>
                   <span className="amt">{formatCents(e.totalCents)}</span>
-                  <button type="button" className="btn btn-sm btn-outline-navy" onClick={() => setDialog({ open: true, entry: e })}>{t("jobs.costs.review")}</button>
-                  <button type="button" className="btn btn-sm btn-navy" style={{ background: "var(--green)" }} disabled={confirm.isPending || !e.totalCents} onClick={() => confirm.mutate(e.id)}><CheckCircle2 className="h-3.5 w-3.5" /> {t("jobs.costs.confirm")}</button>
+                  <span className="row-acts">
+                    <button type="button" className="btn btn-sm btn-outline-navy" onClick={() => setDialog({ open: true, entry: e })}>{t("jobs.costs.review")}</button>
+                    <button type="button" className="btn btn-sm btn-navy" style={{ background: "var(--green)" }} disabled={confirm.isPending || !e.totalCents} onClick={() => confirm.mutate(e.id)}><CheckCircle2 className="h-3.5 w-3.5" /> {t("jobs.costs.confirm")}</button>
+                  </span>
                 </div>
               ))}
             </div>
@@ -115,16 +121,22 @@ export function CostsTab({ data, locale }: { data: JobDetailDto; locale: typeof 
                 return (
                   <div key={e.id} className="item-row">
                     <span className="ic" title={t(`jobs.costs.source.${e.source}`)}><Icon /></span>
-                    <span className="date">{e.date ? format(day(e.date)!, "d MMM yy", { locale }) : "—"}</span>
+                    <span className="date hide-phone">{e.date ? format(day(e.date)!, "d MMM yy", { locale }) : "—"}</span>
                     <div className="grow">
                       <span className="ttl">{e.vendor && !derived ? <b>{e.vendor}</b> : null}{e.vendor && !derived && e.description ? " · " : ""}{e.description}</span>
-                      <span className="sub">{t(`jobs.cost.${e.category}`)}{e.milestoneTitle ? ` · ${e.milestoneTitle}` : ""}{e.taxCents ? ` · ${t("jobs.costs.tax")} ${formatCents(e.taxCents)}` : ""}</span>
+                      <span className="sub">{e.date && <span className="show-phone">{format(day(e.date)!, "d MMM", { locale })} · </span>}{t(`jobs.cost.${e.category}`)}{e.milestoneTitle ? ` · ${e.milestoneTitle}` : ""}{e.taxCents ? ` · ${t("jobs.costs.tax")} ${formatCents(e.taxCents)}` : ""}</span>
                     </div>
                     <span className="amt">{formatCents(e.totalCents)}</span>
                     {!derived && (
-                      <div className="hover-act">
-                        <button type="button" className="ic-btn" onClick={() => setDialog({ open: true, entry: e })}><Pencil /></button>
-                        <button type="button" className="ic-btn danger" onClick={() => del.mutate(e.id)}><Trash2 /></button>
+                      <RowMore label={t("jobs.m.rowActions").replace("{name}", e.vendor || e.description)} actions={[
+                        { label: t("jobs.m.editCost"), icon: Pencil, onSelect: () => setDialog({ open: true, entry: e }) },
+                        { label: t("jobs.m.deleteCost"), icon: Trash2, danger: true, separated: true, onSelect: () => del.mutate(e.id) },
+                      ]} />
+                    )}
+                    {!derived && (
+                      <div className="hover-act hide-phone">
+                        <button type="button" className="ic-btn" aria-label={t("jobs.m.editCost")} onClick={() => setDialog({ open: true, entry: e })}><Pencil /></button>
+                        <button type="button" className="ic-btn danger" aria-label={t("jobs.m.deleteCost")} onClick={() => del.mutate(e.id)}><Trash2 /></button>
                       </div>
                     )}
                   </div>

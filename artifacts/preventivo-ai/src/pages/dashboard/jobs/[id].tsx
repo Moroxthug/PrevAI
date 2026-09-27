@@ -1,11 +1,16 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useLocation, useParams, useSearch } from "wouter";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { it } from "date-fns/locale";
 import {
-  ArrowLeft, Briefcase, MapPin, FileSignature, Sparkles, Plus, Trash2, CheckCircle2, Circle, PlayCircle, Receipt, Wallet, Users, FolderOpen, CalendarDays, LayoutDashboard, GitBranch, ExternalLink, Download, Pencil, Check, X, Camera, Archive,
+  ArrowLeft, Briefcase, MapPin, FileSignature, Sparkles, Plus, Trash2, CheckCircle2, Circle, PlayCircle, PauseCircle, RotateCcw, Receipt, ExternalLink, Download, Pencil, Check, X, Archive,
 } from "lucide-react";
+import { ActionSheet, type SheetAction } from "@/components/mobile/action-sheet";
+import { StickyActionBar } from "@/components/mobile/sticky-action-bar";
+import { StatStrip } from "@/components/mobile/stat-strip";
+import { ScrollTabs } from "@/components/mobile/scroll-tabs";
+import { useMobileHeader } from "@/components/mobile/mobile-page-header";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
@@ -19,15 +24,21 @@ import { ChangeOrderDialog } from "@/components/jobs/change-order-dialog";
 import { CostsTab } from "@/components/jobs/costs-tab";
 import { TeamTab } from "@/components/jobs/team-tab";
 import { InvoicesTab } from "@/components/jobs/invoices-tab";
-import { OverviewCharts } from "@/components/jobs/overview-charts";
+import { OverviewCharts, useJobAnalytics } from "@/components/jobs/overview-charts";
 import { AssistantPanel } from "@/components/assistant/assistant-panel";
 import { PhotosTab } from "@/components/jobs/photos-tab";
+import { JobDockActions } from "@/components/jobs/dock-actions";
+import { formatEurWhole } from "@/lib/money";
 
 const TABS = ["overview", "schedule", "changes", "costs", "invoices", "team", "photos", "documents", "assistant"] as const;
 type Tab = (typeof TABS)[number];
-const TAB_ICONS: Record<Tab, typeof LayoutDashboard> = { overview: LayoutDashboard, schedule: CalendarDays, changes: GitBranch, costs: Wallet, invoices: Receipt, team: Users, photos: Camera, documents: FolderOpen, assistant: Sparkles };
+
+// APP-1e: the number strip shows whole euros (the cents are in the lines below and in each tab).
+const wholeCents = (c: number) => formatEurWhole(c / 100);
 
 const day = (s: string | null) => (s ? new Date(`${s}T00:00:00`) : null);
+/** Opens the address in the phone's maps app (Google's universal link: the app when installed, the web otherwise). */
+const mapsUrl = (address: string) => `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`;
 
 export default function JobDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -40,8 +51,12 @@ export default function JobDetailPage() {
   const initialTab = (new URLSearchParams(search).get("tab") as Tab | null) ?? "overview";
   const [tab, setTab] = useState<Tab>(TABS.includes(initialTab) ? initialTab : "overview");
   const [coOpen, setCoOpen] = useState(false);
+  const [renaming, setRenaming] = useState(false);
+  const tabsTop = useRef<HTMLDivElement>(null);
 
   const { data, isLoading, error } = useQuery({ queryKey: ["job", id], queryFn: () => jobsApi.get(id!), enabled: !!id });
+  // Phase 106: the number strip's margin is the analytics' projection (same request the Overview charts use).
+  const { data: analytics } = useJobAnalytics(id!);
 
   useEffect(() => {
     if (data && data.job.setupStatus === "pending_review") navigate(`/dashboard/jobs/${id}/setup`, { replace: true });
@@ -56,65 +71,110 @@ export default function JobDetailPage() {
   const setStatus = useMutation({ mutationFn: (status: JobStatus) => jobsApi.update(id!, { status }), onSuccess: refresh, onError });
   const archive = useMutation({ mutationFn: () => jobsApi.archive(id!), onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["jobs"] }); toast({ title: t("archive.archivedToast") }); navigate("/dashboard/jobs"); }, onError });
 
-  if (isLoading) return <div className="space-y-4"><Skeleton className="h-10 w-2/3" /><Skeleton className="h-24 w-full rounded-[var(--radius-mk)]" /><Skeleton className="h-64 w-full rounded-[var(--radius-mk)]" /></div>;
-  if (error || !data) return <div className="card card-empty">{t("jobs.notFound")} <Link href="/dashboard/jobs" className="text-link">{t("jobs.backToList")}</Link></div>;
+  const job = data?.job;
+  const jobName = job?.name;
+  useMobileHeader(useMemo(() => (jobName ? { title: jobName } : null), [jobName]));
 
-  const { job, milestones, changeOrders, budgetTotalCents, costs, invoiceTotals } = data;
+  // APP-1e (QuoteAI Phase 106): everything but Foto and Scontrino (the two
+  // things you do standing on site) lives in ⋯, in the order a job lives it.
+  const more: Array<SheetAction | false> = !job ? [] : [
+    job.status === "planning" && { label: t("jobs.action.start"), icon: PlayCircle, onSelect: () => setStatus.mutate("active") },
+    job.status === "suspended" && { label: t("jobs.action.resume"), icon: PlayCircle, onSelect: () => setStatus.mutate("active") },
+    { label: t("jobs.editSetup"), icon: Sparkles, href: `/dashboard/jobs/${job.id}/setup` },
+    { label: t("jobs.m.rename"), icon: Pencil, onSelect: () => setRenaming(true) },
+    job.status === "active" && { label: t("jobs.action.suspend"), icon: PauseCircle, onSelect: () => setStatus.mutate("suspended"), separated: true },
+    job.status !== "completed" && { label: t("jobs.action.complete"), icon: CheckCircle2, onSelect: () => setStatus.mutate("completed"), disabled: setStatus.isPending, separated: job.status !== "active" },
+    job.status === "completed" && { label: t("jobs.action.reopen"), icon: RotateCcw, onSelect: () => setStatus.mutate("active"), separated: true },
+    job.status === "completed" && { label: t("dashboard.quotesList.archive"), icon: Archive, onSelect: () => archive.mutate(), disabled: archive.isPending, danger: true },
+  ];
+
+  if (isLoading) return <div className="space-y-4"><Skeleton className="h-10 w-2/3" /><Skeleton className="h-24 w-full rounded-[var(--radius-mk)]" /><Skeleton className="h-64 w-full rounded-[var(--radius-mk)]" /></div>;
+  if (error || !data || !job) return <div className="card card-empty">{t("jobs.notFound")} <Link href="/dashboard/jobs" className="text-link">{t("jobs.backToList")}</Link></div>;
+
+  const { milestones, changeOrders, budgetTotalCents, costs, invoiceTotals } = data;
   const done = milestones.filter((m) => m.status === "completed").length;
   const subtotalCents = job.contract ? Math.round(job.contract.subtotal * 100) : job.contractValueCents;
-  const projectedMargin = subtotalCents > 0 && budgetTotalCents > 0 ? Math.round(((subtotalCents - budgetTotalCents) / subtotalCents) * 100) : null;
+  const budgetMargin = subtotalCents > 0 && budgetTotalCents > 0 ? Math.round(((subtotalCents - budgetTotalCents) / subtotalCents) * 100) : null;
+  const margin = analytics?.earned.projectedMarginPercent ?? budgetMargin;
   const actualCosts = costs.totalCents;
+  const docked = job.status !== "completed";
+  const dates = job.plannedStart && job.plannedEnd ? `${format(day(job.plannedStart)!, "d MMM", { locale })} → ${format(day(job.plannedEnd)!, "d MMM yyyy", { locale })}` : null;
+
+  const counts: Partial<Record<Tab, number>> = {
+    changes: changeOrders.length,
+    costs: costs.pendingCount,
+    invoices: invoiceTotals.draftCount,
+    team: data.timeEntries.filter((e) => e.status === "submitted").length,
+  };
+  // With the tabs stuck under the top bar, a new tab starts at its top, not wherever the last one was scrolled to.
+  const openTab = (next: Tab) => {
+    setTab(next);
+    const mark = tabsTop.current;
+    if (mark && mark.getBoundingClientRect().top < 0) window.scrollTo({ top: window.scrollY + mark.getBoundingClientRect().top - 64 });
+  };
 
   return (
-    <div className="animate-in fade-in duration-300">
-      <Link href="/dashboard/jobs" className="back-link"><ArrowLeft /> {t("jobs.backToList")}</Link>
-      <div className="page-head">
-        <div className="min-w-0">
-          <div className="title-row">
-            <h1><Briefcase /><EditableName id={job.id} name={job.name} /></h1>
-            <JobStatusBadge status={job.status} />
-          </div>
-          <div className="meta">
-            {job.client && <span><Users />{job.client.name}</span>}
-            {job.address && <span><MapPin />{job.address}</span>}
-            {job.contract && <Link href={`/dashboard/contracts/${job.contract.id}`}><FileSignature />{job.contract.contractNumber}</Link>}
-            {job.plannedStart && job.plannedEnd && <span>{format(day(job.plannedStart)!, "d MMM", { locale })} → {format(day(job.plannedEnd)!, "PP", { locale })}</span>}
-          </div>
-        </div>
-        <div className="head-actions">
-          <Link href={`/dashboard/jobs/${job.id}/setup`} className="btn btn-sm btn-outline-navy"><Sparkles className="h-4 w-4" /> {t("jobs.editSetup")}</Link>
-          {job.status === "planning" && <button type="button" className="btn btn-sm btn-navy" onClick={() => setStatus.mutate("active")}><PlayCircle className="h-4 w-4" /> {t("jobs.action.start")}</button>}
-          {job.status === "active" && <button type="button" className="btn btn-sm btn-outline-navy" onClick={() => setStatus.mutate("suspended")}>{t("jobs.action.suspend")}</button>}
-          {job.status === "suspended" && <button type="button" className="btn btn-sm btn-navy" onClick={() => setStatus.mutate("active")}>{t("jobs.action.resume")}</button>}
-          {job.status !== "completed" && <button type="button" className="btn btn-sm btn-navy" style={{ background: "var(--green)" }} disabled={setStatus.isPending} onClick={() => setStatus.mutate("completed")}><CheckCircle2 className="h-4 w-4" /> {t("jobs.action.complete")}</button>}
-          {job.status === "completed" && <button type="button" className="btn btn-sm btn-outline-navy" onClick={() => setStatus.mutate("active")}>{t("jobs.action.reopen")}</button>}
-          {job.status === "completed" && <button type="button" className="text-link" onClick={() => archive.mutate()} disabled={archive.isPending}><Archive /> {t("dashboard.quotesList.archive")}</button>}
-        </div>
-      </div>
+    <div className="animate-in fade-in duration-300 j-page">
+      <Link href="/dashboard/jobs" className="back-link hide-phone"><ArrowLeft /> {t("jobs.backToList")}</Link>
 
-      {/* KPI strip */}
-      <section className="stat-grid cols-5">
-        <Kpi label={t("jobs.kpi.value")} value={formatCents(job.totalValueCents)} sub={job.changeOrdersCents ? `${formatCents(job.contractValueCents)} + ${formatCents(job.changeOrdersCents)} ${t("jobs.kpi.co")}` : undefined} />
-        <Kpi label={t("jobs.kpi.invoiced")} value={formatCents(invoiceTotals.invoicedCents)} sub={`${formatCents(invoiceTotals.collectedCents)} ${t("jobs.kpi.collected")}${invoiceTotals.outstandingCents ? ` · ${formatCents(invoiceTotals.outstandingCents)} ${t("jobs.kpi.outstanding")}` : ""}`} tone={invoiceTotals.overdueCents ? "bad" : "teal"} />
-        <Kpi label={t("jobs.kpi.budget")} value={budgetTotalCents ? formatCents(budgetTotalCents) : "—"} sub={projectedMargin !== null ? `${t("jobs.kpi.projectedMargin")} ${projectedMargin}%` : undefined} />
-        <Kpi label={t("jobs.kpi.costs")} value={formatCents(actualCosts)} sub={costs.pendingCount ? `${costs.pendingCount} ${t("jobs.kpi.toReview")}` : budgetTotalCents ? `${Math.round((actualCosts / budgetTotalCents) * 100)}% ${t("jobs.kpi.ofBudget")}` : undefined} tone={budgetTotalCents && actualCosts > budgetTotalCents ? "bad" : undefined} />
-        <Kpi label={t("jobs.kpi.progress")} value={`${job.progressPercent}%`} sub={`${done}/${milestones.length} ${t("jobs.milestonesShort")}`} tone="ok" progress={job.progressPercent} />
+      {/* APP-1e (QuoteAI Phase 106): the job first — what, for whom, where, when, how far along;
+          Foto and Scontrino docked at the bottom on a phone, the rest in ⋯. */}
+      <section className="card q-hero j-hero">
+        <div className="q-hero-main">
+          <div className="q-hero-eyebrow">
+            <Briefcase aria-hidden="true" />
+            {job.contract ? <span><Link href={`/dashboard/contracts/${job.contract.id}`} className="j-hero-link">{job.contract.contractNumber}</Link></span> : <span>{t("jobs.col.job")}</span>}
+            {dates && <span>{dates}</span>}
+          </div>
+          <h1><EditableName id={job.id} name={job.name} editing={renaming} onEditingChange={setRenaming} /></h1>
+          {job.client && <p className="q-hero-sub">{job.client.name}</p>}
+          {job.address && (
+            <a href={mapsUrl(job.address)} target="_blank" rel="noreferrer" className="j-addr">
+              <MapPin aria-hidden="true" /><span className="sr-only">{t("jobs.m.openMaps")} </span><span className="j-addr-txt">{job.address}</span>
+            </a>
+          )}
+          <div className="q-hero-chips"><JobStatusBadge status={job.status} /></div>
+        </div>
+        <div className="q-hero-side j-hero-side">
+          <div className="j-prog-head">
+            <span className="q-hero-lbl">{t("jobs.kpi.progress")}</span>
+            <span className="j-prog-ms">{done}/{milestones.length} {t("jobs.milestonesShort")}</span>
+          </div>
+          <div className="j-prog">
+            <span className="pbar" aria-hidden="true"><i style={{ width: `${job.progressPercent}%` }} /></span>
+            <b className="j-prog-val">{job.progressPercent}%</b>
+          </div>
+          {docked ? (
+            <StickyActionBar label={t("jobs.m.actions")}>
+              <ActionSheet actions={more} title={t("jobs.m.actions")} />
+              <JobDockActions jobId={job.id} onPhoto={() => openTab("photos")} onReceipt={() => openTab("costs")} />
+            </StickyActionBar>
+          ) : (
+            <div className="j-hero-acts"><ActionSheet actions={more} title={t("jobs.m.actions")} /></div>
+          )}
+        </div>
       </section>
 
-      {/* Tabs */}
-      <div className="pills scroll" style={{ marginBottom: 16 }}>
-        {TABS.map((k) => {
-          const Icon = TAB_ICONS[k];
-          const count = k === "changes" ? changeOrders.length : k === "costs" ? costs.pendingCount : k === "invoices" ? invoiceTotals.draftCount : k === "team" ? data.timeEntries.filter((e) => e.status === "submitted").length : undefined;
-          return (
-            <button key={k} type="button" onClick={() => setTab(k)} className={cn("pill", tab === k && "on")}>
-              <Icon /> {t(`jobs.tab.${k}`)}{count ? <span className="cnt">{count}</span> : null}
-            </button>
-          );
-        })}
-      </div>
+      <StatStrip
+        className="j-strip"
+        items={[
+          { label: t("jobs.kpi.value"), value: wholeCents(job.totalValueCents), sub: job.changeOrdersCents ? `${formatCents(job.contractValueCents)} + ${formatCents(job.changeOrdersCents)} ${t("jobs.kpi.co")}` : undefined },
+          { label: t("jobs.kpi.invoiced"), value: wholeCents(invoiceTotals.invoicedCents), tone: invoiceTotals.overdueCents ? "bad" : undefined, sub: `${formatCents(invoiceTotals.collectedCents)} ${t("jobs.kpi.collected")}${invoiceTotals.outstandingCents ? ` · ${formatCents(invoiceTotals.outstandingCents)} ${t("jobs.kpi.outstanding")}` : ""}` },
+          { label: t("jobs.kpi.costs"), value: wholeCents(actualCosts), tone: budgetTotalCents && actualCosts > budgetTotalCents ? "bad" : undefined, sub: costs.pendingCount ? `${costs.pendingCount} ${t("jobs.kpi.toReview")}` : budgetTotalCents ? `${Math.round((actualCosts / budgetTotalCents) * 100)}% ${t("jobs.kpi.ofBudget")}` : undefined },
+          { label: t("jobs.kpi.projectedMargin"), value: margin === null ? "—" : `${margin}%`, tone: margin === null ? undefined : margin < 10 ? "bad" : margin < 20 ? "warn" : "ok", sub: budgetTotalCents ? t("jobs.m.budgetSub").replace("{amount}", wholeCents(budgetTotalCents)) : undefined },
+        ]}
+      />
 
-      {tab === "overview" && <OverviewTab data={data} locale={locale} onGoTo={setTab} />}
+      <div ref={tabsTop} aria-hidden="true" />
+      <ScrollTabs
+        sticky
+        label={t("jobs.m.sections")}
+        value={tab}
+        onChange={(v) => openTab(v as Tab)}
+        tabs={TABS.map((k) => ({ id: k, label: t(`jobs.tab.${k}`), count: counts[k] || undefined }))}
+      />
+
+      {tab === "overview" && <OverviewTab data={data} locale={locale} onGoTo={openTab} />}
       {tab === "schedule" && <ScheduleTab data={data} locale={locale} />}
       {tab === "changes" && (
         <ChangesTab data={data} locale={locale} onNew={() => setCoOpen(true)} />
@@ -133,32 +193,22 @@ export default function JobDetailPage() {
 
 // ── Pieces ───────────────────────────────────────────────────────────────────
 
-function Kpi({ label, value, sub, tone, progress }: { label: string; value: string; sub?: string; tone?: "ok" | "warn" | "bad" | "teal"; progress?: number }) {
-  return (
-    <div className="card stat-card">
-      <p className="lbl">{label}</p>
-      <p className={cn("val", tone)}>{value}</p>
-      {progress !== undefined && <div className="pbar"><i style={{ width: `${progress}%` }} /></div>}
-      {sub && <p className="sub">{sub}</p>}
-    </div>
-  );
-}
-
-function EditableName({ id, name }: { id: string; name: string }) {
+/** The job's name; the pencil (desktop hover) or ⋯ → Rename job turns it into a field. */
+function EditableName({ id, name, editing, onEditingChange }: { id: string; name: string; editing: boolean; onEditingChange: (v: boolean) => void }) {
   const { t } = useLanguage();
-  const [editing, setEditing] = useState(false);
   const [value, setValue] = useState(name);
   const queryClient = useQueryClient();
+  useEffect(() => { if (editing) setValue(name); }, [editing, name]);
   const save = useMutation({
     mutationFn: () => jobsApi.update(id, { name: value.trim() }),
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["job", id] }); queryClient.invalidateQueries({ queryKey: ["jobs"] }); setEditing(false); },
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["job", id] }); queryClient.invalidateQueries({ queryKey: ["jobs"] }); onEditingChange(false); },
   });
-  if (!editing) return <span className="inline-flex items-center gap-2 group min-w-0"><span className="truncate">{name}</span><button type="button" className="ic-btn opacity-0 group-hover:opacity-100 focus-visible:opacity-100" aria-label={t("a11y.rename")} onClick={() => { setValue(name); setEditing(true); }}><Pencil /></button></span>;
+  if (!editing) return <span className="inline-flex items-center gap-2 group min-w-0 max-w-full"><span className="j-name">{name}</span><button type="button" className="ic-btn opacity-0 group-hover:opacity-100 focus-visible:opacity-100 hide-phone" aria-label={t("a11y.rename")} onClick={() => onEditingChange(true)}><Pencil /></button></span>;
   return (
-    <span className="field inline">
-      <input value={value} onChange={(e) => setValue(e.target.value)} style={{ width: 288, fontSize: 18, fontWeight: 700 }} autoFocus onKeyDown={(e) => { if (e.key === "Enter") save.mutate(); if (e.key === "Escape") setEditing(false); }} />
-      <button type="button" className="ic-btn ok" onClick={() => save.mutate()} disabled={!value.trim() || save.isPending}><Check /></button>
-      <button type="button" className="ic-btn" onClick={() => setEditing(false)}><X /></button>
+    <span className="field inline j-rename">
+      <input value={value} onChange={(e) => setValue(e.target.value)} aria-label={t("jobs.m.rename")} autoFocus onKeyDown={(e) => { if (e.key === "Enter") save.mutate(); if (e.key === "Escape") onEditingChange(false); }} />
+      <button type="button" className="ic-btn ok" aria-label={t("jobs.save")} onClick={() => save.mutate()} disabled={!value.trim() || save.isPending}><Check /></button>
+      <button type="button" className="ic-btn" aria-label={t("jobs.cancel")} onClick={() => onEditingChange(false)}><X /></button>
     </span>
   );
 }
@@ -171,6 +221,24 @@ function OverviewTab({ data, locale, onGoTo }: { data: JobDetailDto; locale: typ
   const total = job.contract?.total ?? job.contractValueCents / 100;
   return (
     <div className="stack">
+      {/* Phase 106: what happens next on site comes before the numbers. */}
+      {next && (
+        <section className="card j-next" style={{ borderColor: "var(--teal)" }}>
+          <div className="act-body">
+            <p className="eyebrow" style={{ color: "var(--teal-dark)" }}>{t("jobs.overview.upNext")}</p>
+            <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
+              <div className="min-w-0">
+                <b className="block text-[15px]" style={{ color: "var(--navy)" }}>{next.title}</b>
+                <span className="foot-note">
+                  {next.plannedStart && next.plannedEnd ? `${format(day(next.plannedStart)!, "d MMM", { locale })} → ${format(day(next.plannedEnd)!, "PP", { locale })}` : "—"}
+                  {next.paymentAmountCents ? ` · ${t("jobs.overview.releases")} ${formatCents(next.paymentAmountCents)}` : ""}
+                </span>
+              </div>
+              <MilestoneStatusBadge status={next.status} />
+            </div>
+          </div>
+        </section>
+      )}
       <OverviewCharts jobId={job.id} locale={locale} jobStatus={job.status} />
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         <div className="lg:col-span-2 stack">
@@ -184,23 +252,6 @@ function OverviewTab({ data, locale, onGoTo }: { data: JobDetailDto; locale: typ
             </div>
           </section>
 
-          {next && (
-            <section className="card" style={{ borderColor: "var(--teal)" }}>
-              <div className="act-body">
-                <p className="eyebrow" style={{ color: "var(--teal-dark)" }}>{t("jobs.overview.upNext")}</p>
-                <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
-                  <div className="min-w-0">
-                    <b className="block text-[15px]" style={{ color: "var(--navy)" }}>{next.title}</b>
-                    <span className="foot-note">
-                      {next.plannedStart && next.plannedEnd ? `${format(day(next.plannedStart)!, "d MMM", { locale })} → ${format(day(next.plannedEnd)!, "PP", { locale })}` : "—"}
-                      {next.paymentAmountCents ? ` · ${t("jobs.overview.releases")} ${formatCents(next.paymentAmountCents)}` : ""}
-                    </span>
-                  </div>
-                  <MilestoneStatusBadge status={next.status} />
-                </div>
-              </div>
-            </section>
-          )}
         </div>
 
         <div className="stack">
@@ -231,7 +282,7 @@ function OverviewTab({ data, locale, onGoTo }: { data: JobDetailDto; locale: typ
             )}
           </section>
 
-          <section className="card">
+          <section className="card hide-phone">
             <div className="card-head">
               <div><h2>{t("jobs.overview.budget")}</h2></div>
               <button type="button" className="text-link" onClick={() => onGoTo("costs")}>{t("jobs.overview.openCosts")}</button>
@@ -281,7 +332,8 @@ function ScheduleTab({ data, locale }: { data: JobDetailDto; locale: typeof it }
 
   return (
     <div className="stack">
-      <section className="card">
+      {/* Phase 106: on a phone the milestone cards below are the schedule (the chart would repeat them). */}
+      <section className="card hide-phone">
         <div className="card-head">
           <div><h2>{t("jobs.schedule.gantt")}</h2></div>
           <Link href={`/dashboard/jobs/${job.id}/setup`} className="text-link">{t("jobs.schedule.editDates")}</Link>
@@ -298,7 +350,7 @@ function ScheduleTab({ data, locale }: { data: JobDetailDto; locale: typeof it }
           return (
             <div key={m.id} className={cn("card", m.status === "in_progress" && "ms-on", m.status === "completed" && "ms-done")} style={{ marginTop: 0 }}>
               {/* The expand toggle is its own button — a role="button" row around Start/Complete nested interactive controls (Phase 66). */}
-              <div className="item-row" style={{ borderTop: "none" }}>
+              <div className="item-row ms-row" style={{ borderTop: "none" }}>
                 <button type="button" className="ms-toggle grow" aria-expanded={expanded} aria-controls={`ms-panel-${m.id}`} onClick={() => setOpen(expanded ? null : m.id)}>
                 <span className={cn("ms-num", m.status === "completed" && "done", m.status === "in_progress" && "on")}>
                   {m.status === "completed" ? <Check /> : idx + 1}
@@ -315,7 +367,7 @@ function ScheduleTab({ data, locale }: { data: JobDetailDto; locale: typeof it }
                   </span>
                 </div>
                 </button>
-                <div className="flex gap-2 shrink-0">
+                <div className="ms-acts flex gap-2 shrink-0">
                   {m.status === "planned" && <button type="button" className="btn btn-sm btn-outline-navy" onClick={() => setMs.mutate({ mid: m.id, status: "in_progress" })}><PlayCircle className="h-3.5 w-3.5" /> {t("jobs.milestone.start")}</button>}
                   {(m.status === "planned" || m.status === "in_progress") && <button type="button" className="btn btn-sm btn-navy" style={{ background: "var(--green)" }} onClick={() => setMs.mutate({ mid: m.id, status: "completed" })}><CheckCircle2 className="h-3.5 w-3.5" /> {t("jobs.milestone.complete")}</button>}
                   {m.status === "completed" && <button type="button" className="text-link" onClick={() => setMs.mutate({ mid: m.id, status: "in_progress" })}>{t("jobs.milestone.reopen")}</button>}
@@ -360,14 +412,15 @@ function ScheduleTab({ data, locale }: { data: JobDetailDto; locale: typeof it }
 }
 
 function TaskList({ tasks, onToggle, onDelete }: { tasks: TaskDto[]; onToggle: (t: TaskDto) => void; onDelete: (id: string) => void }) {
+  const { t } = useLanguage();
   if (tasks.length === 0) return null;
   return (
     <div>
       {tasks.map((x) => (
         <div key={x.id} className={cn("task-row", x.status === "done" && "done")}>
-          <button type="button" onClick={() => onToggle(x)} className={cn("chk", x.status === "done" && "on")}>{x.status === "done" && <Check />}</button>
+          <button type="button" onClick={() => onToggle(x)} className={cn("chk", x.status === "done" && "on")} aria-pressed={x.status === "done"} aria-label={t("jobs.m.markDone").replace("{title}", x.title)}>{x.status === "done" && <Check />}</button>
           <span className="grow">{x.title}</span>
-          <button type="button" className="ic-btn danger" onClick={() => onDelete(x.id)}><Trash2 /></button>
+          <button type="button" className="ic-btn danger" aria-label={t("jobs.m.deleteTask")} onClick={() => onDelete(x.id)}><Trash2 /></button>
         </div>
       ))}
     </div>
@@ -394,7 +447,7 @@ function ChangesTab({ data, locale, onNew }: { data: JobDetailDto; locale: typeo
         ) : (
           <div>
             {changeOrders.map((co) => (
-              <div key={co.id} className="item-row">
+              <div key={co.id} className="item-row wrap-phone">
                 <div className="grow">
                   <div className="flex items-center gap-2 flex-wrap"><b>{co.number}</b><span className="truncate">{co.title}</span><ChangeOrderStatusBadge status={co.status} /></div>
                   <span className="sub">
@@ -404,12 +457,16 @@ function ChangesTab({ data, locale, onNew }: { data: JobDetailDto; locale: typeo
                   </span>
                 </div>
                 <span className={cn("amt", co.totalCents < 0 && "neg")}>{formatCents(co.totalCents)}</span>
-                {co.documentContractId && (
-                  <Link href={`/dashboard/contracts/${co.documentContractId}`} className="text-link whitespace-nowrap">
-                    {co.status === "draft" ? t("jobs.co.signAndSend") : t("jobs.co.open")} <ExternalLink />
-                  </Link>
+                {(co.documentContractId || co.status === "draft") && (
+                  <span className="row-acts">
+                    {co.documentContractId && (
+                      <Link href={`/dashboard/contracts/${co.documentContractId}`} className="text-link whitespace-nowrap">
+                        {co.status === "draft" ? t("jobs.co.signAndSend") : t("jobs.co.open")} <ExternalLink />
+                      </Link>
+                    )}
+                    {co.status === "draft" && <button type="button" className="ic-btn danger" aria-label={t("jobs.m.deleteCo").replace("{number}", co.number)} onClick={() => del.mutate(co.id)}><Trash2 /></button>}
+                  </span>
                 )}
-                {co.status === "draft" && <button type="button" className="ic-btn danger" onClick={() => del.mutate(co.id)}><Trash2 /></button>}
               </div>
             ))}
             {signedTotal !== 0 && <div className="card-sum">{t("jobs.co.signedTotal")} <b>{formatCents(signedTotal)}</b></div>}

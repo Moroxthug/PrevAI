@@ -209,7 +209,7 @@ export default function OnboardingPage() {
                   </div>
                   <div className="field">
                     <label htmlFor="phone">{t("onboarding.phone")}</label>
-                    <input id="phone" placeholder="+1 416 555 0123" value={phone} onChange={e => setPhone(e.target.value)} />
+                    <input id="phone" placeholder="+39 333 123 4567" value={phone} onChange={e => setPhone(e.target.value)} />
                   </div>
                   <div className="field full">
                     <label htmlFor="address">{t("onboarding.address")}</label>
@@ -217,7 +217,7 @@ export default function OnboardingPage() {
                   </div>
                   <div className="field full">
                     <label htmlFor="email">{t("onboarding.businessEmail")}</label>
-                    <input id="email" type="email" placeholder="info@yourcompany.ca" value={email} onChange={e => setEmail(e.target.value)} />
+                    <input id="email" type="email" placeholder="info@tuaazienda.it" value={email} onChange={e => setEmail(e.target.value)} />
                   </div>
                 </div>
 
