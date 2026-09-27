@@ -138,6 +138,8 @@ Da **verificare** (già presenti): `STRIPE_WEBHOOK_SECRET` deve corrispondere al
 
 ### 5.3 Finestra di manutenzione (ordine obbligatorio)
 
+Orario, chi fa cosa, punti di stop, differenze ammesse nel reconcile e monitoraggio delle 48 ore: `docs/CUTOVER-29-09.md`. Preflight in sola lettura prima di partire: `CUTOVER_DB_URL="$URL" bash scripts/cutover-preflight.sh` (0 KO per partire).
+
 **TLS (prova generale del 2026-09-26):** l'URL porta `sslmode=verify-full&sslrootcert=<CA Supabase>`. Serve al punto 5: con il solo `PGSSLMODE=require` esportato, `schema-drift.ts` (client `pg` di Node) verifica il certificato senza conoscere la CA di Supabase e si ferma; con la CA nell'URL la verifica passa, per `psql`, `pg_dump` e drift allo stesso modo. Provato sullo staging con una CA di prova (connessione TLSv1.3, punti 1–5 verdi) e con la controprova di una CA sbagliata (rifiutata da `psql` e dal drift). **Prima della finestra (lunedì)**: scaricare il certificato da Supabase → Project Settings → Database → SSL Configuration → *Download certificate*, salvarlo in `C:\Users\Admin\PrevAI-backups\supabase-ca.crt` (fuori dal repo) e provare `"$PG/psql.exe" "$URL" -c "select 1"`. Se risponde con un errore di certificato o di nome host (il pooler non coperto da quel certificato), martedì usare `sslmode=require` senza `sslrootcert` per i punti 1–4 e, al punto 5, `sslmode=no-verify` nell'URL del solo drift, annotandolo nel Diario.
 
 ```bash
@@ -172,7 +174,7 @@ cd lib/db && DATABASE_URL="$URL" pnpm exec tsx scripts/schema-drift.ts
 
 ### 5.4 Rollback (pre-scritto)
 
-- **Applicazione**: Vercel → Deployments → ultimo deployment di `main` (v1, commit `6dbe45de4` o successivo) → *Promote to Production*. Tempo: < 1 min. v1 gira sul DB migrato (provato in V2-3: sessione, lista, storico, manuale, AI, sign-up, webhook WhatsApp). Le env aggiunte in 5.1 sono ignorate da v1.
+- **Applicazione**: Vercel → Deployments → ultimo deployment di `main` (v1) → *Promote to Production*. Al 26/9 è `prevai-l42sqwhz9-…` da `aa5c74036` (`docs/CUTOVER-29-09.md` §1 punto 8). **Mai un deployment più vecchio di `f9acdf4e1`** (hotfix del widget della fase 17), anche se è ancora v1: il suo widget chiama `www.prevai.it`, che redirige, e i lead si perdono in silenzio. Tempo: < 1 min. v1 gira sul DB migrato (provato in V2-3: sessione, lista, storico, manuale, AI, sign-up, webhook WhatsApp). Le env aggiunte in 5.1 sono ignorate da v1.
 - **Database**: **nessuna azione**. La migrazione è additiva: v1 non vede le tabelle/colonne nuove. Non fare `pg_restore` del dump (perderebbe i dati creati nel frattempo); il dump serve solo per disastro.
 - **Dati creati da v2 durante la finestra** (pro-forma, contratti, cantieri) restano nelle tabelle v2 e riappaiono al prossimo tentativo di cutover.
 - Dopo il rollback: annotare in `PIANO-AZIONE.md` (Diario) cosa è andato storto; il prossimo tentativo riparte da 5.3 punto 7 (la migrazione non va ripetuta, ma rieseguirla è un no-op).
