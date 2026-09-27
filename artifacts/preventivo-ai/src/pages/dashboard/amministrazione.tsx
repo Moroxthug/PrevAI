@@ -126,7 +126,7 @@ export default function AmministrazionePage() {
           <p className="sub">Fatture dei fornitori e imposta di bollo. Le fatture che emetti tu stanno in Fatture.</p>
         </div>
         <div className="head-actions">
-          <Link href="/dashboard/settings?tab=sdi" className="btn btn-sm btn-outline-navy">
+          <Link href="/dashboard/settings/sdi" className="btn btn-sm btn-outline-navy">
             Impostazioni SdI
           </Link>
         </div>

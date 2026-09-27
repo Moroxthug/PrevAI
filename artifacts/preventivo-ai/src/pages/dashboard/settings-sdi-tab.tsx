@@ -42,7 +42,7 @@ export function SdiTab() {
       <div className="card card-empty">
         Il modulo PrevAI Fisco non è attivo su questo account: le fatture restano pro-forma.
         <br />
-        <Link href="/dashboard/settings?tab=billing" className="text-link">Vedi i piani</Link>
+        <Link href="/dashboard/settings/plan" className="text-link">Vedi i piani</Link>
       </div>
     );
   }

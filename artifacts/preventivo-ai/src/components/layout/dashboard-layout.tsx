@@ -60,7 +60,6 @@ function useNavItems() {
 /** Pages that are not in the sidebar but still need a name in the phone top bar. */
 const EXTRA_TITLES: Record<string, string> = {
   "/dashboard/new": "dashboard.nav.newQuote",
-  "/dashboard/profile": "dashboard.account.companyProfile",
   "/dashboard/billing": "dashboard.account.planBilling",
   "/dashboard/notifications": "notifications.title",
 };
@@ -122,12 +121,12 @@ function AccountMenu({ trigger }: { trigger: React.ReactNode }) {
       <DropdownMenuContent align="end" side="top" className="w-48 mb-1">
         <OrgSwitcherItems />
         <DropdownMenuItem asChild>
-          <Link href="/dashboard/settings?tab=account" className="cursor-pointer flex items-center gap-2">
+          <Link href="/dashboard/settings/company" className="cursor-pointer flex items-center gap-2">
             <Building2 className="h-3.5 w-3.5 text-muted-foreground" /> {t("dashboard.account.companyProfile")}
           </Link>
         </DropdownMenuItem>
         <DropdownMenuItem asChild>
-          <Link href="/dashboard/settings?tab=billing" className="cursor-pointer flex items-center gap-2">
+          <Link href="/dashboard/settings/plan" className="cursor-pointer flex items-center gap-2">
             <CreditCard className="h-3.5 w-3.5 text-muted-foreground" /> {t("dashboard.account.planBilling")}
           </Link>
         </DropdownMenuItem>

@@ -90,7 +90,7 @@ function Firma({ incarico, dueFattori }: { incarico: IncaricoDto; dueFattori: bo
           <ShieldCheck className="h-4 w-4 shrink-0" />
           <span>
             Per firmare serve la verifica in due passaggi sul tuo account.{" "}
-            <Link href="/dashboard/settings?tab=security" className="underline">
+            <Link href="/dashboard/settings/security" className="underline">
               Attivala in Impostazioni → Sicurezza
             </Link>
             .

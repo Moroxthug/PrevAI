@@ -97,7 +97,9 @@ router.get("/calendar/:provider/connect", requireAuth, requirePermission("integr
 
 // GET /api/calendar/:provider/callback — the provider redirects the browser here after the company
 // approves access; this exchanges the code server-side and redirects back into Settings.
-const settingsUrl = (status: "connected" | "error") => `${getBaseUrl()}/dashboard/settings?tab=integrations&cal=${status}`;
+// APP-1b: straight back to the app's panel in Settings → App collegate; `provider` says Google or Outlook.
+const settingsUrl = (status: "connected" | "error", provider?: CalendarProvider) =>
+  `${getBaseUrl()}/dashboard/settings/apps?cal=${status}${provider ? `&provider=${provider}` : ""}`;
 
 router.get("/calendar/:provider/callback", requireAuth, async (req, res) => {
   try {
@@ -107,12 +109,12 @@ router.get("/calendar/:provider/callback", requireAuth, async (req, res) => {
     const state = typeof req.query.state === "string" ? req.query.state : null;
 
     if (!state || !verifyState(state, userId, provider) || !code) {
-      res.redirect(settingsUrl("error"));
+      res.redirect(settingsUrl("error", provider));
       return;
     }
 
     await connectCalendar(userId, provider, code);
-    res.redirect(settingsUrl("connected"));
+    res.redirect(settingsUrl("connected", provider));
   } catch (err) {
     req.log.error({ err }, "Calendar OAuth callback failed");
     res.redirect(settingsUrl("error"));

@@ -136,7 +136,7 @@ function StarterUpgradeCard() {
 function OnboardingView() {
   const { t } = useLanguage();
   const steps = [
-    { icon: Building2, num: "1", title: t("dashboard.index.onboarding.step1.title"), desc: t("dashboard.index.onboarding.step1.desc"), href: "/dashboard/profile", cta: t("dashboard.index.onboarding.step1.cta") },
+    { icon: Building2, num: "1", title: t("dashboard.index.onboarding.step1.title"), desc: t("dashboard.index.onboarding.step1.desc"), href: "/dashboard/settings/company", cta: t("dashboard.index.onboarding.step1.cta") },
     { icon: MessageSquare, num: "2", title: t("dashboard.index.onboarding.step2.title"), desc: t("dashboard.index.onboarding.step2.desc"), href: "/dashboard/new", cta: t("dashboard.index.onboarding.step2.cta") },
     { icon: Download, num: "3", title: t("dashboard.index.onboarding.step3.title"), desc: t("dashboard.index.onboarding.step3.desc"), href: null, cta: null },
   ];
@@ -171,7 +171,7 @@ function OnboardingView() {
         </div>
       </div>
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
-        <Link href="/dashboard/profile" className="card p-3 flex items-center gap-2.5 hover:border-navy-200 hover:bg-navy-50/30 transition-all group">
+        <Link href="/dashboard/settings/company" className="card p-3 flex items-center gap-2.5 hover:border-navy-200 hover:bg-navy-50/30 transition-all group">
           <div className="h-7 w-7 rounded-lg bg-navy-100 flex items-center justify-center"><Building2 className="h-3.5 w-3.5 text-navy-500" /></div>
           <span className="text-sm font-medium text-foreground group-hover:text-navy-700">{t("dashboard.index.onboarding.companyProfile")}</span>
         </Link>

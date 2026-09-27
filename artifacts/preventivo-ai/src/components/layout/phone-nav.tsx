@@ -176,7 +176,7 @@ function MoreSheet({ open, onOpenChange, tabs, navItems, name, email, avatar, ca
         <div className="sheet-grab" aria-hidden="true" />
         <DialogTitle className="sr-only">{t("mobile.nav.more")}</DialogTitle>
         <div className="more-body">
-          <Link href="/dashboard/profile" onClick={close} className="more-account">
+          <Link href="/dashboard/settings/access" onClick={close} className="more-account">
             <span className="more-avatar">{avatar}</span>
             <span className="more-account-text"><b>{name}</b><span>{email}</span></span>
             <ChevronRight className="more-row-chev" aria-hidden="true" />
@@ -213,8 +213,8 @@ function MoreSheet({ open, onOpenChange, tabs, navItems, name, email, avatar, ca
             const items = navItems.filter((i) => GROUP_OF[i.href] === g && !tabRoots.has(i.href));
             const extras = g === "business"
               ? [
-                  row("/dashboard/settings?tab=account", t("dashboard.account.companyProfile"), Building2),
-                  canBilling ? row("/dashboard/settings?tab=billing", t("dashboard.account.planBilling"), CreditCard) : null,
+                  row("/dashboard/settings/company", t("dashboard.account.companyProfile"), Building2),
+                  canBilling ? row("/dashboard/settings/plan", t("dashboard.account.planBilling"), CreditCard) : null,
                 ]
               : [];
             if (items.length === 0 && !extras.some(Boolean)) return null;

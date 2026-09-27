@@ -819,7 +819,7 @@ async function handleTemplateMenuReply(
   }
 
   if ((templateId === "mariagrazia" || templateId === "arosio") && !isPro) {
-    await sendWhatsappText(from, `⚠️ Il template *${templateLabel(templateId)}* richiede Piano Pro/Elite.\n\nAggiorna su: ${PREVAI_BASE_URL}/dashboard/settings`);
+    await sendWhatsappText(from, `⚠️ Il template *${templateLabel(templateId)}* richiede Piano Pro/Elite.\n\nAggiorna su: ${PREVAI_BASE_URL}/dashboard/settings/plan`);
     return;
   }
 
@@ -904,7 +904,7 @@ async function handleTemplateSelectionReply(
   if ((templateId === "mariagrazia" || templateId === "arosio") && !isPro) {
     await sendWhatsappText(
       from,
-      `⚠️ Il template *${templateLabel(templateId)}* è disponibile solo per i piani Pro ed Elite.\n\nAggiorna il tuo piano su ${PREVAI_BASE_URL}/dashboard/settings oppure scegli il template *Starter* (rispondi *1*).`
+      `⚠️ Il template *${templateLabel(templateId)}* è disponibile solo per i piani Pro ed Elite.\n\nAggiorna il tuo piano su ${PREVAI_BASE_URL}/dashboard/settings/plan oppure scegli il template *Starter* (rispondi *1*).`
     );
     return;
   }
@@ -1035,7 +1035,7 @@ async function handleJobInputReply(
       .from(quotesTable)
       .where(and(eq(quotesTable.userId, userId), eq(quotesTable.source, "whatsapp"), gte(quotesTable.createdAt, startOfMonth)));
     if ((countResult?.count ?? 0) >= 20) {
-      await sendWhatsappText(from, `⚠️ Hai raggiunto il limite di *20 preventivi WhatsApp* per questo mese (Piano Pro).\n\nIl contatore si azzera il 1° del mese prossimo.\nPer preventivi illimitati, passa al piano Elite: ${PREVAI_BASE_URL}/dashboard/settings`);
+      await sendWhatsappText(from, `⚠️ Hai raggiunto il limite di *20 preventivi WhatsApp* per questo mese (Piano Pro).\n\nIl contatore si azzera il 1° del mese prossimo.\nPer preventivi illimitati, passa al piano Elite: ${PREVAI_BASE_URL}/dashboard/settings/plan`);
       return;
     }
   }
@@ -1250,12 +1250,12 @@ router.post("/whatsapp/webhook", async (req, res) => {
         .where(eq(whatsappConnectionsTable.phoneNumber, from));
 
       if (!connection) {
-        await sendWhatsappText(from, `ℹ️ Il tuo numero non è collegato a nessun account prevai.\n\nAccedi a ${PREVAI_BASE_URL}/dashboard/settings e collega il tuo numero WhatsApp.`);
+        await sendWhatsappText(from, `ℹ️ Il tuo numero non è collegato a nessun account prevai.\n\nAccedi a ${PREVAI_BASE_URL}/dashboard/settings/whatsapp e collega il tuo numero WhatsApp.`);
         return;
       }
 
       if (!connection.isEnabled) {
-        await sendWhatsappText(from, `ℹ️ L'integrazione WhatsApp è disabilitata. Riabilitala su ${PREVAI_BASE_URL}/dashboard/settings`);
+        await sendWhatsappText(from, `ℹ️ L'integrazione WhatsApp è disabilitata. Riabilitala su ${PREVAI_BASE_URL}/dashboard/settings/whatsapp`);
         return;
       }
 
@@ -1263,7 +1263,7 @@ router.post("/whatsapp/webhook", async (req, res) => {
       const [profile] = await db.select().from(businessProfilesTable).where(eq(businessProfilesTable.userId, connection.userId));
       const allowedPlans = ["monthly_pro", "monthly_elite"];
       if (profile?.subscriptionStatus !== "active" || !allowedPlans.includes(profile?.subscriptionPlan ?? "")) {
-        await sendWhatsappText(from, `⚠️ Il tuo account non ha un piano attivo che include WhatsApp. Aggiornalo su ${PREVAI_BASE_URL}/dashboard/settings`);
+        await sendWhatsappText(from, `⚠️ Il tuo account non ha un piano attivo che include WhatsApp. Aggiornalo su ${PREVAI_BASE_URL}/dashboard/settings/plan`);
         return;
       }
 

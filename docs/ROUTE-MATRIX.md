@@ -107,10 +107,10 @@ Columns — **Auth**: session (`requireAuth`), apiKey (`requireApiKey`), admin (
 |---|---|---|---|---|---|---|---|---|---|---|---|
 | 59 | GET | `/api/calendar/status` | session | integrations:view | — | none | — | n/a | — | — | — |
 | 80 | GET | `/api/calendar/:provider/connect` | session | integrations:full | — | zod | hasFeature(calendar_sync) | predicate | — | — | — |
-| 102 | GET | `/api/calendar/:provider/callback` | session | — | — | zod | — | helper | — | — | — |
-| 123 | DELETE | `/api/calendar/:provider/disconnect` | session | integrations:full | — | zod | — | helper | — | — | — |
-| 136 | PATCH | `/api/calendar/:provider/toggle` | session | integrations:full | — | zod | — | helper | — | — | — |
-| 154 | GET | `/api/calendar/sync-log` | session | integrations:view | — | none | — | n/a | — | — | — |
+| 104 | GET | `/api/calendar/:provider/callback` | session | — | — | zod | — | helper | — | — | — |
+| 125 | DELETE | `/api/calendar/:provider/disconnect` | session | integrations:full | — | zod | — | helper | — | — | — |
+| 138 | PATCH | `/api/calendar/:provider/toggle` | session | integrations:full | — | zod | — | helper | — | — | — |
+| 156 | GET | `/api/calendar/sync-log` | session | integrations:view | — | none | — | n/a | — | — | — |
 
 ## artifacts/api-server/src/routes/catalog.ts
 

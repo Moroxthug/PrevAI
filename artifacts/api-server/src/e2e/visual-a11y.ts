@@ -83,14 +83,17 @@ function routes(s: import("./fixtures.js").Showcase): RouteSpec[] {
     ...(s.teamInviteToken ? [pub(`/team-invite/${s.teamInviteToken}`)] : []),
     dash("/onboarding"),
     dash("/dashboard"), dash("/dashboard/new"), dash("/dashboard/quotes"), dash(`/dashboard/quotes/${s.longQuoteId}`), dash(`/dashboard/quotes/${s.quoteId}`),
-    dash("/dashboard/analytics"), dash("/dashboard/settings"), dash("/dashboard/settings/account"), dash("/dashboard/profile"), dash("/dashboard/billing"),
+    dash("/dashboard/analytics"), dash("/dashboard/settings"), dash("/dashboard/billing"),
+    // APP-1b: ogni sezione delle Impostazioni e il catalogo App collegate con un pannello aperto.
+    ...["access", "security", "company", "fiscal", "payments", "automations", "widget", "whatsapp", "apps", "plan"].map((s) => dash(`/dashboard/settings/${s}`)),
+    dash("/dashboard/settings/apps?app=gmail"),
     dash("/dashboard/catalog"), dash("/dashboard/clients"), ...(s.clientId ? [dash(`/dashboard/clients/${s.clientId}`)] : []),
     dash("/dashboard/leads"), dash("/dashboard/imports"),
     dash("/dashboard/contracts"), dash(`/dashboard/contracts/${s.contractId}`), dash(`/dashboard/contracts/${s.pendingContractId}`),
     dash("/dashboard/invoices"), dash(`/dashboard/invoices/${s.invoiceId}`),
     // A-1: fattura elettronica trasmessa, pagina Amministrazione, scheda SDI.
     ...(s.fiscalInvoiceId ? [dash(`/dashboard/invoices/${s.fiscalInvoiceId}`)] : []),
-    dash("/dashboard/amministrazione"), dash("/dashboard/settings?tab=sdi"),
+    dash("/dashboard/amministrazione"), dash("/dashboard/settings/sdi"),
     // A-2: pagina Fisco (calcolo forfettario, soglia, simulatore).
     dash("/dashboard/fisco"),
     dash("/dashboard/jobs"), dash(`/dashboard/jobs/${s.jobId}`), dash(`/dashboard/jobs/${s.jobId}/setup`),

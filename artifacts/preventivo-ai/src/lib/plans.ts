@@ -18,6 +18,11 @@ export type ProductFeature =
   | "assistant"
   | "analytics_pro"
   | "team_accounts"
+  | "calendar_sync"
+  | "invoice_card_payments"
+  | "public_api"
+  | "gmail_send"
+  | "meta_lead_ads"
   // A-1 e A-2: add-on Amministrazione — nessun piano li include, si accendono
   // col flag sul profilo, separatamente l'uno dall'altro.
   | "sdi_invoicing"
@@ -29,7 +34,7 @@ export type ProductFeature =
 
 const STARTER: ProductFeature[] = ["quotes", "quote_email", "acceptance_notifications"];
 const PRO: ProductFeature[] = [...STARTER, "catalog", "contracts", "jobs", "costs", "invoicing", "team_accounts"];
-const ELITE: ProductFeature[] = [...PRO, "team_time", "assistant", "analytics_pro"];
+const ELITE: ProductFeature[] = [...PRO, "team_time", "assistant", "analytics_pro", "calendar_sync", "invoice_card_payments", "public_api", "gmail_send", "meta_lead_ads"];
 
 export const SEATS_INCLUDED: Record<PlanId, number> = {
   free: 1,

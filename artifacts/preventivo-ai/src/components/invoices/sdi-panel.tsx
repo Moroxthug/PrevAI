@@ -229,7 +229,7 @@ export function SdiPanel({ invoiceId, fiscale, inviabile }: { invoiceId: string;
             {!fiscale && (
               <p className="text-xs" style={{ color: "var(--muted-mk)" }}>
                 Il modulo non è ancora configurato: completa i passi in{" "}
-                <Link href="/dashboard/settings?tab=sdi" className="text-link">
+                <Link href="/dashboard/settings/sdi" className="text-link">
                   Impostazioni → Fatture elettroniche
                 </Link>
                 .
