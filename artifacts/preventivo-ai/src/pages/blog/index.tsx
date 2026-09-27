@@ -65,7 +65,7 @@ export default function BlogPage() {
       </div>
 
       <section className="hero on-dark" id="hero">
-        <div className="wrap" style={{ textAlign: "center", maxWidth: 760, margin: "0 auto", padding: "clamp(48px, 6vw, 84px) 0" }}>
+        <div className="wrap" style={{ textAlign: "center", maxWidth: 760, margin: "0 auto", paddingBlock: "clamp(48px, 6vw, 84px)" }}>
           <p className="eyebrow on-dark" style={{ marginBottom: 22, justifyContent: "center", display: "flex" }}>
             {t("blog.heroBadge")}
           </p>

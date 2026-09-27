@@ -207,6 +207,12 @@ export const INVOICE_CSS = `
   .inv table.grid th, .inv table.grid td { padding:6px 4px; font-size:12px; }
   .inv table.totals { max-width:none; }
 }
+/* APP-1i: on a small phone quantity and unit price move under the description (the table fits the glass). */
+.inv .ln-sub { display:none; color:#6b7280; font-size:11.5px; white-space:nowrap; }
+@media (max-width: 400px) {
+  .inv table.grid .c-qty, .inv table.grid .c-unit { display:none; }
+  .inv .ln-sub { display:block; }
+}
 `;
 
 export function renderInvoiceHtml(inv: Invoice, payments: InvoicePayment[] = []): string {
@@ -228,9 +234,9 @@ export function renderInvoiceHtml(inv: Invoice, payments: InvoicePayment[] = [])
   if (kv.length) parts.push(`<table class="kv">${kv.join("")}</table>`);
 
   const rows = inv.lines
-    .map((l) => `<tr><td>${esc(l.description)}</td><td class="num">${fmtQty(l.quantity, lang)}</td><td class="num">${fmtCents(l.unitCents, lang)}</td><td class="num">${fmtCents(l.amountCents, lang)}</td></tr>`)
+    .map((l) => `<tr><td>${esc(l.description)}<div class="ln-sub">${fmtQty(l.quantity, lang)} × ${fmtCents(l.unitCents, lang)}</div></td><td class="num c-qty">${fmtQty(l.quantity, lang)}</td><td class="num c-unit">${fmtCents(l.unitCents, lang)}</td><td class="num">${fmtCents(l.amountCents, lang)}</td></tr>`)
     .join("");
-  parts.push(`<div class="table-wrap" tabindex="0" role="region" aria-label="${ti("description", lang)}"><table class="grid"><thead><tr><th>${ti("description", lang)}</th><th class="num">${ti("qty", lang)}</th><th class="num">${ti("unit", lang)}</th><th class="num">${ti("amount", lang)}</th></tr></thead><tbody>${rows}</tbody></table></div>`);
+  parts.push(`<div class="table-wrap" tabindex="0" role="region" aria-label="${ti("description", lang)}"><table class="grid"><thead><tr><th>${ti("description", lang)}</th><th class="num c-qty">${ti("qty", lang)}</th><th class="num c-unit">${ti("unit", lang)}</th><th class="num">${ti("amount", lang)}</th></tr></thead><tbody>${rows}</tbody></table></div>`);
 
   const totals: string[] = [];
   totals.push(`<tr><td>${ti("subtotal", lang)}</td><td class="num">${fmtCents(inv.subtotalCents, lang)}</td></tr>`);

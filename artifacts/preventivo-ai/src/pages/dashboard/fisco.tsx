@@ -518,7 +518,7 @@ export default function FiscoPage() {
           </h1>
           <p className="sub">Quanto stai maturando di imposte e contributi, quanto mettere via, e quanto manca alla soglia.</p>
         </div>
-        <div className="head-actions">
+        <div className="head-actions fisco-links">
           <select aria-label="Anno d'imposta" value={anno} onChange={(e) => setAnno(Number(e.target.value))}>
             {[annoCorrente, annoCorrente - 1, annoCorrente - 2].map((a) => (
               <option key={a} value={a}>
@@ -526,15 +526,17 @@ export default function FiscoPage() {
               </option>
             ))}
           </select>
-          <Link href="/dashboard/fisco/prima-nota" className="btn btn-sm btn-outline-navy">
-            Prima nota
-          </Link>
-          <Link href="/dashboard/fisco/chiusura" className="btn btn-sm btn-outline-navy">
-            Chiusura d'anno
-          </Link>
-          <Link href="/dashboard/amministrazione" className="btn btn-sm btn-outline-navy">
-            Amministrazione
-          </Link>
+          <div className="fisco-links-row">
+            <Link href="/dashboard/fisco/prima-nota" className="btn btn-sm btn-outline-navy">
+              Prima nota
+            </Link>
+            <Link href="/dashboard/fisco/chiusura" className="btn btn-sm btn-outline-navy">
+              Chiusura d'anno
+            </Link>
+            <Link href="/dashboard/amministrazione" className="btn btn-sm btn-outline-navy">
+              Amministrazione
+            </Link>
+          </div>
         </div>
       </div>
 

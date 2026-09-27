@@ -186,7 +186,7 @@ export default function SeoCityLanding() {
       {/* ── Hero (lightweight — no per-page media, this route is the
           highest page count on the site: every trade × every city) ── */}
       <section className="hero on-dark" id="hero">
-        <div className="wrap" style={{ textAlign: "center", maxWidth: 760, margin: "0 auto", padding: "clamp(48px, 6vw, 84px) 0" }}>
+        <div className="wrap" style={{ textAlign: "center", maxWidth: 760, margin: "0 auto", paddingBlock: "clamp(48px, 6vw, 84px)" }}>
           <p className="eyebrow on-dark" style={{ marginBottom: 20, display: "inline-flex", alignItems: "center", gap: 8, justifyContent: "center" }}>
             <MapPin className="h-3.5 w-3.5" />
             {regionName}

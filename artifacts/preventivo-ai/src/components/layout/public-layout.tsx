@@ -172,6 +172,9 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
           <div
             className="absolute top-0 right-0 h-full w-72 bg-white shadow-2xl flex flex-col mnav open"
             style={{ padding: 0 }}
+            role="dialog"
+            aria-modal="true"
+            aria-label={t("nav.menu")}
             onClick={e => e.stopPropagation()}
           >
             <div className="flex items-center justify-between px-5 py-4 border-b" style={{ borderColor: "var(--line)" }}>

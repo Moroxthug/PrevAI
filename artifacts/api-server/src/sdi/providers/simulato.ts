@@ -1,4 +1,4 @@
-import { createHash } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import { descrizioneErroreSdi, type StatoSdi } from "@workspace/db";
 import { leggiFatturaPaXml, blocco, testo } from "../parse.js";
 import type { EsitoInvio, EventoSdi, IntermediarioSdi, PassivaScaricata, Ambiente } from "./types.js";
@@ -58,7 +58,9 @@ export class IntermediarioSimulato implements IntermediarioSdi {
   async invia(params: { fileName: string; xml: string; conservazione: boolean }): Promise<EsitoInvio> {
     const intestazione = blocco(params.xml, "DatiTrasmissione") ?? "";
     const destinatario = (testo(intestazione, "CodiceDestinatario") ?? "0000000").toUpperCase();
-    const providerDocumentId = `sim_${createHash("sha1").update(params.fileName).digest("hex").slice(0, 16)}`;
+    // One id per submission, like a real intermediary: the file name alone repeats across companies
+    // sharing a test P.IVA and collided on e_invoices_provider_doc_idx (APP-1i).
+    const providerDocumentId = `sim_${createHash("sha1").update(`${params.fileName}:${randomUUID()}`).digest("hex").slice(0, 16)}`;
     documenti.set(providerDocumentId, { fileName: params.fileName, xml: params.xml, destinatario, inviatoAt: new Date() });
     return { providerDocumentId, identificativoSdi: `SIM${providerDocumentId.slice(4, 12).toUpperCase()}`, stato: "inviata", messaggio: "Trasmissione simulata: nessun documento è stato inviato allo SdI." };
   }

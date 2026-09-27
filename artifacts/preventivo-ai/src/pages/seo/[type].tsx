@@ -324,7 +324,7 @@ export default function SeoLanding() {
 
       {/* ── Hero ─────────────────────────────────────────── */}
       <section className="hero on-dark" id="hero">
-        <div className="wrap hero-grid" style={{ padding: "clamp(36px, 5vw, 64px) 0 clamp(64px, 8vw, 96px)" }}>
+        <div className="wrap hero-grid" style={{ paddingBlock: "clamp(36px, 5vw, 64px) clamp(64px, 8vw, 96px)" }}>
           <div>
             <p className="eyebrow on-dark" style={{ marginBottom: 20, display: "inline-flex", alignItems: "center", gap: 8 }}>
               <Star className="h-3.5 w-3.5" style={{ fill: "currentColor" }} />

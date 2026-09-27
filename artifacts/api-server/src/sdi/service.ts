@@ -29,7 +29,7 @@ import { mappaFattura } from "./mapper.js";
 import { buildFatturaPaXml } from "./xml.js";
 import { validaFatturaPa, type EsitoValidazione } from "./validate.js";
 import { intermediarioPer } from "./providers/index.js";
-import type { EventoSdi } from "./providers/types.js";
+import { ErroreIntermediario, type EventoSdi } from "./providers/types.js";
 import type { FatturaPaInput } from "./types.js";
 import { registraBolloDocumento } from "./bollo.js";
 import { requisitiMancanti, type Requisito } from "./stato.js";
@@ -316,10 +316,13 @@ export async function inviaAlloSdi(params: { invoiceId: string; userId: string; 
     });
     return { eInvoice: inviata!, validazione };
   } catch (err) {
-    const messaggio = err instanceof Error ? err.message : "Errore sconosciuto";
+    // Only the intermediary's own answer reaches the user; anything else (a database error carries
+    // the whole SQL statement and its parameters) stays in the log (APP-1i).
+    const dalIntermediario = err instanceof ErroreIntermediario;
+    const messaggio = dalIntermediario ? err.message : "Errore interno durante la trasmissione, riprova tra qualche minuto.";
     await db.update(eInvoicesTable).set({ stato: "pronta", erroreMessaggio: messaggio, ultimoEventoAt: new Date() }).where(eq(eInvoicesTable.id, riga!.id));
     logger.error({ err, invoiceId: invoice.id }, "Invio allo SdI fallito");
-    throw new ErroreSdi("intermediario", `L'intermediario non ha accettato la trasmissione: ${messaggio}`);
+    throw new ErroreSdi("intermediario", dalIntermediario ? `L'intermediario non ha accettato la trasmissione: ${messaggio}` : messaggio);
   }
 }
 

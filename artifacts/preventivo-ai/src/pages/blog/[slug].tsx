@@ -30,7 +30,7 @@ export default function BlogArticlePage() {
 
   if (!article) {
     return (
-      <div className="wrap" style={{ textAlign: "center", padding: "clamp(80px, 10vw, 140px) 0" }}>
+      <div className="wrap" style={{ textAlign: "center", paddingBlock: "clamp(80px, 10vw, 140px)" }}>
         <h1 className="h2">{t("blog.articleNotFoundTitle")}</h1>
         <p className="lead" style={{ margin: "16px auto 32px" }}>{t("blog.articleNotFoundBody")}</p>
         <Link href="/blog/" className="btn btn-navy">
@@ -107,7 +107,7 @@ export default function BlogArticlePage() {
       </div>
 
       <article className="flex-1">
-        <header className="wrap" style={{ maxWidth: 780, padding: "clamp(12px, 2vw, 24px) 0 clamp(32px, 4vw, 48px)" }}>
+        <header className="wrap" style={{ maxWidth: 780, paddingBlock: "clamp(12px, 2vw, 24px) clamp(32px, 4vw, 48px)" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 14, flexWrap: "wrap", marginBottom: 20 }}>
             <span className={`chip ${CATEGORY_CHIPS[article.category] ?? "chip-grey"}`}>{article.category}</span>
             <span style={{ fontSize: 13, color: "var(--faint)" }}>{article.readingTimeMin} {t("blog.readingTimeSuffix")}</span>

@@ -196,6 +196,7 @@ export const translations: Record<Lang, Record<string, string>> = {
     "nav.signUp": "Registrati",
     "nav.dashboard": "Dashboard",
     "nav.goToDashboard": "Vai alla dashboard →",
+    "nav.menu": "Menu",
     "nav.openMenu": "Apri menu",
     "nav.closeMenu": "Chiudi menu",
     "nav.trades": "Mestieri",

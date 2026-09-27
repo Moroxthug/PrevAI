@@ -53,7 +53,7 @@ export default function WhatsappPage() {
 
       {/* ── HERO ───────────────────────────────────────────── */}
       <section className="hero on-dark" id="hero">
-        <div className="wrap" style={{ textAlign: "center", maxWidth: 760, margin: "0 auto", padding: "clamp(64px, 8vw, 110px) 0" }}>
+        <div className="wrap" style={{ textAlign: "center", maxWidth: 760, margin: "0 auto", paddingBlock: "clamp(64px, 8vw, 110px)" }}>
           <p className="eyebrow on-dark" style={{ marginBottom: 22, justifyContent: "center", display: "flex" }}>
             {t("whatsapp.badgeNew")}
           </p>

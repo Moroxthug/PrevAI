@@ -16,6 +16,14 @@
 //   pnpm --filter @workspace/api-server qa:visual -- --keep        # leave the account + servers up and print the token
 //   pnpm --filter @workspace/api-server qa:visual -- --screenshots=false --widths=1280,375   # axe-only pass
 //   E2E_NO_PURGE=1 pnpm … qa:visual -- --port=5198 --out=visual-quick --routes=…            # alongside a running sweep
+//   pnpm --filter @workspace/api-server qa:phone                   # APP-1i: 360/390/430 px, the phone gate (exit 1 on any finding)
+//
+// APP-1i: at ≤ 640 px every page must pass the phone rules (phoneRules below:
+// no sideways scroll, text off the glass edge, no stacks of full-width buttons,
+// tables that fit, tabs on one line, fields at 16 px, the primary on screen or
+// docked, the end of the page above the tab bar, a height budget). Any finding
+// there fails the run. A deliberate exception is `data-phone-ok="<rule> …"` on
+// the element or an ancestor, never a silent skip.
 //
 // Requires Google Chrome (playwright-core `channel: "chrome"`; set
 // QA_CHROME_PATH to point at another Chromium build).
@@ -51,21 +59,36 @@ for (const a of process.argv.slice(2)) {
   const m = /^--([^=]+)(?:=(.*))?$/.exec(a);
   if (m) args.set(m[1]!, m[2] ?? "true");
 }
+// APP-1i: `--phone` = the three phones of APP-PLAN §5 (Android small, iPhone, iPhone Pro Max), no axe unless asked.
+const PHONE_MODE = args.has("phone");
 const LANGS = (args.get("lang") ?? "it").split(",").filter(Boolean) as Array<"it">;
-const WIDTHS_IT = (args.get("widths") ?? "1280,980,768,640,375").split(",").map(Number);
+const WIDTHS_IT = (args.get("widths") ?? (PHONE_MODE ? "360,390,430" : "1280,980,768,640,375")).split(",").map(Number);
 const WIDTHS_FR = WIDTHS_IT;
 const WIDTHS_EN = WIDTHS_IT;
 const ROUTE_FILTER = (args.get("routes") ?? "").split(",").filter(Boolean);
-const RUN_AXE = args.get("axe") !== "false";
+const RUN_AXE = PHONE_MODE ? args.get("axe") === "true" : args.get("axe") !== "false";
 const SCREENSHOTS = args.get("screenshots") !== "false";
 const KEEP = args.has("keep");
 const PROVINCE = (args.get("province") ?? "MI");
-const VITE_PORT = Number(args.get("port") ?? 5197);
+const VITE_PORT = Number(args.get("port") ?? (PHONE_MODE ? 5196 : 5197));
 // A second run alongside a full sweep needs its own port AND its own output dir (the run starts by wiping it).
-const OUT = resolve(import.meta.dirname, "../../.qa", args.get("out") ?? "visual");
+const OUT = resolve(import.meta.dirname, "../../.qa", args.get("out") ?? (PHONE_MODE ? "phone" : "visual"));
 
 // ── Routes ───────────────────────────────────────────────────────────────────
-type RouteSpec = { path: string; auth: boolean; name?: string };
+/**
+ * `name`: the label (and screenshot) when one path is checked in several states.
+ * `drive`: clicks from the loaded page to that state (a sheet has no URL of its own).
+ * `screens`: APP-1i, this page's height budget in phone screens (PHONE_SCREENS otherwise).
+ */
+type RouteSpec = { path: string; auth: boolean; name?: string; drive?: (page: Page) => Promise<void>; screens?: number };
+// APP-1i: opens a phone sheet when its trigger is on screen (the tab bar exists at 980 px and below; no-op wider).
+async function openPhoneSheet(page: Page, trigger: string, sheet: string) {
+  const b = page.locator(trigger).first();
+  if (!(await b.isVisible().catch(() => false))) return;
+  await b.click();
+  await page.waitForSelector(sheet);
+  await page.waitForTimeout(300);
+}
 function routes(s: import("./fixtures.js").Showcase): RouteSpec[] {
   const pub = (path: string): RouteSpec => ({ path, auth: false });
   const dash = (path: string): RouteSpec => ({ path, auth: true });
@@ -98,11 +121,15 @@ function routes(s: import("./fixtures.js").Showcase): RouteSpec[] {
     dash("/dashboard/fisco"),
     dash("/dashboard/jobs"), dash(`/dashboard/jobs/${s.jobId}`), dash(`/dashboard/jobs/${s.jobId}/setup`),
     dash("/dashboard/assistant"), dash("/dashboard/team"), dash("/dashboard/documents"), dash("/dashboard/archive"), dash("/dashboard/notifications"),
+    // APP-1i: the phone's own overlays — the public menu, the tab bar's Altro and + sheets.
+    { path: "/", auth: false, name: "/ (menu)", drive: (p) => openPhoneSheet(p, ".menu-btn", "[role=dialog]") },
+    { path: "/dashboard", auth: true, name: "/dashboard (Altro)", drive: (p) => openPhoneSheet(p, ".tabbar button.tabbar-link", ".more-sheet") },
+    { path: "/dashboard", auth: true, name: "/dashboard (nuovo)", drive: (p) => openPhoneSheet(p, ".tb-new, .tabbar-new", "[role=dialog]") },
   ];
-  return list.filter((r) => ROUTE_FILTER.length === 0 || ROUTE_FILTER.some((f) => r.path.includes(f)));
+  return list.filter((r) => ROUTE_FILTER.length === 0 || ROUTE_FILTER.some((f) => r.path.includes(f) || (r.name ?? "").includes(f)));
 }
 
-const slug = (path: string) => (path === "/" ? "home" : path.replace(/^\//, "").replace(/[^a-z0-9]+/gi, "-").replace(/-+$/, "").slice(0, 60)) || "home";
+const slug = (path: string) => (path === "/" ? "home" : path.replace(/^\//, "").replace(/[^a-z0-9]+/gi, "-").replace(/^-+|-+$/g, "").slice(0, 60)) || "home";
 
 // ── Vite ─────────────────────────────────────────────────────────────────────
 let vite: ChildProcess | null = null;
@@ -149,6 +176,8 @@ type PageResult = {
   lang: string; width: number; path: string; auth: boolean;
   title: string; screenshot: string;
   overflow: { scrollWidth: number; clientWidth: number; offenders: string[] } | null;
+  /** APP-1i: phone-rule findings at ≤ PHONE_WIDTH (each one fails the run). */
+  phone: PhoneFinding[];
   axe: Array<{ id: string; impact: string; help: string; count: number; targets: string[]; detail: string[] }>;
   consoleErrors: string[]; failedRequests: string[]; boundary: string | null; rawKeys: string[]; error?: string;
 };
@@ -178,6 +207,169 @@ async function overflow(page: Page) {
     offenders.sort((a, b) => b[0] - a[0]);
     return { scrollWidth: doc.scrollWidth, clientWidth: cw, offenders: offenders.slice(0, 4).map(([px, sel]) => `${sel} (+${Math.round(px)}px)`) };
   });
+}
+
+// ── APP-1i: phone rules ──────────────────────────────────────────────────────
+// What a machine can see of "calm on a phone" (QuoteAI Phase 100's rules, made
+// the gate here, plus the phone gutter of QuoteAI Phase 82 and 16 px fields).
+// Each finding names what it found so the fix is obvious from the report alone.
+type PhoneRule = "gutter" | "stacked-buttons" | "full-width-stat" | "wide-table" | "wrapping-tabs" | "small-field" | "tall-page" | "primary-offscreen" | "under-tabbar";
+type PhoneFinding = { rule: PhoneRule; detail: string };
+const PHONE_WIDTH = 640;
+/** Text closer than this to either edge of the glass (px). */
+const GUTTER_MIN = 12;
+/** App pages taller than this many phone screens fail (a route may set its own `screens`). */
+const PHONE_SCREENS = 8;
+
+async function phoneRules(page: Page, width: number, r: RouteSpec): Promise<PhoneFinding[]> {
+  if (width > PHONE_WIDTH) return [];
+  // tsx wraps named helpers in `__name(…)`, which the page does not have.
+  await page.evaluate("globalThis.__name = globalThis.__name || function (f) { return f }").catch(() => {});
+  const found = await page.evaluate(({ budget, app, gutterMin }) => {
+    const out: Array<{ rule: string; detail: string }> = [];
+    const cw = document.documentElement.clientWidth;
+    const vh = window.innerHeight;
+    // A deliberate exception: data-phone-ok="rule …" on the element or an ancestor.
+    const exempt = (el: Element, rule: string) => {
+      const h = el.closest("[data-phone-ok]");
+      return !!h && (h.getAttribute("data-phone-ok") ?? "").split(/\s+/).includes(rule);
+    };
+    const label = (el: Element) => {
+      const h = el as HTMLElement;
+      const cls = typeof h.className === "string" && h.className ? "." + h.className.trim().split(/\s+/).slice(0, 2).join(".") : "";
+      const text = (h.innerText ?? "").trim().replace(/\s+/g, " ").slice(0, 28);
+      return `${el.tagName.toLowerCase()}${h.id ? `#${h.id}` : ""}${cls}${text ? ` "${text}"` : ""}`;
+    };
+    const shown = (el: Element) => {
+      const b = el.getBoundingClientRect();
+      if (b.width === 0 || b.height === 0) return false;
+      const cs = getComputedStyle(el);
+      return cs.visibility !== "hidden" && cs.display !== "none" && Number(cs.opacity) !== 0 && !el.closest("[inert], [aria-hidden='true']");
+    };
+    const inFixed = (el: Element) => {
+      for (let p: Element | null = el; p && p !== document.body; p = p.parentElement) {
+        const pos = getComputedStyle(p).position;
+        if (pos === "fixed" || pos === "sticky") return true;
+      }
+      return false;
+    };
+    const dialogOpen = !!document.querySelector("[role='dialog']");
+    // With a sheet open the page behind it is not what is being checked.
+    const inScope = (el: Element) => !dialogOpen || !!el.closest("[role='dialog']");
+
+    // 1. Text within GUTTER_MIN px of the glass (measured on the glyphs, clipped by any box that hides the overhang).
+    const range = document.createRange();
+    const gut: Array<[number, string]> = [];
+    for (const el of Array.from(document.body.querySelectorAll<HTMLElement>("*"))) {
+      const own = Array.from(el.childNodes).filter((n) => n.nodeType === Node.TEXT_NODE).map((n) => n.textContent ?? "").join("").trim();
+      if (!own || exempt(el, "gutter") || !inScope(el)) continue;
+      const cs = getComputedStyle(el);
+      if (cs.visibility === "hidden" || cs.position === "fixed" || Number(cs.opacity) === 0) continue;
+      if (el.getBoundingClientRect().width <= 1) continue; // .sr-only
+      let left = Infinity, right = -Infinity, top = Infinity;
+      for (const n of Array.from(el.childNodes)) {
+        if (n.nodeType !== Node.TEXT_NODE || !(n.textContent ?? "").trim()) continue;
+        range.selectNodeContents(n);
+        for (const b of Array.from(range.getClientRects())) {
+          if (b.width === 0 || b.height === 0) continue;
+          left = Math.min(left, b.left); right = Math.max(right, b.right); top = Math.min(top, b.top + window.scrollY);
+        }
+      }
+      if (left === Infinity || top < -1000) continue;
+      // A row that scrolls sideways (tabs, chips) runs to the glass on purpose: its text slides past the edge.
+      let scroller = false;
+      for (let p: HTMLElement | null = el; p && p !== document.body; p = p.parentElement) {
+        const ox = getComputedStyle(p).overflowX;
+        if ((ox === "auto" || ox === "scroll") && p.scrollWidth > p.clientWidth + 1) { scroller = true; break; }
+      }
+      if (scroller) continue;
+      for (let p: HTMLElement | null = el; p && p !== document.body; p = p.parentElement) {
+        if (getComputedStyle(p).overflowX === "visible") continue;
+        const pr = p.getBoundingClientRect();
+        left = Math.max(left, pr.left); right = Math.min(right, pr.right);
+      }
+      if (right - left <= 0 || right <= 0 || left >= cw) continue;
+      const worst = Math.min(left, cw - right);
+      if (worst < gutterMin) gut.push([worst, `${label(el)} ${Math.round(worst)}px`]);
+    }
+    gut.sort((a, b) => a[0] - b[0]);
+    if (gut.length) out.push({ rule: "gutter", detail: `${gut.length} text(s) under ${gutterMin}px from the edge: ${gut.slice(0, 3).map(([, s]) => s).join(", ")}` });
+
+    // 2. More than two full-width buttons stacked in a column (a switch row, a section toggle and a list row are rows, not actions).
+    const btns = Array.from(document.querySelectorAll(".btn, button:not([role='switch']), a[role='button']"))
+      .filter((b) => !(b.matches("button[aria-expanded]:not(.btn)") || b.matches("li > button:not(.btn)")))
+      .filter((b) => shown(b) && inScope(b) && !inFixed(b) && !exempt(b, "stacked-buttons") && b.getBoundingClientRect().width >= cw * 0.7)
+      .map((b) => ({ el: b, r: b.getBoundingClientRect() }))
+      .sort((a, b) => a.r.top - b.r.top);
+    let run: typeof btns = [];
+    const flush = () => {
+      if (run.length > 2) out.push({ rule: "stacked-buttons", detail: `${run.length} full-width buttons in a column: ${run.slice(0, 4).map((x) => label(x.el)).join(", ")}` });
+      run = [];
+    };
+    for (const b of btns) {
+      const prev = run[run.length - 1];
+      if (prev && b.r.top - prev.r.bottom > 24) flush();
+      if (!prev || b.r.top >= prev.r.bottom - 2) run.push(b);
+    }
+    flush();
+
+    // 3. A stat card holding one number across the whole width (use a strip).
+    const stats = Array.from(document.querySelectorAll(".stat-card:not(.editable)")).filter((s) => shown(s) && inScope(s) && !exempt(s, "full-width-stat") && s.getBoundingClientRect().width >= cw * 0.8);
+    if (stats.length) out.push({ rule: "full-width-stat", detail: `${stats.length} full-width .stat-card: ${stats.slice(0, 3).map(label).join(", ")}` });
+
+    // 4. A data table wider than its box (sideways scrolling for data: use rows).
+    for (const t of Array.from(document.querySelectorAll("table"))) {
+      if (!shown(t) || !inScope(t) || !t.parentElement || exempt(t, "wide-table")) continue;
+      const box = t.parentElement.clientWidth;
+      if (t.scrollWidth > box + 1) out.push({ rule: "wide-table", detail: `${label(t)} is ${t.scrollWidth}px in a ${box}px box` });
+    }
+
+    // 5. Tabs / pill rows wrapping to a second line (they scroll instead).
+    for (const row of Array.from(document.querySelectorAll(".pills:not(.choices), .stabs, [role='tablist'], .seg"))) {
+      if (!shown(row) || !inScope(row) || exempt(row, "wrapping-tabs")) continue;
+      const tops = new Set(Array.from(row.children).filter(shown).map((c) => Math.round(c.getBoundingClientRect().top / 6)));
+      if (tops.size > 1) out.push({ rule: "wrapping-tabs", detail: `${label(row)} wraps to ${tops.size} lines` });
+    }
+
+    // 6. A field under 16 px: iOS zooms the page in when it gets focus.
+    const small = Array.from(document.querySelectorAll("input, select, textarea"))
+      .filter((f) => !(f as HTMLInputElement).type || !["checkbox", "radio", "range", "hidden", "file", "color", "submit", "button"].includes((f as HTMLInputElement).type))
+      .filter((f) => shown(f) && inScope(f) && !exempt(f, "small-field") && parseFloat(getComputedStyle(f).fontSize) < 16);
+    if (small.length) out.push({ rule: "small-field", detail: `${small.length} field(s) under 16px: ${small.slice(0, 3).map((f) => `${label(f)} ${getComputedStyle(f).fontSize}`).join(", ")}` });
+
+    // 7. App pages taller than their budget.
+    const screens = document.documentElement.scrollHeight / vh;
+    if (app && !dialogOpen && screens > budget) out.push({ rule: "tall-page", detail: `${screens.toFixed(1)} phone screens (budget ${budget})` });
+
+    // 8. The page's marked primary action is neither on screen one nor docked.
+    const primary = Array.from(document.querySelectorAll("[data-primary-action]")).find((p) => shown(p) && inScope(p));
+    if (primary && !inFixed(primary) && !exempt(primary, "primary-offscreen") && primary.getBoundingClientRect().top + window.scrollY > vh) {
+      out.push({ rule: "primary-offscreen", detail: `${label(primary)} starts ${Math.round(primary.getBoundingClientRect().top + window.scrollY)}px down` });
+    }
+    return out;
+  }, { budget: r.screens ?? PHONE_SCREENS, app: r.auth, gutterMin: GUTTER_MIN });
+
+  // 9. With the bottom tab bar, the end of the page must clear it.
+  const covered = await page.evaluate(async () => {
+    const bar = document.querySelector(".tabbar");
+    if (!bar || getComputedStyle(bar).display === "none" || document.querySelector("[role='dialog']")) return null;
+    window.scrollTo(0, document.documentElement.scrollHeight);
+    await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
+    const top = bar.getBoundingClientRect().top;
+    let bottom = 0;
+    for (const el of Array.from(document.querySelectorAll("main *"))) {
+      const b = el.getBoundingClientRect();
+      const cs = getComputedStyle(el);
+      if (b.height === 0 || cs.position === "fixed" || cs.visibility === "hidden") continue;
+      // Docked things (the action bar, sheets) sit over the page, not at its end.
+      if (el.closest("[role='dialog'], .action-bar, .tabbar, [data-phone-ok~='under-tabbar']")) continue;
+      bottom = Math.max(bottom, b.bottom);
+    }
+    window.scrollTo(0, 0);
+    return bottom > top + 1 ? `content ends ${Math.round(bottom - top)}px under the tab bar` : null;
+  });
+  if (covered) found.push({ rule: "under-tabbar", detail: covered });
+  return found as PhoneFinding[];
 }
 
 async function runAxe(page: Page): Promise<PageResult["axe"]> {
@@ -210,11 +402,12 @@ async function checkPage(ctx: BrowserContext, base: string, r: RouteSpec, lang: 
   await page.setViewportSize({ width, height: width <= 640 ? 812 : 800 });
   const dir = resolve(OUT, lang, String(width));
   mkdirSync(dir, { recursive: true });
-  const file = resolve(dir, `${slug(r.path)}.png`);
-  const result: PageResult = { lang, width, path: r.path, auth: r.auth, title: "", screenshot: file, overflow: null, axe: [], consoleErrors, failedRequests, boundary: null, rawKeys: [] };
+  const file = resolve(dir, `${slug(r.name ?? r.path)}.png`);
+  const result: PageResult = { lang, width, path: r.name ?? r.path, auth: r.auth, title: "", screenshot: file, overflow: null, phone: [], axe: [], consoleErrors, failedRequests, boundary: null, rawKeys: [] };
   try {
     await page.goto(`${base}${r.path}`, { waitUntil: "domcontentloaded", timeout: 30_000 });
     await settle(page);
+    if (r.drive) { await r.drive(page); await settle(page); }
     result.title = await page.title();
     result.boundary = await page.evaluate(() => {
       const t = document.body.innerText;
@@ -224,6 +417,7 @@ async function checkPage(ctx: BrowserContext, base: string, r: RouteSpec, lang: 
     const tokens: string[] = await page.evaluate(() => Array.from(new Set((document.body.innerText.match(/\b[a-z][a-zA-Z0-9]*(?:\.[a-zA-Z0-9_-]+){1,6}\b/g) ?? []))));
     result.rawKeys = tokens.filter((t) => TRANSLATION_KEYS.has(t));
     result.overflow = await overflow(page);
+    result.phone = await phoneRules(page, width, r);
     if (SCREENSHOTS) await page.screenshot({ path: file, fullPage: true });
     if (RUN_AXE) result.axe = await runAxe(page);
   } catch (e) {
@@ -263,6 +457,17 @@ function writeReport(results: PageResult[], meta: Record<string, unknown>) {
     lines.push(`### ${id} — ${e.impact} — ${e.help}`, "");
     for (const w of e.where.slice(0, 40)) lines.push(`- ${w}`);
     if (e.where.length > 40) lines.push(`- … ${e.where.length - 40} more`);
+    lines.push("");
+  }
+
+  lines.push(`## Phone rules (≤ ${PHONE_WIDTH}px) — blocking (APP-1i)`, "");
+  const byPhoneRule = new Map<string, string[]>();
+  for (const r of results) for (const w of r.phone) byPhoneRule.set(w.rule, [...(byPhoneRule.get(w.rule) ?? []), `\`${r.path}\` ${r.lang}@${r.width}: ${w.detail}`]);
+  if (!byPhoneRule.size) lines.push("None.", "");
+  for (const [rule, where] of [...byPhoneRule].sort((a, b) => b[1].length - a[1].length)) {
+    lines.push(`### ${rule} (${where.length})`, "");
+    for (const w of where.slice(0, 60)) lines.push(`- ${w}`);
+    if (where.length > 60) lines.push(`- … ${where.length - 60} more`);
     lines.push("");
   }
 
@@ -328,18 +533,21 @@ try {
         for (const r of rs) {
           const res = await checkPage(ctx, frontend, r, lang, width);
           results.push(res);
-          const flags = [res.overflow && "OVERFLOW", res.axe.some((a) => a.impact !== "moderate") && `AXE:${res.axe.filter((a) => a.impact !== "moderate").map((a) => a.id).join(",")}`, res.consoleErrors.length && `CONSOLE:${res.consoleErrors.length}`, res.failedRequests.length && `API:${res.failedRequests.length}`, res.boundary && `BOUNDARY:${res.boundary}`, res.rawKeys.length && `RAWKEY:${res.rawKeys.join(",")}`, res.error && `ERROR:${res.error}`].filter(Boolean);
-          console.log(`${lang}@${String(width).padStart(4)} ${r.path.padEnd(60)} ${flags.join(" ") || "ok"}`);
+          const flags = [res.overflow && "OVERFLOW", res.phone.length && `PHONE:${[...new Set(res.phone.map((w) => w.rule))].join(",")}`,res.axe.some((a) => a.impact !== "moderate") && `AXE:${res.axe.filter((a) => a.impact !== "moderate").map((a) => a.id).join(",")}`, res.consoleErrors.length && `CONSOLE:${res.consoleErrors.length}`, res.failedRequests.length && `API:${res.failedRequests.length}`, res.boundary && `BOUNDARY:${res.boundary}`, res.rawKeys.length && `RAWKEY:${res.rawKeys.join(",")}`, res.error && `ERROR:${res.error}`].filter(Boolean);
+          console.log(`${lang}@${String(width).padStart(4)} ${(r.name ?? r.path).padEnd(60)} ${flags.join(" ") || "ok"}`);
         }
       }
       await ctx.close();
     }
   }
-  writeReport(results, { langs: LANGS, widthsEn: WIDTHS_EN, widthsFr: WIDTHS_FR, province: PROVINCE, routes: all.length, pages: results.length, seconds: Math.round((Date.now() - t0) / 1000) });
+  writeReport(results, { phoneMode: PHONE_MODE, langs: LANGS, widthsEn: WIDTHS_EN, widthsFr: WIDTHS_FR, province: PROVINCE, routes: all.length, pages: results.length, seconds: Math.round((Date.now() - t0) / 1000) });
   const serious = results.reduce((s, r) => s + r.axe.filter((a) => a.impact !== "moderate").reduce((x, a) => x + a.count, 0), 0);
   const overflows = results.filter((r) => r.overflow).length;
   const rawKeyPages = results.filter((r) => r.rawKeys.length).length;
-  console.log(`\n[qa-visual] ${results.length} pages in ${Math.round((Date.now() - t0) / 1000)}s — overflow on ${overflows}, axe serious/critical nodes ${serious}, raw i18n keys on ${rawKeyPages} → ${resolve(OUT, "report.md")}`);
+  // APP-1i: the phone gate — sideways scroll or any phone rule at ≤ PHONE_WIDTH, or a page that did not load there.
+  const phoneFailed = results.filter((r) => r.width <= PHONE_WIDTH && (r.overflow || r.phone.length || r.error || r.boundary));
+  console.log(`\n[qa-visual] ${results.length} pages in ${Math.round((Date.now() - t0) / 1000)}s — overflow on ${overflows}, axe serious/critical nodes ${serious}, raw i18n keys on ${rawKeyPages}, phone gate failed on ${phoneFailed.length} → ${resolve(OUT, "report.md")}`);
+  if (phoneFailed.length) process.exitCode = 1;
   if (KEEP) {
     console.log(`[qa-visual] --keep: account ${org.email} left in place; bearer ${org.token}; frontend ${frontend} (API ${apiBase}). Ctrl-C to stop.`);
     await new Promise(() => {});
@@ -352,4 +560,4 @@ try {
     await stopServer();
   }
 }
-process.exit(0);
+process.exit(typeof process.exitCode === "number" ? process.exitCode : 0);

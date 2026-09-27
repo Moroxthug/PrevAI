@@ -786,3 +786,17 @@ Exit 1 = a variable the code reads is unclassified, or a required one is missing
 | Database "too many connections" | pooler session mode, `max: 3` per function instance; Free plan pooler cap 200 | Supabase → Database → connection stats; scale down concurrency or move to transaction pooler port 6543 (needs `prepare: false`) |
 | Everything 500 after a deploy | function boot log → missing env var at import | §7 |
 | Vercel flags `readable-secret` on a var | `STRIPE_CONNECT_WEBHOOK_SECRET`, `GOOGLE_CALENDAR_CLIENT_SECRET`, `QUICKBOOKS_CLIENT_SECRET` were added as plain Encrypted, not Sensitive | recreate them as Sensitive (the code does not care) |
+
+## 14. Controllo telefono obbligatorio (APP-1i, riga 29)
+
+Prima di chiudere una fase che tocca una schermata, e prima di ogni promozione:
+
+```bash
+pnpm --filter @workspace/api-server qa:phone          # 360/390/430 px, ~7 min; exit 1 = una pagina non passa
+pnpm --filter @workspace/api-server qa:phone-sheets   # fogli di confronto in .qa/phone-sheets/phone/index.html
+```
+
+- Cosa controlla e come si sistema ogni regola: `docs/MOBILE-RULES.md`.
+- Serve lo staging locale (`.env.staging`) e Chrome installato, come `qa:visual`. Vite parte sulla 5196: se è occupata (un'altra chat), `-- --port=5195 --out=phone-b` e `E2E_NO_PURGE=1` davanti.
+- Una pagina nuova entra nel controllo aggiungendola a `routes()` in `artifacts/api-server/src/e2e/visual-a11y.ts`; un foglio (sheet) con `drive: (p) => openPhoneSheet(p, "<pulsante>", "<foglio>")`.
+- Eccezione voluta: `data-phone-ok="<regola>"` sull'elemento, con un commento che dice perché. Mai togliere la regola.
