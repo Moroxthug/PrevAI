@@ -2580,3 +2580,52 @@ button.qline:hover { background: #fafbfc; }
   .fisco-page table { display: block; max-width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
   .fisco-page table :is(td, th) + :is(td, th) { padding-left: 12px; }
 }
+
+/* ── APP-1g (QuoteAI Phase 108/110): squadra e le altre pagine ───────────── */
+/* A phone row with its own ⋯ (ResponsiveTable rowActions). */
+.lrow-split { display: flex; align-items: center; border-top: 1px solid var(--soft); }
+.lrows > li.lrow-split:first-child { border-top: none; }
+.lrow-split > .lrow { flex: 1; min-width: 0; border-top: none; }
+.lrow-split > .row-more { margin-right: 8px; }
+.lrow.dim, .tbl tr.dim { opacity: .6; }
+.lrow-lead > input[type="checkbox"] { width: 20px; height: 20px; display: block; }
+.lrow-end .cta-link, .lrow-end .btn { white-space: nowrap; }
+.t-unit { font-weight: 600; color: var(--faint); font-size: var(--fs-meta); }
+.ny-pill.sq { min-width: 44px; padding: 0 10px; }
+/* Hours on a phone: the hours as a tile, approve by swipe or ✓. */
+.crew-hint { padding: 0 20px 6px; font-size: 12.5px; font-weight: 600; color: var(--muted-mk); }
+.crew-hrs { display: inline-flex; align-items: center; justify-content: center; gap: 1px; min-width: 48px; height: 40px; padding: 0 8px; white-space: nowrap; border-radius: 12px; background: var(--soft-2); flex: none; font-size: 16px; font-weight: 800; color: var(--navy); line-height: 1; font-variant-numeric: tabular-nums; }
+.crew-hrs small { font-size: 11px; font-weight: 700; color: var(--muted-mk); }
+.lrow-meta.warn { color: var(--yellow-dark); }
+/* Swipe row (components/mobile/swipe-row.tsx) */
+.swipe-row { position: relative; overflow: hidden; border-top: 1px solid var(--soft); }
+.lrows > li:first-child > .swipe-row { border-top: none; }
+.swipe-row .lrow { border-top: none; }
+.swipe-under { position: absolute; inset: 0; display: flex; align-items: center; gap: 8px; padding: 0 20px; background: var(--green-dark); color: #fff; font-size: 14px; font-weight: 800; }
+.swipe-under svg { width: 18px; height: 18px; }
+.swipe-top { position: relative; background: #fff; touch-action: pan-y; transition: transform .22s var(--ease-mk); }
+@media (prefers-reduced-motion: reduce) { .swipe-top { transition: none; } }
+@media (max-width: 640px) {
+  .crew-hint { padding: 0 16px 4px; }
+  .swipe-under { padding: 0 16px; }
+  /* Import: the three steps as three short lines, not three cards. */
+  .steps-3 { gap: 8px; }
+  .steps-3 .step-card { display: flex; align-items: center; gap: 12px; padding: 12px 14px; }
+  .steps-3 .step-card .step-num { margin: 0; flex: none; }
+  .steps-3 .step-card b { margin: 0; font-size: 14.5px; }
+  .steps-3 .step-card p { display: none; }
+}
+/* An hour entry: the job may take two lines, the cost leads the quiet line. */
+.hrs-row .lrow-title { white-space: normal; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.hrs-row .lrow-meta { white-space: normal; }
+.lrow.wrap-meta .lrow-meta { white-space: normal; }
+.src-grid.two { grid-template-columns: repeat(2, 1fr); }
+@media (max-width: 640px) {
+  /* Import: the two sources one under the other. */
+  .src-grid.two { grid-template-columns: 1fr; gap: 10px; padding: 16px; }
+  /* Assistant: there is only ever one conversation here, so no list above the chat. */
+  .chat-grid > .th-list { display: none; }
+  .chat-body { padding: 16px; min-height: 300px; }
+}
+/* A docked bar placed in the page head: its spacer belongs at the end of the page, not under the title. */
+@media (max-width: 640px) { .page-head .action-bar-spacer { display: none; } }

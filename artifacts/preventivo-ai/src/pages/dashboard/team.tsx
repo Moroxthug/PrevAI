@@ -14,6 +14,11 @@ import { formatCents, type TimeEntryDto, type TimeEntryStatus, type UsageUnit } 
 import { teamApi, type EquipmentDto, type EquipmentEdit, type EquipmentOwnership, type WorkerDto, type WorkerEdit, type WorkerType } from "@/lib/team-api";
 import { teamMembersApi, type TeamMemberDto, type TeamMemberRole } from "@/lib/team-members-api";
 import { TimeStatusBadge } from "@/components/jobs/team-tab";
+import { ScrollTabs } from "@/components/mobile/scroll-tabs";
+import { ListRow } from "@/components/mobile/list-row";
+import { RowMore } from "@/components/mobile/row-more";
+import { SwipeRow } from "@/components/mobile/swipe-row";
+import { useMediaQuery } from "@/hooks/use-media-query";
 
 const TABS = ["workers", "time", "equipment", "members"] as const;
 type Tab = (typeof TABS)[number];
@@ -44,17 +49,14 @@ export default function TeamPage() {
         </div>
       </div>
 
-      <div className="pills mb-4">
-        {TABS.map((k) => {
-          const Icon = TAB_ICONS[k];
-          const count = k === "time" ? (pending?.items.length ?? 0) : 0;
-          return (
-            <button key={k} type="button" onClick={() => setTab(k)} className={cn("pill", tab === k && "on")}>
-              <Icon /> {t(`team.tab.${k}`)}{count ? <span className="cnt">{count}</span> : null}
-            </button>
-          );
-        })}
-      </div>
+      {/* APP-1g: tabs that scroll on a phone instead of wrapping. */}
+      <ScrollTabs
+        sticky
+        label={t("team.title")}
+        value={tab}
+        onChange={(k) => setTab(k as Tab)}
+        tabs={TABS.map((k) => ({ id: k, label: t(`team.tab.${k}`), icon: TAB_ICONS[k], count: k === "time" && pending?.items.length ? pending.items.length : undefined }))}
+      />
 
       {isLoading ? <div className="space-y-3"><Skeleton className="h-16 w-full rounded-[var(--radius-mk)]" /><Skeleton className="h-16 w-full rounded-[var(--radius-mk)]" /></div> : null}
       {tab === "workers" && workers && <WorkersTab workers={workers.items} locale={locale} />}
@@ -85,19 +87,27 @@ function MembersTab() {
 
   const members = data?.items ?? [];
   const seats = data?.seats;
+  const phone = useMediaQuery("(max-width: 640px)");
 
   return (
     <div className="card">
       <div className="toolbar">
         <p className="foot-note m-0">{t("team.members.intro")}</p>
-        <div className="grow flex items-center gap-2">
-          {seats && <span className="foot-note">{seats.used}/{seats.included} {t("team.members.seatsUsed")}</span>}
+        <div className="grow flex flex-wrap items-center gap-2">
+          {seats && <span className="foot-note" style={{ whiteSpace: "nowrap" }}>{seats.used}/{seats.included} {t("team.members.seatsUsed")}</span>}
           <button type="button" className="btn btn-navy btn-sm" onClick={() => setInviteOpen(true)}><Plus className="h-4 w-4" /> {t("team.members.invite")}</button>
         </div>
       </div>
 
       {isLoading ? (
         <div className="p-5"><Skeleton className="h-16 w-full rounded-[var(--radius-mk)]" /></div>
+      ) : phone ? (
+        <ul className="lrows" aria-label={t("team.tab.members")}>
+          <li><ListRow lead={<span className="avat" style={{ background: "var(--navy)", color: "#fff" }}>YOU</span>} title={t("team.members.you")} meta={[t("team.members.role.admin")]} end={<span className="chip chip-green">{t("team.members.statusActive")}</span>} /></li>
+          {members.map((m) => (
+            <MemberPhoneRow key={m.id} member={m} onResend={() => resend.mutate(m.id)} onSuspend={() => setStatus.mutate({ id: m.id, status: m.status === "suspended" ? "active" : "suspended" })} onRemove={() => { if (confirm(t("team.members.removeConfirm"))) remove.mutate(m.id); }} />
+          ))}
+        </ul>
       ) : (
         <div className="tbl-wrap">
           <table className="tbl">
@@ -156,6 +166,28 @@ function MemberRow({ member, onResend, onSuspend, onRemove }: { member: TeamMemb
         </div>
       </td>
     </tr>
+  );
+}
+
+/** APP-1g — a member on a phone: who, the role, the status chip, the row's actions behind ⋯. */
+function MemberPhoneRow({ member, onResend, onSuspend, onRemove }: { member: TeamMemberDto; onResend: () => void; onSuspend: () => void; onRemove: () => void }) {
+  const { t } = useLanguage();
+  const statusLabel = member.status === "active" ? t("team.members.statusActive") : member.status === "suspended" ? t("team.members.statusSuspended") : t("team.members.statusInvited");
+  const statusChip = member.status === "active" ? "chip-green" : member.status === "suspended" ? "chip-grey" : "chip-yellow";
+  return (
+    <li className="lrow-split">
+      <ListRow
+        lead={<span className="avat">{member.email.slice(0, 2).toUpperCase()}</span>}
+        title={member.email}
+        meta={[t(`team.members.role.${member.role}`)]}
+        end={<span className={cn("chip", statusChip)}>{statusLabel}</span>}
+      />
+      <RowMore label={t("team.m.rowActions").replace("{name}", member.email)} actions={[
+        member.status !== "active" && { label: t("team.members.resend"), icon: RotateCw, onSelect: onResend },
+        member.status !== "invited" && { label: member.status === "suspended" ? t("team.members.reactivate") : t("team.members.suspend"), icon: member.status === "suspended" ? UserCheck : UserX, onSelect: onSuspend },
+        { label: t("team.members.remove"), icon: Trash2, danger: true, separated: true, onSelect: onRemove },
+      ]} />
+    </li>
   );
 }
 
@@ -231,18 +263,41 @@ function WorkersTab({ workers, locale }: { workers: WorkerDto[]; locale: typeof 
 
   const list = workers.filter((w) => showInactive || w.active);
   const inactiveCount = workers.filter((w) => !w.active).length;
+  const phone = useMediaQuery("(max-width: 640px)");
 
   return (
     <div className="card">
       <div className="toolbar">
         <p className="foot-note m-0">{t("team.workers.intro")}</p>
-        <div className="grow flex items-center gap-2">
+        <div className="grow flex flex-wrap items-center gap-2">
           {inactiveCount > 0 && <button type="button" className="text-link" style={{ color: "var(--muted-mk)" }} onClick={() => setShowInactive((v) => !v)}>{showInactive ? t("team.workers.hideInactive") : `${t("team.workers.showInactive")} (${inactiveCount})`}</button>}
           <button type="button" className="btn btn-navy btn-sm" onClick={() => setEditing({ open: true, worker: null })}><Plus className="h-4 w-4" /> {t("team.workers.add")}</button>
         </div>
       </div>
       {list.length === 0 ? (
         <div className="card-empty">{t("team.workers.empty")}</div>
+      ) : phone ? (
+        <ul className="lrows" aria-label={t("team.tab.workers")}>
+          {list.map((w) => (
+            <li key={w.id} className="lrow-split">
+              <ListRow
+                className={cn("wrap-meta", !w.active && "dim")}
+                lead={<span className="avat">{w.name.slice(0, 2).toUpperCase()}</span>}
+                title={w.name}
+                meta={[`${w.hoursThisMonth.toFixed(1)} h`, w.pendingCount > 0 ? <b key="p" style={{ color: "var(--yellow-dark)" }}>{w.pendingCount} {t("team.workers.toApprove")}</b> : null, t(`team.type.${w.workerType}`), w.role && w.role !== "collaboratore" && w.role !== "worker" ? w.role : null, !w.active ? t("team.workers.inactive") : null]}
+                amount={`${formatCents(Math.round(w.hourlyRateCents * (1 + w.burdenPercent / 100)))}/h`}
+                onClick={() => setEditing({ open: true, worker: w })}
+              />
+              <RowMore label={t("team.m.rowActions").replace("{name}", w.name)} actions={[
+                w.active && { label: w.hasInvite ? t("team.workers.newLink") : t("team.workers.timeLink"), icon: Link2, disabled: issue.isPending, onSelect: () => issue.mutate(w) },
+                w.hasInvite && { label: t("team.workers.revoke"), icon: X, onSelect: () => revoke.mutate(w.id) },
+                { label: t("team.workers.edit"), icon: Pencil, onSelect: () => setEditing({ open: true, worker: w }) },
+                { label: w.active ? t("team.workers.deactivate") : t("team.workers.reactivate"), icon: w.active ? UserX : UserCheck, onSelect: () => toggleActive.mutate(w) },
+                { label: t("team.workers.delete"), icon: Trash2, danger: true, separated: true, onSelect: () => { if (confirm(t("team.workers.deleteConfirm"))) remove.mutate(w.id); } },
+              ]} />
+            </li>
+          ))}
+        </ul>
       ) : (
         <div className="tbl-wrap">
           <table className="tbl">
@@ -379,6 +434,7 @@ function TimeTab({ workers, locale }: { workers: WorkerDto[]; locale: typeof it 
   const [from, setFrom] = useState(isoDay(new Date(now.getFullYear(), now.getMonth(), 1)));
   const [to, setTo] = useState(isoDay(now));
   const [selected, setSelected] = useState<Set<string>>(new Set());
+  const phone = useMediaQuery("(max-width: 640px)");
 
   const params = { status: status === "all" ? undefined : status, workerId: workerId || undefined, from: status === "submitted" ? undefined : from, to: status === "submitted" ? undefined : to };
   const { data, isLoading } = useQuery({ queryKey: ["time-entries", params], queryFn: () => teamApi.timeEntries(params) });
@@ -427,8 +483,10 @@ function TimeTab({ workers, locale }: { workers: WorkerDto[]; locale: typeof it 
 
         {status === "submitted" && submittedIds.length > 0 && (
           <div className="bulk-row" style={{ margin: "0 18px 14px" }}>
-            <button type="button" className="text-link" onClick={() => setSelected(new Set(selected.size === submittedIds.length ? [] : submittedIds))}>{selected.size === submittedIds.length ? t("team.time.selectNone") : t("team.time.selectAll")}</button>
-            <button type="button" className="btn btn-sm btn-navy" style={{ background: "var(--green)" }} disabled={approveMany.isPending || selected.size === 0} onClick={() => approveMany.mutate([...selected])}><Check className="h-4 w-4" /> {t("team.time.approveSelected")} ({selected.size})</button>
+            {/* APP-1g: a phone approves one by one (swipe or ✓) or all at once; picking a few is a desktop job. */}
+            {phone && <p className="crew-hint m-0 grow" style={{ padding: 0 }}>{t("team.m.swipeHint")}</p>}
+            <button type="button" className="text-link hide-phone" onClick={() => setSelected(new Set(selected.size === submittedIds.length ? [] : submittedIds))}>{selected.size === submittedIds.length ? t("team.time.selectNone") : t("team.time.selectAll")}</button>
+            <button type="button" className="btn btn-sm btn-navy hide-phone" style={{ background: "var(--green)" }} disabled={approveMany.isPending || selected.size === 0} onClick={() => approveMany.mutate([...selected])}><Check className="h-4 w-4" /> {t("team.time.approveSelected")} ({selected.size})</button>
             <button type="button" className="btn btn-sm btn-outline-navy" disabled={approveMany.isPending} onClick={() => approveMany.mutate(submittedIds)}>{t("team.time.approveAll")} ({submittedIds.length})</button>
           </div>
         )}
@@ -441,10 +499,37 @@ function TimeTab({ workers, locale }: { workers: WorkerDto[]; locale: typeof it 
           {grouped.map(([name, entries]) => (
             <section key={name}>
               <div className="te-group"><b>{name}</b><span>· {entries.reduce((s, e) => s + e.hours, 0).toFixed(2)} h · {formatCents(entries.filter((e) => e.status !== "rejected").reduce((s, e) => s + e.costCents, 0))}</span></div>
-              {entries.map((e) => (
+              {phone ? (
+                <ul className="lrows" aria-label={name}>
+                  {entries.map((e) => {
+                    const submitted = e.status === "submitted";
+                    const body = (
+                      <div className={cn("lrow hrs-row", e.status === "rejected" && "dim")}>
+                        <span className="crew-hrs" aria-hidden="true">{e.hours}<small>h</small></span>
+                        <span className="lrow-main">
+                          <span className="lrow-title"><span className="sr-only">{e.hours} h · </span>{e.projectName}</span>
+                          <span className={cn("lrow-meta", e.geofenceFlagged && "warn")}>
+                            {[formatCents(e.costCents), e.date ? format(day(e.date)!, "EEE d MMM", { locale }) : null, e.milestoneTitle, e.enteredBy === "worker" ? t("team.time.byWorker") : null, e.geofenceFlagged ? t("team.time.geofenceFlag") : null, e.note].filter(Boolean).join(" · ")}
+                          </span>
+                        </span>
+                        {!submitted && <span className="lrow-end"><TimeStatusBadge status={e.status} /></span>}
+                        {submitted && (
+                          <button type="button" className="ny-pill ny-act sq" aria-label={`${t("team.m.approve")} — ${e.projectName} ${e.hours} h`} disabled={setOne.isPending} onClick={() => setOne.mutate({ id: e.id, status: "approved" })}><Check className="h-4 w-4" /></button>
+                        )}
+                        <RowMore label={t("team.m.rowActions").replace("{name}", `${e.projectName} · ${e.hours} h`)} actions={[
+                          submitted && { label: t("team.time.filter.rejected"), icon: X, onSelect: () => setOne.mutate({ id: e.id, status: "rejected" }) },
+                          !submitted && { label: t("jobs.team.reopen"), icon: RotateCw, onSelect: () => setOne.mutate({ id: e.id, status: "submitted" }) },
+                          { label: t("jobs.m.deleteHours"), icon: Trash2, danger: true, separated: true, onSelect: () => del.mutate(e.id) },
+                        ]} />
+                      </div>
+                    );
+                    return <li key={e.id}>{submitted ? <SwipeRow label={t("team.m.approve")} onSwipe={() => setOne.mutateAsync({ id: e.id, status: "approved" })}>{body}</SwipeRow> : body}</li>;
+                  })}
+                </ul>
+              ) : entries.map((e) => (
                 <div key={e.id} className={cn("item-row", e.status === "rejected" && "muted")}>
                   {e.status === "submitted" ? (
-                    <button type="button" className={cn("chk", selected.has(e.id) && "on")} aria-pressed={selected.has(e.id)} onClick={() => toggle(e.id)}>{selected.has(e.id) && <Check />}</button>
+                    <button type="button" className={cn("chk", selected.has(e.id) && "on")} aria-pressed={selected.has(e.id)} aria-label={t("team.m.select").replace("{name}", `${e.projectName} · ${e.hours} h`)} onClick={() => toggle(e.id)}>{selected.has(e.id) && <Check />}</button>
                   ) : <span className="spacer" />}
                   <span className="date">{e.date ? format(day(e.date)!, "d MMM yy", { locale }) : "—"}</span>
                   <div className="grow">
@@ -458,7 +543,7 @@ function TimeTab({ workers, locale }: { workers: WorkerDto[]; locale: typeof it 
                     {e.status === "submitted" && <button type="button" className="ic-btn ok" title={t("team.time.filter.approved")} onClick={() => setOne.mutate({ id: e.id, status: "approved" })}><Check /></button>}
                     {e.status === "submitted" && <button type="button" className="ic-btn bad" title={t("team.time.filter.rejected")} onClick={() => setOne.mutate({ id: e.id, status: "rejected" })}><X /></button>}
                     {e.status !== "submitted" && <button type="button" className="text-link" style={{ color: "var(--muted-mk)" }} onClick={() => setOne.mutate({ id: e.id, status: "submitted" })}>{t("jobs.team.reopen")}</button>}
-                    <button type="button" className="ic-btn danger" onClick={() => del.mutate(e.id)}><Trash2 /></button>
+                    <button type="button" className="ic-btn danger" aria-label={t("jobs.m.deleteHours")} onClick={() => del.mutate(e.id)}><Trash2 /></button>
                   </div>
                 </div>
               ))}
@@ -485,6 +570,7 @@ function EquipmentTab() {
   const toggle = useMutation({ mutationFn: (e: EquipmentDto) => teamApi.updateEquipment(e.id, { active: !e.active }), onSuccess: refresh, onError });
   const remove = useMutation({ mutationFn: (id: string) => teamApi.deleteEquipment(id), onSuccess: (r) => { refresh(); if (r.deactivated) toast({ title: t("team.equipment.deactivatedInstead") }); }, onError });
   const items = data?.items ?? [];
+  const phone = useMediaQuery("(max-width: 640px)");
   const monthlyOverhead = items.filter((e) => e.active && e.ownership === "financed").reduce((s, e) => s + (e.financing.monthlyPaymentCents ?? 0), 0);
 
   return (
@@ -497,6 +583,26 @@ function EquipmentTab() {
       </div>
       {isLoading ? <div className="p-5"><Skeleton className="h-24 w-full rounded-[var(--radius-mk)]" /></div> : items.length === 0 ? (
         <div className="card-empty">{t("team.equipment.empty")}</div>
+      ) : phone ? (
+        <ul className="lrows" aria-label={t("team.tab.equipment")}>
+          {items.map((e) => (
+            <li key={e.id} className="lrow-split">
+              <ListRow
+                className={cn("wrap-meta", !e.active && "dim")}
+                lead={<span className="cell-ic"><Wrench className="h-4 w-4" /></span>}
+                title={e.name}
+                meta={[t(`team.ownership.${e.ownership}`), e.ownership === "financed" && e.financing.monthlyPaymentCents ? `${formatCents(e.financing.monthlyPaymentCents)}/${t("team.equipment.month")}` : null, `${t("team.equipment.chargedThisMonth")} ${formatCents(e.usageCentsThisMonth)}`, !e.active ? t("team.workers.inactive") : null]}
+                amount={`${formatCents(e.usageRateCents)}/${t(`team.unit.${e.usageUnit}`)}`}
+                onClick={() => setEditing({ open: true, item: e })}
+              />
+              <RowMore label={t("team.m.rowActions").replace("{name}", e.name)} actions={[
+                { label: t("team.equipment.edit"), icon: Pencil, onSelect: () => setEditing({ open: true, item: e }) },
+                { label: e.active ? t("team.workers.deactivate") : t("team.workers.reactivate"), icon: e.active ? UserX : UserCheck, onSelect: () => toggle.mutate(e) },
+                { label: t("team.m.deleteEquipment"), icon: Trash2, danger: true, separated: true, onSelect: () => { if (confirm(t("team.equipment.deleteConfirm"))) remove.mutate(e.id); } },
+              ]} />
+            </li>
+          ))}
+        </ul>
       ) : (
         <div className="tbl-wrap">
           <table className="tbl">

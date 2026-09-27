@@ -5,6 +5,8 @@ import { Archive as ArchiveIcon } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useLanguage } from "@/i18n/LanguageContext";
 import { useToast } from "@/hooks/use-toast";
+import { ResponsiveTable } from "@/components/mobile/list-row";
+import { useMediaQuery } from "@/hooks/use-media-query";
 
 type ArchiveType = "quote" | "client" | "invoice" | "job" | "contract";
 type ArchiveItem = { id: string; type: ArchiveType; label: string; archivedAt: string; archivedByName: string | null };
@@ -47,6 +49,7 @@ export default function ArchivePage() {
   });
 
   const items = data?.items ?? [];
+  const phone = useMediaQuery("(max-width: 639.98px)");
 
   return (
     <div className="animate-in fade-in duration-500">
@@ -69,41 +72,23 @@ export default function ArchivePage() {
           </div>
         ) : (
           <>
-            <div className="tbl-wrap">
-              <table className="tbl">
-                <thead>
-                  <tr>
-                    <th>{t("archive.colRecord")}</th>
-                    <th>{t("archive.colType")}</th>
-                    <th>{t("archive.colArchived")}</th>
-                    <th>{t("archive.colBy")}</th>
-                    <th></th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {items.map((item) => (
-                    <tr key={`${item.type}:${item.id}`}>
-                      <td className="t-strong">{item.label}</td>
-                      <td><span className="chip chip-grey">{t(`archive.type.${item.type}`)}</span></td>
-                      <td>{format(new Date(item.archivedAt), "yyyy-MM-dd", { locale })}</td>
-                      <td>{item.archivedByName || "—"}</td>
-                      <td>
-                        {RESTORE_PATH[item.type] && (
-                          <button
-                            type="button"
-                            className="cta-link"
-                            onClick={() => restore.mutate(item)}
-                            disabled={restore.isPending}
-                          >
-                            {t("archive.restore")}
-                          </button>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+            {/* Phase 110: on a phone the record, what it is and when, with Restore on the right. */}
+            <ResponsiveTable
+              label={t("archive.title")}
+              rows={items}
+              getKey={(item) => `${item.type}:${item.id}`}
+              columns={[
+                { key: "rec", header: t("archive.colRecord"), mobile: "title", cell: (item) => <span className="t-strong">{item.label}</span> },
+                { key: "type", header: t("archive.colType"), mobile: "meta", cell: (item) => (phone ? t(`archive.type.${item.type}`) : <span className="chip chip-grey">{t(`archive.type.${item.type}`)}</span>) },
+                { key: "when", header: t("archive.colArchived"), mobile: "meta", cell: (item) => format(new Date(item.archivedAt), phone ? "PP" : "yyyy-MM-dd", { locale }) },
+                { key: "by", header: t("archive.colBy"), mobile: "meta", cell: (item) => item.archivedByName || (phone ? null : "—") },
+                { key: "act", header: "", mobile: "end", cell: (item) => RESTORE_PATH[item.type] && (
+                  <button type="button" className="cta-link" onClick={() => restore.mutate(item)} disabled={restore.isPending}>
+                    {t("archive.restore")}{phone && <span className="sr-only"> {item.label}</span>}
+                  </button>
+                ) },
+              ]}
+            />
             <div className="card-foot">
               <span className="foot-note">{t("archive.footShowing").replace("{count}", String(items.length))}</span>
             </div>

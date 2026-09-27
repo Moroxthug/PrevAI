@@ -204,7 +204,7 @@ export default function ImportsPage() {
             <p className="sub">{t("imports.chooseSourceDesc")}</p>
           </div>
         </div>
-        <div className="src-grid" style={{ gridTemplateColumns: "repeat(2, 1fr)" }}>
+        <div className="src-grid two">
           <button type="button" className={cn("src", source === "csv" && "on")} onClick={() => setSource("csv")}>
             <b>{t("imports.uploadSpreadsheet")}</b>
             <p>{t("imports.uploadSpreadsheetDesc")}</p>

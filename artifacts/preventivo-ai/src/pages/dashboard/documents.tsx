@@ -19,6 +19,7 @@ import { useToast } from "@/hooks/use-toast";
 import type { UploadedDocument } from "@workspace/api-client-react";
 import { cn } from "@/lib/utils";
 import { useLanguage } from "@/i18n/LanguageContext";
+import { RowMore } from "@/components/mobile/row-more";
 
 const fmt = (s: string, vars: Record<string, string | number>) => s.replace(/\{(\w+)\}/g, (_, k) => String(vars[k] ?? ""));
 
@@ -148,7 +149,12 @@ function DocumentRow({ doc }: { doc: UploadedDocument }) {
         )}
       </div>
 
-      <div className="flex items-center gap-1 shrink-0">
+      {/* Phase 110: on a phone Process and Delete are the row's ⋯. */}
+      <RowMore label={t("team.m.rowActions").replace("{name}", doc.fileName)} actions={[
+        (doc.status === "pending" || doc.status === "error") && { label: t("documents.process"), icon: Zap, disabled: extractMut.isPending, onSelect: () => extractMut.mutate({ id: doc.id }) },
+        { label: t("documents.delete"), icon: Trash2, danger: true, separated: true, disabled: deleteMut.isPending, onSelect: () => deleteMut.mutate({ id: doc.id }) },
+      ]} />
+      <div className="flex items-center gap-1 shrink-0 hide-phone">
         {(doc.status === "pending" || doc.status === "error") && (
           <button
             type="button"
@@ -432,7 +438,7 @@ export default function DocumentsPage() {
             </h2>
           </div>
           {pendingCount > 0 && (
-            <span className="sub" style={{ color: "var(--yellow-dark)" }}>{pendingCount} pending processing</span>
+            <span className="sub" style={{ color: "var(--yellow-dark)" }}>{t("documents.pendingCount").replace("{n}", String(pendingCount))}</span>
           )}
         </div>
         {isLoading ? (
