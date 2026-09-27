@@ -22,6 +22,17 @@
 
 Lo script è stato provato su staging in tre casi: DB v1 non migrato (OK, 24 tabelle), DB già migrato (avviso, 88 tabelle) e CA sbagliata (KO `certificate verify failed`).
 
+**Aggiornamento 26/9, tarda sera:**
+- `v2` pushato (`2130be241`); preview nuova `prevai-9aqyn01zy-…`, con il widget sull'apex.
+- Smoke in sola lettura verde:
+  - healthz e healthz/db 200;
+  - home, `/preventivi/idraulico/`, `/preventivi/imbianchino/milano/`, un articolo del blog e `/fisco/`: tutti 200 con canonical `https://prevai.it/…`;
+  - `/seo/imbianchino/` → 308 verso `/preventivi/imbianchino/`;
+  - `GET /api/public/incentives` 200.
+- Il preflight ora dà **1 KO**: la CA Supabase.
+- Restano per lunedì: il punto 2 (solo login admin, storico e PDF, che richiedono le credenziali del titolare), il punto 3 e i punti 5–7.
+- Promuovere martedì **l'ultima preview di `v2`**: il preflight la trova da solo e ne controlla il widget.
+
 ## 1. Lunedì 28/9 (T-1)
 
 Chi: **T** = titolare, **C** = Claude. Claude non inserisce chiavi né password, e non fa push, promote o scritture sulla prod senza un "vai" esplicito in chat per quel passo.
