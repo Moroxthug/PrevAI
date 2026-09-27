@@ -7,9 +7,18 @@ interface PrevAiWidgetGlobal {
   init: (options: PrevAiQuoteBarConfig & { target: string }) => void;
 }
 
+// www.prevai.it redirige (308) su prevai.it: un redirect nel preflight CORS
+// blocca ogni chiamata dai siti delle imprese. Alcuni siti hanno www scritto
+// nel proprio codice, quindi l'host si normalizza qui e non solo nel default.
+function canonicalApiBaseUrl(url: string | undefined): string | undefined {
+  return url?.replace(/^https?:\/\/www\.prevai\.it(?=\/|$)/i, "https://prevai.it");
+}
+
 const PrevAiWidget: PrevAiWidgetGlobal = {
   init: (options) => {
     const { target, ...config } = options;
+    const apiBaseUrl = canonicalApiBaseUrl(config.apiBaseUrl);
+    if (apiBaseUrl) config.apiBaseUrl = apiBaseUrl;
     const container = document.querySelector(target);
     if (!container) {
       console.error(`PrevAI Widget: Impossibile trovare il contenitore target "${target}"`);
