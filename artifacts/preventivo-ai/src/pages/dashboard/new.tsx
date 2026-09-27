@@ -1,10 +1,10 @@
 import { useState, useRef, useCallback, useEffect } from "react";
-import { Link, useLocation } from "wouter";
+import { useLocation } from "wouter";
 import { useCreateQuote, useGetBusinessProfile, useGetSubscription } from "@workspace/api-client-react";
 import {
   Sparkles, ImagePlus, ArrowRight, Loader2,
   X, User, Lock, Bot, PencilLine, FileText, FileSpreadsheet,
-  LayoutTemplate, CheckCircle2, BookOpen, Plus, ChevronDown, ChevronRight, SlidersHorizontal
+  LayoutTemplate, CheckCircle2, BookOpen, Plus, ChevronDown, SlidersHorizontal
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
@@ -171,7 +171,6 @@ export default function NewQuote() {
   // Phones only: layout + target amount sit behind "Opzioni" so the job
   // description is the first thing on screen. Desktop always shows them.
   const [optionsOpen, setOptionsOpen] = useState(false);
-  const [mobilePanel, setMobilePanel] = useState<"client" | "layout" | "target" | null>(null);
   const [, setLocation] = useLocation();
   const createQuote = useCreateQuote();
   const { data: profile } = useGetBusinessProfile();
@@ -354,159 +353,9 @@ export default function NewQuote() {
 
   const attachmentsFull = photos.length + docs.length >= MAX_ATTACHMENTS;
 
-  /* ── Phones: full-screen composer, settings rows, one sticky CTA ── */
-  const TEMPLATES = [
-    { id: "standard" as const, label: t("dashboard.new.template.standard.label"), desc: t("dashboard.new.template.standard.desc"), proOnly: false },
-    { id: "arosio" as const, label: t("dashboard.new.template.professional.label"), desc: t("dashboard.new.template.professional.desc"), proOnly: true },
-    { id: "mariagrazia" as const, label: t("dashboard.new.template.elegant.label"), desc: t("dashboard.new.template.elegant.desc"), proOnly: true },
-  ];
-  const hasProTemplates = subscription?.isActive && (subscription.plan === "monthly_pro" || subscription.plan === "monthly_elite");
-  const pickTemplate = (tmpl: (typeof TEMPLATES)[number]) => {
-    if (tmpl.proOnly && !hasProTemplates) {
-      toast({ title: t("dashboard.new.toast.proRequiredTitle"), description: t("dashboard.new.toast.proRequiredDesc"), variant: "destructive" });
-      return;
-    }
-    setTemplateId(tmpl.id);
-  };
-  const togglePanel = (p: "client" | "layout" | "target") => setMobilePanel(cur => (cur === p ? null : p));
-
-  const mobileAi = (
-    <div className="m-only mnew">
-      <div className={cn("m-sheet m-composer", isAiSubmitting && "busy")}>
-        <p className="m-eyebrow m-eyebrow-teal">{t("dashboard.m.new.describe")}</p>
-        {(photos.length > 0 || docs.length > 0) && (
-          <div className="m-att">
-            {photoPreviews.map((src, idx) => (
-              <span key={src} className="m-att-thumb">
-                <img src={src} alt={`${t("dashboard.new.photoAlt")} ${idx + 1}`} />
-                <button type="button" onClick={() => removePhoto(idx)} disabled={isAiSubmitting} aria-label={t("dashboard.new.client.remove")}><X /></button>
-              </span>
-            ))}
-            {docs.map((file, idx) => (
-              <span key={file.name + idx} className="m-att-doc">
-                {file.type === "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" ? <FileSpreadsheet /> : <FileText />}
-                <span>{file.name}</span>
-                <button type="button" onClick={() => removeDoc(idx)} disabled={isAiSubmitting} aria-label={t("dashboard.new.client.remove")}><X /></button>
-              </span>
-            ))}
-          </div>
-        )}
-        <textarea
-          className="m-composer-text"
-          rows={5}
-          value={input}
-          onChange={e => setInput(e.target.value)}
-          placeholder={t("dashboard.m.new.placeholder")}
-          aria-label={t("dashboard.m.new.describe")}
-          disabled={isAiSubmitting}
-        />
-        <div className="m-composer-foot">
-          {photoAllowed ? (
-            <button type="button" className="m-pill" onClick={() => fileInputRef.current?.click()} disabled={isAiSubmitting || attachmentsFull}>
-              <ImagePlus /> {t("dashboard.m.new.photo")}
-            </button>
-          ) : (
-            <span className="m-pill m-pill-locked" title={t("dashboard.new.paidPlanOnly")}><Lock /> {t("dashboard.m.new.photo")}</span>
-          )}
-          <span className="m-pill m-pill-mic">
-            <MicButton
-              disabled={isAiSubmitting}
-              onTranscribed={text => setInput(prev => (prev.trim() ? `${prev.trim()} ${text}` : text))}
-            />
-            {t("dashboard.m.new.dictate")}
-          </span>
-        </div>
-      </div>
-
-      <div className="m-examples">
-        {EXAMPLES.map(ex => (
-          <button key={ex.label} type="button" onClick={() => setInput(ex.text)} disabled={isAiSubmitting} className="m-chip">{ex.label}</button>
-        ))}
-      </div>
-
-      <div className="m-sheet m-settings">
-        <button type="button" className="m-set" aria-expanded={mobilePanel === "client"} onClick={() => togglePanel("client")}>
-          <span className="m-set-ic mono-teal"><User /></span>
-          <span className="m-set-l">{t("dashboard.m.new.client")}</span>
-          <span className="m-set-v">{clientForm.nome.trim() || t("dashboard.m.new.optional")}</span>
-          <ChevronRight className="m-set-chev" />
-        </button>
-        {mobilePanel === "client" && (
-          <div className="m-set-panel">
-            <ClientSelector
-              clientMode={clientMode}
-              setClientMode={setClientMode}
-              selectedClientId={selectedClientId}
-              setSelectedClientId={setSelectedClientId}
-              clientForm={clientForm}
-              setClientForm={setClientForm}
-              rememberClient={rememberClient}
-              setRememberClient={setRememberClient}
-              savedClients={savedClients}
-              selectSavedClient={selectSavedClient}
-              clearClient={clearClient}
-              disabled={isAiSubmitting}
-            />
-          </div>
-        )}
-        <button type="button" className="m-set" aria-expanded={mobilePanel === "layout"} onClick={() => togglePanel("layout")}>
-          <span className="m-set-ic mono-purple"><LayoutTemplate /></span>
-          <span className="m-set-l">{t("dashboard.m.new.layout")}</span>
-          <span className="m-set-v">{TEMPLATES.find(x => x.id === templateId)?.label}</span>
-          <ChevronRight className="m-set-chev" />
-        </button>
-        {mobilePanel === "layout" && (
-          <div className="m-set-panel m-radio">
-            {TEMPLATES.map(tmpl => (
-              <button key={tmpl.id} type="button" className={cn("m-radio-row", templateId === tmpl.id && "on")} onClick={() => pickTemplate(tmpl)}>
-                <span className="m-radio-dot" />
-                <span className="m-radio-b"><b>{tmpl.label}</b><span>{tmpl.desc}</span></span>
-                {tmpl.proOnly && !hasProTemplates && <span className="m-pro">{t("dashboard.new.template.pro")}</span>}
-              </button>
-            ))}
-          </div>
-        )}
-        <button type="button" className="m-set" aria-expanded={mobilePanel === "target"} onClick={() => togglePanel("target")}>
-          <span className="m-set-ic mono-green">€</span>
-          <span className="m-set-l">{t("dashboard.m.new.target")}</span>
-          <span className="m-set-v">{targetTotalEur ? `${targetTotalEur} €` : t("dashboard.m.new.none")}</span>
-          <ChevronRight className="m-set-chev" />
-        </button>
-        {mobilePanel === "target" && (
-          <div className="m-set-panel">
-            <label className="m-target">
-              <input
-                type="text"
-                inputMode="numeric"
-                value={targetTotalEur}
-                onChange={e => setTargetTotalEur(e.target.value.replace(/[^0-9.,]/g, ""))}
-                placeholder={t("dashboard.new.targetPlaceholder")}
-                disabled={isAiSubmitting}
-              />
-              <span>€ · {t("dashboard.new.taxIncl")}</span>
-            </label>
-          </div>
-        )}
-      </div>
-
-      <div className="m-cta">
-        <button type="button" onClick={handleAiSubmit} disabled={!canAiSubmit}>
-          {isAiSubmitting ? <Loader2 className="animate-spin" /> : <Sparkles />}
-          {isAiSubmitting ? t("dashboard.m.new.generating") : t("dashboard.m.new.generate")}
-        </button>
-        <p>{t("dashboard.m.new.hint")}</p>
-      </div>
-    </div>
-  );
-
   return (
     <div className="animate-in fade-in duration-300" style={{ maxWidth: 760, marginInline: "auto" }}>
-      <div className="m-only mnew-head">
-        <Link href="/dashboard" className="mnew-close" aria-label={t("dashboard.m.new.close")}><X /></Link>
-        <span>{t("dashboard.new.title")}</span>
-        <span className="mnew-spacer" />
-      </div>
-      <div className="page-head d-only">
+      <div className="page-head">
         <div>
           <h1>{t("dashboard.new.title")}</h1>
           <p className="sub">{t("dashboard.new.subtitle")}</p>
@@ -516,20 +365,19 @@ export default function NewQuote() {
       {/* ── Tab switcher ── */}
       <div className="pills new-tabs" style={{ marginBottom: 16 }}>
         <button type="button" onClick={() => setActiveTab("ai")} className={cn("pill", activeTab === "ai" && "on")}>
-          <Bot /> <span className="d-only">{t("dashboard.new.tabAi")}</span><span className="m-only">{t("dashboard.m.new.tabAi")}</span>
+          <Bot /> {t("dashboard.new.tabAi")}
         </button>
         <button type="button" onClick={() => setActiveTab("manual")} className={cn("pill", activeTab === "manual" && "on")}>
           <PencilLine /> {t("dashboard.new.tabManual")}
         </button>
         <button type="button" onClick={() => setActiveTab("listino")} className={cn("pill", activeTab === "listino" && "on")}>
-          <BookOpen /> <span className="d-only">{t("dashboard.new.tabCatalog")}</span><span className="m-only">{t("dashboard.m.new.tabCatalog")}</span>
+          <BookOpen /> {t("dashboard.new.tabCatalog")}
         </button>
       </div>
 
       {/* ══ AI TAB ══════════════════════════════════════════════════════════ */}
-      {activeTab === "ai" && mobileAi}
       {activeTab === "ai" && (
-        <div className="d-only stack new-ai animate-in fade-in duration-200">
+        <div className="stack new-ai animate-in fade-in duration-200">
           <div className={cn("new-opts", optionsOpen && "open")}>
           <button type="button" className="card new-opts-toggle" aria-expanded={optionsOpen} onClick={() => setOptionsOpen(o => !o)}>
             <SlidersHorizontal className="h-4 w-4" />

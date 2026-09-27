@@ -6,7 +6,6 @@ import { Users, Search, Plus, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
 import { useLanguage } from "@/i18n/LanguageContext";
-import { Monogram } from "@/components/mobile-ui";
 
 const formatCurrency = (v: number, _lang: string) =>
   new Intl.NumberFormat("it-IT", { style: "currency", currency: "EUR", maximumFractionDigits: 0 }).format(v);
@@ -25,64 +24,8 @@ export default function ClientsPage() {
 
   const totalQuotes = (clients ?? []).reduce((sum, c) => sum + c.quoteCount, 0);
 
-  /* ── Phones: same premium list as the quotes screen ── */
-  const all = clients ?? [];
-  const activeCount = all.filter(c => c.unlockedCount > 0).length;
-  const totalValue = all.reduce((s, c) => s + c.totalValue, 0);
-  const mobileList = (
-    <div className="m-only mquotes">
-      <h1 className="m-title m-title-lg">{t("clients.title")}</h1>
-      {all.length > 0 && (
-        <div className="m-tiles">
-          <div className="m-sheet m-tile">
-            <span>{t("clients.m.total")}</span>
-            <b>{formatCurrency(totalValue, lang)}</b>
-            <em className="ok">{t("clients.m.quotesN").replace("{n}", String(totalQuotes))}</em>
-          </div>
-          <div className="m-sheet m-tile">
-            <span>{t("clients.m.active")}</span>
-            <b>{activeCount}</b>
-            <em className="wait">{t("clients.m.prospectsN").replace("{n}", String(all.length - activeCount))}</em>
-          </div>
-        </div>
-      )}
-      <label className="m-search">
-        <Search />
-        <input type="search" value={search} onChange={e => setSearch(e.target.value)} placeholder={t("clients.search")} aria-label={t("clients.search")} />
-      </label>
-      {isLoading ? (
-        <div className="m-sheet" style={{ padding: 16, marginTop: 16 }}>
-          {[1, 2, 3, 4].map(i => <Skeleton key={i} className="h-12 w-full rounded-lg mb-2" />)}
-        </div>
-      ) : filtered.length === 0 ? (
-        <div className="m-empty">
-          <p>{t("clients.empty.title")}</p>
-          <Link href="/dashboard/new" className="m-empty-cta">{t("clients.empty.cta")}</Link>
-        </div>
-      ) : (
-        <div className="m-sheet m-list-card" style={{ marginTop: 16 }}>
-          {filtered.map(client => (
-            <div key={client.id} {...rowLink(() => navigate(`/dashboard/clients/${client.id}`))} className="m-li">
-              <Monogram name={client.clientName} />
-              <span className="m-li-b">
-                <span className="m-li-t">{client.clientName}</span>
-                <span className="m-li-s">{client.city ? client.city + (client.province ? ` (${client.province})` : "") : (client.indirizzo || client.email || client.phone || "—")}</span>
-              </span>
-              <span className="m-li-r">
-                <span className="m-li-a">{formatCurrency(client.totalValue, lang)}</span>
-                <span className="m-li-s">{client.quoteCount === 1 ? t("clients.m.oneQuote") : t("clients.m.quotesN").replace("{n}", String(client.quoteCount))}</span>
-              </span>
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-
   return (
-    <>
-    {mobileList}
-    <div className="d-only animate-in fade-in duration-500">
+    <div className="animate-in fade-in duration-500">
       <div className="page-head">
         <div>
           <h1>{t("clients.title")}</h1>
@@ -181,6 +124,5 @@ export default function ClientsPage() {
         )}
       </div>
     </div>
-    </>
   );
 }

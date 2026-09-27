@@ -45,7 +45,6 @@ import { cn } from "@/lib/utils";
 import { MicButton } from "@/components/mic-button";
 import { useLanguage } from "@/i18n/LanguageContext";
 import { leadsApi, type LeadDto } from "@/lib/leads-api";
-import { Monogram, StatusDot, Sparkline, shortDate } from "@/components/mobile-ui";
 
 /* ─── plan helpers ─────────────────────────────────────────────────────────── */
 
@@ -735,90 +734,6 @@ export default function DashboardHome() {
     </div>
   );
 
-  /* ── Phones: premium home (hero card, one-line composer, recents) ── */
-  const now = new Date();
-  const hour = now.getHours();
-  const greeting = t(hour < 13 ? "dashboard.m.greet.morning" : hour < 18 ? "dashboard.m.greet.afternoon" : "dashboard.m.greet.evening");
-  const periodLabel =
-    period === "m" ? now.toLocaleDateString("it-IT", { month: "long" })
-    : period === "q" ? t("dashboard.m.period.quarterN").replace("{n}", String(Math.floor(now.getMonth() / 3) + 1))
-    : String(now.getFullYear());
-  const revenueDelta = deltaPct(periodStats.current.unlockedRevenue, periodStats.previous.unlockedRevenue);
-  const mobileHome = (
-    <div className="m-only mhome">
-      <p className="m-eyebrow">{now.toLocaleDateString("it-IT", { weekday: "long", day: "numeric", month: "long" })}</p>
-      <h1 className="m-title">{firstName ? `${greeting}, ${firstName}` : greeting}</h1>
-
-      {trialStatus?.isTrialActive && !subscription?.isActive && (
-        <div style={{ marginTop: 16 }}>
-          <TrialBanner downloadsUsed={trialStatus.trialDownloadsUsed} downloadsLimit={trialStatus.trialDownloadsLimit} daysLeft={trialStatus.trialDaysLeft} />
-        </div>
-      )}
-
-      {!isNewUser && (
-        <section className="m-hero">
-          <div className="m-hero-top">
-            <span>{t("dashboard.m.hero.label")} · {periodLabel}</span>
-            <div className="m-hero-seg" role="group" aria-label={t("a11y.reportingPeriod")}>
-              {(["m", "q", "y"] as const).map(p => (
-                <button key={p} type="button" className={cn(period === p && "on")} onClick={() => setPeriod(p)}>
-                  {t(`dashboard.m.period.${p}`)}
-                </button>
-              ))}
-            </div>
-          </div>
-          <p className="m-hero-val">
-            {new Intl.NumberFormat("it-IT", { maximumFractionDigits: 0 }).format(periodStats.current.unlockedRevenue)}
-            <span>€</span>
-          </p>
-          {revenueDelta !== null && (
-            <span className={cn("m-hero-delta", revenueDelta < 0 && "neg")}>
-              {revenueDelta > 0 ? "↑" : revenueDelta < 0 ? "↓" : "→"} {Math.abs(revenueDelta)}% {t(`dashboard.m.hero.vs.${period}`)}
-            </span>
-          )}
-          <Sparkline values={weeklyBuckets} />
-          <div className="m-hero-kpis">
-            <div><b>{periodStats.current.count}</b><span>{t("dashboard.m.hero.quotes")}</span></div>
-            <div><b>{periodStats.current.unlocked}</b><span>{t("dashboard.m.hero.unlocked")}</span></div>
-            <div><b>{formatCurrency(periodStats.current.avgValue)}</b><span>{t("dashboard.m.hero.avg")}</span></div>
-          </div>
-        </section>
-      )}
-
-      <Link href="/dashboard/new" className="m-sheet m-quickbar">
-        <span className="m-quickbar-ic"><Sparkles /></span>
-        <span className="m-quickbar-txt">{t("dashboard.m.composer")}</span>
-        <span className="m-quickbar-go"><ArrowRight /></span>
-      </Link>
-
-      {isNewUser ? (
-        <div style={{ marginTop: 16 }}><OnboardingView /></div>
-      ) : (
-        <>
-          <div className="m-sec-head">
-            <h2>{t("dashboard.m.recent")}</h2>
-            <Link href="/dashboard/quotes">{t("dashboard.m.seeAll")}</Link>
-          </div>
-          <div className="m-list">
-            {recentQuotes.slice(0, 5).map(q => {
-              const client = q.clientData?.nome || t("dashboard.quotesList.clientNotSpecified");
-              return (
-                <Link key={q.id} href={`/dashboard/quotes/${q.id}`} className="m-li">
-                  <Monogram name={client} />
-                  <span className="m-li-b">
-                    <span className="m-li-t">{client}</span>
-                    <span className="m-li-s"><StatusDot status={q.status} />{quoteStatusChip(q.status, t).label} · {shortDate(q.createdAt)}</span>
-                  </span>
-                  <span className="m-li-a">{q.status === "draft" ? "—" : formatCurrency(q.totale)}</span>
-                </Link>
-              );
-            })}
-          </div>
-        </>
-      )}
-    </div>
-  );
-
   if (isLoadingStats) {
     return (
       <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -833,9 +748,7 @@ export default function DashboardHome() {
   }
 
   return (
-    <>
-    {mobileHome}
-    <div className="d-only animate-in fade-in duration-500">
+    <div className="animate-in fade-in duration-500">
       <div className="page-head">
         <div>
           <h1>{firstName ? t("dashboard.index.greetingName").replace("{name}", firstName) : t("dashboard.index.greetingFallback")}</h1>
@@ -1026,6 +939,5 @@ export default function DashboardHome() {
         </>
       )}
     </div>
-    </>
   );
 }

@@ -1,7 +1,7 @@
 import { statoOffertaLocale } from "@/lib/addons-api";
 import "@/i18n/dashboard";
 import { Link, useLocation } from "wouter";
-import { LayoutDashboard, FileText, Landmark, Menu, BarChart3, Settings, ChevronLeft, ChevronRight, Plus, LogOut, User, CreditCard, Building2, ChevronDown, BookOpen, Users, Receipt, Briefcase, FolderOpen, FileSignature, HardHat, Sparkles, Check, Target, UploadCloud, Search, Archive, PiggyBank, UserRound, Home, MoreHorizontal } from "lucide-react";
+import { LayoutDashboard, FileText, Landmark, Menu, BarChart3, Settings, ChevronLeft, ChevronRight, Plus, LogOut, User, CreditCard, Building2, ChevronDown, BookOpen, Users, Receipt, Briefcase, FolderOpen, FileSignature, HardHat, Sparkles, Check, Target, UploadCloud, Search, Archive, PiggyBank, UserRound } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { teamMembersApi } from "@/lib/team-members-api";
 import { securityApi } from "@/lib/security-api";
@@ -344,23 +344,8 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
     </>
   );
 
-  // Phones (≤640px): a bottom tab bar replaces the hamburger, and the new-quote
-  // screen runs full-screen with its own header (no topbar, no tab bar).
-  const mobileFocus = location === "/dashboard/new";
-  const TABS = [
-    { href: "/dashboard", label: t("dashboard.nav.tab.home"), icon: Home, exact: true },
-    { href: "/dashboard/quotes", label: t("dashboard.nav.tab.quotes"), icon: FileText, exact: false },
-    { href: "/dashboard/clients", label: t("dashboard.nav.tab.clients"), icon: Users, exact: false },
-  ];
-  const tabLink = (tab: (typeof TABS)[number]) => (
-    <Link key={tab.href} href={tab.href} className={cn("mtab", isActive(tab.href, location, tab.exact) && "on")}>
-      <tab.icon className="ic" />
-      <span>{tab.label}</span>
-    </Link>
-  );
-
   return (
-    <div className={cn("app", isCollapsed && "rail", mobileFocus && "m-focus")}>
+    <div className={cn("app", isCollapsed && "rail")}>
       {/* Sidebar (desktop: rail-collapsible; mobile: slide-in drawer) */}
       <aside ref={swipeRef} className={cn("sidebar", isMobileMenuOpen && "open")} aria-label={t("dashboard.nav.navMenu")}>
         <div className="sb-top">
@@ -410,10 +395,6 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
           <button type="button" className="tb-menu" onClick={() => setIsMobileMenuOpen(true)} aria-label={t("dashboard.nav.toggleMenu")}>
             <Menu className="ic" style={{ width: 22, height: 22 }} />
           </button>
-          <Link href="/dashboard" className="tb-brand" aria-label="PrevAI">
-            <span className="tb-brand-mark"><Sparkles /></span>
-            prevAI
-          </Link>
           <QuickSearch navItems={NAV_ITEMS} />
           <div className="tb-right">
             <NotificationsBell variant="topbar" side="bottom" align="end" />
@@ -422,19 +403,6 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
         </header>
 
         <main className="content">{twoFactorGated ? <TwoFactorGate /> : children}</main>
-
-        <nav className="mtabbar" aria-label={t("dashboard.nav.navMenu")}>
-          {tabLink(TABS[0]!)}
-          {tabLink(TABS[1]!)}
-          <Link href="/dashboard/new" className="mtab-plus" aria-label={t("dashboard.nav.newQuote")}>
-            <Plus className="ic" />
-          </Link>
-          {tabLink(TABS[2]!)}
-          <button type="button" className={cn("mtab", isMobileMenuOpen && "on")} onClick={() => setIsMobileMenuOpen(true)}>
-            <MoreHorizontal className="ic" />
-            <span>{t("dashboard.nav.tab.more")}</span>
-          </button>
-        </nav>
       </div>
     </div>
   );
