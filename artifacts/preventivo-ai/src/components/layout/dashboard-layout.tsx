@@ -1,7 +1,7 @@
 import { statoOffertaLocale } from "@/lib/addons-api";
 import "@/i18n/dashboard";
 import { Link, useLocation } from "wouter";
-import { LayoutDashboard, FileText, Landmark, BarChart3, Settings, ChevronLeft, ChevronRight, Plus, LogOut, User, CreditCard, Building2, ChevronDown, BookOpen, Users, Receipt, Briefcase, FolderOpen, FileSignature, HardHat, Sparkles, Check, Target, UploadCloud, Search, Archive, PiggyBank, UserRound } from "lucide-react";
+import { LayoutDashboard, FileText, Landmark, BarChart3, Settings, ChevronLeft, ChevronRight, Plus, LogOut, User, CreditCard, Building2, ChevronDown, BookOpen, Users, Receipt, Briefcase, FolderOpen, FileSignature, HardHat, Sparkles, Check, Target, UploadCloud, Search, Archive, PiggyBank, UserRound, Bug } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { teamMembersApi } from "@/lib/team-members-api";
 import { securityApi } from "@/lib/security-api";
@@ -20,6 +20,8 @@ import { NotificationsBell } from "@/components/notifications-bell";
 import { useMediaQuery } from "@/hooks/use-media-query";
 import { MobileHeaderProvider, MobilePageHeader } from "@/components/mobile/mobile-page-header";
 import { PhoneNewButton, PhoneTabBar } from "@/components/layout/phone-nav";
+import { FeedbackSheet } from "@/components/feedback-sheet";
+import { trackAppOpenOncePerDay } from "@/lib/app-beta";
 
 /** Section groupings for the sidebar rail — purely presentational, doesn't affect routing or access. */
 const NAV_GROUPS = ["overview", "sales", "delivery", "insights", "workspace"] as const;
@@ -111,8 +113,10 @@ function OrgSwitcherItems() {
 /** Renders the sb-user block; the dropdown itself carries account/org actions. */
 function AccountMenu({ trigger }: { trigger: React.ReactNode }) {
   const { t } = useLanguage();
+  const [feedbackOpen, setFeedbackOpen] = useState(false);
 
   return (
+    <>
     <DropdownMenu>
       <DropdownMenuTrigger asChild>{trigger}</DropdownMenuTrigger>
       <DropdownMenuContent align="end" side="top" className="w-48 mb-1">
@@ -132,12 +136,17 @@ function AccountMenu({ trigger }: { trigger: React.ReactNode }) {
             <Settings className="h-3.5 w-3.5 text-muted-foreground" /> {t("dashboard.account.settings")}
           </Link>
         </DropdownMenuItem>
+        <DropdownMenuItem onSelect={() => setFeedbackOpen(true)} className="cursor-pointer flex items-center gap-2">
+          <Bug className="h-3.5 w-3.5 text-muted-foreground" /> {t("feedback.open")}
+        </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem onClick={signOut} className="cursor-pointer text-red-600 focus:text-red-600 gap-2">
           <LogOut className="h-3.5 w-3.5" /> {t("dashboard.account.signOut")}
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
+    <FeedbackSheet open={feedbackOpen} onOpenChange={setFeedbackOpen} />
+    </>
   );
 }
 
@@ -252,6 +261,11 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     try { localStorage.setItem("sidebar-collapsed", String(isCollapsed)); } catch {}
   }, [isCollapsed]);
+
+  // APP-5: "app aperta", once a day per device, with the surface (web / PWA / native shell).
+  useEffect(() => {
+    if (isSignedIn) trackAppOpenOncePerDay();
+  }, [isSignedIn]);
 
   if (!isLoaded) {
     return (

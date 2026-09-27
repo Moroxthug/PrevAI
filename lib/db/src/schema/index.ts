@@ -37,3 +37,4 @@ export * from "./fiscale";
 export * from "./primanota";
 export * from "./addons";
 export * from "./commercialista";
+export * from "./app-beta";

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useLocation, useSearch } from "wouter";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Bell, Briefcase, Building2, Camera, Check, ChevronRight, CreditCard, FilePlus2, FileText, HardHat, Home, LayoutGrid, Loader2, LogOut, Plus, Target, Users, Wallet, type LucideIcon } from "lucide-react";
+import { Bell, Briefcase, Bug, Building2, Camera, Check, ChevronRight, CreditCard, FilePlus2, FileText, HardHat, Home, LayoutGrid, Loader2, LogOut, Plus, Target, Users, Wallet, type LucideIcon } from "lucide-react";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { BottomTabBar, tabOwns, type TabItem } from "@/components/mobile/bottom-tab-bar";
 import { BottomSheet } from "@/components/mobile/bottom-sheet";
@@ -11,6 +11,7 @@ import { useToast } from "@/hooks/use-toast";
 import { jobsApi, type JobSummaryDto } from "@/lib/jobs-api";
 import { teamMembersApi } from "@/lib/team-members-api";
 import { cn } from "@/lib/utils";
+import { FeedbackSheet } from "@/components/feedback-sheet";
 
 /**
  * APP-1 (portato da QuoteAI, Phase 101) — how you move around the dashboard on a phone or a tablet
@@ -81,13 +82,14 @@ function usePhoneTabs(navItems: PhoneNavItem[]): TabItem[] {
 }
 const TAB_ICON: Record<string, LucideIcon> = { "/dashboard/quotes": FileText, "/dashboard/jobs": Briefcase, "/dashboard/clients": Users, "/dashboard/leads": Target };
 
-export function PhoneTabBar({ navItems, moreProps }: { navItems: PhoneNavItem[]; moreProps: Omit<MoreSheetProps, "open" | "onOpenChange" | "tabs"> }) {
+export function PhoneTabBar({ navItems, moreProps }: { navItems: PhoneNavItem[]; moreProps: Omit<MoreSheetProps, "open" | "onOpenChange" | "tabs" | "onFeedback"> }) {
   const { t } = useLanguage();
   const [location, navigate] = useLocation();
   const search = useSearch();
   const tabs = usePhoneTabs(navItems);
   const unread = useUnreadNotifications();
   const [moreOpen, setMoreOpen] = useState(false);
+  const [feedbackOpen, setFeedbackOpen] = useState(false);
 
   // Remember the last screen of each tab (path + query, so a job's open tab comes back too).
   useEffect(() => {
@@ -125,7 +127,8 @@ export function PhoneTabBar({ navItems, moreProps }: { navItems: PhoneNavItem[];
   return (
     <>
       <BottomTabBar tabs={all} label={t("mobile.sections")} onTabClick={onTabClick} />
-      <MoreSheet open={moreOpen} onOpenChange={setMoreOpen} tabs={tabs} {...moreProps} />
+      <MoreSheet open={moreOpen} onOpenChange={setMoreOpen} tabs={tabs} onFeedback={() => { setMoreOpen(false); setFeedbackOpen(true); }} {...moreProps} />
+      <FeedbackSheet open={feedbackOpen} onOpenChange={setFeedbackOpen} />
     </>
   );
 }
@@ -140,9 +143,11 @@ type MoreSheetProps = {
   avatar: React.ReactNode;
   canBilling: boolean;
   onSignOut: () => void;
+  /** APP-5: opens "Segnala un problema". */
+  onFeedback: () => void;
 };
 
-function MoreSheet({ open, onOpenChange, tabs, navItems, name, email, avatar, canBilling, onSignOut }: MoreSheetProps) {
+function MoreSheet({ open, onOpenChange, tabs, navItems, name, email, avatar, canBilling, onSignOut, onFeedback }: MoreSheetProps) {
   const { t } = useLanguage();
   const [location] = useLocation();
   const unread = useUnreadNotifications();
@@ -225,6 +230,11 @@ function MoreSheet({ open, onOpenChange, tabs, navItems, name, email, avatar, ca
           })}
 
           <div className="more-card">
+            <button type="button" className="more-row" onClick={onFeedback}>
+              <Bug aria-hidden="true" />
+              <span className="more-row-label">{t("feedback.open")}</span>
+              <ChevronRight className="more-row-chev" aria-hidden="true" />
+            </button>
             <button type="button" className="more-row danger" onClick={onSignOut}>
               <LogOut aria-hidden="true" />
               <span className="more-row-label">{t("dashboard.account.signOut")}</span>

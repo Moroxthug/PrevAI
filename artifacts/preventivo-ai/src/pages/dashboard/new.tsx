@@ -1,4 +1,5 @@
 import { useState, useRef, useCallback, useEffect } from "react";
+import { trackAppEvent } from "@/lib/app-beta";
 import { useLocation } from "wouter";
 import { useCreateQuote, useGetBusinessProfile, useGetSubscription } from "@workspace/api-client-react";
 import {
@@ -307,7 +308,7 @@ export default function NewQuote() {
         },
       },
       {
-        onSuccess: (quote) => { setLocation(`/dashboard/quotes/${quote.id}`); },
+        onSuccess: (quote) => { trackAppEvent("quote_created", { entityId: quote.id }); setLocation(`/dashboard/quotes/${quote.id}`); },
         onError: (err: unknown) => {
           const e = err as { status?: number; data?: { error?: string; code?: string } };
           if (e.status === 429) {

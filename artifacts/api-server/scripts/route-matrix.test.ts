@@ -49,6 +49,7 @@ const PERMISSIONLESS_MUTATIONS: Allow[] = [
   { match: /^POST \/api\/storage\/uploads\/request-url$/, reason: "signed upload URL scoped to the acting org; the consuming route enforces its own permission" },
   { match: /^POST \/api\/team\/invite\/:token\/accept$/, reason: "the invitee is joining — has no role in the org yet" },
   { match: /^POST \/api\/team\/switch$/, reason: "switches the actor's own active org" },
+  { match: /^POST \/api\/app\/(events|feedback)$/, reason: "APP-5: the actor's own usage events and problem reports — any role, rate limited per user, writes only rows stamped with the acting org and actor" },
   {
     match: /^POST \/api\/studio\//,
     reason: "A-6: il professionista agisce come persona, non con un ruolo in un'organizzazione — il middleware `studio` chiede la 2FA sull'account, e ogni rotta su un cliente passa da incaricoPerProfessionista (incarico suo, professionista operativo, incarico attivo)",

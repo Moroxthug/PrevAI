@@ -8,7 +8,7 @@ import {
   ChevronUp, ChevronDown, Minus, Search, Settings, ShieldAlert,
   Sparkles, CheckCircle2, AlertTriangle, Activity,
   Globe, Award, HeartHandshake, Eye,
-  MessageSquare, Bot, Send, Mail
+  MessageSquare, Bot, Send, Mail, Smartphone
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -18,6 +18,7 @@ import {
 import { useLanguage } from "@/i18n/LanguageContext";
 import { AdminTestPrezzo } from "@/components/admin-test-prezzo";
 import { AdminCommercialisti } from "@/components/admin-commercialisti";
+import { AdminAppBeta } from "@/components/admin-app-beta";
 import { PREZZI_PIANI, formatPrezzo } from "@workspace/config";
 
 const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
@@ -47,7 +48,7 @@ type AdminUser = {
 };
 
 type Settings = Record<string, string>;
-type Tab = "overview" | "users" | "widget" | "stripe" | "gsc" | "seo" | "settings" | "support" | "email-events" | "margin" | "incentives" | "addon" | "commercialisti";
+type Tab = "overview" | "users" | "widget" | "stripe" | "gsc" | "seo" | "settings" | "support" | "email-events" | "margin" | "incentives" | "addon" | "commercialisti" | "app-beta";
 
 type IncentiveCatalogRow = {
   id: string;
@@ -817,6 +818,7 @@ export default function AdminPage() {
               { id: "stripe", label: t("admin.tabStripe"), icon: DollarSign },
               { id: "addon", label: "Test di prezzo", icon: TrendingUp },
               { id: "commercialisti", label: "Commercialisti", icon: Users },
+              { id: "app-beta", label: "Beta app", icon: Smartphone },
               { id: "gsc", label: "Search Console", icon: Globe },
               { id: "seo", label: "SEO Checker", icon: Sparkles },
               { id: "support", label: t("admin.tabSupport"), icon: MessageSquare },
@@ -1528,6 +1530,7 @@ export default function AdminPage() {
           {/* STRIPE MANAGEMENT TAB */}
           {tab === "addon" && <AdminTestPrezzo />}
           {tab === "commercialisti" && <AdminCommercialisti />}
+          {tab === "app-beta" && <AdminAppBeta />}
 
           {tab === "stripe" && (
             <div className="space-y-6">

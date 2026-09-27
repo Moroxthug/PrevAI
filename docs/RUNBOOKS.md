@@ -519,6 +519,30 @@ Maturano con la ricevuta di accoglimento, all'importo della convenzione del prof
 
 `migrations/v2/0008_a6_commercialista.sql` è additiva e idempotente, **dopo** la 0007 (§5.3): sei tabelle nuove, nessuna colonna su tabelle esistenti, tutte vuote. Nessuna env nuova (gli avvisi email usano `RESEND_API_KEY` come il resto). Staging: 0,1 s, rieseguita senza effetti, drift 0 fatali.
 
+## 12. Beta app con le imprese pilota (APP-5, riga 20)
+
+Kit completo (pilote, invito, due settimane, "fatto quando"): `docs/APP-BETA-KIT.md`.
+
+### 12.1 Migrazione 0009 (la prima dopo il cutover)
+
+`migrations/v2/0009_app5_beta.sql`: due tabelle nuove e vuote (`app_events`, `app_feedback`), nessuna colonna su tabelle esistenti, idempotente. Staging: 0,3 s, rieseguita senza effetti. Si esegue sulla produzione come le altre (§5.3, URL di sessione sulla porta 5432, stesso `sslmode`):
+
+```bash
+"$PG/psql.exe" "$URL" -v ON_ERROR_STOP=1 -1 -f migrations/v2/0009_app5_beta.sql   # APP-5: eventi d'uso e segnalazioni
+```
+
+Ordine rispetto al deploy: indifferente. Senza tabelle il codice è inerte (eventi scartati con 204, "Segnala un problema" risponde 503 con un invito alla chat, il pannello admin mostra un avviso); con le tabelle e il codice vecchio non succede nulla.
+
+### 12.2 Env
+
+Nessuna nuova. Le segnalazioni usano `sendOpsAlert` (`OPS_ALERT_EMAIL` o `ADMIN_EMAIL` + `RESEND_API_KEY`) e Sentry se `SENTRY_DSN` è impostato. Per la beta servono `SENTRY_DSN` e `VITE_SENTRY_DSN` (kit §2).
+
+### 12.3 Dove guardare
+
+- `/dashboard/admin` → **Beta app**: uso per impresa e per superficie, segnalazioni.
+- Sentry: tag `surface` (`web`, `pwa`, `android`, `ios`) e `viewport` su ogni errore del browser.
+- Cancellazione dati: le due tabelle hanno `user_id` (l'impresa), quindi la pulizia per impresa (e2e, futura cancellazione account APP-1c) le copre come le altre.
+
 
 ---
 

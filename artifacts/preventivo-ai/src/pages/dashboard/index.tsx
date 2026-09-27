@@ -1,3 +1,4 @@
+import { trackAppEvent } from "@/lib/app-beta";
 import {
   useGetQuoteStats,
   useGetSubscription,
@@ -344,7 +345,7 @@ function DashboardComposer() {
         },
       },
       {
-        onSuccess: (quote) => { setLocation(`/dashboard/quotes/${quote.id}`); },
+        onSuccess: (quote) => { trackAppEvent("quote_created", { entityId: quote.id }); setLocation(`/dashboard/quotes/${quote.id}`); },
         onError: (err: unknown) => {
           const e = err as { status?: number; data?: { error?: string; code?: string } };
           if (e.status === 429) {

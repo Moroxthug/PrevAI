@@ -5,6 +5,7 @@
 // a render loop cannot burn the quota.
 
 import { buildEvent, parseDsn, sendEvent, type EventContext } from "@workspace/error-reporting";
+import { detectSurface, detectViewport } from "./app-beta";
 
 const dsn = parseDsn(import.meta.env.VITE_SENTRY_DSN);
 const MAX_EVENTS = 10;
@@ -24,7 +25,8 @@ function context(extra: Partial<EventContext> = {}): EventContext {
     logger: "preventivo-ai",
     request: { url: window.location.href.split("?")[0] },
     ...extra,
-    tags: { app: "preventivo-ai", route: window.location.pathname, lang: document.documentElement.lang || "en", ...extra.tags },
+    // APP-5: surface (web / pwa / android / ios) and viewport, so the beta can filter the native app's errors.
+    tags: { app: "preventivo-ai", surface: detectSurface(), viewport: detectViewport(), route: window.location.pathname, lang: document.documentElement.lang || "en", ...extra.tags },
   };
 }
 

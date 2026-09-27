@@ -108,6 +108,7 @@ Il design di riferimento è quello dell'app di QuoteAI (`design/stitch*`, `docs/
 - Crash e errori su Sentry (già cablato in v2, serve il DSN), eventi d'uso minimi: apertura, preventivo creato, preventivo condiviso.
 - Un giro di correzioni sui problemi trovati.
 - **Fatto quando:** due settimane senza crash bloccanti e almeno 20 preventivi creati dall'app dalle imprese pilota.
+- **Preparato il 27/9/2026 (sul sito):** eventi d'uso con la superficie (web / PWA / android / ios), "Segnala un problema", pannello admin "Beta app", tag `surface` su Sentry, migrazione 0009. Kit per il titolare in `docs/APP-BETA-KIT.md`. Restano TestFlight/Play, che aspettano APP-3/APP-4.
 
 ### APP-6 — Pubblicazione negli store (1 sett + tempi di revisione)
 - Schede store in italiano: testi, 6 screenshot per piattaforma (presi dall'app vera, stile dashboard), video facoltativo, categoria "Produttività" o "Business".
@@ -125,7 +126,7 @@ Il design di riferimento è quello dell'app di QuoteAI (`design/stitch*`, `docs/
 | APP-2 | 1 sett | APP-1 | sì dopo APP-1 |
 | APP-3 | 1½–2 sett | APP-0 (account, D15), APP-1 | no, servono gli account |
 | APP-4 | 1½–2 sett | APP-3, D16 | no |
-| APP-5 | 2 sett | APP-4 | no |
+| APP-5 | 2 sett | APP-4 | parte sul sito fatta (27/9); la beta vera no |
 | APP-6 | 1 sett + revisione | APP-5 | no |
 
 **Totale:** circa 8–10 settimane fino agli store; le prime due fasi tecniche (APP-1, APP-2) danno già valore sul sito e sulla PWA dopo 2–3 settimane.

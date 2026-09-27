@@ -1,4 +1,5 @@
 import { localDay } from "@/lib/local-day";
+import { trackAppEvent } from "@/lib/app-beta";
 import { Link, useParams, useSearch } from "wouter";
 import { PREZZI_PIANI, formatPrezzo } from "@workspace/config";
 import { useGetQuote, useGetBusinessProfile, useGenerateQuotePdf, useGetPlans, useUpdateQuote, useCreateCheckoutSession, useVerifyPayment, useGetSubscription, useUnlockQuoteWithSubscription, useCreateCustomerPortalSession, useRegenerateQuote, useDuplicateQuote, useUpgradeToCapitolatoPro, useGenerateQuotePdfPro, useGetTrialStatus, useListClients, useSendQuotePdfEmail, useListQuoteVariants, useCreateQuoteVariant, useUpdateQuoteVariant, useDeleteQuoteVariant, getGetQuoteQueryKey, getVerifyPaymentQueryKey, getListQuotesQueryKey, getGetTrialStatusQueryKey, getListQuoteVariantsQueryKey } from "@workspace/api-client-react";
@@ -144,6 +145,7 @@ export default function QuoteDetail() {
     const url = `${window.location.origin}/p/${id}`;
     try {
       await navigator.clipboard.writeText(url);
+      trackAppEvent("quote_shared", { entityId: id, channel: "link" });
       toast({ title: t("dashboard.quoteDetail.linkCopied"), description: t("dashboard.quoteDetail.linkCopiedDesc") });
     } catch {
       toast({ title: t("dashboard.quoteDetail.error"), description: t("dashboard.quoteDetail.errorCopyLink"), variant: "destructive" });
@@ -258,6 +260,7 @@ export default function QuoteDetail() {
       data: { toEmail: emailTo.trim(), clientName: (quote.clientData as { nome?: string })?.nome || "" }
     }, {
       onSuccess: () => {
+        trackAppEvent("quote_shared", { entityId: id, channel: "email" });
         setIsEmailDialogOpen(false);
         setEmailTo("");
         // Sending unlocks a draft (trial or subscription) — refresh status + trial counter.

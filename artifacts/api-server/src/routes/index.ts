@@ -50,6 +50,7 @@ import addonsRouter from "./addons";
 import commercialistaRouter from "./commercialista";
 import studioRouter from "./studio";
 import todayRouter from "./today";
+import appBetaRouter from "./app-beta";
 
 const router: IRouter = Router();
 
@@ -103,6 +104,7 @@ router.use(addonsRouter);
 router.use(commercialistaRouter);
 router.use(studioRouter);
 router.use(todayRouter);
+router.use(appBetaRouter);
 router.use("/v1/public", publicV1Router);
 
 export default router;
