@@ -209,7 +209,7 @@ export default function QuotesList() {
                         <span className="cell-flex">
                           <span className="cell-ic"><FileText className="h-4 w-4" /></span>
                           <span>
-                            <span className="t-strong">{quote.descrizioneGenerale || t("dashboard.quotesList.noDescription")}</span>
+                            <span className="t-strong q-desc-cell" title={quote.descrizioneGenerale || undefined}>{quote.descrizioneGenerale || t("dashboard.quotesList.noDescription")}</span>
                             <span className="t-sub">
                               {quote.lineItemCount} {quote.lineItemCount === 1 ? t("dashboard.quotesList.lineItem") : t("dashboard.quotesList.lineItems")}
                             </span>
@@ -235,28 +235,30 @@ export default function QuotesList() {
             </table>
           </div>
 
-          {/* Phones: a stacked list instead of a table whose columns ran off-screen */}
-          <ul className="ql sm:hidden">
+          {/* Phones: the dashboard's own "Preventivi recenti" rows instead of a
+              table whose columns ran off-screen */}
+          <div className="sm:hidden">
             {filteredQuotes.map(quote => {
               const chip = statusChip(quote.status, t);
               return (
-                <li key={quote.id} {...rowLink(() => navigate(`/dashboard/quotes/${quote.id}`))} className="ql-row">
-                  <div className="ql-body">
-                    <p className="ql-client">{quote.clientData?.nome || t("dashboard.quotesList.clientNotSpecified")}</p>
-                    <p className="ql-desc">{quote.descrizioneGenerale || t("dashboard.quotesList.noDescription")}</p>
-                    <p className="ql-meta">
-                      {new Date(quote.createdAt).toLocaleDateString("it-IT")} · {quote.lineItemCount} {quote.lineItemCount === 1 ? t("dashboard.quotesList.lineItem") : t("dashboard.quotesList.lineItems")}
-                    </p>
+                <div key={quote.id} {...rowLink(() => navigate(`/dashboard/quotes/${quote.id}`))} className="q-row q-row-m">
+                  <span className="q-ic"><FileText className="h-4 w-4" /></span>
+                  <div className="q-body">
+                    <div className="q-top">
+                      <p className="q-title">{quote.clientData?.nome || t("dashboard.quotesList.clientNotSpecified")}</p>
+                      <span className="q-amt">{quote.status === "draft" ? "—" : formatCurrency(quote.totale)}</span>
+                    </div>
+                    <p className="q-desc">{quote.descrizioneGenerale || t("dashboard.quotesList.noDescription")}</p>
+                    <div className="q-meta">
+                      <span className={cn("chip", chip.cls)}>{chip.label}</span>
+                      <span className="q-date">{new Date(quote.createdAt).toLocaleDateString("it-IT")}</span>
+                    </div>
                   </div>
-                  <div className="ql-side">
-                    <span className="ql-amt">{quote.status === "draft" ? "—" : formatCurrency(quote.totale)}</span>
-                    <span className={cn("chip", chip.cls)}>{chip.label}</span>
-                  </div>
-                  <div className="ql-act" onClick={e => e.stopPropagation()}>{actionsMenu(quote.id)}</div>
-                </li>
+                  <span onClick={e => e.stopPropagation()}>{actionsMenu(quote.id)}</span>
+                </div>
               );
             })}
-          </ul>
+          </div>
           </>
         )}
 

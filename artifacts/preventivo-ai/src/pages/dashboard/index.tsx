@@ -513,7 +513,6 @@ function DashboardComposer() {
         />
 
         <button onClick={handleSubmit} disabled={!canSubmit} aria-label={t("a11y.generateQuote")} className="comp-send">
-          <span className="comp-send-lbl">{t("dashboard.composer.send")}</span>
           {isSubmitting
             ? <Loader2 className="chev animate-spin" />
             : <ArrowRight className="chev" />

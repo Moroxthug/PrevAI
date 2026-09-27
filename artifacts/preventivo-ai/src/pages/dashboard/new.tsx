@@ -535,7 +535,6 @@ export default function NewQuote() {
               />
 
               <button type="button" onClick={handleAiSubmit} disabled={!canAiSubmit} className="comp-send" aria-label={t("dashboard.new.tabAi")}>
-                <span className="comp-send-lbl">{t("dashboard.composer.send")}</span>
                 {isAiSubmitting ? <Loader2 className="chev animate-spin" /> : <ArrowRight className="chev" />}
               </button>
             </div>

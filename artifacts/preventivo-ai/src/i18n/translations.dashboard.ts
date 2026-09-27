@@ -1172,7 +1172,6 @@ export const dashboardTranslations: Record<Lang, Record<string, string>> = {
     "dashboard.index.vsLastPeriod": "vs periodo precedente",
     "dashboard.index.composer.placeholder": "Descrivi il lavoro e ottieni un preventivo in 30 secondi...",
     "dashboard.index.composer.title": "Che lavoro devi preventivare?",
-    "dashboard.composer.send": "Genera",
     "mic.dictate": "Detta la descrizione del lavoro",
     "mic.stop": "Interrompi registrazione",
     "mic.errorTitle": "Dettatura vocale",
