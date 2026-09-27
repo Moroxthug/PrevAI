@@ -65,6 +65,21 @@ Conseguenze sulle fasi: APP-3 fa prima il guscio **Android** (si prova sul telef
 - Controllo a 390 px e 430 px (iPhone standard e Pro Max) e a 360 px (Android piccolo).
 - **Fatto quando:** nessuna pagina della dashboard sborda in larghezza a 360 px (test automatico nella suite `qa:visual`), la cancellazione funziona su staging end-to-end.
 
+### APP-1, diviso (aggiunto il 2026-09-27)
+Il design di riferimento è quello dell'app di QuoteAI (`design/stitch*`, `docs/MOBILE-RULES.md`, Phase 100–113), nello stile navy/Figtree della dashboard. **APP-1a** (riga 16) è fatta: pezzi da telefono, schede in basso, foglio Altro, tasto +, home "Oggi".
+- **APP-1b** (riga 22) — Impostazioni come in QuoteAI 102: elenco raggruppato come prima schermata, ogni sezione una pagina con ‹, niente salvataggio a ogni modifica ma una barra "Modifiche non salvate — Annulla / Salva". App collegate come catalogo (103).
+- **APP-1c** (riga 23) — Cancellazione dell'account (vedi sopra).
+- **APP-1d … APP-1h** (righe 24–28) — Le pagine con i pezzi nuovi: una sola azione principale in basso (`StickyActionBar`), le altre nel foglio ⋯, tabelle che diventano righe sotto i 640 px, numeri in striscia, schede a scorrimento. Ordine: preventivi, cantieri, soldi e persone, squadra e resto, cliente e sito pubblico.
+- **APP-1i** (riga 29) — Le regole mobile di `qa:visual` diventano bloccanti. Qui APP-1 è chiusa.
+
+### APP-4a — Funzioni native possibili dal sito (riga 30)
+- Foto del cantiere dal + (fotocamera del telefono dal browser), nota vocale su un cantiere dal + (dettatura come nel composer), "Condividi" del PDF con la Web Share API, bozze del nuovo preventivo salvate sul telefono se cade la rete.
+- Push native e Face ID restano nella riga 19 (servono APP-3 e D16).
+
+### APP-7 e APP-8 (righe 31–32)
+- **APP-7** — Home per ruolo e "Personalizza la home" (QuoteAI 132, `design/role-homes`).
+- **APP-8** — Assistente vocale (QuoteAI 133–142): richiede un piano a parte, costi dell'IA vocale e regole sui permessi; da valutare dopo gli store.
+
 ### APP-2 — PWA installabile + notifiche web (1 sett)
 - `manifest.webmanifest` (nome, icone, colore navy, `display: standalone`), service worker con cache della struttura dell'app e pagina "sei offline".
 - **Notifiche push web** (standard VAPID): tabella `push_subscriptions`, invio dal server sugli stessi eventi delle notifiche in-app. Primo giro: preventivo aperto dal cliente, preventivo accettato, nuovo lead dal widget, scadenza fiscale a 7 giorni (se PrevAI Fisco è attivo). Preferenze per tipo in Impostazioni.
