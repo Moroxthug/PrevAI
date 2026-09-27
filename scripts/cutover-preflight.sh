@@ -42,7 +42,7 @@ ramo=$(git rev-parse --abbrev-ref HEAD)
 git fetch -q origin v2 main 2>/dev/null
 locale=$(git rev-parse HEAD); remoto=$(git rev-parse origin/v2)
 [ "$locale" = "$remoto" ] && ok "v2 pushato (${locale:0:9})" \
-  || ko "origin/v2 = ${remoto:0:9}, locale = ${locale:0:9}: la preview non contiene gli ultimi commit (push di v2, §2 del kit)"
+  || ko "origin/v2 = ${remoto:0:9}, locale = ${locale:0:9}: la preview non contiene gli ultimi commit (push di v2: docs/CUTOVER-29-09.md §1 punto 1)"
 if grep -q 'www\.prevai\.it' artifacts/preventivo-ai/public/widget.js; then
   ko "widget.js nel repo chiama ancora www.prevai.it"
 else
