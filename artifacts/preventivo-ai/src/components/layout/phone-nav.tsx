@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useLocation, useSearch } from "wouter";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Bell, Briefcase, Bug, Building2, Camera, Check, ChevronRight, CreditCard, FilePlus2, FileText, HardHat, Home, LayoutGrid, Loader2, LogOut, Plus, Target, Users, Wallet, type LucideIcon } from "lucide-react";
+import { Bell, Briefcase, Bug, Building2, Camera, Check, ChevronRight, CreditCard, FilePlus2, FileText, HardHat, Home, LayoutGrid, Loader2, LogOut, Plus, Receipt, Target, Users, Wallet, type LucideIcon } from "lucide-react";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { BottomTabBar, tabOwns, type TabItem } from "@/components/mobile/bottom-tab-bar";
 import { BottomSheet } from "@/components/mobile/bottom-sheet";
@@ -253,7 +253,7 @@ type Intent = "receipt";
  * photo first asks which job, then opens the camera (in the same tap, so the
  * browser allows it).
  */
-export function PhoneNewButton({ hasJobs }: { hasJobs: boolean }) {
+export function PhoneNewButton({ hasJobs, hasInvoices }: { hasJobs: boolean; hasInvoices?: boolean }) {
   const { t } = useLanguage();
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -290,6 +290,8 @@ export function PhoneNewButton({ hasJobs }: { hasJobs: boolean }) {
     { key: "lead", label: t("mobile.new.lead"), icon: Target, run: () => navigate("/dashboard/leads?new=1") },
     // Phase 106: the jobs list's New job button lives here on a phone.
     hasJobs && { key: "job", label: t("jobs.newJob"), icon: Briefcase, run: () => navigate("/dashboard/jobs?new=1") },
+    // APP-1f (QuoteAI Phase 107): and the invoices list's New invoice.
+    hasInvoices && { key: "invoice", label: t("invoices.new"), icon: Receipt, run: () => navigate("/dashboard/invoices?new=1") },
     hasJobs && { key: "receipt", label: t("mobile.new.receipt"), icon: Camera, run: () => { setOpen(false); setIntent("receipt"); } },
   ].filter((a): a is { key: string; label: string; icon: LucideIcon; run: () => void } => !!a);
   if (actions.length === 0) return null;

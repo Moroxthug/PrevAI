@@ -279,7 +279,7 @@ export default function CommercialistaClientePage() {
   const puoRichiedere = !i || chiuso;
 
   return (
-    <div className="animate-in fade-in duration-300">
+    <div className="animate-in fade-in duration-300 fisco-page">
       <div className="page-head">
         <div>
           <h1 className="flex items-center gap-2">

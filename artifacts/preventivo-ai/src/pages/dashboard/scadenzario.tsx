@@ -20,6 +20,7 @@ import {
 import { Dialog, DialogBody, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { formatCents } from "@/lib/jobs-api";
+import { StatStrip } from "@/components/mobile/stat-strip";
 import { localDay } from "@/lib/local-day";
 import {
   ErroreApiFiscale,
@@ -359,7 +360,7 @@ function Riga({ voce, anno }: { voce: VoceScadenzarioDto; anno: number }) {
   const differenza = voce.stato === "versata" && voce.versatoCents > 0 && voce.versatoCents !== voce.scadenza.importoCents;
 
   return (
-    <div className="item-row">
+    <div className="item-row sc-row">
       <div className="flex items-start justify-between gap-3 flex-wrap">
         <div className="min-w-0" style={{ flex: "1 1 280px" }}>
           <div className="flex items-center gap-2 flex-wrap">
@@ -601,7 +602,7 @@ export default function ScadenzarioPage() {
   const s = scadenzario.data;
 
   return (
-    <div className="animate-in fade-in duration-300">
+    <div className="animate-in fade-in duration-300 fisco-page">
       <div className="page-head">
         <div>
           <h1 className="flex items-center gap-2">
@@ -634,7 +635,17 @@ export default function ScadenzarioPage() {
         </div>
       )}
 
-      <div className="stat-grid" style={{ marginTop: 16, gridTemplateColumns: "repeat(3, minmax(0, 1fr))" }}>
+      {/* APP-1f: sul telefono i tre numeri come striscia (due per riga), non tre colonne schiacciate. */}
+      <StatStrip
+        className="show-phone sc-stats"
+        label="Scadenzario in numeri"
+        items={[
+          { label: `Da versare nel ${anno}`, value: euro(s.totaleApertoCents) },
+          { label: "Scaduto e non registrato", value: euro(s.scaduteCents), tone: s.scaduteCents > 0 ? "bad" : undefined },
+          { label: "Prossima scadenza", value: s.prossima ? dataLunga(s.prossima.scadenza.data) : "Nessuna", sub: s.prossima?.scadenza.etichetta },
+        ]}
+      />
+      <div className="stat-grid hide-phone" style={{ marginTop: 16, gridTemplateColumns: "repeat(3, minmax(0, 1fr))" }}>
         <div className="card stat-card">
           <div className="lbl">Ancora da versare nell'anno {anno}</div>
           <div className="val">{euro(s.totaleApertoCents)}</div>
