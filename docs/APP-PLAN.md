@@ -116,6 +116,7 @@ Il design di riferimento è quello dell'app di QuoteAI (`design/stitch*`, `docs/
 - Invio in revisione; risposta alle eventuali obiezioni (tipicamente la 4.2 "funzionalità minima", già coperta da APP-4).
 - Aggiornamenti successivi: le modifiche all'interfaccia arrivano col normale deploy web; una nuova versione negli store serve solo quando cambiano i plugin nativi.
 - **Fatto quando:** PrevAI è scaricabile da App Store e Google Play in Italia.
+- **Preparato il 27/9/2026:** kit `docs/APP-STORE-KIT.md` (schede, etichette privacy, note per il revisore, screenshot), guida `/help/delete-account/`, Privacy Policy aggiornata, script `ops:demo-revisore` per l'account del revisore. L'invio aspetta APP-0, APP-1c, APP-3, APP-4, la beta vera e l'ok del titolare.
 
 ## 6. Tempi e ordine
 
@@ -127,7 +128,7 @@ Il design di riferimento è quello dell'app di QuoteAI (`design/stitch*`, `docs/
 | APP-3 | 1½–2 sett | APP-0 (account, D15), APP-1 | no, servono gli account |
 | APP-4 | 1½–2 sett | APP-3, D16 | no |
 | APP-5 | 2 sett | APP-4 | parte sul sito fatta (27/9); la beta vera no |
-| APP-6 | 1 sett + revisione | APP-5 | no |
+| APP-6 | 1 sett + revisione | APP-5 | kit fatto (27/9); l'invio no |
 
 **Totale:** circa 8–10 settimane fino agli store; le prime due fasi tecniche (APP-1, APP-2) danno già valore sul sito e sulla PWA dopo 2–3 settimane.
 

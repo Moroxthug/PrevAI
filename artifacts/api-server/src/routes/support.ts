@@ -8,7 +8,7 @@ import { ipRateLimiter } from "../lib/rateLimit.js";
 import { moderateSupportMessage } from "../lib/moderation.js";
 import crypto from "crypto";
 
-// Phase 70: the help centre's ten guides (artifacts/preventivo-ai/src/data/help-articles.ts).
+// Phase 70: the help centre guides (artifacts/preventivo-ai/src/data/help-articles.ts).
 // Kept as a plain list here so the support bot can point visitors at the
 // right page instead of improvising product behaviour. Update both when a
 // guide is added or renamed.
@@ -23,6 +23,7 @@ const HELP_GUIDES: ReadonlyArray<[slug: string, topic: string]> = [
   ["team-accounts-and-roles", "invito collaboratori, ruoli (admin/ufficio/capocantiere/visualizzatore), posti per piano"],
   ["leads-and-follow-ups", "fonti lead (widget sito, WhatsApp, Meta Lead Ads), pipeline, consenso GDPR e disiscrizione, richieste di recensione"],
   ["integrations-and-imports", "invio da Gmail, calendario Google/Outlook, Stripe Connect, importazione vecchi preventivi da CSV/Excel/PDF, API pubblica e Zapier"],
+  ["delete-account", "cancellazione dell'account e dei dati (richiesta a privacy@prevai.it, entro 30 giorni), cosa si conserva per legge (contratti e fatture 10 anni)"],
 ];
 
 const SUPPORT_SYSTEM_PROMPT = [

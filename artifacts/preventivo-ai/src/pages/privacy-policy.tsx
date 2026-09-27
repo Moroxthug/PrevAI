@@ -29,7 +29,7 @@ export default function PrivacyPage() {
         <h1 style={{ fontSize: "clamp(1.9rem, 3.4vw, 2.5rem)", fontWeight: 800, letterSpacing: "-.02em", color: "var(--navy)", lineHeight: 1.15, marginBottom: 10 }}>
           Privacy Policy
         </h1>
-        <p style={{ fontSize: 13, color: "var(--faint)" }}>Ultimo aggiornamento: 21 settembre 2026</p>
+        <p style={{ fontSize: 13, color: "var(--faint)" }}>Ultimo aggiornamento: 27 settembre 2026</p>
       </header>
 
       <div className="wrap" style={{ maxWidth: 780, paddingBottom: "clamp(48px, 6vw, 80px)" }}>
@@ -55,6 +55,7 @@ export default function PrivacyPage() {
               <li><strong>Dati di pagamento:</strong> gestiti direttamente da Stripe Inc. — non accediamo mai ai dati completi della tua carta.</li>
               <li><strong>Credenziali di autenticazione:</strong> la password è conservata come hash con salt sui nostri sistemi; non viene trasmessa a fornitori di identità terzi.</li>
               <li><strong>Dati tecnici:</strong> indirizzo IP, tipo di browser, pagine visitate e durata della sessione (tramite log di sistema).</li>
+              <li><strong>Dati d'uso dell'app e del sito da telefono:</strong> eventi essenziali (app aperta, preventivo creato, preventivo condiviso) con il tipo di dispositivo (sito, app installata, Android, iPhone) e la versione; le segnalazioni che invii con "Segnala un problema" (il testo che scrivi e la pagina in cui eri). Negli eventi non finisce il contenuto dei preventivi. Non usiamo identificatori pubblicitari e non tracciamo l'uso di altre app.</li>
             </ul>
           </section>
 
@@ -102,6 +103,7 @@ export default function PrivacyPage() {
               <li><strong>Meta Platforms, Inc.</strong> — messaggi WhatsApp Business che scegli di inviare ai clienti e Meta Lead Ads se colleghi un account pubblicitario.</li>
               <li><strong>Google LLC e Microsoft Corporation</strong> — sincronizzazione del calendario (Google Calendar, Outlook) quando la attivi.</li>
               <li><strong>PostHog, Inc. e Google LLC (Google Analytics)</strong> — analisi d'uso del prodotto e misurazione del traffico del sito.</li>
+              <li><strong>Functional Software, Inc. (Sentry)</strong> — segnalazione automatica degli errori tecnici del sito e dell'app (descrizione tecnica dell'errore, identificativo dell'utente, tipo di dispositivo).</li>
             </ul>
             <p className="mt-3">
               Alcuni fornitori hanno sede al di fuori dell'Unione Europea (in particolare negli Stati Uniti): il trasferimento avviene sulla base delle clausole contrattuali standard approvate dalla Commissione Europea o del Data Privacy Framework, dove applicabile.
@@ -115,7 +117,7 @@ export default function PrivacyPage() {
             <ul className="list-disc pl-5 mt-2 space-y-1">
               <li><strong>Accesso</strong> — ottenere una copia dei dati personali che ti riguardano (art. 15 GDPR).</li>
               <li><strong>Rettifica</strong> — chiedere la correzione di dati inesatti o incompleti (art. 16).</li>
-              <li><strong>Cancellazione</strong> — chiedere la cancellazione dei dati, salvi gli obblighi di conservazione di legge (art. 17).</li>
+              <li><strong>Cancellazione</strong> — chiedere la cancellazione dei dati e dell'account, salvi gli obblighi di conservazione di legge (art. 17). I passi sono nella guida <Link href="/help/delete-account/" className="text-navy-600 hover:underline">Cancellare l'account e i dati</Link>.</li>
               <li><strong>Limitazione e opposizione</strong> — limitare il trattamento o opporti a quello basato sul legittimo interesse (artt. 18 e 21).</li>
               <li><strong>Portabilità</strong> — ricevere i dati in un formato strutturato e leggibile da dispositivo automatico (art. 20).</li>
               <li><strong>Revoca del consenso</strong> — revocare il consenso in qualsiasi momento, senza pregiudicare la liceità del trattamento precedente.</li>
