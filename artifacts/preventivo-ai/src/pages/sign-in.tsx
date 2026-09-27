@@ -132,6 +132,11 @@ export default function SignInPage() {
                   <input
                     type="text"
                     inputMode={useBackupCode ? "text" : "numeric"}
+                    autoComplete="one-time-code"
+                    autoCapitalize="none"
+                    spellCheck={false}
+                    enterKeyHint="go"
+                    aria-label={useBackupCode ? t("signIn.twoFactorBackupPlaceholder") : t("a11y.otpCode")}
                     autoFocus
                     required
                     value={twoFactorCode}
@@ -173,6 +178,9 @@ export default function SignInPage() {
                     type="email"
                     required
                     autoComplete="email"
+                    autoCapitalize="none"
+                    spellCheck={false}
+                    enterKeyHint="next"
                     value={email}
                     onChange={e => setEmail(e.target.value)}
                     placeholder="jane@example.com"
@@ -186,6 +194,7 @@ export default function SignInPage() {
                       type={showPassword ? "text" : "password"}
                       required
                       autoComplete="current-password"
+                      enterKeyHint="go"
                       value={password}
                       onChange={e => setPassword(e.target.value)}
                       placeholder="••••••••"
@@ -242,6 +251,10 @@ export default function SignInPage() {
                     id="resetEmail"
                     type="email"
                     required
+                    autoComplete="email"
+                    autoCapitalize="none"
+                    spellCheck={false}
+                    enterKeyHint="send"
                     value={resetEmail}
                     onChange={e => setResetEmail(e.target.value)}
                     placeholder="jane@example.com"

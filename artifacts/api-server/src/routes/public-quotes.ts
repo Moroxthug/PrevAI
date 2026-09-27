@@ -500,7 +500,7 @@ router.get("/public/quotes/:id", quoteViewLimiter, async (req, res) => {
     // "draft" or "pending_payment" quotes have not yet been unlocked by the
     // owner: don't expose them publicly, not even read-only.
     if (!quote || (quote.status !== "unlocked" && quote.status !== "accepted")) {
-      res.status(404).json({ error: "Quote not found." });
+      res.status(404).json({ error: "Preventivo non trovato." });
       return;
     }
 
@@ -528,11 +528,11 @@ router.post("/public/quotes/:id/accept", quoteAcceptLimiter, async (req, res) =>
 
     const trimmedName = (nomeConferma || "").trim();
     if (!trimmedName) {
-      res.status(400).json({ error: "Enter your first and last name to confirm acceptance." });
+      res.status(400).json({ error: "Inserisci nome e cognome per confermare l'accettazione." });
       return;
     }
     if (trimmedName.length > MAX_ACCEPTED_NAME_LENGTH) {
-      res.status(400).json({ error: "Name too long." });
+      res.status(400).json({ error: "Nome troppo lungo." });
       return;
     }
 
@@ -542,7 +542,7 @@ router.post("/public/quotes/:id/accept", quoteAcceptLimiter, async (req, res) =>
       .where(eq(quotesTable.id, id));
 
     if (!quote || (quote.status !== "unlocked" && quote.status !== "accepted")) {
-      res.status(404).json({ error: "Quote not found." });
+      res.status(404).json({ error: "Preventivo non trovato." });
       return;
     }
 
@@ -569,7 +569,7 @@ router.post("/public/quotes/:id/accept", quoteAcceptLimiter, async (req, res) =>
     if (variants.length > 0) {
       const chosen = variants.find(v => v.id === variantId) ?? (variants.length === 1 ? variants[0] : undefined);
       if (!chosen) {
-        res.status(400).json({ error: "Select one of the options before accepting." });
+        res.status(400).json({ error: "Scegli una delle opzioni prima di accettare." });
         return;
       }
       acceptedVariantId = chosen.id;
@@ -624,7 +624,7 @@ router.get("/public/quotes/:id/incentives", quoteViewLimiter, async (req, res) =
     const id = req.params.id as string;
     const [quote] = await db.select().from(quotesTable).where(eq(quotesTable.id, id));
     if (!quote || (quote.status !== "unlocked" && quote.status !== "accepted")) {
-      res.status(404).json({ error: "Quote not found." });
+      res.status(404).json({ error: "Preventivo non trovato." });
       return;
     }
 

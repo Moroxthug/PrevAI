@@ -37,9 +37,9 @@ function StatTile({
 }
 
 /** Fascia scura "impatto" a tutta larghezza (docs/mockups/homepage-mockup-v2.html .impact) — numeri reali contati dal vivo, niente cifre inventate. */
-export function StatsBar() {
+export function StatsBar({ className = "" }: { className?: string }) {
   return (
-    <section className="sec impact on-dark" id="impact">
+    <section className={`sec impact on-dark ${className}`} id="impact">
       <div className="wrap">
         <div>
           <span className="eyebrow on-dark">Impatto</span>

@@ -53,6 +53,8 @@ export default function OnboardingPage() {
   const [reaNumber, setReaNumber] = useState("");
   const [iban, setIban] = useState("");
   const [schedule, setSchedule] = useState<PaymentSchedule>(DEFAULT_SCHEDULE);
+  // APP-1h (QuoteAI Phase 111): il piano di pagamento è una riga finché non lo si modifica.
+  const [scheduleOpen, setScheduleOpen] = useState(false);
 
   if (!isLoaded) {
     return (
@@ -158,8 +160,8 @@ export default function OnboardingPage() {
           {step === 1 ? (
             <>
               {/* Welcome header */}
-              <div className="text-center mb-8">
-                <div className="mx-auto h-16 w-16 rounded-2xl flex items-center justify-center mb-4"
+              <div className="ob-head text-center mb-8">
+                <div className="ob-icon mx-auto h-16 w-16 rounded-2xl flex items-center justify-center mb-4"
                   style={{ background: "linear-gradient(135deg, rgba(16,16,49,0.15), rgba(15,151,162,0.15))" }}>
                   <Building2 className="h-8 w-8" style={{ color: "var(--navy)" }} />
                 </div>
@@ -200,24 +202,27 @@ export default function OnboardingPage() {
                       placeholder={t("onboarding.companyNamePlaceholder")}
                       value={companyName}
                       onChange={e => setCompanyName(e.target.value)}
+                      autoComplete="organization"
+                      autoCapitalize="words"
+                      enterKeyHint="next"
                       autoFocus
                     />
                   </div>
                   <div className="field">
                     <label htmlFor="vatNumber">{t("onboarding.businessNumber")}</label>
-                    <input id="vatNumber" placeholder="123456789 RT0001" value={vatNumber} onChange={e => setVatNumber(e.target.value)} />
+                    <input id="vatNumber" placeholder="12345678901" value={vatNumber} onChange={e => setVatNumber(e.target.value)} autoComplete="off" spellCheck={false} enterKeyHint="next" />
                   </div>
                   <div className="field">
                     <label htmlFor="phone">{t("onboarding.phone")}</label>
-                    <input id="phone" placeholder="+39 333 123 4567" value={phone} onChange={e => setPhone(e.target.value)} />
+                    <input id="phone" type="tel" inputMode="tel" autoComplete="tel" enterKeyHint="next" placeholder="+39 333 123 4567" value={phone} onChange={e => setPhone(e.target.value)} />
                   </div>
                   <div className="field full">
                     <label htmlFor="address">{t("onboarding.address")}</label>
-                    <input id="address" placeholder="Via Roma 15, 20121 Milano (MI)" value={address} onChange={e => setAddress(e.target.value)} />
+                    <input id="address" autoComplete="street-address" enterKeyHint="next" placeholder="Via Roma 15, 20121 Milano (MI)" value={address} onChange={e => setAddress(e.target.value)} />
                   </div>
                   <div className="field full">
                     <label htmlFor="email">{t("onboarding.businessEmail")}</label>
-                    <input id="email" type="email" placeholder="info@tuaazienda.it" value={email} onChange={e => setEmail(e.target.value)} />
+                    <input id="email" type="email" autoComplete="email" autoCapitalize="none" spellCheck={false} enterKeyHint="done" placeholder="info@tuaazienda.it" value={email} onChange={e => setEmail(e.target.value)} />
                   </div>
                 </div>
 
@@ -244,8 +249,8 @@ export default function OnboardingPage() {
           ) : (
             <>
               {/* Step 2 header */}
-              <div className="text-center mb-8">
-                <div className="mx-auto h-16 w-16 rounded-2xl flex items-center justify-center mb-4"
+              <div className="ob-head text-center mb-8">
+                <div className="ob-icon mx-auto h-16 w-16 rounded-2xl flex items-center justify-center mb-4"
                   style={{ background: "linear-gradient(135deg, rgba(16,16,49,0.15), rgba(15,151,162,0.15))" }}>
                   <MapPin className="h-8 w-8" style={{ color: "var(--navy)" }} />
                 </div>
@@ -272,13 +277,13 @@ export default function OnboardingPage() {
                   </div>
                   <div className="field">
                     <label htmlFor="rea">{t("onboarding.rea")}</label>
-                    <input id="rea" placeholder={t("onboarding.reaPlaceholder")} value={reaNumber} onChange={e => setReaNumber(e.target.value)} />
+                    <input id="rea" placeholder={t("onboarding.reaPlaceholder")} value={reaNumber} onChange={e => setReaNumber(e.target.value)} autoCapitalize="characters" spellCheck={false} enterKeyHint="next" />
                   </div>
                   <div className="field full">
                     <label htmlFor="iban" className="flex items-center gap-1.5">
                       <Landmark className="h-3.5 w-3.5" style={{ color: "var(--faint)" }} /> {t("onboarding.iban")}
                     </label>
-                    <input id="iban" placeholder="IT60X0542811101000000123456" maxLength={34} value={iban} onChange={e => setIban(e.target.value)} />
+                    <input id="iban" placeholder="IT60X0542811101000000123456" maxLength={34} value={iban} onChange={e => setIban(e.target.value)} autoComplete="off" autoCapitalize="characters" spellCheck={false} enterKeyHint="done" />
                     <span className="text-[11px] mt-1 block" style={{ color: "var(--faint)" }}>{t("onboarding.ibanHint")}</span>
                   </div>
                   <div className="field full">
@@ -286,7 +291,17 @@ export default function OnboardingPage() {
                       <CalendarClock className="h-3.5 w-3.5" style={{ color: "var(--faint)" }} /> {t("onboarding.scheduleTitle")}
                     </label>
                     <p className="text-[11px] mb-2" style={{ color: "var(--faint)" }}>{t("onboarding.scheduleHint")}</p>
-                    <PaymentScheduleEditor value={schedule} onChange={setSchedule} total={0} />
+                    {scheduleOpen ? (
+                      <PaymentScheduleEditor value={schedule} onChange={setSchedule} total={0} />
+                    ) : (
+                      <div className="ob-piano">
+                        <span className="ob-piano-txt">
+                          <b>{t(schedule.terms.length === 1 ? "onboarding.schedulePayments1" : "onboarding.schedulePayments").replace("{n}", String(schedule.terms.length))}</b>
+                          <span>{schedule.terms.map((x) => (x.amountType === "percent" ? `${x.value}%` : new Intl.NumberFormat("it-IT", { style: "currency", currency: "EUR", maximumFractionDigits: 0 }).format(x.value))).join(" · ")}</span>
+                        </span>
+                        <button type="button" className="btn btn-sm btn-outline-navy" onClick={() => setScheduleOpen(true)}>{t("onboarding.scheduleChange")}</button>
+                      </div>
+                    )}
                   </div>
                 </div>
 

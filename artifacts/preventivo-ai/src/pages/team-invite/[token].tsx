@@ -28,7 +28,7 @@ export default function TeamInvitePage() {
 
   return (
     <div className="doc-shell flex items-center justify-center p-4">
-      <div className="card w-full max-w-md p-8 text-center space-y-5" style={{ boxShadow: "var(--shadow-card)" }}>
+      <div className="card w-full max-w-md p-6 sm:p-8 text-center space-y-5" style={{ boxShadow: "var(--shadow-card)" }}>
         <Logo style={{ height: 28, margin: "0 auto" }} />
 
         {isLoading && <Loader2 className="h-6 w-6 animate-spin mx-auto" style={{ color: "var(--navy)" }} />}

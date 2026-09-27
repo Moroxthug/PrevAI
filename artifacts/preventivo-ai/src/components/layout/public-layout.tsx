@@ -5,7 +5,8 @@ import { useScrolled } from "@/hooks/use-scrolled";
 import { cn } from "@/lib/utils";
 import { X, Send, CheckCircle2, Menu, ChevronDown } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
-import SupportBot from "@/components/support-bot";
+import { useMediaQuery } from "@/hooks/use-media-query";
+import SupportBot, { openSupportChat } from "@/components/support-bot";
 import { useLanguage } from "@/i18n/LanguageContext";
 import { TRADE_LABELS } from "@/i18n/translations";
 
@@ -91,13 +92,40 @@ function AnnouncementBar() {
   );
 }
 
+/**
+ * APP-1h (QuoteAI Phase 112) — una colonna del piè di pagina. Sul computer il
+ * titolo e i suoi link; sul telefono una sezione chiusa (sei elenchi di link
+ * erano una schermata e mezza su ogni pagina pubblica). Un semplice div fino
+ * all'idratazione, così l'HTML prerenderizzato e il primo render coincidono.
+ */
+function FooterCol({ title, folded, children }: { title: string; folded: boolean; children: React.ReactNode }) {
+  if (!folded) {
+    return (
+      <div className="ft-col">
+        <h4>{title}</h4>
+        {children}
+      </div>
+    );
+  }
+  return (
+    <details className="ft-col ft-fold">
+      <summary>
+        <h4>{title}</h4>
+        <ChevronDown className="ft-chev h-4 w-4" aria-hidden="true" />
+      </summary>
+      <div className="ft-fold-body">{children}</div>
+    </details>
+  );
+}
+
 export function PublicLayout({ children }: { children: React.ReactNode }) {
   const { isSignedIn } = useAuth();
   const { t, lang } = useLanguage();
   const scrolled = useScrolled(20);
   const [supportOpen, setSupportOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [, navigate] = useLocation();
+  const [location, navigate] = useLocation();
+  const phone = useMediaQuery("(max-width: 640px)");
 
   function handleMobileNav(href: string) {
     setMobileMenuOpen(false);
@@ -159,9 +187,10 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
             <nav className="flex flex-col px-4 py-2 flex-1 overflow-y-auto">
               <button className="mnav-link" onClick={() => handleMobileNav("/#products")}>{t("nav.products")}</button>
               <button className="mnav-link" onClick={() => handleMobileNav("/#trades")}>{t("nav.trades")}</button>
-              <button className="mnav-link" onClick={() => handleMobileNav("/#whatsapp")}>{t("nav.whatsapp")}</button>
-              <button className="mnav-link" onClick={() => handleMobileNav("/#guides")}>{t("nav.guides")}</button>
-              <button className="mnav-link" onClick={() => handleMobileNav("/#comparison")}>{t("nav.compare")}</button>
+              <button className="mnav-link" onClick={() => handleMobileNav("/#plans")}>{t("nav.pricing")}</button>
+              <button className="mnav-link" onClick={() => handleMobileNav("/whatsapp/")}>{t("nav.whatsapp")}</button>
+              <button className="mnav-link" onClick={() => handleMobileNav("/blog/")}>{t("nav.guides")}</button>
+              <button className="mnav-link" onClick={() => handleMobileNav("/help/")}>{t("footer.helpCenter")}</button>
               {!isSignedIn ? (
                 <button className="mnav-link" onClick={() => handleMobileNav("/sign-in")}>{t("nav.signIn")}</button>
               ) : (
@@ -181,6 +210,19 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
 
       <main className="flex-1 flex flex-col">{children}</main>
 
+      {/* APP-1h: sul telefono il pulsante flottante della chat copriva testi e
+          pulsanti della pagina; la chat si apre da questa riga. */}
+      {!/^\/sign-(in|up)(\/|$)/.test(location) && (
+        <div className="sb-inline show-phone">
+          <div className="wrap">
+            <span>{t("supportBot.questions")}</span>
+            <button type="button" className="cta-link" onClick={openSupportChat}>
+              {t("supportBot.chatWithUs")}
+            </button>
+          </div>
+        </div>
+      )}
+
       <footer className="footer">
         <div className="wrap ft-grid">
           <div className="ft-brand">
@@ -189,45 +231,40 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
             </Link>
             <p>{t("footer.tagline")}</p>
           </div>
-          <div className="ft-col">
-            <h4>{t("footer.trades")}</h4>
+          <FooterCol title={t("footer.trades")} folded={phone}>
             {Object.entries(TRADE_LABELS[lang]).slice(0, 7).map(([slug, label]) => (
               <Link key={slug} href={`/preventivi/${slug}/`}>{label}</Link>
             ))}
             <Link href="/#trades">{t("footer.allTrades")}</Link>
-          </div>
-          <div className="ft-col">
-            <h4>{t("footer.features")}</h4>
-            <Link href="/#whatsapp">{t("nav.whatsapp")}<span className="chip-new chip">{t("nav.new")}</span></Link>
+          </FooterCol>
+          <FooterCol title={t("footer.features")} folded={phone}>
+            <Link href="/whatsapp/">{t("nav.whatsapp")}<span className="chip-new chip">{t("nav.new")}</span></Link>
             <Link href="/#story-jobs">{t("footer.jobSites")}</Link>
             <Link href="/#story-invoicing">{t("footer.contracts")}</Link>
             <Link href="/#products">{t("footer.analytics")}</Link>
             <Link href="/#products">{t("footer.aiAssistant")}</Link>
             <Link href="/#products">{t("footer.imports")}</Link>
-          </div>
-          <div className="ft-col">
-            <h4>{t("footer.guides")}</h4>
+          </FooterCol>
+          <FooterCol title={t("footer.guides")} folded={phone}>
             <Link href="/blog/">{t("footer.blog")}</Link>
             <Link href="/preventivi/modello-excel/">{t("footer.excelTemplate")}</Link>
             <Link href="/preventivi/modello-word/">{t("footer.wordTemplate")}</Link>
             <Link href="/preventivi/come-fare-preventivo/">{t("footer.howToQuote")}</Link>
             <Link href="/preventivi/preventivi-gratis/">{t("footer.freeQuotes")}</Link>
-          </div>
-          <div className="ft-col">
-            <h4>{t("footer.company")}</h4>
+          </FooterCol>
+          <FooterCol title={t("footer.company")} folded={phone}>
             <Link href="/chi-siamo/">{t("footer.aboutUs")}</Link>
             <Link href="/contatti/">{t("footer.contact")}</Link>
-            <Link href="/#newsroom">{t("footer.newsroom")}</Link>
+            <Link href="/blog/">{t("footer.newsroom")}</Link>
             <Link href="/#reviews">{t("footer.reviews")}</Link>
-          </div>
-          <div className="ft-col">
-            <h4>{t("footer.support")}</h4>
+          </FooterCol>
+          <FooterCol title={t("footer.support")} folded={phone}>
             <Link href="/help/">{t("footer.helpCenter")}</Link>
             <button onClick={() => setSupportOpen(true)}>{t("support.contactSupport")}</button>
             <Link href="/privacy/">{t("footer.privacyPolicy")}</Link>
             <Link href="/termini/">{t("footer.terms")}</Link>
             <Link href="/mappa-sito/">{t("footer.sitemap")}</Link>
-          </div>
+          </FooterCol>
         </div>
         <div className="wrap"><p className="ft-fine">{t("footer.fine")}</p></div>
         <div className="wrap ft-bottom">

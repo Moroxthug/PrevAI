@@ -148,6 +148,8 @@ export default function SignUpPage() {
                     type="text"
                     required
                     autoComplete="name"
+                    autoCapitalize="words"
+                    enterKeyHint="next"
                     value={name}
                     onChange={e => setName(e.target.value)}
                     placeholder={t("signUp.fullNamePlaceholder")}
@@ -160,6 +162,9 @@ export default function SignUpPage() {
                     type="email"
                     required
                     autoComplete="email"
+                    autoCapitalize="none"
+                    spellCheck={false}
+                    enterKeyHint="next"
                     value={email}
                     onChange={e => setEmail(e.target.value)}
                     placeholder="jane@example.com"
@@ -174,6 +179,7 @@ export default function SignUpPage() {
                       required
                       minLength={8}
                       autoComplete="new-password"
+                      enterKeyHint="go"
                       value={password}
                       onChange={e => setPassword(e.target.value)}
                       placeholder={t("signUp.passwordPlaceholder")}

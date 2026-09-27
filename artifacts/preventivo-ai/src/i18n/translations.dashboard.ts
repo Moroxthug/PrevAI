@@ -2355,7 +2355,6 @@ export const dashboardTranslations: Record<Lang, Record<string, string>> = {
     "clients.detail.quote": "Preventivo",
     "clients.detail.quoteAccepted": "Accettato",
     // Phase 67 — aria-label / placeholder
-    "a11y.close": "Chiudi",
     "a11y.reportingPeriod": "Periodo di riferimento",
     "a11y.generateQuote": "Genera preventivo",
     "a11y.moveUp": "Sposta su",

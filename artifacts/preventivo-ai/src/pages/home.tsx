@@ -1,7 +1,8 @@
 import { Link, useLocation } from "wouter";
 import { ArrowRight, Receipt, Shield, Zap } from "lucide-react";
-import { PREZZI_PIANI } from "@workspace/config";
-import { prezzoPianoTesto } from "@/lib/prezzi";
+import { PREZZI_PIANI, PIANI_IN_ABBONAMENTO, formatPrezzo } from "@workspace/config";
+import { prezzoPianoTesto, NOTA_IVA } from "@/lib/prezzi";
+import { FaqList } from "@/components/faq-list";
 import { SeoHead } from "@/components/seo-head";
 import { RevealHeading } from "@/components/reveal-heading";
 import { StatsBar } from "@/components/stats-bar";
@@ -11,6 +12,9 @@ import { useAuth } from "@/hooks/use-auth";
 import { useLanguage } from "@/i18n/LanguageContext";
 import { BLOG_INDEX } from "@/data/blog-index";
 import { sectorLabel } from "@/data/seo-slugs";
+
+/** APP-1h (QuoteAI Phase 112): le domande che la home risolve, dalle stesse chiavi della pagina Contatti. */
+const HOME_FAQ = [1, 2, 3, 4] as const;
 
 function ScrollSection({
   children,
@@ -43,7 +47,7 @@ const TRADE_SLUGS = [
 
 export default function Home() {
   const { isSignedIn } = useAuth();
-  const { lang } = useLanguage();
+  const { lang, t } = useLanguage();
   const [, navigate] = useLocation();
 
   const tradeLabel = (slug: string) => sectorLabel(slug, lang);
@@ -84,7 +88,7 @@ export default function Home() {
               <button onClick={() => navigate(isSignedIn ? "/dashboard/new" : "/sign-up")} className="btn btn-white">
                 Inizia gratis
               </button>
-              <Link href="/#deep-dive" className="btn btn-outline-light">
+              <Link href="/#plans" className="btn btn-outline-light">
                 Vedi i piani
               </Link>
             </div>
@@ -133,48 +137,54 @@ export default function Home() {
           <div className="tiles">
             <Link href="#story-quotes" className="tile t-green">
               <h3>Preventivi AI</h3>
-              <p>
+              <p className="tile-short">Descrivi il lavoro, ricevi un preventivo con prezzi e IVA in 30 secondi.</p>
+              <p className="tile-long">
                 Descrivi il lavoro in italiano — o manda un vocale o una foto su WhatsApp — e ottieni in circa 30 secondi un preventivo con prezzi, logo, voci, quantità e IVA. Basato sul tuo listino, firmato online dal cliente.
               </p>
-              <span className="cta-link">Scopri di più <ArrowRight className="chev h-4 w-4" /></span>
+              <span className="cta-link tile-more">Scopri di più <ArrowRight className="chev h-4 w-4" /></span>
             </Link>
             <Link href="#story-jobs" className="tile t-purple">
               <h3>CRM e lead</h3>
-              <p>
+              <p className="tile-short">Ogni contatto in una pipeline, seguito fino alla firma.</p>
+              <p className="tile-long">
                 I contatti in arrivo finiscono in una pipeline kanban prima di diventare preventivi. Valutali, fai follow-up e portali alla firma senza un foglio Excel.
               </p>
-              <span className="cta-link">Scopri di più <ArrowRight className="chev h-4 w-4" /></span>
+              <span className="cta-link tile-more">Scopri di più <ArrowRight className="chev h-4 w-4" /></span>
             </Link>
             <Link href="#story-jobs" className="tile t-teal">
               <h3>Cantieri</h3>
-              <p>
+              <p className="tile-short">Un preventivo accettato diventa un cantiere: attività, squadra, budget.</p>
+              <p className="tile-long">
                 Un preventivo accettato diventa un cantiere: attività con scadenze, squadra assegnata, fornitori e budget a confronto con i costi reali — collegato al preventivo originale.
               </p>
-              <span className="cta-link">Scopri di più <ArrowRight className="chev h-4 w-4" /></span>
+              <span className="cta-link tile-more">Scopri di più <ArrowRight className="chev h-4 w-4" /></span>
             </Link>
             <Link href="#story-invoicing" className="tile t-yellow">
               <h3>Fatturazione e pagamenti</h3>
-              <p>
+              <p className="tile-short">Fatture dal preventivo, solleciti fino all'incasso.</p>
+              <p className="tile-long">
                 Le fatture nascono dai preventivi accettati o dai cantieri, con una pagina pubblica per il cliente. I solleciti partono da soli finché non incassi.
               </p>
-              <span className="cta-link">Scopri di più <ArrowRight className="chev h-4 w-4" /></span>
+              <span className="cta-link tile-more">Scopri di più <ArrowRight className="chev h-4 w-4" /></span>
             </Link>
             <Link href="#story-invoicing" className="tile t-green">
               <h3>Contratti e documenti</h3>
-              <p>
+              <p className="tile-short">Contratti firmati online, ogni documento in un archivio.</p>
+              <p className="tile-long">
                 I contratti d'appalto nascono dai preventivi accettati e dai cantieri. Ogni file, preventivo, cliente e fattura resta cercabile in un unico archivio — cestino incluso.
               </p>
-              <span className="cta-link">Scopri di più <ArrowRight className="chev h-4 w-4" /></span>
+              <span className="cta-link tile-more">Scopri di più <ArrowRight className="chev h-4 w-4" /></span>
             </Link>
             <Link href="#products" className="tile t-purple">
               <h3>Squadra, analisi e assistente</h3>
-              <p>
+              <p className="tile-short">Ruoli per la squadra, numeri per te, un assistente per tutti.</p>
+              <p className="tile-long">
                 Account multiutente con ruoli e inviti, dashboard su fatturato, tasso di chiusura e tempi di risposta, un assistente AI dentro la dashboard e l'importazione di listini e clienti esistenti.
               </p>
-              <span className="cta-link">Scopri di più <ArrowRight className="chev h-4 w-4" /></span>
+              <span className="cta-link tile-more">Scopri di più <ArrowRight className="chev h-4 w-4" /></span>
             </Link>
           </div>
-          <div className="also">
+          <div className="also hide-phone">
             <span className="lbl">Incluso anche</span>
             {(
               ["Preventivi da WhatsApp", "Firma elettronica", "Listino prezzi", "IVA 22/10/4 %", "Bonus e incentivi", "Ore degli operai", "Inviti alla squadra", "Import da Excel e PDF", "Documenti e archivio", "Assistente AI"]
@@ -189,7 +199,7 @@ export default function Home() {
       <ScrollSection className="sec soft">
         <div className="wrap">
           <div className="split" id="story-quotes">
-            <div className="split-media">
+            <div className="split-media hide-phone">
               <img src="https://picsum.photos/seed/prevai-contractor-onsite/980/686" alt={"Un artigiano che rivede un preventivo in cantiere"} loading="lazy" />
             </div>
             <div className="split-body">
@@ -204,7 +214,7 @@ export default function Home() {
             </div>
           </div>
           <div className="split rev" id="story-jobs">
-            <div className="split-media">
+            <div className="split-media hide-phone">
               <img src="https://picsum.photos/seed/prevai-team-jobsite/980/686" alt={"Una squadra al lavoro in cantiere"} loading="lazy" />
             </div>
             <div className="split-body">
@@ -219,7 +229,7 @@ export default function Home() {
             </div>
           </div>
           <div className="split" id="story-invoicing">
-            <div className="split-media">
+            <div className="split-media hide-phone">
               <img src="https://picsum.photos/seed/prevai-cafe-owner/980/686" alt={"Un titolare d'impresa che controlla una fattura"} loading="lazy" />
             </div>
             <div className="split-body">
@@ -237,7 +247,7 @@ export default function Home() {
       </ScrollSection>
 
       {/* ── WHATSAPP ───────────────────────────────────────── */}
-      <ScrollSection className="sec" id="whatsapp">
+      <ScrollSection className="sec hide-phone" id="whatsapp">
         <div className="wrap">
           <div className="split">
             <div>
@@ -251,7 +261,7 @@ export default function Home() {
                 Scopri la funzione completa <ArrowRight className="chev h-4 w-4" />
               </Link>
             </div>
-            <div className="split-media">
+            <div className="split-media hide-phone">
               <img src="https://picsum.photos/seed/prevai-whatsapp-phone/980/686" alt={"Un artigiano che manda un vocale dal telefono"} loading="lazy" />
             </div>
           </div>
@@ -276,7 +286,7 @@ export default function Home() {
       </ScrollSection>
 
       {/* ── CONFRONTO ──────────────────────────────────────── */}
-      <ScrollSection className="sec soft" id="comparison">
+      <ScrollSection className="sec soft hide-phone" id="comparison">
         <div className="wrap">
           <div className="sec-head">
             <div>
@@ -325,10 +335,10 @@ export default function Home() {
       </ScrollSection>
 
       {/* ── IMPATTO (numeri reali, contati dal vivo) ─────────── */}
-      <StatsBar />
+      <StatsBar className="hide-phone" />
 
       {/* ── NOVITÀ (articoli reali del blog) ──────────────────── */}
-      <ScrollSection className="sec" id="newsroom">
+      <ScrollSection className="sec hide-phone" id="newsroom">
         <div className="wrap">
           <div className="sec-head">
             <div>
@@ -359,8 +369,53 @@ export default function Home() {
       {/* ── RECENSIONI (testimonianze reali e verificate) ─────── */}
       <TestimonialsSection />
 
+      {/* ── PIANI (APP-1h: i prezzi prima che qualcuno debba cercarli) ── */}
+      <ScrollSection className="sec" id="plans">
+        <div className="wrap">
+          <div className="sec-head">
+            <div>
+              <span className="eyebrow grey">Prezzi</span>
+              <h2 className="h2">Un piano per ogni impresa</h2>
+            </div>
+            <p className="lead">
+              Sette giorni gratis, senza carta di credito. Prezzi {NOTA_IVA}, disdici quando vuoi.
+            </p>
+          </div>
+          <ul className="pt-list">
+            {PIANI_IN_ABBONAMENTO.map((id) => {
+              const piano = PREZZI_PIANI[id];
+              const popolare = id === "monthly_pro";
+              return (
+                <li key={id} className={`card pt-plan${popolare ? " is-popular" : ""}`}>
+                  <div className="pt-name">
+                    <h3>{piano.nome}</h3>
+                    {popolare && <span className="chip chip-teal">Il più scelto</span>}
+                  </div>
+                  <p className="pt-price">{formatPrezzo(piano.mensileCents)}<span>/mese</span></p>
+                  <p className="pt-quota">{piano.preventiviMese === null ? "Preventivi illimitati" : `${piano.preventiviMese} preventivi al mese`}</p>
+                </li>
+              );
+            })}
+          </ul>
+          <p className="pt-more">Annuale: due mesi gratis. Serve un solo preventivo? Lo paghi singolo, senza abbonamento.</p>
+        </div>
+      </ScrollSection>
+
+      {/* ── DOMANDE ──────────────────────────────────────── */}
+      <ScrollSection className="sec soft" id="faq">
+        <div className="wrap">
+          <div className="sec-head">
+            <div>
+              <span className="eyebrow grey">Domande</span>
+              <h2 className="h2">{t("contact.faqTitle")}</h2>
+            </div>
+          </div>
+          <FaqList items={HOME_FAQ.map((n) => ({ q: t(`contact.faq${n}Q`), a: t(`contact.faq${n}A`) }))} />
+        </div>
+      </ScrollSection>
+
       {/* ── GUIDE ──────────────────────────────────────────── */}
-      <ScrollSection className="sec" id="guides">
+      <ScrollSection className="sec hide-phone" id="guides">
         <div className="wrap">
           <div className="sec-head">
             <div>
@@ -399,7 +454,7 @@ export default function Home() {
           <div className="sec-head" style={{ justifyContent: "center", textAlign: "center", flexDirection: "column", alignItems: "center" }}>
             <span className="eyebrow grey">Copertura</span>
             <h2 className="h2">Preventivi per ogni mestiere e città</h2>
-            <p className="lead" style={{ marginInline: "auto" }}>
+            <p className="lead hide-phone" style={{ marginInline: "auto" }}>
               Diciotto mestieri con il loro vocabolario, incrociati con le principali città lombarde per le pagine locali — ognuna con l'aliquota IVA giusta applicata in automatico.
             </p>
           </div>
@@ -412,7 +467,7 @@ export default function Home() {
           </div>
         </div>
         <div className="wrap">
-          <div className="cov-note">
+          <div className="cov-note hide-phone">
             <span className="chip chip-green">18 mestieri</span>
             <span className="chip chip-teal">30 città</span>
             <span className="chip chip-grey">Bonus e incentivi</span>
@@ -422,7 +477,7 @@ export default function Home() {
       </ScrollSection>
 
       {/* ── APPROFONDIMENTO ────────────────────────────────── */}
-      <ScrollSection className="sec" id="deep-dive">
+      <ScrollSection className="sec hide-phone" id="deep-dive">
         <div className="wrap">
           <div className="split" style={{ paddingTop: 0 }}>
             <div>
@@ -475,7 +530,7 @@ export default function Home() {
                 Tutti i dati sono conservati su infrastruttura sicura e cifrata nell'Unione Europea, le sessioni sono protette da cookie cifrati e i pagamenti passano da Stripe. L'IVA segue le regole italiane: 22 % ordinaria, 10 % per manutenzione e ristrutturazione di abitazioni, 4 % per la prima casa, con le diciture di legge per reverse charge e regime forfettario. I tuoi preventivi restano tuoi: li scarichi quando vuoi.
               </p>
             </div>
-            <div className="card dd-card" id="plans">
+            <div className="card dd-card">
               <h3>Quanto costa iniziare</h3>
               <p>
                 La registrazione è gratuita e il primo preventivo si genera senza inserire la carta di credito. Da lì puoi scegliere: paghi un preventivo singolo quando serve, oppure attivi un abbonamento, mensile o annuale con due mesi gratis: Starter a {prezzoPianoTesto("monthly_starter")} con {PREZZI_PIANI.monthly_starter.preventiviMese} preventivi al mese, Pro a {prezzoPianoTesto("monthly_pro")} con {PREZZI_PIANI.monthly_pro.preventiviMese}, Elite a {prezzoPianoTesto("monthly_elite")} con preventivi illimitati, squadra, cantieri e integrazioni. Prezzi IVA inclusa. Disdici quando vuoi dalle impostazioni, senza penali.
@@ -494,7 +549,7 @@ export default function Home() {
           <span className="eyebrow on-dark">Inizia ora</span>
           <h2>Pronto a trasformare la tua attività?</h2>
           <p>
-            Unisciti a centinaia di artigiani e imprese italiane che risparmiano ore ogni settimana.
+            Descrivi il prossimo lavoro e invia il preventivo nello stesso minuto.
           </p>
           <div className="cta-actions">
             <button onClick={() => navigate(isSignedIn ? "/dashboard/new" : "/sign-up")} className="btn btn-white">
