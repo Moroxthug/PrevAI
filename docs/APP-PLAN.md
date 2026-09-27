@@ -28,6 +28,21 @@ L'app **non è un prodotto nuovo**: è PrevAI, nella stessa veste della dashboar
 - Le regole sui link verso l'acquisto esterno sono cambiate nel 2024–2025 (DMA nell'UE, sentenze negli USA). **Prima di APP-3 vanno rilette le linee guida in vigore** e annotato qui cosa si può mostrare in Italia (es. un link "Gestisci abbonamento sul sito").
 - **Costi fissi:** Apple Developer Program 99 $/anno (account **organizzazione**, serve il numero D-U-N-S dell'impresa, gratuito ma richiede giorni); Google Play 25 $ una tantum (account organizzazione con verifica d'identità). Servizio di build iOS nel cloud (D15): 0–100 €/mese a seconda del volume.
 
+## 3b. Senza Mac e senza iPhone (vincolo del titolare, 2026-09-27)
+
+Il titolare non ha dispositivi Apple. Non blocca nulla, cambia l'ordine: **Android prima, iPhone subito dopo**.
+
+| Serve | Senza Apple si fa così | Costo indicativo (da verificare in APP-0) |
+|---|---|---|
+| Compilare l'app iOS e caricarla su App Store Connect | Build nel cloud da GitHub: Codemagic (supporta Capacitor, ha un piano gratuito con minuti macOS), in alternativa Ionic Appflow o i runner macOS di GitHub Actions + fastlane | 0–100 €/mese |
+| Firma dell'app (certificati e profili) | Gestita dal servizio di build con la chiave API di App Store Connect: niente Xcode, niente portachiavi del Mac | incluso |
+| Provare l'app su un iPhone | iPhone veri da remoto (BrowserStack App Live o AWS Device Farm), usati dal browser, anche da Claude per le verifiche; poi **TestFlight** con le imprese pilota che hanno un iPhone | 30–40 €/mese solo nei mesi di test |
+| Iscrizione Apple Developer | Dal sito, come organizzazione con il D-U-N-S; la verifica in due passaggi dell'Apple ID via SMS su un numero qualsiasi (anche Android) | 99 $/anno |
+| Gestire l'app (scheda, revisione, TestFlight) | App Store Connect è un sito web, funziona da Windows | — |
+| Screenshot per lo store | Generati da Claude alle misure iPhone richieste da Apple (come per la fase 19) | — |
+
+Conseguenze sulle fasi: APP-3 fa prima il guscio **Android** (si prova sul telefono del titolare) e poi iOS con la build cloud; APP-5 usa TestFlight con le imprese pilota che hanno un iPhone; APP-6 pubblica prima su Google Play.
+
 ## 4. Requisiti che gli store impongono (e che oggi mancano)
 
 1. **Cancellazione dell'account dall'app** (Apple 5.1.1(v)) — oggi non c'è nemmeno sul sito. Serve anche per il GDPR art. 17. Si fa in APP-1, sul web, così vale per tutti.
@@ -61,8 +76,8 @@ L'app **non è un prodotto nuovo**: è PrevAI, nella stessa veste della dashboar
 - **Login con token** (plugin `bearer` di better-auth, già attivo sul server) salvato nel portachiavi sicuro del telefono, invece dei cookie.
 - API con indirizzo assoluto `https://prevai.it/api`, origine dell'app aggiunta a CORS e a `TRUSTED_ORIGINS`.
 - **Link universali:** `prevai.it/dashboard/...` e le notifiche aprono l'app nella schermata giusta (file `apple-app-site-association` e `assetlinks.json` su prevai.it).
-- Build iOS nel cloud (D15), perché sul PC Windows non si può compilare per iPhone.
-- **Fatto quando:** l'app gira su un iPhone e un Android veri (installazione di sviluppo), login, lista preventivi, creazione di un preventivo.
+- **Prima Android** (Android Studio o build Gradle su Windows, prova sul telefono del titolare), **poi iOS** con la build nel cloud (D15), perché il titolare non ha Mac né iPhone (§3b).
+- **Fatto quando:** l'app gira sull'Android del titolare e su un iPhone vero da remoto (BrowserStack) o via TestFlight: login, lista preventivi, creazione di un preventivo.
 
 ### APP-4 — Funzioni native (1½–2 sett)
 - **Fotocamera e galleria** nel composer (plugin Camera), con compressione prima dell'invio.
