@@ -84,6 +84,45 @@ export default function QuotesList() {
     return matchesSearch && matchesStatus;
   });
 
+  const actionsMenu = (id: string) => (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <button type="button" className="h-7 w-7 grid place-items-center rounded-md hover:bg-[var(--soft)] text-[var(--faint)]" aria-label={t("dashboard.quotesList.options")}>
+          {duplicatingId === id
+            ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            : <MoreVertical className="h-3.5 w-3.5" />}
+        </button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end">
+        <DropdownMenuItem asChild>
+          <Link href={`/dashboard/quotes/${id}`} className="cursor-pointer w-full flex items-center text-sm">
+            <Eye className="mr-2 h-3.5 w-3.5" /> {t("dashboard.quotesList.view")}
+          </Link>
+        </DropdownMenuItem>
+        <DropdownMenuItem
+          onClick={() => handleDuplicate(id)}
+          disabled={duplicatingId === id}
+          className="cursor-pointer text-sm"
+        >
+          <Copy className="mr-2 h-3.5 w-3.5" /> {t("dashboard.quotesList.duplicate")}
+        </DropdownMenuItem>
+        <DropdownMenuItem
+          onClick={() => handleArchive(id)}
+          className="cursor-pointer text-sm"
+        >
+          <Archive className="mr-2 h-3.5 w-3.5" /> {t("dashboard.quotesList.archive")}
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem
+          onClick={() => handleDelete(id)}
+          className="text-destructive focus:text-destructive cursor-pointer text-sm"
+        >
+          <Trash2 className="mr-2 h-3.5 w-3.5" /> {t("dashboard.quotesList.delete")}
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+
   return (
     <div className="animate-in fade-in duration-500">
       <div className="page-head">
@@ -94,7 +133,8 @@ export default function QuotesList() {
         <div className="head-actions">
           <Link href="/dashboard/new" className="btn btn-navy">
             <Plus className="h-4 w-4" />
-            {t("dashboard.quotesList.createFirstQuote")}
+            <span className="hidden sm:inline">{t("dashboard.quotesList.createFirstQuote")}</span>
+            <span className="sm:hidden">{t("dashboard.index.quickActions.newQuote")}</span>
           </Link>
         </div>
       </div>
@@ -147,7 +187,8 @@ export default function QuotesList() {
             )}
           </div>
         ) : (
-          <div className="tbl-wrap">
+          <>
+          <div className="tbl-wrap hidden sm:block">
             <table className="tbl">
               <thead>
                 <tr>
@@ -183,42 +224,7 @@ export default function QuotesList() {
                       </td>
                       <td onClick={e => e.stopPropagation()}>
                         <div className="flex items-center gap-1 justify-end">
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <button type="button" className="h-7 w-7 grid place-items-center rounded-md hover:bg-[var(--soft)] text-[var(--faint)]" aria-label={t("dashboard.quotesList.options")}>
-                                {duplicatingId === quote.id
-                                  ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                                  : <MoreVertical className="h-3.5 w-3.5" />}
-                              </button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuItem asChild>
-                                <Link href={`/dashboard/quotes/${quote.id}`} className="cursor-pointer w-full flex items-center text-sm">
-                                  <Eye className="mr-2 h-3.5 w-3.5" /> {t("dashboard.quotesList.view")}
-                                </Link>
-                              </DropdownMenuItem>
-                              <DropdownMenuItem
-                                onClick={() => handleDuplicate(quote.id)}
-                                disabled={duplicatingId === quote.id}
-                                className="cursor-pointer text-sm"
-                              >
-                                <Copy className="mr-2 h-3.5 w-3.5" /> {t("dashboard.quotesList.duplicate")}
-                              </DropdownMenuItem>
-                              <DropdownMenuItem
-                                onClick={() => handleArchive(quote.id)}
-                                className="cursor-pointer text-sm"
-                              >
-                                <Archive className="mr-2 h-3.5 w-3.5" /> {t("dashboard.quotesList.archive")}
-                              </DropdownMenuItem>
-                              <DropdownMenuSeparator />
-                              <DropdownMenuItem
-                                onClick={() => handleDelete(quote.id)}
-                                className="text-destructive focus:text-destructive cursor-pointer text-sm"
-                              >
-                                <Trash2 className="mr-2 h-3.5 w-3.5" /> {t("dashboard.quotesList.delete")}
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
+                          {actionsMenu(quote.id)}
                           <ChevronRight className="chev" style={{ color: "var(--faint)" }} />
                         </div>
                       </td>
@@ -228,6 +234,30 @@ export default function QuotesList() {
               </tbody>
             </table>
           </div>
+
+          {/* Phones: a stacked list instead of a table whose columns ran off-screen */}
+          <ul className="ql sm:hidden">
+            {filteredQuotes.map(quote => {
+              const chip = statusChip(quote.status, t);
+              return (
+                <li key={quote.id} {...rowLink(() => navigate(`/dashboard/quotes/${quote.id}`))} className="ql-row">
+                  <div className="ql-body">
+                    <p className="ql-client">{quote.clientData?.nome || t("dashboard.quotesList.clientNotSpecified")}</p>
+                    <p className="ql-desc">{quote.descrizioneGenerale || t("dashboard.quotesList.noDescription")}</p>
+                    <p className="ql-meta">
+                      {new Date(quote.createdAt).toLocaleDateString("it-IT")} · {quote.lineItemCount} {quote.lineItemCount === 1 ? t("dashboard.quotesList.lineItem") : t("dashboard.quotesList.lineItems")}
+                    </p>
+                  </div>
+                  <div className="ql-side">
+                    <span className="ql-amt">{quote.status === "draft" ? "—" : formatCurrency(quote.totale)}</span>
+                    <span className={cn("chip", chip.cls)}>{chip.label}</span>
+                  </div>
+                  <div className="ql-act" onClick={e => e.stopPropagation()}>{actionsMenu(quote.id)}</div>
+                </li>
+              );
+            })}
+          </ul>
+          </>
         )}
 
         {!isLoading && filteredQuotes.length > 0 && (

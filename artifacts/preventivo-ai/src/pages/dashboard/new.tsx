@@ -4,7 +4,7 @@ import { useCreateQuote, useGetBusinessProfile, useGetSubscription } from "@work
 import {
   Sparkles, ImagePlus, ArrowRight, Loader2,
   X, User, Lock, Bot, PencilLine, FileText, FileSpreadsheet,
-  LayoutTemplate, CheckCircle2, BookOpen, Plus
+  LayoutTemplate, CheckCircle2, BookOpen, Plus, ChevronDown, SlidersHorizontal
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
@@ -168,6 +168,9 @@ export default function NewQuote() {
   const [input, setInput] = useState("");
   const [templateId, setTemplateId] = useState<"standard" | "arosio" | "mariagrazia">("standard");
   const [targetTotalEur, setTargetTotalEur] = useState<string>("");
+  // Phones only: layout + target amount sit behind "Opzioni" so the job
+  // description is the first thing on screen. Desktop always shows them.
+  const [optionsOpen, setOptionsOpen] = useState(false);
   const [, setLocation] = useLocation();
   const createQuote = useCreateQuote();
   const { data: profile } = useGetBusinessProfile();
@@ -360,7 +363,7 @@ export default function NewQuote() {
       </div>
 
       {/* ── Tab switcher ── */}
-      <div className="pills" style={{ marginBottom: 16 }}>
+      <div className="pills new-tabs" style={{ marginBottom: 16 }}>
         <button type="button" onClick={() => setActiveTab("ai")} className={cn("pill", activeTab === "ai" && "on")}>
           <Bot /> {t("dashboard.new.tabAi")}
         </button>
@@ -374,7 +377,17 @@ export default function NewQuote() {
 
       {/* ══ AI TAB ══════════════════════════════════════════════════════════ */}
       {activeTab === "ai" && (
-        <div className="stack animate-in fade-in duration-200">
+        <div className="stack new-ai animate-in fade-in duration-200">
+          <div className={cn("new-opts", optionsOpen && "open")}>
+          <button type="button" className="card new-opts-toggle" aria-expanded={optionsOpen} onClick={() => setOptionsOpen(o => !o)}>
+            <SlidersHorizontal className="h-4 w-4" />
+            <span>
+              <b>{t("dashboard.new.options")}</b>
+              <span>{t("dashboard.new.optionsSummary")}</span>
+            </span>
+            <ChevronDown className="chev" />
+          </button>
+          <div className="new-opts-body stack">
           {/* Template selector */}
           <div>
             <span className="eyebrow flex items-center gap-2" style={{ fontSize: 11, marginBottom: 8 }}>
@@ -434,9 +447,11 @@ export default function NewQuote() {
               <span>{t("dashboard.new.taxIncl")}</span>
             </div>
           </div>
+          </div>
+          </div>
 
           {/* AI composer card */}
-          <div className="card composer">
+          <div className="card composer new-composer">
             {/* Photo strip */}
             {photos.length > 0 && (
               <div className="att-strip">
@@ -499,7 +514,8 @@ export default function NewQuote() {
               )}
 
               <span className="comp-ic"><Sparkles className="h-[18px] w-[18px]" /></span>
-              <input
+              <textarea
+                rows={1}
                 value={input}
                 onChange={e => setInput(e.target.value)}
                 onKeyDown={e => {
@@ -519,6 +535,7 @@ export default function NewQuote() {
               />
 
               <button type="button" onClick={handleAiSubmit} disabled={!canAiSubmit} className="comp-send" aria-label={t("dashboard.new.tabAi")}>
+                <span className="comp-send-lbl">{t("dashboard.composer.send")}</span>
                 {isAiSubmitting ? <Loader2 className="chev animate-spin" /> : <ArrowRight className="chev" />}
               </button>
             </div>

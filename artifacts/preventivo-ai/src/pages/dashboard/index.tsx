@@ -424,6 +424,8 @@ function DashboardComposer() {
 
   return (
     <section className={cn("card composer", isSubmitting && "busy")}>
+      <p className="comp-title">{t("dashboard.index.composer.title")}</p>
+
       {/* Photo strip */}
       {photos.length > 0 && (
         <div className="px-3 pt-3 flex gap-2 flex-wrap border-b border-border pb-3">
@@ -495,7 +497,8 @@ function DashboardComposer() {
           )}
         </div>
 
-        <input
+        <textarea
+          rows={1}
           value={input}
           onChange={e => setInput(e.target.value)}
           onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey && canSubmit) { e.preventDefault(); handleSubmit(); } }}
@@ -510,6 +513,7 @@ function DashboardComposer() {
         />
 
         <button onClick={handleSubmit} disabled={!canSubmit} aria-label={t("a11y.generateQuote")} className="comp-send">
+          <span className="comp-send-lbl">{t("dashboard.composer.send")}</span>
           {isSubmitting
             ? <Loader2 className="chev animate-spin" />
             : <ArrowRight className="chev" />
@@ -719,6 +723,17 @@ export default function DashboardHome() {
     { key: "avgValue" as const, label: t("dashboard.index.stat.avgValue"), icon: Sparkles, isCurrency: true },
   ];
 
+  // Rendered twice: in the header on desktop, above the KPI tiles on phones
+  // (the phone header keeps only the greeting so the composer comes first).
+  const periodSeg = (
+    <div className="seg" data-period={period} role="group" aria-label={t("a11y.reportingPeriod")}>
+      <button type="button" className="seg-b" onClick={() => setPeriod("m")}>{t("dashboard.index.period.month")}</button>
+      <button type="button" className="seg-b" onClick={() => setPeriod("q")}>{t("dashboard.index.period.quarter")}</button>
+      <button type="button" className="seg-b" onClick={() => setPeriod("y")}>{t("dashboard.index.period.year")}</button>
+      <span className="seg-thumb" />
+    </div>
+  );
+
   if (isLoadingStats) {
     return (
       <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -747,13 +762,8 @@ export default function DashboardHome() {
                 : t("dashboard.index.subtitleTotalQuotes").replace("{count}", String(stats?.total ?? 0))}
           </p>
         </div>
-        <div className="head-actions">
-          <div className="seg" data-period={period} role="group" aria-label={t("a11y.reportingPeriod")}>
-            <button type="button" className="seg-b" onClick={() => setPeriod("m")}>{t("dashboard.index.period.month")}</button>
-            <button type="button" className="seg-b" onClick={() => setPeriod("q")}>{t("dashboard.index.period.quarter")}</button>
-            <button type="button" className="seg-b" onClick={() => setPeriod("y")}>{t("dashboard.index.period.year")}</button>
-            <span className="seg-thumb" />
-          </div>
+        <div className="head-actions dash-head-actions">
+          {periodSeg}
           <Link href="/dashboard/new" className="btn btn-navy">
             <Plus className="h-4 w-4" />
             {t("dashboard.index.quickActions.newQuote")}
@@ -779,6 +789,7 @@ export default function DashboardHome() {
         </div>
       ) : (
         <>
+          <div className="dash-period-m">{periodSeg}</div>
           <section className="stat-grid" style={{ marginTop: 16 }}>
             {STAT_CARDS.map(({ key, label, icon: Icon, isCurrency }) => {
               const raw = periodStats.current[key];
@@ -790,7 +801,7 @@ export default function DashboardHome() {
                   <p className="val">{value}</p>
                   {pct !== null && (
                     <p className={cn("delta", pct === 0 && "flat", pct < 0 && "neg")}>
-                      {pct > 0 ? "+" : ""}{pct}% {t("dashboard.index.vsLastPeriod")}
+                      {pct > 0 ? "+" : ""}{pct}%<span className="delta-vs"> {t("dashboard.index.vsLastPeriod")}</span>
                     </p>
                   )}
                   <Icon className="sr-only" aria-hidden />
@@ -853,7 +864,7 @@ export default function DashboardHome() {
             </div>
 
             <div className="stack">
-              <div className="card">
+              <div className="card dash-chart">
                 <div className="card-head">
                   <div>
                     <h2>{t("dashboard.index.revenueByWeek.title")}</h2>
@@ -908,7 +919,7 @@ export default function DashboardHome() {
             </div>
           </section>
 
-          <section className="qa-grid">
+          <section className="qa-grid dash-qa">
             <Link href="/dashboard/new" className="card qa">
               <span className="qa-ic green"><Plus className="h-4 w-4" /></span>
               <span><b>{t("dashboard.index.quickActions.newQuote")}</b><span>{t("dashboard.index.qa.newQuote.desc")}</span></span>

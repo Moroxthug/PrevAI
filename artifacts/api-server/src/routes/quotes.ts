@@ -269,7 +269,15 @@ router.get("/quotes", requireAuth, async (req, res) => {
         province: quotesTable.province,
         clientData: quotesTable.clientData,
         descrizioneGenerale: quotesTable.descrizioneGenerale,
-        lineItemCount: sql<number>`coalesce(jsonb_array_length(${quotesTable.items}), 0)::int`,
+        // Italian quotes keep their lines inside chapters (capitoli[].voci),
+        // not in `items` — count both, or every such quote reads "0 voci".
+        lineItemCount: sql<number>`(
+          case when jsonb_typeof(${quotesTable.items}) = 'array' then jsonb_array_length(${quotesTable.items}) else 0 end
+          + coalesce((
+              select sum(case when jsonb_typeof(c->'voci') = 'array' then jsonb_array_length(c->'voci') else 0 end)
+              from jsonb_array_elements(case when jsonb_typeof(${quotesTable.capitoli}) = 'array' then ${quotesTable.capitoli} else '[]'::jsonb end) c
+            ), 0)
+        )::int`,
         subtotale: quotesTable.subtotale,
         ivaValore: quotesTable.ivaValore,
         totale: quotesTable.totale,

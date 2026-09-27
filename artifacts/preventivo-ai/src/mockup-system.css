@@ -1625,3 +1625,94 @@ button.chap-head:hover { background: var(--soft-2); }
 .help-note { display: flex; gap: 12px; align-items: flex-start; border: 1px solid var(--line); border-left: 3px solid var(--teal); background: var(--soft); border-radius: var(--radius-mk); padding: 16px 18px; margin: 28px 0; }
 .help-note svg { color: var(--teal); flex: none; margin-top: 3px; }
 .help-note p { margin: 0; font-size: 14px; color: var(--ink); line-height: 1.6; }
+
+/* ==========================================================
+   Phone pass (fase 19, 2026-09-27) — dashboard, quotes list,
+   new quote. Everything visual lives under max-width: 640px;
+   the rules above it only keep desktop identical (textarea in
+   place of the one-line input, phone-only bits hidden).
+   ========================================================== */
+.comp-row textarea { flex: 1; border: none; outline: none; resize: none; font: inherit; font-size: 15.5px; line-height: 1.45; color: var(--ink); min-width: 0; background: transparent; padding: 0; height: 22px; overflow: hidden; }
+.comp-row textarea::placeholder { color: var(--faint); }
+.composer .comp-row textarea:disabled { color: var(--faint); }
+.comp-title, .comp-send-lbl, .dash-period-m, .new-opts-toggle { display: none; }
+.new-opts-body { margin-top: 0 !important; }
+
+.ql { list-style: none; margin: 0; padding: 0; }
+.ql-row { display: flex; align-items: flex-start; gap: 10px; padding: 13px 14px 13px 16px; border-top: 1px solid var(--soft); cursor: pointer; }
+.ql-row:first-child { border-top: none; }
+.ql-row:active { background: #fafbfc; }
+.ql-body { flex: 1; min-width: 0; }
+.ql-client { font-size: 15px; font-weight: 700; color: var(--navy); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ql-desc { font-size: 13px; color: var(--muted-mk); font-weight: 600; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ql-meta { font-size: 12px; color: var(--faint); font-weight: 600; margin-top: 3px; }
+.ql-side { display: flex; flex-direction: column; align-items: flex-end; gap: 5px; flex: none; }
+.ql-amt { font-size: 14.5px; font-weight: 800; color: var(--navy); font-variant-numeric: tabular-nums; }
+.ql-side .chip { font-size: 11px; padding: 2px 8px; }
+.ql-act { flex: none; margin-right: -4px; }
+
+@media (max-width: 640px) {
+  /* type scale: the desktop clamp() floors were too big on a phone */
+  .page-head { margin-bottom: 14px; gap: 12px; }
+  .page-head h1 { font-size: 1.35rem; }
+  .page-head .sub { font-size: 13px; margin-top: 3px; }
+  .card-head { padding: 14px 16px; }
+  .card-head h2 { font-size: 15.5px; }
+  .card-foot { padding: 12px 16px; }
+
+  /* composer: the text field gets its own full-width row, icons + send below */
+  .comp-title { display: block; padding: 14px 16px 0; font-size: 15px; font-weight: 700; color: var(--navy); }
+  .comp-row { flex-wrap: wrap; gap: 8px; padding: 12px 14px 14px; }
+  .comp-row textarea { order: -1; flex: 1 1 100%; height: auto; min-height: 96px; overflow: auto; font-size: 16px; background: var(--soft); border-radius: 12px; padding: 12px 14px; }
+  .comp-row span.comp-ic { display: none; }
+  .comp-send { width: auto; height: 40px; border-radius: 999px; padding: 0 16px; margin-left: auto; display: inline-flex; gap: 6px; font-size: 14px; font-weight: 700; }
+  .comp-send-lbl { display: inline; }
+  .comp-client { padding: 12px 16px; }
+  .comp-hint { padding: 0 16px 10px; }
+  .comp-ex { padding: 10px 16px; }
+
+  /* dashboard: greeting, composer, compact KPIs, recents */
+  .dash-head-actions { display: none; }
+  .dash-period-m { display: block; margin-top: 18px; }
+  .dash-period-m .seg-b { padding: 6px 14px; font-size: 12.5px; }
+  .stat-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+  .dash-period-m + .stat-grid { margin-top: 10px !important; }
+  .stat-card { padding: 12px 14px; }
+  .stat-card .lbl { font-size: 12px; }
+  .stat-card .val { font-size: 1.2rem; margin: 3px 0 2px; }
+  .stat-card .delta { font-size: 11.5px; }
+  .delta-vs { display: none; }
+  .q-row { padding: 12px 16px; gap: 10px; }
+  .q-row .q-ic { display: none; }
+  .q-title { font-size: 14.5px; }
+  .q-amt { font-size: 14.5px; }
+  .dash-chart, .dash-qa { display: none; }
+
+  /* quotes list: search first and full width, filters on one scrolling line */
+  .toolbar { padding: 12px 14px; gap: 10px; }
+  .toolbar .search.sm { order: -1; width: 100%; margin-left: 0; }
+  .toolbar .search input { font-size: 16px; }
+  .toolbar .pills { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; margin: 0 -14px; padding: 0 14px; }
+  .toolbar .pills::-webkit-scrollbar { display: none; }
+  .toolbar .pill { flex: none; padding: 6px 13px; font-size: 13px; }
+
+  /* new quote: tabs as a segmented control, description first, options folded */
+  .new-tabs { display: flex; flex-wrap: nowrap; gap: 0; background: var(--soft); border-radius: 12px; padding: 3px; }
+  .new-tabs .pill { flex: 1; justify-content: center; border: none; background: transparent; padding: 8px 6px; font-size: 13px; border-radius: 9px; }
+  .new-tabs .pill.on { background: #fff; color: var(--navy); box-shadow: 0 1px 2px rgba(16, 16, 49, .08); }
+  .new-tabs .pill svg { display: none; }
+  .new-ai > * { order: 3; }
+  .new-ai > .new-composer { order: 1; }
+  .new-ai > :last-child { order: 2; }
+  .new-opts-toggle { display: flex; align-items: center; gap: 12px; width: 100%; padding: 13px 16px; text-align: left; color: var(--muted-mk); }
+  .new-opts-toggle b { display: block; font-size: 14.5px; color: var(--navy); }
+  .new-opts-toggle span span { display: block; font-size: 12.5px; font-weight: 600; color: var(--faint); }
+  .new-opts-toggle .chev { margin-left: auto; width: 14px; height: 14px; transition: transform .25s; }
+  .new-opts.open .new-opts-toggle .chev { transform: rotate(180deg); }
+  .new-opts-body { display: none; }
+  .new-opts.open .new-opts-body { display: flex; margin-top: 10px !important; }
+  .new-opts .src-grid { gap: 8px; }
+  .new-opts .src { padding: 12px 14px; }
+  .new-opts .src p { margin-bottom: 0; }
+  .new-opts .field.inline { padding: 12px 14px !important; flex-wrap: wrap; }
+}
