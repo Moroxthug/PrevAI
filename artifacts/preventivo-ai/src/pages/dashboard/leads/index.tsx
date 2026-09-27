@@ -1,4 +1,5 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useLocation, useSearch } from "wouter";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { formatDistanceToNow } from "date-fns";
 import { it } from "date-fns/locale";
@@ -22,6 +23,14 @@ export default function LeadsListPage() {
   const { data, isLoading } = useQuery({ queryKey: ["leads"], queryFn: () => leadsApi.list() });
   const [search, setSearch] = useState("");
   const [createOpen, setCreateOpen] = useState(false);
+  // APP-1: il + del telefono apre questo modulo con ?new=1 (poi lo toglie, così Indietro non lo riapre).
+  const query = useSearch();
+  const [, navigate] = useLocation();
+  useEffect(() => {
+    if (new URLSearchParams(query).get("new") !== "1") return;
+    setCreateOpen(true);
+    navigate("/dashboard/leads", { replace: true });
+  }, [query, navigate]);
   const [form, setForm] = useState({ name: "", email: "", phone: "", notes: "" });
   const [dragOverCol, setDragOverCol] = useState<LeadStatus | null>(null);
   const [draggingId, setDraggingId] = useState<string | null>(null);

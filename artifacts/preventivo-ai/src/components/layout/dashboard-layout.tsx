@@ -1,14 +1,14 @@
 import { statoOffertaLocale } from "@/lib/addons-api";
 import "@/i18n/dashboard";
 import { Link, useLocation } from "wouter";
-import { LayoutDashboard, FileText, Landmark, Menu, BarChart3, Settings, ChevronLeft, ChevronRight, Plus, LogOut, User, CreditCard, Building2, ChevronDown, BookOpen, Users, Receipt, Briefcase, FolderOpen, FileSignature, HardHat, Sparkles, Check, Target, UploadCloud, Search, Archive, PiggyBank, UserRound } from "lucide-react";
+import { LayoutDashboard, FileText, Landmark, BarChart3, Settings, ChevronLeft, ChevronRight, Plus, LogOut, User, CreditCard, Building2, ChevronDown, BookOpen, Users, Receipt, Briefcase, FolderOpen, FileSignature, HardHat, Sparkles, Check, Target, UploadCloud, Search, Archive, PiggyBank, UserRound } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { teamMembersApi } from "@/lib/team-members-api";
 import { securityApi } from "@/lib/security-api";
 import { TwoFactorGate } from "@/pages/dashboard/settings-security-tab";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { CommandDialog, CommandInput, CommandList, CommandEmpty, CommandGroup, CommandItem, CommandShortcut } from "@/components/ui/command";
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { Logo } from "@/components/logo";
 import { useGetSubscription, useGetBusinessProfile } from "@workspace/api-client-react";
@@ -17,6 +17,9 @@ import { useAuth } from "@/hooks/use-auth";
 import { authClient } from "@/lib/auth-client";
 import { useLanguage } from "@/i18n/LanguageContext";
 import { NotificationsBell } from "@/components/notifications-bell";
+import { useMediaQuery } from "@/hooks/use-media-query";
+import { MobileHeaderProvider, MobilePageHeader } from "@/components/mobile/mobile-page-header";
+import { PhoneNewButton, PhoneTabBar } from "@/components/layout/phone-nav";
 
 /** Section groupings for the sidebar rail — purely presentational, doesn't affect routing or access. */
 const NAV_GROUPS = ["overview", "sales", "delivery", "insights", "workspace"] as const;
@@ -52,54 +55,28 @@ function useNavItems() {
   ].map(item => ({ ...item, label: t(item.labelKey), groupLabel: t(`dashboard.nav.group.${item.group}`) }));
 }
 
+/** Pages that are not in the sidebar but still need a name in the phone top bar. */
+const EXTRA_TITLES: Record<string, string> = {
+  "/dashboard/new": "dashboard.nav.newQuote",
+  "/dashboard/profile": "dashboard.account.companyProfile",
+  "/dashboard/billing": "dashboard.account.planBilling",
+  "/dashboard/notifications": "notifications.title",
+};
+
 /**
- * Attaches touch listeners to a div ref and calls `onClose` when the user
- * swipes left. Only fires when horizontal movement dominates (|dx| > |dy| * 1.5)
- * so vertical scrolling inside the drawer is never blocked.
+ * APP-1 (da QuoteAI Phase 100): the phone top bar’s back target — the screen
+ * one level up (/dashboard/quotes/:id → /dashboard/quotes). Section roots
+ * have none; the bottom tabs are how you move between sections.
  */
-function useSwipeToClose(enabled: boolean, onClose: () => void) {
-  const ref = useRef<HTMLDivElement>(null);
-  const startX = useRef(0);
-  const startY = useRef(0);
-  const onCloseRef = useRef(onClose);
-  onCloseRef.current = onClose;
+function parentOf(location: string): string | null {
+  const segs = location.split("/").filter(Boolean);
+  if (segs[0] !== "dashboard" || segs.length < 3) return null;
+  return "/" + segs.slice(0, -1).join("/");
+}
 
-  useEffect(() => {
-    if (!enabled) return;
-    const el = ref.current;
-    if (!el) return;
-
-    function onTouchStart(e: TouchEvent) {
-      startX.current = e.touches[0]!.clientX;
-      startY.current = e.touches[0]!.clientY;
-    }
-
-    function onTouchEnd(e: TouchEvent) {
-      const dx = e.changedTouches[0]!.clientX - startX.current;
-      const dy = e.changedTouches[0]!.clientY - startY.current;
-      // Swipe left: at least 50px, and clearly more horizontal than vertical
-      if (dx < -50 && Math.abs(dx) > Math.abs(dy) * 1.5) {
-        onCloseRef.current();
-      }
-    }
-
-    function onTouchCancel() {
-      // Reset gesture state if the OS interrupts the touch (e.g. incoming call on iOS)
-      startX.current = 0;
-      startY.current = 0;
-    }
-
-    el.addEventListener("touchstart", onTouchStart, { passive: true });
-    el.addEventListener("touchend", onTouchEnd, { passive: true });
-    el.addEventListener("touchcancel", onTouchCancel, { passive: true });
-    return () => {
-      el.removeEventListener("touchstart", onTouchStart);
-      el.removeEventListener("touchend", onTouchEnd);
-      el.removeEventListener("touchcancel", onTouchCancel);
-    };
-  }, [enabled]);
-
-  return ref;
+async function signOut() {
+  await authClient.signOut();
+  window.location.href = "/";
 }
 
 function isActive(navHref: string, location: string, exact: boolean) {
@@ -135,11 +112,6 @@ function OrgSwitcherItems() {
 function AccountMenu({ trigger }: { trigger: React.ReactNode }) {
   const { t } = useLanguage();
 
-  async function handleSignOut() {
-    await authClient.signOut();
-    window.location.href = "/";
-  }
-
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>{trigger}</DropdownMenuTrigger>
@@ -161,7 +133,7 @@ function AccountMenu({ trigger }: { trigger: React.ReactNode }) {
           </Link>
         </DropdownMenuItem>
         <DropdownMenuSeparator />
-        <DropdownMenuItem onClick={handleSignOut} className="cursor-pointer text-red-600 focus:text-red-600 gap-2">
+        <DropdownMenuItem onClick={signOut} className="cursor-pointer text-red-600 focus:text-red-600 gap-2">
           <LogOut className="h-3.5 w-3.5" /> {t("dashboard.account.signOut")}
         </DropdownMenuItem>
       </DropdownMenuContent>
@@ -232,9 +204,10 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
   const { t } = useLanguage();
   const { isLoaded, isSignedIn, isError, user } = useAuth();
   const [location] = useLocation();
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const closeMenu = useCallback(() => setIsMobileMenuOpen(false), []);
-  const swipeRef = useSwipeToClose(isMobileMenuOpen, closeMenu);
+  // APP-1 (da QuoteAI Phase 101): at 980 px and below the sidebar is gone (CSS)
+  // and the phone tabs + the Altro sheet take over — the hamburger drawer they
+  // replace hid twenty links two taps away.
+  const phoneNav = useMediaQuery("(max-width: 980px)");
   const [isCollapsed, setIsCollapsed] = useState(() => {
     try { return localStorage.getItem("sidebar-collapsed") === "true"; } catch { return false; }
   });
@@ -257,29 +230,28 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
 
   // Every dashboard route used to keep the marketing homepage <title> (Phase 66):
   // name the tab after the section the user is in.
-  const navLabelsKey = allNavItems.map((item) => item.label).join("|"); // useNavItems returns a fresh array each render
+  const sectionOf = (path: string) => {
+    // The home is "Oggi" on the phone tab bar; the top bar and the browser tab say the same.
+    if (path === "/dashboard") return t("mobile.nav.today");
+    const extra = Object.keys(EXTRA_TITLES).find((p) => path === p || path.startsWith(p + "/"));
+    if (extra) return t(EXTRA_TITLES[extra]!);
+    return allNavItems
+      .filter((item) => (item.exact ? path === item.href : path === item.href || path.startsWith(item.href + "/") || path.startsWith(item.href + "?")))
+      .sort((a, b) => b.href.length - a.href.length)[0]?.label;
+  };
+  const sectionLabel = sectionOf(location);
+  const backHref = parentOf(location);
   useEffect(() => {
-    const section = allNavItems
-      .filter((item) => (item.exact ? location === item.href : location.startsWith(item.href)))
-      .sort((a, b) => b.href.length - a.href.length)[0];
     const previous = document.title;
-    document.title = section ? `${section.label} · PrevAI` : "PrevAI";
+    document.title = sectionLabel ? `${sectionLabel} · PrevAI` : "PrevAI";
     return () => {
       document.title = previous;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [location, navLabelsKey]);
+  }, [sectionLabel]);
 
   useEffect(() => {
     try { localStorage.setItem("sidebar-collapsed", String(isCollapsed)); } catch {}
   }, [isCollapsed]);
-
-  // Lock body scroll while the mobile drawer is open.
-  useEffect(() => {
-    if (!isMobileMenuOpen) return;
-    document.body.style.overflow = "hidden";
-    return () => { document.body.style.overflow = ""; };
-  }, [isMobileMenuOpen]);
 
   if (!isLoaded) {
     return (
@@ -327,7 +299,6 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
             <Link
               key={item.href}
               href={item.href}
-              onClick={closeMenu}
               className={cn("sb-link", active && "active")}
               title={item.label}
             >
@@ -345,12 +316,13 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
   );
 
   return (
+    <MobileHeaderProvider>
     <div className={cn("app", isCollapsed && "rail")}>
-      {/* Sidebar (desktop: rail-collapsible; mobile: slide-in drawer) */}
-      <aside ref={swipeRef} className={cn("sidebar", isMobileMenuOpen && "open")} aria-label={t("dashboard.nav.navMenu")}>
+      {/* Sidebar (desktop, rail-collapsible; display: none at 980 px and below — PhoneTabBar instead) */}
+      <aside className="sidebar" aria-label={t("dashboard.nav.navMenu")}>
         <div className="sb-top">
           <span className="sb-mark">q</span>
-          <Link href="/dashboard" className="sb-logo" onClick={closeMenu}>
+          <Link href="/dashboard" className="sb-logo">
             <Logo style={{ height: 28 }} />
           </Link>
           <button
@@ -363,7 +335,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
           </button>
         </div>
 
-        <Link href="/dashboard/new" onClick={closeMenu} className="btn btn-white sb-new">
+        <Link href="/dashboard/new" className="btn btn-white sb-new">
           <Plus className="ic" style={{ width: 16, height: 16 }} />
           <span className="btn-txt">{t("dashboard.nav.newQuote")}</span>
         </Link>
@@ -387,16 +359,14 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
         </div>
       </aside>
 
-      {isMobileMenuOpen && <div className="scrim show" onClick={closeMenu} />}
-
       {/* Main column */}
       <div className="main">
         <header className="topbar">
-          <button type="button" className="tb-menu" onClick={() => setIsMobileMenuOpen(true)} aria-label={t("dashboard.nav.toggleMenu")}>
-            <Menu className="ic" style={{ width: 22, height: 22 }} />
-          </button>
+          <MobilePageHeader title={sectionLabel ?? "PrevAI"} backHref={backHref} backLabel={backHref ? sectionOf(backHref.split("?")[0]!) : undefined} />
           <QuickSearch navItems={NAV_ITEMS} />
           <div className="tb-right">
+            {phoneNav && <PhoneNewButton hasJobs={NAV_ITEMS.some((i) => i.href === "/dashboard/jobs")} />}
+            {/* On a phone both live in Altro (its tab carries the unread count). */}
             <NotificationsBell variant="topbar" side="bottom" align="end" />
             <AccountMenu trigger={<button className="tb-avatar" type="button" aria-label={name}>{initials || <User className="h-3.5 w-3.5" />}</button>} />
           </div>
@@ -404,6 +374,13 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
 
         <main className="content">{twoFactorGated ? <TwoFactorGate /> : children}</main>
       </div>
+      {phoneNav && (
+        <PhoneTabBar
+          navItems={NAV_ITEMS}
+          moreProps={{ navItems: NAV_ITEMS, name, email, avatar: initials || <User className="h-3.5 w-3.5" />, canBilling: true, onSignOut: signOut }}
+        />
+      )}
     </div>
+    </MobileHeaderProvider>
   );
 }

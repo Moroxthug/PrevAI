@@ -24,6 +24,12 @@ async function fetchNotifications(): Promise<{ items: NotificationItem[]; unread
   return res.json();
 }
 
+/** APP-1: the unread count on its own, for the phone More tab (same query, so one request). */
+export function useUnreadNotifications(): number {
+  const { data } = useQuery({ queryKey: QUERY_KEY, queryFn: fetchNotifications, refetchInterval: 60_000, staleTime: 30_000 });
+  return data?.unread ?? 0;
+}
+
 /**
  * Notifications entry point — a `.bell` icon button in the topbar, or a
  * `.sb-link`-styled trigger in the sidebar's bottom block — both open the
