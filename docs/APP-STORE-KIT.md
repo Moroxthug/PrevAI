@@ -8,7 +8,7 @@ Preparato il 27/9/2026, prima che esista l'app nativa: qui c'è tutto ciò che s
 | # | Serve | Riga del piano | Perché blocca |
 |---|---|---|---|
 | 1 | Decisioni D12–D16 e account Apple Developer (organizzazione, D-U-N-S) e Google Play Console | 15 (APP-0) | senza account non esiste una scheda |
-| 2 | **Cancellazione dell'account dentro l'app** | 23 (APP-1c) | Apple 5.1.1(v) la vuole *nell'app*; la guida web del §4 basta a Google, non ad Apple |
+| 2 | ~~Cancellazione dell'account dentro l'app~~ ✅ 27/9/2026 | 23 (APP-1c) | fatta: Impostazioni → Il tuo accesso → Elimina account (password + ELIMINA, 30 giorni di grazia). In produzione serve la migrazione 0010 (RUNBOOKS §13), senza la quale il pulsante rimanda a privacy@prevai.it |
 | 3 | Guscio nativo Android e iOS (Capacitor) | 18 (APP-3) | è il binario che si carica |
 | 4 | Funzioni native (foto, condivisione PDF, push) | 19 (APP-4) | senza, Apple tende a rifiutare con la 4.2 "funzionalità minima" (app = sito impacchettato) |
 | 5 | Beta di due settimane con le imprese pilota | 20 b (APP-5) | "fatto quando" di APP-5; Google chiede comunque un test chiuso prima della produzione per gli account sviluppatore nuovi (verificare le regole in vigore all'apertura dell'account) |
@@ -22,6 +22,7 @@ Due regole da rispettare già in APP-3, perché cambiano le risposte dei §6–7
 
 | Pezzo | Dove |
 |---|---|
+| **Cancellazione dell'account in autonomia** (APP-1c): Impostazioni → Il tuo accesso → Elimina account; avviso in cima alla dashboard durante i 30 giorni | `pages/dashboard/settings/delete-account.tsx`, API `/api/account/deletion`, cron, RUNBOOKS §13 |
 | Guida pubblica **"Cancellare l'account e i dati"** (link di eliminazione richiesto da Google Play) | `/help/delete-account/` — `src/data/help-articles.ts`, anche nella sitemap e nel bot di supporto |
 | Privacy Policy aggiornata: dati d'uso dell'app, "Segnala un problema", Sentry fra i destinatari, link alla guida di cancellazione | `/privacy/` — `src/pages/privacy-policy.tsx` |
 | Registro dei trattamenti v1.4 (T4 comprende eventi e segnalazioni dell'app) | `docs/compliance/REGISTRO-TRATTAMENTI.md` |
@@ -154,10 +155,10 @@ Try: "Preventivi" tab → open "Laura Rossi" (accepted quote) or tap "+" → "Nu
 Native features: camera for job-site photos and receipts, share sheet for the quote PDF, push notifications when a customer opens or accepts a quote.
 
 Accounts and subscriptions are managed on our website (multiplatform service, guideline 3.1.3(b)); the app does not sell or link to any purchase.
-Account deletion: Altro → Impostazioni → Account → Elimina account.
+Account deletion: Altro → Impostazioni → Il tuo accesso → Elimina account (type ELIMINA + password; the account is deleted after a 30-day grace period and the deletion can be cancelled until then).
 ```
 
-Il percorso della cancellazione va corretto quando APP-1c (riga 23) decide dove sta il pulsante; le funzioni native citate devono esserci davvero nella build inviata (APP-4).
+Il percorso della cancellazione è quello vero (APP-1c, 27/9/2026). Le funzioni native citate devono esserci davvero nella build inviata (APP-4).
 
 ## 9. Screenshot e grafica
 

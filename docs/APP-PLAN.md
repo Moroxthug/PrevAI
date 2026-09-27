@@ -68,7 +68,7 @@ Conseguenze sulle fasi: APP-3 fa prima il guscio **Android** (si prova sul telef
 ### APP-1, diviso (aggiunto il 2026-09-27)
 Il design di riferimento è quello dell'app di QuoteAI (`design/stitch*`, `docs/MOBILE-RULES.md`, Phase 100–113), nello stile navy/Figtree della dashboard. **APP-1a** (riga 16) è fatta: pezzi da telefono, schede in basso, foglio Altro, tasto +, home "Oggi".
 - **APP-1b** (riga 22) — Impostazioni come in QuoteAI 102: elenco raggruppato come prima schermata, ogni sezione una pagina con ‹, niente salvataggio a ogni modifica ma una barra "Modifiche non salvate — Annulla / Salva". App collegate come catalogo (103).
-- **APP-1c** (riga 23) — Cancellazione dell'account (vedi sopra).
+- **APP-1c** (riga 23) — Cancellazione dell'account (vedi sopra). ✅ 27/9/2026: Impostazioni → Il tuo accesso → Elimina account; flusso e guasti in RUNBOOKS §13; in produzione serve la migrazione 0010.
 - **APP-1d … APP-1h** (righe 24–28) — Le pagine con i pezzi nuovi: una sola azione principale in basso (`StickyActionBar`), le altre nel foglio ⋯, tabelle che diventano righe sotto i 640 px, numeri in striscia, schede a scorrimento. Ordine: preventivi, cantieri, soldi e persone, squadra e resto, cliente e sito pubblico.
 - **APP-1i** (riga 29) — Le regole mobile di `qa:visual` diventano bloccanti. Qui APP-1 è chiusa.
 

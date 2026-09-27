@@ -22,6 +22,7 @@ import { MobileHeaderProvider, MobilePageHeader } from "@/components/mobile/mobi
 import { PhoneNewButton, PhoneTabBar } from "@/components/layout/phone-nav";
 import { FeedbackSheet } from "@/components/feedback-sheet";
 import { trackAppOpenOncePerDay } from "@/lib/app-beta";
+import { AccountDeletionBanner } from "@/pages/dashboard/settings/delete-account";
 
 /** Section groupings for the sidebar rail — purely presentational, doesn't affect routing or access. */
 const NAV_GROUPS = ["overview", "sales", "delivery", "insights", "workspace"] as const;
@@ -385,7 +386,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
           </div>
         </header>
 
-        <main className="content">{twoFactorGated ? <TwoFactorGate /> : children}</main>
+        <main className="content">{twoFactorGated ? <TwoFactorGate /> : <>{isSignedIn && <AccountDeletionBanner />}{children}</>}</main>
       </div>
       {phoneNav && (
         <PhoneTabBar

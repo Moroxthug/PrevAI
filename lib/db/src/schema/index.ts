@@ -38,3 +38,4 @@ export * from "./primanota";
 export * from "./addons";
 export * from "./commercialista";
 export * from "./app-beta";
+export * from "./account-deletions";

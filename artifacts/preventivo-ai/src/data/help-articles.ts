@@ -338,36 +338,38 @@ export const HELP_ARTICLES: HelpArticle[] = [
     ],
   },
   // APP-6: è anche il "link per l'eliminazione dell'account" che Google Play
-  // chiede nella scheda dell'app (docs/APP-STORE-KIT.md §4). Quando arriva la
-  // cancellazione in autonomia (APP-1c, riga 23) i passi vanno riscritti.
+  // chiede nella scheda dell'app (docs/APP-STORE-KIT.md §4). APP-1c (riga 23):
+  // la cancellazione si fa da sé, da Impostazioni → Il tuo accesso.
   {
     slug: "delete-account",
     category: "start",
     title: { it: "Cancellare l'account e i dati" },
     summary: {
-      it: "Come chiedere la cancellazione del tuo account PrevAI (sito e app), cosa cancelliamo, cosa la legge ci obbliga a conservare e per quanto.",
+      it: "Come cancellare il tuo account PrevAI (sito e app) da Impostazioni, cosa cancelliamo, cosa la legge ci obbliga a conservare e per quanto.",
     },
     updatedAt: "2026-09-27",
     readingTimeMin: 2,
     blocks: [
-      p("Puoi chiedere in qualsiasi momento di cancellare il tuo account PrevAI e i dati collegati. Vale per il sito e per l'app sul telefono: è lo stesso account."),
-      h("Come chiederlo"),
+      p("Puoi cancellare in qualsiasi momento il tuo account PrevAI e i dati collegati, da solo. Vale per il sito e per l'app sul telefono: è lo stesso account."),
+      h("Come si fa"),
       steps([
-        "Se hai un abbonamento, disdicilo da Impostazioni → Piano e fatturazione → Gestisci abbonamento, così non ci sono altri addebiti.",
         "Se vuoi tenere una copia dei tuoi dati, scaricala prima: i PDF di preventivi, contratti e fatture e i CSV dalle rispettive pagine.",
-        "Scrivi a privacy@prevai.it dall'indirizzo email con cui accedi a PrevAI, con oggetto \"Cancellazione account\". Se scrivi da un altro indirizzo ti chiediamo una conferma da quello dell'account.",
-        "Ti rispondiamo per confermare e completiamo la cancellazione entro 30 giorni dalla richiesta.",
+        "Apri Impostazioni → Il tuo accesso (sul telefono: Altro → Impostazioni → Il tuo accesso) e premi \"Elimina account\".",
+        "Scrivi ELIMINA, inserisci la tua password e conferma. Ti mandiamo un'email con la data della cancellazione.",
+        "Da quel momento gli abbonamenti a PrevAI non si rinnovano più e gli altri dispositivi escono dall'account.",
+        "Dopo 30 giorni cancelliamo tutto. Fino ad allora puoi entrare, scaricare i documenti e premere \"Annulla la cancellazione\"; una settimana prima ti mandiamo un promemoria.",
       ]),
+      note("Non riesci a entrare? Scrivi a privacy@prevai.it dall'indirizzo email con cui accedi, con oggetto \"Cancellazione account\": la facciamo noi entro 30 giorni."),
       h("Cosa cancelliamo"),
       bullets([
         "L'account di accesso: nome, email, password, sessioni e impostazioni di sicurezza.",
-        "Il profilo aziendale, il listino, la rubrica clienti, i lead, i cantieri con foto e note, le bozze e i preventivi mai accettati.",
+        "Il profilo aziendale, il listino, la rubrica clienti, i lead, i cantieri con foto e note, tutti i preventivi e i loro PDF, i contratti mai firmati e le fatture rimaste in bozza.",
         "I collegamenti alle integrazioni (Gmail, calendari, WhatsApp, Stripe), i loro token e le chiavi API.",
         "Gli eventi d'uso e le segnalazioni inviate dall'app.",
       ]),
       h("Cosa dobbiamo conservare"),
-      p("La legge ci obbliga a tenere alcuni documenti anche dopo la cancellazione: i contratti firmati e le fatture per 10 anni (art. 2220 c.c. e norme fiscali), e le fatture del tuo abbonamento a PrevAI per 10 anni. Restano in archivio, non sono più visibili né usati per altro, e vengono cancellati alla scadenza. I log tecnici si cancellano da soli dopo 90 giorni."),
-      note("Se fai parte della squadra di un'impresa, il tuo accesso lo rimuove il titolare da Squadra (Rimuovi); i documenti dell'impresa restano suoi. Se sei il titolare, cancellare l'account cancella i dati dell'impresa per tutta la squadra."),
+      p("La legge ci obbliga a tenere alcuni documenti anche dopo la cancellazione: i contratti firmati, le fatture emesse e le fatture elettroniche inviate o ricevute, per 10 anni (art. 2220 c.c. e norme fiscali), e le fatture del tuo abbonamento a PrevAI per 10 anni. Restano in archivio, non sono più visibili né usati per altro, e vengono cancellati alla scadenza. I log tecnici si cancellano da soli dopo 90 giorni."),
+      note("Se fai parte della squadra di un'impresa, cancellare il tuo account cancella solo il tuo accesso: i documenti dell'impresa restano suoi (anche il titolare può toglierti da Squadra → Rimuovi). Se sei il titolare, cancellare l'account cancella i dati dell'impresa per tutta la squadra, che lo vede segnalato in cima alla dashboard durante i 30 giorni."),
     ],
   },
 ];

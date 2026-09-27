@@ -2174,6 +2174,14 @@ a.ny-row:hover .ny-pill, .ny-act:hover { border-color: var(--navy); }
 .app-note { border-top: 1px solid var(--soft); }
 .app-danger { color: var(--red); border-color: var(--red); }
 .app-danger:hover { background: var(--red-t); }
+/* APP-1c: Elimina account (finestra di conferma) e avviso in cima alla dashboard durante i 30 giorni. */
+.del-acc-text p { margin: 0 0 8px; }
+.del-acc-text a { color: var(--navy); font-weight: 700; text-decoration: underline; }
+.del-acc-form { display: contents; }
+.del-acc-fields { gap: 12px; }
+.del-acc-fields .field label { margin-bottom: 5px; }
+.del-acc-error { margin: 0; font-size: 13.5px; font-weight: 700; color: var(--red); }
+.del-acc-banner { margin-bottom: 16px; }
 .app-log { display: flex; flex-direction: column; }
 .app-log li { display: flex; align-items: center; gap: 12px; padding: 12px 20px; border-top: 1px solid var(--soft); }
 .app-log li:first-child { border-top: 0; }

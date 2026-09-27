@@ -541,7 +541,50 @@ Nessuna nuova. Le segnalazioni usano `sendOpsAlert` (`OPS_ALERT_EMAIL` o `ADMIN_
 
 - `/dashboard/admin` → **Beta app**: uso per impresa e per superficie, segnalazioni.
 - Sentry: tag `surface` (`web`, `pwa`, `android`, `ios`) e `viewport` su ogni errore del browser.
-- Cancellazione dati: le due tabelle hanno `user_id` (l'impresa), quindi la pulizia per impresa (e2e, futura cancellazione account APP-1c) le copre come le altre.
+- Cancellazione dati: le due tabelle hanno `user_id` (l'impresa), quindi la pulizia per impresa (e2e, cancellazione account APP-1c, §13) le copre come le altre.
+
+## 13. Cancellazione dell'account in autonomia (APP-1c, riga 23)
+
+Apple 5.1.1(v) e GDPR art. 17. Codice: `artifacts/api-server/src/account/deletion.ts` (servizio), `routes/account.ts` (API), `pages/dashboard/settings/delete-account.tsx` (pagina e avviso). Guida pubblica: `/help/delete-account/`.
+
+### 13.1 Come funziona
+
+1. **Richiesta** — Impostazioni → Il tuo accesso → Elimina account: scrivere ELIMINA + password (`auth.api.verifyPassword`, 5 tentativi ogni 15 min). Nasce una riga `account_deletions` in stato `in_attesa` con `scheduled_for` = +30 giorni. Subito: abbonamenti Stripe del cliente (piano e add-on) in `cancel_at_period_end` (gli id toccati restano in `stripe_subscriptions`), altre sessioni della persona chiuse, email di conferma con link per annullare, evento `account.deletion_requested` nel registro di sicurezza. L'account resta usabile (per scaricare i documenti); in cima alla dashboard un avviso rosso, e per la squadra del titolare un avviso giallo con la data.
+2. **Annullamento** — pulsante "Annulla la cancellazione": riga `annullata`, rinnovi Stripe ripristinati (solo quelli toccati dalla richiesta), email.
+3. **Promemoria** — il cron quotidiano manda un'email 7 giorni prima.
+4. **Cancellazione** — il cron, a scadenza: abbonamenti Stripe ancora vivi chiusi subito (il cliente Stripe resta: fatture di PrevAI, 10 anni); in **una transazione** tutte le righe con `user_id` = persona, tranne i documenti da conservare (sotto); `organization_members` dove è titolare o membro; `auth_user` (sessioni, password, 2FA e collegamenti per cascata). Poi i file nello storage `<cartella>/<userId>` di logos, receipts, documents, quietanze, imports, job-photos, quote-pdfs, capitolato-pdfs, commercialista (entrambi i bucket). La riga diventa `completata`, l'email si svuota (resta `email_hash`), `summary` conta righe cancellate e conservate. Email finale.
+5. **Fine conservazione** — il cron, passato `retain_until` (31/12 dell'anno + 10), cancella anche i documenti conservati e le cartelle contracts/invoices/sdi, e segna `retention_cleared_at`.
+
+**Si conservano** (art. 2220 c.c. e norme fiscali): `contracts` firmati (con firmatari ed eventi), `invoices` non in bozza (con pagamenti ed eventi), `e_invoices` non in bozza, `supplier_e_invoices`; nello storage contracts/, invoices/, sdi/. Non si vedono più da nessuna parte: l'account che li possedeva non esiste.
+
+**Chi si cancella:** sempre la persona (actor), non l'impresa in cui lavora. Un membro della squadra cancella il suo accesso e le sue appartenenze; il titolare anche l'impresa e la squadra perde l'accesso. Un commercialista con incarichi di altre imprese riceve 409 e viene rimandato a privacy@prevai.it (le pratiche vanno passate a mano a un collega).
+
+### 13.2 Migrazione 0010
+
+`migrations/v2/0010_app1c_cancellazione.sql`: una tabella nuova e vuota (`account_deletions`, la persona sta in `subject_user_id` e non in `user_id`, così la cancellazione non si porta via la prova), nessuna colonna su tabelle esistenti, idempotente. Staging: rieseguita senza effetti. In produzione come le altre (§5.3, porta 5432, stesso `sslmode`), dopo la 0009:
+
+```bash
+"$PG/psql.exe" "$URL" -v ON_ERROR_STOP=1 -1 -f migrations/v2/0010_app1c_cancellazione.sql   # APP-1c: cancellazione account
+```
+
+Senza la tabella tutto è inerte: `GET /api/account/deletion` risponde `available: false`, la pagina mostra "scrivi a privacy@prevai.it" (il percorso manuale di prima), POST risponde 503, il cron salta (`accountDeletions.skipped` nel risultato del tick). Ordine rispetto al deploy: indifferente.
+
+### 13.3 Quando qualcosa va storto
+
+- **Cancellazione fallita** — resta `in_attesa` con `attempts` e `last_error`; il tick di domani riprova (è una transazione: o tutto o niente). Dal terzo tentativo arriva un avviso ops "Cancellazione account bloccata". Leggere `last_error`: di solito una FK senza cascata aggiunta da una tabella nuova → aggiungere la cascata o l'ordine, non cancellare a mano pezzi a caso.
+- **"Rinnovi Stripe non fermati"** (avviso alla richiesta) — Stripe non ha risposto: la disdetta vera avviene comunque a 30 giorni. Se nel frattempo c'è un rinnovo, rimborsarlo dal pannello Stripe e mettere a mano "Annulla alla fine del periodo".
+- **"File non cancellati"** (avviso a cancellazione fatta) — cancellare a mano da Supabase Storage le cartelle `<cartella>/<userId>` elencate nell'avviso; i dati del database sono già andati.
+- **Richiesta per email** (chi non riesce a entrare) — verificare che scriva dall'email dell'account, poi creare la richiesta a mano:
+
+```sql
+insert into account_deletions (subject_user_id, owns_org, email, email_hash, scheduled_for)
+select u.id, exists(select 1 from business_profiles b where b.user_id = u.id), u.email,
+       encode(sha256(lower(u.email)::bytea), 'hex'), now()
+from auth_user u where lower(u.email) = lower('<email>');
+```
+
+  (`scheduled_for = now()` perché la persona ha già chiesto: la cancella il prossimo tick. Gli abbonamenti Stripe vengono chiusi lì.)
+- **Verifica "avete cancellato i miei dati?"** — `select stato, completed_at, summary from account_deletions where email_hash = encode(sha256(lower('<email>')::bytea), 'hex');`
 
 
 ---
