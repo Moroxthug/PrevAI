@@ -31,6 +31,13 @@ describe("host canonico", () => {
     expect(js).toMatch(new RegExp(`apiBaseUrl:[\\w$]+="${MARKET.siteUrl.replace(/\./g, "\\.")}"`));
   });
 
+  test("init() riporta sull'apex un apiBaseUrl www passato dal sito dell'impresa", () => {
+    // abduledilizia.it passa apiBaseUrl "https://www.prevai.it" dal proprio bundle.
+    const js = readFileSync(WIDGET_JS, "utf8");
+    const init = js.slice(js.indexOf("init:"), js.indexOf("window.PrevAiWidget"));
+    expect(init).toContain(String.raw`replace(/^https?:\/\/www\.prevai\.it(?=\/|$)/i,"${MARKET.siteUrl}")`);
+  });
+
   test("i vecchi URL /seo/* di v1 portano a /preventivi/*, prima della barra finale", () => {
     const cfg = JSON.parse(readFileSync(VERCEL_JSON, "utf8")) as { redirects?: Redirect[] };
     const redirects = cfg.redirects ?? [];
