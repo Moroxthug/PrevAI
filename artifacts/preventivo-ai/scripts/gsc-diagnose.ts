@@ -7,9 +7,9 @@ const KEY_PATH = path.join(__dirname, "google-indexing-key.json");
 const SITE_URL = "https://prevai.it/";
 
 const urls = [
-  "https://prevai.it/preventivi/condizionatori/",
-  "https://prevai.it/preventivi/imbianchino/monza/",
-  "https://prevai.it/preventivi/edilizia/brescia/",
+  "https://prevai.it/quotes/air-conditioning-installer/",
+  "https://prevai.it/quotes/painter/monza/",
+  "https://prevai.it/quotes/general-contractor/brescia/",
   "https://prevai.it/blog/privacy/",
   "https://prevai.it/privacy/",
   "https://prevai.it/chi-siamo/",

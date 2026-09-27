@@ -1,23 +1,93 @@
 import type { Request, Response, NextFunction } from "express";
 import { fromNodeHeaders } from "better-auth/node";
 import { auth } from "../lib/auth";
+import { db, businessProfilesTable, organizationMembersTable, type TeamMemberRole } from "@workspace/db";
+import { and, asc, eq } from "drizzle-orm";
 
 declare global {
   namespace Express {
     interface Locals {
+      /** The acting org id — an owner's own userId, or the org they're an active member of. Every existing tenant-scoped query keys off this. */
       userId: string;
+      /** The real logged-in person, regardless of which org they're acting as. Use for audit trails and permission checks. */
+      actorUserId: string;
+      /** The actor's role within the acting org ("owner" when acting as themselves). */
+      actorRole: TeamMemberRole;
       userEmail: string;
       userName: string;
+      /** A-0: the acting org's 2FA policy and whether the actor satisfies it. */
+      twoFactorRequired: boolean;
+      twoFactorEnabled: boolean;
     }
   }
 }
 
-// Generico su P: se restasse fisso al default di Request, TypeScript
-// unificherebbe il tipo di req.params sull'intera catena di handler al
-// valore più generico (string | string[]) ogni volta che questo middleware
-// precede un handler con parametri di rotta letterali (es.
-// router.get("/foo/:id", requireAuth, (req) => req.params.id)), nascondendo
-// il tipo reale inferito dalla stringa di rotta.
+/** Cookie holding the acting org id across requests, so switching orgs doesn't require re-login. */
+export const ACTIVE_ORG_COOKIE = "qai_active_org";
+
+function readCookie(req: { headers: { cookie?: string } }, name: string): string | null {
+  const header = req.headers.cookie;
+  if (!header) return null;
+  for (const part of header.split(";")) {
+    const eq = part.indexOf("=");
+    if (eq === -1) continue;
+    const key = part.slice(0, eq).trim();
+    if (key === name) {
+      try {
+        return decodeURIComponent(part.slice(eq + 1).trim());
+      } catch {
+        return null;
+      }
+    }
+  }
+  return null;
+}
+
+/**
+ * Resolves which org a logged-in person is acting as. Order of precedence:
+ * 1. An explicit active-org cookie, if the actor has an active membership there.
+ * 2. Their own business profile (they're an owner) — the default/most common case.
+ * 3. Their oldest active membership, if they don't own a profile themselves.
+ * 4. Fall back to their own id (brand-new signup, no profile row yet).
+ */
+export async function resolveActingOrg(actorId: string, cookieOrgId: string | null): Promise<{ orgId: string; role: TeamMemberRole; twoFactorRequired: boolean }> {
+  if (cookieOrgId && cookieOrgId !== actorId) {
+    const [membership] = await db
+      .select()
+      .from(organizationMembersTable)
+      .where(and(eq(organizationMembersTable.userId, actorId), eq(organizationMembersTable.ownerId, cookieOrgId), eq(organizationMembersTable.status, "active")));
+    if (membership) return { orgId: cookieOrgId, role: membership.role, twoFactorRequired: await orgRequiresTwoFactor(cookieOrgId) };
+  }
+
+  const [profile] = await db.select({ userId: businessProfilesTable.userId, twoFactorRequired: businessProfilesTable.twoFactorRequired }).from(businessProfilesTable).where(eq(businessProfilesTable.userId, actorId));
+  if (profile) return { orgId: actorId, role: "owner", twoFactorRequired: profile.twoFactorRequired };
+
+  const [membership] = await db
+    .select()
+    .from(organizationMembersTable)
+    .where(and(eq(organizationMembersTable.userId, actorId), eq(organizationMembersTable.status, "active")))
+    .orderBy(asc(organizationMembersTable.joinedAt))
+    .limit(1);
+  if (membership) return { orgId: membership.ownerId, role: membership.role, twoFactorRequired: await orgRequiresTwoFactor(membership.ownerId) };
+
+  return { orgId: actorId, role: "owner", twoFactorRequired: false };
+}
+
+async function orgRequiresTwoFactor(orgId: string): Promise<boolean> {
+  const [row] = await db.select({ twoFactorRequired: businessProfilesTable.twoFactorRequired }).from(businessProfilesTable).where(eq(businessProfilesTable.userId, orgId));
+  return row?.twoFactorRequired ?? false;
+}
+
+/**
+ * A-0: the only authenticated routes reachable while the org's 2FA policy is
+ * unmet — what the dashboard gate needs to explain the block and let the user
+ * enrol (better-auth's own /api/auth/* endpoints are not behind requireAuth).
+ */
+const TWO_FACTOR_EXEMPT = new Set(["GET /api/security/policy", "GET /api/business-profile", "GET /api/team/orgs", "POST /api/team/switch"]);
+
+export const TWO_FACTOR_REQUIRED_ERROR = "two_factor_required";
+const TWO_FACTOR_REQUIRED_MESSAGE = "Questa organizzazione richiede la verifica in due passaggi. Attivala in Impostazioni → Sicurezza.";
+
 export async function requireAuth<P = Record<string, string>>(req: Request<P>, res: Response, next: NextFunction): Promise<void> {
   try {
     const session = await auth.api.getSession({ headers: fromNodeHeaders(req.headers) });
@@ -25,9 +95,19 @@ export async function requireAuth<P = Record<string, string>>(req: Request<P>, r
       res.status(401).json({ error: "Unauthorized" });
       return;
     }
-    res.locals.userId = session.user.id;
+    const cookieOrgId = readCookie(req, ACTIVE_ORG_COOKIE);
+    const { orgId, role, twoFactorRequired } = await resolveActingOrg(session.user.id, cookieOrgId);
+    res.locals.userId = orgId;
+    res.locals.actorUserId = session.user.id;
+    res.locals.actorRole = role;
     res.locals.userEmail = session.user.email;
     res.locals.userName = session.user.name;
+    res.locals.twoFactorRequired = twoFactorRequired;
+    res.locals.twoFactorEnabled = Boolean((session.user as { twoFactorEnabled?: boolean }).twoFactorEnabled);
+    if (twoFactorRequired && !res.locals.twoFactorEnabled && !TWO_FACTOR_EXEMPT.has(`${req.method} ${req.baseUrl}${req.path}`)) {
+      res.status(403).json({ error: TWO_FACTOR_REQUIRED_ERROR, message: TWO_FACTOR_REQUIRED_MESSAGE });
+      return;
+    }
     next();
   } catch {
     res.status(401).json({ error: "Unauthorized" });
@@ -37,11 +117,15 @@ export async function requireAuth<P = Record<string, string>>(req: Request<P>, r
 export function getUserId(res: Response): string {
   return res.locals.userId;
 }
-
+export function getActorUserId(res: Response): string {
+  return res.locals.actorUserId;
+}
+export function getActorRole(res: Response): TeamMemberRole {
+  return res.locals.actorRole;
+}
 export function getUserEmail(res: Response): string {
   return res.locals.userEmail ?? "";
 }
-
 export function getUserName(res: Response): string {
   return res.locals.userName ?? "";
 }

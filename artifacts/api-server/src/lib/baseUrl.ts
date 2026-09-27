@@ -2,7 +2,7 @@
  * Returns the public base URL for this app.
  *
  * Priority:
- *  1. PREVAI_BASE_URL env var (explicit override, e.g. https://www.prevai.it)
+ *  1. PREVAI_BASE_URL env var (explicit override, e.g. https://prevai.it)
  *  2. VERCEL_PROJECT_PRODUCTION_URL (Vercel production URL)
  *  3. VERCEL_URL (Vercel preview URL)
  *  4. http://localhost:5000 (local dev)

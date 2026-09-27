@@ -1,11 +1,10 @@
 import { Router } from "express";
 import multer from "multer";
 import { requireAuth, getUserId } from "../middlewares/authMiddleware";
-import type { Response } from "express";
+import { requirePermission } from "../middlewares/requirePermission.js";
 import { db, priceCatalogItemsTable, quotesTable } from "@workspace/db";
-import { eq, desc, and } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 import type { QuoteChapter } from "@workspace/db";
-import { logger } from "../lib/logger.js";
 import { openai } from "@workspace/integrations-openai-ai-server";
 import { extractFromPdf, extractFromDocx, extractFromXlsx } from "../lib/extractDocument.js";
 import { userRateLimiter } from "../lib/rateLimit.js";
@@ -27,14 +26,14 @@ const catalogOcrUpload = multer({
     if (OCR_ALLOWED_MIMES.includes(file.mimetype)) {
       cb(null, true);
     } else {
-      cb(new Error(`Formato non supportato: ${file.mimetype}. Usa JPG, PNG, WEBP, HEIC, PDF, DOCX o XLSX.`));
+      cb(new Error(`Unsupported format: ${file.mimetype}. Use JPG, PNG, WEBP, HEIC, PDF, DOCX, or XLSX.`));
     }
   },
 });
 
-// Import del listino via OCR è un'operazione occasionale (non ripetuta a
-// ogni preventivo come la generazione AI), quindi un tetto orario più basso
-// basta a contenere i costi senza intralciare l'uso normale.
+// Importing the price list via OCR is an occasional operation (not repeated
+// for every quote like AI generation), so a lower hourly cap is enough to
+// contain costs without getting in the way of normal use.
 const catalogOcrLimiter = userRateLimiter({
   windowMs: 60 * 60 * 1000,
   max: 15,
@@ -88,7 +87,7 @@ router.get("/catalog", requireAuth, async (req, res) => {
   }
 });
 
-router.post("/catalog", requireAuth, async (req, res) => {
+router.post("/catalog", requireAuth, requirePermission("quotes", "edit"), async (req, res) => {
   try {
     const userId = getUserId(res);
     const { nome, categoria, um, prezzoUnitario, note } = req.body as {
@@ -100,7 +99,7 @@ router.post("/catalog", requireAuth, async (req, res) => {
     };
 
     if (!nome || !um || prezzoUnitario === undefined) {
-      res.status(400).json({ error: "nome, um e prezzoUnitario sono obbligatori" });
+      res.status(400).json({ error: "nome, um, and prezzoUnitario are required" });
       return;
     }
 
@@ -123,7 +122,7 @@ router.post("/catalog", requireAuth, async (req, res) => {
   }
 });
 
-router.post("/catalog/bulk", requireAuth, async (req, res) => {
+router.post("/catalog/bulk", requireAuth, requirePermission("quotes", "edit"), async (req, res) => {
   try {
     const userId = getUserId(res);
     const items = req.body as Array<{
@@ -167,7 +166,7 @@ router.post("/catalog/bulk", requireAuth, async (req, res) => {
 });
 
 
-router.post("/catalog/import-from-quotes", requireAuth, async (req, res) => {
+router.post("/catalog/import-from-quotes", requireAuth, requirePermission("quotes", "edit"), async (req, res) => {
   try {
     const userId = getUserId(res);
 
@@ -236,21 +235,22 @@ router.post("/catalog/import-from-quotes", requireAuth, async (req, res) => {
   }
 });
 
-// POST /api/catalog/import-ocr — legge una foto o un documento del listino
-// dell'utente e ne estrae le voci via AI. Restituisce solo un'ANTEPRIMA:
-// l'inserimento vero avviene con una chiamata separata a POST /catalog/bulk
-// dopo che l'utente ha rivisto/corretto le voci, per evitare che un errore
-// di lettura OCR inquini silenziosamente il listino.
+// POST /api/catalog/import-ocr — reads a photo or document of the user's
+// price list and extracts the items via AI. Returns only a PREVIEW:
+// the actual insert happens via a separate call to POST /catalog/bulk
+// after the user has reviewed/corrected the items, so an OCR reading
+// error doesn't silently pollute the price list.
 router.post(
   "/catalog/import-ocr",
   requireAuth,
+  requirePermission("quotes", "edit"),
   catalogOcrLimiter,
   catalogOcrUpload.array("files", 3),
   async (req, res) => {
     try {
       const uploadedFiles = (req.files as Express.Multer.File[]) ?? [];
       if (uploadedFiles.length === 0) {
-        res.status(400).json({ error: "Carica almeno una foto o un documento del listino." });
+        res.status(400).json({ error: "Upload at least one photo or document of your price list." });
         return;
       }
 
@@ -272,12 +272,12 @@ router.post(
 
       const hasImages = imageDataUrls.length > 0;
       if (!hasImages && docTexts.length === 0) {
-        res.status(422).json({ error: "Non è stato possibile leggere alcun contenuto dai file caricati." });
+        res.status(422).json({ error: "Impossibile leggere contenuto dai file caricati." });
         return;
       }
 
       const userText = docTexts.length > 0
-        ? `Testo estratto dal/dai documento/i caricato/i:\n\n${docTexts.join("\n\n")}`
+        ? `Testo estratto dai documenti caricati:\n\n${docTexts.join("\n\n")}`
         : "Estrai il listino prezzi dalle immagini allegate.";
 
       const targetModel = hasImages ? "gpt-4o" : "gpt-4o-mini";
@@ -309,7 +309,7 @@ router.post(
         parsedItems = Array.isArray(parsed) ? parsed : (Array.isArray(parsed?.items) ? parsed.items : []);
       } catch (err) {
         req.log.error({ err, content }, "Failed to parse OCR catalog JSON");
-        res.status(422).json({ error: "L'AI non è riuscita a leggere un listino da questi file. Prova con una foto più nitida." });
+        res.status(422).json({ error: "The AI couldn't read a price list from these files. Try a clearer photo." });
         return;
       }
 
@@ -325,7 +325,7 @@ router.post(
         }));
 
       if (items.length === 0) {
-        res.status(422).json({ error: "Nessuna voce con prezzo leggibile trovata in questi file." });
+        res.status(422).json({ error: "No item with a readable price was found in these files." });
         return;
       }
 
@@ -337,7 +337,7 @@ router.post(
   }
 );
 
-router.put("/catalog/:id", requireAuth, async (req, res) => {
+router.put("/catalog/:id", requireAuth, requirePermission("quotes", "edit"), async (req, res) => {
   try {
     const userId = getUserId(res);
     const id = String(req.params.id);
@@ -355,6 +355,10 @@ router.put("/catalog/:id", requireAuth, async (req, res) => {
     if (um !== undefined) updates.um = um.trim();
     if (prezzoUnitario !== undefined) updates.prezzoUnitario = String(prezzoUnitario);
     if (note !== undefined) updates.note = note?.trim() || null;
+    if (Object.keys(updates).length === 0) {
+      res.status(400).json({ error: "Nothing to update" }); // drizzle throws on an empty set()
+      return;
+    }
 
     const [updated] = await db
       .update(priceCatalogItemsTable)
@@ -363,7 +367,7 @@ router.put("/catalog/:id", requireAuth, async (req, res) => {
       .returning();
 
     if (!updated) {
-      res.status(404).json({ error: "Voce non trovata" });
+      res.status(404).json({ error: "Item not found" });
       return;
     }
 
@@ -374,7 +378,7 @@ router.put("/catalog/:id", requireAuth, async (req, res) => {
   }
 });
 
-router.delete("/catalog/:id", requireAuth, async (req, res) => {
+router.delete("/catalog/:id", requireAuth, requirePermission("quotes", "edit"), async (req, res) => {
   try {
     const userId = getUserId(res);
     const id = String(req.params.id);
@@ -385,7 +389,7 @@ router.delete("/catalog/:id", requireAuth, async (req, res) => {
       .returning();
 
     if (deleted.length === 0) {
-      res.status(404).json({ error: "Voce non trovata" });
+      res.status(404).json({ error: "Item not found" });
       return;
     }
 

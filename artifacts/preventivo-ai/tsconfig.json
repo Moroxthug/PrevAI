@@ -16,7 +16,13 @@
   },
   "references": [
     {
+      "path": "../../lib/config"
+    },
+    {
       "path": "../../lib/api-client-react"
+    },
+    {
+      "path": "../../lib/error-reporting"
     },
     {
       "path": "../../lib/integrations-openai-ai-react"

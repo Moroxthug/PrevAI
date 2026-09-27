@@ -1,4 +1,5 @@
 import { Helmet } from "react-helmet-async";
+import { MARKET } from "@workspace/config";
 
 interface JsonLdSchema {
   "@context": string;
@@ -18,13 +19,17 @@ interface SeoHeadProps {
   twitterCard?: "summary" | "summary_large_image" | "app" | "player";
   jsonLd?: JsonLdSchema[];
   noIndex?: boolean;
+  /** V2-2: sito monolingua, sempre "it-IT". Conservato per compatibilità dei call site. */
+  lang?: "it-IT";
+  /** Non più usato (nessuna versione in altra lingua). */
+  frCanonical?: string;
 }
 
 export function SeoHead({
   title,
   description,
   canonical,
-  ogImage = "https://prevai.it/opengraph.jpg",
+  ogImage = `${MARKET.siteUrl}/opengraph.jpg`,
   noIndex = false,
   ogTitle,
   ogDescription,
@@ -33,17 +38,21 @@ export function SeoHead({
   twitterCard = "summary_large_image",
   jsonLd = [],
 }: SeoHeadProps) {
-  const resolvedOgImage = ogImage.startsWith("http") ? ogImage : `https://prevai.it${ogImage}`;
+  const resolvedOgImage = ogImage.startsWith("http") ? ogImage : `${MARKET.siteUrl}${ogImage}`;
   const resolvedOgTitle = ogTitle ?? title;
   const resolvedOgDescription = ogDescription ?? description;
   const resolvedOgUrl = ogUrl ?? canonical;
 
   return (
-    <Helmet>
+    <Helmet htmlAttributes={{ lang: "it" }}>
       <title>{title}</title>
       <meta name="description" content={description} />
       {canonical && <link rel="canonical" href={canonical} />}
       {noIndex && <meta name="robots" content="noindex, nofollow" />}
+
+      {/* hreflang: solo it-IT (PREVAI-V2-PLAN §4 V2-6 "hreflang solo it-IT") */}
+      {canonical && <link rel="alternate" hrefLang="it-IT" href={canonical} />}
+      {canonical && <link rel="alternate" hrefLang="x-default" href={canonical} />}
 
       <meta property="og:title" content={resolvedOgTitle} />
       <meta property="og:description" content={resolvedOgDescription} />
@@ -53,7 +62,7 @@ export function SeoHead({
       <meta property="og:image:height" content="630" />
       <meta property="og:type" content={ogType} />
       <meta property="og:locale" content="it_IT" />
-      <meta property="og:site_name" content="prevai" />
+      <meta property="og:site_name" content={MARKET.brand} />
 
       <meta name="twitter:card" content={twitterCard} />
       <meta name="twitter:title" content={resolvedOgTitle} />

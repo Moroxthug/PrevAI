@@ -1,0 +1,183 @@
+import { importo, quantita } from "@workspace/db";
+import type { AnagraficaFatturaPa, FatturaPaInput, SedeFatturaPa } from "./types.js";
+
+// ── A-1: serializzazione FatturaPA 1.2.2 ─────────────────────────────────────
+// Scritta a mano, senza librerie: il tracciato è una sequenza rigida (l'ordine
+// degli elementi fa parte dello schema, invertirne due vale uno scarto 00200)
+// e un generatore generico non aiuterebbe. Il file NON è firmato qui: la firma
+// elettronica e la trasmissione le fa l'intermediario accreditato.
+//
+// Specifiche: "Rappresentazione tabellare del tracciato FatturaPA" v1.9,
+// schema Schema_del_file_xml_FatturaPA_versione_1.2.2.xsd.
+
+const NS_P = "http://ivaservizi.agenziaentrate.gov.it/docs/xsd/fatture/v1.2";
+const XSD = "http://www.fatturapa.gov.it/export/fatturazione/sdi/fatturapa/v1.2.2/Schema_del_file_xml_FatturaPA_versione_1.2.2.xsd";
+
+/**
+ * Il tracciato ammette solo Latin-1 stampabile: via i caratteri di controllo.
+ * La classe è costruita da stringa perché, scritta come letterale, conterrebbe
+ * tabulazione verticale e avanzamento pagina: caratteri che i linter rifiutano
+ * e che un copia-incolla distruggerebbe.
+ */
+// eslint-disable-next-line no-control-regex -- è esattamente lo scopo: toglierli.
+const CARATTERI_DI_CONTROLLO = new RegExp("[\\u0000-\\u0008\\u000B\\u000C\\u000E-\\u001F\\u007F]", "g");
+
+export function testoXml(value: string): string {
+  return value
+    .replace(CARATTERI_DI_CONTROLLO, " ")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&apos;")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+/** Tronca rispettando il limite del campo (Descrizione 1000, Denominazione 80, …). */
+export function campo(value: string | null | undefined, max: number): string {
+  return testoXml(value ?? "").slice(0, max);
+}
+
+type Nodo = string | null;
+
+const el = (nome: string, valore: string | number | null | undefined): Nodo =>
+  valore === null || valore === undefined || valore === "" ? null : `<${nome}>${valore}</${nome}>`;
+
+const gruppo = (nome: string, figli: Nodo[]): Nodo => {
+  const dentro = figli.filter((n): n is string => n !== null);
+  return dentro.length === 0 ? null : `<${nome}>${dentro.join("")}</${nome}>`;
+};
+
+function anagrafica(a: AnagraficaFatturaPa): Nodo {
+  if (a.denominazione) return gruppo("Anagrafica", [el("Denominazione", campo(a.denominazione, 80))]);
+  return gruppo("Anagrafica", [el("Nome", campo(a.nome, 60)), el("Cognome", campo(a.cognome, 60))]);
+}
+
+function sede(nome: string, s: SedeFatturaPa): Nodo {
+  return gruppo(nome, [
+    el("Indirizzo", campo(s.indirizzo, 60)),
+    el("NumeroCivico", campo(s.numeroCivico, 8)),
+    el("CAP", campo(s.cap, 5)),
+    el("Comune", campo(s.comune, 60)),
+    el("Provincia", campo(s.provincia, 2).toUpperCase() || null),
+    el("Nazione", campo(s.nazione, 2).toUpperCase()),
+  ]);
+}
+
+function idFiscaleIva(nome: string, paese: string | null | undefined, codice: string | null | undefined): Nodo {
+  if (!codice) return null;
+  return gruppo(nome, [el("IdPaese", campo(paese ?? "IT", 2).toUpperCase()), el("IdCodice", campo(codice, 28))]);
+}
+
+/** L'XML pronto per l'intermediario (non firmato, senza dichiarazione stand-alone). */
+export function buildFatturaPaXml(input: FatturaPaInput): string {
+  const header = gruppo("FatturaElettronicaHeader", [
+    gruppo("DatiTrasmissione", [
+      idFiscaleIva("IdTrasmittente", input.trasmittente.paese, input.trasmittente.codice),
+      el("ProgressivoInvio", campo(input.progressivoInvio, 10)),
+      el("FormatoTrasmissione", input.formatoTrasmissione),
+      el("CodiceDestinatario", campo(input.codiceDestinatario, 7).toUpperCase()),
+      // La PEC si indica solo quando il destinatario non ha un codice proprio.
+      input.codiceDestinatario === "0000000" ? el("PECDestinatario", campo(input.pecDestinatario, 256)) : null,
+    ]),
+    gruppo("CedentePrestatore", [
+      gruppo("DatiAnagrafici", [
+        idFiscaleIva("IdFiscaleIVA", input.cedente.paese, input.cedente.partitaIva),
+        el("CodiceFiscale", campo(input.cedente.codiceFiscale, 16)),
+        anagrafica(input.cedente.anagrafica),
+        el("RegimeFiscale", input.cedente.regimeFiscale),
+      ]),
+      sede("Sede", input.cedente.sede),
+      input.cedente.rea
+        ? gruppo("IscrizioneREA", [
+            el("Ufficio", campo(input.cedente.rea.ufficio, 2).toUpperCase()),
+            el("NumeroREA", campo(input.cedente.rea.numero, 20)),
+            el("StatoLiquidazione", "LN"),
+          ])
+        : null,
+      gruppo("Contatti", [el("Telefono", campo(input.cedente.telefono, 12)), el("Email", campo(input.cedente.email, 256))]),
+    ]),
+    gruppo("CessionarioCommittente", [
+      gruppo("DatiAnagrafici", [
+        idFiscaleIva("IdFiscaleIVA", input.cessionario.paese, input.cessionario.partitaIva),
+        el("CodiceFiscale", campo(input.cessionario.codiceFiscale, 16)),
+        anagrafica(input.cessionario.anagrafica),
+      ]),
+      sede("Sede", input.cessionario.sede),
+    ]),
+  ]);
+
+  const datiOrdine =
+    input.cig || input.cup
+      ? gruppo("DatiOrdineAcquisto", [
+          el("RiferimentoNumeroLinea", 1),
+          el("IdDocumento", campo(input.numero, 20)),
+          el("CodiceCUP", campo(input.cup, 15)),
+          el("CodiceCIG", campo(input.cig, 15)),
+        ])
+      : null;
+
+  const body = gruppo("FatturaElettronicaBody", [
+    gruppo("DatiGenerali", [
+      gruppo("DatiGeneraliDocumento", [
+        el("TipoDocumento", input.tipoDocumento),
+        el("Divisa", campo(input.divisa, 3).toUpperCase()),
+        el("Data", input.data),
+        el("Numero", campo(input.numero, 20)),
+        input.bolloVirtualeCents
+          ? gruppo("DatiBollo", [el("BolloVirtuale", "SI"), el("ImportoBollo", importo(input.bolloVirtualeCents))])
+          : null,
+        el("ImportoTotaleDocumento", importo(input.totaleDocumentoCents)),
+        ...(input.causale ?? []).map((c) => el("Causale", campo(c, 200))),
+      ]),
+      datiOrdine,
+      ...(input.fattureCollegate ?? []).map((f) =>
+        gruppo("DatiFattureCollegate", [el("IdDocumento", campo(f.numero, 20)), el("Data", f.data)]),
+      ),
+    ]),
+    gruppo("DatiBeniServizi", [
+      ...input.righe.map((r) =>
+        gruppo("DettaglioLinee", [
+          el("NumeroLinea", r.numero),
+          el("Descrizione", campo(r.descrizione, 1000) || "-"),
+          r.quantita === null || r.quantita === undefined ? null : el("Quantita", quantita(r.quantita)),
+          el("PrezzoUnitario", importo(r.prezzoUnitarioCents)),
+          el("PrezzoTotale", importo(r.prezzoTotaleCents)),
+          el("AliquotaIVA", r.aliquota.toFixed(2)),
+          el("Natura", r.natura ?? null),
+        ]),
+      ),
+      ...input.riepilogo.map((r) =>
+        gruppo("DatiRiepilogo", [
+          el("AliquotaIVA", r.aliquota.toFixed(2)),
+          el("Natura", r.natura ?? null),
+          el("ImponibileImporto", importo(r.imponibileCents)),
+          el("Imposta", importo(r.impostaCents)),
+          el("EsigibilitaIVA", r.esigibilita),
+          el("RiferimentoNormativo", campo(r.riferimentoNormativo, 100)),
+        ]),
+      ),
+    ]),
+    input.pagamento
+      ? gruppo("DatiPagamento", [
+          el("CondizioniPagamento", input.pagamento.condizioni),
+          gruppo("DettaglioPagamento", [
+            el("ModalitaPagamento", input.pagamento.modalita),
+            el("DataScadenzaPagamento", input.pagamento.scadenza),
+            el("ImportoPagamento", importo(input.pagamento.importoCents)),
+            el("IBAN", campo(input.pagamento.iban, 34).toUpperCase() || null),
+          ]),
+        ])
+      : null,
+  ]);
+
+  const radice = [
+    `<?xml version="1.0" encoding="UTF-8"?>`,
+    `<p:FatturaElettronica versione="${input.formatoTrasmissione}" xmlns:p="${NS_P}" xmlns:ds="http://www.w3.org/2000/09/xmldsig#" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="${NS_P} ${XSD}">`,
+    header ?? "",
+    body ?? "",
+    `</p:FatturaElettronica>`,
+  ].join("");
+  return radice;
+}

@@ -1,12 +1,14 @@
 import { Router } from "express";
 import { requireAuth, getUserId } from "../middlewares/authMiddleware";
+import { requirePermission } from "../middlewares/requirePermission";
 import { getBaseUrl } from "../lib/baseUrl";
 import { db, quotesTable, businessProfilesTable, authUsersTable } from "@workspace/db";
 import { eq, sql } from "drizzle-orm";
 import { CreateCheckoutSessionBody } from "@workspace/api-zod";
 import { getUncachableStripeClient } from "../stripeClient";
 import { logger } from "../lib/logger";
-import Stripe from "stripe";
+import { PREVENTIVI_SINGOLI, PREZZI_PIANI, lookupKeyPiano, pianoDaLookupKey, prezzoPianoCents, testoPreventivi, type IntervalloAddon, type PianoInAbbonamento } from "@workspace/config";
+import { eAbbonamentoAddon, sincronizzaAbbonamento, type AbbonamentoStripe } from "../addons/amministrazione.js";
 
 const TRIAL_DAYS = 7;
 const TRIAL_DOWNLOAD_LIMIT = 3;
@@ -47,11 +49,12 @@ export const PLANS = [
     id: "monthly_starter",
     stripePriceId: "price_1TUdJjCaDBaDETvnCGbjTgIq",
     name: "Starter",
-    price: 19,
+    price: PREZZI_PIANI.monthly_starter.mensileCents / 100,
+    annualPrice: PREZZI_PIANI.monthly_starter.annualeCents / 100,
     currency: "eur",
     interval: "month",
     features: [
-      "10 preventivi al mese",
+      testoPreventivi("monthly_starter"),
       "PDF con logo aziendale",
       "Riga 'Fatto con prevai.it' in calce",
       "Template Standard incluso",
@@ -59,18 +62,19 @@ export const PLANS = [
       "Registrazione vocale (1 preventivo/mese)",
     ],
     hasWatermark: true,
-    quotaPerMonth: 10,
+    quotaPerMonth: PREZZI_PIANI.monthly_starter.preventiviMese,
     tier: "starter",
   },
   {
     id: "monthly_pro",
     stripePriceId: "price_1TUdJjCaDBaDETvnfBv37ryF",
     name: "Pro",
-    price: 49,
+    price: PREZZI_PIANI.monthly_pro.mensileCents / 100,
+    annualPrice: PREZZI_PIANI.monthly_pro.annualeCents / 100,
     currency: "eur",
     interval: "month",
     features: [
-      "60 preventivi al mese",
+      testoPreventivi("monthly_pro"),
       "PDF puliti — nessun watermark",
       "Logo aziendale personalizzato",
       "Tutti i template PDF disponibili",
@@ -79,14 +83,17 @@ export const PLANS = [
       "Priorità generazione AI",
     ],
     hasWatermark: false,
-    quotaPerMonth: 60,
+    quotaPerMonth: PREZZI_PIANI.monthly_pro.preventiviMese,
     tier: "pro",
   },
   {
     id: "monthly_elite",
+    // Price storico a 59 €: lo tengono gli abbonati di prima di A-5. I nuovi
+    // passano dalla lookup key piano_elite_* (79 €, decisione D5).
     stripePriceId: "price_1TUdJjCaDBaDETvnCo3JKGJ7",
     name: "Elite",
-    price: 59,
+    price: PREZZI_PIANI.monthly_elite.mensileCents / 100,
+    annualPrice: PREZZI_PIANI.monthly_elite.annualeCents / 100,
     currency: "eur",
     interval: "month",
     features: [
@@ -100,14 +107,15 @@ export const PLANS = [
       "Supporto dedicato",
     ],
     hasWatermark: false,
-    quotaPerMonth: null,
+    quotaPerMonth: PREZZI_PIANI.monthly_elite.preventiviMese,
     tier: "elite",
   },
   {
     id: "oneshot_watermark",
     stripePriceId: "price_1TUdJjCaDBaDETvnRnYfWJWh",
     name: "Singolo con Watermark",
-    price: 3,
+    price: PREVENTIVI_SINGOLI.oneshot_watermark.cents / 100,
+    annualPrice: null,
     currency: "eur",
     interval: null,
     features: ["1 preventivo PDF", "Riga prevai.it in calce", "Download immediato"],
@@ -119,7 +127,8 @@ export const PLANS = [
     id: "oneshot_clean",
     stripePriceId: "price_1TUdJkCaDBaDETvnVsY6ZWec",
     name: "Singolo Pulito",
-    price: 9,
+    price: PREVENTIVI_SINGOLI.oneshot_clean.cents / 100,
+    annualPrice: null,
     currency: "eur",
     interval: null,
     features: ["1 preventivo PDF pulito", "Logo aziendale", "Nessun watermark", "Download immediato"],
@@ -129,12 +138,62 @@ export const PLANS = [
   },
 ];
 
+/**
+ * Price Stripe storici → piano. Riconosce gli abbonati di prima di A-5 (Elite
+ * a 59 € compreso), che tengono il loro prezzo: Stripe non tocca un
+ * abbonamento esistente quando si crea un Price nuovo.
+ */
 export const PRICE_TO_PLAN = PLANS.reduce<Record<string, string>>((acc, plan) => {
   if (plan.stripePriceId) {
     acc[plan.stripePriceId] = plan.id;
   }
   return acc;
 }, {});
+
+/** Piano di un Price Stripe: prima per id storico, poi per lookup key (`piano_pro_annuale`). */
+export function pianoDaPrezzo(price: { id?: string | null; lookup_key?: string | null } | null | undefined): string | null {
+  if (!price) return null;
+  if (price.id && PRICE_TO_PLAN[price.id]) return PRICE_TO_PLAN[price.id]!;
+  return pianoDaLookupKey(price.lookup_key);
+}
+
+export class ErrorePrezzo extends Error {
+  constructor(public readonly codice: string, message: string) {
+    super(message);
+  }
+}
+
+/**
+ * Il Price da addebitare per un piano, con la garanzia che dica la stessa cosa
+ * della pagina: lookup key `piano_<nome>_<periodo>` se esiste su Stripe,
+ * altrimenti il Price storico **solo se** ha lo stesso importo (così Starter e
+ * Pro continuano a vendersi al cutover senza toccare Stripe). Se nessuno dei
+ * due torna, niente checkout: meglio un errore che un importo diverso da
+ * quello mostrato.
+ */
+export async function prezzoPianoStripe(
+  stripe: Awaited<ReturnType<typeof getUncachableStripeClient>>,
+  plan: (typeof PLANS)[number],
+  intervallo: IntervalloAddon,
+): Promise<string> {
+  if (!plan.interval) return plan.stripePriceId; // preventivi singoli: prezzi invariati
+  const piano = plan.id as PianoInAbbonamento;
+  const atteso = prezzoPianoCents(piano, intervallo);
+  const recurring = intervallo === "annuale" ? "year" : "month";
+  const coincide = (p: { unit_amount: number | null; currency: string; recurring: { interval: string } | null; active: boolean }) =>
+    p.active && p.unit_amount === atteso && p.currency === "eur" && p.recurring?.interval === recurring;
+  const { data } = await stripe.prices.list({ lookup_keys: [lookupKeyPiano(piano, intervallo)], active: true, limit: 1 });
+  if (data[0]) {
+    if (coincide(data[0])) return data[0].id;
+    logger.error({ piano, intervallo, atteso, trovato: data[0].unit_amount }, "Price del piano su Stripe diverso dalla configurazione");
+    throw new ErrorePrezzo("PLAN_PRICE_MISMATCH", "Il prezzo su Stripe non coincide con quello mostrato: pagamento sospeso.");
+  }
+  if (intervallo === "mensile") {
+    const storico = await stripe.prices.retrieve(plan.stripePriceId).catch(() => null);
+    if (storico && coincide(storico)) return storico.id;
+  }
+  throw new ErrorePrezzo("PLAN_PRICE_MISSING", `Prezzo "${lookupKeyPiano(piano, intervallo)}" non configurato su Stripe (RUNBOOKS §10.3).`);
+}
 
 router.get("/payments/plans", (_req, res) => {
   res.json(PLANS);
@@ -154,7 +213,7 @@ router.get("/payments/trial-status", requireAuth, async (req, res) => {
   }
 });
 
-router.post("/payments/checkout", requireAuth, async (req, res) => {
+router.post("/payments/checkout", requireAuth, requirePermission("settings", "full"), async (req, res) => {
   try {
     const userId = getUserId(res);
     const parsed = CreateCheckoutSessionBody.safeParse(req.body);
@@ -164,6 +223,7 @@ router.post("/payments/checkout", requireAuth, async (req, res) => {
     }
 
     const { quoteId, planType } = parsed.data;
+    const intervallo: IntervalloAddon = parsed.data.billing === "annuale" ? "annuale" : "mensile";
     const plan = PLANS.find((p) => p.id === planType);
     if (!plan) {
       res.status(400).json({ error: "Invalid plan type" });
@@ -171,6 +231,16 @@ router.post("/payments/checkout", requireAuth, async (req, res) => {
     }
 
     const stripe = await getUncachableStripeClient();
+    let priceId: string;
+    try {
+      priceId = await prezzoPianoStripe(stripe, plan, intervallo);
+    } catch (err) {
+      if (err instanceof ErrorePrezzo) {
+        res.status(503).json({ error: err.codice, message: err.message });
+        return;
+      }
+      throw err;
+    }
 
     const baseUrl = getBaseUrl();
 
@@ -193,7 +263,7 @@ router.post("/payments/checkout", requireAuth, async (req, res) => {
 
     const sessionParams: Parameters<typeof stripe.checkout.sessions.create>[0] = {
       payment_method_types: ["card"],
-      line_items: [{ price: plan.stripePriceId, quantity: 1 }],
+      line_items: [{ price: priceId, quantity: 1 }],
       mode: plan.interval ? "subscription" : "payment",
       allow_promotion_codes: true,
       success_url: successUrl,
@@ -202,6 +272,7 @@ router.post("/payments/checkout", requireAuth, async (req, res) => {
         userId,
         quoteId: quoteId ?? "",
         planType,
+        billing: intervallo,
         hasWatermark: String(plan.hasWatermark),
       },
     };
@@ -282,7 +353,10 @@ router.get("/payments/subscription", requireAuth, async (req, res) => {
   }
 });
 
-router.post("/payments/unlock-quote", requireAuth, async (req, res) => {
+// Phase 66: any member who can edit quotes may unlock one with the org's
+// subscription (the quote page calls this on open — `settings:full` made it
+// 403 for every non-owner and left their quotes un-sendable).
+router.post("/payments/unlock-quote", requireAuth, requirePermission("quotes", "edit"), async (req, res) => {
   try {
     const userId = getUserId(res);
     const { quoteId } = req.body as { quoteId: string };
@@ -312,22 +386,27 @@ router.post("/payments/unlock-quote", requireAuth, async (req, res) => {
       return;
     }
 
-    if (quote.status !== "unlocked") {
+    // Only a draft (or an abandoned one-shot checkout) is unlocked. This used
+    // to be `!== "unlocked"`, which silently reverted every *accepted* quote
+    // to "unlocked" the moment a subscriber opened it (Phase 66).
+    if (quote.status === "draft" || quote.status === "pending_payment") {
       await db
         .update(quotesTable)
         .set({ status: "unlocked", unlockedWithPlan: profile.subscriptionPlan ?? null })
         .where(eq(quotesTable.id, quoteId));
       logger.info({ quoteId, userId, plan: profile.subscriptionPlan }, "Quote unlocked via subscription");
+      res.json({ status: "unlocked" });
+      return;
     }
 
-    res.json({ status: "unlocked" });
+    res.json({ status: quote.status });
   } catch (err) {
     logger.error({ err }, "Error unlocking quote with subscription");
     res.status(500).json({ error: "Internal server error" });
   }
 });
 
-router.post("/payments/portal", requireAuth, async (req, res) => {
+router.post("/payments/portal", requireAuth, requirePermission("settings", "full"), async (req, res) => {
   try {
     const userId = getUserId(res);
     const [profile] = await db
@@ -355,7 +434,7 @@ router.post("/payments/portal", requireAuth, async (req, res) => {
   }
 });
 
-router.post("/payments/sync-subscription", requireAuth, async (req, res) => {
+router.post("/payments/sync-subscription", requireAuth, requirePermission("settings", "full"), async (req, res) => {
   try {
     const userId = getUserId(res);
     const stripe = await getUncachableStripeClient();
@@ -381,17 +460,24 @@ router.post("/payments/sync-subscription", requireAuth, async (req, res) => {
     }
 
     if (!customerId) {
-      res.json({ synced: false, message: "Nessun customer Stripe trovato per questo account" });
+      res.json({ synced: false, message: "No Stripe customer found for this account" });
       return;
     }
 
 
 
-    const subscriptions = await stripe.subscriptions.list({
+    const tutte = await stripe.subscriptions.list({
       customer: customerId,
       status: "active",
       limit: 5,
     });
+    // A-5: l'add-on Amministrazione è un abbonamento a parte. Si sincronizza
+    // per conto suo e non va scambiato per il piano (prima veniva preso
+    // `data[0]` qualunque fosse).
+    const subscriptions = { data: tutte.data.filter((s) => !eAbbonamentoAddon(s as unknown as AbbonamentoStripe)) };
+    for (const s of tutte.data) {
+      if (eAbbonamentoAddon(s as unknown as AbbonamentoStripe)) await sincronizzaAbbonamento(s as unknown as AbbonamentoStripe);
+    }
 
     if (subscriptions.data.length === 0) {
       const cancelledSubs = await stripe.subscriptions.list({
@@ -408,23 +494,23 @@ router.post("/payments/sync-subscription", requireAuth, async (req, res) => {
           set: { stripeCustomerId: customerId, subscriptionStatus: cancelledSubs.data.length > 0 ? "cancelled" : null, subscriptionPlan: null },
         });
 
-      res.json({ synced: true, active: false, message: "Nessun abbonamento attivo trovato" });
+      res.json({ synced: true, active: false, message: "No active subscription found" });
       return;
     }
 
     const sub = subscriptions.data[0];
     const priceId = sub.items.data[0]?.price?.id;
-    const planType = priceId ? PRICE_TO_PLAN[priceId] : null;
+    const planType = pianoDaPrezzo(sub.items.data[0]?.price);
 
     if (!planType) {
-      res.json({ synced: false, message: `Price ID sconosciuto: ${priceId ?? "N/A"}` });
+      res.json({ synced: false, message: `Unknown price ID: ${priceId ?? "N/A"}` });
       return;
     }
 
-    // Dalla v22 dell'SDK Stripe, current_period_end/start vivono sul singolo
-    // subscription item (non più sull'oggetto Subscription): senza questo,
-    // periodEnd risultava sempre null e subscriptionPeriodEnd non veniva
-    // mai sincronizzato correttamente in fase di risincronizzazione manuale.
+    // As of Stripe SDK v22, current_period_end/start live on the individual
+    // subscription item (no longer on the Subscription object): without this,
+    // periodEnd always came out null and subscriptionPeriodEnd never got
+    // synced correctly during a manual re-sync.
     const currentPeriodEnd = sub.items.data[0]?.current_period_end;
     const periodEnd = currentPeriodEnd ? new Date(currentPeriodEnd * 1000) : null;
 

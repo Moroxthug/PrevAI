@@ -1,28 +1,18 @@
-export interface BlogArticle {
-  slug: string;
-  title: string;
-  /** Shorter title for the <title> tag (≤61 chars so the " | prevai" suffix stays within 70). Falls back to title. */
-  seoTitle?: string;
-  metaDescription: string;
-  category: string;
-  publishedAt: string;
-  updatedAt?: string;
-  readingTimeMin: number;
-  relatedSectors: string[];
+// Corpi degli articoli, per slug. I metadati sono in ./blog-index.ts (vedi
+// nota lì); `BLOG_ARTICLES` qui sotto unisce le due parti per la pagina
+// articolo e gli script di build. Ogni slug di BLOG_INDEX deve avere un corpo
+// qui — il join lancia un errore al caricamento del modulo (cioè in build).
+import { BLOG_INDEX, type BlogArticleMeta } from "./blog-index.js";
+import { BLOG_FISCALE_CONTENT } from "./blog-fiscale.js";
+
+export * from "./blog-index.js";
+
+export interface BlogArticle extends BlogArticleMeta {
   contentHtml: string;
 }
 
-export const BLOG_ARTICLES: BlogArticle[] = [
-  {
-    slug: "come-fare-preventivo-imbianchino",
-    title: "Come fare un preventivo professionale per lavori di imbiancatura",
-    seoTitle: "Preventivo per lavori di imbiancatura: guida",
-    metaDescription: "Guida completa per imbianchini: come strutturare un preventivo professionale, quali voci includere, come calcolare i prezzi al mq e convincere il cliente.",
-    category: "Professioni",
-    publishedAt: "2026-04-10",
-    readingTimeMin: 4,
-    relatedSectors: ["imbianchino", "pittore"],
-    contentHtml: `
+const BLOG_CONTENT: Record<string, string> = {
+  "come-fare-preventivo-imbianchino": `
 <p>Un preventivo ben fatto è la differenza tra un cliente che firma subito e uno che va dalla concorrenza. Per un imbianchino, il documento deve comunicare professionalità, chiarezza e trasparenza sui costi — prima ancora di parlare di qualità del lavoro.</p>
 
 <h2>Cosa deve contenere un preventivo per imbiancatura</h2>
@@ -75,17 +65,8 @@ export const BLOG_ARTICLES: BlogArticle[] = [
 <p>Il preventivo più bello è inutile se arriva in ritardo. Il 68% dei lavori viene assegnato al primo professionista che risponde con un documento completo e professionale. Inviarlo via WhatsApp in PDF mentre sei ancora dall'ispezione aumenta significativamente le probabilità di chiudere il lavoro.</p>
 <p>Usa sempre un formato PDF, mai Word o Excel: è più difficile modificarlo e trasmette maggiore serietà.</p>
 `,
-  },
-  {
-    slug: "quanto-costa-tinteggiatura-appartamento",
-    title: "Quanto costa tinteggiare un appartamento nel 2025: guida ai prezzi",
-    seoTitle: "Quanto costa tinteggiare un appartamento nel 2025",
-    metaDescription: "Prezzi aggiornati per tinteggiatura appartamento: costo al mq, manodopera vs materiali, differenze per tipo di pittura. Guida completa per proprietari e professionisti.",
-    category: "Prezzi",
-    publishedAt: "2026-04-15",
-    readingTimeMin: 4,
-    relatedSectors: ["imbianchino", "pittore"],
-    contentHtml: `
+
+  "quanto-costa-tinteggiatura-appartamento": `
 <p>Ristrutturare le pareti di casa è uno dei lavori più richiesti in Italia. Ma quanto costa davvero tinteggiare un appartamento? I prezzi variano molto in base al tipo di pittura, allo stato delle superfici e alla zona geografica. Questa guida fornisce riferimenti aggiornati per il 2025.</p>
 
 <h2>Prezzi indicativi per tinteggiatura in Italia nel 2025</h2>
@@ -152,17 +133,8 @@ export const BLOG_ARTICLES: BlogArticle[] = [
 <h2>Tinteggiatura fai-da-te vs. professionista: quando conviene</h2>
 <p>Per i lavori semplici (una stanza, colore bianco su pareti già in buone condizioni), il fai-da-te può ridurre i costi del 50–60%. Il materiale per tinteggiare una camera da letto da 14mq costa 30–50€; la manodopera professionale ne costa 150–250€. Tuttavia, per lavorazioni che richiedono rasatura, stucco, trattamento di macchie o altezze elevate, il professionista ammortizza il costo con la qualità e la velocità del risultato.</p>
 `,
-  },
-  {
-    slug: "preventivo-impianto-elettrico",
-    title: "Come fare un preventivo per impianto elettrico: guida per elettricisti",
-    seoTitle: "Preventivo impianto elettrico: guida per elettricisti",
-    metaDescription: "Guida pratica per elettricisti: come strutturare un preventivo professionale per impianti elettrici civili e industriali, voci da includere e prezzi di riferimento.",
-    category: "Professioni",
-    publishedAt: "2026-04-18",
-    readingTimeMin: 4,
-    relatedSectors: ["elettricista"],
-    contentHtml: `
+
+  "preventivo-impianto-elettrico": `
 <p>Per un elettricista, il preventivo è il primo documento professionale che il cliente vede. Deve trasmettere competenza tecnica, chiarezza sui costi e affidabilità. Un preventivo ben strutturato per un impianto elettrico fa la differenza tra vincere e perdere il lavoro.</p>
 
 <h2>Le voci fondamentali di un preventivo elettrico</h2>
@@ -222,17 +194,8 @@ export const BLOG_ARTICLES: BlogArticle[] = [
   <li><strong>Non indicare i tempi di esecuzione</strong>: un cliente che deve essere in casa durante i lavori deve poter pianificare. Indicare "3 giorni lavorativi, accesso h 8–17" fa la differenza.</li>
 </ul>
 `,
-  },
-  {
-    slug: "errori-preventivi-artigiani",
-    title: "I 5 errori più comuni nei preventivi degli artigiani (e come evitarli)",
-    seoTitle: "I 5 errori più comuni nei preventivi degli artigiani",
-    metaDescription: "Scopri i 5 errori che fanno perdere lavori agli artigiani nei preventivi: voci generiche, prezzi senza IVA, tempi sbagliati. Come correggerli subito.",
-    category: "Consigli",
-    publishedAt: "2026-04-22",
-    readingTimeMin: 4,
-    relatedSectors: [],
-    contentHtml: `
+
+  "errori-preventivi-artigiani": `
 <p>Il preventivo è lo strumento commerciale più importante di un artigiano. Eppure la maggior parte dei professionisti commette gli stessi errori che fanno sì che il cliente vada dalla concorrenza — spesso non perché quella concorrenza costi meno, ma perché comunica meglio.</p>
 <p>Questi sono i cinque errori più diffusi, con le soluzioni pratiche per correggerli.</p>
 
@@ -270,17 +233,8 @@ export const BLOG_ARTICLES: BlogArticle[] = [
 <p>Non è necessario rivoluzionare il proprio metodo di lavoro tutto in una volta. Il consiglio è di partire dal miglioramento più impattante — nella maggior parte dei casi è il punto 1 (voci dettagliate) o il punto 5 (intestazione professionale) — e integrarlo nei prossimi 5 preventivi come test. Misurare il tasso di risposta e continuare con il miglioramento successivo.</p>
 <p>La preventivazione è una competenza commerciale che si affina nel tempo. Gli artigiani che la trattano come tale — invece di considerarla solo burocrazia — ottengono risultati concreti in termini di lavori vinti e clienti soddisfatti già nel primo mese di applicazione sistematica.</p>
 `,
-  },
-  {
-    slug: "preventivo-ristrutturazione-guida",
-    title: "Come fare un preventivo per ristrutturazione casa: guida completa",
-    seoTitle: "Preventivo ristrutturazione casa: guida completa",
-    metaDescription: "Guida completa per creare un preventivo professionale per ristrutturazione: capitoli, voci, calcolo costi, bonus edilizi. Per imprese e artigiani italiani.",
-    category: "Professioni",
-    publishedAt: "2026-04-25",
-    readingTimeMin: 5,
-    relatedSectors: ["ristrutturazione", "edilizia"],
-    contentHtml: `
+
+  "preventivo-ristrutturazione-guida": `
 <p>La ristrutturazione di un appartamento o di una casa è uno dei lavori più complessi da preventivare. Coinvolge più categorie di lavorazione, spesso più imprese, materiali eterogenei e tempistiche dilazionate. Un preventivo per ristrutturazione fatto bene è la base per evitare contenziosi, rispettare il budget e guadagnare la fiducia del committente.</p>
 
 <h2>La struttura multi-capitolo: il formato professionale</h2>
@@ -330,16 +284,8 @@ export const BLOG_ARTICLES: BlogArticle[] = [
 <h2>Strumenti per preventivi di ristrutturazione</h2>
 <p>I preventivi multi-capitolo richiedevano in passato ore di lavoro su Excel o software costosi. Oggi i software di preventivazione con AI permettono di descrivere il cantiere in italiano e ottenere un preventivo strutturato in capitoli in meno di due minuti, modificabile voce per voce prima dell'invio al committente.</p>
 `,
-  },
-  {
-    slug: "quanto-costa-ristrutturare-bagno",
-    title: "Quanto costa ristrutturare un bagno in Italia nel 2025",
-    metaDescription: "Prezzi aggiornati per ristrutturazione bagno: costi per idraulico, piastrellista, elettricista. Bagno piccolo, medio o grande: guida completa ai prezzi 2025.",
-    category: "Prezzi",
-    publishedAt: "2026-04-28",
-    readingTimeMin: 4,
-    relatedSectors: ["ristrutturazione", "idraulico", "piastrellista"],
-    contentHtml: `
+
+  "quanto-costa-ristrutturare-bagno": `
 <p>La ristrutturazione del bagno è uno degli interventi più frequenti nelle abitazioni italiane. I costi variano in modo significativo in base alla dimensione del locale, alla qualità dei materiali scelti e alla complessità degli impianti. Ecco una guida aggiornata ai prezzi 2025.</p>
 
 <h2>Costi per tipologia di bagno</h2>
@@ -407,17 +353,8 @@ export const BLOG_ARTICLES: BlogArticle[] = [
 <h2>Bagno accessibile: i costi dell'adattamento</h2>
 <p>Per gli interventi di adattamento del bagno a persone anziane o con mobilità ridotta — installazione di maniglioni, doccia a pavimento senza soglia, wc rialzato — i costi variano tra 2.000 e 6.000€ a seconda degli interventi richiesti. Questi lavori possono rientrare nelle detrazioni per eliminazione delle barriere architettoniche (aliquota 75% nella versione attuale del Bonus Edilizi). È consigliabile che il preventivo faccia riferimento esplicito alla normativa applicabile (L. 13/1989) se si intende accedere alle detrazioni.</p>
 `,
-  },
-  {
-    slug: "quanto-costa-impianto-elettrico",
-    title: "Quanto costa un impianto elettrico nel 2025: prezzi per appartamento e ristrutturazione",
-    seoTitle: "Quanto costa un impianto elettrico nel 2025: prezzi",
-    metaDescription: "Prezzi aggiornati per impianti elettrici civili nel 2025: costo per appartamento, per punto luce, quadro elettrico, rifacimento completo. Guida per proprietari e committenti.",
-    category: "Prezzi",
-    publishedAt: "2026-05-05",
-    readingTimeMin: 5,
-    relatedSectors: ["elettricista"],
-    contentHtml: `
+
+  "quanto-costa-impianto-elettrico": `
 <p>Quanto costa rifare l'impianto elettrico di casa? È una delle domande più frequenti per chi affronta una ristrutturazione o acquista un appartamento datato. I prezzi variano molto in base alla dimensione dell'immobile, allo stato dell'impianto esistente e alla tipologia d'intervento. Questa guida riporta i riferimenti di mercato aggiornati al 2025.</p>
 
 <h2>Prezzi indicativi per impianti elettrici civili nel 2025</h2>
@@ -478,17 +415,8 @@ export const BLOG_ARTICLES: BlogArticle[] = [
 <h2>Quanto dura un impianto elettrico?</h2>
 <p>Un impianto elettrico realizzato a regola d'arte con materiali di qualità ha una vita utile di <strong>25–40 anni</strong>. Gli impianti più vecchi (precedenti agli anni '90) sono spesso privi di messa a terra adeguata e non conformi alle normative attuali — questo è un elemento di rischio che giustifica pienamente il costo di un rifacimento completo, anche in assenza di problemi evidenti.</p>
 `,
-  },
-  {
-    slug: "quanto-costa-idraulico",
-    title: "Quanto costa un idraulico nel 2025: prezzi per interventi e impianti",
-    seoTitle: "Quanto costa un idraulico nel 2025: prezzi",
-    metaDescription: "Prezzi aggiornati per lavori idraulici nel 2025: costo per intervento urgente, sostituzione boiler, nuovo impianto, perdita d'acqua. Guida completa per proprietari di casa.",
-    category: "Prezzi",
-    publishedAt: "2026-05-07",
-    readingTimeMin: 5,
-    relatedSectors: ["idraulico", "termoidraulico"],
-    contentHtml: `
+
+  "quanto-costa-idraulico": `
 <p>Il costo di un idraulico è tra i meno trasparenti nel settore dell'edilizia residenziale: i prezzi variano molto in base alla tipologia di intervento, all'urgenza, alla zona geografica e al professionista. Questa guida raccoglie i valori di mercato aggiornati al 2025 per i lavori idraulici più comuni.</p>
 
 <h2>Costi per interventi idraulici comuni nel 2025</h2>
@@ -564,16 +492,8 @@ export const BLOG_ARTICLES: BlogArticle[] = [
 <h2>Quanto dura un impianto idraulico?</h2>
 <p>Le tubazioni in rame ben posate durano 50–70 anni. Gli impianti in ferro nero, comuni nelle case costruite fino agli anni '80, tendono a presentare problemi di corrosione e calcificazione dopo 30–40 anni. Se la vostra abitazione ha tubazioni in ferro e pressione dell'acqua irregolare o colorazione ruggine, una valutazione dell'impianto da parte di un idraulico qualificato è consigliabile prima di manifestarsi guasti importanti.</p>
 `,
-  },
-  {
-    slug: "software-preventivi-artigiani",
-    title: "Il miglior software di preventivazione per artigiani nel 2025",
-    metaDescription: "Confronto dei migliori software di preventivazione per artigiani e PMI italiane nel 2025: Excel vs software dedicati vs AI. Quale conviene davvero?",
-    category: "Tool",
-    publishedAt: "2026-05-02",
-    readingTimeMin: 4,
-    relatedSectors: [],
-    contentHtml: `
+
+  "software-preventivi-artigiani": `
 <p>Imbianchini, elettricisti, idraulici, muratori: ogni artigiano deve fare preventivi, e il modo in cui li fa determina quanti lavori vince e quanto tempo dedica alla burocrazia. Esistono tre approcci principali, con differenze sostanziali in termini di efficienza e qualità del risultato.</p>
 
 <h2>I tre approcci alla preventivazione</h2>
@@ -622,16 +542,8 @@ export const BLOG_ARTICLES: BlogArticle[] = [
 </ul>
 <p>I software più avanzati con AI permettono di descrivere il lavoro in linguaggio naturale ("rifacimento bagno 7mq con piastrelle di fascia media") e ricevere automaticamente una bozza strutturata con le voci tipiche del settore, che il professionista può poi modificare rapidamente prima dell'invio.</p>
 `,
-  },
-  {
-    slug: "preventivo-idraulico",
-    title: "Come fare un preventivo per lavori idraulici: guida pratica",
-    metaDescription: "Guida pratica per idraulici: come strutturare un preventivo professionale per impianti idraulici e termici, voci da includere, prezzi di riferimento e consigli.",
-    category: "Professioni",
-    publishedAt: "2026-05-05",
-    readingTimeMin: 4,
-    relatedSectors: ["idraulico", "termoidraulico"],
-    contentHtml: `
+
+  "preventivo-idraulico": `
 <p>Un idraulico spesso lavora in emergenza: si telefona per un guasto, si interviene, e il preventivo va fatto sul momento. Ma anche per gli interventi pianificati — installazione di una caldaia, rifacimento impianto idrico, nuovi sanitari — un documento professionale fa la differenza tra essere scelti e non esserlo.</p>
 
 <h2>Le voci di un preventivo idraulico professionale</h2>
@@ -692,17 +604,8 @@ export const BLOG_ARTICLES: BlogArticle[] = [
 </ul>
 <p>Questo processo protegge il professionista in caso di contestazioni e trasmette al cliente un senso di controllo e trasparenza che aumenta la fiducia e le probabilità di chiamate future.</p>
 `,
-  },
-  {
-    slug: "come-vincere-piu-lavori",
-    title: "Come vincere più lavori con i tuoi preventivi: 7 consigli pratici",
-    seoTitle: "Come vincere più lavori con i preventivi: 7 consigli",
-    metaDescription: "7 consigli pratici per artigiani e PMI: come aumentare il tasso di accettazione dei preventivi, rispondere più velocemente e comunicare meglio il proprio valore.",
-    category: "Consigli",
-    publishedAt: "2026-05-06",
-    readingTimeMin: 4,
-    relatedSectors: [],
-    contentHtml: `
+
+  "come-vincere-piu-lavori": `
 <p>Il tasso di accettazione medio dei preventivi per gli artigiani italiani è tra il 30% e il 40%. Questo significa che su 10 preventivi inviati, solo 3–4 si trasformano in lavori. Migliorare anche solo del 10% questo tasso equivale a un lavoro in più ogni mese senza acquisire un solo nuovo contatto.</p>
 <p>Questi sono sette consigli pratici — non teorici — che fanno la differenza nella pratica.</p>
 
@@ -739,16 +642,8 @@ export const BLOG_ARTICLES: BlogArticle[] = [
 </ul>
 <p>Anche solo annotarsi su un foglio il numero di preventivi inviati e quanti vengono accettati ogni mese, suddivisi per tipo di lavoro, è un esercizio che cambia la prospettiva sulla propria attività commerciale. La preventivazione diventa una leva di crescita, non solo burocrazia.</p>
 `,
-  },
-  {
-    slug: "preventivo-muratore",
-    title: "Guida al preventivo per muratori: voci, prezzi e struttura",
-    metaDescription: "Come fare un preventivo professionale per lavori di muratura: voci da includere, prezzi al mq per fondazioni, tramezzi e intonaci. Guida pratica per muratori.",
-    category: "Professioni",
-    publishedAt: "2026-05-07",
-    readingTimeMin: 4,
-    relatedSectors: ["muratore", "edilizia"],
-    contentHtml: `
+
+  "preventivo-muratore": `
 <p>Il muratore è la figura professionale al cuore di qualsiasi cantiere edile. Fondazioni, tramezzi, intonaci, riparazioni strutturali: ogni lavoro ha una sua specificità che deve emergere chiaramente nel preventivo. Un documento generico non rende giustizia al valore del lavoro svolto.</p>
 
 <h2>Le principali categorie di lavoro e come preventivare</h2>
@@ -822,17 +717,8 @@ export const BLOG_ARTICLES: BlogArticle[] = [
 </ul>
 <p>I prezzi per il risanamento da umidità variano tra 50 e 150 €/mq a seconda della tecnica, ed è fondamentale che il preventivo sia chiaro su cosa è compreso e cosa potrebbe aggiungere costi in corso d'opera se il problema fosse più esteso del previsto.</p>
 `,
-  },
-  {
-    slug: "ai-preventivi-artigiani",
-    title: "L'intelligenza artificiale per i preventivi: come cambia il lavoro degli artigiani",
-    seoTitle: "AI per i preventivi: come cambia il lavoro artigiano",
-    metaDescription: "Come l'AI sta trasformando la preventivazione per artigiani e PMI italiane: meno tempo, più lavori vinti, documenti professionali in 30 secondi. Guida pratica.",
-    category: "Innovazione",
-    publishedAt: "2026-05-08",
-    readingTimeMin: 4,
-    relatedSectors: [],
-    contentHtml: `
+
+  "ai-preventivi-artigiani": `
 <p>L'intelligenza artificiale sta entrando nel lavoro di tutti i giorni di milioni di professionisti. Per gli artigiani italiani — imbianchini, elettricisti, idraulici, muratori — la trasformazione più concreta e immediata riguarda la preventivazione: il documento che determina se un lavoro viene acquisito o meno.</p>
 
 <h2>Il problema della preventivazione tradizionale</h2>
@@ -883,17 +769,8 @@ export const BLOG_ARTICLES: BlogArticle[] = [
 <p>L'adozione degli strumenti AI per la preventivazione è già in corso tra le categorie più dinamiche degli artigiani italiani: gli elettricisti, che hanno spesso cantieri complessi con molte voci, sono stati tra i primi ad adottare questi strumenti per ridurre il tempo di preventivazione e rispondere prima della concorrenza. Seguono gli imbianchini, che lavorano con molte stanze e molte voci simili (ideali per la generazione automatica), e gli idraulici, che spesso lavorano in emergenza e non possono permettersi di perdere tempo davanti a un foglio Excel.</p>
 <p>La resistenza maggiore viene da chi ha già un sistema funzionante (Excel con template consolidato) e non vede il valore dello spostamento. Ma nel momento in cui un concorrente inizia a inviare preventivi mentre è ancora in sopralluogo, il vantaggio competitivo diventa evidente anche per i più scettici.</p>
 `,
-  },
-  {
-    slug: "preventivo-falegname-carpentiere",
-    title: "Come fare un preventivo per falegnameria e carpenteria metallica",
-    seoTitle: "Preventivo falegnameria e carpenteria metallica",
-    metaDescription: "Guida pratica per falegnami e carpentieri: come strutturare un preventivo professionale con voci per materiali, lavorazione e posa. Prezzi di riferimento 2025.",
-    category: "Professioni",
-    publishedAt: "2026-05-08",
-    readingTimeMin: 4,
-    relatedSectors: ["falegname", "carpentiere"],
-    contentHtml: `
+
+  "preventivo-falegname-carpentiere": `
 <p>Falegnami e carpentieri producono lavori su misura con materiali dalle caratteristiche molto variabili: il prezzo del legno di noce è diverso da quello del pino, così come il costo dell'acciaio inox da quello del ferro verniciato. Un preventivo professionale deve riflettere queste specificità con chiarezza.</p>
 
 <h2>Struttura del preventivo per un falegname</h2>
@@ -953,16 +830,8 @@ export const BLOG_ARTICLES: BlogArticle[] = [
 <h2>Software per preventivi di artigianato su misura</h2>
 <p>I software di preventivazione con AI permettono di descrivere il lavoro in linguaggio naturale e ricevere una bozza strutturata in pochi secondi, anche per lavori complessi su misura. Il falegname o il carpentiere può poi modificare voce per voce i materiali, i prezzi e i dettagli tecnici prima di inviare il documento al cliente.</p>
 `,
-  },
-  {
-    slug: "app-preventivi-smartphone",
-    title: "Le migliori app per fare preventivi da smartphone nel 2025",
-    metaDescription: "Confronto delle migliori app per preventivi da smartphone per artigiani italiani nel 2025: cosa valutare, funzionalità chiave e come scegliere quella giusta.",
-    category: "Tool",
-    publishedAt: "2026-05-04",
-    readingTimeMin: 4,
-    relatedSectors: [],
-    contentHtml: `
+
+  "app-preventivi-smartphone": `
 <p>Lo smartphone è diventato lo strumento di lavoro principale per milioni di artigiani italiani. Ma quante app per preventivi sono davvero ottimizzate per l'uso in cantiere, dal telefono, con un pollice solo? Questa guida analizza i criteri che contano e le funzionalità da cercare.</p>
 
 <h2>Perché lo smartphone è centrale nella preventivazione moderna</h2>
@@ -1012,16 +881,8 @@ export const BLOG_ARTICLES: BlogArticle[] = [
 </ul>
 <p>La maggior parte degli artigiani che fa questo percorso non torna indietro. Non perché il vecchio metodo non funzionasse, ma perché la differenza di velocità e qualità è immediata e tangibile. Scopri di più sulle <a href="/preventivi/preventivi-gratis/">opzioni gratuite per iniziare a fare preventivi digitali</a> senza rischi.</p>
 `,
-  },
-  {
-    slug: "preventivo-digitale-vs-carta",
-    title: "Preventivo digitale vs. carta e penna: perché fare il salto",
-    metaDescription: "Confronto tra preventivo digitale e preventivo su carta per artigiani: velocità, professionalità, tasso di conversione. Perché e come fare il salto al digitale.",
-    category: "Tool",
-    publishedAt: "2026-05-06",
-    readingTimeMin: 3,
-    relatedSectors: [],
-    contentHtml: `
+
+  "preventivo-digitale-vs-carta": `
 <p>Ancora oggi, il 35–40% degli artigiani italiani usa carta e penna — o al massimo un foglio Word stampato — per i propri preventivi. Non per pigrizia, ma perché è il sistema che conoscono e che ha sempre funzionato. Questa guida confronta onestamente i due approcci.</p>
 
 <h2>Cosa succede con il preventivo su carta</h2>
@@ -1061,17 +922,8 @@ export const BLOG_ARTICLES: BlogArticle[] = [
 <p>Per la stragrande maggioranza degli artigiani, il passaggio al preventivo digitale non è più una questione di "se farlo" ma di "quale strumento scegliere". Il mercato offre oggi opzioni per ogni esigenza: strumenti semplici e gratuiti per chi fa pochi preventivi al mese, piattaforme AI avanzate per chi vuole il massimo della velocità e della professionalità.</p>
 <p>Il punto di partenza è sempre lo stesso: definire quanto tempo si spende oggi su ogni preventivo, quanti preventivi si fanno al mese, e qual è il proprio tasso di conversione attuale. Con questi tre numeri è possibile calcolare con precisione il valore di un miglioramento anche del 10% in ciascuna di queste dimensioni.</p>
 `,
-  },
-  {
-    slug: "digitalizzazione-artigiani-italiani",
-    title: "Digitalizzazione degli artigiani italiani: a che punto siamo nel 2025",
-    seoTitle: "Digitalizzazione degli artigiani italiani nel 2025",
-    metaDescription: "Il quadro della digitalizzazione tra gli artigiani italiani nel 2025: dati, ostacoli, opportunità. Chi ha già fatto il salto e cosa manca per gli altri.",
-    category: "Innovazione",
-    publishedAt: "2026-05-05",
-    readingTimeMin: 4,
-    relatedSectors: [],
-    contentHtml: `
+
+  "digitalizzazione-artigiani-italiani": `
 <p>L'Italia ha oltre 1,3 milioni di artigiani attivi. Tra questi, quanti usano strumenti digitali per gestire il proprio lavoro quotidiano? La risposta, nel 2025, è ancora sorprendentemente bassa — ma il trend sta accelerando in modo significativo.</p>
 
 <h2>Il quadro della digitalizzazione artigianale in Italia</h2>
@@ -1112,17 +964,8 @@ export const BLOG_ARTICLES: BlogArticle[] = [
 <p>Le previsioni sono chiare: entro il 2027, la percentuale di artigiani che usa strumenti digitali per la preventivazione supererà il 60%. Non perché qualcuno li abbia convinti con argomenti teorici, ma perché sempre più clienti li richiederanno, perché le piattaforme diventeranno sempre più semplici, e perché chi non si adatta avrà un crescente svantaggio competitivo.</p>
 <p>La scelta oggi non è tra digitale e tradizionale — è tra adottare ora, con un vantaggio iniziale, o farlo tra due anni per non restare indietro.</p>
 `,
-  },
-  {
-    slug: "preventivi-foto-cantiere",
-    title: "Come usare le foto del cantiere per preventivi più precisi e convincenti",
-    seoTitle: "Foto del cantiere per preventivi più precisi",
-    metaDescription: "Come usare le foto del sopralluogo per generare preventivi più accurati, convincere il cliente e documentare lo stato iniziale dei lavori. Guida pratica.",
-    category: "Innovazione",
-    publishedAt: "2026-05-07",
-    readingTimeMin: 3,
-    relatedSectors: ["muratore", "imbianchino", "elettricista", "idraulico"],
-    contentHtml: `
+
+  "preventivi-foto-cantiere": `
 <p>Lo smartphone è sempre in tasca. Ogni artigiano sa fare fotografie. Eppure pochissimi usano sistematicamente le foto del sopralluogo per migliorare i propri preventivi. È un'opportunità sprecata — sia per la precisione del documento che per il suo impatto commerciale sul cliente.</p>
 
 <h2>Perché le foto migliorano la precisione del preventivo</h2>
@@ -1167,17 +1010,8 @@ export const BLOG_ARTICLES: BlogArticle[] = [
 <p>Un aspetto spesso sottovalutato: le foto del sopralluogo sono una documentazione dello stato iniziale dell'immobile. In caso di contestazioni post-lavoro ("avete rotto quella piastrella" o "quella crepe non c'era prima"), avere le foto datate del sopralluogo iniziale è una protezione concreta.</p>
 <p>Conservate le foto del sopralluogo per almeno 2 anni dopo la conclusione dei lavori — lo stesso periodo della garanzia standard sull'esecuzione.</p>
 `,
-  },
-  {
-    slug: "come-fare-prezzo-lavori",
-    title: "Come fissare il prezzo giusto per i tuoi lavori senza svendere",
-    seoTitle: "Come fissare il prezzo giusto senza svendere",
-    metaDescription: "Come calcolare il prezzo corretto per i propri lavori da artigiano: costi reali, margine, mercato locale. Come smettere di svendere il proprio lavoro.",
-    category: "Business",
-    publishedAt: "2026-05-05",
-    readingTimeMin: 5,
-    relatedSectors: [],
-    contentHtml: `
+
+  "come-fare-prezzo-lavori": `
 <p>Uno dei problemi più frequenti tra gli artigiani italiani non è trovare clienti: è fare i conti in modo corretto. Molti professionisti, soprattutto nelle prime fasi, fissano i prezzi "a sensazione" o copiando la concorrenza — senza mai verificare se quei prezzi coprono davvero tutti i costi e garantiscono un margine adeguato.</p>
 
 <h2>Il problema del prezzo "a sensazione"</h2>
@@ -1213,16 +1047,8 @@ export const BLOG_ARTICLES: BlogArticle[] = [
 <p>Il prezzo di un preventivo non è solo un numero: è il risultato di come viene presentato. Le voci dettagliate, i materiali specificati, la garanzia esplicita e la professionalità del documento rendono il prezzo meno confrontabile con quello di un preventivo generico della concorrenza. Un preventivo che dice "tinteggiatura appartamento — 800€" è confrontabile. Un preventivo che dettaglio stanza per stanza, con tipo di pittura, numero di mani e garanzia inclusa, è giudicato su un piano diverso.</p>
 <p>La comunicazione del prezzo è parte integrante della strategia di prezzo stessa.</p>
 `,
-  },
-  {
-    slug: "trovare-clienti-artigiano",
-    title: "Come trovare nuovi clienti come artigiano: guida pratica 2025",
-    metaDescription: "Strategie concrete per trovare nuovi clienti come artigiano nel 2025: passaparola strutturato, Google, social, collaborazioni. Guida pratica per professionisti italiani.",
-    category: "Business",
-    publishedAt: "2026-05-06",
-    readingTimeMin: 5,
-    relatedSectors: [],
-    contentHtml: `
+
+  "trovare-clienti-artigiano": `
 <p>Per la maggior parte degli artigiani italiani, i clienti arrivano principalmente dal passaparola. È un sistema efficace — i clienti referenziati convertono molto di più e restano più a lungo — ma fragile: dipende completamente dalla soddisfazione dei clienti attuali e non è scalabile. Questa guida presenta le strategie che funzionano davvero nel 2025 per acquisire clienti in modo più strutturato.</p>
 
 <h2>1. Il passaparola strutturato (non quello casuale)</h2>
@@ -1266,17 +1092,8 @@ export const BLOG_ARTICLES: BlogArticle[] = [
 <p>C'è un collegamento diretto tra la qualità del preventivo e l'acquisizione di nuovi clienti che spesso viene sottovalutato. Un cliente soddisfatto non racconta solo "il lavoro è stato fatto bene" — racconta anche "mi ha mandato subito un preventivo chiarissimo" e "il PDF era professionale". La prima impressione digitale (il preventivo) condiziona il racconto che il cliente farà ad amici e parenti.</p>
 <p>Investire nella qualità e nella velocità dei propri preventivi non è solo una questione commerciale immediata: è anche un investimento nel passaparola futuro.</p>
 `,
-  },
-  {
-    slug: "gestione-preventivi-pmi",
-    title: "Come gestire i preventivi in una piccola impresa: guida pratica",
-    seoTitle: "Come gestire i preventivi in una piccola impresa",
-    metaDescription: "Come organizzare e gestire i preventivi in una PMI italiana: dalla numerazione all'archivio, dal follow-up alla conversione. Strumenti e consigli pratici.",
-    category: "Business",
-    publishedAt: "2026-05-08",
-    readingTimeMin: 5,
-    relatedSectors: ["edilizia", "ristrutturazione"],
-    contentHtml: `
+
+  "gestione-preventivi-pmi": `
 <p>Una piccola impresa con 3–10 dipendenti produce spesso 20–50 preventivi al mese. Gestirli correttamente — dalla numerazione all'archivio, dal follow-up alla conversione — è una questione di organizzazione che incide direttamente sul fatturato.</p>
 
 <h2>Il problema dei preventivi non tracciati</h2>
@@ -1345,17 +1162,8 @@ export const BLOG_ARTICLES: BlogArticle[] = [
 </ul>
 <p>Questi tre numeri, aggiornati ogni mese, permettono di avere una visione chiara dell'andamento commerciale dell'impresa e di intervenire tempestivamente quando qualcosa non funziona.</p>
 `,
-  },
-  {
-    slug: "preventivo-freelance-professionisti",
-    title: "Come fare un preventivo professionale da freelance: guida per consulenti, geometri e tecnici",
-    seoTitle: "Preventivo da freelance: guida per consulenti e tecnici",
-    metaDescription: "Guida pratica per freelance, geometri e consulenti: come strutturare un preventivo professionale, definire il prezzo delle prestazioni e aumentare il tasso di accettazione.",
-    category: "Consigli",
-    publishedAt: "2026-05-08",
-    readingTimeMin: 5,
-    relatedSectors: ["freelance", "geometra"],
-    contentHtml: `
+
+  "preventivo-freelance-professionisti": `
 <p>Per un freelance, un consulente o un geometra, il preventivo è molto più di un semplice documento con un prezzo. È la prima impressione professionale che il cliente riceve, il punto in cui si decide se il rapporto di lavoro nasce o muore. Eppure la maggior parte dei professionisti italiani lo tratta come una formalità — e perde commesse che avrebbe potuto vincere.</p>
 
 <h2>Perché il preventivo del freelance è diverso da quello dell'artigiano</h2>
@@ -1400,17 +1208,8 @@ export const BLOG_ARTICLES: BlogArticle[] = [
 <p>I software di preventivazione con intelligenza artificiale permettono di descrivere il progetto a parole — "perizia tecnica per immobile di 120mq in zona B, due sopralluoghi, relazione completa per banca" — e ottenere in pochi secondi un documento già strutturato, con voci, costi stimati e condizioni standard. Il professionista rivede, adatta e invia. Ore di lavoro si riducono a minuti, con una qualità del documento spesso superiore.</p>
 <p>Per un geometra, un consulente o qualsiasi professionista che invia più di 3–4 preventivi al mese, il ritorno sull'investimento è immediato.</p>
 `,
-  },
-  {
-    slug: "preventivo-giardiniere",
-    title: "Come fare un preventivo professionale per lavori di giardinaggio",
-    seoTitle: "Preventivo per lavori di giardinaggio: come farlo",
-    metaDescription: "Guida completa per giardinieri e paesaggisti: come strutturare un preventivo professionale, quali voci includere, come calcolare il prezzo per potatura, manutenzione e progettazione del verde.",
-    category: "Professioni",
-    publishedAt: "2026-05-09",
-    readingTimeMin: 5,
-    relatedSectors: ["giardiniere"],
-    contentHtml: `
+
+  "preventivo-giardiniere": `
 <p>Un preventivo professionale è il primo documento che un potenziale cliente vede di te. Per un giardiniere o un paesaggista, è l'occasione per distinguersi dalla concorrenza e comunicare non solo i costi, ma anche la cura e la competenza con cui approcci ogni intervento.</p>
 
 <h2>Perché molti giardinieri perdono lavori a causa del preventivo</h2>
@@ -1483,16 +1282,8 @@ export const BLOG_ARTICLES: BlogArticle[] = [
 <p>Descrivere a voce un lavoro di giardinaggio e ricevere subito un preventivo strutturato è ora possibile. Strumenti come prevai ti permettono di scrivere "manutenzione ordinaria giardino 400 mq, potatura 15 metri di siepe di lauro, taglio prato, smaltimento — Milano nord" e ottenere un documento professionale pronto in 30 secondi.</p>
 <p>Il preventivo generato include già le voci separate, i prezzi di riferimento per zona, i campi per il cliente e le condizioni standard. Tu lo rivedi, aggiungi il tuo logo e invii. Ore di lavoro ridotte a minuti, qualità del documento invariata.</p>
 `,
-  },
-  {
-    slug: "quanto-costa-muratore",
-    title: "Quanto costa un muratore nel 2026: prezzi per tipo di lavoro",
-    metaDescription: "Prezzi aggiornati per lavori di muratura nel 2026: costo al metro quadro per intonaco, demolizioni, costruzione muri, ristrutturazioni. Guida completa con tariffe Nord/Centro/Sud Italia.",
-    category: "Prezzi",
-    publishedAt: "2026-05-10",
-    readingTimeMin: 5,
-    relatedSectors: ["muratore", "edilizia", "ristrutturazione"],
-    contentHtml: `
+
+  "quanto-costa-muratore": `
 <p>Sapere quanto costa un muratore prima di iniziare i lavori è fondamentale per pianificare un cantiere senza brutte sorprese. I prezzi del settore edilizio variano significativamente in base alla zona geografica, alla complessità dell'intervento, alle dimensioni del cantiere e all'esperienza del professionista.</p>
 <p>In questa guida trovi i prezzi aggiornati al 2026 per le principali lavorazioni di muratura, con riferimenti distinti per Nord Italia, Centro Italia e Sud Italia.</p>
 
@@ -1583,17 +1374,8 @@ export const BLOG_ARTICLES: BlogArticle[] = [
 <h2>Ottieni un preventivo accurato in 30 secondi</h2>
 <p>Se sei un muratore o un'impresa edile, strumenti come prevai ti permettono di descrivere l'intervento e ricevere un preventivo strutturato in pochi secondi. Utile soprattutto per gli interventi standard (intonaci, tramezzi, massetti) dove la quotazione è prevedibile e ripetitiva. Meno tempo sui documenti, più tempo in cantiere.</p>
 `,
-  },
-  {
-    slug: "preventivo-piastrellista",
-    title: "Come fare un preventivo da piastrellista: guida completa con prezzi 2026",
-    seoTitle: "Preventivo da piastrellista: guida con prezzi 2026",
-    metaDescription: "Guida per piastrellisti e posatori: come strutturare un preventivo professionale, prezzi per la posa di pavimenti e rivestimenti, voci da includere e consigli pratici.",
-    category: "Professioni",
-    publishedAt: "2026-05-11",
-    readingTimeMin: 5,
-    relatedSectors: ["piastrellista", "pavimentista", "ristrutturazione"],
-    contentHtml: `
+
+  "preventivo-piastrellista": `
 <p>Per un piastrellista, il preventivo è il documento che traduce un'idea del cliente — "voglio rifare il bagno" o "voglio cambiare i pavimenti del soggiorno" — in un piano di lavoro concreto con costi chiari. Un preventivo ben fatto non solo rassicura il cliente, ma protegge il professionista da incomprensioni e contenziosi.</p>
 
 <h2>Cosa deve contenere un preventivo per posa pavimenti e rivestimenti</h2>
@@ -1684,17 +1466,9 @@ export const BLOG_ARTICLES: BlogArticle[] = [
 <p>Un piastrellista che lavora su più cantieri contemporaneamente può passare ore ogni settimana a compilare preventivi. La soluzione più efficiente è descrivere il lavoro in italiano semplice — "rivestimento bagno 8 mq con gres 60x60, rimozione vecchio rivestimento, stuccatura inclusa, Milano" — e ricevere subito un preventivo strutturato con tutte le voci già separate.</p>
 <p>Con strumenti AI come prevai, il documento è pronto in 30 secondi. Aggiungi logo aziendale, P.IVA, le tue condizioni di pagamento e invia. Il cliente riceve un PDF professionale, tu risparmi ore di lavoro burocratico.</p>
 `,
-  },
-  {
-    slug: "costo-impianto-idraulico-appartamento",
-    title: "Costo impianto idraulico appartamento 2026: guida ai prezzi",
-    metaDescription: "Scopri il costo impianto idraulico per appartamento nel 2026: rifacimento completo, sostituzione sanitari, differenze Nord/Sud. Confronta prima di richiedere un preventivo.",
-    category: "Prezzi",
-    publishedAt: "2026-04-01",
-    readingTimeMin: 6,
-    relatedSectors: ["idraulico", "termoidraulico", "ristrutturazione"],
-    contentHtml: `
-<p>Rifacere l'impianto idraulico di un appartamento è uno degli interventi più invasivi e costosi di una ristrutturazione. Eppure molti proprietari arrivano al preventivo senza un'idea chiara di cosa aspettarsi. Questa guida fornisce dati concreti per orientarsi tra le diverse voci di costo.</p>
+
+  "costo-impianto-idraulico-appartamento": `
+<p>Rifare l'impianto idraulico di un appartamento è uno degli interventi più invasivi e costosi di una ristrutturazione. Eppure molti proprietari arrivano al preventivo senza un'idea chiara di cosa aspettarsi. Questa guida fornisce dati concreti per orientarsi tra le diverse voci di costo.</p>
 
 <h2>Costo rifacimento completo impianto idrico per tipologia di tubo</h2>
 <p>La scelta del materiale incide in modo significativo sul preventivo finale. Esistono tre opzioni principali nel mercato italiano 2026:</p>
@@ -1761,17 +1535,8 @@ export const BLOG_ARTICLES: BlogArticle[] = [
 </ul>
 <p>Se il preventivo riporta un unico importo globale senza dettaglio per voce, chiedilo esplicitamente per iscritto prima di firmare.</p>
 `,
-  },
-  {
-    slug: "prezzi-posa-pavimento-gres-parquet",
-    title: "Prezzi posa pavimento 2026: gres, parquet e laminato a confronto",
-    seoTitle: "Prezzi posa pavimento 2026: gres, parquet, laminato",
-    metaDescription: "Prezzi posa pavimento 2026 per gres porcellanato, parquet e laminato: costo al mq, rimozione, massetto. Tabelle con fasce bassa, media e alta per confrontare i preventivi.",
-    category: "Prezzi",
-    publishedAt: "2026-04-02",
-    readingTimeMin: 6,
-    relatedSectors: ["pavimentista", "piastrellista", "ristrutturazione", "edilizia"],
-    contentHtml: `
+
+  "prezzi-posa-pavimento-gres-parquet": `
 <p>La posa del pavimento è una delle voci più variabili in un preventivo di ristrutturazione. Il costo finale dipende dal materiale scelto, dal tipo di posa, dallo stato del sottofondo e dalla zona geografica. Questa guida confronta le tre soluzioni più richieste nel 2026 con dati aggiornati.</p>
 
 <h2>Prezzi posa gres porcellanato: fascia bassa, media e alta</h2>
@@ -1815,7 +1580,7 @@ export const BLOG_ARTICLES: BlogArticle[] = [
 <p>Se il sottofondo non è a livello o è da costruire, il massetto è indispensabile:</p>
 <ul>
   <li><strong>Massetto tradizionale (sabbia + cemento)</strong>: 15–25 €/mq, spessore 4–6cm, maturazione 28 giorni prima della posa</li>
-  <li><strong>Autolitante (anidrite)</strong>: 18–30 €/mq, più planare, maturazione 14 giorni. Ideale per riscaldamento a pavimento</li>
+  <li><strong>Autolivellante (anidrite)</strong>: 18–30 €/mq, più planare, maturazione 14 giorni. Ideale per riscaldamento a pavimento</li>
   <li><strong>Rasante di livellamento</strong> (max 10mm): 8–15 €/mq, per piccole irregolarità senza demolire il massetto esistente</li>
 </ul>
 
@@ -1831,17 +1596,8 @@ export const BLOG_ARTICLES: BlogArticle[] = [
 </ul>
 <p>Per una consulenza professionale sulla scelta del pavimento più adatto al tuo cantiere, rivolgiti a un <a href="/preventivi/pavimentista/">pavimentista esperto</a> nella tua zona.</p>
 `,
-  },
-  {
-    slug: "costo-sostituzione-caldaia-condensazione",
-    title: "Costo sostituzione caldaia a condensazione 2026: prezzi e incentivi",
-    seoTitle: "Costo sostituzione caldaia a condensazione 2026",
-    metaDescription: "Costo sostituzione caldaia a condensazione 2026: prezzi per potenza, manodopera, incentivi fiscali Ecobonus. Confronta marche e risparmia sulla bolletta grazie agli incentivi.",
-    category: "Prezzi",
-    publishedAt: "2026-04-03",
-    readingTimeMin: 6,
-    relatedSectors: ["idraulico", "termoidraulico", "condizionatori"],
-    contentHtml: `
+
+  "costo-sostituzione-caldaia-condensazione": `
 <p>La sostituzione della caldaia è uno degli investimenti più frequenti nella casa italiana. Con l'obbligo di installare esclusivamente caldaie a condensazione nelle ristrutturazioni (D.Lgs. 48/2020 e aggiornamenti 2025), i costi e le tecnologie si sono evoluti. Ecco una guida aggiornata al 2026.</p>
 
 <h2>Prezzi caldaie a condensazione per fascia di potenza</h2>
@@ -1886,16 +1642,8 @@ export const BLOG_ARTICLES: BlogArticle[] = [
 </ul>
 <p>Un contratto di manutenzione annuale con un <a href="/preventivi/termoidraulico/">termoidraulico di fiducia</a> costa tipicamente 100–200€/anno e garantisce interventi in garanzia e priorità in caso di guasto.</p>
 `,
-  },
-  {
-    slug: "costo-rifacimento-tetto-materiali-prezzi",
-    title: "Costo rifacimento tetto 2026: materiali, manodopera e bonus",
-    metaDescription: "Costo rifacimento tetto 2026: prezzi per tegole, coppi, guaina e lamiera. Coibentazione, smaltimento amianto, ponteggio e incentivi fiscali disponibili. Guida completa.",
-    category: "Prezzi",
-    publishedAt: "2026-04-04",
-    readingTimeMin: 7,
-    relatedSectors: ["tetto", "edilizia", "ristrutturazione"],
-    contentHtml: `
+
+  "costo-rifacimento-tetto-materiali-prezzi": `
 <p>Il tetto è l'elemento strutturale della casa con la vita utile più variabile: da 20 anni per le guaine bituminose di bassa qualità a 80+ anni per i coppi in cotto artigianale. Quando arriva il momento del rifacimento, i costi possono variare enormemente. Questa guida fornisce i dati aggiornati al 2026.</p>
 
 <h2>Prezzi per tipo di copertura</h2>
@@ -1953,16 +1701,8 @@ export const BLOG_ARTICLES: BlogArticle[] = [
 </ul>
 <p>Per un tetto da 100mq con copertura in tegole + coibentazione, la spesa totale può aggirarsi tra 15.000 e 30.000€. Con l'Ecobonus al 65%, il risparmio fiscale in 10 anni arriva a 9.750–19.500€. Consulta un <a href="/preventivi/edilizia/">impresa edile specializzata</a> per valutare l'intervento e massimizzare gli incentivi.</p>
 `,
-  },
-  {
-    slug: "prezzi-condizionatori-installazione-2026",
-    title: "Prezzi condizionatori 2026: acquisto e installazione completa",
-    metaDescription: "Prezzi condizionatori installazione 2026: monosplit, multisplit per fascia BTU. Daikin, Mitsubishi, Samsung, LG a confronto. Incentivi e costi nascosti da conoscere prima.",
-    category: "Prezzi",
-    publishedAt: "2026-04-05",
-    readingTimeMin: 6,
-    relatedSectors: ["condizionatori", "termoidraulico"],
-    contentHtml: `
+
+  "prezzi-condizionatori-installazione-2026": `
 <p>Il caldo estivo ha spinto la domanda di condizionatori ai massimi storici in Italia. Ma tra prezzi online, installatori improvvisati e incentivi fiscali da capire, orientarsi è tutt'altro che semplice. Questa guida fornisce dati reali per confrontare preventivi nel 2026.</p>
 
 <h2>Prezzi condizionatori per fascia BTU</h2>
@@ -2018,17 +1758,8 @@ export const BLOG_ARTICLES: BlogArticle[] = [
   <li>Ignorare la rumorosità dell'unità esterna: oltre 65 dB può violare il regolamento condominiale</li>
 </ul>
 `,
-  },
-  {
-    slug: "costo-serramenti-infissi-sostituzione",
-    title: "Costo sostituzione infissi e serramenti 2026: prezzi per tipologia",
-    seoTitle: "Costo sostituzione infissi e serramenti 2026",
-    metaDescription: "Costo sostituzione infissi 2026: PVC, alluminio, legno e legno-alluminio a confronto. Prezzi al mq, detrazioni 50% e 65%, risparmio in bolletta. Guida ai preventivi.",
-    category: "Prezzi",
-    publishedAt: "2026-04-06",
-    readingTimeMin: 6,
-    relatedSectors: ["serramentista", "ristrutturazione", "edilizia"],
-    contentHtml: `
+
+  "costo-serramenti-infissi-sostituzione": `
 <p>Gli infissi rappresentano uno dei principali punti di dispersione termica di un edificio: fino al 30% delle perdite di calore passa attraverso finestre e porte-finestre datate. La sostituzione è uno degli investimenti con il miglior ritorno economico, anche grazie agli incentivi fiscali. Ecco i prezzi 2026.</p>
 
 <h2>Prezzi per tipologia di infisso</h2>
@@ -2082,16 +1813,8 @@ export const BLOG_ARTICLES: BlogArticle[] = [
   <li>Non chiedere i valori U dichiarati (necessari per le detrazioni fiscali)</li>
 </ul>
 `,
-  },
-  {
-    slug: "costo-posa-piastrelle-bagno-cucina",
-    title: "Costo posa piastrelle bagno e cucina 2026: guida ai prezzi",
-    metaDescription: "Costo posa piastrelle 2026 per bagno e cucina: prezzo al mq per pavimento e parete, rimozione, impermeabilizzazione e fugatura. Evita gli errori che fanno lievitare il preventivo.",
-    category: "Prezzi",
-    publishedAt: "2026-04-07",
-    readingTimeMin: 6,
-    relatedSectors: ["piastrellista", "ristrutturazione", "pavimentista"],
-    contentHtml: `
+
+  "costo-posa-piastrelle-bagno-cucina": `
 <p>Il costo di posa delle piastrelle è tra le voci più frequenti nei preventivi di ristrutturazione bagno e cucina. Eppure molti proprietari arrivano alla firma del contratto senza capire cosa stiano pagando. Ecco una guida con prezzi reali e le trappole da evitare.</p>
 
 <h2>Costo posa piastrelle per mq: pavimento vs parete</h2>
@@ -2150,17 +1873,8 @@ export const BLOG_ARTICLES: BlogArticle[] = [
 </ul>
 <p>Per evitare sorprese, richiedi un preventivo dettagliato voce per voce a un <a href="/preventivi/piastrellista/">piastrellista esperto</a> dopo un sopralluogo in cantiere.</p>
 `,
-  },
-  {
-    slug: "quanto-costa-giardiniere-manutenzione",
-    title: "Quanto costa un giardiniere nel 2026: manutenzione e progettazione",
-    seoTitle: "Quanto costa un giardiniere nel 2026: prezzi",
-    metaDescription: "Costo giardiniere 2026: prezzi per manutenzione ordinaria, potatura, irrigazione e progettazione giardino. Forfait mensile vs chiamata singola: cosa conviene davvero.",
-    category: "Prezzi",
-    publishedAt: "2026-04-08",
-    readingTimeMin: 5,
-    relatedSectors: ["giardiniere"],
-    contentHtml: `
+
+  "quanto-costa-giardiniere-manutenzione": `
 <p>Il verde privato ha vissuto una rinascita post-pandemia: sempre più italiani investono in giardini curati, terrazze arredate e aree verdi condominiali. Ma quanto costa davvero un giardiniere professionale nel 2026? I prezzi variano molto in base al servizio richiesto e alla zona geografica.</p>
 
 <h2>Costo manutenzione ordinaria: prezzi orari e forfait mensile</h2>
@@ -2221,17 +1935,8 @@ export const BLOG_ARTICLES: BlogArticle[] = [
 </ul>
 <p>Un <a href="/preventivi/giardiniere/">giardiniere professionista</a> fornisce sempre un preventivo dettagliato con frequenza degli interventi e elenco preciso delle lavorazioni incluse nel canone mensile.</p>
 `,
-  },
-  {
-    slug: "costo-pavimento-in-legno-parquet",
-    title: "Costo pavimento in legno 2026: parquet massello, prefinito e laminato",
-    seoTitle: "Costo pavimento in legno 2026: parquet e laminato",
-    metaDescription: "Costo parquet 2026: massello, prefinito multistrato e laminato a confronto. Levigatura, posa incollata vs flottante, essenze e prezzi al mq. Guida completa per scegliere bene.",
-    category: "Prezzi",
-    publishedAt: "2026-04-09",
-    readingTimeMin: 6,
-    relatedSectors: ["pavimentista", "falegname", "ristrutturazione"],
-    contentHtml: `
+
+  "costo-pavimento-in-legno-parquet": `
 <p>Il pavimento in legno rimane la scelta di punta per chi cerca calore, durabilità e valore immobiliare. Ma tra massello, prefinito, laminato e vinilico LVT, le differenze di prezzo sono enormi. Questa guida aiuta a capire cosa si compra — e cosa si paga — nel 2026.</p>
 
 <h2>Parquet massello: il riferimento del mercato</h2>
@@ -2280,16 +1985,8 @@ export const BLOG_ARTICLES: BlogArticle[] = [
 </ul>
 <p>Affidati a un <a href="/preventivi/pavimentista/">pavimentista specializzato in legno</a> per valutare lo stato del sottofondo — è la variabile che determina quale tipo di posa è possibile e quanto costerà davvero.</p>
 `,
-  },
-  {
-    slug: "prezzi-muratore-lavori-edilizi",
-    title: "Prezzi muratore 2026: costi per i lavori edilizi più comuni",
-    metaDescription: "Prezzi muratore 2026: costo orario, demolizione tramezzi, intonaco, massetto, rasatura pareti. Differenze regionali e come verificare la congruità del preventivo. Guida completa.",
-    category: "Prezzi",
-    publishedAt: "2026-04-11",
-    readingTimeMin: 6,
-    relatedSectors: ["muratore", "edilizia", "ristrutturazione"],
-    contentHtml: `
+
+  "prezzi-muratore-lavori-edilizi": `
 <p>Il muratore è il professionista trasversale di ogni cantiere: demolizioni, costruzioni, intonaci, massetti, finiture. Ma quanto costa davvero nel 2026? I prezzi cambiano per zona geografica, tipo di lavoro e regime contrattuale. Ecco dati aggiornati per orientarsi.</p>
 
 <h2>Costo orario del muratore: dipendente vs autonomo</h2>
@@ -2344,17 +2041,8 @@ export const BLOG_ARTICLES: BlogArticle[] = [
 </ul>
 <p>Per ristrutturazioni importanti, un <a href="/preventivi/muratore/">muratore certificato</a> rilascia sempre una Dichiarazione di Conformità per i lavori strutturali e garantisce i lavori per almeno 2 anni.</p>
 `,
-  },
-  {
-    slug: "come-capire-preventivo-gonfiato",
-    title: "Come capire se un preventivo è gonfiato: 8 segnali da riconoscere",
-    seoTitle: "Preventivo gonfiato: 8 segnali da riconoscere",
-    metaDescription: "Preventivo gonfiato: 8 segnali concreti per riconoscerlo, con esempi reali. Voci vaghe, IVA assente, nessuna scadenza. Come confrontare preventivi e tutelarsi per iscritto.",
-    category: "Consigli",
-    publishedAt: "2026-04-12",
-    readingTimeMin: 6,
-    relatedSectors: ["edilizia", "ristrutturazione", "idraulico", "elettricista"],
-    contentHtml: `
+
+  "come-capire-preventivo-gonfiato": `
 <p>Ricevere un preventivo troppo caro è frustrante. Ma capire se è davvero gonfiato — o semplicemente più dettagliato di altri — è più difficile di quanto sembri. Ecco 8 segnali concreti, con esempi reali, per orientarti prima di firmare.</p>
 
 <h2>1. Voci vaghe senza quantità specificate</h2>
@@ -2394,17 +2082,8 @@ export const BLOG_ARTICLES: BlogArticle[] = [
 <p>Se i lavori vengono consegnati con un conto superiore al preventivo firmato, hai diritto a contestarlo. Il preventivo scritto e firmato è un documento contrattuale. Per extra non autorizzati per iscritto, puoi legittimamente rifiutare il pagamento. Documenta tutto: preventivo firmato, comunicazioni WhatsApp o email, eventuali varianti discusse. Per ristrutturazioni importanti, utilizza sempre un contratto formale e non solo il preventivo.</p>
 <p>Usare strumenti come <a href="/preventivi/ristrutturazione/">prevai per generare preventivi strutturati</a> aiuta anche i professionisti onesti a comunicare con maggiore chiarezza e trasparenza ai propri clienti.</p>
 `,
-  },
-  {
-    slug: "domande-da-fare-prima-firmare-preventivo",
-    title: "10 domande da fare prima di firmare un preventivo di ristrutturazione",
-    seoTitle: "Preventivo di ristrutturazione: 10 domande da fare",
-    metaDescription: "Domande preventivo ristrutturazione: 10 domande essenziali prima di firmare. Materiali inclusi, smaltimento rifiuti, RC professionale, prezzo fisso o a consuntivo. Guida pratica.",
-    category: "Consigli",
-    publishedAt: "2026-04-13",
-    readingTimeMin: 6,
-    relatedSectors: ["ristrutturazione", "edilizia", "elettricista", "idraulico"],
-    contentHtml: `
+
+  "domande-da-fare-prima-firmare-preventivo": `
 <p>Firmare un preventivo di ristrutturazione senza fare le domande giuste è il modo più veloce per ritrovarsi con sorprese in fattura. Queste 10 domande ti proteggono — e distinguono l'impresa seria da quella che specula sull'ignoranza del cliente.</p>
 
 <h2>1. I materiali sono inclusi nel prezzo?</h2>
@@ -2443,16 +2122,8 @@ export const BLOG_ARTICLES: BlogArticle[] = [
 <p>Qualsiasi accordo verbale non vale nulla in caso di controversia. Tutto — varianti, scadenze, pagamenti, garanzie — deve essere documentato via email, WhatsApp (con screenshot salvati), o meglio ancora in un contratto formale allegato al preventivo.</p>
 <p>Per confrontare più preventivi in modo strutturato e capire quale offre il miglior rapporto qualità/prezzo, leggi anche la guida su <a href="/preventivi/ristrutturazione/">come scegliere l'impresa per ristrutturazioni</a>.</p>
 `,
-  },
-  {
-    slug: "differenza-preventivo-contratto-appalto",
-    title: "Differenza tra preventivo e contratto d'appalto: cosa firmare",
-    metaDescription: "Differenza preventivo contratto appalto in Italia: quando il preventivo diventa vincolante, clausole essenziali, penali, garanzie post-lavori. Guida legale pratica per il 2026.",
-    category: "Consigli",
-    publishedAt: "2026-04-14",
-    readingTimeMin: 6,
-    relatedSectors: ["ristrutturazione", "edilizia", "geometra"],
-    contentHtml: `
+
+  "differenza-preventivo-contratto-appalto": `
 <p>Molti committenti firmano un "preventivo" credendo di avere un contratto. Molti professionisti consegnano un "contratto" che è in realtà solo un preventivo. La distinzione ha conseguenze legali concrete. Ecco cosa dice la legge italiana e cosa dovresti firmare.</p>
 
 <h2>Cos'è un preventivo: vincolante o no?</h2>
@@ -2506,17 +2177,8 @@ export const BLOG_ARTICLES: BlogArticle[] = [
 </ul>
 <p>Per i lavori di ristrutturazione di fascia media, un contratto scritto tra privati è sufficiente. Rivolgiti a un <a href="/preventivi/geometra/">geometra professionista</a> per la redazione del capitolato tecnico allegato al contratto.</p>
 `,
-  },
-  {
-    slug: "red-flag-preventivi-idraulici-elettricisti",
-    title: "Red flag nei preventivi di idraulici ed elettricisti: come riconoscerli",
-    seoTitle: "Red flag nei preventivi di idraulici ed elettricisti",
-    metaDescription: "Preventivo idraulico elettricista affidabile: red flag concreti, certificazioni obbligatorie da verificare, P.IVA e CCIAA. Come distinguere i professionisti seri in 5 minuti.",
-    category: "Consigli",
-    publishedAt: "2026-04-16",
-    readingTimeMin: 6,
-    relatedSectors: ["idraulico", "elettricista", "termoidraulico"],
-    contentHtml: `
+
+  "red-flag-preventivi-idraulici-elettricisti": `
 <p>Gli impianti sono il sistema nervoso di una casa. Un impianto idraulico o elettrico fatto male non si vede — fino a quando provoca un guasto, un allagamento o, nel caso peggiore, un incendio. Saper leggere un preventivo in modo critico può letteralmente salvare la vita.</p>
 
 <h2>Red flag specifici per i preventivi degli idraulici</h2>
@@ -2555,17 +2217,8 @@ export const BLOG_ARTICLES: BlogArticle[] = [
 </ul>
 <p>Consulta le guide specifiche per il tuo settore: <a href="/preventivi/idraulico/">trovare un idraulico affidabile</a> o <a href="/preventivi/elettricista/">scegliere un elettricista certificato</a>.</p>
 `,
-  },
-  {
-    slug: "come-confrontare-preventivi-ristrutturazione",
-    title: "Come confrontare preventivi di ristrutturazione: metodo pratico",
-    seoTitle: "Come confrontare preventivi di ristrutturazione",
-    metaDescription: "Confrontare preventivi ristrutturazione correttamente: metodo per normalizzare voci diverse, valutare esperienza oltre il prezzo, capitolato tecnico e referenze verificabili.",
-    category: "Consigli",
-    publishedAt: "2026-04-17",
-    readingTimeMin: 5,
-    relatedSectors: ["ristrutturazione", "edilizia", "geometra"],
-    contentHtml: `
+
+  "come-confrontare-preventivi-ristrutturazione": `
 <p>Hai ricevuto tre preventivi per la ristrutturazione del bagno: €4.200, €5.800 e €7.100. Come decidi quale scegliere? Il prezzo più basso sembra ovvio, ma spesso è l'errore più costoso. Ecco un metodo pratico per confrontare preventivi in modo intelligente.</p>
 
 <h2>Perché il prezzo più basso spesso non conviene</h2>
@@ -2615,16 +2268,8 @@ export const BLOG_ARTICLES: BlogArticle[] = [
 <p>Per una ristrutturazione da 10.000–30.000€, dedica almeno 2–3 settimane alla selezione: almeno 3 preventivi, almeno 1 sopralluogo con ciascun professionista, verifica delle referenze e lettura critica dei preventivi. Accelerare questa fase per risparmiare qualche giorno spesso costa molto di più a fine lavori.</p>
 <p>Consulta anche la guida su <a href="/preventivi/ristrutturazione/">come ristrutturare casa senza sorprese</a> per altri strumenti pratici.</p>
 `,
-  },
-  {
-    slug: "lavori-casa-senza-permessi-rischi",
-    title: "Lavori in casa senza permessi: cosa rischi davvero nel 2026",
-    metaDescription: "Lavori casa senza permessi: differenza tra edilizia libera, CILA e SCIA. Sanzioni aggiornate 2026, impatto sulla vendita, sanatoria e responsabilità dell'impresa. Guida pratica.",
-    category: "Consigli",
-    publishedAt: "2026-04-18",
-    readingTimeMin: 6,
-    relatedSectors: ["ristrutturazione", "edilizia", "geometra", "muratore"],
-    contentHtml: `
+
+  "lavori-casa-senza-permessi-rischi": `
 <p>In Italia, non tutti i lavori in casa richiedono un permesso. Ma sapere cosa si può fare liberamente e cosa invece richiede comunicazione al Comune è fondamentale — le sanzioni per abuso edilizio possono essere salate, e gli errori possono bloccare la vendita dell'immobile per anni.</p>
 
 <h2>Edilizia libera: cosa si può fare senza comunicare al Comune</h2>
@@ -2668,16 +2313,8 @@ export const BLOG_ARTICLES: BlogArticle[] = [
 <h2>Responsabilità dell'impresa e del committente</h2>
 <p>L'impresa che esegue lavori abusivi su richiesta del committente è penalmente responsabile insieme a lui. La responsabilità del committente non viene meno nemmeno se delega tutto all'impresa. Prima di commissionare qualsiasi lavoro strutturale o di ampliamento, verifica con un <a href="/preventivi/geometra/">geometra abilitato</a> cosa è possibile fare e quali titoli abilitativi sono necessari.</p>
 `,
-  },
-  {
-    slug: "acconti-pagamenti-lavori-casa-guida",
-    title: "Acconti e pagamenti per lavori in casa: come tutelarsi",
-    metaDescription: "Acconto lavori casa: percentuali normali per settore, SAL, metodi di pagamento sicuri, cosa fare se l'impresa sparisce. Clausole da inserire nel contratto per tutelarsi.",
-    category: "Consigli",
-    publishedAt: "2026-04-19",
-    readingTimeMin: 6,
-    relatedSectors: ["ristrutturazione", "edilizia", "geometra"],
-    contentHtml: `
+
+  "acconti-pagamenti-lavori-casa-guida": `
 <p>Il momento del pagamento è il più delicato in qualsiasi lavoro di ristrutturazione. Quanto versare prima che inizino i lavori? Cosa fare se l'impresa sparisce dopo l'acconto? Come strutturare i pagamenti per tutelarsi senza bloccare il lavoro? Ecco le regole pratiche.</p>
 
 <h2>Percentuale di acconto normale per settore</h2>
@@ -2726,16 +2363,8 @@ export const BLOG_ARTICLES: BlogArticle[] = [
 </ul>
 <p>Consulta un <a href="/preventivi/geometra/">direttore lavori</a> per la gestione formale dei SAL su cantieri complessi: il suo costo (1–3% del valore dell'opera) si ripaga ampiamente in protezione e qualità dei lavori consegnati.</p>
 `,
-  },
-  {
-    slug: "garanzia-lavori-artigiani-diritti",
-    title: "Garanzia sui lavori degli artigiani: i tuoi diritti nel 2026",
-    metaDescription: "Garanzia lavori artigiani 2026: art. 1669 c.c., 10 anni per vizi strutturali, 2 anni per altri vizi. Come denunciare un vizio, RC professionale e cosa fare se l'artigiano non risponde.",
-    category: "Consigli",
-    publishedAt: "2026-04-20",
-    readingTimeMin: 6,
-    relatedSectors: ["ristrutturazione", "edilizia", "idraulico", "elettricista"],
-    contentHtml: `
+
+  "garanzia-lavori-artigiani-diritti": `
 <p>I lavori sono finiti, l'artigiano è pagato — e poi dopo qualche mese spuntano crepe, perdite d'acqua, cortocircuiti. Chi paga? Per quanto tempo puoi chiedere conto dei difetti? La legge italiana ti dà strumenti precisi: usali.</p>
 
 <h2>La garanzia legale: art. 1669 del Codice Civile</h2>
@@ -2787,16 +2416,8 @@ export const BLOG_ARTICLES: BlogArticle[] = [
 </ul>
 <p>Per <a href="/preventivi/ristrutturazione/">ristrutturazioni importanti</a>, affidati sempre a imprese con assicurazione RC e iscrizione alla CCIAA verificabile: sono i professionisti che non fuggono dopo i lavori.</p>
 `,
-  },
-  {
-    slug: "tipi-pittura-pareti-quale-scegliere",
-    title: "Tipi di pittura per pareti: quale scegliere per ogni ambiente",
-    metaDescription: "Tipi pittura pareti: lavabile, traspirante, antimuffa, al quarzo, silossanica. Resa in mq/litro, prezzi e quale usare per bagno, cucina, camera. Guida per scegliere bene.",
-    category: "Tool",
-    publishedAt: "2026-04-21",
-    readingTimeMin: 6,
-    relatedSectors: ["imbianchino", "pittore", "ristrutturazione"],
-    contentHtml: `
+
+  "tipi-pittura-pareti-quale-scegliere": `
 <p>Non tutte le pitture sono uguali. Scegliere il prodotto sbagliato per un ambiente significa ritinteggiare dopo 2 anni invece che 8. Ecco una guida tecnica ai principali tipi di pittura per interni ed esterni, con prezzi e rese reali.</p>
 
 <h2>Pitture per interni: guida per ambiente</h2>
@@ -2840,19 +2461,10 @@ export const BLOG_ARTICLES: BlogArticle[] = [
   <li>Silossanica per esterno: 12–25 €/litro</li>
   <li>Ai silicati: 18–40 €/litro</li>
 </ul>
-<p>Per un imbianchino professionista, la differenza tra un prodotto da 4 €/litro e uno da 12 €/litro può essere 180€ su 100mq di parete. Ma la pittura di qualità dura il doppio — il risparmio è nella mano d'opera non rifatta. Un <a href="/preventivi/imbianchino/">imbianchino esperto</a> sa sempre consigliare il prodotto giusto per ogni superfice.</p>
+<p>Per un imbianchino professionista, la differenza tra un prodotto da 4 €/litro e uno da 12 €/litro può essere 180€ su 100mq di parete. Ma la pittura di qualità dura il doppio — il risparmio è nella mano d'opera non rifatta. Un <a href="/preventivi/imbianchino/">imbianchino esperto</a> sa sempre consigliare il prodotto giusto per ogni superficie.</p>
 `,
-  },
-  {
-    slug: "tipi-cavi-elettrici-impianti-civili",
-    title: "Tipi di cavi elettrici per impianti civili: guida tecnica per capire il preventivo",
-    seoTitle: "Tipi di cavi elettrici per impianti civili: guida",
-    metaDescription: "Tipi cavi elettrici impianti: FG16OR16, N07V-K, FG17, sezioni per circuito, normativa CEI 64-8. Costi al metro e come leggere il preventivo dell'elettricista. Guida tecnica.",
-    category: "Tool",
-    publishedAt: "2026-04-22",
-    readingTimeMin: 6,
-    relatedSectors: ["elettricista"],
-    contentHtml: `
+
+  "tipi-cavi-elettrici-impianti-civili": `
 <p>Quando l'elettricista ti presenta un preventivo con sigle come "FG16OR16" o "N07V-K", sai cosa sta offrendo? La scelta del cavo non è un dettaglio: sbagliare sezione o tipo può causare surriscaldamenti, cortocircuiti o invaliderebbe la Dichiarazione di Conformità dell'impianto.</p>
 
 <h2>I principali tipi di cavi per impianti civili</h2>
@@ -2898,17 +2510,8 @@ export const BLOG_ARTICLES: BlogArticle[] = [
 </ul>
 <p>Se il preventivo riporta solo "cavi elettrici a norma" senza specificare tipo e sezione, chiedi l'integrazione per iscritto. La differenza tra un N07V-K 1,5mm² e un FG16OR16 4mm² può essere il doppio del costo del materiale — e fa tutta la differenza in sicurezza e conformità. Affidati sempre a un <a href="/preventivi/elettricista/">elettricista abilitato</a> per impianti nuovi e rifacimenti.</p>
 `,
-  },
-  {
-    slug: "tipi-tubazioni-impianti-idraulici",
-    title: "Tipi di tubazioni per impianti idraulici: rame, multistrato e PEX a confronto",
-    seoTitle: "Tubazioni per impianti idraulici: rame, multistrato, PEX",
-    metaDescription: "Tubazioni impianti idraulici: rame, multistrato alluminio-polietilene e PEX a confronto tecnico. Norme UNI, costi al metro, vita utile e quando usare ogni tipo. Guida completa.",
-    category: "Tool",
-    publishedAt: "2026-04-23",
-    readingTimeMin: 6,
-    relatedSectors: ["idraulico", "termoidraulico", "ristrutturazione"],
-    contentHtml: `
+
+  "tipi-tubazioni-impianti-idraulici": `
 <p>La scelta delle tubazioni è uno degli aspetti più tecnici di un impianto idraulico. Eppure è una variabile che incide molto sul costo del preventivo e sulla durata dell'impianto. Ecco la guida tecnica per capire le differenze e leggere con occhio critico ciò che propone l'idraulico.</p>
 
 <h2>Rame: il materiale tradizionale per eccellenza</h2>
@@ -2965,17 +2568,8 @@ export const BLOG_ARTICLES: BlogArticle[] = [
 </ul>
 <p>Affidati a un <a href="/preventivi/idraulico/">idraulico certificato</a> per la scelta del materiale corretto in base alla qualità dell'acqua locale (durezza e pH) e al tipo di impianto.</p>
 `,
-  },
-  {
-    slug: "materiali-ristrutturazione-bagno-guida",
-    title: "Materiali per la ristrutturazione del bagno: guida completa ai costi",
-    seoTitle: "Materiali per ristrutturare il bagno: guida ai costi",
-    metaDescription: "Materiali ristrutturazione bagno: lista completa con prezzi per fascia economica, media e alta. Impermeabilizzante, piastrelle, sanitari, rubinetteria, box doccia. Guida 2026.",
-    category: "Tool",
-    publishedAt: "2026-04-24",
-    readingTimeMin: 7,
-    relatedSectors: ["idraulico", "piastrellista", "ristrutturazione"],
-    contentHtml: `
+
+  "materiali-ristrutturazione-bagno-guida": `
 <p>Ristrutturare un bagno richiede molti materiali diversi, spesso acquistati in luoghi diversi e con tempi diversi. Una stima corretta è impossibile senza una lista completa. Ecco tutti i materiali necessari per un rifacimento bagno completo, con i prezzi divisi per fascia di qualità.</p>
 
 <h2>Lista materiali per bagno completo: dalle fondamenta alle finiture</h2>
@@ -3036,17 +2630,8 @@ export const BLOG_ARTICLES: BlogArticle[] = [
 </ul>
 <p>Pianifica l'acquisto dei materiali con anticipo: box doccia e piastrelle su ordinazione hanno tempi di consegna di 2–4 settimane. Consulta un <a href="/preventivi/idraulico/">idraulico esperto</a> per la sequenza corretta degli acquisti e dei lavori.</p>
 `,
-  },
-  {
-    slug: "tipologie-legno-falegnameria-prezzi",
-    title: "Tipologie di legno per falegnameria: guida ai prezzi e agli utilizzi",
-    seoTitle: "Tipologie di legno per falegnameria: guida ai prezzi",
-    metaDescription: "Tipi legno falegnameria: rovere, noce, ciliegio, pino e abete con prezzi al mq. Massello vs multistrato, MDF, trattamenti e verniciature. Come leggere il preventivo del falegname.",
-    category: "Tool",
-    publishedAt: "2026-04-25",
-    readingTimeMin: 6,
-    relatedSectors: ["falegname", "carpentiere", "ristrutturazione"],
-    contentHtml: `
+
+  "tipologie-legno-falegnameria-prezzi": `
 <p>Quando chiedi un preventivo al falegname, la voce "fornitura legno" può variare del 300% a parità di lavorazione. Capire i materiali ti permette di confrontare offerte diverse e capire se stai pagando quello che vale davvero.</p>
 
 <h2>Legni masselli più usati in Italia: prezzi e caratteristiche</h2>
@@ -3098,17 +2683,8 @@ export const BLOG_ARTICLES: BlogArticle[] = [
 </ul>
 <p>Richiedi sempre il dettaglio per iscritto a un <a href="/preventivi/falegname/">falegname specializzato</a>. La differenza tra MDF laccato e rovere massello oliato può essere 400€/mq — e merita di essere scelta consapevolmente.</p>
 `,
-  },
-  {
-    slug: "gres-porcellanato-quale-scegliere",
-    title: "Gres porcellanato: come scegliere il formato giusto e leggere il preventivo",
-    seoTitle: "Gres porcellanato: formati, prezzi e preventivo",
-    metaDescription: "Gres porcellanato scegliere: classi PEI, scivolosità R9-R13, rettificato vs non, grandi formati, spessori slim vs outdoor. Marchi italiani e come leggere la voce fornitura nel preventivo.",
-    category: "Tool",
-    publishedAt: "2026-04-26",
-    readingTimeMin: 6,
-    relatedSectors: ["piastrellista", "pavimentista", "ristrutturazione"],
-    contentHtml: `
+
+  "gres-porcellanato-quale-scegliere": `
 <p>Il gres porcellanato è la scelta più diffusa per pavimenti e rivestimenti in Italia. Ma non tutti i gres sono uguali: la classe di resistenza, il coefficiente di scivolosità e il formato incidono tantissimo sia sul prezzo che sull'uso corretto. Ecco come scegliere e come leggere il preventivo del piastrellista.</p>
 
 <h2>Classi di resistenza all'abrasione (PEI 1-5)</h2>
@@ -3171,23 +2747,14 @@ export const BLOG_ARTICLES: BlogArticle[] = [
 </ul>
 <p>Senza questi dati, qualsiasi confronto tra preventivi di <a href="/preventivi/piastrellista/">piastrellisti</a> è inutile: stai confrontando prodotti completamente diversi.</p>
 `,
-  },
-  {
-    slug: "strumenti-imbianchino-professionista",
-    title: "Strumenti da imbianchino professionista: quali servono e quanto costano",
-    seoTitle: "Strumenti da imbianchino: quali servono e costi",
-    metaDescription: "Strumenti imbianchino professionista: lista completa rulli, pennelli, airless, trabattello. Costi acquisto vs noleggio, DPI obbligatori D.Lgs. 81/2008. Guida pratica per iniziare.",
-    category: "Tool",
-    publishedAt: "2026-04-27",
-    readingTimeMin: 6,
-    relatedSectors: ["imbianchino", "pittore"],
-    contentHtml: `
+
+  "strumenti-imbianchino-professionista": `
 <p>Iniziare a lavorare come imbianchino professionista significa investire in attrezzatura di qualità. Strumenti scadenti rovinano il lavoro — e il cliente se ne accorge. Ma non serve comprare tutto subito: questa guida ti aiuta a capire cosa è indispensabile da subito e cosa noleggiare.</p>
 
 <h2>Lista completa attrezzatura essenziale</h2>
 
 <h3>Rulli e pennelli</h3>
-<p>Il rullo è lo strumento che usa l'80% del tempo di lavoro. Non lesiniare:</p>
+<p>Il rullo è lo strumento che usa l'80% del tempo di lavoro. Non lesinare:</p>
 <ul>
   <li>Rullo in microfibra 25cm (per pitture lisce su cartongesso e intonaco civile): 8–20€ professionale vs 3€ da grande distribuzione. La differenza? Zero pelucchi, resa uniforme</li>
   <li>Rullo in lana (per pitture al quarzo e superfici ruvide): 10–25€</li>
@@ -3239,17 +2806,8 @@ export const BLOG_ARTICLES: BlogArticle[] = [
 </ul>
 <p>La mancata dotazione dei DPI comporta sanzioni fino a 5.000€ in caso di ispezione. Per chi vuole approfondire il settore, la guida su <a href="/preventivi/imbianchino/">come diventare imbianchino professionista</a> copre anche i corsi obbligatori di sicurezza.</p>
 `,
-  },
-  {
-    slug: "software-preventivi-artigiani-confronto",
-    title: "Software preventivi per artigiani 2026: confronto tra le opzioni disponibili",
-    seoTitle: "Software preventivi per artigiani 2026: confronto",
-    metaDescription: "Software preventivi artigiani 2026: Excel, gestionali, app mobile e AI a confronto. Cosa valutare, limiti di Excel, impatto sulla conversione. Integrazione WhatsApp e PDF.",
-    category: "Tool",
-    publishedAt: "2026-04-28",
-    readingTimeMin: 6,
-    relatedSectors: ["imbianchino", "elettricista", "idraulico", "edilizia", "ristrutturazione"],
-    contentHtml: `
+
+  "software-preventivi-artigiani-confronto": `
 <p>La preventivazione è una delle attività più odiose per chi fa lavori manuali. Ore spese a tavolo invece che in cantiere. Ma il mercato delle soluzioni digitali si è evoluto rapidamente. Ecco un confronto aggiornato al 2026 tra le opzioni disponibili per artigiani italiani.</p>
 
 <h2>Categorie di software per la preventivazione</h2>
@@ -3297,17 +2855,8 @@ export const BLOG_ARTICLES: BlogArticle[] = [
 <p>Essenziali: generazione PDF professionale, export in formato modificabile, inserimento logo, campi IVA e dati aziendali, data di scadenza. Superflue per un artigiano medio: gestione scadenzario fatture, integrazione contabile, firma digitale avanzata, CRM completo.</p>
 <p>Inizia con uno strumento semplice e aggiungi funzionalità solo quando ne hai veramente bisogno.</p>
 `,
-  },
-  {
-    slug: "come-diventare-imbianchino-professionista",
-    title: "Come diventare imbianchino professionista in Italia: guida completa",
-    seoTitle: "Come diventare imbianchino professionista in Italia",
-    metaDescription: "Diventare imbianchino professionista: percorso formativo, abilitazioni obbligatorie, corsi sicurezza D.Lgs. 81/2008, guadagni medi e come trovare i primi clienti. Guida 2026.",
-    category: "Professioni",
-    publishedAt: "2026-04-29",
-    readingTimeMin: 7,
-    relatedSectors: ["imbianchino", "pittore"],
-    contentHtml: `
+
+  "come-diventare-imbianchino-professionista": `
 <p>Diventare imbianchino e aprire un'attività autonoma è uno dei percorsi artigianali più accessibili in Italia. Non richiede una laurea, ma richiede competenze tecniche, obblighi normativi precisi e — spesso sottovalutata — la capacità di gestire i clienti e fare preventivi professionali. Ecco la guida completa.</p>
 
 <h2>Percorso formativo: come si diventa imbianchino</h2>
@@ -3365,17 +2914,8 @@ export const BLOG_ARTICLES: BlogArticle[] = [
 </ul>
 <p>Un preventivo professionale e rapido è spesso ciò che distingue il cliente acquisito da quello perso. Strumenti come <a href="/preventivi/imbianchino/">prevai per imbianchini</a> permettono di creare documenti professionali in 60 secondi anche dal telefono, dopo il sopralluogo.</p>
 `,
-  },
-  {
-    slug: "quanto-guadagna-elettricista-italia",
-    title: "Quanto guadagna un elettricista in Italia nel 2026: dati e prospettive",
-    seoTitle: "Quanto guadagna un elettricista in Italia nel 2026",
-    metaDescription: "Quanto guadagna elettricista in Italia 2026: stipendio dipendente CCNL, reddito autonomo per zona, specializzazioni redditizie, certificazioni CEI. Dati aggiornati e prospettive.",
-    category: "Professioni",
-    publishedAt: "2026-04-30",
-    readingTimeMin: 6,
-    relatedSectors: ["elettricista"],
-    contentHtml: `
+
+  "quanto-guadagna-elettricista-italia": `
 <p>L'elettricista è una delle figure artigianali con la domanda più stabile in Italia. La transizione energetica — fotovoltaico, colonnine di ricarica, domotica — sta creando nuove opportunità e aumentando il valore di mercato delle competenze specialistiche. Ma quanto si guadagna davvero?</p>
 
 <h2>Stipendio elettricista dipendente: CCNL di riferimento</h2>
@@ -3429,16 +2969,8 @@ export const BLOG_ARTICLES: BlogArticle[] = [
 <p>Le stime di Confartigianato e CNA indicano che nei prossimi 5 anni mancheranno in Italia circa 30.000 elettricisti qualificati. La combinazione di pensionamenti dei boomer e scarso ricambio giovane crea uno squilibrio strutturale a favore di chi entra nel settore oggi. Il costo orario medio è destinato a crescere ulteriormente.</p>
 <p>Per lavorare in modo professionale ed efficiente, un <a href="/preventivi/elettricista/">elettricista</a> oggi usa strumenti digitali per preventivi, gestione cantieri e comunicazione con i clienti — parte integrante della competitività nel 2026.</p>
 `,
-  },
-  {
-    slug: "aprire-partita-iva-artigiano-guida",
-    title: "Aprire partita IVA come artigiano: guida pratica 2026",
-    metaDescription: "Aprire partita IVA artigiano 2026: iter completo, regime forfettario vs ordinario, contributi INPS ~3.900€/anno, fatturazione elettronica, RC obbligatoria. Errori da evitare.",
-    category: "Professioni",
-    publishedAt: "2026-05-01",
-    readingTimeMin: 7,
-    relatedSectors: ["imbianchino", "elettricista", "idraulico", "muratore", "falegname"],
-    contentHtml: `
+
+  "aprire-partita-iva-artigiano-guida": `
 <p>Aprire la partita IVA come artigiano è il passo che trasforma un lavoratore dipendente o un aiutante in un imprenditore autonomo. L'iter è meno complicato di quanto sembri, ma ci sono obblighi precisi da rispettare. Questa guida ti accompagna passo per passo.</p>
 
 <h2>Iter completo per aprire la partita IVA artigiana</h2>
@@ -3495,17 +3027,8 @@ export const BLOG_ARTICLES: BlogArticle[] = [
 </ul>
 <p>Prima di aprire, parla con un commercialista specializzato in artigiani e PMI. Una consulenza iniziale da 150–300€ vale molto di più delle sanzioni per errori fiscali dei primi mesi. Per i preventivi, usa strumenti professionali come <a href="/preventivi/elettricista/">quelli disponibili per gli artigiani del tuo settore</a>.</p>
 `,
-  },
-  {
-    slug: "preventivo-lavori-giardino-guida",
-    title: "Come fare un preventivo per lavori di giardinaggio: guida professionale",
-    seoTitle: "Preventivo giardinaggio: guida professionale",
-    metaDescription: "Preventivo lavori giardino: voci da includere, come misurare, prezzi di riferimento per lavorazione, contratti condominio, stagionalità e come distinguersi con foto del sopralluogo.",
-    category: "Professioni",
-    publishedAt: "2026-05-02",
-    readingTimeMin: 6,
-    relatedSectors: ["giardiniere"],
-    contentHtml: `
+
+  "preventivo-lavori-giardino-guida": `
 <p>Un giardiniere che lavora bene ma presenta preventivi approssimativi perde lavori a favore di concorrenti meno competenti ma più professionali sulla carta. La buona notizia: strutturare un preventivo da giardiniere non è difficile — e cambia la percezione del cliente in modo radicale.</p>
 
 <h2>Voci da includere in un preventivo per lavori di giardinaggio</h2>
@@ -3563,16 +3086,8 @@ export const BLOG_ARTICLES: BlogArticle[] = [
 </ul>
 <p>Un preventivo con foto e nomi precisi comunica competenza in modo immediato — e giustifica prezzi più alti. Usa strumenti digitali per creare documenti professionali in modo rapido: la <a href="/preventivi/giardiniere/">guida per giardinieri su prevai</a> spiega come strutturare il documento ideale.</p>
 `,
-  },
-  {
-    slug: "preventivo-falegnameria-su-misura",
-    title: "Come fare un preventivo per lavori di falegnameria su misura",
-    metaDescription: "Preventivo falegnameria su misura: voci specifiche, calcolo legno con sprechi, corpo vs misura, tempi di realizzazione, personalizzazioni. Come comunicare le varianti senza impegnarsi.",
-    category: "Professioni",
-    publishedAt: "2026-05-03",
-    readingTimeMin: 6,
-    relatedSectors: ["falegname", "carpentiere"],
-    contentHtml: `
+
+  "preventivo-falegnameria-su-misura": `
 <p>La falegnameria su misura è un settore dove il preventivo fa una differenza enorme: chi non sa comunicare il valore del proprio lavoro in un documento strutturato perde spesso lavori non per qualità ma per percezione. Ecco come fare un preventivo da falegname che conquista il cliente.</p>
 
 <h2>Voci specifiche per falegnameria su misura</h2>
@@ -3622,17 +3137,8 @@ export const BLOG_ARTICLES: BlogArticle[] = [
 <p>Un preventivo senza disegno tecnico allegato è aperto a interpretazioni. Il disegno serve come riferimento di accordo contrattuale. Per lavori sopra i 5.000€, investi 2–4 ore nel disegno (anche con strumenti semplici come SketchUp Free o AutoCAD LT): ogni ora spesa nel disegno risparmia 3–4 ore di discussioni post-consegna.</p>
 <p>Genera preventivi professionali per i tuoi lavori di <a href="/preventivi/falegname/">falegnameria su misura</a> in modo rapido e strutturato con strumenti AI dedicati agli artigiani italiani.</p>
 `,
-  },
-  {
-    slug: "normativa-impianti-termici-obblighi",
-    title: "Normativa impianti termici 2026: obblighi per artigiani e committenti",
-    seoTitle: "Normativa impianti termici 2026: gli obblighi",
-    metaDescription: "Normativa impianti termici 2026: D.P.R. 74/2013, libretto d'impianto, controllo efficienza energetica, sanzioni fino a 3.000€. Obblighi di manutenzione e cosa includere nel preventivo.",
-    category: "Professioni",
-    publishedAt: "2026-05-04",
-    readingTimeMin: 6,
-    relatedSectors: ["termoidraulico", "idraulico", "condizionatori"],
-    contentHtml: `
+
+  "normativa-impianti-termici-obblighi": `
 <p>Gli impianti termici sono uno degli ambiti più normati del settore edile e impiantistico in Italia. Non rispettare gli obblighi di manutenzione costa sanzioni salate — e chi installa e manutiene gli impianti deve conoscere la normativa per offrire un servizio completo e compliant ai propri clienti.</p>
 
 <h2>D.P.R. 74/2013: la normativa di riferimento</h2>
@@ -3696,17 +3202,8 @@ export const BLOG_ARTICLES: BlogArticle[] = [
 </ul>
 <p>Un preventivo di manutenzione che non cita queste voci non garantisce un servizio compliant. Scegli sempre un manutentore iscritto all'albo artigiani e abilitato ai sensi del D.M. 37/2008.</p>
 `,
-  },
-  {
-    slug: "bonus-edilizi-2026-guida-artigiani",
-    title: "Bonus edilizi 2026: guida per artigiani e clienti su detrazioni e incentivi",
-    seoTitle: "Bonus edilizi 2026: guida a detrazioni e incentivi",
-    metaDescription: "Bonus edilizi 2026: Bonus Ristrutturazione 50%, Ecobonus 65%, Bonus Mobili, Verde, Conto Termico. Requisiti, bonifico parlante, visto conformità. Guida aggiornata per artigiani.",
-    category: "Professioni",
-    publishedAt: "2026-05-05",
-    readingTimeMin: 7,
-    relatedSectors: ["ristrutturazione", "edilizia", "geometra", "termoidraulico", "serramentista"],
-    contentHtml: `
+
+  "bonus-edilizi-2026-guida-artigiani": `
 <p>Il sistema degli incentivi fiscali per i lavori edilizi è cambiato molto negli ultimi anni. Per gli artigiani, conoscere le agevolazioni disponibili è un vantaggio competitivo: puoi aiutare il cliente a ottenere detrazioni che abbattono il costo percepito del lavoro — e chiudere più preventivi.</p>
 
 <h2>Panoramica dei bonus attivi nel 2026</h2>
@@ -3762,16 +3259,8 @@ export const BLOG_ARTICLES: BlogArticle[] = [
 <h2>Scadenze previste per i bonus nel 2026</h2>
 <p>Il Bonus Ristrutturazione 50% è prorogato fino al 31 dicembre 2026 (poi potrebbe scendere al 36%). L'Ecobonus è prorogato fino al 31 dicembre 2027 con meccanismi diversi per edifici unifamiliari e condomini. Consulta sempre un <a href="/preventivi/geometra/">geometra o commercialista</a> per verificare le scadenze aggiornate al momento dei lavori.</p>
 `,
-  },
-  {
-    slug: "geometra-quando-serve-lavori-casa",
-    title: "Quando serve un geometra per i lavori in casa: guida pratica",
-    metaDescription: "Geometra lavori casa quando serve: CILA, SCIA, permesso di costruire, ruolo direttore lavori, costo pratica edilizia e come scegliere. Guida pratica aggiornata al 2026.",
-    category: "Professioni",
-    publishedAt: "2026-05-06",
-    readingTimeMin: 6,
-    relatedSectors: ["geometra", "ristrutturazione", "edilizia"],
-    contentHtml: `
+
+  "geometra-quando-serve-lavori-casa": `
 <p>Molti proprietari di casa si chiedono se hanno bisogno di un geometra per i lavori che stanno pianificando. La risposta dipende dal tipo di intervento e dal comune in cui si trova l'immobile. Questa guida chiarisce quando è obbligatorio, quando è conveniente e quanto costa.</p>
 
 <h2>Lavori che richiedono obbligatoriamente un tecnico abilitato</h2>
@@ -3840,17 +3329,8 @@ export const BLOG_ARTICLES: BlogArticle[] = [
 </ul>
 <p>Il <a href="/preventivi/geometra/">geometra</a> è il professionista che ti protegge dai rischi legali e ti aiuta ad accedere agli incentivi fiscali nel modo corretto. Non è un costo — è un investimento nella regolarità del tuo immobile.</p>
 `,
-  },
-  {
-    slug: "preventivo-ristrutturazione-bagno-completo",
-    title: "Preventivo ristrutturazione bagno completo 2026: voci e prezzi",
-    seoTitle: "Preventivo ristrutturazione bagno 2026: prezzi",
-    metaDescription: "Preventivo ristrutturazione bagno 2026: tutte le voci con prezzi indicativi per bagno 4mq, 6mq e 9mq. Costo totale, ordine delle lavorazioni, tempi di cantiere ed errori da evitare.",
-    category: "Professioni",
-    publishedAt: "2026-05-07",
-    readingTimeMin: 7,
-    relatedSectors: ["idraulico", "piastrellista", "ristrutturazione", "elettricista"],
-    contentHtml: `
+
+  "preventivo-ristrutturazione-bagno-completo": `
 <p>La ristrutturazione del bagno è uno degli interventi più frequenti e più complessi da preventivare. Molte voci, molti artigiani diversi coinvolti, molte variabili. Questa guida elenca tutte le voci con prezzi reali 2026 e il costo totale per tre dimensioni di bagno standard.</p>
 
 <h2>Voci di costo per un preventivo bagno completo</h2>
@@ -3940,17 +3420,8 @@ export const BLOG_ARTICLES: BlogArticle[] = [
 </ul>
 <p>Per ottenere un preventivo strutturato per la tua ristrutturazione bagno, utilizza strumenti dedicati ai professionisti <a href="/preventivi/idraulico/">idraulici</a> e <a href="/preventivi/piastrellista/">piastrellisti</a> per confrontare le offerte in modo corretto.</p>
 `,
-  },
-  {
-    slug: "ai-preventivi-artigiani-come-funziona",
-    title: "AI per preventivi degli artigiani: come funziona e cosa cambia",
-    seoTitle: "AI per preventivi degli artigiani: come funziona",
-    metaDescription: "AI preventivi artigiani: come funziona l'AI per la preventivazione, differenza con ChatGPT, vantaggi su velocità e accuratezza, integrazione WhatsApp. Dati su risparmio di tempo.",
-    category: "Innovazione",
-    publishedAt: "2026-05-08",
-    readingTimeMin: 6,
-    relatedSectors: ["imbianchino", "elettricista", "idraulico", "ristrutturazione"],
-    contentHtml: `
+
+  "ai-preventivi-artigiani-come-funziona": `
 <p>L'intelligenza artificiale ha iniziato a trasformare il modo in cui gli artigiani italiani fanno i preventivi. Non è fantascienza: oggi uno strumento AI può trasformare una descrizione vocale o testuale in un preventivo PDF professionale in meno di 60 secondi. Ecco come funziona e cosa cambia davvero.</p>
 
 <h2>Come funziona l'AI applicata alla preventivazione</h2>
@@ -4012,17 +3483,8 @@ export const BLOG_ARTICLES: BlogArticle[] = [
 </ul>
 <p>Il futuro è già qui. Provare uno strumento AI per preventivi come <a href="/preventivi/ristrutturazione/">prevai</a> richiede meno di 5 minuti e può cambiare il tuo modo di lavorare dalla prima settimana.</p>
 `,
-  },
-  {
-    slug: "gestione-clienti-artigiano-crm",
-    title: "Come gestire i clienti da artigiano: dalla prima richiesta al saldo",
-    seoTitle: "Come gestire i clienti da artigiano: guida pratica",
-    metaDescription: "Gestione clienti artigiano: ciclo di vita completo, follow-up preventivi non accettati, raccolta recensioni, Google My Business, valore del cliente ripetuto. Guida pratica 2026.",
-    category: "Business",
-    publishedAt: "2026-05-09",
-    readingTimeMin: 6,
-    relatedSectors: ["imbianchino", "elettricista", "idraulico", "edilizia"],
-    contentHtml: `
+
+  "gestione-clienti-artigiano-crm": `
 <p>La maggior parte degli artigiani è bravissima nel lavoro manuale e debolissima nella gestione del cliente. Eppure è spesso la gestione del cliente — non la qualità tecnica — a determinare se un'attività cresce o stagna. Questa guida copre l'intero ciclo di vita del cliente.</p>
 
 <h2>Il ciclo di vita del cliente artigiano</h2>
@@ -4082,16 +3544,8 @@ export const BLOG_ARTICLES: BlogArticle[] = [
 </ul>
 <p>Un profilo Google My Business ben ottimizzato porta in media 3–8 nuovi contatti mensili spontanei nella zona di riferimento — senza spendere nulla in pubblicità. Per gestire l'aumento di lavoro che ne deriva, strumenti come <a href="/preventivi/imbianchino/">prevai per artigiani</a> permettono di gestire preventivi rapidamente anche in periodi di picco.</p>
 `,
-  },
-  {
-    slug: "fatturazione-elettronica-artigiani-guida",
-    title: "Fatturazione elettronica per artigiani 2026: guida pratica",
-    metaDescription: "Fatturazione elettronica artigiani 2026: obbligo SDI per forfettari, codice destinatario PEC, software gratuiti e a pagamento, sanzioni per omissione. Guida pratica aggiornata.",
-    category: "Business",
-    publishedAt: "2026-05-10",
-    readingTimeMin: 6,
-    relatedSectors: ["imbianchino", "elettricista", "idraulico", "falegname", "giardiniere"],
-    contentHtml: `
+
+  "fatturazione-elettronica-artigiani-guida": `
 <p>Dal 2024, la fatturazione elettronica è obbligatoria per tutti i titolari di Partita IVA italiani — inclusi i forfettari che fino al 2023 erano esentati. Ecco tutto quello che un artigiano deve sapere per essere in regola nel 2026.</p>
 
 <h2>L'obbligo di fatturazione elettronica per tutti</h2>
@@ -4156,17 +3610,8 @@ export const BLOG_ARTICLES: BlogArticle[] = [
 </ul>
 <p>L'integrazione preventivo → fattura nel flusso di lavoro quotidiano è il modo più efficiente per non dimenticare mai di fatturare. Usa strumenti come <a href="/preventivi/elettricista/">prevai per artigiani</a> che connettono direttamente la generazione del preventivo all'emissione della fattura finale.</p>
 `,
-  },
-  {
-    slug: "google-my-business-artigiani-guida",
-    title: "Google My Business per artigiani: come ottimizzare il profilo e trovare clienti",
-    seoTitle: "Google My Business per artigiani: guida completa",
-    metaDescription: "Google My Business artigiani: come creare e ottimizzare il profilo, foto prima/dopo, raccogliere recensioni, Google Posts stagionali, statistiche. Guida pratica per artigiani locali.",
-    category: "Business",
-    publishedAt: "2026-05-09",
-    readingTimeMin: 6,
-    relatedSectors: ["imbianchino", "elettricista", "idraulico", "edilizia", "giardiniere"],
-    contentHtml: `
+
+  "google-my-business-artigiani-guida": `
 <p>Quando un privato cerca "idraulico Milano" o "elettricista vicino a me", il 78% delle volte clicca su uno dei risultati nella sezione Google Maps. Se non sei lì, perdi quei clienti. Google My Business (ora Google Business Profile) è lo strumento di marketing più potente e gratuito per un artigiano locale.</p>
 
 <h2>Perché Google My Business è lo strumento più potente per artigiani locali</h2>
@@ -4241,17 +3686,8 @@ export const BLOG_ARTICLES: BlogArticle[] = [
 </ul>
 <p>Un profilo GMB ben ottimizzato è il fondamento del marketing locale. Combinalo con uno strumento per preventivi veloci come <a href="/preventivi/idraulico/">prevai per idraulici</a> e potrai rispondere a tutte le richieste in tempo reale, aumentando il tasso di conversione.</p>
 `,
-  },
-  {
-    slug: "preventivo-whatsapp-artigiani-vantaggi",
-    title: "Preventivi su WhatsApp: perché gli artigiani stanno abbandonando l'email",
-    seoTitle: "Preventivi su WhatsApp: perché battono l'email",
-    metaDescription: "Preventivo WhatsApp artigiani: tasso apertura 98% vs 20% email, velocità risposta, PDF professionale, etichette e broadcast. Integrazione AI per preventivo in 2 minuti. Guida 2026.",
-    category: "Business",
-    publishedAt: "2026-05-10",
-    readingTimeMin: 6,
-    relatedSectors: ["imbianchino", "elettricista", "idraulico", "giardiniere", "ristrutturazione"],
-    contentHtml: `
+
+  "preventivo-whatsapp-artigiani-vantaggi": `
 <p>Fino a 10 anni fa, un preventivo si mandava per posta o per email. Poi è arrivato il PDF allegato. Oggi, gli artigiani più competitivi mandano il preventivo su WhatsApp prima ancora di tornare a casa dal sopralluogo. Non è pigrizia: è strategia di conversione.</p>
 
 <h2>Tasso di apertura: WhatsApp vs email</h2>
@@ -4311,17 +3747,8 @@ export const BLOG_ARTICLES: BlogArticle[] = [
 </ul>
 <p>WhatsApp è lo strumento di comunicazione, non di archiviazione. Usa strumenti dedicati come <a href="/preventivi/ristrutturazione/">prevai</a> che archiviano automaticamente tutti i preventivi inviati e ne tracciano lo stato di accettazione.</p>
 `,
-  },
-  {
-    slug: "modello-preventivo-edile",
-    title: "Modello preventivo edile: word, excel e PDF da scaricare gratis",
-    seoTitle: "Modello preventivo edile: word, excel e PDF",
-    metaDescription: "Modello preventivo edile 2026: struttura completa in Word, Excel e PDF con voci, quantità e prezzi. Cosa deve contenere per essere valido e professionale.",
-    category: "Tool",
-    publishedAt: "2026-08-05",
-    readingTimeMin: 5,
-    relatedSectors: ["edilizia", "muratore", "ristrutturazione"],
-    contentHtml: `
+
+  "modello-preventivo-edile": `
 <p>Cercare un "modello preventivo edile" da scaricare è il primo passo di chi sta per aprire un cantiere, piccolo o grande. Il problema è che la maggior parte dei modelli gratuiti trovati online sono generici, mancano di voci obbligatorie o non rispettano la normativa fiscale italiana. Ecco come deve essere fatto un modello valido, in ogni formato.</p>
 
 <h2>Cosa deve contenere un modello preventivo edile completo</h2>
@@ -4368,17 +3795,8 @@ export const BLOG_ARTICLES: BlogArticle[] = [
 </ul>
 <p>Prima di usare un modello trovato online, verifica sempre che rispetti questi punti: un preventivo incompleto può creare contestazioni in fase di pagamento o di detrazione fiscale per il cliente.</p>
 `,
-  },
-  {
-    slug: "modello-preventivo-excel",
-    title: "Modello preventivo Excel: come farlo con formule automatiche",
-    seoTitle: "Modello preventivo Excel: guida con formule",
-    metaDescription: "Modello preventivo Excel 2026: come costruirlo con formule per calcolo automatico di imponibile, IVA e totale. Struttura consigliata e limiti da conoscere.",
-    category: "Tool",
-    publishedAt: "2026-08-06",
-    readingTimeMin: 5,
-    relatedSectors: ["modello-excel", "edilizia", "freelance"],
-    contentHtml: `
+
+  "modello-preventivo-excel": `
 <p>Excel resta lo strumento più diffuso tra artigiani e piccole imprese per preparare i preventivi, perché è già installato su quasi ogni computer e permette di automatizzare i calcoli. Ecco come costruire un modello preventivo Excel che funzioni davvero, senza errori di formula.</p>
 
 <h2>Struttura di base del foglio preventivo</h2>
@@ -4424,17 +3842,8 @@ export const BLOG_ARTICLES: BlogArticle[] = [
   <li>Sono presenti data di validità dell'offerta e condizioni di pagamento</li>
 </ul>
 `,
-  },
-  {
-    slug: "modello-preventivo-lavori-edili-word",
-    title: "Modello preventivo lavori edili in Word: guida e struttura",
-    seoTitle: "Modello preventivo lavori edili in Word",
-    metaDescription: "Modello preventivo lavori edili in Word 2026: struttura consigliata, tabelle, voci obbligatorie e come evitare gli errori più comuni prima di inviarlo al cliente.",
-    category: "Tool",
-    publishedAt: "2026-08-07",
-    readingTimeMin: 4,
-    relatedSectors: ["edilizia", "muratore", "modello-word"],
-    contentHtml: `
+
+  "modello-preventivo-lavori-edili-word": `
 <p>Word resta il programma più usato dalle piccole imprese edili per scrivere un preventivo, grazie alla sua familiarità. Il problema non è lo strumento, ma come viene usato: un preventivo scritto come un semplice elenco puntato comunica poca professionalità rispetto a uno organizzato in tabelle.</p>
 
 <h2>Perché usare le tabelle e non gli elenchi puntati</h2>
@@ -4474,17 +3883,8 @@ export const BLOG_ARTICLES: BlogArticle[] = [
 <h2>Il limite del modello Word: il tempo di compilazione</h2>
 <p>Anche con un modello ben fatto, ogni nuovo preventivo richiede riscrivere voci, quantità e prezzi da zero o copiare da un preventivo precedente e modificarlo a mano — un'operazione che richiede in media 30-60 minuti per un intervento edile con 15-20 voci. Un <a href="/preventivi/muratore/">software di preventivazione con intelligenza artificiale</a> genera lo stesso documento, con la stessa struttura professionale, descrivendo semplicemente il lavoro: il tempo scende a meno di un minuto, senza dover aprire Word né sistemare tabelle.</p>
 `,
-  },
-  {
-    slug: "modello-preventivo-impianto-elettrico",
-    title: "Modello preventivo impianto elettrico: template gratuito e voci",
-    seoTitle: "Modello preventivo impianto elettrico: guida e voci",
-    metaDescription: "Modello preventivo impianto elettrico 2026 in Word: voci obbligatorie, quadro elettrico, punti luce, prese, dichiarazione di conformità. Struttura pronta da compilare.",
-    category: "Tool",
-    publishedAt: "2026-08-08",
-    readingTimeMin: 4,
-    relatedSectors: ["elettricista"],
-    contentHtml: `
+
+  "modello-preventivo-impianto-elettrico": `
 <p>Un modello preventivo per impianto elettrico deve rispettare regole più tecniche rispetto a un preventivo edile generico, perché coinvolge normativa specifica (D.M. 37/2008) e obblighi di collaudo. Ecco come costruirne uno completo, in formato Word o PDF.</p>
 
 <h2>Voci obbligatorie in un preventivo impianto elettrico</h2>
@@ -4525,17 +3925,8 @@ export const BLOG_ARTICLES: BlogArticle[] = [
 </ul>
 <p>Per evitare di ricostruire questa struttura ogni volta da zero, un <a href="/preventivi/elettricista/">generatore di preventivi AI per elettricisti</a> include già tutte queste voci tecniche e la Dichiarazione di Conformità come voce standard, producendo un documento completo partendo solo dalla descrizione del lavoro da fare.</p>
 `,
-  },
-  {
-    slug: "esempio-preventivo-ristrutturazione-bagno",
-    title: "Esempio preventivo ristrutturazione bagno: voci e prezzi reali",
-    seoTitle: "Esempio preventivo ristrutturazione bagno: voci reali",
-    metaDescription: "Esempio preventivo ristrutturazione bagno 2026 con voci reali e prezzi: demolizione, impianti, piastrelle, sanitari. Un modello completo da usare come riferimento.",
-    category: "Prezzi",
-    publishedAt: "2026-08-09",
-    readingTimeMin: 6,
-    relatedSectors: ["idraulico", "piastrellista", "ristrutturazione"],
-    contentHtml: `
+
+  "esempio-preventivo-ristrutturazione-bagno": `
 <p>Chi cerca un esempio di preventivo per la ristrutturazione del bagno vuole capire una cosa sola: come deve essere strutturato un documento vero, con voci reali e prezzi di mercato, non un modello vuoto da compilare a caso. Ecco un esempio completo su un bagno di 6mq, con ogni voce spiegata.</p>
 
 <h2>Esempio preventivo: bagno 6mq, ristrutturazione completa</h2>
@@ -4579,17 +3970,8 @@ export const BLOG_ARTICLES: BlogArticle[] = [
 <p>Ogni bagno ha variabili che cambiano il totale: posizione dei nuovi scarichi rispetto a quelli esistenti (spostare uno scarico costa 200-500€ in più), altezza del rivestimento richiesta, qualità dei materiali scelti. Usa questo esempio come struttura di riferimento, non come preventivo definitivo: chiedi sempre un sopralluogo per un preventivo su misura.</p>
 <p>Per generare rapidamente un documento con questa stessa struttura, adattato al proprio cantiere specifico, un <a href="/preventivi/idraulico/">generatore di preventivi AI</a> permette di ottenere in pochi secondi un documento organizzato per voci, con calcolo automatico di imponibile e IVA.</p>
 `,
-  },
-  {
-    slug: "preventivo-ristrutturazione-casa-esempio",
-    title: "Preventivo ristrutturazione casa: esempio completo passo per passo",
-    seoTitle: "Preventivo ristrutturazione casa: esempio completo",
-    metaDescription: "Preventivo ristrutturazione casa 2026: esempio completo passo per passo con voci, capitoli di spesa e prezzi reali per un appartamento tipo. Guida pratica.",
-    category: "Prezzi",
-    publishedAt: "2026-08-10",
-    readingTimeMin: 6,
-    relatedSectors: ["ristrutturazione", "edilizia", "muratore"],
-    contentHtml: `
+
+  "preventivo-ristrutturazione-casa-esempio": `
 <p>Un preventivo di ristrutturazione casa completo coinvolge diverse categorie di lavoro e diversi artigiani. Vedere un esempio reale, capitolo per capitolo, aiuta a capire cosa aspettarsi prima di chiedere i primi preventivi veri per il proprio appartamento.</p>
 
 <h2>Esempio: ristrutturazione appartamento 80mq, intervento medio</h2>
@@ -4627,17 +4009,8 @@ export const BLOG_ARTICLES: BlogArticle[] = [
 <h2>Come usare questo esempio per il proprio appartamento</h2>
 <p>I prezzi variano in base a metratura, zona geografica e stato di partenza dell'immobile (un appartamento con impianti già recenti richiede interventi più limitati). Usa questa struttura per capitoli come base per confrontare i preventivi che riceverai, verificando che ognuno copra le stesse voci con lo stesso livello di dettaglio. Per generare rapidamente un documento con questa struttura, un <a href="/preventivi/ristrutturazione/">generatore di preventivi AI per ristrutturazioni</a> organizza automaticamente le voci per capitolo di spesa.</p>
 `,
-  },
-  {
-    slug: "esempio-preventivo-ristrutturazione-facciata",
-    title: "Esempio preventivo ristrutturazione facciata: voci e costi",
-    seoTitle: "Esempio preventivo ristrutturazione facciata",
-    metaDescription: "Esempio preventivo ristrutturazione facciata 2026: voci reali, ponteggio, intonaco, tinteggiatura esterna, cappotto termico. Prezzi al mq e bonus applicabili.",
-    category: "Prezzi",
-    publishedAt: "2026-08-11",
-    readingTimeMin: 5,
-    relatedSectors: ["edilizia", "muratore", "ristrutturazione"],
-    contentHtml: `
+
+  "esempio-preventivo-ristrutturazione-facciata": `
 <p>Il rifacimento della facciata è un intervento che coinvolge spesso l'intero condominio e richiede un preventivo particolarmente dettagliato, perché include voci che non compaiono in altri lavori edilizi — ponteggio, permessi comunali, eventuale cappotto termico. Ecco un esempio completo, voce per voce.</p>
 
 <h2>Esempio preventivo: facciata condominiale 300mq</h2>
@@ -4674,17 +4047,8 @@ export const BLOG_ARTICLES: BlogArticle[] = [
 </ul>
 <p>Prima di firmare, verifica che il preventivo indichi chiaramente quale bonus è applicabile e chi si occupa dell'invio della pratica ENEA quando richiesta. Per un preventivo su misura per il proprio edificio, un <a href="/preventivi/edilizia/">generatore di preventivi AI</a> aiuta a strutturare rapidamente tutte queste voci tecniche in un documento pronto per l'assemblea condominiale.</p>
 `,
-  },
-  {
-    slug: "fac-simile-preventivo",
-    title: "Fac simile preventivo: esempio pronto da compilare per ogni settore",
-    seoTitle: "Fac simile preventivo: esempio pronto da compilare",
-    metaDescription: "Fac simile preventivo 2026: esempio completo con tutte le voci obbligatorie, pronto da adattare per edilizia, elettricista, idraulico e altri mestieri.",
-    category: "Tool",
-    publishedAt: "2026-08-12",
-    readingTimeMin: 5,
-    relatedSectors: ["edilizia", "ristrutturazione", "freelance"],
-    contentHtml: `
+
+  "fac-simile-preventivo": `
 <p>Chi cerca un "fac simile preventivo" vuole vedere un esempio concreto, già compilato, da usare come riferimento per il proprio documento — non un modulo vuoto. Ecco un fac simile completo con la struttura corretta, valido come base per qualsiasi settore.</p>
 
 <h2>Fac simile preventivo: struttura generale</h2>
@@ -4724,17 +4088,8 @@ export const BLOG_ARTICLES: BlogArticle[] = [
 <h2>Dal fac simile al preventivo vero: cosa cambia nella pratica</h2>
 <p>Copiare un fac simile e sostituire i numeri richiede comunque tempo: bisogna adattare ogni voce al proprio lavoro reale, ricalcolare i totali, controllare che l'IVA sia corretta. Un <a href="/preventivi/come-fare-preventivo/">generatore di preventivi con intelligenza artificiale</a> parte dalla stessa struttura di questo fac simile ma la compila automaticamente a partire dalla descrizione del lavoro, con calcoli sempre corretti e pronta per l'invio in PDF in meno di un minuto.</p>
 `,
-  },
-  {
-    slug: "fac-simile-preventivo-edile",
-    title: "Fac simile preventivo edile: esempio pronto da compilare",
-    seoTitle: "Fac simile preventivo edile: esempio compilato",
-    metaDescription: "Fac simile preventivo edile 2026 con voci e prezzi reali per demolizioni, murature, intonaci. Esempio completo pronto da usare come riferimento.",
-    category: "Tool",
-    publishedAt: "2026-08-13",
-    readingTimeMin: 4,
-    relatedSectors: ["edilizia", "muratore"],
-    contentHtml: `
+
+  "fac-simile-preventivo-edile": `
 <p>Un fac simile preventivo edile deve mostrare come si documentano correttamente le lavorazioni più comuni di un cantiere edile: demolizioni, murature, intonaci, massetti. Ecco un esempio completo compilato con prezzi reali, utile come riferimento diretto.</p>
 
 <h2>Fac simile: lavori edili di ristrutturazione parziale</h2>
@@ -4762,17 +4117,8 @@ export const BLOG_ARTICLES: BlogArticle[] = [
 <p>Per interventi di dimensioni maggiori (es. ristrutturazione completa di un appartamento), la stessa logica si ripete su più capitoli: opere murarie, impianti, pavimenti, finiture, ciascuno con le proprie voci quantificate. Il fac simile qui sopra è la base che si moltiplica per ogni categoria di lavoro.</p>
 <p>Per generare velocemente un documento con questa stessa struttura, partendo da una descrizione del lavoro reale da eseguire, un <a href="/preventivi/muratore/">generatore di preventivi AI per l'edilizia</a> calcola automaticamente quantità e totali, riducendo il tempo di compilazione da 30-40 minuti a pochi secondi.</p>
 `,
-  },
-  {
-    slug: "fac-simile-preventivo-impianto-elettrico",
-    title: "Fac simile preventivo impianto elettrico: esempio compilato",
-    seoTitle: "Fac simile preventivo impianto elettrico",
-    metaDescription: "Fac simile preventivo impianto elettrico 2026: esempio con quadro, punti luce, prese e Dichiarazione di Conformità. Prezzi reali pronti da consultare.",
-    category: "Tool",
-    publishedAt: "2026-08-14",
-    readingTimeMin: 4,
-    relatedSectors: ["elettricista"],
-    contentHtml: `
+
+  "fac-simile-preventivo-impianto-elettrico": `
 <p>Un fac simile per un preventivo di impianto elettrico deve rispettare regole tecniche precise, perché coinvolge normativa di sicurezza. Ecco un esempio compilato con voci e prezzi realistici, utile come riferimento diretto per elettricisti e clienti.</p>
 
 <h2>Fac simile: impianto elettrico civile appartamento 70mq</h2>
@@ -4801,17 +4147,8 @@ export const BLOG_ARTICLES: BlogArticle[] = [
 <p>Il numero di punti luce e prese varia in base alla metratura e al layout dell'appartamento: una cucina richiede più punti presa dedicati rispetto a una camera da letto, un bagno richiede punti con grado di protezione IP44 per la zona doccia. Usa questo fac simile come riferimento di struttura e prezzi unitari, adattando le quantità al proprio progetto specifico dopo un sopralluogo.</p>
 <p>Per ottenere rapidamente un documento con questa stessa struttura tecnica, un <a href="/preventivi/elettricista/">generatore di preventivi AI per elettricisti</a> calcola automaticamente il numero di punti e i relativi costi partendo dalla descrizione dell'impianto richiesto.</p>
 `,
-  },
-  {
-    slug: "fac-simile-preventivo-imbianchino",
-    title: "Fac simile preventivo imbianchino: modello Word pronto",
-    seoTitle: "Fac simile preventivo imbianchino: esempio Word",
-    metaDescription: "Fac simile preventivo imbianchino 2026: esempio compilato con voci per tinteggiatura e stuccatura, prezzi al mq reali, pronto da adattare in Word.",
-    category: "Tool",
-    publishedAt: "2026-08-15",
-    readingTimeMin: 4,
-    relatedSectors: ["imbianchino", "pittore"],
-    contentHtml: `
+
+  "fac-simile-preventivo-imbianchino": `
 <p>Un fac simile per un preventivo da imbianchino deve mostrare come tradurre in voci chiare un lavoro che, a differenza di altri mestieri edili, si misura quasi sempre in metri quadri di superficie trattata. Ecco un esempio compilato, pronto da adattare in Word.</p>
 
 <h2>Fac simile: tinteggiatura appartamento 85mq</h2>
@@ -4839,17 +4176,8 @@ export const BLOG_ARTICLES: BlogArticle[] = [
 <p>In Word, questo fac simile si traduce in una tabella a 5 colonne (descrizione, superficie, prezzo unitario, totale riga) con il riepilogo IVA in fondo, sempre evidenziato in grassetto. Ricorda di esportare sempre in PDF prima di inviarlo al cliente.</p>
 <p>Per generare automaticamente un documento con questa struttura, un <a href="/preventivi/imbianchino/">generatore di preventivi AI per imbianchini</a> calcola in automatico le superfici per tipo di lavorazione (pareti, soffitti, bagni) a partire dalla descrizione dell'appartamento.</p>
 `,
-  },
-  {
-    slug: "fac-simile-preventivo-tinteggiatura",
-    title: "Fac simile preventivo tinteggiatura e pitturazione interna",
-    seoTitle: "Fac simile preventivo tinteggiatura interna",
-    metaDescription: "Fac simile preventivo tinteggiatura e pitturazione interna 2026: esempio con prezzi per stanza, prodotti e mani di pittura. Pronto da consultare e adattare.",
-    category: "Tool",
-    publishedAt: "2026-08-16",
-    readingTimeMin: 4,
-    relatedSectors: ["imbianchino", "pittore"],
-    contentHtml: `
+
+  "fac-simile-preventivo-tinteggiatura": `
 <p>Quando il lavoro riguarda solo poche stanze e non l'intero appartamento, un fac simile organizzato per singolo ambiente è più utile di un preventivo calcolato sulla metratura totale. Ecco un esempio di preventivo per pitturazione interna limitata a due stanze.</p>
 
 <h2>Fac simile: pitturazione soggiorno e camera da letto</h2>
@@ -4879,17 +4207,8 @@ export const BLOG_ARTICLES: BlogArticle[] = [
 </ul>
 <p>Anche per lavori di piccole dimensioni, un preventivo scritto (non solo verbale) tutela sia il cliente che l'imbianchino in caso di contestazioni sul risultato finale. Per generare rapidamente un documento con questa struttura per stanza, un <a href="/preventivi/imbianchino/">generatore di preventivi AI</a> calcola automaticamente le superfici a partire dalla descrizione degli ambienti da trattare.</p>
 `,
-  },
-  {
-    slug: "fac-simile-preventivo-idraulico",
-    title: "Fac simile preventivo idraulico: esempio impianto e riparazioni",
-    seoTitle: "Fac simile preventivo idraulico: esempio compilato",
-    metaDescription: "Fac simile preventivo idraulico 2026: esempio con voci per impianto, sostituzione sanitari e riparazioni urgenti. Prezzi reali pronti da consultare.",
-    category: "Tool",
-    publishedAt: "2026-08-17",
-    readingTimeMin: 4,
-    relatedSectors: ["idraulico", "termoidraulico"],
-    contentHtml: `
+
+  "fac-simile-preventivo-idraulico": `
 <p>Un fac simile per un preventivo idraulico cambia molto in base al tipo di intervento: un impianto nuovo si preventiva per metro di tubazione e punti di erogazione, un intervento urgente si preventiva a corpo con tariffa oraria maggiorata. Ecco due esempi compilati, per i casi più comuni.</p>
 
 <h2>Fac simile 1: rifacimento impianto idraulico bagno</h2>
@@ -4927,18 +4246,9 @@ export const BLOG_ARTICLES: BlogArticle[] = [
 </ul>
 <p>Per generare rapidamente un documento con questa struttura, sia per lavori programmati che per interventi urgenti, un <a href="/preventivi/idraulico/">generatore di preventivi AI per idraulici</a> permette di ottenere il documento corretto in meno di un minuto, direttamente da smartphone durante il sopralluogo.</p>
 `,
-  },
-  {
-    slug: "prevai-canada-quoteai",
-    title: "PrevAI arriva in Canada: nasce QuoteAI, i preventivi con l'intelligenza artificiale per le imprese canadesi",
-    seoTitle: "PrevAI arriva in Canada: nasce QuoteAI",
-    metaDescription: "Lo stesso team di PrevAI lancia QuoteAI per il Canada: preventivi AI in inglese e francese, imposte provinciali (GST, HST, PST, QST) e dollari canadesi. Cosa cambia per chi lavora in Italia e in Canada.",
-    category: "Innovazione",
-    publishedAt: "2026-09-23",
-    readingTimeMin: 5,
-    relatedSectors: [],
-    contentHtml: `
-<p>PrevAI esce dall'Italia per la prima volta. Lo stesso team che sviluppa PrevAI ha lanciato <a href="https://quoteai.ca/">QuoteAI</a>, la versione del prodotto costruita per le imprese edili e gli artigiani del Canada. Non è una traduzione del sito italiano: è un prodotto pensato per un mercato con altre lingue, altre imposte e altre regole.</p>
+
+  "prevai-canada-quoteai": `
+<p>PrevAI esce dall'Italia per la prima volta. Lo stesso team che sviluppa PrevAI ha lanciato <a href="https://quoteai.ca/">QuoteAI</a>, la versione del prodotto costruita per le imprese edili e gli artigiani del Canada. Non è una traduzione del sito italiano: è un prodotto pensato per un mercato con altre lingue, altre imposte e altre regole, sulla stessa base tecnica che genera i preventivi di PrevAI.</p>
 <p>In questo articolo spieghiamo perché abbiamo scelto il Canada, che cosa cambia fra i due prodotti e che cosa significa per chi usa PrevAI in Italia o lavora in Canada.</p>
 <figure>
   <img src="/images/blog/prevai-canada-quoteai.jpg" width="1600" height="1000" loading="lazy" decoding="async" alt="La homepage di QuoteAI: a destra un preventivo di un'impresa di tinteggiatura di Toronto con subtotale di 1.450 dollari, HST al 13 % e totale di 1.769 dollari" />
@@ -4950,7 +4260,7 @@ export const BLOG_ARTICLES: BlogArticle[] = [
 <p>Il Canada ha poi un legame particolare con l'Italia. Al censimento 2021 di Statistics Canada circa un milione e mezzo di persone hanno dichiarato origini italiane, con le comunità più grandi nelle aree di Toronto e di Montréal: una presenza storica anche nell'edilizia e nei mestieri. Per molti di loro l'italiano è ancora una lingua di casa, ma i preventivi si scrivono in inglese o in francese.</p>
 
 <h2>Che cosa cambia fra PrevAI e QuoteAI</h2>
-<p>Il principio è lo stesso: descrivi il lavoro a parole e in pochi secondi ottieni un preventivo completo, con voci, quantità, prezzi e imposte, pronto da inviare. Cambia tutto ciò che dipende dal Paese:</p>
+<p>Il principio è lo stesso: descrivi il lavoro a parole e in pochi secondi ottieni un preventivo completo, con voci, quantità, prezzi e imposte, pronto da inviare e da far firmare. Cambia tutto ciò che dipende dal Paese:</p>
 <div class="overflow-x-auto">
 <table>
   <thead>
@@ -4960,7 +4270,8 @@ export const BLOG_ARTICLES: BlogArticle[] = [
     <tr><td>Lingua</td><td>Italiano</td><td>Inglese e francese (anche per il Québec)</td></tr>
     <tr><td>Valuta</td><td>Euro</td><td>Dollaro canadese</td></tr>
     <tr><td>Imposte sul preventivo</td><td>IVA al 22 %, 10 % o 4 % secondo il lavoro, regimi senza IVA per i forfettari</td><td>GST, HST, PST e QST secondo la provincia</td></tr>
-    <tr><td>Fatturazione elettronica</td><td>Obbligatoria, tramite il Sistema di Interscambio (SdI)</td><td>Nessun sistema equivalente: le fatture seguono le regole canadesi</td></tr>
+    <tr><td>Documenti fiscali</td><td>Pro-forma e, col modulo PrevAI Fisco, fattura elettronica via SdI</td><td>Fatture secondo le regole canadesi (lo SdI esiste solo in Italia)</td></tr>
+    <tr><td>Piani</td><td>Starter 19 €, Pro 49 €, Elite 79 € al mese, IVA inclusa</td><td>Starter 19 $, Pro 49 $, Elite 59 $ al mese, in dollari canadesi</td></tr>
   </tbody>
 </table>
 </div>
@@ -4969,9 +4280,9 @@ export const BLOG_ARTICLES: BlogArticle[] = [
 <h2>Che cosa significa per chi usa PrevAI in Italia</h2>
 <p>Per le imprese italiane non cambia nulla nel modo di lavorare, e alcune cose migliorano:</p>
 <ul>
-  <li><strong>Un team che lavora su due mercati.</strong> La prossima versione di PrevAI è costruita sulla stessa base tecnica di QuoteAI: le funzioni nate su un mercato, quando hanno senso anche sull'altro, si portano sull'altro.</li>
+  <li><strong>La stessa base tecnica.</strong> PrevAI e QuoteAI condividono il motore che genera i preventivi, i contratti, i cantieri e le fatture. Le funzioni nate su un mercato, quando hanno senso anche sull'altro, si portano sull'altro: per esempio la gestione dei cantieri e della squadra, nata su QuoteAI e arrivata anche su PrevAI.</li>
   <li><strong>Account e dati separati.</strong> Un account PrevAI non è un account QuoteAI. I dati delle imprese italiane restano su server nell'Unione europea e sono trattati secondo il GDPR, come sempre.</li>
-  <li><strong>Regole italiane, non adattate.</strong> Tutto ciò che è specifico dell'Italia — IVA, regime forfettario, regole su preventivi e contratti — resta al centro di PrevAI e continua a essere sviluppato qui.</li>
+  <li><strong>Regole italiane, non adattate.</strong> Tutto ciò che è specifico dell'Italia — IVA, regime forfettario, fatturazione elettronica, contratti secondo il Codice civile e il Codice del Consumo — resta in PrevAI e continua a essere sviluppato qui.</li>
 </ul>
 
 <h2>Se lavori in Canada, o stai per trasferirti</h2>
@@ -4986,128 +4297,12 @@ export const BLOG_ARTICLES: BlogArticle[] = [
 <h3>PrevAI diventerà un prodotto in inglese?</h3>
 <p>No. PrevAI resta in italiano e costruito sulle regole italiane. Il Canada ha il suo prodotto proprio perché adattare un solo software a due Paesi avrebbe reso entrambe le versioni peggiori.</p>
 <h3>Le funzioni nuove arriveranno su tutti e due?</h3>
-<p>Quelle che hanno senso in entrambi i mercati sì. Quelle legate alle regole di un Paese — l'IVA e lo SdI in Italia, le imposte provinciali in Canada — restano dove servono.</p>
+<p>Quelle che hanno senso in entrambi i mercati sì, perché la base tecnica è la stessa. Quelle legate a un Paese — la fatturazione elettronica via SdI in Italia, le imposte provinciali in Canada — restano dove servono.</p>
 `,
-  },
-];
-
-export interface GuideCard {
-  slug: string;
-  title: string;
-  description: string;
-  href: string;
-  icon: string;
-}
-
-export const GUIDE_CARDS: GuideCard[] = [
-  {
-    slug: "come-fare-preventivo",
-    title: "Come fare un preventivo professionale",
-    description: "Guida passo-passo: struttura, voci, IVA e come inviarlo al cliente. Tutto quello che serve per creare un preventivo che converte.",
-    href: "/preventivi/come-fare-preventivo",
-    icon: "📋",
-  },
-  {
-    slug: "preventivi-gratis",
-    title: "Preventivi gratis: inizia senza rischi",
-    description: "Strumenti e opzioni gratuite per generare preventivi professionali. Scopri come iniziare senza investire nulla.",
-    href: "/preventivi/preventivi-gratis",
-    icon: "🎁",
-  },
-  {
-    slug: "modello-excel",
-    title: "Alternativa al modello Excel",
-    description: "Perché il classico template Excel non basta più: confronto diretto con i software AI moderni per artigiani.",
-    href: "/preventivi/modello-excel",
-    icon: "📊",
-  },
-  {
-    slug: "modello-word",
-    title: "Alternativa al modello Word",
-    description: "Dal foglio Word al PDF professionale automatico: come fare il salto senza complicazioni.",
-    href: "/preventivi/modello-word",
-    icon: "📄",
-  },
-];
-
-export const BLOG_LIST_TITLE = "Blog prevai — Guide e Consigli per Artigiani e PMI";
-export const BLOG_LIST_DESCRIPTION = "Guide pratiche, prezzi di mercato e consigli professionali per artigiani e PMI italiane: come fare preventivi, vincere più lavori e crescere.";
-
-export interface BlogCategory {
-  slug: string;
-  name: string;
-  description: string;
-  color: string;
-}
-
-export const BLOG_CATEGORIES: BlogCategory[] = [
-  {
-    slug: "professioni",
-    name: "Professioni",
-    description: "Guide pratiche su come fare preventivi professionali per imbianchini, elettricisti, idraulici e altri mestieri.",
-    color: "bg-violet-50 text-violet-700 border-violet-200 hover:border-violet-400",
-  },
-  {
-    slug: "prezzi",
-    name: "Prezzi",
-    description: "Prezzi aggiornati e fasce di mercato per i lavori più comuni: costi al mq, per opera, per tipologia di intervento.",
-    color: "bg-cyan-50 text-cyan-700 border-cyan-200 hover:border-cyan-400",
-  },
-  {
-    slug: "consigli",
-    name: "Consigli",
-    description: "Consigli pratici per vincere più lavori, migliorare i propri preventivi e crescere come professionista.",
-    color: "bg-amber-50 text-amber-700 border-amber-200 hover:border-amber-400",
-  },
-  {
-    slug: "tool",
-    name: "Tool",
-    description: "Confronto e recensioni dei migliori strumenti digitali per artigiani: software, app e soluzioni AI.",
-    color: "bg-green-50 text-green-700 border-green-200 hover:border-green-400",
-  },
-  {
-    slug: "innovazione",
-    name: "Innovazione",
-    description: "Come l'intelligenza artificiale e le nuove tecnologie stanno trasformando il lavoro degli artigiani.",
-    color: "bg-blue-50 text-blue-700 border-blue-200 hover:border-blue-400",
-  },
-  {
-    slug: "business",
-    name: "Business",
-    description: "Strategie di gestione aziendale, crescita commerciale e organizzazione per PMI e artigiani italiani.",
-    color: "bg-rose-50 text-rose-700 border-rose-200 hover:border-rose-400",
-  },
-];
-
-export function getCategoryBySlug(slug: string): BlogCategory | undefined {
-  return BLOG_CATEGORIES.find((c) => c.slug === slug);
-}
-
-export function getArticlesByCategory(categoryName: string): BlogArticle[] {
-  return BLOG_ARTICLES.filter((a) => a.category.toLowerCase() === categoryName.toLowerCase());
-}
-
-export const SECTOR_ARTICLES: Record<string, string[]> = {
-  imbianchino: ["come-fare-preventivo-imbianchino", "quanto-costa-tinteggiatura-appartamento", "errori-preventivi-artigiani", "preventivi-foto-cantiere", "tipi-pittura-pareti-quale-scegliere", "strumenti-imbianchino-professionista", "come-diventare-imbianchino-professionista", "software-preventivi-artigiani-confronto", "gestione-clienti-artigiano-crm", "fatturazione-elettronica-artigiani-guida", "google-my-business-artigiani-guida", "preventivo-whatsapp-artigiani-vantaggi", "aprire-partita-iva-artigiano-guida", "fac-simile-preventivo-imbianchino", "fac-simile-preventivo-tinteggiatura"],
-  pittore: ["come-fare-preventivo-imbianchino", "quanto-costa-tinteggiatura-appartamento", "come-vincere-piu-lavori", "tipi-pittura-pareti-quale-scegliere", "strumenti-imbianchino-professionista", "come-diventare-imbianchino-professionista", "fac-simile-preventivo-imbianchino", "fac-simile-preventivo-tinteggiatura"],
-  elettricista: ["preventivo-impianto-elettrico", "quanto-costa-impianto-elettrico", "errori-preventivi-artigiani", "come-vincere-piu-lavori", "preventivi-foto-cantiere", "tipi-cavi-elettrici-impianti-civili", "red-flag-preventivi-idraulici-elettricisti", "quanto-guadagna-elettricista-italia", "aprire-partita-iva-artigiano-guida", "gestione-clienti-artigiano-crm", "fatturazione-elettronica-artigiani-guida", "google-my-business-artigiani-guida", "preventivo-whatsapp-artigiani-vantaggi", "software-preventivi-artigiani-confronto", "modello-preventivo-impianto-elettrico", "fac-simile-preventivo-impianto-elettrico"],
-  idraulico: ["preventivo-idraulico", "quanto-costa-idraulico", "quanto-costa-ristrutturare-bagno", "errori-preventivi-artigiani", "preventivi-foto-cantiere", "costo-impianto-idraulico-appartamento", "tipi-tubazioni-impianti-idraulici", "materiali-ristrutturazione-bagno-guida", "red-flag-preventivi-idraulici-elettricisti", "come-capire-preventivo-gonfiato", "domande-da-fare-prima-firmare-preventivo", "garanzia-lavori-artigiani-diritti", "preventivo-ristrutturazione-bagno-completo", "aprire-partita-iva-artigiano-guida", "gestione-clienti-artigiano-crm", "preventivo-whatsapp-artigiani-vantaggi", "esempio-preventivo-ristrutturazione-bagno", "fac-simile-preventivo-idraulico"],
-  termoidraulico: ["preventivo-idraulico", "quanto-costa-idraulico", "come-vincere-piu-lavori", "gestione-preventivi-pmi", "costo-sostituzione-caldaia-condensazione", "tipi-tubazioni-impianti-idraulici", "normativa-impianti-termici-obblighi", "red-flag-preventivi-idraulici-elettricisti", "bonus-edilizi-2026-guida-artigiani", "fac-simile-preventivo-idraulico"],
-  muratore: ["preventivo-muratore", "quanto-costa-muratore", "preventivo-ristrutturazione-guida", "errori-preventivi-artigiani", "preventivi-foto-cantiere", "prezzi-muratore-lavori-edilizi", "lavori-casa-senza-permessi-rischi", "aprire-partita-iva-artigiano-guida", "modello-preventivo-edile", "modello-preventivo-lavori-edili-word", "preventivo-ristrutturazione-casa-esempio", "esempio-preventivo-ristrutturazione-facciata", "fac-simile-preventivo-edile"],
-  edilizia: ["preventivo-ristrutturazione-guida", "gestione-preventivi-pmi", "software-preventivi-artigiani", "trovare-clienti-artigiano", "come-capire-preventivo-gonfiato", "domande-da-fare-prima-firmare-preventivo", "come-confrontare-preventivi-ristrutturazione", "lavori-casa-senza-permessi-rischi", "acconti-pagamenti-lavori-casa-guida", "garanzia-lavori-artigiani-diritti", "software-preventivi-artigiani-confronto", "gestione-clienti-artigiano-crm", "google-my-business-artigiani-guida", "modello-preventivo-edile", "modello-preventivo-lavori-edili-word", "preventivo-ristrutturazione-casa-esempio", "esempio-preventivo-ristrutturazione-facciata", "fac-simile-preventivo", "fac-simile-preventivo-edile"],
-  ristrutturazione: ["preventivo-ristrutturazione-guida", "quanto-costa-ristrutturare-bagno", "gestione-preventivi-pmi", "come-capire-preventivo-gonfiato", "domande-da-fare-prima-firmare-preventivo", "differenza-preventivo-contratto-appalto", "come-confrontare-preventivi-ristrutturazione", "lavori-casa-senza-permessi-rischi", "acconti-pagamenti-lavori-casa-guida", "garanzia-lavori-artigiani-diritti", "preventivo-ristrutturazione-bagno-completo", "bonus-edilizi-2026-guida-artigiani", "ai-preventivi-artigiani-come-funziona", "preventivo-whatsapp-artigiani-vantaggi", "esempio-preventivo-ristrutturazione-bagno", "preventivo-ristrutturazione-casa-esempio", "esempio-preventivo-ristrutturazione-facciata"],
-  falegname: ["preventivo-falegname-carpentiere", "errori-preventivi-artigiani", "come-vincere-piu-lavori", "tipologie-legno-falegnameria-prezzi", "preventivo-falegnameria-su-misura", "aprire-partita-iva-artigiano-guida", "fatturazione-elettronica-artigiani-guida"],
-  carpentiere: ["preventivo-falegname-carpentiere", "errori-preventivi-artigiani", "come-vincere-piu-lavori", "tipologie-legno-falegnameria-prezzi", "preventivo-falegnameria-su-misura"],
-  piastrellista: ["preventivo-piastrellista", "quanto-costa-ristrutturare-bagno", "preventivo-ristrutturazione-guida", "errori-preventivi-artigiani", "costo-posa-piastrelle-bagno-cucina", "gres-porcellanato-quale-scegliere", "materiali-ristrutturazione-bagno-guida", "preventivo-ristrutturazione-bagno-completo", "esempio-preventivo-ristrutturazione-bagno"],
-  giardiniere: ["preventivo-giardiniere", "errori-preventivi-artigiani", "come-vincere-piu-lavori", "trovare-clienti-artigiano", "quanto-costa-giardiniere-manutenzione", "preventivo-lavori-giardino-guida", "fatturazione-elettronica-artigiani-guida", "google-my-business-artigiani-guida", "preventivo-whatsapp-artigiani-vantaggi"],
-  freelance: ["preventivo-freelance-professionisti", "software-preventivi-artigiani", "come-vincere-piu-lavori", "gestione-preventivi-pmi", "come-fare-prezzo-lavori", "aprire-partita-iva-artigiano-guida", "fac-simile-preventivo", "modello-preventivo-excel"],
-  geometra: ["preventivo-freelance-professionisti", "gestione-preventivi-pmi", "preventivo-ristrutturazione-guida", "software-preventivi-artigiani", "differenza-preventivo-contratto-appalto", "come-confrontare-preventivi-ristrutturazione", "lavori-casa-senza-permessi-rischi", "acconti-pagamenti-lavori-casa-guida", "geometra-quando-serve-lavori-casa", "bonus-edilizi-2026-guida-artigiani"],
-  serramentista: ["preventivo-falegname-carpentiere", "errori-preventivi-artigiani", "come-vincere-piu-lavori", "costo-serramenti-infissi-sostituzione", "bonus-edilizi-2026-guida-artigiani"],
-  tetto: ["preventivo-muratore", "preventivo-ristrutturazione-guida", "errori-preventivi-artigiani", "costo-rifacimento-tetto-materiali-prezzi"],
-  condizionatori: ["preventivo-idraulico", "errori-preventivi-artigiani", "ai-preventivi-artigiani", "prezzi-condizionatori-installazione-2026", "costo-sostituzione-caldaia-condensazione", "normativa-impianti-termici-obblighi"],
-  pavimentista: ["quanto-costa-ristrutturare-bagno", "preventivo-ristrutturazione-guida", "errori-preventivi-artigiani", "prezzi-posa-pavimento-gres-parquet", "costo-pavimento-in-legno-parquet", "gres-porcellanato-quale-scegliere"],
-  "modello-excel": ["preventivo-digitale-vs-carta", "errori-preventivi-artigiani", "app-preventivi-smartphone", "modello-preventivo-excel"],
-  "modello-word": ["preventivo-digitale-vs-carta", "gestione-preventivi-pmi", "errori-preventivi-artigiani", "modello-preventivo-lavori-edili-word"],
-  "come-fare-preventivo": ["errori-preventivi-artigiani", "app-preventivi-smartphone", "come-vincere-piu-lavori", "fac-simile-preventivo"],
-  "preventivi-gratis": ["app-preventivi-smartphone", "ai-preventivi-artigiani", "preventivo-digitale-vs-carta"],
 };
+
+export const BLOG_ARTICLES: BlogArticle[] = BLOG_INDEX.map((meta) => {
+  const contentHtml = BLOG_CONTENT[meta.slug] ?? BLOG_FISCALE_CONTENT[meta.slug];
+  if (contentHtml === undefined) throw new Error(`blog-data: manca il corpo dell'articolo "${meta.slug}"`);
+  return { ...meta, contentHtml };
+});

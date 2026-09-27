@@ -39,21 +39,10 @@ export function strHash(s: string): number {
 
 // ─── OG image path ────────────────────────────────────────────────────────
 
-const SECTOR_OG_IMAGES: Record<string, string> = {
-  edilizia: "/og/sectors/edilizia.png",
-  ristrutturazione: "/og/sectors/ristrutturazione.png",
-  elettricista: "/og/sectors/elettricista.png",
-  idraulico: "/og/sectors/idraulico.png",
-  imbianchino: "/og/sectors/imbianchino.png",
-  carpentiere: "/og/sectors/carpentiere.png",
-  falegname: "/og/sectors/falegname.png",
-  termoidraulico: "/og/sectors/termoidraulico.png",
-  freelance: "/og/sectors/freelance.png",
-  geometra: "/og/sectors/geometra.png",
-};
-
+// scripts/generate-sector-og-images.ts genera /og/sectors/<slug>.png per ogni
+// voce di SECTORS in build (Phase 68 PrevAI): niente mappa parziale.
 export function getOgImagePath(sectorSlug: string): string {
-  return SECTOR_OG_IMAGES[sectorSlug] ?? "/opengraph.jpg";
+  return `/og/sectors/${sectorSlug}.png`;
 }
 
 // ─── Intro text — 4 variants, sectorType-aware, deterministic by city.slug ─

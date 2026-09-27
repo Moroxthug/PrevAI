@@ -66,5 +66,5 @@ export type InsertWhatsappConnection = z.infer<typeof insertWhatsappConnectionSc
 export type WhatsappPreferences = {
   defaultTemplate?: string;   // "standard" | "mariagrazia" | "arosio"
   defaultClient?: { nome: string; indirizzo: string } | null;
-  defaultIva?: number;        // 4 | 5 | 10 | 22
+  defaultIva?: number;        // aliquota IVA %: 22 | 10 | 4 | 0
 };

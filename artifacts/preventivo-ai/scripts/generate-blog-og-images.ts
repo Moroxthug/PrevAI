@@ -113,7 +113,7 @@ function buildOgSvg(article: BlogArticle): string {
     ${article.readingTimeMin} min di lettura
   </text>
 
-  <!-- prevai brand -->
+  <!-- PrevAI brand -->
   <text x="${W - 80}" y="${H - 40}" text-anchor="end" font-size="30" font-weight="800" fill="#7c3aed" font-family="'Segoe UI', Arial, Helvetica, sans-serif" letter-spacing="-0.5">prevai</text>
 
   <!-- Divider above brand -->

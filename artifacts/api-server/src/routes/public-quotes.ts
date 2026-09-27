@@ -1,13 +1,20 @@
 import { Router } from "express";
-import { db, quotesTable, businessProfilesTable, priceCatalogItemsTable } from "@workspace/db";
-import { eq, sql } from "drizzle-orm";
+import { db, quotesTable, quoteVariantsTable, businessProfilesTable, priceCatalogItemsTable, leadsTable, leadEventsTable, incentivesCatalogTable, normalizeProvince, regioneDiProvincia, readQuoteClientData, quoteTaxLines } from "@workspace/db";
+import { eq, or, isNull } from "drizzle-orm";
+import { inferInterventionCategories, matchIncentivesForQuote } from "../incentives/matching.js";
+import { ensureDefaultIncentives } from "../incentives/seed.js";
 import { openai } from "@workspace/integrations-openai-ai-server";
-import { REGIONAL_PRICING_GUIDANCE, DESCRIPTION_QUALITY_GUIDANCE } from "../lib/generateQuoteFromText.js";
+import { AI_PROMPT as BASE_AI_PROMPT, REGIONAL_PRICING_GUIDANCE, DESCRIPTION_QUALITY_GUIDANCE } from "../lib/generateQuoteFromText.js";
 import { generateNumeroPreventivo } from "../lib/quoteNumber.js";
 import { logger } from "../lib/logger.js";
-import type { QuoteChapter, QuoteDiscount, QuoteClientData } from "@workspace/db";
+import type { QuoteChapter, QuoteClientData, QuoteDiscount } from "@workspace/db";
 import { sendWidgetLeadNotification, sendWidgetClientConfirmationEmail } from "../lib/email.js";
 import { ipRateLimiter, apiKeyRateLimiter } from "../lib/rateLimit.js";
+import { raiseAutomation } from "../lib/automation.js";
+import { linkQuoteToClient } from "../lib/clients.js";
+import { resolveQuoteTaxRate } from "../lib/tax.js";
+import { FOLLOWUP_CADENCE_DAYS } from "../lib/leadMessaging.js";
+import { quoteProvenance } from "../quotes/pdf.js";
 
 const router = Router();
 
@@ -19,39 +26,61 @@ const MAX_RAW_INPUT_LENGTH = 6000;
 const configLimiter = ipRateLimiter({
   windowMs: 60 * 1000,
   max: 60,
-  message: "Troppe richieste. Riprova tra qualche istante.",
+  message: "Too many requests. Try again shortly.",
 });
 
 const quoteIpLimiter = ipRateLimiter({
   windowMs: 60 * 60 * 1000,
   max: 20,
-  message: "Troppe richieste di preventivo da questo indirizzo IP. Riprova più tardi.",
+  message: "Too many quote requests from this IP address. Try again later.",
 });
 
 const quoteApiKeyLimiter = apiKeyRateLimiter({
   windowMs: 60 * 60 * 1000,
   max: 60,
-  message: "Limite orario di preventivi raggiunto per questo account. Riprova più tardi.",
+  message: "Hourly quote limit reached for this account. Try again later.",
 });
 
+// Phase 67: every page view hits two of these endpoints (quote, incentives), so 30/min was ten views a minute per IP — an office or
+// a family behind one router tripped it, and the page renders a 429 as
+// "Quote not available".
 const quoteViewLimiter = ipRateLimiter({
   windowMs: 60 * 1000,
-  max: 30,
-  message: "Troppe richieste. Riprova tra qualche istante.",
+  max: 120,
+  message: "Too many requests. Try again shortly.",
 });
 
 const quoteAcceptLimiter = ipRateLimiter({
   windowMs: 60 * 60 * 1000,
   max: 10,
-  message: "Troppi tentativi di accettazione da questo indirizzo IP. Riprova più tardi.",
+  message: "Too many acceptance attempts from this IP address. Try again later.",
 });
 
 const MAX_ACCEPTED_NAME_LENGTH = 120;
 
-// Proiezione pubblica del preventivo: esclude sempre userId, dati di
-// fatturazione Stripe e metadati AI interni (costi/token) — questo endpoint
-// non è autenticato, l'unico "segreto" è l'UUID del preventivo stesso.
-function toPublicQuote(quote: typeof quotesTable.$inferSelect) {
+// Public projection of the quote: always excludes userId, Stripe billing
+// data, and internal AI metadata (costs/tokens) — this endpoint is not
+// authenticated, the only "secret" is the quote's UUID itself.
+function toPublicVariant(v: typeof quoteVariantsTable.$inferSelect, _province: string | null = null) {
+  return {
+    id: v.id,
+    label: v.label,
+    description: v.description,
+    position: v.position,
+    capitoli: v.capitoli,
+    sconto: v.sconto,
+    condizioniPagamento: v.condizioniPagamento,
+    subtotale: v.subtotale,
+    ivaPercentuale: v.ivaPercentuale,
+    ivaValore: v.ivaValore,
+    taxLines: quoteTaxLines((v.sconto as QuoteDiscount | null)?.importoScontato ?? Number(v.subtotale), Number(v.ivaPercentuale), Number(v.ivaValore)),
+    totale: v.totale,
+  };
+}
+
+function toPublicQuote(quote: typeof quotesTable.$inferSelect, variants?: (typeof quoteVariantsTable.$inferSelect)[]) {
+  // Phase 71: the public page shows the same statutory tax split as the PDF.
+  const province = normalizeProvince(quote.province) ?? normalizeProvince((quote.clientData as QuoteClientData | null)?.province) ?? null;
   return {
     id: quote.id,
     numeroPreventivoData: quote.numeroPreventivoData,
@@ -66,12 +95,18 @@ function toPublicQuote(quote: typeof quotesTable.$inferSelect) {
     subtotale: quote.subtotale,
     ivaPercentuale: quote.ivaPercentuale,
     ivaValore: quote.ivaValore,
+    taxLines: quoteTaxLines((quote.sconto as QuoteDiscount | null)?.importoScontato ?? Number(quote.subtotale), Number(quote.ivaPercentuale), Number(quote.ivaValore)),
+    province,
     totale: quote.totale,
     note: quote.note,
     pdfUrl: quote.pdfUrl,
     status: quote.status,
     acceptedAt: quote.acceptedAt,
     acceptedByName: quote.acceptedByName,
+    acceptedVariantId: quote.acceptedVariantId ?? null,
+    // V2-6 — AI Act art. 50: la pagina pubblica dichiara la provenienza IA come il PDF.
+    aiGenerated: quoteProvenance(quote) === "ai",
+    variants: variants?.map((v) => toPublicVariant(v, province)) ?? [],
   };
 }
 
@@ -119,64 +154,21 @@ function findRelevantCatalogItems(
   return filtered.slice(0, limit);
 }
 
-const AI_PROMPT = `Sei un consulente esperto di preventivi professionali per il mercato italiano (artigiani, edilizia, impianti, servizi tecnici).
+// Widget pubblico: prompt unificato + vincoli specifici (niente dati cliente inventati, nota fissa).
+const AI_PROMPT = `${BASE_AI_PROMPT}
 
-Devi trasformare una descrizione libera in un'ANALISI ECONOMICA E COMPUTO METRICO PREZZATO professionale, strutturata a capitoli, coerente con i prezzi di listino del proprietario e con le stime di mercato in Italia nel 2026.
+REGOLE AGGIUNTIVE PER IL WIDGET PUBBLICO:
+- Il richiedente è un potenziale cliente che compila il modulo sul sito dell'impresa: NON inventare nome o indirizzo del cliente, lascia i campi "cliente" vuoti.
+- Se non sono indicati luogo o misure, resta su prezzi medi nazionali e quantità prudenziali.
+- condizioni_pagamento: restituisci un array vuoto (le condizioni le imposta l'impresa).
+- note: "Preventivo indicativo generato tramite widget — soggetto a sopralluogo e conferma dell'impresa."`;
 
-REGOLE FONDAMENTALI:
-1. Prezzi di riferimento e di catalogo (LISTINO):
-   - Se è fornito un "LISTINO PREZZI PERSONALIZZATO DELL'UTENTE", devi usare PRIORITARIAMENTE i prezzi unitari definiti nel listino per tutte le lavorazioni corrispondenti o correlate.
-   - Non inventare nuovi prezzi unitari se la voce corrisponde a qualcosa presente nel listino personalizzato.
-   - Se una lavorazione non è presente nel listino personalizzato, usa prezzi realistici del mercato italiano 2026.
-2. Se mancano dati specifici: fai assunzioni realistiche, NON chiedere chiarimenti. Se sono fornite le "MISURE E DIMENSIONI DELL'IMMOBILE", devi usarle rigorosamente per calcolare le quantità (mq, metri lineari, ecc.) in modo matematico.
-3. Organizza il lavoro in CAPITOLI logici (A, B, C, D, …) con titoli professionali (es: "Allestimento cantiere", "Opere di demolizione", "Nuove opere edili", "Impianto elettrico", ecc.)
-4. Ogni capitolo contiene VOCI di lavoro dettagliate con unità di misura professionali (mq, ml, mc, kg, ore, a.c., pezzi, cadauno, kw, etc.)
-5. Calcola subtotale per ogni capitolo. Il QUADRO SINTETICO è ricavato automaticamente dall'array capitoli.
-6. Sempre IVA 22% salvo indicazione contraria.
-7. Il titolo_riga2 deve descrivere l'intervento.
-8. numero_preventivo_data: NON GENERARE — il server assegna il numero automaticamente. Restituisci una stringa vuota.
-
-OUTPUT — SOLO JSON VALIDO, nessun testo extra:
-{
-  "titolo_riga1": "Analisi Economica e Computo Metrico Prezzato",
-  "titolo_riga2": "Intervento di [descrizione breve]",
-  "numero_preventivo_data": "",
-  "cliente": { "nome": "", "indirizzo": "" },
-  "descrizione_generale": "Descrizione sintetica dell'intervento",
-  "capitoli": [
-    {
-      "lettera": "A",
-      "titolo": "Opere",
-      "osservazione": "Voce ordinaria",
-      "voci": [
-        {
-          "descrizione": "Descrizione voce",
-          "um": "mq",
-          "quantita": 10,
-          "prezzo_unitario": 25.00,
-          "totale": 250.00
-        }
-      ],
-      "subtotale": 250.00
-    }
-  ],
-  "sconto": { "percentuale": 0, "importo_scontato": 0 },
-  "condizioni_pagamento": [],
-  "subtotale": 0,
-  "iva_percentuale": 22,
-  "iva_valore": 0,
-  "totale": 0,
-  "note": "Preventivo generato via Widget"
-}
-
-IMPORTANTISSIMO: output SOLO JSON puro, nessuna spiegazione, nessun markdown.`;
-
-// GET /api/public/config (autenticato con x-api-key o query param apiKey)
+// GET /api/public/config (authenticated with x-api-key or apiKey query param)
 router.get("/public/config", configLimiter, async (req, res) => {
   try {
     const apiKeyHeader = req.headers["x-api-key"] || req.query.apiKey;
     if (!apiKeyHeader) {
-      res.status(401).json({ error: "Chiave API mancante. Fornisci l'header x-api-key o il parametro query apiKey." });
+      res.status(401).json({ error: "Missing API key. Provide the x-api-key header or the apiKey query parameter." });
       return;
     }
 
@@ -188,11 +180,11 @@ router.get("/public/config", configLimiter, async (req, res) => {
       .where(eq(businessProfilesTable.apiKey, apiKey));
 
     if (!profile) {
-      res.status(403).json({ error: "Chiave API non valida o inattiva." });
+      res.status(403).json({ error: "Invalid or inactive API key." });
       return;
     }
 
-    // Carica il catalogo prezzi per determinare le categorie supportate
+    // Load the price catalog to determine the supported categories
     const catalogItems = await db
       .select()
       .from(priceCatalogItemsTable)
@@ -220,25 +212,25 @@ router.get("/public/config", configLimiter, async (req, res) => {
   }
 });
 
-// POST /api/public/quotes (autenticato con x-api-key)
+// POST /api/public/quotes (authenticated with x-api-key)
 router.post("/public/quotes", quoteIpLimiter, quoteApiKeyLimiter, async (req, res) => {
   try {
     const apiKeyHeader = req.headers["x-api-key"] || req.query.apiKey;
     if (!apiKeyHeader) {
-      res.status(401).json({ error: "Chiave API mancante. Fornisci l'header x-api-key o il parametro query apiKey." });
+      res.status(401).json({ error: "Missing API key. Provide the x-api-key header or the apiKey query parameter." });
       return;
     }
 
     const apiKey = String(apiKeyHeader);
 
-    // Trova il profilo aziendale corrispondente alla chiave API
+    // Find the business profile matching the API key
     const [profile] = await db
       .select()
       .from(businessProfilesTable)
       .where(eq(businessProfilesTable.apiKey, apiKey));
 
     if (!profile) {
-      res.status(403).json({ error: "Chiave API non valida o inattiva." });
+      res.status(403).json({ error: "Invalid or inactive API key." });
       return;
     }
 
@@ -246,20 +238,20 @@ router.post("/public/quotes", quoteIpLimiter, quoteApiKeyLimiter, async (req, re
 
     const { rawInput, clientData, misure } = req.body as {
       rawInput?: string;
-      clientData?: { nome: string; email?: string; phone?: string; indirizzo?: string; citta?: string; cap?: string; provincia?: string };
+      clientData?: { nome: string; email?: string; phone?: string; indirizzo?: string; city?: string; postalCode?: string; province?: string };
       misure?: Record<string, string | number>;
     };
 
     if (!rawInput || !rawInput.trim()) {
-      res.status(400).json({ error: "Il parametro rawInput è obbligatorio." });
+      res.status(400).json({ error: "The rawInput parameter is required." });
       return;
     }
     if (rawInput.length > MAX_RAW_INPUT_LENGTH) {
-      res.status(400).json({ error: `Descrizione troppo lunga (massimo ${MAX_RAW_INPUT_LENGTH} caratteri).` });
+      res.status(400).json({ error: `Description too long (maximum ${MAX_RAW_INPUT_LENGTH} characters).` });
       return;
     }
 
-    // Carica il listino dell'azienda per fare il filtro RAG
+    // Load the company's price list to run the RAG filter
     const catalogItems = await db
       .select()
       .from(priceCatalogItemsTable)
@@ -274,7 +266,7 @@ ${relevantCatalogItems
   .join("\n")}`
       : "";
 
-    // Misure geometriche
+    // Property measurements
     let misureContext = "";
     if (misure && typeof misure === "object" && Object.keys(misure).length > 0) {
       misureContext = `MISURE E DIMENSIONI DELL'IMMOBILE:
@@ -285,11 +277,11 @@ Usa queste misure esatte per calcolare matematicamente le quantità.`;
     }
 
     // Location context (city/province the widget visitor provided) so the AI can price by zone
-    const locationContext = clientData?.citta || clientData?.provincia
-      ? `LOCALITÀ DEL CANTIERE: ${[clientData?.citta, clientData?.provincia ? `(${clientData.provincia})` : ""].filter(Boolean).join(" ")}`
+    const locationContext = clientData?.city || clientData?.province
+      ? `LUOGO DEL CANTIERE: ${[clientData?.city, clientData?.province ? `(${clientData.province})` : ""].filter(Boolean).join(" ")}`
       : "";
 
-    // Chiama OpenAI
+    // Call OpenAI
     const completion = await openai.chat.completions.create({
       model: "gpt-4o-mini",
       max_completion_tokens: 4096,
@@ -322,46 +314,60 @@ Usa queste misure esatte per calcolare matematicamente le quantità.`;
     try {
       const cleaned = content.trim().replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/i, "");
       aiData = JSON.parse(cleaned);
-    } catch (err) {
+    } catch {
       logger.error({ content }, "Failed to parse public API quote JSON");
-      res.status(422).json({ error: "L'AI non è riuscita a strutturare il preventivo. Riprova con una descrizione diversa." });
+      res.status(422).json({ error: "The AI could not structure the quote. Try again with a different description." });
       return;
     }
 
-    // Struttura i capitoli
-    const capitoli: QuoteChapter[] = (aiData.capitoli ?? []).map((cap: any) => ({
-      lettera: cap.lettera ?? "A",
-      titolo: cap.titolo ?? "",
-      osservazione: cap.osservazione ?? "Voce ordinaria",
-      voci: (cap.voci ?? []).map((v: any) => ({
-        descrizione: v.descrizione ?? "",
-        um: v.um ?? "a.c.",
-        quantita: Number(v.quantita ?? 0),
-        prezzoUnitario: Number(v.prezzo_unitario ?? 0),
-        totale: Number(v.totale ?? 0),
-      })),
-      subtotale: Number(cap.subtotale ?? 0),
-    }));
+    // Chapters/totals are recomputed from quantita * prezzoUnitario rather than
+    // trusted from the AI's own top-level fields, which can echo the prompt's
+    // placeholder "0" values even when the per-item numbers are correct.
+    let calculatedSubtotale = 0;
+    const capitoli: QuoteChapter[] = (aiData.capitoli ?? []).map((cap: any) => {
+      let capSubtotale = 0;
+      const voci = (cap.voci ?? []).map((v: any) => {
+        const quantita = Number(v.quantita ?? 0);
+        const prezzoUnitario = Number(v.prezzo_unitario ?? 0);
+        const totale = Number((quantita * prezzoUnitario).toFixed(2));
+        capSubtotale += totale;
+        return {
+          descrizione: v.descrizione ?? "",
+          um: v.um ?? "a.c.",
+          quantita,
+          prezzoUnitario,
+          totale,
+        };
+      });
+      calculatedSubtotale += capSubtotale;
+      return {
+        lettera: cap.lettera ?? "A",
+        titolo: cap.titolo ?? "",
+        osservazione: cap.osservazione ?? "Voce ordinaria",
+        voci,
+        subtotale: Number(capSubtotale.toFixed(2)),
+      };
+    });
 
-    const subtotale = Number(aiData.subtotale ?? 0);
-    const ivaPercentuale = Number(aiData.iva_percentuale ?? 22);
-    const ivaValore = Number(aiData.iva_valore ?? 0);
-    const totale = Number(aiData.totale ?? 0);
+    const subtotale = Number(calculatedSubtotale.toFixed(2));
+    const ivaPercentuale = resolveQuoteTaxRate(aiData.iva_percentuale, profile.province);
+    const ivaValore = Number((subtotale * ivaPercentuale / 100).toFixed(2));
+    const totale = Number((subtotale + ivaValore).toFixed(2));
 
     const resolvedClientData: QuoteClientData = {
       nome: clientData?.nome || aiData.cliente?.nome || "Lead Widget",
       indirizzo: clientData?.indirizzo || aiData.cliente?.indirizzo || "",
       email: clientData?.email,
       phone: clientData?.phone,
-      citta: clientData?.citta,
-      cap: clientData?.cap,
-      provincia: clientData?.provincia,
+      city: clientData?.city,
+      postalCode: clientData?.postalCode,
+      province: clientData?.province,
     };
 
-    // Genera numero preventivo
+    // Generate the quote number
     const numeroPreventivoData = await generateNumeroPreventivo(userId);
 
-    // Inserisci il preventivo (catturando implicitamente il lead CRM)
+    // Insert the quote (implicitly capturing the CRM lead)
     const [quote] = await db
       .insert(quotesTable)
       .values({
@@ -385,12 +391,12 @@ Usa queste misure esatte per calcolare matematicamente le quantità.`;
         titoloPreventivoRiga2: aiData.titolo_riga2 ?? "",
         numeroPreventivoData,
         subtotale: subtotale.toFixed(2),
-        ivaPercentuale: ivaPercentuale.toFixed(2),
+        ivaPercentuale: ivaPercentuale.toFixed(3),
         ivaValore: ivaValore.toFixed(2),
         totale: totale.toFixed(2),
-        note: aiData.note ?? "Preventivo generato via Widget",
+        note: aiData.note ?? "Quote generated via Widget",
         status: "draft",
-        source: "widget", // Traccia che arriva dal widget
+        source: "widget", // Flag that it came from the widget
         promptTokens,
         completionTokens,
         totalTokens,
@@ -399,7 +405,35 @@ Usa queste misure esatte per calcolare matematicamente le quantità.`;
       })
       .returning();
 
-    // Ritorna la stima in range per il widget
+    await linkQuoteToClient(quote!, profile.province);
+
+    // Phase 9: the widget submission is a lead first — record consent and
+    // schedule the first follow-up here so a quote that's never accepted
+    // still gets a nurture sequence instead of going cold silently.
+    try {
+      const [lead] = await db
+        .insert(leadsTable)
+        .values({
+          userId,
+          clientId: quote!.clientId,
+          quoteId: quote!.id,
+          name: resolvedClientData.nome,
+          email: resolvedClientData.email || null,
+          phone: resolvedClientData.phone || null,
+          preferredChannel: "email",
+          source: "widget",
+          status: "new",
+          consentSource: "widget_form",
+          nextFollowUpAt: new Date(Date.now() + FOLLOWUP_CADENCE_DAYS[0]! * 86_400_000),
+        })
+        .returning();
+      await db.insert(leadEventsTable).values({ leadId: lead!.id, userId, type: "created", payload: { source: "widget", quoteId: quote!.id } });
+      await db.insert(leadEventsTable).values({ leadId: lead!.id, userId, type: "consent_recorded", payload: { consentSource: "widget_form" } });
+    } catch (leadErr) {
+      logger.error({ err: leadErr, quoteId: quote!.id }, "Failed to record widget lead (non-fatal)");
+    }
+
+    // Return the range estimate for the widget
     res.status(201).json({
       success: true,
       quoteId: quote.id,
@@ -409,15 +443,15 @@ Usa queste misure esatte per calcolare matematicamente le quantità.`;
       descrizioneGenerale: quote.descrizioneGenerale,
     });
 
-    // Invia notifica email asincrona all'impresa
+    // Send an async lead-notification email to the contractor
     const contractorEmail = profile.email || "notifiche@prevai.it";
     if (contractorEmail) {
       sendWidgetLeadNotification({
         toEmail: contractorEmail,
         companyName: profile.companyName,
         clientName: resolvedClientData.nome,
-        clientEmail: resolvedClientData.email || "Nessuna email fornita",
-        clientPhone: resolvedClientData.phone || "Nessun telefono fornito",
+        clientEmail: resolvedClientData.email || "No email provided",
+        clientPhone: resolvedClientData.phone || "No phone provided",
         rawInput: rawInput || "",
         totale: totale.toFixed(2),
         prezzoMinimo: (totale * 0.9).toFixed(2),
@@ -427,17 +461,19 @@ Usa queste misure esatte per calcolare matematicamente le quantità.`;
       });
     }
 
-    // Invia conferma email asincrona al cliente finale, se ha fornito un indirizzo
+    // Send an async confirmation email to the end client, if they provided an address
     const clientEmail = resolvedClientData.email;
     if (clientEmail && clientEmail.includes("@")) {
       sendWidgetClientConfirmationEmail({
         toEmail: clientEmail,
+        userId,
         clientName: resolvedClientData.nome,
         companyName: profile.companyName,
         companyPhone: profile.phone ?? null,
         companyEmail: profile.email ?? null,
         prezzoMinimo: (totale * 0.9).toFixed(2),
         prezzoMassimo: (totale * 1.25).toFixed(2),
+        companyLogoUrl: profile.logoUrl ?? null,
       }).catch(emailErr => {
         logger.error({ err: emailErr }, "Failed to send client confirmation email asynchronously");
       });
@@ -448,10 +484,10 @@ Usa queste misure esatte per calcolare matematicamente le quantità.`;
   }
 });
 
-// GET /api/public/quotes/:id — vista pubblica in sola lettura, usata dalla
-// pagina che il cliente finale apre per rivedere e accettare il preventivo.
-// Non richiede autenticazione: l'UUID del preventivo funge da token
-// d'accesso, sul modello già usato per i link ai PDF generati.
+// GET /api/public/quotes/:id — read-only public view, used by the page the
+// end client opens to review and accept the quote.
+// Does not require authentication: the quote's UUID acts as the access
+// token, following the same pattern already used for generated PDF links.
 router.get("/public/quotes/:id", quoteViewLimiter, async (req, res) => {
   try {
     const id = req.params.id as string;
@@ -461,36 +497,42 @@ router.get("/public/quotes/:id", quoteViewLimiter, async (req, res) => {
       .from(quotesTable)
       .where(eq(quotesTable.id, id));
 
-    // I preventivi "draft" o "pending_payment" non sono ancora stati
-    // sbloccati dal titolare: non esporli pubblicamente, nemmeno in lettura.
+    // "draft" or "pending_payment" quotes have not yet been unlocked by the
+    // owner: don't expose them publicly, not even read-only.
     if (!quote || (quote.status !== "unlocked" && quote.status !== "accepted")) {
-      res.status(404).json({ error: "Preventivo non trovato." });
+      res.status(404).json({ error: "Quote not found." });
       return;
     }
 
-    res.json({ success: true, quote: toPublicQuote(quote) });
+    const variants = await db
+      .select()
+      .from(quoteVariantsTable)
+      .where(eq(quoteVariantsTable.quoteId, id))
+      .orderBy(quoteVariantsTable.position);
+
+    res.json({ success: true, quote: toPublicQuote(quote, variants) });
   } catch (err) {
     logger.error({ err }, "Error fetching public quote view");
     res.status(500).json({ error: "Internal server error" });
   }
 });
 
-// POST /api/public/quotes/:id/accept — il cliente finale conferma il nome e
-// accetta il preventivo. Registriamo timestamp + IP come traccia minima di
-// accettazione (non è una firma elettronica qualificata SPID/CIE, ma rende
-// il consenso verificabile e non ripudiabile in modo ragionevole).
+// POST /api/public/quotes/:id/accept — the end client confirms their name
+// and accepts the quote. We record timestamp + IP as a minimal acceptance
+// trail (this is not a qualified electronic signature, but it makes consent
+// reasonably verifiable and non-repudiable).
 router.post("/public/quotes/:id/accept", quoteAcceptLimiter, async (req, res) => {
   try {
     const id = req.params.id as string;
-    const { nomeConferma } = req.body as { nomeConferma?: string };
+    const { nomeConferma, variantId } = req.body as { nomeConferma?: string; variantId?: string };
 
     const trimmedName = (nomeConferma || "").trim();
     if (!trimmedName) {
-      res.status(400).json({ error: "Inserisci nome e cognome per confermare l'accettazione." });
+      res.status(400).json({ error: "Enter your first and last name to confirm acceptance." });
       return;
     }
     if (trimmedName.length > MAX_ACCEPTED_NAME_LENGTH) {
-      res.status(400).json({ error: "Nome troppo lungo." });
+      res.status(400).json({ error: "Name too long." });
       return;
     }
 
@@ -500,31 +542,126 @@ router.post("/public/quotes/:id/accept", quoteAcceptLimiter, async (req, res) =>
       .where(eq(quotesTable.id, id));
 
     if (!quote || (quote.status !== "unlocked" && quote.status !== "accepted")) {
-      res.status(404).json({ error: "Preventivo non trovato." });
+      res.status(404).json({ error: "Quote not found." });
       return;
     }
 
+    const variants = await db
+      .select()
+      .from(quoteVariantsTable)
+      .where(eq(quoteVariantsTable.quoteId, id))
+      .orderBy(quoteVariantsTable.position);
+
     if (quote.status === "accepted") {
-      // Idempotente: se è già stato accettato, restituisci semplicemente lo
-      // stato attuale invece di sovrascrivere chi/quando lo ha accettato.
-      res.json({ success: true, quote: toPublicQuote(quote) });
+      // Idempotent: if already accepted, simply return the current state
+      // instead of overwriting who/when accepted it.
+      res.json({ success: true, quote: toPublicQuote(quote, variants) });
       return;
+    }
+
+    // When the quote has Good/Better/Best variants, the client must pick one
+    // and its pricing is copied onto the parent quote row before status flips
+    // to "accepted" — so every downstream consumer (PDF, contract auto-draft,
+    // invoicing) keeps reading quotesTable.items/capitoli/totale unchanged,
+    // with zero awareness that variants exist.
+    let variantUpdates: Partial<typeof quote> = {};
+    let acceptedVariantId: string | null = null;
+    if (variants.length > 0) {
+      const chosen = variants.find(v => v.id === variantId) ?? (variants.length === 1 ? variants[0] : undefined);
+      if (!chosen) {
+        res.status(400).json({ error: "Select one of the options before accepting." });
+        return;
+      }
+      acceptedVariantId = chosen.id;
+      variantUpdates = {
+        items: chosen.items,
+        capitoli: chosen.capitoli,
+        sconto: chosen.sconto,
+        condizioniPagamento: chosen.condizioniPagamento,
+        subtotale: chosen.subtotale,
+        ivaPercentuale: chosen.ivaPercentuale,
+        ivaValore: chosen.ivaValore,
+        totale: chosen.totale,
+      };
     }
 
     const [updated] = await db
       .update(quotesTable)
       .set({
+        ...variantUpdates,
         status: "accepted",
         acceptedAt: new Date(),
         acceptedByName: trimmedName,
         acceptedIp: req.ip || null,
+        acceptedVariantId,
       })
       .where(eq(quotesTable.id, id))
       .returning();
 
-    res.json({ success: true, quote: toPublicQuote(updated) });
+    // Side effects (notify the company, later: draft the contract) run through
+    // the automation runner so a failure never breaks the customer's flow.
+    await raiseAutomation({
+      event: "quote.accepted",
+      userId: updated.userId,
+      entityType: "quote",
+      entityId: updated.id,
+      payload: { acceptedByName: trimmedName },
+    });
+
+    res.json({ success: true, quote: toPublicQuote(updated, variants) });
   } catch (err) {
     logger.error({ err }, "Error accepting public quote");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// GET /api/public/quotes/:id/incentives — bonus e bandi che potrebbero
+// applicarsi al lavoro e alla zona del preventivo (pagina pubblica /p/:id).
+// Mai una garanzia di ammissibilità: il frontend mostra sempre il disclaimer.
+// Regione dalla provincia del preventivo, comune dalla città del cliente.
+router.get("/public/quotes/:id/incentives", quoteViewLimiter, async (req, res) => {
+  try {
+    const id = req.params.id as string;
+    const [quote] = await db.select().from(quotesTable).where(eq(quotesTable.id, id));
+    if (!quote || (quote.status !== "unlocked" && quote.status !== "accepted")) {
+      res.status(404).json({ error: "Quote not found." });
+      return;
+    }
+
+    await ensureDefaultIncentives();
+    const catalog = await db
+      .select()
+      .from(incentivesCatalogTable)
+      .where(or(isNull(incentivesCatalogTable.userId), eq(incentivesCatalogTable.userId, quote.userId)));
+
+    const cd = readQuoteClientData(quote.clientData as QuoteClientData | null);
+    const chapterText = (quote.capitoli ?? [])
+      .map((c) => [c.titolo, ...(c.voci ?? []).map((v) => v.descrizione)].join(" "))
+      .join(" ");
+    const categories = inferInterventionCategories(`${quote.descrizioneGenerale ?? ""} ${quote.rawInput ?? ""} ${chapterText}`);
+    const province = normalizeProvince(quote.province) ?? normalizeProvince(cd.province) ?? null;
+    const regione = regioneDiProvincia(province) ?? cd.incentivesData?.regione ?? null;
+
+    const matches = matchIncentivesForQuote(catalog, { regione, comune: cd.city ?? null, categories })
+      .slice(0, 6)
+      .map((item) => ({
+        id: item.id,
+        level: item.level,
+        titolo: item.titolo,
+        descrizione: item.descrizione,
+        tipoAgevolazione: item.tipoAgevolazione,
+        percentualeMassima: item.percentualeMassima,
+        massimaleContributo: item.massimaleContributo,
+        massimaleSpesa: item.massimaleSpesa,
+        requisitiIseeMax: item.requisitiIseeMax,
+        scadenza: item.scadenza,
+        fonteUfficialeUrl: item.fonteUfficialeUrl,
+        humanVerified: item.humanVerified,
+      }));
+
+    res.json({ incentives: matches });
+  } catch (err) {
+    logger.error({ err }, "Error matching public quote incentives");
     res.status(500).json({ error: "Internal server error" });
   }
 });

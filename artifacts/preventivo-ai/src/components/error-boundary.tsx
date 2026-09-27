@@ -1,4 +1,17 @@
 import { Component, type ReactNode } from "react";
+import { type Lang } from "@/i18n/translations";
+import { lookup } from "@/i18n/registry";
+import { reportError } from "@/lib/error-tracking";
+
+// Class components can't use hooks; the site is single-language (V2-2).
+function getLang(): Lang {
+  return "it";
+}
+
+function t(key: string): string {
+  const lang = getLang();
+  return lookup(lang, key);
+}
 
 interface Props {
   children: ReactNode;
@@ -21,17 +34,17 @@ export class ErrorBoundary extends Component<Props, State> {
 
   componentDidCatch(error: unknown, info: { componentStack: string }) {
     console.error("Unhandled error in component tree", error, info.componentStack);
+    reportError(error, { mechanism: "react-error-boundary", handled: false, extra: { componentStack: info.componentStack.slice(0, 4000) } });
   }
 
   render() {
     if (this.state.hasError) {
       return (
-        <div className="flex flex-col items-center justify-center min-h-screen px-6 text-center bg-white">
-          <h1 className="text-2xl font-bold text-gray-900 mb-3">Qualcosa è andato storto</h1>
-          <p className="text-gray-500 max-w-md mb-6">
-            Si è verificato un errore imprevisto. Prova a ricaricare la pagina — se il problema
-            persiste, contattaci a{" "}
-            <a href="mailto:info@prevai.it" className="text-violet-600 font-medium">
+        <div className="flex flex-col items-center justify-center min-h-screen px-6 text-center bg-background">
+          <h1 className="text-2xl font-bold text-foreground mb-3">{t("errorBoundary.title")}</h1>
+          <p className="text-muted-foreground max-w-md mb-6">
+            {t("errorBoundary.bodyPrefix")}{" "}
+            <a href="mailto:info@prevai.it" className="text-navy-600 font-medium">
               info@prevai.it
             </a>
             .
@@ -40,7 +53,7 @@ export class ErrorBoundary extends Component<Props, State> {
             href="/"
             className="btn-gradient inline-flex h-11 items-center justify-center px-6 text-sm font-semibold rounded-lg"
           >
-            Torna alla home
+            {t("errorBoundary.backHome")}
           </a>
         </div>
       );

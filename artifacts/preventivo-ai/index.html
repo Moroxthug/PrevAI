@@ -2,11 +2,11 @@
 <html lang="it">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
 
     <!-- Primary SEO -->
     <title>prevai – Preventivi Online per Artigiani e Aziende | AI in 30s</title>
-    <meta name="description" content="Crea preventivi professionali in 30 secondi con l'AI. Software di preventivazione per artigiani, PMI e professionisti italiani. Niente Excel, niente errori. Provalo gratis." />
+    <meta name="description" content="Dimentica Excel e i documenti scritti a mano. Descrivi il lavoro a parole tue e prevai genera un preventivo professionale con IVA, voci di costo e totali in 30 secondi. Prova gratis." />
     <meta name="robots" content="index, follow" />
     <meta name="author" content="prevai" />
     <!--
@@ -46,7 +46,8 @@
               links[i].parentNode.removeChild(links[i]);
             }
           }
-          var noindexPrefixes = ["/dashboard", "/sign-in", "/sign-up", "/onboarding", "/admin", "/reset-password", "/forgot-password"];
+          // Customer-private token pages (/p quote, /i invoice, /sign contract, /t worker, /team-invite) are noindex too (Phase 68).
+          var noindexPrefixes = ["/dashboard", "/sign-in", "/sign-up", "/onboarding", "/admin", "/reset-password", "/forgot-password", "/p", "/i", "/sign", "/t", "/team-invite"];
           for (var j = 0; j < noindexPrefixes.length; j++) {
             if (p === noindexPrefixes[j] + "/" || p.indexOf(noindexPrefixes[j] + "/") === 0) {
               var robots = document.head.querySelector('meta[name="robots"]');
@@ -71,28 +72,58 @@
     <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png" />
     <link rel="icon" type="image/png" sizes="512x512" href="/icon-512.png" />
 
-    <!-- Google tag (gtag.js) -->
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-D2B39E0ELW"></script>
+    <!-- Google tag (gtag.js) — loaded on the first user interaction or after
+         5 s, whichever comes first, so the 170 kB tag never competes with the
+         page's own JS on mobile (Phase 68). Events queued in dataLayer before
+         then are delivered once it loads. -->
     <script>
       window.dataLayer = window.dataLayer || [];
       function gtag(){dataLayer.push(arguments);}
       gtag('js', new Date());
       gtag('config', 'G-D2B39E0ELW');
+      (function () {
+        var done = false;
+        var events = ["pointerdown", "keydown", "touchstart", "scroll"];
+        var load = function () {
+          if (done) return;
+          done = true;
+          for (var i = 0; i < events.length; i++) window.removeEventListener(events[i], load);
+          var s = document.createElement("script");
+          s.async = true;
+          s.src = "https://www.googletagmanager.com/gtag/js?id=G-D2B39E0ELW";
+          document.head.appendChild(s);
+        };
+        for (var j = 0; j < events.length; j++) window.addEventListener(events[j], load, { once: true, passive: true });
+        window.setTimeout(load, 5000);
+      })();
     </script>
 
     <!-- Theme -->
     <meta name="theme-color" content="#7C3AED" />
+    <script>
+      (function () {
+        try {
+          if (
+            window.localStorage.getItem("prevai-theme") === "dark" &&
+            window.location.pathname.indexOf("/dashboard") === 0
+          ) {
+            document.documentElement.classList.add("dark");
+          }
+        } catch (e) {}
+      })();
+    </script>
 
     <!-- Resource hints -->
     <link rel="dns-prefetch" href="https://wa.me" />
 
-    <!-- Self-hosted Inter Variable — preloaded for zero render-blocking -->
+    <!-- Self-hosted Figtree Variable (the site typeface) — preloaded for zero render-blocking.
+         Inter stays declared in index.css as the fallback face; it is only fetched if used. -->
     <link
       rel="preload"
       as="font"
       type="font/woff2"
       crossorigin
-      href="/fonts/inter-latin-wght-normal.woff2"
+      href="/fonts/figtree-latin-wght-normal.woff2"
     />
   </head>
   <body>

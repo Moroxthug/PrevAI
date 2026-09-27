@@ -1,11 +1,30 @@
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
-import { bearer } from "better-auth/plugins";
-import { db, authUsersTable, authSessionsTable, authAccountsTable, authVerificationsTable } from "@workspace/db";
+import { bearer, twoFactor } from "better-auth/plugins";
+import { createAuthMiddleware } from "better-auth/api";
+import { db, authUsersTable, authSessionsTable, authAccountsTable, authVerificationsTable, authTwoFactorTable, businessProfilesTable, organizationMembersTable } from "@workspace/db";
+import { and, asc, eq } from "drizzle-orm";
 import { Resend } from "resend";
 import { logger } from "./logger";
-import { sendWelcomeEmail } from "./email";
+import { sendWelcomeEmail, escapeHtml } from "./email";
 import { getBaseUrl } from "./baseUrl";
+import { recordSecurityAuditEvent } from "./auditLog";
+
+// Minimal, duplicate-of-`resolveActingOrg` org lookup — kept local rather than
+// imported from ../middlewares/authMiddleware to avoid that module's circular
+// import back onto `auth` here. Only used to scope audit rows written from
+// better-auth's own request lifecycle (login, 2FA, session revoke).
+async function resolveOrgForAudit(actorId: string): Promise<string> {
+  const [profile] = await db.select({ userId: businessProfilesTable.userId }).from(businessProfilesTable).where(eq(businessProfilesTable.userId, actorId));
+  if (profile) return actorId;
+  const [membership] = await db
+    .select()
+    .from(organizationMembersTable)
+    .where(and(eq(organizationMembersTable.userId, actorId), eq(organizationMembersTable.status, "active")))
+    .orderBy(asc(organizationMembersTable.joinedAt))
+    .limit(1);
+  return membership?.ownerId ?? actorId;
+}
 
 const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
 
@@ -55,12 +74,57 @@ export const auth = betterAuth({
       session: authSessionsTable,
       account: authAccountsTable,
       verification: authVerificationsTable,
+      twoFactor: authTwoFactorTable,
     },
   }),
-  plugins: [bearer()],
+  plugins: [bearer(), twoFactor({ issuer: "PrevAI" })],
+  hooks: {
+    // IMPORTANT: better-auth re-throws any non-APIError raised in an `after`
+    // hook, which replaces the endpoint's real response with a 500 — so a bug
+    // or transient DB error in this best-effort audit logging would turn a
+    // correct login into "invalid credentials" for the user. Never let
+    // anything in here escape; log and swallow instead.
+    after: createAuthMiddleware(async (ctx) => {
+      try {
+        const newSession = ctx.context.newSession;
+        if (newSession && (ctx.path === "/sign-in/email" || ctx.path === "/sign-up/email" || ctx.path === "/two-factor/verify-totp" || ctx.path === "/two-factor/verify-backup-code")) {
+          const orgId = await resolveOrgForAudit(newSession.user.id);
+          await recordSecurityAuditEvent({
+            orgId,
+            actorUserId: newSession.user.id,
+            action: "login",
+            ipAddress: newSession.session.ipAddress ?? null,
+            userAgent: newSession.session.userAgent ?? null,
+          });
+          return;
+        }
+        const session = ctx.context.session;
+        if (!session) return;
+        if (ctx.path === "/two-factor/enable") {
+          const orgId = await resolveOrgForAudit(session.user.id);
+          await recordSecurityAuditEvent({ orgId, actorUserId: session.user.id, action: "two_factor.enabled" });
+        } else if (ctx.path === "/two-factor/disable") {
+          const orgId = await resolveOrgForAudit(session.user.id);
+          await recordSecurityAuditEvent({ orgId, actorUserId: session.user.id, action: "two_factor.disabled" });
+        } else if (ctx.path === "/revoke-session") {
+          const orgId = await resolveOrgForAudit(session.user.id);
+          await recordSecurityAuditEvent({ orgId, actorUserId: session.user.id, action: "session.revoked" });
+        } else if (ctx.path === "/revoke-sessions" || ctx.path === "/revoke-other-sessions") {
+          const orgId = await resolveOrgForAudit(session.user.id);
+          await recordSecurityAuditEvent({ orgId, actorUserId: session.user.id, action: "session.revoked_all" });
+        }
+      } catch (err) {
+        logger.error({ err, path: ctx.path }, "Security audit hook failed (non-fatal, auth response unaffected)");
+      }
+    }),
+  },
   emailAndPassword: {
     enabled: true,
     requireEmailVerification: true,
+    // Phase 64: a reset is how a user takes an account back — every session
+    // that existed before it (including an attacker's) must die with it.
+    // better-auth defaults this to false.
+    revokeSessionsOnPasswordReset: true,
     async sendResetPassword({ user, url }) {
       if (!resend) {
         logger.warn("RESEND_API_KEY not set — skipping password reset email");
@@ -68,9 +132,9 @@ export const auth = betterAuth({
       }
       try {
         await resend.emails.send({
-          from: "Prevai <no-reply@prevai.it>",
+          from: "PrevAI <no-reply@prevai.it>",
           to: [user.email],
-          subject: "Reimposta la tua password – Prevai",
+          subject: "Reimposta la tua password – PrevAI",
           html: buildResetPasswordEmail(user.name, url),
         });
       } catch (err) {
@@ -86,9 +150,9 @@ export const auth = betterAuth({
       if (!resend) return;
       try {
         await resend.emails.send({
-          from: "Prevai <no-reply@prevai.it>",
+          from: "PrevAI <no-reply@prevai.it>",
           to: [user.email],
-          subject: "Verifica la tua email – Prevai",
+          subject: "Verifica la tua email – PrevAI",
           html: buildVerificationEmail(user.name, url),
         });
       } catch (err) {
@@ -116,11 +180,11 @@ function buildResetPasswordEmail(name: string, url: string): string {
 <tr><td align="center">
 <table width="560" cellpadding="0" cellspacing="0" style="border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(124,58,237,0.10)">
 <tr><td style="background:linear-gradient(135deg,#7c3aed,#06b6d4);padding:28px 40px;text-align:center">
-  <img src="${LOGO_URL}" alt="Prevai" height="36" />
+  <img src="${LOGO_URL}" alt="PrevAI" height="36" />
 </td></tr>
 <tr><td style="background:#fff;padding:32px 40px">
   <h1 style="margin:0 0 16px;font-size:22px;font-weight:700;color:#1a1a2e">Reimposta la tua password</h1>
-  <p style="margin:0 0 24px;font-size:14px;color:#374151;line-height:1.7">Ciao ${name},<br/>hai richiesto di reimpostare la password del tuo account Prevai. Clicca sul pulsante qui sotto:</p>
+  <p style="margin:0 0 24px;font-size:14px;color:#374151;line-height:1.7">Ciao ${escapeHtml(name)},<br/>hai richiesto di reimpostare la password del tuo account Prevai. Clicca sul pulsante qui sotto:</p>
   <table cellpadding="0" cellspacing="0" style="margin:0 auto 24px">
     <tr><td align="center" style="border-radius:10px;background:linear-gradient(135deg,#7c3aed,#06b6d4)">
       <a href="${url}" style="display:inline-block;color:#fff;font-size:15px;font-weight:600;padding:13px 32px;border-radius:10px;text-decoration:none">Reimposta password →</a>
@@ -147,11 +211,11 @@ function buildVerificationEmail(name: string, url: string): string {
 <tr><td align="center">
 <table width="560" cellpadding="0" cellspacing="0" style="border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(124,58,237,0.10)">
 <tr><td style="background:linear-gradient(135deg,#7c3aed,#06b6d4);padding:28px 40px;text-align:center">
-  <img src="${LOGO_URL}" alt="Prevai" height="36" />
+  <img src="${LOGO_URL}" alt="PrevAI" height="36" />
 </td></tr>
 <tr><td style="background:#fff;padding:32px 40px">
   <h1 style="margin:0 0 16px;font-size:22px;font-weight:700;color:#1a1a2e">Verifica il tuo indirizzo email</h1>
-  <p style="margin:0 0 24px;font-size:14px;color:#374151;line-height:1.7">Ciao ${name},<br/>clicca sul pulsante qui sotto per verificare il tuo indirizzo email su Prevai.</p>
+  <p style="margin:0 0 24px;font-size:14px;color:#374151;line-height:1.7">Ciao ${escapeHtml(name)},<br/>clicca sul pulsante qui sotto per verificare il tuo indirizzo email su Prevai.</p>
   <table cellpadding="0" cellspacing="0" style="margin:0 auto 24px">
     <tr><td align="center" style="border-radius:10px;background:linear-gradient(135deg,#7c3aed,#06b6d4)">
       <a href="${url}" style="display:inline-block;color:#fff;font-size:15px;font-weight:600;padding:13px 32px;border-radius:10px;text-decoration:none">Verifica email →</a>

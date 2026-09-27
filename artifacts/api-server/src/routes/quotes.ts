@@ -1,8 +1,13 @@
 import { Router } from "express";
-import { requireAuth, getUserId } from "../middlewares/authMiddleware";
+import { requireAuth, getUserId, getUserName } from "../middlewares/authMiddleware";
+import { requirePermission } from "../middlewares/requirePermission.js";
 import multer from "multer";
-import { db, quotesTable, quoteAttachmentsTable, businessProfilesTable, priceCatalogItemsTable, priceIntelligenceTable, uploadedDocumentsTable, quoteClientDataSchema, quoteCompanySnapshotSchema, quoteChapterSchema } from "@workspace/db";
-import { eq, desc, count, sum, sql, and, avg } from "drizzle-orm";
+import { db, quotesTable, projectsTable, quoteAttachmentsTable, quoteVariantsTable, businessProfilesTable, priceCatalogItemsTable, priceIntelligenceTable, uploadedDocumentsTable, quoteClientDataSchema, quoteCompanySnapshotSchema, paymentScheduleSchema, derivePaymentScheduleFromText, validatePaymentSchedule, paymentScheduleToText, normalizeProvince, quoteTaxLines, readQuoteClientData } from "@workspace/db";
+import { getBaseUrl } from "../lib/baseUrl.js";
+import { resolveQuoteTaxRate } from "../lib/tax.js";
+import { quoteLanguageFor, qt, fmtQuoteDate, fmtQty } from "../quotes/i18n.js";
+import { generateQuotePdfBuffer, generateCapitolatoPdfBuffer, quoteProvenance } from "../quotes/pdf.js";
+import { eq, desc, count, sum, sql, and, avg, isNull } from "drizzle-orm";
 import { getTrialStatus, PLANS } from "./payments.js";
 import {
   UpdateQuoteBody,
@@ -13,11 +18,17 @@ import {
   RegenerateQuoteBody,
 } from "@workspace/api-zod";
 import { openai } from "@workspace/integrations-openai-ai-server";
-import { REGIONAL_PRICING_GUIDANCE, DESCRIPTION_QUALITY_GUIDANCE } from "../lib/generateQuoteFromText.js";
-import type { QuoteChapter, QuoteChapterItem, QuoteDiscount, QuoteCompanySnapshot, QuoteClientData, QuoteItem } from "@workspace/db";
-import { logger } from "../lib/logger.js";
-import pdfmake from "pdfmake";
-import type { TDocumentDefinitions, Content } from "pdfmake/interfaces";
+import {
+  AI_PROMPT,
+  REGIONAL_PRICING_GUIDANCE,
+  DESCRIPTION_QUALITY_GUIDANCE,
+  CAPITOLATO_CONTEXT,
+  COMMERCIAL_OFFER_CONTEXT,
+  CAPITOLATO_REWRITE_PROMPT,
+  ENRICH_VOCI_PROMPT,
+  DEFAULT_PAYMENT_TERMS,
+} from "../lib/generateQuoteFromText.js";
+import type { QuoteChapter, QuoteDiscount, QuoteCompanySnapshot, QuoteClientData, QuoteItem } from "@workspace/db";
 import {
   parseComputoMetrico, isComputoMetrico,
   isTabularComputoMetrico, parseTabularComputoMetrico,
@@ -32,37 +43,15 @@ import { userRateLimiter } from "../lib/rateLimit.js";
 const aiCallLimiter = userRateLimiter({
   windowMs: 60 * 60 * 1000,
   max: 40,
-  message: "Hai raggiunto il limite orario di generazioni AI. Riprova più tardi.",
+  message: "You've reached the hourly limit for AI generations. Please try again later.",
 });
 
-type PdfMakeInstance = {
-  fonts: Record<string, Record<string, string>>;
-  createPdf(docDef: TDocumentDefinitions): { getBuffer(): Promise<Buffer> };
-};
-let _pdfmakeInstance: PdfMakeInstance | null = null;
-function getPdfmake(): PdfMakeInstance {
-  if (_pdfmakeInstance) return _pdfmakeInstance;
-  const lib = pdfmake as unknown as PdfMakeInstance;
-  lib.fonts = {
-    Roboto: {
-      normal: "Helvetica",
-      bold: "Helvetica-Bold",
-      italics: "Helvetica-Oblique",
-      bolditalics: "Helvetica-BoldOblique",
-    },
-    Helvetica: {
-      normal: "Helvetica",
-      bold: "Helvetica-Bold",
-      italics: "Helvetica-Oblique",
-      bolditalics: "Helvetica-BoldOblique",
-    },
-  };
-  _pdfmakeInstance = lib;
-  return lib;
-}
 import { ObjectStorageService } from "../lib/objectStorage.js";
 import { generateNumeroPreventivo } from "../lib/quoteNumber.js";
 import { sendQuotePdfEmail } from "../lib/email.js";
+import { QUOTE_FOLLOWUP_CADENCE_DAYS } from "../lib/quoteMessaging.js";
+import { linkQuoteToClient, ensureClientForQuote } from "../lib/clients.js";
+import { createManualQuote, type ManualQuoteInput } from "../quotes/manualCreate.js";
 import { randomUUID } from "crypto";
 import { extractFromPdf, extractFromDocx, extractFromXlsx } from "../lib/extractDocument.js";
 
@@ -91,89 +80,71 @@ const imageUpload = multer({
 
 const router = Router();
 
-const AI_PROMPT = `Sei un consulente esperto di preventivi professionali per il mercato italiano (artigiani, edilizia, impianti, servizi tecnici).
-
-Devi trasformare una descrizione libera in un'ANALISI ECONOMICA E COMPUTO METRICO PREZZATO professionale, strutturata a capitoli, coerente con i prezzi di listino del proprietario e con le stime di mercato in Italia nel 2026.
-
-REGOLE FONDAMENTALI:
-1. Prezzi di riferimento e di catalogo (LISTINO):
-   - Se è fornito un "LISTINO PREZZI PERSONALIZZATO DELL'UTENTE", devi usare PRIORITARIAMENTE i prezzi unitari definiti nel listino per tutte le lavorazioni corrispondenti o correlate.
-   - Non inventare nuovi prezzi unitari se la voce corrisponde a qualcosa presente nel listino personalizzato.
-   - Se una lavorazione non è presente nel listino personalizzato, usa prezzi realistici del mercato italiano 2026:
-     * imbianchino/pittore: 5–12€/mq per tinteggiatura, 15–25€/mq per lavori speciali
-     * elettricista: 40–70€/ora manodopera
-     * idraulico: 45–75€/ora manodopera
-     * edilizia generale: prezzi coerenti con listino DEI/Regione
-     * muratore: 35–55€/ora
-     * carpentiere/falegname: 40–65€/ora
-2. Se mancano dati specifici: fai assunzioni realistiche, NON chiedere chiarimenti. Se sono fornite le "MISURE E DIMENSIONI DELL'IMMOBILE", devi usarle rigorosamente per calcolare le quantità (mq, metri lineari, ecc.) in modo matematico.
-3. Organizza il lavoro in CAPITOLI logici (A, B, C, D, …) con titoli professionali (es: "Allestimento cantiere", "Opere di demolizione", "Nuove opere edili", "Impianto elettrico", ecc.)
-4. Ogni capitolo contiene VOCI di lavoro dettagliate con unità di misura professionali (mq, ml, mc, kg, ore, a.c., pezzi, cadauno, kw, etc.)
-5. Calcola subtotale per ogni capitolo. Il QUADRO SINTETICO è ricavato automaticamente dall'array capitoli (lettera + titolo + subtotale + osservazione); non serve un campo separato.
-6. Applica uno sconto SOLO se l'utente lo richiede esplicitamente nella sua descrizione; altrimenti imposta sempre percentuale: 0
-7. Condizioni di pagamento tipiche edilizia: 30% acconto firma, 30% SAL intermedio, 30% SAL finale, 10% saldo fine lavori
-8. Sempre IVA 22% salvo indicazione contraria
-9. Il titolo_riga2 deve descrivere l'intervento e il luogo del cantiere
-10. numero_preventivo_data: NON GENERARE — il server assegna il numero automaticamente. Restituisci una stringa vuota.
-11. REGOLA CRITICA — ZERO OMISSIONI: se l'utente fornisce una descrizione dettagliata con molte voci, NUMERATE o PUNTATE, ogni singola voce deve diventare una riga distinta nel preventivo. NON riassumere, NON accorpare più voci in una sola, NON saltare o omettere voci. Se necessario, crea PIÙ CAPITOLI per contenere tutto. Ogni elemento elencato dall'utente deve avere la sua descrizione, unità di misura, quantità, prezzo unitario e totale.
-12. SE l'utente allega un documento con computo metrico o lista voci: trasforma il documento 1:1. Ogni riga del documento diventa una voce. NON inventare nuove voci, NON accorpare voci simili. Mantieni le quantità e i prezzi unitari del documento.
-
-OUTPUT — SOLO JSON VALIDO, nessun testo extra:
-{
-  "titolo_riga1": "Analisi Economica e Computo Metrico Prezzato",
-  "titolo_riga2": "Intervento di [descrizione breve] – [Comune] ([Prov])",
-  "numero_preventivo_data": "",
-  "cliente": { "nome": "", "indirizzo": "" },
-  "descrizione_generale": "Descrizione sintetica dell'intervento",
-  "capitoli": [
-    {
-      "lettera": "A",
-      "titolo": "Allestimento cantiere",
-      "osservazione": "Voce ordinaria",
-      "voci": [
-        {
-          "descrizione": "Allestimento area di cantiere completo",
-          "um": "a.c.",
-          "quantita": 1,
-          "prezzo_unitario": 2500.00,
-          "totale": 2500.00
-        }
-      ],
-      "subtotale": 2500.00
-    }
-  ],
-  "sconto": { "percentuale": 0, "importo_scontato": 0 },
-  "condizioni_pagamento": [
-    "30% acconto alla firma del contratto",
-    "30% a completamento prima fase lavori",
-    "30% a completamento seconda fase lavori",
-    "10% saldo a fine lavori"
-  ],
-  "subtotale": 0,
-  "iva_percentuale": 22,
-  "iva_valore": 0,
-  "totale": 0,
-  "note": "Preventivo valido 30 giorni dalla data di emissione. Eventuali lavori aggiuntivi non contemplati nel presente preventivo saranno preventivati separatamente."
+/**
+ * A draft quote of a non-subscriber is unlocked by the trial — once — the
+ * first time it leaves the account (PDF download or email send). Each unlock
+ * consumes one trial download. Returns false when the trial is over, so the
+ * caller can answer 402. (Phase 66: email send used to require the quote to
+ * be unlocked already, so trial users could not send before downloading.)
+ */
+async function tryTrialUnlock(
+  quote: typeof quotesTable.$inferSelect,
+  profile: typeof businessProfilesTable.$inferSelect | null,
+  log: { info: (obj: object, msg: string) => void }
+): Promise<boolean> {
+  const trial = getTrialStatus(profile);
+  if (!trial.isTrialActive) return false;
+  await Promise.all([
+    db.update(quotesTable).set({ status: "unlocked", unlockedWithPlan: "trial" }).where(eq(quotesTable.id, quote.id)),
+    db
+      .update(businessProfilesTable)
+      .set({ trialDownloadsUsed: (profile?.trialDownloadsUsed ?? 0) + 1 })
+      .where(eq(businessProfilesTable.userId, quote.userId)),
+  ]);
+  log.info({ quoteId: quote.id, userId: quote.userId }, "Quote auto-unlocked via trial");
+  return true;
 }
-
-CALCOLI:
-- subtotale = somma di tutti i subtotali capitoli
-- Se sconto > 0: imponibile_scontato = subtotale * (1 - percentuale/100); iva_valore = imponibile_scontato * iva_percentuale/100; totale = imponibile_scontato + iva_valore
-- Se sconto = 0: iva_valore = subtotale * iva_percentuale/100; totale = subtotale + iva_valore
-- sconto.importo_scontato = subtotale dopo applicazione sconto (prima di IVA)
-
-IMPORTANTISSIMO: output SOLO JSON puro, nessuna spiegazione, nessun markdown.`;
 
 type QuoteRow = typeof quotesTable.$inferSelect;
 
 type AttachmentRow = typeof quoteAttachmentsTable.$inferSelect;
 
-function serializeQuote(q: QuoteRow, attachments?: AttachmentRow[]) {
+type VariantRow = typeof quoteVariantsTable.$inferSelect;
+
+export function serializeQuoteVariant(v: VariantRow, _province: string | null = null) {
+  return {
+    id: v.id,
+    quoteId: v.quoteId,
+    label: v.label,
+    description: v.description,
+    position: v.position,
+    items: Array.isArray(v.items) ? v.items : [],
+    capitoli: Array.isArray(v.capitoli) ? v.capitoli : [],
+    sconto: (v.sconto as QuoteDiscount | null) ?? null,
+    condizioniPagamento: Array.isArray(v.condizioniPagamento) ? v.condizioniPagamento : [],
+    subtotale: Number(v.subtotale),
+    ivaPercentuale: Number(v.ivaPercentuale),
+    ivaValore: Number(v.ivaValore),
+    /** Righe IVA (IVA22/IVA10/IVA4/RC/SP/ESENTE); la somma coincide con ivaValore. */
+    taxLines: quoteTaxLines(v.sconto && typeof (v.sconto as QuoteDiscount).importoScontato === "number" ? (v.sconto as QuoteDiscount).importoScontato : Number(v.subtotale), Number(v.ivaPercentuale), Number(v.ivaValore)),
+    totale: Number(v.totale),
+    createdAt: v.createdAt.toISOString(),
+    updatedAt: v.updatedAt.toISOString(),
+  };
+}
+
+export function serializeQuote(q: QuoteRow, attachments?: AttachmentRow[], variants?: VariantRow[]) {
   const tot = Number(q.totale);
+  const clientData = readQuoteClientData(q.clientData as QuoteClientData | null);
+  const province = normalizeProvince(q.province) ?? normalizeProvince(clientData.province) ?? null;
+  const paymentSchedule = q.paymentSchedule ?? derivePaymentScheduleFromText(q.condizioniPagamento, tot);
   return {
     id: q.id,
     userId: q.userId,
-    clientData: q.clientData,
+    clientId: q.clientId ?? null,
+    province,
+    paymentSchedule,
+    clientData,
     descrizioneGenerale: q.descrizioneGenerale,
     items: Array.isArray(q.items) ? q.items : [],
     capitoli: Array.isArray(q.capitoli) ? q.capitoli : [],
@@ -186,11 +157,18 @@ function serializeQuote(q: QuoteRow, attachments?: AttachmentRow[]) {
     subtotale: Number(q.subtotale),
     ivaPercentuale: Number(q.ivaPercentuale),
     ivaValore: Number(q.ivaValore),
+    /** Righe IVA (IVA22/IVA10/IVA4/RC/SP/ESENTE); la somma coincide con ivaValore. */
+    taxLines: quoteTaxLines((q.sconto as QuoteDiscount | null)?.importoScontato ?? Number(q.subtotale), Number(q.ivaPercentuale), Number(q.ivaValore)),
+    /** Lingua dei documenti rivolti al cliente: sempre italiano. */
+    documentLanguage: "it",
     totale: tot,
     prezzoMinimo: Math.round(tot * 0.9 * 100) / 100,
     prezzoMassimo: Math.round(tot * 1.25 * 100) / 100,
     note: q.note,
     status: q.status,
+    acceptedByName: q.acceptedByName ?? null,
+    acceptedAt: q.acceptedAt?.toISOString() ?? null,
+    sentAt: q.sentAt?.toISOString() ?? null,
     pdfUrl: q.pdfUrl ?? null,
     rawInput: q.rawInput,
     pdfDownloadedAt: q.pdfDownloadedAt?.toISOString() ?? null,
@@ -199,6 +177,9 @@ function serializeQuote(q: QuoteRow, attachments?: AttachmentRow[]) {
     templateId: q.templateId ?? "standard",
     createdAt: q.createdAt.toISOString(),
     updatedAt: q.updatedAt.toISOString(),
+    archivedAt: q.archivedAt?.toISOString() ?? null,
+    acceptedVariantId: q.acceptedVariantId ?? null,
+    variants: variants?.map((v) => serializeQuoteVariant(v, province)) ?? [],
     attachments: attachments?.map(a => ({
       id: a.id,
       fileName: a.fileName,
@@ -239,7 +220,10 @@ router.get("/quotes/stats", requireAuth, async (req, res) => {
         .where(eq(quotesTable.userId, userId)),
     ]);
 
-    const allStatusCounts = { draft: 0, unlocked: 0, pending_payment: 0 };
+    // "unlocked" on the dashboard means "sent to the client" — an accepted
+    // quote is still unlocked (Phase 66: accepted quotes vanished from the
+    // unlocked count and revenue the moment the client said yes).
+    const allStatusCounts = { draft: 0, unlocked: 0, pending_payment: 0, accepted: 0 };
     let thisMonth = 0;
     let unlockedRevenue = 0;
     for (const q of allForStats) {
@@ -247,7 +231,7 @@ router.get("/quotes/stats", requireAuth, async (req, res) => {
         allStatusCounts[q.status as keyof typeof allStatusCounts]++;
       }
       if (q.createdAt >= thisMonthStart) thisMonth++;
-      if (q.status === "unlocked") unlockedRevenue += Number(q.totale ?? 0);
+      if (q.status === "unlocked" || q.status === "accepted") unlockedRevenue += Number(q.totale ?? 0);
     }
 
     const total = Number(statsResult[0]?.total ?? 0);
@@ -256,7 +240,8 @@ router.get("/quotes/stats", requireAuth, async (req, res) => {
     res.json({
       total,
       draft: allStatusCounts.draft,
-      unlocked: allStatusCounts.unlocked,
+      unlocked: allStatusCounts.unlocked + allStatusCounts.accepted,
+      accepted: allStatusCounts.accepted,
       pendingPayment: allStatusCounts.pending_payment,
       totalRevenue: Number(statsResult[0]?.totalRevenue ?? 0),
       unlockedRevenue,
@@ -270,16 +255,70 @@ router.get("/quotes/stats", requireAuth, async (req, res) => {
   }
 });
 
-// GET /api/quotes
+// GET /api/quotes — summaries only (Phase 68). The list pages read a dozen
+// scalar fields; shipping every quote's chapters, line items, raw input and
+// company snapshot made a 500-quote account wait 1.7 s for 1.5 MB. Detail
+// views fetch /api/quotes/:id. `lineItemCount` is computed in SQL so the
+// JSON columns never leave Postgres.
 router.get("/quotes", requireAuth, async (req, res) => {
   try {
     const userId = getUserId(res);
-    const quotes = await db
-      .select()
+    const rows = await db
+      .select({
+        id: quotesTable.id,
+        clientId: quotesTable.clientId,
+        province: quotesTable.province,
+        clientData: quotesTable.clientData,
+        descrizioneGenerale: quotesTable.descrizioneGenerale,
+        title: quotesTable.titoloPreventivoRiga1,
+        // Italian quotes keep their lines inside chapters (capitoli[].voci),
+        // not in `items` — count both, or every such quote reads "0 voci".
+        lineItemCount: sql<number>`(
+          case when jsonb_typeof(${quotesTable.items}) = 'array' then jsonb_array_length(${quotesTable.items}) else 0 end
+          + coalesce((
+              select sum(case when jsonb_typeof(c->'voci') = 'array' then jsonb_array_length(c->'voci') else 0 end)
+              from jsonb_array_elements(case when jsonb_typeof(${quotesTable.capitoli}) = 'array' then ${quotesTable.capitoli} else '[]'::jsonb end) c
+            ), 0)
+        )::int`,
+        subtotale: quotesTable.subtotale,
+        ivaValore: quotesTable.ivaValore,
+        totale: quotesTable.totale,
+        status: quotesTable.status,
+        acceptedAt: quotesTable.acceptedAt,
+        sentAt: quotesTable.sentAt,
+        pdfUrl: quotesTable.pdfUrl,
+        capitolatoPro: quotesTable.capitolatoPro,
+        templateId: quotesTable.templateId,
+        createdAt: quotesTable.createdAt,
+        updatedAt: quotesTable.updatedAt,
+        archivedAt: quotesTable.archivedAt,
+      })
       .from(quotesTable)
-      .where(eq(quotesTable.userId, userId))
+      .where(and(eq(quotesTable.userId, userId), isNull(quotesTable.archivedAt)))
       .orderBy(desc(quotesTable.createdAt));
-    res.json(quotes.map(q => serializeQuote(q)));
+    res.json(
+      rows.map((q) => ({
+        id: q.id,
+        clientId: q.clientId ?? null,
+        province: normalizeProvince(q.province) ?? normalizeProvince(readQuoteClientData(q.clientData as QuoteClientData | null).province) ?? null,
+        clientData: readQuoteClientData(q.clientData as QuoteClientData | null),
+        descrizioneGenerale: q.descrizioneGenerale,
+        title: q.title ?? null,
+        lineItemCount: q.lineItemCount,
+        subtotale: Number(q.subtotale),
+        ivaValore: Number(q.ivaValore),
+        totale: Number(q.totale),
+        status: q.status,
+        acceptedAt: q.acceptedAt?.toISOString() ?? null,
+        sentAt: q.sentAt?.toISOString() ?? null,
+        pdfUrl: q.pdfUrl ?? null,
+        capitolatoPro: q.capitolatoPro ?? false,
+        templateId: q.templateId ?? "standard",
+        createdAt: q.createdAt.toISOString(),
+        updatedAt: q.updatedAt.toISOString(),
+        archivedAt: q.archivedAt?.toISOString() ?? null,
+      })),
+    );
   } catch (err) {
     req.log.error({ err }, "Error fetching quotes");
     res.status(500).json({ error: "Internal server error" });
@@ -347,14 +386,14 @@ function buildPastQuotesContext(
 
   if (examples.length === 0) return "";
 
-  return `STORICO PREVENTIVI DELL'UTENTE (usa come riferimento per coerenza di prezzi e stile):
-Questi sono i preventivi precedenti dello stesso utente. Mantieni coerenza con i prezzi unitari e le tipologie di lavoro già utilizzate, adattandoli al nuovo intervento.
+  return `PREVENTIVI PRECEDENTI DELL'UTENTE (usa come riferimento per coerenza di prezzi e stile):
+Questi sono preventivi già emessi dallo stesso utente. Mantieni coerenza con i prezzi unitari e le tipologie di lavorazione già usate, adattandoli al nuovo lavoro.
 
 ${examples.join("\n\n---\n\n")}`;
 }
 
 // POST /api/quotes  (multipart/form-data: rawInput, clientData?, companySnapshot?, images[])
-router.post("/quotes", requireAuth, aiCallLimiter, imageUpload.array("images", 3), async (req, res) => {
+router.post("/quotes", requireAuth, requirePermission("quotes", "edit"), aiCallLimiter, imageUpload.array("images", 3), async (req, res) => {
   try {
     const userId = getUserId(res);
 
@@ -364,6 +403,7 @@ router.post("/quotes", requireAuth, aiCallLimiter, imageUpload.array("images", 3
         subscriptionPlan: businessProfilesTable.subscriptionPlan,
         subscriptionStatus: businessProfilesTable.subscriptionStatus,
         trialStartedAt: businessProfilesTable.trialStartedAt,
+        province: businessProfilesTable.province,
       })
       .from(businessProfilesTable)
       .where(eq(businessProfilesTable.userId, userId));
@@ -380,7 +420,7 @@ router.post("/quotes", requireAuth, aiCallLimiter, imageUpload.array("images", 3
           .where(sql`${quotesTable.userId} = ${userId} AND ${quotesTable.createdAt} >= ${monthStart.toISOString()} AND ${quotesTable.createdAt} < ${nextMonth.toISOString()}`);
         if (cnt >= plan.quotaPerMonth) {
           res.status(429).json({
-            error: `Quota mensile raggiunta. Hai usato tutti i ${plan.quotaPerMonth} preventivi del piano ${plan.name} questo mese. Passa a un piano superiore per continuare.`,
+            error: `Monthly quota reached. You've used all ${plan.quotaPerMonth} quotes included in the ${plan.name} plan this month. Upgrade to a higher plan to continue.`,
             code: "QUOTA_EXCEEDED",
           });
           return;
@@ -469,11 +509,11 @@ router.post("/quotes", requireAuth, aiCallLimiter, imageUpload.array("images", 3
     // Build user message: inject client data and document text as context
     let userMessage = rawInput;
     if (clientDataInput?.nome) {
-      userMessage = `Dati committente (NON generare di nuovo, usa questi valori esatti):
-- Nome/Ragione Sociale: ${clientDataInput.nome}
-- Indirizzo: ${clientDataInput.indirizzo || ""}${clientDataInput.codiceFiscale ? `\n- Codice Fiscale: ${clientDataInput.codiceFiscale}` : ""}${clientDataInput.citta ? `\n- Comune: ${clientDataInput.citta}` : ""}${clientDataInput.cap ? ` CAP: ${clientDataInput.cap}` : ""}${clientDataInput.provincia ? ` (${clientDataInput.provincia})` : ""}
+      userMessage = `Client data (do NOT regenerate, use these exact values):
+- Name/Company Name: ${clientDataInput.nome}
+- Address: ${clientDataInput.indirizzo || ""}${clientDataInput.businessNumber ? `\n- Codice fiscale: ${clientDataInput.businessNumber}` : ""}${clientDataInput.city ? `\n- City: ${clientDataInput.city}` : ""}${clientDataInput.postalCode ? ` CAP: ${clientDataInput.postalCode}` : ""}${clientDataInput.province ? ` (${clientDataInput.province})` : ""}
 
-Descrizione lavori: ${rawInput}`;
+Job description: ${rawInput}`;
     }
 
     // Detect computo metrico in rawInput or document text to bypass AI entirely
@@ -628,28 +668,11 @@ Se il documento allegato ha molte voci, mantienile tutte e adegua i prezzi propo
 
     const templateStyleContext =
       templateId === "arosio"
-        ? `MODALITÀ CAPITOLATO TECNICO PROFESSIONALE:
-Per ogni voce di lavoro, scrivi la descrizione in stile CAPITOLATO SPECIALE D'APPALTO con ALMENO 4-6 linee tecniche in italiano formale:
-- Descrivi con precisione le operazioni eseguite e le modalità esecutive (ciclo lavorativo, tecniche, successione delle fasi)
-- Specifica materiali, prodotti e componenti con caratteristiche tecniche e standard normativi italiani/europei (UNI, CEI, UNI EN, D.Lgs., D.M.)
-- Indica le caratteristiche di qualità, resistenza, classe o certificazione richieste per i materiali
-- Indica esplicitamente cosa è COMPRESO nella voce (forniture, lavorazioni, carico, trasporto, smaltimento)
-- Indica eventuali ESCLUSIONI rilevanti e/o oneri a carico del committente
-- Usa terminologia professionale edilizia/impiantistica italiana
-Esempio: "Demolizione e rimozione di pavimentazione esistente in piastrelle ceramiche compreso il distacco mediante scalpellatura meccanica e la rimozione del massetto di allettamento per uno spessore medio di 5 cm. Compresi il carico, il trasporto e lo smaltimento del materiale di risulta presso discarica autorizzata secondo D.Lgs. 152/2006. Esclusi lavori di ripristino strutturale del sottofondo e impermeabilizzazioni."
+        ? `${CAPITOLATO_CONTEXT}
 
 Imposta sempre titolo_riga1 = "Analisi Economica e Computo Metrico Prezzato".`
         : templateId === "mariagrazia"
-        ? `MODALITÀ OFFERTA COMMERCIALE ELEGANTE:
-Scrivi il preventivo in stile OFFERTA COMMERCIALE PROFESSIONALE e PERSUASIVA:
-- Le descrizioni voci devono essere CHIARE, CONCISE e BEN FORMULATE (1-3 righe per voce, massimo 4)
-- Usa un tono professionale ma accattivante, adatto a presentare un'offerta commerciale a un cliente privato
-- Enfatizza la QUALITÀ del servizio, l'ESPERIENZA e l'ATTENZIONE AI DETTAGLI
-- Organizza i capitoli in modo logico e facilmente leggibile
-- Usa titoli di capitolo descrittivi e commerciali (es. "Preparazione e allestimento cantiere", "Opere principali", "Finiture di qualità", "Pulizia e consegna")
-- Imposta titolo_riga1 = "Offerta Commerciale"
-- Includi una nota finale che sottolinei la qualità del servizio, l'esperienza dell'impresa e la garanzia sui lavori
-- Condizioni di pagamento: proponi 2-3 rate semplici e chiare (es. 50% acconto alla firma, 50% saldo fine lavori)`
+        ? COMMERCIAL_OFFER_CONTEXT
         : null;
 
     let aiData: {
@@ -739,24 +762,24 @@ Scrivi il preventivo in stile OFFERTA COMMERCIALE PROFESSIONALE e PERSUASIVA:
         const isRefusal = /mi dispiace|mi spiace|non (posso|riesco)|sorry|i cannot|i can't/i.test(content);
         if (isRefusal && hasImages) {
           res.status(422).json({
-            error: "L'AI non è riuscita a interpretare le immagini allegate. Prova a riformulare la descrizione testuale aggiungendo i dettagli principali (misure, materiali, lavorazioni) oppure carica foto più chiare.",
+            error: "The AI couldn't interpret the attached images. Try rephrasing the text description with more details (measurements, materials, work items), or upload clearer photos.",
             code: "AI_IMAGE_REFUSAL",
           });
           return;
         }
         res.status(422).json({
-          error: "L'AI non ha restituito un preventivo valido. Riprova tra qualche istante o riformula la richiesta.",
+          error: "The AI didn't return a valid quote. Please try again in a moment or rephrase your request.",
           code: "AI_INVALID_OUTPUT",
         });
         return;
       }
     } else if (isNumbered && numberedData && numberedData.totalVoci >= 3) {
       // Numbered computo metrico: BYPASS AI entirely — use ACTUAL prices from document
-      // This format (A. Demolizioni + N° rows + Subtotale capitolo) is the most common
-      // from Italian computo software. The AI summarizes C/D/E chapters; we don't.
+      // This format (A. Demolizioni + numbered rows + chapter subtotal) is the most common
+      // one produced by Italian computo-metrico software. The AI summarizes C/D/E chapters; we don't.
       req.log.info({ userId, totalVoci: numberedData.totalVoci, targetTotalEur }, "Numbered computo: bypassing AI, using actual prices from document");
 
-      const chaptersRaw = numberedData.sections.map((s, idx) => {
+      const chaptersRaw = numberedData.sections.map((s) => {
         const voci = s.voci.map(v => {
           // Use actual price from the document; fall back to estimation only if missing
           let pu = v.prezzoUnitario;
@@ -783,7 +806,7 @@ Scrivi il preventivo in stile OFFERTA COMMERCIALE PROFESSIONALE e PERSUASIVA:
         };
       });
 
-      // Apply proportional scaling to hit targetTotalEur (IVA inclusa) if provided
+      // Apply proportional scaling to hit targetTotalEur (tax included) if provided
       let chapters = chaptersRaw;
       let subTot = chaptersRaw.reduce((sum, c) => sum + c.subtotale, 0);
 
@@ -815,16 +838,11 @@ Scrivi il preventivo in stile OFFERTA COMMERCIALE PROFESSIONALE e PERSUASIVA:
         iva_percentuale: 22,
         iva_valore: iva,
         totale,
-        descrizione_generale: "Computo metrico prezzato con prezzi da documento",
+        descrizione_generale: "Preventivo a voci generato dal listino prezzi caricato.",
         note: "Preventivo valido 30 giorni",
         sconto: { percentuale: 0, importo_scontato: 0 },
-        condizioni_pagamento: [
-          "30% acconto alla firma del contratto",
-          "30% a completamento prima fase lavori",
-          "30% a completamento seconda fase lavori",
-          "10% saldo a fine lavori",
-        ],
-        titolo_riga1: "Computo Metrico Prezzato",
+        condizioni_pagamento: DEFAULT_PAYMENT_TERMS,
+        titolo_riga1: "Analisi Economica e Computo Metrico Prezzato",
         titolo_riga2: "",
         numero_preventivo_data: "",
         cliente: { nome: "", indirizzo: "" },
@@ -856,7 +874,7 @@ Scrivi il preventivo in stile OFFERTA COMMERCIALE PROFESSIONALE e PERSUASIVA:
         };
       });
 
-      // Apply proportional scaling to hit the target total (IVA inclusa) if provided
+      // Apply proportional scaling to hit the target total (tax included) if provided
       let chapters = chaptersRaw;
       let subTot = chaptersRaw.reduce((sum, c) => sum + c.subtotale, 0);
 
@@ -891,12 +909,7 @@ Scrivi il preventivo in stile OFFERTA COMMERCIALE PROFESSIONALE e PERSUASIVA:
         descrizione_generale: "Analisi economica e computo metrico prezzato",
         note: "Preventivo valido 30 giorni",
         sconto: { percentuale: 0, importo_scontato: 0 },
-        condizioni_pagamento: [
-          "30% acconto alla firma del contratto",
-          "30% a completamento prima fase lavori",
-          "30% a completamento seconda fase lavori",
-          "10% saldo a fine lavori",
-        ],
+        condizioni_pagamento: DEFAULT_PAYMENT_TERMS,
         titolo_riga1: "Analisi Economica e Computo Metrico Prezzato",
         titolo_riga2: "",
         numero_preventivo_data: "",
@@ -929,44 +942,65 @@ Scrivi il preventivo in stile OFFERTA COMMERCIALE PROFESSIONALE e PERSUASIVA:
       };
     }
 
-    let capitoli: QuoteChapter[] = (aiData.capitoli ?? []).map((cap) => ({
-      lettera: cap.lettera ?? "A",
-      titolo: cap.titolo ?? "",
-      osservazione: cap.osservazione ?? "Voce ordinaria",
-      voci: (cap.voci ?? []).map((v) => ({
-        descrizione: v.descrizione ?? "",
-        um: v.um ?? "a.c.",
-        quantita: Number(v.quantita ?? 0),
-        prezzoUnitario: Number(v.prezzo_unitario ?? 0),
-        totale: Number(v.totale ?? 0),
-      })),
-      subtotale: Number(cap.subtotale ?? 0),
-    }));
+    // NOTE: totale/subtotale for each line item and chapter are always
+    // RECOMPUTED here from quantita * prezzoUnitario rather than trusted from
+    // the AI's own aiData.totale/subtotale/iva_valore fields. The model
+    // sometimes echoes the literal "0" placeholders from the prompt's example
+    // JSON for the top-level totals even while correctly computing every
+    // per-item and per-chapter number, which used to make the request fail
+    // the "AI returned empty or invalid quote structure" check below.
+    let capitoli: QuoteChapter[] = (aiData.capitoli ?? []).map((cap) => {
+      let capSubtotale = 0;
+      const voci = (cap.voci ?? []).map((v) => {
+        const quantita = Number(v.quantita ?? 0);
+        const prezzoUnitario = Number(v.prezzo_unitario ?? 0);
+        const totale = Number((quantita * prezzoUnitario).toFixed(2));
+        capSubtotale += totale;
+        return {
+          descrizione: v.descrizione ?? "",
+          um: v.um ?? "a.c.",
+          quantita,
+          prezzoUnitario,
+          totale,
+        };
+      });
+      return {
+        lettera: cap.lettera ?? "A",
+        titolo: cap.titolo ?? "",
+        osservazione: cap.osservazione ?? "Voce ordinaria",
+        voci,
+        subtotale: Number(capSubtotale.toFixed(2)),
+      };
+    });
 
     if (templateId === "arosio" || templateId === "mariagrazia") {
       capitoli = await enrichVociDescrizioni(capitoli);
     }
 
+    const calculatedSubtotale = Number(capitoli.reduce((sum, c) => sum + c.subtotale, 0).toFixed(2));
+
     const scontoRaw = aiData.sconto;
+    const scontoPercentuale = scontoRaw ? Number(scontoRaw.percentuale ?? 0) : 0;
+    // Phase 67: `importoScontato` is the *discounted subtotal* everywhere the
+    // quote is rendered (PDFs, HTML, dashboard editor) — not the discount
+    // amount. Storing the amount here made a 10 % discount print as "−$9,000".
+    const discountAmount = scontoPercentuale > 0 ? Number((calculatedSubtotale * scontoPercentuale / 100).toFixed(2)) : 0;
+    const importoScontato = Number((calculatedSubtotale - discountAmount).toFixed(2));
     const sconto: QuoteDiscount | null =
-      scontoRaw && Number(scontoRaw.percentuale ?? 0) > 0
-        ? {
-            percentuale: Number(scontoRaw.percentuale ?? 0),
-            importoScontato: Number(scontoRaw.importo_scontato ?? 0),
-          }
-        : null;
+      scontoPercentuale > 0 ? { percentuale: scontoPercentuale, importoScontato } : null;
 
     const condizioniPagamento = aiData.condizioni_pagamento ?? [
-      "30% acconto alla firma del contratto",
-      "30% a completamento prima fase lavori",
-      "30% a completamento seconda fase lavori",
-      "10% saldo a fine lavori",
+      "15% deposit upon contract signing",
+      "35% upon delivery of materials and start of work",
+      "35% upon substantial completion",
+      "15% final balance upon completion and client walkthrough",
     ];
 
-    const subtotale = Number(aiData.subtotale ?? 0);
-    const ivaPercentuale = Number(aiData.iva_percentuale ?? 22);
-    const ivaValore = Number(aiData.iva_valore ?? 0);
-    const totale = Number(aiData.totale ?? 0);
+    const subtotale = calculatedSubtotale;
+    const ivaPercentuale = resolveQuoteTaxRate(aiData.iva_percentuale, profile?.province);
+    const imponibile = importoScontato;
+    const ivaValore = Number((imponibile * ivaPercentuale / 100).toFixed(2));
+    const totale = Number((imponibile + ivaValore).toFixed(2));
 
     // Sanity check: reject empty/zero-value AI output before persisting a junk quote
     const hasAnyVoci = capitoli.some(c => Array.isArray(c.voci) && c.voci.length > 0);
@@ -974,8 +1008,8 @@ Scrivi il preventivo in stile OFFERTA COMMERCIALE PROFESSIONALE e PERSUASIVA:
       req.log.error({ aiData, hasImages }, "AI returned empty or invalid quote structure");
       res.status(422).json({
         error: hasImages
-          ? "L'AI non è riuscita a estrarre informazioni utili dalle immagini. Prova ad aggiungere più dettagli nella descrizione testuale (lavorazioni, misure, materiali)."
-          : "L'AI non è riuscita a generare un preventivo dalla descrizione fornita. Prova ad aggiungere più dettagli (lavorazioni, misure, materiali).",
+          ? "The AI couldn't extract useful information from the images. Try adding more detail to the text description (work items, measurements, materials)."
+          : "The AI couldn't generate a quote from the description provided. Try adding more detail (work items, measurements, materials).",
         code: "AI_EMPTY_QUOTE",
       });
       return;
@@ -986,11 +1020,11 @@ Scrivi il preventivo in stile OFFERTA COMMERCIALE PROFESSIONALE e PERSUASIVA:
       ? {
           nome: clientDataInput.nome,
           indirizzo: clientDataInput.indirizzo || "",
-          codiceFiscale: clientDataInput.codiceFiscale,
+          businessNumber: clientDataInput.businessNumber,
           partitaIva: clientDataInput.partitaIva,
-          citta: clientDataInput.citta,
-          cap: clientDataInput.cap,
-          provincia: clientDataInput.provincia,
+          city: clientDataInput.city,
+          postalCode: clientDataInput.postalCode,
+          province: clientDataInput.province,
         }
       : {
           nome: aiData.cliente?.nome ?? "",
@@ -1020,7 +1054,7 @@ Scrivi il preventivo in stile OFFERTA COMMERCIALE PROFESSIONALE e PERSUASIVA:
           titoloPreventivoRiga2: aiData.titolo_riga2 ?? "",
           numeroPreventivoData,
           subtotale: subtotale.toFixed(2),
-          ivaPercentuale: ivaPercentuale.toFixed(2),
+          ivaPercentuale: ivaPercentuale.toFixed(3),
           ivaValore: ivaValore.toFixed(2),
           totale: totale.toFixed(2),
           note: aiData.note ?? "Preventivo valido 30 giorni",
@@ -1032,6 +1066,8 @@ Scrivi il preventivo in stile OFFERTA COMMERCIALE PROFESSIONALE e PERSUASIVA:
         })
         .returning();
     });
+
+    await linkQuoteToClient(quote!, profile?.province);
 
     // Save attachments to object storage + quote_attachments table
     const savedAttachments: typeof quoteAttachmentsTable.$inferInsert[] = [];
@@ -1103,20 +1139,208 @@ router.get("/quotes/:id", requireAuth, async (req, res) => {
       return;
     }
 
-    const attachments = await db
-      .select()
-      .from(quoteAttachmentsTable)
-      .where(eq(quoteAttachmentsTable.quoteId, id));
+    const [attachments, variants, [job]] = await Promise.all([
+      db.select().from(quoteAttachmentsTable).where(eq(quoteAttachmentsTable.quoteId, id)),
+      db.select().from(quoteVariantsTable).where(eq(quoteVariantsTable.quoteId, id)).orderBy(quoteVariantsTable.position),
+      // Phase 105: the page offers "Open job" instead of "Start job" once one exists.
+      db.select({ id: projectsTable.id }).from(projectsTable).where(and(eq(projectsTable.quoteId, id), eq(projectsTable.userId, userId))).limit(1),
+    ]);
 
-    res.json(serializeQuote(quote, attachments));
+    res.json({ ...serializeQuote(quote, attachments, variants), jobId: job?.id ?? null });
   } catch (err) {
     req.log.error({ err }, "Error fetching quote");
     res.status(500).json({ error: "Internal server error" });
   }
 });
 
+// GET /api/quotes/:id/variants
+router.get("/quotes/:id/variants", requireAuth, async (req, res) => {
+  try {
+    const userId = getUserId(res);
+    const id = req.params.id as string;
+
+    const [quote] = await db.select().from(quotesTable).where(eq(quotesTable.id, id));
+    if (!quote) {
+      res.status(404).json({ error: "Not found" });
+      return;
+    }
+    if (quote.userId !== userId) {
+      res.status(403).json({ error: "Forbidden" });
+      return;
+    }
+
+    const variants = await db
+      .select()
+      .from(quoteVariantsTable)
+      .where(eq(quoteVariantsTable.quoteId, id))
+      .orderBy(quoteVariantsTable.position);
+
+    res.json({ variants: variants.map((v) => serializeQuoteVariant(v, normalizeProvince(quote.province) ?? normalizeProvince((quote.clientData as QuoteClientData | null)?.province))) });
+  } catch (err) {
+    req.log.error({ err }, "Error fetching quote variants");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// POST /api/quotes/:id/variants — clone the quote's current pricing into a new variant
+router.post("/quotes/:id/variants", requireAuth, requirePermission("quotes", "edit"), async (req, res) => {
+  try {
+    const userId = getUserId(res);
+    const id = req.params.id as string;
+
+    const [quote] = await db.select().from(quotesTable).where(eq(quotesTable.id, id));
+    if (!quote) {
+      res.status(404).json({ error: "Not found" });
+      return;
+    }
+    if (quote.userId !== userId) {
+      res.status(403).json({ error: "Forbidden" });
+      return;
+    }
+
+    const existingVariants = await db
+      .select()
+      .from(quoteVariantsTable)
+      .where(eq(quoteVariantsTable.quoteId, id));
+
+    if (existingVariants.length >= 3) {
+      res.status(400).json({ error: "A quote can have at most 3 variants" });
+      return;
+    }
+
+    const body = req.body as Record<string, unknown>;
+    const cloneFrom = typeof body.cloneFromVariantId === "string"
+      ? existingVariants.find(v => v.id === body.cloneFromVariantId)
+      : undefined;
+
+    const source = cloneFrom ?? quote;
+    const defaultLabels = ["Good", "Better", "Best"];
+
+    const [variant] = await db
+      .insert(quoteVariantsTable)
+      .values({
+        quoteId: id,
+        userId,
+        label: typeof body.label === "string" ? body.label : (defaultLabels[existingVariants.length] ?? ""),
+        description: typeof body.description === "string" ? body.description : "",
+        position: existingVariants.length,
+        items: (Array.isArray(source.items) ? source.items : []) as QuoteItem[],
+        capitoli: (Array.isArray(source.capitoli) ? source.capitoli : []) as QuoteChapter[],
+        sconto: (source.sconto as QuoteDiscount | null) ?? null,
+        condizioniPagamento: Array.isArray(source.condizioniPagamento) ? source.condizioniPagamento : [],
+        subtotale: source.subtotale,
+        ivaPercentuale: source.ivaPercentuale,
+        ivaValore: source.ivaValore,
+        totale: source.totale,
+      })
+      .returning();
+
+    res.status(201).json(serializeQuoteVariant(variant!, normalizeProvince(quote.province)));
+  } catch (err) {
+    req.log.error({ err }, "Error creating quote variant");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// PUT /api/quotes/:id/variants/:variantId
+router.put("/quotes/:id/variants/:variantId", requireAuth, requirePermission("quotes", "edit"), async (req, res) => {
+  try {
+    const userId = getUserId(res);
+    const { id, variantId } = req.params as { id: string; variantId: string };
+
+    const [quote] = await db.select().from(quotesTable).where(eq(quotesTable.id, id));
+    if (!quote) {
+      res.status(404).json({ error: "Not found" });
+      return;
+    }
+    if (quote.userId !== userId) {
+      res.status(403).json({ error: "Forbidden" });
+      return;
+    }
+
+    const [existing] = await db
+      .select()
+      .from(quoteVariantsTable)
+      .where(and(eq(quoteVariantsTable.id, variantId), eq(quoteVariantsTable.quoteId, id)));
+    if (!existing) {
+      res.status(404).json({ error: "Not found" });
+      return;
+    }
+
+    const body = req.body as Record<string, unknown>;
+    const updates: Partial<typeof existing> = {};
+    if (typeof body.label === "string") updates.label = body.label;
+    if (typeof body.description === "string") updates.description = body.description;
+    if (Array.isArray(body.items)) updates.items = body.items as QuoteItem[];
+    if (Array.isArray(body.capitoli)) updates.capitoli = body.capitoli as QuoteChapter[];
+    if (body.sconto !== undefined) updates.sconto = body.sconto as QuoteDiscount | null;
+    if (Array.isArray(body.condizioniPagamento)) updates.condizioniPagamento = body.condizioniPagamento as string[];
+    if (body.subtotale !== undefined) updates.subtotale = String(body.subtotale);
+    if (body.ivaPercentuale !== undefined) updates.ivaPercentuale = String(body.ivaPercentuale);
+    if (body.ivaValore !== undefined) updates.ivaValore = String(body.ivaValore);
+    if (body.totale !== undefined) updates.totale = String(body.totale);
+
+    const [updated] = await db
+      .update(quoteVariantsTable)
+      .set(updates)
+      .where(eq(quoteVariantsTable.id, variantId))
+      .returning();
+
+    res.json(serializeQuoteVariant(updated!, normalizeProvince(quote.province)));
+  } catch (err) {
+    req.log.error({ err }, "Error updating quote variant");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// DELETE /api/quotes/:id/variants/:variantId
+router.delete("/quotes/:id/variants/:variantId", requireAuth, requirePermission("quotes", "edit"), async (req, res) => {
+  try {
+    const userId = getUserId(res);
+    const { id, variantId } = req.params as { id: string; variantId: string };
+
+    const [quote] = await db.select().from(quotesTable).where(eq(quotesTable.id, id));
+    if (!quote) {
+      res.status(404).json({ error: "Not found" });
+      return;
+    }
+    if (quote.userId !== userId) {
+      res.status(403).json({ error: "Forbidden" });
+      return;
+    }
+
+    const [existing] = await db
+      .select()
+      .from(quoteVariantsTable)
+      .where(and(eq(quoteVariantsTable.id, variantId), eq(quoteVariantsTable.quoteId, id)));
+    if (!existing) {
+      res.status(404).json({ error: "Not found" });
+      return;
+    }
+
+    await db.delete(quoteVariantsTable).where(eq(quoteVariantsTable.id, variantId));
+
+    // Renumber remaining variants so `position` stays contiguous.
+    const remaining = await db
+      .select()
+      .from(quoteVariantsTable)
+      .where(eq(quoteVariantsTable.quoteId, id))
+      .orderBy(quoteVariantsTable.position);
+    for (let i = 0; i < remaining.length; i++) {
+      if (remaining[i]!.position !== i) {
+        await db.update(quoteVariantsTable).set({ position: i }).where(eq(quoteVariantsTable.id, remaining[i]!.id));
+      }
+    }
+
+    res.status(204).end();
+  } catch (err) {
+    req.log.error({ err }, "Error deleting quote variant");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
 // PUT /api/quotes/:id
-router.put("/quotes/:id", requireAuth, async (req, res) => {
+router.put("/quotes/:id", requireAuth, requirePermission("quotes", "edit"), async (req, res) => {
   try {
     const userId = getUserId(res);
     const { id } = UpdateQuoteParams.parse(req.params);
@@ -1162,7 +1386,49 @@ router.put("/quotes/:id", requireAuth, async (req, res) => {
       }
     }
 
-    if (body.clientData !== undefined) updates.clientData = body.clientData;
+    if (body.clientData !== undefined) {
+      updates.clientData = body.clientData;
+      updates.clientId = await ensureClientForQuote(userId, body.clientData);
+      const fromClient = normalizeProvince(body.clientData.province);
+      if (fromClient) updates.province = fromClient;
+    }
+
+    // Phase 0 fields are not in the generated UpdateQuoteBody (which strips
+    // unknown keys), so they are validated here.
+    const rawBody = req.body as Record<string, unknown>;
+    if (rawBody.province !== undefined) {
+      const p = rawBody.province === null ? null : normalizeProvince(String(rawBody.province));
+      if (rawBody.province !== null && !p) {
+        res.status(400).json({ error: "Invalid province code" });
+        return;
+      }
+      updates.province = p;
+    }
+    if (rawBody.paymentSchedule !== undefined) {
+      if (rawBody.paymentSchedule === null) {
+        updates.paymentSchedule = null;
+      } else {
+        const ps = paymentScheduleSchema.safeParse(rawBody.paymentSchedule);
+        if (!ps.success) {
+          res.status(400).json({ error: "Invalid payment schedule", details: ps.error });
+          return;
+        }
+        const totalForCheck = body.totale !== undefined ? Number(body.totale) : Number(existing.totale);
+        const problem = validatePaymentSchedule(ps.data, totalForCheck);
+        if (problem) {
+          res.status(400).json({ error: problem });
+          return;
+        }
+        updates.paymentSchedule = { ...ps.data, derived: false };
+        // Keep the human-readable terms (used by PDFs/emails) in sync unless
+        // the caller is explicitly editing the text in the same request.
+        if (body.condizioniPagamento === undefined) updates.condizioniPagamento = paymentScheduleToText(ps.data);
+      }
+    } else if (body.condizioniPagamento !== undefined && existing.paymentSchedule?.derived !== false) {
+      // Free-text edit with no hand-edited schedule: drop the cached one so
+      // it is re-derived from the new text on read.
+      updates.paymentSchedule = null;
+    }
     if (body.descrizioneGenerale !== undefined) updates.descrizioneGenerale = body.descrizioneGenerale;
     if (body.items !== undefined) updates.items = body.items;
     if (body.capitoli !== undefined) updates.capitoli = body.capitoli as QuoteChapter[];
@@ -1192,7 +1458,7 @@ router.put("/quotes/:id", requireAuth, async (req, res) => {
 });
 
 // DELETE /api/quotes/:id
-router.delete("/quotes/:id", requireAuth, async (req, res) => {
+router.delete("/quotes/:id", requireAuth, requirePermission("quotes", "full"), async (req, res) => {
   try {
     const userId = getUserId(res);
     const { id } = DeleteQuoteParams.parse(req.params);
@@ -1219,8 +1485,48 @@ router.delete("/quotes/:id", requireAuth, async (req, res) => {
   }
 });
 
+// POST /api/quotes/:id/archive
+router.post("/quotes/:id/archive", requireAuth, requirePermission("quotes", "full"), async (req, res) => {
+  try {
+    const userId = getUserId(res);
+    const { id } = DeleteQuoteParams.parse(req.params);
+    const [existing] = await db.select().from(quotesTable).where(eq(quotesTable.id, id));
+    if (!existing) { res.status(404).json({ error: "Not found" }); return; }
+    if (existing.userId !== userId) { res.status(403).json({ error: "Forbidden" }); return; }
+    const [updated] = await db
+      .update(quotesTable)
+      .set({ archivedAt: new Date(), archivedByName: getUserName(res) })
+      .where(eq(quotesTable.id, id))
+      .returning();
+    res.json(serializeQuote(updated));
+  } catch (err) {
+    req.log.error({ err }, "Error archiving quote");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// POST /api/quotes/:id/restore
+router.post("/quotes/:id/restore", requireAuth, requirePermission("quotes", "full"), async (req, res) => {
+  try {
+    const userId = getUserId(res);
+    const { id } = DeleteQuoteParams.parse(req.params);
+    const [existing] = await db.select().from(quotesTable).where(eq(quotesTable.id, id));
+    if (!existing) { res.status(404).json({ error: "Not found" }); return; }
+    if (existing.userId !== userId) { res.status(403).json({ error: "Forbidden" }); return; }
+    const [updated] = await db
+      .update(quotesTable)
+      .set({ archivedAt: null, archivedByName: null })
+      .where(eq(quotesTable.id, id))
+      .returning();
+    res.json(serializeQuote(updated));
+  } catch (err) {
+    req.log.error({ err }, "Error restoring quote");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
 // POST /api/quotes/:id/generate-pdf
-router.post("/quotes/:id/generate-pdf", requireAuth, async (req, res) => {
+router.post("/quotes/:id/generate-pdf", requireAuth, requirePermission("quotes", "edit"), async (req, res) => {
   try {
     const userId = getUserId(res);
     const { id } = GenerateQuotePdfParams.parse(req.params);
@@ -1251,21 +1557,8 @@ router.post("/quotes/:id/generate-pdf", requireAuth, async (req, res) => {
     // Trial auto-unlock
     let effectiveStatus = quote.status;
     if (quote.status === "draft" && profile?.subscriptionStatus !== "active") {
-      const trial = getTrialStatus(profile ?? null);
-      if (trial.isTrialActive) {
+      if (await tryTrialUnlock(quote, profile ?? null, req.log)) {
         effectiveStatus = "unlocked";
-        const updates: Partial<typeof businessProfilesTable.$inferSelect> = {
-          trialDownloadsUsed: (profile?.trialDownloadsUsed ?? 0) + 1,
-        };
-        await Promise.all([
-          db.update(quotesTable)
-            .set({ status: "unlocked", unlockedWithPlan: "trial" })
-            .where(eq(quotesTable.id, id)),
-          db.update(businessProfilesTable)
-            .set(updates)
-            .where(eq(businessProfilesTable.userId, userId)),
-        ]);
-        req.log.info({ quoteId: id, userId }, "Quote auto-unlocked via trial");
       } else {
         res.status(402).json({ error: "Payment required", code: "trial_expired" });
         return;
@@ -1311,14 +1604,14 @@ router.post("/quotes/:id/generate-pdf", requireAuth, async (req, res) => {
 });
 
 // POST /api/quotes/:id/send-pdf-email — send quote PDF to client via email
-router.post("/quotes/:id/send-pdf-email", requireAuth, async (req, res) => {
+router.post("/quotes/:id/send-pdf-email", requireAuth, requirePermission("quotes", "edit"), async (req, res) => {
   try {
     const userId = getUserId(res);
     const id = req.params.id as string;
     const { toEmail, clientName } = req.body as { toEmail?: string; clientName?: string };
 
     if (!toEmail || !toEmail.includes("@")) {
-      res.status(400).json({ error: "Indirizzo email del destinatario richiesto" });
+      res.status(400).json({ error: "Recipient email address is required" });
       return;
     }
 
@@ -1328,43 +1621,85 @@ router.post("/quotes/:id/send-pdf-email", requireAuth, async (req, res) => {
 
     const [profile] = await db.select().from(businessProfilesTable).where(eq(businessProfilesTable.userId, userId));
 
-    // Only allow email for unlocked quotes or Pro/Elite users
-    const isProOrElite = profile?.subscriptionStatus === "active" &&
-      (profile?.subscriptionPlan === "monthly_pro" || profile?.subscriptionPlan === "monthly_elite");
-    if (quote.status !== "unlocked" && !isProOrElite) {
-      res.status(402).json({ error: "Sblocca il preventivo per inviarlo via email", code: "PAYMENT_REQUIRED" });
+    // Sending is what makes a quote leave the account, so it unlocks the
+    // quote exactly like a PDF download does: subscribers unlock with their
+    // plan, trial users spend one trial download, everyone else must pay.
+    // Only a draft is ever touched — an accepted quote stays accepted.
+    if (quote.status === "draft" || quote.status === "pending_payment") {
+      if (profile?.subscriptionStatus === "active") {
+        await db
+          .update(quotesTable)
+          .set({ status: "unlocked", unlockedWithPlan: profile.subscriptionPlan ?? null })
+          .where(eq(quotesTable.id, id));
+        quote.status = "unlocked";
+      } else if (await tryTrialUnlock(quote, profile ?? null, req.log)) {
+        quote.status = "unlocked";
+      } else {
+        res.status(402).json({ error: "Unlock the quote to send it via email", code: "PAYMENT_REQUIRED" });
+        return;
+      }
+    } else if (quote.status !== "unlocked" && quote.status !== "accepted") {
+      res.status(402).json({ error: "Unlock the quote to send it via email", code: "PAYMENT_REQUIRED" });
       return;
     }
 
     // Generate clean PDF (never watermark for email)
     const pdfBuffer = await generateQuotePdfBuffer(quote, profile ?? null, false);
+    const lang = await quoteLanguageFor(quote);
 
-    const companyName = (quote.companySnapshot as QuoteCompanySnapshot | null)?.companyName || profile?.companyName || "La tua azienda";
-    const numeroData = quote.numeroPreventivoData || `N\u00b0 ${quote.id.slice(0, 4).toUpperCase()} del ${new Date().toLocaleDateString("it-IT")}`;
+    const companyName = (quote.companySnapshot as QuoteCompanySnapshot | null)?.companyName || profile?.companyName || "La tua impresa";
+    const numeroData = quote.numeroPreventivoData || `${qt("quoteNo", lang)} ${quote.id.slice(0, 4).toUpperCase()} - ${fmtQuoteDate(new Date(), lang)}`;
     const totale = Number(quote.totale);
-    const totaleFormatted = new Intl.NumberFormat("it-IT", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(totale);
+    const totaleFormatted = fmtQty(totale, lang);
     const filename = `Preventivo ${numeroData.replace(/\//g, "_")}.pdf`;
 
     await sendQuotePdfEmail({
       toEmail,
+      userId,
       companyName,
-      clientName: clientName || (quote.clientData as QuoteClientData)?.nome || "Cliente",
+      clientName: clientName || (quote.clientData as QuoteClientData)?.nome || "",
+      lang,
       quoteNumber: numeroData,
       totale: totaleFormatted,
       pdfBuffer,
       filename,
+      companyLogoUrl: profile?.logoUrl ?? null,
+      replyTo: profile?.email ?? null,
+      publicUrl: quote.status === "unlocked" || quote.status === "accepted" ? `${getBaseUrl()}/p/${quote.id}` : null,
+      aiGenerated: quoteProvenance(quote) === "ai",
     });
+
+    // Phase 21: start the follow-up reminder sequence, unless the quote is
+    // already accepted or the client has unsubscribed from reminders.
+    if (quote.status !== "accepted" && !quote.unsubscribedAt) {
+      // The follow-ups go to clientData.email, which the quote forms never
+      // collect — remember the address the contractor just typed, or the
+      // whole sequence dies with `no_email` (Phase 66).
+      const existingClient = (quote.clientData as QuoteClientData | null) ?? null;
+      const clientData =
+        existingClient && !existingClient.email ? { ...existingClient, email: toEmail.trim() } : existingClient;
+      await db
+        .update(quotesTable)
+        .set({
+          sentAt: quote.sentAt ?? new Date(),
+          followUpStage: 0,
+          nextFollowUpAt: new Date(Date.now() + QUOTE_FOLLOWUP_CADENCE_DAYS[0] * 86_400_000),
+          ...(clientData && clientData !== existingClient ? { clientData } : {}),
+        })
+        .where(eq(quotesTable.id, quote.id));
+      if (clientData !== existingClient) await linkQuoteToClient({ ...quote, clientData }, profile?.province ?? null, { applyDefaultTerms: false });
+    }
 
     res.json({ success: true });
   } catch (err) {
     req.log.error({ err }, "Error sending quote PDF email");
-    const message = err instanceof Error ? err.message : "Errore durante l'invio dell'email";
+    const message = err instanceof Error ? err.message : "Error sending the email";
     res.status(500).json({ error: message });
   }
 });
 
 // POST /api/quotes/:id/duplicate — clone a quote as a new draft
-router.post("/quotes/:id/duplicate", requireAuth, async (req, res) => {
+router.post("/quotes/:id/duplicate", requireAuth, requirePermission("quotes", "edit"), async (req, res) => {
   try {
     const userId = getUserId(res);
     const id = req.params.id as string;
@@ -1416,6 +1751,8 @@ router.post("/quotes/:id/duplicate", requireAuth, async (req, res) => {
         .returning();
     });
 
+    await linkQuoteToClient(newQuote!, null, { applyDefaultTerms: false });
+
     res.status(201).json(serializeQuote(newQuote));
   } catch (err) {
     req.log.error({ err }, "Error duplicating quote");
@@ -1424,7 +1761,7 @@ router.post("/quotes/:id/duplicate", requireAuth, async (req, res) => {
 });
 
 // POST /api/quotes/:id/regenerate — re-run AI on an existing quote
-router.post("/quotes/:id/regenerate", requireAuth, aiCallLimiter, async (req, res) => {
+router.post("/quotes/:id/regenerate", requireAuth, requirePermission("quotes", "edit"), aiCallLimiter, async (req, res) => {
   try {
     const userId = getUserId(res);
     const id = req.params.id as string;
@@ -1457,11 +1794,11 @@ router.post("/quotes/:id/regenerate", requireAuth, aiCallLimiter, async (req, re
 
     let userMessage = inputText;
     if (currentClientData?.nome) {
-      userMessage = `Dati committente (NON generare di nuovo, usa questi valori esatti):
-- Nome/Ragione Sociale: ${currentClientData.nome}
-- Indirizzo: ${currentClientData.indirizzo || ""}
+      userMessage = `Client data (do NOT regenerate, use these exact values):
+- Name/Company Name: ${currentClientData.nome}
+- Address: ${currentClientData.indirizzo || ""}
 
-Descrizione lavori: ${inputText}`;
+Job description: ${inputText}`;
     }
 
     // Fetch recent quotes and catalog in parallel for pricing context
@@ -1552,35 +1889,55 @@ Quando usi una voce del listino, applica il prezzo unitario esatto o molto simil
       return;
     }
 
-    let capitoli: QuoteChapter[] = (aiData.capitoli ?? []).map((cap) => ({
-      lettera: cap.lettera ?? "A",
-      titolo: cap.titolo ?? "",
-      osservazione: cap.osservazione ?? "Voce ordinaria",
-      voci: (cap.voci ?? []).map((v) => ({
-        descrizione: v.descrizione ?? "",
-        um: v.um ?? "a.c.",
-        quantita: Number(v.quantita ?? 0),
-        prezzoUnitario: Number(v.prezzo_unitario ?? 0),
-        totale: Number(v.totale ?? 0),
-      })),
-      subtotale: Number(cap.subtotale ?? 0),
-    }));
+    // NOTE: totals are recomputed from quantita * prezzoUnitario, not trusted from
+    // the AI's own top-level fields — see the identical comment on the POST /api/quotes
+    // handler above for why (the model can echo the prompt's placeholder "0" values).
+    let capitoli: QuoteChapter[] = (aiData.capitoli ?? []).map((cap) => {
+      let capSubtotale = 0;
+      const voci = (cap.voci ?? []).map((v) => {
+        const quantita = Number(v.quantita ?? 0);
+        const prezzoUnitario = Number(v.prezzo_unitario ?? 0);
+        const totale = Number((quantita * prezzoUnitario).toFixed(2));
+        capSubtotale += totale;
+        return {
+          descrizione: v.descrizione ?? "",
+          um: v.um ?? "a.c.",
+          quantita,
+          prezzoUnitario,
+          totale,
+        };
+      });
+      return {
+        lettera: cap.lettera ?? "A",
+        titolo: cap.titolo ?? "",
+        osservazione: cap.osservazione ?? "Voce ordinaria",
+        voci,
+        subtotale: Number(capSubtotale.toFixed(2)),
+      };
+    });
 
     if (quote.templateId === "arosio" || quote.templateId === "mariagrazia") {
       capitoli = await enrichVociDescrizioni(capitoli);
     }
 
+    const calculatedSubtotale = Number(capitoli.reduce((sum, c) => sum + c.subtotale, 0).toFixed(2));
+
     const scontoRaw = aiData.sconto;
+    const scontoPercentuale = scontoRaw ? Number(scontoRaw.percentuale ?? 0) : 0;
+    // Phase 67: `importoScontato` is the *discounted subtotal* everywhere the
+    // quote is rendered (PDFs, HTML, dashboard editor) — not the discount
+    // amount. Storing the amount here made a 10 % discount print as "−$9,000".
+    const discountAmount = scontoPercentuale > 0 ? Number((calculatedSubtotale * scontoPercentuale / 100).toFixed(2)) : 0;
+    const importoScontato = Number((calculatedSubtotale - discountAmount).toFixed(2));
     const sconto: QuoteDiscount | null =
-      scontoRaw && Number(scontoRaw.percentuale ?? 0) > 0
-        ? { percentuale: Number(scontoRaw.percentuale), importoScontato: Number(scontoRaw.importo_scontato ?? 0) }
-        : null;
+      scontoPercentuale > 0 ? { percentuale: scontoPercentuale, importoScontato } : null;
 
     const condizioniPagamento = aiData.condizioni_pagamento ?? quote.condizioniPagamento ?? [];
-    const subtotale = Number(aiData.subtotale ?? 0);
-    const ivaPercentuale = Number(aiData.iva_percentuale ?? 22);
-    const ivaValore = Number(aiData.iva_valore ?? 0);
-    const totale = Number(aiData.totale ?? 0);
+    const subtotale = calculatedSubtotale;
+    const ivaPercentuale = resolveQuoteTaxRate(aiData.iva_percentuale, quote.province ?? (quote.clientData as QuoteClientData | null)?.province);
+    const imponibile = importoScontato;
+    const ivaValore = Number((imponibile * ivaPercentuale / 100).toFixed(2));
+    const totale = Number((imponibile + ivaValore).toFixed(2));
 
     const resolvedClientData: QuoteClientData = keepClientData && currentClientData?.nome
       ? currentClientData
@@ -1600,7 +1957,7 @@ Quando usi una voce del listino, applica il prezzo unitario esatto o molto simil
         titoloPreventivoRiga2: aiData.titolo_riga2 ?? "",
         numeroPreventivoData: quote.numeroPreventivoData,
         subtotale: subtotale.toFixed(2),
-        ivaPercentuale: ivaPercentuale.toFixed(2),
+        ivaPercentuale: ivaPercentuale.toFixed(3),
         ivaValore: ivaValore.toFixed(2),
         totale: totale.toFixed(2),
         note: aiData.note ?? quote.note,
@@ -1621,7 +1978,7 @@ Quando usi una voce del listino, applica il prezzo unitario esatto o molto simil
 });
 
 // POST /api/quotes/:id/upgrade-to-capitolato — rewrite descriptions in professional capitolato style (Pro only)
-router.post("/quotes/:id/upgrade-to-capitolato", requireAuth, aiCallLimiter, async (req, res) => {
+router.post("/quotes/:id/upgrade-to-capitolato", requireAuth, requirePermission("quotes", "edit"), aiCallLimiter, async (req, res) => {
   try {
     const userId = getUserId(res);
     const id = req.params.id as string;
@@ -1638,46 +1995,17 @@ router.post("/quotes/:id/upgrade-to-capitolato", requireAuth, aiCallLimiter, asy
 
     const isProUser = profile?.subscriptionStatus === "active" && (profile?.subscriptionPlan === "monthly_pro" || profile?.subscriptionPlan === "monthly_elite");
     if (!isProUser) {
-      res.status(403).json({ error: "Piano Pro o Elite richiesto", code: "PRO_REQUIRED" });
+      res.status(403).json({ error: "Pro or Elite plan required", code: "PRO_REQUIRED" });
       return;
     }
 
     const capitoli = Array.isArray(quote.capitoli) ? (quote.capitoli as QuoteChapter[]) : [];
     if (capitoli.length === 0) {
-      res.status(400).json({ error: "Il preventivo non ha capitoli da arricchire" });
+      res.status(400).json({ error: "The quote has no chapters to enrich" });
       return;
     }
 
-    const capitolatoPrompt = `Sei un redattore esperto di CAPITOLATI TECNICI professionali per il settore edilizio e impiantistico italiano.
-
-Per ogni voce del preventivo, riscrivi la "descrizione" in stile CAPITOLATO SPECIALE D'APPALTO professionale, con ALMENO 4-6 linee tecniche in italiano formale:
-- Descrivi con precisione le operazioni eseguite e le modalità esecutive (ciclo lavorativo, tecniche, successione delle fasi)
-- Specifica materiali, prodotti e componenti con caratteristiche tecniche e standard normativi italiani/europei (UNI, CEI, UNI EN, D.Lgs., D.M.)
-- Indica le caratteristiche di qualità, resistenza, classe o certificazione richieste per i materiali
-- Indica esplicitamente cosa è COMPRESO nella voce (es. "Compresi carico, trasporto, smaltimento a discarica autorizzata...")
-- Indica eventuali ESCLUSIONI rilevanti e/o oneri a carico del committente (es. "Esclusi lavori di...")
-- Mantieni invariati: um, quantita, prezzo_unitario, totale, lettera, titolo, osservazione, subtotale
-
-REGOLA FONDAMENTALE: restituisci SOLO JSON valido con questa struttura esatta (nessun testo aggiuntivo):
-{
-  "capitoli": [
-    {
-      "lettera": "A",
-      "titolo": "...",
-      "osservazione": "...",
-      "voci": [
-        {
-          "descrizione": "Descrizione capitolato professionale qui...",
-          "um": "...",
-          "quantita": 0,
-          "prezzo_unitario": 0,
-          "totale": 0
-        }
-      ],
-      "subtotale": 0
-    }
-  ]
-}`;
+    const capitolatoPrompt = CAPITOLATO_REWRITE_PROMPT;
 
     const inputCapitoli = JSON.stringify(capitoli.map(cap => ({
       lettera: cap.lettera,
@@ -1718,7 +2046,7 @@ REGOLA FONDAMENTALE: restituisci SOLO JSON valido con questa struttura esatta (n
     const aiCapitoli = aiData.capitoli ?? [];
     if (aiCapitoli.length !== capitoli.length) {
       req.log.error({ aiCount: aiCapitoli.length, origCount: capitoli.length }, "AI chapter count mismatch in upgrade-to-capitolato");
-      res.status(500).json({ error: "Risposta AI non valida: struttura dei capitoli non corrispondente" });
+      res.status(500).json({ error: "Invalid AI response: chapter structure doesn't match" });
       return;
     }
     for (let i = 0; i < aiCapitoli.length; i++) {
@@ -1726,7 +2054,7 @@ REGOLA FONDAMENTALE: restituisci SOLO JSON valido con questa struttura esatta (n
       const origVoci = capitoli[i]?.voci ?? [];
       if (aiVoci.length !== origVoci.length) {
         req.log.error({ chapIdx: i, aiVociCount: aiVoci.length, origVociCount: origVoci.length }, "AI voci count mismatch");
-        res.status(500).json({ error: "Risposta AI non valida: numero di voci non corrispondente nel capitolo " + (i + 1) });
+        res.status(500).json({ error: "Invalid AI response: item count doesn't match in chapter " + (i + 1) });
         return;
       }
     }
@@ -1763,7 +2091,7 @@ REGOLA FONDAMENTALE: restituisci SOLO JSON valido con questa struttura esatta (n
 });
 
 // POST /api/quotes/:id/generate-pdf-pro — server-side PDF for capitolato quotes (Pro only)
-router.post("/quotes/:id/generate-pdf-pro", requireAuth, async (req, res) => {
+router.post("/quotes/:id/generate-pdf-pro", requireAuth, requirePermission("quotes", "edit"), async (req, res) => {
   try {
     const userId = getUserId(res);
     const id = req.params.id as string;
@@ -1772,7 +2100,7 @@ router.post("/quotes/:id/generate-pdf-pro", requireAuth, async (req, res) => {
     if (!quote) { res.status(404).json({ error: "Not found" }); return; }
     if (quote.userId !== userId) { res.status(403).json({ error: "Forbidden" }); return; }
     if (!quote.capitolatoPro) {
-      res.status(400).json({ error: "Il preventivo non è stato arricchito in formato capitolato" });
+      res.status(400).json({ error: "The quote hasn't been enriched into detailed-specification format" });
       return;
     }
 
@@ -1784,7 +2112,7 @@ router.post("/quotes/:id/generate-pdf-pro", requireAuth, async (req, res) => {
 
     const isProUser = profile?.subscriptionStatus === "active" && (profile?.subscriptionPlan === "monthly_pro" || profile?.subscriptionPlan === "monthly_elite");
     if (!isProUser) {
-      res.status(403).json({ error: "Piano Pro o Elite richiesto", code: "PRO_REQUIRED" });
+      res.status(403).json({ error: "Pro or Elite plan required", code: "PRO_REQUIRED" });
       return;
     }
 
@@ -1792,7 +2120,7 @@ router.post("/quotes/:id/generate-pdf-pro", requireAuth, async (req, res) => {
     const pdfBuffer = await generateCapitolatoPdfBuffer(quote, profile ?? null);
 
     // Upload to Object Storage
-    const subPath = `capitolato-pdfs/${randomUUID()}.pdf`;
+    const subPath = `capitolato-pdfs/${userId}/${randomUUID()}.pdf`;
     const pdfPath = await objectStorage.uploadObjectBuffer({
       subPath,
       buffer: pdfBuffer,
@@ -1812,1819 +2140,17 @@ router.post("/quotes/:id/generate-pdf-pro", requireAuth, async (req, res) => {
   }
 });
 
-type ProfileRow = typeof businessProfilesTable.$inferSelect | null;
-
-function formatEur(amount: number): string {
-  return new Intl.NumberFormat("it-IT", {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(amount);
-}
-
-function generateQuoteHtml(
-  quote: QuoteRow,
-  withWatermark: boolean,
-  profile: ProfileRow
-): string {
-  const templateId = (quote.templateId as string | null) ?? "standard";
-  if (templateId === "arosio") return generateHtmlProfessionale(quote, withWatermark, profile);
-  if (templateId === "mariagrazia") return generateHtmlElegante(quote, withWatermark, profile);
-  return generateHtmlStandard(quote, withWatermark, profile);
-}
-
-function generateHtmlStandard(
-  quote: QuoteRow,
-  withWatermark: boolean,
-  profile: ProfileRow
-): string {
-  const clientData = (quote.clientData ?? { nome: "", indirizzo: "" }) as QuoteClientData;
-  const capitoli: QuoteChapter[] = Array.isArray(quote.capitoli) && quote.capitoli.length > 0
-    ? quote.capitoli as QuoteChapter[]
-    : [];
-  const legacyItems = Array.isArray(quote.items) ? quote.items : [];
-  const hasCapitoli = capitoli.length > 0;
-  const sconto = quote.sconto as QuoteDiscount | null;
-  const condizioniPagamento: string[] = Array.isArray(quote.condizioniPagamento)
-    ? quote.condizioniPagamento
-    : [];
-
-  const titolo1 = quote.titoloPreventivoRiga1 || "Analisi Economica e Computo Metrico Prezzato";
-  const titolo2 = quote.titoloPreventivoRiga2 || "";
-  const numeroData = quote.numeroPreventivoData || `N° ${quote.id.slice(0, 4).toUpperCase()} del ${new Date().toLocaleDateString("it-IT")}`;
-  const subtotale = Number(quote.subtotale);
-  const ivaPerc = Number(quote.ivaPercentuale);
-  const ivaValore = Number(quote.ivaValore);
-  const totale = Number(quote.totale);
-
-  // Use company snapshot saved at quote creation time, fall back to live profile
-  const snap = (quote.companySnapshot as QuoteCompanySnapshot | null) ?? null;
-  const companyName = snap?.companyName || profile?.companyName || "";
-  const companyVat = snap?.vatNumber || profile?.vatNumber || "";
-  const companyAddress = snap?.address || profile?.address || "";
-  const companyPhone = snap?.phone || profile?.phone || "";
-  const companyEmail = snap?.email || profile?.email || "";
-  // Inline SVG logo for PrevAI (used on watermarked/Starter quotes)
-  const prevaiLogoSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="110" height="30" viewBox="0 0 110 30"><defs><linearGradient id="pg" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" style="stop-color:#7c3aed"/><stop offset="100%" style="stop-color:#06b6d4"/></linearGradient></defs><rect width="26" height="26" rx="5" y="2" fill="url(#pg)"/><text x="13" y="19" font-family="system-ui,sans-serif" font-size="14" font-weight="bold" fill="white" text-anchor="middle">P</text><text x="34" y="21" font-family="system-ui,sans-serif" font-size="16" font-weight="700" fill="#1a1a2e">prev</text><text x="63" y="21" font-family="system-ui,sans-serif" font-size="16" font-weight="700" fill="#7c3aed">ai</text></svg>`;
-  const prevaiLogoDataUri = `data:image/svg+xml;base64,${Buffer.from(prevaiLogoSvg).toString("base64")}`;
-
-  const companyLogoUrl = withWatermark
-    ? prevaiLogoDataUri
-    : (snap?.logoUrl || profile?.logoUrl || "");
-
-  const logoHtml = companyLogoUrl
-    ? `<img src="${companyLogoUrl}" alt="Logo" style="${withWatermark ? "max-height:36px;max-width:140px" : "max-height:60px;max-width:180px"};object-fit:contain;" />`
-    : "";
-
-  const companyHtml = `
-    <div class="company-block">
-      ${logoHtml}
-      <div class="company-name">${companyName}</div>
-      ${companyVat ? `<div class="company-detail">P.IVA / C.F.: ${companyVat}</div>` : ""}
-      ${companyAddress ? `<div class="company-detail">${companyAddress}</div>` : ""}
-      ${companyPhone ? `<div class="company-detail">Tel: ${companyPhone}</div>` : ""}
-      ${companyEmail ? `<div class="company-detail">${companyEmail}</div>` : ""}
-    </div>`;
-
-  const quadroSinteticoHtml = hasCapitoli
-    ? `<div class="section">
-        <table class="table-sintetico">
-          <thead>
-            <tr>
-              <th>Capitolo</th>
-              <th class="col-amount">Importo netto</th>
-              <th class="col-obs">Osservazione</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${capitoli.map(cap => `
-              <tr>
-                <td>${cap.lettera}. ${cap.titolo}</td>
-                <td class="col-amount">€&nbsp;${formatEur(cap.subtotale)}</td>
-                <td class="col-obs">${cap.osservazione ?? "Voce ordinaria"}</td>
-              </tr>`).join("")}
-          </tbody>
-        </table>
-      </div>`
-    : "";
-
-  const chaptersHtml = hasCapitoli
-    ? capitoli.map(cap => `
-        <div class="chapter-section">
-          <div class="chapter-heading">${cap.lettera}. ${cap.titolo}</div>
-          <table class="table-detail">
-            <thead>
-              <tr>
-                <th class="col-desc">Descrizione</th>
-                <th class="col-um">U.M.</th>
-                <th class="col-qty">Q.tà</th>
-                <th class="col-pu">P.u.</th>
-                <th class="col-tot">Totale</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${cap.voci.map(v => `
-                <tr>
-                  <td class="col-desc">${formatDescriptionHtml(v.descrizione)}</td>
-                  <td class="col-um">${v.um}</td>
-                  <td class="col-qty">${v.quantita}</td>
-                  <td class="col-pu">€&nbsp;${formatEur(v.prezzoUnitario)}</td>
-                  <td class="col-tot">€&nbsp;${formatEur(v.totale)}</td>
-                </tr>`).join("")}
-              <tr class="subtotale-row">
-                <td colspan="4">Subtotale capitolo ${cap.lettera}</td>
-                <td class="col-tot">€&nbsp;${formatEur(cap.subtotale)}</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>`).join("")
-    : `<div class="chapter-section">
-        <table class="table-detail">
-          <thead>
-            <tr>
-              <th class="col-desc">Descrizione</th>
-              <th class="col-um">U.M.</th>
-              <th class="col-qty">Q.tà</th>
-              <th class="col-pu">P.u.</th>
-              <th class="col-tot">Totale</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${legacyItems.map(item => `
-              <tr>
-                <td class="col-desc">${formatDescriptionHtml(item.descrizione)}</td>
-                <td class="col-um">${item.unita}</td>
-                <td class="col-qty">${item.quantita}</td>
-                <td class="col-pu">€&nbsp;${formatEur(Number(item.prezzoUnitario))}</td>
-                <td class="col-tot">€&nbsp;${formatEur(Number(item.totale))}</td>
-              </tr>`).join("")}
-          </tbody>
-        </table>
-      </div>`;
-
-  const scontoHtml = sconto && sconto.percentuale > 0
-    ? `<tr>
-        <td class="tot-label">SCONTO APPLICATO</td>
-        <td class="tot-value">${sconto.percentuale}%</td>
-       </tr>
-       <tr>
-        <td class="tot-label">IMPONIBILE SCONTATO</td>
-        <td class="tot-value">€&nbsp;${formatEur(sconto.importoScontato)}</td>
-       </tr>`
-    : "";
-
-  const totalsHtml = `
-    <div class="totals-section">
-      <table class="table-totals">
-        <tbody>
-          <tr>
-            <td class="tot-label">TOTALE IMPONIBILE</td>
-            <td class="tot-value">€&nbsp;${formatEur(subtotale)}</td>
-          </tr>
-          ${scontoHtml}
-          <tr>
-            <td class="tot-label">IVA (${ivaPerc.toFixed(0)}%)</td>
-            <td class="tot-value">€&nbsp;${formatEur(ivaValore)}</td>
-          </tr>
-          <tr class="grand-total-row">
-            <td class="tot-label">TOTALE + IVA</td>
-            <td class="tot-value">€&nbsp;${formatEur(totale)}</td>
-          </tr>
-        </tbody>
-      </table>
-    </div>`;
-
-  const condizioniHtml = condizioniPagamento.length > 0
-    ? `<div class="condizioni">
-        <div class="condizioni-title">CONDIZIONI DI PAGAMENTO</div>
-        <ul>${condizioniPagamento.map(c => `<li>${c.toUpperCase()}</li>`).join("")}</ul>
-        <p class="nota-bene">N.B. I LAVORI RICHIESTI NON PRESENTI SU QUESTO PREVENTIVO VANNO PREVENTIVATI E PAGATI SEPARATAMENTE.</p>
-      </div>`
-    : "";
-
-  const filledOrBlank = (val: string | undefined, cls: string) =>
-    val ? `<span class="prefilled">${val}</span>` : `<span class="${cls}"></span>`;
-
-  const acceptanceHtml = `
-    <div class="acceptance">
-      <div class="acceptance-title">DICHIARAZIONE DI ACCETTAZIONE ${numeroData}</div>
-      <div class="acceptance-subtitle">PERSONA FISICA/GIURIDICA</div>
-      <table class="accept-table">
-        <tr>
-          <td>Il sottoscritto ${filledOrBlank(clientData.nome, "blank-line")}</td>
-        </tr>
-        <tr>
-          <td>Codice Fiscale ${filledOrBlank(clientData.codiceFiscale, "blank-line")}
-              &nbsp;&nbsp; P.IVA ${filledOrBlank(clientData.partitaIva, "blank-line-short")}</td>
-        </tr>
-        <tr>
-          <td>Residente in Via / P.za ${filledOrBlank(clientData.indirizzo, "blank-line")}</td>
-        </tr>
-        <tr>
-          <td>Comune ${filledOrBlank(clientData.citta, "blank-line-short")}
-              &nbsp; CAP ${filledOrBlank(clientData.cap, "blank-line-xs")}
-              &nbsp; Provincia ${filledOrBlank(clientData.provincia, "blank-line-xs")}</td>
-        </tr>
-      </table>
-      <p class="dichiara">DICHIARA</p>
-      <p class="dichiara-text">di aver preso visione e di accettare integralmente il preventivo indicato sopra e le condizioni di pagamento concordate in data ………………………………</p>
-      <p class="nb-doc">N.B. Allegare fotocopia di un documento di identità del committente</p>
-      <table class="sign-table">
-        <tr>
-          <td class="sign-col">
-            <div class="sign-label">FIRMA DITTA ESECUTRICE DEI LAVORI</div>
-            <div class="sign-line"></div>
-          </td>
-          <td class="sign-col">
-            <div class="sign-label">FIRMA PER ACCETTAZIONE DEL COMMITTENTE/CLIENTE</div>
-            <div class="sign-line"></div>
-          </td>
-        </tr>
-      </table>
-    </div>`;
-
-  const footerHtml = profile?.companyName
-    ? `<div class="doc-footer">${profile.companyName}${profile.address ? ` – ${profile.address}` : ""}</div>`
-    : "";
-
-  return `<!DOCTYPE html>
-<html lang="it">
-<head>
-  <meta charset="UTF-8">
-  <title>${titolo1}</title>
-  <style>
-    @page { size: A4 portrait; margin: 12mm 16mm 14mm 16mm; }
-    * { box-sizing: border-box; }
-    body {
-      font-family: Arial, Helvetica, sans-serif;
-      font-size: 9pt;
-      color: #1a1a1a;
-      margin: 0;
-      padding: 16px 20px;
-      background: white;
-    }
-    /* ---- Header ---- */
-    .doc-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-      border-bottom: 2px solid #1a1a2e;
-      padding-bottom: 12px;
-      margin-bottom: 14px;
-    }
-    .company-block { max-width: 55%; }
-    .company-name { font-size: 13pt; font-weight: 700; color: #1a1a2e; margin: 4px 0 2px; }
-    .company-detail { font-size: 8pt; color: #555; line-height: 1.4; }
-    .doc-meta { text-align: right; font-size: 8pt; color: #555; }
-    .doc-meta .numero { font-weight: 700; font-size: 10pt; color: #1a1a2e; }
-    /* ---- Title ---- */
-    .doc-title {
-      text-align: center;
-      font-size: 12pt;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      color: #1a1a2e;
-      margin: 0 0 2px;
-    }
-    .doc-subtitle {
-      text-align: center;
-      font-size: 9pt;
-      color: #444;
-      margin: 0 0 14px;
-      font-style: italic;
-    }
-    /* ---- Client box ---- */
-    .client-box {
-      background: #f4f6f9;
-      border-left: 3px solid #1a1a2e;
-      padding: 8px 12px;
-      margin-bottom: 14px;
-      font-size: 8.5pt;
-    }
-    .client-box .label { font-weight: 700; font-size: 8pt; color: #888; text-transform: uppercase; letter-spacing: 0.5px; }
-    .client-box .value { font-weight: 600; color: #1a1a2e; }
-    /* ---- Section headings ---- */
-    .section { margin-bottom: 14px; }
-    .section-heading {
-      font-size: 9pt;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      color: #888;
-      margin-bottom: 4px;
-    }
-    /* ---- Tables ---- */
-    table { width: 100%; border-collapse: collapse; }
-    th {
-      background: #1a1a2e;
-      color: white;
-      padding: 6px 8px;
-      text-align: left;
-      font-size: 8pt;
-      font-weight: 600;
-    }
-    td { padding: 5px 8px; font-size: 8.5pt; vertical-align: top; }
-    tbody tr:nth-child(even) td { background: #f8f9fb; }
-    .table-sintetico { margin-bottom: 14px; }
-    .table-sintetico .col-amount { text-align: right; white-space: nowrap; }
-    .table-sintetico .col-obs { color: #666; font-style: italic; }
-    /* ---- Chapter sections ---- */
-    .chapter-section { margin-bottom: 18px; page-break-inside: avoid; }
-    .chapter-heading {
-      font-size: 10pt;
-      font-weight: 700;
-      color: #1a1a2e;
-      border-left: 4px solid #1a1a2e;
-      padding: 4px 0 4px 8px;
-      margin-bottom: 6px;
-      background: #f4f6f9;
-    }
-    .table-detail .col-desc { width: 44%; }
-    .table-detail .col-um { width: 8%; text-align: center; }
-    .table-detail .col-qty { width: 8%; text-align: center; }
-    .table-detail .col-pu { width: 16%; text-align: right; white-space: nowrap; }
-    .table-detail .col-tot { width: 16%; text-align: right; white-space: nowrap; }
-    .subtotale-row td {
-      background: #edf0f5 !important;
-      font-weight: 700;
-      border-top: 2px solid #c5cce0;
-      font-size: 8.5pt;
-    }
-    /* ---- Totals ---- */
-    .totals-section { display: flex; justify-content: flex-end; margin-bottom: 14px; }
-    .table-totals { width: 340px; border: 1px solid #dde1ec; }
-    .table-totals td { padding: 6px 10px; }
-    .table-totals .tot-label { font-weight: 600; font-size: 8.5pt; color: #333; }
-    .table-totals .tot-value { text-align: right; font-weight: 700; white-space: nowrap; font-size: 9pt; }
-    .grand-total-row td { background: #1a1a2e !important; color: white !important; font-size: 10pt; font-weight: 700; }
-    /* ---- Condizioni ---- */
-    .condizioni {
-      border: 1px solid #dde1ec;
-      border-radius: 3px;
-      padding: 10px 14px;
-      margin-bottom: 14px;
-      page-break-inside: avoid;
-    }
-    .condizioni-title {
-      font-size: 9pt;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      color: #1a1a2e;
-      margin-bottom: 6px;
-    }
-    .condizioni ul { margin: 0 0 8px; padding-left: 18px; }
-    .condizioni li { font-size: 8.5pt; margin-bottom: 3px; font-weight: 600; }
-    .nota-bene { font-size: 8pt; color: #c00; font-weight: 700; margin: 6px 0 0; }
-    /* ---- Acceptance ---- */
-    .acceptance {
-      border: 1px solid #c5cce0;
-      border-radius: 3px;
-      padding: 12px 16px;
-      page-break-inside: avoid;
-    }
-    .acceptance-title {
-      font-size: 9.5pt;
-      font-weight: 700;
-      text-transform: uppercase;
-      color: #1a1a2e;
-      margin-bottom: 4px;
-    }
-    .acceptance-subtitle { font-size: 8.5pt; font-weight: 600; color: #555; margin-bottom: 10px; }
-    .accept-table td { padding: 4px 0; font-size: 8.5pt; border: none; background: transparent; }
-    .blank-line {
-      display: inline-block;
-      width: 220px;
-      border-bottom: 1px dotted #666;
-      margin-left: 4px;
-      vertical-align: bottom;
-    }
-    .blank-line-short {
-      display: inline-block;
-      width: 100px;
-      border-bottom: 1px dotted #666;
-      margin-left: 4px;
-      vertical-align: bottom;
-    }
-    .blank-line-xs {
-      display: inline-block;
-      width: 60px;
-      border-bottom: 1px dotted #666;
-      margin-left: 4px;
-      vertical-align: bottom;
-    }
-    .prefilled {
-      font-weight: 600;
-      color: #1a1a2e;
-      margin-left: 4px;
-    }
-    .dichiara { font-size: 9pt; font-weight: 700; text-transform: uppercase; margin: 10px 0 4px; }
-    .dichiara-text { font-size: 8.5pt; color: #333; margin-bottom: 6px; }
-    .nb-doc { font-size: 7.5pt; color: #888; margin-bottom: 14px; font-style: italic; }
-    .sign-table { width: 100%; border: none; }
-    .sign-table td { border: none; background: transparent; padding: 0; }
-    .sign-col { width: 48%; padding: 0 10px 0 0 !important; vertical-align: bottom; }
-    .sign-label { font-size: 7.5pt; font-weight: 600; color: #333; text-transform: uppercase; margin-bottom: 20px; }
-    .sign-line { border-bottom: 1px solid #333; height: 1px; width: 90%; }
-    /* ---- Footer ---- */
-    .doc-footer {
-      margin-top: 14px;
-      text-align: center;
-      font-size: 7.5pt;
-      color: #aaa;
-      border-top: 1px solid #eee;
-      padding-top: 6px;
-    }
-    /* ---- Watermark ---- */
-    .watermark {
-      position: fixed;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%) rotate(-45deg);
-      font-size: 72pt;
-      color: rgba(0,0,0,0.045);
-      font-weight: 900;
-      z-index: 9999;
-      white-space: nowrap;
-      pointer-events: none;
-      letter-spacing: 4px;
-    }
-    @media print {
-      body { padding: 0; }
-      .watermark { position: fixed; }
-    }
-  </style>
-</head>
-<body>
-  ${withWatermark ? '<div class="watermark">BOZZA NON VALIDA</div>' : ""}
-
-  <div class="doc-header">
-    ${companyHtml}
-    <div class="doc-meta">
-      <div class="numero">${numeroData}</div>
-      <div>Data: ${new Date().toLocaleDateString("it-IT")}</div>
-    </div>
-  </div>
-
-  <div class="doc-title">${titolo1}</div>
-  ${titolo2 ? `<div class="doc-subtitle">${titolo2}</div>` : ""}
-
-  <div class="client-box">
-    <div class="label">Spett.le Committente</div>
-    <div class="value">${clientData.nome || "——"}</div>
-    <div>${clientData.indirizzo || ""}</div>
-  </div>
-
-  ${hasCapitoli ? `<div class="section">
-    <div class="section-heading">1. Quadro Sintetico</div>
-    ${quadroSinteticoHtml}
-  </div>` : ""}
-
-  <div class="section">
-    ${hasCapitoli ? `<div class="section-heading">2. Computo Metrico Dettagliato</div>` : ""}
-    ${chaptersHtml}
-  </div>
-
-  ${totalsHtml}
-  ${condizioniHtml}
-  ${acceptanceHtml}
-  ${footerHtml}
-</body>
-</html>`;
-}
-
-function formatDescriptionHtml(descrizione: string): string {
-  const parts = descrizione.split("\n");
-  const title = parts[0];
-  const detail = parts.slice(1).join("\n");
-  if (!detail) return title;
-  return `<strong>${title}</strong><div style="font-size: 10px; color: #555; margin-top: 2px; font-weight: normal; line-height: 1.3;">${detail}</div>`;
-}
-
-function formatDescriptionPdf(descrizione: string, bg: string | null): any {
-  const parts = descrizione.split("\n");
-  const title = parts[0];
-  const detail = parts.slice(1).join("\n");
-  if (!detail) {
-    return { text: title, fontSize: 8, color: "#1a1a1a", fillColor: bg };
-  }
-  return {
-    stack: [
-      { text: title, bold: true, fontSize: 8, color: "#1a1a1a" },
-      { text: detail, fontSize: 7, color: "#555555", margin: [0, 2, 0, 0] }
-    ],
-    fillColor: bg
-  };
-}
-
-function generateHtmlProfessionale(
-  quote: QuoteRow,
-  withWatermark: boolean,
-  profile: ProfileRow
-): string {
-  const clientData = (quote.clientData ?? { nome: "", indirizzo: "" }) as QuoteClientData;
-  const capitoli: QuoteChapter[] = Array.isArray(quote.capitoli) && quote.capitoli.length > 0
-    ? quote.capitoli as QuoteChapter[]
-    : [];
-  const legacyItems = Array.isArray(quote.items) ? quote.items : [];
-  const sconto = quote.sconto as QuoteDiscount | null;
-  const condizioniPagamento: string[] = Array.isArray(quote.condizioniPagamento)
-    ? quote.condizioniPagamento : [];
-
-  const titolo2 = quote.titoloPreventivoRiga2 || "";
-  const numeroData = quote.numeroPreventivoData || `N° ${quote.id.slice(0, 4).toUpperCase()} del ${new Date().toLocaleDateString("it-IT")}`;
-  const subtotale = Number(quote.subtotale);
-  const ivaPerc = Number(quote.ivaPercentuale);
-  const ivaValore = Number(quote.ivaValore);
-  const totale = Number(quote.totale);
-
-  const snap = (quote.companySnapshot as QuoteCompanySnapshot | null) ?? null;
-  const companyName = snap?.companyName || profile?.companyName || "";
-  const companyVat = snap?.vatNumber || profile?.vatNumber || "";
-  const companyAddress = snap?.address || profile?.address || "";
-  const companyPhone = snap?.phone || profile?.phone || "";
-  const companyEmail = snap?.email || profile?.email || "";
-  const prevaiLogoSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="110" height="30" viewBox="0 0 110 30"><defs><linearGradient id="pg" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" style="stop-color:#7c3aed"/><stop offset="100%" style="stop-color:#06b6d4"/></linearGradient></defs><rect width="26" height="26" rx="5" y="2" fill="url(#pg)"/><text x="13" y="19" font-family="system-ui,sans-serif" font-size="14" font-weight="bold" fill="white" text-anchor="middle">P</text><text x="34" y="21" font-family="system-ui,sans-serif" font-size="16" font-weight="700" fill="#1a1a2e">prev</text><text x="63" y="21" font-family="system-ui,sans-serif" font-size="16" font-weight="700" fill="#7c3aed">ai</text></svg>`;
-  const prevaiLogoDataUri = `data:image/svg+xml;base64,${Buffer.from(prevaiLogoSvg).toString("base64")}`;
-  const companyLogoUrl = withWatermark ? prevaiLogoDataUri : (snap?.logoUrl || profile?.logoUrl || "");
-  const logoHtml = companyLogoUrl ? `<img src="${companyLogoUrl}" alt="Logo" style="max-height:50px;max-width:160px;object-fit:contain;display:block;margin-bottom:4px;" />` : "";
-
-  const scontoHtml = sconto && sconto.percentuale > 0
-    ? `<tr><td class="tot-label">SCONTO (${sconto.percentuale}%)</td><td class="tot-value">−&nbsp;€&nbsp;${formatEur(Number(quote.subtotale) - sconto.importoScontato)}</td></tr>
-       <tr><td class="tot-label">IMPONIBILE SCONTATO</td><td class="tot-value">€&nbsp;${formatEur(sconto.importoScontato)}</td></tr>`
-    : "";
-
-  const hasCapitoli = capitoli.length > 0;
-  const bodyRows = hasCapitoli
-    ? capitoli.map((cap, ci) => {
-        const chapterIdx = String(ci + 1).padStart(2, "0");
-        const chapterLetter = String.fromCharCode(65 + ci);
-        const voceRows = cap.voci.map((v, vi) => `
-          <tr class="item-row">
-            <td class="col-nr">${ci + 1}.${vi + 1}</td>
-            <td class="col-desc">${formatDescriptionHtml(v.descrizione)}</td>
-            <td class="col-um">${v.um}</td>
-            <td class="col-unit">€&nbsp;${formatEur(v.prezzoUnitario)}</td>
-            <td class="col-tot">€&nbsp;${formatEur(v.totale)}</td>
-          </tr>`).join("");
-        return `
-          <tr><td colspan="5" class="section-header">${chapterIdx}_ ${cap.titolo.toUpperCase()}</td></tr>
-          ${voceRows}
-          <tr class="subtotale-row">
-            <td colspan="4">${chapterLetter}_ TOTALE (iva esclusa)</td>
-            <td>€&nbsp;${formatEur(cap.subtotale)}</td>
-          </tr>`;
-      }).join("")
-    : legacyItems.map((item, i) => `
-        <tr class="item-row">
-          <td class="col-nr">${i + 1}</td>
-          <td class="col-desc">${formatDescriptionHtml(item.descrizione)}</td>
-          <td class="col-um">${item.unita}</td>
-          <td class="col-unit">€&nbsp;${formatEur(Number(item.prezzoUnitario))}</td>
-          <td class="col-tot">€&nbsp;${formatEur(Number(item.totale))}</td>
-        </tr>`).join("");
-
-  const condizioniHtml = condizioniPagamento.length > 0
-    ? `<div class="condizioni">
-        <div class="condizioni-title">CONDIZIONI DI PAGAMENTO</div>
-        <ul>${condizioniPagamento.map(c => `<li>${c}</li>`).join("")}</ul>
-      </div>`
-    : "";
-
-  const incentivesData = (clientData as any)?.incentivesData;
-  const incentivesHtml = incentivesData && (incentivesData.bonusStataleApplicato || incentivesData.bandoRegionaleApplicato)
-    ? `<div class="condizioni" style="border-color: #0d9488; background: #f0fdfa;">
-        <div class="condizioni-title" style="color: #0f766e;">🎁 PIANO AGEVOLAZIONI FISCALI E CONTRIBUTI VERIFICATI AI</div>
-        <ul style="list-style: none; padding-left: 0; margin-top: 4px;">
-          ${incentivesData.bonusStataleApplicato ? `<li style="margin-bottom:3px;"><strong>Detrazione Statale:</strong> ${incentivesData.bonusStataleApplicato} (−€&nbsp;${formatEur(Number(incentivesData.detrazioneAnnuaStimata || 0) * 10)} in 10 anni)</li>` : ""}
-          ${incentivesData.bandoRegionaleApplicato ? `<li style="margin-bottom:3px;color:#047857;"><strong>Contributo Locale:</strong> ${incentivesData.bandoRegionaleApplicato} (−€&nbsp;${formatEur(Number(incentivesData.contributoRegionaleStimato || 0))})</li>` : ""}
-          <li style="margin-top: 8px; font-weight: bold; font-size: 10pt; color: #047857; border-top: 1px dashed #99f6e4; padding-top: 6px;">INVESTIMENTO NETTO REALE STIMATO: €&nbsp;${formatEur(Number(incentivesData.costoNettoStimato || totale))}</li>
-        </ul>
-      </div>`
-    : "";
-
-  const footerHtml = companyName
-    ? `<div class="doc-footer">${companyName}${companyAddress ? ` — ${companyAddress}` : ""}</div>` : "";
-
-  const committente = [clientData.nome, clientData.indirizzo, clientData.citta, clientData.cap ? `CAP ${clientData.cap}` : "", clientData.provincia].filter(Boolean).join(" — ");
-
-  return `<!DOCTYPE html>
-<html lang="it">
-<head>
-  <meta charset="UTF-8">
-  <title>Preventivo ${numeroData}</title>
-  <style>
-    @page { size: A4 portrait; margin: 12mm 16mm 14mm 16mm; }
-    * { box-sizing: border-box; }
-    body { font-family: Arial, Helvetica, sans-serif; font-size: 9pt; color: #1a1a1a; margin: 0; padding: 16px 20px; background: white; }
-    .header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 14px; }
-    .company-block { max-width: 55%; }
-    .company-name { font-size: 12pt; font-weight: 700; color: #1a1a2e; margin-bottom: 3px; }
-    .company-detail { font-size: 8pt; color: #555; line-height: 1.5; }
-    .doc-meta { text-align: right; }
-    .doc-meta h1 { font-size: 15pt; font-weight: 900; color: #1a1a2e; margin: 0 0 4px; letter-spacing: 1px; }
-    .doc-meta .doc-ref { font-size: 8.5pt; color: #444; line-height: 1.6; }
-    hr.sep { border: none; border-top: 2.5px solid #1a1a2e; margin: 0 0 10px; }
-    .oggetto { font-size: 9pt; font-weight: 600; margin-bottom: 8px; color: #222; }
-    .committente-box { background: #f4f6f9; border-left: 4px solid #1a1a2e; padding: 7px 12px; margin-bottom: 14px; font-size: 8.5pt; }
-    .committente-box .label { font-size: 7.5pt; font-weight: 700; text-transform: uppercase; color: #888; letter-spacing: 0.5px; }
-    table { width: 100%; border-collapse: collapse; }
-    .table-header-row th { background: #1a1a2e; color: white; padding: 6px 8px; font-size: 8pt; font-weight: 600; }
-    .table-header-row th.col-nr { text-align: center; }
-    .table-header-row th.col-unit, .table-header-row th.col-tot { text-align: right; }
-    .section-header td { background: #2d3561; color: white; font-weight: 700; font-size: 8.5pt; padding: 5px 8px; letter-spacing: 0.3px; }
-    tr.item-row td { padding: 5px 8px; font-size: 8pt; border-bottom: 1px solid #eee; vertical-align: top; }
-    tr.item-row:nth-child(even) td { background: #f8f9fb; }
-    .col-nr { width: 7%; text-align: center; font-weight: 600; }
-    .col-desc { width: 47%; }
-    .col-um { width: 7%; text-align: center; }
-    .col-unit { width: 17%; text-align: right; white-space: nowrap; }
-    .col-tot { width: 17%; text-align: right; font-weight: 700; white-space: nowrap; }
-    .subtotale-row td { background: #e8ecf4 !important; font-weight: 700; border-top: 2px solid #aab0cc; font-size: 8.5pt; padding: 6px 8px; }
-    .subtotale-row td:first-child { text-align: right; }
-    .subtotale-row td:last-child { text-align: right; white-space: nowrap; }
-    .totals-section { display: flex; justify-content: flex-end; margin: 14px 0; }
-    .table-totals { width: 320px; border: 1px solid #dde1ec; border-collapse: collapse; }
-    .table-totals td { padding: 6px 10px; font-size: 8.5pt; border-bottom: 1px solid #eee; }
-    .tot-label { font-weight: 600; color: #333; }
-    .tot-value { text-align: right; font-weight: 700; white-space: nowrap; }
-    .grand-total-row td { background: #1a1a2e !important; color: white !important; font-size: 10pt; font-weight: 700; border-bottom: none; }
-    .condizioni { border: 1px solid #dde1ec; border-radius: 2px; padding: 10px 14px; margin-bottom: 14px; }
-    .condizioni-title { font-size: 8.5pt; font-weight: 700; text-transform: uppercase; color: #1a1a2e; margin-bottom: 6px; letter-spacing: 0.5px; }
-    .condizioni ul { margin: 0; padding-left: 16px; }
-    .condizioni li { font-size: 8pt; margin-bottom: 3px; }
-    .doc-footer { margin-top: 14px; text-align: center; font-size: 7.5pt; color: #aaa; border-top: 1px solid #eee; padding-top: 6px; }
-    .watermark { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%) rotate(-45deg); font-size: 72pt; color: rgba(0,0,0,0.045); font-weight: 900; z-index: 9999; white-space: nowrap; pointer-events: none; letter-spacing: 4px; }
-    @media print { body { padding: 0; } .watermark { position: fixed; } }
-  </style>
-</head>
-<body>
-  ${withWatermark ? '<div class="watermark">BOZZA NON VALIDA</div>' : ""}
-
-  <div class="header">
-    <div class="company-block">
-      ${logoHtml}
-      <div class="company-name">${companyName}</div>
-      ${companyVat ? `<div class="company-detail">P.IVA / C.F.: ${companyVat}</div>` : ""}
-      ${companyAddress ? `<div class="company-detail">${companyAddress}</div>` : ""}
-      ${companyPhone ? `<div class="company-detail">Tel: ${companyPhone}</div>` : ""}
-      ${companyEmail ? `<div class="company-detail">${companyEmail}</div>` : ""}
-    </div>
-    <div class="doc-meta">
-      <h1>PREVENTIVO</h1>
-      <div class="doc-ref">${numeroData}</div>
-      <div class="doc-ref">Data: ${new Date().toLocaleDateString("it-IT")}</div>
-    </div>
-  </div>
-  <hr class="sep">
-  ${titolo2 ? `<div class="oggetto">OGGETTO: ${titolo2}</div>` : ""}
-
-  <div class="committente-box">
-    <div class="label">Committente</div>
-    <div style="font-weight:600;color:#1a1a2e;margin-top:2px;">${committente || "——"}</div>
-  </div>
-
-  <table>
-    <thead>
-      <tr class="table-header-row">
-        <th class="col-nr">Nr</th>
-        <th class="col-desc">Voce di Capitolato</th>
-        <th class="col-um">UM</th>
-        <th class="col-unit">Unitari (€)</th>
-        <th class="col-tot">Totale (€)</th>
-      </tr>
-    </thead>
-    <tbody>
-      ${bodyRows}
-    </tbody>
-  </table>
-
-  <div class="totals-section">
-    <table class="table-totals">
-      <tbody>
-        <tr><td class="tot-label">TOTALE IMPONIBILE</td><td class="tot-value">€&nbsp;${formatEur(subtotale)}</td></tr>
-        ${scontoHtml}
-        <tr><td class="tot-label">IVA (${ivaPerc.toFixed(0)}%)</td><td class="tot-value">€&nbsp;${formatEur(ivaValore)}</td></tr>
-        <tr class="grand-total-row"><td class="tot-label">TOTALE + IVA</td><td class="tot-value">€&nbsp;${formatEur(totale)}</td></tr>
-      </tbody>
-    </table>
-  </div>
-
-  ${incentivesHtml}
-  ${condizioniHtml}
-  ${footerHtml}
-</body>
-</html>`;
-}
-
-function generateHtmlElegante(
-  quote: QuoteRow,
-  withWatermark: boolean,
-  profile: ProfileRow
-): string {
-  const clientData = (quote.clientData ?? { nome: "", indirizzo: "" }) as QuoteClientData;
-  const capitoli: QuoteChapter[] = Array.isArray(quote.capitoli) && quote.capitoli.length > 0
-    ? quote.capitoli as QuoteChapter[]
-    : [];
-  const legacyItems = Array.isArray(quote.items) ? quote.items : [];
-  const sconto = quote.sconto as QuoteDiscount | null;
-  const condizioniPagamento: string[] = Array.isArray(quote.condizioniPagamento)
-    ? quote.condizioniPagamento : [];
-
-  const titolo2 = quote.titoloPreventivoRiga2 || "";
-  const numeroData = quote.numeroPreventivoData || `N° ${quote.id.slice(0, 4).toUpperCase()} del ${new Date().toLocaleDateString("it-IT")}`;
-  const subtotale = Number(quote.subtotale);
-  const ivaPerc = Number(quote.ivaPercentuale);
-  const ivaValore = Number(quote.ivaValore);
-  const totale = Number(quote.totale);
-
-  const snap = (quote.companySnapshot as QuoteCompanySnapshot | null) ?? null;
-  const companyName = snap?.companyName || profile?.companyName || "";
-  const companyVat = snap?.vatNumber || profile?.vatNumber || "";
-  const companyAddress = snap?.address || profile?.address || "";
-  const companyPhone = snap?.phone || profile?.phone || "";
-  const companyEmail = snap?.email || profile?.email || "";
-  const prevaiLogoSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="110" height="30" viewBox="0 0 110 30"><defs><linearGradient id="pg" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" style="stop-color:#7c3aed"/><stop offset="100%" style="stop-color:#06b6d4"/></linearGradient></defs><rect width="26" height="26" rx="5" y="2" fill="url(#pg)"/><text x="13" y="19" font-family="system-ui,sans-serif" font-size="14" font-weight="bold" fill="white" text-anchor="middle">P</text><text x="34" y="21" font-family="system-ui,sans-serif" font-size="16" font-weight="700" fill="#1a1a2e">prev</text><text x="63" y="21" font-family="system-ui,sans-serif" font-size="16" font-weight="700" fill="#7c3aed">ai</text></svg>`;
-  const prevaiLogoDataUri = `data:image/svg+xml;base64,${Buffer.from(prevaiLogoSvg).toString("base64")}`;
-  const companyLogoUrl = withWatermark ? prevaiLogoDataUri : (snap?.logoUrl || profile?.logoUrl || "");
-  const logoHtml = companyLogoUrl ? `<img src="${companyLogoUrl}" alt="Logo" style="max-height:55px;max-width:170px;object-fit:contain;display:block;margin-bottom:6px;" />` : "";
-
-  // Merge all voci from all chapters into a flat numbered list
-  const hasCapitoli = capitoli.length > 0;
-  const allRows = hasCapitoli
-    ? capitoli.flatMap((cap, _ci) =>
-        cap.voci.map(v => ({ descrizione: v.descrizione, um: v.um, quantita: v.quantita, pu: v.prezzoUnitario, totale: v.totale, chapter: cap.titolo }))
-      )
-    : legacyItems.map(item => ({ descrizione: item.descrizione, um: item.unita, quantita: item.quantita, pu: Number(item.prezzoUnitario), totale: Number(item.totale), chapter: "" }));
-
-  const tableRows = allRows.map((row, i) => `
-    <tr class="${i % 2 === 0 ? "row-even" : "row-odd"}">
-      <td class="col-num">${i + 1}</td>
-      <td class="col-desc">${formatDescriptionHtml(row.descrizione)}</td>
-      <td class="col-um">${row.um}</td>
-      <td class="col-qty">${row.quantita}</td>
-      <td class="col-pu">€&nbsp;${formatEur(row.pu)}</td>
-      <td class="col-tot">€&nbsp;${formatEur(row.totale)}</td>
-    </tr>`).join("");
-
-  const scontoHtml = sconto && sconto.percentuale > 0
-    ? `<div class="total-row"><span>Sconto (${sconto.percentuale}%)</span><span>−&nbsp;€&nbsp;${formatEur(Number(quote.subtotale) - sconto.importoScontato)}</span></div>
-       <div class="total-row"><span>Imponibile scontato</span><span>€&nbsp;${formatEur(sconto.importoScontato)}</span></div>` : "";
-
-  const condizioniHtml = condizioniPagamento.length > 0
-    ? `<div class="condizioni">
-        <div class="condizioni-title">CONDIZIONI DI PAGAMENTO</div>
-        <ul>${condizioniPagamento.map(c => `<li>${c}</li>`).join("")}</ul>
-      </div>` : "";
-
-  const incentivesData = (clientData as any)?.incentivesData;
-  const incentivesHtml = incentivesData && (incentivesData.bonusStataleApplicato || incentivesData.bandoRegionaleApplicato)
-    ? `<div class="condizioni" style="border-color: #0d9488; background: #f0fdfa;">
-        <div class="condizioni-title" style="color: #0f766e;">🎁 PIANO AGEVOLAZIONI FISCALI E CONTRIBUTI VERIFICATI AI</div>
-        <ul style="list-style: none; padding-left: 0; margin-top: 4px;">
-          ${incentivesData.bonusStataleApplicato ? `<li style="margin-bottom:3px;"><strong>Detrazione Statale:</strong> ${incentivesData.bonusStataleApplicato} (−€&nbsp;${formatEur(Number(incentivesData.detrazioneAnnuaStimata || 0) * 10)} in 10 anni)</li>` : ""}
-          ${incentivesData.bandoRegionaleApplicato ? `<li style="margin-bottom:3px;color:#047857;"><strong>Contributo Locale:</strong> ${incentivesData.bandoRegionaleApplicato} (−€&nbsp;${formatEur(Number(incentivesData.contributoRegionaleStimato || 0))})</li>` : ""}
-          <li style="margin-top: 8px; font-weight: bold; font-size: 10pt; color: #047857; border-top: 1px dashed #99f6e4; padding-top: 6px;">INVESTIMENTO NETTO REALE STIMATO: €&nbsp;${formatEur(Number(incentivesData.costoNettoStimato || totale))}</li>
-        </ul>
-      </div>`
-    : "";
-
-  const footerHtml = companyName
-    ? `<div class="doc-footer">${companyName}${companyAddress ? ` — ${companyAddress}` : ""}</div>` : "";
-
-  const clientLines = [clientData.nome, clientData.indirizzo, [clientData.citta, clientData.cap, clientData.provincia].filter(Boolean).join(" ")].filter(Boolean);
-
-  return `<!DOCTYPE html>
-<html lang="it">
-<head>
-  <meta charset="UTF-8">
-  <title>Offerta ${numeroData}</title>
-  <style>
-    @page { size: A4 portrait; margin: 12mm 16mm 14mm 16mm; }
-    * { box-sizing: border-box; }
-    body { font-family: Arial, Helvetica, sans-serif; font-size: 9pt; color: #1a1a1a; margin: 0; padding: 16px 20px; background: white; }
-    .page-header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #333; padding-bottom: 12px; margin-bottom: 14px; }
-    .company-info { }
-    .company-name { font-size: 13pt; font-weight: 700; color: #1a1a1a; margin-bottom: 2px; }
-    .company-line { font-size: 8pt; color: #444; line-height: 1.5; }
-    .offerta-block { text-align: right; }
-    .offerta-label { font-size: 18pt; font-weight: 900; color: #1a1a1a; letter-spacing: 2px; margin-bottom: 4px; }
-    .offerta-meta { font-size: 8.5pt; color: #555; line-height: 1.6; }
-    .client-section { margin-bottom: 14px; padding: 8px 0; border-bottom: 1px solid #ddd; }
-    .client-label { font-size: 7.5pt; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: #888; margin-bottom: 3px; }
-    .client-name { font-size: 10pt; font-weight: 700; color: #1a1a1a; }
-    .client-line { font-size: 8.5pt; color: #444; }
-    ${titolo2 ? `.oggetto { font-size: 8.5pt; font-style: italic; color: #555; margin-bottom: 10px; }` : ""}
-    table { width: 100%; border-collapse: collapse; margin-bottom: 14px; }
-    thead th { background: #333; color: white; padding: 6px 8px; font-size: 8pt; font-weight: 600; }
-    thead th.col-num { text-align: center; width: 5%; }
-    thead th.col-desc { text-align: left; width: 42%; }
-    thead th.col-um { text-align: center; width: 7%; }
-    thead th.col-qty { text-align: center; width: 7%; }
-    thead th.col-pu { text-align: right; width: 18%; }
-    thead th.col-tot { text-align: right; width: 18%; }
-    .row-even td { background: #fff; }
-    .row-odd td { background: #f7f7f7; }
-    td { padding: 5px 8px; font-size: 8.5pt; border-bottom: 1px solid #eee; vertical-align: top; }
-    .col-num { text-align: center; font-weight: 600; color: #555; }
-    .col-desc { }
-    .col-um { text-align: center; }
-    .col-qty { text-align: center; }
-    .col-pu { text-align: right; white-space: nowrap; }
-    .col-tot { text-align: right; font-weight: 700; white-space: nowrap; }
-    .totals-block { display: flex; justify-content: flex-end; margin-bottom: 14px; }
-    .totals-inner { width: 300px; border: 1px solid #ccc; }
-    .total-row { display: flex; justify-content: space-between; padding: 6px 12px; font-size: 8.5pt; border-bottom: 1px solid #eee; }
-    .total-row span:last-child { font-weight: 700; white-space: nowrap; }
-    .grand-total { display: flex; justify-content: space-between; padding: 8px 12px; background: #333; color: white; font-size: 10pt; font-weight: 700; }
-    .condizioni { border: 1px solid #ddd; padding: 10px 14px; margin-bottom: 14px; }
-    .condizioni-title { font-size: 8.5pt; font-weight: 700; text-transform: uppercase; color: #333; margin-bottom: 6px; }
-    .condizioni ul { margin: 0; padding-left: 16px; }
-    .condizioni li { font-size: 8pt; margin-bottom: 3px; }
-    .doc-footer { margin-top: 14px; text-align: center; font-size: 7.5pt; color: #aaa; border-top: 1px solid #eee; padding-top: 6px; }
-    .watermark { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%) rotate(-45deg); font-size: 72pt; color: rgba(0,0,0,0.045); font-weight: 900; z-index: 9999; white-space: nowrap; pointer-events: none; letter-spacing: 4px; }
-    @media print { body { padding: 0; } .watermark { position: fixed; } }
-  </style>
-</head>
-<body>
-  ${withWatermark ? '<div class="watermark">BOZZA NON VALIDA</div>' : ""}
-
-  <div class="page-header">
-    <div class="company-info">
-      ${logoHtml}
-      <div class="company-name">${companyName}</div>
-      ${companyAddress ? `<div class="company-line">${companyAddress}</div>` : ""}
-      ${companyVat ? `<div class="company-line">C.F. / P.IVA: ${companyVat}</div>` : ""}
-      ${companyPhone ? `<div class="company-line">${companyPhone}</div>` : ""}
-      ${companyEmail ? `<div class="company-line">${companyEmail}</div>` : ""}
-    </div>
-    <div class="offerta-block">
-      <div class="offerta-label">OFFERTA</div>
-      <div class="offerta-meta">${numeroData}</div>
-      <div class="offerta-meta">Data: ${new Date().toLocaleDateString("it-IT")}</div>
-    </div>
-  </div>
-
-  <div class="client-section">
-    <div class="client-label">Committente</div>
-    ${clientLines[0] ? `<div class="client-name">${clientLines[0]}</div>` : ""}
-    ${clientLines.slice(1).map(l => `<div class="client-line">${l}</div>`).join("")}
-  </div>
-
-  ${titolo2 ? `<div class="oggetto">Oggetto: ${titolo2}</div>` : ""}
-
-  <table>
-    <thead>
-      <tr>
-        <th class="col-num">#</th>
-        <th class="col-desc">Descrizione</th>
-        <th class="col-um">U.M.</th>
-        <th class="col-qty">Q.</th>
-        <th class="col-pu">P. unitario</th>
-        <th class="col-tot">Importo</th>
-      </tr>
-    </thead>
-    <tbody>
-      ${tableRows}
-    </tbody>
-  </table>
-
-  <div class="totals-block">
-    <div class="totals-inner">
-      <div class="total-row"><span>Totale imponibile</span><span>€&nbsp;${formatEur(subtotale)}</span></div>
-      ${scontoHtml}
-      <div class="total-row"><span>IVA (${ivaPerc.toFixed(0)}%)</span><span>€&nbsp;${formatEur(ivaValore)}</span></div>
-      <div class="grand-total"><span>TOTALE</span><span>€&nbsp;${formatEur(totale)}</span></div>
-    </div>
-  </div>
-
-  ${incentivesHtml}
-  ${condizioniHtml}
-  ${footerHtml}
-</body>
-</html>`;
-}
-
-/**
- * Attempt to load a logo image from object storage and encode as base64 data URI for pdfmake.
- *
- * Supported URL formats:
- *   - `/api/storage/public-objects/<subPath>`  (logo uploads — public GCS objects)
- *   - `/objects/<subPath>`                     (private GCS objects, fallback)
- */
-async function fetchLogoDataUri(logoUrl: string | null | undefined): Promise<string | null> {
-  if (!logoUrl) return null;
-  try {
-    let response: Response | null = null;
-
-    if (logoUrl.startsWith("/api/storage/public-objects/")) {
-      // Public logo: extract subPath and search across PUBLIC_OBJECT_SEARCH_PATHS
-      const subPath = logoUrl.replace(/^\/api\/storage\/public-objects\//, "");
-      const file = await objectStorage.searchPublicObject(subPath).catch(() => null);
-      if (!file) return null;
-      response = await objectStorage.downloadObject(file, { isPublic: true, cacheTtlSec: 3600 }).catch(() => null);
-    } else if (logoUrl.startsWith("/objects/")) {
-      // Private object (legacy path)
-      const subPath = logoUrl.replace(/^\/objects\//, "");
-      response = await objectStorage.downloadPrivateObject(subPath).catch(() => null);
-    }
-
-    if (!response || !response.ok) return null;
-    const buf = Buffer.from(await response.arrayBuffer());
-    const ct = response.headers.get("content-type") ?? "image/png";
-    return `data:${ct};base64,${buf.toString("base64")}`;
-  } catch {
-    // Best-effort: if logo fetch fails, proceed without logo
-    return null;
-  }
-}
-
-async function generateCapitolatoPdfBuffer(quote: QuoteRow, profile: ProfileRow): Promise<Buffer> {
-  const capitoli: QuoteChapter[] = Array.isArray(quote.capitoli) && quote.capitoli.length > 0
-    ? quote.capitoli as QuoteChapter[]
-    : [];
-  const clientData = (quote.clientData ?? { nome: "", indirizzo: "" }) as QuoteClientData;
-  const sconto = quote.sconto as QuoteDiscount | null;
-  const condizioniPagamento: string[] = Array.isArray(quote.condizioniPagamento) ? quote.condizioniPagamento : [];
-  const snap = (quote.companySnapshot as QuoteCompanySnapshot | null) ?? null;
-
-  const companyName = snap?.companyName || profile?.companyName || "";
-  const companyVat = snap?.vatNumber || profile?.vatNumber || "";
-  const companyAddress = snap?.address || profile?.address || "";
-  const companyPhone = snap?.phone || profile?.phone || "";
-  const companyEmail = snap?.email || profile?.email || "";
-  const titolo1 = quote.titoloPreventivoRiga1 || "Analisi Economica e Computo Metrico Prezzato";
-  const titolo2 = quote.titoloPreventivoRiga2 || "";
-  const numeroData = quote.numeroPreventivoData || `N° ${quote.id.slice(0, 4).toUpperCase()} del ${new Date().toLocaleDateString("it-IT")}`;
-  const subtotale = Number(quote.subtotale);
-  const ivaPerc = Number(quote.ivaPercentuale);
-  const ivaValore = Number(quote.ivaValore);
-  const totale = Number(quote.totale);
-  const isDraft = quote.status !== "unlocked";
-
-  const DARK = "#1a1a2e";
-  const LIGHT_BG = "#f4f6f9";
-  const GRAY = "#888888";
-
-  // Fetch company logo (best-effort; null if unavailable)
-  const logoPath = snap?.logoUrl || profile?.logoUrl || null;
-  const logoDataUri = await fetchLogoDataUri(logoPath);
-
-  // Company header stack (right of logo or full-width if no logo)
-  const companyInfoStack: Content[] = [
-    { text: companyName, fontSize: 13, bold: true, color: DARK, margin: [0, 4, 0, 2] },
-  ];
-  if (companyVat) companyInfoStack.push({ text: `P.IVA / C.F.: ${companyVat}`, fontSize: 8, color: "#555555" });
-  if (companyAddress) companyInfoStack.push({ text: companyAddress, fontSize: 8, color: "#555555" });
-  if (companyPhone) companyInfoStack.push({ text: `Tel: ${companyPhone}`, fontSize: 8, color: "#555555" });
-  if (companyEmail) companyInfoStack.push({ text: companyEmail, fontSize: 8, color: "#555555" });
-
-  // Header left cell: logo + company info
-  const headerLeftContent: Content = logoDataUri
-    ? {
-        columns: [
-          { image: logoDataUri, fit: [56, 56] as [number, number], margin: [0, 4, 10, 0] as [number, number, number, number] },
-          { stack: companyInfoStack },
-        ],
-      }
-    : { stack: companyInfoStack };
-
-  // Quadro sintetico table body
-  const quadroBody: Content[][] = [
-    [
-      { text: "Capitolo", style: "tableHeader" },
-      { text: "Importo netto", style: "tableHeaderRight" },
-      { text: "Osservazione", style: "tableHeader" },
-    ],
-    ...capitoli.map(cap => [
-      { text: `${cap.lettera}. ${cap.titolo}`, fontSize: 9, color: "#1a1a1a" } as Content,
-      { text: `€ ${formatEur(cap.subtotale)}`, fontSize: 9, alignment: "right" as const, bold: true } as Content,
-      { text: cap.osservazione ?? "Voce ordinaria", fontSize: 8, color: "#666666", italics: true } as Content,
-    ]),
-  ];
-
-  // Chapter detail tables — includes N° column
-  const chaptersContent: Content[] = capitoli.flatMap(cap => {
-    const bodyRows: Content[][] = [
-      [
-        { text: "N°", style: "tableHeaderCenter" },
-        { text: "Descrizione", style: "tableHeader" },
-        { text: "U.M.", style: "tableHeaderCenter" },
-        { text: "Q.tà", style: "tableHeaderCenter" },
-        { text: "P.u. (€)", style: "tableHeaderRight" },
-        { text: "Totale (€)", style: "tableHeaderRight" },
-      ],
-      ...cap.voci.map((v, vi) => {
-        const bg = vi % 2 === 0 ? null : "#f8f9fb";
-        return [
-          { text: String(vi + 1), fontSize: 8, alignment: "center" as const, color: "#666", fillColor: bg } as Content,
-          formatDescriptionPdf(v.descrizione, bg) as Content,
-          { text: v.um, fontSize: 8, alignment: "center" as const, fillColor: bg } as Content,
-          { text: String(v.quantita), fontSize: 8, alignment: "center" as const, fillColor: bg } as Content,
-          { text: formatEur(v.prezzoUnitario), fontSize: 8, alignment: "right" as const, fillColor: bg } as Content,
-          { text: formatEur(v.totale), fontSize: 8, alignment: "right" as const, bold: true, fillColor: bg } as Content,
-        ];
-      }),
-      [
-        { text: `Subtotale capitolo ${cap.lettera}`, colSpan: 5, fontSize: 8.5, bold: true, fillColor: "#edf0f5", color: DARK } as Content,
-        {} as Content, {} as Content, {} as Content, {} as Content,
-        { text: `€ ${formatEur(cap.subtotale)}`, fontSize: 8.5, alignment: "right" as const, bold: true, fillColor: "#edf0f5", color: DARK } as Content,
-      ],
-    ];
-
-    return [
-      {
-        text: `${cap.lettera}. ${cap.titolo}`,
-        fontSize: 10,
-        bold: true,
-        color: DARK,
-        margin: [0, 10, 0, 4],
-      } as Content,
-      {
-        table: {
-          headerRows: 1,
-          widths: [18, "*", 32, 32, 60, 60],
-          body: bodyRows,
-        },
-        layout: {
-          hLineWidth: () => 0.5,
-          vLineWidth: () => 0,
-          hLineColor: () => "#dddddd",
-          paddingLeft: () => 5,
-          paddingRight: () => 5,
-          paddingTop: () => 4,
-          paddingBottom: () => 4,
-          fillColor: (rowIndex: number) => {
-            if (rowIndex === 0) return DARK;
-            if (rowIndex === bodyRows.length - 1) return "#edf0f5";
-            return null;
-          },
-        },
-        margin: [0, 0, 0, 14] as [number, number, number, number],
-      } as Content,
-    ] as Content[];
-  });
-
-  // Totals section
-  const totalsRows: Content[][] = [
-    [
-      { text: "TOTALE IMPONIBILE", style: "totLabel" },
-      { text: `€ ${formatEur(subtotale)}`, style: "totValue" },
-    ],
-  ];
-  if (sconto && sconto.percentuale > 0) {
-    totalsRows.push([
-      { text: `SCONTO (${sconto.percentuale}%)`, style: "totLabel" },
-      { text: `-€ ${formatEur(subtotale - sconto.importoScontato)}`, style: "totValue" },
-    ]);
-    totalsRows.push([
-      { text: "IMPONIBILE SCONTATO", style: "totLabel" },
-      { text: `€ ${formatEur(sconto.importoScontato)}`, style: "totValue" },
-    ]);
-  }
-  totalsRows.push([
-    { text: `IVA (${ivaPerc.toFixed(0)}%)`, style: "totLabel" },
-    { text: `€ ${formatEur(ivaValore)}`, style: "totValue" },
-  ]);
-  totalsRows.push([
-    { text: "TOTALE + IVA", fontSize: 10, bold: true, color: "white", fillColor: DARK } as Content,
-    { text: `€ ${formatEur(totale)}`, fontSize: 10, bold: true, alignment: "right" as const, color: "white", fillColor: DARK } as Content,
-  ]);
-
-  // Payment conditions
-  const condizioniContent: Content[] = condizioniPagamento.length > 0
-    ? [
-        { text: "CONDIZIONI DI PAGAMENTO", style: "sectionHeading", margin: [0, 14, 0, 4] as [number, number, number, number] },
-        {
-          ul: condizioniPagamento.map(c => ({ text: c.toUpperCase(), fontSize: 8.5, bold: true })),
-          margin: [0, 0, 0, 4] as [number, number, number, number],
-        },
-        {
-          text: "N.B. I LAVORI RICHIESTI NON PRESENTI SU QUESTO PREVENTIVO VANNO PREVENTIVATI E PAGATI SEPARATAMENTE.",
-          fontSize: 8,
-          color: "#cc0000",
-          bold: true,
-          margin: [0, 4, 0, 0] as [number, number, number, number],
-        },
-      ]
-    : [];
-
-  // Acceptance signature section
-  const signatureSection: Content[] = [
-    { text: "ACCETTAZIONE DEL PREVENTIVO", style: "sectionHeading", margin: [0, 20, 0, 6] as [number, number, number, number] },
-    {
-      text: "Il/La sottoscritto/a, presa visione del presente preventivo, accetta le condizioni sopra indicate e autorizza l'esecuzione dei lavori.",
-      fontSize: 8,
-      color: "#444",
-      margin: [0, 0, 0, 14] as [number, number, number, number],
-    },
-    {
-      columns: [
-        {
-          width: "*",
-          stack: [
-            { text: "Data e Luogo", fontSize: 8, color: GRAY },
-            { canvas: [{ type: "line", x1: 0, y1: 10, x2: 160, y2: 10, lineWidth: 0.5, lineColor: "#aaaaaa" }] },
-          ],
-        },
-        {
-          width: "*",
-          stack: [
-            { text: "Firma del Committente", fontSize: 8, color: GRAY },
-            { canvas: [{ type: "line", x1: 0, y1: 10, x2: 200, y2: 10, lineWidth: 0.5, lineColor: "#aaaaaa" }] },
-          ],
-        },
-        {
-          width: "*",
-          stack: [
-            { text: "Firma dell'Esecutore", fontSize: 8, color: GRAY },
-            { canvas: [{ type: "line", x1: 0, y1: 10, x2: 160, y2: 10, lineWidth: 0.5, lineColor: "#aaaaaa" }] },
-          ],
-        },
-      ],
-      columnGap: 20,
-    } as Content,
-  ];
-
-  const docDefinition: TDocumentDefinitions = {
-    pageSize: "A4",
-    pageMargins: [40, 70, 40, 50] as [number, number, number, number],
-    defaultStyle: {
-      font: "Helvetica",
-      fontSize: 9,
-      color: "#1a1a1a",
-    },
-    styles: {
-      tableHeader: { color: "white", bold: true, fontSize: 8, fillColor: DARK },
-      tableHeaderCenter: { color: "white", bold: true, fontSize: 8, fillColor: DARK, alignment: "center" },
-      tableHeaderRight: { color: "white", bold: true, fontSize: 8, fillColor: DARK, alignment: "right" },
-      sectionHeading: { fontSize: 9, bold: true, color: GRAY, characterSpacing: 0.5 },
-      totLabel: { fontSize: 8.5, bold: true, color: "#333333" },
-      totValue: { fontSize: 9, bold: true, alignment: "right" },
-    },
-    // BOZZA diagonal watermark for draft/unpaid quotes
-    ...(isDraft ? {
-      watermark: {
-        text: "BOZZA",
-        color: "#cccccc",
-        opacity: 0.18,
-        bold: true,
-        italics: false,
-        fontSize: 120,
-        angle: -45,
-      },
-    } : {}),
-    header: (currentPage: number, pageCount: number): Content => ({
-      margin: [40, 14, 40, 0] as [number, number, number, number],
-      table: {
-        widths: ["*", "auto"],
-        // pdfmake TableCell borders use [bool,bool,bool,bool] which TS types don't fully model;
-        // double-cast through unknown to satisfy the strict union
-        body: ([
-          [
-            { ...(headerLeftContent as object), border: [false, false, false, true] },
-            {
-              stack: [
-                { text: "CAPITOLATO PRO", fontSize: 7, bold: true, color: "#7c3aed", alignment: "right", characterSpacing: 1 },
-                { text: numeroData, fontSize: 10, bold: true, color: DARK, alignment: "right" },
-                { text: `Data: ${new Date().toLocaleDateString("it-IT")}`, fontSize: 8, color: "#555555", alignment: "right" },
-                { text: `Pag. ${currentPage}/${pageCount}`, fontSize: 7, color: GRAY, alignment: "right", margin: [0, 2, 0, 0] },
-              ],
-              border: [false, false, false, true],
-            },
-          ],
-        ] as unknown) as Content[][],
-      },
-      layout: {
-        hLineWidth: (i: number) => i === 1 ? 2 : 0,
-        vLineWidth: () => 0,
-        hLineColor: () => DARK,
-        paddingLeft: () => 0,
-        paddingRight: () => 0,
-        paddingBottom: () => 8,
-      },
-    }),
-    content: [
-      // Document title
-      { text: titolo1.toUpperCase(), fontSize: 12, bold: true, alignment: "center", color: DARK, margin: [0, 6, 0, 0] as [number, number, number, number] },
-      ...(titolo2 ? [{ text: titolo2, fontSize: 9, alignment: "center" as const, color: "#444444", italics: true, margin: [0, 2, 0, 8] as [number, number, number, number] }] : [{ text: "", margin: [0, 0, 0, 8] as [number, number, number, number] }]),
-
-      // Client box
-      {
-        table: {
-          widths: ["*"],
-          body: [[
-            {
-              border: [true, true, true, true],
-              stack: [
-                { text: "SPETT.LE COMMITTENTE", fontSize: 7, bold: true, color: GRAY, characterSpacing: 0.5 },
-                { text: clientData.nome || "——", fontSize: 10, bold: true, color: DARK },
-                ...(clientData.indirizzo ? [{ text: clientData.indirizzo, fontSize: 8.5, color: "#555" }] : []),
-                ...(clientData.citta ? [{ text: [clientData.citta, clientData.cap, clientData.provincia].filter(Boolean).join(" "), fontSize: 8, color: "#666" }] : []),
-                ...((clientData.codiceFiscale || clientData.partitaIva) ? [{ text: [clientData.codiceFiscale ? `C.F.: ${clientData.codiceFiscale}` : "", clientData.partitaIva ? `P.IVA: ${clientData.partitaIva}` : ""].filter(Boolean).join("  ·  "), fontSize: 8, color: "#666" }] : []),
-              ],
-              margin: [10, 8, 10, 8] as [number, number, number, number],
-              fillColor: LIGHT_BG,
-            },
-          ]],
-        },
-        layout: { hLineWidth: () => 0.5, vLineWidth: () => 0.5, hLineColor: () => "#c5cce0", vLineColor: () => "#c5cce0", paddingLeft: () => 0, paddingRight: () => 0, paddingTop: () => 0, paddingBottom: () => 0 },
-        margin: [0, 0, 0, 14] as [number, number, number, number],
-      } as Content,
-
-      // Quadro sintetico
-      ...(capitoli.length > 0 ? [
-        { text: "1. QUADRO SINTETICO", style: "sectionHeading", margin: [0, 0, 0, 6] as [number, number, number, number] },
-        {
-          table: { headerRows: 1, widths: ["*", 120, 120], body: quadroBody },
-          layout: {
-            hLineWidth: () => 0.5,
-            vLineWidth: () => 0,
-            hLineColor: () => "#dddddd",
-            fillColor: (rowIndex: number) => rowIndex === 0 ? DARK : (rowIndex % 2 === 0 ? "#f8f9fb" : null),
-            paddingLeft: () => 8,
-            paddingRight: () => 8,
-            paddingTop: () => 5,
-            paddingBottom: () => 5,
-          },
-          margin: [0, 0, 0, 14] as [number, number, number, number],
-        },
-      ] as Content[] : []),
-
-      // Chapters
-      ...(capitoli.length > 0 ? [
-        { text: "2. COMPUTO METRICO DETTAGLIATO", style: "sectionHeading", margin: [0, 0, 0, 6] as [number, number, number, number] },
-        ...chaptersContent,
-      ] as Content[] : []),
-
-      // Totals
-      {
-        columns: [
-          { width: "*", text: "" },
-          {
-            width: 320,
-            table: { widths: ["*", 120], body: totalsRows },
-            layout: {
-              hLineWidth: () => 0.5,
-              vLineWidth: () => 0,
-              hLineColor: () => "#dde1ec",
-              paddingLeft: () => 10,
-              paddingRight: () => 10,
-              paddingTop: () => 6,
-              paddingBottom: () => 6,
-              fillColor: (rowIndex: number) => rowIndex === totalsRows.length - 1 ? DARK : null,
-            },
-          },
-        ],
-        margin: [0, 0, 0, 14] as [number, number, number, number],
-      } as Content,
-
-      // Payment conditions
-      ...condizioniContent,
-
-      // Note
-      ...(quote.note ? [
-        { text: "NOTE", style: "sectionHeading", margin: [0, 14, 0, 4] as [number, number, number, number] },
-        { text: quote.note, fontSize: 8, color: "#333" },
-      ] as Content[] : []),
-
-      // Acceptance signature section
-      ...signatureSection,
-    ],
-    footer: (currentPage: number, _pageCount: number): Content => ({
-      margin: [40, 0, 40, 14] as [number, number, number, number],
-      columns: [
-        {
-          text: `${companyName}${companyAddress ? " – " + companyAddress : ""}`,
-          fontSize: 7.5,
-          color: "#aaaaaa",
-        },
-        {
-          text: isDraft ? "DOCUMENTO PROVVISORIO – NON VALIDO AI FINI CONTRATTUALI" : "Documento generato con Prevai",
-          fontSize: 7.5,
-          color: isDraft ? "#cc8800" : "#aaaaaa",
-          alignment: "right",
-          bold: isDraft,
-        },
-      ],
-    }),
-  };
-
-  return getPdfmake().createPdf(docDefinition).getBuffer();
-}
-
-/**
- * Generates a server-side PDF buffer for any quote using pdfmake.
- * Supports watermark for draft/unpaid quotes.
- */
-async function generateQuotePdfBuffer(quote: QuoteRow, profile: ProfileRow, withWatermark: boolean): Promise<Buffer> {
-  const capitoli: QuoteChapter[] = Array.isArray(quote.capitoli) && quote.capitoli.length > 0
-    ? quote.capitoli as QuoteChapter[]
-    : [];
-  const clientData = (quote.clientData ?? { nome: "", indirizzo: "" }) as QuoteClientData;
-  const sconto = quote.sconto as QuoteDiscount | null;
-  const condizioniPagamento: string[] = Array.isArray(quote.condizioniPagamento) ? quote.condizioniPagamento : [];
-  const snap = (quote.companySnapshot as QuoteCompanySnapshot | null) ?? null;
-
-  const companyName = snap?.companyName || profile?.companyName || "";
-  const companyVat = snap?.vatNumber || profile?.vatNumber || "";
-  const companyAddress = snap?.address || profile?.address || "";
-  const companyPhone = snap?.phone || profile?.phone || "";
-  const companyEmail = snap?.email || profile?.email || "";
-  const titolo1 = quote.titoloPreventivoRiga1 || "Analisi Economica e Computo Metrico Prezzato";
-  const titolo2 = quote.titoloPreventivoRiga2 || "";
-  const numeroData = quote.numeroPreventivoData || `N° ${quote.id.slice(0, 4).toUpperCase()} del ${new Date().toLocaleDateString("it-IT")}`;
-  const subtotale = Number(quote.subtotale);
-  const ivaPerc = Number(quote.ivaPercentuale);
-  const ivaValore = Number(quote.ivaValore);
-  const totale = Number(quote.totale);
-  const isDraft = withWatermark;
-
-  const DARK = "#1a1a2e";
-  const LIGHT_BG = "#f4f6f9";
-  const GRAY = "#888888";
-
-  const logoPath = snap?.logoUrl || profile?.logoUrl || null;
-  const logoDataUri = await fetchLogoDataUri(logoPath);
-
-  const companyInfoStack: Content[] = [
-    { text: companyName, fontSize: 13, bold: true, color: DARK, margin: [0, 4, 0, 2] },
-  ];
-  if (companyVat) companyInfoStack.push({ text: `P.IVA / C.F.: ${companyVat}`, fontSize: 8, color: "#555555" });
-  if (companyAddress) companyInfoStack.push({ text: companyAddress, fontSize: 8, color: "#555555" });
-  if (companyPhone) companyInfoStack.push({ text: `Tel: ${companyPhone}`, fontSize: 8, color: "#555555" });
-  if (companyEmail) companyInfoStack.push({ text: companyEmail, fontSize: 8, color: "#555555" });
-
-  const headerLeftContent: Content = logoDataUri
-    ? {
-        columns: [
-          { image: logoDataUri, fit: [56, 56] as [number, number], margin: [0, 4, 10, 0] as [number, number, number, number] },
-          { stack: companyInfoStack },
-        ],
-      }
-    : { stack: companyInfoStack };
-
-  const quadroBody: Content[][] = [
-    [
-      { text: "Capitolo", style: "tableHeader" },
-      { text: "Importo netto", style: "tableHeaderRight" },
-      { text: "Osservazione", style: "tableHeader" },
-    ],
-    ...capitoli.map(cap => [
-      { text: `${cap.lettera}. ${cap.titolo}`, fontSize: 9, color: "#1a1a1a" } as Content,
-      { text: `\u20ac ${formatEur(cap.subtotale)}`, fontSize: 9, alignment: "right" as const, bold: true } as Content,
-      { text: cap.osservazione ?? "Voce ordinaria", fontSize: 8, color: "#666666", italics: true } as Content,
-    ]),
-  ];
-
-  const chaptersContent: Content[] = capitoli.flatMap(cap => {
-    const bodyRows: Content[][] = [
-      [
-        { text: "N\u00b0", style: "tableHeaderCenter" },
-        { text: "Descrizione", style: "tableHeader" },
-        { text: "U.M.", style: "tableHeaderCenter" },
-        { text: "Q.t\u00e0", style: "tableHeaderCenter" },
-        { text: "P.u. (\u20ac)", style: "tableHeaderRight" },
-        { text: "Totale (\u20ac)", style: "tableHeaderRight" },
-      ],
-      ...cap.voci.map((v, vi) => {
-        const bg = vi % 2 === 0 ? null : "#f8f9fb";
-        return [
-          { text: String(vi + 1), fontSize: 8, alignment: "center" as const, color: "#666", fillColor: bg } as Content,
-          formatDescriptionPdf(v.descrizione, bg) as Content,
-          { text: v.um, fontSize: 8, alignment: "center" as const, fillColor: bg } as Content,
-          { text: String(v.quantita), fontSize: 8, alignment: "center" as const, fillColor: bg } as Content,
-          { text: formatEur(v.prezzoUnitario), fontSize: 8, alignment: "right" as const, fillColor: bg } as Content,
-          { text: formatEur(v.totale), fontSize: 8, alignment: "right" as const, bold: true, fillColor: bg } as Content,
-        ];
-      }),
-      [
-        { text: `Subtotale capitolo ${cap.lettera}`, colSpan: 5, fontSize: 8.5, bold: true, fillColor: "#edf0f5", color: DARK } as Content,
-        {} as Content, {} as Content, {} as Content, {} as Content,
-        { text: `\u20ac ${formatEur(cap.subtotale)}`, fontSize: 8.5, alignment: "right" as const, bold: true, fillColor: "#edf0f5", color: DARK } as Content,
-      ],
-    ];
-
-    return [
-      {
-        text: `${cap.lettera}. ${cap.titolo}`,
-        fontSize: 10,
-        bold: true,
-        color: DARK,
-        margin: [0, 10, 0, 4],
-      } as Content,
-      {
-        table: {
-          headerRows: 1,
-          widths: [18, "*", 32, 32, 60, 60],
-          body: bodyRows,
-        },
-        layout: {
-          hLineWidth: () => 0.5,
-          vLineWidth: () => 0,
-          hLineColor: () => "#dddddd",
-          paddingLeft: () => 5,
-          paddingRight: () => 5,
-          paddingTop: () => 4,
-          paddingBottom: () => 4,
-          fillColor: (rowIndex: number) => {
-            if (rowIndex === 0) return DARK;
-            if (rowIndex === bodyRows.length - 1) return "#edf0f5";
-            return null;
-          },
-        },
-        margin: [0, 0, 0, 14] as [number, number, number, number],
-      } as Content,
-    ] as Content[];
-  });
-
-  const totalsRows: Content[][] = [
-    [
-      { text: "TOTALE IMPONIBILE", style: "totLabel" },
-      { text: `\u20ac ${formatEur(subtotale)}`, style: "totValue" },
-    ],
-  ];
-  if (sconto && sconto.percentuale > 0) {
-    totalsRows.push([
-      { text: `SCONTO (${sconto.percentuale}%)`, style: "totLabel" },
-      { text: `-\u20ac ${formatEur(subtotale - sconto.importoScontato)}`, style: "totValue" },
-    ]);
-    totalsRows.push([
-      { text: "IMPONIBILE SCONTATO", style: "totLabel" },
-      { text: `\u20ac ${formatEur(sconto.importoScontato)}`, style: "totValue" },
-    ]);
-  }
-  totalsRows.push([
-    { text: `IVA (${ivaPerc.toFixed(0)}%)`, style: "totLabel" },
-    { text: `\u20ac ${formatEur(ivaValore)}`, style: "totValue" },
-  ]);
-  totalsRows.push([
-    { text: "TOTALE + IVA", fontSize: 10, bold: true, color: "white", fillColor: DARK } as Content,
-    { text: `\u20ac ${formatEur(totale)}`, fontSize: 10, bold: true, alignment: "right" as const, color: "white", fillColor: DARK } as Content,
-  ]);
-
-  const condizioniContent: Content[] = condizioniPagamento.length > 0
-    ? [
-        { text: "CONDIZIONI DI PAGAMENTO", style: "sectionHeading", margin: [0, 14, 0, 4] as [number, number, number, number] },
-        {
-          ul: condizioniPagamento.map(c => ({ text: c.toUpperCase(), fontSize: 8.5, bold: true })),
-          margin: [0, 0, 0, 4] as [number, number, number, number],
-        },
-        {
-          text: "N.B. I LAVORI RICHIESTI NON PRESENTI SU QUESTO PREVENTIVO VANNO PREVENTIVATI E PAGATI SEPARATAMENTE.",
-          fontSize: 8,
-          color: "#cc0000",
-          bold: true,
-          margin: [0, 4, 0, 0] as [number, number, number, number],
-        },
-      ]
-    : [];
-
-  const signatureSection: Content[] = [
-    { text: "ACCETTAZIONE DEL PREVENTIVO", style: "sectionHeading", margin: [0, 20, 0, 6] as [number, number, number, number] },
-    {
-      text: "Il/La sottoscritto/a, presa visione del presente preventivo, accetta le condizioni sopra indicate e autorizza l'esecuzione dei lavori.",
-      fontSize: 8,
-      color: "#444",
-      margin: [0, 0, 0, 14] as [number, number, number, number],
-    },
-    {
-      columns: [
-        {
-          width: "*",
-          stack: [
-            { text: "Data e Luogo", fontSize: 8, color: GRAY },
-            { canvas: [{ type: "line", x1: 0, y1: 10, x2: 160, y2: 10, lineWidth: 0.5, lineColor: "#aaaaaa" }] },
-          ],
-        },
-        {
-          width: "*",
-          stack: [
-            { text: "Firma del Committente", fontSize: 8, color: GRAY },
-            { canvas: [{ type: "line", x1: 0, y1: 10, x2: 200, y2: 10, lineWidth: 0.5, lineColor: "#aaaaaa" }] },
-          ],
-        },
-        {
-          width: "*",
-          stack: [
-            { text: "Firma dell'Esecutore", fontSize: 8, color: GRAY },
-            { canvas: [{ type: "line", x1: 0, y1: 10, x2: 160, y2: 10, lineWidth: 0.5, lineColor: "#aaaaaa" }] },
-          ],
-        },
-      ],
-      columnGap: 20,
-    } as Content,
-  ];
-
-  const docDefinition: TDocumentDefinitions = {
-    pageSize: "A4",
-    pageMargins: [40, 70, 40, 50] as [number, number, number, number],
-    defaultStyle: {
-      font: "Helvetica",
-      fontSize: 9,
-      color: "#1a1a1a",
-    },
-    styles: {
-      tableHeader: { color: "white", bold: true, fontSize: 8, fillColor: DARK },
-      tableHeaderCenter: { color: "white", bold: true, fontSize: 8, fillColor: DARK, alignment: "center" },
-      tableHeaderRight: { color: "white", bold: true, fontSize: 8, fillColor: DARK, alignment: "right" },
-      sectionHeading: { fontSize: 9, bold: true, color: GRAY, characterSpacing: 0.5 },
-      totLabel: { fontSize: 8.5, bold: true, color: "#333333" },
-      totValue: { fontSize: 9, bold: true, alignment: "right" },
-    },
-    ...(isDraft ? {
-      watermark: {
-        text: "BOZZA",
-        color: "#cccccc",
-        opacity: 0.18,
-        bold: true,
-        italics: false,
-        fontSize: 120,
-        angle: -45,
-      },
-    } : {}),
-    header: (currentPage: number, pageCount: number): Content => ({
-      margin: [40, 14, 40, 0] as [number, number, number, number],
-      table: {
-        widths: ["*", "auto"],
-        body: ([
-          [
-            { ...(headerLeftContent as object), border: [false, false, false, true] },
-            {
-              stack: [
-                { text: numeroData, fontSize: 10, bold: true, color: DARK, alignment: "right" },
-                { text: `Data: ${new Date().toLocaleDateString("it-IT")}`, fontSize: 8, color: "#555555", alignment: "right" },
-                { text: `Pag. ${currentPage}/${pageCount}`, fontSize: 7, color: GRAY, alignment: "right", margin: [0, 2, 0, 0] },
-              ],
-              border: [false, false, false, true],
-            },
-          ],
-        ] as unknown) as Content[][],
-      },
-      layout: {
-        hLineWidth: (i: number) => i === 1 ? 2 : 0,
-        vLineWidth: () => 0,
-        hLineColor: () => DARK,
-        paddingLeft: () => 0,
-        paddingRight: () => 0,
-        paddingBottom: () => 8,
-      },
-    }),
-    content: [
-      { text: titolo1.toUpperCase(), fontSize: 12, bold: true, alignment: "center", color: DARK, margin: [0, 6, 0, 0] as [number, number, number, number] },
-      ...(titolo2 ? [{ text: titolo2, fontSize: 9, alignment: "center" as const, color: "#444444", italics: true, margin: [0, 2, 0, 8] as [number, number, number, number] }] : [{ text: "", margin: [0, 0, 0, 8] as [number, number, number, number] }]),
-
-      {
-        table: {
-          widths: ["*"],
-          body: [[
-            {
-              border: [true, true, true, true],
-              stack: [
-                { text: "SPETT.LE COMMITTENTE", fontSize: 7, bold: true, color: GRAY, characterSpacing: 0.5 },
-                { text: clientData.nome || "\u2014\u2014", fontSize: 10, bold: true, color: DARK },
-                ...(clientData.indirizzo ? [{ text: clientData.indirizzo, fontSize: 8.5, color: "#555" }] : []),
-                ...(clientData.citta ? [{ text: [clientData.citta, clientData.cap, clientData.provincia].filter(Boolean).join(" "), fontSize: 8, color: "#666" }] : []),
-                ...((clientData.codiceFiscale || clientData.partitaIva) ? [{ text: [clientData.codiceFiscale ? `C.F.: ${clientData.codiceFiscale}` : "", clientData.partitaIva ? `P.IVA: ${clientData.partitaIva}` : ""].filter(Boolean).join("  \u00b7  "), fontSize: 8, color: "#666" }] : []),
-              ],
-              margin: [10, 8, 10, 8] as [number, number, number, number],
-              fillColor: LIGHT_BG,
-            },
-          ]],
-        },
-        layout: { hLineWidth: () => 0.5, vLineWidth: () => 0.5, hLineColor: () => "#c5cce0", vLineColor: () => "#c5cce0", paddingLeft: () => 0, paddingRight: () => 0, paddingTop: () => 0, paddingBottom: () => 0 },
-        margin: [0, 0, 0, 14] as [number, number, number, number],
-      } as Content,
-
-      ...(capitoli.length > 0 ? [
-        { text: "1. QUADRO SINTETICO", style: "sectionHeading", margin: [0, 0, 0, 6] as [number, number, number, number] },
-        {
-          table: { headerRows: 1, widths: ["*", 120, 120], body: quadroBody },
-          layout: {
-            hLineWidth: () => 0.5,
-            vLineWidth: () => 0,
-            hLineColor: () => "#dddddd",
-            fillColor: (rowIndex: number) => rowIndex === 0 ? DARK : (rowIndex % 2 === 0 ? "#f8f9fb" : null),
-            paddingLeft: () => 8,
-            paddingRight: () => 8,
-            paddingTop: () => 5,
-            paddingBottom: () => 5,
-          },
-          margin: [0, 0, 0, 14] as [number, number, number, number],
-        },
-      ] as Content[] : []),
-
-      ...(capitoli.length > 0 ? [
-        { text: "2. COMPUTO METRICO DETTAGLIATO", style: "sectionHeading", margin: [0, 0, 0, 6] as [number, number, number, number] },
-        ...chaptersContent,
-      ] as Content[] : []),
-
-      {
-        columns: [
-          { width: "*", text: "" },
-          {
-            width: 320,
-            table: { widths: ["*", 120], body: totalsRows },
-            layout: {
-              hLineWidth: () => 0.5,
-              vLineWidth: () => 0,
-              hLineColor: () => "#dde1ec",
-              paddingLeft: () => 10,
-              paddingRight: () => 10,
-              paddingTop: () => 6,
-              paddingBottom: () => 6,
-              fillColor: (rowIndex: number) => rowIndex === totalsRows.length - 1 ? DARK : null,
-            },
-          },
-        ],
-        margin: [0, 0, 0, 14] as [number, number, number, number],
-      } as Content,
-
-      ...condizioniContent,
-
-      ...(quote.note ? [
-        { text: "NOTE", style: "sectionHeading", margin: [0, 14, 0, 4] as [number, number, number, number] },
-        { text: quote.note, fontSize: 8, color: "#333" },
-      ] as Content[] : []),
-
-      ...signatureSection,
-    ],
-    footer: (currentPage: number, _pageCount: number): Content => ({
-      margin: [40, 0, 40, 14] as [number, number, number, number],
-      columns: [
-        {
-          text: `${companyName}${companyAddress ? " \u2013 " + companyAddress : ""}`,
-          fontSize: 7.5,
-          color: "#aaaaaa",
-        },
-        {
-          text: isDraft ? "DOCUMENTO PROVVISORIO \u2013 NON VALIDO AI FINI CONTRATTUALI" : "Documento generato con Prevai",
-          fontSize: 7.5,
-          color: isDraft ? "#cc8800" : "#aaaaaa",
-          alignment: "right",
-          bold: isDraft,
-        },
-      ],
-    }),
-  };
-
-  return getPdfmake().createPdf(docDefinition).getBuffer();
-}
 
 // POST /api/quotes/manual — create a manually-built quote (no AI)
-router.post("/quotes/manual", requireAuth, async (req, res) => {
+router.post("/quotes/manual", requireAuth, requirePermission("quotes", "edit"), async (req, res) => {
   try {
     const userId = getUserId(res);
-
-    // Quota enforcement (same as AI route)
-    const [profile] = await db
-      .select({
-        subscriptionPlan: businessProfilesTable.subscriptionPlan,
-        subscriptionStatus: businessProfilesTable.subscriptionStatus,
-        trialStartedAt: businessProfilesTable.trialStartedAt,
-      })
-      .from(businessProfilesTable)
-      .where(eq(businessProfilesTable.userId, userId));
-
-    if (profile?.subscriptionStatus === "active" && profile.subscriptionPlan) {
-      const plan = PLANS.find(p => p.id === profile.subscriptionPlan);
-      if (plan?.quotaPerMonth != null) {
-        const now = new Date();
-        const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-        const nextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1);
-        const [{ cnt }] = await db
-          .select({ cnt: sql<number>`count(*)::int` })
-          .from(quotesTable)
-          .where(sql`${quotesTable.userId} = ${userId} AND ${quotesTable.createdAt} >= ${monthStart.toISOString()} AND ${quotesTable.createdAt} < ${nextMonth.toISOString()}`);
-        if (cnt >= plan.quotaPerMonth) {
-          res.status(429).json({ error: `Quota mensile raggiunta. Hai usato tutti i ${plan.quotaPerMonth} preventivi del piano ${plan.name} questo mese.`, code: "QUOTA_EXCEEDED" });
-          return;
-        }
-      }
-    }
-
-    const {
-      capitoli: rawCapitoli,
-      clientData: rawClientData,
-      companySnapshot: rawSnapshot,
-      templateId,
-      titoloPreventivoRiga1,
-      titoloPreventivoRiga2,
-      descrizioneGenerale,
-      ivaPercentuale: rawIva,
-      condizioniPagamento,
-      note,
-    } = req.body as {
-      capitoli?: unknown;
-      clientData?: unknown;
-      companySnapshot?: unknown;
-      templateId?: string;
-      titoloPreventivoRiga1?: string;
-      titoloPreventivoRiga2?: string;
-      descrizioneGenerale?: string;
-      ivaPercentuale?: number;
-      condizioniPagamento?: string[];
-      note?: string;
-    };
-
-    // Validate capitoli
-    const capitoliResult = quoteChapterSchema.array().safeParse(rawCapitoli);
-    if (!capitoliResult.success) {
-      res.status(400).json({ error: "Invalid capitoli", details: capitoliResult.error });
+    const result = await createManualQuote(userId, req.body as ManualQuoteInput);
+    if (!result.ok) {
+      res.status(result.status).json({ error: result.error, details: result.details, code: result.status === 429 ? "QUOTA_EXCEEDED" : undefined });
       return;
     }
-    const capitoli = capitoliResult.data as QuoteChapter[];
-
-    // Validate optional clientData
-    let clientDataInput: QuoteClientData | undefined;
-    if (rawClientData) {
-      const r = quoteClientDataSchema.safeParse(rawClientData);
-      if (!r.success) {
-        res.status(400).json({ error: "Invalid clientData", details: r.error });
-        return;
-      }
-      clientDataInput = r.data;
-    }
-
-    // Resolve company snapshot
-    let resolvedSnapshot: QuoteCompanySnapshot | null = null;
-    if (rawSnapshot) {
-      const r = quoteCompanySnapshotSchema.safeParse(rawSnapshot);
-      if (r.success) resolvedSnapshot = r.data;
-    }
-    if (!resolvedSnapshot) {
-      const [bp] = await db.select().from(businessProfilesTable).where(eq(businessProfilesTable.userId, userId));
-      if (bp) {
-        resolvedSnapshot = {
-          companyName: bp.companyName,
-          vatNumber: bp.vatNumber ?? undefined,
-          address: bp.address ?? undefined,
-          phone: bp.phone ?? undefined,
-          email: bp.email ?? undefined,
-          logoUrl: bp.logoUrl ?? undefined,
-        };
-      }
-    }
-
-    // Recalculate totals server-side (never trust client)
-    const recalcCapitoli = capitoli.map(cap => {
-      const voci = cap.voci.map(v => ({
-        ...v,
-        totale: Math.round(v.quantita * v.prezzoUnitario * 100) / 100,
-      }));
-      const subtotale = voci.reduce((s, v) => s + v.totale, 0);
-      return { ...cap, voci, subtotale: Math.round(subtotale * 100) / 100 };
-    });
-
-    const subtotale = recalcCapitoli.reduce((s, c) => s + c.subtotale, 0);
-    const ivaPercentuale = typeof rawIva === "number" && rawIva >= 0 ? rawIva : 22;
-    const ivaValore = Math.round(subtotale * (ivaPercentuale / 100) * 100) / 100;
-    const totale = Math.round((subtotale + ivaValore) * 100) / 100;
-
-    const [quote] = await db.transaction(async (tx) => {
-      // Row lock the user's business profile record to prevent concurrent quote creation
-      await tx.execute(sql`SELECT user_id FROM ${businessProfilesTable} WHERE user_id = ${userId} FOR UPDATE`);
-
-      const numeroPreventivoData = await generateNumeroPreventivo(userId);
-
-      return await tx
-        .insert(quotesTable)
-        .values({
-          userId,
-          rawInput: `[Preventivo manuale] ${titoloPreventivoRiga2 ?? descrizioneGenerale ?? ""}`.trim(),
-          capitoli: recalcCapitoli,
-          clientData: clientDataInput ?? { nome: "", indirizzo: "" },
-          companySnapshot: resolvedSnapshot,
-          templateId: (["standard", "arosio", "mariagrazia"].includes(templateId ?? "") ? templateId : "standard") as "standard" | "arosio" | "mariagrazia",
-          titoloPreventivoRiga1: titoloPreventivoRiga1 ?? "Analisi Economica e Computo Metrico Prezzato",
-          titoloPreventivoRiga2: titoloPreventivoRiga2 ?? "",
-          descrizioneGenerale: descrizioneGenerale ?? "",
-          numeroPreventivoData,
-          subtotale: subtotale.toFixed(2),
-          ivaPercentuale: ivaPercentuale.toFixed(2),
-          ivaValore: ivaValore.toFixed(2),
-          totale: totale.toFixed(2),
-          condizioniPagamento: Array.isArray(condizioniPagamento) ? condizioniPagamento : [
-            "30% acconto alla firma",
-            "30% a SAL intermedio",
-            "30% a SAL finale",
-            "10% saldo fine lavori",
-          ],
-          note: note ?? "Preventivo valido 30 giorni",
-          status: "draft",
-        })
-        .returning();
-    });
-
-    // Start trial on first quote creation
-    if (!profile?.trialStartedAt) {
-      await db
-        .update(businessProfilesTable)
-        .set({ trialStartedAt: new Date() })
-        .where(eq(businessProfilesTable.userId, userId));
-    }
-
-    res.status(201).json(serializeQuote(quote!));
+    res.status(201).json(serializeQuote(result.quote));
   } catch (err) {
     req.log.error({ err }, "Error creating manual quote");
     res.status(500).json({ error: "Internal server error" });
@@ -3632,7 +2158,7 @@ router.post("/quotes/manual", requireAuth, async (req, res) => {
 });
 
 // POST /api/quotes/suggest-item-description — AI helper for manual quote items
-router.post("/quotes/suggest-item-description", requireAuth, aiCallLimiter, async (req, res) => {
+router.post("/quotes/suggest-item-description", requireAuth, requirePermission("quotes", "edit"), aiCallLimiter, async (req, res) => {
   try {
     const { brief, context } = req.body as { brief?: string; context?: string };
     if (!brief || typeof brief !== "string" || !brief.trim()) {
@@ -3687,14 +2213,7 @@ async function enrichVociDescrizioni<T extends {
   }
   if (flat.length === 0) return chapters;
 
-  const ENRICH_PROMPT = `Sei un tecnico edile italiano esperto in capitolati speciali d'appalto.
-Per ogni voce ricevi: indice (i), capitolo (cap), titolo breve (t), unità di misura (um).
-Genera una descrizione professionale in italiano stile CAPITOLATO SPECIALE D'APPALTO:
-- Prima riga: copia esatta del titolo breve (t)
-- Seconda riga: descrizione tecnica concisa (1-2 righe) delle operazioni, materiali, lavorazioni incluse, norme di riferimento
-Usa "\\n" come separatore tra titolo e descrizione.
-OUTPUT: solo JSON array nel formato [{"i":0,"d":"Titolo\\nDescrizione tecnica..."},...]
-IMPORTANTISSIMO: output SOLO JSON puro, nessuna spiegazione, nessun markdown.`;
+  const ENRICH_PROMPT = ENRICH_VOCI_PROMPT;
 
   try {
     const completion = await openai.chat.completions.create({
@@ -3721,8 +2240,8 @@ IMPORTANTISSIMO: output SOLO JSON puro, nessuna spiegazione, nessun markdown.`;
   }
 }
 
-// Returns a professional Italian description for a chapter (capitolo) based on its title.
-// Used in deterministic paths to populate osservazione instead of the generic "Voce ordinaria".
+// Restituisce una descrizione professionale italiana per un capitolo in base al titolo.
+// Usata nei percorsi deterministici per popolare osservazione al posto del generico "Voce ordinaria".
 function getChapterDescription(titolo: string): string {
   const t = titolo.toLowerCase().trim();
   const MAP: Record<string, string> = {
@@ -3765,7 +2284,7 @@ function getChapterDescription(titolo: string): string {
   return `Comprende i lavori di ${cap.toLowerCase()} come da computo metrico allegato`;
 }
 
-// Fallback price estimation for tabular computo metrico voci (Brianza/Milano market rates 2026)
+// Fallback price estimation for tabular computo metrico voci (Brianza/Milano market rates 2026).
 // Uses earliest-match strategy: the keyword appearing FIRST in the description wins,
 // preventing secondary words (e.g. "scalini" in a tiling description) from hijacking the price.
 function estimatePriceForVoce(categoria: string, descrizione: string, um: string): number {
@@ -3961,5 +2480,5 @@ function estimatePriceForVoce(categoria: string, descrizione: string, um: string
   return 80;
 }
 
-export { generateQuoteHtml, generateQuotePdfBuffer, generateCapitolatoPdfBuffer };
+export { generateQuotePdfBuffer, generateCapitolatoPdfBuffer };
 export default router;

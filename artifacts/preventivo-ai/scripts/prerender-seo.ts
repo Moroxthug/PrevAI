@@ -1,12 +1,10 @@
-import { readFileSync, writeFileSync, mkdirSync, existsSync } from "node:fs";
+import { readFileSync, writeFileSync, mkdirSync, existsSync, readdirSync } from "node:fs";
 import { join, dirname } from "node:path";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 
 import {
   SECTORS,
-  CITIES,
   ACTIVE_CITIES,
-  CITIES_BY_SLUG,
   CITY_SECTORS,
   getCityTitle,
   getCityDesc,
@@ -27,6 +25,7 @@ import {
   getNearbyAnchors,
   getSameCityOtherSectors,
   buildCityJsonLd as buildCityJsonLdFromEngine,
+  getOgImagePath,
 } from "../src/data/seo-render-engine.js";
 import {
   BLOG_ARTICLES,
@@ -42,6 +41,19 @@ import {
   TESTIMONIALS,
   AGGREGATE_RATING,
 } from "../src/components/testimonials-section.js";
+import { translations } from "../src/i18n/translations.js";
+import { HELP_ARTICLES } from "../src/data/help-articles.js";
+import {
+  FAQ_LANDING_AMMINISTRAZIONE,
+  LANDING_AMMINISTRAZIONE_PATH,
+  LANDING_AMMINISTRAZIONE_SEO,
+  NOME_OFFERTA,
+  landingAmministrazioneIndicizzabile,
+} from "../src/data/amministrazione-landing.js";
+
+function testimonialText(key: string): string {
+  return translations.it[`testimonials.${key}.text`] ?? "";
+}
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const distDir = join(__dirname, "../dist/public");
@@ -54,24 +66,10 @@ if (!existsSync(templatePath)) {
 
 const BASE_URL = "https://prevai.it";
 
-const SECTOR_OG_IMAGES: Record<string, string> = {
-  edilizia: "/og/edilizia.jpg",
-  ristrutturazione: "/og/ristrutturazione.jpg",
-  elettricista: "/og/elettricista.jpg",
-  idraulico: "/og/idraulico.jpg",
-  imbianchino: "/og/imbianchino.jpg",
-  carpentiere: "/og/carpentiere.jpg",
-  falegname: "/og/falegname.jpg",
-  termoidraulico: "/og/termoidraulico.jpg",
-  freelance: "/og/freelance.jpg",
-  geometra: "/og/geometra.jpg",
-};
 
 // ─── Core utilities ────────────────────────────────────────────────────────
 
-function ogImage(sectorSlug: string): string {
-  return SECTOR_OG_IMAGES[sectorSlug] ?? "/opengraph.jpg";
-}
+const ogImage = getOgImagePath; // one map for the engine, the OG generator and this script
 
 function esc(s: string): string {
   return s
@@ -87,17 +85,23 @@ function buildHeadBlock(opts: {
   canonical: string;
   ogImagePath: string;
   jsonLd: object[];
+  /** V2-2: sito monolingua; conservato per compatibilità dei call site. */
+  lang?: "it";
+  altUrl?: string;
 }): string {
   const { title, description, canonical, ogImagePath, jsonLd } = opts;
   const ogImageUrl = ogImagePath.startsWith("http")
     ? ogImagePath
     : `${BASE_URL}${ogImagePath}`;
+  const hreflangLines = [
+    `  <link rel="alternate" hreflang="it-IT" href="${esc(canonical)}" />`,
+    `  <link rel="alternate" hreflang="x-default" href="${esc(canonical)}" />`,
+  ];
   const lines = [
     `  <title>${esc(title)}</title>`,
     `  <meta name="description" content="${esc(description)}" />`,
     `  <link rel="canonical" href="${esc(canonical)}" />`,
-    `  <link rel="alternate" hreflang="it" href="${esc(canonical)}" />`,
-    `  <link rel="alternate" hreflang="x-default" href="${esc(canonical)}" />`,
+    ...hreflangLines,
     `  <meta property="og:title" content="${esc(title)}" />`,
     `  <meta property="og:description" content="${esc(description)}" />`,
     `  <meta property="og:url" content="${esc(canonical)}" />`,
@@ -106,7 +110,7 @@ function buildHeadBlock(opts: {
     `  <meta property="og:image:height" content="630" />`,
     `  <meta property="og:type" content="website" />`,
     `  <meta property="og:locale" content="it_IT" />`,
-    `  <meta property="og:site_name" content="prevai" />`,
+    `  <meta property="og:site_name" content="PrevAI" />`,
     `  <meta name="twitter:card" content="summary_large_image" />`,
     `  <meta name="twitter:title" content="${esc(title)}" />`,
     `  <meta name="twitter:description" content="${esc(description)}" />`,
@@ -119,6 +123,9 @@ function buildHeadBlock(opts: {
 /**
  * Strip dashboard and charts chunk modulepreloads so SEO pages don't
  * eagerly fetch code that is only needed inside the authenticated dashboard.
+ * Since Phase 61 the Vite config no longer emits a "dashboard" manual chunk
+ * (the entry no longer statically reaches it), so this is a no-op guard kept
+ * in case a manual chunk is reintroduced.
  */
 function pruneModulepreload(html: string): string {
   return html.replace(
@@ -127,8 +134,9 @@ function pruneModulepreload(html: string): string {
   );
 }
 
-function injectHead(template: string, headBlock: string): string {
+function injectHead(template: string, headBlock: string, _lang: string = "it"): string {
   let html = template;
+  html = html.replace(/<html lang="[^"]*"/, `<html lang="${"it-IT"}"`);
   html = html.replace(/<title>[^<]*<\/title>/, "");
   html = html.replace(/<meta\s+name="description"[^>]*\/?>/i, "");
   html = html.replace(/<link\b[^>]*\brel=["']canonical["'][^>]*\/?>/gi, "");
@@ -137,13 +145,42 @@ function injectHead(template: string, headBlock: string): string {
   html = html.replace(/<meta\s+name="twitter:[^"]*"[^>]*\/?>/gi, "");
   html = html.replace(/<meta\s+name="keywords"[^>]*\/?>/gi, "");
   html = html.replace(/<script\s+type="application\/ld\+json">[\s\S]*?<\/script>/gi, "");
-  html = html.replace("<head>", `<head>\n${headBlock}`);
+  // After <meta charset> + viewport: the charset declaration must stay within
+  // the first 1024 bytes of the document, and a <title> with an en dash was
+  // landing in front of it (Phase 68).
+  const viewport = /<meta\s+name="viewport"[^>]*>/i.exec(html);
+  html = viewport
+    ? html.slice(0, viewport.index + viewport[0].length) + `\n${headBlock}` + html.slice(viewport.index + viewport[0].length)
+    : html.replace("<head>", `<head>\n${headBlock}`);
   return html;
 }
 
 function injectBody(html: string, bodyHtml: string): string {
   if (!bodyHtml) return html;
   return html.replace(/<div id="root"><\/div>/, `<div id="root">${bodyHtml}</div>`);
+}
+
+// main.tsx imports the App on demand (static SEO pages never load it). The
+// build-time-rendered pages hydrate with it, so they preload the chunk — and
+// the chunks it statically pulls in — to avoid a second round trip before
+// hydration. The names carry content hashes, so they are read off dist/.
+const APP_PRELOADS: string[] = (() => {
+  const assets = join(distDir, "assets");
+  const app = readdirSync(assets).find((f) => /^App-[\w-]+\.js$/.test(f));
+  if (!app) return [];
+  const seen = new Set<string>();
+  const walk = (file: string) => {
+    if (seen.has(file)) return;
+    seen.add(file);
+    const src = readFileSync(join(assets, file), "utf8");
+    for (const m of src.matchAll(/(?:^|[^.\w])import\s*["']\.\/([\w-]+\.js)["']|from\s*["']\.\/([\w-]+\.js)["']/g)) walk((m[1] ?? m[2])!);
+  };
+  walk(app);
+  return [...seen];
+})();
+function injectAppPreload(html: string): string {
+  const links = APP_PRELOADS.map((f) => `<link rel="modulepreload" crossorigin href="/assets/${f}">`).join("\n    ");
+  return links ? html.replace("</head>", `    ${links}\n  </head>`) : html;
 }
 
 function writeRoute(relPath: string, html: string): void {
@@ -224,7 +261,7 @@ const STATIC_FOOTER = `<footer class="border-t py-12 md:py-16 bg-white">
   </div>
 </footer>`;
 
-const STATIC_WHATSAPP = `<a href="https://wa.me/393791059492" target="_blank" rel="noopener noreferrer nofollow" aria-label="Chatta con noi su WhatsApp" class="fixed bottom-6 right-6 z-50 flex items-center gap-2.5 rounded-full shadow-lg shadow-green-200/60 transition-all duration-200 hover:scale-105 active:scale-95" style="background:rgb(37,211,102)"><span class="flex h-14 w-14 items-center justify-center rounded-full" style="background:rgb(37,211,102)"><img src="/wa-icon.svg" alt="" width="28" height="28" loading="lazy" decoding="async"></span><span class="pr-5 text-white text-sm font-semibold whitespace-nowrap hidden sm:inline-block">Hai bisogno di aiuto?</span></a>`;
+const STATIC_WHATSAPP = `<a href="/whatsapp/" aria-label="Chatta con noi su WhatsApp" class="fixed bottom-6 right-6 z-50 flex items-center gap-2.5 rounded-full shadow-lg shadow-green-200/60 transition-all duration-200 hover:scale-105 active:scale-95" style="background:rgb(37,211,102)"><span class="flex h-14 w-14 items-center justify-center rounded-full" style="background:rgb(37,211,102)"><img src="/wa-icon.svg" alt="" width="28" height="28" loading="lazy" decoding="async"></span><span class="pr-5 text-white text-sm font-semibold whitespace-nowrap hidden sm:inline-block">Hai bisogno di aiuto?</span></a>`;
 
 function wrapInPublicLayout(contentHtml: string): string {
   return `<div class="min-h-[100dvh] flex flex-col bg-background text-foreground">
@@ -925,252 +962,36 @@ function buildQuantoCostaBlock(
 </section>`;
 }
 
-// ─── Phase 1: Homepage prerender ────────────────────────────────────────────
+// The homepage (dist/index.html) gets its SEO <head> only.
+// It used to also get a hand-written static copy of the hero (buildHomepageBodyHtml),
+// which drifted from the real React homepage after the pixel redesign and was served
+// as a stale flash on every cold load of "/" AND of every /dashboard/* route (index.html
+// is the SPA fallback) until the bundle replaced it. The real page is client-rendered;
+// crawlers execute JS. Do not reintroduce a static body here unless it is generated
+// from the React tree (renderToString + hydrateRoot), never hand-copied.
 
-function buildHomepageBodyHtml(): string {
-  const sectorLinks = Object.values(SECTORS)
-    .map(
-      (s) =>
-        `<a href="/preventivi/${esc(s.slug)}/" class="group flex flex-col items-center gap-3 rounded-2xl border border-gray-100 bg-white p-5 text-center hover:border-violet-200 hover:shadow-sm transition-all">
-          <div class="h-10 w-10 rounded-xl flex items-center justify-center font-bold text-sm text-violet-600 bg-violet-50" aria-hidden="true">${esc(s.label.charAt(0))}</div>
-          <span class="text-sm font-medium text-gray-700 group-hover:text-violet-700 transition-colors">${esc(s.label)}</span>
-        </a>`
-    )
-    .join("\n      ");
-
-  // Link the homepage's precious crawl authority only at cities we actually
-  // prerender (see ACTIVE_CITIES) — was TOP20_CITY_SLUGS, most of which
-  // aren't generated right now, so those links pointed at un-prerendered pages.
-  const cityLinks = ACTIVE_CITIES
-    .map(
-      (city) =>
-        `<a href="/preventivi/ristrutturazione/${esc(city.slug)}/" class="inline-flex items-center rounded-full border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-600 hover:border-violet-300 hover:text-violet-600 transition-colors">${esc(city.name)}</a>`
-    )
-    .join("\n      ");
-
-  return `<div class="flex flex-col min-h-screen bg-white">
-  <section class="relative overflow-hidden bg-white pt-28 pb-36">
-    <div class="mesh-blob mesh-blob-1" aria-hidden="true"></div>
-    <div class="mesh-blob mesh-blob-2" aria-hidden="true"></div>
-    <div class="mesh-blob mesh-blob-3" aria-hidden="true"></div>
-    <div class="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10 text-center">
-      <h1 class="mx-auto max-w-4xl text-5xl font-extrabold tracking-tight text-gray-900 sm:text-6xl lg:text-7xl leading-[1.1]">
-        Crea preventivi professionali in <span class="gradient-text">30 secondi</span> con l&apos;AI
-      </h1>
-      <p class="mx-auto mt-8 max-w-2xl text-xl text-gray-500 leading-relaxed">
-        Dimentica Excel e i documenti scritti a mano. Descrivi il lavoro a parole tue e prevai genera un documento impeccabile, pronto da inviare al cliente.
-      </p>
-      <div class="mt-12 flex flex-col sm:flex-row justify-center gap-4">
-        <a href="/sign-up/" class="btn-gradient inline-flex h-14 items-center justify-center px-8 text-lg font-semibold">
-          Inizia Gratuitamente
-          <svg xmlns="http://www.w3.org/2000/svg" class="ml-2 h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
-        </a>
-        <a href="#come-funziona" class="btn-gradient-outline inline-flex h-14 items-center justify-center px-8 text-lg font-semibold">
-          Vedi come funziona
-        </a>
-      </div>
-      <p class="mt-6 text-sm text-gray-400">
-        ✓ Gratis per iniziare &nbsp;&middot;&nbsp; ✓ Nessuna carta richiesta &nbsp;&middot;&nbsp; ✓ Preventivo in 30 secondi
-      </p>
-    </div>
-  </section>
-
-  <section id="come-funziona" class="fade-in-section py-28 bg-gray-50/60">
-    <div class="container mx-auto px-4 sm:px-6 lg:px-8">
-      <div class="text-center mb-14">
-        <h2 class="text-3xl font-bold text-gray-900 sm:text-4xl">Basta Excel. Basta fogli scritti a mano.</h2>
-        <p class="mt-4 text-lg text-gray-500 max-w-2xl mx-auto">prevai trasforma una descrizione in linguaggio naturale in un preventivo professionale con tutti i calcoli già fatti.</p>
-      </div>
-      <div class="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
-        <div class="card-soft bg-white rounded-2xl p-8">
-          <div class="h-12 w-12 rounded-2xl flex items-center justify-center text-white mb-6" style="background:linear-gradient(135deg,#7C3AED,#06B6D4)" aria-hidden="true">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z"/></svg>
-          </div>
-          <h3 class="text-lg font-bold text-gray-900 mb-3">Scrivi in italiano</h3>
-          <p class="text-sm text-gray-500 leading-relaxed">Nessun campo da compilare. Descrivi il lavoro come lo descriveresti a voce — l&apos;AI capisce e struttura tutto automaticamente.</p>
-        </div>
-        <div class="card-soft bg-white rounded-2xl p-8">
-          <div class="h-12 w-12 rounded-2xl flex items-center justify-center text-white mb-6" style="background:linear-gradient(135deg,#7C3AED,#06B6D4)" aria-hidden="true">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/></svg>
-          </div>
-          <h3 class="text-lg font-bold text-gray-900 mb-3">PDF professionale immediato</h3>
-          <p class="text-sm text-gray-500 leading-relaxed">Voci di costo, quantità, prezzi unitari, IVA e totale — tutto calcolato e formattato. Pronto da inviare via WhatsApp o email.</p>
-        </div>
-        <div class="card-soft bg-white rounded-2xl p-8">
-          <div class="h-12 w-12 rounded-2xl flex items-center justify-center text-white mb-6" style="background:linear-gradient(135deg,#7C3AED,#06B6D4)" aria-hidden="true">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-          </div>
-          <h3 class="text-lg font-bold text-gray-900 mb-3">Correggi quello che vuoi</h3>
-          <p class="text-sm text-gray-500 leading-relaxed">Ogni voce è modificabile direttamente nell&apos;anteprima. Cambia prezzi, aggiungi lavorazioni, personalizza le condizioni di pagamento.</p>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <section class="fade-in-section py-20 bg-white">
-    <div class="container mx-auto px-4 sm:px-6 lg:px-8">
-      <div class="text-center mb-12">
-        <h2 class="text-2xl font-bold text-gray-900 sm:text-3xl">Preventivi per ogni professione</h2>
-        <p class="mt-3 text-base text-gray-500">Imbianchini, elettricisti, idraulici, falegnami, muratori e molti altri — prevai funziona per tutti.</p>
-      </div>
-      <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 max-w-5xl mx-auto">
-        ${sectorLinks}
-      </div>
-    </div>
-  </section>
-
-  <section class="fade-in-section py-20 bg-gray-50/60">
-    <div class="container mx-auto px-4 sm:px-6 lg:px-8 text-center">
-      <div class="mb-10">
-        <h2 class="text-2xl font-bold text-gray-900 sm:text-3xl">Preventivi nelle principali città italiane</h2>
-        <p class="mt-3 text-base text-gray-500">Usato da artigiani e professionisti da Nord a Sud Italia.</p>
-      </div>
-      <div class="flex flex-wrap gap-3 justify-center max-w-3xl mx-auto">
-        ${cityLinks}
-      </div>
-    </div>
-  </section>
-
-  <section class="fade-in-section py-14 bg-white">
-    <div class="container mx-auto px-4 sm:px-6 lg:px-8">
-      <div class="text-center mb-8">
-        <span class="inline-block bg-amber-50 text-amber-600 text-xs font-bold px-3 py-0.5 rounded-full uppercase tracking-wider mb-3">Recensioni verificate</span>
-        <h2 class="text-2xl font-bold tracking-tight text-gray-900 sm:text-3xl">Cosa dicono <span class="gradient-text">di noi</span></h2>
-        <div class="flex items-center justify-center gap-2 mt-3" aria-label="Valutazione media ${AGGREGATE_RATING.ratingValue} su 5">
-          <div class="flex gap-0.5" aria-hidden="true">
-            ${Array.from({ length: 5 }).map(() => `<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-amber-400 fill-amber-400" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>`).join("")}
-          </div>
-          <span class="text-sm font-bold text-gray-800">${AGGREGATE_RATING.ratingValue}</span>
-          <span class="text-sm text-gray-400">/5 &middot; ${AGGREGATE_RATING.reviewCount} recensioni</span>
-        </div>
-      </div>
-      <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 max-w-5xl mx-auto">
-        ${TESTIMONIALS.map((t) => {
-          const initials = t.name.split(" ").map((n: string) => n[0]).join("").slice(0, 2).toUpperCase();
-          const stars = Array.from({ length: 5 }).map((_, i) =>
-            `<svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 ${i < t.rating ? "text-amber-400 fill-amber-400" : "text-gray-100 fill-gray-100"}" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>`
-          ).join("");
-          return `<div class="bg-white rounded-xl border border-gray-100 p-5 card-soft flex flex-col gap-3">
-            <div class="flex gap-0.5" aria-label="${t.rating} stelle su 5">${stars}</div>
-            <p class="text-sm text-gray-700 leading-relaxed flex-1">&ldquo;${esc(t.text)}&rdquo;</p>
-            <div class="flex items-center gap-3 pt-2 border-t border-gray-50">
-              <div class="h-9 w-9 rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0" style="background:linear-gradient(135deg,#7C3AED,#06B6D4)" aria-hidden="true">${initials}</div>
-              <div>
-                <div class="text-sm font-semibold text-gray-900">${esc(t.name)}</div>
-                <div class="text-xs text-gray-400">${esc(t.website)}</div>
-              </div>
-            </div>
-          </div>`;
-        }).join("\n        ")}
-      </div>
-    </div>
-  </section>
-
-  <section class="fade-in-section py-16 bg-white border-t border-gray-100">
-    <div class="container mx-auto px-4 sm:px-6 lg:px-8">
-      <div class="max-w-3xl mx-auto">
-        <div class="text-center mb-10">
-          <span class="inline-flex items-center gap-1.5 bg-violet-50 border border-violet-100 text-violet-700 text-xs font-semibold px-3 py-1 rounded-full mb-4">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.582a.5.5 0 0 1 0 .962L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z"/></svg>
-            Approfondimento
-          </span>
-          <h2 class="text-2xl font-bold tracking-tight text-gray-900 sm:text-3xl">
-            Cos&#39;è <span class="gradient-text">prevai</span> e a chi serve
-          </h2>
-        </div>
-
-        <div class="space-y-5 text-sm sm:text-[15px] text-gray-600 leading-relaxed">
-          <p>
-            <strong class="text-gray-900">prevai</strong> è il primo software italiano che usa l&#39;intelligenza
-            artificiale per trasformare una descrizione in linguaggio naturale in un preventivo professionale
-            completo. È pensato per artigiani, professionisti tecnici e piccole imprese che ogni settimana devono
-            inviare offerte ai clienti — imbianchini, elettricisti, idraulici, muratori, fabbri, falegnami, imprese
-            di ristrutturazione e tutti i mestieri del settore edile e impiantistico. L&#39;obiettivo è semplice:
-            ridurre il tempo per fare un preventivo da 30-60 minuti a 30 secondi, senza rinunciare alla qualità del
-            documento finale.
-          </p>
-
-          <div class="grid sm:grid-cols-3 gap-3 my-8">
-            <div class="rounded-xl bg-gray-50 border border-gray-100 p-4">
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-violet-600 mb-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 10h12"/><path d="M4 14h9"/><path d="M19 6a7.7 7.7 0 0 0-5.2-2A7.9 7.9 0 0 0 6 12c0 4.4 3.5 8 7.8 8 2 0 3.8-.8 5.2-2"/></svg>
-              <div class="font-semibold text-gray-900 text-sm mb-1">IVA italiana integrata</div>
-              <p class="text-xs text-gray-500 leading-relaxed">Calcolo automatico IVA 10%, 22% e regime forfettario.</p>
-            </div>
-            <div class="rounded-xl bg-gray-50 border border-gray-100 p-4">
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-violet-600 mb-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/></svg>
-              <div class="font-semibold text-gray-900 text-sm mb-1">Dati su server europei</div>
-              <p class="text-xs text-gray-500 leading-relaxed">Stripe per i pagamenti, cookie crittografati.</p>
-            </div>
-            <div class="rounded-xl bg-gray-50 border border-gray-100 p-4">
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-violet-600 mb-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/><path d="M15 2v2"/><path d="M15 20v2"/><path d="M2 15h2"/><path d="M2 9h2"/><path d="M20 15h2"/><path d="M20 9h2"/><path d="M9 2v2"/><path d="M9 20v2"/></svg>
-              <div class="font-semibold text-gray-900 text-sm mb-1">AI addestrata in italiano</div>
-              <p class="text-xs text-gray-500 leading-relaxed">Lessico tecnico edile e impiantistico italiano.</p>
-            </div>
-          </div>
-
-          <h3 class="text-lg font-semibold text-gray-900 pt-3">Come funziona davvero</h3>
-          <p>
-            Apri prevai dal tuo smartphone direttamente in cantiere o da casa la sera. Descrivi il lavoro come lo
-            racconteresti a un collega: <em>«Tinteggiatura appartamento 80mq, due mani di lavabile bianca, rasatura
-            parete bagno»</em>. In trenta secondi il motore AI costruisce un preventivo strutturato in capitoli, con
-            voci di costo, unità di misura (metri quadri, ore, corpo), prezzi unitari di mercato italiano e calcolo
-            IVA automatico. Puoi modificare ogni voce, sostituire i prezzi con il tuo listino personale, aggiungere
-            o togliere capitoli. Quando sei pronto scarichi il PDF, lo invii via WhatsApp o email, e il documento
-            viene archiviato nella tua area personale per future modifiche.
-          </p>
-
-          <h3 class="text-lg font-semibold text-gray-900 pt-3">Perché funziona meglio di Excel o dei software tradizionali</h3>
-          <p>
-            I software di preventivazione tradizionali sono pensati per l&#39;ufficio: richiedono installazione,
-            configurazione iniziale di listini e codici, una formazione di ore. Excel è gratuito ma costringe a
-            partire ogni volta da un foglio bianco o da un template costruito anni fa. prevai elimina entrambi i
-            problemi: non c&#39;è nulla da installare (basta un browser), non serve configurare nulla all&#39;inizio
-            (l&#39;AI conosce già i prezzi medi) e ogni preventivo nasce già strutturato. In media i nostri utenti
-            dichiarano un risparmio di 4-6 ore a settimana, tempo che torna in cantiere o in famiglia.
-          </p>
-
-          <h3 class="text-lg font-semibold text-gray-900 pt-3">Sicurezza e fiscalità italiana</h3>
-          <p>
-            Tutti i dati sono ospitati su server europei, le sessioni sono protette da cookie crittografati e i
-            pagamenti passano da Stripe. La gestione fiscale segue le regole italiane: IVA al 10% per
-            ristrutturazioni residenziali, 22% per nuovi impianti, esenzione automatica per il regime forfettario.
-            I dati aziendali (P.IVA, codice fiscale, codice SDI per fatturazione elettronica) vengono memorizzati
-            una volta e applicati ad ogni preventivo.
-          </p>
-
-          <h3 class="text-lg font-semibold text-gray-900 pt-3">Quanto costa iniziare</h3>
-          <p>
-            La registrazione è gratuita e il primo preventivo si genera senza inserire la carta di credito. Da lì
-            puoi scegliere: pago un preventivo singolo (29€) quando serve, oppure attivo un abbonamento mensile
-            (Starter 19€ con 10 preventivi, Pro 49€ con 60 preventivi, Elite 59€ illimitati). Il piano si cambia
-            o si disdice in qualsiasi momento dall&#39;area cliente. Migliaia di professionisti italiani usano già
-            prevai ogni settimana.
-          </p>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <section class="fade-in-section py-28 bg-white">
-    <div class="container mx-auto px-4 sm:px-6 lg:px-8 text-center max-w-2xl">
-      <h2 class="text-3xl font-bold text-gray-900 sm:text-4xl mb-4">
-        Pronto a creare il tuo primo preventivo <span class="gradient-text">in 30 secondi</span>?
-      </h2>
-      <p class="text-lg text-gray-500 mb-10">
-        Unisciti a centinaia di professionisti italiani che usano prevai ogni giorno. Nessuna carta di credito. Nessun impegno.
-      </p>
-      <a href="/sign-up/" class="btn-gradient inline-flex h-14 items-center justify-center px-10 text-lg font-semibold">
-        Inizia Gratuitamente
-        <svg xmlns="http://www.w3.org/2000/svg" class="ml-2 h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
-      </a>
-    </div>
-  </section>
-</div>`;
-}
 
 // ─── Main execution ─────────────────────────────────────────────────────────
 
 const template = pruneModulepreload(readFileSync(templatePath, "utf-8"));
+
+// Phase 68: "/" and the six static pages (about, contact, privacy,
+// terms, WhatsApp, sitemap) are rendered by the real React tree — built with
+// `vite build --ssr src/entry-server.tsx --outDir dist/server`, see the
+// `build` script — and hydrated by main.tsx, so the hero paints from HTML and
+// crawlers see the same DOM users get (the hand-written bodies this replaced
+// had drifted to the pre-redesign layout). React 19 hoists <title>/<meta>/
+// <link> to the front of the string; the head is authored by buildHeadBlock()
+// here, so those are stripped.
+const ssrEntry = join(__dirname, "../dist/server/entry-server.js");
+if (!existsSync(ssrEntry)) {
+  console.error("dist/server/entry-server.js not found — run `vite build --ssr src/entry-server.tsx --outDir dist/server` first");
+  process.exit(1);
+}
+const { renderPage } = (await import(pathToFileURL(ssrEntry).href)) as { renderPage: (path: string, lang: "it") => Promise<string> };
+function stripHoistedHead(html: string): string {
+  return html.replace(/^(?:\s*(?:<(?:link|meta)\b[^>]*\/?>|<title>[^<]*<\/title>))+/, "");
+}
 let count = 0;
 
 console.log("Prerendering SEO pages...");
@@ -1179,9 +1000,9 @@ console.log("Prerendering SEO pages...");
 const homepageWebSiteSchema = {
   "@context": "https://schema.org",
   "@type": "WebSite",
-  name: "prevai",
+  name: "PrevAI",
   url: BASE_URL,
-  description: "Software AI per preventivi professionali in 30 secondi. Per artigiani, PMI e freelance italiani.",
+  description: "Software AI per preventivi professionali in 30 secondi. Pensato per artigiani, imprese e liberi professionisti italiani.",
   inLanguage: "it",
   potentialAction: {
     "@type": "SearchAction",
@@ -1195,15 +1016,15 @@ const homepageWebSiteSchema = {
 const homepageSoftwareSchema = {
   "@context": "https://schema.org",
   "@type": "SoftwareApplication",
-  name: "prevai",
-  description: "Software di preventivazione con intelligenza artificiale per artigiani, PMI e professionisti italiani.",
+  name: "PrevAI",
+  description: "Software di preventivazione con AI per artigiani, piccole imprese e liberi professionisti italiani.",
   url: `${BASE_URL}/`,
   applicationCategory: "BusinessApplication",
   operatingSystem: "Web",
   offers: { "@type": "Offer", price: "0", priceCurrency: "EUR", description: "Prova gratuita disponibile" },
-  audience: { "@type": "BusinessAudience", audienceType: "Artigiani, PMI, Professionisti, Freelance" },
+  audience: { "@type": "BusinessAudience", audienceType: "Artigiani, piccole imprese, imprese edili, liberi professionisti" },
   inLanguage: "it",
-  provider: { "@type": "Organization", name: "prevai", url: BASE_URL },
+  provider: { "@type": "Organization", name: "PrevAI", url: BASE_URL },
   aggregateRating: {
     "@type": "AggregateRating",
     ratingValue: AGGREGATE_RATING.ratingValue,
@@ -1215,20 +1036,23 @@ const homepageSoftwareSchema = {
     "@type": "Review",
     author: { "@type": "Person", name: t.name },
     reviewRating: { "@type": "Rating", ratingValue: String(t.rating), bestRating: "5", worstRating: "1" },
-    reviewBody: t.text,
+    reviewBody: testimonialText(t.key),
   })),
 };
 const homepageHeadBlock = buildHeadBlock({
   title: "prevai – Preventivi Online per Artigiani e Aziende | AI in 30s",
-  description: "Crea preventivi professionali in 30 secondi con l'AI. Software di preventivazione per artigiani, PMI e professionisti italiani. Niente Excel, niente errori. Provalo gratis.",
+  description: "Dimentica Excel e i documenti scritti a mano. Descrivi il lavoro a parole tue e prevai genera un preventivo professionale con IVA, voci di costo e totali in 30 secondi. Prova gratis.",
   canonical: `${BASE_URL}/`,
   ogImagePath: "/opengraph.jpg",
   jsonLd: [homepageWebSiteSchema, homepageSoftwareSchema],
 });
-const homepageHtml = injectBody(injectHead(template, homepageHeadBlock), buildHomepageBodyHtml());
+const homepageHtml = injectAppPreload(injectBody(injectHead(template, homepageHeadBlock), stripHoistedHead(await renderPage("/", "it"))));
 writeFileSync(templatePath, homepageHtml, "utf-8");
 count++;
 console.log("  ✓ Homepage prerendered");
+
+// French homepage
+// V2-2: nessuna homepage /fr (sito monolingua).
 
 // Phase 2–8: Sector + city pages
 for (const [sectorSlug, sector] of Object.entries(SECTORS)) {
@@ -1254,6 +1078,7 @@ for (const [sectorSlug, sector] of Object.entries(SECTORS)) {
   writeRoute(`preventivi/${sectorSlug}`, html);
   count++;
 
+
   if (!CITY_SECTORS.includes(sectorSlug)) continue;
 
   for (const city of ACTIVE_CITIES) {
@@ -1268,13 +1093,17 @@ for (const [sectorSlug, sector] of Object.entries(SECTORS)) {
       canonical: cityCanonical,
       ogImagePath: ogImage(sectorSlug),
       jsonLd: cityJsonLd,
+
     });
-    const cityBodyHtml = buildCityBodyHtml(sector, city);
+    // Phase 68: the 210 city pages and the 23 blog pages were written without the site header/footer — in production they showed only the (Italian) nav shell and no footer.
+    const cityBodyHtml = wrapInPublicLayout(buildCityBodyHtml(sector, city));
     const cityHtml = injectBody(injectHead(template, cityHeadBlock), cityBodyHtml);
     writeRoute(`preventivi/${sectorSlug}/${city.slug}`, cityHtml);
     count++;
+
   }
 }
+console.log("  ✓ Sector + city pages prerendered");
 
 // ─── Blog JSON-LD builders ───────────────────────────────────────────────────
 
@@ -1716,7 +1545,7 @@ const blogListHeadBlock = buildHeadBlock({
   ogImagePath: "/opengraph.jpg",
   jsonLd: buildBlogListJsonLd(),
 });
-const blogListHtml = injectBody(injectHead(template, blogListHeadBlock), buildBlogListBodyHtml());
+const blogListHtml = injectBody(injectHead(template, blogListHeadBlock), wrapInPublicLayout(buildBlogListBodyHtml()));
 writeRoute("blog", blogListHtml);
 count++;
 console.log("  ✓ Blog list page prerendered");
@@ -1731,7 +1560,7 @@ for (const category of BLOG_CATEGORIES) {
     ogImagePath: "/opengraph.jpg",
     jsonLd: buildBlogCategoryJsonLd(category),
   });
-  const categoryHtml = injectBody(injectHead(template, categoryHeadBlock), buildBlogCategoryBodyHtml(category));
+  const categoryHtml = injectBody(injectHead(template, categoryHeadBlock), wrapInPublicLayout(buildBlogCategoryBodyHtml(category)));
   writeRoute(`blog/categoria/${category.slug}`, categoryHtml);
   count++;
 }
@@ -1748,13 +1577,13 @@ for (const article of BLOG_ARTICLES) {
     ogImagePath: articleOgImage,
     jsonLd: buildArticleJsonLd(article, articleOgImage),
   });
-  const articleHtml = injectBody(injectHead(template, articleHeadBlock), buildBlogArticleBodyHtml(article));
+  const articleHtml = injectBody(injectHead(template, articleHeadBlock), wrapInPublicLayout(buildBlogArticleBodyHtml(article)));
   writeRoute(`blog/${article.slug}`, articleHtml);
   count++;
 }
 console.log(`  ✓ ${BLOG_ARTICLES.length} blog articles prerendered`);
 
-// ─── Static SPA pages prerender ─────────────────────────────────────────────
+// ─── Static SPA pages prerender (bodies from entry-server.tsx, see above) ───
 
 function buildBreadcrumbJsonLd(name: string, path: string): object {
   return {
@@ -1775,145 +1604,11 @@ function buildWebPageJsonLd(name: string, description: string, path: string, typ
     description,
     url: `${BASE_URL}${path}`,
     inLanguage: "it",
-    isPartOf: { "@type": "WebSite", name: "prevai", url: BASE_URL },
+    isPartOf: { "@type": "WebSite", name: "PrevAI", url: BASE_URL },
   };
 }
 
-function buildMappaSitoBodyHtml(): string {
-  const breadcrumb = buildBreadcrumb([
-    { name: "Home", href: "/" },
-    { name: "Mappa del Sito", href: null },
-  ]);
-
-  const mainPages = `
-    <div class="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
-      <div class="flex items-center gap-3 mb-5 pb-3 border-b border-gray-50">
-        <h2 class="text-lg font-bold text-gray-900">Pagine Principali</h2>
-      </div>
-      <ul class="space-y-2.5 text-sm">
-        <li><a href="/" class="text-gray-600 hover:text-violet-600 transition-colors">Home Page</a></li>
-        <li><a href="/whatsapp/" class="text-gray-600 hover:text-violet-600 transition-colors">Preventivi su WhatsApp</a></li>
-        <li><a href="/chi-siamo/" class="text-gray-600 hover:text-violet-600 transition-colors">Chi Siamo</a></li>
-        <li><a href="/contatti/" class="text-gray-600 hover:text-violet-600 transition-colors">Contatti e Assistenza</a></li>
-        <li><a href="/privacy/" class="text-gray-600 hover:text-violet-600 transition-colors">Privacy Policy</a></li>
-        <li><a href="/termini/" class="text-gray-600 hover:text-violet-600 transition-colors">Termini di Servizio</a></li>
-      </ul>
-    </div>
-  `;
-
-  const blogCats = BLOG_CATEGORIES.map((cat) => `
-    <li><a href="/blog/categoria/${cat.slug}/" class="text-gray-600 hover:text-violet-600 transition-colors pl-2">Categoria: ${cat.name}</a></li>
-  `).join("");
-
-  const blogArts = BLOG_ARTICLES.slice(0, 5).map((art) => `
-    <li class="truncate max-w-full"><a href="/blog/${art.slug}/" class="text-gray-500 hover:text-violet-600 text-xs transition-colors pl-2">${esc(art.title)}</a></li>
-  `).join("");
-
-  const blogPages = `
-    <div class="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
-      <div class="flex items-center gap-3 mb-5 pb-3 border-b border-gray-50">
-        <h2 class="text-lg font-bold text-gray-900">Blog e Guide</h2>
-      </div>
-      <ul class="space-y-2.5 text-sm">
-        <li><a href="/blog/" class="font-semibold text-gray-800 hover:text-violet-600 transition-colors">Indice Blog</a></li>
-        ${blogCats}
-        <li class="pt-2 font-semibold text-gray-800 border-t border-gray-50 mt-2">Ultimi Articoli:</li>
-        ${blogArts}
-      </ul>
-    </div>
-  `;
-
-  const sectorLinks = Object.entries(SECTORS).map(([slug, sector]) => `
-    <li><a href="/preventivi/${slug}/" class="text-gray-600 hover:text-violet-600 transition-colors">${esc(sector.label)}</a></li>
-  `).join("");
-
-  const professionsIndex = `
-    <div class="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
-      <div class="flex items-center gap-3 mb-5 pb-3 border-b border-gray-50">
-        <h2 class="text-lg font-bold text-gray-900">Professioni e Servizi</h2>
-      </div>
-      <ul class="space-y-2.5 text-sm">
-        ${sectorLinks}
-      </ul>
-    </div>
-  `;
-
-  const citiesByRegion = new Map<string, typeof CITIES>();
-  for (const city of ACTIVE_CITIES) {
-    const list = citiesByRegion.get(city.region) || [];
-    list.push(city);
-    citiesByRegion.set(city.region, list);
-  }
-
-  const sortedRegions = Array.from(citiesByRegion.keys()).sort();
-
-  const regionBlocks = sortedRegions.map((region) => {
-    const regionCities = citiesByRegion.get(region) || [];
-    const cityItems = regionCities.map((city) => {
-      const sectorLinksForCity = CITY_SECTORS.map((sectorSlug) => {
-        const s = SECTORS[sectorSlug];
-        if (!s) return "";
-        return `<a href="/preventivi/${sectorSlug}/${city.slug}/" class="text-gray-500 hover:text-violet-600 transition-colors truncate" title="Preventivo ${esc(s.label)} a ${esc(city.name)}">${esc(s.label)}</a>`;
-      }).join("\n");
-
-      return `
-        <div class="flex flex-col gap-1">
-          <span class="font-bold text-gray-900 border-b border-gray-50 pb-0.5 mb-1">${esc(city.name)}</span>
-          <div class="flex flex-col gap-1.5 pl-1">
-            ${sectorLinksForCity}
-          </div>
-        </div>
-      `;
-    }).join("");
-
-    return `
-      <div class="border-b border-gray-50 pb-8 last:border-0 last:pb-0">
-        <h3 class="text-sm font-semibold uppercase tracking-wider text-violet-700 mb-4">${esc(region)}</h3>
-        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-y-4 gap-x-2 text-xs">
-          ${cityItems}
-        </div>
-      </div>
-    `;
-  }).join("\n");
-
-  const citiesDirectory = `
-    <div class="mt-12 bg-white rounded-3xl p-8 border border-gray-100 shadow-sm">
-      <div class="flex items-center gap-3 mb-8 pb-4 border-b border-gray-100">
-        <div>
-          <h2 class="text-2xl font-bold text-gray-900">Preventivi Locali per Città</h2>
-          <p class="text-sm text-gray-500 mt-1">Seleziona un settore e la tua città per accedere ai prezzi e alle informazioni territoriali.</p>
-        </div>
-      </div>
-      <div class="space-y-10">
-        ${regionBlocks}
-      </div>
-    </div>
-  `;
-
-  return wrapInPublicLayout(`
-    <div class="flex flex-col min-h-screen bg-white">
-      ${breadcrumb}
-      <section class="relative overflow-hidden bg-white pt-20 pb-12 border-b border-gray-100">
-        <div class="container mx-auto px-4 sm:px-6 lg:px-8 text-center max-w-3xl">
-          <h1 class="text-4xl font-bold tracking-tight text-gray-900 mb-4">Mappa del Sito</h1>
-          <p class="text-lg text-gray-600">Esplora l'indice completo di prevai.it. Trova strumenti di preventivazione specifici, guide fiscali e tutte le pagine locali per regione.</p>
-        </div>
-      </section>
-      <section class="py-16 bg-gray-50/50">
-        <div class="container mx-auto px-4 sm:px-6 lg:px-8 max-w-6xl">
-          <div class="grid md:grid-cols-3 gap-8">
-            ${mainPages}
-            ${blogPages}
-            ${professionsIndex}
-          </div>
-          ${citiesDirectory}
-        </div>
-      </section>
-    </div>
-  `);
-}
-
-function buildStaticPageHtml(opts: {
+async function buildStaticPageHtml(opts: {
   slug: string;
   title: string;
   description: string;
@@ -1921,7 +1616,9 @@ function buildStaticPageHtml(opts: {
   jsonLd: object[];
   bodyHtml: string;
   ogImagePath?: string;
-}): void {
+  /** A-5: pagine che esistono ma non vanno indicizzate (la landing dell'add-on in bozza). */
+  noIndex?: boolean;
+}): Promise<void> {
   const headBlock = buildHeadBlock({
     title: opts.title,
     description: opts.description,
@@ -1929,7 +1626,14 @@ function buildStaticPageHtml(opts: {
     ogImagePath: opts.ogImagePath ?? "/opengraph.jpg",
     jsonLd: opts.jsonLd,
   });
-  const html = injectBody(injectHead(template, headBlock), opts.bodyHtml);
+  let html = injectAppPreload(injectBody(injectHead(template, headBlock), opts.bodyHtml));
+  if (opts.noIndex) {
+    // Si sostituisce il meta della shell invece di aggiungerne un secondo:
+    // con due meta robots in conflitto non si sa quale legga il crawler (A-4).
+    const prima = html;
+    html = html.replace('<meta name="robots" content="index, follow" />', '<meta name="robots" content="noindex, nofollow" />');
+    if (html === prima) throw new Error(`prerender: meta robots della shell non trovato per ${opts.path}`);
+  }
   writeRoute(opts.slug, html);
   count++;
 }
@@ -1938,11 +1642,11 @@ function buildStaticPageHtml(opts: {
 const chiSiamoOrgJsonLd = {
   "@context": "https://schema.org",
   "@type": "Organization",
-  name: "prevai",
+  name: "PrevAI",
   url: `${BASE_URL}/`,
   logo: `${BASE_URL}/icon-192.png`,
   description: "prevai è il software di preventivazione AI per artigiani e liberi professionisti italiani. Genera preventivi professionali in 30 secondi descrivendo il lavoro in italiano.",
-  foundingDate: "2026",
+  foundingDate: "2025",
   foundingLocation: { "@type": "Place", name: "Italia" },
   contactPoint: {
     "@type": "ContactPoint",
@@ -1951,71 +1655,25 @@ const chiSiamoOrgJsonLd = {
     availableLanguage: "it",
   },
 };
-buildStaticPageHtml({
+await buildStaticPageHtml({
   slug: "chi-siamo",
-  title: "Chi Siamo | prevai — Software Preventivi AI per Artigiani",
-  description: "prevai nasce per liberare gli artigiani italiani dalla burocrazia. Scopri la nostra missione: preventivi professionali in 30 secondi grazie all'intelligenza artificiale.",
+  title: translations.it["about.seoTitle"],
+  description: translations.it["about.seoDescription"],
   path: "/chi-siamo/",
-  jsonLd: [chiSiamoOrgJsonLd, buildBreadcrumbJsonLd("Chi Siamo", "/chi-siamo/")],
-  bodyHtml: wrapInPublicLayout(`<section class="relative overflow-hidden bg-white pt-24 pb-20">
-  <div class="container mx-auto px-4 sm:px-6 lg:px-8 max-w-4xl text-center">
-    <div class="inline-flex items-center gap-2 rounded-full bg-violet-50 border border-violet-100 px-4 py-1.5 text-sm font-medium text-violet-700 mb-8">Fatto in Italia</div>
-    <h1 class="text-4xl sm:text-5xl font-bold tracking-tight text-gray-900 mb-6">Siamo prevai. <span style="background:linear-gradient(135deg,#7C3AED 0%,#A855F7 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent">Liberiamo gli artigiani dalla burocrazia.</span></h1>
-    <p class="text-xl text-gray-600 leading-relaxed max-w-2xl mx-auto">In Italia ci sono oltre 1,2 milioni di artigiani e liberi professionisti. Ognuno di loro perde in media 3-4 ore alla settimana a fare preventivi a mano. Noi l'abbiamo costruito per restituire quel tempo.</p>
-  </div>
-</section>
-<section class="py-20 bg-gray-50">
-  <div class="container mx-auto px-4 sm:px-6 lg:px-8 max-w-3xl">
-    <h2 class="text-3xl font-bold text-gray-900 mb-6">Come è nata l'idea</h2>
-    <div class="space-y-5 text-gray-600 leading-relaxed text-lg">
-      <p>Tutto è cominciato da una frustrazione reale: un imbianchino di Roma che ogni sera, dopo ore di lavoro in cantiere, doveva ancora mettersi al computer ad aggiornare i suoi fogli Excel per mandare preventivi ai clienti. Spesso ci metteva un'ora e mezza per un documento da 200€.</p>
-      <p>Abbiamo pensato: l'intelligenza artificiale sa già come si fa un preventivo professionale. Perché non permettere a un professionista di <em>descrivere il lavoro come lo racconterebbe a voce</em>, e ricevere in 30 secondi un documento pronto da mandare?</p>
-      <p>Così è nato prevai. Un software costruito specificatamente per il mercato italiano, con terminologia di settore italiana, prezzi di mercato italiani, e tutto ciò che serve: logo aziendale, partita IVA, IVA al 22%, condizioni personalizzabili, PDF professionale.</p>
-    </div>
-  </div>
-</section>
-<section class="py-20 bg-white">
-  <div class="container mx-auto px-4 sm:px-6 lg:px-8 max-w-5xl">
-    <div class="text-center mb-14"><h2 class="text-3xl font-bold text-gray-900 mb-4">I nostri valori</h2><p class="text-gray-500 text-lg max-w-xl mx-auto">Ogni decisione che prendiamo parte da tre principi fondamentali.</p></div>
-    <div class="grid md:grid-cols-3 gap-8">
-      <div class="bg-gray-50 rounded-2xl p-8 text-center"><h3 class="text-lg font-bold text-gray-900 mb-3">Velocità reale</h3><p class="text-gray-500 text-sm leading-relaxed">30 secondi non è uno slogan. È il tempo che ci vuole per generare un preventivo completo e professionale. Il tuo tempo vale.</p></div>
-      <div class="bg-gray-50 rounded-2xl p-8 text-center"><h3 class="text-lg font-bold text-gray-900 mb-3">Specificità italiana</h3><p class="text-gray-500 text-sm leading-relaxed">Non un software generico tradotto. Costruito da zero per il mercato italiano: categorie di lavoro, prezzi, normativa fiscale, lingua.</p></div>
-      <div class="bg-gray-50 rounded-2xl p-8 text-center"><h3 class="text-lg font-bold text-gray-900 mb-3">Semplicità prima di tutto</h3><p class="text-gray-500 text-sm leading-relaxed">Non servono corsi o tutorial. Se sai scrivere un messaggio WhatsApp, sai usare prevai. La tecnologia deve sparire, il risultato deve restare.</p></div>
-    </div>
-  </div>
-</section>
-<section class="py-20 bg-gray-50">
-  <div class="container mx-auto px-4 sm:px-6 lg:px-8 max-w-3xl">
-    <h2 class="text-3xl font-bold text-gray-900 mb-6">Per chi è prevai</h2>
-    <div class="space-y-4 text-gray-600 leading-relaxed text-lg">
-      <p>prevai è pensato per <strong>artigiani, imprese edili, tecnici e liberi professionisti italiani</strong> che lavorano su commessa e devono presentare preventivi ai propri clienti.</p>
-      <p>Imbianchini, elettricisti, idraulici, muratori, falegnami, geometri, architetti, piastrellisti, giardinieri, serramentisti, termoidraulici, installatori di condizionatori — e molti altri. Se il tuo lavoro richiede di spiegare a un cliente quanto costerà un intervento prima di eseguirlo, prevai è per te.</p>
-      <p>Siamo già usati da professionisti in tutta Italia: da Milano a Palermo, da Torino a Bari.</p>
-    </div>
-  </div>
-</section>
-<section class="py-20 bg-white">
-  <div class="container mx-auto px-4 sm:px-6 lg:px-8 max-w-2xl text-center">
-    <h2 class="text-3xl font-bold text-gray-900 mb-5">Prova prevai gratuitamente</h2>
-    <p class="text-gray-500 text-lg mb-8">Crea il tuo primo preventivo in 30 secondi. Nessuna carta di credito richiesta.</p>
-    <div class="flex flex-col sm:flex-row gap-4 justify-center">
-      <a href="/sign-up/" class="inline-flex items-center justify-center gap-2 rounded-xl px-8 py-4 text-base font-semibold text-white" style="background:linear-gradient(135deg,#7C3AED 0%,#A855F7 100%)">Inizia gratis</a>
-      <a href="/contatti/" class="inline-flex items-center justify-center gap-2 rounded-xl px-8 py-4 text-base font-semibold text-gray-700 border border-gray-200">Contattaci</a>
-    </div>
-  </div>
-</section>`),
+  jsonLd: [chiSiamoOrgJsonLd, buildBreadcrumbJsonLd("Chi siamo", "/chi-siamo/")],
+  bodyHtml: stripHoistedHead(await renderPage("/chi-siamo", "it")),
 });
 
 // /contatti/
 const contattiJsonLd = {
   "@context": "https://schema.org",
   "@type": "ContactPage",
-  name: "Contatti prevai",
+  name: "Contatta prevai",
   url: `${BASE_URL}/contatti/`,
-  description: "Contatta il team prevai per supporto, domande sul prodotto o informazioni commerciali.",
+  description: "Contatta il team prevai per assistenza, domande sul prodotto o richieste commerciali.",
   mainEntity: {
     "@type": "Organization",
-    name: "prevai",
+    name: "PrevAI",
     url: `${BASE_URL}/`,
     email: "info@prevai.it",
     contactPoint: [
@@ -2024,196 +1682,113 @@ const contattiJsonLd = {
     ],
   },
 };
-buildStaticPageHtml({
+await buildStaticPageHtml({
   slug: "contatti",
-  title: "Contatti | prevai — Assistenza e Supporto",
-  description: "Hai domande su prevai? Contattaci via email o WhatsApp. Siamo qui per aiutarti a generare preventivi professionali più velocemente.",
+  title: translations.it["contact.seoTitle"],
+  description: translations.it["contact.seoDescription"],
   path: "/contatti/",
   jsonLd: [contattiJsonLd, buildBreadcrumbJsonLd("Contatti", "/contatti/")],
-  bodyHtml: wrapInPublicLayout(`<section class="relative overflow-hidden bg-white pt-24 pb-16">
-  <div class="container mx-auto px-4 sm:px-6 lg:px-8 max-w-3xl text-center">
-    <h1 class="text-4xl sm:text-5xl font-bold tracking-tight text-gray-900 mb-5">Come possiamo <span style="background:linear-gradient(135deg,#7C3AED 0%,#A855F7 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent">aiutarti?</span></h1>
-    <p class="text-xl text-gray-600 leading-relaxed">Il team prevai risponde entro poche ore nei giorni feriali. Scegli il canale che preferisci.</p>
-  </div>
-</section>
-<section class="py-16 bg-gray-50">
-  <div class="container mx-auto px-4 sm:px-6 lg:px-8 max-w-4xl">
-    <div class="grid md:grid-cols-3 gap-6">
-      <div class="bg-white rounded-2xl p-8 border border-gray-100 shadow-sm">
-        <h2 class="text-lg font-bold text-gray-900 mb-2">Supporto prodotto</h2>
-        <p class="text-gray-500 text-sm leading-relaxed mb-4">Problemi tecnici, domande sull'utilizzo, richiesta di funzionalità.</p>
-        <a href="mailto:info@prevai.it" class="text-violet-600 font-semibold text-sm">info@prevai.it →</a>
-      </div>
-      <div class="bg-white rounded-2xl p-8 border border-gray-100 shadow-sm">
-        <h2 class="text-lg font-bold text-gray-900 mb-2">WhatsApp</h2>
-        <p class="text-gray-500 text-sm leading-relaxed mb-4">Vuoi provare il servizio via WhatsApp o hai una domanda rapida? Scrivici direttamente.</p>
-        <a href="/whatsapp/" class="text-green-600 font-semibold text-sm">Scopri prevai su WhatsApp →</a>
-      </div>
-      <div class="bg-white rounded-2xl p-8 border border-gray-100 shadow-sm">
-        <h2 class="text-lg font-bold text-gray-900 mb-2">Privacy &amp; legale</h2>
-        <p class="text-gray-500 text-sm leading-relaxed mb-4">Richieste GDPR, esercizio dei diritti, questioni legali o contrattuali.</p>
-        <a href="mailto:privacy@prevai.it" class="text-gray-600 font-semibold text-sm">privacy@prevai.it →</a>
-      </div>
-    </div>
-  </div>
-</section>
-<section class="py-16 bg-white">
-  <div class="container mx-auto px-4 sm:px-6 lg:px-8 max-w-3xl">
-    <div class="bg-violet-50 border border-violet-100 rounded-2xl p-6">
-      <h3 class="font-bold text-gray-900 mb-1">Tempi di risposta</h3>
-      <p class="text-gray-600 text-sm leading-relaxed">Rispondiamo a tutte le email entro <strong>4-8 ore nei giorni feriali</strong> (lunedì–venerdì, 9:00–18:00 CET). Per le richieste inviate nel weekend, rispondiamo il lunedì mattina.</p>
-    </div>
-  </div>
-</section>
-<section class="py-16 bg-gray-50">
-  <div class="container mx-auto px-4 sm:px-6 lg:px-8 max-w-3xl">
-    <h2 class="text-2xl font-bold text-gray-900 mb-8">Domande frequenti</h2>
-    <div class="space-y-5">
-      <div class="bg-white rounded-2xl p-6 border border-gray-100"><h3 class="font-semibold text-gray-900 mb-2">Posso cancellare l'abbonamento in qualsiasi momento?</h3><p class="text-gray-500 text-sm leading-relaxed">Sì. Puoi cancellare il tuo abbonamento in qualsiasi momento dalle impostazioni del tuo account, senza penali o costi aggiuntivi. Continuerai ad avere accesso fino alla fine del periodo già pagato.</p></div>
-      <div class="bg-white rounded-2xl p-6 border border-gray-100"><h3 class="font-semibold text-gray-900 mb-2">Offrite uno sconto per agenzie o team?</h3><p class="text-gray-500 text-sm leading-relaxed">Sì. Per utilizzi multi-utente o volumi elevati, contattaci a info@prevai.it e troveremo la soluzione più adatta.</p></div>
-      <div class="bg-white rounded-2xl p-6 border border-gray-100"><h3 class="font-semibold text-gray-900 mb-2">I miei dati e i preventivi sono al sicuro?</h3><p class="text-gray-500 text-sm leading-relaxed">Sì. Tutti i dati sono cifrati in transito (TLS) e a riposo. Non condividiamo i tuoi dati con terze parti. Leggi la nostra Privacy Policy per i dettagli.</p></div>
-      <div class="bg-white rounded-2xl p-6 border border-gray-100"><h3 class="font-semibold text-gray-900 mb-2">Posso importare il mio listino prezzi?</h3><p class="text-gray-500 text-sm leading-relaxed">Sì. Dalla sezione Impostazioni → Listino puoi inserire i tuoi prezzi personalizzati che l'AI userà come riferimento per i tuoi preventivi.</p></div>
-    </div>
-  </div>
-</section>
-<section class="py-16 bg-white">
-  <div class="container mx-auto px-4 sm:px-6 lg:px-8 max-w-xl text-center">
-    <h2 class="text-2xl font-bold text-gray-900 mb-4">Non hai ancora un account?</h2>
-    <p class="text-gray-500 mb-6">Prova prevai gratis — nessuna carta di credito richiesta.</p>
-    <a href="/sign-up/" class="inline-flex items-center justify-center gap-2 rounded-xl px-8 py-4 text-base font-semibold text-white" style="background:linear-gradient(135deg,#7C3AED 0%,#A855F7 100%)">Crea account gratuito</a>
-  </div>
-</section>`),
+  bodyHtml: stripHoistedHead(await renderPage("/contatti", "it")),
 });
 
-// /privacy/
-buildStaticPageHtml({
+// /privacy/ — rispecchia src/pages/privacy-policy.tsx (la route reale)
+const privacyDescription = "Informativa sulla privacy di PrevAI — come raccogliamo, usiamo e proteggiamo i tuoi dati personali.";
+await buildStaticPageHtml({
   slug: "privacy",
-  title: "Privacy Policy | prevai",
-  description: "Informativa sulla privacy di prevai — come raccogliamo e trattiamo i tuoi dati personali.",
+  title: "Privacy Policy | PrevAI",
+  description: privacyDescription,
   path: "/privacy/",
-  jsonLd: [buildWebPageJsonLd("Privacy Policy", "Informativa sulla privacy di prevai — come raccogliamo e trattiamo i tuoi dati personali.", "/privacy/"), buildBreadcrumbJsonLd("Privacy Policy", "/privacy/")],
-  bodyHtml: wrapInPublicLayout(`<div class="container mx-auto px-4 py-16 max-w-3xl">
-  <h1 class="text-3xl font-bold text-gray-900 mb-2">Privacy Policy</h1>
-  <p class="text-sm text-gray-500 mb-10">Ultimo aggiornamento: 6 maggio 2025</p>
-  <div class="prose prose-gray max-w-none space-y-8 text-sm leading-relaxed text-gray-700">
-    <section><h2 class="text-lg font-semibold text-gray-900 mb-3">1. Titolare del trattamento</h2><p>Il titolare del trattamento dei dati personali è <strong>PrevAI</strong> (di seguito "Società" o "noi"), raggiungibile all'indirizzo email <a href="mailto:privacy@prevai.it" class="text-violet-600">privacy@prevai.it</a>.</p></section>
-    <section><h2 class="text-lg font-semibold text-gray-900 mb-3">2. Dati raccolti</h2><p>Raccogliamo le seguenti categorie di dati personali:</p><ul class="list-disc pl-5 mt-2 space-y-1"><li><strong>Dati di registrazione:</strong> nome, cognome, indirizzo email, forniti al momento della creazione dell'account.</li><li><strong>Dati del profilo aziendale:</strong> ragione sociale, partita IVA, indirizzo, telefono, email aziendale, logo aziendale.</li><li><strong>Dati dei preventivi:</strong> descrizioni dei lavori, dati dei clienti (committenti), importi, voci di computo.</li><li><strong>Dati di pagamento:</strong> gestiti direttamente da Stripe Inc. — non accediamo ai dati della carta di credito.</li><li><strong>Dati tecnici:</strong> indirizzo IP, tipo di browser, pagine visitate, durata delle sessioni (tramite log di sistema).</li></ul></section>
-    <section><h2 class="text-lg font-semibold text-gray-900 mb-3">3. Finalità e base giuridica del trattamento</h2><div class="space-y-3"><div><p class="font-medium">a) Erogazione del servizio (art. 6(1)(b) GDPR — esecuzione del contratto)</p><p class="mt-1">Trattamento necessario per creare l'account, generare preventivi tramite AI, gestire abbonamenti e pagamenti.</p></div><div><p class="font-medium">b) Obblighi legali (art. 6(1)(c) GDPR)</p><p class="mt-1">Conservazione dei dati di fatturazione per gli obblighi fiscali previsti dalla normativa italiana.</p></div><div><p class="font-medium">c) Legittimo interesse (art. 6(1)(f) GDPR)</p><p class="mt-1">Analisi aggregate per migliorare il servizio, prevenzione delle frodi, sicurezza della piattaforma.</p></div><div><p class="font-medium">d) Consenso (art. 6(1)(a) GDPR)</p><p class="mt-1">Invio di comunicazioni promozionali e newsletter, previa esplicita accettazione.</p></div></div></section>
-    <section><h2 class="text-lg font-semibold text-gray-900 mb-3">4. Conservazione dei dati</h2><p>I dati vengono conservati per il tempo strettamente necessario alle finalità indicate:</p><ul class="list-disc pl-5 mt-2 space-y-1"><li>Dati dell'account: fino alla cancellazione dell'account, poi 30 giorni per finalità di sicurezza.</li><li>Dati dei preventivi: 10 anni dall'emissione (obblighi fiscali italiani).</li><li>Dati di fatturazione: 10 anni (D.P.R. 633/1972 e D.P.R. 600/1973).</li><li>Log tecnici: 90 giorni.</li></ul></section>
-    <section><h2 class="text-lg font-semibold text-gray-900 mb-3">5. Destinatari dei dati</h2><p>I dati possono essere comunicati alle seguenti categorie di destinatari:</p><ul class="list-disc pl-5 mt-2 space-y-1"><li><strong>Clerk Inc.</strong> — gestione dell'autenticazione e degli account utente (USA, con garanzie adeguate ex art. 46 GDPR).</li><li><strong>Stripe Inc.</strong> — elaborazione dei pagamenti (USA, con garanzie adeguate).</li><li><strong>OpenAI, LLC</strong> — generazione dei preventivi tramite intelligenza artificiale (USA, con garanzie adeguate). I dati inviati sono limitati alla descrizione del lavoro.</li><li><strong>Replit Inc.</strong> — infrastruttura cloud e hosting (USA, con garanzie adeguate).</li><li><strong>Resend Inc.</strong> — invio email transazionali.</li></ul><p class="mt-3">Non vendiamo dati personali a terzi. I trasferimenti extra-UE avvengono con le garanzie previste dagli artt. 44-49 GDPR (clausole contrattuali standard o decisioni di adeguatezza).</p></section>
-    <section><h2 class="text-lg font-semibold text-gray-900 mb-3">6. Diritti dell'interessato</h2><p>Ai sensi degli artt. 15-22 GDPR, hai diritto di:</p><ul class="list-disc pl-5 mt-2 space-y-1"><li><strong>Accesso</strong> — richiedere copia dei dati che trattiamo su di te.</li><li><strong>Rettifica</strong> — correggere dati inesatti o incompleti.</li><li><strong>Cancellazione ("diritto all'oblio")</strong> — richiedere la cancellazione dei dati, salvo obblighi legali di conservazione.</li><li><strong>Limitazione del trattamento</strong> — in determinati casi previsti dall'art. 18 GDPR.</li><li><strong>Portabilità</strong> — ricevere i tuoi dati in formato strutturato e leggibile da macchina.</li><li><strong>Opposizione</strong> — opporti al trattamento basato su legittimo interesse.</li><li><strong>Revoca del consenso</strong> — in qualsiasi momento, senza pregiudizio per la liceità del trattamento precedente.</li></ul><p class="mt-3">Per esercitare i tuoi diritti scrivi a <a href="mailto:privacy@prevai.it" class="text-violet-600">privacy@prevai.it</a>. Risponderemo entro 30 giorni. Hai anche il diritto di proporre reclamo all'Autorità di controllo italiana: Garante per la protezione dei dati personali.</p></section>
-    <section><h2 class="text-lg font-semibold text-gray-900 mb-3">7. Cookie e tecnologie di tracciamento</h2><p>Utilizziamo esclusivamente cookie tecnici necessari al funzionamento del servizio (autenticazione, sessione). Non utilizziamo cookie di profilazione o di terze parti a fini pubblicitari.</p></section>
-    <section><h2 class="text-lg font-semibold text-gray-900 mb-3">8. Sicurezza</h2><p>Adottiamo misure tecniche e organizzative adeguate per proteggere i dati da accesso non autorizzato, perdita o alterazione: connessioni cifrate (TLS/HTTPS), controllo degli accessi, autenticazione sicura.</p></section>
-    <section><h2 class="text-lg font-semibold text-gray-900 mb-3">9. Modifiche alla privacy policy</h2><p>Ci riserviamo il diritto di aggiornare questa informativa. Le modifiche sostanziali saranno comunicate via email o tramite avviso in piattaforma con almeno 14 giorni di anticipo.</p></section>
-    <section><h2 class="text-lg font-semibold text-gray-900 mb-3">10. Contatti</h2><p>Per qualsiasi domanda relativa alla privacy: <a href="mailto:privacy@prevai.it" class="text-violet-600">privacy@prevai.it</a></p></section>
-  </div>
-</div>`),
+  jsonLd: [buildWebPageJsonLd("Privacy Policy", privacyDescription, "/privacy/"), buildBreadcrumbJsonLd("Privacy Policy", "/privacy/")],
+  bodyHtml: stripHoistedHead(await renderPage("/privacy", "it")),
 });
 
-// /termini/
-buildStaticPageHtml({
+// /termini/ — rispecchia src/pages/terms.tsx (la route reale)
+const terminiDescription = "Termini e condizioni per l'utilizzo della piattaforma PrevAI per la generazione di preventivi con intelligenza artificiale.";
+await buildStaticPageHtml({
   slug: "termini",
-  title: "Termini di Servizio | prevai",
-  description: "Termini e condizioni di utilizzo della piattaforma prevai per la generazione di preventivi AI.",
+  title: "Termini di servizio | PrevAI",
+  description: terminiDescription,
   path: "/termini/",
-  jsonLd: [buildWebPageJsonLd("Termini di Servizio", "Termini e condizioni di utilizzo della piattaforma prevai per la generazione di preventivi AI.", "/termini/"), buildBreadcrumbJsonLd("Termini di Servizio", "/termini/")],
-  bodyHtml: wrapInPublicLayout(`<div class="container mx-auto px-4 py-16 max-w-3xl">
-  <h1 class="text-3xl font-bold text-gray-900 mb-2">Termini di Servizio</h1>
-  <p class="text-sm text-gray-500 mb-10">Ultimo aggiornamento: 6 maggio 2025</p>
-  <div class="prose prose-gray max-w-none space-y-8 text-sm leading-relaxed text-gray-700">
-    <section><h2 class="text-lg font-semibold text-gray-900 mb-3">1. Accettazione dei termini</h2><p>Utilizzando la piattaforma <strong>PrevAI</strong> (di seguito "Servizio"), disponibile all'indirizzo <strong>prevai.it</strong>, l'utente accetta integralmente i presenti Termini di Servizio. Se non accetti questi termini, non puoi utilizzare il Servizio.</p></section>
-    <section><h2 class="text-lg font-semibold text-gray-900 mb-3">2. Descrizione del servizio</h2><p>PrevAI è una piattaforma SaaS che consente a professionisti, artigiani e imprese di generare preventivi professionali tramite intelligenza artificiale. Il Servizio include:</p><ul class="list-disc pl-5 mt-2 space-y-1"><li>Generazione di preventivi tramite AI a partire da una descrizione testuale dei lavori.</li><li>Creazione e download di documenti PDF professionale.</li><li>Gestione del profilo aziendale e archiviazione dei preventivi.</li><li>Piani di abbonamento mensile e acquisti singoli.</li></ul></section>
-    <section><h2 class="text-lg font-semibold text-gray-900 mb-3">3. Account utente</h2><p>Per accedere al Servizio è necessario creare un account fornendo dati veritieri e aggiornati. L'utente è responsabile della riservatezza delle proprie credenziali e di tutte le attività svolte tramite il proprio account. In caso di accesso non autorizzato, l'utente deve notificarlo immediatamente a <a href="mailto:supporto@prevai.it" class="text-violet-600">supporto@prevai.it</a>.</p></section>
-    <section><h2 class="text-lg font-semibold text-gray-900 mb-3">4. Piani e pagamenti</h2><div class="space-y-3"><div><p class="font-medium">4.1 Piani disponibili</p><ul class="list-disc pl-5 mt-1 space-y-1"><li><strong>Starter (€29/mese):</strong> fino a 20 preventivi al mese, PDF con filigrana PrevAI.</li><li><strong>Pro (€79/mese):</strong> preventivi illimitati, PDF senza filigrana, branding personalizzabile.</li><li><strong>Singolo con Watermark (€29):</strong> un singolo preventivo PDF con filigrana.</li><li><strong>Singolo Pulito (€39):</strong> un singolo preventivo PDF senza filigrana.</li></ul></div><div><p class="font-medium">4.2 Fatturazione</p><p class="mt-1">I piani mensili vengono rinnovati automaticamente ogni mese. I pagamenti sono processati tramite Stripe Inc. e sono soggetti ai relativi termini di servizio. I prezzi sono IVA esclusa.</p></div><div><p class="font-medium">4.3 Rimborsi</p><p class="mt-1">Ai sensi dell'art. 59(a) del Codice del Consumo (D.Lgs. 206/2005), il diritto di recesso non si applica ai contenuti digitali forniti immediatamente dopo l'acquisto con esplicito consenso. Per i piani mensili, puoi disdire in qualsiasi momento: il servizio rimane attivo fino alla fine del periodo già pagato. Non sono previsti rimborsi pro-rata per i periodi non utilizzati.</p></div></div></section>
-    <section><h2 class="text-lg font-semibold text-gray-900 mb-3">5. Uso accettabile</h2><p>È vietato utilizzare il Servizio per:</p><ul class="list-disc pl-5 mt-2 space-y-1"><li>Generare documenti falsi, fraudolenti o fuorvianti.</li><li>Violare diritti di terzi, normative applicabili o la presente policy.</li><li>Tentare di accedere a dati di altri utenti o compromettere la sicurezza della piattaforma.</li><li>Uso automatizzato massivo (scraping, bot) senza autorizzazione scritta.</li><li>Rivendere o sublicenziare l'accesso al Servizio a terzi.</li></ul></section>
-    <section><h2 class="text-lg font-semibold text-gray-900 mb-3">6. Proprietà intellettuale</h2><p>PrevAI e i relativi loghi, marchi, interfacce e codice sorgente sono di proprietà esclusiva della Società. I preventivi generati tramite il Servizio sono di proprietà dell'utente che li ha creato. L'utente concede a PrevAI una licenza limitata, non esclusiva, per elaborare i dati inseriti al solo fine di erogare il Servizio.</p></section>
-    <section><h2 class="text-lg font-semibold text-gray-900 mb-3">7. Limitazione di responsabilità</h2><p>I preventivi generati dall'AI sono indicativi e basati su dati statistici. <strong>PrevAI non garantisce l'accuratezza, la completezza o l'adeguatezza dei preventivi per specifici contesti contrattuali.</strong> L'utente è responsabile della verifica e validazione dei contenuti prima di presentarli ai propri clienti. PrevAI non è responsabile per danni indiretti, perdita di dati, lucro cessante o danni derivanti da errori nell'output dell'AI, nei limiti consentiti dalla legge applicabile.</p></section>
-    <section><h2 class="text-lg font-semibold text-gray-900 mb-3">8. Sospensione e cancellazione</h2><p>PrevAI si riserva il diritto di sospendere o terminare l'accesso al Servizio in caso di violazione dei presenti Termini, previo avviso via email salvo casi di grave violazione. L'utente può cancellare il proprio account in qualsiasi momento dalla pagina Impostazioni o contattando <a href="mailto:supporto@prevai.it" class="text-violet-600">supporto@prevai.it</a>.</p></section>
-    <section><h2 class="text-lg font-semibold text-gray-900 mb-3">9. Modifiche ai termini</h2><p>Ci riserviamo il diritto di modificare i presenti Termini con preavviso di almeno 14 giorni via email. L'uso continuato del Servizio dopo la data di efficacia delle modifiche costituisce accettazione dei nuovi Termini.</p></section>
-    <section><h2 class="text-lg font-semibold text-gray-900 mb-3">10. Legge applicabile e foro competente</h2><p>I presenti Termini sono regolati dalla legge italiana. Per qualsiasi controversia è competente in via esclusiva il Tribunale di Milano, salvo i casi in cui l'utente sia un consumatore ai sensi del D.Lgs. 206/2005 (Codice del Consumo), nel qual caso si applicano le disposizioni di legge inderogabili a tutela dei consumatori.</p></section>
-    <section><h2 class="text-lg font-semibold text-gray-900 mb-3">11. Contatti</h2><p>Per qualsiasi domanda sui presenti Termini: <a href="mailto:supporto@prevai.it" class="text-violet-600">supporto@prevai.it</a></p></section>
-  </div>
-</div>`),
+  jsonLd: [buildWebPageJsonLd("Termini di servizio", terminiDescription, "/termini/"), buildBreadcrumbJsonLd("Termini di servizio", "/termini/")],
+  bodyHtml: stripHoistedHead(await renderPage("/termini", "it")),
 });
 
 // /whatsapp/
-buildStaticPageHtml({
+await buildStaticPageHtml({
   slug: "whatsapp",
-  title: "Preventivi su WhatsApp – prevai | Prima piattaforma italiana",
-  description: "Descrivi il lavoro a voce, per testo o foto su WhatsApp. prevai genera un preventivo professionale con PDF in 60 secondi. Prima piattaforma in Italia.",
+  title: translations.it["whatsapp.seoTitle"],
+  description: translations.it["whatsapp.seoDescription"],
   path: "/whatsapp/",
-  jsonLd: [buildWebPageJsonLd("Preventivi su WhatsApp", "Descrivi il lavoro a voce, per testo o foto su WhatsApp. prevai genera un preventivo professionale con PDF in 60 secondi.", "/whatsapp/"), buildBreadcrumbJsonLd("WhatsApp", "/whatsapp/")],
-  bodyHtml: wrapInPublicLayout(`<div class="flex flex-col bg-white">
-<section class="relative overflow-hidden bg-gray-950 pt-20 pb-24">
-  <div class="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10 text-center max-w-3xl">
-    <div class="inline-flex items-center gap-2 bg-green-500/10 border border-green-500/20 text-green-400 text-xs font-bold px-3 py-1.5 rounded-full mb-6">NOVITÀ · Prima in Italia</div>
-    <h1 class="text-4xl sm:text-5xl font-extrabold tracking-tight text-white leading-[1.1] mb-5">I tuoi preventivi, <span class="text-transparent bg-clip-text" style="background-image:linear-gradient(135deg,#a78bfa,#34d399)">direttamente su WhatsApp</span></h1>
-    <p class="text-lg text-gray-400 leading-relaxed mb-4 max-w-2xl mx-auto">Manda un vocale dal cantiere. PrevAI genera il preventivo professionale, te lo mostra in anteprima e ti invia il PDF — senza aprire nessuna app.</p>
-    <p class="text-sm text-gray-600 mb-10 font-medium">Mentre i tuoi concorrenti aprono ancora Excel, i tuoi clienti già ricevono il preventivo.</p>
-    <div class="flex flex-col sm:flex-row justify-center gap-3">
-      <a href="/sign-up/?plan=monthly_pro" class="inline-flex h-12 items-center justify-center gap-2 px-7 rounded-xl text-sm font-bold text-white" style="background:linear-gradient(135deg,#7c3aed,#2563eb)">Attiva WhatsApp Bot</a>
-      <a href="#demo" class="inline-flex h-12 items-center justify-center gap-2 px-7 rounded-xl text-sm font-semibold text-gray-300 border border-gray-700">Guarda la demo</a>
-    </div>
-    <div class="mt-8 flex flex-col sm:flex-row items-center justify-center gap-4 text-xs text-gray-500">
-      <span>Disponibile su Piano Pro ed Elite</span><span class="hidden sm:block text-gray-700">·</span>
-      <span>Attivazione immediata</span><span class="hidden sm:block text-gray-700">·</span>
-      <span>Funziona con qualsiasi smartphone</span>
-    </div>
-  </div>
-</section>
-<section id="demo" class="py-20 bg-gray-50">
-  <div class="container mx-auto px-4 sm:px-6 lg:px-8 max-w-5xl">
-    <span class="inline-block text-violet-600 text-xs font-bold uppercase tracking-wider mb-3">Come funziona</span>
-    <h2 class="text-3xl font-bold tracking-tight text-gray-900 mb-6 leading-snug">Dal vocale al PDF <span class="text-violet-600">senza toccare il computer</span></h2>
-    <div class="space-y-5 max-w-2xl">
-      <div class="flex gap-4"><div class="w-8 h-8 rounded-xl text-sm font-bold shrink-0 flex items-center justify-center text-white" style="background:linear-gradient(135deg,#7c3aed,#2563eb)">1</div><div><p class="font-semibold text-gray-900 text-sm mb-0.5">Manda un vocale, testo o foto</p><p class="text-sm text-gray-500 leading-relaxed">Direttamente su WhatsApp. Descrivi il lavoro come parli con un cliente.</p></div></div>
-      <div class="flex gap-4"><div class="w-8 h-8 rounded-xl text-sm font-bold shrink-0 flex items-center justify-center text-white" style="background:linear-gradient(135deg,#7c3aed,#2563eb)">2</div><div><p class="font-semibold text-gray-900 text-sm mb-0.5">L'AI genera l'anteprima</p><p class="text-sm text-gray-500 leading-relaxed">Capitoli, prezzi e IVA in 60 secondi. Puoi correggere o approvare subito.</p></div></div>
-      <div class="flex gap-4"><div class="w-8 h-8 rounded-xl text-sm font-bold shrink-0 flex items-center justify-center text-white" style="background:linear-gradient(135deg,#7c3aed,#2563eb)">3</div><div><p class="font-semibold text-gray-900 text-sm mb-0.5">Ricevi il PDF in chat</p><p class="text-sm text-gray-500 leading-relaxed">Lo invii al cliente con un tap. Il preventivo viene salvato anche su prevai.it.</p></div></div>
-    </div>
-    <div class="mt-8 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3"><p class="text-sm font-semibold text-amber-900">In arrivo: fatture e solleciti automatici</p><p class="text-xs text-amber-700 mt-0.5">Sempre su WhatsApp. Stai costruendo il futuro prima degli altri.</p></div>
-  </div>
-</section>
-<section class="py-16 bg-white">
-  <div class="container mx-auto px-4 sm:px-6 lg:px-8 max-w-4xl">
-    <div class="text-center mb-10"><h2 class="text-2xl font-bold tracking-tight text-gray-900">Tutto quello che ti serve, in tasca</h2><p class="text-gray-500 mt-2 text-sm">Il potere di prevai.it, disponibile su WhatsApp in qualsiasi momento.</p></div>
-    <div class="grid sm:grid-cols-3 gap-6">
-      <div class="bg-gray-50 rounded-2xl p-5 border border-gray-100"><h3 class="font-semibold text-gray-900 text-sm mb-1.5">Voce, testo o foto</h3><p class="text-gray-500 text-xs leading-relaxed">Manda un vocale dall'auto, scrivi dal cantiere o fotografa gli appunti. L'AI capisce tutto e genera il preventivo.</p></div>
-      <div class="bg-gray-50 rounded-2xl p-5 border border-gray-100"><h3 class="font-semibold text-gray-900 text-sm mb-1.5">Preventivo in 60 secondi</h3><p class="text-gray-500 text-xs leading-relaxed">Capitoli, voci di costo, IVA e totali calcolati istantaneamente. Zero formule, zero Excel.</p></div>
-      <div class="bg-gray-50 rounded-2xl p-5 border border-gray-100"><h3 class="font-semibold text-gray-900 text-sm mb-1.5">PDF consegnato in chat</h3><p class="text-gray-500 text-xs leading-relaxed">Il documento professionale arriva direttamente su WhatsApp. Lo inoltri al cliente con un tap.</p></div>
-    </div>
-  </div>
-</section>
-<section class="py-16 bg-gray-950">
-  <div class="container mx-auto px-4 sm:px-6 lg:px-8 max-w-2xl text-center">
-    <p class="text-gray-500 text-sm mb-4 uppercase tracking-wider font-semibold">La realtà del mercato</p>
-    <h2 class="text-2xl sm:text-3xl font-bold text-white mb-6 leading-snug">I tuoi concorrenti impiegano <span class="line-through text-gray-600">30–40 minuti</span> per fare un preventivo. <span class="text-transparent bg-clip-text" style="background-image:linear-gradient(135deg,#a78bfa,#34d399)">Tu ce ne metti 60 secondi.</span></h2>
-    <p class="text-gray-400 text-sm mb-10 leading-relaxed">Un artigiano che risponde entro un'ora ha il <strong class="text-white">3× più probabilità</strong> di aggiudicarsi il lavoro. Con il bot WhatsApp, rispondi prima ancora di arrivare a casa.</p>
-  </div>
-</section>
-<section class="py-16 bg-white">
-  <div class="container mx-auto px-4 sm:px-6 lg:px-8 text-center max-w-xl">
-    <h2 class="text-2xl font-bold tracking-tight text-gray-900 mb-3">Inizia oggi. Zero configurazione.</h2>
-    <p class="text-gray-500 text-sm mb-7 leading-relaxed">Collega il tuo numero WhatsApp dalle impostazioni in meno di 2 minuti. Il bot è subito attivo.</p>
-    <div class="flex flex-col sm:flex-row justify-center gap-3">
-      <a href="/sign-up/?plan=monthly_pro" class="inline-flex h-11 items-center justify-center gap-2 px-7 rounded-xl text-sm font-bold text-white" style="background:linear-gradient(135deg,#7c3aed,#2563eb)">Prova Gratis 7 Giorni</a>
-      <a href="/#prezzi" class="inline-flex h-11 items-center justify-center px-7 rounded-xl text-sm font-semibold text-gray-700 border border-gray-200">Confronta i piani</a>
-    </div>
-    <p class="text-xs text-gray-400 mt-4">7 giorni gratis · Nessuna carta richiesta · Cancella quando vuoi</p>
-  </div>
-</section>
-</div>`),
+  jsonLd: [buildWebPageJsonLd("Preventivi su WhatsApp", translations.it["whatsapp.seoDescription"], "/whatsapp/"), buildBreadcrumbJsonLd("WhatsApp", "/whatsapp/")],
+  bodyHtml: stripHoistedHead(await renderPage("/whatsapp", "it")),
 });
 
 // /mappa-sito/
-buildStaticPageHtml({
+await buildStaticPageHtml({
   slug: "mappa-sito",
-  title: "Mappa del Sito | prevai — Elenco Completo delle Pagine",
-  description: "Mappa del sito completa di prevai. Trova tutte le pagine statiche, gli articoli del blog e le guide per professionisti e artigiani nelle città italiane.",
+  title: translations.it["sitemap.seoTitle"],
+  description: translations.it["sitemap.seoDescription"],
   path: "/mappa-sito/",
-  jsonLd: [buildWebPageJsonLd("Mappa del Sito", "Mappa del sito completa di prevai.it. Trova tutte le pagine statiche, gli articoli del blog e le guide per professionisti e artigiani nelle città italiane.", "/mappa-sito/"), buildBreadcrumbJsonLd("Mappa del Sito", "/mappa-sito/")],
-  bodyHtml: buildMappaSitoBodyHtml(),
+  jsonLd: [buildWebPageJsonLd("Mappa del sito", translations.it["sitemap.seoDescription"], "/mappa-sito/"), buildBreadcrumbJsonLd("Mappa del sito", "/mappa-sito/")],
+  bodyHtml: stripHoistedHead(await renderPage("/mappa-sito", "it")),
 });
 
-console.log(`  ✓ 6 SPA pages prerendered (chi-siamo, contatti, privacy, termini, whatsapp, mappa-sito)`);
+// /fisco/ — A-5, landing dell'add-on PrevAI Fisco. noindex finché l'offerta è in bozza.
+await buildStaticPageHtml({
+  slug: "fisco",
+  title: LANDING_AMMINISTRAZIONE_SEO.title,
+  description: LANDING_AMMINISTRAZIONE_SEO.description,
+  path: LANDING_AMMINISTRAZIONE_PATH,
+  noIndex: !landingAmministrazioneIndicizzabile(),
+  jsonLd: [
+    buildWebPageJsonLd(NOME_OFFERTA, LANDING_AMMINISTRAZIONE_SEO.description, LANDING_AMMINISTRAZIONE_PATH),
+    {
+      "@context": "https://schema.org",
+      "@type": "FAQPage",
+      mainEntity: FAQ_LANDING_AMMINISTRAZIONE.map((f) => ({ "@type": "Question", name: f.domanda, acceptedAnswer: { "@type": "Answer", text: f.risposta } })),
+    },
+    buildBreadcrumbJsonLd(NOME_OFFERTA, LANDING_AMMINISTRAZIONE_PATH),
+  ],
+  bodyHtml: stripHoistedHead(await renderPage("/fisco", "it")),
+});
 
-console.log(`Prerendered ${count} pages total (1 homepage + SEO sector pages + ${BLOG_CATEGORIES.length} category pages + ${BLOG_ARTICLES.length + 1} blog pages + 6 SPA pages).`);
+console.log(`  ✓ 7 SPA pages prerendered (chi-siamo, contatti, privacy, termini, whatsapp, mappa-sito, fisco)`);
+
+// Phase 70: centro assistenza — indice + una pagina per articolo, resi dallo
+// stesso albero React (title/description del SeoHead della pagina sono quelli
+// ripetuti qui nell'head; tenerli identici così crawler e DOM idratato coincidono).
+const helpIndexTitle = translations.it["help.seoTitle"];
+const helpIndexDescription = translations.it["help.seoDescription"];
+await buildStaticPageHtml({
+  slug: "help",
+  title: helpIndexTitle,
+  description: helpIndexDescription,
+  path: "/help/",
+  jsonLd: [buildWebPageJsonLd("Centro assistenza", helpIndexDescription, "/help/", "CollectionPage"), buildBreadcrumbJsonLd("Centro assistenza", "/help/")],
+  bodyHtml: stripHoistedHead(await renderPage("/help", "it")),
+});
+for (const article of HELP_ARTICLES) {
+  const path = `/help/${article.slug}/`;
+  await buildStaticPageHtml({
+    slug: `help/${article.slug}`,
+    title: `${article.title.it} | prevai`,
+    description: article.summary.it,
+    path,
+    jsonLd: [
+      buildWebPageJsonLd(article.title.it, article.summary.it, path, "TechArticle"),
+      {
+        "@context": "https://schema.org",
+        "@type": "BreadcrumbList",
+        itemListElement: [
+          { "@type": "ListItem", position: 1, name: "Home", item: `${BASE_URL}/` },
+          { "@type": "ListItem", position: 2, name: "Centro assistenza", item: `${BASE_URL}/help/` },
+          { "@type": "ListItem", position: 3, name: article.title.it, item: `${BASE_URL}${path}` },
+        ],
+      },
+    ],
+    bodyHtml: stripHoistedHead(await renderPage(`/help/${article.slug}`, "it")),
+  });
+}
+console.log(`  ✓ ${HELP_ARTICLES.length + 1} help-centre pages prerendered`);
+
+console.log(`Prerendered ${count} pages total (1 homepage + SEO sector pages + ${BLOG_CATEGORIES.length} category pages + ${BLOG_ARTICLES.length + 1} blog pages + 7 SPA pages + ${HELP_ARTICLES.length + 1} help pages).`);

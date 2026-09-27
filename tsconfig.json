@@ -4,6 +4,9 @@
   "files": [],
   "references": [
     {
+      "path": "./lib/config"
+    },
+    {
       "path": "./lib/db"
     },
     {
@@ -11,6 +14,9 @@
     },
     {
       "path": "./lib/api-zod"
+    },
+    {
+      "path": "./lib/error-reporting"
     },
     {
       "path": "./lib/integrations-openai-ai-server"

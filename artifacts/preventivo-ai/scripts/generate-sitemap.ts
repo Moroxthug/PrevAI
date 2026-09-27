@@ -7,17 +7,19 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 import { SECTORS, CITIES, ACTIVE_CITIES, CITY_SECTORS } from "../src/data/seo-data.js";
 import { BLOG_ARTICLES, BLOG_CATEGORIES } from "../src/data/blog-data.js";
 import { PUBLIC_ROUTES } from "../src/data/sitemap-routes.js";
+import { HELP_ARTICLES } from "../src/data/help-articles.js";
 
 const BASE_URL = "https://prevai.it";
-const TODAY = new Date().toISOString().split("T")[0];
 
+// The half-dozen highest-population metros get a slightly higher priority
+// than the rest of ACTIVE_CITIES.
 const TIER1_CITY_SLUGS = new Set([
   "roma", "milano", "napoli", "torino", "palermo", "genova", "bologna",
   "firenze", "bari", "catania", "venezia", "verona", "messina", "padova",
   "trieste", "brescia", "reggio-calabria", "modena", "parma", "prato",
 ]);
 
-function url(loc: string, priority: string, changefreq: string, lastmod = TODAY): string {
+function url(loc: string, priority: string, changefreq: string, lastmod: string): string {
   return `  <url>
     <loc>${loc}</loc>
     <lastmod>${lastmod}</lastmod>
@@ -28,13 +30,14 @@ function url(loc: string, priority: string, changefreq: string, lastmod = TODAY)
 
 const entries: string[] = [];
 
-// Static public routes — add trailing slash to all paths except root "/"
+// Static public routes — add trailing slash to all paths except root "/".
+// Every lastmod below is a fixed date so the committed sitemap.xml only
+// changes when content does (no build-date churn).
 for (const route of PUBLIC_ROUTES) {
   const loc = route.path === "/" ? `${BASE_URL}/` : `${BASE_URL}${route.path}/`;
-  entries.push(url(loc, route.priority, route.changefreq));
+  entries.push(url(loc, route.priority, route.changefreq, route.lastmod));
 }
-
-// SEO sector landing pages
+// SEO sector landing pages (V2-2: solo italiano; slug v1 in V2-2b)
 for (const sectorSlug of Object.keys(SECTORS)) {
   entries.push(url(`${BASE_URL}/preventivi/${sectorSlug}/`, "0.8", "monthly", "2026-05-01"));
 }
@@ -46,6 +49,11 @@ for (const sectorSlug of CITY_SECTORS) {
     const priority = TIER1_CITY_SLUGS.has(city.slug) ? "0.7" : "0.6";
     entries.push(url(`${BASE_URL}/preventivi/${sectorSlug}/${city.slug}/`, priority, "monthly", "2026-05-01"));
   }
+}
+
+// Help centre (Phase 70) — lastmod is each article's updatedAt
+for (const article of HELP_ARTICLES) {
+  entries.push(url(`${BASE_URL}/help/${article.slug}/`, "0.7", "monthly", article.updatedAt));
 }
 
 // Blog — categories get a stable aggregate date; articles use their real publishedAt
@@ -85,6 +93,13 @@ Disallow: /sign-up
 Disallow: /onboarding
 Disallow: /admin
 Disallow: /api
+Disallow: /p/
+Disallow: /i/
+Disallow: /sign/
+Disallow: /t/
+Disallow: /team-invite/
+Disallow: /commercialista/
+Disallow: /studio
 
 # City pages outside the active region (see ACTIVE_CITIES in seo-data.ts)
 ${inactiveCitySlugs.map((slug) => `Disallow: /preventivi/*/${slug}/`).join("\n")}

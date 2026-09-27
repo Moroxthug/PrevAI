@@ -82,8 +82,10 @@ Ogni fase = typecheck pulito, build verde, e2e verdi, un commit, doc aggiornato.
 - Eseguo su staging → app v2 su staging → e2e + schema-drift check → riconciliazione conteggi.
 - **Deploy anche del codice v1 sullo staging migrato** e smoke (login, apertura preventivo storico, generazione nuovo, replay webhook WhatsApp): prova la regola §1.4 prima di toccare la prod.
 - Misuro la durata della migrazione per dimensionare la finestra di manutenzione.
+- **Esito (2026-09-21):** fatto su **Postgres 17 locale** (decisione titolare: niente terzo progetto Supabase; Storage e preview Vercel rimandati a V2-5). Migrazione unica `migrations/v2/0001_v1_to_v2_additive.sql`: 342 ms, idempotente, drift 0. e2e 63/63 con storage in memoria. v1 e v2 verificate sul DB migrato. Runbook completo in `RUNBOOKS.md` §3–§4. **La migrazione va rigenerata in V2-5** dallo schema finale di V2-4 (le colonne canadesi ancora presenti nello schema — `gst_hst_number`, `qst_number`, `etransfer_email`, `homestars_profile_url`, default `incentives_catalog` — non devono arrivare in prod).
 
 ### V2-4 — Riconciliazione feature per l'Italia (5–8 giorni)
+- **Aggiunto da V2-3:** pulizia dello schema Drizzle dalle colonne/default canadesi (`business_profiles`, `incentives_catalog`, `collaborators.role`) e dalle tabelle delle integrazioni disattivate se si decide di non crearle (QuickBooks, Wave, Flinks, LSA, Financeit, Meta lead ads); poi `schema-drift` + rigenerazione della migrazione in V2-5.
 Per ogni feature QuoteAI: tieni / rietichetta / sostituisci / disattiva. Proposta:
 
 | Feature QuoteAI | Decisione IT |
@@ -111,6 +113,7 @@ Per ogni feature QuoteAI: tieni / rietichetta / sostituisci / disattiva. Propost
 | Piani | riuso dei price ID Stripe EUR live di v1; mappare il gating di `plans.ts` su quelli |
 
 "Disattiva" = fuori dal catalogo integrazioni: sparisce da nav, settings, route e route-matrix guard, non solo nascosto.
+- **Esito (2026-09-22):** fatto come da tabella (D3 ✅). Schema: colonne canadesi di `business_profiles` sostituite da `codice_fiscale`/`codice_sdi`/`rea_number`/`iban`/`secondary_review_url`; tabelle delle integrazioni disattivate rimosse; `incentives_catalog` riportato allo schema v1 (uguale alla prod); `contract_signers.tax_id`; `invoices.bank_transfer_self_reported_at`. Fatture = pro-forma PF-/NC- con avviso art. 21 DPR 633/72. Incentivi: endpoint del widget v1 preservati (`routes/incentives.ts`, `incentives/calc.ts`), matching italiano per `/p/:id`, verifica AI v1 sul cron. Chiavi v1 del JSON cliente lette da `readQuoteClientData()`. Piani: team/cantieri/pro-forma da Pro (già così). Staging: delta `migrations/v2/0002`, drift 0, e2e 60/60. ~~V2-5 deve rigenerare `0001`~~ fatto in V2-5a (2026-09-21): `0001` rigenerata, `0002` eliminata.
 
 ### V2-5 — Migrazione produzione + cutover (1 giorno, finestra di manutenzione)
 1. Avviso utenti (Resend + banner) — orario a scelta del titolare; consiglio mattina presto di un giorno feriale.
@@ -120,8 +123,10 @@ Per ogni feature QuoteAI: tieni / rietichetta / sostituisci / disattiva. Propost
 5. Vercel `prevai`: build dal branch `v2`, env da inventario V2-0 + variabili nuove (Stripe webhook secret ri-puntato, `BETTER_AUTH_URL`/`TRUSTED_ORIGINS`=https://prevai.it). **Prima su preview URL**, smoke con login admin reale, apertura preventivi storici, rigenerazione PDF, webhook WhatsApp.
 6. Promote a produzione. Monitoraggio `vercel logs` + error tracking (Fase 69) per 48 h.
 7. Rollback pre-scritto in `RUNBOOKS.md`: Vercel → promote deployment v1 precedente. Nessuna azione sul DB.
+- **Stato (2026-09-21):** **a** preparazione ✅ — migrazione finale rigenerata e verificata (RUNBOOKS §4), runbook cutover/rollback in RUNBOOKS §5, `docs/sql/reconcile.sql`. **b/c** (env Vercel, preview, finestra, promote) in attesa di D2.
 
 ### V2-6 — Consolidamento post-cutover (1–2 settimane)
+> Stato 2026-09-22: AI Act art. 50, suite QA e check SEO eseguiti su `v2` prima del cutover (vedi PIANO-AZIONE Diario). Dopo V2-5 restano: copertura GSC, `v2` → `main`, fase contract.
 - **AI Act art. 50 (in vigore dal 2/8/2026, proroga marcatura al 2/12/2026)**: avviso "stai interagendo con un'IA" al primo contatto su assistente, support bot e bot WhatsApp; metadati "contenuto generato con IA" nei PDF/email generati. Dettagli in `AMMINISTRAZIONE-PLAN.md` §7 — va fatto qui, non aspetta il modulo fiscale.
 - Suite QA (fasi 61–70 importate): route matrix, security, sweep a11y, matrice PDF, Lighthouse.
 - SEO: ogni URL v1 indicizzato risponde 200 con lo stesso canonical; controllo copertura GSC; hreflang solo `it-IT`.

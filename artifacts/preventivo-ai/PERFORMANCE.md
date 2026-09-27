@@ -6,7 +6,7 @@ _Last updated: May 2026. Build: Vite 7 / React 19. URL: `/seo/imbianchino` (mobi
 
 ## Baseline Lighthouse Scores (before this task — May 8, 2026)
 
-Source: PageSpeed Insights (mobile) — https://www.prevai.it/seo/imbianchino
+Source: PageSpeed Insights (mobile) — https://quoteai.ca/seo/imbianchino
 
 | Category | Score | Status |
 |---|---|---|
@@ -134,7 +134,7 @@ After:  `<meta name="viewport" content="width=device-width, initial-scale=1.0">`
 
 ```bash
 # PageSpeed Insights (web UI)
-# https://pagespeed.web.dev/report?url=https%3A%2F%2Fwww.prevai.it%2Fseo%2Fimbianchino
+# https://pagespeed.web.dev/report?url=https%3A%2F%2Fquoteai.ca%2Fseo%2Fimbianchino
 
 # Local production build audit (requires Playwright Chromium):
 node /tmp/lighthouse-pw.mjs

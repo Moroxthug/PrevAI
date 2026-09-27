@@ -1,0 +1,13 @@
+# Keep LF everywhere (Vercel/CI build on Linux; CSP hashes in vercel.json are computed from LF sources)
+* text=auto eol=lf
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.webp binary
+*.ico binary
+*.woff binary
+*.woff2 binary
+*.ttf binary
+*.pdf binary
+*.mp4 binary
+*.webm binary

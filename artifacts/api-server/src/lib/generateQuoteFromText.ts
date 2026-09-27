@@ -1,17 +1,29 @@
 import { db, quotesTable, businessProfilesTable, priceCatalogItemsTable } from "@workspace/db";
 import { eq, desc, count, sql } from "drizzle-orm";
 import { openai } from "@workspace/integrations-openai-ai-server";
-import { generateNumeroPreventivo } from "./quoteNumber.js";
 import type { QuoteChapter, QuoteDiscount, QuoteCompanySnapshot, QuoteClientData } from "@workspace/db";
 import type { Logger } from "pino";
 import { trackEvent } from "./telemetry.js";
+import { linkQuoteToClient } from "./clients.js";
+import { resolveQuoteTaxRate } from "./tax.js";
+import { recordAiUsage } from "./usage.js";
+import { stripLocationPlaceholder } from "../quotes/titles.js";
 
+/**
+ * Prompt unificato PrevAI v2 (V2-2e).
+ * Base: prompt v1 (prezzi di mercato italiani 2026, adeguamento regionale, guardrail
+ * chiavi in mano) esteso con la struttura QuoteAI: listino prioritario, misure vincolanti,
+ * zero omissioni, documento 1:1, descrizione_generale estesa, note con validità/esclusioni/garanzia.
+ * Unica copia: routes/quotes.ts e routes/public-quotes.ts importano da qui.
+ */
 export const AI_PROMPT = `Sei un consulente esperto di preventivi professionali per il mercato italiano (artigiani, edilizia, impianti, servizi tecnici).
 
-Devi trasformare una descrizione libera in un'ANALISI ECONOMICA E COMPUTO METRICO PREZZATO professionale, strutturata a capitoli, coerente con i prezzi di mercato in Italia nel 2026.
+Devi trasformare una descrizione libera in un'ANALISI ECONOMICA E COMPUTO METRICO PREZZATO professionale, strutturata a capitoli, coerente con il listino del titolare (se fornito) e con i prezzi di mercato in Italia nel 2026. Scrivi TUTTI i testi (titoli, descrizioni, note) in italiano.
 
 REGOLE FONDAMENTALI:
-1. Prezzi realistici di mercato italiano 2026:
+1. Prezzi di riferimento e di listino:
+   - Se è fornito un "LISTINO PREZZI PERSONALIZZATO DELL'UTENTE", devi usare PRIORITARIAMENTE i prezzi unitari definiti nel listino per tutte le lavorazioni corrispondenti o correlate. Non inventare nuovi prezzi unitari se la voce corrisponde a qualcosa presente nel listino.
+   - Se una lavorazione non è presente nel listino, usa prezzi realistici del mercato italiano 2026:
    - RISTRUTTURAZIONE COMPLETA "CHIAVI IN MANO" (Intera casa/appartamento):
      La ristrutturazione completa comprende demolizioni, impianti nuovi, massetti, pavimentazione, tinteggiatura ed eventuali infissi/porte. I costi al mq totali reali sono:
      * Fascia Economica/Base: 450 - 650 €/mq (es. per 145mq il totale deve essere tra i 65.000€ e i 95.000€)
@@ -25,29 +37,34 @@ REGOLE FONDAMENTALI:
    - DEMOLIZIONI E RIMOZIONI: 20 - 45 €/mq (rimozione pavimenti, massetti, pareti divisorie, compreso trasporto a discarica).
    - POSA PAVIMENTI E RIVESTIMENTI: 25 - 45 €/mq (esclusi materiali). MASSETTO DI SOTTOFONDO: 20 - 30 €/mq.
    - IMBIANCHINO/PITTORE: 5–12€/mq per tinteggiatura ordinaria a due mani, 15–25€/mq per lavori speciali o rasatura/preparazione pareti.
+   - EDILIZIA GENERALE: prezzi coerenti con i prezzari DEI/regionali.
    - MANODOPERA IN ECONOMIA (oraria):
      * muratore: 35–55€/ora
      * elettricista: 40–70€/ora
      * idraulico: 45–75€/ora
      * carpentiere/falegname: 40–65€/ora
      * imbianchino: 30–45€/ora
-2. Se mancano dati specifici: fai assunzioni realistiche, NON chiedere chiarimenti
-3. Organizza il lavoro in CAPITOLI logici (A, B, C, D, …) con titoli professionali
+2. Se mancano dati specifici: fai assunzioni realistiche, NON chiedere chiarimenti. Se sono fornite le "MISURE E DIMENSIONI DELL'IMMOBILE", devi usarle rigorosamente per calcolare le quantità (mq, metri lineari, ecc.) in modo matematico.
+3. Organizza il lavoro in CAPITOLI logici (A, B, C, D, …) con titoli professionali (es: "Allestimento cantiere", "Opere di demolizione", "Nuove opere edili", "Impianto elettrico", ecc.)
 4. Ogni capitolo contiene VOCI di lavoro dettagliate con unità di misura professionali (mq, ml, mc, kg, ore, a.c., pezzi, cadauno, kw, etc.)
-5. Calcola subtotale per ogni capitolo.
-6. Applica uno sconto SOLO se l'utente lo richiede esplicitamente; altrimenti percentuale: 0
+5. Calcola subtotale per ogni capitolo. Il QUADRO SINTETICO è ricavato automaticamente dall'array capitoli (lettera + titolo + subtotale + osservazione); non serve un campo separato.
+6. Applica uno sconto SOLO se l'utente lo richiede esplicitamente nella sua descrizione; altrimenti imposta sempre percentuale: 0
 7. Condizioni di pagamento tipiche edilizia: 30% acconto firma, 30% SAL intermedio, 30% SAL finale, 10% saldo fine lavori
-8. Sempre IVA 22% salvo indicazione contraria
-9. Il titolo_riga2 deve descrivere l'intervento e il luogo del cantiere
+8. Sempre IVA 22% salvo indicazione contraria (es. 10% per ristrutturazioni edilizie su abitazioni, 4% per prima casa; se l'utente indica reverse charge o split payment, imposta iva_percentuale a 0)
+9. Il titolo_riga2 deve descrivere l'intervento e, SOLO se noto dai dati forniti, il luogo del cantiere ("Intervento di … – Milano (MI)"). Se il luogo non è indicato, ometti la parte del luogo: mai scrivere segnaposto come "[Comune]" o "(Prov)"
 10. numero_preventivo_data: NON GENERARE — il server assegna il numero automaticamente. Restituisci una stringa vuota.
+11. REGOLA CRITICA — ZERO OMISSIONI: se l'utente fornisce una descrizione dettagliata con molte voci, NUMERATE o PUNTATE, ogni singola voce deve diventare una riga distinta nel preventivo. NON riassumere, NON accorpare più voci in una sola, NON saltare o omettere voci. Se necessario, crea PIÙ CAPITOLI per contenere tutto. Ogni elemento elencato dall'utente deve avere la sua descrizione, unità di misura, quantità, prezzo unitario e totale.
+12. SE l'utente allega un documento con computo metrico o lista voci: trasforma il documento 1:1. Ogni riga del documento diventa una voce. NON inventare nuove voci, NON accorpare voci simili. Mantieni le quantità e i prezzi unitari del documento.
+13. descrizione_generale deve essere un vero riassunto di 2-4 frasi dell'intervento (cosa si fa, dove e con quale approccio generale) — mai un segnaposto né una ripetizione del titolo in una riga.
+14. note deve essere un breve paragrafo di chiusura rivolto al cliente che copra sempre: la validità del preventivo (30 giorni), una riga su cosa NON è compreso (pratiche edilizie e autorizzazioni, imprevisti dietro pareti/pavimenti esistenti, lavorazioni non espressamente elencate) e una breve garanzia sulle opere (es. "Le opere sono garantite per 2 anni dalla consegna ai sensi dell'art. 1667 c.c.; sui materiali valgono le garanzie del produttore.").
 
 OUTPUT — SOLO JSON VALIDO, nessun testo extra:
 {
   "titolo_riga1": "Analisi Economica e Computo Metrico Prezzato",
-  "titolo_riga2": "Intervento di [descrizione breve] – [Comune] ([Prov])",
+  "titolo_riga2": "Intervento di ristrutturazione bagno – Milano (MI)",
   "numero_preventivo_data": "",
   "cliente": { "nome": "", "indirizzo": "" },
-  "descrizione_generale": "Descrizione sintetica dell'intervento",
+  "descrizione_generale": "Riassunto di 2-4 frasi dell'intervento, dell'approccio e del luogo.",
   "capitoli": [
     {
       "lettera": "A",
@@ -76,14 +93,28 @@ OUTPUT — SOLO JSON VALIDO, nessun testo extra:
   "iva_percentuale": 22,
   "iva_valore": 0,
   "totale": 0,
-  "note": "Preventivo valido 30 giorni dalla data di emissione."
+  "note": "Preventivo valido 30 giorni dalla data di emissione. Sono esclusi pratiche edilizie e autorizzazioni, imprevisti dietro pareti e pavimenti esistenti e ogni lavorazione non espressamente elencata. Le opere sono garantite per 2 anni dalla consegna ai sensi dell'art. 1667 c.c.; sui materiali valgono le garanzie del produttore."
 }
 
 CALCOLI:
 - subtotale = somma di tutti i subtotali capitoli
+- Se sconto > 0: imponibile_scontato = subtotale * (1 - percentuale/100); iva_valore = imponibile_scontato * iva_percentuale/100; totale = imponibile_scontato + iva_valore
 - Se sconto = 0: iva_valore = subtotale * iva_percentuale/100; totale = subtotale + iva_valore
+- sconto.importo_scontato = subtotale dopo applicazione sconto (prima di IVA)
 
 IMPORTANTISSIMO: output SOLO JSON puro, nessuna spiegazione, nessun markdown.`;
+
+/** Nota di chiusura predefinita quando l'AI non la restituisce. */
+export const DEFAULT_QUOTE_NOTE =
+  "Preventivo valido 30 giorni dalla data di emissione. Sono esclusi pratiche edilizie e autorizzazioni, imprevisti dietro pareti e pavimenti esistenti e ogni lavorazione non espressamente elencata.";
+
+/** Condizioni di pagamento predefinite (edilizia italiana). */
+export const DEFAULT_PAYMENT_TERMS = [
+  "30% acconto alla firma del contratto",
+  "30% a completamento prima fase lavori",
+  "30% a completamento seconda fase lavori",
+  "10% saldo a fine lavori",
+];
 
 export const REGIONAL_PRICING_GUIDANCE = `ADEGUAMENTO GEOGRAFICO DEI PREZZI:
 Se dal testo, dall'indirizzo del cliente o dal luogo del cantiere è possibile individuare la regione, provincia o città italiana, adegua i prezzi unitari secondo la reale variazione del costo del lavoro edile/artigianale in Italia:
@@ -106,6 +137,61 @@ Per ogni voce di lavoro, scrivi la descrizione in stile CAPITOLATO SPECIALE D'AP
 - Indica eventuali ESCLUSIONI rilevanti e/o oneri a carico del committente
 - Usa terminologia professionale edilizia/impiantistica italiana
 Esempio: "Demolizione e rimozione di pavimentazione esistente in piastrelle ceramiche compreso il distacco mediante scalpellatura meccanica e la rimozione del massetto di allettamento per uno spessore medio di 5 cm. Compresi il carico, il trasporto e lo smaltimento del materiale di risulta presso discarica autorizzata secondo D.Lgs. 152/2006. Esclusi lavori di ripristino strutturale del sottofondo e impermeabilizzazioni."`;
+
+/** Prompt della modalità "Offerta commerciale" (template mariagrazia). */
+export const COMMERCIAL_OFFER_CONTEXT = `MODALITÀ OFFERTA COMMERCIALE ELEGANTE:
+Scrivi il preventivo in stile OFFERTA COMMERCIALE PROFESSIONALE e PERSUASIVA:
+- Le descrizioni voci devono essere CHIARE, CONCISE e BEN FORMULATE (1-3 righe per voce, massimo 4)
+- Usa un tono professionale ma accattivante, adatto a presentare un'offerta commerciale a un cliente privato
+- Enfatizza la QUALITÀ del servizio, l'ESPERIENZA e l'ATTENZIONE AI DETTAGLI
+- Organizza i capitoli in modo logico e facilmente leggibile
+- Usa titoli di capitolo descrittivi e commerciali (es. "Preparazione e allestimento cantiere", "Opere principali", "Finiture di qualità", "Pulizia e consegna")
+- Imposta titolo_riga1 = "Offerta Commerciale"
+- Includi una nota finale che sottolinei la qualità del servizio, l'esperienza dell'impresa e la garanzia sui lavori
+- Condizioni di pagamento: proponi 2-3 rate semplici e chiare (es. 50% acconto alla firma, 50% saldo fine lavori)`;
+
+/** Prompt per la riscrittura delle voci in stile capitolato (endpoint /enrich). */
+export const CAPITOLATO_REWRITE_PROMPT = `Sei un redattore esperto di CAPITOLATI TECNICI professionali per il settore edilizio e impiantistico italiano.
+
+Per ogni voce del preventivo, riscrivi la "descrizione" in stile CAPITOLATO SPECIALE D'APPALTO professionale, con ALMENO 4-6 linee tecniche in italiano formale:
+- Descrivi con precisione le operazioni eseguite e le modalità esecutive (ciclo lavorativo, tecniche, successione delle fasi)
+- Specifica materiali, prodotti e componenti con caratteristiche tecniche e standard normativi italiani/europei (UNI, CEI, UNI EN, D.Lgs., D.M.)
+- Indica le caratteristiche di qualità, resistenza, classe o certificazione richieste per i materiali
+- Indica esplicitamente cosa è COMPRESO nella voce (es. "Compresi carico, trasporto, smaltimento a discarica autorizzata...")
+- Indica eventuali ESCLUSIONI rilevanti e/o oneri a carico del committente (es. "Esclusi lavori di...")
+- Mantieni invariati: um, quantita, prezzo_unitario, totale, lettera, titolo, osservazione, subtotale
+- Scrivi tutti i testi in italiano
+
+REGOLA FONDAMENTALE: restituisci SOLO JSON valido con questa struttura esatta (nessun testo aggiuntivo):
+{
+  "capitoli": [
+    {
+      "lettera": "A",
+      "titolo": "...",
+      "osservazione": "...",
+      "voci": [
+        {
+          "descrizione": "Descrizione tecnica in stile capitolato...",
+          "um": "...",
+          "quantita": 0,
+          "prezzo_unitario": 0,
+          "totale": 0
+        }
+      ],
+      "subtotale": 0
+    }
+  ]
+}`;
+
+/** Prompt per l'arricchimento rapido delle voci da computo tabellare. */
+export const ENRICH_VOCI_PROMPT = `Sei un tecnico edile italiano esperto in capitolati speciali d'appalto.
+Per ogni voce ricevi: indice (i), capitolo (cap), titolo breve (t), unità di misura (um).
+Genera una descrizione professionale in italiano stile CAPITOLATO SPECIALE D'APPALTO:
+- Prima riga: copia esatta del titolo breve (t)
+- Seconda riga: descrizione tecnica concisa (1-2 righe) delle operazioni, materiali, lavorazioni incluse, norme di riferimento
+Usa "\\n" come separatore tra titolo e descrizione.
+OUTPUT: solo JSON array nel formato [{"i":0,"d":"Titolo\\nDescrizione tecnica..."},...]
+IMPORTANTISSIMO: output SOLO JSON puro, nessuna spiegazione, nessun markdown.`;
 
 // ── Public types ────────────────────────────────────────────────────────────────
 
@@ -183,7 +269,7 @@ function parseAiResponse(content: string, rawInput: string, profile: typeof busi
   }
 
   const imponibile = Number((calculatedSubtotale - importoScontato).toFixed(2));
-  const ivaPercentualeVal = Number(aiData.iva_percentuale ?? 22);
+  const ivaPercentualeVal = resolveQuoteTaxRate(aiData.iva_percentuale, profile?.province);
   const ivaValoreVal = Number((imponibile * ivaPercentualeVal / 100).toFixed(2));
   const totaleVal = Number((imponibile + ivaValoreVal).toFixed(2));
 
@@ -201,24 +287,19 @@ function parseAiResponse(content: string, rawInput: string, profile: typeof busi
   return {
     rawInput,
     titoloPreventivoRiga1: aiData.titolo_riga1 ?? "Analisi Economica e Computo Metrico Prezzato",
-    titoloPreventivoRiga2: aiData.titolo_riga2 ?? "",
+    titoloPreventivoRiga2: stripLocationPlaceholder(aiData.titolo_riga2 ?? ""),
     numeroPreventivoData: aiData.numero_preventivo_data ?? "",
     clientData: { nome: aiData.cliente?.nome ?? "", indirizzo: aiData.cliente?.indirizzo ?? "" },
     companySnapshot: resolvedSnapshot,
     descrizioneGenerale: aiData.descrizione_generale ?? "",
     capitoli,
     sconto,
-    condizioniPagamento: aiData.condizioni_pagamento ?? [
-      "30% acconto alla firma del contratto",
-      "30% a completamento prima fase lavori",
-      "30% a completamento seconda fase lavori",
-      "10% saldo a fine lavori",
-    ],
+    condizioniPagamento: aiData.condizioni_pagamento ?? DEFAULT_PAYMENT_TERMS,
     subtotale: calculatedSubtotale.toFixed(2),
-    ivaPercentuale: ivaPercentualeVal.toFixed(2),
+    ivaPercentuale: ivaPercentualeVal.toFixed(3),
     ivaValore: ivaValoreVal.toFixed(2),
     totale: totaleVal.toFixed(2),
-    note: aiData.note ?? "Preventivo valido 30 giorni",
+    note: aiData.note ?? DEFAULT_QUOTE_NOTE,
     capitolatoPro: !!(profile?.subscriptionStatus === "active" && (profile?.subscriptionPlan === "monthly_pro" || profile?.subscriptionPlan === "monthly_elite")),
     templateId,
   };
@@ -327,6 +408,8 @@ export async function buildQuoteFromAI({
       const cCostRate = isMini ? 0.00000060 : isGpt4 ? 0.000015 : 0.00000079;
       result.apiCost = (result.promptTokens * pCostRate) + (result.completionTokens * cCostRate);
 
+      recordAiUsage({ userId, model: result.modelUsed, kind: hasImages ? "ai_vision" : "ai_text", usage, relatedEntityType: "quote_generation" });
+
       flagIfAnomalousTotal(userId, result, log, "generation");
 
       trackEvent(userId, "quote_generation_completed", {
@@ -339,7 +422,7 @@ export async function buildQuoteFromAI({
         totalAmount: result.totale,
       });
       return result;
-    } catch (parseErr) {
+    } catch {
       trackEvent(userId, "quote_generation_failed", {
         latencyMs,
         error: "Failed to parse AI JSON response",
@@ -415,12 +498,12 @@ export async function regenerateWithCorrection({
     note: current.note,
   });
 
-  const correctionPrompt = `Modifica il seguente preventivo applicando questa istruzione: "${correction}"
+  const correctionPrompt = `Modify the following quote by applying this instruction: "${correction}"
 
-PREVENTIVO CORRENTE (JSON):
+CURRENT QUOTE (JSON):
 ${currentJson}
 
-Restituisci il preventivo aggiornato COMPLETO in JSON valido con la stessa struttura. Ricalcola tutti i subtotali, l'IVA e il totale. SOLO JSON puro, nessun testo extra.`;
+Return the COMPLETE updated quote in valid JSON with the same structure. Recalculate all subtotals, the tax, and the total. JSON ONLY, no extra text.`;
 
   const startTime = Date.now();
   trackEvent(userId, "quote_regeneration_started", {
@@ -461,6 +544,8 @@ Restituisci il preventivo aggiornato COMPLETO in JSON valido con la stessa strut
       const cCostRate = isMini ? 0.00000060 : isGpt4 ? 0.000015 : 0.00000079;
       result.apiCost = (result.promptTokens * pCostRate) + (result.completionTokens * cCostRate);
 
+      recordAiUsage({ userId, model: result.modelUsed, kind: "ai_text", usage, relatedEntityType: "quote_regeneration" });
+
       flagIfAnomalousTotal(userId, result, log, "regeneration");
 
       trackEvent(userId, "quote_regeneration_completed", {
@@ -473,7 +558,7 @@ Restituisci il preventivo aggiornato COMPLETO in JSON valido con la stessa strut
         totalAmount: result.totale,
       });
       return result;
-    } catch (parseErr) {
+    } catch {
       trackEvent(userId, "quote_regeneration_failed", {
         latencyMs,
         error: "Failed to parse AI JSON response",
@@ -524,7 +609,7 @@ export async function saveQuoteToDb({
       const today = new Date();
       const dd = String(today.getDate()).padStart(2, "0");
       const mm = String(today.getMonth() + 1).padStart(2, "0");
-      numeroPreventivoData = `N° ${nextNumber}.${year} del ${dd}/${mm}/${year}`;
+      numeroPreventivoData = `No. ${nextNumber}.${year} - ${dd}/${mm}/${year}`;
     }
 
     const [q] = await tx.insert(quotesTable).values({
@@ -574,6 +659,8 @@ export async function saveQuoteToDb({
 
     return q;
   });
+
+  await linkQuoteToClient(quote);
 
   return quote;
 }
@@ -630,15 +717,15 @@ function buildPastContext(quotes: { rawInput: string; capitoli: unknown; totale:
       const voci = caps.flatMap(c => c.voci).slice(0, 6);
       const lines = voci.map(v => `  - ${v.descrizione} (${v.um}): ${v.prezzoUnitario}€/unità`).join("\n");
       const tot = new Intl.NumberFormat("it-IT", { style: "currency", currency: "EUR" }).format(Number(q.totale));
-      return `Lavoro: "${q.rawInput.slice(0, 100).replace(/\n/g, " ")}"\nTotale: ${tot}\nPrezzi:\n${lines}`;
+      return `Lavoro: "${q.rawInput.slice(0, 100).replace(/\n/g, " ")}"\nTotale: ${tot}\nPrezzi applicati:\n${lines}`;
     });
   if (examples.length === 0) return "";
-  return `STORICO PREVENTIVI (usa come riferimento per coerenza prezzi):\n\n${examples.join("\n\n---\n\n")}`;
+  return `STORICO PREVENTIVI DELL'UTENTE (usa come riferimento per la coerenza dei prezzi):\n\n${examples.join("\n\n---\n\n")}`;
 }
 
 function buildCatalogContext(items: { nome: string; um: string; prezzoUnitario: string; categoria: string | null; note: string | null }[]): string {
   if (items.length === 0) return "";
-  return `LISTINO PREZZI PERSONALIZZATO (usa come riferimento PRIORITARIO):\n${items.map(item => `  - ${item.nome} (${item.um}): ${Number(item.prezzoUnitario).toFixed(2)}€/unità${item.categoria ? ` [${item.categoria}]` : ""}`).join("\n")}`;
+  return `LISTINO PREZZI PERSONALIZZATO DELL'UTENTE (usa questi prezzi come riferimento PRIORITARIO):\n${items.map(item => `  - ${item.nome} (${item.um}): ${Number(item.prezzoUnitario).toFixed(2)}€/unità${item.categoria ? ` [${item.categoria}]` : ""}`).join("\n")}`;
 }
 
 type AiQuoteData = {

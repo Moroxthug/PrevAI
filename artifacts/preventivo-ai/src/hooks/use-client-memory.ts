@@ -4,10 +4,10 @@ export interface SavedClient {
   id: string;
   nome: string;
   indirizzo?: string;
-  citta?: string;
-  cap?: string;
-  provincia?: string;
-  codiceFiscale?: string;
+  city?: string;
+  postalCode?: string;
+  province?: string;
+  businessNumber?: string;
   partitaIva?: string;
   lastUsed: number;
 }

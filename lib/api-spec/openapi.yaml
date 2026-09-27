@@ -26,6 +26,25 @@ tags:
   - name: documents
     description: Document upload and price intelligence extraction
 paths:
+  /tax-profiles:
+    get:
+      operationId: listTaxProfiles
+      tags: [health]
+      summary: Regimi IVA italiani (statici, pubblici)
+      responses:
+        "200":
+          description: Un profilo per regime IVA (IVA22, IVA10, IVA4, RC, SP, ESENTE)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  profiles:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/TaxProfile"
+                required: [profiles]
+
   /healthz:
     get:
       operationId: healthCheck
@@ -52,7 +71,7 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: "#/components/schemas/Quote"
+                  $ref: "#/components/schemas/QuoteSummary"
     post:
       operationId: createQuote
       tags: [quotes]
@@ -177,6 +196,44 @@ paths:
         "204":
           description: Deleted
 
+  /quotes/{id}/archive:
+    post:
+      operationId: archiveQuote
+      tags: [quotes]
+      summary: Soft-archive a quote (moves it to the Archive view)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Archived quote
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Quote"
+
+  /quotes/{id}/restore:
+    post:
+      operationId: restoreQuote
+      tags: [quotes]
+      summary: Restore an archived quote
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Restored quote
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Quote"
+
   /quotes/{id}/generate-pdf:
     post:
       operationId: generateQuotePdf
@@ -242,6 +299,99 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Quote"
+
+  /quotes/{id}/variants:
+    get:
+      operationId: listQuoteVariants
+      tags: [quotes]
+      summary: List a quote's Good/Better/Best variants
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Variants for the quote
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  variants:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/QuoteVariant"
+    post:
+      operationId: createQuoteVariant
+      tags: [quotes]
+      summary: Add a variant to a quote (clones current pricing, or another variant, by default). A quote can have at most 3.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateQuoteVariantBody"
+      responses:
+        "201":
+          description: Newly created variant
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/QuoteVariant"
+
+  /quotes/{id}/variants/{variantId}:
+    put:
+      operationId: updateQuoteVariant
+      tags: [quotes]
+      summary: Update a quote variant's pricing/content
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: variantId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateQuoteVariantBody"
+      responses:
+        "200":
+          description: Updated variant
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/QuoteVariant"
+    delete:
+      operationId: deleteQuoteVariant
+      tags: [quotes]
+      summary: Remove a quote variant
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: variantId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: Deleted
 
   /quotes/{id}/regenerate:
     post:
@@ -655,6 +805,171 @@ paths:
               schema:
                 $ref: "#/components/schemas/SuccessResult"
 
+  /calendar/status:
+    get:
+      operationId: getCalendarStatus
+      tags: [calendar]
+      summary: Get the calendar sync connection status for every provider the company has connected
+      responses:
+        "200":
+          description: Connection status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CalendarStatus"
+
+  /calendar/{provider}/connect:
+    get:
+      operationId: getCalendarConnectUrl
+      tags: [calendar]
+      summary: Get the OAuth authorization URL to redirect the browser to for a calendar provider
+      parameters:
+        - name: provider
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/CalendarProvider"
+      responses:
+        "200":
+          description: Authorization URL
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CalendarConnectUrl"
+
+  /calendar/{provider}/disconnect:
+    delete:
+      operationId: disconnectCalendar
+      tags: [calendar]
+      summary: Unlink a calendar provider from the company account
+      parameters:
+        - name: provider
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/CalendarProvider"
+      responses:
+        "200":
+          description: Disconnected
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResult"
+
+  /calendar/{provider}/toggle:
+    patch:
+      operationId: toggleCalendar
+      tags: [calendar]
+      summary: Enable or disable calendar sync for a connected provider
+      parameters:
+        - name: provider
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/CalendarProvider"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CalendarToggleBody"
+      responses:
+        "200":
+          description: Toggled
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResult"
+
+  /calendar/sync-log:
+    get:
+      operationId: getCalendarSyncLog
+      tags: [calendar]
+      summary: Recent milestone calendar sync attempts (success and failure)
+      responses:
+        "200":
+          description: Sync log
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CalendarSyncLog"
+
+  /email-connections/status:
+    get:
+      operationId: getEmailConnectionsStatus
+      tags: [emailConnections]
+      summary: Get the connected-email-sending status for every provider the company has connected
+      responses:
+        "200":
+          description: Connection status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EmailConnectionsStatus"
+
+  /email-connections/{provider}/connect:
+    get:
+      operationId: getEmailConnectionConnectUrl
+      tags: [emailConnections]
+      summary: Get the OAuth authorization URL to redirect the browser to for connected email sending
+      parameters:
+        - name: provider
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/EmailProvider"
+      responses:
+        "200":
+          description: Authorization URL
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EmailConnectionUrl"
+
+  /email-connections/{provider}/disconnect:
+    delete:
+      operationId: disconnectEmailConnection
+      tags: [emailConnections]
+      summary: Unlink a connected email account from the company account
+      parameters:
+        - name: provider
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/EmailProvider"
+      responses:
+        "200":
+          description: Disconnected
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResult"
+
+  /email-connections/{provider}/toggle:
+    patch:
+      operationId: toggleEmailConnection
+      tags: [emailConnections]
+      summary: Enable or disable connected email sending for a connected provider
+      parameters:
+        - name: provider
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/EmailProvider"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EmailConnectionToggleBody"
+      responses:
+        "200":
+          description: Toggled
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResult"
+
   /documents:
     get:
       operationId: listDocuments
@@ -707,6 +1022,53 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/PriceSummary"
+
+  /documents/price-alerts:
+    get:
+      operationId: getPriceAlerts
+      tags: [documents]
+      summary: List active (undismissed) price-trend alerts for the authenticated user
+      responses:
+        "200":
+          description: Active price-trend alerts
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/PriceAlert"
+
+  /documents/price-alerts/{id}/dismiss:
+    post:
+      operationId: dismissPriceAlert
+      tags: [documents]
+      summary: Dismiss a price-trend alert
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Alert dismissed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PriceAlert"
+
+  /documents/price-comparison:
+    get:
+      operationId: getPriceComparison
+      tags: [documents]
+      summary: Cross-supplier price comparison for work types seen from 2+ vendors
+      responses:
+        "200":
+          description: Cross-supplier comparison groups
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PriceComparisonResult"
 
   /documents/{id}/extract:
     post:
@@ -922,15 +1284,15 @@ components:
           type: string
         phone:
           type: string
-        codiceFiscale:
+        businessNumber:
           type: string
         partitaIva:
           type: string
-        citta:
+        city:
           type: string
-        cap:
+        postalCode:
           type: string
-        provincia:
+        province:
           type: string
       required:
         - nome
@@ -977,6 +1339,146 @@ components:
         - fileUrl
         - createdAt
 
+    QuoteTaxLine:
+      type: object
+      properties:
+        code:
+          type: string
+          enum: [IVA22, IVA10, IVA4, RC, SP, ESENTE, TAX]
+        label:
+          type: string
+        rate:
+          type: number
+        amount:
+          type: number
+      required: [code, label, rate, amount]
+
+    TaxProfile:
+      type: object
+      properties:
+        code:
+          type: string
+        name:
+          type: string
+        hint:
+          type: string
+        totalRate:
+          type: number
+        components:
+          type: array
+          items:
+            type: object
+            properties:
+              code:
+                type: string
+              label:
+                type: string
+              rate:
+                type: number
+            required: [code, label, rate]
+      required: [code, name, hint, totalRate, components]
+
+    QuoteVariant:
+      type: object
+      properties:
+        id:
+          type: string
+        quoteId:
+          type: string
+        label:
+          type: string
+        description:
+          type: string
+        position:
+          type: number
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/QuoteItem"
+        capitoli:
+          type: array
+          items:
+            $ref: "#/components/schemas/QuoteChapter"
+        sconto:
+          $ref: "#/components/schemas/QuoteDiscount"
+          nullable: true
+        condizioniPagamento:
+          type: array
+          items:
+            type: string
+        subtotale:
+          type: number
+        ivaPercentuale:
+          type: number
+        ivaValore:
+          type: number
+        taxLines:
+          description: Righe IVA (IVA22/IVA10/IVA4) o una riga generica "Imposta"; gli importi sommano a ivaValore.
+          type: array
+          items:
+            $ref: "#/components/schemas/QuoteTaxLine"
+        totale:
+          type: number
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+      required:
+        - id
+        - quoteId
+        - label
+        - items
+        - capitoli
+        - condizioniPagamento
+        - subtotale
+        - ivaPercentuale
+        - ivaValore
+        - totale
+        - createdAt
+        - updatedAt
+
+    CreateQuoteVariantBody:
+      type: object
+      properties:
+        label:
+          type: string
+        description:
+          type: string
+        cloneFromVariantId:
+          type: string
+          description: Clone an existing variant's pricing instead of the parent quote's current pricing.
+
+    UpdateQuoteVariantBody:
+      type: object
+      properties:
+        label:
+          type: string
+        description:
+          type: string
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/QuoteItem"
+        capitoli:
+          type: array
+          items:
+            $ref: "#/components/schemas/QuoteChapter"
+        sconto:
+          $ref: "#/components/schemas/QuoteDiscount"
+          nullable: true
+        condizioniPagamento:
+          type: array
+          items:
+            type: string
+        subtotale:
+          type: number
+        ivaPercentuale:
+          type: number
+        ivaValore:
+          type: number
+        totale:
+          type: number
+
     Quote:
       type: object
       properties:
@@ -1021,13 +1523,38 @@ components:
           type: number
         ivaValore:
           type: number
+        taxLines:
+          description: Righe IVA (IVA22/IVA10/IVA4) o una riga generica "Imposta"; gli importi sommano a ivaValore.
+          type: array
+          items:
+            $ref: "#/components/schemas/QuoteTaxLine"
+        documentLanguage:
+          description: Lingua dei documenti rivolti al cliente (sempre italiano).
+          type: string
+          enum: [it]
         totale:
           type: number
         note:
           type: string
         status:
           type: string
-          enum: [draft, unlocked, pending_payment]
+          enum: [draft, unlocked, pending_payment, accepted]
+        acceptedByName:
+          type: string
+          nullable: true
+        acceptedAt:
+          type: string
+          format: date-time
+          nullable: true
+        sentAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: When the quote was last emailed to the client (Phase 105 picks the primary action from it).
+        jobId:
+          type: string
+          nullable: true
+          description: The job started from this quote, on GET /quotes/{id} only (Phase 105).
         pdfUrl:
           type: string
           nullable: true
@@ -1048,10 +1575,20 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/QuoteAttachment'
+        acceptedVariantId:
+          type: string
+          nullable: true
+        variants:
+          type: array
+          items:
+            $ref: "#/components/schemas/QuoteVariant"
         createdAt:
           type: string
         updatedAt:
           type: string
+        archivedAt:
+          type: string
+          nullable: true
       required:
         - id
         - userId
@@ -1071,6 +1608,73 @@ components:
         - createdAt
         - updatedAt
 
+    # Phase 68: the list endpoint returns this instead of the full Quote —
+    # 500 quotes with their chapters, line items, raw input and company
+    # snapshot were 1.5 MB and 1.7 s; the list pages only read these fields.
+    QuoteSummary:
+      type: object
+      properties:
+        id:
+          type: string
+        clientId:
+          type: string
+          nullable: true
+        province:
+          type: string
+          nullable: true
+        clientData:
+          $ref: "#/components/schemas/QuoteClientData"
+        descrizioneGenerale:
+          type: string
+        title:
+          type: string
+          nullable: true
+          description: The quote heading (titoloPreventivoRiga1), Phase 105.
+        sentAt:
+          type: string
+          nullable: true
+        lineItemCount:
+          type: integer
+        subtotale:
+          type: number
+        ivaValore:
+          type: number
+        totale:
+          type: number
+        status:
+          type: string
+          enum: [draft, unlocked, pending_payment, accepted]
+        acceptedAt:
+          type: string
+          nullable: true
+        pdfUrl:
+          type: string
+          nullable: true
+        capitolatoPro:
+          type: boolean
+        templateId:
+          type: string
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+        archivedAt:
+          type: string
+          nullable: true
+      required:
+        - id
+        - clientData
+        - descrizioneGenerale
+        - lineItemCount
+        - subtotale
+        - ivaValore
+        - totale
+        - status
+        - capitolatoPro
+        - templateId
+        - createdAt
+        - updatedAt
+
     QuoteStats:
       type: object
       properties:
@@ -1079,6 +1683,8 @@ components:
         draft:
           type: number
         unlocked:
+          type: number
+        accepted:
           type: number
         pendingPayment:
           type: number
@@ -1173,7 +1779,7 @@ components:
           type: string
         status:
           type: string
-          enum: [draft, unlocked, pending_payment]
+          enum: [draft, unlocked, pending_payment, accepted]
         templateId:
           type: string
           enum: [standard, arosio, mariagrazia]
@@ -1286,6 +1892,10 @@ components:
         planType:
           type: string
           enum: [monthly_starter, monthly_pro, monthly_elite, oneshot_watermark, oneshot_clean]
+        billing:
+          type: string
+          enum: [mensile, annuale]
+          description: A-5 — periodicità dell'abbonamento (default mensile; ignorata per i preventivi singoli)
       required:
         - planType
 
@@ -1294,7 +1904,7 @@ components:
       properties:
         status:
           type: string
-          enum: [draft, unlocked, pending_payment]
+          enum: [draft, unlocked, pending_payment, accepted]
       required:
         - status
 
@@ -1318,6 +1928,10 @@ components:
           type: string
         price:
           type: number
+        annualPrice:
+          type: number
+          nullable: true
+          description: A-5 — prezzo annuale IVA inclusa (dieci mensilità); null per i preventivi singoli
         currency:
           type: string
         interval:
@@ -1384,6 +1998,10 @@ components:
           type: string
         ivaPercentuale:
           type: number
+        province:
+          description: Province the work is performed in; drives the tax components. Defaults to the client's, then the company's.
+          type: string
+          nullable: true
         condizioniPagamento:
           type: array
           items:
@@ -1536,6 +2154,9 @@ components:
       properties:
         connected:
           type: boolean
+        available:
+          type: boolean
+          description: False when the server-side app registration for this integration is missing (Phase 65) — the UI shows "not available yet" instead of a Connect button.
         phoneNumber:
           type: string
           nullable: true
@@ -1607,6 +2228,158 @@ components:
           type: boolean
       required:
         - success
+
+    CalendarProvider:
+      type: string
+      enum: [google, outlook]
+
+    CalendarConnectionStatus:
+      type: object
+      properties:
+        provider:
+          $ref: "#/components/schemas/CalendarProvider"
+        accountEmail:
+          type: string
+        isEnabled:
+          type: boolean
+        connectedAt:
+          type: string
+        lastSyncedAt:
+          type: string
+          nullable: true
+      required:
+        - provider
+        - accountEmail
+        - isEnabled
+        - connectedAt
+
+    CalendarStatus:
+      type: object
+      properties:
+        available:
+          type: object
+          description: Per-provider app-registration presence (Phase 65).
+          properties:
+            google:
+              type: boolean
+            outlook:
+              type: boolean
+          required: [google, outlook]
+        connections:
+          type: array
+          items:
+            $ref: "#/components/schemas/CalendarConnectionStatus"
+      required:
+        - connections
+
+    CalendarConnectUrl:
+      type: object
+      properties:
+        url:
+          type: string
+      required:
+        - url
+
+    CalendarToggleBody:
+      type: object
+      properties:
+        isEnabled:
+          type: boolean
+      required:
+        - isEnabled
+
+    CalendarSyncLogEntry:
+      type: object
+      properties:
+        id:
+          type: string
+        provider:
+          $ref: "#/components/schemas/CalendarProvider"
+        milestoneId:
+          type: string
+        status:
+          type: string
+        error:
+          type: string
+          nullable: true
+        updatedAt:
+          type: string
+      required:
+        - id
+        - provider
+        - milestoneId
+        - status
+        - updatedAt
+
+    CalendarSyncLog:
+      type: object
+      properties:
+        entries:
+          type: array
+          items:
+            $ref: "#/components/schemas/CalendarSyncLogEntry"
+      required:
+        - entries
+
+    EmailProvider:
+      type: string
+      enum: [google]
+
+    EmailConnectionStatus:
+      type: object
+      properties:
+        provider:
+          $ref: "#/components/schemas/EmailProvider"
+        accountEmail:
+          type: string
+        isEnabled:
+          type: boolean
+        connectedAt:
+          type: string
+        lastSendAt:
+          type: string
+          nullable: true
+        lastSendError:
+          type: string
+          nullable: true
+      required:
+        - provider
+        - accountEmail
+        - isEnabled
+        - connectedAt
+
+    EmailConnectionsStatus:
+      type: object
+      properties:
+        available:
+          type: object
+          description: Per-provider app-registration presence (Phase 65).
+          properties:
+            google:
+              type: boolean
+          required: [google]
+        connections:
+          type: array
+          items:
+            $ref: "#/components/schemas/EmailConnectionStatus"
+      required:
+        - connections
+
+    EmailConnectionUrl:
+      type: object
+      properties:
+        url:
+          type: string
+      required:
+        - url
+
+    EmailConnectionToggleBody:
+      type: object
+      properties:
+        isEnabled:
+          type: boolean
+      required:
+        - isEnabled
 
     TrialStatus:
       type: object
@@ -1748,6 +2521,80 @@ components:
         - maxPrice
         - count
 
+    PriceAlert:
+      type: object
+      properties:
+        id:
+          type: string
+        workType:
+          type: string
+        zone:
+          type: string
+          nullable: true
+        previousAvgPrice:
+          type: number
+        currentAvgPrice:
+          type: number
+        percentChange:
+          type: number
+        direction:
+          type: string
+          enum: [up, down]
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - workType
+        - previousAvgPrice
+        - currentAvgPrice
+        - percentChange
+        - direction
+        - createdAt
+
+    PriceComparisonVendor:
+      type: object
+      properties:
+        vendor:
+          type: string
+        avgPrice:
+          type: number
+        count:
+          type: number
+      required:
+        - vendor
+        - avgPrice
+        - count
+
+    PriceComparisonGroup:
+      type: object
+      properties:
+        workType:
+          type: string
+        zone:
+          type: string
+          nullable: true
+        unit:
+          type: string
+          nullable: true
+        vendors:
+          type: array
+          items:
+            $ref: "#/components/schemas/PriceComparisonVendor"
+      required:
+        - workType
+        - vendors
+
+    PriceComparisonResult:
+      type: object
+      properties:
+        comparisons:
+          type: array
+          items:
+            $ref: "#/components/schemas/PriceComparisonGroup"
+      required:
+        - comparisons
+
     Client:
       type: object
       properties:
@@ -1774,16 +2621,19 @@ components:
         indirizzo:
           type: string
           nullable: true
-        citta:
+        city:
           type: string
           nullable: true
-        provincia:
+        province:
           type: string
           nullable: true
         partitaIva:
           type: string
           nullable: true
-        codiceFiscale:
+        businessNumber:
+          type: string
+          nullable: true
+        postalCode:
           type: string
           nullable: true
       required:

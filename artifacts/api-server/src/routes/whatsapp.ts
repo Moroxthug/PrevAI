@@ -1,5 +1,7 @@
 import { Router } from "express";
 import { requireAuth, getUserId } from "../middlewares/authMiddleware";
+import { requirePermission } from "../middlewares/requirePermission.js";
+import { isIntegrationConfigured, refuseIfNotConfigured } from "../lib/integrationAvailability.js";
 import {
   db,
   whatsappConnectionsTable,
@@ -19,10 +21,10 @@ import {
   type PendingQuoteData,
 } from "../lib/generateQuoteFromText.js";
 import { generateQuoteWhatsappPdfBuffer } from "../lib/generateQuoteWhatsappPdfBuffer.js";
-import { generateQuotePreviewImage } from "../lib/generateQuotePreviewImage.js";
 import { ObjectStorageService } from "../lib/objectStorage.js";
 import { getBaseUrl } from "../lib/baseUrl.js";
 import { randomUUID } from "crypto";
+import { withWhatsappUsageContext, recordWhatsappUsageFromContext } from "../lib/usage.js";
 
 const objectStorage = new ObjectStorageService();
 const router = Router();
@@ -36,11 +38,12 @@ if (!WA_VERIFY_TOKEN) {
 const PREVAI_BASE_URL = getBaseUrl();
 const SESSION_TTL_MS = 30 * 60 * 1000; // 30 minutes
 const MAX_ITERATIONS = 3; // max correction rounds before forcing save-as-draft
+// AI Act art. 50: al primo contatto di ogni sessione l'utente sa che risponde un'IA.
+const AI_DISCLOSURE = "🤖 _Risponde un assistente basato su intelligenza artificiale: i preventivi generati vanno sempre verificati prima dell'invio._";
 
 // ── In-memory deduplication + per-number lock ──────────────────────────────────
 const processedMessageIds = new Set<string>();
 const processingLocks = new Map<string, boolean>();
-const MESSAGE_ID_WINDOW_MS = 5 * 60 * 1000; // 5 minutes
 
 function isDuplicateMessage(messageId: string): boolean {
   if (processedMessageIds.has(messageId)) return true;
@@ -77,6 +80,48 @@ async function sendWhatsappText(to: string, text: string): Promise<void> {
     body: JSON.stringify({ messaging_product: "whatsapp", to, type: "text", text: { body: text } }),
   });
   if (!res.ok) logger.error({ err: await res.text(), to }, "WhatsApp text send failed");
+  else recordWhatsappUsageFromContext();
+}
+
+/**
+ * Sends a pre-approved Meta template message ("HSM"). Business-initiated
+ * outbound (e.g. lead follow-ups) must use a template outside Meta's 24h
+ * customer-service window — free-form text (sendWhatsappText) is only legal
+ * within that window. Template names/languages must already be approved in
+ * the Meta Business Manager; this call does not submit or verify approval.
+ */
+async function sendWhatsappTemplate(
+  to: string,
+  templateName: string,
+  languageCode: string,
+  bodyParams: string[] = [],
+): Promise<boolean> {
+  if (!WA_TOKEN || !WA_PHONE_ID) {
+    logger.warn("WhatsApp env vars not configured — skipping template send");
+    return false;
+  }
+  const res = await fetch(`https://graph.facebook.com/v20.0/${WA_PHONE_ID}/messages`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${WA_TOKEN}`, "Content-Type": "application/json" },
+    body: JSON.stringify({
+      messaging_product: "whatsapp",
+      to,
+      type: "template",
+      template: {
+        name: templateName,
+        language: { code: languageCode },
+        components: bodyParams.length
+          ? [{ type: "body", parameters: bodyParams.map(text => ({ type: "text", text })) }]
+          : [],
+      },
+    }),
+  });
+  if (!res.ok) {
+    logger.error({ err: await res.text(), to, templateName }, "WhatsApp template send failed");
+    return false;
+  }
+  recordWhatsappUsageFromContext();
+  return true;
 }
 
 async function uploadMetaMedia(buffer: Buffer, mimeType: string, filename: string): Promise<string | null> {
@@ -101,52 +146,6 @@ async function uploadMetaMedia(buffer: Buffer, mimeType: string, filename: strin
   }
 }
 
-async function sendWhatsappImage(to: string, imageBuffer: Buffer, caption: string): Promise<void> {
-  if (!WA_TOKEN || !WA_PHONE_ID) return;
-
-  const mediaId = await uploadMetaMedia(imageBuffer, "image/png", "preventivo_preview.png");
-
-  if (mediaId) {
-    const res = await fetch(`https://graph.facebook.com/v20.0/${WA_PHONE_ID}/messages`, {
-      method: "POST",
-      headers: { Authorization: `Bearer ${WA_TOKEN}`, "Content-Type": "application/json" },
-      body: JSON.stringify({
-        messaging_product: "whatsapp",
-        to,
-        type: "image",
-        image: { id: mediaId, caption },
-      }),
-    });
-    if (res.ok) return;
-    logger.error({ err: await res.text(), to }, "WhatsApp image send (media-id) failed — trying link fallback");
-  }
-
-  // Fallback: Object Storage presigned URL
-  let subPath: string | null = null;
-  try {
-    subPath = `whatsapp-previews/${randomUUID()}.png`;
-    await objectStorage.uploadObjectBuffer({ subPath, buffer: imageBuffer, contentType: "image/png" });
-    const presignedUrl = await objectStorage.getPresignedGetURL(subPath, 3600);
-    const res = await fetch(`https://graph.facebook.com/v20.0/${WA_PHONE_ID}/messages`, {
-      method: "POST",
-      headers: { Authorization: `Bearer ${WA_TOKEN}`, "Content-Type": "application/json" },
-      body: JSON.stringify({
-        messaging_product: "whatsapp",
-        to,
-        type: "image",
-        image: { link: presignedUrl, caption },
-      }),
-    });
-    if (!res.ok) {
-      logger.error({ err: await res.text(), to }, "WhatsApp image send (link fallback) failed");
-    } else {
-      void objectStorage.deleteObjectBuffer(subPath).catch(e => logger.warn({ e, subPath }, "Image cleanup failed"));
-    }
-  } catch (err) {
-    logger.error({ err }, "WhatsApp image storage fallback failed");
-  }
-}
-
 async function sendWhatsappDocument(to: string, pdfBuffer: Buffer, filename: string, caption: string): Promise<void> {
   if (!WA_TOKEN || !WA_PHONE_ID) return;
 
@@ -163,7 +162,7 @@ async function sendWhatsappDocument(to: string, pdfBuffer: Buffer, filename: str
         document: { id: mediaId, filename, caption },
       }),
     });
-    if (res.ok) return;
+    if (res.ok) { recordWhatsappUsageFromContext(); return; }
     logger.error({ err: await res.text(), to }, "WhatsApp document send (media-id) failed — trying link fallback");
   }
 
@@ -185,6 +184,7 @@ async function sendWhatsappDocument(to: string, pdfBuffer: Buffer, filename: str
     if (!res.ok) {
       logger.error({ err: await res.text(), to }, "WhatsApp document send (link fallback) failed");
     } else {
+      recordWhatsappUsageFromContext();
       void objectStorage.deleteObjectBuffer(subPath).catch(e => logger.warn({ e, subPath }, "PDF cleanup failed"));
     }
   } catch (err) {
@@ -249,7 +249,7 @@ async function extractRawInput(
         messages: [
           { role: "system", content: `Sei un esperto di estrazione dati da appunti di cantiere per artigiani edili italiani.
 
-Analizza l'immagine e trascrive TUTTO il contenuto visibile:
+Analizza l'immagine e trascrivi TUTTO il contenuto visibile:
 - Testo scritto a mano: nomi, indirizzi, misure, materiali, prezzi, unità di misura
 - Numeri e quantità (mq, mc, ml, kg, ore, pezzi, ecc.)
 - Voci di lavoro con descrizioni complete
@@ -392,8 +392,8 @@ const TEMPLATES = [
 function templateFromChoice(text: string): string | null {
   const t = text.trim();
   if (t === "1" || /starter/i.test(t)) return "standard";
-  if (t === "2" || /elegante/i.test(t)) return "mariagrazia";
-  if (t === "3" || /professionale/i.test(t)) return "arosio";
+  if (t === "2" || /elegant/i.test(t)) return "mariagrazia";
+  if (t === "3" || /professional/i.test(t)) return "arosio";
   return null;
 }
 
@@ -407,9 +407,9 @@ type ConfirmIntent = "confirm" | "abandon" | "new_work_hint" | "correction";
 
 function classifyConfirmationIntent(text: string): ConfirmIntent {
   const t = text.toLowerCase().trim();
-  const confirmKeywords = ["ok", "va bene", "va benissimo", "perfetto", "procedi", "ottimo", "bene", "confermo", "conferma", "approvato", "giusto", "corretto", "andiamo", "yes", "go", "sì", "si"];
-  const abandonKeywords = ["abbandona", "ricomincia", "nuovo preventivo", "lascia stare", "annulla", "cancella", "reset", "no grazie", "ricomincia da capo"];
-  const socialBanal = ["ciao", "ciao!", "grazie", "grazie!", "grazie mille", "grazie mille!", "perfetto!", "ok!", "ottimo!", "bene!", "va bene!", "ok grazie", "ok grazie!"];
+  const confirmKeywords = ["ok", "okay", "sounds good", "perfect", "proceed", "great", "good", "confirm", "confirmed", "approved", "correct", "right", "let's go", "yes", "go", "yep", "yeah"];
+  const abandonKeywords = ["abandon", "start over", "new quote", "never mind", "cancel", "delete", "reset", "no thanks", "restart"];
+  const socialBanal = ["hi", "hi!", "hello", "hello!", "thanks", "thanks!", "thank you", "thank you!", "perfect!", "ok!", "great!", "good!", "sounds good!", "ok thanks", "ok thanks!"];
 
   if (confirmKeywords.some(kw => t === kw || t.startsWith(`${kw} `) || t.endsWith(` ${kw}`))) {
     return "confirm";
@@ -482,6 +482,8 @@ async function handleGreeting(from: string, userId: string, profile: typeof busi
   // Fast-track: both template AND client are pre-set → skip straight to job input
   if (effectiveTemplate && prefs.defaultClient?.nome) {
     await sendWhatsappText(from, [
+      AI_DISCLOSURE,
+      ``,
       `✅ Template: *${templateLabel(effectiveTemplate)}* | Cliente: *${prefs.defaultClient.nome}*`,
       `_(predefiniti — scrivi *menu* per cambiarli)_`,
       ``,
@@ -502,6 +504,8 @@ async function handleGreeting(from: string, userId: string, profile: typeof busi
         .map((c, i) => `*${i + 1}* — ${c.nome}${c.indirizzo ? ` – ${c.indirizzo}` : ""}`)
         .join("\n");
       await sendWhatsappText(from, [
+        AI_DISCLOSURE,
+        ``,
         `✅ Template: *${templateLabel(effectiveTemplate)}* _(predefinito)_`,
         ``,
         `👤 Scegli il cliente:`,
@@ -517,6 +521,8 @@ async function handleGreeting(from: string, userId: string, profile: typeof busi
       }, 0);
     } else {
       await sendWhatsappText(from, [
+        AI_DISCLOSURE,
+        ``,
         `✅ Template: *${templateLabel(effectiveTemplate)}* _(predefinito)_`,
         ``,
         `👤 Inserisci *nome e indirizzo* del cliente (es. "Mario Rossi, Via Roma 1, Milano"), oppure scrivi *salta*.`,
@@ -538,6 +544,7 @@ async function handleGreeting(from: string, userId: string, profile: typeof busi
 
   await sendWhatsappText(from, [
     `👋 Ciao! Sono *PrevAI*, il tuo assistente per preventivi professionali.`,
+    AI_DISCLOSURE,
     ``,
     `Che tipo di preventivo vuoi creare?`,
     ``,
@@ -554,7 +561,7 @@ async function handleGreeting(from: string, userId: string, profile: typeof busi
 
 async function sendMainMenu(from: string, userId: string, prefs: WhatsappPreferences) {
   const defaultTmpl = templateLabel(prefs.defaultTemplate ?? "standard");
-  const defaultClient = prefs.defaultClient?.nome || "nessuno";
+  const defaultClient = prefs.defaultClient?.nome || "none";
   const defaultIva = prefs.defaultIva ?? 22;
 
   await sendWhatsappText(from, [
@@ -588,7 +595,7 @@ async function handleMenuMainReply(
 ) {
   const t = text.trim().toLowerCase();
 
-  if (t === "p" || t === "preventivo" || t === "nuovo preventivo") {
+  if (t === "p" || t === "quote" || t === "new quote" || t === "preventivo" || t === "nuovo preventivo") {
     await deleteSession(from);
     await handleGreeting(from, userId, profile);
     return;
@@ -690,15 +697,15 @@ async function handleQuoteHistory(from: string, userId: string) {
     return;
   }
 
-  const eur = (v: string | null) =>
+  const euro = (v: string | null) =>
     new Intl.NumberFormat("it-IT", { style: "currency", currency: "EUR" }).format(Number(v ?? 0));
 
   const lines = quotes.map((q, i) => {
     const cd = q.clientData as { nome?: string } | null;
     const clientStr = cd?.nome ? ` — ${cd.nome}` : "";
     const dateStr = q.createdAt.toLocaleDateString("it-IT", { day: "2-digit", month: "2-digit" });
-    const total = eur(q.totale);
-    return `*${i + 1}.* ${q.titoloPreventivoRiga2 ?? "Preventivo"}${clientStr}\n    ${total} — ${dateStr}`;
+    const total = euro(q.totale);
+    return `*${i + 1}.* ${q.titoloPreventivoRiga2 ?? "Quote"}${clientStr}\n    ${total} — ${dateStr}`;
   });
 
   await sendWhatsappText(from, [
@@ -812,7 +819,7 @@ async function handleTemplateMenuReply(
   }
 
   if ((templateId === "mariagrazia" || templateId === "arosio") && !isPro) {
-    await sendWhatsappText(from, `⚠️ Il template *${templateLabel(templateId)}* richiede Piano Pro/Elite.\n\nAggiorna su: ${PREVAI_BASE_URL}/dashboard/settings`);
+    await sendWhatsappText(from, `⚠️ Il template *${templateLabel(templateId)}* richiede Piano Pro/Elite.\n\nAggiorna su: ${PREVAI_BASE_URL}/dashboard/settings/plan`);
     return;
   }
 
@@ -821,14 +828,16 @@ async function handleTemplateMenuReply(
   await deleteSession(from);
 }
 
-// ── Menu: IVA ───────────────────────────────────────────────────────────────────
+// ── Menu: tax rate ────────────────────────────────────────────────────────────
 
-const IVA_OPTIONS = [4, 5, 10, 22];
+// Aliquote IVA italiane: 4% (prima casa, super-ridotta), 5%, 10% (ristrutturazioni
+// e manutenzione straordinaria residenziale), 22% (ordinaria).
+const TAX_RATE_OPTIONS = [4, 5, 10, 22];
 
 async function handleIvaMenu(from: string, userId: string, prefs: WhatsappPreferences) {
-  const currentIva = prefs.defaultIva ?? 22;
-  const lines = IVA_OPTIONS.map((iva, i) =>
-    `*${i + 1}* — ${iva}%${iva === currentIva ? " ✓" : ""}`
+  const currentRate = prefs.defaultIva ?? 22;
+  const lines = TAX_RATE_OPTIONS.map((rate, i) =>
+    `*${i + 1}* — ${rate}%${rate === currentRate ? " ✓" : ""}`
   );
 
   await sendWhatsappText(from, [
@@ -846,10 +855,10 @@ async function handleIvaMenu(from: string, userId: string, prefs: WhatsappPrefer
 async function handleIvaMenuReply(from: string, userId: string, text: string) {
   const choice = parseInt(text.trim(), 10);
 
-  if (choice >= 1 && choice <= IVA_OPTIONS.length) {
-    const iva = IVA_OPTIONS[choice - 1]!;
-    await setPreferences(userId, { defaultIva: iva });
-    await sendWhatsappText(from, `✅ Aliquota IVA predefinita impostata a *${iva}%*.\n\n_Scrivi *menu* per le impostazioni o *P* per un nuovo preventivo._`);
+  if (choice >= 1 && choice <= TAX_RATE_OPTIONS.length) {
+    const rate = TAX_RATE_OPTIONS[choice - 1]!;
+    await setPreferences(userId, { defaultIva: rate });
+    await sendWhatsappText(from, `✅ Default tax rate set to *${rate}%*.\n\n_Type *menu* for settings or *P* for a new quote._`);
     await deleteSession(from);
   } else {
     await sendWhatsappText(from, `🤔 Rispondi con *1* (4%), *2* (5%), *3* (10%) o *4* (22%).`);
@@ -895,7 +904,7 @@ async function handleTemplateSelectionReply(
   if ((templateId === "mariagrazia" || templateId === "arosio") && !isPro) {
     await sendWhatsappText(
       from,
-      `⚠️ Il template *${templateLabel(templateId)}* è disponibile solo per i piani Pro ed Elite.\n\nAggiorna il tuo piano su ${PREVAI_BASE_URL}/dashboard/settings oppure scegli il template *Starter* (rispondi *1*).`
+      `⚠️ Il template *${templateLabel(templateId)}* è disponibile solo per i piani Pro ed Elite.\n\nAggiorna il tuo piano su ${PREVAI_BASE_URL}/dashboard/settings/plan oppure scegli il template *Starter* (rispondi *1*).`
     );
     return;
   }
@@ -1026,17 +1035,17 @@ async function handleJobInputReply(
       .from(quotesTable)
       .where(and(eq(quotesTable.userId, userId), eq(quotesTable.source, "whatsapp"), gte(quotesTable.createdAt, startOfMonth)));
     if ((countResult?.count ?? 0) >= 20) {
-      await sendWhatsappText(from, `⚠️ Hai raggiunto il limite di *20 preventivi WhatsApp* per questo mese (Piano Pro).\n\nIl contatore si azzera il 1° del mese prossimo.\nPer preventivi illimitati, passa al piano Elite: ${PREVAI_BASE_URL}/dashboard/settings`);
+      await sendWhatsappText(from, `⚠️ Hai raggiunto il limite di *20 preventivi WhatsApp* per questo mese (Piano Pro).\n\nIl contatore si azzera il 1° del mese prossimo.\nPer preventivi illimitati, passa al piano Elite: ${PREVAI_BASE_URL}/dashboard/settings/plan`);
       return;
     }
   }
 
   await sendWhatsappText(from, "⏳ Sto generando il tuo preventivo, attendi qualche secondo...");
 
-  // Prepend default IVA hint to rawInput if user has set a non-default rate
+  // Prepend default tax-rate hint to rawInput if user has set a non-default rate
   const prefs = await getPreferences(userId);
   const ivaHint = prefs.defaultIva && prefs.defaultIva !== 22
-    ? `[Usa aliquota IVA ${prefs.defaultIva}%]\n`
+    ? `[Use a tax rate of ${prefs.defaultIva}%]\n`
     : "";
   const augmentedInput = `${ivaHint}${rawInput}`;
 
@@ -1127,7 +1136,7 @@ async function handleClientDataReply(
   const pendingData = session.pendingQuoteData as unknown as PendingQuoteData;
 
   const t = text.toLowerCase().trim();
-  const abandonKeywords = ["abbandona", "ricomincia", "annulla", "cancella", "reset", "ricomincia da capo"];
+  const abandonKeywords = ["abandon", "start over", "cancel", "reset", "abbandona", "ricomincia", "annulla", "cancella", "ricomincia da capo"];
   if (abandonKeywords.some(kw => t.includes(kw))) {
     await deleteSession(from);
     await sendWhatsappText(from, "🗑️ Preventivo annullato.\n\nInviami un nuovo messaggio quando vuoi.");
@@ -1149,7 +1158,7 @@ async function finalizeQuote(
   from: string,
   userId: string,
   data: PendingQuoteData,
-  profile: typeof businessProfilesTable.$inferSelect,
+  _profile: typeof businessProfilesTable.$inferSelect,
 ) {
   await sendWhatsappText(from, "⏳ Sto salvando il preventivo e generando il PDF...");
 
@@ -1172,7 +1181,7 @@ async function finalizeQuote(
 
     const [profileRow] = await db.select().from(businessProfilesTable).where(eq(businessProfilesTable.userId, userId));
     const pdfBuffer = await generateQuoteWhatsappPdfBuffer(quote, profileRow ?? null);
-    const safeTitle = (quote.titoloPreventivoRiga2 ?? "preventivo").toLowerCase().replace(/[^a-z0-9]+/g, "-").slice(0, 60);
+    const safeTitle = (quote.titoloPreventivoRiga2 ?? "quote").toLowerCase().replace(/[^a-z0-9]+/g, "-").slice(0, 60);
     await sendWhatsappDocument(from, pdfBuffer, `${safeTitle}.pdf`, `📄 PDF — ${quote.titoloPreventivoRiga2 ?? ""}`.trim());
   } catch (err) {
     logger.error({ err }, "WhatsApp save/PDF failed");
@@ -1241,12 +1250,12 @@ router.post("/whatsapp/webhook", async (req, res) => {
         .where(eq(whatsappConnectionsTable.phoneNumber, from));
 
       if (!connection) {
-        await sendWhatsappText(from, `ℹ️ Il tuo numero non è collegato a nessun account prevai.\n\nAccedi a ${PREVAI_BASE_URL}/dashboard/settings e collega il tuo numero WhatsApp.`);
+        await sendWhatsappText(from, `ℹ️ Il tuo numero non è collegato a nessun account prevai.\n\nAccedi a ${PREVAI_BASE_URL}/dashboard/settings/whatsapp e collega il tuo numero WhatsApp.`);
         return;
       }
 
       if (!connection.isEnabled) {
-        await sendWhatsappText(from, `ℹ️ L'integrazione WhatsApp è disabilitata. Riabilitala su ${PREVAI_BASE_URL}/dashboard/settings`);
+        await sendWhatsappText(from, `ℹ️ L'integrazione WhatsApp è disabilitata. Riabilitala su ${PREVAI_BASE_URL}/dashboard/settings/whatsapp`);
         return;
       }
 
@@ -1254,70 +1263,72 @@ router.post("/whatsapp/webhook", async (req, res) => {
       const [profile] = await db.select().from(businessProfilesTable).where(eq(businessProfilesTable.userId, connection.userId));
       const allowedPlans = ["monthly_pro", "monthly_elite"];
       if (profile?.subscriptionStatus !== "active" || !allowedPlans.includes(profile?.subscriptionPlan ?? "")) {
-        await sendWhatsappText(from, `⚠️ Il tuo account non ha un piano attivo che include WhatsApp. Aggiornalo su ${PREVAI_BASE_URL}/dashboard/settings`);
+        await sendWhatsappText(from, `⚠️ Il tuo account non ha un piano attivo che include WhatsApp. Aggiornalo su ${PREVAI_BASE_URL}/dashboard/settings/plan`);
         return;
       }
 
-      // ── Load session ────────────────────────────────────────────────────────────
-      const session = await loadValidSession(from);
+      await withWhatsappUsageContext(connection.userId, async () => {
+        // ── Load session ────────────────────────────────────────────────────────────
+        const session = await loadValidSession(from);
 
-      // ── Menu trigger — intercepts any state (except OTP, handled above) ─────────
-      if (isMenuTrigger(rawInput)) {
-        const prefs = await getPreferences(connection.userId);
-        await sendMainMenu(from, connection.userId, prefs);
-        return;
-      }
+        // ── Menu trigger — intercepts any state (except OTP, handled above) ─────────
+        if (isMenuTrigger(rawInput)) {
+          const prefs = await getPreferences(connection.userId);
+          await sendMainMenu(from, connection.userId, prefs);
+          return;
+        }
 
-      // ── Menu state routing ───────────────────────────────────────────────────────
-      if (session?.state === "menu_main") {
-        await handleMenuMainReply(from, connection.userId, rawInput, profile);
-        return;
-      }
+        // ── Menu state routing ───────────────────────────────────────────────────────
+        if (session?.state === "menu_main") {
+          await handleMenuMainReply(from, connection.userId, rawInput, profile);
+          return;
+        }
 
-      if (session?.state === "menu_clients") {
-        await handleClientsMenuReply(from, connection.userId, rawInput, session);
-        return;
-      }
+        if (session?.state === "menu_clients") {
+          await handleClientsMenuReply(from, connection.userId, rawInput, session);
+          return;
+        }
 
-      if (session?.state === "menu_template") {
-        await handleTemplateMenuReply(from, connection.userId, rawInput, profile);
-        return;
-      }
+        if (session?.state === "menu_template") {
+          await handleTemplateMenuReply(from, connection.userId, rawInput, profile);
+          return;
+        }
 
-      if (session?.state === "menu_iva") {
-        await handleIvaMenuReply(from, connection.userId, rawInput);
-        return;
-      }
+        if (session?.state === "menu_iva") {
+          await handleIvaMenuReply(from, connection.userId, rawInput);
+          return;
+        }
 
-      // ── Quote flow state routing ─────────────────────────────────────────────────
-      if (session?.state === "awaiting_template_selection") {
-        await handleTemplateSelectionReply(from, connection.userId, rawInput, profile);
-        return;
-      }
+        // ── Quote flow state routing ─────────────────────────────────────────────────
+        if (session?.state === "awaiting_template_selection") {
+          await handleTemplateSelectionReply(from, connection.userId, rawInput, profile);
+          return;
+        }
 
-      if (session?.state === "awaiting_client_choice") {
-        await handleClientChoiceReply(from, connection.userId, rawInput, session);
-        return;
-      }
+        if (session?.state === "awaiting_client_choice") {
+          await handleClientChoiceReply(from, connection.userId, rawInput, session);
+          return;
+        }
 
-      if (session?.state === "awaiting_job_input") {
-        await handleJobInputReply(from, connection.userId, rawInput, session, profile, imageDataUrls);
-        return;
-      }
+        if (session?.state === "awaiting_job_input") {
+          await handleJobInputReply(from, connection.userId, rawInput, session, profile, imageDataUrls);
+          return;
+        }
 
-      if (session?.state === "awaiting_confirmation") {
-        await handleConfirmationReply(from, connection.userId, rawInput, session, profile);
-        return;
-      }
+        if (session?.state === "awaiting_confirmation") {
+          await handleConfirmationReply(from, connection.userId, rawInput, session, profile);
+          return;
+        }
 
-      if (session?.state === "awaiting_client_data") {
-        // Legacy backward-compat handler
-        await handleClientDataReply(from, connection.userId, rawInput, session, profile);
-        return;
-      }
+        if (session?.state === "awaiting_client_data") {
+          // Legacy backward-compat handler
+          await handleClientDataReply(from, connection.userId, rawInput, session, profile);
+          return;
+        }
 
-      // ── No session: start greeting flow ─────────────────────────────────────────
-      await handleGreeting(from, connection.userId, profile);
+        // ── No session: start greeting flow ─────────────────────────────────────────
+        await handleGreeting(from, connection.userId, profile);
+      });
     } finally {
       releaseProcessingLock(from);
     }
@@ -1356,7 +1367,7 @@ async function handleInboundOtpVerification(phoneNumber: string, otp: string): P
 
   await sendWhatsappText(
     phoneNumber,
-    `✅ *Account collegato!*\n\nCiao ${profile?.companyName ?? ""}! 👋\n\nInviami qualsiasi messaggio per iniziare a creare un preventivo professionale.`
+    `✅ *Account collegato!*\n\nCiao ${profile?.companyName ?? ""}! 👋\n\n${AI_DISCLOSURE}\n\nInviami qualsiasi messaggio per iniziare a creare un preventivo professionale.`
   );
 }
 
@@ -1367,7 +1378,7 @@ router.get("/whatsapp/status", requireAuth, async (req, res) => {
     const userId = getUserId(res);
     const [connection] = await db.select().from(whatsappConnectionsTable).where(eq(whatsappConnectionsTable.userId, userId));
     const businessNumber = process.env.WHATSAPP_BUSINESS_NUMBER ?? null;
-    res.json({ connected: !!connection, phoneNumber: connection?.phoneNumber ?? null, isEnabled: connection?.isEnabled ?? null, businessNumber });
+    res.json({ connected: !!connection, available: isIntegrationConfigured("whatsapp"), phoneNumber: connection?.phoneNumber ?? null, isEnabled: connection?.isEnabled ?? null, businessNumber });
   } catch (err) {
     req.log.error({ err }, "WhatsApp status error");
     res.status(500).json({ error: "Internal server error" });
@@ -1399,7 +1410,7 @@ router.get("/whatsapp/usage", requireAuth, async (req, res) => {
   }
 });
 
-router.post("/whatsapp/connect", requireAuth, async (req, res) => {
+router.post("/whatsapp/connect", requireAuth, requirePermission("integrations", "full"), async (req, res) => {
   try {
     const userId = getUserId(res);
     const { phoneNumber } = req.body as { phoneNumber?: string };
@@ -1420,12 +1431,12 @@ router.post("/whatsapp/connect", requireAuth, async (req, res) => {
       return;
     }
 
+    if (refuseIfNotConfigured(res, "whatsapp", "WhatsApp")) return;
     const otp = generateOtp();
     const expiresAt = new Date(Date.now() + 15 * 60 * 1000);
     await db.insert(whatsappOtpTable).values({ phoneNumber: normalized, otp, userId, expiresAt })
       .onConflictDoUpdate({ target: whatsappOtpTable.phoneNumber, set: { otp, userId, expiresAt } });
 
-    if (!WA_TOKEN || !WA_PHONE_ID) { res.status(503).json({ error: "L'integrazione WhatsApp non è ancora configurata." }); return; }
     await sendWhatsappText(normalized, `🔐 *Codice di verifica PrevAI*\n\nIl tuo codice è: *${otp}*\n\nInseriscilo nella pagina Impostazioni. Valido 15 minuti.`);
     res.json({ sent: true, phoneNumber: normalized });
   } catch (err) {
@@ -1434,7 +1445,7 @@ router.post("/whatsapp/connect", requireAuth, async (req, res) => {
   }
 });
 
-router.post("/whatsapp/verify", requireAuth, async (req, res) => {
+router.post("/whatsapp/verify", requireAuth, requirePermission("integrations", "full"), async (req, res) => {
   try {
     const userId = getUserId(res);
     const { phoneNumber, otp } = req.body as { phoneNumber?: string; otp?: string };
@@ -1454,7 +1465,7 @@ router.post("/whatsapp/verify", requireAuth, async (req, res) => {
       .onConflictDoUpdate({ target: whatsappConnectionsTable.userId, set: { phoneNumber: normalized, isEnabled: true, connectedAt: new Date() } });
 
     const [profile] = await db.select({ companyName: businessProfilesTable.companyName }).from(businessProfilesTable).where(eq(businessProfilesTable.userId, userId));
-    await sendWhatsappText(normalized, `✅ *Account collegato con successo!*\n\nCiao ${profile?.companyName ?? ""}! 👋\n\nInviami qualsiasi messaggio per iniziare a creare un preventivo.`);
+    await sendWhatsappText(normalized, `✅ *Account collegato con successo!*\n\nCiao ${profile?.companyName ?? ""}! 👋\n\n${AI_DISCLOSURE}\n\nInviami qualsiasi messaggio per iniziare a creare un preventivo.`);
     res.json({ success: true });
   } catch (err) {
     req.log.error({ err }, "WhatsApp verify error");
@@ -1462,7 +1473,7 @@ router.post("/whatsapp/verify", requireAuth, async (req, res) => {
   }
 });
 
-router.delete("/whatsapp/disconnect", requireAuth, async (req, res) => {
+router.delete("/whatsapp/disconnect", requireAuth, requirePermission("integrations", "full"), async (req, res) => {
   try {
     const userId = getUserId(res);
     await db.delete(whatsappConnectionsTable).where(eq(whatsappConnectionsTable.userId, userId));
@@ -1473,7 +1484,7 @@ router.delete("/whatsapp/disconnect", requireAuth, async (req, res) => {
   }
 });
 
-router.patch("/whatsapp/toggle", requireAuth, async (req, res) => {
+router.patch("/whatsapp/toggle", requireAuth, requirePermission("integrations", "full"), async (req, res) => {
   try {
     const userId = getUserId(res);
     const { isEnabled } = req.body as { isEnabled?: boolean };
@@ -1501,6 +1512,7 @@ function normalizePhone(input: string): string | null {
 
 // Kept for backwards-compatibility with the web (non-WhatsApp) quote generation
 export { generateQuoteFromText };
+export { sendWhatsappText, sendWhatsappTemplate };
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 

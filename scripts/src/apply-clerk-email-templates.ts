@@ -1,8 +1,8 @@
 /**
  * apply-clerk-email-templates.ts
  *
- * Applies Prevai branding to Clerk system email templates via the Clerk Backend API.
- * Custom HTML bodies with Prevai purple gradient header, logo, and Italian copy.
+ * Applies QuoteAI branding to Clerk system email templates via the Clerk Backend API.
+ * Custom HTML bodies with QuoteAI purple gradient header, logo, and Italian copy.
  *
  * Run for dev:  CLERK_SECRET_KEY=sk_test_... pnpm --filter @workspace/scripts run apply-clerk-email-templates
  * Run for prod: CLERK_SECRET_KEY=sk_live_... pnpm --filter @workspace/scripts run apply-clerk-email-templates
@@ -71,7 +71,7 @@ function wrapEmail(title: string, preheader: string, bodyContent: string): strin
         <tr>
           <td style="background:#f9fafb;padding:20px 40px;border-top:1px solid #f3f4f6;text-align:center">
             <p style="margin:0;font-family:system-ui,-apple-system,Arial,sans-serif;font-size:12px;color:#9ca3af;line-height:1.6">
-              &copy; {{current_year}} Prevai &middot; Preventivi professionali con l'AI
+              &copy; {{current_year}} QuoteAI &middot; Preventivi professionali con l'AI
             </p>
           </td>
         </tr>
@@ -116,8 +116,8 @@ function divider(): string {
 // ─── Template Bodies ──────────────────────────────────────────────────────────
 
 const VERIFICATION_CODE_BODY = wrapEmail(
-  "{{otp_code}} è il tuo codice di verifica – Prevai",
-  "{{otp_code}} è il tuo codice di verifica Prevai. Scade tra 10 minuti.",
+  "{{otp_code}} è il tuo codice di verifica – QuoteAI",
+  "{{otp_code}} è il tuo codice di verifica QuoteAI. Scade tra 10 minuti.",
   `
   ${heading("Verifica il tuo indirizzo email")}
   ${bodyText("Usa il codice seguente per completare la verifica. Non condividerlo con nessuno.")}
@@ -129,11 +129,11 @@ const VERIFICATION_CODE_BODY = wrapEmail(
 );
 
 const RESET_PASSWORD_BODY = wrapEmail(
-  "{{otp_code}} è il tuo codice per reimpostare la password – Prevai",
-  "Codice per reimpostare la password del tuo account Prevai.",
+  "{{otp_code}} è il tuo codice per reimpostare la password – QuoteAI",
+  "Codice per reimpostare la password del tuo account QuoteAI.",
   `
   ${heading("Reimposta la tua password")}
-  ${bodyText("Hai richiesto di reimpostare la password del tuo account Prevai. Usa il codice seguente:")}
+  ${bodyText("Hai richiesto di reimpostare la password del tuo account QuoteAI. Usa il codice seguente:")}
   ${otpBlock("{{otp_code}}")}
   ${bodyText("Il codice scade tra <strong>10 minuti</strong>. Non condividerlo con nessuno.")}
   ${divider()}
@@ -143,12 +143,12 @@ const RESET_PASSWORD_BODY = wrapEmail(
 
 // Magic link templates require {{magic_link}} variable in the body
 const MAGIC_LINK_SIGN_IN_BODY = wrapEmail(
-  "Il tuo link per accedere a Prevai",
-  "Clicca sul link per accedere al tuo account Prevai.",
+  "Il tuo link per accedere a QuoteAI",
+  "Clicca sul link per accedere al tuo account QuoteAI.",
   `
   ${heading("Accedi al tuo account")}
-  ${bodyText("Clicca sul pulsante qui sotto per accedere a Prevai. Il link è valido per {{ttl_minutes}} minuti.")}
-  ${primaryButton("Accedi a Prevai →", "{{magic_link}}")}
+  ${bodyText("Clicca sul pulsante qui sotto per accedere a QuoteAI. Il link è valido per {{ttl_minutes}} minuti.")}
+  ${primaryButton("Accedi a QuoteAI →", "{{magic_link}}")}
   ${bodyText("Se il pulsante non funziona, copia e incolla questo link nel browser:<br><a href='{{magic_link}}' style='color:#7c3aed;word-break:break-all'>{{magic_link}}</a>", "font-size:13px;margin-top:20px")}
   ${divider()}
   ${bodyText("<strong>Non hai richiesto questo link?</strong><br>Richiesta da <strong>{{requested_from}}</strong>. Puoi ignorare questa email in sicurezza.", "font-size:13px;color:#9ca3af")}
@@ -156,11 +156,11 @@ const MAGIC_LINK_SIGN_IN_BODY = wrapEmail(
 );
 
 const MAGIC_LINK_SIGN_UP_BODY = wrapEmail(
-  "Il tuo link per registrarti su Prevai",
-  "Clicca sul link per completare la registrazione su Prevai.",
+  "Il tuo link per registrarti su QuoteAI",
+  "Clicca sul link per completare la registrazione su QuoteAI.",
   `
   ${heading("Completa la registrazione")}
-  ${bodyText("Clicca sul pulsante qui sotto per completare la registrazione su Prevai e iniziare a creare preventivi professionali in pochi secondi.")}
+  ${bodyText("Clicca sul pulsante qui sotto per completare la registrazione su QuoteAI e iniziare a creare preventivi professionali in pochi secondi.")}
   ${primaryButton("Completa registrazione →", "{{magic_link}}")}
   ${bodyText("Se il pulsante non funziona, copia e incolla questo link nel browser:<br><a href='{{magic_link}}' style='color:#7c3aed;word-break:break-all'>{{magic_link}}</a>", "font-size:13px;margin-top:20px")}
   ${divider()}
@@ -169,11 +169,11 @@ const MAGIC_LINK_SIGN_UP_BODY = wrapEmail(
 );
 
 const MAGIC_LINK_VERIFY_EMAIL_BODY = wrapEmail(
-  "Verifica il tuo indirizzo email – Prevai",
-  "Clicca sul link per verificare il tuo indirizzo email su Prevai.",
+  "Verifica il tuo indirizzo email – QuoteAI",
+  "Clicca sul link per verificare il tuo indirizzo email su QuoteAI.",
   `
   ${heading("Verifica il tuo indirizzo email")}
-  ${bodyText("Clicca sul pulsante qui sotto per verificare il nuovo indirizzo email associato al tuo account Prevai.")}
+  ${bodyText("Clicca sul pulsante qui sotto per verificare il nuovo indirizzo email associato al tuo account QuoteAI.")}
   ${primaryButton("Verifica email →", "{{magic_link}}")}
   ${bodyText("Se il pulsante non funziona, copia e incolla questo link nel browser:<br><a href='{{magic_link}}' style='color:#7c3aed;word-break:break-all'>{{magic_link}}</a>", "font-size:13px;margin-top:20px")}
   ${divider()}
@@ -183,34 +183,34 @@ const MAGIC_LINK_VERIFY_EMAIL_BODY = wrapEmail(
 
 // password_changed requires {{primary_email_address}} variable in the body
 const PASSWORD_CHANGED_BODY = wrapEmail(
-  "La tua password Prevai è stata modificata",
-  "La password del tuo account Prevai è stata modificata con successo.",
+  "La tua password QuoteAI è stata modificata",
+  "La password del tuo account QuoteAI è stata modificata con successo.",
   `
   ${heading("Password modificata")}
-  ${bodyText("Ti informiamo che la password dell'account <strong>{{primary_email_address}}</strong> su Prevai è stata modificata con successo.")}
+  ${bodyText("Ti informiamo che la password dell'account <strong>{{primary_email_address}}</strong> su QuoteAI è stata modificata con successo.")}
   ${bodyText("Se sei stato tu a effettuare questa modifica, non è necessario fare nient'altro.")}
   ${divider()}
-  ${bodyText("<strong>Non sei stato tu?</strong><br>Se non hai modificato la password, contatta immediatamente il supporto su <a href='mailto:supporto@prevai.it' style='color:#7c3aed'>supporto@prevai.it</a> o reimposta la password accedendo a Prevai.", "font-size:13px;color:#9ca3af")}
+  ${bodyText("<strong>Non sei stato tu?</strong><br>Se non hai modificato la password, contatta immediatamente il supporto su <a href='mailto:supporto@quoteai.ca' style='color:#7c3aed'>supporto@quoteai.ca</a> o reimposta la password accedendo a QuoteAI.", "font-size:13px;color:#9ca3af")}
   `,
 );
 
 const NEW_DEVICE_BODY = wrapEmail(
-  "Nuovo accesso al tuo account Prevai",
-  "È stato rilevato un accesso da un nuovo dispositivo al tuo account Prevai.",
+  "Nuovo accesso al tuo account QuoteAI",
+  "È stato rilevato un accesso da un nuovo dispositivo al tuo account QuoteAI.",
   `
   ${heading("Nuovo accesso rilevato")}
-  ${bodyText("È stato effettuato un accesso al tuo account Prevai da un nuovo dispositivo o browser.")}
+  ${bodyText("È stato effettuato un accesso al tuo account QuoteAI da un nuovo dispositivo o browser.")}
   ${divider()}
-  ${bodyText("<strong>Non sei stato tu?</strong><br>Se non riconosci questo accesso, contatta immediatamente il supporto su <a href='mailto:supporto@prevai.it' style='color:#7c3aed'>supporto@prevai.it</a> e modifica la password.", "font-size:13px;color:#9ca3af")}
+  ${bodyText("<strong>Non sei stato tu?</strong><br>Se non riconosci questo accesso, contatta immediatamente il supporto su <a href='mailto:supporto@quoteai.ca' style='color:#7c3aed'>supporto@quoteai.ca</a> e modifica la password.", "font-size:13px;color:#9ca3af")}
   `,
 );
 
 const INVITATION_BODY = wrapEmail(
-  "Sei stato invitato su Prevai",
-  "Hai ricevuto un invito per accedere a Prevai.",
+  "Sei stato invitato su QuoteAI",
+  "Hai ricevuto un invito per accedere a QuoteAI.",
   `
   ${heading("Sei stato invitato!")}
-  ${bodyText("Hai ricevuto un invito per accedere a Prevai — la piattaforma AI per creare preventivi professionali in pochi secondi.")}
+  ${bodyText("Hai ricevuto un invito per accedere a QuoteAI — la piattaforma AI per creare preventivi professionali in pochi secondi.")}
   ${primaryButton("Accetta invito →", "{{action_url}}")}
   ${bodyText("Se il pulsante non funziona, copia e incolla questo link nel browser:<br><a href='{{action_url}}' style='color:#7c3aed;word-break:break-all'>{{action_url}}</a>", "font-size:13px;margin-top:20px")}
   `,
@@ -231,57 +231,57 @@ const TEMPLATE_UPDATES: TemplateUpdate[] = [
   {
     slug: "verification_code",
     name: "Verification code",
-    subject: "{{otp_code}} è il tuo codice di verifica – Prevai",
-    fromEmailName: "Prevai",
+    subject: "{{otp_code}} è il tuo codice di verifica – QuoteAI",
+    fromEmailName: "QuoteAI",
     body: VERIFICATION_CODE_BODY,
   },
   {
     slug: "reset_password_code",
     name: "Reset password code",
-    subject: "{{otp_code}} è il tuo codice per reimpostare la password – Prevai",
-    fromEmailName: "Prevai",
+    subject: "{{otp_code}} è il tuo codice per reimpostare la password – QuoteAI",
+    fromEmailName: "QuoteAI",
     body: RESET_PASSWORD_BODY,
   },
   {
     slug: "magic_link_sign_in",
     name: "Email link - Sign in",
-    subject: "Il tuo link per accedere a Prevai",
-    fromEmailName: "Prevai",
+    subject: "Il tuo link per accedere a QuoteAI",
+    fromEmailName: "QuoteAI",
     body: MAGIC_LINK_SIGN_IN_BODY,
   },
   {
     slug: "magic_link_sign_up",
     name: "Email link - Sign up",
-    subject: "Il tuo link per registrarti su Prevai",
-    fromEmailName: "Prevai",
+    subject: "Il tuo link per registrarti su QuoteAI",
+    fromEmailName: "QuoteAI",
     body: MAGIC_LINK_SIGN_UP_BODY,
   },
   {
     slug: "magic_link_user_profile",
     name: "Email link - Verify email",
-    subject: "Verifica il tuo indirizzo email – Prevai",
-    fromEmailName: "Prevai",
+    subject: "Verifica il tuo indirizzo email – QuoteAI",
+    fromEmailName: "QuoteAI",
     body: MAGIC_LINK_VERIFY_EMAIL_BODY,
   },
   {
     slug: "password_changed",
     name: "Password changed",
-    subject: "La tua password Prevai è stata modificata",
-    fromEmailName: "Prevai",
+    subject: "La tua password QuoteAI è stata modificata",
+    fromEmailName: "QuoteAI",
     body: PASSWORD_CHANGED_BODY,
   },
   {
     slug: "new_device_sign_in",
     name: "Sign in from new device",
-    subject: "Nuovo accesso al tuo account Prevai",
-    fromEmailName: "Prevai",
+    subject: "Nuovo accesso al tuo account QuoteAI",
+    fromEmailName: "QuoteAI",
     body: NEW_DEVICE_BODY,
   },
   {
     slug: "invitation",
     name: "Invitation",
-    subject: "Sei stato invitato su Prevai",
-    fromEmailName: "Prevai",
+    subject: "Sei stato invitato su QuoteAI",
+    fromEmailName: "QuoteAI",
     body: INVITATION_BODY,
   },
 ];
@@ -348,7 +348,7 @@ async function applyTemplate(update: TemplateUpdate): Promise<void> {
 async function main(): Promise<void> {
   const keyPrefix = CLERK_SECRET_KEY!.slice(0, 10);
   const env = CLERK_SECRET_KEY!.startsWith("sk_live_") ? "PRODUCTION" : "development";
-  console.log(`\nApplying Prevai email branding to Clerk ${env} instance (key: ${keyPrefix}...)\n`);
+  console.log(`\nApplying QuoteAI email branding to Clerk ${env} instance (key: ${keyPrefix}...)\n`);
 
   for (const update of TEMPLATE_UPDATES) {
     await applyTemplate(update);
