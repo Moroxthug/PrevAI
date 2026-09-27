@@ -74,7 +74,7 @@ for v in DATABASE_URL BETTER_AUTH_SECRET BETTER_AUTH_URL TRUSTED_ORIGINS CRON_SE
   printf '%s\n' "$envs" | grep -qx "$v" && ok "$v" || ko "$v assente su Production"
 done
 printf '%s\n' "$envs" | grep -qx STRIPE_CONNECT_WEBHOOK_SECRET && ok "STRIPE_CONNECT_WEBHOOK_SECRET" \
-  || avviso "STRIPE_CONNECT_WEBHOOK_SECRET assente: RUNBOOKS §5.1 chiede comunque un valore (senza, il webhook Connect logga un errore a ogni chiamata)"
+  || ok "STRIPE_CONNECT_WEBHOOK_SECRET assente: carta sulle pro-forma spenta finché Connect non è attivo (voluto)"
 printf '%s\n' "$envs" | grep -qx OPS_ALERT_EMAIL && ok "OPS_ALERT_EMAIL" \
   || avviso "OPS_ALERT_EMAIL assente: gli alert vanno ad ADMIN_EMAIL"
 printf '%s\n' "$envs" | grep -qx PREVAI_BASE_URL \

@@ -122,7 +122,7 @@ Le 13 variabili v1 restano valide (`docs/ENV-INVENTORY.md`). Da **aggiungere** p
 | `TRUSTED_ORIGINS` | `https://prevai.it,https://www.prevai.it` | CORS + better-auth; senza, il login da `www` fallisce |
 | `CRON_SECRET` | `openssl rand -hex 32` | bearer del cron giornaliero `/api/cron/tick` (12:00 UTC, `vercel.json`): incentivi v1, follow-up, promemoria pro-forma |
 | `TOKEN_ENCRYPTION_KEY` | `openssl rand -hex 32` (64 hex) | AES-256-GCM per i token OAuth (calendario/Gmail) a riposo; il modulo lancia un errore alla prima cifratura se manca |
-| `STRIPE_CONNECT_WEBHOOK_SECRET` | da Stripe → Webhooks → endpoint `/api/payments/connect-webhook` | firma del webhook Connect (pagamenti pro-forma con carta). Se Connect non si attiva subito, impostare comunque un valore: l'endpoint rifiuta con 400, nessun crash |
+| `STRIPE_CONNECT_WEBHOOK_SECRET` | da Stripe → Webhooks → endpoint `/api/payments/connect-webhook` | firma del webhook Connect (pagamenti pro-forma con carta). **Solo quando Connect è attivo** sull'account Stripe (al 26/9 non lo è). La sua presenza accende il pagamento con carta (`INTEGRATION_ENV.stripe` in `lib/integrationAvailability.ts`): senza, `connect/status` dice `available: false` e `connect/onboard` risponde 503 `NOT_CONFIGURED`. Non mettere un valore finto |
 | `SUPABASE_PUBLIC_BUCKET` / `SUPABASE_PRIVATE_BUCKET` | `public-assets` / `private-assets` | default già uguali a v1: opzionali, impostarle solo per esplicitare |
 | `OPS_ALERT_EMAIL` | email del titolare | alert cron/automazioni (fallback: `ADMIN_EMAIL`) |
 | `SENTRY_DSN`, `VITE_SENTRY_DSN` | opzionali | error tracking (QuoteAI §1); senza, solo log Vercel |

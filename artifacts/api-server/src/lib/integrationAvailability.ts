@@ -13,7 +13,11 @@ import type { Response } from "express";
 // whether the credentials are *valid*; that is what the live smoke is for.
 
 export const INTEGRATION_ENV: Record<IntegrationName, readonly string[]> = {
-  stripe: ["STRIPE_SECRET_KEY"],
+  // Card rail for pro-forma invoices (Stripe Connect). Without the Connect
+  // webhook secret a paid Checkout is never recorded, and until the platform
+  // activates Connect `accounts.create` fails with a 500 — so the secret is
+  // only set once Connect is live, and its absence means "not available yet".
+  stripe: ["STRIPE_SECRET_KEY", "STRIPE_CONNECT_WEBHOOK_SECRET"],
   google_calendar: ["GOOGLE_CALENDAR_CLIENT_ID", "GOOGLE_CALENDAR_CLIENT_SECRET", "GOOGLE_CALENDAR_REDIRECT_URI"],
   outlook_calendar: ["OUTLOOK_CALENDAR_CLIENT_ID", "OUTLOOK_CALENDAR_CLIENT_SECRET", "OUTLOOK_CALENDAR_REDIRECT_URI"],
   gmail_send: ["GMAIL_SEND_CLIENT_ID", "GMAIL_SEND_CLIENT_SECRET", "GMAIL_SEND_REDIRECT_URI"],
