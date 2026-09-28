@@ -619,8 +619,8 @@ Columns — **Auth**: session (`requireAuth`), apiKey (`requireApiKey`), admin (
 | Line | Method | Path | Auth | Perm | RL | Val | Gate | Scope | Archived | Token | Webhook |
 |---|---|---|---|---|---|---|---|---|---|---|---|
 | 13 | POST | `/api/storage/uploads/request-url` | session | — | — | manual | — | n/a | — | — | — |
-| 39 | GET | `/api/storage/public-objects/*filePath` | none | — | — | none | — | n/a | — | — | — |
-| 70 | GET | `/api/storage/objects/*objectPath` | session | — | — | none | — | post-check | — | — | — |
+| 51 | GET | `/api/storage/public-objects/*filePath` | none | — | — | none | — | n/a | — | — | — |
+| 83 | GET | `/api/storage/objects/*objectPath` | session | — | — | none | — | post-check | — | — | — |
 
 ## artifacts/api-server/src/routes/studio.ts
 

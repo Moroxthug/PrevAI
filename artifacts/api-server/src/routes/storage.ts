@@ -36,6 +36,18 @@ router.post("/storage/uploads/request-url", requireAuth, async (req: Request, re
   }
 });
 
+/**
+ * Fase 41: uploaded files are served from the app's own origin, so an SVG logo
+ * with a <script> inside would run as prevai.it if someone opened its URL.
+ * The sandbox CSP stops any script in the file; <img> tags are unaffected.
+ * PDFs are left out: Chrome refuses to open a PDF under a sandbox CSP.
+ */
+function hardenObjectResponse(res: Response): void {
+  res.setHeader("X-Content-Type-Options", "nosniff");
+  if (String(res.getHeader("content-type") ?? "").toLowerCase().startsWith("application/pdf")) return;
+  res.setHeader("Content-Security-Policy", "default-src 'none'; img-src 'self' data:; style-src 'unsafe-inline'; sandbox");
+}
+
 router.get("/storage/public-objects/*filePath", async (req: Request, res: Response) => {
   try {
     const raw = req.params.filePath;
@@ -50,6 +62,7 @@ router.get("/storage/public-objects/*filePath", async (req: Request, res: Respon
 
     res.status(response.status);
     response.headers.forEach((value, key) => res.setHeader(key, value));
+    hardenObjectResponse(res);
 
     if (response.body) {
       // The global ReadableStream (DOM lib/undici) doesn't expose the values()/
@@ -85,6 +98,7 @@ router.get("/storage/objects/*objectPath", requireAuth, async (req: Request, res
 
     res.status(objectData.status);
     objectData.headers.forEach((value: string, key: string) => res.setHeader(key, value));
+    hardenObjectResponse(res);
 
     if (objectData.body) {
       const nodeStream = Readable.fromWeb(objectData.body as unknown as import("node:stream/web").ReadableStream<Uint8Array>);

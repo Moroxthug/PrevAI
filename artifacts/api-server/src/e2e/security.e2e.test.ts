@@ -53,6 +53,9 @@ import {
   bankMovementsTable,
   accountantSharesTable,
   incarichiTable,
+  suppliersTable,
+  fiscalPaymentsTable,
+  jobNotesTable,
   authSessionsTable,
   authUsersTable,
 } from "@workspace/db";
@@ -156,6 +159,10 @@ async function seedOrgA(): Promise<Fixtures> {
   f.condivisione = await ins(db.insert(accountantSharesTable).values({ userId, tokenHash: randomUUID(), destinatario: "Studio E2E", anno: 2025, scadeAt: new Date(Date.now() + 86_400_000) }).returning());
   // A-6: un incarico attivo di A. Le rotte dello studio lo cercano per professionista, quelle dell'impresa per org.
   f.incarico = await ins(db.insert(incarichiTable).values({ userId, anno: 2025, stato: "attivo" }).returning());
+  // Fase 41: le righe aggiunte dopo A-6 (fornitori, versamenti, note del cantiere).
+  f.supplier = await ins(db.insert(suppliersTable).values({ userId, name: "Ferramenta E2E" }).returning());
+  f.versamento = await ins(db.insert(fiscalPaymentsTable).values({ userId, anno: 2025, tipo: "altro", importoCents: 100 }).returning());
+  f.note = await ins(db.insert(jobNotesTable).values({ userId, actorUserId: userId, projectId: project.id, body: "Nota E2E" }).returning());
 
   // Clients are virtual (md5 of the quote's client fields) — read the id back the way the UI does.
   const clients = await A.api("/api/clients");
@@ -181,6 +188,9 @@ function resolveParams(route: MatrixRoute, f: Fixtures): { path: string; unseede
     // A-3: idem per la chiave della scadenza, che è una costante del calendario
     // fiscale (`saldo_primo_acconto`, `inps_fissi_1`) uguale per tutte.
     if (name === "anno" || name === "trimestre" || name === "chiave") return null;
+    // APP-7: il tipo di home (titolare, ufficio, …) è una costante uguale per
+    // tutte le imprese; ognuna scrive solo la propria.
+    if (name === "kind") return null;
     // A-4: il verbo dell'azione sul movimento bancario non è un identificatore:
     // se ne prova uno innocuo, e l'id di A davanti è quello che conta.
     // A-6: il tipo di file della pratica (bozza/ricevuta) non è un identificatore.
@@ -205,7 +215,7 @@ function resolveParams(route: MatrixRoute, f: Fixtures): { path: string; unseede
           ["/api/v1/public/invoices", "invoice"], ["/api/v1/public/clients", "client"],
           ["/api/sdi/transmissions", "trasmissione"], ["/api/sdi/passive", "passiva"],
           ["/api/fiscale/prima-nota/movimenti", "movimentoPn"], ["/api/fiscale/banca/import", "estratto"], ["/api/fiscale/banca/movimenti", "movBanca"],
-          ["/api/fiscale/condivisioni", "condivisione"],
+          ["/api/fiscale/condivisioni", "condivisione"], ["/api/fiscale/versamenti", "versamento"], ["/api/crm/suppliers", "supplier"],
           ["/api/fiscale/commercialista/incarichi", "incarico"], ["/api/studio/incarichi", "incarico"],
         ];
         id = byPrefix.find(([p]) => prefix === p)?.[1];
@@ -222,6 +232,7 @@ function resolveParams(route: MatrixRoute, f: Fixtures): { path: string; unseede
       case "photoId": id = "photo"; break;
       case "tid": id = route.path.includes("/tasks/") ? "task" : "timeEntry"; break;
       case "taskId": id = "task"; break;
+      case "noteId": id = "note"; break;
       case "uid": id = "usage"; break;
       case "variantId": id = "variant"; break;
       case "eid": id = "equipment"; break;
@@ -355,6 +366,23 @@ describe("private storage", () => {
     expect(theirs.status).toBe(404);
     const anon = await api(`/api/storage/objects/${signedPdfObjectPath}`);
     expect(anon.status).toBe(401);
+    // PDFs keep opening in Chrome's viewer: nosniff, but no sandbox CSP.
+    expect(mine.headers.get("x-content-type-options")).toBe("nosniff");
+    expect(mine.headers.get("content-security-policy") ?? "").not.toContain("sandbox");
+  });
+
+  test("an SVG logo with a script is served sandboxed (fase 41)", async () => {
+    const form = new FormData();
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg"><script>alert(document.domain)</script></svg>`;
+    form.append("logo", new Blob([svg], { type: "image/svg+xml" }), "logo.svg");
+    const up = await A.api("/api/business-profile/logo", { method: "POST", form });
+    expect(up.status).toBe(200);
+    const url = (up.body as { logoUrl?: string }).logoUrl ?? "";
+    expect(url).toMatch(/^\/api\/storage\/public-objects\/.+\.svg$/);
+    const res = await api(url);
+    expect(res.status).toBe(200);
+    expect(res.headers.get("content-security-policy")).toContain("sandbox");
+    expect(res.headers.get("x-content-type-options")).toBe("nosniff");
   });
 });
 

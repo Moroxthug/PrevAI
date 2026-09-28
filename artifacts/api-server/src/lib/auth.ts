@@ -46,7 +46,9 @@ function getBaseURL(): string {
 }
 
 export function getTrustedOrigins(): string[] {
-  const origins: string[] = ["http://localhost:5000", "http://localhost:3000"];
+  // Fase 41: local dev servers are trusted only outside production (a reset
+  // link's callbackURL must never be able to point at a program on localhost).
+  const origins: string[] = process.env.NODE_ENV === "production" ? [] : ["http://localhost:5000", "http://localhost:3000"];
   if (process.env.BETTER_AUTH_URL) origins.push(process.env.BETTER_AUTH_URL);
   if (process.env.PREVAI_BASE_URL) origins.push(process.env.PREVAI_BASE_URL);
   if (process.env.VERCEL_PROJECT_PRODUCTION_URL) origins.push(`https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`);
