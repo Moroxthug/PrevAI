@@ -2,6 +2,7 @@
 // tools never write: they validate the arguments and hand back a proposal
 // the user confirms from a card (see apply.ts).
 import { z } from "zod";
+import { voiceFacts } from "@workspace/config";
 import type { OpenAI } from "@workspace/integrations-openai-ai-server";
 import {
   db,
@@ -364,7 +365,7 @@ export async function validateProposal(name: string, rawArgs: unknown, ctx: Tool
         if (!inv) return { ok: false, error: "Invoice not found." };
         if (inv.status === "void" || inv.status === "paid") return { ok: false, error: `Invoice ${inv.number} is ${inv.status}; it cannot be sent.` };
         if (!inv.customer.email) return { ok: false, error: `Invoice ${inv.number} has no customer email; ask the user to add one on the invoice page.` };
-        return { ok: true, proposal: { kind: "send_invoice", projectId: inv.projectId, summary: `${inv.status === "draft" ? "Invia" : "Invia di nuovo"} ${inv.number} (${money(inv.totalCents)}) a ${inv.customer.email}`, payload: { invoiceId: inv.id, message: a.message ?? "" } } };
+        return { ok: true, proposal: { kind: "send_invoice", projectId: inv.projectId, summary: `${inv.status === "draft" ? "Invia" : "Invia di nuovo"} ${inv.number} (${money(inv.totalCents)}) a ${inv.customer.email}`, payload: { invoiceId: inv.id, message: a.message ?? "", ...voiceFacts(inv.totalCents, inv.number, inv.customer.name) } } };
       }
       case "propose_record_payment": {
         const a = ProposeArgs.propose_record_payment.parse(rawArgs);
@@ -375,7 +376,7 @@ export async function validateProposal(name: string, rawArgs: unknown, ctx: Tool
         const balance = balanceCents(inv);
         const amountCents = a.amount ? Math.round(a.amount * 100) : balance;
         if (amountCents <= 0) return { ok: false, error: `Invoice ${inv.number} has no balance.` };
-        return { ok: true, proposal: { kind: "record_payment", projectId: inv.projectId, summary: `Registra incasso di ${money(amountCents)} (${METODO_IT[a.method ?? "bank_transfer"] ?? a.method}) su ${inv.number}${amountCents < balance ? ` (parziale, resta ${money(balance)})` : ""}`, payload: { invoiceId: inv.id, amountCents, method: a.method ?? "bank_transfer", date: a.date ?? toIsoDate(ctx.now), reference: a.reference ?? "" } } };
+        return { ok: true, proposal: { kind: "record_payment", projectId: inv.projectId, summary: `Registra incasso di ${money(amountCents)} (${METODO_IT[a.method ?? "bank_transfer"] ?? a.method}) su ${inv.number}${amountCents < balance ? ` (parziale, resta ${money(balance)})` : ""}`, payload: { ...voiceFacts(amountCents, inv.number, inv.customer.name), invoiceId: inv.id, amountCents, method: a.method ?? "bank_transfer", date: a.date ?? toIsoDate(ctx.now), reference: a.reference ?? "" } } };
       }
       default:
         return { ok: false, error: `Unknown tool ${name}` };

@@ -15,3 +15,4 @@ export * from "./commercialista";
 export * from "./home";
 export * from "./assistente";
 export * from "./assistente-voce";
+export * from "./assistente-conferma";

@@ -54,7 +54,7 @@ export type TurnEventDto =
 
 /** APP-8b: one saved choice of Impostazioni → Assistente (role "" = the whole company). */
 export type AssistantSettingDto = { action: AssistantAction; role: "" | "admin" | "office" | "foreman" | "bookkeeper" | "viewer"; level: AssistantLevel };
-export type AssistantPermissionsDto = { available: boolean; settings: AssistantSettingDto[]; mine: Record<AssistantAction, AssistantLevel>; canEdit: boolean; roleLimits: Record<Exclude<AssistantSettingDto["role"], "">, AssistantAction[]> };
+export type AssistantPermissionsDto = { available: boolean; settings: AssistantSettingDto[]; voiceConfirmMaxCents: number; mine: Record<AssistantAction, AssistantLevel>; canEdit: boolean; roleLimits: Record<Exclude<AssistantSettingDto["role"], "">, AssistantAction[]> };
 
 export const assistantApi = {
   conversation: (projectId: string | null) => req<ConversationDto>(`/api/assistant/conversation${projectId ? `?projectId=${projectId}` : ""}`),
@@ -63,11 +63,12 @@ export const assistantApi = {
   send: (conversationId: string, content: string, language: "it", context?: PageContextDto | null) =>
     req<TurnDto>(`/api/assistant/conversations/${conversationId}/messages`, { method: "POST", body: json({ content, language, context }) }),
   clear: (conversationId: string) => req<{ success: true }>(`/api/assistant/conversations/${conversationId}`, { method: "DELETE" }),
-  confirm: (proposalId: string) => req<{ proposal: ProposalDto; link: string | null }>(`/api/assistant/proposals/${proposalId}/confirm`, { method: "POST" }),
+  /** APP-8f: via "voice" = the person said "sì" (refused with 409 above the owner's threshold: the card stays). */
+  confirm: (proposalId: string, via: "tap" | "voice" = "tap") => req<{ proposal: ProposalDto; link: string | null }>(`/api/assistant/proposals/${proposalId}/confirm`, { method: "POST", body: json({ via }) }),
   dismiss: (proposalId: string) => req<{ proposal: ProposalDto }>(`/api/assistant/proposals/${proposalId}/dismiss`, { method: "POST" }),
   undo: (proposalId: string) => req<{ proposal: ProposalDto }>(`/api/assistant/proposals/${proposalId}/undo`, { method: "POST" }),
   permissions: () => req<AssistantPermissionsDto>("/api/assistant/permissions"),
-  savePermissions: (settings: AssistantSettingDto[]) => req<AssistantPermissionsDto>("/api/assistant/permissions", { method: "PUT", body: json({ settings }) }),
+  savePermissions: (settings: AssistantSettingDto[], voiceConfirmMaxCents?: number) => req<AssistantPermissionsDto>("/api/assistant/permissions", { method: "PUT", body: json({ settings, voiceConfirmMaxCents }) }),
   stream: streamTurn,
 };
 

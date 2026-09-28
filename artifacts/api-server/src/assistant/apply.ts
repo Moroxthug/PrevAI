@@ -26,7 +26,8 @@ import { writeAudit } from "../lib/notifications.js";
 import { recomputeProgress } from "../jobs/setup.js";
 import { parseIsoDate } from "../jobs/dates.js";
 import { draftDepositInvoice, draftFinalInvoice, draftHoldbackReleaseInvoice, draftMilestoneInvoice, buildInvoiceContext, sendInvoice, recordPayment, voidInvoice } from "../invoices/service.js";
-import { assistantV2Ready, ownsConversation, roleAllowsAction, undoDeadline } from "./permissions.js";
+import { assistantV2Ready, loadVoiceConfirmMax, ownsConversation, roleAllowsAction, undoDeadline } from "./permissions.js";
+import { voiceNeedsTap } from "@workspace/config";
 import { executeApp8c, undoApp8c, App8cError, APP8C_KINDS } from "./apply-app8c.js";
 export { undoDeadline };
 
@@ -91,9 +92,22 @@ export async function runProposal(params: { proposal: AssistantProposal; who: Wh
   }
 }
 
-export async function confirmProposal(params: { who: Who; proposalId: string; ip?: string | null }): Promise<ApplyResult> {
+/**
+ * Conferma on a card. APP-8f: `via: "voice"` = the person said "sì". Refused —
+ * the card stays pending — when the amount is above the owner's threshold, or
+ * unknown on an amount card: that takes the tap. Voice confirmations are audited.
+ */
+export async function confirmProposal(params: { who: Who; proposalId: string; ip?: string | null; via?: "tap" | "voice" }): Promise<ApplyResult> {
   const proposal = await ownProposal(params.who, params.proposalId);
-  return runProposal({ proposal, who: params.who, level: "ask", ip: params.ip });
+  if (params.via === "voice" && proposal.status === "pending") {
+    const max = await loadVoiceConfirmMax(params.who.orgId);
+    if (voiceNeedsTap({ kind: proposal.kind, summary: proposal.summary, payload: proposal.payload as Record<string, unknown> }, max)) {
+      throw new ProposalError("Per questo importo serve il tocco su Conferma.", "TAP_REQUIRED", 409);
+    }
+  }
+  const out = await runProposal({ proposal, who: params.who, level: "ask", ip: params.ip });
+  if (params.via === "voice") await writeAudit({ userId: params.who.orgId, actorType: "user", actorId: params.who.actorId, entityType: "assistant_proposal", entityId: proposal.id, action: "confirmed_by_voice", diff: { kind: proposal.kind, summary: proposal.summary }, ip: params.ip ?? null });
+  return out;
 }
 
 export async function dismissProposal(params: { who: Who; proposalId: string }): Promise<AssistantProposal> {

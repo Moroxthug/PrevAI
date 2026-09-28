@@ -5,6 +5,7 @@ import {
   ASSISTANT_ACTIONS, ASSISTANT_ACTION_DEFS, ASSISTANT_GROUPS, ASSISTANT_GROUP_LABEL, ASSISTANT_ROLE_LABEL,
   effectiveAssistantLevel, type AssistantAction, type AssistantLevel,
   ASSISTANT_VOICE_MODES, ASSISTANT_VOICE_MODE_LABEL, ASSISTANT_VOICE_RATES, type AssistantVoiceMode,
+  ASSISTANT_VOICE_CONFIRM_OPTIONS,
 } from "@workspace/config";
 import { Speaker, browserSpeechAvailable, readVoicePrefs, useItalianVoices, useVoiceInfo, useVoicePrefs } from "@/lib/assistant-voice";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -30,21 +31,28 @@ const LEVEL_HELP: Record<AssistantLevel, string> = {
 const helpFor = (action: AssistantAction, level: AssistantLevel) =>
   level === "auto" && !ASSISTANT_ACTION_DEFS[action].undoable ? "Lo fa subito e ti mostra una scheda «fatto» (senza Annulla: si cambia dalla schermata)." : LEVEL_HELP[level];
 
-/** The draft: one entry per choice, keyed "role|action" (role "" = the whole company). A role key missing or "" = same as the company. */
-type Draft = Record<string, AssistantLevel | "">;
+/**
+ * The draft: one entry per choice, keyed "role|action" (role "" = the whole company). A role key missing or "" = same as the company.
+ * APP-8f: plus VOICE_MAX, the owner's threshold for "sì" said out loud (cents, as text).
+ */
+type Draft = Record<string, AssistantLevel | "" | string>;
+const VOICE_MAX = "voice|max";
+const euro = (cents: number) => new Intl.NumberFormat("it-IT", { style: "currency", currency: "EUR", maximumFractionDigits: 0, useGrouping: "always" } as Intl.NumberFormatOptions).format(cents / 100);
 const keyOf = (role: Scope, action: AssistantAction) => `${role}|${action}`;
 const PERMISSIONS_KEY = ["assistant-permissions"];
 
 function toDraft(data: AssistantPermissionsDto): Draft {
   const out: Draft = {};
   for (const s of data.settings) out[keyOf(s.role, s.action)] = s.level;
+  out[VOICE_MAX] = String(data.voiceConfirmMaxCents);
   return out;
 }
 
 function toSettings(d: Draft): AssistantSettingDto[] {
   return Object.entries(d).flatMap(([k, level]) => {
+    if (k === VOICE_MAX) return [];
     const [role, action] = k.split("|") as [Scope, AssistantAction];
-    return level ? [{ role, action, level }] : [];
+    return level ? [{ role, action, level: level as AssistantLevel }] : [];
   });
 }
 
@@ -57,7 +65,7 @@ export function AssistantSection() {
   const [scope, setScope] = useState<Scope>("");
   const source = useMemo(() => (data ? toDraft(data) : undefined), [data]);
   const { draft, set } = useSettingsDraft<Draft>(source, async (d) => {
-    const saved = await assistantApi.savePermissions(toSettings(d));
+    const saved = await assistantApi.savePermissions(toSettings(d), d[VOICE_MAX] ? Number(d[VOICE_MAX]) : undefined);
     queryClient.setQueryData(PERMISSIONS_KEY, saved);
   });
   const setLevel = (role: Scope, action: AssistantAction, level: AssistantLevel | "") => set(keyOf(role, action), level);
@@ -105,6 +113,21 @@ export function AssistantSection() {
 
       <VoiceGroup />
 
+      {/* APP-8f: sopra questa cifra un "sì" detto non basta, serve il tocco su Conferma. */}
+      <SettingsGroup title="Conferma a voce" desc="Quando una scheda aspetta, l'assistente ti rilegge importo e destinatario e accetta solo un sì chiaro. Importi e destinatari restano sempre scritti sulla scheda.">
+        {data.canEdit ? (
+          <SettingsRow label="Basta la voce fino a" help="Sopra questa cifra serve il tocco su Conferma. Vale per tutta l'impresa." htmlFor="s-asst-voice-max">
+            <select id="s-asst-voice-max" value={draft[VOICE_MAX] ?? ""} disabled={!editable} onChange={(e) => set(VOICE_MAX, e.target.value)}>
+              {ASSISTANT_VOICE_CONFIRM_OPTIONS.map((c) => <option key={c} value={String(c)}>{c === 0 ? "Mai: gli importi si confermano col tocco" : euro(c)}</option>)}
+            </select>
+          </SettingsRow>
+        ) : (
+          <SettingsRow label="Basta la voce fino a" help="Sopra questa cifra serve il tocco su Conferma. La decide il titolare.">
+            <span className="srow-value">{data.voiceConfirmMaxCents === 0 ? "Mai" : euro(data.voiceConfirmMaxCents)}</span>
+          </SettingsRow>
+        )}
+      </SettingsGroup>
+
       {data.canEdit && (
         <SettingsGroup title="Per chi" desc="Di solito basta l'impresa intera. Un ruolo può avere regole più strette (o più larghe, ma mai oltre quello che il ruolo può fare a mano).">
           <SettingsRow label="Regole per" htmlFor="s-asst-scope">
@@ -132,7 +155,7 @@ export function AssistantSection() {
               }
               const own = draft[keyOf(scope, a)];
               const inherited = companyLevel(draft, a);
-              const value: AssistantLevel | "" = scope === "" ? inherited : (own || "");
+              const value: AssistantLevel | "" = scope === "" ? inherited : ((own || "") as AssistantLevel | "");
               const shown: AssistantLevel = value === "" ? inherited : value;
               const help = def.max === "ask" && shown === "ask" ? `${LEVEL_HELP[shown]} Non può farlo da solo.` : helpFor(a, shown);
               return (
@@ -208,6 +231,12 @@ function VoiceGroup() {
           <span className="srow-value">{info.minutesUsed.toLocaleString("it-IT")}</span>
         </SettingsRow>
       )}
+      <SettingsRow label="Interrompi parlando" help="Se parli mentre l'assistente risponde, si zittisce e ti ascolta. Se su questo dispositivo si interrompe da solo (altoparlante alto), spegnilo: resta il tasto Zittisci." htmlFor="s-asst-voice-barge">
+        <select id="s-asst-voice-barge" value={prefs.bargeIn ? "on" : "off"} onChange={(e) => setPrefs({ bargeIn: e.target.value === "on" })} disabled={prefs.mode === "off"}>
+          <option value="on">Sì</option>
+          <option value="off">No</option>
+        </select>
+      </SettingsRow>
       <SettingsRow label="Prova la voce" help="Una frase d'esempio con queste scelte.">
         <button type="button" className="btn btn-outline-navy btn-sm" onClick={play} disabled={!canSpeak}><Play className="h-3.5 w-3.5" aria-hidden="true" /> Ascolta</button>
       </SettingsRow>

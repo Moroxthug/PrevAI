@@ -9,10 +9,10 @@ import { getOrCreateConversation, loadConversation, listConversations, clearConv
 import { pageContextSchema } from "../assistant/context.js";
 import { sseFrame, type TurnEvent } from "../assistant/stream.js";
 import { confirmProposal, dismissProposal, undoProposal, undoDeadline, ProposalError } from "../assistant/apply.js";
-import { assistantV2Ready, levelsFor, loadPermissionRows, roleAllowsAction, withUnavailable } from "../assistant/permissions.js";
+import { assistantV2Ready, levelsFor, loadPermissionRows, roleAllowsAction, loadVoiceConfirmMax, voiceConfirmMaxFrom, withUnavailable } from "../assistant/permissions.js";
 import { jobNotesReady } from "../assistant/ready.js";
 import { roleCan } from "../middlewares/requirePermission.js";
-import { ASSISTANT_ACTIONS, ASSISTANT_LEVELS, ASSISTANT_SPEECH_MAX_CHARS, ASSISTANT_TTS, clampAssistantLevel, isAssistantAction, spokenText } from "@workspace/config";
+import { ASSISTANT_ACTIONS, ASSISTANT_LEVELS, ASSISTANT_SPEECH_MAX_CHARS, ASSISTANT_VOICE_CONFIRM_OPTIONS, ASSISTANT_VOICE_CONFIRM_SETTING, ASSISTANT_TTS, clampAssistantLevel, isAssistantAction, spokenText } from "@workspace/config";
 import { speechProvider, synthesize, voiceMinutesIncluded, voiceMinutesUsed } from "../assistant/speech.js";
 import { writeAudit } from "../lib/notifications.js";
 
@@ -175,12 +175,14 @@ router.delete("/assistant/conversations/:id", requireAuth, requirePermission("jo
   }
 });
 
-// POST /api/assistant/proposals/:id/confirm
+// POST /api/assistant/proposals/:id/confirm { via?: "tap" | "voice" }
 // APP-8b: the role is checked per kind of card inside (a bookkeeper records a payment
 // without jobs:edit; a foreman never sends an invoice), so the route only needs jobs:view.
 router.post("/assistant/proposals/:id/confirm", requireAuth, requirePermission("jobs", "view"), async (req, res) => {
   try {
-    const out = await confirmProposal({ who: whoOf(res), proposalId: req.params.id as string, ip: req.ip });
+    // APP-8f: { via: "voice" } when the person said "sì" (above the owner's threshold → 409 TAP_REQUIRED).
+    const via = (req.body as { via?: unknown } | undefined)?.via === "voice" ? "voice" : "tap";
+    const out = await confirmProposal({ who: whoOf(res), proposalId: req.params.id as string, ip: req.ip, via });
     res.json({ proposal: serializeProposal(out.proposal, out.action), link: out.link });
   } catch (err) {
     if (err instanceof ProposalError) { res.status(err.status).json({ error: err.code, message: err.message }); return; }
@@ -222,6 +224,8 @@ router.post("/assistant/proposals/:id/undo", requireAuth, requirePermission("job
 const SETTABLE_ROLES = ["", "admin", "office", "foreman", "bookkeeper", "viewer"] as const;
 const permissionsBody = z.object({
   settings: z.array(z.object({ action: z.enum(ASSISTANT_ACTIONS), role: z.enum(SETTABLE_ROLES), level: z.enum(ASSISTANT_LEVELS) })).max(ASSISTANT_ACTIONS.length * SETTABLE_ROLES.length),
+  // APP-8f: above this amount (cents) a card takes the tap, the voice is not enough. Omitted = unchanged.
+  voiceConfirmMaxCents: z.number().int().refine((n) => (ASSISTANT_VOICE_CONFIRM_OPTIONS as readonly number[]).includes(n)).optional(),
 });
 
 /** What each role can do by hand (the settings show "the role can't" instead of a choice), and whether the caller may change them. */
@@ -240,6 +244,7 @@ router.get("/assistant/permissions", requireAuth, requirePermission("settings", 
     res.json({
       available: ready,
       settings: rows.filter((r) => isAssistantAction(r.action)).map((r) => ({ action: r.action, role: r.role, level: r.level })),
+      voiceConfirmMaxCents: voiceConfirmMaxFrom(rows),
       mine: withUnavailable(levelsFor(getActorRole(res), rows, ready), { job_note: !(await jobNotesReady()) }),
       ...permissionsExtras(getActorRole(res)),
     });
@@ -259,13 +264,16 @@ router.put("/assistant/permissions", requireAuth, requirePermission("settings", 
     if (!body.success) { res.status(400).json({ error: "Invalid parameters", details: body.error }); return; }
     // One row per (action, role); a money action is stored at most "ask" whatever was sent.
     const byKey = new Map(body.data.settings.map((s) => [`${s.action}|${s.role}`, { ...s, level: clampAssistantLevel(s.action, s.level) }]));
+    // APP-8f: the voice threshold lives in the same table; kept when the body leaves it out.
+    const voiceMax = body.data.voiceConfirmMaxCents ?? voiceConfirmMaxFrom(await loadPermissionRows(userId));
+    const values = [...[...byKey.values()].map((s) => ({ userId, action: s.action as string, role: s.role as string, level: s.level as string })), { userId, action: ASSISTANT_VOICE_CONFIRM_SETTING, role: "", level: String(voiceMax) }];
     await db.transaction(async (tx) => {
       await tx.delete(assistantPermissionsTable).where(eq(assistantPermissionsTable.userId, userId));
-      if (byKey.size) await tx.insert(assistantPermissionsTable).values([...byKey.values()].map((s) => ({ userId, action: s.action, role: s.role, level: s.level })));
+      await tx.insert(assistantPermissionsTable).values(values);
     });
-    await writeAudit({ userId, actorType: "user", actorId: getActorUserId(res), entityType: "assistant_permissions", entityId: userId, action: "updated", diff: { settings: [...byKey.values()] }, ip: req.ip });
+    await writeAudit({ userId, actorType: "user", actorId: getActorUserId(res), entityType: "assistant_permissions", entityId: userId, action: "updated", diff: { settings: [...byKey.values()], voiceConfirmMaxCents: voiceMax }, ip: req.ip });
     const rows = await loadPermissionRows(userId);
-    res.json({ available: true, settings: rows.map((r) => ({ action: r.action, role: r.role, level: r.level })), mine: withUnavailable(levelsFor(getActorRole(res), rows, true), { job_note: !(await jobNotesReady()) }), ...permissionsExtras(getActorRole(res)) });
+    res.json({ available: true, settings: rows.filter((r) => isAssistantAction(r.action)).map((r) => ({ action: r.action, role: r.role, level: r.level })), voiceConfirmMaxCents: voiceConfirmMaxFrom(rows), mine: withUnavailable(levelsFor(getActorRole(res), rows, true), { job_note: !(await jobNotesReady()) }), ...permissionsExtras(getActorRole(res)) });
   } catch (err) {
     req.log.error({ err }, "Error saving assistant permissions");
     res.status(500).json({ error: "Internal server error" });
@@ -286,7 +294,8 @@ router.get("/assistant/voice", requireAuth, requirePermission("jobs", "view"), a
     const gate = await requireAssistant(userId);
     if (!gate.ok) { res.status(403).json({ error: "PLAN_REQUIRED", requiredPlan: gate.plan }); return; }
     const provider = speechProvider();
-    res.json({ provider, voice: provider === "openai" ? ASSISTANT_TTS.voice : null, minutesUsed: provider === "openai" ? await voiceMinutesUsed(userId) : 0, minutesIncluded: voiceMinutesIncluded() });
+    // APP-8f: confirmMaxCents — the owner's threshold for "sì" said out loud (the confirm route checks it again).
+    res.json({ provider, voice: provider === "openai" ? ASSISTANT_TTS.voice : null, minutesUsed: provider === "openai" ? await voiceMinutesUsed(userId) : 0, minutesIncluded: voiceMinutesIncluded(), confirmMaxCents: await loadVoiceConfirmMax(userId) });
   } catch (err) {
     req.log.error({ err }, "Error loading assistant voice");
     res.status(500).json({ error: "Internal server error" });

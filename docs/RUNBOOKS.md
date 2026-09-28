@@ -984,3 +984,29 @@ Nessuna.
 3. Altoparlante spento → la stessa domanda dettata resta solo scritta.
 4. Impostazioni → Assistente → Voce → Conversazione a voce → detta → parte senza toccare Invia.
 5. iPhone: la prima risposta si sente dopo un tocco su Invia o sul microfono (Safari vuole un tocco prima dell'audio).
+
+## 22. Assistente: conferma a voce, interruzione, annulla (APP-8f, riga 37)
+
+### 22.1 Cosa c'è
+
+- **Domanda di conferma:** se una risposta detta a voce lascia una sola scheda in attesa, l'assistente rilegge importo (in lettere), documento e destinatario e dice come rispondere. I dati li scrive il server sulla scheda (`amountCents`, `docNumber`, `recipientName`); le schede create prima del 27/9 non li hanno → per quelle con un importo serve il tocco.
+- **Risposte:** solo un sì breve e chiaro conferma; un no chiaro mette da parte la scheda; "annulla" annulla l'ultima azione fatta da sola nei suoi 10 s; tutto il resto va all'assistente e la scheda resta. Regola: `classifyVoiceReply` in `lib/config/src/assistente-conferma.ts`; prove in `artifacts/api-server/src/assistant/evals/cases.ts` (`APP8F_VOICE_REPLY_CASES`).
+- **Soglia:** Impostazioni → Assistente → Conferma a voce (solo il titolare), predefinita 5.000 €. Sta in `assistant_permissions` come riga `action = 'voice_confirm_max'`, `role = ''`, `level` = centesimi. `POST /api/assistant/proposals/:id/confirm` con `{ "via": "voice" }` sopra la soglia → 409 `TAP_REQUIRED`, la scheda resta in attesa. Audit: `entity_type = 'assistant_proposal'`, `action = 'confirmed_by_voice'`.
+- **Ascolto a mani libere** (solo *Conversazione a voce*, solo sotto la soglia): dopo la domanda il microfono si apre, si chiude dopo una pausa o dopo 8 s di silenzio (senza trascrivere), mai più di 30 s.
+- **Interruzione parlando** (scelta del dispositivo "Interrompi parlando", Sì predefinito): mentre l'assistente parla, se il microfono è già permesso, parlare sopra lo zittisce e detta. Su Safari senza `permissions.query` per il microfono resta spenta (c'è Zittisci).
+
+### 22.2 Migrazioni
+
+Nessuna.
+
+### 22.3 Controlli dopo il deploy
+
+1. Account Elite, Impostazioni → Assistente: c'è "Conferma a voce" con 5.000 €; cambiarla e salvare, ricaricare → resta.
+2. Chat in *Conversazione a voce*: "scrivi a <un cliente> che domani arriviamo alle 8" → dopo la risposta si sente "Mando l'email … ? Di' sì per confermare." e il microfono si accende da solo; non dire nulla → dopo 8 s si spegne.
+3. Detta "sì, anzi no" → la scheda resta in attesa. Detta "no" → "Va bene, lascio stare.", scheda ignorata.
+4. Una scheda sopra la soglia: la scheda scrive "Sopra 5.000 € conferma col tocco"; detto "sì" → "Per questo importo serve il tocco su Conferma."; il tocco su Conferma funziona.
+5. Mentre l'assistente parla, parlagli sopra → si zittisce e ti ascolta. Se su un telefono si interrompe da solo: Impostazioni → Assistente → Voce → Interrompi parlando → No.
+
+### 22.4 Cambiare la soglia a mano (supporto)
+
+`update assistant_permissions set level = '<centesimi>' where user_id = '<id impresa>' and action = 'voice_confirm_max';` — valori ammessi 0, 100000, 200000, 500000, 1000000, 2000000 (un altro valore vale come 500000).

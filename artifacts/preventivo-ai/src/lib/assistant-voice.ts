@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { ASSISTANT_VOICE_MODES, ASSISTANT_VOICE_RATES, type AssistantVoiceMode } from "@workspace/config";
+import { ASSISTANT_VOICE_CONFIRM_DEFAULT_CENTS, ASSISTANT_VOICE_MODES, ASSISTANT_VOICE_RATES, type AssistantVoiceMode } from "@workspace/config";
+import { openMicrophone, voiceActivitySupported, watchVoiceActivity } from "@/lib/voice-activity";
 
 // ── APP-8e: l'assistente risponde a voce ─────────────────────────────────────
 // Le frasi arrivano mentre la risposta si scrive (SentenceChunker) e si dicono
@@ -9,11 +10,13 @@ import { ASSISTANT_VOICE_MODES, ASSISTANT_VOICE_RATES, type AssistantVoiceMode }
 // preferenze sono di questo dispositivo: chi usa il telefono in cantiere e il
 // computer in ufficio le vuole diverse.
 
-export type VoicePrefs = { mode: AssistantVoiceMode; rate: number; voiceName: string | null };
-export type VoiceInfo = { provider: "openai" | "browser"; voice: string | null; minutesUsed: number; minutesIncluded: number | null };
+/** APP-8f: `bargeIn` — speaking over the assistant silences it (this device; off if it interrupts itself on a loud speaker). */
+export type VoicePrefs = { mode: AssistantVoiceMode; rate: number; voiceName: string | null; bargeIn: boolean };
+/** APP-8f: `confirmMaxCents` — above it the voice does not confirm a card (the owner's threshold; the server checks it again). */
+export type VoiceInfo = { provider: "openai" | "browser"; voice: string | null; minutesUsed: number; minutesIncluded: number | null; confirmMaxCents: number };
 
 const PREFS_KEY = "prevai:assistant-voice";
-const DEFAULT_PREFS: VoicePrefs = { mode: "dictated", rate: 1, voiceName: null };
+const DEFAULT_PREFS: VoicePrefs = { mode: "dictated", rate: 1, voiceName: null, bargeIn: true };
 const PREFS_EVENT = "prevai:assistant-voice-prefs";
 
 export function readVoicePrefs(): VoicePrefs {
@@ -24,6 +27,7 @@ export function readVoicePrefs(): VoicePrefs {
       mode: (ASSISTANT_VOICE_MODES as readonly string[]).includes(raw.mode ?? "") ? raw.mode! : DEFAULT_PREFS.mode,
       rate: (ASSISTANT_VOICE_RATES as readonly number[]).includes(raw.rate ?? 0) ? raw.rate! : 1,
       voiceName: typeof raw.voiceName === "string" ? raw.voiceName : null,
+      bargeIn: typeof raw.bargeIn === "boolean" ? raw.bargeIn : DEFAULT_PREFS.bargeIn,
     };
   } catch {
     return DEFAULT_PREFS;
@@ -60,7 +64,7 @@ export function useVoiceInfo(enabled = true): VoiceInfo {
       return res.json();
     },
   });
-  return data ?? { provider: "browser", voice: null, minutesUsed: 0, minutesIncluded: null };
+  return data ?? { provider: "browser", voice: null, minutesUsed: 0, minutesIncluded: null, confirmMaxCents: ASSISTANT_VOICE_CONFIRM_DEFAULT_CENTS };
 }
 
 export const browserSpeechAvailable = () => typeof window !== "undefined" && "speechSynthesis" in window && typeof SpeechSynthesisUtterance !== "undefined";
@@ -105,6 +109,7 @@ export class Speaker {
   private audio: HTMLAudioElement | null = null;
   private fetches = new Set<AbortController>();
   private serverOff = false;
+  private idle: (() => void)[] = [];
 
   constructor(private opts: SpeakerOptions) {}
 
@@ -131,11 +136,33 @@ export class Speaker {
   /** No more sentences for this answer. */
   end() {
     this.ended = true;
-    if (!this.playing && this.queue.length === 0) this.opts.onSpeaking(false);
+    if (!this.playing && this.queue.length === 0) { this.opts.onSpeaking(false); this.fireIdle(); }
+  }
+
+  /** APP-8f: one more thing to say on its own (the confirmation question, "Fatto."), after whatever is being said. */
+  say(text: string) {
+    if (this.ended && !this.playing && this.queue.length === 0) this.first = true;
+    this.ended = false;
+    this.enqueue(text);
+    this.end();
+  }
+
+  /** APP-8f: `fn` runs once everything queued has been said — not if it is stopped first. */
+  afterSpeech(fn: () => void) {
+    if (this.ended && !this.playing && this.queue.length === 0) { fn(); return; }
+    this.idle.push(fn);
+  }
+
+  private fireIdle() {
+    const fns = this.idle;
+    this.idle = [];
+    for (const fn of fns) fn();
   }
 
   stop() {
     this.gen++;
+    this.idle = [];
+    this.ended = true;
     this.queue = [];
     for (const c of this.fetches) c.abort();
     this.fetches.clear();
@@ -176,7 +203,7 @@ export class Speaker {
     }
     if (gen !== this.gen) return;
     this.playing = false;
-    if (this.ended) this.opts.onSpeaking(false);
+    if (this.ended) { this.opts.onSpeaking(false); this.fireIdle(); }
   }
 
   private markFirst() {
@@ -216,6 +243,49 @@ export class Speaker {
       window.speechSynthesis.speak(u);
     });
   }
+}
+
+/**
+ * APP-8f — speaking over the assistant silences it. While `active` (the
+ * assistant is talking) the microphone listens with echo cancellation and a
+ * higher bar than usual (the assistant's own voice may leak back in); when
+ * someone speaks, `onBarge` gets the open microphone to record the rest.
+ * Only once the microphone is already allowed: it never asks mid-answer.
+ */
+export function useBargeIn(active: boolean, onBarge: (stream: MediaStream) => void) {
+  const cb = useRef(onBarge);
+  cb.current = onBarge;
+  useEffect(() => {
+    if (!active || !voiceActivitySupported() || !navigator.mediaDevices?.getUserMedia) return;
+    let cancelled = false;
+    let handed = false;
+    let stream: MediaStream | null = null;
+    let watch: { stop: () => void } | null = null;
+    void (async () => {
+      try {
+        const perm = await navigator.permissions?.query({ name: "microphone" as PermissionName });
+        if (!perm || perm.state !== "granted" || cancelled) return;
+        stream = await openMicrophone();
+        if (cancelled) { stream.getTracks().forEach((t) => t.stop()); return; }
+        watch = watchVoiceActivity(stream, {
+          startMs: 180,
+          factor: 4,
+          minRms: 0.03,
+          onSpeechStart: () => {
+            if (cancelled || handed || !stream) return;
+            handed = true;
+            watch?.stop();
+            cb.current(stream);
+          },
+        });
+      } catch { /* no permission API or no microphone: the Zittisci button still works */ }
+    })();
+    return () => {
+      cancelled = true;
+      watch?.stop();
+      if (!handed) stream?.getTracks().forEach((t) => t.stop());
+    };
+  }, [active]);
 }
 
 /** One Speaker for a chat, stopped when the chat goes away. */

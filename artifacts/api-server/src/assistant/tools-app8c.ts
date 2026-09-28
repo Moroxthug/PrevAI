@@ -11,6 +11,7 @@
 // max "ask"), and every text read from customers (a lead's message, a quote's
 // description) reaches the model as data — the prompt says so.
 import { z } from "zod";
+import { voiceFacts } from "@workspace/config";
 import type { OpenAI } from "@workspace/integrations-openai-ai-server";
 import {
   db,
@@ -400,7 +401,7 @@ export async function validateApp8cProposal(name: string, rawArgs: unknown, ctx:
       if (unlock === "trial" && !getTrialStatus(profile ?? null).isTrialActive) return { ok: false, error: "The quote is still locked and the free trial is over: the user must unlock it (or subscribe) before it can be sent." };
       const known = await isKnownContact(ctx.userId, to);
       const who = c.nome ? `${c.nome} ` : "";
-      return { ok: true, proposal: { kind: "send_quote", projectId: null, summary: `Invia il preventivo ${q.numeroPreventivoData || q.id.slice(0, 8)} (${money(Number(q.totale))}) a ${who}<${to}> per email`, payload: { quoteId: q.id, toEmail: to, clientName: c.nome ?? "", newAddress: !known, unlock, followUps: q.status !== "accepted" } } };
+      return { ok: true, proposal: { kind: "send_quote", projectId: null, summary: `Invia il preventivo ${q.numeroPreventivoData || q.id.slice(0, 8)} (${money(Number(q.totale))}) a ${who}<${to}> per email`, payload: { ...voiceFacts(Number(q.totale) * 100, q.numeroPreventivoData, c.nome), quoteId: q.id, toEmail: to, clientName: c.nome ?? "", newAddress: !known, unlock, followUps: q.status !== "accepted" } } };
     }
     case "propose_send_contract": {
       const a = ProposeArgs.propose_send_contract.parse(rawArgs);
@@ -413,7 +414,7 @@ export async function validateApp8cProposal(name: string, rawArgs: unknown, ctx:
       const to = cleanEmail(contract.variables.customer.email || signers.find((s) => s.role === "customer")?.email);
       if (!to) return { ok: false, error: "The contract has no customer email: the user adds it on the contract page (or update the client first)." };
       const again = contract.status === "draft" ? "" : "di nuovo ";
-      return { ok: true, proposal: { kind: "send_contract", projectId: contract.projectId, summary: `Invia ${again}il contratto ${contract.contractNumber} (${cents(contract.contractValueCents)}) a ${contract.variables.customer.name} <${to}> da firmare`, payload: { contractId: contract.id, toEmail: to, message: a.message ?? "" } } };
+      return { ok: true, proposal: { kind: "send_contract", projectId: contract.projectId, summary: `Invia ${again}il contratto ${contract.contractNumber} (${cents(contract.contractValueCents)}) a ${contract.variables.customer.name} <${to}> da firmare`, payload: { contractId: contract.id, toEmail: to, message: a.message ?? "", ...voiceFacts(contract.contractValueCents, contract.contractNumber, contract.variables.customer.name) } } };
     }
     case "propose_reply_lead": {
       const a = ProposeArgs.propose_reply_lead.parse(rawArgs);
@@ -423,7 +424,7 @@ export async function validateApp8cProposal(name: string, rawArgs: unknown, ctx:
       if (lead.status === "won" || lead.status === "lost") return { ok: false, error: `This lead is already ${LEAD_STATUS_IT[lead.status]}.` };
       if (lead.preferredChannel === "email" && !cleanEmail(lead.email)) return { ok: false, error: `${lead.name} has no email address.` };
       const channel = lead.preferredChannel === "whatsapp" ? "WhatsApp (o email se WhatsApp non è attivo)" : "email";
-      return { ok: true, proposal: { kind: "reply_lead", projectId: null, summary: `Manda a ${lead.name} il messaggio di ricontatto n. ${lead.followUpStage + 1} per ${channel}`, payload: { leadId: lead.id, stage: lead.followUpStage } } };
+      return { ok: true, proposal: { kind: "reply_lead", projectId: null, summary: `Manda a ${lead.name} il messaggio di ricontatto n. ${lead.followUpStage + 1} per ${channel}`, payload: { leadId: lead.id, stage: lead.followUpStage, recipientName: lead.name } } };
     }
     case "propose_message_client": {
       const a = ProposeArgs.propose_message_client.parse(rawArgs);

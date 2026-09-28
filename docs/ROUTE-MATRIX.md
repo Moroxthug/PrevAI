@@ -100,13 +100,13 @@ Columns — **Auth**: session (`requireAuth`), apiKey (`requireApiKey`), admin (
 | 108 | POST | `/api/assistant/conversations/:id/stream` | session | jobs:view | chatLimiter | zod | hasFeature(assistant) | predicate | — | — | — |
 | 149 | POST | `/api/assistant/conversations/:id/messages` | session | jobs:view | chatLimiter | zod | hasFeature(assistant) | predicate | — | — | — |
 | 167 | DELETE | `/api/assistant/conversations/:id` | session | jobs:view | — | none | — | helper | — | — | — |
-| 181 | POST | `/api/assistant/proposals/:id/confirm` | session | jobs:view | — | none | — | helper | — | — | — |
-| 193 | POST | `/api/assistant/proposals/:id/dismiss` | session | jobs:view | — | none | — | helper | — | — | — |
-| 205 | POST | `/api/assistant/proposals/:id/undo` | session | jobs:view | — | none | — | helper | — | — | — |
-| 233 | GET | `/api/assistant/permissions` | session | settings:view | — | none | hasFeature(assistant) | n/a | — | — | — |
-| 252 | PUT | `/api/assistant/permissions` | session | settings:full | — | zod | hasFeature(assistant) | n/a | — | — | — |
-| 283 | GET | `/api/assistant/voice` | session | jobs:view | — | none | hasFeature(assistant) | n/a | — | — | — |
-| 296 | POST | `/api/assistant/speech` | session | jobs:view | speechLimiter | zod | hasFeature(assistant) | n/a | — | — | — |
+| 181 | POST | `/api/assistant/proposals/:id/confirm` | session | jobs:view | — | manual | — | helper | — | — | — |
+| 195 | POST | `/api/assistant/proposals/:id/dismiss` | session | jobs:view | — | none | — | helper | — | — | — |
+| 207 | POST | `/api/assistant/proposals/:id/undo` | session | jobs:view | — | none | — | helper | — | — | — |
+| 237 | GET | `/api/assistant/permissions` | session | settings:view | — | none | hasFeature(assistant) | n/a | — | — | — |
+| 257 | PUT | `/api/assistant/permissions` | session | settings:full | — | zod | hasFeature(assistant) | n/a | — | — | — |
+| 291 | GET | `/api/assistant/voice` | session | jobs:view | — | none | hasFeature(assistant) | n/a | — | — | — |
+| 305 | POST | `/api/assistant/speech` | session | jobs:view | speechLimiter | zod | hasFeature(assistant) | n/a | — | — | — |
 
 ## artifacts/api-server/src/routes/business-profile.ts
 

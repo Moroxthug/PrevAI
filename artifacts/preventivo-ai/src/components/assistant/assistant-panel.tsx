@@ -10,8 +10,8 @@ import { useLanguage } from "@/i18n/LanguageContext";
 import { assistantApi, type AssistantMessageDto, type ConversationDto, type ProposalDto, type ProposalKind } from "@/lib/assistant-api";
 import { useAssistantPageContext } from "@/lib/assistant-context";
 import { formatCents } from "@/lib/jobs-api";
-import { ASSISTANT_UNDO_SECONDS, SentenceChunker } from "@workspace/config";
-import { useSpeaker, useVoiceInfo, useVoicePrefs } from "@/lib/assistant-voice";
+import { ASSISTANT_UNDO_SECONDS, SentenceChunker, classifyVoiceReply, voiceConfirmation, voiceNeedsTap } from "@workspace/config";
+import { useBargeIn, useSpeaker, useVoiceInfo, useVoicePrefs } from "@/lib/assistant-voice";
 
 const KIND_ICON: Record<ProposalKind, typeof Receipt> = { cost_entry: Wallet, milestone_update: Flag, task: ListTodo, invoice: Receipt, send_invoice: Mail, record_payment: Banknote, draft_quote: FileText, send_quote: SendIcon, send_contract: FileSignature, reply_lead: MessageSquare, message_client: Mail, update_client: UserPen, job_note: StickyNote };
 
@@ -28,8 +28,14 @@ function proposalLink(p: ProposalDto): string | null {
   return p.projectId ? `/dashboard/jobs/${p.projectId}${tab ? `?tab=${tab}` : ""}` : null;
 }
 
-/** APP-8d — a clear yes typed while one card waits ("o scrivi sì"): confirms that card, like Conferma. */
-const YES = /^(s[iì]|ok|okay|vai|conferma|confermo|procedi|mandala|mandalo)[.!]*$/i;
+/** APP-8f: the last card that ran by itself and can still be undone ("annulla" said or typed). */
+function undoableNow(proposals: readonly ProposalDto[]): ProposalDto | null {
+  const now = Date.now();
+  const live = proposals.filter((p) => p.status === "confirmed" && p.auto && p.undoUntil && new Date(p.undoUntil).getTime() > now && now - new Date(p.resolvedAt ?? p.createdAt).getTime() < ASSISTANT_UNDO_SECONDS * 1000);
+  return live[live.length - 1] ?? null;
+}
+
+const euro = (cents: number) => new Intl.NumberFormat("it-IT", { style: "currency", currency: "EUR", maximumFractionDigits: 0, useGrouping: "always" } as Intl.NumberFormatOptions).format(cents / 100);
 
 /** The query that holds a thread: the main one (null) or an older per-job one. */
 const threadKey = (threadId: string | null) => ["assistant", threadId ?? "main"];
@@ -97,7 +103,8 @@ export function AssistantChat({ threadId = null, compact, startDictation, classN
   const [editing, setEditing] = useState<ProposalDto | null>(null);
   // APP-8e — the answer out loud: "Conversazione a voce" always, "A voce quando detti" when the question came from the microphone.
   const [voicePrefs, setVoicePrefs] = useVoicePrefs();
-  const voiceInfo = useVoiceInfo(voicePrefs.mode !== "off");
+  // Always read: it also carries the owner's threshold for a "sì" said out loud (APP-8f).
+  const voiceInfo = useVoiceInfo();
   const { speaker, speaking } = useSpeaker(voiceInfo.provider === "openai");
   const dictatedRef = useRef(false);
   const lastOnMode = useRef(voicePrefs.mode === "off" ? "dictated" : voicePrefs.mode);
@@ -131,6 +138,7 @@ export function AssistantChat({ threadId = null, compact, startDictation, classN
     if (chunker) { speaker.begin(); try { performance.mark("asst-voice:sent"); } catch { /* old browsers */ } }
     // APP-8c: open_screen — go there once the answer is over (leaving the page closes the panel, which would stop it).
     const nav = { to: null as string | null };
+    const newCards: ProposalDto[] = [];
     try {
       await assistantApi.stream(data.conversation.id, content, context, (e) => {
         if (e.type === "delta") {
@@ -141,6 +149,7 @@ export function AssistantChat({ threadId = null, compact, startDictation, classN
         else if (e.type === "navigate") nav.to = e.path;
         else if (e.type === "proposal") {
           patch((p) => ({ ...p, proposals: [...p.proposals, e.proposal] }));
+          newCards.push(e.proposal);
           if (e.proposal.auto && e.proposal.status === "confirmed") invalidateData();
         }
         else {
@@ -154,7 +163,18 @@ export function AssistantChat({ threadId = null, compact, startDictation, classN
       if (!ctrl.signal.aborted) setFailed({ content, message: (e as Error).message });
     } finally {
       // What is left of the answer is said too, unless it was stopped.
-      if (chunker && !ctrl.signal.aborted) { for (const sentence of chunker.flush()) speaker.enqueue(sentence); speaker.end(); }
+      if (chunker && !ctrl.signal.aborted) {
+        for (const sentence of chunker.flush()) speaker.enqueue(sentence);
+        speaker.end();
+        // APP-8f: one card waiting from this answer → the essentials read back, and (Conversazione a voce) the microphone opens for the answer.
+        const waiting = newCards.filter((p) => p.status === "pending");
+        const stillPending = (queryClient.getQueryData<ConversationDto>(key)?.proposals ?? []).filter((p) => p.status === "pending");
+        if (waiting.length === 1 && stillPending.length === 1) {
+          const v = voiceConfirmation(waiting[0]!, voiceInfo.confirmMaxCents);
+          speaker.say(v.say);
+          if (voicePrefs.mode === "always" && !v.needsTap) speaker.afterSpeech(() => handlers.current.listenForReply(waiting[0]!.id));
+        }
+      }
       if (abortRef.current === ctrl) abortRef.current = null;
       setLive(null);
       // After a stop or an error, what the server kept (the question, anything already written) is the truth.
@@ -165,33 +185,82 @@ export function AssistantChat({ threadId = null, compact, startDictation, classN
   };
 
   const patchProposal = (p: ProposalDto) => patch((prev) => ({ ...prev, proposals: prev.proposals.map((x) => (x.id === p.id ? p : x)) }));
+  // APP-8f: out loud only when the answers are (the person is listening, maybe not looking).
+  const sayIfVoice = (text: string) => { if (voicePrefs.mode !== "off") speaker.say(text); };
   const confirm = useMutation({
-    mutationFn: (id: string) => assistantApi.confirm(id),
-    onSuccess: ({ proposal }) => { patchProposal(proposal); invalidateData(); toast({ title: t("assistant.applied"), description: proposal.summary }); },
-    onError: (e: Error) => { toast({ title: t("assistant.applyFailed"), description: e.message, variant: "destructive" }); queryClient.invalidateQueries({ queryKey: key }); },
+    mutationFn: ({ id, via }: { id: string; via: "tap" | "voice" }) => assistantApi.confirm(id, via),
+    onSuccess: ({ proposal }, { via }) => { patchProposal(proposal); invalidateData(); toast({ title: t("assistant.applied"), description: proposal.summary }); if (via === "voice") sayIfVoice(t("assistant.voiceDone")); },
+    onError: (e: Error, { via }) => { toast({ title: t("assistant.applyFailed"), description: e.message, variant: "destructive" }); if (via === "voice") sayIfVoice(e.message); queryClient.invalidateQueries({ queryKey: key }); },
   });
   const dismiss = useMutation({ mutationFn: (id: string) => assistantApi.dismiss(id), onSuccess: ({ proposal }) => patchProposal(proposal) });
   // APP-8b: Annulla on a card the assistant carried out by itself.
   const undo = useMutation({
     mutationFn: (id: string) => assistantApi.undo(id),
-    onSuccess: ({ proposal }) => { patchProposal(proposal); invalidateData(); toast({ title: t("assistant.undoneToast"), description: proposal.summary }); },
+    onSuccess: ({ proposal }) => { patchProposal(proposal); invalidateData(); toast({ title: t("assistant.undoneToast"), description: proposal.summary }); sayIfVoice(t("assistant.voiceUndone")); },
     onError: (e: Error) => { toast({ title: t("assistant.undoFailed"), description: e.message, variant: "destructive" }); queryClient.invalidateQueries({ queryKey: key }); },
   });
-  const card = (p: ProposalDto) => <ProposalCard key={p.id} proposal={p} onConfirm={() => confirm.mutate(p.id)} onDismiss={() => dismiss.mutate(p.id)} onUndo={() => undo.mutate(p.id)} onEdit={() => startEdit(p)} offline={!online} editing={editing?.id === p.id} sayYes={pending.length === 1 && pending[0]!.id === p.id} busy={(confirm.isPending && confirm.variables === p.id) || (undo.isPending && undo.variables === p.id)} />;
+  const card = (p: ProposalDto) => <ProposalCard key={p.id} proposal={p} onConfirm={() => confirm.mutate({ id: p.id, via: "tap" })} onDismiss={() => dismiss.mutate(p.id)} onUndo={() => undo.mutate(p.id)} onEdit={() => startEdit(p)} offline={!online} editing={editing?.id === p.id} hint={pending.length === 1 && pending[0]!.id === p.id ? yesHint(p) : null} busy={(confirm.isPending && confirm.variables?.id === p.id) || (undo.isPending && undo.variables === p.id)} />;
   const clear = useMutation({
     mutationFn: () => assistantApi.clear(data!.conversation.id),
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: key }); queryClient.invalidateQueries({ queryKey: ["assistant-threads"] }); },
   });
 
+  /**
+   * APP-8f — a short answer to a waiting card, said or typed. Only a clear yes
+   * confirms (by voice: not above the owner's threshold — the server checks
+   * again); a clear no sets the card aside; "annulla" takes back the last thing
+   * done by itself. Anything else returns false and goes to the assistant.
+   */
+  const answerCard = (text: string, via: "tap" | "voice"): boolean => {
+    if (editing || !online) return false;
+    const reply = classifyVoiceReply(text);
+    if (reply === "other") return false;
+    if (pending.length === 1) {
+      const p = pending[0]!;
+      if (reply === "yes") {
+        if (via === "voice" && voiceNeedsTap(p, voiceInfo.confirmMaxCents)) {
+          const msg = t("assistant.tapNeeded");
+          toast({ title: msg, description: p.summary });
+          sayIfVoice(msg);
+        } else confirm.mutate({ id: p.id, via });
+        return true;
+      }
+      dismiss.mutate(p.id);
+      sayIfVoice(t("assistant.voiceDismissed"));
+      return true;
+    }
+    if (reply === "undo" && pending.length === 0) {
+      const u = undoableNow(data?.proposals ?? []);
+      if (u) { undo.mutate(u.id); return true; }
+    }
+    return false;
+  };
+
+  const onTranscribed = (text: string) => {
+    if (!draft.trim() && answerCard(text, "voice")) return;
+    // "Conversazione a voce": what was said goes at once (sends still wait for Conferma); otherwise it is read over first.
+    if (voicePrefs.mode === "always" && !editing && !draft.trim()) { void ask(text, true); return; }
+    dictatedRef.current = true;
+    setDraft((d) => (d.trim() ? `${d.trim()} ${text}` : text));
+    inputRef.current?.focus();
+  };
+  // The recorder calls back long after it started: always the latest state.
+  const handlers = useRef({ onTranscribed, listenForReply: (_id: string) => {} });
+  handlers.current.onTranscribed = onTranscribed;
   const voice = useVoiceInput({
-    onTranscribed: (text) => {
-      // "Conversazione a voce": what was said goes at once (sends still wait for Conferma); otherwise it is read over first.
-      if (voicePrefs.mode === "always" && !editing && !draft.trim()) { void ask(text, true); return; }
-      dictatedRef.current = true;
-      setDraft((d) => (d.trim() ? `${d.trim()} ${text}` : text));
-      inputRef.current?.focus();
-    },
+    onTranscribed: (text) => handlers.current.onTranscribed(text),
     onError: (message) => toast({ title: t("assistant.voiceError"), description: message, variant: "destructive" }),
+  });
+  // Hands-free: after the question, listen once; it stops by itself after a pause and is dropped if nobody answers.
+  handlers.current.listenForReply = (id: string) => {
+    const still = (queryClient.getQueryData<ConversationDto>(key)?.proposals ?? []).find((p) => p.id === id);
+    if (still?.status !== "pending" || voice.isRecording || voice.isTranscribing || abortRef.current) return;
+    void voice.startRecording({ autoStop: true, waitMs: 8000 });
+  };
+  // APP-8f: speaking over the assistant silences it (and stops the answer being written); what is said next is recorded.
+  useBargeIn(speaking && voicePrefs.mode !== "off" && voicePrefs.bargeIn && !voice.isRecording && !voice.isTranscribing, (stream) => {
+    stop();
+    void voice.startRecording({ stream, autoStop: true, speaking: true });
   });
 
   // Instant while an answer is being written (a smooth scroll per word falls behind), smooth otherwise; also for the state lines of APP-8d.
@@ -225,8 +294,8 @@ export function AssistantChat({ threadId = null, compact, startDictation, classN
     const c = draft.trim();
     if (!c || busy) return;
     speaker.unlock(); // a tap or Enter: lets iOS play the answer later
-    // "sì" with exactly one card waiting is that card's Conferma; with none or several it goes to the assistant like any text.
-    if (!editing && online && pending.length === 1 && YES.test(c)) { setDraft(""); confirm.mutate(pending[0]!.id); return; }
+    // "sì" with exactly one card waiting is that card's Conferma ("no" sets it aside, "annulla" undoes); anything else goes to the assistant.
+    if (answerCard(c, "tap")) { setDraft(""); return; }
     if (editing) {
       // Modifica: the old card is set aside and the assistant proposes a new one with the change.
       dismiss.mutate(editing.id);
@@ -247,6 +316,14 @@ export function AssistantChat({ threadId = null, compact, startDictation, classN
   };
   const toggleVoice = () => { if (voicePrefs.mode === "off") { speaker.unlock(); setVoicePrefs({ mode: lastOnMode.current }); } else { speaker.stop(); setVoicePrefs({ mode: "off" }); } };
   const startEdit = (p: ProposalDto) => { setEditing(p); inputRef.current?.focus(); };
+  // What the waiting card says under its buttons: how to answer it (APP-8f: by voice, or the tap above the threshold).
+  const yesHint = (p: ProposalDto): string => {
+    if (voicePrefs.mode === "off") return t("assistant.sayYes");
+    if (!voiceNeedsTap(p, voiceInfo.confirmMaxCents)) return t("assistant.sayYesVoice");
+    return voiceInfo.confirmMaxCents > 0 && (typeof p.payload.amountCents === "number" || typeof p.payload.totalCents === "number")
+      ? t("assistant.tapAbove").replace("{amount}", euro(voiceInfo.confirmMaxCents))
+      : t("assistant.tapOnly");
+  };
 
   // Back online: the question kept meanwhile goes now.
   useEffect(() => {
@@ -426,7 +503,7 @@ function useUndoSecondsLeft(undoUntil: string | null): number {
   return end ? Math.max(0, Math.ceil((end - now) / 1000)) : 0;
 }
 
-function ProposalCard({ proposal, onConfirm, onDismiss, onUndo, onEdit, offline, editing, sayYes, busy }: { proposal: ProposalDto; onConfirm: () => void; onDismiss: () => void; onUndo: () => void; onEdit: () => void; offline: boolean; editing: boolean; sayYes: boolean; busy: boolean }) {
+function ProposalCard({ proposal, onConfirm, onDismiss, onUndo, onEdit, offline, editing, hint, busy }: { proposal: ProposalDto; onConfirm: () => void; onDismiss: () => void; onUndo: () => void; onEdit: () => void; offline: boolean; editing: boolean; hint: string | null; busy: boolean }) {
   const { t } = useLanguage();
   const undoLeft = useUndoSecondsLeft(proposal.status === "confirmed" && proposal.auto ? proposal.undoUntil : null);
   const Icon = KIND_ICON[proposal.kind] ?? Receipt;
@@ -468,7 +545,7 @@ function ProposalCard({ proposal, onConfirm, onDismiss, onUndo, onEdit, offline,
             </button>
             <button type="button" className="prop-dismiss" onClick={onEdit} disabled={busy || editing} aria-pressed={editing}><Pencil className="h-3 w-3" /> {t("assistant.edit")}</button>
             <button type="button" className="prop-dismiss" onClick={onDismiss} disabled={busy}><X className="h-3.5 w-3.5" /> {t("assistant.dismiss")}</button>
-            {sayYes && !offline && <span className="prop-yes" aria-hidden="true">{t("assistant.sayYes")}</span>}
+            {hint && !offline && <span className="prop-yes">{hint}</span>}
           </>
         )}
         {status === "confirmed" && (

@@ -6,7 +6,7 @@
 // a card) and by /confirm (the role must still allow it). The role always wins:
 // the setting can only narrow what a person can already do by hand.
 import { db, type AssistantActionRow, assistantPermissionsTable, assistantConversationsTable, assistantConversationActorsTable, type TeamMemberRole } from "@workspace/db";
-import { ASSISTANT_ACTIONS, ASSISTANT_ACTION_DEFS, ASSISTANT_UNDO_SECONDS, effectiveAssistantLevel, type AssistantAction, type AssistantLevel } from "@workspace/config";
+import { ASSISTANT_ACTIONS, ASSISTANT_ACTION_DEFS, ASSISTANT_UNDO_SECONDS, ASSISTANT_VOICE_CONFIRM_DEFAULT_CENTS, ASSISTANT_VOICE_CONFIRM_SETTING, effectiveAssistantLevel, parseVoiceConfirmMax, type AssistantAction, type AssistantLevel } from "@workspace/config";
 import { and, eq, sql } from "drizzle-orm";
 import type { OpenAI } from "@workspace/integrations-openai-ai-server";
 import { roleCan } from "../middlewares/requirePermission.js";
@@ -125,4 +125,19 @@ export function withUnavailable(levels: AssistantLevels, missing: Partial<Record
   const out = { ...levels };
   for (const [action, gone] of Object.entries(missing) as [AssistantAction, boolean][]) if (gone) out[action] = "never";
   return out;
+}
+
+// ── APP-8f: la soglia della conferma a voce ──────────────────────────────────
+// Una riga di assistant_permissions (action "voice_confirm_max", role '', level = i centesimi):
+// nessuna migrazione. Senza riga (o prima della 0013) vale la proposta del piano, 5.000 €.
+
+/** Above this amount (cents) the voice is not enough: the card takes a tap. */
+export function voiceConfirmMaxFrom(rows: readonly { action: string; role: string; level: string }[]): number {
+  const row = rows.find((r) => r.action === ASSISTANT_VOICE_CONFIRM_SETTING && !r.role);
+  return row ? parseVoiceConfirmMax(row.level) : ASSISTANT_VOICE_CONFIRM_DEFAULT_CENTS;
+}
+
+export async function loadVoiceConfirmMax(orgUserId: string): Promise<number> {
+  if (!(await assistantV2Ready())) return ASSISTANT_VOICE_CONFIRM_DEFAULT_CENTS;
+  return voiceConfirmMaxFrom(await loadPermissionRows(orgUserId));
 }

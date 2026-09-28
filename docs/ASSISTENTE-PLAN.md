@@ -17,7 +17,7 @@ Stesse regole di sempre: una riga per sessione, in ordine; un commit per riga su
 | 34 | **APP-8c** Strumenti nuovi: brief del giorno, cerca, apri la schermata, preventivi, messaggi ai clienti | 135 | ✅ 2026-09-27 |
 | 35 | **APP-8d** La schermata dell'assistente (calma) e la riga su Oggi | 136 | ✅ 2026-09-27 |
 | 36 | **APP-8e** Risponde a voce | 137 | ✅ (D17 aperta: voce del browser, fornitore spento) |
-| 37 | **APP-8f** Conferma a voce, interruzione, annulla | 138 | ⬜ |
+| 37 | **APP-8f** Conferma a voce, interruzione, annulla | 138 | ✅ |
 | 38 | **APP-8g** "Chiama Rossi" apre il telefono; rubrica fornitori | 139 | ⬜ |
 | 39 | **APP-8h** Fiducia: prove automatiche, costi, registro delle azioni | 141 | ⬜ |
 
@@ -135,7 +135,9 @@ Fatta il 2026-09-27 con **D17 aperta** (diario in PIANO-AZIONE, RUNBOOKS §21): 
 - Minuti contati per posto (D18). L'audio non si conserva (come la dettatura di oggi).
 - **Fatta quando:** dal silenzio alla prima parola detta meno di 2 s in Wi-Fi e 3 s in 4G, misurati.
 
-## APP-8f — Conferma a voce, interruzione, annulla (riga 37)
+## APP-8f — Conferma a voce, interruzione, annulla (riga 37) ✅
+
+Fatta il 2026-09-27 (diario in PIANO-AZIONE, RUNBOOKS §22). Differenze: la soglia sta in `assistant_permissions` (riga `voice_confirm_max`), nessuna migrazione; un no chiaro mette da parte la scheda (non la lascia in attesa: non succede comunque nulla); scritto a mano "sì" conferma anche sopra la soglia (è come il tocco); l'interruzione parlando è una scelta del dispositivo e si accende solo se il microfono è già permesso. Le prove sono `APP8F_VOICE_REPLY_CASES` in `assistant/evals/cases.ts` (girano senza modello).
 
 - Parlare sopra l'assistente lo zittisce subito.
 - La conferma a voce rilegge l'essenziale ("Invio la fattura PF-2026-0042, settemilacentododici euro, a Marco Venturi per email?") e accetta solo un sì chiaro ("sì", "vai", "mandala"); tutto il resto la lascia in attesa.
