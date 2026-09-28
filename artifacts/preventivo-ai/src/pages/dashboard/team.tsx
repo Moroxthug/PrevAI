@@ -69,7 +69,7 @@ export default function TeamPage() {
 
 // ── Team members (Phase 7: logins, not workers logging hours) ──────────────
 
-const ROLE_OPTIONS: TeamMemberRole[] = ["admin", "office", "foreman", "viewer"];
+const ROLE_OPTIONS: TeamMemberRole[] = ["admin", "office", "foreman", "bookkeeper", "viewer"];
 
 function MembersTab() {
   const { t } = useLanguage();

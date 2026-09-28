@@ -24,6 +24,7 @@ import {
 } from "@workspace/db";
 import type { TeamMemberRole } from "@workspace/db";
 import { roleCan } from "../middlewares/requirePermission.js";
+import { homeKindOf } from "../home/service.js";
 
 const DAY_MS = 86_400_000;
 
@@ -71,6 +72,21 @@ export type NeedsYouItem = {
   canRemind?: boolean;
 };
 
+/**
+ * APP-7: "Serve a te" is what waits on *this* person, not everything their role
+ * may read. A capocantiere approves hours; a contabile confirms transfers and
+ * chases late invoices; nobody else in the field or the books calls leads back.
+ * The owner, the office and a read-only member keep the whole list.
+ */
+const KINDS_BY_HOME: Partial<Record<ReturnType<typeof homeKindOf>, readonly NeedsYouKind[]>> = {
+  capocantiere: ["hours"],
+  contabile: ["bonifico", "overdue"],
+};
+
+export function needsYouKindsFor(role: TeamMemberRole): ReadonlySet<NeedsYouKind> {
+  return new Set(KINDS_BY_HOME[homeKindOf(role)] ?? (["bonifico", "overdue", "hours", "followup", "waiting"] as const));
+}
+
 /** Most urgent first: money, then people waiting on an answer. */
 const KIND_RANK: Record<NeedsYouKind, number> = { bonifico: 0, overdue: 1, hours: 2, followup: 3, waiting: 4 };
 
@@ -105,9 +121,10 @@ const clientPhone = (c: QuoteClientData | null | undefined): string | null => (c
 export async function needsYou(userId: string, role: TeamMemberRole, profile: BusinessProfile | undefined, now = new Date()): Promise<NeedsYouItem[]> {
   const today = localDay(now);
   const items: NeedsYouItem[] = [];
+  const kinds = needsYouKindsFor(role);
 
   // ── On site: hours to approve (the time-tracking tier) ─────────────────────
-  if (hasFeature(profile, "team_time") && roleCan(role, "jobs", "view")) {
+  if (kinds.has("hours") && hasFeature(profile, "team_time") && roleCan(role, "jobs", "view")) {
     if (roleCan(role, "jobs", "edit")) {
       // The same two sets the crew card approves: clocked shifts that ended, and hours typed in.
       const [hours] = await db
@@ -137,7 +154,7 @@ export async function needsYou(userId: string, role: TeamMemberRole, profile: Bu
   }
 
   // ── Money: bank transfers to confirm, invoices past due ───────────────────────
-  if (roleCan(role, "invoicing", "view")) {
+  if ((kinds.has("bonifico") || kinds.has("overdue")) && roleCan(role, "invoicing", "view")) {
     const open = await db
       .select({
         id: invoicesTable.id,
@@ -164,9 +181,11 @@ export async function needsYou(userId: string, role: TeamMemberRole, profile: Bu
       const customer = inv.customer as InvoiceParty;
       const balance = Math.max(0, inv.totalCents - inv.paidCents);
       if (inv.status === "pending_confirmation") {
+        if (!kinds.has("bonifico")) continue;
         items.push({ id: `bonifico:${inv.id}`, kind: "bonifico", title: inv.number, subtitle: customer?.name ?? "", at: inv.dueDate.toISOString(), href: `/dashboard/invoices/${inv.id}`, amountCents: balance });
         continue;
       }
+      if (!kinds.has("overdue")) continue;
       // Due today is not late yet: the due date is a whole local day.
       const days = daysPastDue(inv.dueDate, now);
       if (days <= 0) continue;
@@ -186,7 +205,7 @@ export async function needsYou(userId: string, role: TeamMemberRole, profile: Bu
   }
 
   // ── People waiting on an answer: leads to call back, quotes nobody answered ──
-  if (roleCan(role, "leads", "view")) {
+  if (kinds.has("followup") && roleCan(role, "leads", "view")) {
     // A day and a half ahead covers "today" whatever the server zone; the local-day test is done here.
     const leads = await db
       .select({ id: leadsTable.id, name: leadsTable.name, phone: leadsTable.phone, status: leadsTable.status, nextFollowUpAt: leadsTable.nextFollowUpAt, notes: leadsTable.notes })
@@ -200,7 +219,7 @@ export async function needsYou(userId: string, role: TeamMemberRole, profile: Bu
     }
   }
 
-  if (roleCan(role, "quotes", "view")) {
+  if (kinds.has("waiting") && roleCan(role, "quotes", "view")) {
     // Sent, not accepted, and the automatic follow-ups are over (or off, or the client unsubscribed) — a call is what is left.
     const quotes = await db
       .select({ id: quotesTable.id, title: quotesTable.titoloPreventivoRiga1, clientData: quotesTable.clientData, sentAt: quotesTable.sentAt, totale: quotesTable.totale })

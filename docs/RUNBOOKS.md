@@ -819,3 +819,28 @@ pnpm --filter @workspace/api-server qa:phone-sheets   # fogli di confronto in .q
 ```
 
 Senza la tabella: `GET /api/jobs/:id/notes` risponde `available: false`, la scheda Note non compare, "Nota vocale" dal + dice "non ancora attive", POST risponde 503. Foto dal +, Condividi PDF e bozza funzionano comunque. Ordine rispetto al deploy: indifferente. La cancellazione dell'account la spazza da sola (ha `user_id`).
+
+## 16. Home per ruolo e "Personalizza la home" (APP-7, riga 31)
+
+### 16.1 Cosa c'è
+
+- **Cinque home** calcolate dal ruolo: titolare (owner, admin), ufficio (office), capocantiere (foreman), contabile (bookkeeper, ruolo nuovo), sola lettura (viewer). Catalogo, partenze e regole in `lib/config/src/home.ts`; quali sezioni un ruolo può avere lo decide l'API (`artifacts/api-server/src/home/service.ts`) dalla matrice dei permessi.
+- **"Serve a te" per persona** (`today/service.ts`, `needsYouKindsFor`): capocantiere → ore da approvare; contabile → bonifici da confermare e fatture scadute; gli altri → tutto.
+- **Personalizza la home**: `GET/PUT/DELETE /api/home` (la propria, qualunque ruolo), `PUT/DELETE /api/home/roles/:tipo` (la partenza di un ruolo, `team:full`). Ogni home salvata è ritagliata al ruolo a ogni lettura e scrittura.
+- **Contabile**: si invita da Squadra → Accessi → ruolo "Contabile". Vede e usa fatture, incassi, costi; legge scadenze fiscali e F24; il resto in lettura.
+
+### 16.2 Migrazione 0012
+
+`migrations/v2/0012_app7_home.sql`: una tabella nuova e vuota (`home_layouts`, indice unico su impresa + soggetto), nessuna colonna su tabelle esistenti, idempotente. Staging: applicata e rieseguita senza effetti. In produzione come le altre (§5.3, porta 5432, stesso `sslmode`), dopo la 0011:
+
+```bash
+"$PG/psql.exe" "$URL" -v ON_ERROR_STOP=1 -1 -f migrations/v2/0012_app7_home.sql   # APP-7: home per ruolo
+```
+
+Senza la tabella: ognuno vede la home del suo ruolo (calcolata), `GET /api/home` risponde `available: false`, il foglio "Personalizza" si apre con l'avviso e il pulsante Salva spento, le scritture rispondono 503. Ordine rispetto al deploy: indifferente. La cancellazione dell'account la spazza da sola (ha `user_id`).
+
+### 16.3 Controlli dopo il deploy
+
+1. Da titolare: home uguale a prima più "Cantieri in corso" (se il piano ha i cantieri); l'icona accanto a "Nuovo preventivo" apre il foglio con "Stai modificando".
+2. Dopo la 0012: nascondere una sezione, Salva, ricaricare → resta nascosta; Ripristina → torna.
+3. Se c'è un membro capocantiere o contabile: la sua home è la sua (`GET /api/home` → `kind`).

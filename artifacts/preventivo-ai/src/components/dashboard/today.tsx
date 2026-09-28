@@ -140,9 +140,12 @@ function NeedsYouRow({ item }: { item: NeedsYouItemDto }) {
   );
 }
 
-export function NeedsYouCard() {
+/** APP-7: `collapsed` = the person chose a compact "Serve a te" — its title and count, opened with a tap. It can never be removed. */
+export function NeedsYouCard({ collapsed = false }: { collapsed?: boolean }) {
   const { t } = useLanguage();
   const [all, setAll] = useState(false);
+  const [openedHere, setOpenedHere] = useState(false);
+  const folded = collapsed && !openedHere;
   const { data, isLoading, isError } = useQuery({ queryKey: ["today", "needs-you"], queryFn: todayApi.needsYou, refetchInterval: 120_000 });
   const items = data?.items ?? [];
   const shown = all ? items : items.slice(0, PRIMI);
@@ -152,8 +155,13 @@ export function NeedsYouCard() {
       <div className="today-head">
         <h2 id="needs-you-h">{t("today.ny.title")}</h2>
         {items.length > 0 && <span className="ny-count">{items.length}</span>}
+        {collapsed && (
+          <button type="button" className="cta-link today-link ny-fold" onClick={() => setOpenedHere((v) => !v)} aria-expanded={!folded}>
+            {folded ? t("home.ny.show") : t("home.ny.hide")}
+          </button>
+        )}
       </div>
-      {isLoading ? (
+      {folded ? null : isLoading ? (
         <div className="px-4 pb-4 space-y-2"><Skeleton className="h-12 w-full" /><Skeleton className="h-12 w-full" /><Skeleton className="h-12 w-full" /></div>
       ) : isError ? (
         <p className="today-empty">{t("today.ny.error")}</p>
@@ -200,9 +208,10 @@ function delta(current: number, previous: number, t: T): string | undefined {
   return fill(t("today.stats.vsLast"), { pct: `${pct > 0 ? "+" : ""}${pct}%` });
 }
 
-export function TodayStats() {
+/** APP-7: `initialPeriod` is the one the person picked in "Personalizza la home". */
+export function TodayStats({ initialPeriod = "m" }: { initialPeriod?: Period }) {
   const { t } = useLanguage();
-  const [period, setPeriod] = useState<Period>("m");
+  const [period, setPeriod] = useState<Period>(initialPeriod);
   // The window is fixed per period for the page's life; midnight on the last day of a month is not worth a re-render.
   const win = useMemo(() => periodWindow(period), [period]);
   const { data, isLoading } = useQuery({

@@ -27,6 +27,10 @@ const MATRIX: Record<TeamMemberRole, Record<PermissionArea, LivelloPermesso>> = 
   admin: { quotes: "full", contracts: "full", jobs: "full", costs: "full", invoicing: "full", team: "full", analytics: "full", settings: "view", leads: "full", integrations: "view", security: "view", imports: "full", fiscale: "view" },
   office: { quotes: "full", contracts: "edit", jobs: "full", costs: "full", invoicing: "full", team: "view", analytics: "view", settings: "view", leads: "full", integrations: "view", security: "view", imports: "edit", fiscale: "none" },
   foreman: { quotes: "view", contracts: "view", jobs: "edit", costs: "edit", invoicing: "view", team: "view", analytics: "view", settings: "view", leads: "view", integrations: "view", security: "view", imports: "view", fiscale: "none" },
+  // APP-7: il contabile emette e incassa, registra i costi e legge le scadenze fiscali
+  // (è il suo lavoro: l'unica eccezione alla chiusura dell'area fiscale di A-2). Non cambia
+  // il profilo fiscale, non manda nulla al commercialista, non tocca preventivi e cantieri.
+  bookkeeper: { quotes: "view", contracts: "view", jobs: "view", costs: "full", invoicing: "full", team: "view", analytics: "view", settings: "view", leads: "view", integrations: "view", security: "view", imports: "edit", fiscale: "view" },
   viewer: { quotes: "view", contracts: "view", jobs: "view", costs: "view", invoicing: "view", team: "view", analytics: "view", settings: "view", leads: "view", integrations: "view", security: "view", imports: "view", fiscale: "none" },
 };
 

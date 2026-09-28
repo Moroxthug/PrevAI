@@ -51,6 +51,7 @@ import commercialistaRouter from "./commercialista";
 import studioRouter from "./studio";
 import todayRouter from "./today";
 import appBetaRouter from "./app-beta";
+import homeRouter from "./home";
 import accountRouter from "./account";
 
 const router: IRouter = Router();
@@ -106,6 +107,7 @@ router.use(commercialistaRouter);
 router.use(studioRouter);
 router.use(todayRouter);
 router.use(appBetaRouter);
+router.use(homeRouter);
 router.use(accountRouter);
 router.use("/v1/public", publicV1Router);
 

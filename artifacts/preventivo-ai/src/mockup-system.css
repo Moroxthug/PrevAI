@@ -2837,3 +2837,40 @@ button.qline:hover { background: #fafbfc; }
 .vnote-state { margin: 0; font-size: 13.5px; font-weight: 600; color: var(--muted-mk); text-align: center; }
 .vnote-err { margin: 0; font-size: 13px; font-weight: 600; color: var(--red); text-align: center; }
 .vnote .field { width: 100%; }
+
+/* ==========================================================
+   APP-7 — home per ruolo e "Personalizza la home"
+   (components/dashboard/home-sections.tsx, customize-home.tsx).
+   Same cards, rows and chips as the rest of Oggi.
+   ========================================================== */
+.today-grid.solo { grid-template-columns: minmax(0, 1fr); }
+.home-sub { padding: 0 20px 6px; font-size: var(--fs-meta); font-weight: 600; color: var(--muted-mk); }
+.home-bad { color: var(--red); font-weight: 700; }
+.home-inline-link { color: var(--navy); font-weight: 700; text-decoration: underline; text-underline-offset: 2px; }
+.ny-fold { margin-left: auto; }
+.home-cz { display: flex; flex-direction: column; gap: 10px; }
+.home-cz-note { padding: 10px 12px; border-radius: var(--radius-sm); background: var(--yellow-t); color: var(--yellow-dark); font-size: 13.5px; font-weight: 600; }
+.home-cz-target { display: flex; flex-direction: column; gap: 6px; font-size: var(--fs-meta); font-weight: 700; color: var(--muted-mk); }
+.home-cz-target select { height: var(--tap); padding: 0 12px; border: 1px solid var(--line); border-radius: 12px; background: #fff; font-size: var(--fs-body); font-weight: 700; color: var(--navy); }
+.home-cz-h { margin-top: 8px; font-size: 15px; font-weight: 800; color: var(--navy); display: flex; align-items: center; gap: 8px; }
+.home-cz-sub { margin-top: -4px; font-size: 13px; font-weight: 600; color: var(--muted-mk); }
+.home-cz-hint { font-size: var(--fs-meta); font-weight: 600; color: var(--faint); }
+.home-cz-list { display: flex; flex-direction: column; border: 1px solid var(--line); border-radius: var(--radius-sm); overflow: hidden; }
+.home-cz-row { display: flex; align-items: center; gap: 10px; min-height: 56px; padding: 4px 6px 4px 14px; background: #fff; }
+.home-cz-row + .home-cz-row { border-top: 1px solid var(--soft); }
+.home-cz-row.off .home-cz-name { color: var(--muted-mk); }
+.home-cz-name { flex: 1; min-width: 0; display: flex; flex-direction: column; font-size: var(--fs-body); font-weight: 700; color: var(--navy); }
+.home-cz-compact { display: flex; align-items: center; gap: 8px; font-size: var(--fs-meta); font-weight: 600; color: var(--muted-mk); }
+.home-cz-move { display: flex; width: calc(var(--tap) * 2); flex: none; }
+.home-cz-move .more-btn:disabled { opacity: .3; }
+.home-cz-tabs { display: flex; flex-wrap: wrap; gap: 8px; }
+.home-cz-tabs .chip { min-height: 36px; padding-inline: 12px; border: 0; font-size: 13.5px; }
+.home-cz-tabs .chip.on { box-shadow: inset 0 0 0 1.5px var(--navy); }
+.home-cz-tabs .chip:disabled { opacity: .45; }
+.home-cz .seg { align-self: flex-start; }
+@media (max-width: 640px) {
+  .today > .page-head { flex-wrap: nowrap; align-items: flex-start; }
+  .today > .page-head .head-actions { flex: none; }
+  .home-sub { padding: 0 16px 4px; }
+  .home-cz-move { width: auto; }
+}

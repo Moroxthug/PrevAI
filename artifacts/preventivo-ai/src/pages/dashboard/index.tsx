@@ -30,6 +30,7 @@ import {
   Loader2,
   ChevronDown,
   ChevronUp,
+  SlidersHorizontal,
 } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { useClientMemory } from "@/hooks/use-client-memory";
@@ -42,6 +43,10 @@ import { cn } from "@/lib/utils";
 import { MicButton } from "@/components/mic-button";
 import { useLanguage } from "@/i18n/LanguageContext";
 import { NeedsYouCard, TodayStats } from "@/components/dashboard/today";
+import { FiscoSection, HoursSection, InvoicesSection, JobsSection } from "@/components/dashboard/home-sections";
+import { CustomizeHomeSheet } from "@/components/dashboard/customize-home";
+import { useHome } from "@/lib/home-api";
+import { HOME_DEFAULTS, type HomeLayout, type HomeSectionId } from "@workspace/config";
 import { ListRow } from "@/components/mobile/list-row";
 
 /* ─── plan helpers ─────────────────────────────────────────────────────────── */
@@ -635,7 +640,14 @@ function DashboardComposer() {
  * box, then the period's numbers as one strip and the latest quotes as rows —
  * instead of a greeting followed by a tower of cards. On a desktop the weekly
  * revenue sits beside them; on a phone it is one column.
+ *
+ * APP-7: which sections, in which order, comes from the person's home
+ * (GET /api/home): their role's starting home, or their own from
+ * "Personalizza la home". The describe-a-job box stays on top and the weekly
+ * revenue stays beside, wherever they are in the list; the rest follow its order.
  */
+/** While /api/home loads or if it fails: the home as it was before APP-7. */
+const FALLBACK_LAYOUT: HomeLayout = HOME_DEFAULTS.titolare;
 export default function DashboardHome() {
   const { t } = useLanguage();
   const { data: stats, isLoading: isLoadingStats } = useGetQuoteStats();
@@ -643,6 +655,11 @@ export default function DashboardHome() {
   const { data: trialStatus } = useGetTrialStatus();
   const { data: allQuotes } = useListQuotes();
   const { user } = useAuth();
+  const { data: home, isLoading: isLoadingHome } = useHome();
+  const [customizeOpen, setCustomizeOpen] = useState(false);
+  const layout = home?.layout ?? FALLBACK_LAYOUT;
+  const shown = new Set<HomeSectionId>(layout.order);
+  const isOwner = !home || home.role === "owner";
 
   const formatCurrency = (amount: number) =>
     new Intl.NumberFormat("it-IT", { style: "currency", currency: "EUR", maximumFractionDigits: 0 }).format(amount);
@@ -655,7 +672,7 @@ export default function DashboardHome() {
   const maxBucket = Math.max(0, ...weeklyBuckets);
   const hotIdx = maxBucket > 0 ? weeklyBuckets.lastIndexOf(maxBucket) : -1;
 
-  if (isLoadingStats) {
+  if (isLoadingStats || isLoadingHome) {
     return (
       <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
         <Skeleton className="h-16 w-full rounded-[var(--radius)]" />
@@ -680,16 +697,24 @@ export default function DashboardHome() {
                 : t("dashboard.index.subtitleTotalQuotes").replace("{count}", String(stats?.total ?? 0))}
           </p>
         </div>
-        {/* On a phone the + in the top bar is the new-quote button. */}
-        <div className="head-actions today-new">
-          <Link href="/dashboard/new" className="btn btn-navy">
-            <Plus className="h-4 w-4" />
-            {t("dashboard.index.quickActions.newQuote")}
-          </Link>
+        <div className="head-actions">
+          {home && (
+            <button type="button" className="more-btn" onClick={() => setCustomizeOpen(true)} aria-label={t("home.customize.open")} title={t("home.customize.open")} data-testid="customize-home-open">
+              <SlidersHorizontal />
+            </button>
+          )}
+          {/* On a phone the + in the top bar is the new-quote button. */}
+          {(!home || home.allowed.includes("composer")) && (
+            <Link href="/dashboard/new" className="btn btn-navy today-new">
+              <Plus className="h-4 w-4" />
+              {t("dashboard.index.quickActions.newQuote")}
+            </Link>
+          )}
         </div>
       </div>
+      {home && <CustomizeHomeSheet open={customizeOpen} onOpenChange={setCustomizeOpen} home={home} />}
 
-      <DashboardComposer />
+      {shown.has("composer") && <DashboardComposer />}
 
       {trialStatus?.isTrialActive && !subscription?.isActive && (
         <div className="today-gap">
@@ -701,68 +726,87 @@ export default function DashboardHome() {
         </div>
       )}
 
-      {isNewUser ? (
+      {isNewUser && isOwner ? (
         <div className="today-gap">
           <OnboardingView />
         </div>
       ) : (
         <>
-          <div className="today-grid">
+          <div className={cn("today-grid", !shown.has("revenue") && "solo")}>
             <div className="today-main">
-              <NeedsYouCard />
-              <TodayStats />
-              {recentQuotes.length > 0 && (
-                <section className="card" aria-labelledby="recent-quotes-h">
+              {layout.order.map((id) => {
+                switch (id) {
+                  case "needs-you":
+                    return <NeedsYouCard key={id} collapsed={layout.needsYouCollapsed} />;
+                  case "stats":
+                    return <TodayStats key={`${id}-${layout.period}`} initialPeriod={layout.period} />;
+                  case "jobs":
+                    return <JobsSection key={id} />;
+                  case "hours":
+                    return <HoursSection key={id} />;
+                  case "invoices":
+                    return <InvoicesSection key={id} />;
+                  case "fisco":
+                    return <FiscoSection key={id} />;
+                  case "recent-quotes":
+                    return recentQuotes.length > 0 ? (
+                      <section key={id} className="card" aria-labelledby="recent-quotes-h">
+                        <div className="today-head">
+                          <h2 id="recent-quotes-h">{t("dashboard.index.recentQuotes.title")}</h2>
+                          <Link href="/dashboard/quotes" className="cta-link today-link">
+                            {t("dashboard.index.recentQuotes.viewAll")} <ArrowRight className="chev" />
+                          </Link>
+                        </div>
+                        <ul className="lrows">
+                          {recentQuotes.map((quote) => {
+                            const chip = quoteStatusChip(quote.status, t);
+                            return (
+                              <li key={quote.id}>
+                                <ListRow
+                                  href={`/dashboard/quotes/${quote.id}`}
+                                  title={quote.clientData?.nome || t("dashboard.quotesList.clientNotSpecified")}
+                                  meta={new Date(quote.createdAt).toLocaleDateString("it-IT")}
+                                  amount={formatCurrency(quote.totale)}
+                                  end={<span className={cn("chip", chip.cls)}>{chip.label}</span>}
+                                />
+                              </li>
+                            );
+                          })}
+                        </ul>
+                      </section>
+                    ) : null;
+                  default:
+                    return null;
+                }
+              })}
+            </div>
+            {shown.has("revenue") && (
+              <div className="today-side">
+                <section className="card dash-chart" aria-labelledby="revenue-week-h">
                   <div className="today-head">
-                    <h2 id="recent-quotes-h">{t("dashboard.index.recentQuotes.title")}</h2>
-                    <Link href="/dashboard/quotes" className="cta-link today-link">
-                      {t("dashboard.index.recentQuotes.viewAll")} <ArrowRight className="chev" />
-                    </Link>
+                    <h2 id="revenue-week-h">{t("dashboard.index.revenueByWeek.title")}</h2>
                   </div>
-                  <ul className="lrows">
-                    {recentQuotes.map((quote) => {
-                      const chip = quoteStatusChip(quote.status, t);
-                      return (
-                        <li key={quote.id}>
-                          <ListRow
-                            href={`/dashboard/quotes/${quote.id}`}
-                            title={quote.clientData?.nome || t("dashboard.quotesList.clientNotSpecified")}
-                            meta={new Date(quote.createdAt).toLocaleDateString("it-IT")}
-                            amount={formatCurrency(quote.totale)}
-                            end={<span className={cn("chip", chip.cls)}>{chip.label}</span>}
-                          />
-                        </li>
-                      );
-                    })}
-                  </ul>
+                  <div className="act-body">
+                    <p className="sub" style={{ marginBottom: 12 }}>{t("dashboard.index.revenueByWeek.subtitle")}</p>
+                    <div className="bars">
+                      {weeklyBuckets.map((v, i) => (
+                        <span
+                          key={i}
+                          className={cn("bar", i === hotIdx && "hot")}
+                          style={{ height: maxBucket > 0 ? `${Math.max(4, Math.round((v / maxBucket) * 100))}%` : "4%" }}
+                        />
+                      ))}
+                    </div>
+                    <div className="bar-x">
+                      {weeklyBuckets.map((_, i) => <span key={i}>S{i + 1}</span>)}
+                    </div>
+                  </div>
                 </section>
-              )}
-            </div>
-            <div className="today-side">
-              <section className="card dash-chart" aria-labelledby="revenue-week-h">
-                <div className="today-head">
-                  <h2 id="revenue-week-h">{t("dashboard.index.revenueByWeek.title")}</h2>
-                </div>
-                <div className="act-body">
-                  <p className="sub" style={{ marginBottom: 12 }}>{t("dashboard.index.revenueByWeek.subtitle")}</p>
-                  <div className="bars">
-                    {weeklyBuckets.map((v, i) => (
-                      <span
-                        key={i}
-                        className={cn("bar", i === hotIdx && "hot")}
-                        style={{ height: maxBucket > 0 ? `${Math.max(4, Math.round((v / maxBucket) * 100))}%` : "4%" }}
-                      />
-                    ))}
-                  </div>
-                  <div className="bar-x">
-                    {weeklyBuckets.map((_, i) => <span key={i}>S{i + 1}</span>)}
-                  </div>
-                </div>
-              </section>
-            </div>
+              </div>
+            )}
           </div>
 
-          {!subscription?.isActive && (
+          {isOwner && !subscription?.isActive && (
             <div className="bg-gradient-to-r from-navy-50 to-teal-50 border border-navy-100 rounded-[var(--radius)] p-4 flex items-center justify-between gap-4 today-gap">
               <div className="flex items-center gap-3">
                 <div className="h-9 w-9 rounded-lg bg-navy-100 flex items-center justify-center shrink-0">
@@ -779,7 +823,7 @@ export default function DashboardHome() {
             </div>
           )}
 
-          {subscription?.isActive && subscription?.plan === "monthly_starter" && (
+          {isOwner && subscription?.isActive && subscription?.plan === "monthly_starter" && (
             <div className="today-gap"><StarterUpgradeCard /></div>
           )}
         </>

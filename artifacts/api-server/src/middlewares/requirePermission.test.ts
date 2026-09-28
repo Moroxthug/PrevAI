@@ -50,14 +50,25 @@ describe("roleCan", () => {
   // A-2: `fiscale` è la prima area **chiusa**. Incassi, imposte e soglia del
   // forfettario sono la posizione fiscale del titolare, non un dato di lavoro:
   // office, foreman e viewer non li vedono nemmeno in lettura.
-  it("only owner and admin can read the fiscal area; nobody else can even view it", () => {
+  // APP-7: il contabile la legge (scadenze, F24) ma non la cambia.
+  it("only owner, admin and bookkeeper can read the fiscal area; nobody else can even view it", () => {
     expect(roleCan("owner", "fiscale", "full")).toBe(true);
     expect(roleCan("admin", "fiscale", "view")).toBe(true);
     expect(roleCan("admin", "fiscale", "full")).toBe(false);
+    expect(roleCan("bookkeeper", "fiscale", "view")).toBe(true);
+    expect(roleCan("bookkeeper", "fiscale", "edit")).toBe(false);
     for (const role of ["office", "foreman", "viewer"] as const) {
       expect(roleCan(role, "fiscale", "view")).toBe(false);
       expect(roleCan(role, "fiscale", "full")).toBe(false);
     }
+  });
+
+  it("bookkeeper handles invoices and costs but only reads quotes and jobs", () => {
+    expect(roleCan("bookkeeper", "invoicing", "full")).toBe(true);
+    expect(roleCan("bookkeeper", "costs", "full")).toBe(true);
+    expect(roleCan("bookkeeper", "quotes", "edit")).toBe(false);
+    expect(roleCan("bookkeeper", "jobs", "edit")).toBe(false);
+    expect(roleCan("bookkeeper", "team", "edit")).toBe(false);
   });
 
   it("rank comparison is monotonic: full implies edit implies view", () => {

@@ -2,7 +2,7 @@
 // invite accept flow, and the org switcher.
 import { apiRequest as req, apiJson as json } from "./jobs-api";
 
-export type TeamMemberRole = "admin" | "office" | "foreman" | "viewer";
+export type TeamMemberRole = "admin" | "office" | "foreman" | "bookkeeper" | "viewer";
 export type TeamMemberStatus = "invited" | "active" | "suspended";
 
 export type TeamMemberDto = {

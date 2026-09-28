@@ -10,6 +10,7 @@ import { useLanguage } from "@/i18n/LanguageContext";
 import { useToast } from "@/hooks/use-toast";
 import { jobsApi, type JobSummaryDto } from "@/lib/jobs-api";
 import { teamMembersApi } from "@/lib/team-members-api";
+import { useHome } from "@/lib/home-api";
 import { cn } from "@/lib/utils";
 import { FeedbackSheet } from "@/components/feedback-sheet";
 import { VoiceNoteSheet } from "@/components/jobs/voice-note-sheet";
@@ -55,7 +56,11 @@ const GROUP_OF: Record<string, Group> = {
   "/dashboard/settings": "business",
 };
 
-/** What the office reaches for most, in order; the first three that this plan shows become tabs (a Starter plan without jobs and invoices gets Clienti · Richieste). */
+/**
+ * What the office reaches for most, in order; the first three that this plan shows become tabs (a Starter plan without jobs and invoices gets Clienti · Richieste).
+ * APP-7: the person's home picks the tabs first (their own choice, or their role's: jobs and crew for a capocantiere, money and tax for a contabile);
+ * this list only fills the places their plan doesn't show — never the places they chose to leave empty.
+ */
 const PREFERRED = ["/dashboard/quotes", "/dashboard/jobs", "/dashboard/invoices", "/dashboard/clients", "/dashboard/leads"];
 
 const MEMORY_KEY = "phone-tab-memory";
@@ -68,18 +73,21 @@ function writeMemory(m: Record<string, string>) {
 
 function usePhoneTabs(navItems: PhoneNavItem[]): TabItem[] {
   const { t } = useLanguage();
+  const { data: home } = useHome();
   return useMemo(() => {
     const shown = new Map(navItems.map((i) => [i.href, i]));
-    const picks = PREFERRED.filter((h) => shown.has(h)).slice(0, 3);
+    const chosen = (home?.layout.tabs ?? []).filter((h) => shown.has(h)).slice(0, 3);
+    const picks = home?.source === "user" && chosen.length > 0 ? chosen : [...chosen, ...PREFERRED.filter((h) => shown.has(h) && !chosen.includes(h))].slice(0, 3);
     const tabs: TabItem[] = [{ href: "/dashboard", label: t("mobile.nav.today"), icon: Home, exact: true }];
     for (const href of picks) {
       const item = shown.get(href)!;
       if (href === "/dashboard/invoices") tabs.push({ href, label: t("mobile.nav.money"), icon: Wallet, match: ["/dashboard/amministrazione", "/dashboard/banca", "/dashboard/prima-nota", "/dashboard/chiusura"] });
       else if (href === "/dashboard/team") tabs.push({ href, label: t("mobile.nav.crew"), icon: HardHat });
+      else if (href === "/dashboard/fisco") tabs.push({ href, label: item.label, icon: item.icon, match: ["/dashboard/scadenzario"] });
       else tabs.push({ href, label: item.label, icon: TAB_ICON[href] ?? item.icon });
     }
     return tabs;
-  }, [navItems, t]);
+  }, [navItems, t, home]);
 }
 const TAB_ICON: Record<string, LucideIcon> = { "/dashboard/quotes": FileText, "/dashboard/jobs": Briefcase, "/dashboard/clients": Users, "/dashboard/leads": Target };
 

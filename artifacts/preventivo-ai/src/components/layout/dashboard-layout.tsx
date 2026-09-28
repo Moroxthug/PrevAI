@@ -19,6 +19,7 @@ import { useLanguage } from "@/i18n/LanguageContext";
 import { NotificationsBell } from "@/components/notifications-bell";
 import { useMediaQuery } from "@/hooks/use-media-query";
 import { MobileHeaderProvider, MobilePageHeader } from "@/components/mobile/mobile-page-header";
+import { DashboardNavContext } from "@/lib/dashboard-nav-context";
 import { PhoneNewButton, PhoneTabBar } from "@/components/layout/phone-nav";
 import { FeedbackSheet } from "@/components/feedback-sheet";
 import { trackAppOpenOncePerDay } from "@/lib/app-beta";
@@ -386,7 +387,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
           </div>
         </header>
 
-        <main className="content">{twoFactorGated ? <TwoFactorGate /> : <>{isSignedIn && <AccountDeletionBanner />}{children}</>}</main>
+        <main className="content">{twoFactorGated ? <TwoFactorGate /> : <>{isSignedIn && <AccountDeletionBanner />}<DashboardNavContext.Provider value={NAV_ITEMS}>{children}</DashboardNavContext.Provider></>}</main>
       </div>
       {phoneNav && (
         <PhoneTabBar

@@ -26,6 +26,7 @@ export * from "./usage";
 export * from "./leads";
 export * from "./job-photos";
 export * from "./job-notes";
+export * from "./home-layouts";
 export * from "./calendar";
 export * from "./email-connections";
 export * from "./imports";
