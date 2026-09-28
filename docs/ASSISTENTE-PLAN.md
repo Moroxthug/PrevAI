@@ -14,7 +14,7 @@ Stesse regole di sempre: una riga per sessione, in ordine; un commit per riga su
 |---|---|---|---|
 | 32 | **APP-8a** Risposte in streaming, un assistente da ogni schermata, sa dove sei, dettatura | 133 | ✅ 2026-09-27 |
 | 33 | **APP-8b** Permessi "fa / chiede / mai" + una conversazione per persona | 134 | ✅ |
-| 34 | **APP-8c** Strumenti nuovi: brief del giorno, cerca, apri la schermata, preventivi, messaggi ai clienti | 135 | ⬜ |
+| 34 | **APP-8c** Strumenti nuovi: brief del giorno, cerca, apri la schermata, preventivi, messaggi ai clienti | 135 | ✅ 2026-09-27 |
 | 35 | **APP-8d** La schermata dell'assistente (calma) e la riga su Oggi | 136 | ⬜ |
 | 36 | **APP-8e** Risponde a voce | 137 | ⬜ serve D17 |
 | 37 | **APP-8f** Conferma a voce, interruzione, annulla | 138 | ⬜ |
@@ -97,7 +97,9 @@ Fatta il 2026-09-27 (diario in PIANO-AZIONE, RUNBOOKS §18). Differenza dal pian
 - D18: se si apre il testo a Pro, `assistant` passa da Elite a Pro in `piani.ts` (e nei Termini).
 - **Fatta quando:** test che provano che uno strumento "Mai" non è mai offerto, che "Chiede prima" non esegue mai senza conferma e che un ruolo senza `invoicing:edit` non invia una fattura con nessuna impostazione; un membro della squadra non vede la conversazione del titolare.
 
-## APP-8c — Strumenti nuovi (riga 34)
+## APP-8c — Strumenti nuovi (riga 34) ✅
+
+Fatta il 2026-09-27 (diario in PIANO-AZIONE, RUNBOOKS §19). Differenze dalla tabella qui sotto: `add_job_note` è `propose_job_note` e aspetta la migrazione 0011; `message_client` è **solo email** e solo verso contatti già noti (WhatsApp verso i clienti richiede un template, D10); `reply_lead` manda il messaggio standard della sequenza; le letture non passano dai permessi (sempre attive) ma sono filtrate per ruolo. I casi per APP-8h sono in `assistant/evals/cases.ts`.
 
 | Strumento | Tipo | Usa |
 |---|---|---|

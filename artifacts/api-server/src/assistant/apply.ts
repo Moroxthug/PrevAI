@@ -27,6 +27,7 @@ import { recomputeProgress } from "../jobs/setup.js";
 import { parseIsoDate } from "../jobs/dates.js";
 import { draftDepositInvoice, draftFinalInvoice, draftHoldbackReleaseInvoice, draftMilestoneInvoice, buildInvoiceContext, sendInvoice, recordPayment, voidInvoice } from "../invoices/service.js";
 import { assistantV2Ready, ownsConversation, roleAllowsAction, undoDeadline } from "./permissions.js";
+import { executeApp8c, undoApp8c, App8cError, APP8C_KINDS } from "./apply-app8c.js";
 export { undoDeadline };
 
 const FEATURE_FOR: Record<AssistantProposal["kind"], ProductFeature> = {
@@ -36,6 +37,14 @@ const FEATURE_FOR: Record<AssistantProposal["kind"], ProductFeature> = {
   invoice: "invoicing",
   send_invoice: "invoicing",
   record_payment: "invoicing",
+  // APP-8c
+  draft_quote: "quotes",
+  send_quote: "quote_email",
+  send_contract: "contracts",
+  reply_lead: "quotes",
+  message_client: "quotes",
+  update_client: "quotes",
+  job_note: "jobs",
 };
 
 export class ProposalError extends Error {
@@ -67,7 +76,9 @@ export async function runProposal(params: { proposal: AssistantProposal; who: Wh
   if (!hasFeature(profile, FEATURE_FOR[proposal.kind])) throw new ProposalError("Your plan does not include this action", "PLAN_REQUIRED", 403);
 
   try {
-    const out = await execute(proposal, who.orgId, params.ip ?? null, params.level);
+    const out = APP8C_KINDS.has(proposal.kind)
+      ? await executeApp8c(proposal, who, params.ip ?? null, params.level).catch((e) => { throw e instanceof App8cError ? new ProposalError(e.message, e.code, e.status) : e; })
+      : await execute(proposal, who.orgId, params.ip ?? null, params.level);
     const [updated] = await db.update(assistantProposalsTable).set({ status: "confirmed", resultEntityType: out.entityType, resultEntityId: out.entityId, resolvedAt: new Date() }).where(eq(assistantProposalsTable.id, proposal.id)).returning();
     const action = (await assistantV2Ready())
       ? (await db.insert(assistantActionsTable).values({ userId: who.orgId, proposalId: proposal.id, actorUserId: who.actorId, kind: proposal.kind, level: params.level }).returning())[0] ?? null
@@ -129,7 +140,8 @@ export async function undoProposal(params: { who: Who; proposalId: string; ip?: 
       break;
     }
     default:
-      throw new ProposalError("Questa azione non si può annullare.", "NOT_UNDOABLE", 409);
+      if (!APP8C_KINDS.has(proposal.kind)) throw new ProposalError("Questa azione non si può annullare.", "NOT_UNDOABLE", 409);
+      await undoApp8c(proposal, who).catch((e) => { throw e instanceof App8cError ? new ProposalError(e.message, e.code, e.status) : e; });
   }
   const [updated] = await db.update(assistantProposalsTable).set({ status: "undone" }).where(eq(assistantProposalsTable.id, proposal.id)).returning();
   const [undone] = await db.update(assistantActionsTable).set({ undoneAt: now }).where(eq(assistantActionsTable.id, action.id)).returning();

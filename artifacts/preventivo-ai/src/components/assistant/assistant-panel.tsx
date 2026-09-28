@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Sparkles, Send, Trash2, Check, X, ExternalLink, Receipt, Wallet, Flag, ListTodo, Mail, Banknote, Loader2, AlertTriangle, Mic, Square, Undo2 } from "lucide-react";
+import { Sparkles, Send, Trash2, Check, X, ExternalLink, Receipt, Wallet, Flag, ListTodo, Mail, Banknote, Loader2, AlertTriangle, Mic, Square, Undo2, FileText, Send as SendIcon, FileSignature, MessageSquare, UserPen, StickyNote } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useVoiceInput } from "@/hooks/use-voice-input";
 import { cn } from "@/lib/utils";
@@ -11,7 +11,20 @@ import { useAssistantPageContext } from "@/lib/assistant-context";
 import { formatCents } from "@/lib/jobs-api";
 import { ASSISTANT_UNDO_SECONDS } from "@workspace/config";
 
-const KIND_ICON: Record<ProposalKind, typeof Receipt> = { cost_entry: Wallet, milestone_update: Flag, task: ListTodo, invoice: Receipt, send_invoice: Mail, record_payment: Banknote };
+const KIND_ICON: Record<ProposalKind, typeof Receipt> = { cost_entry: Wallet, milestone_update: Flag, task: ListTodo, invoice: Receipt, send_invoice: Mail, record_payment: Banknote, draft_quote: FileText, send_quote: SendIcon, send_contract: FileSignature, reply_lead: MessageSquare, message_client: Mail, update_client: UserPen, job_note: StickyNote };
+
+/** The page a done card opens (APP-8c adds quotes, contracts, leads, clients, job notes). */
+function proposalLink(p: ProposalDto): string | null {
+  const id = p.resultEntityId;
+  if (id && p.resultEntityType === "invoice") return `/dashboard/invoices/${id}`;
+  if (id && p.resultEntityType === "quote") return `/dashboard/quotes/${id}`;
+  if (id && p.resultEntityType === "contract") return `/dashboard/contracts/${id}`;
+  if (p.resultEntityType === "lead") return "/dashboard/leads";
+  if (p.resultEntityType === "client") return "/dashboard/clients";
+  if (p.kind === "message_client") return null;
+  const tab = p.kind === "cost_entry" ? "costs" : p.kind === "milestone_update" || p.kind === "task" ? "schedule" : p.kind === "job_note" ? null : "invoices";
+  return p.projectId ? `/dashboard/jobs/${p.projectId}${tab ? `?tab=${tab}` : ""}` : null;
+}
 
 /** The query that holds a thread: the main one (null) or an older per-job one. */
 const threadKey = (threadId: string | null) => ["assistant", threadId ?? "main"];
@@ -71,6 +84,7 @@ export function AssistantChat({ threadId = null, compact, className }: { threadI
   const listRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const abortRef = useRef<AbortController | null>(null);
+  const [, navigate] = useLocation();
 
   const key = threadKey(threadId);
   const { data, isLoading, error } = useQuery({ queryKey: key, queryFn: () => (threadId ? assistantApi.byId(threadId) : assistantApi.conversation(null)), retry: false });
@@ -80,7 +94,9 @@ export function AssistantChat({ threadId = null, compact, className }: { threadI
   useEffect(() => () => abortRef.current?.abort(), []);
 
   const invalidateData = () => {
-    for (const k of ["job", "jobs", "job-analytics", "invoices", "invoice", "company-analytics"]) queryClient.invalidateQueries({ queryKey: [k] });
+    for (const k of ["job", "jobs", "job-analytics", "invoices", "invoice", "company-analytics", "leads", "job-notes"]) queryClient.invalidateQueries({ queryKey: [k] });
+    // APP-8c: quotes, clients and contracts live under the generated client's "/api/…" keys.
+    queryClient.invalidateQueries({ predicate: (q) => typeof q.queryKey[0] === "string" && /^\/api\/(quotes|clients|contracts)/.test(q.queryKey[0]) });
   };
   const patch = (fn: (prev: ConversationDto) => ConversationDto) => queryClient.setQueryData(key, (prev: ConversationDto | undefined) => (prev ? fn(prev) : prev));
 
@@ -90,10 +106,13 @@ export function AssistantChat({ threadId = null, compact, className }: { threadI
     setLive({ user: content, text: "", progress: null });
     const ctrl = new AbortController();
     abortRef.current = ctrl;
+    // APP-8c: open_screen — go there once the answer is over (leaving the page closes the panel, which would stop it).
+    const nav = { to: null as string | null };
     try {
       await assistantApi.stream(data.conversation.id, content, context, (e) => {
         if (e.type === "delta") setLive((l) => (l ? { ...l, text: l.text + e.text, progress: null } : l));
         else if (e.type === "progress") setLive((l) => (l ? { ...l, progress: e.label } : l));
+        else if (e.type === "navigate") nav.to = e.path;
         else if (e.type === "proposal") {
           patch((p) => ({ ...p, proposals: [...p.proposals, e.proposal] }));
           if (e.proposal.auto && e.proposal.status === "confirmed") invalidateData();
@@ -113,6 +132,7 @@ export function AssistantChat({ threadId = null, compact, className }: { threadI
       if (abortRef.current === ctrl) abortRef.current = null;
       setLive(null);
       queryClient.invalidateQueries({ queryKey: ["assistant-threads"] });
+      if (nav.to && !ctrl.signal.aborted) navigate(nav.to);
     }
   };
 
@@ -303,9 +323,18 @@ function ProposalCard({ proposal, onConfirm, onDismiss, onUndo, busy }: { propos
   if (proposal.kind === "cost_entry") details.push(`${formatCents(Number(p.subtotalCents))} + ${t("assistant.tax")} ${formatCents(Number(p.taxCents))} = ${formatCents(Number(p.totalCents))}`, String(p.date ?? ""), String(p.description ?? ""));
   if (proposal.kind === "record_payment") details.push(`${formatCents(Number(p.amountCents))} · ${t(`invoices.method.${String(p.method)}`)} · ${String(p.date ?? "")}`);
   if (proposal.kind === "milestone_update" && p.releasesPaymentTerm) details.push(`${t("assistant.releases")} ${String(p.releasesPaymentTerm)}`);
-  if (proposal.kind === "send_invoice" && p.message) details.push(`"${String(p.message)}"`);
-  const tab = proposal.kind === "cost_entry" ? "costs" : proposal.kind === "milestone_update" || proposal.kind === "task" ? "schedule" : "invoices";
-  const link = proposal.resultEntityType === "invoice" && proposal.resultEntityId ? `/dashboard/invoices/${proposal.resultEntityId}` : proposal.projectId ? `/dashboard/jobs/${proposal.projectId}?tab=${tab}` : null;
+  if ((proposal.kind === "send_invoice" || proposal.kind === "send_contract") && p.message) details.push(`"${String(p.message)}"`);
+  // APP-8c: what the person must see before a send — a new address, the quote unlock, the text of an email.
+  if (proposal.kind === "send_quote") {
+    if (p.newAddress) details.push(t("assistant.detail.newAddress"));
+    if (p.unlock === "plan") details.push(t("assistant.detail.unlockPlan"));
+    if (p.unlock === "trial") details.push(t("assistant.detail.unlockTrial"));
+    if (p.followUps) details.push(t("assistant.detail.followUps"));
+  }
+  if (proposal.kind === "reply_lead") details.push(t("assistant.detail.leadTemplate"));
+  if (proposal.kind === "draft_quote") details.push(t("assistant.detail.draftQuote"));
+  const body = proposal.kind === "message_client" || (proposal.kind === "job_note" && String(p.body ?? "").length > 90) ? String(p.body ?? "") : "";
+  const link = proposalLink(proposal);
   const status = proposal.status;
   return (
     <div className={cn("prop-card", status)}>
@@ -315,6 +344,7 @@ function ProposalCard({ proposal, onConfirm, onDismiss, onUndo, busy }: { propos
           <div className="prop-kind">{t(`assistant.kind.${proposal.kind}`)}</div>
           <div className="prop-summary">{proposal.summary}</div>
           {details.filter(Boolean).map((d, i) => <div key={i} className="prop-detail">{d}</div>)}
+          {body && <div className="prop-body">{body}</div>}
           {status === "failed" && proposal.error && <div className="prop-detail" style={{ color: "var(--red)" }}><AlertTriangle className="h-3 w-3" style={{ display: "inline", marginRight: 4 }} />{proposal.error}</div>}
         </div>
       </div>

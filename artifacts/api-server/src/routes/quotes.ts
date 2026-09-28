@@ -3,12 +3,9 @@ import { requireAuth, getUserId, getUserName } from "../middlewares/authMiddlewa
 import { requirePermission } from "../middlewares/requirePermission.js";
 import multer from "multer";
 import { db, quotesTable, projectsTable, quoteAttachmentsTable, quoteVariantsTable, businessProfilesTable, priceCatalogItemsTable, priceIntelligenceTable, uploadedDocumentsTable, quoteClientDataSchema, quoteCompanySnapshotSchema, paymentScheduleSchema, derivePaymentScheduleFromText, validatePaymentSchedule, paymentScheduleToText, normalizeProvince, quoteTaxLines, readQuoteClientData } from "@workspace/db";
-import { getBaseUrl } from "../lib/baseUrl.js";
 import { resolveQuoteTaxRate } from "../lib/tax.js";
-import { quoteLanguageFor, qt, fmtQuoteDate, fmtQty } from "../quotes/i18n.js";
-import { generateQuotePdfBuffer, generateCapitolatoPdfBuffer, quoteProvenance } from "../quotes/pdf.js";
+import { generateQuotePdfBuffer, generateCapitolatoPdfBuffer } from "../quotes/pdf.js";
 import { eq, desc, count, sum, sql, and, avg, isNull } from "drizzle-orm";
-import { getTrialStatus, PLANS } from "./payments.js";
 import {
   UpdateQuoteBody,
   GetQuoteParams,
@@ -48,9 +45,8 @@ const aiCallLimiter = userRateLimiter({
 
 import { ObjectStorageService } from "../lib/objectStorage.js";
 import { generateNumeroPreventivo } from "../lib/quoteNumber.js";
-import { sendQuotePdfEmail } from "../lib/email.js";
-import { QUOTE_FOLLOWUP_CADENCE_DAYS } from "../lib/quoteMessaging.js";
 import { linkQuoteToClient, ensureClientForQuote } from "../lib/clients.js";
+import { tryTrialUnlock, sendQuoteByEmail, QuoteSendError, quoteQuotaExceeded } from "../quotes/send.js";
 import { createManualQuote, type ManualQuoteInput } from "../quotes/manualCreate.js";
 import { randomUUID } from "crypto";
 import { extractFromPdf, extractFromDocx, extractFromXlsx } from "../lib/extractDocument.js";
@@ -79,31 +75,6 @@ const imageUpload = multer({
 });
 
 const router = Router();
-
-/**
- * A draft quote of a non-subscriber is unlocked by the trial — once — the
- * first time it leaves the account (PDF download or email send). Each unlock
- * consumes one trial download. Returns false when the trial is over, so the
- * caller can answer 402. (Phase 66: email send used to require the quote to
- * be unlocked already, so trial users could not send before downloading.)
- */
-async function tryTrialUnlock(
-  quote: typeof quotesTable.$inferSelect,
-  profile: typeof businessProfilesTable.$inferSelect | null,
-  log: { info: (obj: object, msg: string) => void }
-): Promise<boolean> {
-  const trial = getTrialStatus(profile);
-  if (!trial.isTrialActive) return false;
-  await Promise.all([
-    db.update(quotesTable).set({ status: "unlocked", unlockedWithPlan: "trial" }).where(eq(quotesTable.id, quote.id)),
-    db
-      .update(businessProfilesTable)
-      .set({ trialDownloadsUsed: (profile?.trialDownloadsUsed ?? 0) + 1 })
-      .where(eq(businessProfilesTable.userId, quote.userId)),
-  ]);
-  log.info({ quoteId: quote.id, userId: quote.userId }, "Quote auto-unlocked via trial");
-  return true;
-}
 
 type QuoteRow = typeof quotesTable.$inferSelect;
 
@@ -397,7 +368,6 @@ router.post("/quotes", requireAuth, requirePermission("quotes", "edit"), aiCallL
   try {
     const userId = getUserId(res);
 
-    // ── Quota enforcement ─────────────────────────────────────────────────────
     const [profile] = await db
       .select({
         subscriptionPlan: businessProfilesTable.subscriptionPlan,
@@ -408,26 +378,12 @@ router.post("/quotes", requireAuth, requirePermission("quotes", "edit"), aiCallL
       .from(businessProfilesTable)
       .where(eq(businessProfilesTable.userId, userId));
 
-    if (profile?.subscriptionStatus === "active" && profile.subscriptionPlan) {
-      const plan = PLANS.find(p => p.id === profile.subscriptionPlan);
-      if (plan?.quotaPerMonth != null) {
-        const now = new Date();
-        const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-        const nextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1);
-        const [{ cnt }] = await db
-          .select({ cnt: sql<number>`count(*)::int` })
-          .from(quotesTable)
-          .where(sql`${quotesTable.userId} = ${userId} AND ${quotesTable.createdAt} >= ${monthStart.toISOString()} AND ${quotesTable.createdAt} < ${nextMonth.toISOString()}`);
-        if (cnt >= plan.quotaPerMonth) {
-          res.status(429).json({
-            error: `Monthly quota reached. You've used all ${plan.quotaPerMonth} quotes included in the ${plan.name} plan this month. Upgrade to a higher plan to continue.`,
-            code: "QUOTA_EXCEEDED",
-          });
-          return;
-        }
-      }
+    // ── Quota enforcement (quotes/send.ts, shared with the assistant's draft_quote) ──
+    const quotaMessage = await quoteQuotaExceeded(userId);
+    if (quotaMessage) {
+      res.status(429).json({ error: quotaMessage, code: "QUOTA_EXCEEDED" });
+      return;
     }
-    // ─────────────────────────────────────────────────────────────────────────
 
     const rawInput = typeof req.body.rawInput === "string" ? req.body.rawInput.trim() : "";
     if (!rawInput) {
@@ -1609,89 +1565,15 @@ router.post("/quotes/:id/send-pdf-email", requireAuth, requirePermission("quotes
     const userId = getUserId(res);
     const id = req.params.id as string;
     const { toEmail, clientName } = req.body as { toEmail?: string; clientName?: string };
-
-    if (!toEmail || !toEmail.includes("@")) {
-      res.status(400).json({ error: "Recipient email address is required" });
-      return;
-    }
-
-    const [quote] = await db.select().from(quotesTable).where(eq(quotesTable.id, id));
-    if (!quote) { res.status(404).json({ error: "Not found" }); return; }
-    if (quote.userId !== userId) { res.status(403).json({ error: "Forbidden" }); return; }
-
-    const [profile] = await db.select().from(businessProfilesTable).where(eq(businessProfilesTable.userId, userId));
-
-    // Sending is what makes a quote leave the account, so it unlocks the
-    // quote exactly like a PDF download does: subscribers unlock with their
-    // plan, trial users spend one trial download, everyone else must pay.
-    // Only a draft is ever touched — an accepted quote stays accepted.
-    if (quote.status === "draft" || quote.status === "pending_payment") {
-      if (profile?.subscriptionStatus === "active") {
-        await db
-          .update(quotesTable)
-          .set({ status: "unlocked", unlockedWithPlan: profile.subscriptionPlan ?? null })
-          .where(eq(quotesTable.id, id));
-        quote.status = "unlocked";
-      } else if (await tryTrialUnlock(quote, profile ?? null, req.log)) {
-        quote.status = "unlocked";
-      } else {
-        res.status(402).json({ error: "Unlock the quote to send it via email", code: "PAYMENT_REQUIRED" });
-        return;
-      }
-    } else if (quote.status !== "unlocked" && quote.status !== "accepted") {
-      res.status(402).json({ error: "Unlock the quote to send it via email", code: "PAYMENT_REQUIRED" });
-      return;
-    }
-
-    // Generate clean PDF (never watermark for email)
-    const pdfBuffer = await generateQuotePdfBuffer(quote, profile ?? null, false);
-    const lang = await quoteLanguageFor(quote);
-
-    const companyName = (quote.companySnapshot as QuoteCompanySnapshot | null)?.companyName || profile?.companyName || "La tua impresa";
-    const numeroData = quote.numeroPreventivoData || `${qt("quoteNo", lang)} ${quote.id.slice(0, 4).toUpperCase()} - ${fmtQuoteDate(new Date(), lang)}`;
-    const totale = Number(quote.totale);
-    const totaleFormatted = fmtQty(totale, lang);
-    const filename = `Preventivo ${numeroData.replace(/\//g, "_")}.pdf`;
-
-    await sendQuotePdfEmail({
-      toEmail,
-      userId,
-      companyName,
-      clientName: clientName || (quote.clientData as QuoteClientData)?.nome || "",
-      lang,
-      quoteNumber: numeroData,
-      totale: totaleFormatted,
-      pdfBuffer,
-      filename,
-      companyLogoUrl: profile?.logoUrl ?? null,
-      replyTo: profile?.email ?? null,
-      publicUrl: quote.status === "unlocked" || quote.status === "accepted" ? `${getBaseUrl()}/p/${quote.id}` : null,
-      aiGenerated: quoteProvenance(quote) === "ai",
-    });
-
-    // Phase 21: start the follow-up reminder sequence, unless the quote is
-    // already accepted or the client has unsubscribed from reminders.
-    if (quote.status !== "accepted" && !quote.unsubscribedAt) {
-      // The follow-ups go to clientData.email, which the quote forms never
-      // collect — remember the address the contractor just typed, or the
-      // whole sequence dies with `no_email` (Phase 66).
-      const existingClient = (quote.clientData as QuoteClientData | null) ?? null;
-      const clientData =
-        existingClient && !existingClient.email ? { ...existingClient, email: toEmail.trim() } : existingClient;
-      await db
-        .update(quotesTable)
-        .set({
-          sentAt: quote.sentAt ?? new Date(),
-          followUpStage: 0,
-          nextFollowUpAt: new Date(Date.now() + QUOTE_FOLLOWUP_CADENCE_DAYS[0] * 86_400_000),
-          ...(clientData && clientData !== existingClient ? { clientData } : {}),
-        })
-        .where(eq(quotesTable.id, quote.id));
-      if (clientData !== existingClient) await linkQuoteToClient({ ...quote, clientData }, profile?.province ?? null, { applyDefaultTerms: false });
-    }
-
+    await sendQuoteByEmail({ userId, quoteId: id, toEmail: toEmail ?? "", clientName, log: req.log });
     res.json({ success: true });
   } catch (err) {
+    if (err instanceof QuoteSendError) {
+      if (err.code === "BAD_EMAIL") res.status(400).json({ error: err.message });
+      else if (err.code === "NOT_FOUND") res.status(404).json({ error: err.message });
+      else res.status(402).json({ error: err.message, code: "PAYMENT_REQUIRED" });
+      return;
+    }
     req.log.error({ err }, "Error sending quote PDF email");
     const message = err instanceof Error ? err.message : "Error sending the email";
     res.status(500).json({ error: message });

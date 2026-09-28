@@ -9,7 +9,9 @@ export type TurnEvent =
   | { type: "progress"; tool: string; label: string }
   | { type: "delta"; text: string }
   | { type: "message"; message: AssistantMessage }
-  | { type: "proposal"; proposal: AssistantProposal; action?: AssistantActionRow | null };
+  | { type: "proposal"; proposal: AssistantProposal; action?: AssistantActionRow | null }
+  // APP-8c: open_screen — the app goes to this page.
+  | { type: "navigate"; path: string; label: string };
 
 export type StreamedCall = { id: string; name: string; arguments: string };
 
@@ -51,12 +53,37 @@ const LABELS: Record<string, string> = {
   list_time_entries: "Guardo le ore",
   get_schedule_risks: "Controllo il cronoprogramma",
   get_company_overview: "Guardo i numeri dell'impresa",
+  brief_me: "Preparo il riepilogo",
+  find: "Cerco",
+  get_quote: "Leggo il preventivo",
+  open_screen: "Apro la schermata",
+  propose_draft_quote: "Scrivo la bozza del preventivo",
+  propose_send_quote: "Preparo l'invio del preventivo",
+  propose_send_contract: "Preparo l'invio del contratto",
+  propose_reply_lead: "Preparo il messaggio",
+  propose_message_client: "Scrivo l'email",
+  propose_update_client: "Preparo la modifica del cliente",
+  propose_job_note: "Scrivo la nota",
 };
 
 export function progressLabel(tool: string): string {
   if (LABELS[tool]) return LABELS[tool]!;
   if (tool.startsWith("propose_")) return "Preparo la proposta";
   return "Controllo i dati";
+}
+
+/** APP-8c: the tool a refused generation tried to call, if Groq says. */
+export function failedToolName(err: unknown): string | null {
+  const e = err as { error?: { failed_generation?: string } } | null;
+  const g = e?.error?.failed_generation;
+  if (typeof g !== "string") return null;
+  return /"name"\s*:\s*"([\w-]+)"/.exec(g)?.[1] ?? null;
+}
+
+/** APP-8c: optional arguments may arrive as null (the schemas allow it); the tools want them left out. */
+export function dropNulls(args: unknown): unknown {
+  if (!args || typeof args !== "object" || Array.isArray(args)) return args;
+  return Object.fromEntries(Object.entries(args as Record<string, unknown>).filter(([, v]) => v !== null));
 }
 
 /** One SSE frame. `data` is JSON on a single line, as the spec wants. */

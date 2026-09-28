@@ -18,13 +18,16 @@ import {
   computeTax,
   type Project,
   type ProposalKind,
+  type TeamMemberRole,
 } from "@workspace/db";
 import { and, asc, desc, eq, inArray } from "drizzle-orm";
 import { balanceCents } from "../invoices/math.js";
 import { toIsoDate } from "../jobs/dates.js";
 import { companyAnalytics, jobAnalytics } from "../analytics/service.js";
+import { APP8C_TOOL_DEFINITIONS, APP8C_PROPOSAL_TOOLS, APP8C_READ_TOOLS, runApp8cReadTool, validateApp8cProposal } from "./tools-app8c.js";
 
-export type ToolContext = { userId: string; projectId: string | null; province: string | null; now: Date };
+/** APP-8c: the person too — their role (brief_me, open_screen) and id (job notes). */
+export type ToolContext = { userId: string; projectId: string | null; province: string | null; now: Date; role: TeamMemberRole; actorId: string };
 
 const euro = (cents: number) => Math.round(cents) / 100;
 const dateRe = /^\d{4}-\d{2}-\d{2}$/;
@@ -33,7 +36,7 @@ const dateRe = /^\d{4}-\d{2}-\d{2}$/;
 
 const jobIdProp = { job_id: { type: "string", description: "Job id. Omit to use the current job." } } as const;
 
-export const TOOL_DEFINITIONS: OpenAI.Chat.Completions.ChatCompletionTool[] = [
+const BASE_TOOL_DEFINITIONS: OpenAI.Chat.Completions.ChatCompletionTool[] = [
   { type: "function", function: { name: "get_job_summary", description: "Value, progress, schedule, budget vs actual costs, invoicing status and milestones (with ids) of a job.", parameters: { type: "object", properties: { ...jobIdProp }, additionalProperties: false } } },
   { type: "function", function: { name: "list_jobs", description: "All jobs of the company with status, value, progress and next milestone.", parameters: { type: "object", properties: { status: { type: "string", enum: ["planning", "active", "suspended", "completed"] } }, additionalProperties: false } } },
   { type: "function", function: { name: "list_costs", description: "Cost entries of a job (or all jobs), newest first, with ids.", parameters: { type: "object", properties: { ...jobIdProp, category: { type: "string", enum: [...COST_CATEGORIES] }, status: { type: "string", enum: ["pending_review", "confirmed"] }, limit: { type: "integer", minimum: 1, maximum: 100 } }, additionalProperties: false } } },
@@ -87,7 +90,31 @@ export const TOOL_DEFINITIONS: OpenAI.Chat.Completions.ChatCompletionTool[] = [
   },
 ];
 
+/** Every tool the model can be offered (APP-8c adds brief_me, find, get_quote, open_screen and seven cards). */
+export const TOOL_DEFINITIONS: OpenAI.Chat.Completions.ChatCompletionTool[] = [...BASE_TOOL_DEFINITIONS, ...APP8C_TOOL_DEFINITIONS].map(allowNullOptionals);
+
+type JsonProp = { type?: string | string[]; enum?: unknown[] } & Record<string, unknown>;
+
+/**
+ * APP-8c: the model often writes an argument it doesn't know as null ("id": null) and
+ * Groq then refuses the whole answer, because null isn't in the schema. Every
+ * optional argument accepts null; the turn drops them before the tools read the
+ * arguments (service.ts dropNulls), so for the tools null means "left out".
+ */
+export function allowNullOptionals(tool: OpenAI.Chat.Completions.ChatCompletionTool): OpenAI.Chat.Completions.ChatCompletionTool {
+  if (tool.type !== "function" || !tool.function.parameters) return tool;
+  const params = tool.function.parameters as { properties?: Record<string, JsonProp>; required?: string[] };
+  const required = new Set(params.required ?? []);
+  const properties = Object.fromEntries(Object.entries(params.properties ?? {}).map(([k, p]) => {
+    if (required.has(k) || !p.type) return [k, p];
+    const types = Array.isArray(p.type) ? p.type : [p.type];
+    return [k, { ...p, type: types.includes("null") ? types : [...types, "null"], ...(p.enum ? { enum: [...p.enum, null] } : {}) }];
+  }));
+  return { ...tool, function: { ...tool.function, parameters: { ...params, properties } } };
+}
+
 export const PROPOSAL_TOOLS: Record<string, ProposalKind> = {
+  ...APP8C_PROPOSAL_TOOLS,
   propose_cost_entry: "cost_entry",
   propose_milestone_update: "milestone_update",
   propose_task: "task",
@@ -129,6 +156,7 @@ const ReadArgs = {
 };
 
 export async function runReadTool(name: string, rawArgs: unknown, ctx: ToolContext): Promise<unknown> {
+  if (APP8C_READ_TOOLS.has(name)) return runApp8cReadTool(name, rawArgs, ctx, runReadTool);
   switch (name) {
     case "get_job_summary": {
       const a = ReadArgs.get_job_summary.parse(rawArgs);
@@ -257,6 +285,7 @@ const METODO_IT: Record<string, string> = { bank_transfer: "bonifico", cheque: "
 /** Validates propose_* arguments against the user's data and returns the proposal to store, or an error string for the model. */
 export async function validateProposal(name: string, rawArgs: unknown, ctx: ToolContext): Promise<{ ok: true; proposal: ValidatedProposal } | { ok: false; error: string }> {
   try {
+    if (APP8C_PROPOSAL_TOOLS[name]) return await validateApp8cProposal(name, rawArgs, ctx);
     switch (name) {
       case "propose_cost_entry": {
         const a = ProposeArgs.propose_cost_entry.parse(rawArgs);

@@ -94,17 +94,17 @@ Columns — **Auth**: session (`requireAuth`), apiKey (`requireApiKey`), admin (
 
 | Line | Method | Path | Auth | Perm | RL | Val | Gate | Scope | Archived | Token | Webhook |
 |---|---|---|---|---|---|---|---|---|---|---|---|
-| 54 | GET | `/api/assistant/conversation` | session | — | — | none | hasFeature(assistant) | n/a | — | — | — |
-| 74 | GET | `/api/assistant/conversations` | session | jobs:view | — | none | hasFeature(assistant) | n/a | — | — | — |
-| 88 | GET | `/api/assistant/conversations/:id` | session | jobs:view | — | none | hasFeature(assistant) | predicate | — | — | — |
-| 106 | POST | `/api/assistant/conversations/:id/stream` | session | jobs:view | chatLimiter | zod | hasFeature(assistant) | predicate | — | — | — |
-| 146 | POST | `/api/assistant/conversations/:id/messages` | session | jobs:view | chatLimiter | zod | hasFeature(assistant) | predicate | — | — | — |
-| 164 | DELETE | `/api/assistant/conversations/:id` | session | jobs:view | — | none | — | helper | — | — | — |
-| 178 | POST | `/api/assistant/proposals/:id/confirm` | session | jobs:view | — | none | — | helper | — | — | — |
-| 190 | POST | `/api/assistant/proposals/:id/dismiss` | session | jobs:view | — | none | — | helper | — | — | — |
-| 202 | POST | `/api/assistant/proposals/:id/undo` | session | jobs:view | — | none | — | helper | — | — | — |
-| 230 | GET | `/api/assistant/permissions` | session | settings:view | — | none | hasFeature(assistant) | n/a | — | — | — |
-| 249 | PUT | `/api/assistant/permissions` | session | settings:full | — | zod | hasFeature(assistant) | n/a | — | — | — |
+| 55 | GET | `/api/assistant/conversation` | session | — | — | none | hasFeature(assistant) | n/a | — | — | — |
+| 75 | GET | `/api/assistant/conversations` | session | jobs:view | — | none | hasFeature(assistant) | n/a | — | — | — |
+| 89 | GET | `/api/assistant/conversations/:id` | session | jobs:view | — | none | hasFeature(assistant) | predicate | — | — | — |
+| 107 | POST | `/api/assistant/conversations/:id/stream` | session | jobs:view | chatLimiter | zod | hasFeature(assistant) | predicate | — | — | — |
+| 148 | POST | `/api/assistant/conversations/:id/messages` | session | jobs:view | chatLimiter | zod | hasFeature(assistant) | predicate | — | — | — |
+| 166 | DELETE | `/api/assistant/conversations/:id` | session | jobs:view | — | none | — | helper | — | — | — |
+| 180 | POST | `/api/assistant/proposals/:id/confirm` | session | jobs:view | — | none | — | helper | — | — | — |
+| 192 | POST | `/api/assistant/proposals/:id/dismiss` | session | jobs:view | — | none | — | helper | — | — | — |
+| 204 | POST | `/api/assistant/proposals/:id/undo` | session | jobs:view | — | none | — | helper | — | — | — |
+| 232 | GET | `/api/assistant/permissions` | session | settings:view | — | none | hasFeature(assistant) | n/a | — | — | — |
+| 251 | PUT | `/api/assistant/permissions` | session | settings:full | — | zod | hasFeature(assistant) | n/a | — | — | — |
 
 ## artifacts/api-server/src/routes/business-profile.ts
 
@@ -381,11 +381,11 @@ Columns — **Auth**: session (`requireAuth`), apiKey (`requireApiKey`), admin (
 
 | Line | Method | Path | Auth | Perm | RL | Val | Gate | Scope | Archived | Token | Webhook |
 |---|---|---|---|---|---|---|---|---|---|---|---|
-| 12 | GET | `/api/leads` | session | leads:view | — | zod | — | n/a | — | — | — |
-| 30 | POST | `/api/leads` | session | leads:edit | — | zod | — | n/a | — | — | — |
-| 74 | GET | `/api/leads/:id` | session | leads:view | — | none | — | predicate | — | — | — |
-| 92 | PATCH | `/api/leads/:id` | session | leads:edit | — | zod | — | predicate | — | — | — |
-| 140 | POST | `/api/leads/:id/send` | session | leads:edit | — | none | — | predicate | — | — | — |
+| 13 | GET | `/api/leads` | session | leads:view | — | zod | — | n/a | — | — | — |
+| 31 | POST | `/api/leads` | session | leads:edit | — | zod | — | n/a | — | — | — |
+| 75 | GET | `/api/leads/:id` | session | leads:view | — | none | — | predicate | — | — | — |
+| 93 | PATCH | `/api/leads/:id` | session | leads:edit | — | zod | — | predicate | — | — | — |
+| 141 | POST | `/api/leads/:id/send` | session | leads:edit | — | none | — | helper | — | — | — |
 
 ## artifacts/api-server/src/routes/meta-lead-ads.ts
 
@@ -524,26 +524,26 @@ Columns — **Auth**: session (`requireAuth`), apiKey (`requireApiKey`), admin (
 
 | Line | Method | Path | Auth | Perm | RL | Val | Gate | Scope | Archived | Token | Webhook |
 |---|---|---|---|---|---|---|---|---|---|---|---|
-| 195 | GET | `/api/quotes/stats` | session | — | — | none | — | n/a | — | — | — |
-| 263 | GET | `/api/quotes` | session | — | — | none | — | n/a | quotes:ok | — | — |
-| 396 | POST | `/api/quotes` | session | quotes:edit | aiCallLimiter | zod | plan-check | n/a | — | — | — |
-| 1123 | GET | `/api/quotes/:id` | session | — | — | none | — | predicate | — | — | — |
-| 1157 | GET | `/api/quotes/:id/variants` | session | — | — | none | — | post-check | — | — | — |
-| 1186 | POST | `/api/quotes/:id/variants` | session | quotes:edit | — | manual | — | post-check | — | — | — |
-| 1246 | PUT | `/api/quotes/:id/variants/:variantId` | session | quotes:edit | — | manual | — | post-check | — | — | — |
-| 1297 | DELETE | `/api/quotes/:id/variants/:variantId` | session | quotes:edit | — | none | — | post-check | — | — | — |
-| 1343 | PUT | `/api/quotes/:id` | session | quotes:edit | — | zod | plan-check | predicate | — | — | — |
-| 1461 | DELETE | `/api/quotes/:id` | session | quotes:full | — | none | — | post-check | — | — | — |
-| 1489 | POST | `/api/quotes/:id/archive` | session | quotes:full | — | none | — | post-check | — | — | — |
-| 1509 | POST | `/api/quotes/:id/restore` | session | quotes:full | — | none | — | post-check | — | — | — |
-| 1529 | POST | `/api/quotes/:id/generate-pdf` | session | quotes:edit | — | none | plan-check | predicate | — | — | — |
-| 1607 | POST | `/api/quotes/:id/send-pdf-email` | session | quotes:edit | — | manual | — | predicate | — | — | — |
-| 1702 | POST | `/api/quotes/:id/duplicate` | session | quotes:edit | — | none | — | post-check | — | — | — |
-| 1764 | POST | `/api/quotes/:id/regenerate` | session | quotes:edit | aiCallLimiter | manual | — | predicate | — | — | — |
-| 1981 | POST | `/api/quotes/:id/upgrade-to-capitolato` | session | quotes:edit | aiCallLimiter | none | plan-check | predicate | — | — | — |
-| 2094 | POST | `/api/quotes/:id/generate-pdf-pro` | session | quotes:edit | — | none | plan-check | predicate | — | — | — |
-| 2145 | POST | `/api/quotes/manual` | session | quotes:edit | — | manual | — | n/a | — | — | — |
-| 2161 | POST | `/api/quotes/suggest-item-description` | session | quotes:edit | aiCallLimiter | manual | — | n/a | — | — | — |
+| 166 | GET | `/api/quotes/stats` | session | — | — | none | — | n/a | — | — | — |
+| 234 | GET | `/api/quotes` | session | — | — | none | — | n/a | quotes:ok | — | — |
+| 367 | POST | `/api/quotes` | session | quotes:edit | aiCallLimiter | zod | plan-check | n/a | — | — | — |
+| 1079 | GET | `/api/quotes/:id` | session | — | — | none | — | predicate | — | — | — |
+| 1113 | GET | `/api/quotes/:id/variants` | session | — | — | none | — | post-check | — | — | — |
+| 1142 | POST | `/api/quotes/:id/variants` | session | quotes:edit | — | manual | — | post-check | — | — | — |
+| 1202 | PUT | `/api/quotes/:id/variants/:variantId` | session | quotes:edit | — | manual | — | post-check | — | — | — |
+| 1253 | DELETE | `/api/quotes/:id/variants/:variantId` | session | quotes:edit | — | none | — | post-check | — | — | — |
+| 1299 | PUT | `/api/quotes/:id` | session | quotes:edit | — | zod | plan-check | predicate | — | — | — |
+| 1417 | DELETE | `/api/quotes/:id` | session | quotes:full | — | none | — | post-check | — | — | — |
+| 1445 | POST | `/api/quotes/:id/archive` | session | quotes:full | — | none | — | post-check | — | — | — |
+| 1465 | POST | `/api/quotes/:id/restore` | session | quotes:full | — | none | — | post-check | — | — | — |
+| 1485 | POST | `/api/quotes/:id/generate-pdf` | session | quotes:edit | — | none | plan-check | predicate | — | — | — |
+| 1563 | POST | `/api/quotes/:id/send-pdf-email` | session | quotes:edit | — | manual | — | helper | — | — | — |
+| 1584 | POST | `/api/quotes/:id/duplicate` | session | quotes:edit | — | none | — | post-check | — | — | — |
+| 1646 | POST | `/api/quotes/:id/regenerate` | session | quotes:edit | aiCallLimiter | manual | — | predicate | — | — | — |
+| 1863 | POST | `/api/quotes/:id/upgrade-to-capitolato` | session | quotes:edit | aiCallLimiter | none | plan-check | predicate | — | — | — |
+| 1976 | POST | `/api/quotes/:id/generate-pdf-pro` | session | quotes:edit | — | none | plan-check | predicate | — | — | — |
+| 2027 | POST | `/api/quotes/manual` | session | quotes:edit | — | manual | — | n/a | — | — | — |
+| 2043 | POST | `/api/quotes/suggest-item-description` | session | quotes:edit | aiCallLimiter | manual | — | n/a | — | — | — |
 
 ## artifacts/api-server/src/routes/sdi-webhooks.ts
 

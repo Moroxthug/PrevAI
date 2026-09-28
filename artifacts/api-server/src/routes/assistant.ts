@@ -9,7 +9,8 @@ import { getOrCreateConversation, loadConversation, listConversations, clearConv
 import { pageContextSchema } from "../assistant/context.js";
 import { sseFrame, type TurnEvent } from "../assistant/stream.js";
 import { confirmProposal, dismissProposal, undoProposal, undoDeadline, ProposalError } from "../assistant/apply.js";
-import { assistantV2Ready, levelsFor, loadPermissionRows, roleAllowsAction } from "../assistant/permissions.js";
+import { assistantV2Ready, levelsFor, loadPermissionRows, roleAllowsAction, withUnavailable } from "../assistant/permissions.js";
+import { jobNotesReady } from "../assistant/ready.js";
 import { roleCan } from "../middlewares/requirePermission.js";
 import { ASSISTANT_ACTIONS, ASSISTANT_LEVELS, clampAssistantLevel, isAssistantAction } from "@workspace/config";
 import { writeAudit } from "../lib/notifications.js";
@@ -101,7 +102,7 @@ router.get("/assistant/conversations/:id", requireAuth, requirePermission("jobs"
 });
 
 // POST /api/assistant/conversations/:id/stream { content, context? } — the same turn as /messages, sent as it happens:
-//   event: progress {label}  ·  delta {text}  ·  message {message}  ·  proposal {proposal}  ·  done {}  ·  error {message}
+//   event: progress {label}  ·  delta {text}  ·  message {message}  ·  proposal {proposal}  ·  navigate {path, label} (APP-8c)  ·  done {}  ·  error {message}
 // The HTTP status is decided before the first byte (plan, body, thread); anything that fails later arrives as an `error` event.
 router.post("/assistant/conversations/:id/stream", requireAuth, requirePermission("jobs", "view"), chatLimiter, async (req, res) => {
   const userId = getUserId(res);
@@ -127,6 +128,7 @@ router.post("/assistant/conversations/:id/stream", requireAuth, requirePermissio
     if (e.type === "message") send("message", { message: serializeMessage(e.message) });
     else if (e.type === "proposal") send("proposal", { proposal: serializeProposal(e.proposal, e.action) });
     else if (e.type === "delta") send("delta", { text: e.text });
+    else if (e.type === "navigate") send("navigate", { path: e.path, label: e.label });
     else send("progress", { tool: e.tool, label: e.label });
   };
   try {
@@ -237,7 +239,7 @@ router.get("/assistant/permissions", requireAuth, requirePermission("settings", 
     res.json({
       available: ready,
       settings: rows.filter((r) => isAssistantAction(r.action)).map((r) => ({ action: r.action, role: r.role, level: r.level })),
-      mine: levelsFor(getActorRole(res), rows, ready),
+      mine: withUnavailable(levelsFor(getActorRole(res), rows, ready), { job_note: !(await jobNotesReady()) }),
       ...permissionsExtras(getActorRole(res)),
     });
   } catch (err) {
@@ -262,7 +264,7 @@ router.put("/assistant/permissions", requireAuth, requirePermission("settings", 
     });
     await writeAudit({ userId, actorType: "user", actorId: getActorUserId(res), entityType: "assistant_permissions", entityId: userId, action: "updated", diff: { settings: [...byKey.values()] }, ip: req.ip });
     const rows = await loadPermissionRows(userId);
-    res.json({ available: true, settings: rows.map((r) => ({ action: r.action, role: r.role, level: r.level })), mine: levelsFor(getActorRole(res), rows, true), ...permissionsExtras(getActorRole(res)) });
+    res.json({ available: true, settings: rows.map((r) => ({ action: r.action, role: r.role, level: r.level })), mine: withUnavailable(levelsFor(getActorRole(res), rows, true), { job_note: !(await jobNotesReady()) }), ...permissionsExtras(getActorRole(res)) });
   } catch (err) {
     req.log.error({ err }, "Error saving assistant permissions");
     res.status(500).json({ error: "Internal server error" });

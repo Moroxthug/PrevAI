@@ -3,7 +3,9 @@ import { apiRequest as req, apiJson as json } from "@/lib/jobs-api";
 import type { AssistantAction, AssistantLevel } from "@workspace/config";
 
 export type AssistantRole = "user" | "assistant" | "tool";
-export type ProposalKind = "cost_entry" | "milestone_update" | "task" | "invoice" | "record_payment" | "send_invoice";
+export type ProposalKind = "cost_entry" | "milestone_update" | "task" | "invoice" | "record_payment" | "send_invoice"
+  // APP-8c
+  | "draft_quote" | "send_quote" | "send_contract" | "reply_lead" | "message_client" | "update_client" | "job_note";
 export type ProposalStatus = "pending" | "confirmed" | "dismissed" | "failed" | "undone";
 
 export type AssistantMessageDto = {
@@ -46,7 +48,9 @@ export type TurnEventDto =
   | { type: "progress"; label: string }
   | { type: "delta"; text: string }
   | { type: "message"; message: AssistantMessageDto }
-  | { type: "proposal"; proposal: ProposalDto };
+  | { type: "proposal"; proposal: ProposalDto }
+  // APP-8c: open_screen — the app goes to this page once the answer is over.
+  | { type: "navigate"; path: string; label: string };
 
 /** APP-8b: one saved choice of Impostazioni → Assistente (role "" = the whole company). */
 export type AssistantSettingDto = { action: AssistantAction; role: "" | "admin" | "office" | "foreman" | "bookkeeper" | "viewer"; level: AssistantLevel };
@@ -106,6 +110,7 @@ export async function streamTurn(conversationId: string, content: string, contex
     else if (event === "progress") onEvent({ type: "progress", label: String(payload.label ?? "") });
     else if (event === "message") onEvent({ type: "message", message: payload.message as AssistantMessageDto });
     else if (event === "proposal") onEvent({ type: "proposal", proposal: payload.proposal as ProposalDto });
+    else if (event === "navigate" && typeof payload.path === "string" && payload.path.startsWith("/dashboard")) onEvent({ type: "navigate", path: payload.path, label: String(payload.label ?? "") });
     else if (event === "error") state.failure = String(payload.message ?? "L'assistente non riesce a rispondere adesso.");
     else if (event === "done") state.done = true;
   };

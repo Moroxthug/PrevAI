@@ -11,6 +11,7 @@ import { and, eq, sql } from "drizzle-orm";
 import type { OpenAI } from "@workspace/integrations-openai-ai-server";
 import { roleCan } from "../middlewares/requirePermission.js";
 import { PROPOSAL_TOOLS } from "./tools.js";
+import { jobNotesReady } from "./ready.js";
 
 export type AssistantLevels = Record<AssistantAction, AssistantLevel>;
 
@@ -114,7 +115,14 @@ export async function ownsConversation(who: { orgId: string; actorId: string }, 
 
 /** Everything a turn or a confirmation needs to know about one person. */
 export async function resolveLevels(orgUserId: string, role: TeamMemberRole): Promise<{ ready: boolean; levels: AssistantLevels }> {
-  const ready = await assistantV2Ready();
+  const [ready, notes] = await Promise.all([assistantV2Ready(), jobNotesReady()]);
   const rows = ready ? await loadPermissionRows(orgUserId) : [];
-  return { ready, levels: levelsFor(role, rows, ready) };
+  return { ready, levels: withUnavailable(levelsFor(role, rows, ready), { job_note: !notes }) };
+}
+
+/** APP-8c: an action whose table does not exist yet (job notes before migration 0011) is "never", whatever the setting. */
+export function withUnavailable(levels: AssistantLevels, missing: Partial<Record<AssistantAction, boolean>>): AssistantLevels {
+  const out = { ...levels };
+  for (const [action, gone] of Object.entries(missing) as [AssistantAction, boolean][]) if (gone) out[action] = "never";
+  return out;
 }

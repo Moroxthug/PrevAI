@@ -426,6 +426,8 @@ table.tbl { width: 100%; border-collapse: collapse; font-size: 14.5px; }
 .prop-kind { font-size: 10.5px; text-transform: uppercase; letter-spacing: .07em; color: var(--faint); font-weight: 700; }
 .prop-summary { font-size: 14px; font-weight: 700; color: var(--navy); }
 .prop-detail { font-size: 12.5px; color: var(--muted-mk); font-weight: 600; margin-top: 2px; }
+/* APP-8c: the text of an email to a client (or a long note), read before Conferma. */
+.prop-body { font-size: 13px; color: var(--navy); line-height: 1.5; white-space: pre-wrap; overflow-wrap: anywhere; margin-top: 8px; padding: 8px 10px; background: #fff; border: 1px solid var(--line); border-radius: 8px; max-height: 220px; overflow-y: auto; }
 .prop-actions { display: flex; align-items: center; gap: 8px; margin-top: 10px; }
 .prop-actions .btn-sm { padding: 7px 14px; font-size: 12.5px; }
 .prop-dismiss { display: inline-flex; align-items: center; gap: 5px; font-size: 12.5px; font-weight: 700; color: var(--faint); padding: 7px 10px; transition: color .2s; }

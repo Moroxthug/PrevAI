@@ -1,10 +1,11 @@
 import { Router } from "express";
 import { z } from "zod";
-import { db, leadsTable, leadEventsTable, businessProfilesTable, whatsappConnectionsTable, LEAD_STATUSES, LEAD_CHANNELS } from "@workspace/db";
+import { db, leadsTable, leadEventsTable, LEAD_STATUSES, LEAD_CHANNELS } from "@workspace/db";
 import { and, desc, eq } from "drizzle-orm";
 import { requireAuth, getUserId, getActorUserId } from "../middlewares/authMiddleware.js";
 import { requirePermission } from "../middlewares/requirePermission.js";
-import { sendLeadFollowup, FOLLOWUP_CADENCE_DAYS } from "../lib/leadMessaging.js";
+import { FOLLOWUP_CADENCE_DAYS } from "../lib/leadMessaging.js";
+import { sendLeadNow, LeadSendError } from "../leads/send-now.js";
 
 const router = Router();
 
@@ -139,46 +140,16 @@ router.patch("/leads/:id", requireAuth, requirePermission("leads", "edit"), asyn
 // automated sequence and advances the sequence exactly like an automated send.
 router.post("/leads/:id/send", requireAuth, requirePermission("leads", "edit"), async (req, res) => {
   try {
-    const userId = getUserId(res);
-    const [lead] = await db.select().from(leadsTable).where(and(eq(leadsTable.id, req.params.id as string), eq(leadsTable.userId, userId)));
-    if (!lead) {
-      res.status(404).json({ error: "Not found" });
-      return;
-    }
-    if (lead.unsubscribedAt) {
-      res.status(409).json({ error: "UNSUBSCRIBED", message: "This lead has unsubscribed and cannot be messaged." });
-      return;
-    }
-    const [profile] = await db.select().from(businessProfilesTable).where(eq(businessProfilesTable.userId, userId));
-    if (!profile) {
-      res.status(500).json({ error: "Business profile not found" });
-      return;
-    }
-    const [wa] = await db.select().from(whatsappConnectionsTable).where(eq(whatsappConnectionsTable.userId, userId));
-    const whatsappTemplateName = wa?.isEnabled ? (process.env.WHATSAPP_LEAD_FOLLOWUP_TEMPLATE ?? null) : null;
-
-    const result = await sendLeadFollowup({ lead, profile, stage: lead.followUpStage, whatsappTemplateName });
-    if (!result.ok) {
-      await db.insert(leadEventsTable).values({ leadId: lead.id, userId, type: "message_failed", payload: { stage: lead.followUpStage, reason: result.reason, manual: true, actorUserId: getActorUserId(res) } });
-      res.status(502).json({ error: "SEND_FAILED", reason: result.reason });
-      return;
-    }
-
-    await db.insert(leadEventsTable).values({ leadId: lead.id, userId, type: "message_sent", channel: result.channel, payload: { stage: lead.followUpStage, manual: true, actorUserId: getActorUserId(res) } });
-    const nextStage = lead.followUpStage + 1;
-    const nextDelayDays = FOLLOWUP_CADENCE_DAYS[nextStage];
-    const [updated] = await db
-      .update(leadsTable)
-      .set({
-        followUpStage: nextStage,
-        lastContactedAt: new Date(),
-        nextFollowUpAt: nextDelayDays !== undefined ? new Date(Date.now() + nextDelayDays * 86_400_000) : null,
-        status: lead.status === "new" ? "contacted" : lead.status,
-      })
-      .where(eq(leadsTable.id, lead.id))
-      .returning();
-    res.json({ lead: updated, channel: result.channel });
+    const { lead, channel } = await sendLeadNow({ userId: getUserId(res), leadId: req.params.id as string, actorUserId: getActorUserId(res) });
+    res.json({ lead, channel });
   } catch (err) {
+    if (err instanceof LeadSendError) {
+      if (err.code === "NOT_FOUND") res.status(404).json({ error: "Not found" });
+      else if (err.code === "UNSUBSCRIBED") res.status(409).json({ error: "UNSUBSCRIBED", message: err.message });
+      else if (err.code === "NO_PROFILE") res.status(500).json({ error: err.message });
+      else res.status(502).json({ error: "SEND_FAILED", reason: err.reason });
+      return;
+    }
     req.log.error({ err }, "Error sending lead follow-up");
     res.status(500).json({ error: "Internal server error" });
   }

@@ -31,7 +31,7 @@ describe("catalog", () => {
 
   it("defaults follow the plan: notes and drafts Lo fa, money Chiede prima", () => {
     const owner = levelsFor("owner", [], true);
-    expect(owner).toEqual({ cost_entry: "auto", task: "auto", milestone_update: "auto", invoice: "auto", send_invoice: "ask", record_payment: "ask" });
+    expect(owner).toEqual({ cost_entry: "auto", task: "auto", milestone_update: "auto", invoice: "auto", send_invoice: "ask", record_payment: "ask", job_note: "auto", update_client: "ask", draft_quote: "auto", send_quote: "ask", send_contract: "ask", reply_lead: "ask", message_client: "ask" });
   });
 });
 

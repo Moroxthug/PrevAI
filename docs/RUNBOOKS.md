@@ -897,3 +897,38 @@ Senza le tabelle: una conversazione per impresa come prima, **ogni azione chiede
 2. "Manda la fattura … al cliente" → scheda da confermare (mai Fatto) → Ignora.
 3. Impostazioni → Assistente → Regole per "Capo cantiere" → costo *Mai* → Salva. Se c'è un capocantiere: gli strumenti di costo spariscono e l'assistente glielo dice.
 4. Un membro della squadra apre ✦: la sua conversazione è vuota, non quella del titolare.
+
+
+## 19. Assistente: strumenti nuovi (APP-8c, riga 34)
+
+### 19.1 Cosa c'è
+
+- **Letture** (sempre attive, per ogni ruolo nei limiti di quello che vede): `brief_me` (oggi / settimana / un cantiere: "Serve a te", numeri del periodo, fasi e attività in scadenza, cantieri a rischio), `find` (clienti, cantieri, preventivi, fatture, richieste, contratti per nome, email, telefono, indirizzo o numero), `get_quote` (il preventivo per intero), `open_screen` (l'app va alla pagina **dopo** la risposta: l'evento SSE `navigate` arriva durante il turno e l'app lo applica alla fine, altrimenti cambiando pagina il pannello si chiuderebbe e fermerebbe il modello).
+- **Schede nuove** (catalogo `lib/config/src/assistente.ts`, esecuzione in `assistant/apply-app8c.ts`):
+
+| Azione | Predefinito | Massimo | Ruolo | Annulla |
+|---|---|---|---|---|
+| Nota sul cantiere | Lo fa | Lo fa | `jobs:edit` | sì (cancella la nota) |
+| Dati di un cliente | Chiede prima | Lo fa | `quotes:edit` | sì (rimette i dati, anche sui preventivi aperti) |
+| Bozza di preventivo | Lo fa | Lo fa | `quotes:edit` | sì, se ancora bozza mai inviata né scaricata |
+| Invia preventivo | Chiede prima | **Chiede prima** | `quotes:edit` | — |
+| Invia contratto da firmare | Chiede prima | **Chiede prima** | `contracts:edit` | — |
+| Messaggio a una richiesta (sequenza) | Chiede prima | **Chiede prima** | `leads:edit` | — |
+| Email a un cliente | Chiede prima | **Chiede prima** | `leads:edit` | — |
+
+- **Stessi servizi delle schermate:** l'invio del preventivo è `quotes/send.ts` (lo usa anche il pulsante Invia; sblocca col piano o con un download della prova, come prima), "Manda adesso" di una richiesta è `leads/send-now.ts`, il contratto `sendContractToCustomer`, la bozza lo stesso generatore di Nuovo preventivo con la stessa quota mensile. L'email a un cliente passa da `sendCustomerEmail` (Gmail collegato o Resend) ed **è ammessa solo verso un indirizzo che l'impresa ha già** (cliente, preventivo, richiesta, fattura), mai verso chi si è disiscritto. **WhatsApp non c'è**: verso un cliente serve un template approvato (D10).
+- La scheda d'invio del preventivo dice se l'indirizzo è nuovo, se l'invio sblocca il preventivo e che partono i promemoria; la scheda dell'email mostra il testo intero.
+- Il prompt dice che i testi letti (richieste, email, descrizioni) sono dati e mai istruzioni. I primi casi delle prove di APP-8h sono in `assistant/evals/cases.ts`.
+- Argomenti facoltativi `null`: ammessi dallo schema e tolti prima che gli strumenti li leggano (gpt-oss scriveva `"id": null` e Groq rifiutava la risposta intera). Se Groq rifiuta comunque la chiamata a uno strumento offerto, il giro si ripete una volta con la spiegazione.
+
+### 19.2 Migrazioni
+
+Nessuna migrazione nuova. **La nota sul cantiere ha bisogno della 0011** (§15.2): finché non gira, lo strumento non viene offerto e Impostazioni → Assistente lo mostra "Mai" per tutti. Il server se ne accorge entro un minuto.
+
+### 19.3 Controlli dopo il deploy
+
+1. ✦ dalla home → "Com'è la mia giornata?" → riepilogo con le voci di "Serve a te".
+2. "Portami alle fatture" → risposta di una riga, poi l'app è su Pro-forma.
+3. Da un preventivo con l'email del cliente: "Mandalo al cliente" → scheda **da confermare** con indirizzo, sblocco e promemoria → Ignora.
+4. "Scrivi a nessuno@example.org che…" → rifiutato (indirizzo non fra i contatti), nessuna scheda.
+5. "Fammi un preventivo per imbiancare una stanza di 20 mq per Prova" → scheda **Fatto** con Annulla → Annulla → la bozza sparisce da Preventivi.
