@@ -19,3 +19,4 @@ export * from "./assistente-conferma";
 export * from "./assistente-costi";
 export * from "./telefono";
 export * from "./notifiche-push";
+export * from "./tetto-ia";

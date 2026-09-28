@@ -20,6 +20,7 @@ import { and, asc, desc, eq, inArray, isNull, or } from "drizzle-orm";
 import { requireAuth, getUserId } from "../middlewares/authMiddleware.js";
 import { requirePermission } from "../middlewares/requirePermission.js";
 import { userRateLimiter } from "../lib/rateLimit.js";
+import { requireAiBudget } from "../lib/aiBudget.js";
 import { ObjectStorageService, ObjectNotFoundError } from "../lib/objectStorage.js";
 import { writeAudit } from "../lib/notifications.js";
 import { raiseAutomation } from "../lib/automation.js";
@@ -35,7 +36,7 @@ import { costSummary, serializeCostEntry, nameMaps } from "../costs/service.js";
 const router = Router();
 const objectStorage = new ObjectStorageService();
 
-const receiptLimiter = userRateLimiter({ windowMs: 60 * 60 * 1000, max: 60, message: "Hourly receipt-scanning limit reached. Try again later." });
+const receiptLimiter = userRateLimiter({ name: "costs.receiptLimiter", windowMs: 60 * 60 * 1000, max: 60, message: "Hourly receipt-scanning limit reached. Try again later." });
 
 const receiptUpload = multer({
   storage: multer.memoryStorage(),
@@ -269,6 +270,7 @@ router.post(
   requireAuth,
   requirePermission("costs", "edit"),
   receiptLimiter,
+  requireAiBudget,
   (req, res, next) => {
     receiptUpload.single("file")(req, res, (err) => {
       if (err instanceof multer.MulterError || err instanceof Error) {

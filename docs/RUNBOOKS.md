@@ -1113,3 +1113,41 @@ Senza la 0014 l'app si installa e funziona offline lo stesso; le notifiche sul t
 - "Non mi arrivano": in Impostazioni la riga sotto l'interruttore dice il motivo (iPhone senza app sulla schermata Home, browser che ha bloccato le notifiche, chiavi non impostate, 0014 non eseguita). Il bottone di prova risponde "Nessun dispositivo ha ricevuto la prova" se il browser non è più iscritto: spegnere e riaccendere.
 - Un browser che il servizio push dichiara scomparso (404/410) viene cancellato subito; uno che fallisce 5 volte di fila anche.
 - Il testo di una notifica passa, cifrato, dai server push di Google/Apple/Mozilla: è lo stesso della campanella (nome del cliente, numero del preventivo; per la scadenza fiscale cosa scade e l'importo) e può comparire sulla schermata di blocco. Chi non lo vuole spegne quel tipo in "Cosa ti arriva".
+
+## 26. Limiti di velocità condivisi e tetto IA mensile (SEC-2, riga 43)
+
+**Migrazione.** `migrations/v2/0015_sec2_limiti.sql`: due tabelle nuove e vuote (`rate_limit_counters`, `ai_budgets`), nessuna colonna su tabelle esistenti, idempotente. Staging: applicata e rieseguita senza effetti, drift 0. In produzione come le altre (§5.3), dopo la 0014:
+
+```bash
+psql "$PROD_SESSION_URL" -v ON_ERROR_STOP=1 -1 -f migrations/v2/0015_sec2_limiti.sql
+```
+
+Finché non gira: i limiti funzionano come prima (in memoria, per istanza) e il tetto IA usa solo quello del piano. Il server se ne accorge entro un minuto, senza rilascio.
+
+**Limiti.** Ogni limite ha un nome (`name` in `ipRateLimiter`/`userRateLimiter`, prefisso delle righe). Un limite si azzera per qualcuno cancellando le sue righe:
+
+```sql
+-- tutte le righe di un limite
+delete from rate_limit_counters where key like 'app.signInRateLimiter:%';
+-- chi è sopra un limite adesso
+select key, hits, reset_at from rate_limit_counters where reset_at > now() order by hits desc limit 20;
+```
+
+`RATE_LIMIT_STORE=memory` torna al contatore per istanza (lo usano i test e2e e gli script QA; in produzione non va impostato).
+
+**Tetto IA.** 30 % del prezzo mensile del piano, minimo 3 € (`lib/config/src/tetto-ia.ts`). Sopra, le funzioni con l'IA rispondono 429 `AI_BUDGET` fino al primo del mese; il widget salva comunque la richiesta senza stima. Il cron manda un avviso allo staff il giorno in cui un'impresa passa l'80 %. Per una sola impresa:
+
+```sql
+-- alzare il tetto a 50 €
+insert into ai_budgets (user_id, monthly_cap_eur_cents, note) values ('<user_id impresa>', 5000, 'motivo')
+  on conflict (user_id) do update set monthly_cap_eur_cents = excluded.monthly_cap_eur_cents, note = excluded.note, updated_at = now();
+-- nessun tetto
+update ai_budgets set monthly_cap_eur_cents = null where user_id = '<user_id impresa>';
+-- tornare al tetto del piano
+delete from ai_budgets where user_id = '<user_id impresa>';
+-- spesa IA del mese (centesimi di dollaro)
+select sum(quantity * unit_cost_cents) from usage_events
+ where user_id = '<user_id impresa>' and kind in ('ai_text','ai_vision','ai_speech') and created_at >= date_trunc('month', now());
+```
+
+Il server rilegge tetto e spesa ogni 30 secondi per istanza.

@@ -39,7 +39,7 @@ import { collegaACantiere, ignoraPassiva, listaPassive, serializzaPassiva, sincr
 import { f24Bollo, periodiBollo, segnaVersato } from "../sdi/bollo.js";
 
 const router = Router();
-const inviiLimiter = userRateLimiter({ windowMs: 60 * 60_000, max: 200, message: "Troppe trasmissioni in un'ora" });
+const inviiLimiter = userRateLimiter({ name: "sdi.inviiLimiter", windowMs: 60 * 60_000, max: 200, message: "Troppe trasmissioni in un'ora" });
 
 // ── A-1: API del modulo Fatture SDI ──────────────────────────────────────────
 // Tutte le rotte vogliono l'add-on "Amministrazione" (`sdi_invoicing`), che

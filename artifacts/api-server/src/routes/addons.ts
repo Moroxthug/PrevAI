@@ -14,8 +14,8 @@ import { ErroreAddon, creaCheckout, offertaCorrente, registraEventoUtente, riepi
 // (`settings: full`), come per il piano.
 
 const router = Router();
-const pubblicoLimiter = ipRateLimiter({ windowMs: 60_000, max: 60, message: "Troppe richieste" });
-const checkoutLimiter = userRateLimiter({ windowMs: 60 * 60_000, max: 20, message: "Troppi tentativi di pagamento in un'ora" });
+const pubblicoLimiter = ipRateLimiter({ name: "addons.pubblicoLimiter", windowMs: 60_000, max: 60, message: "Troppe richieste" });
+const checkoutLimiter = userRateLimiter({ name: "addons.checkoutLimiter", windowMs: 60 * 60_000, max: 20, message: "Troppi tentativi di pagamento in un'ora" });
 
 function errore(err: unknown, res: import("express").Response, cosa: string): void {
   if (err instanceof ErroreAddon) {

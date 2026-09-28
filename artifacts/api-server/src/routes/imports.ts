@@ -17,6 +17,7 @@ import { and, desc, eq } from "drizzle-orm";
 import { requireAuth, getUserId } from "../middlewares/authMiddleware.js";
 import { requirePermission } from "../middlewares/requirePermission.js";
 import { userRateLimiter } from "../lib/rateLimit.js";
+import { requireAiBudget } from "../lib/aiBudget.js";
 import { ObjectStorageService } from "../lib/objectStorage.js";
 import { ensureClientForQuote } from "../lib/clients.js";
 import { logger } from "../lib/logger.js";
@@ -31,7 +32,7 @@ import { readImportedQuotePdf } from "../imports/quoteImportAi.js";
 const router = Router();
 const objectStorage = new ObjectStorageService();
 
-const importLimiter = userRateLimiter({ windowMs: 60 * 60 * 1000, max: 20, message: "Hourly import limit reached. Try again later." });
+const importLimiter = userRateLimiter({ name: "imports.importLimiter", windowMs: 60 * 60 * 1000, max: 20, message: "Hourly import limit reached. Try again later." });
 
 const spreadsheetUpload = multer({
   storage: multer.memoryStorage(),
@@ -217,6 +218,7 @@ router.post(
   requireAuth,
   requirePermission("imports", "edit"),
   importLimiter,
+  requireAiBudget,
   (req, res, next) => {
     pdfUpload.array("files", 20)(req, res, (err) => {
       if (err instanceof multer.MulterError || err instanceof Error) {

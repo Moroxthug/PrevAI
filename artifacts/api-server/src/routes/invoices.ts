@@ -47,7 +47,7 @@ import { renderInvoiceHtml, INVOICE_CSS } from "../invoices/render.js";
 import { sendInvoiceReminderEmail } from "../lib/emailInvoices.js";
 
 const router = Router();
-const sendLimiter = userRateLimiter({ windowMs: 60 * 60_000, max: 120, message: "Too many emails sent this hour" });
+const sendLimiter = userRateLimiter({ name: "invoices.sendLimiter", windowMs: 60 * 60_000, max: 120, message: "Too many emails sent this hour" });
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 

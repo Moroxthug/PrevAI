@@ -26,16 +26,19 @@ installProcessHandlers();
 // "invalid credentials" or "error sending" on the frontend instead of a clear
 // rate-limit message.
 const signInRateLimiter = ipRateLimiter({
+  name: "app.signInRateLimiter",
   windowMs: 15 * 60 * 1000,
   max: 30,
   message: "Too many sign-in attempts. Please wait a few minutes and try again.",
 });
 const twoFactorRateLimiter = ipRateLimiter({
+  name: "app.twoFactorRateLimiter",
   windowMs: 15 * 60 * 1000,
   max: 30,
   message: "Too many verification attempts. Please wait a few minutes and try again.",
 });
 const passwordResetRateLimiter = ipRateLimiter({
+  name: "app.passwordResetRateLimiter",
   windowMs: 15 * 60 * 1000,
   max: 10,
   message: "Too many password reset requests. Please wait a few minutes and try again.",
@@ -44,6 +47,7 @@ const passwordResetRateLimiter = ipRateLimiter({
 // re-send verification, 2FA email OTP) is an email-bombing vector as well as
 // an enumeration one, so it gets the same tight budget as password reset.
 const emailSendingRateLimiter = ipRateLimiter({
+  name: "app.emailSendingRateLimiter",
   windowMs: 15 * 60 * 1000,
   max: 10,
   message: "Too many requests. Please wait a few minutes and try again.",

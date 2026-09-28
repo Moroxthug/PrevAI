@@ -5,6 +5,7 @@ import { and, desc, eq, isNull } from "drizzle-orm";
 import { requireAuth, getUserId, getUserName } from "../middlewares/authMiddleware.js";
 import { requirePermission } from "../middlewares/requirePermission.js";
 import { userRateLimiter } from "../lib/rateLimit.js";
+import { requireAiBudget } from "../lib/aiBudget.js";
 import {
   createContractFromQuote,
   loadContract,
@@ -19,7 +20,7 @@ import { writeAudit } from "../lib/notifications.js";
 import { isWellFormedPngDataUrl } from "../lib/pngDataUrl.js";
 
 const router = Router();
-const aiLimiter = userRateLimiter({ windowMs: 60_000, max: 10, message: "Too many contract drafts, try again in a minute." });
+const aiLimiter = userRateLimiter({ name: "contracts.aiLimiter", windowMs: 60_000, max: 10, message: "Too many contract drafts, try again in a minute." });
 
 async function requireContractsFeature(userId: string): Promise<{ ok: true } | { ok: false; plan: string }> {
   const [profile] = await db.select().from(businessProfilesTable).where(eq(businessProfilesTable.userId, userId));
@@ -140,7 +141,7 @@ router.get("/contracts/by-quote/:quoteId", requireAuth, async (req, res) => {
 });
 
 // POST /api/contracts/from-quote/:quoteId — draft (AI) a contract from an accepted/unlocked quote
-router.post("/contracts/from-quote/:quoteId", requireAuth, requirePermission("contracts", "edit"), aiLimiter, async (req, res) => {
+router.post("/contracts/from-quote/:quoteId", requireAuth, requirePermission("contracts", "edit"), aiLimiter, requireAiBudget, async (req, res) => {
   try {
     const userId = getUserId(res);
     const gate = await requireContractsFeature(userId);

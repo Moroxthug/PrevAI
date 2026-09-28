@@ -6,8 +6,10 @@ import { requirePermission } from "../middlewares/requirePermission.js";
 import { openai, toFile } from "@workspace/integrations-openai-ai-server";
 import { logger } from "../lib/logger.js";
 import { userRateLimiter } from "../lib/rateLimit.js";
+import { requireAiBudget } from "../lib/aiBudget.js";
 
 const speechLimiter = userRateLimiter({
+  name: "speech.speechLimiter",
   windowMs: 60 * 60 * 1000,
   max: 60,
   message: "You have reached the hourly limit for voice transcriptions. Please try again later.",
@@ -43,6 +45,7 @@ router.post(
   requireAuth,
   requirePermission("quotes", "edit"),
   speechLimiter,
+  requireAiBudget,
   (req, res, next) => {
     audioUpload.single("audio")(req, res, (err) => {
       if (err instanceof multer.MulterError || err instanceof Error) {

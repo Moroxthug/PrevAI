@@ -14,7 +14,7 @@ import { buildPacchettoPdf } from "../primanota/pdf.js";
 // ricerca: sono i conti di un'impresa.
 
 const router = Router();
-const viewLimiter = ipRateLimiter({ windowMs: 60_000, max: 30, message: "Troppe richieste" });
+const viewLimiter = ipRateLimiter({ name: "public-commercialista.viewLimiter", windowMs: 60_000, max: 30, message: "Troppe richieste" });
 
 function riservato(res: import("express").Response): void {
   res.setHeader("Cache-Control", "no-store");

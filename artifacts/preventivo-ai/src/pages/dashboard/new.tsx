@@ -347,7 +347,7 @@ export default function NewQuote() {
         onError: (err: unknown) => {
           const e = err as { status?: number; data?: { error?: string; code?: string } };
           if (e.status === 429) {
-            toast({ title: t("dashboard.new.toast.quotaReachedTitle"), description: t("dashboard.new.toast.quotaReachedDesc"), variant: "destructive" });
+            toast({ title: t("dashboard.new.toast.quotaReachedTitle"), description: e.data?.code === "AI_BUDGET" && e.data.error ? e.data.error : t("dashboard.new.toast.quotaReachedDesc"), variant: "destructive" });
           } else if ((e.status === 422 || e.status === 400) && e.data?.error) {
             toast({ title: t("dashboard.new.toast.cannotGenerateTitle"), description: e.data.error, variant: "destructive" });
           } else if (!e.status || !navigator.onLine) {

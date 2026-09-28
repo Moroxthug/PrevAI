@@ -26,7 +26,7 @@ function missingTable(err: unknown): boolean {
   return e?.code === "42P01" || e?.cause?.code === "42P01";
 }
 
-const writeLimiter = userRateLimiter({ windowMs: 60_000, max: 30, message: "Troppe modifiche alla home: riprova tra un minuto." });
+const writeLimiter = userRateLimiter({ name: "home.writeLimiter", windowMs: 60_000, max: 30, message: "Troppe modifiche alla home: riprova tra un minuto." });
 
 const userSubject = (actorUserId: string) => `user:${actorUserId}`;
 const roleSubject = (kind: HomeKind) => `role:${kind}`;

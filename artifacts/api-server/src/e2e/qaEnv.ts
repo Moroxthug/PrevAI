@@ -40,6 +40,7 @@ export function bootstrapQaEnv(label: string): void {
   process.env.TOKEN_ENCRYPTION_KEY ??= "0".repeat(64);
   process.env.CRON_SECRET ??= `${label}-cron-secret`;
   process.env.LOG_LEVEL ??= "warn";
+  process.env.RATE_LIMIT_STORE ??= "memory"; // SEC-2: QA sweeps share 127.0.0.1 and the database
   process.env.RESEND_API_KEY ??= `re_${label}_mock`;
   // Vercel pulls Sensitive vars as empty strings, so the AI key is usually
   // absent locally. Without one, point the client at a closed port so every AI

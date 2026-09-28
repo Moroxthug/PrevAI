@@ -25,8 +25,8 @@ function missingTable(err: unknown): boolean {
   return e?.code === "42P01" || e?.cause?.code === "42P01";
 }
 
-const eventsLimiter = userRateLimiter({ windowMs: 60_000, max: 60, message: "Too many events" });
-const feedbackLimiter = userRateLimiter({ windowMs: 60 * 60_000, max: 10, message: "Hai inviato molte segnalazioni: riprova tra un po'." });
+const eventsLimiter = userRateLimiter({ name: "app-beta.eventsLimiter", windowMs: 60_000, max: 60, message: "Too many events" });
+const feedbackLimiter = userRateLimiter({ name: "app-beta.feedbackLimiter", windowMs: 60 * 60_000, max: 10, message: "Hai inviato molte segnalazioni: riprova tra un po'." });
 
 const common = {
   surface: z.enum(APP_SURFACES),

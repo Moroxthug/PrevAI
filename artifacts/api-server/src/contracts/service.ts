@@ -26,6 +26,7 @@ import {
 import { and, asc, eq, sql } from "drizzle-orm";
 import { openai } from "@workspace/integrations-openai-ai-server";
 import { logger } from "../lib/logger.js";
+import { recordAiUsage } from "../lib/usage.js";
 import { ObjectStorageService } from "../lib/objectStorage.js";
 import { getBaseUrl } from "../lib/baseUrl.js";
 import { raiseAutomation } from "../lib/automation.js";
@@ -194,6 +195,7 @@ Restituisci: {"scope": "<testo markdown-lite: paragrafi separati da riga vuota, 
       { role: "user", content: user },
     ],
   });
+  recordAiUsage({ userId: quote.userId, model: completion.model || "gpt-4o-mini", kind: "ai_text", usage: completion.usage, relatedEntityType: "contract_draft" });
   const raw = completion.choices[0]?.message?.content ?? "{}";
   const parsed = JSON.parse(raw) as { scope?: string; schedule?: string; duration_weeks?: number | null };
   if (!parsed.scope || !parsed.schedule) throw new Error("AI draft incomplete");

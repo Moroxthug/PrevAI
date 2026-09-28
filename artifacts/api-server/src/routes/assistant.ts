@@ -5,6 +5,7 @@ import { and, eq } from "drizzle-orm";
 import { requireAuth, getUserId, getActorUserId, getActorRole } from "../middlewares/authMiddleware.js";
 import { requirePermission } from "../middlewares/requirePermission.js";
 import { userRateLimiter } from "../lib/rateLimit.js";
+import { requireAiBudget } from "../lib/aiBudget.js";
 import { getOrCreateConversation, loadConversation, listConversations, clearConversation, runAssistantTurn, type Lang, type Who } from "../assistant/service.js";
 import { pageContextSchema } from "../assistant/context.js";
 import { sseFrame, type TurnEvent } from "../assistant/stream.js";
@@ -24,7 +25,7 @@ import { listActivity, assistantCosts } from "../assistant/activity.js";
 // opened from any screen with that screen as context, answers streamed (SSE).
 
 const router = Router();
-const chatLimiter = userRateLimiter({ windowMs: 60 * 60 * 1000, max: 120, message: "Hourly assistant limit reached. Try again later." });
+const chatLimiter = userRateLimiter({ name: "assistant.chatLimiter", windowMs: 60 * 60 * 1000, max: 120, message: "Hourly assistant limit reached. Try again later." });
 
 async function requireAssistant(userId: string): Promise<{ ok: true } | { ok: false; plan: string }> {
   const [profile] = await db.select().from(businessProfilesTable).where(eq(businessProfilesTable.userId, userId));
@@ -106,7 +107,7 @@ router.get("/assistant/conversations/:id", requireAuth, requirePermission("jobs"
 // POST /api/assistant/conversations/:id/stream { content, context? } — the same turn as /messages, sent as it happens:
 //   event: progress {label}  ·  delta {text}  ·  message {message}  ·  proposal {proposal}  ·  navigate {path, label} (APP-8c)  ·  done {}  ·  error {message}
 // The HTTP status is decided before the first byte (plan, body, thread); anything that fails later arrives as an `error` event.
-router.post("/assistant/conversations/:id/stream", requireAuth, requirePermission("jobs", "view"), chatLimiter, async (req, res) => {
+router.post("/assistant/conversations/:id/stream", requireAuth, requirePermission("jobs", "view"), chatLimiter, requireAiBudget, async (req, res) => {
   const userId = getUserId(res);
   const gate = await requireAssistant(userId).catch(() => null);
   if (!gate) { res.status(500).json({ error: "Internal server error" }); return; }
@@ -147,7 +148,7 @@ router.post("/assistant/conversations/:id/stream", requireAuth, requirePermissio
 });
 
 // POST /api/assistant/conversations/:id/messages { content, language?, context? } — the whole turn in one JSON answer
-router.post("/assistant/conversations/:id/messages", requireAuth, requirePermission("jobs", "view"), chatLimiter, async (req, res) => {
+router.post("/assistant/conversations/:id/messages", requireAuth, requirePermission("jobs", "view"), chatLimiter, requireAiBudget, async (req, res) => {
   try {
     const userId = getUserId(res);
     const gate = await requireAssistant(userId);
@@ -324,7 +325,7 @@ router.get("/assistant/usage", requireAuth, requirePermission("jobs", "view"), a
 // chiave del fornitore, che resta qui. Senza chiave: 503 VOICE_BROWSER e
 // l'app legge con la voce del browser.
 
-const speechLimiter = userRateLimiter({ windowMs: 60 * 60 * 1000, max: 600, message: "Limite orario della voce raggiunto. Riprova più tardi." });
+const speechLimiter = userRateLimiter({ name: "assistant.speechLimiter", windowMs: 60 * 60 * 1000, max: 600, message: "Limite orario della voce raggiunto. Riprova più tardi." });
 const speechBody = z.object({ text: z.string().trim().min(1).max(ASSISTANT_SPEECH_MAX_CHARS), rate: z.number().min(0.5).max(2).optional() });
 
 router.get("/assistant/voice", requireAuth, requirePermission("jobs", "view"), async (req, res) => {
@@ -341,7 +342,7 @@ router.get("/assistant/voice", requireAuth, requirePermission("jobs", "view"), a
   }
 });
 
-router.post("/assistant/speech", requireAuth, requirePermission("jobs", "view"), speechLimiter, async (req, res) => {
+router.post("/assistant/speech", requireAuth, requirePermission("jobs", "view"), speechLimiter, requireAiBudget, async (req, res) => {
   try {
     const userId = getUserId(res);
     const gate = await requireAssistant(userId);

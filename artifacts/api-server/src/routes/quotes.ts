@@ -38,6 +38,7 @@ import { userRateLimiter } from "../lib/rateLimit.js";
 // on total AI spend per user, not per endpoint — a runaway/compromised
 // account can't just spread calls across routes to dodge the limit.
 const aiCallLimiter = userRateLimiter({
+  name: "quotes.aiCallLimiter",
   windowMs: 60 * 60 * 1000,
   max: 40,
   message: "You've reached the hourly limit for AI generations. Please try again later.",
@@ -49,6 +50,8 @@ import { linkQuoteToClient, ensureClientForQuote } from "../lib/clients.js";
 import { tryTrialUnlock, sendQuoteByEmail, QuoteSendError, quoteQuotaExceeded } from "../quotes/send.js";
 import { createManualQuote, type ManualQuoteInput } from "../quotes/manualCreate.js";
 import { randomUUID } from "crypto";
+import { recordAiUsage } from "../lib/usage.js";
+import { requireAiBudget } from "../lib/aiBudget.js";
 import { extractFromPdf, extractFromDocx, extractFromXlsx } from "../lib/extractDocument.js";
 
 const objectStorage = new ObjectStorageService();
@@ -364,7 +367,7 @@ ${examples.join("\n\n---\n\n")}`;
 }
 
 // POST /api/quotes  (multipart/form-data: rawInput, clientData?, companySnapshot?, images[])
-router.post("/quotes", requireAuth, requirePermission("quotes", "edit"), aiCallLimiter, imageUpload.array("images", 3), async (req, res) => {
+router.post("/quotes", requireAuth, requirePermission("quotes", "edit"), aiCallLimiter, requireAiBudget, imageUpload.array("images", 3), async (req, res) => {
   try {
     const userId = getUserId(res);
 
@@ -698,6 +701,7 @@ Imposta sempre titolo_riga1 = "Analisi Economica e Computo Metrico Prezzato".`
       });
 
       const usage = completion.usage;
+      recordAiUsage({ userId, model: targetModel, kind: hasImages ? "ai_vision" : "ai_text", usage, relatedEntityType: "quote_generation" });
       promptTokens = usage?.prompt_tokens ?? 0;
       completionTokens = usage?.completion_tokens ?? 0;
       totalTokens = usage?.total_tokens ?? 0;
@@ -783,7 +787,7 @@ Imposta sempre titolo_riga1 = "Analisi Economica e Computo Metrico Prezzato".`
         subTot = chapters.reduce((sum, c) => sum + c.subtotale, 0);
       }
 
-      chapters = await enrichVociDescrizioni(chapters);
+      chapters = await enrichVociDescrizioni(chapters, userId);
 
       const iva = Math.round(subTot * 22) / 100;
       const totale = Math.round((subTot + iva) * 100) / 100;
@@ -851,7 +855,7 @@ Imposta sempre titolo_riga1 = "Analisi Economica e Computo Metrico Prezzato".`
         subTot = chapters.reduce((sum, c) => sum + c.subtotale, 0);
       }
 
-      chapters = await enrichVociDescrizioni(chapters);
+      chapters = await enrichVociDescrizioni(chapters, userId);
 
       const iva = Math.round(subTot * 22) / 100;
       const totale = Math.round((subTot + iva) * 100) / 100;
@@ -930,7 +934,7 @@ Imposta sempre titolo_riga1 = "Analisi Economica e Computo Metrico Prezzato".`
     });
 
     if (templateId === "arosio" || templateId === "mariagrazia") {
-      capitoli = await enrichVociDescrizioni(capitoli);
+      capitoli = await enrichVociDescrizioni(capitoli, userId);
     }
 
     const calculatedSubtotale = Number(capitoli.reduce((sum, c) => sum + c.subtotale, 0).toFixed(2));
@@ -1643,7 +1647,7 @@ router.post("/quotes/:id/duplicate", requireAuth, requirePermission("quotes", "e
 });
 
 // POST /api/quotes/:id/regenerate — re-run AI on an existing quote
-router.post("/quotes/:id/regenerate", requireAuth, requirePermission("quotes", "edit"), aiCallLimiter, async (req, res) => {
+router.post("/quotes/:id/regenerate", requireAuth, requirePermission("quotes", "edit"), aiCallLimiter, requireAiBudget, async (req, res) => {
   try {
     const userId = getUserId(res);
     const id = req.params.id as string;
@@ -1722,6 +1726,7 @@ Quando usi una voce del listino, applica il prezzo unitario esatto o molto simil
     });
 
     const usage = completion.usage;
+    recordAiUsage({ userId, model: "gpt-4o-mini", kind: "ai_text", usage, relatedEntityType: "quote_regeneration" });
     const promptTokens = usage?.prompt_tokens ?? 0;
     const completionTokens = usage?.completion_tokens ?? 0;
     const totalTokens = usage?.total_tokens ?? 0;
@@ -1799,7 +1804,7 @@ Quando usi una voce del listino, applica il prezzo unitario esatto o molto simil
     });
 
     if (quote.templateId === "arosio" || quote.templateId === "mariagrazia") {
-      capitoli = await enrichVociDescrizioni(capitoli);
+      capitoli = await enrichVociDescrizioni(capitoli, userId);
     }
 
     const calculatedSubtotale = Number(capitoli.reduce((sum, c) => sum + c.subtotale, 0).toFixed(2));
@@ -1860,7 +1865,7 @@ Quando usi una voce del listino, applica il prezzo unitario esatto o molto simil
 });
 
 // POST /api/quotes/:id/upgrade-to-capitolato — rewrite descriptions in professional capitolato style (Pro only)
-router.post("/quotes/:id/upgrade-to-capitolato", requireAuth, requirePermission("quotes", "edit"), aiCallLimiter, async (req, res) => {
+router.post("/quotes/:id/upgrade-to-capitolato", requireAuth, requirePermission("quotes", "edit"), aiCallLimiter, requireAiBudget, async (req, res) => {
   try {
     const userId = getUserId(res);
     const id = req.params.id as string;
@@ -1911,6 +1916,7 @@ router.post("/quotes/:id/upgrade-to-capitolato", requireAuth, requirePermission(
         { role: "user", content: `Ecco il preventivo da arricchire in stile capitolato:\n${inputCapitoli}` },
       ],
     });
+    recordAiUsage({ userId, model: "gpt-4o", kind: "ai_text", usage: completion.usage, relatedEntityType: "quote_capitolato" });
 
     const content = completion.choices[0]?.message?.content ?? "{}";
     let aiData: { capitoli?: Array<{ lettera?: string; titolo?: string; osservazione?: string; voci?: Array<{ descrizione?: string; um?: string; quantita?: number; prezzo_unitario?: number; totale?: number }>; subtotale?: number }> };
@@ -2040,7 +2046,7 @@ router.post("/quotes/manual", requireAuth, requirePermission("quotes", "edit"), 
 });
 
 // POST /api/quotes/suggest-item-description — AI helper for manual quote items
-router.post("/quotes/suggest-item-description", requireAuth, requirePermission("quotes", "edit"), aiCallLimiter, async (req, res) => {
+router.post("/quotes/suggest-item-description", requireAuth, requirePermission("quotes", "edit"), aiCallLimiter, requireAiBudget, async (req, res) => {
   try {
     const { brief, context } = req.body as { brief?: string; context?: string };
     if (!brief || typeof brief !== "string" || !brief.trim()) {
@@ -2065,6 +2071,7 @@ La descrizione deve essere precisa, professionale e in italiano. Massimo 2 righe
       max_tokens: 150,
       temperature: 0.4,
     });
+    recordAiUsage({ userId: getUserId(res), model: "gpt-4o-mini", kind: "ai_text", usage: completion.usage, relatedEntityType: "quote_item_description" });
 
     const description = completion.choices[0]?.message?.content?.trim() ?? brief;
     res.json({ description });
@@ -2081,7 +2088,7 @@ async function enrichVociDescrizioni<T extends {
   lettera: string;
   titolo: string;
   voci: Array<{ descrizione: string; um: string } & Record<string, unknown>>;
-}>(chapters: T[]): Promise<T[]> {
+}>(chapters: T[], userId: string): Promise<T[]> {
   const flat: Array<{ ci: number; vi: number; i: number; cap: string; t: string; um: string }> = [];
   for (let ci = 0; ci < chapters.length; ci++) {
     for (let vi = 0; vi < chapters[ci].voci.length; vi++) {
@@ -2106,6 +2113,7 @@ async function enrichVociDescrizioni<T extends {
         { role: "user", content: JSON.stringify(flat.map(f => ({ i: f.i, cap: f.cap, t: f.t, um: f.um }))) },
       ],
     });
+    recordAiUsage({ userId, model: "gpt-4o-mini", kind: "ai_text", usage: completion.usage, relatedEntityType: "quote_enrich" });
     const raw = completion.choices[0]?.message?.content ?? "[]";
     const cleaned = raw.trim().replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/i, "");
     const enriched: Array<{ i: number; d: string }> = JSON.parse(cleaned);

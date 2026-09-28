@@ -14,8 +14,8 @@ import { getConnectAccount, createInvoiceCheckoutSession } from "../invoices/str
 // Rate-limited by IP; the token is hashed before lookup.
 
 const router = Router();
-const viewLimiter = ipRateLimiter({ windowMs: 60_000, max: 60, message: "Too many requests" });
-const actionLimiter = ipRateLimiter({ windowMs: 60_000, max: 10, message: "Too many requests" });
+const viewLimiter = ipRateLimiter({ name: "public-invoices.viewLimiter", windowMs: 60_000, max: 60, message: "Too many requests" });
+const actionLimiter = ipRateLimiter({ name: "public-invoices.actionLimiter", windowMs: 60_000, max: 10, message: "Too many requests" });
 
 async function resolve(rawToken: string) {
   if (!rawToken || rawToken.length < 20 || rawToken.length > 200) return null;

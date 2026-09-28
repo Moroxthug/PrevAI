@@ -16,8 +16,8 @@ import { isPushConfigured, pushPublicKey, pushReady, saveSubscription, removeSub
 // is the actor's own business (their browser, their switches) — any role.
 
 const router = Router();
-const testLimiter = userRateLimiter({ windowMs: 15 * 60_000, max: 10, message: "Troppe prove. Riprova fra qualche minuto." });
-const writeLimiter = userRateLimiter({ windowMs: 15 * 60_000, max: 60, message: "Troppe richieste. Riprova fra qualche minuto." });
+const testLimiter = userRateLimiter({ name: "push.testLimiter", windowMs: 15 * 60_000, max: 10, message: "Troppe prove. Riprova fra qualche minuto." });
+const writeLimiter = userRateLimiter({ name: "push.writeLimiter", windowMs: 15 * 60_000, max: 60, message: "Troppe richieste. Riprova fra qualche minuto." });
 
 const NOT_CONFIGURED = { error: "NOT_CONFIGURED", message: "Le notifiche sul telefono non sono ancora attive su PrevAI." };
 const NOT_READY = { error: "NOT_READY", message: "Le notifiche sul telefono si attivano con il prossimo aggiornamento." };

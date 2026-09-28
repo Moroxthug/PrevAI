@@ -9,7 +9,9 @@ import { generateNumeroPreventivo } from "../lib/quoteNumber.js";
 import { logger } from "../lib/logger.js";
 import type { QuoteChapter, QuoteClientData, QuoteDiscount } from "@workspace/db";
 import { sendWidgetLeadNotification, sendWidgetClientConfirmationEmail } from "../lib/email.js";
-import { ipRateLimiter, apiKeyRateLimiter } from "../lib/rateLimit.js";
+import { ipRateLimiter, widgetKeySoftLimiter } from "../lib/rateLimit.js";
+import { aiBudgetExceeded } from "../lib/aiBudget.js";
+import { recordAiUsage } from "../lib/usage.js";
 import { raiseAutomation } from "../lib/automation.js";
 import { linkQuoteToClient } from "../lib/clients.js";
 import { resolveQuoteTaxRate } from "../lib/tax.js";
@@ -24,21 +26,24 @@ const router = Router();
 const MAX_RAW_INPUT_LENGTH = 6000;
 
 // /api/public/* is open to any origin (widget visitors on customer sites), so
-// it's rate-limited both per source IP and per tenant API key — the latter
-// caps damage if a single key is scraped/abused from many IPs.
+// it's rate-limited per source IP (hard) and per tenant API key (soft, SEC-2:
+// past it the request is saved without calling the AI, see widgetKeySoftLimiter).
 const configLimiter = ipRateLimiter({
+  name: "public-quotes.configLimiter",
   windowMs: 60 * 1000,
   max: 60,
   message: "Too many requests. Try again shortly.",
 });
 
 const quoteIpLimiter = ipRateLimiter({
+  name: "public-quotes.quoteIpLimiter",
   windowMs: 60 * 60 * 1000,
   max: 20,
   message: "Too many quote requests from this IP address. Try again later.",
 });
 
-const quoteApiKeyLimiter = apiKeyRateLimiter({
+const quoteApiKeyLimiter = widgetKeySoftLimiter({
+  name: "public-quotes.quoteApiKeyLimiter",
   windowMs: 60 * 60 * 1000,
   max: 60,
   message: "Hourly quote limit reached for this account. Try again later.",
@@ -48,12 +53,14 @@ const quoteApiKeyLimiter = apiKeyRateLimiter({
 // a family behind one router tripped it, and the page renders a 429 as
 // "Quote not available".
 const quoteViewLimiter = ipRateLimiter({
+  name: "public-quotes.quoteViewLimiter",
   windowMs: 60 * 1000,
   max: 120,
   message: "Too many requests. Try again shortly.",
 });
 
 const quoteAcceptLimiter = ipRateLimiter({
+  name: "public-quotes.quoteAcceptLimiter",
   windowMs: 60 * 60 * 1000,
   max: 10,
   message: "Too many acceptance attempts from this IP address. Try again later.",
@@ -111,6 +118,98 @@ function toPublicQuote(quote: typeof quotesTable.$inferSelect, variants?: (typeo
     aiGenerated: quoteProvenance(quote) === "ai",
     variants: variants?.map((v) => toPublicVariant(v, province)) ?? [],
   };
+}
+
+type WidgetClientData = { nome: string; email?: string; phone?: string; indirizzo?: string; city?: string; postalCode?: string; province?: string };
+
+// Phase 9: the widget submission is a lead first — record consent and
+// schedule the first follow-up here so a quote that's never accepted
+// still gets a nurture sequence instead of going cold silently.
+async function recordWidgetLead(userId: string, quote: typeof quotesTable.$inferSelect, client: QuoteClientData, notificationBody: string): Promise<void> {
+  try {
+    const [lead] = await db
+      .insert(leadsTable)
+      .values({
+        userId,
+        clientId: quote.clientId,
+        quoteId: quote.id,
+        name: client.nome,
+        email: client.email || null,
+        phone: client.phone || null,
+        preferredChannel: "email",
+        source: "widget",
+        status: "new",
+        consentSource: "widget_form",
+        nextFollowUpAt: new Date(Date.now() + FOLLOWUP_CADENCE_DAYS[0]! * 86_400_000),
+      })
+      .returning();
+    await db.insert(leadEventsTable).values({ leadId: lead!.id, userId, type: "created", payload: { source: "widget", quoteId: quote.id } });
+    await db.insert(leadEventsTable).values({ leadId: lead!.id, userId, type: "consent_recorded", payload: { consentSource: "widget_form" } });
+    // APP-2: bell + phone. Before answering the widget: a serverless function may stop once it has answered.
+    await createNotification({
+      userId,
+      type: "lead_new",
+      title: `Nuova richiesta dal sito: ${client.nome || "senza nome"}`,
+      body: notificationBody,
+      link: `/dashboard/quotes/${quote.id}`,
+      entityType: "lead",
+      entityId: lead!.id,
+    });
+  } catch (leadErr) {
+    logger.error({ err: leadErr, quoteId: quote.id }, "Failed to record widget lead (non-fatal)");
+  }
+}
+
+/** SEC-2: the request without the AI — an empty draft quote plus the lead, so nothing the visitor wrote is lost. */
+async function saveWidgetRequestWithoutEstimate(profile: typeof businessProfilesTable.$inferSelect, rawInput: string, clientData: WidgetClientData | undefined): Promise<boolean> {
+  try {
+    const client: QuoteClientData = {
+      nome: clientData?.nome || "Lead Widget",
+      indirizzo: clientData?.indirizzo || "",
+      email: clientData?.email,
+      phone: clientData?.phone,
+      city: clientData?.city,
+      postalCode: clientData?.postalCode,
+      province: clientData?.province,
+    };
+    const [quote] = await db
+      .insert(quotesTable)
+      .values({
+        userId: profile.userId,
+        rawInput,
+        clientData: client,
+        companySnapshot: {
+          companyName: profile.companyName,
+          vatNumber: profile.vatNumber ?? undefined,
+          address: profile.address ?? undefined,
+          phone: profile.phone ?? undefined,
+          email: profile.email ?? undefined,
+          logoUrl: profile.logoUrl ?? undefined,
+        },
+        descrizioneGenerale: "",
+        items: [],
+        capitoli: [],
+        sconto: null,
+        condizioniPagamento: [],
+        titoloPreventivoRiga1: "Analisi Economica e Computo Metrico Prezzato",
+        titoloPreventivoRiga2: "",
+        numeroPreventivoData: await generateNumeroPreventivo(profile.userId),
+        subtotale: "0.00",
+        ivaPercentuale: "0.000",
+        ivaValore: "0.00",
+        totale: "0.00",
+        note: "Richiesta arrivata dal sito senza stima automatica (limite dell'IA raggiunto): il preventivo va preparato a mano.",
+        status: "draft",
+        source: "widget",
+      })
+      .returning();
+    await linkQuoteToClient(quote!, profile.province);
+    await recordWidgetLead(profile.userId, quote!, client, "Arrivata senza stima automatica (limite dell'IA raggiunto): la descrizione è nel preventivo in bozza.");
+    return true;
+  } catch (err) {
+    logger.error({ err, userId: profile.userId }, "Failed to save widget request without estimate");
+    return false;
+  }
 }
 
 // Helper in-memory semantic search for listino prices
@@ -254,6 +353,18 @@ router.post("/public/quotes", quoteIpLimiter, quoteApiKeyLimiter, async (req, re
       return;
     }
 
+    // SEC-2: past this key's hourly AI budget, or the company's monthly AI cap,
+    // the request is still a lead — saved without an estimate and notified. The
+    // non-2xx answer makes the widget show its own local estimate, so a stranger
+    // holding the public key can't switch off a company's contact form.
+    const degraded = (res.locals.aiDegraded as string | undefined) ?? ((await aiBudgetExceeded(userId)) ? "monthly_cap" : undefined);
+    if (degraded) {
+      const saved = await saveWidgetRequestWithoutEstimate(profile, rawInput, clientData);
+      logger.warn({ userId, reason: degraded, saved }, "Widget request saved without an AI estimate");
+      res.status(429).json({ error: "Stima automatica non disponibile ora: la richiesta è stata inviata all'impresa.", code: "AI_DEGRADED", leadSaved: saved });
+      return;
+    }
+
     // Load the company's price list to run the RAG filter
     const catalogItems = await db
       .select()
@@ -301,6 +412,7 @@ Usa queste misure esatte per calcolare matematicamente le quantità.`;
     });
 
     const usage = completion.usage;
+    recordAiUsage({ userId, model: "gpt-4o-mini", kind: "ai_text", usage, relatedEntityType: "widget_quote" });
     const promptTokens = usage?.prompt_tokens ?? 0;
     const completionTokens = usage?.completion_tokens ?? 0;
     const totalTokens = usage?.total_tokens ?? 0;
@@ -410,41 +522,7 @@ Usa queste misure esatte per calcolare matematicamente le quantità.`;
 
     await linkQuoteToClient(quote!, profile.province);
 
-    // Phase 9: the widget submission is a lead first — record consent and
-    // schedule the first follow-up here so a quote that's never accepted
-    // still gets a nurture sequence instead of going cold silently.
-    try {
-      const [lead] = await db
-        .insert(leadsTable)
-        .values({
-          userId,
-          clientId: quote!.clientId,
-          quoteId: quote!.id,
-          name: resolvedClientData.nome,
-          email: resolvedClientData.email || null,
-          phone: resolvedClientData.phone || null,
-          preferredChannel: "email",
-          source: "widget",
-          status: "new",
-          consentSource: "widget_form",
-          nextFollowUpAt: new Date(Date.now() + FOLLOWUP_CADENCE_DAYS[0]! * 86_400_000),
-        })
-        .returning();
-      await db.insert(leadEventsTable).values({ leadId: lead!.id, userId, type: "created", payload: { source: "widget", quoteId: quote!.id } });
-      await db.insert(leadEventsTable).values({ leadId: lead!.id, userId, type: "consent_recorded", payload: { consentSource: "widget_form" } });
-      // APP-2: bell + phone. Before answering the widget: a serverless function may stop once it has answered.
-      await createNotification({
-        userId,
-        type: "lead_new",
-        title: `Nuova richiesta dal sito: ${resolvedClientData.nome || "senza nome"}`,
-        body: `Stima ${fmtEurCents(Math.round(totale * 100))}. Il preventivo in bozza è pronto da rivedere.`,
-        link: `/dashboard/quotes/${quote!.id}`,
-        entityType: "lead",
-        entityId: lead!.id,
-      });
-    } catch (leadErr) {
-      logger.error({ err: leadErr, quoteId: quote!.id }, "Failed to record widget lead (non-fatal)");
-    }
+    await recordWidgetLead(userId, quote!, resolvedClientData, `Stima ${fmtEurCents(Math.round(totale * 100))}. Il preventivo in bozza è pronto da rivedere.`);
 
     // Return the range estimate for the widget
     res.status(201).json({

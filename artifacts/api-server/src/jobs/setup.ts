@@ -16,6 +16,7 @@ import {
 import { and, eq } from "drizzle-orm";
 import { openai } from "@workspace/integrations-openai-ai-server";
 import { logger } from "../lib/logger.js";
+import { recordAiUsage } from "../lib/usage.js";
 import { writeAudit } from "../lib/notifications.js";
 import { layoutSequential } from "./dates.js";
 import { buildFallbackPlan, budgetFromSplit, DEFAULT_COST_RATIO, DEFAULT_SPLIT, type SetupPlan } from "./plan.js";
@@ -31,7 +32,7 @@ import { buildFallbackPlan, budgetFromSplit, DEFAULT_COST_RATIO, DEFAULT_SPLIT, 
 // The AI only adjusts durations and the budget split of the deterministic
 // plan; it never invents milestones, so payment links stay intact.
 
-async function refineWithAi(plan: SetupPlan, params: { chapters: QuoteChapter[]; variables: ContractVariables; language: "it" }): Promise<SetupPlan> {
+async function refineWithAi(plan: SetupPlan, params: { chapters: QuoteChapter[]; variables: ContractVariables; language: "it"; userId: string }): Promise<SetupPlan> {
   const { variables: v, language } = params;
   const model = process.env.AI_MODEL ?? "gpt-4o-mini";
   const list = plan.milestones.map((m) => `- key=${m.key} | ${m.title} | value ${(m.valueCents / 100).toFixed(0)} EUR | tasks: ${m.tasks.slice(0, 5).join("; ") || "-"}`).join("\n");
@@ -56,6 +57,7 @@ Restituisci: {"milestones":[{"key":"<key>","duration_days":<intero ≥1>}...una 
     },
     { timeout: 20_000 },
   );
+  recordAiUsage({ userId: params.userId, model, kind: "ai_text", usage: completion.usage, relatedEntityType: "job_setup" });
   const raw = completion.choices[0]?.message?.content ?? "{}";
   const parsed = JSON.parse(raw) as {
     milestones?: { key?: string; duration_days?: number }[];
@@ -117,7 +119,7 @@ export async function setupJobFromContract(contract: Contract): Promise<{ projec
 
   let plan = buildFallbackPlan({ chapters, variables: v, signedAt, language });
   try {
-    plan = await refineWithAi(plan, { chapters, variables: v, language });
+    plan = await refineWithAi(plan, { chapters, variables: v, language, userId: contract.userId });
   } catch (err) {
     logger.warn({ err, contractId: contract.id }, "AI job plan failed — using deterministic schedule and budget");
   }

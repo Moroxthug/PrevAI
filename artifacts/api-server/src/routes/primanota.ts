@@ -49,7 +49,7 @@ import { buildPacchettoPdf } from "../primanota/pdf.js";
 // (AMMINISTRAZIONE-PLAN.md §5).
 
 const router = Router();
-const importLimiter = userRateLimiter({ windowMs: 60_000, max: 10, message: "Troppi caricamenti al minuto" });
+const importLimiter = userRateLimiter({ name: "primanota.importLimiter", windowMs: 60_000, max: 10, message: "Troppi caricamenti al minuto" });
 const estrattoUpload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: MAX_FILE_ESTRATTO, files: 1 },

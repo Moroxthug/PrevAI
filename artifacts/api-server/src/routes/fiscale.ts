@@ -39,7 +39,7 @@ import { buildF24Pdf } from "../fiscale/f24pdf.js";
 import { prospettoF24 } from "@workspace/config";
 
 const router = Router();
-const simulaLimiter = userRateLimiter({ windowMs: 60_000, max: 60, message: "Troppe simulazioni al minuto" });
+const simulaLimiter = userRateLimiter({ name: "fiscale.simulaLimiter", windowMs: 60_000, max: 60, message: "Troppe simulazioni al minuto" });
 const objectStorage = new ObjectStorageService();
 
 /** A-3: una quietanza è un PDF o la foto della ricevuta dell'home banking. */

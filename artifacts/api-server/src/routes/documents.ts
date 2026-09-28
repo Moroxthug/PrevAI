@@ -16,10 +16,13 @@ import { randomUUID } from "crypto";
 import { logger } from "../lib/logger.js";
 import { createRequire } from "node:module";
 import { userRateLimiter } from "../lib/rateLimit.js";
+import { requireAiBudget } from "../lib/aiBudget.js";
+import { recordAiUsage } from "../lib/usage.js";
 
 const _require = createRequire(import.meta.url);
 
 const documentAiLimiter = userRateLimiter({
+  name: "documents.documentAiLimiter",
   windowMs: 60 * 60 * 1000,
   max: 40,
   message: "Hai raggiunto il limite orario di elaborazione documenti AI. Riprova più tardi.",
@@ -90,7 +93,7 @@ OUTPUT SOLO JSON VALIDO, nessun testo extra:
 
 Se non riesci a trovare prezzi unitari chiari, restituisci: { "lavorazioni": [], "totale": null, "zona": null, "fornitore": null, "note": "Prezzi unitari non trovati" }`;
 
-async function extractFromImage(buffer: Buffer, mimeType: string) {
+async function extractFromImage(buffer: Buffer, mimeType: string, userId: string) {
   const base64 = buffer.toString("base64");
   const dataUrl = `data:${mimeType};base64,${base64}`;
 
@@ -115,10 +118,11 @@ async function extractFromImage(buffer: Buffer, mimeType: string) {
     ],
   });
 
+  recordAiUsage({ userId, model: completion.model || "gpt-4o-mini", kind: "ai_text", usage: completion.usage, relatedEntityType: "document_extract" });
   return completion.choices[0]?.message?.content ?? "{}";
 }
 
-async function extractFromPdf(buffer: Buffer) {
+async function extractFromPdf(buffer: Buffer, userId: string) {
   let pdfText = "";
   try {
     const { PDFParse } = _require("pdf-parse") as {
@@ -151,10 +155,11 @@ async function extractFromPdf(buffer: Buffer) {
     ],
   });
 
+  recordAiUsage({ userId, model: completion.model || "gpt-4o-mini", kind: "ai_text", usage: completion.usage, relatedEntityType: "document_extract" });
   return completion.choices[0]?.message?.content ?? "{}";
 }
 
-async function extractFromDocx(buffer: Buffer) {
+async function extractFromDocx(buffer: Buffer, userId: string) {
   let docText = "";
   try {
     const mammoth = _require("mammoth") as {
@@ -182,10 +187,11 @@ async function extractFromDocx(buffer: Buffer) {
     ],
   });
 
+  recordAiUsage({ userId, model: completion.model || "gpt-4o-mini", kind: "ai_text", usage: completion.usage, relatedEntityType: "document_extract" });
   return completion.choices[0]?.message?.content ?? "{}";
 }
 
-async function extractFromXlsx(buffer: Buffer) {
+async function extractFromXlsx(buffer: Buffer, userId: string) {
   let sheetText = "";
   try {
     const XLSX = _require("xlsx") as {
@@ -226,6 +232,7 @@ async function extractFromXlsx(buffer: Buffer) {
     ],
   });
 
+  recordAiUsage({ userId, model: completion.model || "gpt-4o-mini", kind: "ai_text", usage: completion.usage, relatedEntityType: "document_extract" });
   return completion.choices[0]?.message?.content ?? "{}";
 }
 
@@ -472,7 +479,7 @@ router.get("/documents/price-comparison", requireAuth, async (req, res) => {
 });
 
 // POST /api/documents/:id/extract
-router.post("/documents/:id/extract", requireAuth, requirePermission("quotes", "edit"), documentAiLimiter, async (req, res) => {
+router.post("/documents/:id/extract", requireAuth, requirePermission("quotes", "edit"), documentAiLimiter, requireAiBudget, async (req, res) => {
   try {
     const userId = getUserId(res);
     const docId = String(req.params.id);
@@ -510,13 +517,13 @@ router.post("/documents/:id/extract", requireAuth, requirePermission("quotes", "
 
       let rawContent: string;
       if (doc.mimeType === "application/pdf") {
-        rawContent = await extractFromPdf(buffer);
+        rawContent = await extractFromPdf(buffer, userId);
       } else if (doc.mimeType === "application/vnd.openxmlformats-officedocument.wordprocessingml.document") {
-        rawContent = await extractFromDocx(buffer);
+        rawContent = await extractFromDocx(buffer, userId);
       } else if (doc.mimeType === "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet") {
-        rawContent = await extractFromXlsx(buffer);
+        rawContent = await extractFromXlsx(buffer, userId);
       } else {
-        rawContent = await extractFromImage(buffer, doc.mimeType);
+        rawContent = await extractFromImage(buffer, doc.mimeType, userId);
       }
 
       const cleaned = rawContent

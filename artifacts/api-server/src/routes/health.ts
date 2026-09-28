@@ -27,7 +27,7 @@ router.get("/healthz/db", async (_req, res) => {
 // tick is stale (Vercel Cron does not tell anyone when a schedule stops
 // firing) or when automation runs are dead — so the monitor's own alerting
 // becomes the alert. Public by design; it reveals counts and timestamps only.
-const opsLimiter = ipRateLimiter({ windowMs: 60_000, max: 30, message: "Too many requests" });
+const opsLimiter = ipRateLimiter({ name: "health.opsLimiter", windowMs: 60_000, max: 30, message: "Too many requests" });
 router.get("/healthz/ops", opsLimiter, async (_req, res) => {
   try {
     const health = await opsHealth();

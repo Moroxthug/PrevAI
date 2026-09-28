@@ -17,9 +17,9 @@ import { isWellFormedPngDataUrl } from "../lib/pngDataUrl.js";
 // token from the emailed link (hashed before lookup) and rate-limited by IP.
 
 const router = Router();
-const viewLimiter = ipRateLimiter({ windowMs: 60_000, max: 60, message: "Too many requests" });
-const otpLimiter = ipRateLimiter({ windowMs: 15 * 60_000, max: 8, message: "Too many verification attempts. Try again later." });
-const signLimiter = ipRateLimiter({ windowMs: 15 * 60_000, max: 10, message: "Too many attempts." });
+const viewLimiter = ipRateLimiter({ name: "sign.viewLimiter", windowMs: 60_000, max: 60, message: "Too many requests" });
+const otpLimiter = ipRateLimiter({ name: "sign.otpLimiter", windowMs: 15 * 60_000, max: 8, message: "Too many verification attempts. Try again later." });
+const signLimiter = ipRateLimiter({ name: "sign.signLimiter", windowMs: 15 * 60_000, max: 10, message: "Too many attempts." });
 
 const OTP_TTL_MS = 10 * 60_000;
 const OTP_MAX_ATTEMPTS = 5;

@@ -46,7 +46,7 @@ router.get("/account/deletion", requireAuth, async (req, res) => {
   }
 });
 
-const passwordLimiter = userRateLimiter({ windowMs: 15 * 60_000, max: 5, message: "Troppi tentativi: riprova tra un quarto d'ora." });
+const passwordLimiter = userRateLimiter({ name: "account.passwordLimiter", windowMs: 15 * 60_000, max: 5, message: "Troppi tentativi: riprova tra un quarto d'ora." });
 
 const requestSchema = z.object({
   password: z.string().min(1).max(200),

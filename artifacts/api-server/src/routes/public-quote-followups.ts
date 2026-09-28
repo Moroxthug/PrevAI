@@ -5,7 +5,7 @@ import { logger } from "../lib/logger.js";
 import { ipRateLimiter } from "../lib/rateLimit.js";
 
 const router = Router();
-const unsubscribeLimiter = ipRateLimiter({ windowMs: 60_000, max: 30, message: "Too many requests" });
+const unsubscribeLimiter = ipRateLimiter({ name: "public-quote-followups.unsubscribeLimiter", windowMs: 60_000, max: 30, message: "Too many requests" });
 
 // Working unsubscribe link for Phase 21 quote follow-up reminders, same
 // pattern as public-leads.ts. No auth — the token itself (a random uuid,

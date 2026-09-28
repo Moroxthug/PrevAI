@@ -59,7 +59,7 @@ import { erroreCommercialista, inviaFile } from "./commercialista.js";
 
 const router = Router();
 const objectStorage = new ObjectStorageService();
-const messaggiLimiter = userRateLimiter({ windowMs: 60_000, max: 30, message: "Troppi messaggi al minuto" });
+const messaggiLimiter = userRateLimiter({ name: "studio.messaggiLimiter", windowMs: 60_000, max: 30, message: "Troppi messaggi al minuto" });
 
 const MIME_DOCUMENTO = ["application/pdf", "image/jpeg", "image/png", "application/xml", "text/xml", "text/plain"] as const;
 const documentoUpload = multer({

@@ -2,6 +2,7 @@ import { AsyncLocalStorage } from "node:async_hooks";
 import { and, gte, lt, sql } from "drizzle-orm";
 import { db, usageEventsTable, usageDailySummaryTable, type UsageEventKind } from "@workspace/db";
 import { logger } from "./logger.js";
+import { AI_USAGE_KINDS, noteAiSpend } from "./aiBudget.js";
 
 // ── Phase 8: per-org cost/usage observability ──────────────────────────────
 // See docs/GROWTH-PLATFORM-PLAN.md §4a. Every AI call and WhatsApp send is a
@@ -30,6 +31,8 @@ export async function recordUsageEvent(params: {
   relatedEntityType?: string;
   relatedEntityId?: string;
 }): Promise<void> {
+  // SEC-2: the monthly AI cap sees this spend at once, not at the next re-read.
+  if ((AI_USAGE_KINDS as readonly string[]).includes(params.kind)) noteAiSpend(params.userId, params.quantity * (params.unitCostCents ?? 0));
   try {
     await db.insert(usageEventsTable).values({
       userId: params.userId,
@@ -60,8 +63,13 @@ const MODEL_COST_PER_1K_TOKENS_CENTS: Record<string, { input: number; output: nu
 };
 
 /** APP-8h: USD cents for these tokens on this model (0 for a model not in the table). The eval runner uses it too. */
+/** SEC-2: completion.model comes back dated ("gpt-4o-mini-2024-07-18"): price it as the base model. */
+function pricingFor(model: string): { input: number; output: number } | undefined {
+  return MODEL_COST_PER_1K_TOKENS_CENTS[model] ?? MODEL_COST_PER_1K_TOKENS_CENTS[model.replace(/-\d{4}-\d{2}-\d{2}$/, "")];
+}
+
 export function aiUsageCostCents(model: string, usage: { prompt_tokens?: number; completion_tokens?: number } | null | undefined): number {
-  const pricing = MODEL_COST_PER_1K_TOKENS_CENTS[model];
+  const pricing = pricingFor(model);
   if (!pricing || !usage) return 0;
   return ((usage.prompt_tokens ?? 0) / 1000) * pricing.input + ((usage.completion_tokens ?? 0) / 1000) * pricing.output;
 }
@@ -77,7 +85,7 @@ export function recordAiUsage(params: {
   const usage = params.usage;
   const totalTokens = usage?.total_tokens ?? ((usage?.prompt_tokens ?? 0) + (usage?.completion_tokens ?? 0));
   if (!totalTokens) return;
-  const pricing = MODEL_COST_PER_1K_TOKENS_CENTS[params.model];
+  const pricing = pricingFor(params.model);
   const costCents = pricing
     ? ((usage?.prompt_tokens ?? 0) / 1000) * pricing.input + ((usage?.completion_tokens ?? 0) / 1000) * pricing.output
     : 0;

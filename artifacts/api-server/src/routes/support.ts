@@ -98,12 +98,14 @@ async function requireConversationAccess(
 // conversation and trigger an AI completion per message, so both are capped
 // per-IP. Limits are generous enough for a real visitor conversation.
 const createConversationLimiter = ipRateLimiter({
+  name: "support.createConversationLimiter",
   windowMs: 15 * 60 * 1000,
   max: 15,
   message: "Too many requests. Please try again in a few minutes.",
 });
 
 const sendMessageLimiter = ipRateLimiter({
+  name: "support.sendMessageLimiter",
   windowMs: 10 * 60 * 1000,
   max: 30,
   message: "Too many messages sent. Please try again later.",

@@ -40,7 +40,7 @@ import {
 
 const router = Router();
 const objectStorage = new ObjectStorageService();
-const messaggiLimiter = userRateLimiter({ windowMs: 60_000, max: 20, message: "Troppi messaggi al minuto" });
+const messaggiLimiter = userRateLimiter({ name: "commercialista.messaggiLimiter", windowMs: 60_000, max: 20, message: "Troppi messaggi al minuto" });
 
 async function servizioOForbidden(userId: string, res: import("express").Response): Promise<boolean> {
   const [profile] = await db.select().from(businessProfilesTable).where(eq(businessProfilesTable.userId, userId));

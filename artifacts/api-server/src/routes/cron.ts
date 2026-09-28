@@ -17,6 +17,8 @@ import { eq, lt } from "drizzle-orm";
 import { automationBacklog, pingHeartbeat, recentAutomationFailures, sendOpsAlert } from "../lib/ops.js";
 import { captureException, flush } from "../lib/errorTracking.js";
 import { runAssistantCostAlerts } from "../assistant/activity.js";
+import { runAiBudgetAlerts } from "../lib/aiBudget.js";
+import { sweepExpiredCounters } from "../lib/rateLimitStore.js";
 
 const router = Router();
 
@@ -64,7 +66,10 @@ router.get("/cron/tick", async (req, res) => {
     await rollUpUsageForDate(new Date());
     // APP-8h: avviso allo staff quando un'impresa supera il costo dell'assistente per posto.
     const assistantCosts = await runAssistantCostAlerts();
-    const result = { automations, contracts, invoices, leads, reviewRequests, incentives, priceTrends, quoteFollowups, sdi, fiscale, accountDeletions, usage, assistantCosts };
+    // SEC-2: avviso allo staff quando un'impresa passa l'80 % del tetto IA del mese; contatori dei limiti scaduti.
+    const aiBudget = await runAiBudgetAlerts();
+    const rateLimitRowsSwept = await sweepExpiredCounters();
+    const result = { automations, contracts, invoices, leads, reviewRequests, incentives, priceTrends, quoteFollowups, sdi, fiscale, accountDeletions, usage, assistantCosts, aiBudget, rateLimitRowsSwept };
     const tookMs = Date.now() - startedAt;
     if (tick) await db.update(cronTicksTable).set({ finishedAt: new Date(), ok: true, result, tookMs }).where(eq(cronTicksTable.id, tick.id));
     await db.delete(cronTicksTable).where(lt(cronTicksTable.startedAt, new Date(Date.now() - 90 * 24 * 3_600_000)));

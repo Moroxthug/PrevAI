@@ -26,8 +26,8 @@ const MAX_SESSION_HOURS = 16;
 // company's open jobs and their own entries; nothing money-related leaks.
 
 const router = Router();
-const viewLimiter = ipRateLimiter({ windowMs: 60_000, max: 60, message: "Too many requests" });
-const writeLimiter = ipRateLimiter({ windowMs: 15 * 60_000, max: 60, message: "Too many requests. Try again in a few minutes." });
+const viewLimiter = ipRateLimiter({ name: "worker-time.viewLimiter", windowMs: 60_000, max: 60, message: "Too many requests" });
+const writeLimiter = ipRateLimiter({ name: "worker-time.writeLimiter", windowMs: 15 * 60_000, max: 60, message: "Too many requests. Try again in a few minutes." });
 
 async function resolveWorker(rawToken: string) {
   if (!rawToken || rawToken.length < 20 || rawToken.length > 200) return null;

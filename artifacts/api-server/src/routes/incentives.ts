@@ -18,12 +18,14 @@ import { calcolaIncentiviPreventivo, riepilogoIncentivi } from "../incentives/ca
 const router = Router();
 
 const publicIncentivesLimiter = ipRateLimiter({
+  name: "incentives.publicIncentivesLimiter",
   windowMs: 60 * 1000,
   max: 60,
   message: "Troppe richieste. Riprova tra poco.",
 });
 
 const calcLimiter = ipRateLimiter({
+  name: "incentives.calcLimiter",
   windowMs: 60 * 60 * 1000,
   max: 30,
   message: "Limite orario di verifiche incentivi raggiunto. Riprova più tardi.",

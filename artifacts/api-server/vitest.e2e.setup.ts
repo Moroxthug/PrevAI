@@ -21,6 +21,10 @@ process.env.BETTER_AUTH_SECRET ??= "e2e-secret-not-for-production-use-0000";
 process.env.TOKEN_ENCRYPTION_KEY ??= "0".repeat(64);
 process.env.CRON_SECRET ??= "e2e-cron-secret";
 process.env.LOG_LEVEL ??= "warn";
+// SEC-2: the rate limiters count in memory here — several suites and QA sweeps
+// share the staging database and 127.0.0.1, and shared counters would make one
+// run trip another's limits. limits.e2e.test.ts turns the shared store on itself.
+process.env.RATE_LIMIT_STORE ??= "memory";
 
 // Phase 64: the inbound-webhook tests sign requests with these. Real values
 // from .env.staging win (`??=`); the tests read process.env, so either works.

@@ -6,3 +6,4 @@
 process.env.DATABASE_URL ??= "postgres://test:test@localhost:5432/test";
 process.env.BETTER_AUTH_SECRET ??= "test-secret-not-for-production-use-0000";
 process.env.TOKEN_ENCRYPTION_KEY ??= "0".repeat(64);
+process.env.RATE_LIMIT_STORE ??= "memory"; // SEC-2: no shared counters without a database

@@ -5,7 +5,7 @@ import { logger } from "../lib/logger.js";
 import { ipRateLimiter } from "../lib/rateLimit.js";
 
 const router = Router();
-const unsubscribeLimiter = ipRateLimiter({ windowMs: 60_000, max: 30, message: "Too many requests" });
+const unsubscribeLimiter = ipRateLimiter({ name: "public-reviews.unsubscribeLimiter", windowMs: 60_000, max: 30, message: "Too many requests" });
 
 // GDPR art. 21 / art. 130 Codice Privacy: link di disiscrizione efficace subito,
 // same pattern as public-leads.ts. No auth — the token itself (a random uuid,

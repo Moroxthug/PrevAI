@@ -8,6 +8,8 @@ import type { QuoteChapter } from "@workspace/db";
 import { openai } from "@workspace/integrations-openai-ai-server";
 import { extractFromPdf, extractFromDocx, extractFromXlsx } from "../lib/extractDocument.js";
 import { userRateLimiter } from "../lib/rateLimit.js";
+import { requireAiBudget } from "../lib/aiBudget.js";
+import { recordAiUsage } from "../lib/usage.js";
 
 const router = Router();
 
@@ -35,6 +37,7 @@ const catalogOcrUpload = multer({
 // for every quote like AI generation), so a lower hourly cap is enough to
 // contain costs without getting in the way of normal use.
 const catalogOcrLimiter = userRateLimiter({
+  name: "catalog.catalogOcrLimiter",
   windowMs: 60 * 60 * 1000,
   max: 15,
   message: "Hai raggiunto il limite orario di importazioni listino. Riprova più tardi.",
@@ -245,6 +248,7 @@ router.post(
   requireAuth,
   requirePermission("quotes", "edit"),
   catalogOcrLimiter,
+  requireAiBudget,
   catalogOcrUpload.array("files", 3),
   async (req, res) => {
     try {
@@ -301,6 +305,7 @@ router.post(
         ],
       });
 
+      recordAiUsage({ userId: getUserId(res), model: targetModel, kind: hasImages ? "ai_vision" : "ai_text", usage: completion.usage, relatedEntityType: "catalog_ocr" });
       const content = completion.choices[0]?.message?.content ?? "[]";
       let parsedItems: any[] = [];
       try {

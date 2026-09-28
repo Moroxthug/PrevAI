@@ -7,7 +7,7 @@ import { userRateLimiter } from "../lib/rateLimit.js";
 // Keys by res.locals.userId, which requireApiKey sets — must run AFTER it in
 // every route's middleware chain, same convention as the cookie-auth routes'
 // own userRateLimiter usage.
-export const publicApiLimiter = userRateLimiter({ windowMs: 60 * 60_000, max: 300, message: "Too many API requests this hour" });
+export const publicApiLimiter = userRateLimiter({ name: "apiKeyAuth.publicApiLimiter", windowMs: 60 * 60_000, max: 300, message: "Too many API requests this hour" });
 
 /**
  * Auth for the public API (`/api/v1/public/*`) — a bearer API key instead of

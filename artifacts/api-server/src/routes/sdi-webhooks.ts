@@ -9,7 +9,7 @@ import { registraEvento } from "../sdi/service.js";
 import { sincronizzaPassive } from "../sdi/passive.js";
 
 const router = Router();
-const webhookLimiter = ipRateLimiter({ windowMs: 60_000, max: 300, message: "Troppe notifiche SDI da questo indirizzo" });
+const webhookLimiter = ipRateLimiter({ name: "sdi-webhooks.webhookLimiter", windowMs: 60_000, max: 300, message: "Troppe notifiche SDI da questo indirizzo" });
 
 // ── A-1: notifiche dell'intermediario ────────────────────────────────────────
 // Lo SdI non parla con noi: parla con l'intermediario, che ci richiama su un
