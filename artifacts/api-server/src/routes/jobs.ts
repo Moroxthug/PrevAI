@@ -20,6 +20,9 @@ import {
   businessProfilesTable,
   whatsappConnectionsTable,
   jobPhotosTable,
+  jobNotesTable,
+  JOB_NOTE_SOURCES,
+  type JobNote,
   hasFeature,
   minimumPlanFor,
   PROJECT_STATUSES,
@@ -30,7 +33,7 @@ import {
   type CostBudgetLine,
 } from "@workspace/db";
 import { and, asc, desc, eq, inArray, isNull, sql } from "drizzle-orm";
-import { requireAuth, getUserId, getUserName } from "../middlewares/authMiddleware.js";
+import { requireAuth, getUserId, getUserName, getActorUserId } from "../middlewares/authMiddleware.js";
 import { requirePermission } from "../middlewares/requirePermission.js";
 import { raiseAutomation } from "../lib/automation.js";
 import { writeAudit } from "../lib/notifications.js";
@@ -1140,6 +1143,101 @@ router.delete("/jobs/:id/photos/:photoId", requireAuth, requirePermission("jobs"
     res.json({ success: true });
   } catch (err) {
     req.log.error({ err }, "Error deleting job photo");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// ── APP-4a: note del cantiere ────────────────────────────────────────────────
+// Typed on the job page or dictated from the phone's + (the dictation becomes
+// text on the phone, only the text is stored). Inert until
+// migrations/v2/0011_app4a_note_cantiere.sql runs: the list answers
+// { available: false } and the app hides the card and the + entry.
+
+/** Postgres "relation does not exist": the 0011 migration has not run yet. */
+function missingTable(err: unknown): boolean {
+  const e = err as { code?: string; cause?: { code?: string } };
+  return e?.code === "42P01" || e?.cause?.code === "42P01";
+}
+
+function serializeNote(n: JobNote) {
+  return { id: n.id, body: n.body, source: n.source, authorName: n.authorName, createdAt: n.createdAt.toISOString() };
+}
+
+const NoteSchema = z.object({
+  body: z.string().trim().min(1).max(4000),
+  source: z.enum(JOB_NOTE_SOURCES).default("typed"),
+});
+
+router.get("/jobs/:id/notes", requireAuth, requirePermission("jobs", "view"), async (req, res) => {
+  try {
+    const project = await ownedProject(getUserId(res), req.params.id as string);
+    if (!project) {
+      res.status(404).json({ error: "Not found" });
+      return;
+    }
+    const notes = await db.select().from(jobNotesTable).where(eq(jobNotesTable.projectId, project.id)).orderBy(desc(jobNotesTable.createdAt)).limit(200);
+    res.json({ available: true, notes: notes.map(serializeNote) });
+  } catch (err) {
+    if (missingTable(err)) {
+      res.json({ available: false, notes: [] });
+      return;
+    }
+    req.log.error({ err }, "Error listing job notes");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+router.post("/jobs/:id/notes", requireAuth, requirePermission("jobs", "edit"), async (req, res) => {
+  const body = NoteSchema.safeParse(req.body);
+  if (!body.success) {
+    res.status(400).json({ error: "Scrivi il testo della nota." });
+    return;
+  }
+  try {
+    const userId = getUserId(res);
+    const project = await ownedProject(userId, req.params.id as string);
+    if (!project) {
+      res.status(404).json({ error: "Not found" });
+      return;
+    }
+    const [note] = await db.insert(jobNotesTable).values({
+      userId,
+      actorUserId: getActorUserId(res) ?? userId,
+      authorName: getUserName(res),
+      projectId: project.id,
+      body: body.data.body,
+      source: body.data.source,
+    }).returning();
+    res.status(201).json({ note: serializeNote(note!) });
+  } catch (err) {
+    if (missingTable(err)) {
+      res.status(503).json({ error: "NOTES_UNAVAILABLE", message: "Le note del cantiere non sono ancora attive." });
+      return;
+    }
+    req.log.error({ err }, "Error adding job note");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+router.delete("/jobs/:id/notes/:noteId", requireAuth, requirePermission("jobs", "edit"), async (req, res) => {
+  try {
+    const project = await ownedProject(getUserId(res), req.params.id as string);
+    if (!project) {
+      res.status(404).json({ error: "Not found" });
+      return;
+    }
+    const deleted = await db.delete(jobNotesTable).where(and(eq(jobNotesTable.id, req.params.noteId as string), eq(jobNotesTable.projectId, project.id))).returning({ id: jobNotesTable.id });
+    if (deleted.length === 0) {
+      res.status(404).json({ error: "Not found" });
+      return;
+    }
+    res.json({ success: true });
+  } catch (err) {
+    if (missingTable(err)) {
+      res.status(404).json({ error: "Not found" });
+      return;
+    }
+    req.log.error({ err }, "Error deleting job note");
     res.status(500).json({ error: "Internal server error" });
   }
 });

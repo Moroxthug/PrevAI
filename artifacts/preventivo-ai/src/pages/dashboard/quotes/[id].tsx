@@ -1,11 +1,12 @@
 import { localDay } from "@/lib/local-day";
 import { trackAppEvent } from "@/lib/app-beta";
+import { usePdfShare, fetchPdfFile } from "@/components/share-pdf";
 import { Link, useParams, useSearch } from "wouter";
 import { PREZZI_PIANI, formatPrezzo } from "@workspace/config";
 import { useGetQuote, useGetBusinessProfile, useGenerateQuotePdf, useGetPlans, useUpdateQuote, useCreateCheckoutSession, useVerifyPayment, useGetSubscription, useUnlockQuoteWithSubscription, useCreateCustomerPortalSession, useRegenerateQuote, useDuplicateQuote, useUpgradeToCapitolatoPro, useGenerateQuotePdfPro, useGetTrialStatus, useListClients, useSendQuotePdfEmail, useListQuoteVariants, useCreateQuoteVariant, useUpdateQuoteVariant, useDeleteQuoteVariant, useArchiveQuote, useDeleteQuote, getGetQuoteQueryKey, getVerifyPaymentQueryKey, getListQuotesQueryKey, getGetTrialStatusQueryKey, getListQuoteVariantsQueryKey } from "@workspace/api-client-react";
 import { Dialog, DialogBody, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ArrowLeft, Download, Lock, CheckCircle2, Edit2, Save, FileText, FileSpreadsheet, ImageIcon, ChevronDown, ChevronRight, Plus, Trash2, X, Pencil, Sparkles, AlertTriangle, RefreshCw, Loader2, Copy, Star, FileDown, LayoutTemplate, Mail, Hammer, Archive, Briefcase, Send } from "lucide-react";
+import { ArrowLeft, Download, Lock, CheckCircle2, Edit2, Save, FileText, FileSpreadsheet, ImageIcon, ChevronDown, ChevronRight, Plus, Trash2, X, Pencil, Sparkles, AlertTriangle, RefreshCw, Loader2, Copy, Star, FileDown, LayoutTemplate, Mail, Hammer, Archive, Briefcase, Send, Share2 } from "lucide-react";
 import { useState, useRef, useEffect, useMemo, Fragment } from "react";
 import { ActionSheet, type SheetAction } from "@/components/mobile/action-sheet";
 import { StickyActionBar } from "@/components/mobile/sticky-action-bar";
@@ -150,6 +151,8 @@ export default function QuoteDetail() {
   // lines as rows; a line is edited in a sheet.
   const phone = useMediaQuery("(max-width: 640px)");
   const [isLayoutSheetOpen, setIsLayoutSheetOpen] = useState(false);
+  // APP-4a: "Condividi PDF" through the phone's share sheet (WhatsApp…), where the browser can share files.
+  const pdfShare = usePdfShare({ onShared: () => trackAppEvent("quote_shared", { entityId: id, channel: "share_sheet" }) });
   const [lineSheet, setLineSheet] = useState<{ ci: number; vi: number | null } | null>(null);
   const archiveQuote = useArchiveQuote();
   const deleteQuote = useDeleteQuote();
@@ -223,10 +226,11 @@ export default function QuoteDetail() {
     });
   };
 
+  const pdfFullUrl = (pdfUrl: string) => (pdfUrl.startsWith("/api") ? pdfUrl : `/api/storage${pdfUrl}`);
+
   const downloadPdfFromUrl = async (pdfUrl: string, filename: string) => {
     try {
-      const fullUrl = pdfUrl.startsWith("/api") ? pdfUrl : `/api/storage${pdfUrl}`;
-      const response = await fetch(fullUrl, { credentials: "include" });
+      const response = await fetch(pdfFullUrl(pdfUrl), { credentials: "include" });
       if (!response.ok) throw new Error("Download failed");
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
@@ -242,14 +246,37 @@ export default function QuoteDetail() {
     }
   };
 
+  const pdfFilename = () => {
+    if (!quote) return "preventivo.pdf";
+    const numero = quote.numeroPreventivoData
+      ? quote.numeroPreventivoData.replace(/\//g, "_")
+      : `N\u00b0 ${quote.id.slice(0, 4).toUpperCase()} - ${new Date(quote.createdAt || Date.now()).toLocaleDateString("it-IT").replace(/\//g, "_")}`;
+    return `${t("dashboard.quoteDetail.filenamePrefix")} ${numero}.pdf`;
+  };
+
+  // Same PDF as Download (and the same edit lock), handed to the share sheet instead of saved.
+  const handleSharePdf = () => {
+    if (!id || !quote) return;
+    void pdfShare.share(async () => {
+      try {
+        const result = await generatePdf.mutateAsync({ id });
+        queryClient.invalidateQueries({ queryKey: getGetQuoteQueryKey(id) });
+        queryClient.invalidateQueries({ queryKey: getGetTrialStatusQueryKey() });
+        if (!result.pdfUrl) throw new Error("no pdf");
+        return await fetchPdfFile(pdfFullUrl(result.pdfUrl), pdfFilename());
+      } catch (err) {
+        if ((err as { status?: number })?.status === 402) setIsPaywallOpen(true);
+        else toast({ title: t("dashboard.quoteDetail.error"), description: t("dashboard.quoteDetail.errorGeneratePdf"), variant: "destructive" });
+        return null;
+      }
+    });
+  };
+
   const handleDownload = () => {
     if (!id || !quote) return;
     generatePdf.mutate({ id }, {
       onSuccess: (result) => {
-        const numero = quote.numeroPreventivoData
-          ? quote.numeroPreventivoData.replace(/\//g, "_")
-          : `N\u00b0 ${quote.id.slice(0, 4).toUpperCase()} - ${new Date(quote.createdAt || Date.now()).toLocaleDateString("it-IT").replace(/\//g, "_")}`;
-        const filename = `${t("dashboard.quoteDetail.filenamePrefix")} ${numero}.pdf`;
+        const filename = pdfFilename();
         if (result.pdfUrl) {
           downloadPdfFromUrl(result.pdfUrl, filename);
         } else {
@@ -791,6 +818,7 @@ export default function QuoteDetail() {
     !isEditLocked && { label: t("dashboard.quoteDetail.regenerateWithAi"), icon: Sparkles, onSelect: () => setIsRegenOpen(true) },
     asSheet(sendAction),
     asSheet(copyLink),
+    pdfShare.canShare && { label: t("share.pdf"), icon: isLocked ? Lock : Share2, onSelect: isLocked ? handleUnlock : handleSharePdf, disabled: generatePdf.isPending || pdfShare.busy, hint: "WhatsApp" },
     { label: t("dashboard.quoteDetail.downloadPdf"), icon: isLocked ? Lock : Download, onSelect: isLocked ? handleUnlock : handleDownload, disabled: generatePdf.isPending, hint: "PDF" },
     quote.capitolatoPro && isPro && quote.status === "unlocked" && { label: t("dashboard.quoteDetail.downloadProPdf"), icon: FileDown, onSelect: handleDownloadProPdf, disabled: generatePdfPro.isPending },
     !quote.capitolatoPro && { label: isPro ? t("dashboard.quoteDetail.upgradeToProSpec") : t("dashboard.quoteDetail.proSpec"), icon: Star, onSelect: handleUpgradeToCapitolato, disabled: upgradeToCapitolato.isPending },
@@ -1671,6 +1699,8 @@ export default function QuoteDetail() {
       >
         <div className="src-list flush">{templateButtons}</div>
       </BottomSheet>
+
+      {pdfShare.sheet}
 
       {/* ── APP-1d: one line of the quote, edited in a sheet on a phone ── */}
       {lineSheet && editCapitoli[lineSheet.ci] && (

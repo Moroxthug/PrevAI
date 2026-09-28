@@ -800,3 +800,22 @@ pnpm --filter @workspace/api-server qa:phone-sheets   # fogli di confronto in .q
 - Serve lo staging locale (`.env.staging`) e Chrome installato, come `qa:visual`. Vite parte sulla 5196: se è occupata (un'altra chat), `-- --port=5195 --out=phone-b` e `E2E_NO_PURGE=1` davanti.
 - Una pagina nuova entra nel controllo aggiungendola a `routes()` in `artifacts/api-server/src/e2e/visual-a11y.ts`; un foglio (sheet) con `drive: (p) => openPhoneSheet(p, "<pulsante>", "<foglio>")`.
 - Eccezione voluta: `data-phone-ok="<regola>"` sull'elemento, con un commento che dice perché. Mai togliere la regola.
+
+## 15. Funzioni "native" dal sito (APP-4a, riga 30)
+
+### 15.1 Cosa c'è
+
+- **+ del telefono → Foto del cantiere / Nota vocale**: si sceglie il cantiere, poi si apre la fotocamera (la foto va nella scheda Foto) o il registratore (la voce diventa testo con `/api/speech/transcribe`, come nel composer; si rilegge e si salva). **L'audio non viene salvato**, solo il testo.
+- **Note del cantiere**: scheda nella Panoramica del cantiere, scritte o dettate; `GET/POST /api/jobs/:id/notes`, `DELETE /api/jobs/:id/notes/:noteId` (permessi `jobs` view/edit).
+- **Condividi PDF** (preventivo e fattura, nel ⋯): il PDF va al foglio di condivisione del telefono (WhatsApp, Mail…) con la Web Share API. Compare solo dove il browser sa condividere file (Android Chrome, iPhone Safari, Chrome su Windows). Per il preventivo è lo stesso PDF di "Scarica" e **blocca le modifiche come lo scaricamento**. Se il PDF ci mette troppo, il browser rifiuta la condivisione: compare "Il PDF è pronto" con un pulsante Condividi (un tocco in più). Conta come `quote_shared` con canale `share_sheet` nel pannello Beta app.
+- **Bozza del nuovo preventivo sul telefono**: descrizione, cliente, impaginazione e importo obiettivo restano nel `localStorage` del browser (chiave `prevai:new-quote-draft:<userId>`) finché il preventivo non viene scritto o si tocca "Ricomincia"; scade dopo 14 giorni. Foto e documenti allegati **non** vengono conservati. Senza rete il pulsante diventa "In attesa della rete". È l'unica copia di dati sul telefono (APP-PLAN §6, regola 4).
+
+### 15.2 Migrazione 0011
+
+`migrations/v2/0011_app4a_note_cantiere.sql`: una tabella nuova e vuota (`job_notes`, FK al cantiere con cascata), nessuna colonna su tabelle esistenti, idempotente. Staging: applicata e rieseguita senza effetti. In produzione come le altre (§5.3, porta 5432, stesso `sslmode`), dopo la 0010:
+
+```bash
+"$PG/psql.exe" "$URL" -v ON_ERROR_STOP=1 -1 -f migrations/v2/0011_app4a_note_cantiere.sql   # APP-4a: note del cantiere
+```
+
+Senza la tabella: `GET /api/jobs/:id/notes` risponde `available: false`, la scheda Note non compare, "Nota vocale" dal + dice "non ancora attive", POST risponde 503. Foto dal +, Condividi PDF e bozza funzionano comunque. Ordine rispetto al deploy: indifferente. La cancellazione dell'account la spazza da sola (ha `user_id`).

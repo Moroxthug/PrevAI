@@ -2820,3 +2820,20 @@ button.qline:hover { background: #fafbfc; }
   .marquee::-webkit-scrollbar { display: none; }
   .mq-track { flex-wrap: nowrap; justify-content: flex-start; width: max-content; padding-inline: 16px; }
 }
+
+/* ── APP-4a (riga 30): note del cantiere e nota vocale dal + ─────────────── */
+.note-compose .comp-box { box-shadow: none; }
+.note-compose .comp-box textarea { min-height: 64px; padding: 12px 14px 4px; }
+.note-row { align-items: flex-start; }
+.note-body { margin: 0; font-size: 14px; font-weight: 600; color: var(--ink); white-space: pre-wrap; overflow-wrap: anywhere; }
+.note-row .sub { white-space: normal; }
+.vnote { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+.vnote-mic { width: 72px; height: 72px; border-radius: 50%; display: grid; place-items: center; background: var(--navy); color: #fff; transition: background .2s; }
+.vnote-mic svg { width: 28px; height: 28px; }
+.vnote-mic.rec { background: var(--red); animation: vnote-pulse 1.4s infinite; }
+.vnote-mic:disabled { opacity: .6; }
+@keyframes vnote-pulse { 0% { box-shadow: 0 0 0 0 rgba(220, 38, 38, .35); } 70% { box-shadow: 0 0 0 14px rgba(220, 38, 38, 0); } 100% { box-shadow: 0 0 0 0 rgba(220, 38, 38, 0); } }
+@media (prefers-reduced-motion: reduce) { .vnote-mic.rec { animation: none; } }
+.vnote-state { margin: 0; font-size: 13.5px; font-weight: 600; color: var(--muted-mk); text-align: center; }
+.vnote-err { margin: 0; font-size: 13px; font-weight: 600; color: var(--red); text-align: center; }
+.vnote .field { width: 100%; }

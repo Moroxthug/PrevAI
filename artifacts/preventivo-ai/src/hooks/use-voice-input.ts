@@ -43,16 +43,16 @@ export function useVoiceInput({ onTranscribed, onError }: UseVoiceInputOptions) 
       const data = await res.json().catch(() => ({}));
 
       if (!res.ok) {
-        onError?.(data.error || "Transcription failed. Please try again.");
+        onError?.(data.error || "Trascrizione non riuscita. Riprova.");
         return;
       }
       if (data.text && typeof data.text === "string" && data.text.trim()) {
         onTranscribed(data.text.trim());
       } else {
-        onError?.("Didn't catch that — try speaking more clearly.");
+        onError?.("Non ho capito: riprova parlando più vicino al telefono.");
       }
     } catch {
-      onError?.("Connection error. Please try again.");
+      onError?.("Connessione assente o instabile. Riprova.");
     } finally {
       setIsTranscribing(false);
     }
@@ -61,7 +61,7 @@ export function useVoiceInput({ onTranscribed, onError }: UseVoiceInputOptions) 
   const startRecording = useCallback(async () => {
     if (isRecording) return;
     if (!navigator.mediaDevices?.getUserMedia) {
-      onError?.("Your browser doesn't support audio recording.");
+      onError?.("Questo browser non permette di registrare l'audio.");
       return;
     }
     try {
@@ -88,7 +88,7 @@ export function useVoiceInput({ onTranscribed, onError }: UseVoiceInputOptions) 
       recorder.start();
       setIsRecording(true);
     } catch {
-      onError?.("Couldn't access the microphone. Check your browser permissions.");
+      onError?.("Microfono non disponibile: controlla i permessi del browser.");
       cleanupStream();
     }
   }, [isRecording, cleanupStream, transcribe, onError]);

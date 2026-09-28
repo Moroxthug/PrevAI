@@ -226,6 +226,8 @@ export type MilestoneEdit = {
 export type BudgetEdit = { category: CostCategory; label?: string; plannedCents: number };
 export type SetupEdits = { name?: string; plannedStart?: string | null; milestones?: MilestoneEdit[]; budget?: BudgetEdit[] };
 
+export type JobNoteDto = { id: string; body: string; source: "typed" | "voice"; authorName: string; createdAt: string };
+
 async function req<T>(url: string, init?: RequestInit): Promise<T> {
   const res = await fetch(url, { credentials: "include", headers: { "Content-Type": "application/json", ...(init?.headers ?? {}) }, ...init });
   const body = (await res.json().catch(() => ({}))) as T & { error?: string; message?: string; requiredPlan?: string };
@@ -317,6 +319,11 @@ export const jobsApi = {
   deletePhoto: (id: string, photoId: string) => req<{ success: true }>(`/api/jobs/${id}/photos/${photoId}`, { method: "DELETE" }),
   sharePhotos: (id: string, photoIds: string[]) => req<{ success: true; channel: "email" | "whatsapp"; count: number }>(`/api/jobs/${id}/photos/share`, { method: "POST", body: json({ photoIds }) }),
   photoFileUrl: (id: string, photoId: string) => `/api/jobs/${id}/photos/${photoId}/file`,
+
+  // Notes (APP-4a): `available: false` until migration 0011 runs.
+  listNotes: (id: string) => req<{ available: boolean; notes: JobNoteDto[] }>(`/api/jobs/${id}/notes`),
+  addNote: (id: string, body: { body: string; source?: JobNoteDto["source"] }) => req<{ note: JobNoteDto }>(`/api/jobs/${id}/notes`, { method: "POST", body: json(body) }),
+  deleteNote: (id: string, noteId: string) => req<{ success: true }>(`/api/jobs/${id}/notes/${noteId}`, { method: "DELETE" }),
 };
 
 export { req as apiRequest, json as apiJson };

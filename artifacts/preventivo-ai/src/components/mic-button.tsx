@@ -7,13 +7,15 @@ import { useLanguage } from "@/i18n/LanguageContext";
 interface MicButtonProps {
   onTranscribed: (text: string) => void;
   disabled?: boolean;
+  /** What the dictation is for (defaults to the quote description). */
+  label?: string;
 }
 
 /**
  * Voice-dictation trigger rendered as the composer's `.comp-mic` control
  * (dashboard home + new-quote AI tab). Recording state flips it to `.rec`.
  */
-export function MicButton({ onTranscribed, disabled }: MicButtonProps) {
+export function MicButton({ onTranscribed, disabled, label }: MicButtonProps) {
   const { toast } = useToast();
   const { t } = useLanguage();
   const { isRecording, isTranscribing, startRecording, stopRecording } = useVoiceInput({
@@ -26,8 +28,8 @@ export function MicButton({ onTranscribed, disabled }: MicButtonProps) {
       type="button"
       onClick={() => (isRecording ? stopRecording() : startRecording())}
       disabled={disabled || isTranscribing}
-      title={isRecording ? t("mic.stop") : t("mic.dictate")}
-      aria-label={isRecording ? t("mic.stop") : t("mic.dictate")}
+      title={isRecording ? t("mic.stop") : (label ?? t("mic.dictate"))}
+      aria-label={isRecording ? t("mic.stop") : (label ?? t("mic.dictate"))}
       className={cn("comp-mic", isRecording && "rec")}
     >
       {isTranscribing ? (

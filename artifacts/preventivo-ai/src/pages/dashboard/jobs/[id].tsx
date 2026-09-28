@@ -25,6 +25,7 @@ import { CostsTab } from "@/components/jobs/costs-tab";
 import { TeamTab } from "@/components/jobs/team-tab";
 import { InvoicesTab } from "@/components/jobs/invoices-tab";
 import { OverviewCharts, useJobAnalytics } from "@/components/jobs/overview-charts";
+import { NotesCard } from "@/components/jobs/notes-card";
 import { AssistantPanel } from "@/components/assistant/assistant-panel";
 import { PhotosTab } from "@/components/jobs/photos-tab";
 import { JobDockActions } from "@/components/jobs/dock-actions";
@@ -251,6 +252,7 @@ function OverviewTab({ data, locale, onGoTo }: { data: JobDetailDto; locale: typ
               <Gantt rows={milestones.map((m) => ({ id: m.id, title: m.title, start: m.plannedStart, end: m.plannedEnd, status: m.status, paymentAmountCents: m.paymentAmountCents }))} onRowClick={() => onGoTo("schedule")} />
             </div>
           </section>
+          <NotesCard jobId={job.id} />
 
         </div>
 

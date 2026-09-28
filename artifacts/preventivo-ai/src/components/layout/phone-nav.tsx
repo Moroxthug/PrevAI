@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useLocation, useSearch } from "wouter";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Bell, Briefcase, Bug, Building2, Camera, Check, ChevronRight, CreditCard, FilePlus2, FileText, HardHat, Home, LayoutGrid, Loader2, LogOut, Plus, Receipt, Target, Users, Wallet, type LucideIcon } from "lucide-react";
+import { Bell, Briefcase, Bug, Building2, Camera, Check, ChevronRight, CreditCard, FilePlus2, FileText, HardHat, Home, ImagePlus, LayoutGrid, Loader2, LogOut, Mic, Plus, Receipt, Target, Users, Wallet, type LucideIcon } from "lucide-react";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { BottomTabBar, tabOwns, type TabItem } from "@/components/mobile/bottom-tab-bar";
 import { BottomSheet } from "@/components/mobile/bottom-sheet";
@@ -12,6 +12,7 @@ import { jobsApi, type JobSummaryDto } from "@/lib/jobs-api";
 import { teamMembersApi } from "@/lib/team-members-api";
 import { cn } from "@/lib/utils";
 import { FeedbackSheet } from "@/components/feedback-sheet";
+import { VoiceNoteSheet } from "@/components/jobs/voice-note-sheet";
 
 /**
  * APP-1 (portato da QuoteAI, Phase 101) — how you move around the dashboard on a phone or a tablet
@@ -246,12 +247,13 @@ function MoreSheet({ open, onOpenChange, tabs, navItems, name, email, avatar, ca
   );
 }
 
-type Intent = "receipt";
+type Intent = "receipt" | "photo" | "note";
 
 /**
  * The + in the phone top bar. Quote and lead open their screens; a receipt
- * photo first asks which job, then opens the camera (in the same tap, so the
- * browser allows it).
+ * photo, a job photo (APP-4a) and a voice note (APP-4a) first ask which job,
+ * then open the camera (in the same tap, so the browser allows it) or the
+ * recorder.
  */
 export function PhoneNewButton({ hasJobs, hasInvoices }: { hasJobs: boolean; hasInvoices?: boolean }) {
   const { t } = useLanguage();
@@ -261,10 +263,12 @@ export function PhoneNewButton({ hasJobs, hasInvoices }: { hasJobs: boolean; has
   const [open, setOpen] = useState(false);
   const [intent, setIntent] = useState<Intent | null>(null);
   const [scanningJob, setScanningJob] = useState<string | null>(null);
+  const [noteJob, setNoteJob] = useState<{ id: string; name: string } | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
+  const photoRef = useRef<HTMLInputElement>(null);
   const jobForFile = useRef<string | null>(null);
 
-  useEffect(() => { setOpen(false); setIntent(null); }, [location]);
+  useEffect(() => { setOpen(false); setIntent(null); setNoteJob(null); }, [location]);
 
   const { data: jobs, isLoading } = useQuery({ queryKey: ["jobs"], queryFn: jobsApi.list, enabled: intent !== null, staleTime: 30_000 });
   const openJobs = (jobs?.items ?? [])
@@ -284,6 +288,20 @@ export function PhoneNewButton({ hasJobs, hasInvoices }: { hasJobs: boolean; has
     onError: (e: Error & { code?: string }) => toast({ title: e.code === "PLAN_REQUIRED" ? t("jobs.planRequired") : t("jobs.error"), description: e.message, variant: "destructive" }),
     onSettled: () => setScanningJob(null),
   });
+  const photo = useMutation({
+    mutationFn: ({ file, jobId }: { file: File; jobId: string }) => jobsApi.uploadPhoto(jobId, file),
+    onMutate: ({ jobId }) => setScanningJob(jobId),
+    onSuccess: (_r, { jobId }) => {
+      queryClient.invalidateQueries({ queryKey: ["job-photos", jobId] });
+      queryClient.invalidateQueries({ queryKey: ["job", jobId] });
+      toast({ title: t("jobs.m.photoSaved") });
+      setIntent(null);
+      navigate(`/dashboard/jobs/${jobId}?tab=photos`);
+    },
+    onError: (e: Error) => toast({ title: t("jobs.photos.uploadError"), description: e.message, variant: "destructive" }),
+    onSettled: () => setScanningJob(null),
+  });
+  const pending = scan.isPending || photo.isPending;
 
   const actions = [
     { key: "quote", label: t("dashboard.nav.newQuote"), icon: FilePlus2, run: () => navigate("/dashboard/new") },
@@ -293,12 +311,16 @@ export function PhoneNewButton({ hasJobs, hasInvoices }: { hasJobs: boolean; has
     // APP-1f (QuoteAI Phase 107): and the invoices list's New invoice.
     hasInvoices && { key: "invoice", label: t("invoices.new"), icon: Receipt, run: () => navigate("/dashboard/invoices?new=1") },
     hasJobs && { key: "receipt", label: t("mobile.new.receipt"), icon: Camera, run: () => { setOpen(false); setIntent("receipt"); } },
+    // APP-4a (row 30): the two other things you do standing on site.
+    hasJobs && { key: "photo", label: t("mobile.new.jobPhoto"), icon: ImagePlus, run: () => { setOpen(false); setIntent("photo"); } },
+    hasJobs && { key: "note", label: t("mobile.new.voiceNote"), icon: Mic, run: () => { setOpen(false); setIntent("note"); } },
   ].filter((a): a is { key: string; label: string; icon: LucideIcon; run: () => void } => !!a);
   if (actions.length === 0) return null;
 
-  const pickJob = (jobId: string) => {
-    jobForFile.current = jobId;
-    fileRef.current?.click();
+  const pickJob = (job: JobSummaryDto) => {
+    if (intent === "note") { setIntent(null); setNoteJob({ id: job.id, name: job.name }); return; }
+    jobForFile.current = job.id;
+    (intent === "photo" ? photoRef : fileRef).current?.click();
   };
 
   return (
@@ -325,9 +347,9 @@ export function PhoneNewButton({ hasJobs, hasInvoices }: { hasJobs: boolean; has
 
       <BottomSheet
         open={intent !== null}
-        onOpenChange={(v) => { if (!v && !scan.isPending) setIntent(null); }}
+        onOpenChange={(v) => { if (!v && !pending) setIntent(null); }}
         title={t("mobile.new.whichJob")}
-        description={t("mobile.new.whichJobReceipt")}
+        description={intent === "photo" ? t("mobile.new.whichJobPhoto") : intent === "note" ? t("mobile.new.whichJobNote") : t("mobile.new.whichJobReceipt")}
         flush
       >
         {isLoading ? (
@@ -337,12 +359,12 @@ export function PhoneNewButton({ hasJobs, hasInvoices }: { hasJobs: boolean; has
         ) : (
           <div className="lrows">
             {openJobs.map((j) => (
-              <button key={j.id} type="button" className="lrow" disabled={scan.isPending} onClick={() => pickJob(j.id)}>
+              <button key={j.id} type="button" className="lrow" disabled={pending} onClick={() => pickJob(j)}>
                 <span className="lrow-main">
                   <span className="lrow-title">{j.name}</span>
                   <span className="lrow-meta">{[j.clientName, j.address].filter(Boolean).join(" · ") || "—"}</span>
                 </span>
-                {scanningJob === j.id ? <Loader2 className="lrow-chev animate-spin" aria-label={t("mobile.new.reading")} /> : <ChevronRight className="lrow-chev" aria-hidden="true" />}
+                {scanningJob === j.id ? <Loader2 className="lrow-chev animate-spin" aria-label={intent === "photo" ? t("mobile.new.uploading") : t("mobile.new.reading")} /> : <ChevronRight className="lrow-chev" aria-hidden="true" />}
               </button>
             ))}
           </div>
@@ -362,6 +384,21 @@ export function PhoneNewButton({ hasJobs, hasInvoices }: { hasJobs: boolean; has
           if (file && jobForFile.current) scan.mutate({ file, jobId: jobForFile.current });
         }}
       />
+      <input
+        ref={photoRef}
+        type="file"
+        accept="image/jpeg,image/png,image/webp,image/heic"
+        capture="environment"
+        className="hidden"
+        data-testid="new-job-photo-input"
+        onChange={(e) => {
+          const file = e.target.files?.[0];
+          e.target.value = "";
+          if (file && jobForFile.current) photo.mutate({ file, jobId: jobForFile.current });
+        }}
+      />
+
+      <VoiceNoteSheet job={noteJob} onClose={() => setNoteJob(null)} onSaved={(jobId) => { setNoteJob(null); navigate(`/dashboard/jobs/${jobId}`); }} />
 
     </>
   );

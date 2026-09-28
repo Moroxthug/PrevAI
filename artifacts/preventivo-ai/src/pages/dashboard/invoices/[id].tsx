@@ -3,7 +3,7 @@ import { Link, useParams, useLocation } from "wouter";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { it } from "date-fns/locale";
-import { ArrowLeft, Receipt, Send, Download, Banknote, Ban, FileMinus, BellRing, Pencil, Check, X, Loader2, Copy, ExternalLink, Trash2, Briefcase, Clock, AlertTriangle, MailQuestion, Archive } from "lucide-react";
+import { ArrowLeft, Receipt, Send, Download, Banknote, Ban, FileMinus, BellRing, Pencil, Check, X, Loader2, Copy, ExternalLink, Trash2, Briefcase, Clock, AlertTriangle, MailQuestion, Archive, Share2 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ActionSheet, type SheetAction } from "@/components/mobile/action-sheet";
 import { StickyActionBar } from "@/components/mobile/sticky-action-bar";
@@ -18,6 +18,7 @@ import { invoicesApi, isOpenInvoice, type InvoiceDetailDto, type InvoiceDto, typ
 import { InvoiceStatusBadge, InvoiceTypeBadge } from "@/components/jobs/badges";
 import { LineEditor, RecordPaymentDialog, CreditNoteDialog, rowsFromLines, toLineInputs } from "@/components/invoices/invoice-dialogs";
 import { SdiPanel } from "@/components/invoices/sdi-panel";
+import { usePdfShare, fetchPdfFile } from "@/components/share-pdf";
 
 export default function InvoiceDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -44,6 +45,8 @@ export default function InvoiceDetailPage() {
   const remove = useMutation({ mutationFn: () => invoicesApi.remove(id!), onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["invoices"] }); toast({ title: t("invoices.draftDeleted") }); navigate("/dashboard/invoices"); }, onError });
   const archive = useMutation({ mutationFn: () => invoicesApi.archive(id!), onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["invoices"] }); toast({ title: t("archive.archivedToast") }); navigate("/dashboard/invoices"); }, onError });
   const number = data?.invoice.number;
+  // APP-4a: the invoice PDF through the phone's share sheet.
+  const pdfShare = usePdfShare();
   useMobileHeader(useMemo(() => (number ? { title: number } : null), [number]));
 
   if (isLoading) return <div className="space-y-4"><Skeleton className="h-10 w-2/3" /><Skeleton className="h-24 w-full rounded-[var(--radius-mk)]" /><Skeleton className="h-96 w-full rounded-[var(--radius-mk)]" /></div>;
@@ -62,6 +65,10 @@ export default function InvoiceDetailPage() {
     : open ? { label: t("invoices.recordPayment"), icon: Banknote, onClick: () => setPayOpen(true) }
     : null;
   const moreActions: Array<SheetAction | false> = [
+    pdfShare.canShare && { label: t("share.pdf"), icon: Share2, disabled: pdfShare.busy, hint: "WhatsApp", onSelect: () => void pdfShare.share(async () => {
+      try { return await fetchPdfFile(invoicesApi.pdfUrl(inv.id, false), `${t(`invoices.type.${inv.type}`)} ${inv.number.replace(/\//g, "_")}.pdf`); }
+      catch (e) { onError(e as Error); return null; }
+    }) },
     { label: t("invoices.m.downloadPdf"), icon: Download, onSelect: () => { window.location.href = invoicesApi.pdfUrl(inv.id, true); } },
     isDraft && !editing && { label: t("invoices.edit"), icon: Pencil, onSelect: () => setEditing(true) },
     open && !isCredit && { label: t("invoices.resend"), icon: Send, onSelect: () => setSendOpen(true) },
@@ -203,6 +210,7 @@ export default function InvoiceDetailPage() {
       <CreditNoteDialog invoice={inv} open={creditOpen} onOpenChange={setCreditOpen} />
       <SendDialog invoice={inv} open={sendOpen} onOpenChange={setSendOpen} onDone={refresh} />
       <VoidDialog invoice={inv} open={voidOpen} onOpenChange={setVoidOpen} onDone={refresh} />
+      {pdfShare.sheet}
     </div>
   );
 }

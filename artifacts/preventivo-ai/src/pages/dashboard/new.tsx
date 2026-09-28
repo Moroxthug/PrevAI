@@ -2,7 +2,7 @@ import { useState, useRef, useCallback, useEffect } from "react";
 import { trackAppEvent } from "@/lib/app-beta";
 import { useLocation } from "wouter";
 import { useCreateQuote, useGetBusinessProfile, useGetSubscription } from "@workspace/api-client-react";
-import { Sparkles, ImagePlus, Loader2, X, User, Lock, FileText, FileSpreadsheet, Plus } from "lucide-react";
+import { Sparkles, ImagePlus, Loader2, X, User, Lock, FileText, FileSpreadsheet, Plus, WifiOff, History } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { useClientMemory } from "@/hooks/use-client-memory";
@@ -14,6 +14,8 @@ import { useLanguage } from "@/i18n/LanguageContext";
 import { ScrollTabs } from "@/components/mobile/scroll-tabs";
 import { StickyActionBar } from "@/components/mobile/sticky-action-bar";
 import { QuoteOptions, parseTarget } from "@/components/quotes/quote-options";
+import { useAuth } from "@/hooks/use-auth";
+import { useOnline, useQuoteDraft } from "@/hooks/use-quote-draft";
 
 function fmt(template: string, vars: Record<string, string | number>): string {
   return template.replace(/\{(\w+)\}/g, (_, k) => String(vars[k] ?? ""));
@@ -191,6 +193,37 @@ export default function NewQuote() {
   const [clientForm, setClientForm] = useState<ClientForm>(emptyClient);
   const [rememberClient, setRememberClient] = useState(false);
 
+  // APP-4a: what you type is kept on this phone until the quote is written
+  // (a dropped connection on site loses nothing). Opened from the home
+  // composer or a client page, the page starts from that instead.
+  const { userId } = useAuth();
+  const online = useOnline();
+  const [cameWithContent] = useState(() => {
+    try { return !!sessionStorage.getItem("prevai:homepage_prompt") || !!sessionStorage.getItem("prevai:selected_client"); } catch { return false; }
+  });
+  const draft = useQuoteDraft({
+    userId,
+    skipRestore: cameWithContent,
+    value: { input, templateId, targetTotalEur, clientMode, selectedClientId, clientForm },
+    isEmpty: (d) => !d.input.trim() && !d.clientForm.nome.trim(),
+    onRestore: (d) => {
+      setInput(d.input ?? "");
+      if (d.templateId) setTemplateId(d.templateId);
+      setTargetTotalEur(d.targetTotalEur ?? "");
+      setClientMode(d.clientMode ?? "none");
+      setSelectedClientId(d.selectedClientId ?? null);
+      setClientForm({ ...emptyClient, ...d.clientForm });
+    },
+  });
+  const discardDraft = () => {
+    draft.clear();
+    setInput("");
+    setTargetTotalEur("");
+    setClientMode("none");
+    setSelectedClientId(null);
+    setClientForm(emptyClient);
+  };
+
   useEffect(() => {
     const savedPrompt = sessionStorage.getItem("prevai:homepage_prompt");
     if (savedPrompt) {
@@ -278,6 +311,10 @@ export default function NewQuote() {
 
   const handleAiSubmit = () => {
     if (!input.trim() || isAiSubmitting) return;
+    if (!online) {
+      toast({ title: t("dashboard.new.offline.title"), description: t("dashboard.new.offline.desc") });
+      return;
+    }
     const clientData = getClientData();
     if (rememberClient && clientData) upsertClient(clientData);
 
@@ -306,13 +343,16 @@ export default function NewQuote() {
         },
       },
       {
-        onSuccess: (quote) => { trackAppEvent("quote_created", { entityId: quote.id }); setLocation(`/dashboard/quotes/${quote.id}`); },
+        onSuccess: (quote) => { draft.clear(); trackAppEvent("quote_created", { entityId: quote.id }); setLocation(`/dashboard/quotes/${quote.id}`); },
         onError: (err: unknown) => {
           const e = err as { status?: number; data?: { error?: string; code?: string } };
           if (e.status === 429) {
             toast({ title: t("dashboard.new.toast.quotaReachedTitle"), description: t("dashboard.new.toast.quotaReachedDesc"), variant: "destructive" });
           } else if ((e.status === 422 || e.status === 400) && e.data?.error) {
             toast({ title: t("dashboard.new.toast.cannotGenerateTitle"), description: e.data.error, variant: "destructive" });
+          } else if (!e.status || !navigator.onLine) {
+            // No answer at all: the connection dropped. The draft is still on the phone.
+            toast({ title: t("dashboard.new.offline.lostTitle"), description: t("dashboard.new.offline.desc"), variant: "destructive" });
           } else {
             toast({ title: t("dashboard.new.toast.genericErrorTitle"), description: t("dashboard.new.toast.genericErrorDesc"), variant: "destructive" });
           }
@@ -380,6 +420,27 @@ export default function NewQuote() {
           then the options as one line. */}
       {activeTab === "ai" && (
         <div className="stack animate-in fade-in duration-200">
+          {!online && (
+            <div className="notice warn" role="status" data-testid="new-quote-offline">
+              <WifiOff aria-hidden="true" />
+              <span className="grow">
+                {t("dashboard.new.offline.title")}
+                <small>{t("dashboard.new.offline.desc")}</small>
+              </span>
+            </div>
+          )}
+          {draft.restoredAt !== null && online && (
+            <div className="notice info" role="status" data-testid="new-quote-draft">
+              <History aria-hidden="true" />
+              <span className="grow">
+                {fmt(t("dashboard.new.draft.restored"), { time: new Date(draft.restoredAt).toLocaleString("it-IT", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }) })}
+                <small>{t("dashboard.new.draft.noFiles")}</small>
+              </span>
+              <span className="actions">
+                <button type="button" className="btn btn-sm btn-outline-navy" onClick={discardDraft}>{t("dashboard.new.draft.discard")}</button>
+              </span>
+            </div>
+          )}
           <div className="card composer comp-box">
             <label htmlFor="new-quote-describe" className="sr-only">{t("dashboard.new.inputPlaceholder")}</label>
             <textarea
@@ -503,9 +564,9 @@ export default function NewQuote() {
           />
 
           <StickyActionBar label={t("dashboard.new.title")}>
-            <button type="button" className="btn btn-navy" onClick={handleAiSubmit} disabled={!canAiSubmit} data-primary-action>
-              {isAiSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
-              {isAiSubmitting ? t("quotes.m.writing") : t("quotes.m.writeQuote")}
+            <button type="button" className="btn btn-navy" onClick={handleAiSubmit} disabled={!canAiSubmit || !online} data-primary-action>
+              {isAiSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : !online ? <WifiOff className="h-4 w-4" /> : <Sparkles className="h-4 w-4" />}
+              {isAiSubmitting ? t("quotes.m.writing") : !online ? t("dashboard.new.offline.button") : t("quotes.m.writeQuote")}
             </button>
           </StickyActionBar>
         </div>

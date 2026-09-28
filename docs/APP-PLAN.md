@@ -75,6 +75,7 @@ Il design di riferimento è quello dell'app di QuoteAI (`design/stitch*`, `docs/
 ### APP-4a — Funzioni native possibili dal sito (riga 30)
 - Foto del cantiere dal + (fotocamera del telefono dal browser), nota vocale su un cantiere dal + (dettatura come nel composer), "Condividi" del PDF con la Web Share API, bozze del nuovo preventivo salvate sul telefono se cade la rete.
 - Push native e Face ID restano nella riga 19 (servono APP-3 e D16).
+- **Fatto il 27/9/2026:** + → Foto del cantiere e Nota vocale, scheda Note del cantiere (migrazione 0011), Condividi PDF su preventivo e fattura, bozza del nuovo preventivo nel browser con avviso "senza rete". Dettagli in RUNBOOKS §15.
 
 ### APP-7 e APP-8 (righe 31–32)
 - **APP-7** — Home per ruolo e "Personalizza la home" (QuoteAI 132, `design/role-homes`).
