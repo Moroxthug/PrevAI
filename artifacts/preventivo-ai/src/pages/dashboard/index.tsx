@@ -48,6 +48,8 @@ import { CustomizeHomeSheet } from "@/components/dashboard/customize-home";
 import { useHome } from "@/lib/home-api";
 import { HOME_DEFAULTS, type HomeLayout, type HomeSectionId } from "@workspace/config";
 import { ListRow } from "@/components/mobile/list-row";
+import { AssistantAskRow } from "@/components/assistant/assistant-launcher";
+import { hasFeature } from "@/lib/plans";
 
 /* ─── plan helpers ─────────────────────────────────────────────────────────── */
 
@@ -660,6 +662,9 @@ export default function DashboardHome() {
   const layout = home?.layout ?? FALLBACK_LAYOUT;
   const shown = new Set<HomeSectionId>(layout.order);
   const isOwner = !home || home.role === "owner";
+  // APP-8d: one line to ask or dictate, on the plans that have the assistant (same test as the ✦ in the top bar).
+  const { data: profile } = useGetBusinessProfile();
+  const hasAssistant = profile ? hasFeature(profile as never, "assistant") : false;
 
   const formatCurrency = (amount: number) =>
     new Intl.NumberFormat("it-IT", { style: "currency", currency: "EUR", maximumFractionDigits: 0 }).format(amount);
@@ -715,6 +720,8 @@ export default function DashboardHome() {
       {home && <CustomizeHomeSheet open={customizeOpen} onOpenChange={setCustomizeOpen} home={home} />}
 
       {shown.has("composer") && <DashboardComposer />}
+
+      {hasAssistant && <AssistantAskRow />}
 
       {trialStatus?.isTrialActive && !subscription?.isActive && (
         <div className="today-gap">

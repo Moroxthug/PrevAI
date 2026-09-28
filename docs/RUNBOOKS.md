@@ -932,3 +932,25 @@ Nessuna migrazione nuova. **La nota sul cantiere ha bisogno della 0011** (§15.2
 3. Da un preventivo con l'email del cliente: "Mandalo al cliente" → scheda **da confermare** con indirizzo, sblocco e promemoria → Ignora.
 4. "Scrivi a nessuno@example.org che…" → rifiutato (indirizzo non fra i contatti), nessuna scheda.
 5. "Fammi un preventivo per imbiancare una stanza di 20 mq per Prova" → scheda **Fatto** con Annulla → Annulla → la bozza sparisce da Preventivi.
+
+## 20. Assistente: la schermata calma e "Chiedi o detta" (APP-8d, riga 35)
+
+### 20.1 Cosa c'è
+
+- **Conversazione:** le risposte sono testo semplice, la domanda un fumetto chiaro, le schede a tutta larghezza. Righe di stato sotto la conversazione: avanzamento ("Guardo il cantiere…"), **errore con Riprova** (rimanda la stessa domanda), **senza rete** (la domanda resta a schermo e parte da sola quando torna la rete; Conferma è spento).
+- **Scheda in attesa:** Conferma / **Modifica** / Ignora. Modifica mette la scheda da parte (Ignorata) e la domanda successiva parte con la proposta di prima, così il modello ne fa una nuova. Con **una sola** scheda in attesa, "sì", "ok", "vai", "conferma", "mandala"… scritti nel campo sono il Conferma di quella scheda, fatto dall'app: non arrivano al modello. Con nessuna o più schede, vanno al modello come testo.
+- **Barra:** campo, microfono, **Stop** al posto di Invia mentre risponde (anche Esc sulla pagina Assistente; nel pannello Esc chiude, e chiudere ferma comunque la risposta). Quello che il server ha già salvato resta.
+- **Oggi:** la riga "Chiedi o detta…" sotto il riquadro del preventivo, sui piani con `assistant` (come ✦). Tocco sulla riga → pannello; tocco sul microfono → pannello già in ascolto (chiede il permesso del microfono la prima volta).
+- **Telefono:** se ci sono conversazioni per cantiere di prima, la pagina Assistente le mostra come pillole sopra la chat.
+
+### 20.2 Migrazioni
+
+Nessuna.
+
+### 20.3 Controlli dopo il deploy
+
+1. Oggi su un account Elite → "Chiedi o detta…" c'è sotto il riquadro del preventivo; su Starter/Pro no.
+2. Tocco sulla riga → pannello; "Com'è la mia giornata?" → risposta come testo, senza fumetto.
+3. Una domanda lunga → Stop a metà → il pulsante torna Invia, nessun errore.
+4. Una scheda da confermare (per esempio "Mandalo al cliente" da un preventivo) → Modifica → il campo chiede cosa cambiare → Esc la lascia com'era → Ignora.
+5. Telefono in modalità aereo con il pannello aperto → domanda → "Senza rete: lo chiedo appena torni in linea…" → rete di nuovo → la risposta arriva.

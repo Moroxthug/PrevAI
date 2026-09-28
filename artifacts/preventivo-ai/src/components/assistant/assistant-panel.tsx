@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Link, useLocation } from "wouter";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Sparkles, Send, Trash2, Check, X, ExternalLink, Receipt, Wallet, Flag, ListTodo, Mail, Banknote, Loader2, AlertTriangle, Mic, Square, Undo2, FileText, Send as SendIcon, FileSignature, MessageSquare, UserPen, StickyNote } from "lucide-react";
+import { Sparkles, Send, Trash2, Check, X, ExternalLink, Receipt, Wallet, Flag, ListTodo, Mail, Banknote, Loader2, AlertTriangle, Mic, Square, Undo2, FileText, Send as SendIcon, FileSignature, MessageSquare, UserPen, StickyNote, Pencil, RotateCcw, WifiOff } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useVoiceInput } from "@/hooks/use-voice-input";
+import { useOnline } from "@/hooks/use-quote-draft";
 import { cn } from "@/lib/utils";
 import { useLanguage } from "@/i18n/LanguageContext";
 import { assistantApi, type AssistantMessageDto, type ConversationDto, type ProposalDto, type ProposalKind } from "@/lib/assistant-api";
@@ -26,6 +27,9 @@ function proposalLink(p: ProposalDto): string | null {
   return p.projectId ? `/dashboard/jobs/${p.projectId}${tab ? `?tab=${tab}` : ""}` : null;
 }
 
+/** APP-8d — a clear yes typed while one card waits ("o scrivi sì"): confirms that card, like Conferma. */
+const YES = /^(s[iì]|ok|okay|vai|conferma|confermo|procedi|mandala|mandalo)[.!]*$/i;
+
 /** The query that holds a thread: the main one (null) or an older per-job one. */
 const threadKey = (threadId: string | null) => ["assistant", threadId ?? "main"];
 
@@ -45,7 +49,7 @@ export function AssistantPanel({ className }: { className?: string }) {
 
   return (
     <div className={cn("chat-grid", className)}>
-      <div className="card th-list">
+      <div className={cn("card th-list", older.length > 0 && "has-older")} role="group" aria-label={t("assistant.threadsTitle")}>
         <div className="card-head"><div><h2>{t("assistant.threadsTitle")}</h2></div></div>
         <button type="button" className={cn("th-row", threadId === null && "on")} onClick={() => setThreadId(null)} aria-pressed={threadId === null}>
           <b>{t("assistant.threadCompany")}</b>
@@ -74,7 +78,7 @@ export function AssistantPanel({ className }: { className?: string }) {
  * Writes happen through cards: confirmed by the person, or — APP-8b, when the
  * owner chose "Lo fa" for that action — carried out at once with Annulla.
  */
-export function AssistantChat({ threadId = null, compact, className }: { threadId?: string | null; compact?: boolean; className?: string }) {
+export function AssistantChat({ threadId = null, compact, startDictation, className }: { threadId?: string | null; compact?: boolean; startDictation?: boolean; className?: string }) {
   const { t } = useLanguage();
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -85,6 +89,11 @@ export function AssistantChat({ threadId = null, compact, className }: { threadI
   const inputRef = useRef<HTMLInputElement>(null);
   const abortRef = useRef<AbortController | null>(null);
   const [, navigate] = useLocation();
+  // APP-8d — the states around a turn: the question that failed (Riprova), the one kept while offline, the card being changed.
+  const online = useOnline();
+  const [failed, setFailed] = useState<{ content: string; message: string } | null>(null);
+  const [queued, setQueued] = useState<string | null>(null);
+  const [editing, setEditing] = useState<ProposalDto | null>(null);
 
   const key = threadKey(threadId);
   const { data, isLoading, error } = useQuery({ queryKey: key, queryFn: () => (threadId ? assistantApi.byId(threadId) : assistantApi.conversation(null)), retry: false });
@@ -103,6 +112,9 @@ export function AssistantChat({ threadId = null, compact, className }: { threadI
   const ask = async (content: string) => {
     if (!data || busy) return;
     setDraft("");
+    setFailed(null);
+    // Offline: kept and asked when the network is back. Whatever it leads to, a send still waits for Conferma.
+    if (!online) { setQueued(content); return; }
     setLive({ user: content, text: "", progress: null });
     const ctrl = new AbortController();
     abortRef.current = ctrl;
@@ -124,13 +136,13 @@ export function AssistantChat({ threadId = null, compact, className }: { threadI
         }
       }, ctrl.signal);
     } catch (e) {
-      if (!ctrl.signal.aborted) {
-        toast({ title: t("assistant.error"), description: (e as Error).message, variant: "destructive" });
-        queryClient.invalidateQueries({ queryKey: key });
-      }
+      // A stop is not an error; anything else leaves a Riprova under the conversation.
+      if (!ctrl.signal.aborted) setFailed({ content, message: (e as Error).message });
     } finally {
       if (abortRef.current === ctrl) abortRef.current = null;
       setLive(null);
+      // After a stop or an error, what the server kept (the question, anything already written) is the truth.
+      queryClient.invalidateQueries({ queryKey: key });
       queryClient.invalidateQueries({ queryKey: ["assistant-threads"] });
       if (nav.to && !ctrl.signal.aborted) navigate(nav.to);
     }
@@ -149,7 +161,7 @@ export function AssistantChat({ threadId = null, compact, className }: { threadI
     onSuccess: ({ proposal }) => { patchProposal(proposal); invalidateData(); toast({ title: t("assistant.undoneToast"), description: proposal.summary }); },
     onError: (e: Error) => { toast({ title: t("assistant.undoFailed"), description: e.message, variant: "destructive" }); queryClient.invalidateQueries({ queryKey: key }); },
   });
-  const card = (p: ProposalDto) => <ProposalCard key={p.id} proposal={p} onConfirm={() => confirm.mutate(p.id)} onDismiss={() => dismiss.mutate(p.id)} onUndo={() => undo.mutate(p.id)} busy={(confirm.isPending && confirm.variables === p.id) || (undo.isPending && undo.variables === p.id)} />;
+  const card = (p: ProposalDto) => <ProposalCard key={p.id} proposal={p} onConfirm={() => confirm.mutate(p.id)} onDismiss={() => dismiss.mutate(p.id)} onUndo={() => undo.mutate(p.id)} onEdit={() => startEdit(p)} offline={!online} editing={editing?.id === p.id} sayYes={pending.length === 1 && pending[0]!.id === p.id} busy={(confirm.isPending && confirm.variables === p.id) || (undo.isPending && undo.variables === p.id)} />;
   const clear = useMutation({
     mutationFn: () => assistantApi.clear(data!.conversation.id),
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: key }); queryClient.invalidateQueries({ queryKey: ["assistant-threads"] }); },
@@ -160,7 +172,8 @@ export function AssistantChat({ threadId = null, compact, className }: { threadI
     onError: (message) => toast({ title: t("assistant.voiceError"), description: message, variant: "destructive" }),
   });
 
-  useEffect(() => { listRef.current?.scrollTo({ top: listRef.current.scrollHeight, behavior: "smooth" }); }, [data?.messages.length, data?.proposals.length, live?.user, live?.text, live?.progress]);
+  // Instant while an answer is being written (a smooth scroll per word falls behind), smooth otherwise; also for the state lines of APP-8d.
+  useEffect(() => { listRef.current?.scrollTo({ top: listRef.current.scrollHeight, behavior: busy ? "auto" : "smooth" }); }, [busy, data?.messages.length, data?.proposals.length, live?.user, live?.text, live?.progress, failed, queued]);
 
   const visible = useMemo(() => (data?.messages ?? []).filter((m) => m.role === "user" || (m.role === "assistant" && m.content.trim())), [data]);
   const proposalsByMessage = useMemo(() => {
@@ -185,7 +198,35 @@ export function AssistantChat({ threadId = null, compact, className }: { threadI
     return all.slice(last + 1).flatMap((m) => proposalsByMessage.get(m.id) ?? []);
   }, [data, visible, proposalsByMessage]);
 
-  const submit = () => { const c = draft.trim(); if (c) void ask(c); };
+  const pending = (data?.proposals ?? []).filter((p) => p.status === "pending");
+  const submit = () => {
+    const c = draft.trim();
+    if (!c || busy) return;
+    // "sì" with exactly one card waiting is that card's Conferma; with none or several it goes to the assistant like any text.
+    if (!editing && online && pending.length === 1 && YES.test(c)) { setDraft(""); confirm.mutate(pending[0]!.id); return; }
+    if (editing) {
+      // Modifica: the old card is set aside and the assistant proposes a new one with the change.
+      dismiss.mutate(editing.id);
+      setEditing(null);
+      void ask(t("assistant.editPrefix").replace("{summary}", editing.summary) + c);
+      return;
+    }
+    void ask(c);
+  };
+  const stop = () => abortRef.current?.abort();
+  const startEdit = (p: ProposalDto) => { setEditing(p); inputRef.current?.focus(); };
+
+  // Back online: the question kept meanwhile goes now.
+  useEffect(() => {
+    if (online && queued && data && !busy) { const q = queued; setQueued(null); void ask(q); }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [online, queued, data, busy]);
+  // "Chiedi o detta" on Oggi: the microphone there opens the panel already listening.
+  const dictateOnce = useRef(Boolean(startDictation));
+  useEffect(() => {
+    if (dictateOnce.current && data && !gated) { dictateOnce.current = false; void voice.startRecording(); }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [data, gated]);
   const kind = context.projectId ? "job" : context.quoteId ? "quote" : context.invoiceId ? "invoice" : "company";
   const suggestionKeys = { job: ["s1", "s2", "s3", "s4"], quote: ["q1", "q2", "q3"], invoice: ["i1", "i2", "i3"], company: ["c1", "c2", "c3", "c4"] }[kind];
   const suggestions = suggestionKeys.map((k) => t(`assistant.suggest.${k}`));
@@ -204,7 +245,7 @@ export function AssistantChat({ threadId = null, compact, className }: { threadI
   }
 
   return (
-    <div className={cn("asst-chat", compact && "compact", className)}>
+    <div className={cn("asst-chat", compact && "compact", className)} onKeyDown={(e) => { if (e.key === "Escape" && busy) { e.preventDefault(); e.stopPropagation(); stop(); } }}>
       <div className="chat-head">
         <div className="chat-head-main">
           <span className="chat-av"><Sparkles className="h-4 w-4" /></span>
@@ -233,11 +274,34 @@ export function AssistantChat({ threadId = null, compact, className }: { threadI
         {live && !live.text && (live.progress
           ? <div className="chat-progress"><Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" />{live.progress}…</div>
           : <div className="bubble ai typing" aria-label={t("assistant.thinking")}><i /><i /><i /></div>)}
+        {queued && (
+          <>
+            <div className="bubble user">{queued}</div>
+            <div className="chat-state" role="status"><WifiOff className="h-3.5 w-3.5" aria-hidden="true" /><span>{t("assistant.offlineQueued")}</span></div>
+          </>
+        )}
+        {failed && !live && (
+          <div className="chat-state err" role="alert">
+            <AlertTriangle className="h-3.5 w-3.5" aria-hidden="true" />
+            <span>{failed.message || t("assistant.error")}</span>
+            <button type="button" className="prop-dismiss" onClick={() => void ask(failed.content)} disabled={!online}><RotateCcw className="h-3 w-3" aria-hidden="true" /> {t("assistant.retry")}</button>
+          </div>
+        )}
       </div>
 
-      {empty && (
+      {!online && !queued && <p className="chat-state bar" role="status"><WifiOff className="h-3.5 w-3.5" aria-hidden="true" /> {t("assistant.offline")}</p>}
+
+      {empty && !queued && (
         <div className="chat-sug">
           {suggestions.map((s) => <button key={s} type="button" className="pill" onClick={() => void ask(s)}>{s}</button>)}
+        </div>
+      )}
+
+      {editing && (
+        <div className="chat-editing">
+          <Pencil className="h-3.5 w-3.5" aria-hidden="true" />
+          <span>{t("assistant.editingLabel")} <b>{editing.summary}</b></span>
+          <button type="button" className="prop-dismiss" onClick={() => setEditing(null)} aria-label={t("assistant.editCancel")}><X className="h-3.5 w-3.5" aria-hidden="true" /></button>
         </div>
       )}
 
@@ -246,10 +310,14 @@ export function AssistantChat({ threadId = null, compact, className }: { threadI
           ref={inputRef}
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
-          onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); submit(); } }}
-          placeholder={voice.isRecording ? t("assistant.listening") : voice.isTranscribing ? t("assistant.transcribing") : t("assistant.placeholder")}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); submit(); }
+            else if (e.key === "Escape" && editing) { e.preventDefault(); e.stopPropagation(); setEditing(null); }
+          }}
+          placeholder={voice.isRecording ? t("assistant.listening") : voice.isTranscribing ? t("assistant.transcribing") : editing ? t("assistant.editPlaceholder") : t("assistant.placeholder")}
           aria-label={t("assistant.placeholder")}
-          disabled={!data || busy}
+          disabled={!data}
+          readOnly={busy}
           enterKeyHint="send"
         />
         <button
@@ -262,9 +330,16 @@ export function AssistantChat({ threadId = null, compact, className }: { threadI
         >
           {voice.isTranscribing ? <Loader2 className="h-4 w-4 animate-spin" /> : voice.isRecording ? <><Square className="h-4 w-4" /><span className="rec-dot" /></> : <Mic className="h-4 w-4" />}
         </button>
-        <button type="button" className="comp-send" onClick={submit} disabled={!draft.trim() || !data || busy} aria-label={t("assistant.send")}>
-          <Send className="chev" />
-        </button>
+        {busy ? (
+          // Stop: the server stops the model when the answer is abandoned; what it already kept stays.
+          <button type="button" className="comp-send" onClick={stop} aria-label={t("assistant.stop")} title={t("assistant.stop")}>
+            <Square className="h-3.5 w-3.5" fill="currentColor" aria-hidden="true" />
+          </button>
+        ) : (
+          <button type="button" className="comp-send" onClick={submit} disabled={!draft.trim() || !data} aria-label={t("assistant.send")}>
+            <Send className="chev" />
+          </button>
+        )}
       </div>
     </div>
   );
@@ -314,7 +389,7 @@ function useUndoSecondsLeft(undoUntil: string | null): number {
   return end ? Math.max(0, Math.ceil((end - now) / 1000)) : 0;
 }
 
-function ProposalCard({ proposal, onConfirm, onDismiss, onUndo, busy }: { proposal: ProposalDto; onConfirm: () => void; onDismiss: () => void; onUndo: () => void; busy: boolean }) {
+function ProposalCard({ proposal, onConfirm, onDismiss, onUndo, onEdit, offline, editing, sayYes, busy }: { proposal: ProposalDto; onConfirm: () => void; onDismiss: () => void; onUndo: () => void; onEdit: () => void; offline: boolean; editing: boolean; sayYes: boolean; busy: boolean }) {
   const { t } = useLanguage();
   const undoLeft = useUndoSecondsLeft(proposal.status === "confirmed" && proposal.auto ? proposal.undoUntil : null);
   const Icon = KIND_ICON[proposal.kind] ?? Receipt;
@@ -337,7 +412,7 @@ function ProposalCard({ proposal, onConfirm, onDismiss, onUndo, busy }: { propos
   const link = proposalLink(proposal);
   const status = proposal.status;
   return (
-    <div className={cn("prop-card", status)}>
+    <div className={cn("prop-card", status, editing && "editing")} role="group" aria-label={`${t(`assistant.kind.${proposal.kind}`)}: ${proposal.summary}`}>
       <div className="prop-head">
         <span className="prop-ic"><Icon className="h-3.5 w-3.5" /></span>
         <div className="min-w-0 flex-1">
@@ -351,10 +426,12 @@ function ProposalCard({ proposal, onConfirm, onDismiss, onUndo, busy }: { propos
       <div className="prop-actions">
         {status === "pending" && (
           <>
-            <button type="button" className="btn btn-navy btn-sm" onClick={onConfirm} disabled={busy}>
+            <button type="button" className="btn btn-navy btn-sm" onClick={onConfirm} disabled={busy || offline} title={offline ? t("assistant.offlineConfirm") : undefined}>
               {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Check className="h-3.5 w-3.5" />} {t("assistant.confirm")}
             </button>
+            <button type="button" className="prop-dismiss" onClick={onEdit} disabled={busy || editing} aria-pressed={editing}><Pencil className="h-3 w-3" /> {t("assistant.edit")}</button>
             <button type="button" className="prop-dismiss" onClick={onDismiss} disabled={busy}><X className="h-3.5 w-3.5" /> {t("assistant.dismiss")}</button>
+            {sayYes && !offline && <span className="prop-yes" aria-hidden="true">{t("assistant.sayYes")}</span>}
           </>
         )}
         {status === "confirmed" && (

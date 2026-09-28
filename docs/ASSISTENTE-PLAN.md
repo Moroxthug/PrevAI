@@ -15,7 +15,7 @@ Stesse regole di sempre: una riga per sessione, in ordine; un commit per riga su
 | 32 | **APP-8a** Risposte in streaming, un assistente da ogni schermata, sa dove sei, dettatura | 133 | ✅ 2026-09-27 |
 | 33 | **APP-8b** Permessi "fa / chiede / mai" + una conversazione per persona | 134 | ✅ |
 | 34 | **APP-8c** Strumenti nuovi: brief del giorno, cerca, apri la schermata, preventivi, messaggi ai clienti | 135 | ✅ 2026-09-27 |
-| 35 | **APP-8d** La schermata dell'assistente (calma) e la riga su Oggi | 136 | ⬜ |
+| 35 | **APP-8d** La schermata dell'assistente (calma) e la riga su Oggi | 136 | ✅ 2026-09-27 |
 | 36 | **APP-8e** Risponde a voce | 137 | ⬜ serve D17 |
 | 37 | **APP-8f** Conferma a voce, interruzione, annulla | 138 | ⬜ |
 | 38 | **APP-8g** "Chiama Rossi" apre il telefono; rubrica fornitori | 139 | ⬜ |
@@ -116,7 +116,9 @@ Fatta il 2026-09-27 (diario in PIANO-AZIONE, RUNBOOKS §19). Differenze dalla ta
 - Ogni strumento: argomenti con zod, limitato all'impresa, una frase per la scheda ("Invia il preventivo 2026-014, 46.200 €, a Sara Lini per email").
 - **Fatta quando:** ogni strumento ha un test e un caso nelle prove di APP-8h.
 
-## APP-8d — La schermata dell'assistente e la riga su Oggi (riga 35)
+## APP-8d — La schermata dell'assistente e la riga su Oggi (riga 35) ✅
+
+Fatta il 2026-09-27 (diario in PIANO-AZIONE, RUNBOOKS §20). Differenze: nessuno schizzo separato (nessuno stile nuovo, solo pezzi della dashboard); "o di' sì" per ora è "o scrivi sì" — la conferma a voce è APP-8f; senza rete la domanda aspetta la rete, e un invio arriva comunque come scheda da confermare.
 
 - Conversazione come testo senza fumetti pesanti, righe di avanzamento, schede con Conferma / Modifica ("o di' sì"), suggerimenti dal contesto, barra in basso con tastiera, microfono, stop — **nello stile della dashboard**, prima uno schizzo accanto al desktop come chiede la regola di design.
 - Su Oggi una riga sola "Chiedi o detta…" che apre l'assistente.

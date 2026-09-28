@@ -125,6 +125,8 @@ function routes(s: import("./fixtures.js").Showcase): RouteSpec[] {
     { path: "/", auth: false, name: "/ (menu)", drive: (p) => openPhoneSheet(p, ".menu-btn", "[role=dialog]") },
     { path: "/dashboard", auth: true, name: "/dashboard (Altro)", drive: (p) => openPhoneSheet(p, ".tabbar button.tabbar-link", ".more-sheet") },
     { path: "/dashboard", auth: true, name: "/dashboard (nuovo)", drive: (p) => openPhoneSheet(p, ".tb-new, .tabbar-new", "[role=dialog]") },
+    // APP-8d: "Chiedi o detta…" on Oggi opens the assistant sheet.
+    { path: "/dashboard", auth: true, name: "/dashboard (assistente)", drive: (p) => openPhoneSheet(p, ".asst-ask-main", ".asst-panel") },
   ];
   return list.filter((r) => ROUTE_FILTER.length === 0 || ROUTE_FILTER.some((f) => r.path.includes(f) || (r.name ?? "").includes(f)));
 }

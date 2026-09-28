@@ -2924,3 +2924,49 @@ button.qline:hover { background: #fafbfc; }
 @media (prefers-reduced-motion: reduce) {
   .modal.asst-panel[data-state="open"], .modal.asst-panel[data-state="closed"] { animation: none; }
 }
+
+/* ==========================================================
+   APP-8d — the calm assistant: the assistant's words as plain text (no
+   bubble), the person's as a light one; state lines (error with Riprova,
+   offline), a card being changed, Stop in place of Invia; "Chiedi o detta…"
+   on Oggi; the older conversations as a strip on a phone.
+   ========================================================== */
+.asst-chat .bubble.ai { background: none; padding: 2px 0; border-radius: 0; max-width: 100%; color: var(--ink); }
+.asst-chat .bubble.ai.typing { padding: 8px 0; }
+.asst-chat .bubble.user { background: var(--soft); color: var(--navy); border-radius: 14px; border-bottom-right-radius: 5px; font-weight: 600; }
+.asst-chat .prop-card { max-width: 100%; width: 100%; }
+.prop-card.editing { border-color: var(--navy); }
+.prop-actions { flex-wrap: wrap; }
+.prop-yes { font-size: 12px; font-weight: 600; color: var(--faint); }
+.chat-state { align-self: flex-start; display: flex; align-items: center; flex-wrap: wrap; gap: 8px; font-size: 13px; font-weight: 600; color: var(--muted-mk); line-height: 1.45; }
+.chat-state > svg { flex: none; }
+.chat-state > span { flex: 1 1 180px; min-width: 0; }
+.chat-state.err { color: var(--red); }
+.chat-state.err .prop-dismiss { padding: 4px 8px; }
+.chat-state.bar { padding: 8px 22px; border-top: 1px solid var(--soft); }
+.chat-editing { display: flex; align-items: center; gap: 8px; padding: 8px 22px; border-top: 1px solid var(--soft); font-size: 13px; color: var(--muted-mk); font-weight: 600; }
+.chat-editing > span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.chat-editing b { color: var(--navy); }
+.chat-editing .prop-dismiss { padding: 4px; }
+
+.asst-ask { display: flex; align-items: center; gap: 6px; margin-top: 16px; background: #fff; border: 1px solid var(--line); border-radius: var(--radius-mk); padding: 6px 8px 6px 6px; }
+.asst-ask-main { flex: 1; min-width: 0; display: flex; align-items: center; gap: 12px; padding: 6px 10px; border-radius: 10px; text-align: left; font-size: 15px; color: var(--faint); font-weight: 600; }
+.asst-ask-main svg { width: 38px; height: 38px; padding: 10px; border-radius: 10px; background: var(--soft); color: var(--navy); flex: none; }
+.asst-ask-main:hover { color: var(--navy); }
+.asst-ask-mic { width: var(--tap); height: var(--tap); border-radius: 50%; display: grid; place-items: center; color: var(--muted-mk); flex: none; }
+.asst-ask-mic:hover { background: var(--soft); color: var(--navy); }
+.asst-ask-mic svg { width: 18px; height: 18px; }
+.asst-ask button:focus-visible { outline: 2px solid var(--navy); outline-offset: 2px; }
+
+@media (max-width: 640px) {
+  .asst-ask { margin-top: 12px; }
+  .asst-ask-main { font-size: 16px; }
+  .chat-state.bar, .chat-editing { padding: 6px 16px; }
+  /* Older per-job conversations: a strip of pills above the chat (only when there are some). */
+  .chat-grid > .th-list.has-older { display: flex; gap: 8px; overflow-x: auto; padding: 10px 12px; scrollbar-width: none; }
+  .chat-grid > .th-list.has-older > .card-head, .chat-grid > .th-list.has-older > .th-sub { display: none; }
+  .chat-grid > .th-list.has-older .th-row { flex: none; width: auto; max-width: 70vw; padding: 8px 14px; border: 1px solid var(--line); border-radius: 999px; min-height: var(--tap); justify-content: center; }
+  .chat-grid > .th-list.has-older .th-row.on { border-color: var(--navy); }
+  .chat-grid > .th-list.has-older .th-row b { font-size: 13.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .chat-grid > .th-list.has-older .th-row span { display: none; }
+}
