@@ -1010,3 +1010,29 @@ Nessuna.
 ### 22.4 Cambiare la soglia a mano (supporto)
 
 `update assistant_permissions set level = '<centesimi>' where user_id = '<id impresa>' and action = 'voice_confirm_max';` — valori ammessi 0, 100000, 200000, 500000, 1000000, 2000000 (un altro valore vale come 500000).
+
+## 23. Assistente: "Chiama Rossi" e rubrica fornitori (APP-8g, riga 38)
+
+### 23.1 Cosa c'è
+
+- **Scheda Chiamata** (`propose_call`, `artifacts/api-server/src/assistant/tools-app8g.ts`): il numero lo cerca il server fra clienti, richieste, fornitori e operai attivi dell'impresa, filtrati per ruolo. Più persone con numeri diversi → nessuna scheda, l'assistente chiede quale. Il livello è sempre "Chiede prima" (azione `call`, gruppo *Chiamate*); si può solo spegnere (Mai).
+- **Conferma:** sul telefono apre il compositore (`tel:+39…`); sul computer mostra numero e QR. PrevAI non chiama mai e non registra nulla della telefonata: solo l'audit `action = 'call_opened_via_assistant'` (entità = cliente / richiesta / fornitore / operaio, `diff.phone`).
+- **Nota dopo la chiamata:** tornando all'app "Aggiungo una nota sulla chiamata?"; la nota va sul cantiere della chiamata (serve la migrazione 0011 delle note, come la nota vocale del +).
+- **Rubrica fornitori:** Squadra → Fornitori. API `GET/POST /api/crm/suppliers`, `PUT/DELETE /api/crm/suppliers/:id` (`jobs:edit`). Numeri accettati: vedi `telefonoPerChiamata` in `lib/config/src/telefono.ts`; un numero non valido si salva lo stesso, ma la schermata avverte che l'assistente non potrà chiamarlo.
+
+### 23.2 Migrazioni
+
+Nessuna.
+
+### 23.3 Controlli dopo il deploy
+
+1. Squadra → Fornitori: aggiungere un fornitore con referente nelle note ("Marco …") e un cellulare; modificarlo; eliminarlo.
+2. Assistente: "chiama Marco di <ditta>" → scheda *Chiamata* con referente, ditta e numero. Sul computer **Mostra il numero** → QR; inquadrarlo col telefono → si apre il compositore con il numero giusto.
+3. Sul telefono: la stessa domanda → **Chiama** apre il compositore. Tornando all'app compare/si sente "Aggiungo una nota sulla chiamata?"; da un cantiere, "sì" apre la nota vocale già con "Chiamata con …".
+4. "chiama Marco" con due Marco con numeri diversi → l'assistente chiede quale, nessuna scheda finché non si sceglie.
+5. Impostazioni → Assistente → Chiamate → Mai → l'assistente dice che non è disponibile.
+
+### 23.4 Supporto
+
+- "L'assistente non trova il fornitore": controllare che il nome o il referente siano scritti nella rubrica (la ricerca è parola per parola) e che il telefono sia un numero valido.
+- Chi ha chiesto di chiamare chi: `select created_at, entity_type, entity_id, diff from audit_log where user_id = '<id impresa>' and action = 'call_opened_via_assistant' order by created_at desc;`

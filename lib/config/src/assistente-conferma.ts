@@ -114,6 +114,12 @@ export function voiceNeedsTap(card: VoiceConfirmCard, maxCents: number): boolean
 
 const str = (v: unknown) => (typeof v === "string" && v.trim() ? v.trim() : null);
 
+/** APP-8g: "+39 333 123 4567" → "3 3 3, 1 2 3, 4 5 6 7": digit by digit in the groups it is written in (the prefix is left out). */
+export function spokenPhone(display: string): string {
+  const groups = display.replace(/^\+39\s*/, "").split(/[\s./-]+/).map((g) => g.replace(/\D/g, "")).filter(Boolean);
+  return groups.map((g) => g.split("").join(" ")).join(", ");
+}
+
 /** What the assistant says while the card waits: the essentials, then how to answer. */
 export function voiceConfirmation(card: VoiceConfirmCard, maxCents: number): VoiceConfirmation {
   const p = card.payload;
@@ -132,11 +138,13 @@ export function voiceConfirmation(card: VoiceConfirmCard, maxCents: number): Voi
     case "cost_entry": q = `Aggiungo un costo di ${amount ?? "questo importo"}${str(p.vendor) ? ` di ${str(p.vendor)}` : ""}?`; break;
     case "reply_lead": q = `Mando ${to ? `a ${to} ` : ""}il messaggio di ricontatto?`; break;
     case "message_client": q = `Mando l'email${str(p.subject) ? ` "${str(p.subject)}"` : ""}${to ? ` a ${to}` : ""}?`; break;
+    // APP-8g: the number read in small groups, so it can be checked by ear.
+    case "call": q = `Chiamo ${str(p.name) ?? "questo numero"}${str(p.company) ? ` di ${str(p.company)}` : ""}${str(p.phoneDisplay) ? ` al ${spokenPhone(str(p.phoneDisplay)!)}` : ""}?`; break;
     default: q = `${spokenText(card.summary.replace(/<[^>]*>/g, "")).replace(/[.\s]+$/, "")}. Confermo?`;
   }
   q = q.replace(/\s+/g, " ").replace(/ a il /g, " al ");
   const how = !needsTap
-    ? "Di' sì per confermare."
+    ? card.kind === "call" ? "Di' sì e apro il telefono." : "Di' sì per confermare."
     : amountCents === null || maxCents === 0
       ? "Per confermare tocca Conferma sullo schermo."
       : `È sopra i ${importoInLettere(maxCents)}: per confermare tocca Conferma sullo schermo.`;
@@ -147,7 +155,7 @@ export function voiceConfirmation(card: VoiceConfirmCard, maxCents: number): Voi
 
 export type VoiceReply = "yes" | "no" | "undo" | "other";
 
-const YES_WORDS = "sì|si|ok|okay|certo|va bene|d accordo|vai|vai pure|conferma|confermo|confermato|procedi|mandala|mandalo|mandale|mandali|inviala|invialo|inviale|registralo|registrala|fallo|falla";
+const YES_WORDS = "sì|si|ok|okay|certo|va bene|d accordo|vai|vai pure|conferma|confermo|confermato|procedi|mandala|mandalo|mandale|mandali|inviala|invialo|inviale|registralo|registrala|fallo|falla|chiama|chiamalo|chiamala|chiamali";
 const YES = new RegExp(`^(?:(?:${YES_WORDS}) )*(?:${YES_WORDS})(?: grazie)?$`);
 const NO = /^(?:no(?: no)*(?: grazie)?|no,? ?lascia (?:stare|perdere)|lascia (?:stare|perdere)|non (?:mandarla|mandarlo|inviarla|inviarlo|farlo|farla)|niente)$/;
 const UNDO = /^(?:annulla|annullala|annullalo|annullale|annullali|annulla tutto|torna indietro)$/;

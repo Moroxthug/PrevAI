@@ -2,7 +2,7 @@ import { Router } from "express";
 import { requireAuth, getUserId } from "../middlewares/authMiddleware";
 import { requirePermission } from "../middlewares/requirePermission.js";
 import { db } from "@workspace/db";
-import { eq, and } from "drizzle-orm";
+import { eq, and, asc } from "drizzle-orm";
 import {
   projectsTable,
   projectTasksTable,
@@ -436,13 +436,26 @@ router.post("/crm/collaborators", requireAuth, requirePermission("jobs", "edit")
 });
 
 // ── SUPPLIERS (FORNITORI) ───────────────────────────────────────────────────
+// APP-8g: the supplier book in Squadra → Fornitori (name = the company, contactInfo =
+// referente and notes, where the SdI match also looks for the P. IVA). An empty email
+// or phone is stored as null.
+const blankToNull = (v: unknown) => (typeof v === "string" && !v.trim() ? null : v);
+const supplierSchema = z.object({
+  name: z.string().trim().min(1).max(200),
+  category: z.string().trim().max(120).optional(),
+  contactInfo: z.string().trim().max(1000).optional(),
+  email: z.preprocess(blankToNull, z.string().trim().email().max(254).optional().nullable()),
+  phone: z.preprocess(blankToNull, z.string().trim().max(40).optional().nullable()),
+});
+
 router.get("/crm/suppliers", requireAuth, async (req, res) => {
   try {
     const userId = getUserId(res);
     const suppliers = await db
       .select()
       .from(suppliersTable)
-      .where(eq(suppliersTable.userId, userId));
+      .where(eq(suppliersTable.userId, userId))
+      .orderBy(asc(suppliersTable.name));
     res.json(suppliers);
   } catch (err) {
     req.log.error({ err }, "Error fetching suppliers");
@@ -453,15 +466,7 @@ router.get("/crm/suppliers", requireAuth, async (req, res) => {
 router.post("/crm/suppliers", requireAuth, requirePermission("jobs", "edit"), async (req, res) => {
   try {
     const userId = getUserId(res);
-    const schema = z.object({
-      name: z.string().min(1),
-      category: z.string().optional(),
-      contactInfo: z.string().optional(),
-      email: z.string().email().optional().nullable(),
-      phone: z.string().optional().nullable(),
-    });
-
-    const parsed = schema.safeParse(req.body);
+    const parsed = supplierSchema.safeParse(req.body);
     if (!parsed.success) {
       res.status(400).json({ error: "Invalid parameters", details: parsed.error });
       return;
@@ -482,6 +487,53 @@ router.post("/crm/suppliers", requireAuth, requirePermission("jobs", "edit"), as
     res.status(201).json(supplier);
   } catch (err) {
     req.log.error({ err }, "Error creating supplier");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+router.put("/crm/suppliers/:id", requireAuth, requirePermission("jobs", "edit"), async (req, res) => {
+  try {
+    const userId = getUserId(res);
+    const parsed = supplierSchema.partial().safeParse(req.body);
+    if (!parsed.success || !z.string().uuid().safeParse(req.params.id).success) {
+      res.status(400).json({ error: "Invalid parameters", details: parsed.success ? undefined : parsed.error });
+      return;
+    }
+    const [supplier] = await db
+      .update(suppliersTable)
+      .set(parsed.data)
+      .where(and(eq(suppliersTable.id, String(req.params.id)), eq(suppliersTable.userId, userId)))
+      .returning();
+    if (!supplier) {
+      res.status(404).json({ error: "Supplier not found" });
+      return;
+    }
+    res.json(supplier);
+  } catch (err) {
+    req.log.error({ err }, "Error updating supplier");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// Costs and purchase invoices keep their row: the link to the supplier becomes empty (on delete set null).
+router.delete("/crm/suppliers/:id", requireAuth, requirePermission("jobs", "edit"), async (req, res) => {
+  try {
+    const userId = getUserId(res);
+    if (!z.string().uuid().safeParse(req.params.id).success) {
+      res.status(404).json({ error: "Supplier not found" });
+      return;
+    }
+    const deleted = await db
+      .delete(suppliersTable)
+      .where(and(eq(suppliersTable.id, String(req.params.id)), eq(suppliersTable.userId, userId)))
+      .returning({ id: suppliersTable.id });
+    if (!deleted.length) {
+      res.status(404).json({ error: "Supplier not found" });
+      return;
+    }
+    res.json({ success: true });
+  } catch (err) {
+    req.log.error({ err }, "Error deleting supplier");
     res.status(500).json({ error: "Internal server error" });
   }
 });

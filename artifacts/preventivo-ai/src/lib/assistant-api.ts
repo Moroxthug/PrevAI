@@ -5,7 +5,9 @@ import type { AssistantAction, AssistantLevel } from "@workspace/config";
 export type AssistantRole = "user" | "assistant" | "tool";
 export type ProposalKind = "cost_entry" | "milestone_update" | "task" | "invoice" | "record_payment" | "send_invoice"
   // APP-8c
-  | "draft_quote" | "send_quote" | "send_contract" | "reply_lead" | "message_client" | "update_client" | "job_note";
+  | "draft_quote" | "send_quote" | "send_contract" | "reply_lead" | "message_client" | "update_client" | "job_note"
+  // APP-8g
+  | "call";
 export type ProposalStatus = "pending" | "confirmed" | "dismissed" | "failed" | "undone";
 
 export type AssistantMessageDto = {

@@ -16,7 +16,7 @@ import { jobNotesKey } from "./notes-card";
  * card. Only the text is kept; the audio goes to the same transcription
  * service as the quote composer and is not stored.
  */
-export function VoiceNoteSheet({ job, onClose, onSaved }: { job: { id: string; name: string } | null; onClose: () => void; onSaved: (jobId: string) => void }) {
+export function VoiceNoteSheet({ job, onClose, onSaved, initialText }: { job: { id: string; name: string } | null; onClose: () => void; onSaved: (jobId: string) => void; /** APP-8g: "Chiamata con Marco:" before what is dictated. */ initialText?: string }) {
   const { t } = useLanguage();
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -36,6 +36,10 @@ export function VoiceNoteSheet({ job, onClose, onSaved }: { job: { id: string; n
     if (!job) { started.current = false; setText(""); setMicError(null); return; }
     if (data?.available && !started.current) { started.current = true; void startRecording(); }
   }, [job, data?.available, startRecording]);
+
+  // APP-8g: a note after a call starts with who it was with.
+  const jobKey = job?.id ?? null;
+  useEffect(() => { if (jobKey && initialText) setText(initialText); }, [jobKey, initialText]);
 
   const save = useMutation({
     mutationFn: () => jobsApi.addNote(jobId, { body: text.trim(), source: "voice" }),

@@ -16,3 +16,4 @@ export * from "./home";
 export * from "./assistente";
 export * from "./assistente-voce";
 export * from "./assistente-conferma";
+export * from "./telefono";

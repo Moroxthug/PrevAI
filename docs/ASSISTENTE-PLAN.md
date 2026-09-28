@@ -18,7 +18,7 @@ Stesse regole di sempre: una riga per sessione, in ordine; un commit per riga su
 | 35 | **APP-8d** La schermata dell'assistente (calma) e la riga su Oggi | 136 | ✅ 2026-09-27 |
 | 36 | **APP-8e** Risponde a voce | 137 | ✅ (D17 aperta: voce del browser, fornitore spento) |
 | 37 | **APP-8f** Conferma a voce, interruzione, annulla | 138 | ✅ |
-| 38 | **APP-8g** "Chiama Rossi" apre il telefono; rubrica fornitori | 139 | ⬜ |
+| 38 | **APP-8g** "Chiama Rossi" apre il telefono; rubrica fornitori | 139 | ✅ |
 | 39 | **APP-8h** Fiducia: prove automatiche, costi, registro delle azioni | 141 | ⬜ |
 
 Non diventano righe: la **chiamata collegata** dal numero dell'impresa con registrazione (QuoteAI 140) — rinviata dalla decisione D19; **mani libere in furgone** con Siri/Google (QuoteAI 142) — si fa dentro il guscio nativo, dopo APP-3/APP-4 (righe 18–19).
@@ -145,7 +145,9 @@ Fatta il 2026-09-27 (diario in PIANO-AZIONE, RUNBOOKS §22). Differenze: la sogl
 - "Annulla" nella finestra di annullamento.
 - **Fatta quando:** nelle prove ci sono conferme ambigue ("sì, anzi no") e nessuna esegue.
 
-## APP-8g — "Chiama Rossi" apre il telefono (riga 38)
+## APP-8g — "Chiama Rossi" apre il telefono (riga 38) ✅
+
+Fatta il 2026-09-27 (diario in PIANO-AZIONE, RUNBOOKS §23). Differenze: lo strumento è `propose_call` (una scheda come le altre, livello massimo "Chiede prima") e cerca il numero da solo, senza passare da `find`; la rubrica fornitori non è una tabella nuova ma la `suppliers` di v1 con una schermata in Squadra → Fornitori (il referente sta nelle note, dove il riconoscimento SdI cerca già la P. IVA); il QR si mostra dopo "Mostra il numero". I casi per APP-8h sono `APP8G_EVAL_CASES`.
 
 - Strumento `call`: trova il numero giusto (cliente, lead, fornitore, squadra) e, dopo "Chiede prima", apre il compositore del telefono (`tel:`); sul computer mostra il numero e un QR.
 - Una rubrica fornitori semplice (nome, ditta, telefono, email) se non c'è, così "chiama Marco di Edilceramiche" si risolve.

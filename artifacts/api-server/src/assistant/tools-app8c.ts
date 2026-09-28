@@ -24,6 +24,7 @@ import {
   leadsTable,
   clientsTable,
   contractsTable,
+  suppliersTable,
   businessProfilesTable,
   clientDedupKey,
   normalizeProvince,
@@ -72,11 +73,12 @@ const SCREEN_KEYS = Object.keys(SCREENS) as [ScreenKey, ...ScreenKey[]];
 /** The area a screen needs (fisco is closed to most roles since A-2). */
 const SCREEN_AREA: Partial<Record<ScreenKey, PermissionArea>> = { fisco: "fiscale", leads: "leads", contracts: "contracts", invoices: "invoicing", team: "team", analytics: "analytics" };
 
-const FIND_TYPES = ["client", "job", "quote", "invoice", "lead", "contract"] as const;
+// APP-8g adds the supplier book (Squadra → Fornitori).
+const FIND_TYPES = ["client", "job", "quote", "invoice", "lead", "contract", "supplier"] as const;
 
 export const APP8C_TOOL_DEFINITIONS: OpenAI.Chat.Completions.ChatCompletionTool[] = [
   { type: "function", function: { name: "brief_me", description: "A short briefing: for 'today' or 'week' what needs the user (transfers to confirm, overdue invoices, hours to approve, leads to call back, quotes with no answer), the period's numbers, milestones and tasks due, jobs at risk; for 'job' the state of one job. Use it for 'com'è la giornata', 'cosa ho questa settimana', 'come va il cantiere'.", parameters: { type: "object", properties: { scope: { type: "string", enum: ["today", "week", "job"] }, job_id: str("For scope job; omit to use the current job") }, required: ["scope"], additionalProperties: false } } },
-  { type: "function", function: { name: "find", description: "Search the company's clients, jobs, quotes, invoices, leads and contracts by name, email, phone, address or number. Returns ids and the page of each result. Use it before any tool that needs an id the user described by name.", parameters: { type: "object", properties: { query: str("Name, email, phone, address fragment or document number"), types: { type: "array", items: { type: "string", enum: [...FIND_TYPES] } } }, required: ["query"], additionalProperties: false } } },
+  { type: "function", function: { name: "find", description: "Search the company's clients, jobs, quotes, invoices, leads, contracts and suppliers by name, email, phone, address or number. Returns ids and the page of each result. Use it before any tool that needs an id the user described by name.", parameters: { type: "object", properties: { query: str("Name, email, phone, address fragment or document number"), types: { type: "array", items: { type: "string", enum: [...FIND_TYPES] } } }, required: ["query"], additionalProperties: false } } },
   { type: "function", function: { name: "get_quote", description: "One quote in detail: client and contacts, chapters and line items, discount, VAT, total, status, when it was sent or accepted, variants, contract and job linked to it.", parameters: { type: "object", properties: { quote_id: str() }, required: ["quote_id"], additionalProperties: false } } },
   { type: "function", function: { name: "open_screen", description: "Take the app to a page: a job, quote, invoice, client or contract by id (from find), or a section. Use it when the user says 'fammi vedere', 'apri', 'portami a'.", parameters: { type: "object", properties: { target: { type: "string", enum: ["job", "quote", "invoice", "client", "contract", "screen"] }, id: str("For job / quote / invoice / client / contract"), screen: { type: "string", enum: SCREEN_KEYS } }, required: ["target"], additionalProperties: false } } },
   { type: "function", function: { name: "propose_draft_quote", description: "Prepare a new quote draft from a description of the work, with the same generator as Nuovo preventivo (it takes up to half a minute). Nothing is sent; the user reviews the draft.", parameters: { type: "object", properties: { description: str("The work, as the user described it: rooms, quantities, materials, place"), client_name: str(), client_address: str(), client_email: str(), client_phone: str() }, required: ["description"], additionalProperties: false } } },
@@ -260,6 +262,11 @@ async function find(a: z.infer<typeof ReadArgs.find>, ctx: App8cContext) {
       .from(contractsTable).where(and(eq(contractsTable.userId, ctx.userId), isNull(contractsTable.archivedAt), or(ilike(contractsTable.contractNumber), sql`${contractsTable.variables}->'customer'->>'name' ilike ${pat}`, sql`${contractsTable.variables}->>'projectTitle' ilike ${pat}`)))
       .orderBy(desc(contractsTable.createdAt)).limit(6)
       .then((rows) => rows.map((r) => ({ type: "contract", id: r.id, number: r.number, kind: r.kind, customer: r.variables?.customer?.name ?? null, title: r.variables?.projectTitle ?? null, value: cents(r.value), status: r.status, page: `/dashboard/contracts/${r.id}` }))));
+  }
+  if (want.has("supplier") && roleCan(ctx.role, "jobs", "view")) {
+    add("suppliers", db.select({ id: suppliersTable.id, name: suppliersTable.name, category: suppliersTable.category, info: suppliersTable.contactInfo, email: suppliersTable.email, phone: suppliersTable.phone })
+      .from(suppliersTable).where(and(eq(suppliersTable.userId, ctx.userId), or(ilike(suppliersTable.name), ilike(suppliersTable.category), ilike(suppliersTable.contactInfo), ilike(suppliersTable.email), ilike(suppliersTable.phone)))).limit(6)
+      .then((rows) => rows.map((r) => ({ type: "supplier", id: r.id, name: r.name, trade: r.category || null, referente_and_notes: r.info || null, email: r.email, phone: r.phone, page: "/dashboard/team?tab=suppliers" }))));
   }
   await Promise.all(tasks);
   return Object.keys(out).length ? out : { results: [], note: `Nothing matches "${a.query}". Try a shorter part of the name.` };

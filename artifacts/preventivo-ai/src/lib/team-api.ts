@@ -59,7 +59,17 @@ export const teamApi = {
   addEquipment: (body: EquipmentEdit & { name: string }) => req<{ equipment: EquipmentDto }>("/api/team/equipment", { method: "POST", body: json(body) }),
   updateEquipment: (id: string, body: EquipmentEdit) => req<{ equipment: EquipmentDto }>(`/api/team/equipment/${id}`, { method: "PUT", body: json(body) }),
   deleteEquipment: (id: string) => req<{ success: true; deactivated: boolean }>(`/api/team/equipment/${id}`, { method: "DELETE" }),
+
+  // APP-8g: the supplier book (Squadra → Fornitori).
+  suppliers: () => req<SupplierDto[]>("/api/crm/suppliers"),
+  addSupplier: (body: SupplierEdit) => req<SupplierDto>("/api/crm/suppliers", { method: "POST", body: json(body) }),
+  updateSupplier: (id: string, body: Partial<SupplierEdit>) => req<SupplierDto>(`/api/crm/suppliers/${id}`, { method: "PUT", body: json(body) }),
+  deleteSupplier: (id: string) => req<{ success: true }>(`/api/crm/suppliers/${id}`, { method: "DELETE" }),
 };
+
+/** A supplier: name = the company; contactInfo = referente and notes (the P. IVA there is how SdI invoices find it). */
+export type SupplierDto = { id: string; name: string; category: string; contactInfo: string; email: string | null; phone: string | null; createdAt: string; updatedAt: string };
+export type SupplierEdit = { name: string; category: string; contactInfo: string; phone: string; email: string };
 
 // ── Public worker page (/t/:token) ───────────────────────────────────────────
 

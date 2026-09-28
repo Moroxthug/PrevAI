@@ -46,6 +46,8 @@ const FEATURE_FOR: Record<AssistantProposal["kind"], ProductFeature> = {
   message_client: "quotes",
   update_client: "quotes",
   job_note: "jobs",
+  // APP-8g
+  call: "jobs",
 };
 
 export class ProposalError extends Error {

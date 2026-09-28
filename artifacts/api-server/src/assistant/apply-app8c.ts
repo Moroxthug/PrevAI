@@ -107,6 +107,12 @@ export async function executeApp8c(proposal: AssistantProposal, who: Who, ip: st
       await audit("job_note", note!.id, "created_via_assistant");
       return { entityType: "job_note", entityId: note!.id, link: `/dashboard/jobs/${project.id}` };
     }
+    case "call": {
+      // APP-8g: nothing to carry out here — the app opens the phone (or shows the number and a QR).
+      // Confirming only records who asked to call whom; the call itself never goes through PrevAI.
+      await audit(String(p.contactType), String(p.contactId), "call_opened_via_assistant", { phone: p.phone });
+      return { entityType: String(p.contactType), entityId: String(p.contactId), link: `tel:${String(p.phone)}` };
+    }
     default:
       throw new App8cError(`Unsupported proposal kind ${proposal.kind}`);
   }
@@ -158,4 +164,4 @@ export async function undoApp8c(proposal: AssistantProposal, who: Who): Promise<
   }
 }
 
-export const APP8C_KINDS = new Set(["draft_quote", "send_quote", "send_contract", "reply_lead", "message_client", "update_client", "job_note"]);
+export const APP8C_KINDS = new Set(["draft_quote", "send_quote", "send_contract", "reply_lead", "message_client", "update_client", "job_note", "call"]);

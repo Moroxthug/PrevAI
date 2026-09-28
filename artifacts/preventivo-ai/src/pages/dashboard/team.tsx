@@ -4,7 +4,7 @@ import { Link, useSearch } from "wouter";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { it } from "date-fns/locale";
-import { Users, Clock, Wrench, Plus, Trash2, Link2, Copy, Check, X, Download, Loader2, Pencil, UserX, UserCheck, Filter, UserPlus, RotateCw, MapPin } from "lucide-react";
+import { Users, Clock, Wrench, Plus, Trash2, Link2, Copy, Check, X, Download, Loader2, Pencil, UserX, UserCheck, Filter, UserPlus, RotateCw, MapPin, Truck } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Dialog, DialogBody, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
@@ -19,10 +19,11 @@ import { ListRow } from "@/components/mobile/list-row";
 import { RowMore } from "@/components/mobile/row-more";
 import { SwipeRow } from "@/components/mobile/swipe-row";
 import { useMediaQuery } from "@/hooks/use-media-query";
+import { SuppliersTab } from "@/components/team/suppliers-tab";
 
-const TABS = ["workers", "time", "equipment", "members"] as const;
+const TABS = ["workers", "time", "equipment", "suppliers", "members"] as const;
 type Tab = (typeof TABS)[number];
-const TAB_ICONS: Record<Tab, typeof Users> = { workers: Users, time: Clock, equipment: Wrench, members: UserPlus };
+const TAB_ICONS: Record<Tab, typeof Users> = { workers: Users, time: Clock, equipment: Wrench, suppliers: Truck, members: UserPlus };
 const day = (s: string | null) => (s ? new Date(`${s}T00:00:00`) : null);
 const isoDay = (d: Date) => localDay(d);
 
@@ -62,6 +63,7 @@ export default function TeamPage() {
       {tab === "workers" && workers && <WorkersTab workers={workers.items} locale={locale} />}
       {tab === "time" && <TimeTab workers={workers?.items ?? []} locale={locale} />}
       {tab === "equipment" && <EquipmentTab />}
+      {tab === "suppliers" && <SuppliersTab />}
       {tab === "members" && <MembersTab />}
     </div>
   );

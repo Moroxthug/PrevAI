@@ -11,7 +11,7 @@ export type AssistantRole = (typeof ASSISTANT_ROLES)[number];
 
 // APP-8c adds the quote draft, the customer-facing sends (quote, contract, lead, free message),
 // a client's contact details and a job note. `kind` is plain text in SQL, so no migration.
-export const PROPOSAL_KINDS = ["cost_entry", "milestone_update", "task", "invoice", "record_payment", "send_invoice", "draft_quote", "send_quote", "send_contract", "reply_lead", "message_client", "update_client", "job_note"] as const;
+export const PROPOSAL_KINDS = ["cost_entry", "milestone_update", "task", "invoice", "record_payment", "send_invoice", "draft_quote", "send_quote", "send_contract", "reply_lead", "message_client", "update_client", "job_note", "call"] as const;
 export type ProposalKind = (typeof PROPOSAL_KINDS)[number];
 
 // APP-8b: "undone" = ran by itself ("Lo fa") and the person pressed Annulla.

@@ -64,6 +64,7 @@ const LABELS: Record<string, string> = {
   propose_message_client: "Scrivo l'email",
   propose_update_client: "Preparo la modifica del cliente",
   propose_job_note: "Scrivo la nota",
+  propose_call: "Cerco il numero",
 };
 
 export function progressLabel(tool: string): string {

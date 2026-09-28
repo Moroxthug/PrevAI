@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Link, useLocation } from "wouter";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Sparkles, Send, Trash2, Check, X, ExternalLink, Receipt, Wallet, Flag, ListTodo, Mail, Banknote, Loader2, AlertTriangle, Mic, Square, Undo2, FileText, Send as SendIcon, FileSignature, MessageSquare, UserPen, StickyNote, Pencil, RotateCcw, WifiOff, Volume2, VolumeX } from "lucide-react";
+import { Sparkles, Send, Trash2, Check, X, ExternalLink, Receipt, Wallet, Flag, ListTodo, Mail, Banknote, Loader2, AlertTriangle, Mic, Square, Undo2, FileText, Send as SendIcon, FileSignature, MessageSquare, UserPen, StickyNote, Pencil, RotateCcw, WifiOff, Volume2, VolumeX, Phone } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useVoiceInput } from "@/hooks/use-voice-input";
 import { useOnline } from "@/hooks/use-quote-draft";
@@ -12,11 +12,19 @@ import { useAssistantPageContext } from "@/lib/assistant-context";
 import { formatCents } from "@/lib/jobs-api";
 import { ASSISTANT_UNDO_SECONDS, SentenceChunker, classifyVoiceReply, voiceConfirmation, voiceNeedsTap } from "@workspace/config";
 import { useBargeIn, useSpeaker, useVoiceInfo, useVoicePrefs } from "@/lib/assistant-voice";
+import { useMediaQuery } from "@/hooks/use-media-query";
+import { VoiceNoteSheet } from "@/components/jobs/voice-note-sheet";
+import { CallQr } from "./call-qr";
 
-const KIND_ICON: Record<ProposalKind, typeof Receipt> = { cost_entry: Wallet, milestone_update: Flag, task: ListTodo, invoice: Receipt, send_invoice: Mail, record_payment: Banknote, draft_quote: FileText, send_quote: SendIcon, send_contract: FileSignature, reply_lead: MessageSquare, message_client: Mail, update_client: UserPen, job_note: StickyNote };
+const KIND_ICON: Record<ProposalKind, typeof Receipt> = { cost_entry: Wallet, milestone_update: Flag, task: ListTodo, invoice: Receipt, send_invoice: Mail, record_payment: Banknote, draft_quote: FileText, send_quote: SendIcon, send_contract: FileSignature, reply_lead: MessageSquare, message_client: Mail, update_client: UserPen, job_note: StickyNote, call: Phone };
+
+/** APP-8g: a phone or tablet opens the dialer; a computer shows the number and a QR. */
+const touchDevice = () => typeof window !== "undefined" && window.matchMedia?.("(pointer: coarse)").matches === true;
+const openDialer = (p: ProposalDto) => { if (touchDevice() && typeof p.payload.phone === "string") window.location.assign(`tel:${p.payload.phone}`); };
 
 /** The page a done card opens (APP-8c adds quotes, contracts, leads, clients, job notes). */
 function proposalLink(p: ProposalDto): string | null {
+  if (p.kind === "call") return null; // the card has its own Chiama button
   const id = p.resultEntityId;
   if (id && p.resultEntityType === "invoice") return `/dashboard/invoices/${id}`;
   if (id && p.resultEntityType === "quote") return `/dashboard/quotes/${id}`;
@@ -101,6 +109,10 @@ export function AssistantChat({ threadId = null, compact, startDictation, classN
   const [failed, setFailed] = useState<{ content: string; message: string } | null>(null);
   const [queued, setQueued] = useState<string | null>(null);
   const [editing, setEditing] = useState<ProposalDto | null>(null);
+  // APP-8g — after a call: the dictated note (on the job of the call), and the spoken "Aggiungo una nota?" waiting for a yes.
+  const [noteFor, setNoteFor] = useState<{ job: { id: string; name: string }; text: string } | null>(null);
+  const [askNote, setAskNote] = useState<ProposalDto | null>(null);
+  const lastCall = useRef<{ proposal: ProposalDto; left: boolean } | null>(null);
   // APP-8e — the answer out loud: "Conversazione a voce" always, "A voce quando detti" when the question came from the microphone.
   const [voicePrefs, setVoicePrefs] = useVoicePrefs();
   // Always read: it also carries the owner's threshold for a "sì" said out loud (APP-8f).
@@ -189,7 +201,12 @@ export function AssistantChat({ threadId = null, compact, startDictation, classN
   const sayIfVoice = (text: string) => { if (voicePrefs.mode !== "off") speaker.say(text); };
   const confirm = useMutation({
     mutationFn: ({ id, via }: { id: string; via: "tap" | "voice" }) => assistantApi.confirm(id, via),
-    onSuccess: ({ proposal }, { via }) => { patchProposal(proposal); invalidateData(); toast({ title: t("assistant.applied"), description: proposal.summary }); if (via === "voice") sayIfVoice(t("assistant.voiceDone")); },
+    onSuccess: ({ proposal }, { via }) => {
+      patchProposal(proposal);
+      // APP-8g: the phone opens (a tap already opened it); no toast, the card shows the number.
+      if (proposal.kind === "call") { if (via === "voice") openDialer(proposal); lastCall.current = { proposal, left: false }; return; }
+      invalidateData(); toast({ title: t("assistant.applied"), description: proposal.summary }); if (via === "voice") sayIfVoice(t("assistant.voiceDone"));
+    },
     onError: (e: Error, { via }) => { toast({ title: t("assistant.applyFailed"), description: e.message, variant: "destructive" }); if (via === "voice") sayIfVoice(e.message); queryClient.invalidateQueries({ queryKey: key }); },
   });
   const dismiss = useMutation({ mutationFn: (id: string) => assistantApi.dismiss(id), onSuccess: ({ proposal }) => patchProposal(proposal) });
@@ -199,7 +216,7 @@ export function AssistantChat({ threadId = null, compact, startDictation, classN
     onSuccess: ({ proposal }) => { patchProposal(proposal); invalidateData(); toast({ title: t("assistant.undoneToast"), description: proposal.summary }); sayIfVoice(t("assistant.voiceUndone")); },
     onError: (e: Error) => { toast({ title: t("assistant.undoFailed"), description: e.message, variant: "destructive" }); queryClient.invalidateQueries({ queryKey: key }); },
   });
-  const card = (p: ProposalDto) => <ProposalCard key={p.id} proposal={p} onConfirm={() => confirm.mutate({ id: p.id, via: "tap" })} onDismiss={() => dismiss.mutate(p.id)} onUndo={() => undo.mutate(p.id)} onEdit={() => startEdit(p)} offline={!online} editing={editing?.id === p.id} hint={pending.length === 1 && pending[0]!.id === p.id ? yesHint(p) : null} busy={(confirm.isPending && confirm.variables?.id === p.id) || (undo.isPending && undo.variables === p.id)} />;
+  const card = (p: ProposalDto) => <ProposalCard key={p.id} proposal={p} onNote={() => addCallNote(p)} onConfirm={() => { if (p.kind === "call") openDialer(p); confirm.mutate({ id: p.id, via: "tap" }); }} onDismiss={() => dismiss.mutate(p.id)} onUndo={() => undo.mutate(p.id)} onEdit={() => startEdit(p)} offline={!online} editing={editing?.id === p.id} hint={pending.length === 1 && pending[0]!.id === p.id ? yesHint(p) : null} busy={(confirm.isPending && confirm.variables?.id === p.id) || (undo.isPending && undo.variables === p.id)} />;
   const clear = useMutation({
     mutationFn: () => assistantApi.clear(data!.conversation.id),
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: key }); queryClient.invalidateQueries({ queryKey: ["assistant-threads"] }); },
@@ -215,6 +232,12 @@ export function AssistantChat({ threadId = null, compact, startDictation, classN
     if (editing || !online) return false;
     const reply = classifyVoiceReply(text);
     if (reply === "other") return false;
+    // APP-8g: "Aggiungo una nota sulla chiamata?" — sì opens the note, no lets it go.
+    if (askNote && pending.length === 0 && (reply === "yes" || reply === "no")) {
+      if (reply === "yes") addCallNote(askNote);
+      setAskNote(null);
+      return true;
+    }
     if (pending.length === 1) {
       const p = pending[0]!;
       if (reply === "yes") {
@@ -324,6 +347,34 @@ export function AssistantChat({ threadId = null, compact, startDictation, classN
       ? t("assistant.tapAbove").replace("{amount}", euro(voiceInfo.confirmMaxCents))
       : t("assistant.tapOnly");
   };
+
+  // APP-8g — the note after a call: dictated on the job of the call, or (no job known) written to the assistant, which asks which job.
+  const addCallNote = (p: ProposalDto) => {
+    setAskNote(null);
+    const name = String(p.payload.name ?? "");
+    const jobId = typeof p.payload.projectId === "string" ? p.payload.projectId : null;
+    if (jobId) { setNoteFor({ job: { id: jobId, name: String(p.payload.projectName ?? "") }, text: t("assistant.call.notePrefix").replace("{name}", name) }); return; }
+    setDraft(t("assistant.call.chatPrefix").replace("{name}", name));
+    inputRef.current?.focus();
+  };
+  // Back from the call (the page was hidden, now it is seen again): the question out loud, and in Conversazione a voce the microphone for the answer.
+  const afterCallRef = useRef(() => {});
+  afterCallRef.current = () => {
+    const c = lastCall.current;
+    if (!c) return;
+    if (document.visibilityState === "hidden") { c.left = true; return; }
+    if (!c.left) return;
+    lastCall.current = null;
+    setAskNote(c.proposal);
+    if (voicePrefs.mode === "off") return;
+    speaker.say(t("assistant.call.askNote"));
+    if (voicePrefs.mode === "always") speaker.afterSpeech(() => { if (!voice.isRecording && !voice.isTranscribing) void voice.startRecording({ autoStop: true, waitMs: 8000 }); });
+  };
+  useEffect(() => {
+    const onVisibility = () => afterCallRef.current();
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => document.removeEventListener("visibilitychange", onVisibility);
+  }, []);
 
   // Back online: the question kept meanwhile goes now.
   useEffect(() => {
@@ -455,6 +506,7 @@ export function AssistantChat({ threadId = null, compact, startDictation, classN
           </button>
         )}
       </div>
+      <VoiceNoteSheet job={noteFor?.job ?? null} initialText={noteFor?.text} onClose={() => setNoteFor(null)} onSaved={() => setNoteFor(null)} />
     </div>
   );
 }
@@ -503,8 +555,10 @@ function useUndoSecondsLeft(undoUntil: string | null): number {
   return end ? Math.max(0, Math.ceil((end - now) / 1000)) : 0;
 }
 
-function ProposalCard({ proposal, onConfirm, onDismiss, onUndo, onEdit, offline, editing, hint, busy }: { proposal: ProposalDto; onConfirm: () => void; onDismiss: () => void; onUndo: () => void; onEdit: () => void; offline: boolean; editing: boolean; hint: string | null; busy: boolean }) {
+function ProposalCard({ proposal, onConfirm, onDismiss, onUndo, onEdit, onNote, offline, editing, hint, busy }: { proposal: ProposalDto; onConfirm: () => void; onDismiss: () => void; onUndo: () => void; onEdit: () => void; onNote: () => void; offline: boolean; editing: boolean; hint: string | null; busy: boolean }) {
   const { t } = useLanguage();
+  const touch = useMediaQuery("(pointer: coarse)");
+  const isCall = proposal.kind === "call";
   const undoLeft = useUndoSecondsLeft(proposal.status === "confirmed" && proposal.auto ? proposal.undoUntil : null);
   const Icon = KIND_ICON[proposal.kind] ?? Receipt;
   const p = proposal.payload;
@@ -522,6 +576,7 @@ function ProposalCard({ proposal, onConfirm, onDismiss, onUndo, onEdit, offline,
   }
   if (proposal.kind === "reply_lead") details.push(t("assistant.detail.leadTemplate"));
   if (proposal.kind === "draft_quote") details.push(t("assistant.detail.draftQuote"));
+  if (isCall) details.push(p.projectName ? t("assistant.call.noteOn").replace("{job}", String(p.projectName)) : t("assistant.call.never"));
   const body = proposal.kind === "message_client" || (proposal.kind === "job_note" && String(p.body ?? "").length > 90) ? String(p.body ?? "") : "";
   const link = proposalLink(proposal);
   const status = proposal.status;
@@ -534,6 +589,12 @@ function ProposalCard({ proposal, onConfirm, onDismiss, onUndo, onEdit, offline,
           <div className="prop-summary">{proposal.summary}</div>
           {details.filter(Boolean).map((d, i) => <div key={i} className="prop-detail">{d}</div>)}
           {body && <div className="prop-body">{body}</div>}
+          {isCall && status === "confirmed" && !touch && typeof p.phone === "string" && (
+            <div className="prop-call">
+              <CallQr dial={p.phone} label={t("assistant.call.scan")} />
+              <span className="prop-detail">{t("assistant.call.scan")}</span>
+            </div>
+          )}
           {status === "failed" && proposal.error && <div className="prop-detail" style={{ color: "var(--red)" }}><AlertTriangle className="h-3 w-3" style={{ display: "inline", marginRight: 4 }} />{proposal.error}</div>}
         </div>
       </div>
@@ -541,14 +602,20 @@ function ProposalCard({ proposal, onConfirm, onDismiss, onUndo, onEdit, offline,
         {status === "pending" && (
           <>
             <button type="button" className="btn btn-navy btn-sm" onClick={onConfirm} disabled={busy || offline} title={offline ? t("assistant.offlineConfirm") : undefined}>
-              {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Check className="h-3.5 w-3.5" />} {t("assistant.confirm")}
+              {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : isCall ? <Phone className="h-3.5 w-3.5" /> : <Check className="h-3.5 w-3.5" />} {isCall ? t(touch ? "assistant.call.dial" : "assistant.call.show") : t("assistant.confirm")}
             </button>
             <button type="button" className="prop-dismiss" onClick={onEdit} disabled={busy || editing} aria-pressed={editing}><Pencil className="h-3 w-3" /> {t("assistant.edit")}</button>
             <button type="button" className="prop-dismiss" onClick={onDismiss} disabled={busy}><X className="h-3.5 w-3.5" /> {t("assistant.dismiss")}</button>
             {hint && !offline && <span className="prop-yes">{hint}</span>}
           </>
         )}
-        {status === "confirmed" && (
+        {status === "confirmed" && isCall && typeof p.phone === "string" && (
+          <>
+            <a href={`tel:${p.phone}`} className={cn("btn btn-sm", touch ? "btn-navy" : "btn-outline-navy")}><Phone className="h-3.5 w-3.5" /> {t("assistant.call.again").replace("{phone}", String(p.phoneDisplay ?? p.phone))}</a>
+            <button type="button" className="prop-dismiss" onClick={onNote}><StickyNote className="h-3 w-3" /> {t("assistant.call.note")}</button>
+          </>
+        )}
+        {status === "confirmed" && !isCall && (
           <>
             <span className="prop-status ok"><Check className="h-3.5 w-3.5" /> {proposal.auto ? t("assistant.done") : t("assistant.confirmed")}</span>
             {undoLeft > 0 && (

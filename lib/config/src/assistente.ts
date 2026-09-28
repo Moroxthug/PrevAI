@@ -21,16 +21,18 @@ export const ASSISTANT_ACTIONS = [
   "cost_entry", "milestone_update", "task", "job_note", "update_client",
   "invoice", "draft_quote",
   "send_invoice", "record_payment", "send_quote", "send_contract", "reply_lead", "message_client",
+  "call",
 ] as const;
 export type AssistantAction = (typeof ASSISTANT_ACTIONS)[number];
 
-export const ASSISTANT_GROUPS = ["notes", "drafts", "money"] as const;
+export const ASSISTANT_GROUPS = ["notes", "drafts", "money", "calls"] as const;
 export type AssistantGroup = (typeof ASSISTANT_GROUPS)[number];
 
 export const ASSISTANT_GROUP_LABEL: Record<AssistantGroup, { title: string; desc: string }> = {
   notes: { title: "Note e attività", desc: "Restano dentro l'impresa: costi, attività, note, date e stato delle fasi, dati dei clienti." },
   drafts: { title: "Bozze", desc: "Una bozza non parte: la rileggi prima di mandarla." },
   money: { title: "Soldi e clienti", desc: "Quello che esce verso un cliente o tocca un incasso chiede sempre prima." },
+  calls: { title: "Chiamate", desc: "Apre il telefono con il numero giusto: la chiamata la fai tu, l'assistente non chiama mai da solo." },
 };
 
 /** Team roles as stored on organization_members (plus the account owner). Strings, so this file needs no db import. */
@@ -51,7 +53,7 @@ export type AssistantActionDef = {
   /** The most the owner can allow: "ask" means it can never run by itself. */
   max: AssistantLevel;
   /** What the person's role needs (the same areas as requirePermission). */
-  needs: { area: "jobs" | "costs" | "invoicing" | "quotes" | "contracts" | "leads"; action: "edit" | "full" };
+  needs: { area: "jobs" | "costs" | "invoicing" | "quotes" | "contracts" | "leads"; action: "view" | "edit" | "full" };
   /** "Lo fa" shows Annulla for a few seconds (apply.ts undoAction). */
   undoable: boolean;
 };
@@ -74,6 +76,10 @@ export const ASSISTANT_ACTION_DEFS: Record<AssistantAction, AssistantActionDef> 
   send_contract: { label: "Inviare un contratto da firmare", group: "money", default: "ask", max: "ask", needs: { area: "contracts", action: "edit" }, undoable: false },
   reply_lead: { label: "Rispondere a una richiesta", group: "money", default: "ask", max: "ask", needs: { area: "leads", action: "edit" }, undoable: false },
   message_client: { label: "Scrivere un'email a un cliente", group: "money", default: "ask", max: "ask", needs: { area: "leads", action: "edit" }, undoable: false },
+  // ── APP-8g ──
+  // Opening the phone needs a tap anyway (and on a computer shows the number): never by itself.
+  // Anyone who sees the jobs may ask; which contacts they can reach follows their role (tools-app8g.ts).
+  call: { label: "Aprire il telefono per una chiamata", group: "calls", default: "ask", max: "ask", needs: { area: "jobs", action: "view" }, undoable: false },
 };
 
 /** How many seconds "Annulla" stays on a card that ran by itself (the server allows a little more for slow networks). */

@@ -26,6 +26,7 @@ import { balanceCents } from "../invoices/math.js";
 import { toIsoDate } from "../jobs/dates.js";
 import { companyAnalytics, jobAnalytics } from "../analytics/service.js";
 import { APP8C_TOOL_DEFINITIONS, APP8C_PROPOSAL_TOOLS, APP8C_READ_TOOLS, runApp8cReadTool, validateApp8cProposal } from "./tools-app8c.js";
+import { APP8G_TOOL_DEFINITIONS, APP8G_PROPOSAL_TOOLS, validateApp8gProposal } from "./tools-app8g.js";
 
 /** APP-8c: the person too — their role (brief_me, open_screen) and id (job notes). */
 export type ToolContext = { userId: string; projectId: string | null; province: string | null; now: Date; role: TeamMemberRole; actorId: string };
@@ -91,8 +92,8 @@ const BASE_TOOL_DEFINITIONS: OpenAI.Chat.Completions.ChatCompletionTool[] = [
   },
 ];
 
-/** Every tool the model can be offered (APP-8c adds brief_me, find, get_quote, open_screen and seven cards). */
-export const TOOL_DEFINITIONS: OpenAI.Chat.Completions.ChatCompletionTool[] = [...BASE_TOOL_DEFINITIONS, ...APP8C_TOOL_DEFINITIONS].map(allowNullOptionals);
+/** Every tool the model can be offered (APP-8c adds brief_me, find, get_quote, open_screen and seven cards; APP-8g propose_call). */
+export const TOOL_DEFINITIONS: OpenAI.Chat.Completions.ChatCompletionTool[] = [...BASE_TOOL_DEFINITIONS, ...APP8C_TOOL_DEFINITIONS, ...APP8G_TOOL_DEFINITIONS].map(allowNullOptionals);
 
 type JsonProp = { type?: string | string[]; enum?: unknown[] } & Record<string, unknown>;
 
@@ -116,6 +117,7 @@ export function allowNullOptionals(tool: OpenAI.Chat.Completions.ChatCompletionT
 
 export const PROPOSAL_TOOLS: Record<string, ProposalKind> = {
   ...APP8C_PROPOSAL_TOOLS,
+  ...APP8G_PROPOSAL_TOOLS,
   propose_cost_entry: "cost_entry",
   propose_milestone_update: "milestone_update",
   propose_task: "task",
@@ -287,6 +289,7 @@ const METODO_IT: Record<string, string> = { bank_transfer: "bonifico", cheque: "
 export async function validateProposal(name: string, rawArgs: unknown, ctx: ToolContext): Promise<{ ok: true; proposal: ValidatedProposal } | { ok: false; error: string }> {
   try {
     if (APP8C_PROPOSAL_TOOLS[name]) return await validateApp8cProposal(name, rawArgs, ctx);
+    if (APP8G_PROPOSAL_TOOLS[name]) return await validateApp8gProposal(name, rawArgs, ctx);
     switch (name) {
       case "propose_cost_entry": {
         const a = ProposeArgs.propose_cost_entry.parse(rawArgs);
