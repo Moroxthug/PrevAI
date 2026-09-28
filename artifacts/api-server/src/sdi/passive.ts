@@ -5,6 +5,7 @@ import {
   costEntriesTable,
   suppliersTable,
   projectsTable,
+  milestonesTable,
   normalizzaPartitaIva,
   COST_CATEGORIES,
   type SupplierEInvoice,
@@ -140,13 +141,17 @@ export async function collegaACantiere(params: {
   const [progetto] = await db.select().from(projectsTable).where(and(eq(projectsTable.id, params.projectId), eq(projectsTable.userId, params.userId)));
   if (!progetto) throw new ErroreSdi("not_found", "Cantiere non trovato.");
 
+  // SEC-4: only a phase of this job (the id comes from the request body).
+  const milestoneId = params.milestoneId
+    ? ((await db.select({ id: milestonesTable.id }).from(milestonesTable).where(and(eq(milestonesTable.id, params.milestoneId), eq(milestonesTable.projectId, progetto.id))))[0]?.id ?? null)
+    : null;
   const category: CostCategory = params.category && COST_CATEGORIES.includes(params.category) ? params.category : "materials";
   const [costo] = await db
     .insert(costEntriesTable)
     .values({
       userId: params.userId,
       projectId: params.projectId,
-      milestoneId: params.milestoneId ?? null,
+      milestoneId,
       category,
       vendor: passiva.fornitoreNome,
       supplierId: passiva.supplierId,

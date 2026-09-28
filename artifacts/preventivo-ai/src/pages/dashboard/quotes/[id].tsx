@@ -6,7 +6,7 @@ import { PREZZI_PIANI, formatPrezzo } from "@workspace/config";
 import { useGetQuote, useGetBusinessProfile, useGenerateQuotePdf, useGetPlans, useUpdateQuote, useCreateCheckoutSession, useVerifyPayment, useGetSubscription, useUnlockQuoteWithSubscription, useCreateCustomerPortalSession, useRegenerateQuote, useDuplicateQuote, useUpgradeToCapitolatoPro, useGenerateQuotePdfPro, useGetTrialStatus, useListClients, useSendQuotePdfEmail, useListQuoteVariants, useCreateQuoteVariant, useUpdateQuoteVariant, useDeleteQuoteVariant, useArchiveQuote, useDeleteQuote, getGetQuoteQueryKey, getVerifyPaymentQueryKey, getListQuotesQueryKey, getGetTrialStatusQueryKey, getListQuoteVariantsQueryKey } from "@workspace/api-client-react";
 import { Dialog, DialogBody, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ArrowLeft, Download, Lock, CheckCircle2, Edit2, Save, FileText, FileSpreadsheet, ImageIcon, ChevronDown, ChevronRight, Plus, Trash2, X, Pencil, Sparkles, AlertTriangle, RefreshCw, Loader2, Copy, Star, FileDown, LayoutTemplate, Mail, Hammer, Archive, Briefcase, Send, Share2 } from "lucide-react";
+import { ArrowLeft, Download, Lock, CheckCircle2, Edit2, Save, FileText, FileSpreadsheet, ImageIcon, ChevronDown, ChevronRight, Plus, Trash2, X, Pencil, Sparkles, AlertTriangle, RefreshCw, Loader2, Copy, Star, FileDown, LayoutTemplate, Mail, Hammer, Archive, Briefcase, Send, Share2, Link2Off } from "lucide-react";
 import { useState, useRef, useEffect, useMemo, Fragment } from "react";
 import { ActionSheet, type SheetAction } from "@/components/mobile/action-sheet";
 import { StickyActionBar } from "@/components/mobile/sticky-action-bar";
@@ -26,6 +26,7 @@ import { useLanguage } from "@/i18n/LanguageContext";
 import { PaymentScheduleCard } from "@/components/payment-schedule-card";
 import { QuoteContractCard } from "@/components/quote-contract-card";
 import { jobsApi } from "@/lib/jobs-api";
+import { quoteLinkApi, copyPendingText } from "@/lib/quote-link-api";
 import { hasFeature } from "@/lib/plans";
 import type { PaymentSchedule } from "@/lib/payment-schedule";
 
@@ -159,15 +160,33 @@ export default function QuoteDetail() {
   const heroTitle = quote?.clientData?.nome || t("dashboard.quoteDetail.title");
   useMobileHeader(useMemo(() => ({ title: heroTitle }), [heroTitle]));
 
+  // SEC-4: the link is made (or renewed) by the server — revocable, with an expiry.
   const handleCopyPublicLink = async () => {
     if (!id) return;
-    const url = `${window.location.origin}/p/${id}`;
+    const pending = quoteLinkApi.share(id).then((l) => {
+      if (!l.url) throw new Error("no link");
+      return l.url;
+    });
     try {
-      await navigator.clipboard.writeText(url);
+      await copyPendingText(pending);
       trackAppEvent("quote_shared", { entityId: id, channel: "link" });
       toast({ title: t("dashboard.quoteDetail.linkCopied"), description: t("dashboard.quoteDetail.linkCopiedDesc") });
     } catch {
       toast({ title: t("dashboard.quoteDetail.error"), description: t("dashboard.quoteDetail.errorCopyLink"), variant: "destructive" });
+    }
+  };
+
+  const [revokingLink, setRevokingLink] = useState(false);
+  const handleRevokePublicLink = async () => {
+    if (!id || revokingLink || !confirm(t("dashboard.quoteDetail.revokeLinkConfirm"))) return;
+    setRevokingLink(true);
+    try {
+      await quoteLinkApi.revoke(id);
+      toast({ title: t("dashboard.quoteDetail.linkRevoked"), description: t("dashboard.quoteDetail.linkRevokedDesc") });
+    } catch (err) {
+      toast({ title: t("dashboard.quoteDetail.error"), description: err instanceof Error && err.message ? err.message : t("dashboard.quoteDetail.errorRevokeLink"), variant: "destructive" });
+    } finally {
+      setRevokingLink(false);
     }
   };
 
@@ -818,6 +837,7 @@ export default function QuoteDetail() {
     !isEditLocked && { label: t("dashboard.quoteDetail.regenerateWithAi"), icon: Sparkles, onSelect: () => setIsRegenOpen(true) },
     asSheet(sendAction),
     asSheet(copyLink),
+    isOpen && { label: t("dashboard.quoteDetail.revokeLink"), icon: Link2Off, onSelect: handleRevokePublicLink, disabled: revokingLink },
     pdfShare.canShare && { label: t("share.pdf"), icon: isLocked ? Lock : Share2, onSelect: isLocked ? handleUnlock : handleSharePdf, disabled: generatePdf.isPending || pdfShare.busy, hint: "WhatsApp" },
     { label: t("dashboard.quoteDetail.downloadPdf"), icon: isLocked ? Lock : Download, onSelect: isLocked ? handleUnlock : handleDownload, disabled: generatePdf.isPending, hint: "PDF" },
     quote.capitolatoPro && isPro && quote.status === "unlocked" && { label: t("dashboard.quoteDetail.downloadProPdf"), icon: FileDown, onSelect: handleDownloadProPdf, disabled: generatePdfPro.isPending },

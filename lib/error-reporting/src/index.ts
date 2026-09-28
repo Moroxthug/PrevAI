@@ -229,7 +229,7 @@ export function debugIdImages(frames: Frame[]): DebugImage[] {
 // after one of these prefixes is replaced — in the API's request log and in
 // every event both apps send (URL, Referer, route tag, error messages).
 const PUBLIC_TOKEN_PATH =
-  /(\/(?:api\/)?(?:sign|i|t|p|commercialista|team-invite|team\/invite|public\/quotes)\/)(?!unsubscribe\b)[A-Za-z0-9_-]{16,}/g;
+  /(\/(?:api\/)?(?:sign|i|t|p|commercialista|team-invite|team\/invite|public\/quotes)\/)(?!unsubscribe\b)[A-Za-z0-9_.-]{16,}/g; // "." — SEC-4 quote links are <id>.<signature>
 
 /** Replaces the secret segment of every public-link path in `text`. */
 export function redactTokens(text: string): string {

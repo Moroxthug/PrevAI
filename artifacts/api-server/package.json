@@ -28,6 +28,7 @@
     "ops:addon-beta": "tsx scripts/addon-beta.ts",
     "ops:demo-revisore": "tsx scripts/demo-revisore.ts",
     "ops:vapid-keys": "tsx scripts/vapid-keys.ts",
+    "ops:storage-buckets": "tsx scripts/storage-buckets.ts",
     "eval:assistant": "tsx src/assistant/evals/run.ts"
   },
   "dependencies": {

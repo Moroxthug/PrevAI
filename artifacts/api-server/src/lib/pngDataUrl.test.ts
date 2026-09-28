@@ -19,4 +19,9 @@ describe("isWellFormedPngDataUrl", () => {
     const truncated = Buffer.from(TINY_PNG_DATA_URL.slice("data:image/png;base64,".length), "base64").subarray(0, 40).toString("base64");
     expect(isWellFormedPngDataUrl(`data:image/png;base64,${truncated}`)).toBe(false);
   });
+  test("rejects markup after a valid PNG (SEC-4: it used to decode fine and land in an <img src>)", () => {
+    expect(isWellFormedPngDataUrl(`${TINY_PNG_DATA_URL}" onerror="alert(1)`)).toBe(false);
+    expect(isWellFormedPngDataUrl(`${TINY_PNG_DATA_URL}"><img src=x onerror=alert(1)>`)).toBe(false);
+    expect(isWellFormedPngDataUrl(`${TINY_PNG_DATA_URL} `)).toBe(false);
+  });
 });

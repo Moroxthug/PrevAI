@@ -8,7 +8,7 @@ import { describe, test, expect, beforeAll, afterAll } from "vitest";
 import { db, quotesTable, clientsTable, quoteImportCandidatesTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
 import "../automations/index.js";
-import { startServer, stopServer, createOrg, createUser, seedQuote, cleanupAll, api } from "./harness.js";
+import { startServer, stopServer, createOrg, createUser, seedQuote, cleanupAll, api, publicRef } from "./harness.js";
 import { sentEmails } from "./mailbox.js";
 
 describe("quotes: archive, variants, import", () => {
@@ -69,13 +69,14 @@ describe("quotes: archive, variants, import", () => {
     expect(listed.body.variants.map((v: { label: string }) => v.label)).toEqual(["Good", "Better", "Best"]);
 
     // Public page exposes the options; accepting without a choice is refused.
-    const pub = await api(`/api/public/quotes/${quote.id}`);
+    const ref = await publicRef(quote);
+    const pub = await api(`/api/public/quotes/${ref}`);
     expect(pub.status).toBe(200);
     expect(pub.body.quote.variants).toHaveLength(3);
-    const noChoice = await api(`/api/public/quotes/${quote.id}/accept`, { body: { nomeConferma: "Jordan Client" } });
+    const noChoice = await api(`/api/public/quotes/${ref}/accept`, { body: { nomeConferma: "Jordan Client" } });
     expect(noChoice.status).toBe(400);
 
-    const accepted = await api(`/api/public/quotes/${quote.id}/accept`, { body: { nomeConferma: "Jordan Client", variantId: best.body.id } });
+    const accepted = await api(`/api/public/quotes/${ref}/accept`, { body: { nomeConferma: "Jordan Client", variantId: best.body.id } });
     expect(accepted.status, JSON.stringify(accepted.body)).toBe(200);
 
     const [row] = await db.select().from(quotesTable).where(eq(quotesTable.id, quote.id));
@@ -163,7 +164,7 @@ describe("quotes: unlock + send lifecycle (Phase 66)", () => {
   test("a subscriber's unlock-quote never reverts an accepted quote, and stats count accepted as unlocked", async () => {
     const org = await createOrg({ plan: "monthly_pro" });
     const quote = await seedQuote(org.userId, { status: "unlocked" });
-    const accepted = await api(`/api/public/quotes/${quote.id}/accept`, { method: "POST", body: { nomeConferma: "Jordan Client" } });
+    const accepted = await api(`/api/public/quotes/${await publicRef(quote)}/accept`, { method: "POST", body: { nomeConferma: "Jordan Client" } });
     expect(accepted.status, JSON.stringify(accepted.body)).toBe(200);
 
     // The quote page calls this on open for every subscriber.
@@ -223,7 +224,7 @@ describe("quotes: righe IVA + documenti in italiano (Phase 71 / V2-2)", () => {
     expect(mail?.html).toContain("in allegato trovi il preventivo");
 
     // L'invio lo ha sbloccato: la pagina pubblica mostra la stessa riga IVA.
-    const pub = await org.api(`/api/public/quotes/${quote.id}`);
+    const pub = await org.api(`/api/public/quotes/${await publicRef(quote)}`);
     expect(pub.status).toBe(200);
     expect(pub.body.quote.taxLines.map((l: { code: string }) => l.code)).toEqual(["IVA10"]);
   });

@@ -3,7 +3,7 @@
 // download, and the monthly quota check shared by the generator and draft_quote.
 import { db, quotesTable, businessProfilesTable, type QuoteClientData, type QuoteCompanySnapshot } from "@workspace/db";
 import { eq, sql } from "drizzle-orm";
-import { getBaseUrl } from "../lib/baseUrl.js";
+import { publicQuoteLink } from "./publicLink.js";
 import { quoteLanguageFor, qt, fmtQuoteDate, fmtQty } from "./i18n.js";
 import { generateQuotePdfBuffer, quoteProvenance } from "./pdf.js";
 import { getTrialStatus, PLANS } from "../routes/payments.js";
@@ -100,7 +100,8 @@ export async function sendQuoteByEmail(params: { userId: string; quoteId: string
     filename,
     companyLogoUrl: profile?.logoUrl ?? null,
     replyTo: profile?.email ?? null,
-    publicUrl: quote.status === "unlocked" || quote.status === "accepted" ? `${getBaseUrl()}/p/${quote.id}` : null,
+    // SEC-4: sending the quote is sharing its link (a new one if it had been revoked).
+    publicUrl: quote.status === "unlocked" || quote.status === "accepted" ? (await publicQuoteLink(quote, { share: true })).url : null,
     aiGenerated: quoteProvenance(quote) === "ai",
   });
 

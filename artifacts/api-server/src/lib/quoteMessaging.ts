@@ -3,6 +3,7 @@ import { Resend } from "resend";
 import { MARKET, fmtEur } from "@workspace/config";
 import { logger } from "./logger.js";
 import { getBaseUrl } from "./baseUrl.js";
+import { publicQuoteLink } from "../quotes/publicLink.js";
 import { sanitizeForFromHeader } from "./emailUtils.js";
 import { type BusinessProfile, type Quote, type QuoteClientData, type QuoteCompanySnapshot } from "@workspace/db";
 
@@ -113,7 +114,10 @@ export async function sendQuoteFollowup(params: {
   const companyName = (quote.companySnapshot as QuoteCompanySnapshot | null)?.companyName || profile.companyName || "La tua impresa";
   const quoteNumber = quote.numeroPreventivoData || `N° ${quote.id.slice(0, 4).toUpperCase()}`;
   const totale = fmtEur(Number(quote.totale));
-  const publicUrl = `${getBaseUrl()}/p/${quote.id}`;
+  // SEC-4: a reminder moves the link's expiry forward, but never reopens a link the company revoked.
+  const link = await publicQuoteLink(quote, { share: true, reopen: false });
+  if (!link.url) return { ok: false, reason: "link_revoked" };
+  const publicUrl = link.url;
   const { subject } = followupCopy(stage, quoteNumber, totale);
 
   try {

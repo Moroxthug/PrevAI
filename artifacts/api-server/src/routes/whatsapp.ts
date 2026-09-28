@@ -23,11 +23,17 @@ import {
 import { generateQuoteWhatsappPdfBuffer } from "../lib/generateQuoteWhatsappPdfBuffer.js";
 import { ObjectStorageService } from "../lib/objectStorage.js";
 import { getBaseUrl } from "../lib/baseUrl.js";
-import { randomUUID } from "crypto";
+import { randomInt, randomUUID } from "crypto";
+import { userRateLimiter } from "../lib/rateLimit.js";
 import { withWhatsappUsageContext, recordWhatsappUsageFromContext } from "../lib/usage.js";
 
 const objectStorage = new ObjectStorageService();
 const router = Router();
+
+// SEC-4: "connect" sends a WhatsApp message to the number typed in (cost, and
+// spam towards a stranger); "verify" guesses a 6-digit code. Both per person.
+const connectLimiter = userRateLimiter({ name: "whatsapp.connectLimiter", windowMs: 60 * 60_000, max: 5, message: "Troppe richieste di codice: riprova tra un'ora." });
+const verifyLimiter = userRateLimiter({ name: "whatsapp.verifyLimiter", windowMs: 15 * 60_000, max: 10, message: "Troppi tentativi: riprova tra un quarto d'ora." });
 
 const WA_TOKEN = process.env.WHATSAPP_ACCESS_TOKEN ?? "";
 const WA_PHONE_ID = process.env.WHATSAPP_PHONE_NUMBER_ID ?? "";
@@ -1410,7 +1416,7 @@ router.get("/whatsapp/usage", requireAuth, async (req, res) => {
   }
 });
 
-router.post("/whatsapp/connect", requireAuth, requirePermission("integrations", "full"), async (req, res) => {
+router.post("/whatsapp/connect", requireAuth, requirePermission("integrations", "full"), connectLimiter, async (req, res) => {
   try {
     const userId = getUserId(res);
     const { phoneNumber } = req.body as { phoneNumber?: string };
@@ -1445,7 +1451,7 @@ router.post("/whatsapp/connect", requireAuth, requirePermission("integrations", 
   }
 });
 
-router.post("/whatsapp/verify", requireAuth, requirePermission("integrations", "full"), async (req, res) => {
+router.post("/whatsapp/verify", requireAuth, requirePermission("integrations", "full"), verifyLimiter, async (req, res) => {
   try {
     const userId = getUserId(res);
     const { phoneNumber, otp } = req.body as { phoneNumber?: string; otp?: string };
@@ -1500,7 +1506,7 @@ router.patch("/whatsapp/toggle", requireAuth, requirePermission("integrations", 
 // ── Utilities ──────────────────────────────────────────────────────────────────
 
 function generateOtp(): string {
-  return Math.floor(100000 + Math.random() * 900000).toString();
+  return randomInt(100000, 1000000).toString();
 }
 
 function normalizePhone(input: string): string | null {

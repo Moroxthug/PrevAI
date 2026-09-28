@@ -384,7 +384,7 @@ function buildQuoteEmailHtml(params: {
     <div class="quote-box">
       <div class="quote-row">
         <span class="quote-label">${c.quote}</span>
-        <span><strong>${quoteNumber}</strong></span>
+        <span><strong>${escapeHtml(quoteNumber)}</strong></span>
       </div>
       <div class="quote-row">
         <span class="quote-label">${c.total}</span>
@@ -715,7 +715,7 @@ function buildQuoteAcceptedEmail(params: {
   <div class="body">
     <p class="greeting">Ottima notizia, ${companyName}!<br/><br/><strong>${clientName}</strong> ha confermato il preventivo online il ${acceptedAt}. Il prossimo passo è trasformarlo in un contratto firmato e incassare l'acconto.</p>
     <div class="quote-box">
-      <div class="quote-row"><span class="quote-label">Preventivo</span><span><strong>${quoteNumber}</strong></span></div>
+      <div class="quote-row"><span class="quote-label">Preventivo</span><span><strong>${escapeHtml(quoteNumber)}</strong></span></div>
       <div class="quote-row"><span class="quote-label">Accettato da</span><span>${clientName}</span></div>
       <div class="quote-row"><span class="quote-label">Totale</span><span>€ ${totale}</span></div>
     </div>

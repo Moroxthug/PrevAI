@@ -6,11 +6,17 @@
 // rather than failing the whole contract (Phase 63 e2e finding).
 
 const PNG_PREFIX = "data:image/png;base64,";
+const BASE64_BODY = /^[A-Za-z0-9+/]+={0,2}$/;
 const PNG_MAGIC = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
 
 /** True when the data URL decodes to something pdfkit can actually open: PNG magic, an IHDR chunk, and a trailing IEND. */
 export function isWellFormedPngDataUrl(value: string | null | undefined): boolean {
   if (!value || !value.startsWith(PNG_PREFIX)) return false;
+  // SEC-4: Node's base64 decoder stops at the first "=" and skips characters
+  // outside the alphabet, so a valid PNG followed by '"><img onerror=…>'
+  // used to pass — and the value lands in an <img src> of the contract page.
+  // Only the base64 alphabet, padding at the very end.
+  if (!BASE64_BODY.test(value.slice(PNG_PREFIX.length))) return false;
   let bytes: Buffer;
   try {
     bytes = Buffer.from(value.slice(PNG_PREFIX.length), "base64");

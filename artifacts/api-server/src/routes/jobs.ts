@@ -164,7 +164,7 @@ router.get("/jobs", requireAuth, requirePermission("jobs", "view"), async (req, 
     const projects = await db.select().from(projectsTable).where(and(eq(projectsTable.userId, userId), isNull(projectsTable.archivedAt))).orderBy(desc(projectsTable.createdAt)).limit(300);
     const ids = projects.map((p) => p.id);
     const clientIds = [...new Set(projects.map((p) => p.clientId).filter((x): x is string => !!x))];
-    const clients: { id: string; name: string }[] = clientIds.length ? await db.select({ id: clientsTable.id, name: clientsTable.name }).from(clientsTable).where(inArray(clientsTable.id, clientIds)) : [];
+    const clients: { id: string; name: string }[] = clientIds.length ? await db.select({ id: clientsTable.id, name: clientsTable.name }).from(clientsTable).where(and(inArray(clientsTable.id, clientIds), eq(clientsTable.userId, userId))) : [];
     const milestones: Milestone[] = ids.length ? await db.select().from(milestonesTable).where(inArray(milestonesTable.projectId, ids)).orderBy(asc(milestonesTable.sortOrder)) : [];
     const assignments: { projectId: string }[] = ids.length ? await db.select({ projectId: projectAssignmentsTable.projectId }).from(projectAssignmentsTable).where(inArray(projectAssignmentsTable.projectId, ids)) : [];
     const clientName = new Map(clients.map((c) => [c.id, c.name]));
@@ -222,6 +222,11 @@ router.post("/jobs", requireAuth, requirePermission("jobs", "edit"), async (req,
       }
     }
     const quote = d.quoteId ? (await db.select().from(quotesTable).where(and(eq(quotesTable.id, d.quoteId), eq(quotesTable.userId, userId))))[0] : undefined;
+    // SEC-4: a client id from the body must be one of this company's clients.
+    if (d.clientId && !(await db.select({ id: clientsTable.id }).from(clientsTable).where(and(eq(clientsTable.id, d.clientId), eq(clientsTable.userId, userId))))[0]) {
+      res.status(404).json({ error: "Client not found" });
+      return;
+    }
     const [project] = await db
       .insert(projectsTable)
       .values({
@@ -281,9 +286,9 @@ async function loadJobDetail(userId: string, id: string) {
       .from(projectAssignmentsTable)
       .innerJoin(collaboratorsTable, eq(projectAssignmentsTable.collaboratorId, collaboratorsTable.id))
       .where(eq(projectAssignmentsTable.projectId, id)),
-    project.clientId ? db.select().from(clientsTable).where(eq(clientsTable.id, project.clientId)).then((r) => r[0] ?? null) : Promise.resolve(null),
-    project.contractId ? db.select().from(contractsTable).where(eq(contractsTable.id, project.contractId)).then((r) => r[0] ?? null) : Promise.resolve(null),
-    project.quoteId ? db.select({ id: quotesTable.id, number: quotesTable.numeroPreventivoData, status: quotesTable.status }).from(quotesTable).where(eq(quotesTable.id, project.quoteId)).then((r) => r[0] ?? null) : Promise.resolve(null),
+    project.clientId ? db.select().from(clientsTable).where(and(eq(clientsTable.id, project.clientId), eq(clientsTable.userId, userId))).then((r) => r[0] ?? null) : Promise.resolve(null),
+    project.contractId ? db.select().from(contractsTable).where(and(eq(contractsTable.id, project.contractId), eq(contractsTable.userId, userId))).then((r) => r[0] ?? null) : Promise.resolve(null),
+    project.quoteId ? db.select({ id: quotesTable.id, number: quotesTable.numeroPreventivoData, status: quotesTable.status }).from(quotesTable).where(and(eq(quotesTable.id, project.quoteId), eq(quotesTable.userId, userId))).then((r) => r[0] ?? null) : Promise.resolve(null),
     db
       .select({ e: timeEntriesTable, workerName: collaboratorsTable.name })
       .from(timeEntriesTable)

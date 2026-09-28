@@ -7,10 +7,10 @@
 //  • il tick cron chiude i bandi scaduti e ri-verifica gli altri senza AI raggiungibile
 
 import { describe, test, expect, beforeAll, afterAll } from "vitest";
-import { db, quotesTable, incentivesCatalogTable, type QuoteClientData } from "@workspace/db";
+import { db, quotesTable, businessProfilesTable, incentivesCatalogTable, type QuoteClientData } from "@workspace/db";
 import { eq } from "drizzle-orm";
 import "../automations/index.js";
-import { startServer, stopServer, createOrg, seedQuote, cleanupAll, api, daysAgo } from "./harness.js";
+import { startServer, stopServer, createOrg, seedQuote, cleanupAll, api, daysAgo, publicRef } from "./harness.js";
 import { sentEmails } from "./mailbox.js";
 
 describe("incentivi v1: catalogo, widget, pagina pubblica, cron", () => {
@@ -49,10 +49,19 @@ describe("incentivi v1: catalogo, widget, pagina pubblica, cron", () => {
   test("POST /api/public/quotes/:id/incentives: calcolo v1, salvataggio nel preventivo, email", async () => {
     const org = await createOrg({ companyName: "Impresa Incentivi" });
     const quote = await seedQuote(org.userId, { clientEmail: "cliente-incentivi@e2e-test.invalid" });
+    // SEC-4: only the widget that just made the quote, with the company's widget key.
+    const widgetKey = `pk_e2e_${org.userId}`;
+    await db.update(businessProfilesTable).set({ apiKey: widgetKey }).where(eq(businessProfilesTable.userId, org.userId));
+    const calc = { tipoImmobile: "prima_casa", obiettivoLavori: "ristrutturazione", fasciaIsee: "sotto_30k", regione: "Lombardia", cap: "20100", totalePreventivo: 10000 };
+    expect((await api(`/api/public/quotes/${quote.id}/incentives`, { method: "POST", body: calc, headers: { "x-api-key": widgetKey } })).status).toBe(404); // not from the widget
+    await db.update(quotesTable).set({ source: "widget" }).where(eq(quotesTable.id, quote.id));
+    expect((await api(`/api/public/quotes/${quote.id}/incentives`, { method: "POST", body: calc })).status).toBe(404); // no key
+    expect((await api(`/api/public/quotes/${quote.id}/incentives`, { method: "POST", body: calc, headers: { "x-api-key": "pk_someone_else" } })).status).toBe(404);
     const before = sentEmails.length;
 
     const res = await api(`/api/public/quotes/${quote.id}/incentives`, {
       method: "POST",
+      headers: { "x-api-key": widgetKey },
       body: { tipoImmobile: "prima_casa", obiettivoLavori: "ristrutturazione", fasciaIsee: "sotto_30k", regione: "Lombardia", cap: "20100", totalePreventivo: 10000 },
     });
     expect(res.status, JSON.stringify(res.body)).toBe(200);
@@ -97,7 +106,7 @@ describe("incentivi v1: catalogo, widget, pagina pubblica, cron", () => {
   test("GET /api/public/quotes/:id/incentives (pagina /p/:id): bandi della regione del cantiere", async () => {
     const org = await createOrg();
     const quote = await seedQuote(org.userId, { province: "MI" }); // MI → Lombardia, città Milano
-    const res = await api(`/api/public/quotes/${quote.id}/incentives`);
+    const res = await api(`/api/public/quotes/${await publicRef(quote)}/incentives`);
     expect(res.status, JSON.stringify(res.body)).toBe(200);
     const list = res.body.incentives as { level: string; titolo: string; regione?: string }[];
     expect(list.length).toBeGreaterThan(0);
@@ -107,7 +116,7 @@ describe("incentivi v1: catalogo, widget, pagina pubblica, cron", () => {
     expect(list.some((i) => /Regione Lombardia/.test(i.titolo))).toBe(false);
 
     const napoli = await seedQuote(org.userId, { province: "NA" });
-    const campania = (await api(`/api/public/quotes/${napoli.id}/incentives`)).body.incentives as { level: string }[];
+    const campania = (await api(`/api/public/quotes/${await publicRef(napoli)}/incentives`)).body.incentives as { level: string }[];
     expect(campania.every((i) => i.level === "statale")).toBe(true);
   });
 

@@ -488,18 +488,6 @@ export interface LogoUploadResult {
   logoUrl: string;
 }
 
-export interface UploadUrlRequest {
-  name: string;
-  size: number;
-  contentType: string;
-}
-
-export interface UploadUrlResponse {
-  uploadURL: string;
-  objectPath: string;
-  metadata?: UploadUrlRequest;
-}
-
 export interface CatalogItem {
   id: string;
   userId: string;

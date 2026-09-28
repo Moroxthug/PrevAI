@@ -13,7 +13,7 @@ import { eq } from "drizzle-orm";
 import { db, organizationMembersTable, pushSubscriptionsTable, notificationsTable } from "@workspace/db";
 import { createNotification } from "../lib/notifications.js";
 import { generateVapidKeys, decryptPayloadForTest, verifyVapidForTest } from "../lib/webPush.js";
-import { startServer, stopServer, createOrg, createUser, cleanupAll, api, seedQuote } from "./harness.js";
+import { startServer, stopServer, createOrg, createUser, cleanupAll, api, seedQuote, publicRef } from "./harness.js";
 import { installVendorStubs, stubHost, unstubHost, requestsTo, resetRecorded } from "./vendorStub.js";
 
 const PUSH_HOST = "https://push.e2e-test.invalid/";
@@ -124,9 +124,10 @@ describe("Notifiche push (APP-2)", () => {
     const b = browser();
     expect((await org.api("/api/push/subscriptions", { body: b.subscription })).status).toBe(201);
     const quote = await seedQuote(org.userId, { status: "unlocked", clientName: "Mario Rossi" });
+    const ref = await publicRef(quote);
     resetRecorded();
-    expect((await api(`/api/public/quotes/${quote.id}`)).status).toBe(200);
-    expect((await api(`/api/public/quotes/${quote.id}`)).status).toBe(200);
+    expect((await api(`/api/public/quotes/${ref}`)).status).toBe(200);
+    expect((await api(`/api/public/quotes/${ref}`)).status).toBe(200);
     await settle();
     const viewed = (await db.select().from(notificationsTable).where(eq(notificationsTable.userId, org.userId))).filter((n) => n.type === "quote_viewed");
     expect(viewed).toHaveLength(1);
@@ -136,7 +137,7 @@ describe("Notifiche push (APP-2)", () => {
 
     // Un preventivo in bozza non è pubblico: niente avviso.
     const draft = await seedQuote(org.userId, { status: "draft" });
-    expect((await api(`/api/public/quotes/${draft.id}`)).status).toBe(404);
+    expect((await api(`/api/public/quotes/${await publicRef(draft)}`)).status).toBe(404);
     expect((await db.select().from(notificationsTable).where(eq(notificationsTable.entityId, draft.id)))).toHaveLength(0);
   });
 

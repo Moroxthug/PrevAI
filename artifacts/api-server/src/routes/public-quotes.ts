@@ -1,4 +1,4 @@
-import { Router } from "express";
+import { Router, type Response } from "express";
 import { db, quotesTable, quoteVariantsTable, businessProfilesTable, priceCatalogItemsTable, leadsTable, leadEventsTable, incentivesCatalogTable, normalizeProvince, regioneDiProvincia, readQuoteClientData, quoteTaxLines } from "@workspace/db";
 import { eq, or, isNull } from "drizzle-orm";
 import { inferInterventionCategories, matchIncentivesForQuote } from "../incentives/matching.js";
@@ -18,6 +18,7 @@ import { resolveQuoteTaxRate } from "../lib/tax.js";
 import { FOLLOWUP_CADENCE_DAYS } from "../lib/leadMessaging.js";
 import { quoteProvenance } from "../quotes/pdf.js";
 import { noteQuoteViewed } from "../quotes/viewed.js";
+import { resolvePublicQuoteRef } from "../quotes/publicLink.js";
 import { createNotification } from "../lib/notifications.js";
 import { fmtEurCents } from "@workspace/config";
 
@@ -575,13 +576,26 @@ Usa queste misure esatte per calcolare matematicamente le quantità.`;
   }
 });
 
+/**
+ * SEC-4: `:id` is the link the customer got — `<quote id>.<signature>`, or
+ * the bare UUID of a link sent before SEC-4 (quotes/publicLink.ts). Answers
+ * 404 / 410 itself and returns null when the link doesn't open anything.
+ */
+async function quoteIdFromLink(ref: string, res: Response): Promise<string | null> {
+  const r = await resolvePublicQuoteRef(ref);
+  if (r.ok) return r.quoteId;
+  if (r.reason === "expired") res.status(410).json({ error: "Il link è scaduto: chiedi all'impresa di mandartene uno nuovo.", code: "LINK_EXPIRED" });
+  else res.status(404).json({ error: "Preventivo non trovato." });
+  return null;
+}
+
 // GET /api/public/quotes/:id — read-only public view, used by the page the
-// end client opens to review and accept the quote.
-// Does not require authentication: the quote's UUID acts as the access
-// token, following the same pattern already used for generated PDF links.
+// end client opens to review and accept the quote. No login: the signed link
+// is the access token (revocable, with an expiry — SEC-4).
 router.get("/public/quotes/:id", quoteViewLimiter, async (req, res) => {
   try {
-    const id = req.params.id as string;
+    const id = await quoteIdFromLink(req.params.id as string, res);
+    if (!id) return;
 
     const [quote] = await db
       .select()
@@ -617,7 +631,8 @@ router.get("/public/quotes/:id", quoteViewLimiter, async (req, res) => {
 // reasonably verifiable and non-repudiable).
 router.post("/public/quotes/:id/accept", quoteAcceptLimiter, async (req, res) => {
   try {
-    const id = req.params.id as string;
+    const id = await quoteIdFromLink(req.params.id as string, res);
+    if (!id) return;
     const { nomeConferma, variantId } = req.body as { nomeConferma?: string; variantId?: string };
 
     const trimmedName = (nomeConferma || "").trim();
@@ -715,7 +730,8 @@ router.post("/public/quotes/:id/accept", quoteAcceptLimiter, async (req, res) =>
 // Regione dalla provincia del preventivo, comune dalla città del cliente.
 router.get("/public/quotes/:id/incentives", quoteViewLimiter, async (req, res) => {
   try {
-    const id = req.params.id as string;
+    const id = await quoteIdFromLink(req.params.id as string, res);
+    if (!id) return;
     const [quote] = await db.select().from(quotesTable).where(eq(quotesTable.id, id));
     if (!quote || (quote.status !== "unlocked" && quote.status !== "accepted")) {
       res.status(404).json({ error: "Preventivo non trovato." });

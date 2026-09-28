@@ -91,7 +91,8 @@ interface MatchedIncentive {
 // Card autonoma: carica i bonus/bandi del catalogo v1 che combaciano con il
 // preventivo (regione dalla provincia, comune dalla città, categoria dal
 // testo) e non mostra nulla se non c'è nessuna corrispondenza.
-function RebatesWidget({ quoteId }: { quoteId: string }) {
+// quoteRef is the link from the address bar (SEC-4: id + signature), not quote.id.
+function RebatesWidget({ quoteRef }: { quoteRef: string }) {
   const { t } = useLanguage();
   const [checked, setChecked] = useState(false);
   const [incentives, setIncentives] = useState<MatchedIncentive[]>([]);
@@ -100,7 +101,7 @@ function RebatesWidget({ quoteId }: { quoteId: string }) {
     let cancelled = false;
     (async () => {
       try {
-        const res = await fetch(`/api/public/quotes/${quoteId}/incentives`);
+        const res = await fetch(`/api/public/quotes/${quoteRef}/incentives`);
         if (!res.ok) return;
         const data = await res.json();
         if (cancelled) return;
@@ -112,7 +113,7 @@ function RebatesWidget({ quoteId }: { quoteId: string }) {
       }
     })();
     return () => { cancelled = true; };
-  }, [quoteId]);
+  }, [quoteRef]);
 
   if (!checked || incentives.length === 0) return null;
 
@@ -177,6 +178,8 @@ export default function PublicQuotePage() {
   const [quote, setQuote] = useState<PublicQuote | null>(null);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
+  // SEC-4: the link has an expiry (410) — the customer is told to ask for a new one.
+  const [expired, setExpired] = useState(false);
   const [nomeConferma, setNomeConferma] = useState("");
   const [accepting, setAccepting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -192,7 +195,7 @@ export default function PublicQuotePage() {
       try {
         const res = await fetch(`/api/public/quotes/${id}`);
         if (!res.ok) {
-          if (!cancelled) setNotFound(true);
+          if (!cancelled) { setNotFound(true); setExpired(res.status === 410); }
           return;
         }
         const data = await res.json();
@@ -255,9 +258,9 @@ export default function PublicQuotePage() {
     return (
       <div className="doc-shell min-h-[70vh] flex flex-col items-center justify-center text-center px-4">
         <FileX className="h-10 w-10 mb-4" style={{ color: "var(--line)" }} />
-        <h1 className="text-lg font-semibold" style={{ color: "var(--navy)" }}>{t("publicQuote.notAvailableTitle")}</h1>
+        <h1 className="text-lg font-semibold" style={{ color: "var(--navy)" }}>{expired ? t("publicQuote.expiredTitle") : t("publicQuote.notAvailableTitle")}</h1>
         <p className="text-sm mt-1 max-w-sm" style={{ color: "var(--muted-mk)" }}>
-          {t("publicQuote.notAvailableBody")}
+          {expired ? t("publicQuote.expiredBody") : t("publicQuote.notAvailableBody")}
         </p>
       </div>
     );
@@ -428,7 +431,7 @@ export default function PublicQuotePage() {
         </div>
       </div>
 
-      <RebatesWidget quoteId={quote.id} />
+      <RebatesWidget quoteRef={id!} />
 
       {!isAccepted && (
         <>

@@ -119,9 +119,9 @@ export async function sendJobReviewRequest(params: {
 
   if (!client.email) return { ok: false, reason: "no_email" };
   const secondLine = secondaryReviewUrl
-    ? `<p style="font-size:14px;color:#374151;line-height:1.6;">Preferisci un'altra piattaforma? <a href="${secondaryReviewUrl}" style="color:#2563eb;">${escapeHtml(secondaryReviewUrl)}</a></p>`
+    ? `<p style="font-size:14px;color:#374151;line-height:1.6;">Preferisci un'altra piattaforma? <a href="${escapeHtml(secondaryReviewUrl)}" style="color:#2563eb;">${escapeHtml(secondaryReviewUrl)}</a></p>`
     : "";
-  const bodyHtml = `<p style="font-size:14px;color:#374151;line-height:1.6;">${escapeHtml(body.split(reviewUrl)[0] ?? "")}<a href="${reviewUrl}" style="color:#2563eb;">${escapeHtml(reviewUrl)}</a></p>${secondLine}`;
+  const bodyHtml = `<p style="font-size:14px;color:#374151;line-height:1.6;">${escapeHtml(body.split(reviewUrl)[0] ?? "")}<a href="${escapeHtml(reviewUrl)}" style="color:#2563eb;">${escapeHtml(reviewUrl)}</a></p>${secondLine}`;
   const html = wrapEmailHtml({ clientName: client.name, profile, unsubscribeToken: client.marketingUnsubscribeToken, subject, bodyHtml });
   const result = await sendEmail({ to: client.email, profile, subject, html, unsubscribeToken: client.marketingUnsubscribeToken });
   return result.ok ? { ok: true, channel: "email" } : result;

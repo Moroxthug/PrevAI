@@ -638,6 +638,8 @@ export const translations: Record<Lang, Record<string, string>> = {
 
     "publicQuote.notAvailableTitle": "Preventivo non disponibile",
     "publicQuote.notAvailableBody": "Il link potrebbe essere scaduto, oppure il preventivo non è ancora stato reso disponibile dal professionista.",
+    "publicQuote.expiredTitle": "Link scaduto",
+    "publicQuote.expiredBody": "Questo link al preventivo non è più valido. Chiedi all'impresa di mandartene uno nuovo.",
     "publicQuote.quoteFallback": "Preventivo",
     "publicQuote.clientLabel": "Spett.le",
     "publicQuote.subtotal": "Imponibile",

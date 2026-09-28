@@ -2,6 +2,7 @@ import type { ContractDocument, ContractVariables, ContractSigner, ContractEvent
 import { paymentTermAmount } from "@workspace/db";
 import { MARKET, fmtEur, fmtDateLong, fmtDateTime, fmtIsoDateLong, type Lang } from "@workspace/config";
 import { taxLabel } from "../invoices/render.js";
+import { isWellFormedPngDataUrl } from "../lib/pngDataUrl.js";
 
 // ── Parser markdown-lite (condiviso da renderer HTML e PDF) ─────────────────
 // Supporta: paragrafi separati da riga vuota, elenchi "- ", **grassetto**,
@@ -195,8 +196,9 @@ export function signaturesHtml(v: ContractVariables, signers: ContractSigner[], 
     const party = role === "contractor" ? v.contractor : v.customer;
     let sig = `<div class="sig-empty">${tr("notYetSigned", lang)}</div>`;
     if (s?.status === "signed") {
-      sig = s.signatureType === "drawn" && s.signatureData?.startsWith("data:image")
-        ? `<img class="sig-img" src="${s.signatureData}" alt="signature" />`
+      // SEC-4: rows signed before the stricter check may carry markup after the PNG.
+      sig = s.signatureType === "drawn" && isWellFormedPngDataUrl(s.signatureData)
+        ? `<img class="sig-img" src="${esc(s.signatureData!)}" alt="signature" />`
         : `<div class="sig-typed">${esc(s.signatureData || s.name)}</div>`;
       sig += `<div class="sig-meta">${tr("signedBy", lang)} ${esc(s.name)} · ${tr("signedOn", lang)} ${fmtDate(s.signedAt, lang, true)}</div>`;
     }

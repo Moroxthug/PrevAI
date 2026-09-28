@@ -6,6 +6,7 @@ import { eq, and, asc } from "drizzle-orm";
 import {
   projectsTable,
   projectTasksTable,
+  quotesTable,
   collaboratorsTable,
   projectAssignmentsTable,
   suppliersTable,
@@ -50,6 +51,11 @@ router.post("/crm/projects", requireAuth, requirePermission("jobs", "edit"), asy
     }
 
     const { name, description, quoteId, status, startDate, endDate, budget } = parsed.data;
+    // SEC-4: a quote id from the body must be one of this company's quotes.
+    if (quoteId && !(await db.select({ id: quotesTable.id }).from(quotesTable).where(and(eq(quotesTable.id, quoteId), eq(quotesTable.userId, userId))))[0]) {
+      res.status(404).json({ error: "Quote not found" });
+      return;
+    }
 
     const [project] = await db
       .insert(projectsTable)

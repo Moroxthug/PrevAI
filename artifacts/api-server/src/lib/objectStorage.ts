@@ -1,5 +1,4 @@
 import { createClient } from "@supabase/supabase-js";
-import { randomUUID } from "crypto";
 
 function getSupabaseClient() {
   const url = process.env.SUPABASE_URL;
@@ -58,22 +57,6 @@ export class ObjectStorageService {
         "Cache-Control": "private, max-age=3600",
       },
     });
-  }
-
-  async getObjectEntityUploadURL(): Promise<string> {
-    const supabase = getSupabaseClient();
-    const objectId = randomUUID();
-    const path = `uploads/${objectId}`;
-    const { data, error } = await supabase.storage
-      .from(PRIVATE_BUCKET)
-      .createSignedUploadUrl(path);
-    if (error || !data) throw new Error(`Failed to create signed upload URL: ${error?.message}`);
-    return data.signedUrl;
-  }
-
-  normalizeObjectEntityPath(rawPath: string): string {
-    // Already normalized paths from Supabase don't need adjustment
-    return rawPath;
   }
 
   async uploadObjectBuffer({

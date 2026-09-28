@@ -1,40 +1,15 @@
 import { Router, type IRouter, type Request, type Response } from "express";
 import { Readable } from "stream";
 import { requireAuth } from "../middlewares/authMiddleware";
-import {
-  RequestUploadUrlBody,
-  RequestUploadUrlResponse,
-} from "@workspace/api-zod";
 import { ObjectStorageService, ObjectNotFoundError } from "../lib/objectStorage.js";
 
 const router: IRouter = Router();
 const objectStorageService = new ObjectStorageService();
 
-router.post("/storage/uploads/request-url", requireAuth, async (req: Request, res: Response) => {
-  const parsed = RequestUploadUrlBody.safeParse(req.body);
-  if (!parsed.success) {
-    res.status(400).json({ error: "Missing or invalid required fields" });
-    return;
-  }
-
-  try {
-    const { name, size, contentType } = parsed.data;
-
-    const uploadURL = await objectStorageService.getObjectEntityUploadURL();
-    const objectPath = objectStorageService.normalizeObjectEntityPath(uploadURL);
-
-    res.json(
-      RequestUploadUrlResponse.parse({
-        uploadURL,
-        objectPath,
-        metadata: { name, size, contentType },
-      }),
-    );
-  } catch (error) {
-    req.log.error({ err: error }, "Error generating upload URL");
-    res.status(500).json({ error: "Failed to generate upload URL" });
-  }
-});
+// SEC-4: POST /storage/uploads/request-url is gone. Nothing in the app used it,
+// and it handed any signed-in user an unlimited, unchecked upload URL into the
+// private bucket (no size, no type, no owner in the path). Every upload now
+// goes through a route that checks size and type (multer limits) itself.
 
 /**
  * Fase 41: uploaded files are served from the app's own origin, so an SVG logo

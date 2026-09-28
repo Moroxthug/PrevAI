@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { z } from "zod";
-import { db, projectsTable, quotesTable, businessProfilesTable, hasFeature, minimumPlanFor } from "@workspace/db";
+import { db, clientsTable, projectsTable, quotesTable, businessProfilesTable, hasFeature, minimumPlanFor } from "@workspace/db";
 import { and, desc, eq, isNull } from "drizzle-orm";
 import { requireApiKey, publicApiLimiter } from "../../middlewares/apiKeyAuth.js";
 import { requirePermission } from "../../middlewares/requirePermission.js";
@@ -70,6 +70,11 @@ router.post("/jobs", requireApiKey, publicApiLimiter, requirePermission("jobs", 
       if (existing) { res.status(200).json({ job: serializeProject(existing), created: false }); return; }
     }
     const quote = d.quoteId ? (await db.select().from(quotesTable).where(and(eq(quotesTable.id, d.quoteId), eq(quotesTable.userId, userId))))[0] : undefined;
+    // SEC-4: a client id from the body must be one of this company's clients.
+    if (d.clientId && !(await db.select({ id: clientsTable.id }).from(clientsTable).where(and(eq(clientsTable.id, d.clientId), eq(clientsTable.userId, userId))))[0]) {
+      res.status(404).json({ error: "Client not found" });
+      return;
+    }
 
     const [project] = await db
       .insert(projectsTable)

@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { db, incentivesCatalogTable, quotesTable, businessProfilesTable, readQuoteClientData, type QuoteClientData } from "@workspace/db";
-import { eq, ne, desc } from "drizzle-orm";
+import { and, eq, gt, ne, desc } from "drizzle-orm";
 import { logger } from "../lib/logger.js";
 import { ipRateLimiter } from "../lib/rateLimit.js";
 import { sendWidgetLeadNotification, sendWidgetClientConfirmationEmail } from "../lib/email.js";
@@ -23,6 +23,10 @@ const publicIncentivesLimiter = ipRateLimiter({
   max: 60,
   message: "Troppe richieste. Riprova tra poco.",
 });
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+/** The widget asks for incentives right after the estimate; a day is plenty. */
+const WIDGET_INCENTIVES_WINDOW_MS = 24 * 60 * 60_000;
 
 const calcLimiter = ipRateLimiter({
   name: "incentives.calcLimiter",
@@ -70,7 +74,18 @@ router.get("/public/incentives", publicIncentivesLimiter, async (req, res) => {
 router.post("/public/quotes/:quoteId/incentives", calcLimiter, async (req, res) => {
   try {
     const quoteId = req.params.quoteId as string;
-    const [quote] = await db.select().from(quotesTable).where(eq(quotesTable.id, quoteId));
+    // SEC-4: only the widget that just made this quote. Before, anyone holding
+    // a quote id (of any status) could rewrite its incentives and send two
+    // emails in the company's name. The widget already sends its public key.
+    const widgetKey = req.headers["x-api-key"];
+    const [quote] = UUID_RE.test(quoteId) && typeof widgetKey === "string" && widgetKey
+      ? await db
+          .select({ q: quotesTable })
+          .from(quotesTable)
+          .innerJoin(businessProfilesTable, eq(businessProfilesTable.userId, quotesTable.userId))
+          .where(and(eq(quotesTable.id, quoteId), eq(businessProfilesTable.apiKey, widgetKey), eq(quotesTable.source, "widget"), gt(quotesTable.createdAt, new Date(Date.now() - WIDGET_INCENTIVES_WINDOW_MS))))
+          .then((rows) => rows.map((r) => r.q))
+      : [];
     if (!quote) {
       res.status(404).json({ error: "Preventivo non trovato." });
       return;

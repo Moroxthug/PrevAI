@@ -25,6 +25,11 @@ registerAutomation("quote.followup_due", async (run) => {
 
   const result = await sendQuoteFollowup({ quote, profile, stage: quote.followUpStage });
 
+  if (!result.ok && result.reason === "link_revoked") {
+    // SEC-4: the company took the link back — the sequence ends here, no retry.
+    await db.update(quotesTable).set({ nextFollowUpAt: null }).where(eq(quotesTable.id, quote.id));
+    return { skipped: "public link revoked" };
+  }
   if (!result.ok) {
     throw new Error(`Quote follow-up send failed: ${result.reason}`);
   }

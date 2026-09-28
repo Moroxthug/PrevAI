@@ -1169,3 +1169,17 @@ Il server rilegge tetto e spesa ogni 30 secondi per istanza.
 **SdI simulato.** Anche il simulatore rifiuta il webhook finché l'impresa non ha scelto un segreto, come l'intermediario vero.
 
 **pdfmake.** Nessun URL http(s) viene scaricato durante la generazione dei PDF: logo e firme sono già incorporati.
+
+## 28. Revisione delle parti non viste (SEC-4, riga 45)
+
+**Migrazione 0016.** `migrations/v2/0016_sec4_link_preventivo.sql` crea `quote_public_links` (una riga per preventivo condiviso). Finché non viene eseguita tutto funziona come prima: il link è l'UUID, senza scadenza, e "Revoca il link" risponde 503 `LINKS_NOT_READY`. Il server se ne accorge entro un minuto. Esecuzione come le altre (§ migrazioni): `psql "<session URL>" -v ON_ERROR_STOP=1 -1 -f migrations/v2/0016_sec4_link_preventivo.sql`.
+
+**Link del cliente al preventivo.** Ora è `/p/<id del preventivo>.<firma>`: la firma è un HMAC di id e versione del link con `QUOTE_LINK_SECRET` (se manca, `BETTER_AUTH_SECRET`). **Non cambiare quel segreto** senza sapere che tutti i link mandati smettono di aprirsi. Ogni condivisione (Invia, Copia il link, promemoria automatico) sposta la scadenza a 180 giorni da quel momento; dopo, la pagina dice "Link scaduto" (410 `LINK_EXPIRED`) e basta condividerlo di nuovo. "Revoca il link del cliente" (menu del preventivo) fa morire tutti i link mandati e ferma i promemoria; la condivisione successiva crea un link nuovo. I promemoria non riaprono mai un link revocato. I link vecchi (solo UUID) funzionano, salvo revoca, per i preventivi creati prima della soglia — il 29/9/2026, o il momento del primo link nuovo se la 0016 gira più tardi (fino ad allora il server continua a dare link col solo UUID) — e per 180 giorni dalla soglia.
+
+**Chiavi API.** Una chiave vale quanto chi l'ha creata oggi: se quella persona esce dal team (o è sospesa) → 403 `API_KEY_CREATOR_GONE`; se le cambia il ruolo → 403 `API_KEY_ROLE_CHANGED`; se l'impresa richiede la 2FA e il creatore non l'ha attiva → 403 `two_factor_required`. In tutti i casi si crea una chiave nuova (Impostazioni → Sviluppatori). Nessuna 2FA per singola richiesta: uno script non può digitare un codice.
+
+**Bucket di Storage.** Script `pnpm --filter @workspace/api-server ops:storage-buckets` (senza argomenti mostra la situazione, con `--apply` scrive): `public-assets` 2 MB e solo PNG/JPEG/SVG (ci sono solo i loghi), `private-assets` 25 MB, tipi liberi. Serve `SUPABASE_URL` + `SUPABASE_SERVICE_ROLE_KEY`, es. `node --env-file=../../.env.production --import tsx scripts/storage-buckets.ts --apply` da `artifacts/api-server`. Nessuna policy RLS su `storage.objects`: nessuno elenca i bucket con la chiave anonima (controllato il 28/9). Tolta la rotta `POST /api/storage/uploads/request-url` (non usata, dava un URL di caricamento senza limiti).
+
+**WhatsApp.** Il webhook verifica già la firma di Meta (`WHATSAPP_APP_SECRET`). Nuovo: codice di collegamento generato con `crypto.randomInt`, al massimo 5 richieste di codice all'ora e 10 tentativi ogni 15 minuti per persona.
+
+**Widget: bonus e bandi.** `POST /api/public/quotes/:id/incentives` risponde solo al widget che ha appena creato quel preventivo: serve la chiave del widget dell'impresa (`x-api-key`), preventivo con `source = widget`, creato nelle ultime 24 ore. Altrimenti 404.

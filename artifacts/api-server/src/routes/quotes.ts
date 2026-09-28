@@ -1,6 +1,6 @@
 import { ownLogoPath } from "../lib/logo.js";
 import { Router } from "express";
-import { requireAuth, getUserId, getUserName } from "../middlewares/authMiddleware";
+import { requireAuth, getUserId, getUserName, getActorUserId } from "../middlewares/authMiddleware";
 import { requirePermission } from "../middlewares/requirePermission.js";
 import multer from "multer";
 import { db, quotesTable, projectsTable, quoteAttachmentsTable, quoteVariantsTable, businessProfilesTable, priceCatalogItemsTable, priceIntelligenceTable, uploadedDocumentsTable, quoteClientDataSchema, quoteCompanySnapshotSchema, paymentScheduleSchema, derivePaymentScheduleFromText, validatePaymentSchedule, paymentScheduleToText, normalizeProvince, quoteTaxLines, readQuoteClientData } from "@workspace/db";
@@ -50,6 +50,8 @@ import { generateNumeroPreventivo } from "../lib/quoteNumber.js";
 import { linkQuoteToClient, ensureClientForQuote } from "../lib/clients.js";
 import { tryTrialUnlock, sendQuoteByEmail, QuoteSendError, quoteQuotaExceeded } from "../quotes/send.js";
 import { createManualQuote, type ManualQuoteInput } from "../quotes/manualCreate.js";
+import { publicQuoteLink, revokePublicQuoteLink, ownedQuote } from "../quotes/publicLink.js";
+import { writeAudit } from "../lib/notifications.js";
 import { randomUUID } from "crypto";
 import { recordAiUsage } from "../lib/usage.js";
 import { requireAiBudget } from "../lib/aiBudget.js";
@@ -1587,6 +1589,57 @@ router.post("/quotes/:id/send-pdf-email", requireAuth, requirePermission("quotes
 });
 
 // POST /api/quotes/:id/duplicate — clone a quote as a new draft
+// ── SEC-4: the customer's link (/p/…) — see quotes/publicLink.ts ────────────
+
+// GET /api/quotes/:id/public-link — the link's state, changes nothing.
+router.get("/quotes/:id/public-link", requireAuth, async (req, res) => {
+  try {
+    const quote = await ownedQuote(getUserId(res), req.params.id as string);
+    if (!quote) { res.status(404).json({ error: "Not found" }); return; }
+    res.json(await publicQuoteLink(quote, { share: false }));
+  } catch (err) {
+    req.log.error({ err }, "Error reading quote public link");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// POST /api/quotes/:id/public-link — "Copia il link": makes the link (a new one
+// after a revocation) and moves its expiry forward.
+router.post("/quotes/:id/public-link", requireAuth, requirePermission("quotes", "edit"), async (req, res) => {
+  try {
+    const quote = await ownedQuote(getUserId(res), req.params.id as string);
+    if (!quote) { res.status(404).json({ error: "Not found" }); return; }
+    if (quote.status !== "unlocked" && quote.status !== "accepted") {
+      res.status(409).json({ error: "QUOTE_NOT_SHAREABLE", message: "Sblocca il preventivo prima di condividerlo." });
+      return;
+    }
+    res.json(await publicQuoteLink(quote, { share: true }));
+  } catch (err) {
+    req.log.error({ err }, "Error sharing quote public link");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// DELETE /api/quotes/:id/public-link — "Revoca il link": every link sent so far
+// stops working and the automatic reminders stop.
+router.delete("/quotes/:id/public-link", requireAuth, requirePermission("quotes", "edit"), async (req, res) => {
+  try {
+    const userId = getUserId(res);
+    const quote = await ownedQuote(userId, req.params.id as string);
+    if (!quote) { res.status(404).json({ error: "Not found" }); return; }
+    if (!(await revokePublicQuoteLink(quote))) {
+      res.status(503).json({ error: "LINKS_NOT_READY", message: "La revoca del link non è ancora attiva." });
+      return;
+    }
+    await db.update(quotesTable).set({ nextFollowUpAt: null }).where(and(eq(quotesTable.id, quote.id), eq(quotesTable.userId, userId)));
+    await writeAudit({ userId, actorType: "user", actorId: getActorUserId(res), entityType: "quote", entityId: quote.id, action: "public_link_revoked" });
+    res.json(await publicQuoteLink(quote, { share: false }));
+  } catch (err) {
+    req.log.error({ err }, "Error revoking quote public link");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
 router.post("/quotes/:id/duplicate", requireAuth, requirePermission("quotes", "edit"), async (req, res) => {
   try {
     const userId = getUserId(res);

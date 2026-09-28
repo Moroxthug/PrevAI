@@ -278,5 +278,12 @@ export async function purgeStaleFixtures(): Promise<number> {
 
 // ── Misc helpers ─────────────────────────────────────────────────────────────
 
+/** SEC-4: the `/p/<ref>` part of the link the company would share (signed, revocable). */
+export async function publicRef(quote: { id: string; userId: string }): Promise<string> {
+  const { publicQuoteLink } = await import("../quotes/publicLink.js");
+  const link = await publicQuoteLink(quote, { share: true });
+  return link.url!.split("/p/")[1]!;
+}
+
 export const daysFromNow = (days: number) => new Date(Date.now() + days * 86_400_000);
 export const daysAgo = (days: number) => new Date(Date.now() - days * 86_400_000);
