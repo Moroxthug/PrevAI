@@ -1,3 +1,5 @@
+import { assistantCosts } from "../assistant/activity.js";
+import { ASSISTANT_COST_ALERT_EUR_CENTS_PER_SEAT, PIANI_IN_ABBONAMENTO, prezzoPianoCents, type PianoInAbbonamento } from "@workspace/config";
 import { Router, type Request, type Response, type NextFunction } from "express";
 import { fromNodeHeaders } from "better-auth/node";
 import { auth } from "../lib/auth";
@@ -967,11 +969,8 @@ router.post("/admin/widget/create-client", async (req, res) => {
 // what the account pays — flags accounts running at a loss before it's a
 // pattern, so pricing/allowances (plans.ts MONTHLY_USAGE_ALLOWANCE) can be
 // corrected.
-const PLAN_MONTHLY_PRICE_EUR: Record<string, number> = {
-  monthly_starter: 19,
-  monthly_pro: 49,
-  monthly_elite: 59,
-};
+// APP-8h: da piani.ts (qui c'era ancora Elite a 59 €, prezzo di prima di A-5).
+const planMonthlyCents = (plan: string): number => ((PIANI_IN_ABBONAMENTO as readonly string[]).includes(plan) ? prezzoPianoCents(plan as PianoInAbbonamento, "mensile") : 0);
 
 router.get("/admin/margin", async (req, res) => {
   try {
@@ -1012,7 +1011,7 @@ router.get("/admin/margin", async (req, res) => {
         const entry = byUser.get(userId)!;
         const profile = profileByUser.get(userId);
         const plan = profile?.subscriptionStatus === "active" ? (profile?.subscriptionPlan ?? null) : null;
-        const revenueCents = (plan ? PLAN_MONTHLY_PRICE_EUR[plan] ?? 0 : 0) * 100;
+        const revenueCents = plan ? planMonthlyCents(plan) : 0;
         return {
           userId,
           companyName: profile?.companyName ?? null,
@@ -1028,6 +1027,18 @@ router.get("/admin/margin", async (req, res) => {
     res.json({ days, rows });
   } catch (err) {
     logger.error({ err }, "Admin margin error");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// GET /api/admin/assistant-costs?month=YYYY-MM — APP-8h: quanto costa l'assistente a ogni impresa
+// (token dei turni + voce del fornitore, in euro, per posto), le più care per posto prima.
+router.get("/admin/assistant-costs", async (req, res) => {
+  try {
+    const m = typeof req.query.month === "string" && /^\d{4}-\d{2}$/.test(req.query.month) ? new Date(`${req.query.month}-01T00:00:00Z`) : new Date();
+    res.json({ ...(await assistantCosts({ month: m })), alertPerSeatEurCents: ASSISTANT_COST_ALERT_EUR_CENTS_PER_SEAT });
+  } catch (err) {
+    logger.error({ err }, "Admin assistant costs error");
     res.status(500).json({ error: "Internal server error" });
   }
 });

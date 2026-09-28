@@ -75,12 +75,20 @@ const SCREEN_AREA: Partial<Record<ScreenKey, PermissionArea>> = { fisco: "fiscal
 
 // APP-8g adds the supplier book (Squadra → Fornitori).
 const FIND_TYPES = ["client", "job", "quote", "invoice", "lead", "contract", "supplier"] as const;
+type FindType = (typeof FIND_TYPES)[number];
+// APP-8h: the model often writes the type in Italian ("fornitore", "richiesta") or one that
+// does not exist ("request", "worker"), and Groq refuses a value outside an enum — so the list
+// is free text: Italian names are mapped, unknown ones dropped (the test set found it).
+const FIND_TYPE_IT: Record<string, FindType> = { cliente: "client", cantiere: "job", preventivo: "quote", fattura: "invoice", richiesta: "lead", contratto: "contract", fornitore: "supplier" };
+export function findType(v: string): FindType {
+  return FIND_TYPE_IT[v] ?? (v as FindType);
+}
 
 export const APP8C_TOOL_DEFINITIONS: OpenAI.Chat.Completions.ChatCompletionTool[] = [
   { type: "function", function: { name: "brief_me", description: "A short briefing: for 'today' or 'week' what needs the user (transfers to confirm, overdue invoices, hours to approve, leads to call back, quotes with no answer), the period's numbers, milestones and tasks due, jobs at risk; for 'job' the state of one job. Use it for 'com'è la giornata', 'cosa ho questa settimana', 'come va il cantiere'.", parameters: { type: "object", properties: { scope: { type: "string", enum: ["today", "week", "job"] }, job_id: str("For scope job; omit to use the current job") }, required: ["scope"], additionalProperties: false } } },
-  { type: "function", function: { name: "find", description: "Search the company's clients, jobs, quotes, invoices, leads, contracts and suppliers by name, email, phone, address or number. Returns ids and the page of each result. Use it before any tool that needs an id the user described by name.", parameters: { type: "object", properties: { query: str("Name, email, phone, address fragment or document number"), types: { type: "array", items: { type: "string", enum: [...FIND_TYPES] } } }, required: ["query"], additionalProperties: false } } },
+  { type: "function", function: { name: "find", description: "Search the company's clients, jobs, quotes, invoices, leads, contracts and suppliers by name, email, phone, address or number. Returns ids and the page of each result. Use it before any tool that needs an id the user described by name.", parameters: { type: "object", properties: { query: str("Name, email, phone, address fragment or document number"), types: { type: "array", items: { type: "string" }, description: "Optional filter, any of: client, job, quote, invoice, lead (a richiesta), contract, supplier (a fornitore). Omit to search everything" } }, required: ["query"], additionalProperties: false } } },
   { type: "function", function: { name: "get_quote", description: "One quote in detail: client and contacts, chapters and line items, discount, VAT, total, status, when it was sent or accepted, variants, contract and job linked to it.", parameters: { type: "object", properties: { quote_id: str() }, required: ["quote_id"], additionalProperties: false } } },
-  { type: "function", function: { name: "open_screen", description: "Take the app to a page: a job, quote, invoice, client or contract by id (from find), or a section. Use it when the user says 'fammi vedere', 'apri', 'portami a'.", parameters: { type: "object", properties: { target: { type: "string", enum: ["job", "quote", "invoice", "client", "contract", "screen"] }, id: str("For job / quote / invoice / client / contract"), screen: { type: "string", enum: SCREEN_KEYS } }, required: ["target"], additionalProperties: false } } },
+  { type: "function", function: { name: "open_screen", description: "Take the app to a page: a job, quote, invoice, client or contract by id (from find), or a section. Use it when the user says 'fammi vedere', 'apri', 'portami a'.", parameters: { type: "object", properties: { target: { type: "string", enum: ["job", "quote", "invoice", "client", "contract", "screen"], description: "A record (with id) or 'screen' for a section such as the team, invoices or settings (then pass screen)" }, id: str("For job / quote / invoice / client / contract"), screen: { type: "string", description: `For target screen, one of: ${SCREEN_KEYS.join(", ")}` } }, required: ["target"], additionalProperties: false } } },
   { type: "function", function: { name: "propose_draft_quote", description: "Prepare a new quote draft from a description of the work, with the same generator as Nuovo preventivo (it takes up to half a minute). Nothing is sent; the user reviews the draft.", parameters: { type: "object", properties: { description: str("The work, as the user described it: rooms, quantities, materials, place"), client_name: str(), client_address: str(), client_email: str(), client_phone: str() }, required: ["description"], additionalProperties: false } } },
   { type: "function", function: { name: "propose_send_quote", description: "Propose emailing a quote (PDF + online accept link) to the customer. Uses the quote's client email unless to_email is given. The user must confirm.", parameters: { type: "object", properties: { quote_id: str(), to_email: str() }, required: ["quote_id"], additionalProperties: false } } },
   { type: "function", function: { name: "propose_send_contract", description: "Propose emailing a contract to the customer for signature (or re-sending the signing link). The company must have signed it first. The user must confirm.", parameters: { type: "object", properties: { contract_id: str(), message: str("Optional note in the email") }, required: ["contract_id"], additionalProperties: false } } },
@@ -112,7 +120,7 @@ export function likePattern(q: string): string {
 /** The page of one thing, or of a section; null when the role can't open it. */
 export function screenPath(target: "job" | "quote" | "invoice" | "client" | "contract" | "screen", id: string | undefined, screen: ScreenKey | undefined, role: TeamMemberRole): { path: string; label: string } | { error: string } {
   if (target === "screen") {
-    if (!screen) return { error: "Pass screen." };
+    if (!screen) return { error: `Pass screen, one of: ${SCREEN_KEYS.join(", ")}.` };
     const area = SCREEN_AREA[screen];
     if (area && !roleCan(role, area, "view")) return { error: "This person's role can't open that page." };
     return SCREENS[screen];
@@ -157,9 +165,10 @@ export function romeMidnight(now: Date): Date {
 
 const ReadArgs = {
   brief_me: z.object({ scope: z.enum(["today", "week", "job"]), job_id: z.string().optional() }),
-  find: z.object({ query: z.string().trim().min(2).max(120), types: z.array(z.enum(FIND_TYPES)).optional() }),
+  find: z.object({ query: z.string().trim().min(2).max(120), // Free strings on purpose: an unknown type ("request", "worker") is dropped instead of Groq refusing the whole answer.
+  types: z.array(z.string()).optional().transform((list) => (list ?? []).map(findType).filter((t) => (FIND_TYPES as readonly string[]).includes(t))) }),
   get_quote: z.object({ quote_id: z.string().uuid() }),
-  open_screen: z.object({ target: z.enum(["job", "quote", "invoice", "client", "contract", "screen"]), id: z.string().optional(), screen: z.enum(SCREEN_KEYS).optional() }),
+  open_screen: z.object({ target: z.enum(["job", "quote", "invoice", "client", "contract", "screen"]), id: z.string().optional(), screen: z.string().optional().transform((v) => ((SCREEN_KEYS as readonly string[]).includes(v ?? "") ? (v as ScreenKey) : undefined)) }),
 };
 
 type BaseRead = (name: string, args: unknown, ctx: App8cContext) => Promise<unknown>;
@@ -222,7 +231,7 @@ async function briefMe(a: z.infer<typeof ReadArgs.brief_me>, ctx: App8cContext, 
 
 async function find(a: z.infer<typeof ReadArgs.find>, ctx: App8cContext) {
   const pat = likePattern(a.query);
-  const want = new Set(a.types?.length ? a.types : FIND_TYPES);
+  const want = new Set<FindType>(a.types.length ? a.types : FIND_TYPES);
   const ilike = (col: SQL | unknown) => sql`${col} ilike ${pat}`;
   const tasks: Promise<unknown[]>[] = [];
   const out: Record<string, unknown[]> = {};

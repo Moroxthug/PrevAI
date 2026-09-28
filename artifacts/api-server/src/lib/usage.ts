@@ -59,6 +59,13 @@ const MODEL_COST_PER_1K_TOKENS_CENTS: Record<string, { input: number; output: nu
   "openai/gpt-oss-20b": { input: 0.005, output: 0.015 },
 };
 
+/** APP-8h: USD cents for these tokens on this model (0 for a model not in the table). The eval runner uses it too. */
+export function aiUsageCostCents(model: string, usage: { prompt_tokens?: number; completion_tokens?: number } | null | undefined): number {
+  const pricing = MODEL_COST_PER_1K_TOKENS_CENTS[model];
+  if (!pricing || !usage) return 0;
+  return ((usage.prompt_tokens ?? 0) / 1000) * pricing.input + ((usage.completion_tokens ?? 0) / 1000) * pricing.output;
+}
+
 export function recordAiUsage(params: {
   userId: string;
   model: string;

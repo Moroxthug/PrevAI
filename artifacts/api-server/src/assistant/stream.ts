@@ -13,6 +13,25 @@ export type TurnEvent =
   // APP-8c: open_screen — the app goes to this page.
   | { type: "navigate"; path: string; label: string };
 
+/** APP-8h: usage_events.related_entity_type of the assistant's tokens (activity.ts adds them up per company). */
+export const ASSISTANT_USAGE_ENTITY = "assistant_turn";
+
+export type TokenUsage = { prompt_tokens: number; completion_tokens: number };
+
+/** APP-8h: where a streamed chunk carries the token count — `usage` (OpenAI, stream_options) or `x_groq.usage` (Groq). */
+export function chunkUsage(chunk: { usage?: Partial<TokenUsage> | null; x_groq?: { usage?: Partial<TokenUsage> | null } | null }): TokenUsage | null {
+  const u = chunk.usage ?? chunk.x_groq?.usage;
+  if (!u || (u.prompt_tokens == null && u.completion_tokens == null)) return null;
+  return { prompt_tokens: u.prompt_tokens ?? 0, completion_tokens: u.completion_tokens ?? 0 };
+}
+
+/** Adds up the tokens of every round of a turn. */
+export function addUsage(a: TokenUsage | null, b: TokenUsage | null): TokenUsage | null {
+  if (!a) return b;
+  if (!b) return a;
+  return { prompt_tokens: a.prompt_tokens + b.prompt_tokens, completion_tokens: a.completion_tokens + b.completion_tokens };
+}
+
 export type StreamedCall = { id: string; name: string; arguments: string };
 
 type ChunkDelta = {
@@ -23,6 +42,9 @@ type ChunkDelta = {
 /** Accumulates one streamed completion. Tool calls come as fragments keyed by `index`. */
 export class CompletionAccumulator {
   text = "";
+  /** APP-8h: the tokens of this call (the last chunk carries them) and the model that answered. */
+  usage: TokenUsage | null = null;
+  model: string | null = null;
   private calls = new Map<number, StreamedCall>();
 
   /** Returns the text added by this chunk ("" if none), so the caller can forward it. */

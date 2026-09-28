@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { Link } from "wouter";
 import { Info, Play } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 import {
   ASSISTANT_ACTIONS, ASSISTANT_ACTION_DEFS, ASSISTANT_GROUPS, ASSISTANT_GROUP_LABEL, ASSISTANT_ROLE_LABEL,
   effectiveAssistantLevel, type AssistantAction, type AssistantLevel,
@@ -9,7 +11,7 @@ import {
 } from "@workspace/config";
 import { Speaker, browserSpeechAvailable, readVoicePrefs, useItalianVoices, useVoiceInfo, useVoicePrefs } from "@/lib/assistant-voice";
 import { Skeleton } from "@/components/ui/skeleton";
-import { assistantApi, type AssistantPermissionsDto, type AssistantSettingDto } from "@/lib/assistant-api";
+import { assistantApi, type ActivityItemDto, type AssistantPermissionsDto, type AssistantSettingDto } from "@/lib/assistant-api";
 import { SettingsGroup, SettingsRow, SettingsSection, useSettingsDraft } from "./ui";
 
 // ── APP-8b: Impostazioni → Assistente (docs/ASSISTENTE-PLAN.md §4) ──────────
@@ -172,7 +174,110 @@ export function AssistantSection() {
           </SettingsGroup>
         );
       })}
+
+      <ActivityGroup />
+      <UsageGroup />
     </SettingsSection>
+  );
+}
+
+// ── APP-8h: Attività e uso del mese ──────────────────────────────────────────
+// Ogni azione dell'assistente, chi l'ha chiesta e come: il titolare vede tutta
+// l'impresa, gli altri le proprie. Annulla c'è finché c'è sulla scheda (pochi
+// secondi, solo per chi l'ha chiesta); dopo si cambia dalla schermata, con Apri.
+
+const WHEN = new Intl.DateTimeFormat("it-IT", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
+
+function ActivityGroup() {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const [pages, setPages] = useState<ActivityItemDto[][]>([]);
+  const [next, setNext] = useState<string | null>(null);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const { data, isLoading } = useQuery({ queryKey: ["assistant-activity"], queryFn: () => assistantApi.activity(), retry: false });
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => { setPages([]); setNext(data?.next ?? null); }, [data]);
+  const items = [...(data?.items ?? []), ...pages.flat()];
+  // Annulla sparisce da solo quando scade.
+  const soonest = items.map((i) => (i.undoUntil ? new Date(i.undoUntil).getTime() : Infinity)).filter((t) => t > now).sort((a, b) => a - b)[0];
+  useEffect(() => {
+    if (!soonest || soonest === Infinity) return;
+    const t = setTimeout(() => setNow(Date.now()), Math.max(250, soonest - Date.now()));
+    return () => clearTimeout(t);
+  }, [soonest]);
+
+  const more = async () => {
+    if (!next) return;
+    setLoadingMore(true);
+    try {
+      const page = await assistantApi.activity(next);
+      setPages((p) => [...p, page.items]);
+      setNext(page.next);
+    } finally { setLoadingMore(false); }
+  };
+  const undo = async (item: ActivityItemDto) => {
+    try {
+      await assistantApi.undo(item.proposalId);
+      toast({ title: "Annullata", description: item.summary });
+      await queryClient.invalidateQueries({ queryKey: ["assistant-activity"] });
+    } catch (e) {
+      toast({ title: "Non si può annullare", description: (e as Error).message, variant: "destructive" });
+      setNow(Date.now());
+    }
+  };
+
+  const desc = data?.everyone
+    ? "Ogni cosa che l'assistente ha fatto per l'impresa, chi l'ha chiesta e se l'ha fatta da solo o dopo una conferma."
+    : "Le cose che l'assistente ha fatto per te.";
+  if (isLoading) return <SettingsGroup title="Attività" desc={desc}><Skeleton className="h-24 w-full" /></SettingsGroup>;
+  if (!data?.available) {
+    return (
+      <SettingsGroup title="Attività" desc={desc}>
+        <SettingsRow label="Registro delle azioni" help="Si attiva con il prossimo aggiornamento di PrevAI."><span className="srow-value">—</span></SettingsRow>
+      </SettingsGroup>
+    );
+  }
+  return (
+    <SettingsGroup title="Attività" desc={desc}>
+      {items.length === 0 && <SettingsRow label="Ancora nulla" help="Quando l'assistente aggiunge un costo, prepara una bozza o manda qualcosa dopo la tua conferma, lo trovi qui."><span className="srow-value">—</span></SettingsRow>}
+      {items.map((item) => {
+        const canUndo = item.status === "done" && item.undoUntil && new Date(item.undoUntil).getTime() > now;
+        const how = item.level === "auto" ? "da solo" : "dopo la conferma";
+        const who = item.actor.mine ? "Tu" : item.actor.name;
+        const help = `${item.label} · ${who} · ${WHEN.format(new Date(item.executedAt))} · ${how}${item.status === "undone" && item.undoneAt ? ` · annullata alle ${WHEN.format(new Date(item.undoneAt)).split(", ").pop()}` : ""}`;
+        return (
+          <SettingsRow key={item.id} label={item.summary} help={help}>
+            <div className="flex flex-wrap items-center gap-2">
+              {item.status === "undone" ? <span className="chip chip-grey">Annullata</span> : <span className={item.level === "auto" ? "chip chip-teal" : "chip chip-green"}>{item.level === "auto" ? "Lo fa" : "Confermata"}</span>}
+              {canUndo && <button type="button" className="btn btn-outline-navy btn-sm" onClick={() => undo(item)}>Annulla</button>}
+              {!canUndo && item.status === "done" && item.link && <Link href={item.link} className="btn btn-outline-navy btn-sm">Apri</Link>}
+            </div>
+          </SettingsRow>
+        );
+      })}
+      {next && (
+        <div className="srow">
+          <button type="button" className="btn btn-outline-navy btn-sm" onClick={more} disabled={loadingMore}>{loadingMore ? "Carico…" : "Mostra le precedenti"}</button>
+        </div>
+      )}
+    </SettingsGroup>
+  );
+}
+
+/** Quanto l'impresa ha usato l'assistente nel mese (i costi in euro li vede lo staff). */
+function UsageGroup() {
+  const { data } = useQuery({ queryKey: ["assistant-usage"], queryFn: assistantApi.usage, retry: false });
+  if (!data) return null;
+  const month = new Date(`${data.from}T12:00:00Z`).toLocaleDateString("it-IT", { month: "long", year: "numeric" });
+  return (
+    <SettingsGroup title="Uso del mese" desc={`Da inizio ${month}, per tutta l'impresa.`}>
+      <SettingsRow label="Domande all'assistente" help="Ogni domanda o richiesta conta una volta, anche se l'assistente guarda più dati per rispondere.">
+        <span className="srow-value">{data.turns.toLocaleString("it-IT")}</span>
+      </SettingsRow>
+      <SettingsRow label="Minuti di voce" help={data.voiceMinutesIncluded === null ? "Solo la voce scelta per PrevAI; quella del dispositivo non si conta. Il limite del piano non è ancora deciso." : `Inclusi: ${data.voiceMinutesIncluded} per posto.`}>
+        <span className="srow-value">{data.voiceMinutes.toLocaleString("it-IT")}</span>
+      </SettingsRow>
+    </SettingsGroup>
   );
 }
 

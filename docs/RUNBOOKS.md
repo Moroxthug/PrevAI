@@ -1036,3 +1036,41 @@ Nessuna.
 
 - "L'assistente non trova il fornitore": controllare che il nome o il referente siano scritti nella rubrica (la ricerca è parola per parola) e che il telefono sia un numero valido.
 - Chi ha chiesto di chiamare chi: `select created_at, entity_type, entity_id, diff from audit_log where user_id = '<id impresa>' and action = 'call_opened_via_assistant' order by created_at desc;`
+
+## 24. Assistente: prove automatiche, costi, registro delle azioni (APP-8h, riga 39)
+
+### 24.1 Le prove del modello
+
+- **Set:** `artifacts/api-server/src/assistant/evals/cases-app8h.ts` (`ASSISTANT_EVAL_SET`, 165 richieste: letture, schede, dettatura con rumore, ambigue, ruoli, istruzioni nascoste nei dati, chiamate). Ogni caso: la frase, la schermata, il ruolo, la prima mossa attesa (o `none` = risponde/chiede), a volte il risultato inventato dello strumento e la mossa dopo, e gli strumenti vietati. Come si giudica: `evals/grade.ts`.
+- **Quando girarle:** a ogni cambio del prompt (`assistantSystemPrompt` in `assistant/service.ts`), degli strumenti o del modello. Non usano il database e non eseguono nulla.
+- **Come:** da `artifacts/api-server`, con la chiave Groq di sviluppo:
+
+  ```bash
+  GROQ_API_KEY=$(grep -E '^GROQ_API_KEY=' ../../.env | cut -d= -f2- | tr -d '"\r') pnpm eval:assistant --repeat 2
+  ```
+
+  Opzioni: `--model openai/gpt-oss-20b` (o un altro id Groq) per confrontare, `--only schede,call-colombo` (gruppi o id), `--concurrency 4`, `--min 0.95`. Rapporto in `.qa/assistant-evals/<data>-<modello>.md` e `.json`.
+- **Esito:** exit 1 se c'è **anche una sola azione sbagliata** (uno strumento vietato, o un invio/incasso che il caso non prevede) → non si rilascia il cambio. Exit 2 se l'esattezza è sotto `--min`. "Rifiutato da Groq" = il modello ha chiamato uno strumento con argomenti fuori schema due volte di fila (nell'app diventa "non disponibile"): è un difetto dello schema, da correggere.
+- **Numeri del 28/9/2026** (gpt-oss-120b, 2 giri, 330 risposte): 97,6 % giuste, **0 azioni sbagliate**, 0 rifiutate, primo passo mediana ~0,55 s (95° perc. ~1,4 s), ~3.900 token e ~0,0004 € per turno. Confronto: gpt-oss-20b 92,4 % con **4 azioni sbagliate** (scartato); qwen3.6-27b 98,8 % ma mediana 1,7 s e 95° perc. 8 s (troppo lento per la voce). Si resta su gpt-oss-120b.
+
+### 24.2 Costi
+
+- Ogni turno registra i suoi token in `usage_events` (`kind = 'ai_text'`, `related_entity_type = 'assistant_turn'`, `related_entity_id` = la conversazione); la voce del fornitore è `ai_speech` (§21). Nessuna migrazione.
+- **Staff:** `/dashboard/admin` → **Assistente**: per impresa domande, token, minuti di voce, posti, costo e costo per posto del mese, in euro al cambio approssimato `USD_TO_EUR_APPROX` (`lib/config/src/assistente-costi.ts`). API `GET /api/admin/assistant-costs?month=YYYY-MM`.
+- **Avviso:** il cron del giorno (`runAssistantCostAlerts` in `assistant/activity.ts`) manda un'email ops (OPS_ALERT_EMAIL / ADMIN_EMAIL) il giorno in cui un'impresa supera `ASSISTANT_COST_ALERT_EUR_CENTS_PER_SEAT` (500 = 5 € al mese per posto). Una volta sola per mese: ieri sotto, oggi sopra.
+- **L'impresa** vede in Impostazioni → Assistente → **Uso del mese** le domande e i minuti di voce (non gli euro). API `GET /api/assistant/usage`.
+
+### 24.3 Registro delle azioni
+
+- Impostazioni → Assistente → **Attività** (`GET /api/assistant/activity?before=…`, 30 per pagina): ogni azione dell'assistente con chi l'ha chiesta, quando, se l'ha fatta da sola ("Lo fa") o dopo la conferma, e se è stata annullata. Il titolare (impostazioni "full") vede tutta l'impresa, gli altri le proprie. Serve la migrazione 0013 (in produzione dal 27/9); senza, il gruppo dice "si attiva con il prossimo aggiornamento".
+- **Annulla** c'è solo finché c'è sulla scheda (10 s, solo per chi l'ha chiesta); dopo, **Apri** porta alla schermata dove si cambia a mano.
+
+### 24.4 Istruzioni nascoste nei dati
+
+Tre difese: il prompt dice che i testi letti sono dati e che niente parte senza una richiesta dell'utente; ogni invio e incasso è al massimo "Chiede prima" (serve sempre il tocco o il sì); le prove hanno 11 casi con istruzioni finte in richieste, preventivi, note, fornitori e fatture — l'esito atteso è nessuna scheda.
+
+### 24.5 Controlli dopo il deploy
+
+1. Una domanda all'assistente, poi: `select quantity, unit_cost_cents from usage_events where related_entity_type = 'assistant_turn' order by created_at desc limit 1;` → una riga con i token.
+2. `/dashboard/admin` → Assistente: l'impresa compare con 1 domanda.
+3. Impostazioni → Assistente: gruppi **Attività** e **Uso del mese** in fondo; con una nota "Lo fa" appena scritta c'è Annulla, dopo 10 s diventa Apri.

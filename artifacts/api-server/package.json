@@ -26,7 +26,8 @@
     "ops:rotate-token-key": "tsx scripts/rotate-token-key.ts",
     "ops:encrypt-fiscal-fields": "tsx scripts/encrypt-fiscal-fields.ts",
     "ops:addon-beta": "tsx scripts/addon-beta.ts",
-    "ops:demo-revisore": "tsx scripts/demo-revisore.ts"
+    "ops:demo-revisore": "tsx scripts/demo-revisore.ts",
+    "eval:assistant": "tsx src/assistant/evals/run.ts"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.49.1",

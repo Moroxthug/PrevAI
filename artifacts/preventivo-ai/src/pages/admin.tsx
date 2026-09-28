@@ -19,6 +19,7 @@ import { useLanguage } from "@/i18n/LanguageContext";
 import { AdminTestPrezzo } from "@/components/admin-test-prezzo";
 import { AdminCommercialisti } from "@/components/admin-commercialisti";
 import { AdminAppBeta } from "@/components/admin-app-beta";
+import { AdminAssistantCosts } from "@/components/admin-assistant-costs";
 import { PREZZI_PIANI, formatPrezzo } from "@workspace/config";
 
 const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
@@ -48,7 +49,7 @@ type AdminUser = {
 };
 
 type Settings = Record<string, string>;
-type Tab = "overview" | "users" | "widget" | "stripe" | "gsc" | "seo" | "settings" | "support" | "email-events" | "margin" | "incentives" | "addon" | "commercialisti" | "app-beta";
+type Tab = "overview" | "users" | "widget" | "stripe" | "gsc" | "seo" | "settings" | "support" | "email-events" | "margin" | "incentives" | "addon" | "commercialisti" | "app-beta" | "assistant-costs";
 
 type IncentiveCatalogRow = {
   id: string;
@@ -819,6 +820,7 @@ export default function AdminPage() {
               { id: "addon", label: "Test di prezzo", icon: TrendingUp },
               { id: "commercialisti", label: "Commercialisti", icon: Users },
               { id: "app-beta", label: "Beta app", icon: Smartphone },
+              { id: "assistant-costs", label: "Assistente", icon: Sparkles },
               { id: "gsc", label: "Search Console", icon: Globe },
               { id: "seo", label: "SEO Checker", icon: Sparkles },
               { id: "support", label: t("admin.tabSupport"), icon: MessageSquare },
@@ -1531,6 +1533,7 @@ export default function AdminPage() {
           {tab === "addon" && <AdminTestPrezzo />}
           {tab === "commercialisti" && <AdminCommercialisti />}
           {tab === "app-beta" && <AdminAppBeta />}
+          {tab === "assistant-costs" && <AdminAssistantCosts />}
 
           {tab === "stripe" && (
             <div className="space-y-6">

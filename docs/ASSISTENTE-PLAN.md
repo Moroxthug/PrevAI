@@ -19,7 +19,7 @@ Stesse regole di sempre: una riga per sessione, in ordine; un commit per riga su
 | 36 | **APP-8e** Risponde a voce | 137 | ✅ (D17 aperta: voce del browser, fornitore spento) |
 | 37 | **APP-8f** Conferma a voce, interruzione, annulla | 138 | ✅ |
 | 38 | **APP-8g** "Chiama Rossi" apre il telefono; rubrica fornitori | 139 | ✅ |
-| 39 | **APP-8h** Fiducia: prove automatiche, costi, registro delle azioni | 141 | ⬜ |
+| 39 | **APP-8h** Fiducia: prove automatiche, costi, registro delle azioni | 141 | ✅ 2026-09-28 |
 
 Non diventano righe: la **chiamata collegata** dal numero dell'impresa con registrazione (QuoteAI 140) — rinviata dalla decisione D19; **mani libere in furgone** con Siri/Google (QuoteAI 142) — si fa dentro il guscio nativo, dopo APP-3/APP-4 (righe 18–19).
 
@@ -153,7 +153,9 @@ Fatta il 2026-09-27 (diario in PIANO-AZIONE, RUNBOOKS §23). Differenze: lo stru
 - Una rubrica fornitori semplice (nome, ditta, telefono, email) se non c'è, così "chiama Marco di Edilceramiche" si risolve.
 - Dopo la chiamata: "Aggiungo una nota?" → nota dettata sul cantiere.
 
-## APP-8h — Fiducia (riga 39)
+## APP-8h — Fiducia (riga 39) ✅
+
+Fatta il 2026-09-28 (diario in PIANO-AZIONE, RUNBOOKS §24). Differenze: 165 richieste invece di 150 (si allarga con AS-4); le prove girano senza database, con il prompt e gli strumenti veri per ruolo e schermata, e ricevono un risultato inventato dove serve un secondo passo; costi in euro al cambio approssimato, avviso allo staff oltre 5 € al mese per posto; Annulla dal registro solo nei secondi della scheda, poi Apri. Primo esito: 97,6 %, 0 azioni sbagliate, si resta su gpt-oss-120b (il 20b sbaglia azioni, qwen è troppo lento per la voce).
 
 - Circa 150 richieste realistiche (rumore nella dettatura, nomi ambigui, tentativi fuori dal proprio ruolo) con lo strumento atteso; girano a ogni cambio di prompt o di modello; misurano esattezza, **azioni sbagliate (obiettivo 0)**, latenza e costo per turno. Servono anche a decidere se cambiare modello (oggi gpt-oss su Groq).
 - Costi per impresa: minuti di voce, token, € per posto; avviso allo staff.

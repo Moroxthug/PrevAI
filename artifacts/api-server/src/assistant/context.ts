@@ -65,17 +65,18 @@ export async function resolvePageContext(userId: string, ctx: PageContext | null
       .where(and(eq(quotesTable.id, ctx.quoteId), eq(quotesTable.userId, userId)));
     if (q) {
       const status = { draft: "bozza", unlocked: "pronto", pending_payment: "in attesa di pagamento", accepted: "accettato dal cliente" }[q.status] ?? q.status;
-      parts.push(`il preventivo${q.numero ? ` ${q.numero}` : ""} per ${q.client?.nome || "un cliente senza nome"}, totale ${euro(Number(q.totale))} IVA inclusa, ${status}${q.descrizione ? ` — "${q.descrizione.slice(0, 160)}"` : ""}`);
+      // APP-8h: the id too, or the model has to search for the quote the person is looking at (found by the test set).
+      parts.push(`il preventivo id ${q.id}${q.numero ? ` (${q.numero})` : ""} per ${q.client?.nome || "un cliente senza nome"}, totale ${euro(Number(q.totale))} IVA inclusa, ${status}${q.descrizione ? ` — "${q.descrizione.slice(0, 160)}"` : ""}`);
     }
   }
   if (ctx.invoiceId) {
     const [i] = await db
-      .select({ number: invoicesTable.number, customer: invoicesTable.customer, totalCents: invoicesTable.totalCents, paidCents: invoicesTable.paidCents, status: invoicesTable.status, projectId: invoicesTable.projectId, dueDate: invoicesTable.dueDate })
+      .select({ id: invoicesTable.id, number: invoicesTable.number, customer: invoicesTable.customer, totalCents: invoicesTable.totalCents, paidCents: invoicesTable.paidCents, status: invoicesTable.status, projectId: invoicesTable.projectId, dueDate: invoicesTable.dueDate })
       .from(invoicesTable)
       .where(and(eq(invoicesTable.id, ctx.invoiceId), eq(invoicesTable.userId, userId)));
     if (i) {
       projectId ??= i.projectId;
-      parts.push(`la fattura ${i.number} a ${i.customer?.name || "?"}, totale ${euro(i.totalCents / 100)}, incassati ${euro(i.paidCents / 100)}, stato ${i.status}, scadenza ${toIsoDate(i.dueDate) ?? "?"}`);
+      parts.push(`la fattura id ${i.id} (${i.number}) a ${i.customer?.name || "?"}, totale ${euro(i.totalCents / 100)}, incassati ${euro(i.paidCents / 100)}, stato ${i.status}, scadenza ${toIsoDate(i.dueDate) ?? "?"}`);
     }
   }
 

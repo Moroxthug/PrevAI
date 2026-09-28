@@ -58,6 +58,24 @@ export type TurnEventDto =
 export type AssistantSettingDto = { action: AssistantAction; role: "" | "admin" | "office" | "foreman" | "bookkeeper" | "viewer"; level: AssistantLevel };
 export type AssistantPermissionsDto = { available: boolean; settings: AssistantSettingDto[]; voiceConfirmMaxCents: number; mine: Record<AssistantAction, AssistantLevel>; canEdit: boolean; roleLimits: Record<Exclude<AssistantSettingDto["role"], "">, AssistantAction[]> };
 
+/** APP-8h: one action of the assistant in Impostazioni → Assistente → Attività. */
+export type ActivityItemDto = {
+  id: string;
+  proposalId: string;
+  kind: ProposalKind;
+  label: string;
+  summary: string;
+  level: "auto" | "ask";
+  status: "done" | "undone";
+  executedAt: string;
+  undoneAt: string | null;
+  undoUntil: string | null;
+  actor: { id: string; name: string; mine: boolean };
+  link: string | null;
+};
+export type ActivityDto = { available: boolean; everyone: boolean; items: ActivityItemDto[]; next: string | null };
+export type AssistantUsageDto = { from: string; turns: number; tokens: number; voiceMinutes: number; voiceMinutesIncluded: number | null; seats: number };
+
 export const assistantApi = {
   conversation: (projectId: string | null) => req<ConversationDto>(`/api/assistant/conversation${projectId ? `?projectId=${projectId}` : ""}`),
   byId: (id: string) => req<ConversationDto>(`/api/assistant/conversations/${id}`),
@@ -72,6 +90,8 @@ export const assistantApi = {
   permissions: () => req<AssistantPermissionsDto>("/api/assistant/permissions"),
   savePermissions: (settings: AssistantSettingDto[], voiceConfirmMaxCents?: number) => req<AssistantPermissionsDto>("/api/assistant/permissions", { method: "PUT", body: json({ settings, voiceConfirmMaxCents }) }),
   stream: streamTurn,
+  activity: (before?: string | null) => req<ActivityDto>(`/api/assistant/activity${before ? `?before=${encodeURIComponent(before)}` : ""}`),
+  usage: () => req<AssistantUsageDto>("/api/assistant/usage"),
 };
 
 /**

@@ -15,6 +15,7 @@ import { roleCan } from "../middlewares/requirePermission.js";
 import { ASSISTANT_ACTIONS, ASSISTANT_LEVELS, ASSISTANT_SPEECH_MAX_CHARS, ASSISTANT_VOICE_CONFIRM_OPTIONS, ASSISTANT_VOICE_CONFIRM_SETTING, ASSISTANT_TTS, clampAssistantLevel, isAssistantAction, spokenText } from "@workspace/config";
 import { speechProvider, synthesize, voiceMinutesIncluded, voiceMinutesUsed } from "../assistant/speech.js";
 import { writeAudit } from "../lib/notifications.js";
+import { listActivity, assistantCosts } from "../assistant/activity.js";
 
 // ── Phase 5: job assistant ───────────────────────────────────────────────────
 // Gate: "assistant" (Elite). Reads are free-form; writes only happen when
@@ -276,6 +277,42 @@ router.put("/assistant/permissions", requireAuth, requirePermission("settings", 
     res.json({ available: true, settings: rows.filter((r) => isAssistantAction(r.action)).map((r) => ({ action: r.action, role: r.role, level: r.level })), voiceConfirmMaxCents: voiceConfirmMaxFrom(rows), mine: withUnavailable(levelsFor(getActorRole(res), rows, true), { job_note: !(await jobNotesReady()) }), ...permissionsExtras(getActorRole(res)) });
   } catch (err) {
     req.log.error({ err }, "Error saving assistant permissions");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// ── APP-8h: Impostazioni → Assistente → Attività e consumo del mese ──────────
+// GET /api/assistant/activity?before=ISO  le azioni dell'assistente, più recenti prima (il titolare vede
+//                                         tutta l'impresa, gli altri le proprie); inerte senza la 0013
+// GET /api/assistant/usage                turni, token e minuti di voce dell'impresa nel mese
+
+router.get("/assistant/activity", requireAuth, requirePermission("jobs", "view"), async (req, res) => {
+  try {
+    const userId = getUserId(res);
+    const gate = await requireAssistant(userId);
+    if (!gate.ok) { res.status(403).json({ error: "PLAN_REQUIRED", requiredPlan: gate.plan }); return; }
+    const beforeRaw = typeof req.query.before === "string" ? new Date(req.query.before) : null;
+    const before = beforeRaw && !Number.isNaN(beforeRaw.getTime()) ? beforeRaw : null;
+    const everyone = roleCan(getActorRole(res), "settings", "full");
+    const out = await listActivity({ orgId: userId, actorId: getActorUserId(res), everyone, before, limit: 30 });
+    res.json({ ...out, everyone });
+  } catch (err) {
+    req.log.error({ err }, "Error loading assistant activity");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+router.get("/assistant/usage", requireAuth, requirePermission("jobs", "view"), async (req, res) => {
+  try {
+    const userId = getUserId(res);
+    const gate = await requireAssistant(userId);
+    if (!gate.ok) { res.status(403).json({ error: "PLAN_REQUIRED", requiredPlan: gate.plan }); return; }
+    const { from, rows } = await assistantCosts({ orgId: userId });
+    const r = rows[0]!;
+    // L'impresa vede quanto l'ha usato; i costi in euro restano allo staff (/api/admin/assistant-costs).
+    res.json({ from, turns: r.turns, tokens: r.tokens, voiceMinutes: r.voiceMinutes, voiceMinutesIncluded: voiceMinutesIncluded(), seats: r.seats });
+  } catch (err) {
+    req.log.error({ err }, "Error loading assistant usage");
     res.status(500).json({ error: "Internal server error" });
   }
 });

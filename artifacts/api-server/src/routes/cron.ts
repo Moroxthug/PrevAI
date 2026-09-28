@@ -16,6 +16,7 @@ import { db, cronTicksTable } from "@workspace/db";
 import { eq, lt } from "drizzle-orm";
 import { automationBacklog, pingHeartbeat, recentAutomationFailures, sendOpsAlert } from "../lib/ops.js";
 import { captureException, flush } from "../lib/errorTracking.js";
+import { runAssistantCostAlerts } from "../assistant/activity.js";
 
 const router = Router();
 
@@ -61,7 +62,9 @@ router.get("/cron/tick", async (req, res) => {
     // Roll up yesterday's (and today's, in case cron shifted) usage_events into the daily summary.
     const usage = await rollUpUsageForDate(new Date(Date.now() - 24 * 60 * 60 * 1000));
     await rollUpUsageForDate(new Date());
-    const result = { automations, contracts, invoices, leads, reviewRequests, incentives, priceTrends, quoteFollowups, sdi, fiscale, accountDeletions, usage };
+    // APP-8h: avviso allo staff quando un'impresa supera il costo dell'assistente per posto.
+    const assistantCosts = await runAssistantCostAlerts();
+    const result = { automations, contracts, invoices, leads, reviewRequests, incentives, priceTrends, quoteFollowups, sdi, fiscale, accountDeletions, usage, assistantCosts };
     const tookMs = Date.now() - startedAt;
     if (tick) await db.update(cronTicksTable).set({ finishedAt: new Date(), ok: true, result, tookMs }).where(eq(cronTicksTable.id, tick.id));
     await db.delete(cronTicksTable).where(lt(cronTicksTable.startedAt, new Date(Date.now() - 90 * 24 * 3_600_000)));

@@ -45,7 +45,7 @@ const BASE_TOOL_DEFINITIONS: OpenAI.Chat.Completions.ChatCompletionTool[] = [
   { type: "function", function: { name: "list_invoices", description: "Invoices of a job (or all jobs) with ids, status, totals, balances and due dates.", parameters: { type: "object", properties: { ...jobIdProp, status: { type: "string", enum: ["draft", "sent", "viewed", "partially_paid", "paid", "overdue", "void", "open"] } }, additionalProperties: false } } },
   { type: "function", function: { name: "list_time_entries", description: "Hours logged by workers on a job (or all jobs), with approval status.", parameters: { type: "object", properties: { ...jobIdProp, status: { type: "string", enum: ["submitted", "approved", "rejected"] }, limit: { type: "integer", minimum: 1, maximum: 100 } }, additionalProperties: false } } },
   { type: "function", function: { name: "get_schedule_risks", description: "Late milestones and forecast end date of a job; without a job: every job's risk flags (over budget, behind schedule, overdue invoices, unbilled work).", parameters: { type: "object", properties: { ...jobIdProp }, additionalProperties: false } } },
-  { type: "function", function: { name: "get_company_overview", description: "Company-wide invoiced / collected / costs / margin for recent months, accounts receivable aging and the 8-week cash-flow forecast.", parameters: { type: "object", properties: { months: { type: "integer", minimum: 3, maximum: 12 } }, additionalProperties: false } } },
+  { type: "function", function: { name: "get_company_overview", description: "Company-wide invoiced / collected / costs / margin for recent months, accounts receivable aging and the 8-week cash-flow forecast.", parameters: { type: "object", properties: { months: { type: "integer", minimum: 1, maximum: 12, description: "How many months back (at least 3 are returned; the current month is always included)" } }, additionalProperties: false } } },
   {
     type: "function",
     function: {
@@ -155,7 +155,8 @@ const ReadArgs = {
   list_invoices: z.object({ job_id: z.string().optional(), status: z.enum(["draft", "sent", "viewed", "partially_paid", "paid", "overdue", "void", "open"]).optional() }),
   list_time_entries: z.object({ job_id: z.string().optional(), status: z.enum(["submitted", "approved", "rejected"]).optional(), limit: z.number().int().min(1).max(100).optional() }),
   get_schedule_risks: z.object({ job_id: z.string().optional() }),
-  get_company_overview: z.object({ months: z.number().int().min(3).max(12).optional() }),
+  // APP-8h: "quanto ho fatturato a settembre" → months 1 was refused by Groq; the analytics return at least 3 anyway.
+  get_company_overview: z.object({ months: z.number().int().min(1).max(12).optional() }),
 };
 
 export async function runReadTool(name: string, rawArgs: unknown, ctx: ToolContext): Promise<unknown> {

@@ -70,7 +70,8 @@ describe("a tool called with null or bad arguments", () => {
     const open = TOOL_DEFINITIONS.find((t) => t.type === "function" && t.function.name === "open_screen")!;
     const props = (open.type === "function" ? open.function.parameters : {}) as { properties: Record<string, { type: unknown; enum?: unknown[] }> };
     expect(props.properties.id!.type).toEqual(["string", "null"]);
-    expect(props.properties.screen!.enum).toContain(null);
+    // APP-8h: screen is free text now (an unknown value is dropped, not refused by Groq).
+    expect(props.properties.screen!.type).toEqual(["string", "null"]);
     expect(props.properties.target!.type).toBe("string");
   });
   it("nulls are dropped before the tool reads the arguments", () => {
@@ -133,5 +134,15 @@ describe("message_client email", () => {
     expect(html).toContain("Edilizia &lt;Rossi&gt;");
     expect(html).toContain("02 123 · info@rossi.it");
     expect(html.toLowerCase()).not.toContain("disiscriv");
+  });
+});
+
+describe("APP-8h: find types in Italian", () => {
+  it("maps the Italian names the model writes to the search types", async () => {
+    const { findType } = await import("./tools-app8c.js");
+    expect(findType("fornitore")).toBe("supplier");
+    expect(findType("richiesta")).toBe("lead");
+    expect(findType("cantiere")).toBe("job");
+    expect(findType("quote")).toBe("quote");
   });
 });
