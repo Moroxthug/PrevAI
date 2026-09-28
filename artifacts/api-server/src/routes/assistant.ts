@@ -5,12 +5,16 @@ import { and, eq } from "drizzle-orm";
 import { requireAuth, getUserId } from "../middlewares/authMiddleware.js";
 import { requirePermission } from "../middlewares/requirePermission.js";
 import { userRateLimiter } from "../lib/rateLimit.js";
-import { getOrCreateConversation, loadConversation, clearConversation, runAssistantTurn, type Lang } from "../assistant/service.js";
+import { getOrCreateConversation, loadConversation, listConversations, clearConversation, runAssistantTurn, type Lang } from "../assistant/service.js";
+import { pageContextSchema } from "../assistant/context.js";
+import { sseFrame, type TurnEvent } from "../assistant/stream.js";
 import { confirmProposal, dismissProposal, ProposalError } from "../assistant/apply.js";
 
 // ── Phase 5: job assistant ───────────────────────────────────────────────────
 // Gate: "assistant" (Elite). Reads are free-form; writes only happen when
 // the user confirms a proposal card.
+// APP-8a: one conversation for the company (the per-job ones stay readable),
+// opened from any screen with that screen as context, answers streamed (SSE).
 
 const router = Router();
 const chatLimiter = userRateLimiter({ windowMs: 60 * 60 * 1000, max: 120, message: "Hourly assistant limit reached. Try again later." });
@@ -28,6 +32,8 @@ export function serializeMessage(m: AssistantMessage) {
 export function serializeProposal(p: AssistantProposal) {
   return { id: p.id, messageId: p.messageId, projectId: p.projectId, kind: p.kind, summary: p.summary, payload: p.payload, status: p.status, resultEntityType: p.resultEntityType, resultEntityId: p.resultEntityId, error: p.error, resolvedAt: p.resolvedAt?.toISOString() ?? null, createdAt: p.createdAt.toISOString() };
 }
+
+const turnBody = z.object({ content: z.string().trim().min(1).max(4000), language: z.enum(["it"]).optional(), context: pageContextSchema.nullish() });
 
 function langOf(_req: { headers: Record<string, unknown>; body?: unknown }): Lang {
   return "it";
@@ -53,17 +59,89 @@ router.get("/assistant/conversation", requireAuth, async (req, res) => {
   }
 });
 
-// POST /api/assistant/conversations/:id/messages { content, language? }
+// GET /api/assistant/conversations — the company's threads, newest first (the main one has projectId null)
+router.get("/assistant/conversations", requireAuth, requirePermission("jobs", "view"), async (req, res) => {
+  try {
+    const userId = getUserId(res);
+    const gate = await requireAssistant(userId);
+    if (!gate.ok) { res.status(403).json({ error: "PLAN_REQUIRED", requiredPlan: gate.plan }); return; }
+    const rows = await listConversations(userId);
+    res.json({ conversations: rows.map((c) => ({ id: c.id, projectId: c.projectId, projectName: c.projectName, title: c.title, lastMessageAt: c.lastMessageAt.toISOString() })) });
+  } catch (err) {
+    req.log.error({ err }, "Error listing assistant conversations");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// GET /api/assistant/conversations/:id — one thread with its messages and cards
+router.get("/assistant/conversations/:id", requireAuth, requirePermission("jobs", "view"), async (req, res) => {
+  try {
+    const userId = getUserId(res);
+    const gate = await requireAssistant(userId);
+    if (!gate.ok) { res.status(403).json({ error: "PLAN_REQUIRED", requiredPlan: gate.plan }); return; }
+    const loaded = await loadConversation(userId, req.params.id as string);
+    if (!loaded) { res.status(404).json({ error: "Not found" }); return; }
+    const c = loaded.conversation;
+    res.json({ conversation: { id: c.id, projectId: c.projectId, title: c.title }, messages: loaded.messages.map(serializeMessage), proposals: loaded.proposals.map(serializeProposal) });
+  } catch (err) {
+    req.log.error({ err }, "Error loading assistant conversation");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// POST /api/assistant/conversations/:id/stream { content, context? } — the same turn as /messages, sent as it happens:
+//   event: progress {label}  ·  delta {text}  ·  message {message}  ·  proposal {proposal}  ·  done {}  ·  error {message}
+// The HTTP status is decided before the first byte (plan, body, thread); anything that fails later arrives as an `error` event.
+router.post("/assistant/conversations/:id/stream", requireAuth, requirePermission("jobs", "view"), chatLimiter, async (req, res) => {
+  const userId = getUserId(res);
+  const gate = await requireAssistant(userId).catch(() => null);
+  if (!gate) { res.status(500).json({ error: "Internal server error" }); return; }
+  if (!gate.ok) { res.status(403).json({ error: "PLAN_REQUIRED", requiredPlan: gate.plan }); return; }
+  const body = turnBody.safeParse(req.body);
+  if (!body.success) { res.status(400).json({ error: "Invalid parameters", details: body.error }); return; }
+  const loaded = await loadConversation(userId, req.params.id as string).catch(() => null);
+  if (!loaded) { res.status(404).json({ error: "Not found" }); return; }
+
+  res.status(200);
+  res.setHeader("Content-Type", "text/event-stream; charset=utf-8");
+  res.setHeader("Cache-Control", "no-cache, no-transform");
+  res.setHeader("Connection", "keep-alive");
+  res.setHeader("X-Accel-Buffering", "no");
+  res.flushHeaders();
+  // Closing the sheet mid-answer stops the model instead of paying for words nobody reads.
+  const abort = new AbortController();
+  res.on("close", () => { if (!res.writableEnded) abort.abort(); });
+  const send = (event: string, data: unknown) => { if (!res.writableEnded) res.write(sseFrame(event, data)); };
+  const onEvent = (e: TurnEvent) => {
+    if (e.type === "message") send("message", { message: serializeMessage(e.message) });
+    else if (e.type === "proposal") send("proposal", { proposal: serializeProposal(e.proposal) });
+    else if (e.type === "delta") send("delta", { text: e.text });
+    else send("progress", { tool: e.tool, label: e.label });
+  };
+  try {
+    await runAssistantTurn({ conversation: loaded.conversation, userId, content: body.data.content, language: langOf(req), context: body.data.context, onEvent, signal: abort.signal });
+    send("done", {});
+  } catch (err) {
+    if (!abort.signal.aborted) {
+      req.log.error({ err }, "Assistant streamed turn failed");
+      send("error", { error: "ASSISTANT_FAILED", message: "L'assistente non riesce a rispondere adesso. Riprova tra un momento." });
+    }
+  } finally {
+    if (!res.writableEnded) res.end();
+  }
+});
+
+// POST /api/assistant/conversations/:id/messages { content, language?, context? } — the whole turn in one JSON answer
 router.post("/assistant/conversations/:id/messages", requireAuth, requirePermission("jobs", "view"), chatLimiter, async (req, res) => {
   try {
     const userId = getUserId(res);
     const gate = await requireAssistant(userId);
     if (!gate.ok) { res.status(403).json({ error: "PLAN_REQUIRED", requiredPlan: gate.plan }); return; }
-    const body = z.object({ content: z.string().trim().min(1).max(4000), language: z.enum(["it"]).optional() }).safeParse(req.body);
+    const body = turnBody.safeParse(req.body);
     if (!body.success) { res.status(400).json({ error: "Invalid parameters", details: body.error }); return; }
     const loaded = await loadConversation(userId, req.params.id as string);
     if (!loaded) { res.status(404).json({ error: "Not found" }); return; }
-    const result = await runAssistantTurn({ conversation: loaded.conversation, userId, content: body.data.content, language: langOf(req) });
+    const result = await runAssistantTurn({ conversation: loaded.conversation, userId, content: body.data.content, language: langOf(req), context: body.data.context });
     res.json({ messages: result.messages.map(serializeMessage), proposals: result.proposals.map(serializeProposal) });
   } catch (err) {
     req.log.error({ err }, "Assistant turn failed");

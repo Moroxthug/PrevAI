@@ -1,61 +1,134 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Link } from "wouter";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Sparkles, Send, Trash2, Check, X, ExternalLink, Receipt, Wallet, Flag, ListTodo, Mail, Banknote, Loader2, AlertTriangle } from "lucide-react";
+import { Sparkles, Send, Trash2, Check, X, ExternalLink, Receipt, Wallet, Flag, ListTodo, Mail, Banknote, Loader2, AlertTriangle, Mic, Square } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useVoiceInput } from "@/hooks/use-voice-input";
 import { cn } from "@/lib/utils";
 import { useLanguage } from "@/i18n/LanguageContext";
-import { assistantApi, type AssistantMessageDto, type ProposalDto, type ProposalKind } from "@/lib/assistant-api";
+import { assistantApi, type AssistantMessageDto, type ConversationDto, type ProposalDto, type ProposalKind } from "@/lib/assistant-api";
+import { useAssistantPageContext } from "@/lib/assistant-context";
 import { formatCents } from "@/lib/jobs-api";
 
 const KIND_ICON: Record<ProposalKind, typeof Receipt> = { cost_entry: Wallet, milestone_update: Flag, task: ListTodo, invoice: Receipt, send_invoice: Mail, record_payment: Banknote };
 
+/** The query that holds a thread: the main one (null) or an older per-job one. */
+const threadKey = (threadId: string | null) => ["assistant", threadId ?? "main"];
+
 /**
- * Chat with the job assistant. `projectId` scopes the conversation to a job;
- * null = the company-wide conversation. Writes only happen through proposal
- * cards the user confirms here.
+ * The assistant page: the company's threads on the left (APP-8a: the main
+ * conversation first, then the older per-job ones, still readable and
+ * continuable), the chat on the right.
  */
-export function AssistantPanel({ projectId, className }: { projectId: string | null; className?: string }) {
-  const { t, lang } = useLanguage();
+export function AssistantPanel({ className }: { className?: string }) {
+  const { t } = useLanguage();
+  const [threadId, setThreadId] = useState<string | null>(null);
+  const { data } = useQuery({ queryKey: ["assistant-threads"], queryFn: assistantApi.threads, retry: false });
+  const threads = data?.conversations ?? [];
+  const main = threads.find((c) => !c.projectId);
+  const older = threads.filter((c) => c.projectId);
+  const when = (iso: string | undefined) => (iso ? new Date(iso).toLocaleDateString("it-IT") : t("assistant.threadNew"));
+
+  return (
+    <div className={cn("chat-grid", className)}>
+      <div className="card th-list">
+        <div className="card-head"><div><h2>{t("assistant.threadsTitle")}</h2></div></div>
+        <button type="button" className={cn("th-row", threadId === null && "on")} onClick={() => setThreadId(null)} aria-pressed={threadId === null}>
+          <b>{t("assistant.threadCompany")}</b>
+          <span>{when(main?.lastMessageAt)}</span>
+        </button>
+        {older.length > 0 && <p className="th-sub">{t("assistant.threadsOlder")}</p>}
+        {older.map((c) => (
+          <button key={c.id} type="button" className={cn("th-row", threadId === c.id && "on")} onClick={() => setThreadId(c.id)} aria-pressed={threadId === c.id}>
+            <b>{c.projectName || c.title || t("assistant.threadJob")}</b>
+            <span>{when(c.lastMessageAt)}</span>
+          </button>
+        ))}
+      </div>
+      <div className="card">
+        <AssistantChat threadId={threadId} />
+      </div>
+    </div>
+  );
+}
+
+/**
+ * APP-8a — the conversation itself, the same everywhere: the assistant page,
+ * a job's Assistente tab and the sheet that opens from the top bar. It sends
+ * the screen it is on with every question, shows the answer as it is written
+ * and what the assistant is looking up meanwhile, and takes dictation.
+ * Writes still only happen through proposal cards the user confirms.
+ */
+export function AssistantChat({ threadId = null, compact, className }: { threadId?: string | null; compact?: boolean; className?: string }) {
+  const { t } = useLanguage();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const context = useAssistantPageContext();
   const [draft, setDraft] = useState("");
-  const [pending, setPending] = useState<string | null>(null); // optimistic user bubble while the turn runs
+  const [live, setLive] = useState<{ user: string | null; text: string; progress: string | null } | null>(null);
   const listRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const abortRef = useRef<AbortController | null>(null);
 
-  const key = ["assistant", projectId ?? "company"];
-  const { data, isLoading, error } = useQuery({ queryKey: key, queryFn: () => assistantApi.conversation(projectId), retry: false });
+  const key = threadKey(threadId);
+  const { data, isLoading, error } = useQuery({ queryKey: key, queryFn: () => (threadId ? assistantApi.byId(threadId) : assistantApi.conversation(null)), retry: false });
   const gated = (error as (Error & { code?: string }) | null)?.code === "PLAN_REQUIRED";
+  const busy = live !== null;
+
+  useEffect(() => () => abortRef.current?.abort(), []);
 
   const invalidateData = () => {
-    queryClient.invalidateQueries({ queryKey: ["job"] });
-    queryClient.invalidateQueries({ queryKey: ["jobs"] });
-    queryClient.invalidateQueries({ queryKey: ["job-analytics"] });
-    queryClient.invalidateQueries({ queryKey: ["invoices"] });
-    queryClient.invalidateQueries({ queryKey: ["invoice"] });
-    queryClient.invalidateQueries({ queryKey: ["company-analytics"] });
+    for (const k of ["job", "jobs", "job-analytics", "invoices", "invoice", "company-analytics"]) queryClient.invalidateQueries({ queryKey: [k] });
+  };
+  const patch = (fn: (prev: ConversationDto) => ConversationDto) => queryClient.setQueryData(key, (prev: ConversationDto | undefined) => (prev ? fn(prev) : prev));
+
+  const ask = async (content: string) => {
+    if (!data || busy) return;
+    setDraft("");
+    setLive({ user: content, text: "", progress: null });
+    const ctrl = new AbortController();
+    abortRef.current = ctrl;
+    try {
+      await assistantApi.stream(data.conversation.id, content, context, (e) => {
+        if (e.type === "delta") setLive((l) => (l ? { ...l, text: l.text + e.text, progress: null } : l));
+        else if (e.type === "progress") setLive((l) => (l ? { ...l, progress: e.label } : l));
+        else if (e.type === "proposal") patch((p) => ({ ...p, proposals: [...p.proposals, e.proposal] }));
+        else {
+          patch((p) => ({ ...p, messages: [...p.messages, e.message] }));
+          // The stored copy replaces what was on screen: the question once saved, the text once the assistant's message is.
+          setLive((l) => (l ? (e.message.role === "user" ? { ...l, user: null } : e.message.role === "assistant" ? { ...l, text: "" } : l) : l));
+        }
+      }, ctrl.signal);
+    } catch (e) {
+      if (!ctrl.signal.aborted) {
+        toast({ title: t("assistant.error"), description: (e as Error).message, variant: "destructive" });
+        queryClient.invalidateQueries({ queryKey: key });
+      }
+    } finally {
+      if (abortRef.current === ctrl) abortRef.current = null;
+      setLive(null);
+      queryClient.invalidateQueries({ queryKey: ["assistant-threads"] });
+    }
   };
 
-  const send = useMutation({
-    mutationFn: (content: string) => assistantApi.send(data!.conversation.id, content, lang),
-    onMutate: (content) => { setPending(content); setDraft(""); },
-    onSuccess: (turn) => {
-      queryClient.setQueryData(key, (prev: typeof data) => (prev ? { ...prev, messages: [...prev.messages, ...turn.messages], proposals: [...prev.proposals, ...turn.proposals] } : prev));
-    },
-    onError: (e: Error) => toast({ title: t("assistant.error"), description: e.message, variant: "destructive" }),
-    onSettled: () => setPending(null),
-  });
-
-  const patchProposal = (p: ProposalDto) => queryClient.setQueryData(key, (prev: typeof data) => (prev ? { ...prev, proposals: prev.proposals.map((x) => (x.id === p.id ? p : x)) } : prev));
+  const patchProposal = (p: ProposalDto) => patch((prev) => ({ ...prev, proposals: prev.proposals.map((x) => (x.id === p.id ? p : x)) }));
   const confirm = useMutation({
     mutationFn: (id: string) => assistantApi.confirm(id),
     onSuccess: ({ proposal }) => { patchProposal(proposal); invalidateData(); toast({ title: t("assistant.applied"), description: proposal.summary }); },
     onError: (e: Error) => { toast({ title: t("assistant.applyFailed"), description: e.message, variant: "destructive" }); queryClient.invalidateQueries({ queryKey: key }); },
   });
   const dismiss = useMutation({ mutationFn: (id: string) => assistantApi.dismiss(id), onSuccess: ({ proposal }) => patchProposal(proposal) });
-  const clear = useMutation({ mutationFn: () => assistantApi.clear(data!.conversation.id), onSuccess: () => queryClient.invalidateQueries({ queryKey: key }) });
+  const clear = useMutation({
+    mutationFn: () => assistantApi.clear(data!.conversation.id),
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: key }); queryClient.invalidateQueries({ queryKey: ["assistant-threads"] }); },
+  });
 
-  useEffect(() => { listRef.current?.scrollTo({ top: listRef.current.scrollHeight, behavior: "smooth" }); }, [data?.messages.length, pending, send.isPending]);
+  const voice = useVoiceInput({
+    onTranscribed: (text) => { setDraft((d) => (d.trim() ? `${d.trim()} ${text}` : text)); inputRef.current?.focus(); },
+    onError: (message) => toast({ title: t("assistant.voiceError"), description: message, variant: "destructive" }),
+  });
+
+  useEffect(() => { listRef.current?.scrollTo({ top: listRef.current.scrollHeight, behavior: "smooth" }); }, [data?.messages.length, data?.proposals.length, live?.user, live?.text, live?.progress]);
 
   const visible = useMemo(() => (data?.messages ?? []).filter((m) => m.role === "user" || (m.role === "assistant" && m.content.trim())), [data]);
   const proposalsByMessage = useMemo(() => {
@@ -73,13 +146,19 @@ export function AssistantPanel({ projectId, className }: { projectId: string | n
     for (let i = prevVisiblePos + 1; i <= pos; i++) out.push(...(proposalsByMessage.get(all[i]!.id) ?? []));
     return out;
   };
+  // While a turn streams, a card can arrive before the message it will sit under: show it at the end until then.
+  const trailing = useMemo(() => {
+    const all = data?.messages ?? [];
+    const last = visible.length ? all.findIndex((m) => m.id === visible[visible.length - 1]!.id) : -1;
+    return all.slice(last + 1).flatMap((m) => proposalsByMessage.get(m.id) ?? []);
+  }, [data, visible, proposalsByMessage]);
 
-  const submit = () => { const c = draft.trim(); if (c && data && !send.isPending) send.mutate(c); };
-  const suggestions = (projectId ? ["s1", "s2", "s3", "s4"] : ["c1", "c2", "c3", "c4"]).map((k) => t(`assistant.suggest.${k}`));
-
-  const lastAt = data?.messages.length ? data.messages[data.messages.length - 1]!.createdAt : null;
-  const threadLabel = projectId ? t("assistant.threadJob") : t("assistant.threadCompany");
-  const threadTime = lastAt ? new Date(lastAt).toLocaleDateString() : t("assistant.threadNew");
+  const submit = () => { const c = draft.trim(); if (c) void ask(c); };
+  const kind = context.projectId ? "job" : context.quoteId ? "quote" : context.invoiceId ? "invoice" : "company";
+  const suggestionKeys = { job: ["s1", "s2", "s3", "s4"], quote: ["q1", "q2", "q3"], invoice: ["i1", "i2", "i3"], company: ["c1", "c2", "c3", "c4"] }[kind];
+  const suggestions = suggestionKeys.map((k) => t(`assistant.suggest.${k}`));
+  const empty = data && visible.length === 0 && !live;
+  const olderJobThread = Boolean(data?.conversation.projectId);
 
   if (gated) {
     return (
@@ -93,66 +172,67 @@ export function AssistantPanel({ projectId, className }: { projectId: string | n
   }
 
   return (
-    <div className={cn("chat-grid", className)}>
-      <div className="card th-list">
-        <div className="card-head"><div><h2>{t("assistant.threadsTitle")}</h2></div></div>
-        <button type="button" className="th-row on">
-          <b>{threadLabel}</b>
-          <span>{threadTime}</span>
-        </button>
+    <div className={cn("asst-chat", compact && "compact", className)}>
+      <div className="chat-head">
+        <div className="chat-head-main">
+          <span className="chat-av"><Sparkles className="h-4 w-4" /></span>
+          <div><b>{t("assistant.title")}</b><small>{t(`assistant.ctx.${kind}`)}</small></div>
+        </div>
+        {data && data.messages.length > 0 && !busy && (
+          <button type="button" className="chat-clear" onClick={() => clear.mutate()} aria-label={t("assistant.clear")} disabled={clear.isPending}><Trash2 className="h-3.5 w-3.5" aria-hidden="true" /> <span className="chat-clear-txt">{t("assistant.clear")}</span></button>
+        )}
+      </div>
+      {/* AI Act art. 50: the user is told at first contact that this is an AI. */}
+      <p className="chat-notice" role="note">{t("assistant.aiNotice")}</p>
+      {olderJobThread && <p className="chat-notice">{t("assistant.olderThread")}</p>}
+
+      <div ref={listRef} className="chat-body" aria-live="polite" aria-busy={busy}>
+        {isLoading && <div className="bubble ai typing"><i /><i /><i /></div>}
+        {empty && <div className="bubble ai">{kind === "job" ? t("assistant.emptyJob") : t("assistant.emptyCompany")}</div>}
+        {visible.map((m, idx) => (
+          <div key={m.id} className="contents">
+            {m.role === "assistant" && cardsFor(idx).map((p) => <ProposalCard key={p.id} proposal={p} onConfirm={() => confirm.mutate(p.id)} onDismiss={() => dismiss.mutate(p.id)} busy={confirm.isPending && confirm.variables === p.id} />)}
+            <Bubble message={m} />
+          </div>
+        ))}
+        {trailing.map((p) => <ProposalCard key={p.id} proposal={p} onConfirm={() => confirm.mutate(p.id)} onDismiss={() => dismiss.mutate(p.id)} busy={confirm.isPending && confirm.variables === p.id} />)}
+        {live?.user && <div className="bubble user">{live.user}</div>}
+        {live && live.text && <div className="bubble ai"><Markdownish text={live.text} /></div>}
+        {live && !live.text && (live.progress
+          ? <div className="chat-progress"><Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" />{live.progress}…</div>
+          : <div className="bubble ai typing" aria-label={t("assistant.thinking")}><i /><i /><i /></div>)}
       </div>
 
-      <div className="card">
-        <div className="chat-head">
-          <div className="chat-head-main">
-            <span className="chat-av"><Sparkles className="h-4 w-4" /></span>
-            <div><b>{t("assistant.title")}</b><small>{t("assistant.online")}</small></div>
-          </div>
-          {data && data.messages.length > 0 && (
-            <button type="button" className="chat-clear" onClick={() => clear.mutate()} disabled={clear.isPending}><Trash2 className="h-3.5 w-3.5" /> {t("assistant.clear")}</button>
-          )}
+      {empty && (
+        <div className="chat-sug">
+          {suggestions.map((s) => <button key={s} type="button" className="pill" onClick={() => void ask(s)}>{s}</button>)}
         </div>
-        {/* AI Act art. 50: the user is told at first contact that this is an AI. */}
-        <p className="chat-notice" role="note">{t("assistant.aiNotice")}</p>
+      )}
 
-        <div ref={listRef} className="chat-body">
-          {isLoading && (
-            <>
-              <div className="bubble ai typing"><i /><i /><i /></div>
-            </>
-          )}
-          {data && visible.length === 0 && !pending && (
-            <div className="bubble ai">{projectId ? t("assistant.emptyJob") : t("assistant.emptyCompany")}</div>
-          )}
-          {visible.map((m, idx) => (
-            <div key={m.id} className="contents">
-              {m.role === "assistant" && cardsFor(idx).map((p) => <ProposalCard key={p.id} proposal={p} onConfirm={() => confirm.mutate(p.id)} onDismiss={() => dismiss.mutate(p.id)} busy={confirm.isPending && confirm.variables === p.id} />)}
-              <Bubble message={m} />
-            </div>
-          ))}
-          {pending && <Bubble message={{ id: "pending", role: "user", content: pending, toolCalls: null, toolCallId: null, toolName: null, createdAt: "" }} />}
-          {send.isPending && <div className="bubble ai typing"><i /><i /><i /></div>}
-        </div>
-
-        {data && visible.length === 0 && !pending && (
-          <div className="chat-sug">
-            {suggestions.map((s) => <button key={s} type="button" className="pill" onClick={() => send.mutate(s)}>{s}</button>)}
-          </div>
-        )}
-
-        <div className="chat-in">
-          <input
-            value={draft}
-            onChange={(e) => setDraft(e.target.value)}
-            onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); submit(); } }}
-            placeholder={t("assistant.placeholder")}
-            aria-label={t("assistant.placeholder")}
-            disabled={!data || send.isPending}
-          />
-          <button type="button" className="comp-send" onClick={submit} disabled={!draft.trim() || !data || send.isPending} aria-label={t("assistant.send")}>
-            <Send className="chev" />
-          </button>
-        </div>
+      <div className="chat-in">
+        <input
+          ref={inputRef}
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); submit(); } }}
+          placeholder={voice.isRecording ? t("assistant.listening") : voice.isTranscribing ? t("assistant.transcribing") : t("assistant.placeholder")}
+          aria-label={t("assistant.placeholder")}
+          disabled={!data || busy}
+          enterKeyHint="send"
+        />
+        <button
+          type="button"
+          className={cn("comp-mic", voice.isRecording && "rec")}
+          onClick={() => (voice.isRecording ? voice.stopRecording() : void voice.startRecording())}
+          disabled={!data || busy || voice.isTranscribing}
+          aria-label={voice.isRecording ? t("assistant.stopDictation") : t("assistant.dictate")}
+          aria-pressed={voice.isRecording}
+        >
+          {voice.isTranscribing ? <Loader2 className="h-4 w-4 animate-spin" /> : voice.isRecording ? <><Square className="h-4 w-4" /><span className="rec-dot" /></> : <Mic className="h-4 w-4" />}
+        </button>
+        <button type="button" className="comp-send" onClick={submit} disabled={!draft.trim() || !data || busy} aria-label={t("assistant.send")}>
+          <Send className="chev" />
+        </button>
       </div>
     </div>
   );

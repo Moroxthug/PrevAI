@@ -1,6 +1,9 @@
 // Phase 5 — assistant conversation runner. One turn = user message →
 // (model → tool calls → results)* → final answer. Every message is stored;
 // propose_* calls become assistant_proposals rows the UI renders as cards.
+// APP-8a: the model's answer is streamed (onEvent gets text as it is written
+// and a line for each tool it runs), and the turn knows which screen the
+// user is on (context.ts) — one conversation follows them around the app.
 import { openai, type OpenAI } from "@workspace/integrations-openai-ai-server";
 import {
   db,
@@ -19,6 +22,8 @@ import { and, asc, desc, eq, isNull, inArray } from "drizzle-orm";
 import { logger } from "../lib/logger.js";
 import { toIsoDate } from "../jobs/dates.js";
 import { TOOL_DEFINITIONS, PROPOSAL_TOOLS, runReadTool, validateProposal, type ToolContext } from "./tools.js";
+import { resolvePageContext, type PageContext } from "./context.js";
+import { CompletionAccumulator, progressLabel, type TurnEvent } from "./stream.js";
 
 export type Lang = "it";
 const MAX_ROUNDS = 6;
@@ -45,6 +50,18 @@ export async function loadConversation(userId: string, id: string): Promise<{ co
   return { conversation, messages, proposals };
 }
 
+/** Every conversation of the company, newest first: the main one and the older per-job ones (APP-8a keeps them readable). */
+export async function listConversations(userId: string): Promise<(AssistantConversation & { projectName: string | null })[]> {
+  const rows = await db
+    .select({ c: assistantConversationsTable, projectName: projectsTable.name })
+    .from(assistantConversationsTable)
+    .leftJoin(projectsTable, eq(projectsTable.id, assistantConversationsTable.projectId))
+    .where(eq(assistantConversationsTable.userId, userId))
+    .orderBy(desc(assistantConversationsTable.lastMessageAt))
+    .limit(50);
+  return rows.map((r) => ({ ...r.c, projectName: r.projectName ?? null }));
+}
+
 export async function clearConversation(userId: string, id: string): Promise<boolean> {
   const deleted = await db.delete(assistantConversationsTable).where(and(eq(assistantConversationsTable.id, id), eq(assistantConversationsTable.userId, userId))).returning({ id: assistantConversationsTable.id });
   return deleted.length > 0;
@@ -52,7 +69,7 @@ export async function clearConversation(userId: string, id: string): Promise<boo
 
 // ── System prompt ────────────────────────────────────────────────────────────
 
-async function buildSystemPrompt(params: { userId: string; projectId: string | null; language: Lang; now: Date }): Promise<{ prompt: string; province: string | null }> {
+async function buildSystemPrompt(params: { userId: string; projectId: string | null; language: Lang; now: Date; screenLine: string }): Promise<{ prompt: string; province: string | null }> {
   const [profile] = await db.select().from(businessProfilesTable).where(eq(businessProfilesTable.userId, params.userId));
   const company = profile?.companyName || "the company";
   let province = profile?.province ?? null;
@@ -68,7 +85,7 @@ async function buildSystemPrompt(params: { userId: string; projectId: string | n
   const langLine = "Rispondi sempre in italiano.";
   const prompt = `Sei l'assistente di cantiere dentro PrevAI, un'app di gestione lavori edili usata da ${company}, impresa italiana${province ? ` con sede in provincia di ${province}` : ""}. Oggi è ${toIsoDate(params.now)}.
 ${langLine}
-${jobBlock}
+${jobBlock}${params.screenLine}
 
 Aiuti l'impresa a gestire i cantieri: cronoprogramma, budget vs costi, ore, fatture e cassa. Usa gli strumenti per consultare i dati prima di rispondere — non inventare mai cifre. Gli importi sono in EUR; precisa se una cifra è IVA esclusa o inclusa quando conta.
 
@@ -98,8 +115,9 @@ function toOpenAiMessages(rows: AssistantMessage[]): OpenAI.Chat.Completions.Cha
 
 export type TurnResult = { messages: AssistantMessage[]; proposals: AssistantProposal[] };
 
-export async function runAssistantTurn(params: { conversation: AssistantConversation; userId: string; content: string; language: Lang; now?: Date }): Promise<TurnResult> {
+export async function runAssistantTurn(params: { conversation: AssistantConversation; userId: string; content: string; language: Lang; context?: PageContext | null; onEvent?: (e: TurnEvent) => void; signal?: AbortSignal; now?: Date }): Promise<TurnResult> {
   const now = params.now ?? new Date();
+  const emit = params.onEvent ?? (() => {});
   const conv = params.conversation;
   const newMessages: AssistantMessage[] = [];
   const newProposals: AssistantProposal[] = [];
@@ -107,57 +125,66 @@ export async function runAssistantTurn(params: { conversation: AssistantConversa
   const insertMessage = async (values: Omit<typeof assistantMessagesTable.$inferInsert, "conversationId" | "userId">) => {
     const [row] = await db.insert(assistantMessagesTable).values({ conversationId: conv.id, userId: params.userId, ...values }).returning();
     newMessages.push(row!);
+    emit({ type: "message", message: row! });
     return row!;
   };
 
   await insertMessage({ role: "user", content: params.content });
   if (!conv.title) await db.update(assistantConversationsTable).set({ title: params.content.slice(0, 80) }).where(eq(assistantConversationsTable.id, conv.id));
 
-  const { prompt, province } = await buildSystemPrompt({ userId: params.userId, projectId: conv.projectId, language: params.language, now });
-  const ctx: ToolContext = { userId: params.userId, projectId: conv.projectId, province, now };
+  // The screen wins over the conversation's own job: in a job's old thread, asking from another job's page means that job.
+  const screen = await resolvePageContext(params.userId, params.context);
+  const projectId = screen.projectId ?? conv.projectId;
+  const { prompt, province } = await buildSystemPrompt({ userId: params.userId, projectId, language: params.language, now, screenLine: screen.line });
+  const ctx: ToolContext = { userId: params.userId, projectId, province, now };
   const history = await db.select().from(assistantMessagesTable).where(eq(assistantMessagesTable.conversationId, conv.id)).orderBy(desc(assistantMessagesTable.createdAt)).limit(HISTORY_LIMIT);
   const messages: OpenAI.Chat.Completions.ChatCompletionMessageParam[] = [{ role: "system", content: prompt }, ...toOpenAiMessages(history.reverse())];
 
   for (let round = 0; round < MAX_ROUNDS; round++) {
     const lastRound = round === MAX_ROUNDS - 1;
-    const completion = await openai.chat.completions.create(
-      { model: MODEL, temperature: 0.2, max_completion_tokens: 1200, messages, tools: TOOL_DEFINITIONS, tool_choice: lastRound ? "none" : "auto" },
-      { timeout: 45_000 },
+    const stream = await openai.chat.completions.create(
+      { model: MODEL, temperature: 0.2, max_completion_tokens: 1200, messages, tools: TOOL_DEFINITIONS, tool_choice: lastRound ? "none" : "auto", stream: true },
+      { timeout: 45_000, signal: params.signal },
     );
-    const choice = completion.choices[0]?.message;
-    if (!choice) throw new Error("Empty completion");
-    const calls = (choice.tool_calls ?? []).filter((c): c is OpenAI.Chat.Completions.ChatCompletionMessageFunctionToolCall => c.type === "function");
+    const acc = new CompletionAccumulator();
+    for await (const chunk of stream) {
+      const piece = acc.push(chunk.choices[0]?.delta as Parameters<CompletionAccumulator["push"]>[0]);
+      if (piece) emit({ type: "delta", text: piece });
+    }
+    const calls = acc.toolCalls();
     if (!calls.length) {
-      const text = (choice.content ?? "").trim() || "Non ho nulla da aggiungere.";
+      const text = acc.text.trim() || "Non ho nulla da aggiungere.";
       await insertMessage({ role: "assistant", content: text });
       break;
     }
-    const stored: AssistantToolCall[] = calls.map((c) => ({ id: c.id, name: c.function.name, arguments: c.function.arguments }));
-    const assistantRow = await insertMessage({ role: "assistant", content: choice.content ?? "", toolCalls: stored });
-    messages.push({ role: "assistant", content: choice.content ?? null, tool_calls: calls.map((c) => ({ id: c.id, type: "function" as const, function: { name: c.function.name, arguments: c.function.arguments } })) });
+    const stored: AssistantToolCall[] = calls.map((c) => ({ id: c.id, name: c.name, arguments: c.arguments }));
+    const assistantRow = await insertMessage({ role: "assistant", content: acc.text, toolCalls: stored });
+    messages.push({ role: "assistant", content: acc.text || null, tool_calls: calls.map((c) => ({ id: c.id, type: "function" as const, function: { name: c.name, arguments: c.arguments } })) });
 
     for (const call of calls) {
+      emit({ type: "progress", tool: call.name, label: progressLabel(call.name) });
       let args: unknown;
-      try { args = call.function.arguments ? JSON.parse(call.function.arguments) : {}; } catch { args = {}; }
+      try { args = call.arguments ? JSON.parse(call.arguments) : {}; } catch { args = {}; }
       let result: unknown;
-      const kind = PROPOSAL_TOOLS[call.function.name];
+      const kind = PROPOSAL_TOOLS[call.name];
       try {
         if (kind) {
-          const v = await validateProposal(call.function.name, args, ctx);
+          const v = await validateProposal(call.name, args, ctx);
           if (v.ok) {
             const [row] = await db.insert(assistantProposalsTable).values({ conversationId: conv.id, messageId: assistantRow.id, userId: params.userId, projectId: v.proposal.projectId, kind: v.proposal.kind, summary: v.proposal.summary, payload: v.proposal.payload, status: "pending" }).returning();
             newProposals.push(row!);
+            emit({ type: "proposal", proposal: row! });
             result = { proposal_id: row!.id, status: "pending_confirmation", summary: v.proposal.summary, note: "The user sees a card and must confirm. Do not say this was done." };
           } else result = { error: v.error };
         } else {
-          result = await runReadTool(call.function.name, args, ctx);
+          result = await runReadTool(call.name, args, ctx);
         }
       } catch (err) {
-        logger.warn({ err, tool: call.function.name }, "assistant tool failed");
+        logger.warn({ err, tool: call.name }, "assistant tool failed");
         result = { error: (err as Error).message };
       }
       const content = JSON.stringify(result).slice(0, 24_000);
-      await insertMessage({ role: "tool", content, toolCallId: call.id, toolName: call.function.name });
+      await insertMessage({ role: "tool", content, toolCallId: call.id, toolName: call.name });
       messages.push({ role: "tool", tool_call_id: call.id, content });
     }
   }

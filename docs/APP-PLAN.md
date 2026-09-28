@@ -77,9 +77,9 @@ Il design di riferimento è quello dell'app di QuoteAI (`design/stitch*`, `docs/
 - Push native e Face ID restano nella riga 19 (servono APP-3 e D16).
 - **Fatto il 27/9/2026:** + → Foto del cantiere e Nota vocale, scheda Note del cantiere (migrazione 0011), Condividi PDF su preventivo e fattura, bozza del nuovo preventivo nel browser con avviso "senza rete". Dettagli in RUNBOOKS §15.
 
-### APP-7 e APP-8 (righe 31–32)
+### APP-7 e APP-8 (righe 31–39)
 - **APP-7** — Home per ruolo e "Personalizza la home" (QuoteAI 132, `design/role-homes`).
-- **APP-8** — Assistente vocale (QuoteAI 133–142): richiede un piano a parte, costi dell'IA vocale e regole sui permessi; da valutare dopo gli store.
+- **APP-8** — Assistente che parla e agisce (QuoteAI 133–142): piano in `docs/ASSISTENTE-PLAN.md`, diviso nelle righe 32–39 (APP-8a … APP-8h). **APP-8a fatta il 27/9/2026** (streaming, un assistente da ogni schermata, contesto, dettatura; RUNBOOKS §17).
 
 ### APP-2 — PWA installabile + notifiche web (1 sett)
 - `manifest.webmanifest` (nome, icone, colore navy, `display: standalone`), service worker con cache della struttura dell'app e pagina "sei offline".

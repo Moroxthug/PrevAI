@@ -12,7 +12,7 @@ export default function AssistantPage() {
         </div>
         <div className="head-actions"><span className="chip chip-purple">{t("assistant.includedInElite")}</span></div>
       </div>
-      <AssistantPanel projectId={null} />
+      <AssistantPanel />
     </div>
   );
 }

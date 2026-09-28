@@ -24,6 +24,7 @@ import { PhoneNewButton, PhoneTabBar } from "@/components/layout/phone-nav";
 import { FeedbackSheet } from "@/components/feedback-sheet";
 import { trackAppOpenOncePerDay } from "@/lib/app-beta";
 import { AccountDeletionBanner } from "@/pages/dashboard/settings/delete-account";
+import { AssistantLauncher } from "@/components/assistant/assistant-launcher";
 
 /** Section groupings for the sidebar rail — purely presentational, doesn't affect routing or access. */
 const NAV_GROUPS = ["overview", "sales", "delivery", "insights", "workspace"] as const;
@@ -234,6 +235,8 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
   const hasSdi = navProfile ? hasFeature(navProfile as never, "sdi_invoicing") : false;
   const hasFisco = navProfile ? hasFeature(navProfile as never, "fiscal_engine") : false;
   const hasCommercialista = navProfile ? hasFeature(navProfile as never, "accountant_service") : false;
+  // APP-8a: the assistant opens from the top bar on every screen of a plan that has it.
+  const hasAssistant = navProfile ? hasFeature(navProfile as never, "assistant") : false;
   const showAddonOffer = Boolean(navProfile) && !hasSdi && !hasFisco && statoOffertaLocale() !== "bozza";
   // Hooks must run on every render — keep this above the early returns below.
   const allNavItems = useNavItems();
@@ -380,6 +383,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
           <MobilePageHeader title={sectionLabel ?? "PrevAI"} backHref={backHref} backLabel={backHref ? sectionOf(backHref.split("?")[0]!) : undefined} />
           <QuickSearch navItems={NAV_ITEMS} />
           <div className="tb-right">
+            {hasAssistant && <AssistantLauncher />}
             {phoneNav && <PhoneNewButton hasJobs={NAV_ITEMS.some((i) => i.href === "/dashboard/jobs")} hasInvoices={NAV_ITEMS.some((i) => i.href === "/dashboard/invoices")} />}
             {/* On a phone both live in Altro (its tab carries the unread count). */}
             <NotificationsBell variant="topbar" side="bottom" align="end" />

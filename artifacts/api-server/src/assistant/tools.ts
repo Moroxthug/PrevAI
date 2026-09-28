@@ -251,6 +251,7 @@ const ProposeArgs = {
 };
 
 const money = (cents: number) => new Intl.NumberFormat("it-IT", { style: "currency", currency: "EUR" }).format(cents / 100);
+const CATEGORIA_IT: Record<string, string> = { materials: "materiali", labour: "manodopera", subcontractor: "subappalto", permits_fees: "pratiche e oneri", equipment: "attrezzature", misc: "varie" };
 const METODO_IT: Record<string, string> = { bank_transfer: "bonifico", cheque: "assegno", cash: "contanti", card: "carta", other: "altro" };
 
 /** Validates propose_* arguments against the user's data and returns the proposal to store, or an error string for the model. */
@@ -285,7 +286,7 @@ export async function validateProposal(name: string, rawArgs: unknown, ctx: Tool
           milestoneId = m?.id ?? null;
         }
         const payload = { projectId: p.id, category: a.category, vendor: a.vendor ?? "", description: a.description ?? "", date: a.date ?? toIsoDate(ctx.now), subtotalCents, taxCents, taxBreakdown: breakdown, totalCents, milestoneId };
-        return { ok: true, proposal: { kind: "cost_entry", projectId: p.id, summary: `Costo ${money(totalCents)} (${a.category})${a.vendor ? ` — ${a.vendor}` : ""} su ${p.name}`, payload } };
+        return { ok: true, proposal: { kind: "cost_entry", projectId: p.id, summary: `Costo ${money(totalCents)} (${CATEGORIA_IT[a.category] ?? a.category})${a.vendor ? ` — ${a.vendor}` : ""} su ${p.name}`, payload } };
       }
       case "propose_milestone_update": {
         const a = ProposeArgs.propose_milestone_update.parse(rawArgs);

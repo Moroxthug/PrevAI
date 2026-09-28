@@ -26,7 +26,7 @@ import { TeamTab } from "@/components/jobs/team-tab";
 import { InvoicesTab } from "@/components/jobs/invoices-tab";
 import { OverviewCharts, useJobAnalytics } from "@/components/jobs/overview-charts";
 import { NotesCard } from "@/components/jobs/notes-card";
-import { AssistantPanel } from "@/components/assistant/assistant-panel";
+import { AssistantChat } from "@/components/assistant/assistant-panel";
 import { PhotosTab } from "@/components/jobs/photos-tab";
 import { JobDockActions } from "@/components/jobs/dock-actions";
 import { formatEurWhole } from "@/lib/money";
@@ -185,7 +185,8 @@ export default function JobDetailPage() {
       {tab === "team" && <TeamTab data={data} locale={locale} />}
       {tab === "photos" && <PhotosTab data={data} />}
       {tab === "documents" && <DocumentsTab data={data} locale={locale} />}
-      {tab === "assistant" && <AssistantPanel projectId={job.id} />}
+      {/* APP-8a: the same conversation as everywhere else, asked from this job. */}
+      {tab === "assistant" && <div className="card"><AssistantChat /></div>}
 
       <ChangeOrderDialog jobId={job.id} open={coOpen} onOpenChange={setCoOpen} />
     </div>

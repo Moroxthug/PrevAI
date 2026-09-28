@@ -1331,7 +1331,7 @@ button.chap-head:hover { background: var(--soft-2); }
 .stat-card .text-link { margin-top: 4px; font-size: 12.5px; }
 .stat-grid .stat-card.span-2 { grid-column: span 2; }
 /* the mockup's own `.card + .card { margin-top }` sibling rule leaks into grid cells and pushes cards 2..n down 16px; grids space with gap */
-.stat-grid > .card, .qa-grid > .card, .split-2 > .card, .mid-grid > .card, .steps-3 > .card, .kanban > .card { margin-top: 0; }
+.stat-grid > .card, .qa-grid > .card, .split-2 > .card, .mid-grid > .card, .steps-3 > .card, .kanban > .card, .chat-grid > .card { margin-top: 0; }
 
 .ms-edit { display: grid; grid-template-columns: auto minmax(0, 1.3fr) 150px 150px minmax(0, 1fr) 30px; gap: 10px; align-items: center; padding: 12px 14px; border: 1px solid var(--line); border-radius: 12px; background: #fff; }
 .ms-edit + .ms-edit { margin-top: 8px; }
@@ -2873,4 +2873,50 @@ button.qline:hover { background: #fafbfc; }
   .today > .page-head .head-actions { flex: none; }
   .home-sub { padding: 0 16px 4px; }
   .home-cz-move { width: auto; }
+}
+
+/* ---------- APP-8a: one assistant from every screen ----------
+   The ✦ in the top bar opens the conversation: a panel docked to the right
+   on a computer, a tall sheet on a phone (the .modal phone rule). */
+.tb-asst { width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center; color: var(--navy); flex: none; }
+.tb-asst:hover { background: var(--soft); }
+.tb-asst svg { width: 20px; height: 20px; }
+@media (max-width: 640px) {
+  .tb-asst { width: var(--tap); height: var(--tap); }
+  .tb-asst svg { width: 22px; height: 22px; }
+}
+.th-list .th-sub { padding: 12px 20px 4px; font-size: 11px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; color: var(--faint); border-top: 1px solid var(--soft); }
+.asst-chat { display: flex; flex-direction: column; min-height: 0; }
+.chat-progress { align-self: flex-start; display: inline-flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 700; color: var(--muted-mk); padding: 6px 2px; }
+.modal.asst-panel { padding: 0; overflow: hidden; }
+.modal.asst-panel > .asst-chat { flex: 1; }
+.asst-panel .chat-head { padding-right: 96px; }
+.asst-chat .chat-head-main { flex: 1; }
+.asst-chat .chat-head-main > div { min-width: 0; }
+.asst-chat .chat-head small { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.asst-panel .chat-body { flex: 1; min-height: 0; max-height: none; }
+.asst-panel .asst-full { position: absolute; top: 14px; right: 50px; z-index: 1; }
+.asst-panel .asst-full svg { width: 16px; height: 16px; }
+@media (min-width: 981px) {
+  .modal.asst-panel, .modal.asst-panel.tall { left: auto; right: 0; top: 0; bottom: 0; transform: none; width: min(460px, 100vw); max-width: none; height: 100dvh; max-height: none; border-radius: 0; border-width: 0 0 0 1px; }
+  .modal.asst-panel[data-state="open"] { animation: asst-in .28s var(--ease-mk); }
+  .modal.asst-panel[data-state="closed"] { animation: asst-out .18s var(--ease-mk); }
+}
+@keyframes asst-in { from { transform: translateX(24px); opacity: 0; } to { transform: none; opacity: 1; } }
+@keyframes asst-out { from { transform: none; opacity: 1; } to { transform: translateX(24px); opacity: 0; } }
+@media (max-width: 640px) {
+  .modal.asst-panel.tall { height: calc(100dvh - 48px - var(--safe-top, 0px)); max-height: none; }
+  .asst-panel .chat-head { padding: 10px 96px 10px 16px; }
+  /* Only the bin on a phone: the words "Ricomincia" left the subtitle three letters. */
+  .asst-chat .chat-clear-txt { display: none; }
+  .asst-chat .chat-clear { width: 36px; height: 36px; justify-content: center; }
+  .asst-panel .chat-notice { padding: 6px 16px; }
+  .asst-panel .chat-in { padding: 10px 12px; }
+  .asst-panel .chat-in input { font-size: 16px; }
+  .asst-panel .chat-sug { flex-wrap: nowrap; overflow-x: auto; padding: 0 16px 12px; scrollbar-width: none; }
+  .asst-panel .chat-sug .pill { flex: none; }
+  .chat-in input { font-size: 16px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .modal.asst-panel[data-state="open"], .modal.asst-panel[data-state="closed"] { animation: none; }
 }

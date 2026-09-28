@@ -844,3 +844,30 @@ Senza la tabella: ognuno vede la home del suo ruolo (calcolata), `GET /api/home`
 1. Da titolare: home uguale a prima più "Cantieri in corso" (se il piano ha i cantieri); l'icona accanto a "Nuovo preventivo" apre il foglio con "Stai modificando".
 2. Dopo la 0012: nascondere una sezione, Salva, ricaricare → resta nascosta; Ripristina → torna.
 3. Se c'è un membro capocantiere o contabile: la sua home è la sua (`GET /api/home` → `kind`).
+
+## 17. Un assistente da ogni schermata, in streaming (APP-8a, riga 32)
+
+Piano completo in `docs/ASSISTENTE-PLAN.md`. Nessuna migrazione, nessuna variabile nuova: usa `GROQ_API_KEY` come prima.
+
+### 17.1 Come funziona
+
+- **Dove si apre:** ✦ nella barra in alto di ogni schermata della dashboard, solo se il piano ha `assistant` (Elite). Pannello a destra sul computer, foglio sul telefono; non compare sulla pagina Assistente stessa. La scheda Assistente di un cantiere e la pagina mostrano la stessa conversazione (quella dell'impresa, `project_id` nullo).
+- **Contesto:** con ogni domanda l'app manda `context: { path, projectId?, quoteId?, invoiceId? }` preso dall'indirizzo (`lib/assistant-context.ts`). Il server (`assistant/context.ts`) scarta gli id che non sono dell'impresa e aggiunge al prompt una riga "l'utente sta guardando…"; il cantiere diventa quello predefinito degli strumenti.
+- **Streaming:** `POST /api/assistant/conversations/:id/stream`, risposta `text/event-stream`: `progress {tool,label}`, `delta {text}`, `message {message}`, `proposal {proposal}`, `done {}`, `error {error,message}`. Errori prima dello stream = stati HTTP normali (403 `PLAN_REQUIRED`, 400, 404, 429 dal limitatore). `POST …/messages` resta per chi vuole il JSON in una volta.
+- **Conversazioni di prima:** `GET /api/assistant/conversations` (elenco) e `GET /api/assistant/conversations/:id`. Sulla pagina Assistente, su computer, sotto "Conversazioni per cantiere (prima)".
+- **Dettatura:** il microfono del campo usa `/api/speech/transcribe` come il composer; il testo va nel campo e si manda a mano. L'audio non si conserva.
+
+### 17.2 Se qualcosa non va
+
+- **Il testo arriva tutto insieme alla fine:** qualcosa bufferizza la risposta (proxy, compressione). L'app funziona lo stesso. Controllare che la risposta abbia `Content-Type: text/event-stream` e `X-Accel-Buffering: no`, e che nessun middleware di compressione sia stato aggiunto in `app.ts`.
+- **"La risposta si è interrotta":** la connessione è caduta prima di `done` (rete del telefono, `maxDuration` di 60 s della funzione Vercel con molti giri di strumenti). I messaggi già salvati restano; l'app ricarica la conversazione.
+- **Il ✦ non c'è:** il piano non ha `assistant` (`hasFeature`), oppure si è sulla pagina Assistente.
+- **Un membro della squadra vede la conversazione del titolare:** è così fino ad APP-8b (le conversazioni sono dell'impresa).
+
+### 17.3 Controlli dopo il deploy
+
+1. Da un account Elite, su un cantiere: ✦ → "Com'è messo questo cantiere?" → compare "Guardo il cantiere…", poi il testo che scorre.
+2. Da una fattura: "Quanto resta da incassare?" → risponde con numero e importo di quella fattura.
+3. DevTools → Network → la richiesta `stream` ha tipo `eventsource`/`text/event-stream` e riceve eventi mentre è aperta (se arrivano tutti alla fine, vedi 17.2).
+4. Chiedere uno scontrino → scheda "Costo" → Ignora.
+
