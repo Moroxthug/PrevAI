@@ -14,6 +14,7 @@ export const USAGE_EVENT_KINDS = [
   "email",
   "storage_bytes",
   "sms",
+  "ai_speech", // APP-8e: sintesi vocale dell'assistente (quantità = secondi stimati)
 ] as const;
 export type UsageEventKind = (typeof USAGE_EVENT_KINDS)[number];
 

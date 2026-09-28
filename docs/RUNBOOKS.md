@@ -954,3 +954,33 @@ Nessuna.
 3. Una domanda lunga → Stop a metà → il pulsante torna Invia, nessun errore.
 4. Una scheda da confermare (per esempio "Mandalo al cliente" da un preventivo) → Modifica → il campo chiede cosa cambiare → Esc la lascia com'era → Ignora.
 5. Telefono in modalità aereo con il pannello aperto → domanda → "Senza rete: lo chiedo appena torni in linea…" → rete di nuovo → la risposta arriva.
+
+## 21. Assistente: risponde a voce (APP-8e, riga 36)
+
+### 21.1 Cosa c'è
+
+- Mentre la risposta si scrive, l'app la taglia in frasi e le dice una dopo l'altra (la prima appena è finita).
+- **Voce del browser** (oggi, gratis): legge con la voce italiana del telefono o del computer, se c'è; altrimenti con quella predefinita.
+- **Voce del fornitore** (D17, spenta): con `ASSISTANT_TTS_OPENAI_KEY` nelle variabili di Vercel (Production), `POST /api/assistant/speech` manda ogni frase a OpenAI `gpt-4o-mini-tts` e restituisce mp3. La chiave resta sul server. Senza chiave la rotta risponde 503 `VOICE_BROWSER` e l'app usa la voce del browser. Voce e istruzioni in `lib/config/src/assistente-voce.ts` (`ASSISTANT_TTS`, voce provvisoria "coral" finché il titolare non sceglie, AS-3).
+- **Scelte (di questo dispositivo):** altoparlante nella testata della chat; Impostazioni → Assistente → Voce: Solo testo / A voce quando detti (predefinito) / Conversazione a voce (la dettatura parte subito), velocità, voce del dispositivo, Ascolta. Zittisci al posto di Invia mentre parla; il microfono la zittisce prima di ascoltare.
+- **Minuti:** ogni frase del fornitore scrive un evento `ai_speech` in `usage_events` (secondi stimati). `GET /api/assistant/voice` dà i minuti del mese. Tetto: `ASSISTANT_VOICE_MINUTES_PER_SEAT` = `null` finché D18 è aperta (nessun blocco); con un numero la rotta risponde 402 `VOICE_MINUTES_OVER` e l'app torna al testo. L'audio non si conserva.
+
+### 21.2 Migrazioni
+
+Nessuna.
+
+### 21.3 Accendere la voce del fornitore (dopo D17 e AS-2)
+
+1. Chiave OpenAI con tetto di spesa mensile → Vercel, progetto `prevai`, Production: `ASSISTANT_TTS_OPENAI_KEY`.
+2. Redeploy. `GET /api/assistant/voice` da un account Elite → `"provider":"openai"`.
+3. Impostazioni → Assistente → Voce → Ascolta: si sente la voce del fornitore; "Minuti di voce questo mese" sale dopo qualche frase.
+4. Rimisurare "dal silenzio alla prima parola" (obiettivo < 2 s Wi-Fi, < 3 s 4G): con la voce del browser era 1,9 / 2,3 s.
+5. Spegnere: togliere la variabile e ridistribuire; l'app torna da sola alla voce del browser.
+
+### 21.4 Controlli dopo il deploy
+
+1. Account Elite → pagina Assistente → l'altoparlante c'è nella testata.
+2. Detta "com'è la mia giornata?", manda → la risposta si sente mentre compare; Zittisci la ferma.
+3. Altoparlante spento → la stessa domanda dettata resta solo scritta.
+4. Impostazioni → Assistente → Voce → Conversazione a voce → detta → parte senza toccare Invia.
+5. iPhone: la prima risposta si sente dopo un tocco su Invia o sul microfono (Safari vuole un tocco prima dell'audio).

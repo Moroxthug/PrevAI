@@ -12,7 +12,8 @@ import { confirmProposal, dismissProposal, undoProposal, undoDeadline, ProposalE
 import { assistantV2Ready, levelsFor, loadPermissionRows, roleAllowsAction, withUnavailable } from "../assistant/permissions.js";
 import { jobNotesReady } from "../assistant/ready.js";
 import { roleCan } from "../middlewares/requirePermission.js";
-import { ASSISTANT_ACTIONS, ASSISTANT_LEVELS, clampAssistantLevel, isAssistantAction } from "@workspace/config";
+import { ASSISTANT_ACTIONS, ASSISTANT_LEVELS, ASSISTANT_SPEECH_MAX_CHARS, ASSISTANT_TTS, clampAssistantLevel, isAssistantAction, spokenText } from "@workspace/config";
+import { speechProvider, synthesize, voiceMinutesIncluded, voiceMinutesUsed } from "../assistant/speech.js";
 import { writeAudit } from "../lib/notifications.js";
 
 // ── Phase 5: job assistant ───────────────────────────────────────────────────
@@ -268,6 +269,50 @@ router.put("/assistant/permissions", requireAuth, requirePermission("settings", 
   } catch (err) {
     req.log.error({ err }, "Error saving assistant permissions");
     res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// ── APP-8e: risponde a voce (D17 aperta, speech.ts) ──────────────────────────
+// GET dice all'app quale voce usare; POST trasforma una frase in audio con la
+// chiave del fornitore, che resta qui. Senza chiave: 503 VOICE_BROWSER e
+// l'app legge con la voce del browser.
+
+const speechLimiter = userRateLimiter({ windowMs: 60 * 60 * 1000, max: 600, message: "Limite orario della voce raggiunto. Riprova più tardi." });
+const speechBody = z.object({ text: z.string().trim().min(1).max(ASSISTANT_SPEECH_MAX_CHARS), rate: z.number().min(0.5).max(2).optional() });
+
+router.get("/assistant/voice", requireAuth, requirePermission("jobs", "view"), async (req, res) => {
+  try {
+    const userId = getUserId(res);
+    const gate = await requireAssistant(userId);
+    if (!gate.ok) { res.status(403).json({ error: "PLAN_REQUIRED", requiredPlan: gate.plan }); return; }
+    const provider = speechProvider();
+    res.json({ provider, voice: provider === "openai" ? ASSISTANT_TTS.voice : null, minutesUsed: provider === "openai" ? await voiceMinutesUsed(userId) : 0, minutesIncluded: voiceMinutesIncluded() });
+  } catch (err) {
+    req.log.error({ err }, "Error loading assistant voice");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+router.post("/assistant/speech", requireAuth, requirePermission("jobs", "view"), speechLimiter, async (req, res) => {
+  try {
+    const userId = getUserId(res);
+    const gate = await requireAssistant(userId);
+    if (!gate.ok) { res.status(403).json({ error: "PLAN_REQUIRED", requiredPlan: gate.plan }); return; }
+    const body = speechBody.safeParse(req.body);
+    if (!body.success) { res.status(400).json({ error: "Invalid parameters", details: body.error }); return; }
+    if (speechProvider() === "browser") { res.status(503).json({ error: "VOICE_BROWSER", message: "Sintesi vocale del server non attiva: usa la voce del browser." }); return; }
+    const included = voiceMinutesIncluded();
+    if (included !== null && (await voiceMinutesUsed(userId)) >= included) { res.status(402).json({ error: "VOICE_MINUTES_OVER", message: "Minuti di voce del mese finiti: l'assistente risponde per scritto." }); return; }
+    const ctrl = new AbortController();
+    res.on("close", () => { if (!res.writableEnded) ctrl.abort(); });
+    const audio = await synthesize(userId, spokenText(body.data.text), body.data.rate ?? 1, ctrl.signal);
+    res.setHeader("Content-Type", "audio/mpeg");
+    res.setHeader("Cache-Control", "no-store");
+    res.send(audio);
+  } catch (err) {
+    if (res.headersSent || res.destroyed) return;
+    req.log.error({ err }, "Error synthesizing assistant speech");
+    res.status(502).json({ error: "VOICE_FAILED", message: "La voce non è disponibile adesso." });
   }
 });
 

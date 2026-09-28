@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Link, useLocation } from "wouter";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Sparkles, Send, Trash2, Check, X, ExternalLink, Receipt, Wallet, Flag, ListTodo, Mail, Banknote, Loader2, AlertTriangle, Mic, Square, Undo2, FileText, Send as SendIcon, FileSignature, MessageSquare, UserPen, StickyNote, Pencil, RotateCcw, WifiOff } from "lucide-react";
+import { Sparkles, Send, Trash2, Check, X, ExternalLink, Receipt, Wallet, Flag, ListTodo, Mail, Banknote, Loader2, AlertTriangle, Mic, Square, Undo2, FileText, Send as SendIcon, FileSignature, MessageSquare, UserPen, StickyNote, Pencil, RotateCcw, WifiOff, Volume2, VolumeX } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useVoiceInput } from "@/hooks/use-voice-input";
 import { useOnline } from "@/hooks/use-quote-draft";
@@ -10,7 +10,8 @@ import { useLanguage } from "@/i18n/LanguageContext";
 import { assistantApi, type AssistantMessageDto, type ConversationDto, type ProposalDto, type ProposalKind } from "@/lib/assistant-api";
 import { useAssistantPageContext } from "@/lib/assistant-context";
 import { formatCents } from "@/lib/jobs-api";
-import { ASSISTANT_UNDO_SECONDS } from "@workspace/config";
+import { ASSISTANT_UNDO_SECONDS, SentenceChunker } from "@workspace/config";
+import { useSpeaker, useVoiceInfo, useVoicePrefs } from "@/lib/assistant-voice";
 
 const KIND_ICON: Record<ProposalKind, typeof Receipt> = { cost_entry: Wallet, milestone_update: Flag, task: ListTodo, invoice: Receipt, send_invoice: Mail, record_payment: Banknote, draft_quote: FileText, send_quote: SendIcon, send_contract: FileSignature, reply_lead: MessageSquare, message_client: Mail, update_client: UserPen, job_note: StickyNote };
 
@@ -94,6 +95,13 @@ export function AssistantChat({ threadId = null, compact, startDictation, classN
   const [failed, setFailed] = useState<{ content: string; message: string } | null>(null);
   const [queued, setQueued] = useState<string | null>(null);
   const [editing, setEditing] = useState<ProposalDto | null>(null);
+  // APP-8e — the answer out loud: "Conversazione a voce" always, "A voce quando detti" when the question came from the microphone.
+  const [voicePrefs, setVoicePrefs] = useVoicePrefs();
+  const voiceInfo = useVoiceInfo(voicePrefs.mode !== "off");
+  const { speaker, speaking } = useSpeaker(voiceInfo.provider === "openai");
+  const dictatedRef = useRef(false);
+  const lastOnMode = useRef(voicePrefs.mode === "off" ? "dictated" : voicePrefs.mode);
+  if (voicePrefs.mode !== "off") lastOnMode.current = voicePrefs.mode;
 
   const key = threadKey(threadId);
   const { data, isLoading, error } = useQuery({ queryKey: key, queryFn: () => (threadId ? assistantApi.byId(threadId) : assistantApi.conversation(null)), retry: false });
@@ -109,20 +117,26 @@ export function AssistantChat({ threadId = null, compact, startDictation, classN
   };
   const patch = (fn: (prev: ConversationDto) => ConversationDto) => queryClient.setQueryData(key, (prev: ConversationDto | undefined) => (prev ? fn(prev) : prev));
 
-  const ask = async (content: string) => {
+  const ask = async (content: string, spoken = voicePrefs.mode === "always") => {
     if (!data || busy) return;
     setDraft("");
+    dictatedRef.current = false;
     setFailed(null);
     // Offline: kept and asked when the network is back. Whatever it leads to, a send still waits for Conferma.
     if (!online) { setQueued(content); return; }
     setLive({ user: content, text: "", progress: null });
     const ctrl = new AbortController();
     abortRef.current = ctrl;
+    const chunker = spoken ? new SentenceChunker() : null;
+    if (chunker) { speaker.begin(); try { performance.mark("asst-voice:sent"); } catch { /* old browsers */ } }
     // APP-8c: open_screen — go there once the answer is over (leaving the page closes the panel, which would stop it).
     const nav = { to: null as string | null };
     try {
       await assistantApi.stream(data.conversation.id, content, context, (e) => {
-        if (e.type === "delta") setLive((l) => (l ? { ...l, text: l.text + e.text, progress: null } : l));
+        if (e.type === "delta") {
+          setLive((l) => (l ? { ...l, text: l.text + e.text, progress: null } : l));
+          for (const sentence of chunker?.push(e.text) ?? []) speaker.enqueue(sentence);
+        }
         else if (e.type === "progress") setLive((l) => (l ? { ...l, progress: e.label } : l));
         else if (e.type === "navigate") nav.to = e.path;
         else if (e.type === "proposal") {
@@ -139,6 +153,8 @@ export function AssistantChat({ threadId = null, compact, startDictation, classN
       // A stop is not an error; anything else leaves a Riprova under the conversation.
       if (!ctrl.signal.aborted) setFailed({ content, message: (e as Error).message });
     } finally {
+      // What is left of the answer is said too, unless it was stopped.
+      if (chunker && !ctrl.signal.aborted) { for (const sentence of chunker.flush()) speaker.enqueue(sentence); speaker.end(); }
       if (abortRef.current === ctrl) abortRef.current = null;
       setLive(null);
       // After a stop or an error, what the server kept (the question, anything already written) is the truth.
@@ -168,7 +184,13 @@ export function AssistantChat({ threadId = null, compact, startDictation, classN
   });
 
   const voice = useVoiceInput({
-    onTranscribed: (text) => { setDraft((d) => (d.trim() ? `${d.trim()} ${text}` : text)); inputRef.current?.focus(); },
+    onTranscribed: (text) => {
+      // "Conversazione a voce": what was said goes at once (sends still wait for Conferma); otherwise it is read over first.
+      if (voicePrefs.mode === "always" && !editing && !draft.trim()) { void ask(text, true); return; }
+      dictatedRef.current = true;
+      setDraft((d) => (d.trim() ? `${d.trim()} ${text}` : text));
+      inputRef.current?.focus();
+    },
     onError: (message) => toast({ title: t("assistant.voiceError"), description: message, variant: "destructive" }),
   });
 
@@ -202,18 +224,28 @@ export function AssistantChat({ threadId = null, compact, startDictation, classN
   const submit = () => {
     const c = draft.trim();
     if (!c || busy) return;
+    speaker.unlock(); // a tap or Enter: lets iOS play the answer later
     // "sì" with exactly one card waiting is that card's Conferma; with none or several it goes to the assistant like any text.
     if (!editing && online && pending.length === 1 && YES.test(c)) { setDraft(""); confirm.mutate(pending[0]!.id); return; }
     if (editing) {
       // Modifica: the old card is set aside and the assistant proposes a new one with the change.
       dismiss.mutate(editing.id);
       setEditing(null);
-      void ask(t("assistant.editPrefix").replace("{summary}", editing.summary) + c);
+      void ask(t("assistant.editPrefix").replace("{summary}", editing.summary) + c, voicePrefs.mode === "always" || (voicePrefs.mode === "dictated" && dictatedRef.current));
       return;
     }
-    void ask(c);
+    void ask(c, voicePrefs.mode === "always" || (voicePrefs.mode === "dictated" && dictatedRef.current));
   };
-  const stop = () => abortRef.current?.abort();
+  // Stop: the answer being written and the voice reading it.
+  const stop = () => { abortRef.current?.abort(); speaker.stop(); };
+  const mic = () => {
+    if (voice.isRecording) { try { performance.mark("asst-voice:silence"); } catch { /* old browsers */ } voice.stopRecording(); return; }
+    // Speaking over the assistant: the microphone silences it first.
+    speaker.stop();
+    speaker.unlock();
+    void voice.startRecording();
+  };
+  const toggleVoice = () => { if (voicePrefs.mode === "off") { speaker.unlock(); setVoicePrefs({ mode: lastOnMode.current }); } else { speaker.stop(); setVoicePrefs({ mode: "off" }); } };
   const startEdit = (p: ProposalDto) => { setEditing(p); inputRef.current?.focus(); };
 
   // Back online: the question kept meanwhile goes now.
@@ -245,15 +277,20 @@ export function AssistantChat({ threadId = null, compact, startDictation, classN
   }
 
   return (
-    <div className={cn("asst-chat", compact && "compact", className)} onKeyDown={(e) => { if (e.key === "Escape" && busy) { e.preventDefault(); e.stopPropagation(); stop(); } }}>
+    <div className={cn("asst-chat", compact && "compact", className)} onKeyDown={(e) => { if (e.key === "Escape" && (busy || speaking)) { e.preventDefault(); e.stopPropagation(); stop(); } }}>
       <div className="chat-head">
         <div className="chat-head-main">
           <span className="chat-av"><Sparkles className="h-4 w-4" /></span>
           <div><b>{t("assistant.title")}</b><small>{t(`assistant.ctx.${kind}`)}</small></div>
         </div>
+        <div className="chat-head-tools">
+        <button type="button" className="chat-clear" onClick={toggleVoice} aria-pressed={voicePrefs.mode !== "off"} aria-label={voicePrefs.mode === "off" ? t("assistant.voiceOn") : t("assistant.voiceOff")} title={voicePrefs.mode === "off" ? t("assistant.voiceOn") : t("assistant.voiceOff")}>
+          {voicePrefs.mode === "off" ? <VolumeX className="h-3.5 w-3.5" aria-hidden="true" /> : <Volume2 className="h-3.5 w-3.5" aria-hidden="true" />}
+        </button>
         {data && data.messages.length > 0 && !busy && (
           <button type="button" className="chat-clear" onClick={() => clear.mutate()} aria-label={t("assistant.clear")} disabled={clear.isPending}><Trash2 className="h-3.5 w-3.5" aria-hidden="true" /> <span className="chat-clear-txt">{t("assistant.clear")}</span></button>
         )}
+        </div>
       </div>
       {/* AI Act art. 50: the user is told at first contact that this is an AI. */}
       <p className="chat-notice" role="note">{t("assistant.aiNotice")}</p>
@@ -293,7 +330,7 @@ export function AssistantChat({ threadId = null, compact, startDictation, classN
 
       {empty && !queued && (
         <div className="chat-sug">
-          {suggestions.map((s) => <button key={s} type="button" className="pill" onClick={() => void ask(s)}>{s}</button>)}
+          {suggestions.map((s) => <button key={s} type="button" className="pill" onClick={() => { speaker.unlock(); void ask(s); }}>{s}</button>)}
         </div>
       )}
 
@@ -323,16 +360,16 @@ export function AssistantChat({ threadId = null, compact, startDictation, classN
         <button
           type="button"
           className={cn("comp-mic", voice.isRecording && "rec")}
-          onClick={() => (voice.isRecording ? voice.stopRecording() : void voice.startRecording())}
+          onClick={mic}
           disabled={!data || busy || voice.isTranscribing}
           aria-label={voice.isRecording ? t("assistant.stopDictation") : t("assistant.dictate")}
           aria-pressed={voice.isRecording}
         >
           {voice.isTranscribing ? <Loader2 className="h-4 w-4 animate-spin" /> : voice.isRecording ? <><Square className="h-4 w-4" /><span className="rec-dot" /></> : <Mic className="h-4 w-4" />}
         </button>
-        {busy ? (
+        {busy || speaking ? (
           // Stop: the server stops the model when the answer is abandoned; what it already kept stays.
-          <button type="button" className="comp-send" onClick={stop} aria-label={t("assistant.stop")} title={t("assistant.stop")}>
+          <button type="button" className="comp-send" onClick={stop} aria-label={busy ? t("assistant.stop") : t("assistant.stopVoice")} title={busy ? t("assistant.stop") : t("assistant.stopVoice")}>
             <Square className="h-3.5 w-3.5" fill="currentColor" aria-hidden="true" />
           </button>
         ) : (

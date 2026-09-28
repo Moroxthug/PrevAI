@@ -14,3 +14,4 @@ export * from "./piani";
 export * from "./commercialista";
 export * from "./home";
 export * from "./assistente";
+export * from "./assistente-voce";

@@ -16,7 +16,7 @@ Stesse regole di sempre: una riga per sessione, in ordine; un commit per riga su
 | 33 | **APP-8b** Permessi "fa / chiede / mai" + una conversazione per persona | 134 | ✅ |
 | 34 | **APP-8c** Strumenti nuovi: brief del giorno, cerca, apri la schermata, preventivi, messaggi ai clienti | 135 | ✅ 2026-09-27 |
 | 35 | **APP-8d** La schermata dell'assistente (calma) e la riga su Oggi | 136 | ✅ 2026-09-27 |
-| 36 | **APP-8e** Risponde a voce | 137 | ⬜ serve D17 |
+| 36 | **APP-8e** Risponde a voce | 137 | ✅ (D17 aperta: voce del browser, fornitore spento) |
 | 37 | **APP-8f** Conferma a voce, interruzione, annulla | 138 | ⬜ |
 | 38 | **APP-8g** "Chiama Rossi" apre il telefono; rubrica fornitori | 139 | ⬜ |
 | 39 | **APP-8h** Fiducia: prove automatiche, costi, registro delle azioni | 141 | ⬜ |
@@ -126,7 +126,9 @@ Fatta il 2026-09-27 (diario in PIANO-AZIONE, RUNBOOKS §20). Differenze: nessuno
 - Sul telefono anche le conversazioni di prima (oggi l'elenco è nascosto sotto 640 px).
 - **Fatta quando:** `qa:phone` passa; si usa tutta con la tastiera e con il lettore di schermo.
 
-## APP-8e — Risponde a voce (riga 36, serve D17)
+## APP-8e — Risponde a voce (riga 36) ✅
+
+Fatta il 2026-09-27 con **D17 aperta** (diario in PIANO-AZIONE, RUNBOOKS §21): la catena (b) è costruita, ma finché non c'è la chiave del fornitore (AS-2) parla la voce del browser (c). Differenze: la voce del fornitore è provvisoria ("coral", AS-3); velocità e modo "solo testo" sono scelte del dispositivo, non dell'impresa; i minuti si contano per l'impresa senza tetto (D18 aperta), il "per posto" si aggiunge quando D18 fissa il numero. Misure: dal silenzio alla frase consegnata alla voce, mediana 1,73 s in Wi-Fi e 2,12 s in 4G simulato, con la voce del browser; da rimisurare con quella del fornitore.
 
 - Con la catena di D17: la dettatura c'è; il testo arriva già in streaming; si aggiunge la sintesi vocale frase per frase (si comincia a parlare alla prima frase finita, non alla fine della risposta). `POST /api/assistant/speech` con la chiave sul server, mai nel browser.
 - Voce calma e neutra in italiano scelta dal titolare fra alcuni campioni; velocità; modalità "solo testo".

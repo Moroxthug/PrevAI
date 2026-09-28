@@ -1,10 +1,12 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Info } from "lucide-react";
+import { Info, Play } from "lucide-react";
 import {
   ASSISTANT_ACTIONS, ASSISTANT_ACTION_DEFS, ASSISTANT_GROUPS, ASSISTANT_GROUP_LABEL, ASSISTANT_ROLE_LABEL,
   effectiveAssistantLevel, type AssistantAction, type AssistantLevel,
+  ASSISTANT_VOICE_MODES, ASSISTANT_VOICE_MODE_LABEL, ASSISTANT_VOICE_RATES, type AssistantVoiceMode,
 } from "@workspace/config";
+import { Speaker, browserSpeechAvailable, readVoicePrefs, useItalianVoices, useVoiceInfo, useVoicePrefs } from "@/lib/assistant-voice";
 import { Skeleton } from "@/components/ui/skeleton";
 import { assistantApi, type AssistantPermissionsDto, type AssistantSettingDto } from "@/lib/assistant-api";
 import { SettingsGroup, SettingsRow, SettingsSection, useSettingsDraft } from "./ui";
@@ -101,6 +103,8 @@ export function AssistantSection() {
         </div>
       )}
 
+      <VoiceGroup />
+
       {data.canEdit && (
         <SettingsGroup title="Per chi" desc="Di solito basta l'impresa intera. Un ruolo può avere regole più strette (o più larghe, ma mai oltre quello che il ruolo può fare a mano).">
           <SettingsRow label="Regole per" htmlFor="s-asst-scope">
@@ -146,5 +150,67 @@ export function AssistantSection() {
         );
       })}
     </SettingsSection>
+  );
+}
+
+// ── APP-8e: la voce (D17 aperta) ─────────────────────────────────────────────
+// Scelte di questo dispositivo. La voce del fornitore arriva quando sul server
+// c'è la sua chiave (AS-2); fino ad allora legge la voce del browser.
+
+const MODE_HELP: Record<AssistantVoiceMode, string> = {
+  off: "Risponde solo per scritto.",
+  dictated: "Se detti la domanda, la risposta te la dice anche a voce.",
+  always: "Detti e parte subito, senza rileggere; la risposta arriva a voce. Gli invii aspettano comunque la tua conferma.",
+};
+const RATE_LABEL: Record<number, string> = { 0.85: "Più lenta", 1: "Normale", 1.15: "Più veloce", 1.3: "Veloce" };
+const SAMPLE = "Ciao, sono l'assistente di PrevAI. Il cantiere Rossi è nel budget: mancano da incassare 4.200 euro.";
+
+function VoiceGroup() {
+  const [prefs, setPrefs] = useVoicePrefs();
+  const info = useVoiceInfo();
+  const voices = useItalianVoices();
+  const server = info.provider === "openai";
+  const serverRef = useRef(server);
+  serverRef.current = server;
+  const [sample] = useState(() => new Speaker({ server: () => serverRef.current, prefs: readVoicePrefs, onSpeaking: () => {}, onFirstAudio: () => {} }));
+  useEffect(() => () => sample.stop(), [sample]);
+  const canSpeak = server || browserSpeechAvailable();
+  const play = () => { sample.unlock(); sample.begin(); sample.enqueue(SAMPLE); sample.end(); };
+  const desc = server
+    ? "Ti legge la risposta frase per frase, mentre la scrive. Queste scelte valgono su questo dispositivo."
+    : "Ti legge la risposta frase per frase, mentre la scrive. Per ora con la voce di questo telefono o computer: la voce scelta per PrevAI arriva con un prossimo aggiornamento. Queste scelte valgono su questo dispositivo.";
+  return (
+    <SettingsGroup title="Voce" desc={desc}>
+      <SettingsRow label="Risposte" help={MODE_HELP[prefs.mode]} htmlFor="s-asst-voice-mode">
+        <select id="s-asst-voice-mode" value={prefs.mode} onChange={(e) => setPrefs({ mode: e.target.value as AssistantVoiceMode })}>
+          {ASSISTANT_VOICE_MODES.map((m) => <option key={m} value={m}>{ASSISTANT_VOICE_MODE_LABEL[m]}</option>)}
+        </select>
+      </SettingsRow>
+      <SettingsRow label="Velocità" htmlFor="s-asst-voice-rate">
+        <select id="s-asst-voice-rate" value={prefs.rate} onChange={(e) => setPrefs({ rate: Number(e.target.value) })}>
+          {ASSISTANT_VOICE_RATES.map((r) => <option key={r} value={r}>{RATE_LABEL[r]}</option>)}
+        </select>
+      </SettingsRow>
+      {!server && (
+        <SettingsRow
+          label="Voce del dispositivo"
+          help={!browserSpeechAvailable() ? "Questo browser non sa leggere ad alta voce: le risposte restano scritte." : voices.length === 0 ? "Su questo dispositivo non c'è una voce italiana: legge con quella predefinita." : "Le voci cambiano da telefono a telefono."}
+          htmlFor="s-asst-voice-name"
+        >
+          <select id="s-asst-voice-name" value={prefs.voiceName ?? ""} onChange={(e) => setPrefs({ voiceName: e.target.value || null })} disabled={voices.length === 0}>
+            <option value="">Automatica</option>
+            {voices.map((v) => <option key={v.name} value={v.name}>{v.name}</option>)}
+          </select>
+        </SettingsRow>
+      )}
+      {server && (
+        <SettingsRow label="Minuti di voce questo mese" help={info.minutesIncluded === null ? "Contati per tutta l'impresa. Il limite del piano non è ancora deciso." : `Inclusi: ${info.minutesIncluded}. Finiti i minuti, risponde per scritto.`}>
+          <span className="srow-value">{info.minutesUsed.toLocaleString("it-IT")}</span>
+        </SettingsRow>
+      )}
+      <SettingsRow label="Prova la voce" help="Una frase d'esempio con queste scelte.">
+        <button type="button" className="btn btn-outline-navy btn-sm" onClick={play} disabled={!canSpeak}><Play className="h-3.5 w-3.5" aria-hidden="true" /> Ascolta</button>
+      </SettingsRow>
+    </SettingsGroup>
   );
 }
