@@ -1,3 +1,4 @@
+import { emailLogoSrc } from "./logo.js";
 import { Resend } from "resend";
 import { MARKET, fmtEur } from "@workspace/config";
 import { logger } from "./logger.js";
@@ -68,7 +69,8 @@ function buildFollowupEmailHtml(params: {
 }): string {
   const { subject, body } = followupCopy(params.stage, params.quoteNumber, params.totale);
   const greeting = `Gentile ${escapeHtml(params.clientName)},`;
-  const logo = params.profile.logoUrl ? `<img src="${escapeHtml(params.profile.logoUrl)}" alt="" style="max-height:40px;margin-bottom:16px;" />` : "";
+  const logoSrc = emailLogoSrc(params.profile.logoUrl);
+  const logo = logoSrc ? `<img src="${logoSrc}" alt="" style="max-height:40px;margin-bottom:16px;" />` : "";
   const cta = params.publicUrl
     ? `<p style="margin-top:24px;"><a href="${escapeHtml(params.publicUrl)}" style="background:#2563eb;color:#fff;padding:10px 20px;border-radius:6px;text-decoration:none;font-size:14px;">Vedi il preventivo</a></p>`
     : "";

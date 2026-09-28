@@ -223,6 +223,19 @@ export function debugIdImages(frames: Frame[]): DebugImage[] {
   return images;
 }
 
+// SEC-3: a public link *is* its secret (firma, fattura, foglio ore, pacchetto
+// del commercialista, invito, preventivo). Whoever reads a log line or a
+// Sentry event with the path could open the document, so every path segment
+// after one of these prefixes is replaced — in the API's request log and in
+// every event both apps send (URL, Referer, route tag, error messages).
+const PUBLIC_TOKEN_PATH =
+  /(\/(?:api\/)?(?:sign|i|t|p|commercialista|team-invite|team\/invite|public\/quotes)\/)(?!unsubscribe\b)[A-Za-z0-9_-]{16,}/g;
+
+/** Replaces the secret segment of every public-link path in `text`. */
+export function redactTokens(text: string): string {
+  return text.replace(PUBLIC_TOKEN_PATH, "$1[token]");
+}
+
 function stringTags(tags: EventContext["tags"]): Record<string, string> | undefined {
   if (!tags) return undefined;
   const out: Record<string, string> = {};
@@ -260,7 +273,9 @@ export function buildEvent(
   if (ctx.extra && Object.keys(ctx.extra).length) event.extra = ctx.extra;
   if (ctx.user) event.user = ctx.user;
   if (ctx.request) event.request = ctx.request;
-  return event;
+  // One pass over the whole event: messages, URLs, headers, tags and extra
+  // all come from places that may quote a public link.
+  return JSON.parse(redactTokens(JSON.stringify(event))) as SentryEvent;
 }
 
 /** The three-line envelope Sentry's `/envelope/` endpoint accepts. */

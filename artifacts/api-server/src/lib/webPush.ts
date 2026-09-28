@@ -1,4 +1,5 @@
 import { createECDH, createPrivateKey, createPublicKey, createSign, createVerify, hkdfSync, createCipheriv, createDecipheriv, randomBytes } from "node:crypto";
+import { isPushServiceEndpoint } from "./outboundUrl.js";
 
 // ── APP-2: Web Push without a vendor SDK (ported from QuoteAI Phase 77) ───────────────────────────────
 // The two RFCs a push service needs, implemented on Node's crypto:
@@ -84,6 +85,8 @@ export type PushMessage = { title: string; body: string; link?: string | null; t
 
 /** Encrypts and posts one message to one subscription. Never throws — the caller decides what a failure means for the row. */
 export async function sendWebPush(keys: PushKeys, subscription: PushSubscriptionInput, message: PushMessage, opts: { ttlSeconds?: number; urgency?: "very-low" | "low" | "normal" | "high" } = {}): Promise<PushDelivery> {
+  // SEC-3: rows saved before the check existed are dropped, never posted to.
+  if (!isPushServiceEndpoint(subscription.endpoint)) return { ok: false, status: 0, gone: true, error: "not a push service endpoint" };
   let body: Buffer;
   let authorization: string;
   try {
@@ -104,6 +107,7 @@ export async function sendWebPush(keys: PushKeys, subscription: PushSubscription
         ...(message.tag ? { Topic: message.tag.replace(/[^A-Za-z0-9_-]/g, "").slice(0, 32) } : {}),
       },
       body: new Uint8Array(body),
+      redirect: "manual",
     });
     if (res.ok || res.status === 201 || res.status === 202) return { ok: true, status: res.status };
     // 404/410: the browser unsubscribed (or the subscription expired) — drop the row.

@@ -1,3 +1,4 @@
+import { emailLogoSrc } from "./logo.js";
 import { Resend } from "resend";
 import { MARKET, testoPreventivi, type Lang } from "@workspace/config";
 import { logger } from "./logger.js";
@@ -341,7 +342,7 @@ function buildQuoteEmailHtml(params: {
   const clientName = escapeHtml(params.clientName);
   const { quoteNumber, totale, publicUrl } = params;
   const c = QUOTE_EMAIL_COPY;
-  const logoUrl = params.logoUrl || LOGO_URL;
+  const logoUrl = emailLogoSrc(params.logoUrl) ?? LOGO_URL;
   const ctaHtml = publicUrl
     ? `<div class="cta"><a class="btn" href="${publicUrl}">${c.view}</a></div>
     <p style="font-size:13px;color:#6b7280;text-align:center;margin-top:-12px;">${c.viewHint}</p>`
@@ -415,7 +416,7 @@ function buildWidgetClientConfirmationEmail(params: {
   logoUrl?: string | null;
 }): string {
   const { clientName, companyName, companyPhone, companyEmail, prezzoMinimo, prezzoMassimo, incentivesSummary } = params;
-  const logoUrl = params.logoUrl || LOGO_URL;
+  const logoUrl = emailLogoSrc(params.logoUrl) ?? LOGO_URL;
   const contactLine = [companyPhone, companyEmail].filter(Boolean).join(" · ");
   const incentivesBlock = incentivesSummary
     ? `<div class="incentives-box"><strong>🎁 Agevolazioni potenzialmente applicabili</strong><br/>${incentivesSummary.replace(/\n/g, "<br/>")}</div>`

@@ -267,7 +267,9 @@ export function ApiPanel() {
   const createHook = useMutation({
     mutationFn: () => developerApi.createWebhook(url.trim(), events),
     onSuccess: (r) => { refreshHooks(); setUrl(""); setEvents([]); setRevealedSecret(r.secret); },
-    onError,
+    // SEC-3: an address that is not on the public internet comes back with the reason.
+    onError: (err: Error & { code?: string }) =>
+      toast({ title: t("dashboard.settings.developerApi.error"), description: err.code === "INVALID_WEBHOOK_URL" ? err.message : undefined, variant: "destructive" }),
   });
   const toggleHook = useMutation({ mutationFn: ({ id, on }: { id: string; on: boolean }) => developerApi.toggleWebhook(id, on), onSuccess: refreshHooks, onError });
   const deleteHook = useMutation({ mutationFn: (id: string) => developerApi.deleteWebhook(id), onSuccess: refreshHooks, onError });

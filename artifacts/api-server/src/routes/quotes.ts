@@ -1,3 +1,4 @@
+import { ownLogoPath } from "../lib/logo.js";
 import { Router } from "express";
 import { requireAuth, getUserId, getUserName } from "../middlewares/authMiddleware";
 import { requirePermission } from "../middlewares/requirePermission.js";
@@ -444,7 +445,8 @@ router.post("/quotes", requireAuth, requirePermission("quotes", "edit"), aiCallL
         res.status(400).json({ error: "Invalid companySnapshot", details: result.error });
         return;
       }
-      companySnapshotInput = result.data;
+      // SEC-3: the logo can only be this tenant's own upload.
+      companySnapshotInput = { ...result.data, logoUrl: ownLogoPath(result.data.logoUrl, getUserId(res)) ?? undefined };
     }
 
     const uploadedFiles = (req.files as Express.Multer.File[]) ?? [];

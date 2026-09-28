@@ -12,6 +12,7 @@ import type { TDocumentDefinitions } from "pdfmake/interfaces";
 export type PdfMakeInstance = {
   fonts: Record<string, Record<string, string>>;
   createPdf(docDef: TDocumentDefinitions): { getBuffer(): Promise<Buffer> };
+  setUrlAccessPolicy(policy: (url: string) => boolean): void;
 };
 
 const HELVETICA = { normal: "Helvetica", bold: "Helvetica-Bold", italics: "Helvetica-Oblique", bolditalics: "Helvetica-BoldOblique" };
@@ -57,6 +58,11 @@ export function getPdfmake(): PdfMakeInstance {
   if (_instance) return _instance;
   const lib = pdfmake as unknown as PdfMakeInstance;
   lib.fonts = PDF_FONTS;
+  // SEC-3: every image we embed is already a data: URI (logo, signature) and
+  // the fonts are the PDF built-ins, so pdfmake never needs the network. Deny
+  // every http(s) URL: a value that slipped through as a URL would otherwise
+  // make the server fetch it (SSRF) while rendering.
+  lib.setUrlAccessPolicy(() => false);
   _instance = lib;
   return lib;
 }

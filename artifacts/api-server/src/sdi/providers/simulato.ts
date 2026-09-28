@@ -1,4 +1,4 @@
-import { createHash, randomUUID } from "node:crypto";
+import { createHash, randomUUID, timingSafeEqual } from "node:crypto";
 import { descrizioneErroreSdi, type StatoSdi } from "@workspace/db";
 import { leggiFatturaPaXml, blocco, testo } from "../parse.js";
 import type { EsitoInvio, EventoSdi, IntermediarioSdi, PassivaScaricata, Ambiente } from "./types.js";
@@ -89,8 +89,12 @@ export class IntermediarioSimulato implements IntermediarioSdi {
   }
 
   verificaWebhook(params: { segreto: string | null; intestazioni: Record<string, string | undefined> }): boolean {
-    if (!params.segreto) return true;
-    return params.intestazioni["x-sdi-secret"] === params.segreto;
+    // SEC-3: senza segreto nessuno è creduto, come con l'intermediario vero —
+    // prima una rotta pubblica bastava a cambiare lo stato di una fattura.
+    if (!params.segreto) return false;
+    const atteso = Buffer.from(params.segreto);
+    const dato = Buffer.from(params.intestazioni["x-sdi-secret"] ?? "");
+    return atteso.length === dato.length && timingSafeEqual(atteso, dato);
   }
 
   leggiWebhook(payload: unknown): EventoSdi[] {

@@ -1,3 +1,4 @@
+import { ownLogoPath } from "../lib/logo.js";
 import { Router } from "express";
 import { requireAuth, getUserId } from "../middlewares/authMiddleware";
 import { requirePermission } from "../middlewares/requirePermission.js";
@@ -116,6 +117,13 @@ router.put("/business-profile", requireAuth, requirePermission("settings", "edit
     }
 
     const body = parsed.data;
+    // SEC-3: the logo is set by the upload route; here it can only be cleared
+    // or re-sent unchanged. Any other string would end up in <img src> of
+    // client emails and in the PDF's storage lookup.
+    if (body.logoUrl && !ownLogoPath(body.logoUrl, userId)) {
+      res.status(400).json({ error: "Invalid logoUrl" });
+      return;
+    }
     const extrasParsed = ProfileExtrasBody.safeParse(req.body);
     if (!extrasParsed.success) {
       res.status(400).json({ error: "Invalid request", details: extrasParsed.error });

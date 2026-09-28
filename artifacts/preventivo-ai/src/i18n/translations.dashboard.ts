@@ -2145,6 +2145,9 @@ export const dashboardTranslations: Record<Lang, Record<string, string>> = {
 
     "admin.accessRestricted": "Accesso riservato",
     "admin.accessRestrictedDesc": "Solo gli amministratori di sistema possono accedere a questa console.",
+    "admin.twoFactorRequired": "Serve la verifica in due passaggi",
+    "admin.twoFactorRequiredDesc": "La console vede i dati di tutte le imprese: per entrare attiva la verifica in due passaggi sul tuo account.",
+    "admin.openSecurity": "Apri Sicurezza",
     "admin.actions": "Azioni",
     "admin.active": "Attivo",
     "admin.activeApiKey": "Chiave API attiva",

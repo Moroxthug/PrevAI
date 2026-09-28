@@ -14,6 +14,7 @@ import "./automations";
 import { logger } from "./lib/logger";
 import { ipRateLimiter } from "./lib/rateLimit";
 import { captureException, flush, installProcessHandlers, requestContext } from "./lib/errorTracking";
+import { redactTokens } from "@workspace/error-reporting";
 
 // Phase 69: report unhandled rejections / uncaught exceptions before the
 // process (or the Vercel instance) goes down with them.
@@ -104,7 +105,8 @@ app.use(
         return {
           id: req.id,
           method: req.method,
-          url: req.url?.split("?")[0],
+          // No query string (reset/unsubscribe tokens) and no public-link token (SEC-3).
+          url: redactTokens(req.url?.split("?")[0] ?? ""),
         };
       },
       res(res) {
@@ -417,10 +419,16 @@ app.post(
         const session = event.data.object;
         const invoiceId = session.metadata?.invoiceId;
         if (invoiceId && session.payment_status === "paid" && typeof session.amount_total === "number") {
-          const { db: database, invoicesTable: invTable, invoicePaymentsTable: payTable } = await import("@workspace/db");
+          const { db: database, invoicesTable: invTable, invoicePaymentsTable: payTable, stripeConnectAccountsTable: connTable } = await import("@workspace/db");
           const { eq: eqOp } = await import("drizzle-orm");
           const [inv] = await database.select().from(invTable).where(eqOp(invTable.id, invoiceId));
-          if (inv) {
+          // SEC-3: metadata is whatever the connected account wrote. Only the
+          // invoice owner's own account can mark its invoice paid — otherwise any
+          // company with Connect could "pay" someone else's invoice for 1 cent.
+          const [conn] = inv ? await database.select().from(connTable).where(eqOp(connTable.userId, inv.userId)) : [];
+          if (inv && (!conn || conn.stripeAccountId !== event.account)) {
+            logger.warn({ invoiceId, account: event.account }, "Connect payment from an account that does not own the invoice — ignored");
+          } else if (inv) {
             // Idempotent: a webhook retry must not double-record the same Checkout Session.
             const [already] = await database.select().from(payTable).where(eqOp(payTable.reference, session.id ?? ""));
             if (!already) {

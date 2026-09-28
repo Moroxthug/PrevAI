@@ -309,9 +309,15 @@ describe("A-1: il webhook crede solo a chi conosce il segreto", () => {
     const [trasmissione] = await db.select().from(eInvoicesTable).where(eq(eInvoicesTable.id, invio.body.trasmissione.id));
     const providerDocumentId = trasmissione!.providerDocumentId!;
 
+    const corpo = { providerDocumentId, tipo: "RC", eventId: `${providerDocumentId}:RC` };
+
+    // SEC-3: finché l'impresa non ha scelto un segreto, nemmeno il simulatore crede a nessuno.
+    await org.api("/api/sdi/settings", { method: "PATCH", body: { webhookSecret: null } });
+    const senzaSegreto = await org.api(`/api/webhooks/sdi/${org.userId}`, { method: "POST", body: corpo });
+    expect(senzaSegreto.status).toBe(401);
+
     await org.api("/api/sdi/settings", { method: "PATCH", body: { webhookSecret: "segreto-webhook-e2e-123456" } });
 
-    const corpo = { providerDocumentId, tipo: "RC", eventId: `${providerDocumentId}:RC` };
     const rifiutato = await org.api(`/api/webhooks/sdi/${org.userId}`, { method: "POST", body: corpo });
     expect(rifiutato.status).toBe(401);
 

@@ -2,6 +2,7 @@
 // the Pro "capitolato" technical specification), extracted from routes/quotes.ts
 // so the WhatsApp bot and the e2e PDF matrix render the same layout as the
 // dashboard instead of a drifting copy. Bilingual via ./i18n.ts.
+import { logoSubPath, ownLogoPath } from "../lib/logo.js";
 import { getPdfmake, pdfInfo, type PdfProvenance } from "../lib/pdfmake.js";
 import type { TDocumentDefinitions, Content } from "pdfmake/interfaces";
 import type { QuoteChapter, QuoteDiscount, QuoteCompanySnapshot, QuoteClientData } from "@workspace/db";
@@ -44,29 +45,18 @@ function formatDescriptionPdf(descrizione: string, bg: string | null): any {
 
 
 /**
- * Attempt to load a logo image from object storage and encode as base64 data URI for pdfmake.
- *
- * Supported URL formats:
- *   - `/api/storage/public-objects/<subPath>`  (logo uploads — public GCS objects)
- *   - `/objects/<subPath>`                     (private GCS objects, fallback)
+ * Attempt to load the tenant's logo from object storage and encode it as a
+ * base64 data URI for pdfmake. SEC-3: only `logos/<tenant>/logo.<ext>` of the
+ * quote's own tenant — a snapshot or profile value pointing anywhere else
+ * (another company's logo, a private object) is ignored.
  */
-async function fetchLogoDataUri(logoUrl: string | null | undefined): Promise<string | null> {
-  if (!logoUrl) return null;
+async function fetchLogoDataUri(logoUrl: string | null | undefined, userId: string): Promise<string | null> {
+  const path = ownLogoPath(logoUrl, userId);
+  if (!path) return null;
   try {
-    let response: Response | null = null;
-
-    if (logoUrl.startsWith("/api/storage/public-objects/")) {
-      // Public logo: extract subPath and search across PUBLIC_OBJECT_SEARCH_PATHS
-      const subPath = logoUrl.replace(/^\/api\/storage\/public-objects\//, "");
-      const file = await objectStorage.searchPublicObject(subPath).catch(() => null);
-      if (!file) return null;
-      response = await objectStorage.downloadObject(file, { isPublic: true, cacheTtlSec: 3600 }).catch(() => null);
-    } else if (logoUrl.startsWith("/objects/")) {
-      // Private object (legacy path)
-      const subPath = logoUrl.replace(/^\/objects\//, "");
-      response = await objectStorage.downloadPrivateObject(subPath).catch(() => null);
-    }
-
+    const file = await objectStorage.searchPublicObject(logoSubPath(path)).catch(() => null);
+    if (!file) return null;
+    const response = await objectStorage.downloadObject(file, { isPublic: true, cacheTtlSec: 3600 }).catch(() => null);
     if (!response || !response.ok) return null;
     const buf = Buffer.from(await response.arrayBuffer());
     const ct = response.headers.get("content-type") ?? "image/png";
@@ -145,7 +135,7 @@ export async function generateCapitolatoPdfBuffer(quote: QuoteRow, profile: Prof
 
   // Fetch company logo (best-effort; null if unavailable)
   const logoPath = snap?.logoUrl || profile?.logoUrl || null;
-  const logoDataUri = await fetchLogoDataUri(logoPath);
+  const logoDataUri = await fetchLogoDataUri(logoPath, quote.userId);
 
   // Company header stack (right of logo or full-width if no logo)
   const companyInfoStack: Content[] = [
@@ -539,7 +529,7 @@ export async function generateQuotePdfBuffer(quote: QuoteRow, profile: ProfileRo
   const GRAY = "#888888";
 
   const logoPath = snap?.logoUrl || profile?.logoUrl || null;
-  const logoDataUri = await fetchLogoDataUri(logoPath);
+  const logoDataUri = await fetchLogoDataUri(logoPath, quote.userId);
 
   const companyInfoStack: Content[] = [
     { text: companyName, fontSize: 13, bold: true, color: DARK, margin: [0, 4, 0, 2] },

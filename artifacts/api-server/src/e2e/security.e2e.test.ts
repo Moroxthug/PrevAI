@@ -495,6 +495,23 @@ describe("cross-tenant access (IDOR sweep over the route matrix)", () => {
     expect((await B.api("/api/admin/users")).status).toBe(403);
     expect((await api("/api/admin/metrics")).status).toBe(403);
   });
+
+  test("SEC-3: the admin console needs 2FA on the admin's own account", async () => {
+    const saved = { admin: process.env.ADMIN_EMAIL, req: process.env.ADMIN_REQUIRE_2FA };
+    process.env.ADMIN_EMAIL = B.email;
+    process.env.ADMIN_REQUIRE_2FA = "1";
+    try {
+      const blocked = await B.api("/api/admin/metrics");
+      expect(blocked.status).toBe(403);
+      expect(blocked.body.error).toBe("admin_two_factor_required");
+      await db.update(authUsersTable).set({ twoFactorEnabled: true }).where(eq(authUsersTable.id, B.userId));
+      expect((await B.api("/api/admin/metrics")).status).toBe(200);
+    } finally {
+      await db.update(authUsersTable).set({ twoFactorEnabled: false }).where(eq(authUsersTable.id, B.userId));
+      if (saved.admin === undefined) delete process.env.ADMIN_EMAIL; else process.env.ADMIN_EMAIL = saved.admin;
+      if (saved.req === undefined) delete process.env.ADMIN_REQUIRE_2FA; else process.env.ADMIN_REQUIRE_2FA = saved.req;
+    }
+  });
 });
 
 describe("better-auth flows", () => {

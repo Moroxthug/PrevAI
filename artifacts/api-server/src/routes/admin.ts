@@ -19,27 +19,50 @@ import { retryAutomationNow } from "../lib/automation.js";
 
 const router = Router();
 
-export async function isAdmin<P = Record<string, string>>(req: Request<P>): Promise<boolean> {
+/**
+ * SEC-3: the admin console sees every company's data, so an admin session
+ * must have passed the second factor. Required in production; elsewhere only
+ * when ADMIN_REQUIRE_2FA=1 (the e2e suite turns it on to test it).
+ */
+function adminNeedsTwoFactor(): boolean {
+  const flag = process.env.ADMIN_REQUIRE_2FA;
+  return flag ? flag !== "0" : process.env.NODE_ENV === "production";
+}
+
+export const ADMIN_TWO_FACTOR_REQUIRED_ERROR = "admin_two_factor_required";
+
+/** "admin" when the session is an admin (with 2FA where required), "needs_2fa" when it would be but 2FA is off. */
+async function adminStatus<P = Record<string, string>>(req: Request<P>): Promise<"admin" | "needs_2fa" | "no"> {
   const adminEmail = process.env.ADMIN_EMAIL || process.env.admin_email;
-  if (!adminEmail) return false;
+  if (!adminEmail) return "no";
   try {
     const session = await auth.api.getSession({ headers: fromNodeHeaders(req.headers) });
-    if (!session) return false;
+    if (!session) return "no";
     const cleanEmailStr = adminEmail.replace(/['"]/g, "");
     const emails = cleanEmailStr.split(",").map(e => e.trim().toLowerCase());
-    return emails.includes(session.user.email.toLowerCase());
+    if (!emails.includes(session.user.email.toLowerCase())) return "no";
+    const twoFactorEnabled = Boolean((session.user as { twoFactorEnabled?: boolean }).twoFactorEnabled);
+    return twoFactorEnabled || !adminNeedsTwoFactor() ? "admin" : "needs_2fa";
   } catch (err) {
     logger.error({ err }, "isAdmin check failed with exception");
-    return false;
+    return "no";
   }
+}
+
+export async function isAdmin<P = Record<string, string>>(req: Request<P>): Promise<boolean> {
+  return (await adminStatus(req)) === "admin";
 }
 
 // Generic over P so req.params doesn't collapse to string | string[] on
 // routes that use requireAdmin as middleware before the real handler
 // (see the analogous comment on requireAuth in middlewares/authMiddleware.ts).
 export async function requireAdmin<P = Record<string, string>>(req: Request<P>, res: Response, next: NextFunction): Promise<void> {
-  const ok = await isAdmin(req);
-  if (!ok) {
+  const status = await adminStatus(req);
+  if (status === "needs_2fa") {
+    res.status(403).json({ error: ADMIN_TWO_FACTOR_REQUIRED_ERROR, message: "Per la console di amministrazione serve la verifica in due passaggi. Attivala in Impostazioni → Sicurezza." });
+    return;
+  }
+  if (status !== "admin") {
     res.status(403).json({ error: "Forbidden" });
     return;
   }

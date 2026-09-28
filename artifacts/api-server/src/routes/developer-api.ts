@@ -6,6 +6,7 @@ import { requireAuth, getUserId, getActorUserId, getActorRole } from "../middlew
 import { requirePermission } from "../middlewares/requirePermission.js";
 import { createApiKey, listApiKeys, revokeApiKey } from "../lib/apiKeys.js";
 import { createWebhook, listWebhooks, deleteWebhook, setWebhookEnabled } from "../lib/webhooks.js";
+import { checkWebhookUrl } from "../lib/outboundUrl.js";
 
 const router = Router();
 
@@ -94,6 +95,9 @@ router.post("/developer/webhooks", requireAuth, requirePermission("integrations"
     if (!gate.ok) { res.status(403).json({ error: "PLAN_REQUIRED", requiredPlan: gate.plan, message: "Webhooks require the Elite plan" }); return; }
     const body = z.object({ url: z.string().url().max(500), events: z.array(eventEnum).min(1) }).safeParse(req.body);
     if (!body.success) { res.status(400).json({ error: "Invalid parameters", details: body.error }); return; }
+    // SEC-3: only addresses on the public internet (no SSRF towards internal hosts).
+    const urlCheck = checkWebhookUrl(body.data.url);
+    if (!urlCheck.ok) { res.status(400).json({ error: "INVALID_WEBHOOK_URL", message: urlCheck.reason }); return; }
     const { webhook, secret } = await createWebhook(userId, body.data.url, body.data.events);
     res.status(201).json({ webhook: serializeWebhook(webhook), secret });
   } catch (err) {

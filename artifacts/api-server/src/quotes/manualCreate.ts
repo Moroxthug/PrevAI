@@ -2,6 +2,7 @@
 // API's `POST /v1/public/quotes` — the only two places a quote is created
 // from structured input rather than AI parsing. Extracted so the two never
 // drift on quota enforcement or server-side total recalculation.
+import { ownLogoPath } from "../lib/logo.js";
 import { db, quotesTable, businessProfilesTable, quoteClientDataSchema, quoteCompanySnapshotSchema, quoteChapterSchema, normalizeProvince, DEFAULT_TAX_RATE, type QuoteChapter, type QuoteCompanySnapshot, type QuoteClientData } from "@workspace/db";
 import { eq, sql } from "drizzle-orm";
 import { PLANS } from "../routes/payments.js";
@@ -71,7 +72,8 @@ export async function createManualQuote(userId: string, input: ManualQuoteInput)
   let resolvedSnapshot: QuoteCompanySnapshot | null = null;
   if (input.companySnapshot) {
     const r = quoteCompanySnapshotSchema.safeParse(input.companySnapshot);
-    if (r.success) resolvedSnapshot = r.data;
+    // SEC-3: the logo can only be this tenant's own upload.
+    if (r.success) resolvedSnapshot = { ...r.data, logoUrl: ownLogoPath(r.data.logoUrl, userId) ?? undefined };
   }
   if (!resolvedSnapshot) {
     const [bp] = await db.select().from(businessProfilesTable).where(eq(businessProfilesTable.userId, userId));

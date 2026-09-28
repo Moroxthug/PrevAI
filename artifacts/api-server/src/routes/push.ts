@@ -1,3 +1,4 @@
+import { isPushServiceEndpoint } from "../lib/outboundUrl.js";
 import { Router } from "express";
 import { z } from "zod";
 import { db, pushSubscriptionsTable } from "@workspace/db";
@@ -23,7 +24,8 @@ const NOT_CONFIGURED = { error: "NOT_CONFIGURED", message: "Le notifiche sul tel
 const NOT_READY = { error: "NOT_READY", message: "Le notifiche sul telefono si attivano con il prossimo aggiornamento." };
 
 const SubscriptionBody = z.object({
-  endpoint: z.string().url().max(2000).refine((u) => u.startsWith("https://"), "endpoint must be https"),
+  // SEC-3: only a browser vendor's push service (the server POSTs to it).
+  endpoint: z.string().url().max(2000).refine(isPushServiceEndpoint, "endpoint must be a known push service"),
   keys: z.object({ p256dh: z.string().min(80).max(120), auth: z.string().min(16).max(32) }),
 });
 

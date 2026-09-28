@@ -2,6 +2,7 @@ import { randomBytes, createHmac } from "crypto";
 import { db, webhookEndpointsTable, webhookDeliveriesTable, type WebhookEndpoint, type AutomationEvent } from "@workspace/db";
 import { and, desc, eq } from "drizzle-orm";
 import { logger } from "./logger.js";
+import { postWebhook } from "./outboundUrl.js";
 
 export async function createWebhook(userId: string, url: string, events: AutomationEvent[]): Promise<{ webhook: WebhookEndpoint; secret: string }> {
   const secret = `whsec_${randomBytes(24).toString("hex")}`;
@@ -56,18 +57,13 @@ export async function dispatchWebhooks(userId: string, event: AutomationEvent, e
     let success = false;
     let error: string | null = null;
     try {
-      const res = await fetch(endpoint.url, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "X-PrevAI-Signature": signPayload(endpoint.secret, body),
-          "X-PrevAI-Event": event,
-        },
-        body,
-        signal: AbortSignal.timeout(10_000),
+      const res = await postWebhook(endpoint.url, body, {
+        "Content-Type": "application/json",
+        "X-PrevAI-Signature": signPayload(endpoint.secret, body),
+        "X-PrevAI-Event": event,
       });
       responseStatus = res.status;
-      success = res.ok;
+      success = res.status >= 200 && res.status < 300;
       if (!success) error = `HTTP ${res.status}`;
     } catch (err) {
       error = err instanceof Error ? err.message : String(err);

@@ -4,7 +4,7 @@
 // lookup that makes uploaded source maps match, and the envelope wire format.
 
 import { describe, expect, test } from "vitest";
-import { buildEvent, debugIdImages, parseDsn, parseStack, sendEvent, serializeEnvelope } from "@workspace/error-reporting";
+import { buildEvent, debugIdImages, parseDsn, parseStack, redactTokens, sendEvent, serializeEnvelope } from "@workspace/error-reporting";
 
 const DSN = "https://abc123@o4507.ingest.us.sentry.io/4509";
 
@@ -147,5 +147,38 @@ describe("envelope + transport", () => {
     expect(calls[0]!.init.body).toContain('"type":"event"');
     expect(await sendEvent(dsn, event, async () => ({ status: 429 }))).toBe(false);
     expect(await sendEvent(dsn, event, async () => { throw new Error("offline"); })).toBe(false);
+  });
+});
+
+// SEC-3: a public link is its own secret — it must never reach a log line or an event.
+describe("redactTokens", () => {
+  const tok = "q3Zb8vN1kP0xY7wR4tU6sA2dF9gH5jK8lM3nB1cV0zX";
+  const uuid = "3f1c2b7e-9a4d-4c1e-8b2a-7d6e5f4a3b2c";
+  test.each([
+    [`/api/sign/${tok}/otp`, "/api/sign/[token]/otp"],
+    [`/api/i/${tok}`, "/api/i/[token]"],
+    [`/api/t/${tok}/entries/${uuid}/clock-out`, `/api/t/[token]/entries/${uuid}/clock-out`],
+    [`/api/commercialista/${tok}/pacchetto.pdf`, "/api/commercialista/[token]/pacchetto.pdf"],
+    [`/api/team/invite/${tok}/accept`, "/api/team/invite/[token]/accept"],
+    [`/api/public/quotes/${uuid}/accept`, "/api/public/quotes/[token]/accept"],
+    [`https://prevai.it/sign/${tok}`, "https://prevai.it/sign/[token]"],
+    [`https://prevai.it/p/${uuid}`, "https://prevai.it/p/[token]"],
+    [`https://prevai.it/team-invite/${tok}`, "https://prevai.it/team-invite/[token]"],
+    [`fetch failed: GET /api/i/${tok}/pdf and /api/t/${tok}`, "fetch failed: GET /api/i/[token]/pdf and /api/t/[token]"],
+  ])("%s", (input, expected) => {
+    expect(redactTokens(input)).toBe(expected);
+  });
+  test("leaves ordinary paths alone", () => {
+    for (const p of ["/api/public/quotes/unsubscribe", `/api/quotes/${uuid}`, "/api/public/quotes", `/dashboard/jobs/${uuid}`, "/api/i/short"]) {
+      expect(redactTokens(p)).toBe(p);
+    }
+  });
+  test("buildEvent scrubs URL, referer, tags and the error message", () => {
+    const e = buildEvent({ error: new Error(`boom on /api/sign/${tok}`) }, "node", {
+      request: { url: `/api/sign/${tok}`, headers: { referer: `https://prevai.it/sign/${tok}` } },
+      tags: { route: `/sign/${tok}` },
+    });
+    expect(JSON.stringify(e)).not.toContain(tok);
+    expect(e.request?.url).toBe("/api/sign/[token]");
   });
 });

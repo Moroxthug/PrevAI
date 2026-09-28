@@ -2,6 +2,7 @@
 // the assistant and confirmed by a person (message_client). One-to-one and
 // transactional, so no unsubscribe link; it goes out like every other customer
 // email (the connected Gmail if there is one, else Resend with Reply-To).
+import { emailLogoSrc } from "./logo.js";
 import type { BusinessProfile } from "@workspace/db";
 import { escapeHtml } from "./email.js";
 import { sendCustomerEmail } from "./connectedEmailSend.js";
@@ -18,7 +19,8 @@ export function textToHtml(body: string): string {
 
 export function buildClientMessageHtml(params: { subject: string; body: string; profile: Pick<BusinessProfile, "companyName" | "address" | "phone" | "email" | "logoUrl"> }): string {
   const p = params.profile;
-  const logo = p.logoUrl ? `<img src="${escapeHtml(p.logoUrl)}" alt="" style="max-height:40px;margin-bottom:16px;" />` : "";
+  const logoSrc = emailLogoSrc(p.logoUrl);
+  const logo = logoSrc ? `<img src="${logoSrc}" alt="" style="max-height:40px;margin-bottom:16px;" />` : "";
   const contact = [p.phone, p.email].filter(Boolean).map((x) => escapeHtml(String(x))).join(" · ");
   return `<!DOCTYPE html>
 <html lang="it"><body style="font-family:Arial,sans-serif;background:#f9fafb;padding:24px;">

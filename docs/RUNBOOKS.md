@@ -1151,3 +1151,21 @@ select sum(quantity * unit_cost_cents) from usage_events
 ```
 
 Il server rilegge tetto e spesa ogni 30 secondi per istanza.
+
+## 27. Igiene di sicurezza (SEC-3, riga 44)
+
+**Admin con 2FA.** In produzione la console (`/dashboard/admin`, ogni `/api/admin/*`, le risposte dello staff nella chat di supporto) apre solo se l'account in `ADMIN_EMAIL` ha la verifica in due passaggi attiva (Impostazioni → Sicurezza). Senza: 403 `admin_two_factor_required` e la pagina spiega cosa fare. Fuori produzione non serve, a meno di `ADMIN_REQUIRE_2FA=1` (così la provano l'e2e e lo staging); `ADMIN_REQUIRE_2FA=0` la toglie anche in produzione — solo in emergenza, e da rimettere.
+
+**Webhook dei clienti.** Solo `https://` verso un nome pubblico: rifiutati IP privati, loopback, link-local (169.254.x, metadati cloud), CGNAT, `localhost`, `.internal`, `.local`, nomi senza punto, credenziali nell'URL (400 `INVALID_WEBHOOK_URL` con il motivo). L'indirizzo a cui il nome risolve si ricontrolla al momento della connessione (niente DNS rebinding) e i redirect non si seguono: un 3xx è una consegna fallita. Fuori produzione è permesso tutto (per provare in locale).
+
+**Notifiche push.** Si accettano solo endpoint dei servizi push dei browser (`fcm.googleapis.com`, `*.push.services.mozilla.com`, `*.notify.windows.com`, `*.push.apple.com`); una riga vecchia con un altro indirizzo viene cancellata al primo invio.
+
+**Log e Sentry.** Il segmento segreto dei link pubblici (`/sign/`, `/i/`, `/t/`, `/p/`, `/commercialista/`, `/team-invite/`, `/team/invite/`, `/public/quotes/`) diventa `[token]` nel log delle richieste dell'API e in ogni evento che le due app mandano a Sentry (URL, Referer, tag della rotta, messaggi d'errore). Restano in chiaro nei **log di Vercel** (percorso della richiesta scritto dalla piattaforma): chi ha accesso al progetto Vercel li vede.
+
+**Logo.** `logoUrl` può essere solo `/api/storage/public-objects/logos/<impresa>/logo.<svg|png|jpg|jpeg>` della propria impresa (lo scrive il caricamento); altro → 400 sul profilo, ignorato nel preventivo e nel PDF. Nelle email il logo ora esce con l'indirizzo completo (prima era relativo e i programmi di posta non lo mostravano).
+
+**Webhook Stripe Connect.** Un pagamento conta solo se arriva dall'account Connect dell'impresa che possiede la fattura (`stripe_connect_accounts`); altrimenti viene ignorato con un avviso nel log (`Connect payment from an account that does not own the invoice`).
+
+**SdI simulato.** Anche il simulatore rifiuta il webhook finché l'impresa non ha scelto un segreto, come l'intermediario vero.
+
+**pdfmake.** Nessun URL http(s) viene scaricato durante la generazione dei PDF: logo e firme sono già incorporati.

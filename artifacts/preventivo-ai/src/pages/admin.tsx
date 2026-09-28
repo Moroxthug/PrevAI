@@ -214,7 +214,7 @@ export default function AdminPage() {
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [settings, setSettings] = useState<Settings>({});
   const [loading, setLoading] = useState(true);
-  const [forbidden, setForbidden] = useState(false);
+  const [forbidden, setForbidden] = useState<false | "denied" | "two_factor">(false);
   const [savingKey, setSavingKey] = useState<string | null>(null);
 
   // Stripe Management state
@@ -538,7 +538,8 @@ export default function AdminPage() {
       credentials: "include",
     });
     if (r.type === "opaqueredirect" || r.status === 302 || r.status === 403) {
-      throw Object.assign(new Error("Forbidden"), { status: 403 });
+      const data = r.status === 403 ? await r.json().catch(() => ({})) : {};
+      throw Object.assign(new Error("Forbidden"), { status: 403, twoFactor: data.error === "admin_two_factor_required" });
     }
     if (!r.ok) {
       const data = await r.json().catch(() => ({}));
@@ -557,7 +558,7 @@ export default function AdminPage() {
       setMetrics(m as Metrics);
       setSettings(s as Settings);
     } catch (e: any) {
-      if (e.status === 403) setForbidden(true);
+      if (e.status === 403) setForbidden(e.twoFactor ? "two_factor" : "denied");
     } finally {
       setLoading(false);
     }
@@ -758,10 +759,10 @@ export default function AdminPage() {
           <div className="h-14 w-14 bg-red-50 text-red-500 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-red-100">
             <ShieldAlert className="h-7 w-7" />
           </div>
-          <h1 className="text-xl font-bold text-slate-900 mb-2">{t("admin.accessRestricted")}</h1>
-          <p className="text-slate-500 text-sm mb-6">{t("admin.accessRestrictedDesc")}</p>
-          <Link href="/" className="btn-gradient inline-flex items-center justify-center h-10 px-6 font-semibold w-full">
-            {t("admin.backToHome")}
+          <h1 className="text-xl font-bold text-slate-900 mb-2">{t(forbidden === "two_factor" ? "admin.twoFactorRequired" : "admin.accessRestricted")}</h1>
+          <p className="text-slate-500 text-sm mb-6">{t(forbidden === "two_factor" ? "admin.twoFactorRequiredDesc" : "admin.accessRestrictedDesc")}</p>
+          <Link href={forbidden === "two_factor" ? "/dashboard/settings/security" : "/"} className="btn-gradient inline-flex items-center justify-center h-10 px-6 font-semibold w-full">
+            {t(forbidden === "two_factor" ? "admin.openSecurity" : "admin.backToHome")}
           </Link>
         </div>
       </div>

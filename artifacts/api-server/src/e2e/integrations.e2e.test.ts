@@ -39,6 +39,7 @@ import {
   calendarConnectionsTable,
   calendarSyncedEventsTable,
   milestonesTable,
+  stripeConnectAccountsTable,
 } from "@workspace/db";
 import "../automations/index.js";
 import { encryptSecret } from "../lib/crypto.js";
@@ -272,7 +273,15 @@ describe("Phase 65 — integrations", () => {
       const [sent] = await db.select().from(invoicesTable).where(eq(invoicesTable.id, inv.id));
       const emailsBefore = emailsTo(client.email!).length;
 
-      const payload = stripeEvent("checkout.session.completed", { id: "cs_e2e_card", payment_status: "paid", amount_total: sent!.totalCents, metadata: { invoiceId: inv.id } }, { account: "acct_e2e" });
+      const account = `acct_e2e_${org.userId.slice(0, 8)}`;
+      await db.insert(stripeConnectAccountsTable).values({ userId: org.userId, stripeAccountId: account, chargesEnabled: true });
+
+      // SEC-3: another company's connected account writing our invoice id in its metadata pays nothing.
+      const foreign = stripeEvent("checkout.session.completed", { id: "cs_e2e_foreign", payment_status: "paid", amount_total: 1, metadata: { invoiceId: inv.id } }, { account: "acct_e2e_someone_else" });
+      expect((await connectWebhook(foreign)).status).toBe(200);
+      expect(await db.select().from(invoicePaymentsTable).where(eq(invoicePaymentsTable.invoiceId, inv.id))).toHaveLength(0);
+
+      const payload = stripeEvent("checkout.session.completed", { id: "cs_e2e_card", payment_status: "paid", amount_total: sent!.totalCents, metadata: { invoiceId: inv.id } }, { account });
       expect((await connectWebhook(payload)).status).toBe(200);
 
       const [paid] = await db.select().from(invoicesTable).where(eq(invoicesTable.id, inv.id));

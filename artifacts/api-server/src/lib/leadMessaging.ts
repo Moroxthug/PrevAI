@@ -1,3 +1,4 @@
+import { emailLogoSrc } from "./logo.js";
 import { Resend } from "resend";
 import { MARKET } from "@workspace/config";
 import { logger } from "./logger.js";
@@ -65,7 +66,8 @@ function followupCopy(stage: number): { subject: string; body: string } {
 function buildFollowupEmailHtml(params: { clientName: string; profile: BusinessProfile; stage: number; unsubscribeToken: string }): string {
   const { subject, body } = followupCopy(params.stage);
   const greeting = `Gentile ${escapeHtml(params.clientName)},`;
-  const logo = params.profile.logoUrl ? `<img src="${escapeHtml(params.profile.logoUrl)}" alt="" style="max-height:40px;margin-bottom:16px;" />` : "";
+  const logoSrc = emailLogoSrc(params.profile.logoUrl);
+  const logo = logoSrc ? `<img src="${logoSrc}" alt="" style="max-height:40px;margin-bottom:16px;" />` : "";
   return `<!DOCTYPE html>
 <html lang="${MARKET.locale}"><body style="font-family:Arial,sans-serif;background:#f9fafb;padding:24px;">
   <div style="max-width:560px;margin:0 auto;background:#fff;border-radius:8px;padding:32px;">

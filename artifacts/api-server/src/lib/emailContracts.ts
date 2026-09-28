@@ -1,3 +1,4 @@
+import { emailLogoSrc } from "./logo.js";
 import { MARKET, fmtEur, fmtDateLong, type Lang } from "@workspace/config";
 import { logger } from "./logger.js";
 import { getBaseUrl } from "./baseUrl.js";
@@ -20,7 +21,7 @@ export function escapeHtml(value: string): string {
 
 export function shell(params: { lang?: EmailLang; headerTitle: string; headerSub: string; bodyHtml: string; footer: string; accent?: string; logoUrl?: string | null; logoAlt?: string }): string {
   const accent = params.accent ?? "linear-gradient(135deg,#7c3aed,#06b6d4)";
-  const logoUrl = params.logoUrl || LOGO_URL;
+  const logoUrl = emailLogoSrc(params.logoUrl) ?? LOGO_URL;
   return `<!DOCTYPE html>
 <html lang="${MARKET.locale}">
 <head>
