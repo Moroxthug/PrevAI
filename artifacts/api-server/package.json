@@ -53,7 +53,7 @@
     "pino-http": "^10",
     "posthog-node": "^5.40.0",
     "resend": "^6.12.2",
-    "stripe": "^22.1.0",
+    "stripe": "^22.6.2",
     "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz",
     "zod": "catalog:"
   },
