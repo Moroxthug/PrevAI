@@ -113,6 +113,32 @@ export function effectiveAssistantLevel(action: AssistantAction, role: Assistant
   return clampAssistantLevel(action, level);
 }
 
+// ── SEC-1 (riga 42): quello che chiede sempre, qualunque sia l'impostazione ────
+// Some cards look internal but reach money or a customer: they never run by
+// themselves ("Lo fa" becomes a card) and the voice alone never confirms them.
+
+/** Client fields that decide where later emails, messages and e-invoices go. */
+export const ASSISTANT_CONTACT_FIELDS = ["email", "phone", "pec", "codiceSdi"] as const;
+
+type SecCard = { kind: string; payload: Record<string, unknown> };
+
+/** A card that must wait for the person even when its action is "Lo fa". */
+export function cardMustAsk(card: SecCard): boolean {
+  const p = card.payload;
+  // Completing a phase that releases a payment term drafts its SAL invoice.
+  if (card.kind === "milestone_update") return p.status === "completed" && Boolean(p.releasesPaymentTerm);
+  if (card.kind === "update_client") {
+    const changes = (p.changes ?? {}) as Record<string, unknown>;
+    return ASSISTANT_CONTACT_FIELDS.some((f) => f in changes);
+  }
+  return false;
+}
+
+/** A card the voice can't confirm at any amount: free text to a customer, or a new contact address. */
+export function cardNeedsTapAlways(card: SecCard): boolean {
+  return card.kind === "message_client" || (card.kind === "update_client" && cardMustAsk(card));
+}
+
 export function isAssistantAction(v: unknown): v is AssistantAction {
   return typeof v === "string" && (ASSISTANT_ACTIONS as readonly string[]).includes(v);
 }

@@ -29,7 +29,8 @@ import { TOOL_DEFINITIONS, PROPOSAL_TOOLS, runReadTool, validateProposal, type T
 import { resolvePageContext, type PageContext } from "./context.js";
 import { CompletionAccumulator, progressLabel, failedToolName, dropNulls, chunkUsage, addUsage, ASSISTANT_USAGE_ENTITY, type TokenUsage, type TurnEvent } from "./stream.js";
 import { recordAiUsage } from "../lib/usage.js";
-import { assistantV2Ready, resolveLevels, toolsFor, permissionsParagraph, proposalOutcome, type AssistantLevels } from "./permissions.js";
+import { cardMustAsk } from "@workspace/config";
+import { assistantV2Ready, resolveLevels,toolsFor, permissionsParagraph, proposalOutcome, type AssistantLevels } from "./permissions.js";
 import { runProposal, ProposalError } from "./apply.js";
 
 export type Lang = "it";
@@ -280,9 +281,11 @@ export async function runAssistantTurn(params: { conversation: AssistantConversa
         const kind = PROPOSAL_TOOLS[call.name];
         try {
           if (kind) {
-            const outcome = proposalOutcome(levels[kind], ready);
+            let outcome = proposalOutcome(levels[kind], ready);
             // A "never" tool is not offered to the model; if it calls one anyway, nothing is stored.
             const v = outcome === "reject" ? null : await validateProposal(call.name, args, ctx);
+            // SEC-1: a phase that releases a SAL, or a client's contact address, waits for the person even on "Lo fa".
+            if (v?.ok && outcome === "run" && cardMustAsk(v.proposal)) outcome = "card";
             if (!v) result = { error: "Questa azione non è disponibile per questa persona." };
             else if (v.ok) {
               const [row] = await db.insert(assistantProposalsTable).values({ conversationId: conv.id, messageId: assistantRow.id, userId, projectId: v.proposal.projectId, kind: v.proposal.kind, summary: v.proposal.summary, payload: v.proposal.payload, status: "pending" }).returning();

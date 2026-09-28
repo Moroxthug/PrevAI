@@ -22,8 +22,11 @@ registerAutomation("milestone.completed", async (run) => {
   const drafted = await draftMilestoneInvoice({ milestone: m });
   if (drafted?.created || (drafted && !done.notified)) {
     const [profile] = await db.select().from(businessProfilesTable).where(eq(businessProfilesTable.userId, run.userId));
+    // SEC-1: a phase completed through the assistant leaves the SAL as a draft to review, whatever the send policy.
+    const holdSend = (run.payload as { holdSend?: unknown } | null)?.holdSend === true;
     const outcome = await applyAutoSendPolicy(drafted.invoice, profile, {
       notify: true,
+      holdSend,
       notificationTitle: `"${m.title}" completed — ${drafted.invoice.number} ${outcomeVerb(drafted.created)}`,
     });
     return { notified: true, invoiceId: drafted.invoice.id, action: outcome.action, paymentTermId: m.paymentTermId };

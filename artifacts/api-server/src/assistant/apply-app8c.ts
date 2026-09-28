@@ -22,6 +22,7 @@ import { sendQuoteByEmail, QuoteSendError, quoteQuotaExceeded } from "../quotes/
 import { sendContractToCustomer } from "../contracts/service.js";
 import { sendLeadNow, LeadSendError } from "../leads/send-now.js";
 import { sendClientMessage } from "../lib/clientMessage.js";
+import { isKnownContact } from "./tools-app8c.js";
 
 type Who = { orgId: string; actorId: string };
 type Out = { entityType: string; entityId: string; link: string | null };
@@ -87,6 +88,8 @@ export async function executeApp8c(proposal: AssistantProposal, who: Who, ip: st
     case "message_client": {
       const [profile] = await db.select().from(businessProfilesTable).where(eq(businessProfilesTable.userId, userId));
       if (!profile) throw new App8cError("Profilo dell'impresa mancante.");
+      // SEC-1: checked again at send time (the card may be old; the address may have changed).
+      if (!(await isKnownContact(userId, String(p.toEmail)))) throw new App8cError("Questo indirizzo non è fra i contatti dell'impresa: scrivi dalla schermata Clienti o Richieste.", "UNKNOWN_CONTACT", 409);
       await sendClientMessage({ userId, toEmail: String(p.toEmail), subject: String(p.subject), body: String(p.body), profile });
       await audit("client_message", proposal.id, "sent_via_assistant", { to: p.toEmail, subject: p.subject });
       return { entityType: "client_message", entityId: proposal.id, link: null };

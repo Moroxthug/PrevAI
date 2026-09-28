@@ -200,7 +200,7 @@ export function AssistantChat({ threadId = null, compact, startDictation, classN
   // APP-8f: out loud only when the answers are (the person is listening, maybe not looking).
   const sayIfVoice = (text: string) => { if (voicePrefs.mode !== "off") speaker.say(text); };
   const confirm = useMutation({
-    mutationFn: ({ id, via }: { id: string; via: "tap" | "voice" }) => assistantApi.confirm(id, via),
+    mutationFn: ({ id, via, voiceProof }: { id: string; via: "tap" | "voice"; voiceProof?: string }) => assistantApi.confirm(id, via, voiceProof),
     onSuccess: ({ proposal }, { via }) => {
       patchProposal(proposal);
       // APP-8g: the phone opens (a tap already opened it); no toast, the card shows the number.
@@ -228,7 +228,7 @@ export function AssistantChat({ threadId = null, compact, startDictation, classN
    * again); a clear no sets the card aside; "annulla" takes back the last thing
    * done by itself. Anything else returns false and goes to the assistant.
    */
-  const answerCard = (text: string, via: "tap" | "voice"): boolean => {
+  const answerCard = (text: string, via: "tap" | "voice", voiceProof?: string): boolean => {
     if (editing || !online) return false;
     const reply = classifyVoiceReply(text);
     if (reply === "other") return false;
@@ -245,7 +245,7 @@ export function AssistantChat({ threadId = null, compact, startDictation, classN
           const msg = t("assistant.tapNeeded");
           toast({ title: msg, description: p.summary });
           sayIfVoice(msg);
-        } else confirm.mutate({ id: p.id, via });
+        } else confirm.mutate({ id: p.id, via, voiceProof });
         return true;
       }
       dismiss.mutate(p.id);
@@ -259,8 +259,8 @@ export function AssistantChat({ threadId = null, compact, startDictation, classN
     return false;
   };
 
-  const onTranscribed = (text: string) => {
-    if (!draft.trim() && answerCard(text, "voice")) return;
+  const onTranscribed = (text: string, voiceProof?: string) => {
+    if (!draft.trim() && answerCard(text, "voice", voiceProof)) return;
     // "Conversazione a voce": what was said goes at once (sends still wait for Conferma); otherwise it is read over first.
     if (voicePrefs.mode === "always" && !editing && !draft.trim()) { void ask(text, true); return; }
     dictatedRef.current = true;
@@ -271,7 +271,7 @@ export function AssistantChat({ threadId = null, compact, startDictation, classN
   const handlers = useRef({ onTranscribed, listenForReply: (_id: string) => {} });
   handlers.current.onTranscribed = onTranscribed;
   const voice = useVoiceInput({
-    onTranscribed: (text) => handlers.current.onTranscribed(text),
+    onTranscribed: (text, voiceProof) => handlers.current.onTranscribed(text, voiceProof),
     onError: (message) => toast({ title: t("assistant.voiceError"), description: message, variant: "destructive" }),
   });
   // Hands-free: after the question, listen once; it stops by itself after a pause and is dropped if nobody answers.

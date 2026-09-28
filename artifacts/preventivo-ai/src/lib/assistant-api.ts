@@ -84,7 +84,7 @@ export const assistantApi = {
     req<TurnDto>(`/api/assistant/conversations/${conversationId}/messages`, { method: "POST", body: json({ content, language, context }) }),
   clear: (conversationId: string) => req<{ success: true }>(`/api/assistant/conversations/${conversationId}`, { method: "DELETE" }),
   /** APP-8f: via "voice" = the person said "sì" (refused with 409 above the owner's threshold: the card stays). */
-  confirm: (proposalId: string, via: "tap" | "voice" = "tap") => req<{ proposal: ProposalDto; link: string | null }>(`/api/assistant/proposals/${proposalId}/confirm`, { method: "POST", body: json({ via }) }),
+  confirm: (proposalId: string, via: "tap" | "voice" = "tap", voiceProof?: string) => req<{ proposal: ProposalDto; link: string | null }>(`/api/assistant/proposals/${proposalId}/confirm`, { method: "POST", body: json(via === "voice" ? { via, voiceProof } : { via }) }),
   dismiss: (proposalId: string) => req<{ proposal: ProposalDto }>(`/api/assistant/proposals/${proposalId}/dismiss`, { method: "POST" }),
   undo: (proposalId: string) => req<{ proposal: ProposalDto }>(`/api/assistant/proposals/${proposalId}/undo`, { method: "POST" }),
   permissions: () => req<AssistantPermissionsDto>("/api/assistant/permissions"),

@@ -13,7 +13,8 @@ function pickMimeType(): string {
 }
 
 interface UseVoiceInputOptions {
-  onTranscribed: (text: string) => void;
+  /** `voiceProof`: SEC-1 — the server's signed copy of what it heard (a spoken "sì" confirms an assistant card only with it). */
+  onTranscribed: (text: string, voiceProof?: string) => void;
   onError?: (message: string) => void;
   /** APP-8f: an automatic listen heard nobody and was dropped. */
   onNoSpeech?: () => void;
@@ -65,7 +66,7 @@ export function useVoiceInput({ onTranscribed, onError, onNoSpeech }: UseVoiceIn
         return;
       }
       if (data.text && typeof data.text === "string" && data.text.trim()) {
-        onTranscribed(data.text.trim());
+        onTranscribed(data.text.trim(), typeof data.voiceProof === "string" ? data.voiceProof : undefined);
       } else {
         onError?.("Non ho capito: riprova parlando più vicino al telefono.");
       }

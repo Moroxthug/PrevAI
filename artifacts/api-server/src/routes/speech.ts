@@ -1,6 +1,7 @@
 import { Router } from "express";
 import multer from "multer";
-import { requireAuth } from "../middlewares/authMiddleware";
+import { requireAuth, getActorUserId } from "../middlewares/authMiddleware";
+import { signVoiceProof } from "../assistant/voice-proof.js";
 import { requirePermission } from "../middlewares/requirePermission.js";
 import { openai, toFile } from "@workspace/integrations-openai-ai-server";
 import { logger } from "../lib/logger.js";
@@ -70,7 +71,8 @@ router.post(
         response_format: "json",
       });
 
-      res.json({ text: transcription.text });
+      // SEC-1: what the server heard, signed — a "sì" confirms an assistant card only with this (assistant/voice-proof.ts).
+      res.json({ text: transcription.text, voiceProof: signVoiceProof(getActorUserId(res), transcription.text ?? "") });
     } catch (err) {
       logger.error({ err }, "Error transcribing audio");
       res.status(500).json({ error: "Transcription failed. Please try again." });

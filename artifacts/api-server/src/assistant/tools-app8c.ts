@@ -372,13 +372,23 @@ const ProposeArgs = {
 };
 
 /** Whether an address is already one of the company's contacts (a client, a quote, a lead, an invoice). */
-async function isKnownContact(userId: string, email: string): Promise<boolean> {
+/**
+ * An address the company itself has used or entered. SEC-1: an address that only
+ * arrived from a public form (the site widget, Meta Lead Ads) is not enough — a
+ * stranger chose it, and text injected in the same request could steer the
+ * assistant towards it. It becomes known once the company sends that quote,
+ * invoices the person, or saves the address on a client by hand.
+ */
+export async function isKnownContact(userId: string, email: string): Promise<boolean> {
   const e = email.trim().toLowerCase();
   const r = await db.execute<{ known: boolean }>(sql`select (
-    exists(select 1 from ${clientsTable} where ${clientsTable.userId} = ${userId} and lower(${clientsTable.email}) = ${e})
-    or exists(select 1 from ${quotesTable} where ${quotesTable.userId} = ${userId} and lower(${quotesTable.clientData}->>'email') = ${e})
-    or exists(select 1 from ${leadsTable} where ${leadsTable.userId} = ${userId} and lower(${leadsTable.email}) = ${e})
+    exists(select 1 from ${quotesTable} where ${quotesTable.userId} = ${userId} and lower(${quotesTable.clientData}->>'email') = ${e}
+      and (coalesce(${quotesTable.source}, 'web') <> 'widget' or ${quotesTable.sentAt} is not null))
+    or exists(select 1 from ${leadsTable} where ${leadsTable.userId} = ${userId} and lower(${leadsTable.email}) = ${e} and ${leadsTable.source} in ('manual', 'import'))
     or exists(select 1 from ${invoicesTable} where ${invoicesTable.userId} = ${userId} and lower(${invoicesTable.customer}->>'email') = ${e})
+    or exists(select 1 from ${clientsTable} c where c.user_id = ${userId} and lower(c.email) = ${e}
+      and not exists(select 1 from ${leadsTable} l where l.client_id = c.id and l.source in ('widget', 'meta_lead_ads'))
+      and not exists(select 1 from ${quotesTable} q where q.client_id = c.id and q.source = 'widget' and q.sent_at is null))
   ) as known`);
   return Boolean(r.rows[0]?.known);
 }
@@ -446,7 +456,7 @@ export async function validateApp8cProposal(name: string, rawArgs: unknown, ctx:
       const a = ProposeArgs.propose_message_client.parse(rawArgs);
       const to = cleanEmail(a.to_email);
       if (!to) return { ok: false, error: "to_email is not a valid address." };
-      if (!(await isKnownContact(ctx.userId, to))) return { ok: false, error: "That address is not one of the company's contacts. Only existing clients or leads can be written to: add the email to the client first (propose_update_client) or ask the user." };
+      if (!(await isKnownContact(ctx.userId, to))) return { ok: false, error: "That address is not one of the company's contacts (an address that only came from the website form does not count). Tell the user to write from the Richieste or Clienti screen, or to save the email on the client first (propose_update_client)." };
       const [unsub] = await db.select({ id: leadsTable.id }).from(leadsTable).where(and(eq(leadsTable.userId, ctx.userId), sql`lower(${leadsTable.email}) = ${to}`, sql`${leadsTable.unsubscribedAt} is not null`)).limit(1);
       if (unsub) return { ok: false, error: "This person unsubscribed from the company's messages: do not write to them." };
       return { ok: true, proposal: { kind: "message_client", projectId: null, summary: `Email a ${a.name ? `${a.name} ` : ""}<${to}>: "${a.subject}"`, payload: { toEmail: to, name: a.name ?? "", subject: a.subject, body: a.body } } };

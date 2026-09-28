@@ -102,14 +102,14 @@ Columns — **Auth**: session (`requireAuth`), apiKey (`requireApiKey`), admin (
 | 150 | POST | `/api/assistant/conversations/:id/messages` | session | jobs:view | chatLimiter | zod | hasFeature(assistant) | predicate | — | — | — |
 | 168 | DELETE | `/api/assistant/conversations/:id` | session | jobs:view | — | none | — | helper | — | — | — |
 | 182 | POST | `/api/assistant/proposals/:id/confirm` | session | jobs:view | — | manual | — | helper | — | — | — |
-| 196 | POST | `/api/assistant/proposals/:id/dismiss` | session | jobs:view | — | none | — | helper | — | — | — |
-| 208 | POST | `/api/assistant/proposals/:id/undo` | session | jobs:view | — | none | — | helper | — | — | — |
-| 238 | GET | `/api/assistant/permissions` | session | settings:view | — | none | hasFeature(assistant) | n/a | — | — | — |
-| 258 | PUT | `/api/assistant/permissions` | session | settings:full | — | zod | hasFeature(assistant) | n/a | — | — | — |
-| 289 | GET | `/api/assistant/activity` | session | jobs:view | — | none | hasFeature(assistant) | n/a | — | — | — |
-| 305 | GET | `/api/assistant/usage` | session | jobs:view | — | none | hasFeature(assistant) | n/a | — | — | — |
-| 328 | GET | `/api/assistant/voice` | session | jobs:view | — | none | hasFeature(assistant) | n/a | — | — | — |
-| 342 | POST | `/api/assistant/speech` | session | jobs:view | speechLimiter | zod | hasFeature(assistant) | n/a | — | — | — |
+| 198 | POST | `/api/assistant/proposals/:id/dismiss` | session | jobs:view | — | none | — | helper | — | — | — |
+| 210 | POST | `/api/assistant/proposals/:id/undo` | session | jobs:view | — | none | — | helper | — | — | — |
+| 240 | GET | `/api/assistant/permissions` | session | settings:view | — | none | hasFeature(assistant) | n/a | — | — | — |
+| 260 | PUT | `/api/assistant/permissions` | session | settings:full | — | zod | hasFeature(assistant) | n/a | — | — | — |
+| 291 | GET | `/api/assistant/activity` | session | jobs:view | — | none | hasFeature(assistant) | n/a | — | — | — |
+| 307 | GET | `/api/assistant/usage` | session | jobs:view | — | none | hasFeature(assistant) | n/a | — | — | — |
+| 330 | GET | `/api/assistant/voice` | session | jobs:view | — | none | hasFeature(assistant) | n/a | — | — | — |
+| 344 | POST | `/api/assistant/speech` | session | jobs:view | speechLimiter | zod | hasFeature(assistant) | n/a | — | — | — |
 
 ## artifacts/api-server/src/routes/business-profile.ts
 
@@ -612,7 +612,7 @@ Columns — **Auth**: session (`requireAuth`), apiKey (`requireApiKey`), admin (
 
 | Line | Method | Path | Auth | Perm | RL | Val | Gate | Scope | Archived | Token | Webhook |
 |---|---|---|---|---|---|---|---|---|---|---|---|
-| 40 | POST | `/api/speech/transcribe` | session | quotes:edit | speechLimiter | none | — | n/a | — | — | — |
+| 41 | POST | `/api/speech/transcribe` | session | quotes:edit | speechLimiter | none | — | n/a | — | — | — |
 
 ## artifacts/api-server/src/routes/storage.ts
 

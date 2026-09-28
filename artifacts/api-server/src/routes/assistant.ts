@@ -182,8 +182,10 @@ router.delete("/assistant/conversations/:id", requireAuth, requirePermission("jo
 router.post("/assistant/proposals/:id/confirm", requireAuth, requirePermission("jobs", "view"), async (req, res) => {
   try {
     // APP-8f: { via: "voice" } when the person said "sì" (above the owner's threshold → 409 TAP_REQUIRED).
-    const via = (req.body as { via?: unknown } | undefined)?.via === "voice" ? "voice" : "tap";
-    const out = await confirmProposal({ who: whoOf(res), proposalId: req.params.id as string, ip: req.ip, via });
+    // SEC-1: + { voiceProof } from /api/speech/transcribe, else 409 VOICE_UNVERIFIED.
+    const body = (req.body ?? {}) as { via?: unknown; voiceProof?: unknown };
+    const via = body.via === "voice" ? "voice" : "tap";
+    const out = await confirmProposal({ who: whoOf(res), proposalId: req.params.id as string, ip: req.ip, via, voiceProof: body.voiceProof });
     res.json({ proposal: serializeProposal(out.proposal, out.action), link: out.link });
   } catch (err) {
     if (err instanceof ProposalError) { res.status(err.status).json({ error: err.code, message: err.message }); return; }

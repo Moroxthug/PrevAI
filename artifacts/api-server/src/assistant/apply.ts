@@ -19,15 +19,17 @@ import {
   assistantActionsTable,
   invoicesTable,
   type AssistantActionRow,
+  auditLogTable,
 } from "@workspace/db";
-import { and, eq } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
+import { verifyVoiceProof } from "./voice-proof.js";
 import { raiseAutomation } from "../lib/automation.js";
 import { writeAudit } from "../lib/notifications.js";
 import { recomputeProgress } from "../jobs/setup.js";
 import { parseIsoDate } from "../jobs/dates.js";
 import { draftDepositInvoice, draftFinalInvoice, draftHoldbackReleaseInvoice, draftMilestoneInvoice, buildInvoiceContext, sendInvoice, recordPayment, voidInvoice } from "../invoices/service.js";
 import { assistantV2Ready, loadVoiceConfirmMax, ownsConversation, roleAllowsAction, undoDeadline } from "./permissions.js";
-import { voiceNeedsTap } from "@workspace/config";
+import { cardMustAsk, cardNeedsTapAlways, voiceNeedsTap } from "@workspace/config";
 import { executeApp8c, undoApp8c, App8cError, APP8C_KINDS } from "./apply-app8c.js";
 export { undoDeadline };
 
@@ -75,6 +77,8 @@ export async function runProposal(params: { proposal: AssistantProposal; who: Wh
   const { proposal, who } = params;
   if (proposal.status !== "pending") throw new ProposalError(`Proposal already ${proposal.status}`, "ALREADY_RESOLVED", 409);
   if (!roleAllowsAction(who.role, proposal.kind)) throw new ProposalError("Il tuo ruolo non può fare questa azione.", "FORBIDDEN", 403);
+  // SEC-1: never by itself, whatever the setting (the turn already makes these a card).
+  if (params.level === "auto" && cardMustAsk({ kind: proposal.kind, payload: proposal.payload as Record<string, unknown> })) throw new ProposalError("Questa azione chiede conferma.", "CONFIRM_REQUIRED", 409);
   const [profile] = await db.select().from(businessProfilesTable).where(eq(businessProfilesTable.userId, who.orgId));
   if (!hasFeature(profile, FEATURE_FOR[proposal.kind])) throw new ProposalError("Your plan does not include this action", "PLAN_REQUIRED", 403);
 
@@ -99,17 +103,29 @@ export async function runProposal(params: { proposal: AssistantProposal; who: Wh
  * the card stays pending — when the amount is above the owner's threshold, or
  * unknown on an amount card: that takes the tap. Voice confirmations are audited.
  */
-export async function confirmProposal(params: { who: Who; proposalId: string; ip?: string | null; via?: "tap" | "voice" }): Promise<ApplyResult> {
+export async function confirmProposal(params: { who: Who; proposalId: string; ip?: string | null; via?: "tap" | "voice"; voiceProof?: unknown; now?: number }): Promise<ApplyResult> {
   const proposal = await ownProposal(params.who, params.proposalId);
+  let proofHash: string | null = null;
   if (params.via === "voice" && proposal.status === "pending") {
     const max = await loadVoiceConfirmMax(params.who.orgId);
     if (voiceNeedsTap({ kind: proposal.kind, summary: proposal.summary, payload: proposal.payload as Record<string, unknown> }, max)) {
-      throw new ProposalError("Per questo importo serve il tocco su Conferma.", "TAP_REQUIRED", 409);
+      throw new ProposalError(cardNeedsTapAlways({ kind: proposal.kind, payload: proposal.payload as Record<string, unknown> }) ? "Per questa azione serve il tocco su Conferma." : "Per questo importo serve il tocco su Conferma.", "TAP_REQUIRED", 409);
     }
+    // SEC-1: the server must have heard the "sì" itself, once.
+    const check = verifyVoiceProof(params.voiceProof, params.who.actorId, params.now);
+    if (!check.ok || (await voiceProofUsed(params.who.orgId, check.hash))) {
+      throw new ProposalError("Non ho sentito il sì: tocca Conferma.", "VOICE_UNVERIFIED", 409);
+    }
+    proofHash = check.hash;
   }
   const out = await runProposal({ proposal, who: params.who, level: "ask", ip: params.ip });
-  if (params.via === "voice") await writeAudit({ userId: params.who.orgId, actorType: "user", actorId: params.who.actorId, entityType: "assistant_proposal", entityId: proposal.id, action: "confirmed_by_voice", diff: { kind: proposal.kind, summary: proposal.summary }, ip: params.ip ?? null });
+  if (params.via === "voice") await writeAudit({ userId: params.who.orgId, actorType: "user", actorId: params.who.actorId, entityType: "assistant_proposal", entityId: proposal.id, action: "confirmed_by_voice", diff: { kind: proposal.kind, summary: proposal.summary, proof: proofHash }, ip: params.ip ?? null });
   return out;
+}
+
+async function voiceProofUsed(orgId: string, hash: string): Promise<boolean> {
+  const [row] = await db.select({ id: auditLogTable.id }).from(auditLogTable).where(and(eq(auditLogTable.userId, orgId), eq(auditLogTable.action, "confirmed_by_voice"), sql`${auditLogTable.diff}->>'proof' = ${hash}`)).limit(1);
+  return Boolean(row);
 }
 
 export async function dismissProposal(params: { who: Who; proposalId: string }): Promise<AssistantProposal> {
@@ -217,7 +233,8 @@ async function execute(proposal: AssistantProposal, userId: string, ip: string |
       await db.update(milestonesTable).set(updates).where(eq(milestonesTable.id, m.id));
       await recomputeProgress(project.id);
       if (status === "completed" && m.status !== "completed") {
-        await raiseAutomation({ event: "milestone.completed", userId, entityType: "milestone", entityId: m.id, payload: { projectId: project.id } });
+        // SEC-1: the SAL is drafted as usual but never sent (nor scheduled to send) because the assistant completed the phase.
+        await raiseAutomation({ event: "milestone.completed", userId, entityType: "milestone", entityId: m.id, payload: { projectId: project.id, holdSend: true } });
       }
       await writeAudit({ userId, actorType: "ai", actorId: proposal.id, entityType: "milestone", entityId: m.id, action: "updated_via_assistant", diff: { ...(updates as Record<string, unknown>), level }, ip });
       return { entityType: "milestone", entityId: m.id, link: `/dashboard/jobs/${project.id}?tab=schedule` };

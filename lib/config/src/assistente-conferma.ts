@@ -7,6 +7,7 @@
 // basta: serve il tocco su Conferma. Regole condivise da server e app.
 
 import { spokenText } from "./assistente-voce";
+import { cardNeedsTapAlways } from "./assistente";
 
 // ── Numeri in lettere ────────────────────────────────────────────────────────
 
@@ -105,8 +106,9 @@ export function cardAmountCents(card: Pick<VoiceConfirmCard, "payload">): number
   return null;
 }
 
-/** Whether the voice may confirm this card, or it takes a tap (above the owner's threshold, or an amount card without its amount). */
+/** Whether the voice may confirm this card, or it takes a tap (above the owner's threshold, an amount card without its amount, or SEC-1: free text to a customer / a new contact address). */
 export function voiceNeedsTap(card: VoiceConfirmCard, maxCents: number): boolean {
+  if (cardNeedsTapAlways(card)) return true;
   const amount = cardAmountCents(card);
   if (amount === null) return AMOUNT_KINDS.has(card.kind);
   return amount > maxCents;

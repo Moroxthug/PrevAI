@@ -437,7 +437,7 @@ export type DraftOutcome = { invoice: Invoice; action: "sent" | "scheduled_auto_
  * review-then-auto-send timer, or leave a draft. Holdback releases are
  * never sent before their lien date. Optionally notifies the company.
  */
-export async function applyAutoSendPolicy(invoice: Invoice, profile: BusinessProfile | undefined, opts: { notify: boolean; notificationTitle?: string } = { notify: true }): Promise<DraftOutcome> {
+export async function applyAutoSendPolicy(invoice: Invoice, profile: BusinessProfile | undefined, opts: { notify: boolean; notificationTitle?: string; /** SEC-1: stays a draft (no send, no timer) — e.g. raised by the assistant. */ holdSend?: boolean } = { notify: true }): Promise<DraftOutcome> {
   const settings = automationSettings(profile);
   const lang = invoice.language as Lang;
   const euro = (c: number) => new Intl.NumberFormat("it-IT", { style: "currency", currency: "EUR" }).format(c / 100);
@@ -447,6 +447,8 @@ export async function applyAutoSendPolicy(invoice: Invoice, profile: BusinessPro
 
   if (invoice.scheduledFor && invoice.scheduledFor > new Date()) {
     outcome = { invoice, action: "scheduled_release" };
+  } else if (opts.holdSend) {
+    // Stays a draft: the notification below says it is ready to review and send.
   } else if (settings.autoSendInvoices) {
     try {
       const sent = await sendInvoice({ invoiceId: invoice.id, actor: "system" });
