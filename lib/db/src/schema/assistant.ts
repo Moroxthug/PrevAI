@@ -1,4 +1,4 @@
-import { pgTable, text, timestamp, uuid, jsonb, index } from "drizzle-orm/pg-core";
+import { pgTable, text, timestamp, uuid, jsonb, index, uniqueIndex } from "drizzle-orm/pg-core";
 import { projectsTable } from "./crm";
 
 // ── Phase 5: job assistant ───────────────────────────────────────────────────
@@ -12,7 +12,8 @@ export type AssistantRole = (typeof ASSISTANT_ROLES)[number];
 export const PROPOSAL_KINDS = ["cost_entry", "milestone_update", "task", "invoice", "record_payment", "send_invoice"] as const;
 export type ProposalKind = (typeof PROPOSAL_KINDS)[number];
 
-export const PROPOSAL_STATUSES = ["pending", "confirmed", "dismissed", "failed"] as const;
+// APP-8b: "undone" = ran by itself ("Lo fa") and the person pressed Annulla.
+export const PROPOSAL_STATUSES = ["pending", "confirmed", "dismissed", "failed", "undone"] as const;
 export type ProposalStatus = (typeof PROPOSAL_STATUSES)[number];
 
 export type AssistantToolCall = { id: string; name: string; arguments: string };
@@ -73,6 +74,59 @@ export const assistantProposalsTable = pgTable(
   (t) => [index("assistant_proposals_conversation_idx").on(t.conversationId, t.status)],
 );
 
+// ── APP-8b: permessi e una conversazione per persona (docs/ASSISTENTE-PLAN.md §4) ──
+// Three NEW tables, created by migrations/v2/0013_app8b_assistente.sql. Nothing
+// is added to the tables above on purpose: every select() on them would ask for
+// a new column and fail until the migration runs. Until it does the assistant
+// works as before APP-8b (one conversation per company, every action asks) — the
+// role check needs no table and applies anyway (api-server assistant/permissions.ts).
+
+/** Who a conversation belongs to. No row = the account owner (every conversation before APP-8b). */
+export const assistantConversationActorsTable = pgTable(
+  "assistant_conversation_actors",
+  {
+    conversationId: uuid("conversation_id").primaryKey().references(() => assistantConversationsTable.id, { onDelete: "cascade" }),
+    /** The company (owner account), like every other table. */
+    userId: text("user_id").notNull(),
+    /** The person (auth_user.id) — the owner too, for threads created after APP-8b. */
+    actorUserId: text("actor_user_id").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index("assistant_conversation_actors_actor_idx").on(t.userId, t.actorUserId)],
+);
+
+/** The owner's choices in Impostazioni → Assistente. role "" = the whole company, otherwise only that role. */
+export const assistantPermissionsTable = pgTable(
+  "assistant_permissions",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    userId: text("user_id").notNull(),
+    action: text("action").notNull(),
+    role: text("role").notNull().default(""),
+    level: text("level").notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
+  },
+  (t) => [uniqueIndex("assistant_permissions_user_action_role_idx").on(t.userId, t.action, t.role)],
+);
+
+/** One row per action the assistant carried out: who, at which level ("auto" = Lo fa, "ask" = confirmed), and whether it was undone. */
+export const assistantActionsTable = pgTable(
+  "assistant_actions",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    userId: text("user_id").notNull(),
+    proposalId: uuid("proposal_id").notNull().references(() => assistantProposalsTable.id, { onDelete: "cascade" }),
+    actorUserId: text("actor_user_id").notNull(),
+    kind: text("kind", { enum: PROPOSAL_KINDS }).notNull(),
+    level: text("level", { enum: ["auto", "ask"] }).notNull(),
+    executedAt: timestamp("executed_at", { withTimezone: true }).notNull().defaultNow(),
+    undoneAt: timestamp("undone_at", { withTimezone: true }),
+  },
+  (t) => [uniqueIndex("assistant_actions_proposal_idx").on(t.proposalId), index("assistant_actions_user_idx").on(t.userId, t.executedAt)],
+);
+
 export type AssistantConversation = typeof assistantConversationsTable.$inferSelect;
 export type AssistantMessage = typeof assistantMessagesTable.$inferSelect;
 export type AssistantProposal = typeof assistantProposalsTable.$inferSelect;
+export type AssistantPermissionRow = typeof assistantPermissionsTable.$inferSelect;
+export type AssistantActionRow = typeof assistantActionsTable.$inferSelect;

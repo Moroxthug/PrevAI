@@ -13,3 +13,4 @@ export * from "./offerta";
 export * from "./piani";
 export * from "./commercialista";
 export * from "./home";
+export * from "./assistente";

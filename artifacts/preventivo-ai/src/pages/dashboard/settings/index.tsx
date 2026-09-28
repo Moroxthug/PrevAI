@@ -3,7 +3,7 @@ import { Link, useLocation, useRoute, useSearch } from "wouter";
 import { useGetSubscription, useGetWhatsappStatus, getGetWhatsappStatusQueryKey } from "@workspace/api-client-react";
 import { useQuery } from "@tanstack/react-query";
 import {
-  Building2, CalendarClock, ChevronLeft, ChevronRight, CreditCard, FileCheck2, Globe, Landmark, MessageCircle, Plug, ShieldCheck, UserRound, Zap,
+  Building2, CalendarClock, ChevronLeft, ChevronRight, CreditCard, FileCheck2, Globe, Landmark, MessageCircle, Plug, ShieldCheck, Sparkles, UserRound, Zap,
   type LucideIcon,
 } from "lucide-react";
 import {
@@ -25,6 +25,7 @@ import { AutomationsSection } from "./automations";
 import { WidgetSection } from "./widget";
 import { WhatsappSection } from "./whatsapp";
 import { AppsSection } from "./apps";
+import { AssistantSection } from "./assistant";
 import { APPS_HREF, appById } from "./apps/catalog";
 import { PlanSection, planLabelOf } from "./plan";
 
@@ -35,7 +36,7 @@ import { PlanSection, planLabelOf } from "./plan";
 // la freccia indietro. I vecchi link ?tab= (email, ritorni OAuth, segnalibri,
 // messaggi del bot WhatsApp) rimandano alla sezione giusta.
 
-type SectionId = "access" | "security" | "company" | "fiscal" | "sdi" | "payments" | "automations" | "widget" | "whatsapp" | "apps" | "plan";
+type SectionId = "access" | "security" | "company" | "fiscal" | "sdi" | "payments" | "automations" | "widget" | "whatsapp" | "assistant" | "apps" | "plan";
 type GroupId = "you" | "business" | "selling" | "messaging" | "more";
 
 type SectionDef = { id: SectionId; group: GroupId; label: string; icon: LucideIcon; Component: ComponentType };
@@ -50,6 +51,8 @@ const SECTIONS: SectionDef[] = [
   { id: "automations", group: "selling", label: "Automazioni e recensioni", icon: Zap, Component: AutomationsSection },
   { id: "widget", group: "selling", label: "Widget per il sito", icon: Globe, Component: WidgetSection },
   { id: "whatsapp", group: "messaging", label: "WhatsApp", icon: MessageCircle, Component: WhatsappSection },
+  // APP-8b: cosa l'assistente fa da solo, chiede prima o non fa mai.
+  { id: "assistant", group: "more", label: "Assistente", icon: Sparkles, Component: AssistantSection },
   { id: "apps", group: "more", label: "App collegate", icon: Plug, Component: AppsSection },
   { id: "plan", group: "more", label: "Piano e fatturazione", icon: CreditCard, Component: PlanSection },
 ];
@@ -76,14 +79,16 @@ function useVisibleSections() {
   const plan = sub?.isActive ? sub.plan : null;
   const proUp = plan === "monthly_pro" || plan === "monthly_elite";
   const hasSdi = profile ? hasFeature(profile as never, "sdi_invoicing") : false;
+  const hasAssistant = profile ? hasFeature(profile as never, "assistant") : false;
   const visible = useMemo(() => {
     const hidden: Partial<Record<SectionId, boolean>> = {
       // A-1: la sezione compare solo a chi ha il modulo PrevAI Fisco.
       sdi: !hasSdi,
       whatsapp: !proUp,
+      assistant: !hasAssistant,
     };
     return SECTIONS.filter((s) => !hidden[s.id]);
-  }, [hasSdi, proUp]);
+  }, [hasSdi, proUp, hasAssistant]);
   return { visible, ready: subLoaded && profileLoaded, plan };
 }
 
@@ -103,6 +108,7 @@ function useStatuses(plan: string | null | undefined, visible: SectionDef[]): Pa
     security: session ? { text: twoFactor ? "Verifica in due passaggi attiva" : "Verifica in due passaggi spenta", attention: !twoFactor } : { text: null },
     plan: { text: planLabelOf(plan) ? `Piano ${planLabelOf(plan)}` : "Nessun piano attivo" },
     apps: { text: "Calendario, Gmail, Stripe e altre" },
+    assistant: { text: "Cosa fa da solo e cosa chiede" },
   };
   if (profile) {
     const missingContact = !profile.phone || !profile.address;

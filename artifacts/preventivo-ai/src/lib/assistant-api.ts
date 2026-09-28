@@ -1,9 +1,10 @@
 // Thin fetch client for the Phase 5 assistant endpoints.
 import { apiRequest as req, apiJson as json } from "@/lib/jobs-api";
+import type { AssistantAction, AssistantLevel } from "@workspace/config";
 
 export type AssistantRole = "user" | "assistant" | "tool";
 export type ProposalKind = "cost_entry" | "milestone_update" | "task" | "invoice" | "record_payment" | "send_invoice";
-export type ProposalStatus = "pending" | "confirmed" | "dismissed" | "failed";
+export type ProposalStatus = "pending" | "confirmed" | "dismissed" | "failed" | "undone";
 
 export type AssistantMessageDto = {
   id: string;
@@ -16,6 +17,9 @@ export type AssistantMessageDto = {
 };
 
 export type ProposalDto = {
+  /** APP-8b: it ran by itself ("Lo fa"), and until when Annulla works (null = it can't be undone). */
+  auto: boolean;
+  undoUntil: string | null;
   id: string;
   messageId: string | null;
   projectId: string | null;
@@ -44,6 +48,10 @@ export type TurnEventDto =
   | { type: "message"; message: AssistantMessageDto }
   | { type: "proposal"; proposal: ProposalDto };
 
+/** APP-8b: one saved choice of Impostazioni → Assistente (role "" = the whole company). */
+export type AssistantSettingDto = { action: AssistantAction; role: "" | "admin" | "office" | "foreman" | "bookkeeper" | "viewer"; level: AssistantLevel };
+export type AssistantPermissionsDto = { available: boolean; settings: AssistantSettingDto[]; mine: Record<AssistantAction, AssistantLevel>; canEdit: boolean; roleLimits: Record<Exclude<AssistantSettingDto["role"], "">, AssistantAction[]> };
+
 export const assistantApi = {
   conversation: (projectId: string | null) => req<ConversationDto>(`/api/assistant/conversation${projectId ? `?projectId=${projectId}` : ""}`),
   byId: (id: string) => req<ConversationDto>(`/api/assistant/conversations/${id}`),
@@ -53,6 +61,9 @@ export const assistantApi = {
   clear: (conversationId: string) => req<{ success: true }>(`/api/assistant/conversations/${conversationId}`, { method: "DELETE" }),
   confirm: (proposalId: string) => req<{ proposal: ProposalDto; link: string | null }>(`/api/assistant/proposals/${proposalId}/confirm`, { method: "POST" }),
   dismiss: (proposalId: string) => req<{ proposal: ProposalDto }>(`/api/assistant/proposals/${proposalId}/dismiss`, { method: "POST" }),
+  undo: (proposalId: string) => req<{ proposal: ProposalDto }>(`/api/assistant/proposals/${proposalId}/undo`, { method: "POST" }),
+  permissions: () => req<AssistantPermissionsDto>("/api/assistant/permissions"),
+  savePermissions: (settings: AssistantSettingDto[]) => req<AssistantPermissionsDto>("/api/assistant/permissions", { method: "PUT", body: json({ settings }) }),
   stream: streamTurn,
 };
 

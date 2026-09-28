@@ -420,7 +420,7 @@ table.tbl { width: 100%; border-collapse: collapse; font-size: 14.5px; }
 .prop-card.pending { border-color: #cfd6ea; background: #f7f8fc; }
 .prop-card.confirmed { border-color: var(--green-t); background: #f3faf1; }
 .prop-card.failed { border-color: #f3c9c9; background: #fdf4f4; }
-.prop-card.dismissed { opacity: .6; }
+.prop-card.dismissed, .prop-card.undone { opacity: .6; }
 .prop-head { display: flex; align-items: flex-start; gap: 10px; }
 .prop-ic { width: 28px; height: 28px; border-radius: 8px; background: var(--soft); border: 1px solid var(--line); display: grid; place-items: center; flex: none; color: var(--navy); }
 .prop-kind { font-size: 10.5px; text-transform: uppercase; letter-spacing: .07em; color: var(--faint); font-weight: 700; }
@@ -430,6 +430,7 @@ table.tbl { width: 100%; border-collapse: collapse; font-size: 14.5px; }
 .prop-actions .btn-sm { padding: 7px 14px; font-size: 12.5px; }
 .prop-dismiss { display: inline-flex; align-items: center; gap: 5px; font-size: 12.5px; font-weight: 700; color: var(--faint); padding: 7px 10px; transition: color .2s; }
 .prop-dismiss:hover { color: var(--navy); }
+.prop-undo-left { font-variant-numeric: tabular-nums; font-weight: 600; min-width: 1.2em; text-align: right; }
 .prop-status { font-size: 12.5px; font-weight: 700; display: flex; align-items: center; gap: 5px; }
 .prop-status.ok { color: var(--green-dark); }
 .prop-status.err { color: var(--red); }
@@ -2010,6 +2011,7 @@ a.ny-row:hover .ny-pill, .ny-act:hover { border-color: var(--navy); }
 .srow-toggle:disabled .tgl { opacity: .5; }
 .srow-action { grid-template-columns: minmax(0, 1fr) auto; align-items: center; }
 .srow-act { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
+.srow-value { display: inline-block; font-size: 14px; font-weight: 700; color: var(--navy); padding-top: 2px; }
 
 /* Pieces particular to one section. */
 .slogo { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }

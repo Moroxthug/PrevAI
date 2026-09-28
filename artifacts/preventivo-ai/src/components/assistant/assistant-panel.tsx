@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Link } from "wouter";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Sparkles, Send, Trash2, Check, X, ExternalLink, Receipt, Wallet, Flag, ListTodo, Mail, Banknote, Loader2, AlertTriangle, Mic, Square } from "lucide-react";
+import { Sparkles, Send, Trash2, Check, X, ExternalLink, Receipt, Wallet, Flag, ListTodo, Mail, Banknote, Loader2, AlertTriangle, Mic, Square, Undo2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useVoiceInput } from "@/hooks/use-voice-input";
 import { cn } from "@/lib/utils";
@@ -9,6 +9,7 @@ import { useLanguage } from "@/i18n/LanguageContext";
 import { assistantApi, type AssistantMessageDto, type ConversationDto, type ProposalDto, type ProposalKind } from "@/lib/assistant-api";
 import { useAssistantPageContext } from "@/lib/assistant-context";
 import { formatCents } from "@/lib/jobs-api";
+import { ASSISTANT_UNDO_SECONDS } from "@workspace/config";
 
 const KIND_ICON: Record<ProposalKind, typeof Receipt> = { cost_entry: Wallet, milestone_update: Flag, task: ListTodo, invoice: Receipt, send_invoice: Mail, record_payment: Banknote };
 
@@ -57,7 +58,8 @@ export function AssistantPanel({ className }: { className?: string }) {
  * a job's Assistente tab and the sheet that opens from the top bar. It sends
  * the screen it is on with every question, shows the answer as it is written
  * and what the assistant is looking up meanwhile, and takes dictation.
- * Writes still only happen through proposal cards the user confirms.
+ * Writes happen through cards: confirmed by the person, or — APP-8b, when the
+ * owner chose "Lo fa" for that action — carried out at once with Annulla.
  */
 export function AssistantChat({ threadId = null, compact, className }: { threadId?: string | null; compact?: boolean; className?: string }) {
   const { t } = useLanguage();
@@ -92,7 +94,10 @@ export function AssistantChat({ threadId = null, compact, className }: { threadI
       await assistantApi.stream(data.conversation.id, content, context, (e) => {
         if (e.type === "delta") setLive((l) => (l ? { ...l, text: l.text + e.text, progress: null } : l));
         else if (e.type === "progress") setLive((l) => (l ? { ...l, progress: e.label } : l));
-        else if (e.type === "proposal") patch((p) => ({ ...p, proposals: [...p.proposals, e.proposal] }));
+        else if (e.type === "proposal") {
+          patch((p) => ({ ...p, proposals: [...p.proposals, e.proposal] }));
+          if (e.proposal.auto && e.proposal.status === "confirmed") invalidateData();
+        }
         else {
           patch((p) => ({ ...p, messages: [...p.messages, e.message] }));
           // The stored copy replaces what was on screen: the question once saved, the text once the assistant's message is.
@@ -118,6 +123,13 @@ export function AssistantChat({ threadId = null, compact, className }: { threadI
     onError: (e: Error) => { toast({ title: t("assistant.applyFailed"), description: e.message, variant: "destructive" }); queryClient.invalidateQueries({ queryKey: key }); },
   });
   const dismiss = useMutation({ mutationFn: (id: string) => assistantApi.dismiss(id), onSuccess: ({ proposal }) => patchProposal(proposal) });
+  // APP-8b: Annulla on a card the assistant carried out by itself.
+  const undo = useMutation({
+    mutationFn: (id: string) => assistantApi.undo(id),
+    onSuccess: ({ proposal }) => { patchProposal(proposal); invalidateData(); toast({ title: t("assistant.undoneToast"), description: proposal.summary }); },
+    onError: (e: Error) => { toast({ title: t("assistant.undoFailed"), description: e.message, variant: "destructive" }); queryClient.invalidateQueries({ queryKey: key }); },
+  });
+  const card = (p: ProposalDto) => <ProposalCard key={p.id} proposal={p} onConfirm={() => confirm.mutate(p.id)} onDismiss={() => dismiss.mutate(p.id)} onUndo={() => undo.mutate(p.id)} busy={(confirm.isPending && confirm.variables === p.id) || (undo.isPending && undo.variables === p.id)} />;
   const clear = useMutation({
     mutationFn: () => assistantApi.clear(data!.conversation.id),
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: key }); queryClient.invalidateQueries({ queryKey: ["assistant-threads"] }); },
@@ -191,11 +203,11 @@ export function AssistantChat({ threadId = null, compact, className }: { threadI
         {empty && <div className="bubble ai">{kind === "job" ? t("assistant.emptyJob") : t("assistant.emptyCompany")}</div>}
         {visible.map((m, idx) => (
           <div key={m.id} className="contents">
-            {m.role === "assistant" && cardsFor(idx).map((p) => <ProposalCard key={p.id} proposal={p} onConfirm={() => confirm.mutate(p.id)} onDismiss={() => dismiss.mutate(p.id)} busy={confirm.isPending && confirm.variables === p.id} />)}
+            {m.role === "assistant" && cardsFor(idx).map(card)}
             <Bubble message={m} />
           </div>
         ))}
-        {trailing.map((p) => <ProposalCard key={p.id} proposal={p} onConfirm={() => confirm.mutate(p.id)} onDismiss={() => dismiss.mutate(p.id)} busy={confirm.isPending && confirm.variables === p.id} />)}
+        {trailing.map(card)}
         {live?.user && <div className="bubble user">{live.user}</div>}
         {live && live.text && <div className="bubble ai"><Markdownish text={live.text} /></div>}
         {live && !live.text && (live.progress
@@ -269,8 +281,22 @@ function inline(s: string): ReactNode {
   return parts.map((p, i) => (p.startsWith("**") && p.endsWith("**") ? <strong key={i}>{p.slice(2, -2)}</strong> : <span key={i}>{p}</span>));
 }
 
-function ProposalCard({ proposal, onConfirm, onDismiss, busy }: { proposal: ProposalDto; onConfirm: () => void; onDismiss: () => void; busy: boolean }) {
+/** Seconds left to press Annulla: what the server allows, never more than ASSISTANT_UNDO_SECONDS from when this card was first drawn. */
+function useUndoSecondsLeft(undoUntil: string | null): number {
+  const [shownAt] = useState(() => Date.now());
+  const end = undoUntil ? Math.min(new Date(undoUntil).getTime(), shownAt + ASSISTANT_UNDO_SECONDS * 1000) : 0;
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    if (!end || now >= end) return;
+    const id = window.setInterval(() => setNow(Date.now()), 500);
+    return () => window.clearInterval(id);
+  }, [end, now]);
+  return end ? Math.max(0, Math.ceil((end - now) / 1000)) : 0;
+}
+
+function ProposalCard({ proposal, onConfirm, onDismiss, onUndo, busy }: { proposal: ProposalDto; onConfirm: () => void; onDismiss: () => void; onUndo: () => void; busy: boolean }) {
   const { t } = useLanguage();
+  const undoLeft = useUndoSecondsLeft(proposal.status === "confirmed" && proposal.auto ? proposal.undoUntil : null);
   const Icon = KIND_ICON[proposal.kind] ?? Receipt;
   const p = proposal.payload;
   const details: string[] = [];
@@ -303,11 +329,17 @@ function ProposalCard({ proposal, onConfirm, onDismiss, busy }: { proposal: Prop
         )}
         {status === "confirmed" && (
           <>
-            <span className="prop-status ok"><Check className="h-3.5 w-3.5" /> {t("assistant.confirmed")}</span>
+            <span className="prop-status ok"><Check className="h-3.5 w-3.5" /> {proposal.auto ? t("assistant.done") : t("assistant.confirmed")}</span>
+            {undoLeft > 0 && (
+              <button type="button" className="prop-dismiss" onClick={onUndo} disabled={busy}>
+                {busy ? <Loader2 className="h-3 w-3 animate-spin" /> : <Undo2 className="h-3 w-3" />} {t("assistant.undo")} <span className="prop-undo-left" aria-hidden="true">{undoLeft}</span>
+              </button>
+            )}
             {link && <Link href={link} className="prop-dismiss"><ExternalLink className="h-3 w-3" /> {t("assistant.open")}</Link>}
           </>
         )}
         {status === "dismissed" && <span className="prop-status muted">{t("assistant.dismissed")}</span>}
+        {status === "undone" && <span className="prop-status muted">{t("assistant.undone")}</span>}
         {status === "failed" && <span className="prop-status err">{t("assistant.failed")}</span>}
       </div>
     </div>

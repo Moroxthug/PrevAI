@@ -272,6 +272,11 @@ export async function purgeDatabase(subjectUserId: string): Promise<Pick<Account
 
     // 3. La squadra: chi era nella sua impresa perde l'accesso; lui esce dalle imprese altrui.
     add("organization_members", count(await tx.execute(sql`delete from organization_members where owner_id = ${subjectUserId} or user_id = ${subjectUserId}`)));
+    // APP-8b: le sue conversazioni con l'assistente dentro le imprese altrui (hanno lo user_id dell'impresa).
+    // Prima della migrazione 0013 la tabella non c'è: il savepoint fallisce e si va avanti.
+    try {
+      add("assistant_conversations", count(await tx.transaction(async (sp) => sp.execute(sql`delete from assistant_conversations c using assistant_conversation_actors a where a.conversation_id = c.id and a.actor_user_id = ${subjectUserId}`))));
+    } catch { /* 0013 non ancora eseguita */ }
 
     // 4. L'accesso (sessioni, password, 2FA e collegamenti vanno per cascata).
     add("auth_user", count(await tx.execute(sql`delete from auth_user where id = ${subjectUserId}`)));

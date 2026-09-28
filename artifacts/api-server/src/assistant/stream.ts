@@ -2,14 +2,14 @@
 // puts the chunks back together (text + tool calls, which also arrive in
 // pieces) and names what the assistant is doing while a tool runs, so the
 // screen can say "Guardo il cantiere…" instead of three dots.
-import type { AssistantMessage, AssistantProposal } from "@workspace/db";
+import type { AssistantActionRow, AssistantMessage, AssistantProposal } from "@workspace/db";
 
 /** What the server sends while a turn runs (one SSE event each). */
 export type TurnEvent =
   | { type: "progress"; tool: string; label: string }
   | { type: "delta"; text: string }
   | { type: "message"; message: AssistantMessage }
-  | { type: "proposal"; proposal: AssistantProposal };
+  | { type: "proposal"; proposal: AssistantProposal; action?: AssistantActionRow | null };
 
 export type StreamedCall = { id: string; name: string; arguments: string };
 

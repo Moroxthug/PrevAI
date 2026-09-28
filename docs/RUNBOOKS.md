@@ -871,3 +871,29 @@ Piano completo in `docs/ASSISTENTE-PLAN.md`. Nessuna migrazione, nessuna variabi
 3. DevTools → Network → la richiesta `stream` ha tipo `eventsource`/`text/event-stream` e riceve eventi mentre è aperta (se arrivano tutti alla fine, vedi 17.2).
 4. Chiedere uno scontrino → scheda "Costo" → Ignora.
 
+
+## 18. Assistente: permessi "fa / chiede / mai" e una conversazione per persona (APP-8b, riga 33)
+
+### 18.1 Cosa c'è
+
+- **Impostazioni → Assistente** (solo piani con l'assistente): per ogni azione *Lo fa* / *Chiede prima* / *Mai*, per tutta l'impresa e, se serve, diversa per un ruolo. Catalogo e predefiniti in `lib/config/src/assistente.ts`: costi, attività, fasi e bozze di fattura *Lo fa*; inviare una fattura e registrare un incasso *Chiede prima* e **non possono diventare Lo fa**. Le modifica solo il titolare (`settings:full`); gli altri vedono cosa vale per loro.
+- **Il ruolo vince sempre** (`assistant/permissions.ts`): uno strumento che il ruolo non può usare a mano non viene nemmeno mandato al modello, e `/confirm` lo ricontrolla. Il capocantiere non prepara né invia fatture; il contabile registra incassi (prima `/confirm` chiedeva `jobs:edit`, che il contabile non ha).
+- **Lo fa**: l'azione parte subito, la scheda dice "Fatto" con **Annulla** per 10 s (costo, attività, bozza di fattura ancora bozza; il cambio di una fase no). Ogni azione eseguita è in `assistant_actions` (chi, livello, annullata) e nell'audit con `level`.
+- **Una conversazione per persona**: le conversazioni di prima restano del titolare; ogni membro ne ha di sue e non vede quelle degli altri. Cancellando il proprio account, un membro porta via anche le sue.
+
+### 18.2 Migrazione 0013
+
+`migrations/v2/0013_app8b_assistente.sql`: tre tabelle nuove e vuote (`assistant_conversation_actors`, `assistant_permissions`, `assistant_actions`), nessuna colonna su tabelle esistenti, idempotente. Staging: applicata e rieseguita senza effetti. In produzione come le altre (§5.3), dopo la 0012:
+
+```bash
+"$PG/psql.exe" "$URL" -v ON_ERROR_STOP=1 -1 -f migrations/v2/0013_app8b_assistente.sql   # APP-8b: permessi assistente
+```
+
+Senza le tabelle: una conversazione per impresa come prima, **ogni azione chiede conferma**, la sezione Assistente dice che si attiva con il prossimo aggiornamento e il salvataggio risponde 503. Il controllo del ruolo vale già. Il server si accorge della migrazione entro un minuto, senza riavvio. Ordine rispetto al deploy: indifferente.
+
+### 18.3 Controlli dopo il deploy
+
+1. Titolare, su un cantiere: ✦ → "Ho speso 30 euro di materiali da X" → scheda **Fatto** con Annulla che conta alla rovescia → Annulla → "Annullato", il costo sparisce da Costi.
+2. "Manda la fattura … al cliente" → scheda da confermare (mai Fatto) → Ignora.
+3. Impostazioni → Assistente → Regole per "Capo cantiere" → costo *Mai* → Salva. Se c'è un capocantiere: gli strumenti di costo spariscono e l'assistente glielo dice.
+4. Un membro della squadra apre ✦: la sua conversazione è vuota, non quella del titolare.

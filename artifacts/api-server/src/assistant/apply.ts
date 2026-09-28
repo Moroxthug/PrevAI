@@ -15,13 +15,19 @@ import {
   type PaymentMethod,
   type ProductFeature,
   type TaxBreakdown,
+  type TeamMemberRole,
+  assistantActionsTable,
+  invoicesTable,
+  type AssistantActionRow,
 } from "@workspace/db";
 import { and, eq } from "drizzle-orm";
 import { raiseAutomation } from "../lib/automation.js";
 import { writeAudit } from "../lib/notifications.js";
 import { recomputeProgress } from "../jobs/setup.js";
 import { parseIsoDate } from "../jobs/dates.js";
-import { draftDepositInvoice, draftFinalInvoice, draftHoldbackReleaseInvoice, draftMilestoneInvoice, buildInvoiceContext, sendInvoice, recordPayment } from "../invoices/service.js";
+import { draftDepositInvoice, draftFinalInvoice, draftHoldbackReleaseInvoice, draftMilestoneInvoice, buildInvoiceContext, sendInvoice, recordPayment, voidInvoice } from "../invoices/service.js";
+import { assistantV2Ready, ownsConversation, roleAllowsAction, undoDeadline } from "./permissions.js";
+export { undoDeadline };
 
 const FEATURE_FOR: Record<AssistantProposal["kind"], ProductFeature> = {
   cost_entry: "costs",
@@ -36,19 +42,37 @@ export class ProposalError extends Error {
   constructor(message: string, public code: string = "PROPOSAL_FAILED", public status = 400) { super(message); }
 }
 
-export type ApplyResult = { proposal: AssistantProposal; entityType: string; entityId: string; link: string | null };
+export type ApplyResult = { proposal: AssistantProposal; action: AssistantActionRow | null; entityType: string; entityId: string; link: string | null };
 
-export async function confirmProposal(params: { userId: string; proposalId: string; ip?: string | null }): Promise<ApplyResult> {
-  const [proposal] = await db.select().from(assistantProposalsTable).where(and(eq(assistantProposalsTable.id, params.proposalId), eq(assistantProposalsTable.userId, params.userId)));
-  if (!proposal) throw new ProposalError("Proposal not found", "NOT_FOUND", 404);
+/** APP-8b: the person acting — the company, the person and their role (service.ts Who). */
+type Who = { orgId: string; actorId: string; role: TeamMemberRole };
+
+/** A card of this person's conversation, or 404 (another person's card looks like no card at all). */
+async function ownProposal(who: Who, proposalId: string): Promise<AssistantProposal> {
+  const [proposal] = await db.select().from(assistantProposalsTable).where(and(eq(assistantProposalsTable.id, proposalId), eq(assistantProposalsTable.userId, who.orgId)));
+  if (!proposal || !(await ownsConversation(who, proposal.conversationId))) throw new ProposalError("Proposal not found", "NOT_FOUND", 404);
+  return proposal;
+}
+
+/**
+ * Runs a pending card — from the Conferma button (level "ask") or straight from
+ * the turn when the action is "Lo fa" (level "auto"). The plan and the person's
+ * role are checked here, whatever the settings say (the second check of §4).
+ */
+export async function runProposal(params: { proposal: AssistantProposal; who: Who; level: "auto" | "ask"; ip?: string | null }): Promise<ApplyResult> {
+  const { proposal, who } = params;
   if (proposal.status !== "pending") throw new ProposalError(`Proposal already ${proposal.status}`, "ALREADY_RESOLVED", 409);
-  const [profile] = await db.select().from(businessProfilesTable).where(eq(businessProfilesTable.userId, params.userId));
+  if (!roleAllowsAction(who.role, proposal.kind)) throw new ProposalError("Il tuo ruolo non può fare questa azione.", "FORBIDDEN", 403);
+  const [profile] = await db.select().from(businessProfilesTable).where(eq(businessProfilesTable.userId, who.orgId));
   if (!hasFeature(profile, FEATURE_FOR[proposal.kind])) throw new ProposalError("Your plan does not include this action", "PLAN_REQUIRED", 403);
 
   try {
-    const out = await execute(proposal, params.userId, params.ip ?? null);
+    const out = await execute(proposal, who.orgId, params.ip ?? null, params.level);
     const [updated] = await db.update(assistantProposalsTable).set({ status: "confirmed", resultEntityType: out.entityType, resultEntityId: out.entityId, resolvedAt: new Date() }).where(eq(assistantProposalsTable.id, proposal.id)).returning();
-    return { proposal: updated!, ...out };
+    const action = (await assistantV2Ready())
+      ? (await db.insert(assistantActionsTable).values({ userId: who.orgId, proposalId: proposal.id, actorUserId: who.actorId, kind: proposal.kind, level: params.level }).returning())[0] ?? null
+      : null;
+    return { proposal: updated!, action, ...out };
   } catch (err) {
     const message = (err as Error).message || "Could not apply the proposal";
     await db.update(assistantProposalsTable).set({ status: "failed", error: message, resolvedAt: new Date() }).where(eq(assistantProposalsTable.id, proposal.id));
@@ -56,12 +80,61 @@ export async function confirmProposal(params: { userId: string; proposalId: stri
   }
 }
 
-export async function dismissProposal(params: { userId: string; proposalId: string }): Promise<AssistantProposal> {
-  const [proposal] = await db.select().from(assistantProposalsTable).where(and(eq(assistantProposalsTable.id, params.proposalId), eq(assistantProposalsTable.userId, params.userId)));
-  if (!proposal) throw new ProposalError("Proposal not found", "NOT_FOUND", 404);
+export async function confirmProposal(params: { who: Who; proposalId: string; ip?: string | null }): Promise<ApplyResult> {
+  const proposal = await ownProposal(params.who, params.proposalId);
+  return runProposal({ proposal, who: params.who, level: "ask", ip: params.ip });
+}
+
+export async function dismissProposal(params: { who: Who; proposalId: string }): Promise<AssistantProposal> {
+  const proposal = await ownProposal(params.who, params.proposalId);
   if (proposal.status !== "pending") throw new ProposalError(`Proposal already ${proposal.status}`, "ALREADY_RESOLVED", 409);
   const [updated] = await db.update(assistantProposalsTable).set({ status: "dismissed", resolvedAt: new Date() }).where(eq(assistantProposalsTable.id, proposal.id)).returning();
   return updated!;
+}
+
+/** Seconds the server still accepts Annulla after the card showed it (the phone may be slow). */
+const UNDO_GRACE_SECONDS = 20;
+
+/**
+ * APP-8b — Annulla on a card that ran by itself. Only for "Lo fa" actions that
+ * can be taken back (a cost, a task, a draft invoice still a draft), only by the
+ * same person, only for a few seconds.
+ */
+export async function undoProposal(params: { who: Who; proposalId: string; ip?: string | null; now?: Date }): Promise<{ proposal: AssistantProposal; action: AssistantActionRow }> {
+  const { who } = params;
+  const proposal = await ownProposal(who, params.proposalId);
+  if (!(await assistantV2Ready())) throw new ProposalError("Annulla non è ancora disponibile.", "NOT_AVAILABLE", 503);
+  const [action] = await db.select().from(assistantActionsTable).where(eq(assistantActionsTable.proposalId, proposal.id));
+  const deadline = undoDeadline(action);
+  if (!action || !deadline || proposal.status !== "confirmed" || !proposal.resultEntityId) throw new ProposalError("Questa azione non si può annullare.", "NOT_UNDOABLE", 409);
+  if (action.actorUserId !== who.actorId) throw new ProposalError("Proposal not found", "NOT_FOUND", 404);
+  const now = params.now ?? new Date();
+  if (now.getTime() > deadline.getTime() + UNDO_GRACE_SECONDS * 1000) throw new ProposalError("Troppo tardi per annullare: puoi cambiarlo dalla schermata.", "UNDO_EXPIRED", 409);
+  if (!roleAllowsAction(who.role, proposal.kind)) throw new ProposalError("Il tuo ruolo non può fare questa azione.", "FORBIDDEN", 403);
+
+  const id = proposal.resultEntityId;
+  switch (proposal.kind) {
+    case "cost_entry":
+      await db.delete(costEntriesTable).where(and(eq(costEntriesTable.id, id), eq(costEntriesTable.userId, who.orgId)));
+      break;
+    case "task": {
+      const project = await ownedProject(who.orgId, String((proposal.payload as Record<string, unknown>).projectId));
+      await db.delete(projectTasksTable).where(and(eq(projectTasksTable.id, id), eq(projectTasksTable.projectId, project.id)));
+      break;
+    }
+    case "invoice": {
+      const [inv] = await db.select({ status: invoicesTable.status }).from(invoicesTable).where(and(eq(invoicesTable.id, id), eq(invoicesTable.userId, who.orgId)));
+      if (!inv || inv.status !== "draft") throw new ProposalError("La fattura non è più una bozza: annullala dalla sua pagina.", "NOT_UNDOABLE", 409);
+      await voidInvoice({ invoiceId: id, userId: who.orgId, reason: "Bozza annullata dall'assistente" });
+      break;
+    }
+    default:
+      throw new ProposalError("Questa azione non si può annullare.", "NOT_UNDOABLE", 409);
+  }
+  const [updated] = await db.update(assistantProposalsTable).set({ status: "undone" }).where(eq(assistantProposalsTable.id, proposal.id)).returning();
+  const [undone] = await db.update(assistantActionsTable).set({ undoneAt: now }).where(eq(assistantActionsTable.id, action.id)).returning();
+  await writeAudit({ userId: who.orgId, actorType: "user", actorId: who.actorId, entityType: proposal.resultEntityType ?? proposal.kind, entityId: id, action: "undone_via_assistant", diff: { proposalId: proposal.id }, ip: params.ip ?? null });
+  return { proposal: updated!, action: undone! };
 }
 
 async function ownedProject(userId: string, id: string) {
@@ -70,7 +143,7 @@ async function ownedProject(userId: string, id: string) {
   return p;
 }
 
-async function execute(proposal: AssistantProposal, userId: string, ip: string | null): Promise<{ entityType: string; entityId: string; link: string | null }> {
+async function execute(proposal: AssistantProposal, userId: string, ip: string | null, level: "auto" | "ask"): Promise<{ entityType: string; entityId: string; link: string | null }> {
   const p = proposal.payload as Record<string, unknown>;
   switch (proposal.kind) {
     case "cost_entry": {
@@ -95,7 +168,7 @@ async function execute(proposal: AssistantProposal, userId: string, ip: string |
           confirmedAt: new Date(),
         })
         .returning();
-      await writeAudit({ userId, actorType: "ai", actorId: proposal.id, entityType: "cost_entry", entityId: entry!.id, action: "created_via_assistant", ip });
+      await writeAudit({ userId, actorType: "ai", actorId: proposal.id, entityType: "cost_entry", entityId: entry!.id, action: "created_via_assistant", diff: { level }, ip });
       return { entityType: "cost_entry", entityId: entry!.id, link: `/dashboard/jobs/${project.id}?tab=costs` };
     }
     case "milestone_update": {
@@ -118,12 +191,13 @@ async function execute(proposal: AssistantProposal, userId: string, ip: string |
       if (status === "completed" && m.status !== "completed") {
         await raiseAutomation({ event: "milestone.completed", userId, entityType: "milestone", entityId: m.id, payload: { projectId: project.id } });
       }
-      await writeAudit({ userId, actorType: "ai", actorId: proposal.id, entityType: "milestone", entityId: m.id, action: "updated_via_assistant", diff: updates as Record<string, unknown>, ip });
+      await writeAudit({ userId, actorType: "ai", actorId: proposal.id, entityType: "milestone", entityId: m.id, action: "updated_via_assistant", diff: { ...(updates as Record<string, unknown>), level }, ip });
       return { entityType: "milestone", entityId: m.id, link: `/dashboard/jobs/${project.id}?tab=schedule` };
     }
     case "task": {
       const project = await ownedProject(userId, String(p.projectId));
       const [t] = await db.insert(projectTasksTable).values({ projectId: project.id, title: String(p.title), milestoneId: (p.milestoneId as string | null) ?? null, dueDate: parseIsoDate((p.dueDate as string | null) ?? null), status: "todo" }).returning();
+      await writeAudit({ userId, actorType: "ai", actorId: proposal.id, entityType: "task", entityId: t!.id, action: "created_via_assistant", diff: { level }, ip });
       return { entityType: "task", entityId: t!.id, link: `/dashboard/jobs/${project.id}?tab=schedule` };
     }
     case "invoice": {
@@ -141,6 +215,7 @@ async function execute(proposal: AssistantProposal, userId: string, ip: string |
       } else if (kind === "final") out = await draftFinalInvoice({ project, source: "manual", actor: "contractor" });
       else out = await draftHoldbackReleaseInvoice({ project, source: "manual", actor: "contractor" });
       if (!out) throw new ProposalError("Nothing left to invoice for that item", "NOTHING_TO_INVOICE");
+      await writeAudit({ userId, actorType: "ai", actorId: proposal.id, entityType: "invoice", entityId: out.invoice.id, action: "drafted_via_assistant", diff: { level }, ip });
       return { entityType: "invoice", entityId: out.invoice.id, link: `/dashboard/invoices/${out.invoice.id}` };
     }
     case "send_invoice": {

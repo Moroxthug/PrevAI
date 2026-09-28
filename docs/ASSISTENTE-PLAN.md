@@ -13,7 +13,7 @@ Stesse regole di sempre: una riga per sessione, in ordine; un commit per riga su
 | Riga | Sotto-fase | Da QuoteAI | Stato |
 |---|---|---|---|
 | 32 | **APP-8a** Risposte in streaming, un assistente da ogni schermata, sa dove sei, dettatura | 133 | ✅ 2026-09-27 |
-| 33 | **APP-8b** Permessi "fa / chiede / mai" + una conversazione per persona | 134 | ⬜ |
+| 33 | **APP-8b** Permessi "fa / chiede / mai" + una conversazione per persona | 134 | ✅ |
 | 34 | **APP-8c** Strumenti nuovi: brief del giorno, cerca, apri la schermata, preventivi, messaggi ai clienti | 135 | ⬜ |
 | 35 | **APP-8d** La schermata dell'assistente (calma) e la riga su Oggi | 136 | ⬜ |
 | 36 | **APP-8e** Risponde a voce | 137 | ⬜ serve D17 |
@@ -86,7 +86,9 @@ Il ruolo vince sempre: chi non può emettere fatture non le emette nemmeno trami
 
 Fatta il 2026-09-27. **Server:** `POST /api/assistant/conversations/:id/stream` manda il turno come Server-Sent Events (`progress` con la riga "Guardo il cantiere", `delta` col testo mentre si scrive, `message`, `proposal`, `done`, `error`); il turno è lo stesso di `/messages`, che resta. `assistant/stream.ts` rimette insieme testo e chiamate agli strumenti che arrivano a pezzi; `assistant/context.ts` riceve la schermata (percorso + id di cantiere, preventivo o fattura), controlla che ogni id sia dell'impresa e la descrive al modello; il cantiere della schermata diventa quello predefinito per gli strumenti. Se l'utente chiude il pannello a metà risposta il modello si ferma. `GET /api/assistant/conversations` e `GET /api/assistant/conversations/:id` per le conversazioni di prima. **App:** ✦ nella barra in alto su ogni schermata dei piani con l'assistente: pannello a destra sul computer, foglio alto sul telefono; la scheda Assistente del cantiere e la pagina Assistente usano la stessa conversazione; le vecchie conversazioni per cantiere restano leggibili nella pagina; microfono nel campo (dettatura con Whisper, il testo si rilegge prima di mandarlo). Dettagli in RUNBOOKS §17.
 
-## APP-8b — Permessi e una conversazione per persona (riga 33)
+## APP-8b — Permessi e una conversazione per persona (riga 33) ✅
+
+Fatta il 2026-09-27 (diario in PIANO-AZIONE, RUNBOOKS §18). Differenza dal piano qui sotto: nessuna colonna su `assistant_conversations`; la persona sta in una tabella nuova (`assistant_conversation_actors`), perché la colonna avrebbe rotto ogni lettura prima della migrazione. Il livello sta in `assistant_actions` e nell'audit. D18 aperta: piani invariati.
 
 - Migrazione `0013`: `assistant_conversations.actor_user_id` (la persona; le conversazioni esistenti restano del titolare), `assistant_permissions` (impresa, tipo di azione, livello, ruolo facoltativo), livello registrato nell'audit.
 - **Inerte finché la migrazione non gira** come 0011/0012: senza la colonna il server continua come oggi.

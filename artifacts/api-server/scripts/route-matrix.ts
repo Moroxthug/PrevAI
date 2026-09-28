@@ -186,7 +186,8 @@ function classifyFeatureGate(reach: string, auth: AuthKind): string | null {
 }
 
 const TENANT_COLS = "(userId|ownerId|actorUserId|organizationId|companyId)";
-const TENANT_VARS = "(?:userId|orgId|ownerId|actorUserId|actorId|res\\.locals\\.userId|getUserId\\(res\\)|getActorUserId\\(res\\))(?!\\w)";
+// `whoOf(res)` (routes/assistant.ts, APP-8b) returns { orgId: getUserId(res), actorId, role }.
+const TENANT_VARS = "(?:userId|orgId|ownerId|actorUserId|actorId|res\\.locals\\.userId|getUserId\\(res\\)|getActorUserId\\(res\\)|whoOf\\(res\\))(?!\\w)";
 
 function classifyTenantScope(idx: FileIndex, reach: string, row: Pick<RouteRow, "auth" | "hasParams">): TenantScope {
   if (row.auth === "none" || row.auth === "admin") return "n/a";

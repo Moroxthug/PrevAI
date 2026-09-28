@@ -1,14 +1,18 @@
 import { Router } from "express";
 import { z } from "zod";
-import { db, projectsTable, businessProfilesTable, hasFeature, minimumPlanFor, type AssistantMessage, type AssistantProposal } from "@workspace/db";
+import { db, projectsTable, businessProfilesTable, assistantPermissionsTable, hasFeature, minimumPlanFor, type AssistantMessage, type AssistantProposal, type AssistantActionRow, type TeamMemberRole } from "@workspace/db";
 import { and, eq } from "drizzle-orm";
-import { requireAuth, getUserId } from "../middlewares/authMiddleware.js";
+import { requireAuth, getUserId, getActorUserId, getActorRole } from "../middlewares/authMiddleware.js";
 import { requirePermission } from "../middlewares/requirePermission.js";
 import { userRateLimiter } from "../lib/rateLimit.js";
-import { getOrCreateConversation, loadConversation, listConversations, clearConversation, runAssistantTurn, type Lang } from "../assistant/service.js";
+import { getOrCreateConversation, loadConversation, listConversations, clearConversation, runAssistantTurn, type Lang, type Who } from "../assistant/service.js";
 import { pageContextSchema } from "../assistant/context.js";
 import { sseFrame, type TurnEvent } from "../assistant/stream.js";
-import { confirmProposal, dismissProposal, ProposalError } from "../assistant/apply.js";
+import { confirmProposal, dismissProposal, undoProposal, undoDeadline, ProposalError } from "../assistant/apply.js";
+import { assistantV2Ready, levelsFor, loadPermissionRows, roleAllowsAction } from "../assistant/permissions.js";
+import { roleCan } from "../middlewares/requirePermission.js";
+import { ASSISTANT_ACTIONS, ASSISTANT_LEVELS, clampAssistantLevel, isAssistantAction } from "@workspace/config";
+import { writeAudit } from "../lib/notifications.js";
 
 // ── Phase 5: job assistant ───────────────────────────────────────────────────
 // Gate: "assistant" (Elite). Reads are free-form; writes only happen when
@@ -29,11 +33,18 @@ export function serializeMessage(m: AssistantMessage) {
   return { id: m.id, role: m.role, content: m.content, toolCalls: m.toolCalls?.map((c) => ({ id: c.id, name: c.name })) ?? null, toolCallId: m.toolCallId, toolName: m.toolName, createdAt: m.createdAt.toISOString() };
 }
 
-export function serializeProposal(p: AssistantProposal) {
-  return { id: p.id, messageId: p.messageId, projectId: p.projectId, kind: p.kind, summary: p.summary, payload: p.payload, status: p.status, resultEntityType: p.resultEntityType, resultEntityId: p.resultEntityId, error: p.error, resolvedAt: p.resolvedAt?.toISOString() ?? null, createdAt: p.createdAt.toISOString() };
+/** APP-8b: `action` says whether the card ran by itself ("Lo fa") and until when Annulla works. */
+export function serializeProposal(p: AssistantProposal, action?: AssistantActionRow | null) {
+  const undoUntil = undoDeadline(action);
+  return { auto: action?.level === "auto", undoUntil: undoUntil?.toISOString() ?? null, id: p.id, messageId: p.messageId, projectId: p.projectId, kind: p.kind, summary: p.summary, payload: p.payload, status: p.status, resultEntityType: p.resultEntityType, resultEntityId: p.resultEntityId, error: p.error, resolvedAt: p.resolvedAt?.toISOString() ?? null, createdAt: p.createdAt.toISOString() };
 }
 
 const turnBody = z.object({ content: z.string().trim().min(1).max(4000), language: z.enum(["it"]).optional(), context: pageContextSchema.nullish() });
+
+/** APP-8b: the company, the person and their role. */
+function whoOf(res: Parameters<typeof getUserId>[0]): Who {
+  return { orgId: getUserId(res), actorId: getActorUserId(res), role: getActorRole(res) };
+}
 
 function langOf(_req: { headers: Record<string, unknown>; body?: unknown }): Lang {
   return "it";
@@ -50,9 +61,9 @@ router.get("/assistant/conversation", requireAuth, async (req, res) => {
       const [p] = await db.select({ id: projectsTable.id }).from(projectsTable).where(and(eq(projectsTable.id, projectId), eq(projectsTable.userId, userId)));
       if (!p) { res.status(404).json({ error: "Not found" }); return; }
     }
-    const conv = await getOrCreateConversation(userId, projectId);
-    const loaded = await loadConversation(userId, conv.id);
-    res.json({ conversation: { id: conv.id, projectId: conv.projectId, title: conv.title }, messages: loaded!.messages.map(serializeMessage), proposals: loaded!.proposals.map(serializeProposal) });
+    const conv = await getOrCreateConversation(whoOf(res), projectId);
+    const loaded = await loadConversation(whoOf(res), conv.id);
+    res.json({ conversation: { id: conv.id, projectId: conv.projectId, title: conv.title }, messages: loaded!.messages.map(serializeMessage), proposals: loaded!.proposals.map((p) => serializeProposal(p, loaded!.actions.get(p.id))) });
   } catch (err) {
     req.log.error({ err }, "Error loading assistant conversation");
     res.status(500).json({ error: "Internal server error" });
@@ -65,7 +76,7 @@ router.get("/assistant/conversations", requireAuth, requirePermission("jobs", "v
     const userId = getUserId(res);
     const gate = await requireAssistant(userId);
     if (!gate.ok) { res.status(403).json({ error: "PLAN_REQUIRED", requiredPlan: gate.plan }); return; }
-    const rows = await listConversations(userId);
+    const rows = await listConversations(whoOf(res));
     res.json({ conversations: rows.map((c) => ({ id: c.id, projectId: c.projectId, projectName: c.projectName, title: c.title, lastMessageAt: c.lastMessageAt.toISOString() })) });
   } catch (err) {
     req.log.error({ err }, "Error listing assistant conversations");
@@ -79,10 +90,10 @@ router.get("/assistant/conversations/:id", requireAuth, requirePermission("jobs"
     const userId = getUserId(res);
     const gate = await requireAssistant(userId);
     if (!gate.ok) { res.status(403).json({ error: "PLAN_REQUIRED", requiredPlan: gate.plan }); return; }
-    const loaded = await loadConversation(userId, req.params.id as string);
+    const loaded = await loadConversation(whoOf(res), req.params.id as string);
     if (!loaded) { res.status(404).json({ error: "Not found" }); return; }
     const c = loaded.conversation;
-    res.json({ conversation: { id: c.id, projectId: c.projectId, title: c.title }, messages: loaded.messages.map(serializeMessage), proposals: loaded.proposals.map(serializeProposal) });
+    res.json({ conversation: { id: c.id, projectId: c.projectId, title: c.title }, messages: loaded.messages.map(serializeMessage), proposals: loaded.proposals.map((p) => serializeProposal(p, loaded.actions.get(p.id))) });
   } catch (err) {
     req.log.error({ err }, "Error loading assistant conversation");
     res.status(500).json({ error: "Internal server error" });
@@ -99,7 +110,7 @@ router.post("/assistant/conversations/:id/stream", requireAuth, requirePermissio
   if (!gate.ok) { res.status(403).json({ error: "PLAN_REQUIRED", requiredPlan: gate.plan }); return; }
   const body = turnBody.safeParse(req.body);
   if (!body.success) { res.status(400).json({ error: "Invalid parameters", details: body.error }); return; }
-  const loaded = await loadConversation(userId, req.params.id as string).catch(() => null);
+  const loaded = await loadConversation(whoOf(res), req.params.id as string).catch(() => null);
   if (!loaded) { res.status(404).json({ error: "Not found" }); return; }
 
   res.status(200);
@@ -114,12 +125,12 @@ router.post("/assistant/conversations/:id/stream", requireAuth, requirePermissio
   const send = (event: string, data: unknown) => { if (!res.writableEnded) res.write(sseFrame(event, data)); };
   const onEvent = (e: TurnEvent) => {
     if (e.type === "message") send("message", { message: serializeMessage(e.message) });
-    else if (e.type === "proposal") send("proposal", { proposal: serializeProposal(e.proposal) });
+    else if (e.type === "proposal") send("proposal", { proposal: serializeProposal(e.proposal, e.action) });
     else if (e.type === "delta") send("delta", { text: e.text });
     else send("progress", { tool: e.tool, label: e.label });
   };
   try {
-    await runAssistantTurn({ conversation: loaded.conversation, userId, content: body.data.content, language: langOf(req), context: body.data.context, onEvent, signal: abort.signal });
+    await runAssistantTurn({ conversation: loaded.conversation, who: whoOf(res), content: body.data.content, language: langOf(req), context: body.data.context, onEvent, signal: abort.signal, ip: req.ip });
     send("done", {});
   } catch (err) {
     if (!abort.signal.aborted) {
@@ -139,10 +150,10 @@ router.post("/assistant/conversations/:id/messages", requireAuth, requirePermiss
     if (!gate.ok) { res.status(403).json({ error: "PLAN_REQUIRED", requiredPlan: gate.plan }); return; }
     const body = turnBody.safeParse(req.body);
     if (!body.success) { res.status(400).json({ error: "Invalid parameters", details: body.error }); return; }
-    const loaded = await loadConversation(userId, req.params.id as string);
+    const loaded = await loadConversation(whoOf(res), req.params.id as string);
     if (!loaded) { res.status(404).json({ error: "Not found" }); return; }
-    const result = await runAssistantTurn({ conversation: loaded.conversation, userId, content: body.data.content, language: langOf(req), context: body.data.context });
-    res.json({ messages: result.messages.map(serializeMessage), proposals: result.proposals.map(serializeProposal) });
+    const result = await runAssistantTurn({ conversation: loaded.conversation, who: whoOf(res), content: body.data.content, language: langOf(req), context: body.data.context, ip: req.ip });
+    res.json({ messages: result.messages.map(serializeMessage), proposals: result.proposals.map((p) => serializeProposal(p, result.actions.get(p.id))) });
   } catch (err) {
     req.log.error({ err }, "Assistant turn failed");
     res.status(502).json({ error: "ASSISTANT_FAILED", message: "The assistant could not answer right now. Try again in a moment." });
@@ -152,7 +163,7 @@ router.post("/assistant/conversations/:id/messages", requireAuth, requirePermiss
 // DELETE /api/assistant/conversations/:id — start over
 router.delete("/assistant/conversations/:id", requireAuth, requirePermission("jobs", "view"), async (req, res) => {
   try {
-    const ok = await clearConversation(getUserId(res), req.params.id as string);
+    const ok = await clearConversation(whoOf(res), req.params.id as string);
     if (!ok) { res.status(404).json({ error: "Not found" }); return; }
     res.json({ success: true });
   } catch (err) {
@@ -162,10 +173,12 @@ router.delete("/assistant/conversations/:id", requireAuth, requirePermission("jo
 });
 
 // POST /api/assistant/proposals/:id/confirm
-router.post("/assistant/proposals/:id/confirm", requireAuth, requirePermission("jobs", "edit"), async (req, res) => {
+// APP-8b: the role is checked per kind of card inside (a bookkeeper records a payment
+// without jobs:edit; a foreman never sends an invoice), so the route only needs jobs:view.
+router.post("/assistant/proposals/:id/confirm", requireAuth, requirePermission("jobs", "view"), async (req, res) => {
   try {
-    const out = await confirmProposal({ userId: getUserId(res), proposalId: req.params.id as string, ip: req.ip });
-    res.json({ proposal: serializeProposal(out.proposal), link: out.link });
+    const out = await confirmProposal({ who: whoOf(res), proposalId: req.params.id as string, ip: req.ip });
+    res.json({ proposal: serializeProposal(out.proposal, out.action), link: out.link });
   } catch (err) {
     if (err instanceof ProposalError) { res.status(err.status).json({ error: err.code, message: err.message }); return; }
     req.log.error({ err }, "Error confirming proposal");
@@ -174,13 +187,84 @@ router.post("/assistant/proposals/:id/confirm", requireAuth, requirePermission("
 });
 
 // POST /api/assistant/proposals/:id/dismiss
-router.post("/assistant/proposals/:id/dismiss", requireAuth, requirePermission("jobs", "edit"), async (req, res) => {
+router.post("/assistant/proposals/:id/dismiss", requireAuth, requirePermission("jobs", "view"), async (req, res) => {
   try {
-    const proposal = await dismissProposal({ userId: getUserId(res), proposalId: req.params.id as string });
+    const proposal = await dismissProposal({ who: whoOf(res), proposalId: req.params.id as string });
     res.json({ proposal: serializeProposal(proposal) });
   } catch (err) {
     if (err instanceof ProposalError) { res.status(err.status).json({ error: err.code, message: err.message }); return; }
     req.log.error({ err }, "Error dismissing proposal");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// POST /api/assistant/proposals/:id/undo — APP-8b: Annulla on a card that ran by itself ("Lo fa"), for a few seconds
+router.post("/assistant/proposals/:id/undo", requireAuth, requirePermission("jobs", "view"), async (req, res) => {
+  try {
+    const out = await undoProposal({ who: whoOf(res), proposalId: req.params.id as string, ip: req.ip });
+    res.json({ proposal: serializeProposal(out.proposal, out.action) });
+  } catch (err) {
+    if (err instanceof ProposalError) { res.status(err.status).json({ error: err.code, message: err.message }); return; }
+    req.log.error({ err }, "Error undoing proposal");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// ── APP-8b: Impostazioni → Assistente ─────────────────────────────────────────
+// GET  /api/assistant/permissions  the company's choices, and what the caller gets
+// PUT  /api/assistant/permissions  the owner saves them (the whole list replaces the old one)
+// Inert until migrations/v2/0013_app8b_assistente.sql runs: GET says available: false
+// (everything asks, as before), PUT answers 503.
+
+const SETTABLE_ROLES = ["", "admin", "office", "foreman", "bookkeeper", "viewer"] as const;
+const permissionsBody = z.object({
+  settings: z.array(z.object({ action: z.enum(ASSISTANT_ACTIONS), role: z.enum(SETTABLE_ROLES), level: z.enum(ASSISTANT_LEVELS) })).max(ASSISTANT_ACTIONS.length * SETTABLE_ROLES.length),
+});
+
+/** What each role can do by hand (the settings show "the role can't" instead of a choice), and whether the caller may change them. */
+function permissionsExtras(role: TeamMemberRole) {
+  const roleLimits = Object.fromEntries(SETTABLE_ROLES.filter((r) => r).map((r) => [r, ASSISTANT_ACTIONS.filter((a) => roleAllowsAction(r as TeamMemberRole, a))]));
+  return { canEdit: roleCan(role, "settings", "full"), roleLimits };
+}
+
+router.get("/assistant/permissions", requireAuth, requirePermission("settings", "view"), async (req, res) => {
+  try {
+    const userId = getUserId(res);
+    const gate = await requireAssistant(userId);
+    if (!gate.ok) { res.status(403).json({ error: "PLAN_REQUIRED", requiredPlan: gate.plan }); return; }
+    const ready = await assistantV2Ready();
+    const rows = ready ? await loadPermissionRows(userId) : [];
+    res.json({
+      available: ready,
+      settings: rows.filter((r) => isAssistantAction(r.action)).map((r) => ({ action: r.action, role: r.role, level: r.level })),
+      mine: levelsFor(getActorRole(res), rows, ready),
+      ...permissionsExtras(getActorRole(res)),
+    });
+  } catch (err) {
+    req.log.error({ err }, "Error loading assistant permissions");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+router.put("/assistant/permissions", requireAuth, requirePermission("settings", "full"), async (req, res) => {
+  try {
+    const userId = getUserId(res);
+    const gate = await requireAssistant(userId);
+    if (!gate.ok) { res.status(403).json({ error: "PLAN_REQUIRED", requiredPlan: gate.plan }); return; }
+    if (!(await assistantV2Ready())) { res.status(503).json({ error: "NOT_AVAILABLE", message: "I permessi dell'assistente non sono ancora disponibili." }); return; }
+    const body = permissionsBody.safeParse(req.body);
+    if (!body.success) { res.status(400).json({ error: "Invalid parameters", details: body.error }); return; }
+    // One row per (action, role); a money action is stored at most "ask" whatever was sent.
+    const byKey = new Map(body.data.settings.map((s) => [`${s.action}|${s.role}`, { ...s, level: clampAssistantLevel(s.action, s.level) }]));
+    await db.transaction(async (tx) => {
+      await tx.delete(assistantPermissionsTable).where(eq(assistantPermissionsTable.userId, userId));
+      if (byKey.size) await tx.insert(assistantPermissionsTable).values([...byKey.values()].map((s) => ({ userId, action: s.action, role: s.role, level: s.level })));
+    });
+    await writeAudit({ userId, actorType: "user", actorId: getActorUserId(res), entityType: "assistant_permissions", entityId: userId, action: "updated", diff: { settings: [...byKey.values()] }, ip: req.ip });
+    const rows = await loadPermissionRows(userId);
+    res.json({ available: true, settings: rows.map((r) => ({ action: r.action, role: r.role, level: r.level })), mine: levelsFor(getActorRole(res), rows, true), ...permissionsExtras(getActorRole(res)) });
+  } catch (err) {
+    req.log.error({ err }, "Error saving assistant permissions");
     res.status(500).json({ error: "Internal server error" });
   }
 });
