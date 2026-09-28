@@ -18,3 +18,4 @@ export * from "./assistente-voce";
 export * from "./assistente-conferma";
 export * from "./assistente-costi";
 export * from "./telefono";
+export * from "./notifiche-push";

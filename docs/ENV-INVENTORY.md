@@ -94,6 +94,8 @@ Kinds: **required** (boot/core flows) · **recommended** (launch expectation, de
 | `VITE_POSTHOG_HOST` | ? |  | defaults to https://eu.i.posthog.com | preventivo-ai/src/lib/analytics.ts |  |
 | `VITE_POSTHOG_KEY` | ? |  | browser analytics (loaded on first interaction) | preventivo-ai/src/App.tsx, preventivo-ai/src/lib/analytics.ts |  |
 | `VITE_SENTRY_DSN` | ? |  | browser error tracking (same DSN is fine) | preventivo-ai/src/lib/error-tracking.ts |  |
+| `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY` | ? |  | APP-2 push notifications on phones (`pnpm --filter @workspace/api-server ops:vapid-keys`, RUNBOOKS §25); unset = the bell only. Never rotate lightly: subscribed browsers stop receiving | api-server/src/lib/webPush.ts |  |
+| `VAPID_SUBJECT` | ? |  | contact in the VAPID token; default mailto:notifiche@prevai.it | api-server/src/lib/webPush.ts |  |
 
 ### feature
 

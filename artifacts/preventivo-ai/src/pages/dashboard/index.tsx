@@ -50,6 +50,7 @@ import { HOME_DEFAULTS, type HomeLayout, type HomeSectionId } from "@workspace/c
 import { ListRow } from "@/components/mobile/list-row";
 import { AssistantAskRow } from "@/components/assistant/assistant-launcher";
 import { hasFeature } from "@/lib/plans";
+import { InstallPrompt } from "@/components/pwa/install-prompt";
 
 /* ─── plan helpers ─────────────────────────────────────────────────────────── */
 
@@ -732,6 +733,9 @@ export default function DashboardHome() {
           />
         </div>
       )}
+
+      {/* APP-2: the install invitation, from the second quote on (never at first sign-in). */}
+      {(stats?.total ?? 0) >= 2 && <InstallPrompt className="today-gap" />}
 
       {isNewUser && isOwner ? (
         <div className="today-gap">

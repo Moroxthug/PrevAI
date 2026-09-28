@@ -495,7 +495,8 @@ router.put("/crm/suppliers/:id", requireAuth, requirePermission("jobs", "edit"),
   try {
     const userId = getUserId(res);
     const parsed = supplierSchema.partial().safeParse(req.body);
-    if (!parsed.success || !z.string().uuid().safeParse(req.params.id).success) {
+    // An empty body has nothing to set (drizzle throws on an empty SET): same answer as a bad one.
+    if (!parsed.success || !z.string().uuid().safeParse(req.params.id).success || Object.keys(parsed.data).length === 0) {
       res.status(400).json({ error: "Invalid parameters", details: parsed.success ? undefined : parsed.error });
       return;
     }

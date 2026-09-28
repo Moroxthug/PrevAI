@@ -27,6 +27,7 @@
     "ops:encrypt-fiscal-fields": "tsx scripts/encrypt-fiscal-fields.ts",
     "ops:addon-beta": "tsx scripts/addon-beta.ts",
     "ops:demo-revisore": "tsx scripts/demo-revisore.ts",
+    "ops:vapid-keys": "tsx scripts/vapid-keys.ts",
     "eval:assistant": "tsx src/assistant/evals/run.ts"
   },
   "dependencies": {

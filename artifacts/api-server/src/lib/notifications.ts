@@ -1,4 +1,8 @@
 import { db, notificationsTable, auditLogTable } from "@workspace/db";
+import { pushForNotification } from "./push";
+
+/** The longest a notification waits for its push to go out (a slow push service must not slow the caller). */
+const PUSH_WAIT_MS = 4000;
 
 export async function createNotification(params: {
   userId: string;
@@ -8,6 +12,8 @@ export async function createNotification(params: {
   link?: string;
   entityType?: string;
   entityId?: string;
+  /** APP-2: false keeps a push kind in the bell only (lib/push.ts decides the rest). */
+  push?: boolean;
 }): Promise<void> {
   await db.insert(notificationsTable).values({
     userId: params.userId,
@@ -18,6 +24,9 @@ export async function createNotification(params: {
     entityType: params.entityType ?? null,
     entityId: params.entityId ?? null,
   });
+  // APP-2: the kinds worth interrupting for also reach the phone. Awaited (a serverless
+  // function may be frozen once it answers) but capped, and it never throws.
+  await Promise.race([pushForNotification(params), new Promise<void>((resolve) => setTimeout(resolve, PUSH_WAIT_MS).unref?.())]);
 }
 
 export async function writeAudit(params: {

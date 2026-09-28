@@ -52,6 +52,11 @@ const MANIFEST: Record<string, Entry> = {
   // ── Recommended for launch (Phase 69) ──
   SENTRY_DSN: { kind: "recommended", note: "API error tracking; unset = errors only in Vercel logs" },
   VITE_SENTRY_DSN: { kind: "recommended", note: "browser error tracking (same DSN is fine)" },
+  // ── APP-2: push notifications on phones (RUNBOOKS §25) ──
+  VAPID_PUBLIC_KEY: { kind: "recommended", note: "Web Push key pair (`pnpm --filter @workspace/api-server ops:vapid-keys`); unset = the bell only. Never rotate lightly: subscribed browsers stop receiving" },
+  VAPID_PRIVATE_KEY: { kind: "recommended", note: "private half of the VAPID pair — server only" },
+  VAPID_SUBJECT: { kind: "recommended", note: "contact in the VAPID token; default mailto:notifiche@prevai.it" },
+  VITE_ENABLE_SW: { kind: "local", note: "1 = register the service worker in `vite dev` too (it is always on in production builds)" },
   SENTRY_ENVIRONMENT: { kind: "build", note: "optional override; defaults to VERCEL_ENV" },
   SENTRY_RELEASE: { kind: "build", note: "optional override; defaults to VERCEL_GIT_COMMIT_SHA" },
   VITE_SENTRY_ENVIRONMENT: { kind: "build", note: "optional override for the browser side" },

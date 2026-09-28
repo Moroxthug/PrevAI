@@ -6,7 +6,7 @@ import { sql } from "drizzle-orm";
 
 const cache = new Map<string, { ready: boolean; at: number }>();
 
-async function tableReady(table: string): Promise<boolean> {
+export async function tableReady(table: string): Promise<boolean> {
   const hit = cache.get(table);
   if (hit && (hit.ready || Date.now() - hit.at < 60_000)) return hit.ready;
   let ready: boolean;

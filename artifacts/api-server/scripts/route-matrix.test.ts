@@ -51,6 +51,7 @@ const PERMISSIONLESS_MUTATIONS: Allow[] = [
   { match: /^POST \/api\/team\/invite\/:token\/accept$/, reason: "the invitee is joining — has no role in the org yet" },
   { match: /^POST \/api\/team\/switch$/, reason: "switches the actor's own active org" },
   { match: /^POST \/api\/app\/(events|feedback)$/, reason: "APP-5: the actor's own usage events and problem reports — any role, rate limited per user, writes only rows stamped with the acting org and actor" },
+  { match: /^(POST|DELETE) \/api\/push\/subscriptions$|^POST \/api\/push\/test$|^PUT \/api\/push\/preferences$/, reason: "APP-2: the actor turns notifications on or off on their OWN browser, tests them on their own devices and picks their own kinds — any role, rate limited per user; what a push may carry is still cut by role at send time" },
   { match: /^(PUT|DELETE) \/api\/home$/, reason: "APP-7: the actor arranges their OWN home — any role; the layout is cut to what the role may see before saving, so it can never reveal anything" },
   {
     match: /^POST \/api\/studio\//,

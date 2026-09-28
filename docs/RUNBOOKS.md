@@ -1074,3 +1074,42 @@ Tre difese: il prompt dice che i testi letti sono dati e che niente parte senza 
 1. Una domanda all'assistente, poi: `select quantity, unit_cost_cents from usage_events where related_entity_type = 'assistant_turn' order by created_at desc limit 1;` → una riga con i token.
 2. `/dashboard/admin` → Assistente: l'impresa compare con 1 domanda.
 3. Impostazioni → Assistente: gruppi **Attività** e **Uso del mese** in fondo; con una nota "Lo fa" appena scritta c'è Annulla, dopo 10 s diventa Apri.
+
+## 25. App installabile e notifiche sul telefono (APP-2, riga 17)
+
+### 25.1 Cosa c'è
+
+- **App installabile (PWA):** `public/manifest.webmanifest` (nome PrevAI, icone normali e "maskable", avvio su `/dashboard/`, scorciatoie Nuovo preventivo / Preventivi / Cantieri). Su Android e Chrome/Edge compare "Installa"; su iPhone i due passi di Safari (Condividi → Aggiungi alla schermata Home). L'invito sta su Oggi **dal secondo preventivo** (mai al primo accesso; "Non ora" lo nasconde 30 giorni) e sempre in Impostazioni → Notifiche sul telefono.
+- **Service worker** (`public/sw.js`, completato dopo la build da `scripts/build-sw.ts`): si registra solo nelle pagine dell'app (`/dashboard`, `/t`, app installata), mai su sito pubblico e blog. Precarica la struttura della dashboard (~60 file, ~1,9 MB); `/assets` prima dalla cache; navigazioni prima dalla rete, senza rete la struttura salvata, poi la pagina "Sei offline". Alcune letture (sessione, profilo, piano, Oggi, preventivi, cantieri, notifiche) tengono l'ultima risposta per l'uso senza rete; la cache `prevai-api` si svuota all'uscita e quando la sessione non c'è più. Le scritture non passano mai dal service worker. Ogni deploy ha cache nuove; la dashboard mostra "È pronta una nuova versione — Aggiorna" e, senza rete, "Sei offline". `sw.js` è servito `no-cache` (vercel.json).
+- **Notifiche push (Web Push, VAPID, senza librerie):** `lib/webPush.ts` (firma e cifratura), `lib/push.ts` (chi riceve), rotte `/api/push/config|subscriptions|test|preferences`. Partono dalle notifiche della campanella di quattro tipi (`lib/config/src/notifiche-push.ts`): **il cliente apre il preventivo** (la prima volta, dal link pubblico, non se lo apre qualcuno dell'impresa — nuova anche in campanella), **preventivo accettato**, **nuova richiesta dal widget** (nuova anche in campanella), **scadenza fiscale** solo negli ultimi 7 giorni (le soglie più lontane restano in campanella). Chi riceve: ogni browser acceso, se il ruolo della persona vede l'area (la scadenza fiscale solo a titolare, amministratore e contabile) e se non ha spento quel tipo; un membro sospeso o uscito non riceve più nulla. Uscendo dall'account il browser si disiscrive; la cancellazione dell'account spazza le righe.
+- **Impostazioni → Notifiche sul telefono:** "Questo dispositivo" (interruttore che agisce subito + Invia una prova) e "Cosa ti arriva" (per persona, salvato con la barra).
+
+### 25.2 Migrazione 0014
+
+`migrations/v2/0014_app2_push.sql`: due tabelle nuove e vuote (`push_subscriptions`, `push_preferences`), nessuna colonna su tabelle esistenti, idempotente. Staging: applicata e rieseguita senza effetti. In produzione come le altre (§5.3), dopo la 0013:
+
+```bash
+"$PG/psql.exe" "$URL" -v ON_ERROR_STOP=1 -1 -f migrations/v2/0014_app2_push.sql   # APP-2: notifiche push
+```
+
+Senza la 0014 l'app si installa e funziona offline lo stesso; le notifiche sul telefono dicono "si attivano con il prossimo aggiornamento" (il server se ne accorge entro un minuto). **Attenzione:** 0011 e 0012 non risultano ancora eseguite in produzione (§15.2, §16.2): vanno prima.
+
+### 25.3 Accendere le notifiche (titolare, una volta)
+
+1. Da `artifacts/api-server`: `pnpm ops:vapid-keys` → stampa tre righe.
+2. Vercel → progetto `prevai` → Settings → Environment Variables: `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY` (Sensitive), `VAPID_SUBJECT` su **Production** (e Preview se si vuole provare lì). Poi un redeploy.
+3. **Non rigenerarle** dopo: con chiavi nuove ogni telefono iscritto smette di ricevere finché non riaccende l'interruttore.
+
+### 25.4 Controlli dopo il deploy
+
+1. `curl -sI https://prevai.it/sw.js --ssl-no-revoke` → `cache-control: no-cache…`; `https://prevai.it/manifest.webmanifest` → 200.
+2. Su Android (Chrome): prevai.it/dashboard → menu → Installa app; Impostazioni → Notifiche sul telefono → accendi → **Invia una prova** → la notifica arriva, il tocco apre la pagina.
+3. Su iPhone (iOS 16.4+): Safari → Condividi → Aggiungi alla schermata Home → apri PrevAI dall'icona → Impostazioni → Notifiche sul telefono → accendi → prova.
+4. "Fatto quando" del piano: su un preventivo di prova, accettazione dal link pubblico → la notifica "… ha accettato il preventivo …" arriva su entrambi.
+5. `select count(*) from push_subscriptions;` → le righe dei telefoni accesi.
+
+### 25.5 Supporto
+
+- "Non mi arrivano": in Impostazioni la riga sotto l'interruttore dice il motivo (iPhone senza app sulla schermata Home, browser che ha bloccato le notifiche, chiavi non impostate, 0014 non eseguita). Il bottone di prova risponde "Nessun dispositivo ha ricevuto la prova" se il browser non è più iscritto: spegnere e riaccendere.
+- Un browser che il servizio push dichiara scomparso (404/410) viene cancellato subito; uno che fallisce 5 volte di fila anche.
+- Il testo di una notifica passa, cifrato, dai server push di Google/Apple/Mozilla: è lo stesso della campanella (nome del cliente, numero del preventivo; per la scadenza fiscale cosa scade e l'importo) e può comparire sulla schermata di blocco. Chi non lo vuole spegne quel tipo in "Cosa ti arriva".

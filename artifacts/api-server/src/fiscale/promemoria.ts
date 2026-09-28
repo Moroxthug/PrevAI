@@ -1,6 +1,6 @@
 import { Resend } from "resend";
 import { db, fiscalDeadlinesTable, authUsersTable, type ProfiloFiscale } from "@workspace/db";
-import { MARKET, fmtEurCents, fmtIsoDateLong, normalizzaGiorniPromemoria, riepilogoScadenza } from "@workspace/config";
+import { MARKET, PUSH_FISCAL_DAYS, fmtEurCents, fmtIsoDateLong, normalizzaGiorniPromemoria, riepilogoScadenza } from "@workspace/config";
 import { and, eq } from "drizzle-orm";
 import { logger } from "../lib/logger.js";
 import { getBaseUrl } from "../lib/baseUrl.js";
@@ -155,6 +155,8 @@ export async function inviaPromemoria(params: {
       title: titolo(voce),
       body: corpo(voce),
       link: "/dashboard/fisco/scadenzario",
+      // APP-2: sul telefono solo dall'ultima settimana (e se è già scaduta); la campanella le ha tutte.
+      push: voce.giorniAllaScadenza <= PUSH_FISCAL_DAYS,
     });
     esito.inApp++;
 

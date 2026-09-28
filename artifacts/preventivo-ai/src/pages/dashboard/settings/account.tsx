@@ -2,6 +2,7 @@ import { LogOut, UserRound } from "lucide-react";
 import { Link } from "wouter";
 import { Skeleton } from "@/components/ui/skeleton";
 import { authClient } from "@/lib/auth-client";
+import { leaveThisDevice } from "@/lib/push-api";
 import { SdiTab } from "../settings-sdi-tab";
 import { SecurityTab } from "../settings-security-tab";
 import { ActionRow, SettingsGroup, SettingsSection } from "./ui";
@@ -17,6 +18,8 @@ export function AccountSection() {
   const { data: session, isPending } = authClient.useSession();
   const user = session?.user as { name?: string | null; email?: string | null } | undefined;
   const signOut = async () => {
+    // APP-2: this browser stops getting this person's notifications and forgets the offline copies.
+    await leaveThisDevice();
     await authClient.signOut();
     window.location.href = "/";
   };

@@ -15,6 +15,9 @@ import { linkQuoteToClient } from "../lib/clients.js";
 import { resolveQuoteTaxRate } from "../lib/tax.js";
 import { FOLLOWUP_CADENCE_DAYS } from "../lib/leadMessaging.js";
 import { quoteProvenance } from "../quotes/pdf.js";
+import { noteQuoteViewed } from "../quotes/viewed.js";
+import { createNotification } from "../lib/notifications.js";
+import { fmtEurCents } from "@workspace/config";
 
 const router = Router();
 
@@ -429,6 +432,16 @@ Usa queste misure esatte per calcolare matematicamente le quantità.`;
         .returning();
       await db.insert(leadEventsTable).values({ leadId: lead!.id, userId, type: "created", payload: { source: "widget", quoteId: quote!.id } });
       await db.insert(leadEventsTable).values({ leadId: lead!.id, userId, type: "consent_recorded", payload: { consentSource: "widget_form" } });
+      // APP-2: bell + phone. Before answering the widget: a serverless function may stop once it has answered.
+      await createNotification({
+        userId,
+        type: "lead_new",
+        title: `Nuova richiesta dal sito: ${resolvedClientData.nome || "senza nome"}`,
+        body: `Stima ${fmtEurCents(Math.round(totale * 100))}. Il preventivo in bozza è pronto da rivedere.`,
+        link: `/dashboard/quotes/${quote!.id}`,
+        entityType: "lead",
+        entityId: lead!.id,
+      });
     } catch (leadErr) {
       logger.error({ err: leadErr, quoteId: quote!.id }, "Failed to record widget lead (non-fatal)");
     }
@@ -509,6 +522,9 @@ router.get("/public/quotes/:id", quoteViewLimiter, async (req, res) => {
       .from(quoteVariantsTable)
       .where(eq(quoteVariantsTable.quoteId, id))
       .orderBy(quoteVariantsTable.position);
+
+    // APP-2: the first time the client opens it, the company hears about it (bell + phone).
+    await noteQuoteViewed(req, quote);
 
     res.json({ success: true, quote: toPublicQuote(quote, variants) });
   } catch (err) {

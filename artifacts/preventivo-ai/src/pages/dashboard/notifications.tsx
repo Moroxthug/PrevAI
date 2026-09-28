@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Link } from "wouter";
-import { Bell, CheckCheck } from "lucide-react";
+import { Bell, BellRing, CheckCheck } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { it } from "date-fns/locale";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -26,7 +26,7 @@ async function fetchNotifications(): Promise<{ items: NotificationItem[]; unread
 
 function dotColor(type: string): "green" | "teal" | "yellow" | "grey" {
   if (/accepted|signed|paid$/.test(type)) return "green";
-  if (/invoice|payment/.test(type)) return "teal";
+  if (/invoice|payment|viewed|lead_new/.test(type)) return "teal";
   if (/due|overdue|reminder/.test(type)) return "yellow";
   return "grey";
 }
@@ -61,13 +61,17 @@ export default function NotificationsPage() {
           <h1>{t("notifications.title")}</h1>
           <p className="sub">{t("notifications.page.subtitle")}</p>
         </div>
-        {unread > 0 && (
-          <div className="head-actions">
+        <div className="head-actions">
+          {/* APP-2: the same notifications on the phone. */}
+          <Link href="/dashboard/settings/notifications" className="btn btn-outline-navy btn-sm gap-1.5">
+            <BellRing className="h-4 w-4" /> Sul telefono
+          </Link>
+          {unread > 0 && (
             <button type="button" className="btn btn-outline-navy btn-sm gap-1.5" onClick={() => markRead.mutate(undefined)}>
               <CheckCheck className="h-4 w-4" /> {t("notifications.page.markAllRead")}
             </button>
-          </div>
-        )}
+          )}
+        </div>
       </div>
 
       <div className="card">

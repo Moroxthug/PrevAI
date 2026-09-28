@@ -2978,3 +2978,13 @@ button.qline:hover { background: #fafbfc; }
 .prop-qr { width: 104px; height: 104px; flex: none; padding: 4px; background: #fff; border: 1px solid var(--line); border-radius: 8px; }
 .prop-qr svg { display: block; width: 100%; height: 100%; }
 .prop-actions a.btn { text-decoration: none; }
+
+/* ── APP-2: PWA — barra offline / nuova versione, invito a installare, Notifiche sul telefono ── */
+.pwa-bar { margin-bottom: 16px; }
+.install-prompt .install-steps { margin: 8px 0 0; padding-left: 18px; list-style: decimal; font-size: 12.5px; font-weight: 600; }
+.install-prompt .install-steps li + li { margin-top: 2px; }
+.notif-install { margin: 0; }
+@media (max-width: 640px) {
+  .install-prompt { flex-wrap: wrap; }
+  .install-prompt .actions { width: 100%; }
+}

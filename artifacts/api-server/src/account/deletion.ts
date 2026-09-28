@@ -277,6 +277,12 @@ export async function purgeDatabase(subjectUserId: string): Promise<Pick<Account
     try {
       add("assistant_conversations", count(await tx.transaction(async (sp) => sp.execute(sql`delete from assistant_conversations c using assistant_conversation_actors a where a.conversation_id = c.id and a.actor_user_id = ${subjectUserId}`))));
     } catch { /* 0013 non ancora eseguita */ }
+    // APP-2: i suoi telefoni e le sue preferenze dentro le imprese altrui. Prima della 0014 le tabelle non ci sono.
+    for (const table of ["push_subscriptions", "push_preferences"]) {
+      try {
+        add(table, count(await tx.transaction(async (sp) => sp.execute(sql`delete from ${sql.identifier(table)} where member_user_id = ${subjectUserId}`))));
+      } catch { /* 0014 non ancora eseguita */ }
+    }
 
     // 4. L'accesso (sessioni, password, 2FA e collegamenti vanno per cascata).
     add("auth_user", count(await tx.execute(sql`delete from auth_user where id = ${subjectUserId}`)));

@@ -86,6 +86,7 @@ Il design di riferimento è quello dell'app di QuoteAI (`design/stitch*`, `docs/
 - **Notifiche push web** (standard VAPID): tabella `push_subscriptions`, invio dal server sugli stessi eventi delle notifiche in-app. Primo giro: preventivo aperto dal cliente, preventivo accettato, nuovo lead dal widget, scadenza fiscale a 7 giorni (se PrevAI Fisco è attivo). Preferenze per tipo in Impostazioni.
 - Invito "Aggiungi alla schermata Home" discreto, dopo il secondo preventivo creato (non al primo accesso).
 - **Fatto quando:** su Android e su iPhone (installata sulla home) arriva la notifica di un preventivo accettato su staging.
+- **Fatta il 28/9/2026 (riga 17):** manifest, service worker, invito dal 2° preventivo, Web Push per preventivo aperto/accettato, richiesta dal widget, scadenza fiscale a 7 giorni, per ruolo e preferenze. Provata con Chrome vero; la prova sui telefoni resta al titolare (migrazione 0014 + chiavi VAPID, RUNBOOKS §25).
 
 ### APP-3 — Guscio nativo iOS e Android con Capacitor (1½–2 sett)
 - Nuovo pacchetto `artifacts/mobile` (Capacitor) che impacchetta la build di `preventivo-ai`.

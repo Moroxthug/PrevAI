@@ -15,6 +15,7 @@ import { useGetSubscription, useGetBusinessProfile } from "@workspace/api-client
 import { hasFeature } from "@/lib/plans";
 import { useAuth } from "@/hooks/use-auth";
 import { authClient } from "@/lib/auth-client";
+import { leaveThisDevice } from "@/lib/push-api";
 import { useLanguage } from "@/i18n/LanguageContext";
 import { NotificationsBell } from "@/components/notifications-bell";
 import { useMediaQuery } from "@/hooks/use-media-query";
@@ -24,6 +25,7 @@ import { PhoneNewButton, PhoneTabBar } from "@/components/layout/phone-nav";
 import { FeedbackSheet } from "@/components/feedback-sheet";
 import { trackAppOpenOncePerDay } from "@/lib/app-beta";
 import { AccountDeletionBanner } from "@/pages/dashboard/settings/delete-account";
+import { PwaBar } from "@/components/pwa/pwa-bar";
 import { AssistantLauncher } from "@/components/assistant/assistant-launcher";
 
 /** Section groupings for the sidebar rail — purely presentational, doesn't affect routing or access. */
@@ -79,6 +81,8 @@ function parentOf(location: string): string | null {
 }
 
 async function signOut() {
+  // APP-2: this browser stops getting this person's notifications and forgets the offline copies.
+  await leaveThisDevice();
   await authClient.signOut();
   window.location.href = "/";
 }
@@ -391,7 +395,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
           </div>
         </header>
 
-        <main className="content">{twoFactorGated ? <TwoFactorGate /> : <>{isSignedIn && <AccountDeletionBanner />}<DashboardNavContext.Provider value={NAV_ITEMS}>{children}</DashboardNavContext.Provider></>}</main>
+        <main className="content">{twoFactorGated ? <TwoFactorGate /> : <><PwaBar />{isSignedIn && <AccountDeletionBanner />}<DashboardNavContext.Provider value={NAV_ITEMS}>{children}</DashboardNavContext.Provider></>}</main>
       </div>
       {phoneNav && (
         <PhoneTabBar

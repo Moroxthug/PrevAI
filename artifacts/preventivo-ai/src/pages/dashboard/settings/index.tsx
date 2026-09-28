@@ -3,7 +3,7 @@ import { Link, useLocation, useRoute, useSearch } from "wouter";
 import { useGetSubscription, useGetWhatsappStatus, getGetWhatsappStatusQueryKey } from "@workspace/api-client-react";
 import { useQuery } from "@tanstack/react-query";
 import {
-  Building2, CalendarClock, ChevronLeft, ChevronRight, CreditCard, FileCheck2, Globe, Landmark, MessageCircle, Plug, ShieldCheck, Sparkles, UserRound, Zap,
+  BellRing, Building2, CalendarClock, ChevronLeft, ChevronRight, CreditCard, FileCheck2, Globe, Landmark, MessageCircle, Plug, ShieldCheck, Sparkles, UserRound, Zap,
   type LucideIcon,
 } from "lucide-react";
 import {
@@ -26,6 +26,7 @@ import { WidgetSection } from "./widget";
 import { WhatsappSection } from "./whatsapp";
 import { AppsSection } from "./apps";
 import { AssistantSection } from "./assistant";
+import { NotificationsSection } from "./notifications";
 import { APPS_HREF, appById } from "./apps/catalog";
 import { PlanSection, planLabelOf } from "./plan";
 
@@ -36,7 +37,7 @@ import { PlanSection, planLabelOf } from "./plan";
 // la freccia indietro. I vecchi link ?tab= (email, ritorni OAuth, segnalibri,
 // messaggi del bot WhatsApp) rimandano alla sezione giusta.
 
-type SectionId = "access" | "security" | "company" | "fiscal" | "sdi" | "payments" | "automations" | "widget" | "whatsapp" | "assistant" | "apps" | "plan";
+type SectionId = "access" | "security" | "notifications" | "company" | "fiscal" | "sdi" | "payments" | "automations" | "widget" | "whatsapp" | "assistant" | "apps" | "plan";
 type GroupId = "you" | "business" | "selling" | "messaging" | "more";
 
 type SectionDef = { id: SectionId; group: GroupId; label: string; icon: LucideIcon; Component: ComponentType };
@@ -44,6 +45,8 @@ type SectionDef = { id: SectionId; group: GroupId; label: string; icon: LucideIc
 const SECTIONS: SectionDef[] = [
   { id: "access", group: "you", label: "Il tuo accesso", icon: UserRound, Component: AccountSection },
   { id: "security", group: "you", label: "Sicurezza", icon: ShieldCheck, Component: SecuritySection },
+  // APP-2: notifiche push sul telefono (per dispositivo e per persona).
+  { id: "notifications", group: "you", label: "Notifiche sul telefono", icon: BellRing, Component: NotificationsSection },
   { id: "company", group: "business", label: "Dati dell'impresa", icon: Building2, Component: CompanySection },
   { id: "fiscal", group: "business", label: "Dati fiscali e bancari", icon: Landmark, Component: FiscalSection },
   { id: "sdi", group: "business", label: "Fatture elettroniche", icon: FileCheck2, Component: SdiSection },
@@ -109,6 +112,7 @@ function useStatuses(plan: string | null | undefined, visible: SectionDef[]): Pa
     plan: { text: planLabelOf(plan) ? `Piano ${planLabelOf(plan)}` : "Nessun piano attivo" },
     apps: { text: "Calendario, Gmail, Stripe e altre" },
     assistant: { text: "Cosa fa da solo e cosa chiede" },
+    notifications: { text: "Preventivi aperti e accettati, richieste, scadenze" },
   };
   if (profile) {
     const missingContact = !profile.phone || !profile.address;
