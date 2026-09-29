@@ -21,7 +21,7 @@ export const publicApiLimiter = userRateLimiter({ name: "apiKeyAuth.publicApiLim
  * - if the company requires 2FA, the creator must have it on.
  */
 async function creatorStanding(key: ApiKey, orgRequiresTwoFactor: boolean): Promise<{ ok: true } | { ok: false; code: string; message: string }> {
-  let role: TeamMemberRole | null = null;
+  let role: TeamMemberRole | null;
   if (key.createdByUserId === key.userId) {
     role = "owner";
   } else {

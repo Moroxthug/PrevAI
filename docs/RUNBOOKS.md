@@ -1183,3 +1183,19 @@ Il server rilegge tetto e spesa ogni 30 secondi per istanza.
 **WhatsApp.** Il webhook verifica già la firma di Meta (`WHATSAPP_APP_SECRET`). Nuovo: codice di collegamento generato con `crypto.randomInt`, al massimo 5 richieste di codice all'ora e 10 tentativi ogni 15 minuti per persona.
 
 **Widget: bonus e bandi.** `POST /api/public/quotes/:id/incentives` risponde solo al widget che ha appena creato quel preventivo: serve la chiave del widget dell'impresa (`x-api-key`), preventivo con `source = widget`, creato nelle ultime 24 ore. Altrimenti 404.
+
+## 29. "Scarica i tuoi dati" (GDPR-1, riga 46)
+
+**Migrazione 0017.** `migrations/v2/0017_gdpr1_esportazione.sql` crea `account_exports` (una riga per richiesta). Finché non viene eseguita la scheda dice di scrivere a privacy@prevai.it, POST risponde 503 e il cron salta (`accountExports.skipped = migrazione_0017_mancante` nel risultato del tick). Il server se ne accorge entro un minuto. Si lancia con `bash scripts/prod-migrate.sh migrations/v2/0017_gdpr1_esportazione.sql`. Servono anche `SUPABASE_URL` e `SUPABASE_SERVICE_ROLE_KEY` (senza, stessa risposta di "non ancora attiva").
+
+**Come funziona.** Impostazioni → Il tuo accesso → "Scarica i tuoi dati", solo per il titolare che agisce come se stesso, con la password, una volta ogni 24 ore (una fallita non conta). Lo ZIP è in parti nel bucket privato, `account-exports/<user_id>/<id export>/parte-NN-….zip`: la parte 1 ha le tabelle (JSON in `dati/`, CSV col punto e virgola in `fogli/`, `elenco-file.csv`, `manifest.json`, `LEGGIMI.txt`), le altre i file, al massimo 20 MB l'una (il bucket accetta 25 MB). La richiesta prepara per ~20 s; poi la pagina aperta chiede "vai avanti" ogni 3 s (`POST /api/account/export/:id/continue`) e, se la chiude, ci pensa il cron quotidiano (25 s per tick). Pronta → email "i tuoi dati sono pronti" che rimanda all'app (niente link al file nella posta); "Scarica" dà un link firmato di 5 minuti. Dopo 7 giorni il cron cancella gli ZIP e la riga diventa `scaduta`.
+
+**Cosa non esce.** Tabelle `auth_account`, `auth_session`, `two_factor`, `whatsapp_otp`, `automation_runs`, `ai_budgets`, `account_exports`; le colonne che somigliano a segreti diventano `[nascosto]` (`REDACTED_COLUMN` in `account/export.ts`: token, hash di token/chiavi/OTP, `secret`, `api_key`, `*_enc`, chiavi push). Aggiungendo una tabella o una colonna con un segreto, controllare che il nome lo faccia prendere dalla regola (il test `account-export.e2e.test.ts` elenca i casi). I campi cifrati con `enc1:` (IBAN, credenziali SdI) escono decifrati.
+
+**Guasti.**
+- Riga ferma in `in_preparazione` con `last_error`: il passaggio successivo riprova; al terzo errore `stato = errore` e arriva "Esportazione dei dati non riuscita" allo staff. Il titolare può chiederne subito un'altra. Per vedere: `select id, user_id, stato, attempts, last_error, jsonb_array_length(pending_files) from account_exports where stato in ('in_preparazione','errore') order by created_at desc;`
+- "Parte dati troppo grande": più di 24 MB di tabelle compresse (non dovrebbe succedere: servirebbero centinaia di MB di JSON). Si prepara a mano con `collectTables` da uno script e si manda a privacy@ → titolare.
+- File non inclusi (`skipped_files`): spariti tra l'elenco e lo scaricamento, o un file da solo più grande di quanto il bucket accetta. La pagina li elenca e rimanda a privacy@.
+- Una riga bloccata da un passaggio morto si sblocca da sola dopo 90 s (`locked_until`).
+
+**Membri della squadra e richieste per email.** L'app esporta solo l'impresa intera. Chi lavora in una squadra e chiede i propri dati personali scrive a privacy@: i suoi dati sono `auth_user` (nome, email, date), le righe di `organization_members` con il suo `user_id`, e le sue azioni nel registro (`audit_log.actor_id`).

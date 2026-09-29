@@ -9,6 +9,7 @@ import { runQuoteFollowupMaintenance } from "../quotes/maintenance.js";
 import { runSdiMaintenance } from "../sdi/maintenance.js";
 import { runFiscalMaintenance } from "../fiscale/maintenance.js";
 import { runAccountDeletionMaintenance } from "../account/deletion.js";
+import { runAccountExportMaintenance } from "../account/export.js";
 import { rollUpUsageForDate } from "../lib/usage.js";
 import { runIncentivesFreshnessCheck } from "../incentives/maintenance.js";
 import { runPriceIntelligenceTrendCheck } from "../priceIntelligence/maintenance.js";
@@ -69,7 +70,9 @@ router.get("/cron/tick", async (req, res) => {
     // SEC-2: avviso allo staff quando un'impresa passa l'80 % del tetto IA del mese; contatori dei limiti scaduti.
     const aiBudget = await runAiBudgetAlerts();
     const rateLimitRowsSwept = await sweepExpiredCounters();
-    const result = { automations, contracts, invoices, leads, reviewRequests, incentives, priceTrends, quoteFollowups, sdi, fiscale, accountDeletions, usage, assistantCosts, aiBudget, rateLimitRowsSwept };
+    // GDPR-1: esportazioni lasciate a metà (pagina chiusa) e ZIP scaduti (inerte senza la 0017). Per ultima: usa il tempo che resta.
+    const accountExports = await runAccountExportMaintenance(new Date(), 25_000);
+    const result = { automations, contracts, invoices, leads, reviewRequests, incentives, priceTrends, quoteFollowups, sdi, fiscale, accountDeletions, usage, assistantCosts, aiBudget, rateLimitRowsSwept, accountExports };
     const tookMs = Date.now() - startedAt;
     if (tick) await db.update(cronTicksTable).set({ finishedAt: new Date(), ok: true, result, tookMs }).where(eq(cronTicksTable.id, tick.id));
     await db.delete(cronTicksTable).where(lt(cronTicksTable.startedAt, new Date(Date.now() - 90 * 24 * 3_600_000)));

@@ -125,7 +125,7 @@ function DeleteAccountDialog({ open, onOpenChange, ownsOrg, graceDays }: { open:
                   <p>Cancelliamo il tuo accesso a PrevAI. I preventivi e i documenti dell'impresa per cui lavori restano suoi.</p>
                 )}
                 <p>
-                  Succede tra <b>{graceDays} giorni</b>: fino ad allora puoi scaricare i tuoi documenti e annullare. Per legge conserviamo solo contratti firmati e fatture, per 10 anni.{" "}
+                  Succede tra <b>{graceDays} giorni</b>: fino ad allora puoi {ownsOrg ? "scaricare una copia di tutti i tuoi dati (Scarica i tuoi dati, qui sopra)" : "scaricare i tuoi documenti"} e annullare. Per legge conserviamo solo contratti firmati e fatture, per 10 anni.{" "}
                   <a href="/help/delete-account/" target="_blank" rel="noopener">Tutti i dettagli</a>
                 </p>
               </div>

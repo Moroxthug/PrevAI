@@ -47,6 +47,7 @@ const PUBLIC_ROUTES: Allow[] = [
 const PERMISSIONLESS_MUTATIONS: Allow[] = [
   { match: /^POST \/api\/notifications\/read$/, reason: "marks the actor's own notifications read — any role" },
   { match: /^(POST|DELETE) \/api\/account\/deletion$/, reason: "APP-1c: the actor deletes (or keeps) their OWN account — a right of every person, not an org permission; POST re-checks the password and is rate limited" },
+  { match: /^POST \/api\/account\/export(\/:id\/continue)?$/, reason: "GDPR-1: art. 20 is the owner's right, not a role permission — the handler only lets the business owner acting as themselves through (403 owner_only otherwise); POST re-checks the password, is rate limited and allowed once per 24 h" },
   { match: /^POST \/api\/storage\/uploads\/request-url$/, reason: "signed upload URL scoped to the acting org; the consuming route enforces its own permission" },
   { match: /^POST \/api\/team\/invite\/:token\/accept$/, reason: "the invitee is joining — has no role in the org yet" },
   { match: /^POST \/api\/team\/switch$/, reason: "switches the actor's own active org" },

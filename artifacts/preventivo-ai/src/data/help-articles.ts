@@ -347,13 +347,13 @@ export const HELP_ARTICLES: HelpArticle[] = [
     summary: {
       it: "Come cancellare il tuo account PrevAI (sito e app) da Impostazioni, cosa cancelliamo, cosa la legge ci obbliga a conservare e per quanto.",
     },
-    updatedAt: "2026-09-27",
+    updatedAt: "2026-09-28",
     readingTimeMin: 2,
     blocks: [
       p("Puoi cancellare in qualsiasi momento il tuo account PrevAI e i dati collegati, da solo. Vale per il sito e per l'app sul telefono: è lo stesso account."),
       h("Come si fa"),
       steps([
-        "Se vuoi tenere una copia dei tuoi dati, scaricala prima: i PDF di preventivi, contratti e fatture e i CSV dalle rispettive pagine.",
+        "Se vuoi tenere una copia dei tuoi dati, scaricala prima da Impostazioni → Il tuo accesso → \"Scarica i tuoi dati\": uno ZIP con tutte le tabelle (JSON e CSV per Excel) e tutti i file, pronto in pochi minuti e scaricabile per 7 giorni.",
         "Apri Impostazioni → Il tuo accesso (sul telefono: Altro → Impostazioni → Il tuo accesso) e premi \"Elimina account\".",
         "Scrivi ELIMINA, inserisci la tua password e conferma. Ti mandiamo un'email con la data della cancellazione.",
         "Da quel momento gli abbonamenti a PrevAI non si rinnovano più e gli altri dispositivi escono dall'account.",

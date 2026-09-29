@@ -12,9 +12,9 @@ const fmt = (d: Date) => d.toLocaleDateString("it-IT", { day: "numeric", month: 
 async function send(to: string, subject: string, html: string, what: string): Promise<void> {
   try {
     await resendOrThrow().emails.send({ from: FROM, to: [to], subject, html });
-    logger.info({ what }, "Account deletion email sent");
+    logger.info({ what }, "Account email sent");
   } catch (err) {
-    logger.warn({ err, what }, "Account deletion email not sent (non-fatal)");
+    logger.warn({ err, what }, "Account email not sent (non-fatal)");
   }
 }
 
@@ -79,5 +79,27 @@ export async function sendDeletionCompletedEmail(p: { to: string; name: string; 
       footer: `${MARKET.brand} · Cancellazione dell'account`,
     }),
     "completed",
+  );
+}
+
+// ── GDPR-1: l'esportazione dei dati è pronta ────────────────────────────────
+// L'email non porta il file né un link diretto: rimanda alla pagina dell'app,
+// dove serve essere entrati. Uno ZIP con tutti i clienti non deve poter
+// girare in una casella di posta.
+
+const mb = (bytes: number) => (bytes < 1024 * 1024 ? "meno di 1 MB" : `${Math.round(bytes / (1024 * 1024))} MB`);
+
+export async function sendExportReadyEmail(p: { to: string; name: string; parts: number; bytes: number; expiresAt: Date; url: string }): Promise<void> {
+  const parti = p.parts === 1 ? "un file ZIP" : `${p.parts} file ZIP`;
+  await send(
+    p.to,
+    `I tuoi dati ${MARKET.brand} sono pronti da scaricare`,
+    shell({
+      headerTitle: "I tuoi dati sono pronti",
+      headerSub: `Scaricabili fino al ${fmt(p.expiresAt)}`,
+      bodyHtml: `<p>Ciao ${escapeHtml(p.name)},</p><p>l'esportazione che hai chiesto è pronta: ${parti}, ${mb(p.bytes)} in tutto. Dentro trovi le tabelle della tua impresa in JSON e in CSV (si aprono con Excel) e tutti i tuoi file: PDF, foto, ricevute, fatture.</p><p>Per scaricarla entra in ${MARKET.brand} e vai in <strong>Impostazioni → Il tuo accesso → Scarica i tuoi dati</strong>. Resta disponibile fino al <strong>${fmt(p.expiresAt)}</strong>, poi la cancelliamo.</p><div class="cta"><a class="btn" href="${p.url}">Vai allo scaricamento</a></div><p class="muted">Non l'hai chiesta tu? Cambia subito la password da Impostazioni → Sicurezza e scrivi a privacy@${MARKET.domain}.</p>`,
+      footer: `${MARKET.brand} · I tuoi dati`,
+    }),
+    "export-ready",
   );
 }

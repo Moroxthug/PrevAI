@@ -1,5 +1,4 @@
 import { createHash } from "node:crypto";
-import { createClient } from "@supabase/supabase-js";
 import type Stripe from "stripe";
 import { and, eq, isNull, lte, ne, sql } from "drizzle-orm";
 import {
@@ -16,6 +15,7 @@ import { logger } from "../lib/logger.js";
 import { getBaseUrl } from "../lib/baseUrl.js";
 import { sendOpsAlert } from "../lib/ops.js";
 import { recordSecurityAuditEvent } from "../lib/auditLog.js";
+import { listFolder, storageBuckets, storageClient, storageConfigured } from "./storageFiles.js";
 import { sendDeletionCancelledEmail, sendDeletionCompletedEmail, sendDeletionReminderEmail, sendDeletionRequestedEmail } from "../lib/emailAccount.js";
 
 // ── APP-1c: cancellazione dell'account in autonomia (docs/APP-PLAN.md §5) ────
@@ -51,7 +51,7 @@ export const RETAINED_TABLES = ["contracts", "invoices", "invoice_payments", "e_
 
 /** Cartelle dello storage per persona/impresa: `<cartella>/<userId>/…`. */
 export const RETAINED_STORAGE = ["contracts", "invoices", "sdi"] as const;
-export const DELETED_STORAGE = ["logos", "receipts", "documents", "quietanze", "imports", "job-photos", "quote-pdfs", "capitolato-pdfs", "commercialista"] as const;
+export const DELETED_STORAGE = ["logos", "receipts", "documents", "quietanze", "imports", "job-photos", "quote-pdfs", "capitolato-pdfs", "commercialista", "account-exports"] as const;
 
 /** Postgres "relation does not exist": la migrazione 0010 non è ancora stata eseguita. */
 function missingTable(err: unknown): boolean {
@@ -298,27 +298,15 @@ export async function purgeDatabase(subjectUserId: string): Promise<Pick<Account
 
 /** Cancella (ricorsivamente) le cartelle `<cartella>/<userId>` nei due bucket. */
 export async function purgeStorage(subjectUserId: string, folders: readonly string[]): Promise<{ deleted: number; error?: string }> {
-  if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) return { deleted: 0, error: "storage non configurato" };
-  const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
-  const buckets = [process.env.SUPABASE_PRIVATE_BUCKET ?? "private-assets", process.env.SUPABASE_PUBLIC_BUCKET ?? "public-assets"];
+  if (!storageConfigured()) return { deleted: 0, error: "storage non configurato" };
+  const supabase = storageClient();
   let deleted = 0;
   const errors: string[] = [];
-  for (const bucketName of buckets) {
+  for (const bucketName of storageBuckets()) {
     const bucket = supabase.storage.from(bucketName);
-    const collect = async (prefix: string, depth: number, out: string[]) => {
-      const { data, error } = await bucket.list(prefix, { limit: 1000 });
-      if (error) throw error;
-      for (const entry of data ?? []) {
-        const path = `${prefix}/${entry.name}`;
-        // Nelle liste di Supabase una cartella non ha id.
-        if (entry.id === null && depth < 5) await collect(path, depth + 1, out);
-        else out.push(path);
-      }
-    };
     for (const folder of folders) {
       try {
-        const paths: string[] = [];
-        await collect(`${folder}/${subjectUserId}`, 0, paths);
+        const paths = (await listFolder(supabase, bucketName, `${folder}/${subjectUserId}`)).map((f) => f.path);
         for (let i = 0; i < paths.length; i += 500) {
           const { error } = await bucket.remove(paths.slice(i, i + 500));
           if (error) throw error;

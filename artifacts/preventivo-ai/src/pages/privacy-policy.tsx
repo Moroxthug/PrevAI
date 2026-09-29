@@ -119,7 +119,7 @@ export default function PrivacyPage() {
               <li><strong>Rettifica</strong> — chiedere la correzione di dati inesatti o incompleti (art. 16).</li>
               <li><strong>Cancellazione</strong> — chiedere la cancellazione dei dati e dell'account, salvi gli obblighi di conservazione di legge (art. 17). I passi sono nella guida <Link href="/help/delete-account/" className="text-navy-600 hover:underline">Cancellare l'account e i dati</Link>.</li>
               <li><strong>Limitazione e opposizione</strong> — limitare il trattamento o opporti a quello basato sul legittimo interesse (artt. 18 e 21).</li>
-              <li><strong>Portabilità</strong> — ricevere i dati in un formato strutturato e leggibile da dispositivo automatico (art. 20).</li>
+              <li><strong>Portabilità</strong> — ricevere i dati in un formato strutturato e leggibile da dispositivo automatico (art. 20). Il titolare dell'impresa lo fa da solo in Impostazioni → Il tuo accesso → Scarica i tuoi dati: uno ZIP con tutte le tabelle in JSON e CSV e tutti i file caricati, scaricabile per 7 giorni.</li>
               <li><strong>Revoca del consenso</strong> — revocare il consenso in qualsiasi momento, senza pregiudicare la liceità del trattamento precedente.</li>
             </ul>
             <p className="mt-3">

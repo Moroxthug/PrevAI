@@ -7,13 +7,14 @@ import { SdiTab } from "../settings-sdi-tab";
 import { SecurityTab } from "../settings-security-tab";
 import { ActionRow, SettingsGroup, SettingsSection } from "./ui";
 import { DeleteAccountGroup } from "./delete-account";
+import { ExportDataGroup } from "./export-data";
 
 // APP-1b: le tre sezioni che avvolgono pagine già esistenti senza campi da
 // bozza. Sicurezza e Fatture elettroniche agiscono a ogni scelta (attivare la
 // 2FA, chiudere una sessione, salvare il regime SdI) perché sono passaggi con
 // verifiche lato server, non preferenze: niente barra Salva.
 
-/** Tu → Il tuo accesso: con quale nome ed email entri, l'uscita e (APP-1c) la cancellazione dell'account. */
+/** Tu → Il tuo accesso: con quale nome ed email entri, l'uscita, (GDPR-1) la copia dei dati e (APP-1c) la cancellazione dell'account. */
 export function AccountSection() {
   const { data: session, isPending } = authClient.useSession();
   const user = session?.user as { name?: string | null; email?: string | null } | undefined;
@@ -48,6 +49,7 @@ export function AccountSection() {
               </button>
             </ActionRow>
           </SettingsGroup>
+          <ExportDataGroup />
           <DeleteAccountGroup />
         </>
       )}
