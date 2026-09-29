@@ -62,7 +62,7 @@
     "wouter": "catalog:"
   },
   "dependencies": {
-    "@google-analytics/admin": "^9.2.0",
+    "@google-analytics/admin": "^10.1.0",
     "@google-analytics/data": "^6.1.0",
     "better-auth": "^1.6.9",
     "compression": "^1.8.1",
