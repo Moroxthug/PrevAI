@@ -7,9 +7,9 @@ import { placeMatches } from "./matching.js";
 // `quotes.client_data.incentivesData` e stampati nel PDF). Le aliquote sono
 // indicative e vanno confermate con il commercialista in A-0 (regole 2026).
 
-export type TipoImmobile = "prima_casa" | "seconda_casa" | "condominio" | "ufficio" | string;
-export type ObiettivoLavori = "ristrutturazione" | "efficienza" | "efficienza_energetica" | "barriere" | "barriere_architettoniche" | string;
-export type FasciaIsee = "sotto_30k" | "sopra_30k" | string;
+type TipoImmobile = "prima_casa" | "seconda_casa" | "condominio" | "ufficio" | string;
+type ObiettivoLavori = "ristrutturazione" | "efficienza" | "efficienza_energetica" | "barriere" | "barriere_architettoniche" | string;
+type FasciaIsee = "sotto_30k" | "sopra_30k" | string;
 
 export interface IncentiveCalcInput {
   totaleLavori: number;

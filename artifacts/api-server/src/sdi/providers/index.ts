@@ -5,11 +5,11 @@ import { IntermediarioOpenapi } from "./openapi.js";
 import type { CredenzialiProvider, IntermediarioSdi } from "./types.js";
 
 export * from "./types.js";
-export { IntermediarioSimulato, accodaPassivaSimulata, azzeraSimulatore, statoPerTipo } from "./simulato.js";
-export { IntermediarioOpenapi, statoOpenapi } from "./openapi.js";
+;
+;
 
 /** Credenziali in chiaro, decifrate al volo (A-0): non tornano mai al client. */
-export function credenzialiDa(settings: Pick<SdiSettings, "providerAccountId" | "providerApiKey" | "webhookSecret" | "ambiente">): CredenzialiProvider {
+function credenzialiDa(settings: Pick<SdiSettings, "providerAccountId" | "providerApiKey" | "webhookSecret" | "ambiente">): CredenzialiProvider {
   return {
     accountId: decryptField(settings.providerAccountId),
     apiKey: decryptField(settings.providerApiKey),

@@ -19,7 +19,7 @@ export function ownLogoPath(url: string | null | undefined, userId: string): str
 }
 
 /** Any tenant's logo path (reads where the owner is not at hand); null for anything else. */
-export function logoPath(url: string | null | undefined): string | null {
+function logoPath(url: string | null | undefined): string | null {
   return url && LOGO_PATH.test(url) ? url : null;
 }
 

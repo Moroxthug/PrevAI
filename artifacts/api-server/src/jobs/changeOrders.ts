@@ -29,7 +29,7 @@ import { addCalendarDays } from "./dates.js";
 
 type Lang = "it";
 
-export function changeOrderTotals(items: ChangeOrderItem[], taxCode: string | null | undefined): { subtotal: number; tax: number; total: number; taxLines: { code: string; label: string; rate: number; amount: number }[] } {
+function changeOrderTotals(items: ChangeOrderItem[], taxCode: string | null | undefined): { subtotal: number; tax: number; total: number; taxLines: { code: string; label: string; rate: number; amount: number }[] } {
   const subtotal = Math.round(items.reduce((s, i) => s + Number(i.totale || 0), 0) * 100) / 100;
   const calc = computeTax(subtotal, taxCode);
   return {

@@ -25,6 +25,12 @@ process.env.LOG_LEVEL ??= "warn";
 // share the staging database and 127.0.0.1, and shared counters would make one
 // run trip another's limits. limits.e2e.test.ts turns the shared store on itself.
 process.env.RATE_LIMIT_STORE ??= "memory";
+// QUAL-1: the files share one module cache (isolate: false), so the memory
+// counters would carry over from the previous file — start each one at zero.
+{
+  const { resetMemoryCounters } = await import("./src/lib/rateLimitStore.ts");
+  resetMemoryCounters();
+}
 
 // Phase 64: the inbound-webhook tests sign requests with these. Real values
 // from .env.staging win (`??=`); the tests read process.env, so either works.

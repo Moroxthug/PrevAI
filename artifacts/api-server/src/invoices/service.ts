@@ -67,7 +67,7 @@ export function invoiceToken(inv: Pick<Invoice, "id" | "userId">): string {
  * FT-2026-0042 (fattura elettronica, A-1), NC-2026-0003 (nota di credito).
  * Le serie sono indipendenti e nessun numero viene riusato.
  */
-export async function nextInvoiceNumber(userId: string, kind: "PF" | "NC" | "FT" = "PF", now = new Date()): Promise<string> {
+async function nextInvoiceNumber(userId: string, kind: "PF" | "NC" | "FT" = "PF", now = new Date()): Promise<string> {
   const year = now.getFullYear();
   const [row] = await db
     .insert(invoiceSequencesTable)
@@ -304,7 +304,7 @@ async function invoicedSubtotalCents(projectId: string): Promise<number> {
 }
 
 /** Pre-tax value of the job: contract subtotal + signed change orders. */
-export async function jobSubtotalCents(project: Project, ctx: InvoiceContext): Promise<number> {
+async function jobSubtotalCents(project: Project, ctx: InvoiceContext): Promise<number> {
   // I cantieri manuali memorizzano un valore IVA inclusa: si scorpora l'IVA del regime.
   const base = ctx.contract ? ctx.contractSubtotalCents : Math.round(project.contractValueCents / (1 + getTaxProfile(ctx.taxCode).totalRate / 100));
   const cos = await db.select({ s: changeOrdersTable.subtotalCents }).from(changeOrdersTable).where(and(eq(changeOrdersTable.projectId, project.id), eq(changeOrdersTable.status, "signed")));
@@ -564,7 +564,7 @@ export async function sendInvoice(params: { invoiceId: string; userId?: string; 
 // ── Payments ─────────────────────────────────────────────────────────────────
 
 /** Recomputes paid_cents + status from the payments table. */
-export async function refreshInvoiceStatus(invoiceId: string, now = new Date()): Promise<Invoice> {
+async function refreshInvoiceStatus(invoiceId: string, now = new Date()): Promise<Invoice> {
   const loaded = await loadInvoice(invoiceId);
   if (!loaded) throw new Error("Invoice not found");
   const inv = loaded.invoice;

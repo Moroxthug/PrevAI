@@ -9,7 +9,7 @@ import { decryptSecret, encryptSecret } from "./crypto";
 // before A-0 and encrypted rows side by side: reads are transparent, writes
 // always encrypt, and `ops:encrypt-fiscal-fields` converts the backlog once.
 
-export const ENCRYPTED_FIELD_PREFIX = "enc1:";
+const ENCRYPTED_FIELD_PREFIX = "enc1:";
 
 export function isEncryptedField(value: string | null | undefined): boolean {
   return typeof value === "string" && value.startsWith(ENCRYPTED_FIELD_PREFIX);

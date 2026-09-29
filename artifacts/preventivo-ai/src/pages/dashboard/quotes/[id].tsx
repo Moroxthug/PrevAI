@@ -132,7 +132,7 @@ export default function QuoteDetail() {
       queryClient.invalidateQueries({ queryKey: getGetQuoteQueryKey(id || "") });
       toast({ title: t("dashboard.quoteDetail.paymentConfirmed"), description: t("dashboard.quoteDetail.paymentConfirmedDesc") });
     }
-  }, [verifyData, verifyDone, id, queryClient, toast]);
+  }, [verifyData, verifyDone, id, queryClient, toast, t]);
 
   const [localTemplateId, setLocalTemplateId] = useState<string>("standard");
 

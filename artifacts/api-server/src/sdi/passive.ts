@@ -11,7 +11,7 @@ import {
   type SupplierEInvoice,
   type CostCategory,
 } from "@workspace/db";
-import { and, desc, eq, isNull } from "drizzle-orm";
+import { and, desc, eq } from "drizzle-orm";
 import { logger } from "../lib/logger.js";
 import { ObjectStorageService } from "../lib/objectStorage.js";
 import { writeAudit, createNotification } from "../lib/notifications.js";
@@ -111,14 +111,6 @@ export async function listaPassive(params: { userId: string; stato?: SupplierEIn
     ? and(eq(supplierEInvoicesTable.userId, params.userId), eq(supplierEInvoicesTable.stato, params.stato))
     : eq(supplierEInvoicesTable.userId, params.userId);
   return db.select().from(supplierEInvoicesTable).where(dove).orderBy(desc(supplierEInvoicesTable.ricevutaAt)).limit(500);
-}
-
-export async function passiveDaLavorare(userId: string): Promise<number> {
-  const righe = await db
-    .select({ id: supplierEInvoicesTable.id })
-    .from(supplierEInvoicesTable)
-    .where(and(eq(supplierEInvoicesTable.userId, userId), eq(supplierEInvoicesTable.stato, "nuova"), isNull(supplierEInvoicesTable.costEntryId)));
-  return righe.length;
 }
 
 /**

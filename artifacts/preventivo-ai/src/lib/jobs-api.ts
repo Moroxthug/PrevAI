@@ -79,10 +79,10 @@ export type ChangeOrderDto = {
   createdAt: string;
 };
 
-export type CostEntryStatus = "pending_review" | "confirmed";
-export type CostEntrySource = "manual" | "receipt" | "time_entry" | "equipment" | "legacy";
-export type TaxBreakdownDto = { IVA?: number };
-export type ReceiptExtractionDto = {
+type CostEntryStatus = "pending_review" | "confirmed";
+type CostEntrySource = "manual" | "receipt" | "time_entry" | "equipment" | "legacy";
+type TaxBreakdownDto = { IVA?: number };
+type ReceiptExtractionDto = {
   vendor: string | null;
   date: string | null;
   currency: string | null;
@@ -165,7 +165,7 @@ export type EquipmentUsageDto = {
   createdAt: string;
 };
 
-export type PaymentTermDto = { id: string; type: string; label: string; trigger: string; amountType: "percent" | "fixed"; value: number; dueDays: number; milestoneKey?: string };
+type PaymentTermDto = { id: string; type: string; label: string; trigger: string; amountType: "percent" | "fixed"; value: number; dueDays: number; milestoneKey?: string };
 
 export type JobDetailDto = {
   job: Omit<JobSummaryDto, "clientName" | "milestoneCount" | "milestonesDone" | "nextMilestone" | "crewCount"> & {

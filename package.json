@@ -7,8 +7,7 @@
     "typecheck:libs": "tsc --build",
     "typecheck": "pnpm run typecheck:libs && pnpm -r --filter @workspace/api-server --filter @workspace/preventivo-ai --filter @workspace/scripts --if-present run typecheck",
     "test": "pnpm -r --if-present run test",
-    "lint": "eslint . --max-warnings=1000",
-    "lint:strict": "eslint . --max-warnings=0",
+    "lint": "eslint . --max-warnings=0",
     "knip": "knip --no-progress",
     "env:inventory": "pnpm --filter @workspace/scripts env-inventory",
     "spell": "cspell --no-progress artifacts/preventivo-ai/src/i18n/*.ts artifacts/preventivo-ai/src/data/*.ts artifacts/preventivo-ai/src/pages/*.tsx artifacts/api-server/src/lib/email*.ts artifacts/api-server/src/lib/*Messaging.ts"

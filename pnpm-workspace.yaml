@@ -2,7 +2,6 @@ packages:
   - artifacts/api-server
   - artifacts/preventivo-ai
   - lib/*
-  - lib/integrations/*
   - scripts
 
 allowBuilds:
@@ -129,3 +128,6 @@ overrides:
   # rollup>@rollup/rollup-win32-x64-gnu: '-'
   # rollup>@rollup/rollup-win32-x64-msvc: '-'
 
+
+patchedDependencies:
+  knip@6.36.0: patches/knip@6.36.0.patch

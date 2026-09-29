@@ -55,7 +55,8 @@ async function main() {
       });
       ok++;
       console.log(`OK   ${url}`);
-    } catch (err: any) {
+    } catch (caught) {
+      const err = caught as { message: string; response?: { data?: { error?: { message?: string } } } };
       failed++;
       const message = err?.response?.data?.error?.message ?? err.message;
       console.error(`FAIL ${url} -> ${message}`);

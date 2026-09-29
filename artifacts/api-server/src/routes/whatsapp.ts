@@ -17,7 +17,6 @@ import {
   buildQuoteFromAI,
   regenerateWithCorrection,
   saveQuoteToDb,
-  generateQuoteFromText,
   type PendingQuoteData,
 } from "../lib/generateQuoteFromText.js";
 import { generateQuoteWhatsappPdfBuffer } from "../lib/generateQuoteWhatsappPdfBuffer.js";
@@ -1517,8 +1516,8 @@ function normalizePhone(input: string): string | null {
 }
 
 // Kept for backwards-compatibility with the web (non-WhatsApp) quote generation
-export { generateQuoteFromText };
-export { sendWhatsappText, sendWhatsappTemplate };
+;
+export {  sendWhatsappTemplate };
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 

@@ -22,7 +22,7 @@ import { useMobileHeader } from "@/components/mobile/mobile-page-header";
 const formatCad = (n: number) => new Intl.NumberFormat("it-IT", { style: "currency", currency: "EUR" }).format(n);
 
 /** Contract status → locked `.chip-*` colour (Phase 57). */
-export const STATUS_STYLES: Record<ContractDto["status"], string> = {
+const STATUS_STYLES: Record<ContractDto["status"], string> = {
   draft: "chip-grey",
   sent: "chip-teal",
   viewed: "chip-purple",

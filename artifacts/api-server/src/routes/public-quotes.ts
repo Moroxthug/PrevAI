@@ -4,7 +4,7 @@ import { eq, or, isNull } from "drizzle-orm";
 import { inferInterventionCategories, matchIncentivesForQuote } from "../incentives/matching.js";
 import { ensureDefaultIncentives } from "../incentives/seed.js";
 import { openai } from "@workspace/integrations-openai-ai-server";
-import { AI_PROMPT as BASE_AI_PROMPT, REGIONAL_PRICING_GUIDANCE, DESCRIPTION_QUALITY_GUIDANCE } from "../lib/generateQuoteFromText.js";
+import { AI_PROMPT as BASE_AI_PROMPT, REGIONAL_PRICING_GUIDANCE, DESCRIPTION_QUALITY_GUIDANCE, type AiQuoteData } from "../lib/generateQuoteFromText.js";
 import { generateNumeroPreventivo } from "../lib/quoteNumber.js";
 import { logger } from "../lib/logger.js";
 import type { QuoteChapter, QuoteClientData, QuoteDiscount } from "@workspace/db";
@@ -426,7 +426,7 @@ Usa queste misure esatte per calcolare matematicamente le quantità.`;
     const apiCost = ((promptTokens * pCostRate) + (completionTokens * cCostRate)).toFixed(6);
 
     const content = completion.choices[0]?.message?.content ?? "{}";
-    let aiData: any = {};
+    let aiData: AiQuoteData = {};
     try {
       const cleaned = content.trim().replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/i, "");
       aiData = JSON.parse(cleaned);
@@ -440,9 +440,9 @@ Usa queste misure esatte per calcolare matematicamente le quantità.`;
     // trusted from the AI's own top-level fields, which can echo the prompt's
     // placeholder "0" values even when the per-item numbers are correct.
     let calculatedSubtotale = 0;
-    const capitoli: QuoteChapter[] = (aiData.capitoli ?? []).map((cap: any) => {
+    const capitoli: QuoteChapter[] = (aiData.capitoli ?? []).map((cap) => {
       let capSubtotale = 0;
-      const voci = (cap.voci ?? []).map((v: any) => {
+      const voci = (cap.voci ?? []).map((v) => {
         const quantita = Number(v.quantita ?? 0);
         const prezzoUnitario = Number(v.prezzo_unitario ?? 0);
         const totale = Number((quantita * prezzoUnitario).toFixed(2));

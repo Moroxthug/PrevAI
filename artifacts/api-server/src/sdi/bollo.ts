@@ -22,13 +22,6 @@ const SCADENZE: Record<number, { mese: number; giorno: number; annoSuccessivo?: 
   4: { mese: 2, giorno: 28, annoSuccessivo: true },
 };
 
-/**
- * Se il bollo del primo trimestre non supera € 5.000 si può versare insieme
- * al secondo; se primo + secondo restano sotto € 5.000, entro il 30 novembre.
- * È una facoltà, non un obbligo: la mostriamo come suggerimento.
- */
-export const SOGLIA_RINVIO_CENTS = 500_000;
-
 export function trimestreDi(data: Date): number {
   return Math.floor(data.getUTCMonth() / 3) + 1;
 }
@@ -199,10 +192,4 @@ export async function f24Bollo(params: { userId: string; anno: number; trimestre
         ? "Nessuna fattura con bollo in questo trimestre: non c'è niente da versare."
         : "Importo calcolato sulle fatture elettroniche emesse nel trimestre. Verifica sempre il prospetto dell'Agenzia delle Entrate (portale Fatture e Corrispettivi), che è quello che fa fede: l'AdE può aver rilevato altri documenti soggetti a bollo.",
   };
-}
-
-/** Trimestri chiusi e ancora da versare: li guarda il cron per il promemoria. */
-export async function trimestriDaVersare(userId: string, oggi = new Date()): Promise<BolloPeriod[]> {
-  const righe = await db.select().from(bolloPeriodsTable).where(and(eq(bolloPeriodsTable.userId, userId), eq(bolloPeriodsTable.stato, "aperto")));
-  return righe.filter((r) => r.importoCents > 0 && r.scadenza !== null && r.scadenza.getTime() > oggi.getTime() - 365 * 86_400_000);
 }

@@ -4,6 +4,7 @@ import { requirePermission } from "../middlewares/requirePermission.js";
 import { db } from "@workspace/db";
 import { eq, and, asc } from "drizzle-orm";
 import {
+  PROJECT_STATUSES,
   projectsTable,
   projectTasksTable,
   quotesTable,
@@ -38,7 +39,7 @@ router.post("/crm/projects", requireAuth, requirePermission("jobs", "edit"), asy
       name: z.string().min(1),
       description: z.string().optional(),
       quoteId: z.string().uuid().optional(),
-      status: z.string().optional(),
+      status: z.enum(PROJECT_STATUSES).optional(),
       startDate: z.string().optional(),
       endDate: z.string().optional(),
       budget: z.number().optional(),
@@ -64,7 +65,7 @@ router.post("/crm/projects", requireAuth, requirePermission("jobs", "edit"), asy
         name,
         description: description ?? "",
         quoteId: quoteId ?? null,
-        status: (status ?? "planning") as "planning" | "active" | "suspended" | "completed",
+        status: status ?? "planning",
         startDate: startDate ? new Date(startDate) : null,
         endDate: endDate ? new Date(endDate) : null,
         budget: budget ?? 0,
@@ -86,7 +87,7 @@ router.put("/crm/projects/:id", requireAuth, requirePermission("jobs", "edit"), 
     const schema = z.object({
       name: z.string().optional(),
       description: z.string().optional(),
-      status: z.string().optional(),
+      status: z.enum(PROJECT_STATUSES).optional(),
       startDate: z.string().optional().nullable(),
       endDate: z.string().optional().nullable(),
       budget: z.number().optional(),
@@ -98,7 +99,7 @@ router.put("/crm/projects/:id", requireAuth, requirePermission("jobs", "edit"), 
       return;
     }
 
-    const updates: Record<string, any> = {};
+    const updates: Partial<typeof projectsTable.$inferInsert> = {};
     if (parsed.data.name !== undefined) updates.name = parsed.data.name;
     if (parsed.data.description !== undefined) updates.description = parsed.data.description;
     if (parsed.data.status !== undefined) updates.status = parsed.data.status;

@@ -34,7 +34,7 @@ export type AssistantEvalCase = {
 };
 
 export const EVAL_TAGS = ["letture", "schede", "dettatura", "ambigui", "ruolo", "istruzioni-nascoste", "chiamate"] as const;
-export type EvalTag = (typeof EVAL_TAGS)[number];
+type EvalTag = (typeof EVAL_TAGS)[number];
 
 export const APP8C_EVAL_CASES: AssistantEvalCase[] = [
   { id: "brief-today", screen: "home", say: "com'è la giornata?", first: "brief_me" },

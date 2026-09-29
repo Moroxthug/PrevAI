@@ -15,7 +15,7 @@ export function blocco(xml: string, nome: string): string | null {
   return re(nome).exec(xml)?.[1] ?? null;
 }
 
-export function blocchi(xml: string, nome: string): string[] {
+function blocchi(xml: string, nome: string): string[] {
   return Array.from(xml.matchAll(re(nome, "g")), (m) => m[1]);
 }
 
@@ -39,7 +39,7 @@ export function testo(xml: string | null, nome: string): string | null {
 }
 
 /** Importo `1234.56` → centesimi interi. */
-export function centesimi(valore: string | null | undefined): number {
+function centesimi(valore: string | null | undefined): number {
   if (!valore) return 0;
   const n = Number.parseFloat(valore.replace(",", "."));
   return Number.isFinite(n) ? Math.round(n * 100) : 0;

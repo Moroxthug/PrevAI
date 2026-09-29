@@ -88,7 +88,7 @@ type AttachmentRow = typeof quoteAttachmentsTable.$inferSelect;
 
 type VariantRow = typeof quoteVariantsTable.$inferSelect;
 
-export function serializeQuoteVariant(v: VariantRow, _province: string | null = null) {
+function serializeQuoteVariant(v: VariantRow, _province: string | null = null) {
   return {
     id: v.id,
     quoteId: v.quoteId,
@@ -2425,5 +2425,5 @@ function estimatePriceForVoce(categoria: string, descrizione: string, um: string
   return 80;
 }
 
-export { generateQuotePdfBuffer, generateCapitolatoPdfBuffer };
+;
 export default router;

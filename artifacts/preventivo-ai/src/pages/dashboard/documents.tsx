@@ -1,4 +1,4 @@
-import { useRef, useState, useCallback } from "react";
+import { useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { FolderOpen, Upload, Loader2, CheckCircle2, AlertCircle, Clock, Trash2, Zap, FileText, ImageIcon, TrendingUp, TrendingDown, ChevronDown, ChevronUp, X, Scale } from "lucide-react";
 import {
@@ -316,11 +316,11 @@ export default function DocumentsPage() {
     }
   }
 
-  const onDrop = useCallback((e: React.DragEvent) => {
+  const onDrop = (e: React.DragEvent) => {
     e.preventDefault();
     setIsDragging(false);
     handleFiles(e.dataTransfer.files);
-  }, []);
+  };
 
   const pendingCount = docs.filter(d => d.status === "pending" || d.status === "error").length;
   const doneCount = docs.filter(d => d.status === "done").length;

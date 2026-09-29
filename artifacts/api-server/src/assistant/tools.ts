@@ -103,7 +103,7 @@ type JsonProp = { type?: string | string[]; enum?: unknown[] } & Record<string, 
  * optional argument accepts null; the turn drops them before the tools read the
  * arguments (service.ts dropNulls), so for the tools null means "left out".
  */
-export function allowNullOptionals(tool: OpenAI.Chat.Completions.ChatCompletionTool): OpenAI.Chat.Completions.ChatCompletionTool {
+function allowNullOptionals(tool: OpenAI.Chat.Completions.ChatCompletionTool): OpenAI.Chat.Completions.ChatCompletionTool {
   if (tool.type !== "function" || !tool.function.parameters) return tool;
   const params = tool.function.parameters as { properties?: Record<string, JsonProp>; required?: string[] };
   const required = new Set(params.required ?? []);

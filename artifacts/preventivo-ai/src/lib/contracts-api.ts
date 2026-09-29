@@ -1,7 +1,7 @@
 // Thin fetch client for the Phase 1 contract endpoints (not in the orval
 // generated client). All calls send the session cookie.
 
-export type ContractSectionDto = { key: string; heading: string; body: string; kind: "legal" | "ai" | "data"; editable: boolean };
+type ContractSectionDto = { key: string; heading: string; body: string; kind: "legal" | "ai" | "data"; editable: boolean };
 
 export type ContractDto = {
   id: string;

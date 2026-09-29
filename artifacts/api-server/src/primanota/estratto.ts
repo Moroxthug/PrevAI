@@ -17,7 +17,7 @@ import { createHash } from "node:crypto";
 //
 // Modulo puro: nessun database, nessuna data di sistema.
 
-export const MAX_MOVIMENTI = 5000;
+const MAX_MOVIMENTI = 5000;
 
 export type MovimentoLetto = {
   /** `YYYY-MM-DD`. */
@@ -376,7 +376,7 @@ function leggiOfx(testo: string): Lettura {
 
 // ── Ingresso ─────────────────────────────────────────────────────────────────
 
-export function sembraOfx(testo: string): boolean {
+function sembraOfx(testo: string): boolean {
   return /OFXHEADER|<OFX>/i.test(testo.slice(0, 2000));
 }
 

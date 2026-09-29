@@ -283,7 +283,7 @@ export default function NewQuote() {
     setPhotos(prev => [...prev, ...validImages]);
     setPhotoPreviews(prev => [...prev, ...imagePreviews]);
     setDocs(prev => [...prev, ...validDocs]);
-  }, [photos.length, docs.length, toast]);
+  }, [photos.length, docs.length, toast, t]);
 
   const removePhoto = (idx: number) => {
     URL.revokeObjectURL(photoPreviews[idx]);

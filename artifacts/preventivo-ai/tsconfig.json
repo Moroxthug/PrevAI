@@ -23,9 +23,6 @@
     },
     {
       "path": "../../lib/error-reporting"
-    },
-    {
-      "path": "../../lib/integrations-openai-ai-react"
     }
   ]
 }

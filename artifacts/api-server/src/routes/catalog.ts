@@ -307,7 +307,7 @@ router.post(
 
       recordAiUsage({ userId: getUserId(res), model: targetModel, kind: hasImages ? "ai_vision" : "ai_text", usage: completion.usage, relatedEntityType: "catalog_ocr" });
       const content = completion.choices[0]?.message?.content ?? "[]";
-      let parsedItems: any[] = [];
+      let parsedItems: { nome?: unknown; categoria?: unknown; um?: unknown; prezzoUnitario?: unknown; note?: unknown }[] = [];
       try {
         const cleaned = content.trim().replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/i, "");
         const parsed = JSON.parse(cleaned);

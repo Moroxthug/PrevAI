@@ -40,6 +40,9 @@ export default defineConfig({
     // Every file shares one database and one in-process server; run them one
     // at a time so per-user rate limiters and sequence counters stay predictable.
     fileParallelism: false,
+    // QUAL-1: with the files already in sequence, re-importing the whole app
+    // for each one was ~40 % of the run; share the module cache instead.
+    isolate: false,
     testTimeout: 120_000,
     hookTimeout: 120_000,
   },

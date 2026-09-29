@@ -59,19 +59,19 @@ Columns — **Auth**: session (`requireAuth`), apiKey (`requireApiKey`), admin (
 | 489 | GET | `/api/admin/quote-stats` | admin | — | — | none | — | n/a | — | — | — |
 | 611 | GET | `/api/admin/seo-audit` | admin | — | — | none | — | n/a | — | — | — |
 | 705 | GET | `/api/admin/search-console` | admin | — | — | none | — | n/a | — | — | — |
-| 886 | GET | `/api/admin/widget/stats` | admin | — | — | none | — | n/a | — | — | — |
-| 959 | POST | `/api/admin/widget/create-client` | admin | — | — | manual | — | n/a | — | — | — |
-| 998 | GET | `/api/admin/margin` | admin | — | — | none | — | n/a | — | — | — |
-| 1059 | GET | `/api/admin/assistant-costs` | admin | — | — | none | — | n/a | — | — | — |
-| 1072 | GET | `/api/admin/email-events` | admin | — | — | none | — | n/a | — | — | — |
-| 1090 | GET | `/api/admin/incentives` | admin | — | — | none | — | n/a | — | — | — |
-| 1104 | POST | `/api/admin/incentives` | admin | — | — | zod | — | n/a | — | — | — |
-| 1119 | PUT | `/api/admin/incentives/:id` | admin | — | — | zod | — | n/a | — | — | — |
-| 1143 | POST | `/api/admin/incentives/cron-sync` | admin | — | — | none | — | n/a | — | — | — |
-| 1155 | DELETE | `/api/admin/incentives/:id` | admin | — | — | none | — | n/a | — | — | — |
-| 1180 | GET | `/api/admin/ops` | admin | — | — | none | — | n/a | — | — | — |
-| 1191 | GET | `/api/admin/automations` | admin | — | — | none | — | n/a | — | — | — |
-| 1211 | POST | `/api/admin/automations/:id/retry` | admin | — | — | none | — | n/a | — | — | — |
+| 888 | GET | `/api/admin/widget/stats` | admin | — | — | none | — | n/a | — | — | — |
+| 961 | POST | `/api/admin/widget/create-client` | admin | — | — | manual | — | n/a | — | — | — |
+| 1000 | GET | `/api/admin/margin` | admin | — | — | none | — | n/a | — | — | — |
+| 1061 | GET | `/api/admin/assistant-costs` | admin | — | — | none | — | n/a | — | — | — |
+| 1074 | GET | `/api/admin/email-events` | admin | — | — | none | — | n/a | — | — | — |
+| 1092 | GET | `/api/admin/incentives` | admin | — | — | none | — | n/a | — | — | — |
+| 1106 | POST | `/api/admin/incentives` | admin | — | — | zod | — | n/a | — | — | — |
+| 1121 | PUT | `/api/admin/incentives/:id` | admin | — | — | zod | — | n/a | — | — | — |
+| 1145 | POST | `/api/admin/incentives/cron-sync` | admin | — | — | none | — | n/a | — | — | — |
+| 1157 | DELETE | `/api/admin/incentives/:id` | admin | — | — | none | — | n/a | — | — | — |
+| 1182 | GET | `/api/admin/ops` | admin | — | — | none | — | n/a | — | — | — |
+| 1193 | GET | `/api/admin/automations` | admin | — | — | none | — | n/a | — | — | — |
+| 1213 | POST | `/api/admin/automations/:id/retry` | admin | — | — | none | — | n/a | — | — | — |
 
 ## artifacts/api-server/src/routes/analytics.ts
 
@@ -200,22 +200,22 @@ Columns — **Auth**: session (`requireAuth`), apiKey (`requireApiKey`), admin (
 
 | Line | Method | Path | Auth | Perm | RL | Val | Gate | Scope | Archived | Token | Webhook |
 |---|---|---|---|---|---|---|---|---|---|---|---|
-| 20 | GET | `/api/crm/projects` | session | — | — | none | — | n/a | — | — | — |
-| 34 | POST | `/api/crm/projects` | session | jobs:edit | — | zod | — | n/a | — | — | — |
-| 81 | PUT | `/api/crm/projects/:id` | session | jobs:edit | — | zod | — | predicate | — | — | — |
-| 131 | DELETE | `/api/crm/projects/:id` | session | jobs:full | — | none | — | predicate | — | — | — |
-| 154 | GET | `/api/crm/projects/:projectId/tasks` | session | — | — | none | — | predicate | — | — | — |
-| 182 | POST | `/api/crm/projects/:projectId/tasks` | session | jobs:edit | — | zod | — | predicate | — | — | — |
-| 228 | PATCH | `/api/crm/projects/:projectId/tasks/:taskId` | session | jobs:edit | — | zod | — | predicate | — | — | — |
-| 272 | GET | `/api/crm/projects/:projectId/assignments` | session | — | — | none | — | predicate | — | — | — |
-| 309 | POST | `/api/crm/projects/:projectId/assignments` | session | jobs:edit | — | zod | — | predicate | — | — | — |
-| 361 | DELETE | `/api/crm/projects/:projectId/assignments/:assignmentId` | session | jobs:edit | — | none | — | predicate | — | — | — |
-| 394 | GET | `/api/crm/collaborators` | session | — | — | none | — | n/a | — | — | — |
-| 408 | POST | `/api/crm/collaborators` | session | jobs:edit | — | zod | — | n/a | — | — | — |
-| 457 | GET | `/api/crm/suppliers` | session | — | — | none | — | n/a | — | — | — |
-| 472 | POST | `/api/crm/suppliers` | session | jobs:edit | — | zod | — | n/a | — | — | — |
-| 500 | PUT | `/api/crm/suppliers/:id` | session | jobs:edit | — | zod | — | predicate | — | — | — |
-| 526 | DELETE | `/api/crm/suppliers/:id` | session | jobs:edit | — | zod | — | predicate | — | — | — |
+| 21 | GET | `/api/crm/projects` | session | — | — | none | — | n/a | — | — | — |
+| 35 | POST | `/api/crm/projects` | session | jobs:edit | — | zod | — | n/a | — | — | — |
+| 82 | PUT | `/api/crm/projects/:id` | session | jobs:edit | — | zod | — | predicate | — | — | — |
+| 132 | DELETE | `/api/crm/projects/:id` | session | jobs:full | — | none | — | predicate | — | — | — |
+| 155 | GET | `/api/crm/projects/:projectId/tasks` | session | — | — | none | — | predicate | — | — | — |
+| 183 | POST | `/api/crm/projects/:projectId/tasks` | session | jobs:edit | — | zod | — | predicate | — | — | — |
+| 229 | PATCH | `/api/crm/projects/:projectId/tasks/:taskId` | session | jobs:edit | — | zod | — | predicate | — | — | — |
+| 273 | GET | `/api/crm/projects/:projectId/assignments` | session | — | — | none | — | predicate | — | — | — |
+| 310 | POST | `/api/crm/projects/:projectId/assignments` | session | jobs:edit | — | zod | — | predicate | — | — | — |
+| 362 | DELETE | `/api/crm/projects/:projectId/assignments/:assignmentId` | session | jobs:edit | — | none | — | predicate | — | — | — |
+| 395 | GET | `/api/crm/collaborators` | session | — | — | none | — | n/a | — | — | — |
+| 409 | POST | `/api/crm/collaborators` | session | jobs:edit | — | zod | — | n/a | — | — | — |
+| 458 | GET | `/api/crm/suppliers` | session | — | — | none | — | n/a | — | — | — |
+| 473 | POST | `/api/crm/suppliers` | session | jobs:edit | — | zod | — | n/a | — | — | — |
+| 501 | PUT | `/api/crm/suppliers/:id` | session | jobs:edit | — | zod | — | predicate | — | — | — |
+| 527 | DELETE | `/api/crm/suppliers/:id` | session | jobs:edit | — | zod | — | predicate | — | — | — |
 
 ## artifacts/api-server/src/routes/cron.ts
 
@@ -722,14 +722,14 @@ Columns — **Auth**: session (`requireAuth`), apiKey (`requireApiKey`), admin (
 
 | Line | Method | Path | Auth | Perm | RL | Val | Gate | Scope | Archived | Token | Webhook |
 |---|---|---|---|---|---|---|---|---|---|---|---|
-| 1200 | GET | `/api/whatsapp/webhook` | none | — | — | none | — | n/a | — | — | — |
-| 1214 | POST | `/api/whatsapp/webhook` | none | — | — | manual | plan-check | n/a | — | — | NONE |
-| 1382 | GET | `/api/whatsapp/status` | session | — | — | none | — | n/a | — | — | — |
-| 1394 | GET | `/api/whatsapp/usage` | session | — | — | none | — | n/a | — | — | — |
-| 1419 | POST | `/api/whatsapp/connect` | session | integrations:full | connectLimiter | manual | — | n/a | — | — | — |
-| 1454 | POST | `/api/whatsapp/verify` | session | integrations:full | verifyLimiter | manual | — | n/a | — | — | — |
-| 1482 | DELETE | `/api/whatsapp/disconnect` | session | integrations:full | — | none | — | n/a | — | — | — |
-| 1493 | PATCH | `/api/whatsapp/toggle` | session | integrations:full | — | manual | — | n/a | — | — | — |
+| 1199 | GET | `/api/whatsapp/webhook` | none | — | — | none | — | n/a | — | — | — |
+| 1213 | POST | `/api/whatsapp/webhook` | none | — | — | manual | plan-check | n/a | — | — | NONE |
+| 1381 | GET | `/api/whatsapp/status` | session | — | — | none | — | n/a | — | — | — |
+| 1393 | GET | `/api/whatsapp/usage` | session | — | — | none | — | n/a | — | — | — |
+| 1418 | POST | `/api/whatsapp/connect` | session | integrations:full | connectLimiter | manual | — | n/a | — | — | — |
+| 1453 | POST | `/api/whatsapp/verify` | session | integrations:full | verifyLimiter | manual | — | n/a | — | — | — |
+| 1481 | DELETE | `/api/whatsapp/disconnect` | session | integrations:full | — | none | — | n/a | — | — | — |
+| 1492 | PATCH | `/api/whatsapp/toggle` | session | integrations:full | — | manual | — | n/a | — | — | — |
 
 ## artifacts/api-server/src/routes/worker-time.ts
 

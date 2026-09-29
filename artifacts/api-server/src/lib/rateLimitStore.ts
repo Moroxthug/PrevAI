@@ -25,6 +25,13 @@ function useMemoryOnly(): boolean {
   return process.env.RATE_LIMIT_STORE === "memory";
 }
 
+const memoryStores: MemoryStore[] = [];
+
+/** Tests only: the e2e files share one module cache, so each starts from zero. */
+export function resetMemoryCounters(): void {
+  for (const store of memoryStores) void store.resetAll();
+}
+
 export class SharedRateLimitStore implements Store {
   readonly localKeys = false;
   readonly prefix: string;
@@ -33,6 +40,7 @@ export class SharedRateLimitStore implements Store {
 
   constructor(name: string) {
     this.prefix = `${name}:`;
+    memoryStores.push(this.memory);
   }
 
   init(options: Options): void {

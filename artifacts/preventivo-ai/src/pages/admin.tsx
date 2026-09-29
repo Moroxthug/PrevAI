@@ -46,7 +46,44 @@ type AdminUser = {
   subscriptionStatus: string | null;
   stripeCustomerId: string | null;
   createdAt: string;
+  apiKey: string | null;
+  quoteCount: number;
+  totalCost: number;
 };
+
+type SupportConversation = {
+  id: number;
+  status: string;
+  title: string | null;
+  updatedAt: string;
+  visitorName: string | null;
+  visitorEmail: string | null;
+  visitorPhone: string | null;
+};
+
+type SupportMessage = { id: number; role: string; content: string; createdAt: string };
+
+type ClientQuote = {
+  id: string;
+  numeroPreventivoData: string | null;
+  clientData: { nome?: string } | null;
+  createdAt: string;
+  source: string | null;
+  modelUsed: string | null;
+  promptTokens: number | null;
+  completionTokens: number | null;
+  totale: string | null;
+  apiCost: string | null;
+};
+
+type WidgetStats = {
+  global: { totalQuotes: number; totalCost: number; totalTokens: number };
+  clientUsage: { userId: string; companyName: string | null; apiKey: string | null; quotesCount: number; totalTokens: number; totalCost: number }[];
+  recentCalls: { quoteId: string; companyName: string | null; clientName: string | null; clientEmail: string | null; date: string; apiCost: string | null; totalTokens: number | null }[];
+};
+
+/** The JSON every admin route answers with; the fields depend on the route. */
+type AdminResponse = { success?: boolean; error?: string };
 
 type Settings = Record<string, string>;
 type Tab = "overview" | "users" | "widget" | "stripe" | "gsc" | "seo" | "settings" | "support" | "email-events" | "margin" | "incentives" | "addon" | "commercialisti" | "app-beta" | "assistant-costs";
@@ -191,7 +228,7 @@ function WidgetStatusBadge({ active }: { active: boolean }) {
   );
 }
 
-function QuoteSourceBadge({ source }: { source: string }) {
+function QuoteSourceBadge({ source }: { source: string | null }) {
   const { t } = useLanguage();
   const style =
     source === "widget" ? "bg-teal-50 text-teal-700 border-teal-200" :
@@ -239,20 +276,20 @@ export default function AdminPage() {
 
   // Support live chat states
   const [adminOnline, setAdminOnline] = useState(false);
-  const [supportConvs, setSupportConvs] = useState<any[]>([]);
+  const [supportConvs, setSupportConvs] = useState<SupportConversation[]>([]);
   const [selectedConvId, setSelectedConvId] = useState<number | null>(null);
-  const [convMessages, setConvMessages] = useState<any[]>([]);
+  const [convMessages, setConvMessages] = useState<SupportMessage[]>([]);
   const [adminReply, setAdminReply] = useState("");
 
   // Client monitoring / widget control state
   const [expandedUserId, setExpandedUserId] = useState<string | null>(null);
-  const [clientQuotes, setClientQuotes] = useState<any[]>([]);
+  const [clientQuotes, setClientQuotes] = useState<ClientQuote[]>([]);
   const [loadingQuotes, setLoadingQuotes] = useState(false);
   const [rotatingKeyId, setRotatingKeyId] = useState<string | null>(null);
 
   // Widget sub-tab e stati per le statistiche avanzate
   const [widgetSubTab, setWidgetSubTab] = useState<"keys" | "analytics">("keys");
-  const [widgetStats, setWidgetStats] = useState<any>(null);
+  const [widgetStats, setWidgetStats] = useState<WidgetStats | null>(null);
   const [widgetStatsLoading, setWidgetStatsLoading] = useState(false);
 
   // Stati del form per la creazione di un cliente non registrato
@@ -269,8 +306,8 @@ export default function AdminPage() {
   async function loadMargin() {
     setMarginLoading(true);
     try {
-      const data = await authFetch("/api/admin/margin?days=30");
-      setMarginRows((data as { rows: MarginRow[] }).rows ?? []);
+      const data = await authFetch<{ rows?: MarginRow[] }>("/api/admin/margin?days=30");
+      setMarginRows(data.rows ?? []);
     } catch {
       toast({ variant: "destructive", title: t("admin.error"), description: "Failed to load margin data" });
     } finally {
@@ -281,7 +318,7 @@ export default function AdminPage() {
   async function loadWidgetStats() {
     setWidgetStatsLoading(true);
     try {
-      const data = await authFetch("/api/admin/widget/stats");
+      const data = await authFetch<WidgetStats>("/api/admin/widget/stats");
       setWidgetStats(data);
     } catch {
       toast({
@@ -301,7 +338,7 @@ export default function AdminPage() {
   async function loadEmailEvents() {
     setLoadingEmailEvents(true);
     try {
-      const res = await authFetch("/api/admin/email-events");
+      const res = await authFetch<AdminResponse & { events?: EmailEvent[] }>("/api/admin/email-events");
       if (res.success) setEmailEvents(res.events || []);
     } catch {
       toast({ variant: "destructive", title: t("admin.error"), description: t("admin.errorLoadEmailEvents") });
@@ -312,6 +349,7 @@ export default function AdminPage() {
 
   useEffect(() => {
     if (tab === "email-events") loadEmailEvents();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tab]);
 
   // Incentives catalog (Phase 17)
@@ -325,7 +363,7 @@ export default function AdminPage() {
   async function loadIncentives() {
     setLoadingIncentives(true);
     try {
-      const res = await authFetch("/api/admin/incentives");
+      const res = await authFetch<AdminResponse & { incentives?: IncentiveCatalogRow[] }>("/api/admin/incentives");
       if (res.success) setIncentives(res.incentives || []);
     } catch {
       toast({ variant: "destructive", title: t("admin.error"), description: t("admin.errorLoadIncentivesCatalog") });
@@ -336,6 +374,7 @@ export default function AdminPage() {
 
   useEffect(() => {
     if (tab === "incentives") loadIncentives();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tab]);
 
   function startEditIncentive(row: IncentiveCatalogRow) {
@@ -387,8 +426,8 @@ export default function AdminPage() {
         resetIncentiveForm();
         loadIncentives();
       }
-    } catch (err: any) {
-      toast({ variant: "destructive", title: t("admin.error"), description: err.message || t("admin.errorLoadIncentivesCatalog") });
+    } catch (err) {
+      toast({ variant: "destructive", title: t("admin.error"), description: (err instanceof Error && err.message) || t("admin.errorLoadIncentivesCatalog") });
     } finally {
       setSavingIncentive(false);
     }
@@ -444,8 +483,8 @@ export default function AdminPage() {
         setNewClientVat("");
         loadUsers(); // Reload the users grid
       }
-    } catch (err: any) {
-      toast({ variant: "destructive", title: t("admin.error"), description: err.message || t("admin.errorCreateClient") });
+    } catch (err) {
+      toast({ variant: "destructive", title: t("admin.error"), description: (err instanceof Error && err.message) || t("admin.errorCreateClient") });
     } finally {
       setCreatingClient(false);
     }
@@ -462,11 +501,12 @@ export default function AdminPage() {
     // content) when switching to "Clients & Widget", since they share
     // the same expandedUserId.
     setExpandedUserId(null);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tab, widgetSubTab]);
 
   async function loadSupportStatus() {
     try {
-      const res = await authFetch("/api/support/admin-status");
+      const res = await authFetch<{ online: boolean }>("/api/support/admin-status");
       setAdminOnline(res.online);
     } catch (e) {
       console.error(e);
@@ -475,7 +515,7 @@ export default function AdminPage() {
 
   async function loadSupportConvs() {
     try {
-      const list = await authFetch("/api/support/conversations");
+      const list = await authFetch<SupportConversation[]>("/api/support/conversations");
       setSupportConvs(list);
     } catch (e) {
       console.error(e);
@@ -507,6 +547,7 @@ export default function AdminPage() {
     }, 4000);
 
     return () => clearInterval(interval);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tab]);
 
   // Poll messages for active conversation
@@ -515,7 +556,7 @@ export default function AdminPage() {
 
     const fetchMsgs = async () => {
       try {
-        const msgs = await authFetch(`/api/support/conversations/${selectedConvId}/messages`);
+        const msgs = await authFetch<SupportMessage[]>(`/api/support/conversations/${selectedConvId}/messages`);
         setConvMessages(msgs);
       } catch (e) {
         console.error(e);
@@ -527,7 +568,7 @@ export default function AdminPage() {
     return () => clearInterval(interval);
   }, [tab, selectedConvId]);
 
-  async function authFetch(path: string, options?: RequestInit) {
+  async function authFetch<T = AdminResponse>(path: string, options?: RequestInit): Promise<T> {
     const r = await fetch(`${BASE}${path}`, {
       ...options,
       redirect: "manual",
@@ -545,19 +586,20 @@ export default function AdminPage() {
       const data = await r.json().catch(() => ({}));
       throw new Error(data.error || `${r.status}`);
     }
-    return r.json() as Promise<any>;
+    return r.json() as Promise<T>;
   }
 
   const loadBaseData = async () => {
     setLoading(true);
     try {
       const [m, s] = await Promise.all([
-        authFetch("/api/admin/metrics"),
-        authFetch("/api/admin/settings"),
+        authFetch<Metrics>("/api/admin/metrics"),
+        authFetch<Settings>("/api/admin/settings"),
       ]);
-      setMetrics(m as Metrics);
-      setSettings(s as Settings);
-    } catch (e: any) {
+      setMetrics(m);
+      setSettings(s);
+    } catch (caught) {
+      const e = caught as { status?: number; twoFactor?: boolean };
       if (e.status === 403) setForbidden(e.twoFactor ? "two_factor" : "denied");
     } finally {
       setLoading(false);
@@ -573,8 +615,8 @@ export default function AdminPage() {
   async function loadUsers() {
     setLoading(true);
     try {
-      const u = await authFetch("/api/admin/users");
-      setUsers(u as AdminUser[]);
+      const u = await authFetch<AdminUser[]>("/api/admin/users");
+      setUsers(u);
     } catch {
       toast({ variant: "destructive", title: t("admin.error"), description: t("admin.errorLoadUsers") });
     } finally {
@@ -585,7 +627,7 @@ export default function AdminPage() {
   async function loadClientQuotes(targetUserId: string) {
     setLoadingQuotes(true);
     try {
-      const data = await authFetch(`/api/admin/users/${targetUserId}/quotes`);
+      const data = await authFetch<ClientQuote[]>(`/api/admin/users/${targetUserId}/quotes`);
       setClientQuotes(data);
     } catch {
       toast({
@@ -634,7 +676,7 @@ export default function AdminPage() {
   async function loadGSC() {
     setGscLoading(true);
     try {
-      const res = await authFetch("/api/admin/search-console");
+      const res = await authFetch<{ summary: GscSummary; keywords: GscKeyword[]; trends: GscTrend[] }>("/api/admin/search-console");
       setGscSummary(res.summary);
       setGscKeywords(res.keywords);
       setGscTrends(res.trends);
@@ -650,7 +692,7 @@ export default function AdminPage() {
     // Simulate real scanning delay for visual premium feel
     await new Promise(resolve => setTimeout(resolve, 1500));
     try {
-      const res = await authFetch("/api/admin/seo-audit");
+      const res = await authFetch<SeoAuditResult>("/api/admin/seo-audit");
       setSeoResult(res);
       toast({ title: t("admin.scanComplete"), description: t("admin.scanCompleteDesc") });
     } catch {
@@ -704,8 +746,8 @@ export default function AdminPage() {
       toast({ title: t("admin.planGrantedSuccess"), description: t("admin.planGrantedDesc").replace("{plan}", freePlanType).replace("{days}", freeDuration).replace("{email}", selectedUserEmail) });
       setSelectedUserEmail("");
       loadUsers();
-    } catch (err: any) {
-      toast({ variant: "destructive", title: t("admin.error"), description: err.message || t("admin.errorGrantPlan") });
+    } catch (err) {
+      toast({ variant: "destructive", title: t("admin.error"), description: (err instanceof Error && err.message) || t("admin.errorGrantPlan") });
     } finally {
       setGrantingPlan(false);
     }
@@ -719,8 +761,8 @@ export default function AdminPage() {
       });
       toast({ title: t("admin.syncComplete"), description: t("admin.syncCompleteDesc").replace("{email}", email) });
       loadUsers();
-    } catch (err: any) {
-      toast({ variant: "destructive", title: t("admin.syncError"), description: err.message || t("admin.errorVerifyStripeUser") });
+    } catch (err) {
+      toast({ variant: "destructive", title: t("admin.syncError"), description: (err instanceof Error && err.message) || t("admin.errorVerifyStripeUser") });
     }
   }
 
@@ -739,8 +781,8 @@ export default function AdminPage() {
       setStripeCustomerId("");
       setSelectedUserEmail("");
       loadUsers();
-    } catch (err: any) {
-      toast({ variant: "destructive", title: t("admin.error"), description: err.message || t("admin.errorLinkCustomerId") });
+    } catch (err) {
+      toast({ variant: "destructive", title: t("admin.error"), description: (err instanceof Error && err.message) || t("admin.errorLinkCustomerId") });
     }
   }
 
@@ -1009,8 +1051,8 @@ export default function AdminPage() {
                               <td className="px-5 py-4 text-slate-600 font-medium">{u.companyName || "—"}</td>
                               <td className="px-5 py-4"><PlanBadge plan={u.subscriptionPlan} status={u.subscriptionStatus} /></td>
                               <td className="px-5 py-4">
-                                <div className="font-semibold text-slate-700">{(u as any).quoteCount ?? 0} {t("admin.quotesAbbrev")}</div>
-                                <div className="text-xs text-emerald-600 font-bold">{Number((u as any).totalCost ?? 0).toFixed(4)} $</div>
+                                <div className="font-semibold text-slate-700">{u.quoteCount ?? 0} {t("admin.quotesAbbrev")}</div>
+                                <div className="text-xs text-emerald-600 font-bold">{Number(u.totalCost ?? 0).toFixed(4)} $</div>
                               </td>
                               <td className="px-5 py-4 text-xs text-slate-400">{new Date(u.createdAt).toLocaleDateString("it-IT", { day: "numeric", month: "short", year: "numeric" })}</td>
                               <td className="px-5 py-4 text-right">
@@ -1057,7 +1099,7 @@ export default function AdminPage() {
                                       </div>
                                       <div className="text-right">
                                         <span className="text-xs font-bold text-slate-500 bg-slate-100 px-2.5 py-1 rounded-full">
-                                          {t("admin.totalApiCost")}: <span className="text-emerald-600 font-mono">{Number((u as any).totalCost ?? 0).toFixed(4)} $</span>
+                                          {t("admin.totalApiCost")}: <span className="text-emerald-600 font-mono">{Number(u.totalCost ?? 0).toFixed(4)} $</span>
                                         </span>
                                       </div>
                                     </div>
@@ -1088,7 +1130,7 @@ export default function AdminPage() {
                                             {clientQuotes.map(q => (
                                               <tr key={q.id} className="hover:bg-slate-50/20">
                                                 <td className="px-4 py-3">
-                                                  <div className="font-semibold text-slate-800" title={q.numeroPreventivoData}>
+                                                  <div className="font-semibold text-slate-800" title={q.numeroPreventivoData ?? undefined}>
                                                     {q.numeroPreventivoData || t("admin.unnumberedQuote")}
                                                   </div>
                                                   <div className="text-[10px] text-slate-400">
@@ -1280,16 +1322,16 @@ export default function AdminPage() {
                                     </td>
                                     <td className="px-5 py-4 text-slate-600 font-medium">{u.companyName || "—"}</td>
                                     <td className="px-5 py-4">
-                                      {(u as any).apiKey ? (
+                                      {u.apiKey ? (
                                         <span className="font-mono text-xs bg-slate-50 border border-slate-100 px-2 py-0.5 rounded text-slate-600">
-                                          {(u as any).apiKey.slice(0, 15)}...
+                                          {u.apiKey.slice(0, 15)}...
                                         </span>
                                       ) : (
                                         <span className="text-red-500 text-xs font-medium bg-red-50 px-2 py-0.5 rounded border border-red-100">{t("admin.noKey")}</span>
                                       )}
                                     </td>
                                     <td className="px-5 py-4">
-                                      <WidgetStatusBadge active={Boolean((u as any).apiKey)} />
+                                      <WidgetStatusBadge active={Boolean(u.apiKey)} />
                                     </td>
                                     <td className="px-5 py-4 text-right">
                                       <button
@@ -1326,7 +1368,7 @@ export default function AdminPage() {
                                                 <input
                                                   type="text"
                                                   readOnly
-                                                  value={(u as any).apiKey || t("admin.noKeyConfigured")}
+                                                  value={u.apiKey || t("admin.noKeyConfigured")}
                                                   className="font-mono text-xs bg-slate-50 text-slate-700 px-3 py-2 border border-slate-100 rounded-xl w-full focus:outline-none text-center"
                                                 />
                                               </div>
@@ -1336,13 +1378,13 @@ export default function AdminPage() {
                                                 className="w-full bg-navy-600 hover:bg-navy-700 disabled:bg-navy-300 text-white text-xs font-bold py-2.5 rounded-xl transition-all shadow-sm flex items-center justify-center gap-1.5 cursor-pointer"
                                               >
                                                 {rotatingKeyId === u.userId ? <RefreshCw className="h-3 w-3 animate-spin" /> : <RefreshCw className="h-3 w-3" />}
-                                                {(u as any).apiKey ? t("admin.regenerateApiKey") : t("admin.generateApiKey")}
+                                                {u.apiKey ? t("admin.regenerateApiKey") : t("admin.generateApiKey")}
                                               </button>
                                             </div>
 
                                             <div className="md:col-span-2 space-y-2">
                                               <label className="text-xs font-bold text-slate-500 block uppercase tracking-wider">{t("admin.embedScriptCode")}</label>
-                                              {(u as any).apiKey ? (
+                                              {u.apiKey ? (
                                                 <div className="relative">
                                                   <pre className="p-4 bg-slate-950 text-slate-200 rounded-xl overflow-x-auto font-mono text-[10px] leading-relaxed max-h-40 whitespace-pre-wrap select-all border border-slate-800">
 {`<!-- PrevAI Widget Funnel -->
@@ -1351,13 +1393,13 @@ export default function AdminPage() {
 </div>
 <script
   src="${typeof window !== "undefined" ? window.location.origin : "https://prevai.it"}/widget.js"
-  data-api-key="${(u as any).apiKey}"
+  data-api-key="${u.apiKey}"
   async
 ></script>`}
                                                   </pre>
                                                   <button
                                                     onClick={() => {
-                                                      const code = `<!-- PrevAI Widget Funnel -->\n<div id="prevai-widget">\n  <a href="https://prevai.it" rel="noopener">Calcola il tuo preventivo con PrevAI</a>\n</div>\n<script\n  src="${typeof window !== "undefined" ? window.location.origin : "https://prevai.it"}/widget.js"\n  data-api-key="${(u as any).apiKey}"\n  async\n></script>`;
+                                                      const code = `<!-- PrevAI Widget Funnel -->\n<div id="prevai-widget">\n  <a href="https://prevai.it" rel="noopener">Calcola il tuo preventivo con PrevAI</a>\n</div>\n<script\n  src="${typeof window !== "undefined" ? window.location.origin : "https://prevai.it"}/widget.js"\n  data-api-key="${u.apiKey}"\n  async\n></script>`;
                                                       navigator.clipboard.writeText(code);
                                                       toast({ title: t("admin.codeCopied"), description: t("admin.codeCopiedDesc") });
                                                     }}
@@ -1428,7 +1470,7 @@ export default function AdminPage() {
                               </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-50">
-                              {widgetStats.clientUsage.map((c: any) => (
+                              {widgetStats.clientUsage.map((c) => (
                                 <tr key={c.userId} className="hover:bg-slate-50/20">
                                   <td className="px-5 py-3.5 font-semibold text-slate-800">{c.companyName || t("admin.noNameVirtual")}</td>
                                   <td className="px-5 py-3.5 font-mono text-xs text-slate-500">{c.apiKey ? `${c.apiKey.slice(0, 15)}...` : t("admin.none")}</td>
@@ -1458,7 +1500,7 @@ export default function AdminPage() {
                               </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-50">
-                              {widgetStats.recentCalls.map((call: any) => (
+                              {widgetStats.recentCalls.map((call) => (
                                 <tr key={call.quoteId} className="hover:bg-slate-50/20 text-xs">
                                   <td className="px-5 py-3 text-slate-500">{new Date(call.date).toLocaleString("it-IT")}</td>
                                   <td className="px-5 py-3 font-semibold text-slate-800">{call.companyName || t("admin.virtual")}</td>
@@ -1893,7 +1935,7 @@ export default function AdminPage() {
                 {showIncentiveForm && (
                   <form onSubmit={saveIncentive} className="border border-slate-100 rounded-xl p-4 space-y-3 bg-slate-50/50">
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                      <select value={incentiveForm.level} onChange={e => setIncentiveForm(f => ({ ...f, level: e.target.value as any }))} className="text-xs border border-slate-200 rounded-lg px-2 py-1.5">
+                      <select value={incentiveForm.level} onChange={e => setIncentiveForm(f => ({ ...f, level: e.target.value as IncentiveCatalogRow["level"] }))} className="text-xs border border-slate-200 rounded-lg px-2 py-1.5">
                         <option value="statale">Statale</option>
                         <option value="regionale">Regionale</option>
                         <option value="comunale">Comunale</option>
@@ -2267,7 +2309,7 @@ export default function AdminPage() {
                                     body: JSON.stringify({ role: "admin", content }),
                                   });
                                   // Refresh messages
-                                  const msgs = await authFetch(`/api/support/conversations/${selectedConvId}/messages`);
+                                  const msgs = await authFetch<SupportMessage[]>(`/api/support/conversations/${selectedConvId}/messages`);
                                   setConvMessages(msgs);
                                 } catch {
                                   toast({ variant: "destructive", title: t("admin.error"), description: t("admin.errorSendMessage") });

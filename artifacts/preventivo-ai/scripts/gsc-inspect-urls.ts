@@ -57,7 +57,8 @@ async function main() {
       const lastCrawl = result?.lastCrawlTime ?? undefined;
       results.push({ url, verdict, coverageState, lastCrawl });
       console.log(`${verdict.padEnd(10)} ${coverageState.padEnd(35)} ${url}`);
-    } catch (err: any) {
+    } catch (caught) {
+      const err = caught as { message: string; response?: { data?: { error?: { message?: string } } } };
       const message = err?.response?.data?.error?.message ?? err.message;
       console.error(`ERROR      ${message.slice(0, 60).padEnd(35)} ${url}`);
     }

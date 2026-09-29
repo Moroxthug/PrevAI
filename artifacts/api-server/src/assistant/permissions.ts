@@ -94,11 +94,6 @@ export async function assistantV2Ready(): Promise<boolean> {
   return readyCache.ready;
 }
 
-/** Tests only. */
-export function resetAssistantV2ReadyCache(value: boolean | null = null): void {
-  readyCache = value === null ? null : { ready: value, at: Date.now() };
-}
-
 export async function loadPermissionRows(orgUserId: string): Promise<{ action: string; role: string; level: string }[]> {
   return db.select({ action: assistantPermissionsTable.action, role: assistantPermissionsTable.role, level: assistantPermissionsTable.level }).from(assistantPermissionsTable).where(eq(assistantPermissionsTable.userId, orgUserId));
 }

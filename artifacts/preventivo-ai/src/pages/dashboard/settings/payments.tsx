@@ -6,7 +6,7 @@ import type { PaymentSchedule } from "@/lib/payment-schedule";
 import { SettingsGroup, SettingsSection, useSettingsDraft } from "./ui";
 import { useBusinessProfile, useSaveBusinessProfile } from "./data";
 
-export const DEFAULT_SCHEDULE: PaymentSchedule = {
+const DEFAULT_SCHEDULE: PaymentSchedule = {
   currency: "EUR",
   derived: false,
   holdback: { enabled: false, percent: 10 },

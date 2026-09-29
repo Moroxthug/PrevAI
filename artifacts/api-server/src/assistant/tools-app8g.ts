@@ -19,8 +19,8 @@ import { roleCan } from "../middlewares/requirePermission.js";
 
 export type App8gContext = { userId: string; projectId: string | null; role: TeamMemberRole };
 
-export const CONTACT_TYPES = ["client", "lead", "supplier", "worker"] as const;
-export type ContactType = (typeof CONTACT_TYPES)[number];
+const CONTACT_TYPES = ["client", "lead", "supplier", "worker"] as const;
+type ContactType = (typeof CONTACT_TYPES)[number];
 
 export const APP8G_TOOL_DEFINITIONS: OpenAI.Chat.Completions.ChatCompletionTool[] = [
   {

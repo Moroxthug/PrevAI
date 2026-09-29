@@ -4,7 +4,7 @@ import { useGetBusinessProfile, getGetBusinessProfileQueryKey } from "@workspace
 import { useToast } from "@/hooks/use-toast";
 import type { PaymentSchedule } from "@/lib/payment-schedule";
 
-export type AutomationSettings = {
+type AutomationSettings = {
   notifyOnQuoteAccepted: boolean;
   autoDraftContract?: boolean;
   autoSendInvoices: boolean;
@@ -13,7 +13,7 @@ export type AutomationSettings = {
 };
 
 /** GET /api/business-profile con i campi che il client generato non tipizza. */
-export type BusinessProfile = {
+type BusinessProfile = {
   companyName: string;
   vatNumber: string | null;
   address: string | null;

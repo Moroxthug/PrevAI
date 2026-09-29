@@ -1,0 +1,92 @@
+diff --git a/dist/IssueCollector.js b/dist/IssueCollector.js
+index eeb9dfb4dabdd80068c73d8167bdf10e20f04ea9..0dde2f10a4c7d43682b366d7482faa9b9b28fbdb 100644
+--- a/dist/IssueCollector.js
++++ b/dist/IssueCollector.js
+@@ -1,7 +1,7 @@
+ import picomatch from 'picomatch';
+ import { ROOT_WORKSPACE_NAME } from './constants.js';
+ import { partition } from './util/array.js';
+-import { prependDirToPattern } from './util/glob.js';
++import { prependDirToGlob } from './util/glob.js';
+ import { initCounters, initIssues } from './util/issue-initializers.js';
+ import { relative } from './util/path.js';
+ const createMatcher = (patterns) => {
+@@ -82,7 +82,7 @@ export class IssueCollector {
+             return;
+         const issueTypePatterns = new Map();
+         for (const [pattern, issueTypes] of Object.entries(ignoreIssues)) {
+-            const id = prependDirToPattern(this.cwd, pattern);
++            const id = prependDirToGlob(this.cwd, pattern);
+             for (const issueType of issueTypes) {
+                 if (!issueTypePatterns.has(issueType)) {
+                     issueTypePatterns.set(issueType, []);
+diff --git a/dist/WorkspaceWorker.js b/dist/WorkspaceWorker.js
+index 20817e89740da2704209e6ff29a51eacca5ca219..231dd381cb2b1e1c96a257a8c6e64ddc7fe276bb 100644
+--- a/dist/WorkspaceWorker.js
++++ b/dist/WorkspaceWorker.js
+@@ -10,7 +10,7 @@ import { collectStringLiterals, isExternalReExportsOnly } from './typescript/ast
+ import { _parseFile } from './typescript/ast-nodes.js';
+ import { compact } from './util/array.js';
+ import { debugLogArray, debugLogObject } from './util/debug.js';
+-import { _glob, hasNoProductionSuffix, hasProductionSuffix, negate } from './util/glob.js';
++import { _glob, hasNoProductionSuffix, hasProductionSuffix, negate, prependDirToGlob } from './util/glob.js';
+ import { isCatalog, isConfig, isDeferResolve, isDependency, toConfig, toDebugString, toEntry, toProductionEntry, } from './util/input.js';
+ import { getPackageNameFromSpecifier } from './util/modules.js';
+ import { timerify } from './util/Performance.js';
+@@ -504,7 +504,7 @@ export class WorkspaceWorker {
+                 hints.push({ type: `${type}-redundant`, identifier: pattern, workspaceName });
+             }
+             else {
+-                const matcher = picomatch(filePathOrPattern);
++                const matcher = picomatch(prependDirToGlob(this.dir, pattern.replace(/!$/, '')));
+                 if (!filePaths.some(filePath => matcher(filePath))) {
+                     hints.push({ type: `${type}-empty`, identifier: pattern, workspaceName });
+                 }
+diff --git a/dist/graph/build.js b/dist/graph/build.js
+index 5c8b06abb2408e8ef6f4987283e5a7a58139ee08..97d592889d98b9d413b9b392c42060eaff80c16c 100644
+--- a/dist/graph/build.js
++++ b/dist/graph/build.js
+@@ -9,7 +9,7 @@ import { existsSync } from 'node:fs';
+ import picomatch from 'picomatch';
+ import { tryRealpath } from '../util/fs.js';
+ import { createManifest } from '../util/package-json.js';
+-import { _glob, _syncGlob, negate, prependDirToPattern as prependDir } from '../util/glob.js';
++import { _glob, _syncGlob, negate, prependDirToPattern as prependDir, prependDirToGlob } from '../util/glob.js';
+ import { isAlias, isCatalog, isConfig, isDeferResolveEntry, isDeferResolveProductionEntry, isEntry, isIgnore, isProductionEntry, isProject, toDeferResolveEntry, toDependency, toProductionEntry, } from '../util/input.js';
+ import { isAmbientDeclarationFile } from '../typescript/ast-nodes.js';
+ import { resolveImportGlobs } from '../typescript/glob-imports.js';
+@@ -50,8 +50,8 @@ export async function build({ chief, collector, counselor, deputy, principal, is
+         });
+     }
+     deputy.setWorkspacePkgNames(chief.availableWorkspacePkgNames);
+-    collector.addIgnorePatterns(chief.config.ignore.map(id => ({ pattern: prependDir(options.cwd, id), id })));
+-    collector.addIgnoreFilesPatterns(chief.config.ignoreFiles.map(id => ({ pattern: prependDir(options.cwd, id), id })));
++    collector.addIgnorePatterns(chief.config.ignore.map(id => ({ pattern: prependDirToGlob(options.cwd, id), id })));
++    collector.addIgnoreFilesPatterns(chief.config.ignoreFiles.map(id => ({ pattern: prependDirToGlob(options.cwd, id), id })));
+     if (options.configFilePath) {
+         principal.addEntryPath(options.configFilePath, { skipExportsAnalysis: true });
+     }
+@@ -121,7 +121,7 @@ export async function build({ chief, collector, counselor, deputy, principal, is
+                 inputs.add(toProductionEntry(tryRealpath(id), { containingFilePath: tsConfigFilePath }));
+         }
+         const sharedGlobOptions = { cwd: options.cwd, dir, gitignore: options.gitignore };
+-        const fn = (id) => ({ pattern: prependDir(options.cwd, prependDir(name, id)), id, workspaceName: name });
++        const fn = (id) => ({ pattern: prependDirToGlob(options.cwd, prependDir(name, id)), id, workspaceName: name });
+         collector.addIgnorePatterns(config.ignore.map(fn));
+         collector.addIgnoreFilesPatterns(config.ignoreFiles.map(fn));
+         const entrySpecifiersFromManifest = getEntrySpecifiersFromManifest(manifest);
+diff --git a/dist/util/glob.js b/dist/util/glob.js
+index abdca01a3c847cb6c798f396d2a05d70df96277f..65280ca3cc22e91f317be447266ce4f0e0c38506 100644
+--- a/dist/util/glob.js
++++ b/dist/util/glob.js
+@@ -13,6 +13,10 @@ export const prependDirToPattern = (dir, pattern) => {
+         return `!${join(dir, pattern.slice(1))}`;
+     return join(dir, pattern);
+ };
++// PrevAI patch: for patterns handed to picomatch, a directory like "PrevAI (2)"
++// must match literally, not as a glob group.
++const escapeGlobDir = (dir) => dir.replace(/[()[\]{}!*?+@]/g, '\\$&');
++export const prependDirToGlob = (dir, pattern) => prependDirToPattern(escapeGlobDir(dir), pattern);
+ export const negate = (pattern) => pattern.replace(/^!?/, '!');
+ export const hasProductionSuffix = (pattern) => pattern.endsWith('!');
+ export const hasNoProductionSuffix = (pattern) => !pattern.endsWith('!');

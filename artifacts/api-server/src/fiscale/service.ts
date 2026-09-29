@@ -2,7 +2,6 @@ import {
   db,
   taxProfilesTable,
   fiscalPaymentsTable,
-  businessProfilesTable,
   FISCO_ONBOARDING_STEPS,
   type FiscoOnboardingStep,
   type ProfiloFiscale,
@@ -143,7 +142,7 @@ export async function aggiornaProfilo(userId: string, patch: AggiornamentoProfil
 }
 
 /** I passi che mancano all'onboarding, dedotti dai dati veri e non da un flag. */
-export function passiMancanti(profilo: ProfiloFiscale): FiscoOnboardingStep[] {
+function passiMancanti(profilo: ProfiloFiscale): FiscoOnboardingStep[] {
   const mancanti: FiscoOnboardingStep[] = [];
   if (!profilo.regime) mancanti.push("regime");
   if (!profilo.codiceAteco) mancanti.push("ateco");
@@ -165,7 +164,7 @@ async function completaSeFinito(profilo: ProfiloFiscale): Promise<ProfiloFiscale
 }
 
 /** Ingresso del motore per un anno, con la possibilità di forzare qualche numero (simulatore). */
-export async function ingressoDi(
+async function ingressoDi(
   userId: string,
   anno: number,
   override: Partial<IngressoCalcolo> = {},
@@ -342,10 +341,4 @@ export function statoRevisione(anno: number) {
       nota: r.revisione.nota ?? null,
     })),
   };
-}
-
-/** La 2FA è un requisito del modulo Amministrazione (A-0): senza, non si entra. */
-export async function requisitiDiSicurezza(userId: string): Promise<{ twoFactorRequired: boolean }> {
-  const [profile] = await db.select().from(businessProfilesTable).where(eq(businessProfilesTable.userId, userId));
-  return { twoFactorRequired: Boolean(profile?.twoFactorRequired) };
 }

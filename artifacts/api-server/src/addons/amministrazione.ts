@@ -76,7 +76,7 @@ function abbonamentoDi(profile: Pick<BusinessProfile, "addons"> | null | undefin
  * assegnasse ora (hash dell'id). Leggere non scrive: l'assegnazione diventa
  * definitiva al primo evento.
  */
-export function varianteDi(userId: string, profile: Pick<BusinessProfile, "addons"> | null | undefined): VariantePrezzo {
+function varianteDi(userId: string, profile: Pick<BusinessProfile, "addons"> | null | undefined): VariantePrezzo {
   return varianteDaId(abbonamentoDi(profile).variante) ?? varianteDiUtente(userId);
 }
 
@@ -99,7 +99,7 @@ async function scriviAbbonamento(userId: string, profile: BusinessProfile, patch
  * `?v=` con cui l'utente è arrivato dalla landing: vince sull'hash, così chi
  * ha visto 9 € in un annuncio non si ritrova 15 € nel paywall.
  */
-export async function assegnaVariante(userId: string, campagna?: string | null): Promise<VariantePrezzo> {
+async function assegnaVariante(userId: string, campagna?: string | null): Promise<VariantePrezzo> {
   const profile = await profiloDi(userId);
   const gia = varianteDaId(abbonamentoDi(profile).variante);
   if (gia) return gia;
@@ -226,7 +226,7 @@ export async function riepilogo(userId: string): Promise<RiepilogoAddon> {
 // ── Prezzo fondatori ─────────────────────────────────────────────────────────
 
 /** Imprese che hanno preso un posto fondatori (anche se poi hanno disdetto). */
-export async function fondatoriPresi(): Promise<number> {
+async function fondatoriPresi(): Promise<number> {
   const [riga] = await db
     .select({ n: sql<number>`count(*)::int` })
     .from(businessProfilesTable)
@@ -251,7 +251,7 @@ const INTERVALLO_STRIPE: Record<IntervalloAddon, "month" | "year"> = { mensile: 
  * configurazione. Un Price mancante o diverso blocca la vendita invece di
  * addebitare un importo che l'utente non ha visto.
  */
-export async function prezzoStripe(stripe: Stripe, chiave: string, attesoCents: number, intervallo: IntervalloAddon): Promise<Stripe.Price> {
+async function prezzoStripe(stripe: Stripe, chiave: string, attesoCents: number, intervallo: IntervalloAddon): Promise<Stripe.Price> {
   const { data } = await stripe.prices.list({ lookup_keys: [chiave], active: true, limit: 1 });
   const price = data[0];
   if (!price) {

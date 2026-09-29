@@ -37,7 +37,7 @@ export type Lang = "it";
 const MAX_ROUNDS = 6;
 const HISTORY_LIMIT = 40;
 const MODEL = "gpt-4o";
-export { ASSISTANT_USAGE_ENTITY };
+;
 
 // ── Conversations ────────────────────────────────────────────────────────────
 
@@ -113,7 +113,7 @@ export async function clearConversation(who: Who, id: string): Promise<boolean> 
 }
 
 /** The action rows (Lo fa / confirmed, undone) of some proposals; empty before migration 0013. */
-export async function actionsFor(proposalIds: string[]): Promise<Map<string, AssistantActionRow>> {
+async function actionsFor(proposalIds: string[]): Promise<Map<string, AssistantActionRow>> {
   if (!proposalIds.length || !(await assistantV2Ready())) return new Map();
   const rows = await db.select().from(assistantActionsTable).where(inArray(assistantActionsTable.proposalId, proposalIds));
   return new Map(rows.map((r) => [r.proposalId, r]));
@@ -331,9 +331,4 @@ export async function runAssistantTurn(params: { conversation: AssistantConversa
 
   await db.update(assistantConversationsTable).set({ lastMessageAt: new Date() }).where(eq(assistantConversationsTable.id, conv.id));
   return { messages: newMessages, proposals: newProposals, actions: newActions };
-}
-
-export async function proposalsByIds(userId: string, ids: string[]): Promise<AssistantProposal[]> {
-  if (!ids.length) return [];
-  return db.select().from(assistantProposalsTable).where(and(eq(assistantProposalsTable.userId, userId), inArray(assistantProposalsTable.id, ids)));
 }

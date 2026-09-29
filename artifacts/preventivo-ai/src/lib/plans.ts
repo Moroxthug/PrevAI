@@ -36,13 +36,6 @@ const STARTER: ProductFeature[] = ["quotes", "quote_email", "acceptance_notifica
 const PRO: ProductFeature[] = [...STARTER, "catalog", "contracts", "jobs", "costs", "invoicing", "team_accounts"];
 const ELITE: ProductFeature[] = [...PRO, "team_time", "assistant", "analytics_pro", "calendar_sync", "invoice_card_payments", "public_api", "gmail_send", "meta_lead_ads"];
 
-export const SEATS_INCLUDED: Record<PlanId, number> = {
-  free: 1,
-  monthly_starter: 1,
-  monthly_pro: 2,
-  monthly_elite: 5,
-};
-
 export const PLAN_FEATURES: Record<PlanId, ReadonlySet<ProductFeature>> = {
   free: new Set<ProductFeature>(["quotes"]),
   monthly_starter: new Set(STARTER),
@@ -63,9 +56,4 @@ export function hasFeature(profile: ProfileLike, feature: ProductFeature): boole
   if (typeof fromServer === "boolean") return fromServer;
   const plan = (profile?.plan ?? profile?.subscriptionPlan ?? "free") as PlanId;
   return (PLAN_FEATURES[plan] ?? PLAN_FEATURES.free).has(feature);
-}
-
-export function minimumPlanFor(feature: ProductFeature): PlanId {
-  for (const plan of PLAN_IDS) if (PLAN_FEATURES[plan].has(feature)) return plan;
-  return "monthly_elite";
 }

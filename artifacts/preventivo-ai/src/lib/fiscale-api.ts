@@ -9,7 +9,7 @@
 export type GestionePrevidenziale = "artigiani" | "commercianti" | "gestione_separata" | "cassa_professionale" | "nessuna";
 export type RiduzioneContributiva = "nessuna" | "forfettari_35" | "nuovi_iscritti_50";
 export type LivelloSoglia = "ok" | "attenzione" | "vicino" | "superata" | "fuori_regime";
-export type StatoRevisione = "non_revisionata" | "confermata" | "con_condizione" | "corretta";
+type StatoRevisione = "non_revisionata" | "confermata" | "con_condizione" | "corretta";
 export type TipoVersamento = "contributi_inps" | "imposta_saldo" | "imposta_acconto" | "bollo" | "altro";
 
 export type ProfiloFiscaleDto = {
@@ -52,7 +52,7 @@ export type SpiegazioneDto = {
   fonte: string;
 };
 
-export type MonitorSogliaDto = {
+type MonitorSogliaDto = {
   livello: LivelloSoglia;
   maturatoCents: number;
   proiezioneCents: number;
@@ -64,10 +64,10 @@ export type MonitorSogliaDto = {
 };
 
 export type CategoriaScadenza = "imposta" | "contributi" | "bollo" | "dichiarazione";
-export type StatoScadenza = "aperta" | "versata" | "non_dovuta";
+type StatoScadenza = "aperta" | "versata" | "non_dovuta";
 
 /** Una riga del modello F24: il modello ha una riga per tributo, non per scadenza. */
-export type RigaF24Dto = {
+type RigaF24Dto = {
   sezione: "erario" | "inps";
   codiceTributo?: string;
   causale?: string;
@@ -79,7 +79,7 @@ export type RigaF24Dto = {
   regole: string[];
 };
 
-export type ScadenzaDto = {
+type ScadenzaDto = {
   id: string;
   etichetta: string;
   data: string;
@@ -120,7 +120,7 @@ export type CalcoloDto = {
   spiegazioni: SpiegazioneDto[];
 };
 
-export type DatiAnnoDto = {
+type DatiAnnoDto = {
   anno: number;
   incassatiCents: number;
   fatturatoNonIncassatoCents: number;
@@ -131,9 +131,9 @@ export type DatiAnnoDto = {
   incassiConteggio: number;
 };
 
-export type RegolaDto = { id: string; titolo: string; fonte: string; stato: StatoRevisione; da: string | null; il: string | null; nota: string | null };
+type RegolaDto = { id: string; titolo: string; fonte: string; stato: StatoRevisione; da: string | null; il: string | null; nota: string | null };
 export type RevisioneDto = { annoRegole: number; revisionato: boolean; regole: RegolaDto[] };
-export type RequisitoFiscaleDto = { id: string; etichetta: string; rispettato: boolean; dettaglio: string };
+type RequisitoFiscaleDto = { id: string; etichetta: string; rispettato: boolean; dettaglio: string };
 
 export type RispostaCalcolo = {
   anno: number;
@@ -171,7 +171,7 @@ export type VoceScadenzarioDto = {
   regoleNonRevisionate: string[];
 };
 
-export type PreferenzePromemoriaDto = {
+type PreferenzePromemoriaDto = {
   email: boolean;
   whatsapp: boolean;
   telefono: string;
@@ -192,8 +192,8 @@ export type ScadenzarioDto = {
   avviso: { testo: string; versione: string };
 };
 
-export type CampoF24Dto = { etichetta: string; valore: string; mancante?: boolean };
-export type SezioneProspettoDto = { sezione: "erario" | "inps"; titolo: string; colonne: string[]; righe: string[][]; totaleCents: number };
+type CampoF24Dto = { etichetta: string; valore: string; mancante?: boolean };
+type SezioneProspettoDto = { sezione: "erario" | "inps"; titolo: string; colonne: string[]; righe: string[][]; totaleCents: number };
 
 export type ProspettoF24Dto = {
   scadenzaId: string;
@@ -351,7 +351,7 @@ export const ETICHETTE_RIDUZIONE: Record<RiduzioneContributiva, string> = {
 
 // ── A-4: prima nota, estratto conto, chiusura d'anno, commercialista ─────────
 
-export type FonteVoce = "incasso" | "costo" | "versamento" | "movimento";
+type FonteVoce = "incasso" | "costo" | "versamento" | "movimento";
 export type TipoMovimento = "entrata" | "uscita";
 export type CategoriaMovimento =
   | "altri_ricavi"
@@ -381,7 +381,7 @@ export type VocePrimaNotaDto = {
   collegamento: { tipo: "fattura" | "cantiere"; id: string; etichetta: string } | null;
 };
 
-export type TotaliPrimaNotaDto = {
+type TotaliPrimaNotaDto = {
   entrateCents: number;
   usciteCents: number;
   saldoCents: number;
@@ -393,7 +393,7 @@ export type TotaliPrimaNotaDto = {
   mesi: { mese: number; entrateCents: number; usciteCents: number }[];
 };
 
-export type AvvisoPrimaNotaDto = { id: string; testo: string; conteggio: number; importoCents?: number; link?: string };
+type AvvisoPrimaNotaDto = { id: string; testo: string; conteggio: number; importoCents?: number; link?: string };
 
 export type PrimaNotaDto = {
   anno: number;
@@ -478,9 +478,9 @@ export type EsitoImportDto = {
   periodo: { da: string; a: string } | null;
 };
 
-export type RigoDichiarazioneDto = { quadro: "LM" | "RR"; rigo: string; descrizione: string; valore: string; importoCents?: number; nota?: string };
+type RigoDichiarazioneDto = { quadro: "LM" | "RR"; rigo: string; descrizione: string; valore: string; importoCents?: number; nota?: string };
 
-export type ProspettoDichiarazioneDto = {
+type ProspettoDichiarazioneDto = {
   anno: number;
   annoPresentazione: number;
   termineInvio: string;

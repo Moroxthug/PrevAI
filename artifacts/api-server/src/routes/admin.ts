@@ -29,7 +29,7 @@ function adminNeedsTwoFactor(): boolean {
   return flag ? flag !== "0" : process.env.NODE_ENV === "production";
 }
 
-export const ADMIN_TWO_FACTOR_REQUIRED_ERROR = "admin_two_factor_required";
+const ADMIN_TWO_FACTOR_REQUIRED_ERROR = "admin_two_factor_required";
 
 /** "admin" when the session is an admin (with 2FA where required), "needs_2fa" when it would be but 2FA is off. */
 async function adminStatus<P = Record<string, string>>(req: Request<P>): Promise<"admin" | "needs_2fa" | "no"> {
@@ -632,7 +632,7 @@ router.get("/admin/seo-audit", async (req, res) => {
             name: page.name,
             ...seo,
           };
-        } catch (e: any) {
+        } catch (e) {
           return {
             url: page.url,
             name: page.name,
@@ -640,7 +640,7 @@ router.get("/admin/seo-audit", async (req, res) => {
             title: "Read error",
             description: "",
             h1: "",
-            issues: [`Unable to read the page: ${e.message}`],
+            issues: [`Unable to read the page: ${e instanceof Error ? e.message : String(e)}`],
           };
         }
       })
@@ -798,7 +798,9 @@ router.get("/admin/search-console", async (req, res) => {
       throw new Error(`Google Search Console API responded with status ${apiResponse.status}: ${errText}`);
     }
 
-    const data = await apiResponse.json() as { rows?: any[] };
+    const data = await apiResponse.json() as {
+      rows?: { keys: string[]; clicks?: number; impressions?: number; ctr?: number; position?: number }[];
+    };
     const rows = data.rows || [];
 
     if (rows.length === 0) {

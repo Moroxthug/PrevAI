@@ -29,20 +29,20 @@ import { sendExportReadyEmail } from "../lib/emailAccount.js";
 // Senza la migrazione 0017 tutto è inerte: la pagina rimanda a privacy@.
 
 export const EXPORT_TTL_DAYS = 7;
-export const EXPORT_COOLDOWN_HOURS = 24;
+const EXPORT_COOLDOWN_HOURS = 24;
 export const PART_MAX_BYTES = 20 * 1024 * 1024;
 const MAX_ATTEMPTS = 3;
 const LOCK_MS = 90_000;
 const DAY = 86_400_000;
 
 /** Cartelle dello storage che finiscono nello ZIP (tutte quelle dell'impresa, tranne le esportazioni stesse). */
-export const EXPORT_FOLDERS = [...RETAINED_STORAGE, ...DELETED_STORAGE].filter((f) => f !== "account-exports");
+const EXPORT_FOLDERS = [...RETAINED_STORAGE, ...DELETED_STORAGE].filter((f) => f !== "account-exports");
 
 /** Tabelle con `user_id` che non si esportano: credenziali e contabilità interna di PrevAI. */
-export const SKIPPED_TABLES = new Set(["auth_account", "auth_session", "two_factor", "whatsapp_otp", "account_exports", "automation_runs", "ai_budgets", "rate_limit_counters"]);
+const SKIPPED_TABLES = new Set(["auth_account", "auth_session", "two_factor", "whatsapp_otp", "account_exports", "automation_runs", "ai_budgets", "rate_limit_counters"]);
 
 /** Tabelle senza `user_id` che appartengono a una riga che ce l'ha: [tabella, colonna, tabella madre]. */
-export const CHILD_TABLES: [string, string, string][] = [
+const CHILD_TABLES: [string, string, string][] = [
   ["contract_signers", "contract_id", "contracts"],
   ["contract_events", "contract_id", "contracts"],
   ["invoice_events", "invoice_id", "invoices"],
@@ -60,7 +60,7 @@ export const CHILD_TABLES: [string, string, string][] = [
  * Gli hash dei documenti (pdf_hash, xml_hash, file_hash) invece restano: sono
  * l'impronta del documento, non un segreto.
  */
-export const REDACTED_COLUMN = /(^|_)(secret|password|p256dh)$|^(auth|otp|token)$|_enc$|(token|key|otp)_hash$|api_key$|(access|refresh|id|unsubscribe)_token$/i;
+const REDACTED_COLUMN = /(^|_)(secret|password|p256dh)$|^(auth|otp|token)$|_enc$|(token|key|otp)_hash$|api_key$|(access|refresh|id|unsubscribe)_token$/i;
 
 const missingTable = (err: unknown) => {
   const e = err as { code?: string; cause?: { code?: string } };
@@ -127,7 +127,7 @@ async function tablesWithUserId(): Promise<string[]> {
 }
 
 /** Ogni tabella dell'impresa: nome → righe già ripulite. */
-export async function collectTables(userId: string): Promise<Map<string, Row[]>> {
+async function collectTables(userId: string): Promise<Map<string, Row[]>> {
   const out = new Map<string, Row[]>();
   const put = (name: string, rows: Row[]) => {
     if (rows.length) out.set(name, rows.map(cleanRow));
@@ -390,7 +390,7 @@ export async function advanceExport(id: string, budgetMs = 40_000): Promise<Acco
 
 // ── Scaricamento ─────────────────────────────────────────────────────────────
 
-export const partFileName = (row: Pick<AccountExport, "createdAt" | "parts">, n: number) =>
+const partFileName = (row: Pick<AccountExport, "createdAt" | "parts">, n: number) =>
   `prevai-dati-${row.createdAt.toISOString().slice(0, 10)}-parte-${n}-di-${row.parts.length}.zip`;
 
 /** Link firmato di 5 minuti a una parte di un'esportazione pronta dell'impresa. */

@@ -37,7 +37,7 @@ import { logger } from "../lib/logger.js";
 
 const router = Router();
 const dateRe = /^\d{4}-\d{2}-\d{2}$/;
-export const WORKER_LINK_DAYS = 180;
+const WORKER_LINK_DAYS = 180;
 
 async function requireTeamFeature(userId: string): Promise<{ ok: true } | { ok: false; plan: string }> {
   const [profile] = await db.select().from(businessProfilesTable).where(eq(businessProfilesTable.userId, userId));

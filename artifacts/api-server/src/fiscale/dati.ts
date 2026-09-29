@@ -7,7 +7,7 @@ import {
   bolloPeriodsTable,
   OPEN_INVOICE_STATUSES,
 } from "@workspace/db";
-import { and, eq, gte, inArray, isNull, lt } from "drizzle-orm";
+import { and, eq, gte, isNull, lt } from "drizzle-orm";
 
 // ── A-2: i numeri dell'anno, presi dove già stanno ───────────────────────────
 // Il motore di calcolo è puro e non sa nulla del database: questo modulo gli
@@ -109,19 +109,4 @@ export async function datiAnno(userId: string, anno: number): Promise<DatiAnno> 
     bolloCents: bollo.reduce((s, b) => s + b.importo, 0),
     incassiConteggio: incassi.length,
   };
-}
-
-/** Imposta sostitutiva dell'anno precedente, se già registrata come versamento a saldo. */
-export async function impostaVersataNelAnno(userId: string, anno: number): Promise<number> {
-  const righe = await db
-    .select({ importo: fiscalPaymentsTable.importoCents })
-    .from(fiscalPaymentsTable)
-    .where(
-      and(
-        eq(fiscalPaymentsTable.userId, userId),
-        eq(fiscalPaymentsTable.anno, anno),
-        inArray(fiscalPaymentsTable.tipo, ["imposta_saldo", "imposta_acconto"]),
-      ),
-    );
-  return righe.reduce((s, r) => s + r.importo, 0);
 }

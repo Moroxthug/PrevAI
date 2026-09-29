@@ -19,7 +19,7 @@ import type { FatturaPaInput, SedeFatturaPa } from "./types.js";
 // messaggio che dice cosa manca e dove. Ogni controllo cita il codice di
 // scarto che evita, così quando l'AdE cambia le regole si sa cosa aggiornare.
 
-export type ProblemaFattura = {
+type ProblemaFattura = {
   /** Percorso leggibile del campo: "cliente.codiceFiscale". */
   campo: string;
   messaggio: string;

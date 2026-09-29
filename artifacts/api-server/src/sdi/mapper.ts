@@ -87,12 +87,12 @@ function anagraficaCliente(nome: string, haPartitaIva: boolean): { denominazione
   return { nome: pezzi.slice(0, -1).join(" "), cognome: pezzi[pezzi.length - 1] };
 }
 
-export function tipoDocumentoPer(invoice: Pick<Invoice, "type">): TipoDocumento {
+function tipoDocumentoPer(invoice: Pick<Invoice, "type">): TipoDocumento {
   return invoice.type === "credit_note" ? "TD04" : "TD01";
 }
 
 /** Il recapito elettronico congelato sulla fattura, con il cliente come riserva. */
-export function recapitoElettronico(party: InvoiceParty, client?: Client | null): { codiceDestinatario: string; pec: string | null } {
+function recapitoElettronico(party: InvoiceParty, client?: Client | null): { codiceDestinatario: string; pec: string | null } {
   const codice = (party.codiceSdi ?? client?.codiceSdi ?? "").trim().toUpperCase();
   const pec = (party.pec ?? client?.pec ?? "").trim() || null;
   if (codice) return { codiceDestinatario: codice, pec: codice === CODICE_DESTINATARIO_PRIVATO ? pec : null };

@@ -58,7 +58,7 @@ export async function impostazioniSdi(userId: string): Promise<SdiSettings | nul
  * documenti fiscali, e una configurazione completa non vale niente se
  * l'add-on non è stato attivato.
  */
-export function moduloAttivo(profile: (PlanLike & ProfiloFiscale) | null | undefined, settings: SdiSettings | null | undefined): boolean {
+function moduloAttivo(profile: (PlanLike & ProfiloFiscale) | null | undefined, settings: SdiSettings | null | undefined): boolean {
   if (!settings || settings.stato === "sospeso") return false;
   if (!hasFeature(profile ?? null, "sdi_invoicing")) return false;
   return requisitiMancanti(settings, profile ?? null).length === 0;

@@ -9,13 +9,13 @@ Questo file è il rapporto del controllo. Le cose da fare sono diventate le righ
 | Controllo | Esito |
 |---|---|
 | `pnpm typecheck` (librerie, API, app, script) | ✅ 0 errori |
-| `pnpm lint` | ✅ 0 errori, 67 avvisi (quasi tutti `any` esplicito) → riga 48 |
+| `pnpm lint` | ✅ 0 errori, 67 avvisi (quasi tutti `any` esplicito) → riga 48 ✅ 28/9: 0 avvisi, `pnpm lint` ora con `--max-warnings=0` |
 | `pnpm test` (unit API) | ✅ 426/426 |
 | `pnpm test:e2e` (staging) | ❌→✅ 150/151: il test anti‑IDOR aveva **6 route senza dati di prova** (fornitori ×2, versamenti, note del cantiere, home per ruolo ×2), quindi quelle route non erano davvero verificate. **Sistemato qui**: dati di prova aggiunti, `:kind` escluso perché non identifica niente; ora 21/21 nel file di sicurezza |
 | `qa:pdf` | ✅ 44 PDF generati, lint IA/inglese pulito |
 | `route-matrix` | ✅ `ROUTE-MATRIX.md` allineato al codice |
 | `pnpm audit --prod` | 🟨 1 vulnerabilità **bassa**: esbuild < 0.28.1 (solo sviluppo, via drizzle-kit) → riga 44 ✅ 28/9 (0.28.2) |
-| `knip` | 🟨 20 file inutilizzati (audio/batch/image delle integrazioni OpenAI, `ui/form.tsx`, `ui/select.tsx`), 159 export e 63 tipi inutilizzati; la configurazione di knip non trova i propri entry su Windows → riga 48 |
+| `knip` | 🟨 20 file inutilizzati (audio/batch/image delle integrazioni OpenAI, `ui/form.tsx`, `ui/select.tsx`), 159 export e 63 tipi inutilizzati; la configurazione di knip non trova i propri entry su Windows → riga 48 ✅ 28/9: la colpa era la parentesi in "PrevAI (2)", non Windows (patch di knip in `patches/`); `pnpm knip` pulito |
 | Segreti nel repo | ✅ nessuna chiave nei file tracciati; `.env*` ignorati |
 | TODO/FIXME nel codice | ✅ nessuno aperto |
 | Non rilanciati | `qa:visual` e `qa:phone` (16 min, verdi alla riga 30), Lighthouse |

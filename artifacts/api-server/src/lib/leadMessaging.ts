@@ -30,7 +30,7 @@ function sanitizeForFromHeader(value: string): string {
   return value.replace(/[\r\n"<>]/g, "").trim().slice(0, 60);
 }
 
-export function unsubscribeUrl(token: string): string {
+function unsubscribeUrl(token: string): string {
   return `${getBaseUrl()}/api/public/leads/unsubscribe?token=${encodeURIComponent(token)}`;
 }
 

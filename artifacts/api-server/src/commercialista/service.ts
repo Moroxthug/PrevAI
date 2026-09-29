@@ -31,7 +31,6 @@ import {
   type Documento,
   type SezioneAlbo,
   type StatoIncarico,
-  type StatoPratica,
 } from "@workspace/config";
 import {
   db,
@@ -101,7 +100,7 @@ async function professionistaPerId(id: string): Promise<Professionista | undefin
   return p;
 }
 
-export function operativitaDi(p: Professionista, now = new Date()) {
+function operativitaDi(p: Professionista, now = new Date()) {
   return operativita(
     {
       stato: p.stato,
@@ -115,7 +114,7 @@ export function operativitaDi(p: Professionista, now = new Date()) {
   );
 }
 
-export function datiProfessionista(p: Professionista): DatiProfessionista {
+function datiProfessionista(p: Professionista): DatiProfessionista {
   return {
     nome: p.nome,
     cognome: p.cognome,
@@ -281,7 +280,7 @@ export async function salvaCandidatura(userId: string, dati: DatiCandidatura): P
   return aggiornato!;
 }
 
-export async function professionistiOperativi(now = new Date()): Promise<Professionista[]> {
+async function professionistiOperativi(now = new Date()): Promise<Professionista[]> {
   const verificati = await db.select().from(professionistiTable).where(eq(professionistiTable.stato, "verificato"));
   return verificati.filter((p) => operativitaDi(p, now).operativo);
 }
@@ -894,7 +893,7 @@ export async function filePratica(incarico: Incarico, tipo: "bozza" | "ricevuta"
 
 // ── Consulenza ───────────────────────────────────────────────────────────────
 
-export const MAX_MESSAGGIO = 4000;
+const MAX_MESSAGGIO = 4000;
 
 export async function messaggi(incaricoId: string, lettore: "cliente" | "professionista" | null) {
   // Leggere segna letti i messaggi dell'altra parte (chi guarda soltanto, come un amministratore, no).
@@ -1009,4 +1008,4 @@ export function serializzaIncarico(i: Incarico) {
   };
 }
 
-export type { StatoPratica };
+;

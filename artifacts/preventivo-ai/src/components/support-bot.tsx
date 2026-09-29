@@ -128,6 +128,8 @@ export default function SupportBot() {
     }, 3000);
 
     return () => clearInterval(interval);
+  // Restart the poll only when the conversation or the panel changes.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [conversationId, conversationToken, isOpen]);
 
   // Scroll to bottom

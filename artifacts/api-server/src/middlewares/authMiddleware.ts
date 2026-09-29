@@ -85,7 +85,7 @@ async function orgRequiresTwoFactor(orgId: string): Promise<boolean> {
  */
 const TWO_FACTOR_EXEMPT = new Set(["GET /api/security/policy", "GET /api/business-profile", "GET /api/team/orgs", "POST /api/team/switch"]);
 
-export const TWO_FACTOR_REQUIRED_ERROR = "two_factor_required";
+const TWO_FACTOR_REQUIRED_ERROR = "two_factor_required";
 const TWO_FACTOR_REQUIRED_MESSAGE = "Questa organizzazione richiede la verifica in due passaggi. Attivala in Impostazioni → Sicurezza.";
 
 export async function requireAuth<P = Record<string, string>>(req: Request<P>, res: Response, next: NextFunction): Promise<void> {

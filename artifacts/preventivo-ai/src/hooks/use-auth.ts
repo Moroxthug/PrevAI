@@ -2,7 +2,7 @@ import { authClient } from "@/lib/auth-client";
 import { useLocation } from "wouter";
 import { useEffect } from "react";
 
-export type AuthUser = {
+type AuthUser = {
   id: string;
   name: string;
   email: string;

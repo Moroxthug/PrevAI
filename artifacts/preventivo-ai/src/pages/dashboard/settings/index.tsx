@@ -73,7 +73,7 @@ const LEGACY: Record<string, SectionId> = {
   widget: "widget", integrations: "apps", security: "security", sdi: "sdi",
 };
 
-export const settingsHref = (id: SectionId) => `/dashboard/settings/${id}`;
+const settingsHref = (id: SectionId) => `/dashboard/settings/${id}`;
 
 /** Quali sezioni vede questa persona: gli stessi vincoli di piano e modulo delle vecchie schede. */
 function useVisibleSections() {

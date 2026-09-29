@@ -33,7 +33,7 @@ export type AnagraficaFatturaPa = {
   cognome?: string | null;
 };
 
-export type CedenteFatturaPa = {
+type CedenteFatturaPa = {
   partitaIva: string;
   /** `IdPaese` dell'IdFiscaleIVA. */
   paese: string;
@@ -77,7 +77,7 @@ export type RiepilogoFatturaPa = {
   riferimentoNormativo?: string | null;
 };
 
-export type PagamentoFatturaPa = {
+type PagamentoFatturaPa = {
   condizioni: CondizioniPagamento;
   modalita: ModalitaPagamento;
   /** `AAAA-MM-GG`. */
@@ -86,7 +86,7 @@ export type PagamentoFatturaPa = {
   iban?: string | null;
 };
 
-export type FatturaCollegata = {
+type FatturaCollegata = {
   numero: string;
   /** `AAAA-MM-GG`. */
   data?: string | null;

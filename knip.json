@@ -1,8 +1,7 @@
 {
   "$schema": "https://unpkg.com/knip@6/schema.json",
   "ignore": [
-    "lib/integrations/**",
-    "lib/integrations-openai-ai-react/src/audio/audio-playback-worklet.js"
+    "artifacts/preventivo-ai/public/widget.js"
   ],
   "ignoreDependencies": [
     "prettier",
@@ -11,13 +10,15 @@
     "mammoth",
     "xlsx",
     "@google/genai",
-    "@types/react-dom",
     "@types/pdf-parse",
     "@fontsource-variable/figtree"
   ],
-  "ignoreBinaries": [
-    "ffmpeg"
-  ],
+  "ignoreIssues": {
+    "artifacts/preventivo-ai/src/components/ui/**": [
+      "exports",
+      "types"
+    ]
+  },
   "rules": {
     "exports": "warn",
     "types": "warn",
@@ -30,7 +31,6 @@
   "workspaces": {
     ".": {
       "entry": [
-        "eslint.config.mjs",
         "api/index.js"
       ]
     },
@@ -38,25 +38,20 @@
       "entry": [
         "src/index.ts",
         "src/app.ts",
-        "build.mjs",
         "src/**/*.test.ts",
         "src/e2e/**",
-        "scripts/*.ts"
+        "scripts/*.ts",
+        "vitest.e2e.config.ts",
+        "vitest.e2e.setup.ts"
       ]
     },
     "artifacts/preventivo-ai": {
       "entry": [
-        "src/main.tsx",
         "index.html",
         "scripts/*.ts",
         "server/*.mjs",
-        "vite.config.ts",
+        "public/sw.js",
         "src/entry-server.tsx"
-      ]
-    },
-    "lib/*": {
-      "entry": [
-        "src/index.ts"
       ]
     },
     "scripts": {
@@ -64,9 +59,10 @@
         "src/*.ts"
       ]
     },
-    "lib/api-spec": {
+    "lib/db": {
+      "drizzle": false,
       "entry": [
-        "orval.config.ts"
+        "drizzle.config.ts"
       ]
     }
   }

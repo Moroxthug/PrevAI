@@ -70,7 +70,7 @@ export function useVoiceInfo(enabled = true): VoiceInfo {
 export const browserSpeechAvailable = () => typeof window !== "undefined" && "speechSynthesis" in window && typeof SpeechSynthesisUtterance !== "undefined";
 
 /** The browser's Italian voices, the better-sounding ones first. */
-export function italianVoices(): SpeechSynthesisVoice[] {
+function italianVoices(): SpeechSynthesisVoice[] {
   if (!browserSpeechAvailable()) return [];
   const score = (v: SpeechSynthesisVoice) => (/natural|neural|online|premium|enhanced/i.test(v.name) ? 0 : /google/i.test(v.name) ? 1 : 2);
   return window.speechSynthesis.getVoices().filter((v) => /^it([-_]|$)/i.test(v.lang)).sort((a, b) => score(a) - score(b));

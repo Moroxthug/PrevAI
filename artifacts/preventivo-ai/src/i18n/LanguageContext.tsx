@@ -47,8 +47,3 @@ export function useLanguage(): LanguageContextValue {
   if (!ctx) throw new Error("useLanguage must be used within a LanguageProvider");
   return ctx;
 }
-
-/** @deprecated V2-2: non esistono route /fr, vale sempre false. Da rimuovere in V2-2b con la nuova seo-data. */
-export function isFrenchPath(_pathname: string): boolean {
-  return false;
-}

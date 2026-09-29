@@ -16,11 +16,6 @@ export function taxLineLabel(line: { code: string; label: string; rate: number }
   return `${line.label} ${fmtRate(line.rate)}`;
 }
 
-/** "IVA 10 %" — il riepilogo mostrato accanto al regime in un selettore. */
-export function profileSummary(profile: TaxProfile, _lang?: Lang): string {
-  return profile.components.map((c) => `${c.label} ${fmtRate(c.rate)}`).join(" + ");
-}
-
 /**
  * Anteprima lato client degli importi per un imponibile; rispecchia
  * `quoteTaxLines` in lib/config (l'ultima riga assorbe l'arrotondamento così

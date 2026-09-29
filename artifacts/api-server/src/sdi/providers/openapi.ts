@@ -63,7 +63,7 @@ const stringa = (r: Record<string, unknown>, ...chiavi: string[]): string | null
 };
 
 /** Gli stati che Openapi usa sui documenti emessi, tradotti nei nostri. */
-export function statoOpenapi(valore: string | null | undefined): StatoSdi | null {
+function statoOpenapi(valore: string | null | undefined): StatoSdi | null {
   switch ((valore ?? "").toLowerCase()) {
     case "delivered":
     case "consegnata":

@@ -2,13 +2,13 @@
 import { apiRequest as req, apiJson as json } from "@/lib/jobs-api";
 import type { AssistantAction, AssistantLevel } from "@workspace/config";
 
-export type AssistantRole = "user" | "assistant" | "tool";
+type AssistantRole = "user" | "assistant" | "tool";
 export type ProposalKind = "cost_entry" | "milestone_update" | "task" | "invoice" | "record_payment" | "send_invoice"
   // APP-8c
   | "draft_quote" | "send_quote" | "send_contract" | "reply_lead" | "message_client" | "update_client" | "job_note"
   // APP-8g
   | "call";
-export type ProposalStatus = "pending" | "confirmed" | "dismissed" | "failed" | "undone";
+type ProposalStatus = "pending" | "confirmed" | "dismissed" | "failed" | "undone";
 
 export type AssistantMessageDto = {
   id: string;
@@ -46,7 +46,7 @@ export type ThreadDto = { id: string; projectId: string | null; projectName: str
 export type PageContextDto = { path: string; projectId?: string | null; quoteId?: string | null; invoiceId?: string | null };
 
 /** What a streamed turn sends, one at a time (routes/assistant.ts). */
-export type TurnEventDto =
+type TurnEventDto =
   | { type: "progress"; label: string }
   | { type: "delta"; text: string }
   | { type: "message"; message: AssistantMessageDto }
@@ -101,7 +101,7 @@ export const assistantApi = {
  * end, in order. Rejects with `code` like the JSON client on a refusal
  * before the stream starts, and with the server's message on an `error` event.
  */
-export async function streamTurn(conversationId: string, content: string, context: PageContextDto | null, onEvent: (e: TurnEventDto) => void, signal?: AbortSignal): Promise<void> {
+async function streamTurn(conversationId: string, content: string, context: PageContextDto | null, onEvent: (e: TurnEventDto) => void, signal?: AbortSignal): Promise<void> {
   const res = await fetch(`/api/assistant/conversations/${conversationId}/stream`, {
     method: "POST",
     credentials: "include",

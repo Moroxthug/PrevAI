@@ -276,7 +276,6 @@ async function authPost(path: string, body: unknown, jar: Jar, token?: string) {
   const text = await res.text();
   let parsed: unknown;
   try { parsed = text ? JSON.parse(text) : null; } catch { parsed = text; }
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return { status: res.status, body: parsed as any, headers: res.headers, token: res.headers.get("set-auth-token") };
 }
 

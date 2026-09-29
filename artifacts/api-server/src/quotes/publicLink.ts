@@ -21,7 +21,7 @@ import { tableReady } from "../assistant/ready.js";
 import { getBaseUrl } from "../lib/baseUrl.js";
 
 /** A link stays open this many days after the company last shared it. */
-export const QUOTE_LINK_DAYS = 180;
+const QUOTE_LINK_DAYS = 180;
 /** Quotes created before this moment may still be opened by their bare UUID (links already in customers' inboxes). */
 export const LEGACY_CREATED_BEFORE = new Date("2026-09-29T00:00:00Z");
 
@@ -33,7 +33,7 @@ let firstLinkAt: Date | null = null;
  * The first managed link appears right after migration 0016 (the next share),
  * which covers an owner who runs the migration days after the deploy.
  */
-export async function legacyCutoff(): Promise<Date | null> {
+async function legacyCutoff(): Promise<Date | null> {
   if (!firstLinkAt) {
     const [r] = await db.select({ at: sql<string | null>`min(${quotePublicLinksTable.createdAt})` }).from(quotePublicLinksTable);
     if (r?.at) firstLinkAt = new Date(r.at);
@@ -45,7 +45,7 @@ export async function legacyCutoff(): Promise<Date | null> {
 const TABLE = "quote_public_links";
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-export function linksReady(): Promise<boolean> {
+function linksReady(): Promise<boolean> {
   return tableReady(TABLE);
 }
 
@@ -56,7 +56,7 @@ function key(): string {
 }
 
 /** 128 bits of HMAC, base64url — short enough for a WhatsApp message. */
-export function quoteLinkSignature(quoteId: string, version: number): string {
+function quoteLinkSignature(quoteId: string, version: number): string {
   return createHmac("sha256", key()).update(`${quoteId.toLowerCase()}:${version}`).digest("base64url").slice(0, 22);
 }
 

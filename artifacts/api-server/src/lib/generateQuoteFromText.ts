@@ -105,7 +105,7 @@ CALCOLI:
 IMPORTANTISSIMO: output SOLO JSON puro, nessuna spiegazione, nessun markdown.`;
 
 /** Nota di chiusura predefinita quando l'AI non la restituisce. */
-export const DEFAULT_QUOTE_NOTE =
+const DEFAULT_QUOTE_NOTE =
   "Preventivo valido 30 giorni dalla data di emissione. Sono esclusi pratiche edilizie e autorizzazioni, imprevisti dietro pareti e pavimenti esistenti e ogni lavorazione non espressamente elencata.";
 
 /** Condizioni di pagamento predefinite (edilizia italiana). */
@@ -431,11 +431,11 @@ export async function buildQuoteFromAI({
       log.error({ content }, "Failed to parse AI JSON in buildQuoteFromAI");
       throw new Error("AI returned invalid JSON");
     }
-  } catch (err: any) {
+  } catch (err) {
     const latencyMs = Date.now() - startTime;
     trackEvent(userId, "quote_generation_failed", {
       latencyMs,
-      error: err?.message || String(err),
+      error: err instanceof Error ? err.message : String(err),
     });
     throw err;
   }
@@ -567,11 +567,11 @@ Return the COMPLETE updated quote in valid JSON with the same structure. Recalcu
       log.error({ content }, "Failed to parse AI JSON in regenerateWithCorrection");
       throw new Error("AI returned invalid JSON during correction");
     }
-  } catch (err: any) {
+  } catch (err) {
     const latencyMs = Date.now() - startTime;
     trackEvent(userId, "quote_regeneration_failed", {
       latencyMs,
-      error: err?.message || String(err),
+      error: err instanceof Error ? err.message : String(err),
     });
     throw err;
   }
@@ -665,25 +665,6 @@ export async function saveQuoteToDb({
   return quote;
 }
 
-/**
- * Legacy interface: generates a quote AND saves it to DB in one step.
- * Used by the web flow and existing callers.
- */
-export async function generateQuoteFromText({
-  userId,
-  rawInput,
-  log,
-  source = "web",
-}: {
-  userId: string;
-  rawInput: string;
-  log: Logger;
-  source?: string;
-}): Promise<typeof quotesTable.$inferSelect> {
-  const data = await buildQuoteFromAI({ userId, rawInput, log });
-  return saveQuoteToDb({ userId, data, source });
-}
-
 // ── Guardrails ──────────────────────────────────────────────────────────────────
 
 /**
@@ -728,7 +709,7 @@ function buildCatalogContext(items: { nome: string; um: string; prezzoUnitario: 
   return `LISTINO PREZZI PERSONALIZZATO DELL'UTENTE (usa questi prezzi come riferimento PRIORITARIO):\n${items.map(item => `  - ${item.nome} (${item.um}): ${Number(item.prezzoUnitario).toFixed(2)}€/unità${item.categoria ? ` [${item.categoria}]` : ""}`).join("\n")}`;
 }
 
-type AiQuoteData = {
+export type AiQuoteData = {
   titolo_riga1?: string;
   titolo_riga2?: string;
   numero_preventivo_data?: string;

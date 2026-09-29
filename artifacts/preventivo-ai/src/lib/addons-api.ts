@@ -77,7 +77,7 @@ export function ricordaCampagna(v: string | null): void {
   }
 }
 
-export function campagnaRicordata(): string | null {
+function campagnaRicordata(): string | null {
   try {
     return sessionStorage.getItem(CHIAVE_CAMPAGNA);
   } catch {
@@ -99,6 +99,3 @@ export const addonsApi = {
 export function statoOffertaLocale(): StatoOfferta {
   return statoOfferta({ anno: new Date().getFullYear() }).effettivo;
 }
-
-/** Codici delle API che vogliono dire "questa parte si sblocca con l'add-on". */
-export const CODICI_PAYWALL = ["FISCAL_MODULE_OFF", "ADMIN_SUITE_OFF", "SDI_MODULE_OFF"] as const;

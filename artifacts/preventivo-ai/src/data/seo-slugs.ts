@@ -3,12 +3,12 @@
 // homepage, footer) ha bisogno solo di slug ed etichette, che vivono qui;
 // seo-data.ts verifica che restino allineati (la build fallisce se divergono).
 // Slug = PrevAI v1 (URL indicizzate: /preventivi/<slug>/).
-export interface SectorSlugEntry {
+interface SectorSlugEntry {
   label: string;
   labelPlural: string;
 }
 
-export const SECTOR_SLUGS: Record<string, SectorSlugEntry> = {
+const SECTOR_SLUGS: Record<string, SectorSlugEntry> = {
   imbianchino: { label: "Imbianchino", labelPlural: "imbianchini" },
   elettricista: { label: "Elettricista", labelPlural: "elettricisti" },
   idraulico: { label: "Idraulico", labelPlural: "idraulici" },
@@ -31,32 +31,6 @@ export const SECTOR_SLUGS: Record<string, SectorSlugEntry> = {
   "modello-word": { label: "Preventivo Word", labelPlural: "utenti Word" },
   "come-fare-preventivo": { label: "Preventivo Professionale", labelPlural: "professionisti" },
   "preventivi-gratis": { label: "Preventivi Gratis", labelPlural: "artigiani e PMI" },
-};
-
-/** Slug PrevAI → slug v1: usato solo per tradurre riferimenti importati (footer, TRADE_LABELS). */
-export const LEGACY_SECTOR_SLUGS: Record<string, string> = {
-  painter: "imbianchino",
-  electrician: "elettricista",
-  plumber: "idraulico",
-  "general-contractor": "edilizia",
-  "renovation-contractor": "ristrutturazione",
-  "welder-fabricator": "carpentiere",
-  "carpenter-cabinetmaker": "falegname",
-  "hvac-technician": "termoidraulico",
-  freelance: "freelance",
-  "building-consultant": "geometra",
-  mason: "muratore",
-  landscaper: "giardiniere",
-  "tile-installer": "piastrellista",
-  "window-door-installer": "serramentista",
-  roofer: "tetto",
-  "air-conditioning-installer": "condizionatori",
-  "decorative-painter": "pittore",
-  "flooring-installer": "pavimentista",
-  "excel-template": "modello-excel",
-  "word-template": "modello-word",
-  "how-to-quote": "come-fare-preventivo",
-  "free-quote": "preventivi-gratis"
 };
 
 export function sectorLabel(slug: string, _lang?: string): string {

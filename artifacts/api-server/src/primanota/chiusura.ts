@@ -10,7 +10,7 @@ import {
   hasFeature,
   type ChiusuraAnno,
 } from "@workspace/db";
-import { guidaFaiDaTe, prospettoDichiarazione, calcolaUtileNetto, fmtEurCents, type ProspettoDichiarazione, type UtileNetto } from "@workspace/config";
+import { guidaFaiDaTe, prospettoDichiarazione, calcolaUtileNetto, type ProspettoDichiarazione, type UtileNetto } from "@workspace/config";
 import { and, desc, eq, sql } from "drizzle-orm";
 import { AVVISO_NON_CONSULENZA, ErroreFiscale, VERSIONE_AVVISO, calcoloCorrente, statoRevisione } from "../fiscale/service.js";
 import { contribuenteDi } from "../fiscale/scadenzario.js";
@@ -266,7 +266,7 @@ function hashToken(raw: string): string {
   return createHash("sha256").update(raw).digest("hex");
 }
 
-export function urlCondivisione(token: string): string {
+function urlCondivisione(token: string): string {
   return `${getBaseUrl()}/commercialista/${token}`;
 }
 
@@ -358,8 +358,4 @@ export async function apriCondivisione(token: string, risorsa: string, meta: { i
 
 export function guida(anno: number) {
   return guidaFaiDaTe(anno);
-}
-
-export function riassuntoSaldo(p: ProspettoDichiarazione): string {
-  return p.saldoCents >= 0 ? `Imposta a debito: ${fmtEurCents(p.saldoCents)}` : `Imposta a credito: ${fmtEurCents(-p.saldoCents)}`;
 }

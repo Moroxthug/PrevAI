@@ -157,7 +157,7 @@ export async function eliminaImport(userId: string, importId: string): Promise<v
 
 // ── Suggerimenti ─────────────────────────────────────────────────────────────
 
-export type Suggerimento =
+type Suggerimento =
   | { azione: "abbina"; tipo: TipoAbbinamento; id: string; etichetta: string; certezza: "alta" | "media" }
   | { azione: "registra_incasso"; invoiceId: string; etichetta: string; certezza: "alta" | "media" }
   | { azione: "registra_costo"; etichetta: string; categoria: CostCategory }

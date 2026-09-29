@@ -1,5 +1,15 @@
 import OpenAI from "openai";
 
+/** The fields of a chat-completions request that the Groq rewrite reads or sets. */
+type GroqRequest = {
+  model: string;
+  messages: { content?: unknown }[];
+  reasoning_effort?: string | null;
+  max_completion_tokens?: number | null;
+  max_tokens?: number | null;
+};
+type CreateFn = (body: GroqRequest, options?: unknown) => unknown;
+
 function buildClient(): OpenAI {
   // Option 1: Groq (fast, free, OpenAI-compatible)
   if (process.env.GROQ_API_KEY) {
@@ -15,14 +25,14 @@ function buildClient(): OpenAI {
     // tokens separately from `content`, so reasoning_effort caps that overhead;
     // qwen3.6 instead inlines its <think> block into `content` unless told not
     // to, which would otherwise break every caller's JSON.parse(content).
-    const originalCreate = client.chat.completions.create.bind(client.chat.completions);
-    (client.chat.completions as any).create = function (body: any, options: any) {
+    const originalCreate = client.chat.completions.create.bind(client.chat.completions) as CreateFn;
+    (client.chat.completions as unknown as { create: CreateFn }).create = function (body, options) {
       if (body.model === "gpt-4o-mini") {
         body.model = "openai/gpt-oss-20b";
         body.reasoning_effort ??= "low";
       } else if (body.model === "gpt-4o") {
-        const hasImages = body.messages.some((msg: any) =>
-          Array.isArray(msg.content) && msg.content.some((c: any) => c.type === "image_url")
+        const hasImages = body.messages.some((msg) =>
+          Array.isArray(msg.content) && msg.content.some((c: { type?: string }) => c.type === "image_url")
         );
         if (hasImages) {
           body.model = "qwen/qwen3.6-27b";

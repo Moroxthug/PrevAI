@@ -1,8 +1,8 @@
-export type ImportBatchKind = "csv" | "xlsx" | "pdf";
-export type ImportBatchStatus = "processing" | "done" | "error";
+type ImportBatchKind = "csv" | "xlsx" | "pdf";
+type ImportBatchStatus = "processing" | "done" | "error";
 export type ImportCandidateStatus = "pending_review" | "confirmed" | "rejected";
 
-export type ImportedQuoteItem = { description: string; quantity: number | null; unitPrice: number | null; total: number | null };
+type ImportedQuoteItem = { description: string; quantity: number | null; unitPrice: number | null; total: number | null };
 
 export type ImportedQuoteExtraction = {
   clientName: string | null;

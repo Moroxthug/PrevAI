@@ -15,13 +15,3 @@ export async function getUncachableStripeClient(): Promise<Stripe> {
   const { secretKey } = getCredentials();
   return new Stripe(secretKey);
 }
-
-export async function getStripePublishableKey(): Promise<string> {
-  const { publishableKey } = getCredentials();
-  return publishableKey;
-}
-
-export async function getStripeSecretKey(): Promise<string> {
-  const { secretKey } = getCredentials();
-  return secretKey;
-}

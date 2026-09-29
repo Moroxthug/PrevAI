@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import { useParams, Link } from "wouter";
 import { ArrowRight, CheckCircle2, MapPin, BarChart2, BookOpen } from "lucide-react";
 import { SECTORS, DEFAULT_SECTOR, CITIES_BY_SLUG, getCityTitle, getCityDesc } from "@/data/seo-data";
@@ -51,7 +51,7 @@ export default function SeoCityLanding() {
   const canonical = `${MARKET.siteUrl}${base}/${s.slug}/${citySlug}/`;
 
   const intro = city ? getCityIntro(s, city) : "";
-  const faqItems = city ? getCityFaqItems(s, city) : [];
+  const faqItems = useMemo(() => (city ? getCityFaqItems(s, city) : []), [s, city]);
   const howItWorksSteps = getCityHowItWorksSteps(cityName);
   const layout = city ? getCityLayout(s, city) : 0;
   const ctaVariant = city ? getCityCtaVariant(s, city) : 0;

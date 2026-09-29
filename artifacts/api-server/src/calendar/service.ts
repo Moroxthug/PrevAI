@@ -9,7 +9,7 @@ export async function listCalendarConnections(userId: string): Promise<CalendarC
   return db.select().from(calendarConnectionsTable).where(eq(calendarConnectionsTable.userId, userId));
 }
 
-export async function getCalendarConnection(userId: string, provider: CalendarProvider): Promise<CalendarConnection | null> {
+async function getCalendarConnection(userId: string, provider: CalendarProvider): Promise<CalendarConnection | null> {
   const [conn] = await db
     .select()
     .from(calendarConnectionsTable)

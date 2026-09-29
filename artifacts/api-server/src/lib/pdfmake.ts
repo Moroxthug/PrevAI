@@ -18,7 +18,7 @@ export type PdfMakeInstance = {
 const HELVETICA = { normal: "Helvetica", bold: "Helvetica-Bold", italics: "Helvetica-Oblique", bolditalics: "Helvetica-BoldOblique" };
 const TIMES = { normal: "Times-Roman", bold: "Times-Bold", italics: "Times-Italic", bolditalics: "Times-BoldItalic" };
 
-export const PDF_FONTS: Record<string, Record<string, string>> = {
+const PDF_FONTS: Record<string, Record<string, string>> = {
   Roboto: HELVETICA, // pdfmake's default font name, mapped onto the built-in Helvetica
   Helvetica: HELVETICA,
   Serif: TIMES, // contracts
@@ -30,12 +30,12 @@ export const PDF_FONTS: Record<string, Record<string, string>> = {
 // provenienza compare anche nel piè di pagina visibile (quotes/pdf.ts).
 export type PdfProvenance = "ai" | "ai_assisted" | "none";
 
-export const PDF_AI_KEYWORDS: Record<Exclude<PdfProvenance, "none">, string> = {
+const PDF_AI_KEYWORDS: Record<Exclude<PdfProvenance, "none">, string> = {
   ai: "AI-generated, contenuto generato con intelligenza artificiale, AI Act art. 50",
   ai_assisted: "AI-assisted, bozza redatta con l'ausilio di intelligenza artificiale e rivista dall'impresa, AI Act art. 50",
 };
 
-export const PDF_AI_SUBJECT: Record<Exclude<PdfProvenance, "none">, string> = {
+const PDF_AI_SUBJECT: Record<Exclude<PdfProvenance, "none">, string> = {
   ai: "Documento generato con intelligenza artificiale (AI Act art. 50)",
   ai_assisted: "Documento redatto con l'ausilio di intelligenza artificiale (AI Act art. 50)",
 };

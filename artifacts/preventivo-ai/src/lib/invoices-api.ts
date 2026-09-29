@@ -7,7 +7,7 @@ export type InvoiceStatus = "draft" | "sent" | "viewed" | "pending_confirmation"
 export type PaymentMethod = "bank_transfer" | "cheque" | "cash" | "card" | "credit_note" | "other";
 export const PAYMENT_METHODS: Exclude<PaymentMethod, "credit_note">[] = ["bank_transfer", "cheque", "cash", "card", "other"];
 
-export type InvoicePartyDto = {
+type InvoicePartyDto = {
   name: string;
   address?: string | null;
   city?: string | null;
@@ -20,8 +20,8 @@ export type InvoicePartyDto = {
   reaNumber?: string | null;
   businessNumber?: string | null;
 };
-export type InvoiceLineDto = { description: string; quantity: number; unitCents: number; amountCents: number };
-export type InvoiceTaxLineDto = { code: string; label: string; rate: number; amountCents: number; registrationNumber?: string | null };
+type InvoiceLineDto = { description: string; quantity: number; unitCents: number; amountCents: number };
+type InvoiceTaxLineDto = { code: string; label: string; rate: number; amountCents: number; registrationNumber?: string | null };
 
 export type InvoiceDto = {
   id: string;

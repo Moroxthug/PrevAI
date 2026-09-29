@@ -16,7 +16,6 @@ import {
   type SdiSettings,
   type SdiOnboardingStep,
   type EInvoice,
-  type Invoice,
   type StatoSdi,
 } from "@workspace/db";
 import { and, desc, eq, inArray, sql } from "drizzle-orm";
@@ -34,7 +33,7 @@ import type { FatturaPaInput } from "./types.js";
 import { registraBolloDocumento } from "./bollo.js";
 import { requisitiMancanti, type Requisito } from "./stato.js";
 
-export { requisitiMancanti, moduloAttivo, moduloSdiAttivo, impostazioniSdi, type Requisito } from "./stato.js";
+export { requisitiMancanti,    type Requisito } from "./stato.js";
 
 const storage = new ObjectStorageService();
 
@@ -152,7 +151,7 @@ export async function ricalcolaStatoConfigurazione(settings: SdiSettings): Promi
 // ── Progressivo di invio ─────────────────────────────────────────────────────
 
 /** Univoco per trasmittente: `<anno a 2 cifre><contatore>`, mai riusato. */
-export async function prossimoProgressivo(userId: string, now = new Date()): Promise<string> {
+async function prossimoProgressivo(userId: string, now = new Date()): Promise<string> {
   const anno = now.getFullYear();
   const [row] = await db
     .insert(invoiceSequencesTable)
@@ -327,7 +326,7 @@ export async function inviaAlloSdi(params: { invoiceId: string; userId: string; 
 }
 
 /** L'ultima trasmissione di una fattura (quella che conta). */
-export async function trasmissioneCorrente(invoiceId: string): Promise<EInvoice | null> {
+async function trasmissioneCorrente(invoiceId: string): Promise<EInvoice | null> {
   const [riga] = await db.select().from(eInvoicesTable).where(eq(eInvoicesTable.invoiceId, invoiceId)).orderBy(desc(eInvoicesTable.createdAt)).limit(1);
   return riga ?? null;
 }
@@ -516,10 +515,4 @@ export function serializzaImpostazioni(s: SdiSettings, extra: { requisitiMancant
     webhookSegretoPresente: Boolean(s.webhookSecret),
     ...extra,
   };
-}
-
-/** Fattura + sua trasmissione, per le schede dell'interfaccia. */
-export async function statoFattura(invoice: Invoice): Promise<ReturnType<typeof serializzaTrasmissione> | null> {
-  const riga = await trasmissioneCorrente(invoice.id);
-  return riga ? serializzaTrasmissione(riga) : null;
 }

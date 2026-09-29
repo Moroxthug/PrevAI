@@ -30,7 +30,8 @@ async function main() {
       const r = res.data.inspectionResult?.indexStatusResult;
       console.log(`\n=== ${url} ===`);
       console.log(JSON.stringify(r, null, 2));
-    } catch (err: any) {
+    } catch (caught) {
+      const err = caught as { message: string; response?: { data?: { error?: { message?: string } } } };
       console.error(`ERROR for ${url}:`, err?.response?.data?.error?.message ?? err.message);
     }
     await new Promise((r) => setTimeout(r, 500));

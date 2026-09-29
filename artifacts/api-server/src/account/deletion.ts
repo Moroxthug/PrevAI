@@ -37,8 +37,8 @@ import { sendDeletionCancelledEmail, sendDeletionCompletedEmail, sendDeletionRem
 // l'API lo dice e la pagina rimanda a privacy@prevai.it; il cron salta.
 
 export const GRACE_DAYS = 30;
-export const REMINDER_DAYS_BEFORE = 7;
-export const RETENTION_YEARS = 10;
+const REMINDER_DAYS_BEFORE = 7;
+const RETENTION_YEARS = 10;
 const DAY = 24 * 3_600_000;
 
 /**
@@ -47,7 +47,7 @@ const DAY = 24 * 3_600_000;
  * fatture in bozza, fatture elettroniche mai trasmesse. I figli (firmatari,
  * eventi, pagamenti) seguono il documento per cascata.
  */
-export const RETAINED_TABLES = ["contracts", "invoices", "invoice_payments", "e_invoices", "e_invoice_events", "supplier_e_invoices"] as const;
+const RETAINED_TABLES = ["contracts", "invoices", "invoice_payments", "e_invoices", "e_invoice_events", "supplier_e_invoices"] as const;
 
 /** Cartelle dello storage per persona/impresa: `<cartella>/<userId>/…`. */
 export const RETAINED_STORAGE = ["contracts", "invoices", "sdi"] as const;
@@ -69,7 +69,7 @@ export async function deletionAvailable(): Promise<boolean> {
   }
 }
 
-export const emailHash = (email: string) => createHash("sha256").update(email.trim().toLowerCase()).digest("hex");
+const emailHash = (email: string) => createHash("sha256").update(email.trim().toLowerCase()).digest("hex");
 const settingsUrl = () => `${getBaseUrl()}/dashboard/settings/access`;
 
 export async function pendingDeletionFor(subjectUserId: string): Promise<AccountDeletion | null> {
@@ -242,7 +242,7 @@ async function tablesWithUserId(tx: Exec): Promise<string[]> {
  * cascata, es. incarichi → professionisti), quindi ogni DELETE sta in un
  * savepoint e chi fallisce riprova al giro dopo.
  */
-export async function purgeDatabase(subjectUserId: string): Promise<Pick<AccountDeletionSummary, "deleted" | "retained">> {
+async function purgeDatabase(subjectUserId: string): Promise<Pick<AccountDeletionSummary, "deleted" | "retained">> {
   return db.transaction(async (tx) => {
     const deleted: Record<string, number> = {};
     const retained: Record<string, number> = {};
@@ -297,7 +297,7 @@ export async function purgeDatabase(subjectUserId: string): Promise<Pick<Account
 }
 
 /** Cancella (ricorsivamente) le cartelle `<cartella>/<userId>` nei due bucket. */
-export async function purgeStorage(subjectUserId: string, folders: readonly string[]): Promise<{ deleted: number; error?: string }> {
+async function purgeStorage(subjectUserId: string, folders: readonly string[]): Promise<{ deleted: number; error?: string }> {
   if (!storageConfigured()) return { deleted: 0, error: "storage non configurato" };
   const supabase = storageClient();
   let deleted = 0;
@@ -321,7 +321,7 @@ export async function purgeStorage(subjectUserId: string, folders: readonly stri
 }
 
 /** Esegue una cancellazione arrivata a scadenza. */
-export async function executeDeletion(row: AccountDeletion, now = new Date()): Promise<AccountDeletionSummary> {
+async function executeDeletion(row: AccountDeletion, now = new Date()): Promise<AccountDeletionSummary> {
   const [user] = await db.execute<{ name: string }>(sql`select name from auth_user where id = ${row.subjectUserId}`).then((r) => r.rows);
   const stripe = await cancelSubscriptionsNow(row.stripeCustomerId);
   const { deleted, retained } = await purgeDatabase(row.subjectUserId);
@@ -351,7 +351,7 @@ export async function executeDeletion(row: AccountDeletion, now = new Date()): P
 }
 
 /** Scaduti i 10 anni: via anche contratti firmati, fatture e fatture elettroniche. */
-export async function clearRetention(row: AccountDeletion, now = new Date()): Promise<number> {
+async function clearRetention(row: AccountDeletion, now = new Date()): Promise<number> {
   const n = await db.transaction(async (tx) => {
     let total = 0;
     for (const table of ["e_invoice_events", "e_invoices", "invoice_payments", "invoices", "supplier_e_invoices", "contracts"]) {

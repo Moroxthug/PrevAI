@@ -27,19 +27,19 @@ export function quoteProvenance(quote: Pick<QuoteRow, "rawInput">): PdfProvenanc
 }
 
 
-function formatDescriptionPdf(descrizione: string, bg: string | null): any {
+function formatDescriptionPdf(descrizione: string, bg: string | null): Content {
   const parts = descrizione.split("\n");
   const title = parts[0];
   const detail = parts.slice(1).join("\n");
   if (!detail) {
-    return { text: title, fontSize: 8, color: "#1a1a1a", fillColor: bg };
+    return { text: title, fontSize: 8, color: "#1a1a1a", fillColor: bg ?? undefined };
   }
   return {
     stack: [
       { text: title, bold: true, fontSize: 8, color: "#1a1a1a" },
       { text: detail, fontSize: 7, color: "#555555", margin: [0, 2, 0, 0] }
     ],
-    fillColor: bg
+    fillColor: bg ?? undefined
   };
 }
 
@@ -185,7 +185,7 @@ export async function generateCapitolatoPdfBuffer(quote: QuoteRow, profile: Prof
         const bg = vi % 2 === 0 ? null : "#f8f9fb";
         return [
           { text: String(vi + 1), fontSize: 8, alignment: "center" as const, color: "#666", fillColor: bg } as Content,
-          formatDescriptionPdf(v.descrizione, bg) as Content,
+          formatDescriptionPdf(v.descrizione, bg),
           { text: v.um, fontSize: 8, alignment: "center" as const, fillColor: bg } as Content,
           { text: String(v.quantita), fontSize: 8, alignment: "center" as const, fillColor: bg } as Content,
           { text: fmtQty(v.prezzoUnitario, lang), fontSize: 8, alignment: "right" as const, fillColor: bg } as Content,
@@ -575,7 +575,7 @@ export async function generateQuotePdfBuffer(quote: QuoteRow, profile: ProfileRo
         const bg = vi % 2 === 0 ? null : "#f8f9fb";
         return [
           { text: String(vi + 1), fontSize: 8, alignment: "center" as const, color: "#666", fillColor: bg } as Content,
-          formatDescriptionPdf(v.descrizione, bg) as Content,
+          formatDescriptionPdf(v.descrizione, bg),
           { text: v.um, fontSize: 8, alignment: "center" as const, fillColor: bg } as Content,
           { text: String(v.quantita), fontSize: 8, alignment: "center" as const, fillColor: bg } as Content,
           { text: fmtQty(v.prezzoUnitario, lang), fontSize: 8, alignment: "right" as const, fillColor: bg } as Content,

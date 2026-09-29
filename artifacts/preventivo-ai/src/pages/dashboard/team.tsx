@@ -446,7 +446,7 @@ function TimeTab({ workers, locale }: { workers: WorkerDto[]; locale: typeof it 
   const approveMany = useMutation({ mutationFn: (ids: string[]) => teamApi.approveMany(ids), onSuccess: (r) => { refresh(); toast({ title: `${r.approved} ${t("team.time.approvedToast")}` }); }, onError });
   const del = useMutation({ mutationFn: (id: string) => teamApi.deleteTimeEntry(id), onSuccess: refresh, onError });
 
-  const items = data?.items ?? [];
+  const items = useMemo(() => data?.items ?? [], [data]);
   const totals = useMemo(() => ({ hours: items.reduce((s, e) => s + e.hours, 0), cents: items.filter((e) => e.status !== "rejected").reduce((s, e) => s + e.costCents, 0) }), [items]);
   const grouped = useMemo(() => {
     const m = new Map<string, TimeEntryDto[]>();

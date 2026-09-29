@@ -13,7 +13,7 @@ const RULES: [RegExp, keyof Omit<PageContextDto, "path">][] = [
   [new RegExp(`^/dashboard/invoices/(${UUID})`, "i"), "invoiceId"],
 ];
 
-export function pageContextFor(path: string): PageContextDto {
+function pageContextFor(path: string): PageContextDto {
   const clean = path.split(/[?#]/)[0]!.replace(/[^\w\-/]/g, "").slice(0, 200) || "/dashboard";
   const ctx: PageContextDto = { path: clean.startsWith("/") ? clean : `/${clean}` };
   for (const [re, key] of RULES) {

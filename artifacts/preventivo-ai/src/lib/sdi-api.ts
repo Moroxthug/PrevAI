@@ -67,7 +67,7 @@ export type TrasmissioneDto = {
 export type EventoSdiDto = { id: string; tipo: string; stato: StatoSdi | null; messaggio: string; ricevutoAt: string };
 
 export type ProblemaDto = { campo: string; messaggio: string; codiceSdi?: string };
-export type ValidazioneDto = { ok: boolean; errori: ProblemaDto[]; avvisi: ProblemaDto[] };
+type ValidazioneDto = { ok: boolean; errori: ProblemaDto[]; avvisi: ProblemaDto[] };
 
 export type AnteprimaDto = {
   fileName: string;

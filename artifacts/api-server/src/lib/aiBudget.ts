@@ -85,7 +85,7 @@ export async function aiBudgetExceeded(orgId: string): Promise<boolean> {
 }
 
 // Same shape as a rate-limit block: the app's fetch helpers show `error` or `message` as they are.
-export const AI_BUDGET_ERROR = { error: MESSAGGIO_TETTO_IA, message: MESSAGGIO_TETTO_IA, code: "AI_BUDGET" } as const;
+const AI_BUDGET_ERROR = { error: MESSAGGIO_TETTO_IA, message: MESSAGGIO_TETTO_IA, code: "AI_BUDGET" } as const;
 
 /** Dopo requireAuth: sopra il tetto del mese le rotte con l'IA rispondono 429 AI_BUDGET. */
 export async function requireAiBudget(_req: Request, res: Response, next: NextFunction): Promise<void> {

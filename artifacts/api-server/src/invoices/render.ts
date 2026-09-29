@@ -1,5 +1,4 @@
 import type { Invoice, InvoiceParty, InvoicePayment } from "@workspace/db";
-import { provinceName as provinciaNome } from "@workspace/db";
 import { MARKET, fmtEurCents, fmtNumber, type Lang } from "@workspace/config";
 
 // ── Rendering fatture: etichette + HTML ──────────────────────────────────────
@@ -13,7 +12,7 @@ import { MARKET, fmtEurCents, fmtNumber, type Lang } from "@workspace/config";
 
 export type { Lang };
 
-export const I = {
+const I = {
   invoice: "Fattura pro-forma",
   creditNote: "Nota di credito pro-forma",
   invoiceNo: "Pro-forma n.",
@@ -84,7 +83,7 @@ export type IKey = keyof typeof I;
  * FT-, XML trasmesso allo SdI). Il PDF resta una **copia di cortesia**:
  * l'originale è il file elettronico nel cassetto fiscale del cliente.
  */
-export const I_FISCALE: Partial<Record<IKey, string>> = {
+const I_FISCALE: Partial<Record<IKey, string>> = {
   invoice: "Fattura",
   creditNote: "Nota di credito",
   invoiceNo: "Fattura n.",
@@ -122,10 +121,6 @@ export function fmtDay(d: Date | string | null | undefined, _lang?: Lang): strin
 
 export function fmtQty(q: number, _lang?: Lang): string {
   return fmtNumber(q, Number.isInteger(q) ? 0 : 2);
-}
-
-export function provinceName(code: string | null | undefined, _lang?: Lang): string {
-  return provinciaNome(code);
 }
 
 export function isCreditNote(inv: Pick<Invoice, "type">): boolean {
