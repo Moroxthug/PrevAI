@@ -1215,7 +1215,7 @@ for p in / /pagina-inesistente-xyz/ /blog/nope/ /dashboard/ /reset-password/ /pr
 ```
 Atteso: 200, 404, 404, 200, 200, 200.
 
-**Copertura Search Console (dal titolare).** Search Console → proprietà prevai.it:
+**Copertura Search Console.** Claude la legge da Claude in Chrome, nel Chrome con l'account che ha accesso a `sc-domain:prevai.it` ("Browser 2"; l'altro profilo vede "Oops, you don't have access"). Search Console → proprietà prevai.it:
 1. *Sitemap*: inviare di nuovo `https://prevai.it/sitemap.xml` (344 URL attese).
 2. *Pagine* (Indicizzazione): guardare "Soft 404", "Duplicata, Google ha scelto un URL canonico diverso" e "Non trovata (404)". Dopo il deploy le soft 404 diventano 404: è giusto. Su "Soft 404" → *Convalida correzione*.
 3. Se in "Non trovata (404)" compaiono indirizzi che dovrebbero esistere (vecchi URL di v1 ancora linkati da fuori), aggiungerli ai `redirects` di `vercel.json` verso la pagina nuova, prima del redirect della barra finale.
