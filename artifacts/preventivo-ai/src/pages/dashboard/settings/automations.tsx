@@ -9,12 +9,13 @@ type AutoDraft = {
   autoSendInvoices: boolean;
   invoiceAutoSendAfterHours: number;
   invoiceReminders: boolean;
+  scheduleReminders: boolean;
   googleReviewUrl: string;
   secondaryReviewUrl: string;
   sendReviewRequests: boolean;
 };
 
-const AUTOMATION_KEYS = ["notifyOnQuoteAccepted", "autoSendInvoices", "invoiceAutoSendAfterHours", "invoiceReminders"] as const;
+const AUTOMATION_KEYS = ["notifyOnQuoteAccepted", "autoSendInvoices", "invoiceAutoSendAfterHours", "invoiceReminders", "scheduleReminders"] as const;
 
 /** Vendere → Automazioni e recensioni: cosa PrevAI fa da solo dopo un sì, una fattura, un lavoro finito. */
 export function AutomationsSection() {
@@ -26,6 +27,7 @@ export function AutomationsSection() {
     autoSendInvoices: profile.automationSettings?.autoSendInvoices ?? false,
     invoiceAutoSendAfterHours: profile.automationSettings?.invoiceAutoSendAfterHours ?? 0,
     invoiceReminders: profile.automationSettings?.invoiceReminders ?? true,
+    scheduleReminders: (profile.automationSettings as { scheduleReminders?: boolean } | undefined)?.scheduleReminders ?? true,
     googleReviewUrl: profile.googleReviewUrl ?? "",
     secondaryReviewUrl: profile.secondaryReviewUrl ?? "",
     sendReviewRequests: profile.sendReviewRequests ?? true,
@@ -69,6 +71,7 @@ export function AutomationsSection() {
               </SettingsRow>
             )}
             <ToggleRow label={t("dashboard.settings.business.invoiceReminders")} help={t("dashboard.settings.business.invoiceRemindersHint")} checked={draft.invoiceReminders} onChange={(v) => set("invoiceReminders", v)} />
+            <ToggleRow label={t("dashboard.settings.business.scheduleReminders")} help={t("dashboard.settings.business.scheduleRemindersHint")} checked={draft.scheduleReminders} onChange={(v) => set("scheduleReminders", v)} />
           </SettingsGroup>
           <SettingsGroup title={t("dashboard.settings.business.reviewsTitle")} desc={t("dashboard.settings.business.reviewsDesc")}>
             <SettingsRow label={t("dashboard.settings.business.googleReviewUrl")} help={t("dashboard.settings.business.googleReviewUrlHint")} htmlFor="s-auto-google" error={urlError(draft.googleReviewUrl)}>

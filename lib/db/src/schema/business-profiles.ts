@@ -29,6 +29,12 @@ export type AutomationSettings = {
   invoiceAutoSendAfterHours: number;
   /** Phase 4: email overdue reminders to the customer (3 / 7 / 14 days past due). */
   invoiceReminders: boolean;
+  /**
+   * AGENDA-1: la sera prima di un blocco in agenda (e la mattina stessa, se
+   * aggiunto dopo) ogni lavorante riceve un'email con orario, cantiere e
+   * indirizzo. Da spegnere per le agende tenute solo in ufficio.
+   */
+  scheduleReminders: boolean;
 };
 
 export const DEFAULT_AUTOMATION_SETTINGS: AutomationSettings = {
@@ -37,6 +43,7 @@ export const DEFAULT_AUTOMATION_SETTINGS: AutomationSettings = {
   autoSendInvoices: false,
   invoiceAutoSendAfterHours: 0,
   invoiceReminders: true,
+  scheduleReminders: true,
 };
 
 export const businessProfilesTable = pgTable("business_profiles", {

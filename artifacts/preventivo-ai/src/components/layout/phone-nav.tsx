@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useLocation, useSearch } from "wouter";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Bell, Briefcase, Bug, Building2, Camera, Check, ChevronRight, CreditCard, FilePlus2, FileText, HardHat, Home, ImagePlus, LayoutGrid, Loader2, LogOut, Mic, Plus, Receipt, Target, Users, Wallet, type LucideIcon } from "lucide-react";
+import { Bell, Briefcase, Bug, Building2, CalendarDays, Camera, Check, ChevronRight, CreditCard, FilePlus2, FileText, HardHat, Home, ImagePlus, LayoutGrid, Loader2, LogOut, Mic, Plus, Receipt, Target, Users, Wallet, type LucideIcon } from "lucide-react";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { BottomTabBar, tabOwns, type TabItem } from "@/components/mobile/bottom-tab-bar";
 import { BottomSheet } from "@/components/mobile/bottom-sheet";
@@ -41,6 +41,7 @@ const GROUP_OF: Record<string, Group> = {
   "/dashboard/leads": "work",
   "/dashboard/contracts": "work",
   "/dashboard/jobs": "work",
+  "/dashboard/schedule": "work",
   "/dashboard/catalog": "work",
   "/dashboard/documents": "work",
   "/dashboard/archive": "work",
@@ -89,7 +90,7 @@ function usePhoneTabs(navItems: PhoneNavItem[]): TabItem[] {
     return tabs;
   }, [navItems, t, home]);
 }
-const TAB_ICON: Record<string, LucideIcon> = { "/dashboard/quotes": FileText, "/dashboard/jobs": Briefcase, "/dashboard/clients": Users, "/dashboard/leads": Target };
+const TAB_ICON: Record<string, LucideIcon> = { "/dashboard/quotes": FileText, "/dashboard/jobs": Briefcase, "/dashboard/clients": Users, "/dashboard/leads": Target, "/dashboard/schedule": CalendarDays };
 
 export function PhoneTabBar({ navItems, moreProps }: { navItems: PhoneNavItem[]; moreProps: Omit<MoreSheetProps, "open" | "onOpenChange" | "tabs" | "onFeedback"> }) {
   const { t } = useLanguage();

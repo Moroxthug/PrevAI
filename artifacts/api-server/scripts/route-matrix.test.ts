@@ -28,6 +28,8 @@ const PUBLIC_ROUTES: Allow[] = [
   { match: /^GET \/api\/tax-profiles$/, reason: "static IVA regimes table for the quote builder; no data, cache-control 1 day" },
   { match: /^GET \/api\/settings\/registration$/, reason: "public 'is sign-up open' flag read by the auth pages" },
   { match: /^GET \/api\/payments\/plans$/, reason: "public pricing table" },
+  { match: /^GET \/api\/cron\/evening$/, reason: "AGENDA-1: second Vercel cron (crew reminders) — same Bearer $CRON_SECRET check as the tick" },
+  { match: /^GET \/api\/calendar\/feed\/:token\.ics$/, reason: "AGENDA-1: published .ics — only the SHA-256 of the token is stored, rate limited, schedule only (no invoices/quotes)" },
   { match: /^GET \/api\/cron\/tick$/, reason: "Vercel cron — handler checks `Authorization: Bearer $CRON_SECRET` itself" },
   { match: /^GET \/api\/storage\/public-objects\/\*filePath$/, reason: "public bucket (logos etc.) by design" },
   { match: /^GET \/api\/support\/admin-status$/, reason: "widget reads whether a human is online; no data" },

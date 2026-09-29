@@ -33,6 +33,7 @@ import { ClientThreadCard } from "@/components/clients/client-thread";
 import { ClientPortalCard } from "@/components/clients/client-portal-card";
 import { clientPortalApi } from "@/lib/portal-api";
 import { formatEurWhole } from "@/lib/money";
+import { CrewScheduleCard } from "@/components/schedule/crew-schedule-card";
 
 // PERF-1: recharts (~110 kB gzip) arrives after the page has painted; the fallback is the charts' own skeleton.
 const OverviewCharts = lazy(() => import("@/components/jobs/overview-charts").then((m) => ({ default: m.OverviewCharts })));
@@ -367,6 +368,8 @@ function ScheduleTab({ data, locale }: { data: JobDetailDto; locale: typeof it }
           <Gantt rows={milestones.map((m) => ({ id: m.id, title: m.title, start: m.plannedStart, end: m.plannedEnd, status: m.status, paymentAmountCents: m.paymentAmountCents }))} onRowClick={(mid) => setOpen(mid)} />
         </div>
       </section>
+
+      <CrewScheduleCard jobId={job.id} />
 
       <div className="stack" style={{ gap: 10 }}>
         {milestones.map((m: MilestoneDto, idx) => {

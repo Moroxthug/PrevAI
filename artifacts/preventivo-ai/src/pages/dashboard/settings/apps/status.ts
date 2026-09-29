@@ -8,6 +8,7 @@ import { developerApi, metaLeadAdsApi, stripeConnectApi } from "@/lib/invoices-a
 import { sdiApi } from "@/lib/sdi-api";
 import { useBusinessProfile } from "../data";
 import { APPS, type AppId } from "./catalog";
+import { calendarApi } from "@/lib/calendar-api";
 
 /**
  * - `connected`: funziona (o è acceso).
@@ -27,6 +28,8 @@ export const STATUS_KEYS = {
   apiKeys: ["developer-api-keys"],
   webhooks: ["developer-webhooks"],
   sdi: ["sdi", "settings"],
+  calendarFeeds: ["calendar-feeds"],
+  calendarPublish: ["calendar-publish"],
 } as const;
 
 /**
@@ -43,6 +46,8 @@ export function useAppStatuses(unlocked: (id: AppId) => boolean): Record<AppId, 
   const meta = useQuery({ queryKey: STATUS_KEYS.meta, queryFn: metaLeadAdsApi.status, enabled: on("meta_leads"), retry: false });
   const keys = useQuery({ queryKey: STATUS_KEYS.apiKeys, queryFn: developerApi.listKeys, enabled: on("api"), retry: false });
   const hooks = useQuery({ queryKey: STATUS_KEYS.webhooks, queryFn: developerApi.listWebhooks, enabled: on("api"), retry: false });
+  const icsFeeds = useQuery({ queryKey: STATUS_KEYS.calendarFeeds, queryFn: () => calendarApi.feeds(), enabled: on("ics_calendar"), retry: false });
+  const icsPublish = useQuery({ queryKey: STATUS_KEYS.calendarPublish, queryFn: () => calendarApi.publishState(), enabled: on("ics_calendar"), retry: false });
   const sdi = useQuery({ queryKey: STATUS_KEYS.sdi, queryFn: () => sdiApi.settings(), enabled: on("sdi"), retry: false });
   const profile = useBusinessProfile();
 
@@ -66,6 +71,15 @@ export function useAppStatuses(unlocked: (id: AppId) => boolean): Record<AppId, 
     return { state: conn.isEnabled === false ? "paused" : "connected", detail: conn.accountEmail ?? null };
   };
 
+  /** AGENDA-1: collegata se c'è almeno un calendario in abbonamento o il link pubblicato; da guardare se un abbonamento non si legge. */
+  const icsStatus = (): AppStatus => {
+    if (icsFeeds.isLoading || icsPublish.isLoading) return { state: "loading" };
+    const list = icsFeeds.data?.feeds ?? [];
+    if (list.some((f) => f.isEnabled && f.lastStatus === "failed")) return { state: "attention", detail: "Un calendario non si legge" };
+    const parts = [list.length ? `${list.length} ${list.length === 1 ? "calendario" : "calendari"}` : null, icsPublish.data?.enabled ? "agenda pubblicata" : null].filter(Boolean);
+    return parts.length ? { state: "connected", detail: parts.join(" · ") } : { state: "off" };
+  };
+
   const gmail = email.data?.connections.find((c) => c.provider === "google");
   const activeKeys = (keys.data?.items ?? []).filter((k) => !k.revokedAt).length;
   const webhookCount = hooks.data?.items.length ?? 0;
@@ -74,6 +88,7 @@ export function useAppStatuses(unlocked: (id: AppId) => boolean): Record<AppId, 
   const raw: Record<AppId, AppStatus> = {
     google_calendar: calendarOf("google"),
     outlook_calendar: calendarOf("outlook"),
+    ics_calendar: icsStatus(),
     gmail: email.isLoading
       ? { state: "loading" }
       : !gmail

@@ -56,6 +56,8 @@ import {
   suppliersTable,
   fiscalPaymentsTable,
   jobNotesTable,
+  scheduleBlocksTable,
+  calendarFeedsTable,
   authSessionsTable,
   authUsersTable,
 } from "@workspace/db";
@@ -163,6 +165,9 @@ async function seedOrgA(): Promise<Fixtures> {
   f.supplier = await ins(db.insert(suppliersTable).values({ userId, name: "Ferramenta E2E" }).returning());
   f.versamento = await ins(db.insert(fiscalPaymentsTable).values({ userId, anno: 2025, tipo: "altro", importoCents: 100 }).returning());
   f.note = await ins(db.insert(jobNotesTable).values({ userId, actorUserId: userId, projectId: project.id, body: "Nota E2E" }).returning());
+  // AGENDA-1: un turno in agenda e un calendario .ics in abbonamento.
+  f.block = await ins(db.insert(scheduleBlocksTable).values({ userId, projectId: project.id, collaboratorId: f.worker, startsAt: new Date(), endsAt: new Date(Date.now() + 3_600_000) }).returning());
+  f.feed = await ins(db.insert(calendarFeedsTable).values({ userId, name: "Feed E2E", url: "https://example.invalid/a.ics" }).returning());
 
   // Clients are virtual (md5 of the quote's client fields) — read the id back the way the UI does.
   const clients = await A.api("/api/clients");
@@ -217,6 +222,7 @@ function resolveParams(route: MatrixRoute, f: Fixtures): { path: string; unseede
           ["/api/fiscale/prima-nota/movimenti", "movimentoPn"], ["/api/fiscale/banca/import", "estratto"], ["/api/fiscale/banca/movimenti", "movBanca"],
           ["/api/fiscale/condivisioni", "condivisione"], ["/api/fiscale/versamenti", "versamento"], ["/api/crm/suppliers", "supplier"],
           ["/api/fiscale/commercialista/incarichi", "incarico"], ["/api/studio/incarichi", "incarico"],
+          ["/api/schedule/blocks", "block"], ["/api/calendar/feeds", "feed"],
         ];
         id = byPrefix.find(([p]) => prefix === p)?.[1];
         break;

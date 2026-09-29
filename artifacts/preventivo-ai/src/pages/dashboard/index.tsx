@@ -51,6 +51,7 @@ import { ListRow } from "@/components/mobile/list-row";
 import { AssistantAskRow } from "@/components/assistant/assistant-launcher";
 import { hasFeature } from "@/lib/plans";
 import { InstallPrompt } from "@/components/pwa/install-prompt";
+import { CalendarCard } from "@/components/dashboard/calendar-card";
 
 /* ─── plan helpers ─────────────────────────────────────────────────────────── */
 
@@ -755,6 +756,8 @@ export default function DashboardHome() {
                     return <JobsSection key={id} />;
                   case "hours":
                     return <HoursSection key={id} />;
+                  case "calendar":
+                    return <CalendarCard key={id} />;
                   case "invoices":
                     return <InvoicesSection key={id} />;
                   case "fisco":

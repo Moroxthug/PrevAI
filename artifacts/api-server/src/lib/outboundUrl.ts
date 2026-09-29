@@ -132,3 +132,67 @@ export function isPushServiceEndpoint(endpoint: string): boolean {
   if (!isProduction() && host.endsWith(".invalid")) return true;
   return PUSH_SERVICE_HOSTS.some((h) => host === h || host.endsWith(`.${h}`));
 }
+
+export type PublicGet = { status: number; text: string; tooLarge: boolean };
+
+/**
+ * AGENDA-1: GET of a customer-supplied URL (a subscribed .ics calendar) whose
+ * body we then show back, so the guard matters even more than for webhooks:
+ * same static check and connect-time address check, redirects followed by
+ * hand (at most `maxRedirects`, each hop checked again, https→http refused),
+ * body capped at `maxBytes`.
+ */
+export async function getPublicText(raw: string, opts: { maxBytes: number; timeoutMs: number; headers?: Record<string, string>; maxRedirects?: number }): Promise<PublicGet> {
+  let current = raw;
+  for (let hop = 0; hop <= (opts.maxRedirects ?? 3); hop++) {
+    const check = checkWebhookUrl(current);
+    if (!check.ok) throw new Error(check.reason);
+    const { url } = check;
+    // Dominio riservato (RFC 2606) che i test e2e servono col fetch finto; mai risolvibile, e mai in produzione.
+    if (!isProduction() && url.hostname.endsWith(".invalid")) {
+      const res = await fetch(url, { redirect: "manual", headers: opts.headers, signal: AbortSignal.timeout(opts.timeoutMs) });
+      const location = res.status >= 300 && res.status < 400 ? res.headers.get("location") : null;
+      if (!location) {
+        const text = await res.text();
+        return { status: res.status, text: text.length > opts.maxBytes ? "" : text, tooLarge: text.length > opts.maxBytes };
+      }
+      current = new URL(location, url).toString();
+      continue;
+    }
+    const client = url.protocol === "https:" ? https : http;
+    const answer = await new Promise<{ status: number; location: string | null; text: string; tooLarge: boolean }>((resolve, reject) => {
+      const req = client.request(url, { method: "GET", headers: opts.headers ?? {}, lookup: guardedLookup as never, timeout: opts.timeoutMs }, (res) => {
+        const status = res.statusCode ?? 0;
+        if (status >= 300 && status < 400) {
+          res.resume();
+          resolve({ status, location: res.headers.location ?? null, text: "", tooLarge: false });
+          return;
+        }
+        const chunks: Buffer[] = [];
+        let size = 0;
+        res.on("data", (chunk: Buffer) => {
+          size += chunk.length;
+          if (size > opts.maxBytes) {
+            res.destroy();
+            resolve({ status, location: null, text: "", tooLarge: true });
+            return;
+          }
+          chunks.push(chunk);
+        });
+        res.on("end", () => resolve({ status, location: null, text: Buffer.concat(chunks).toString("utf8"), tooLarge: false }));
+        res.on("error", reject);
+      });
+      req.on("timeout", () => req.destroy(Object.assign(new Error("timeout"), { name: "TimeoutError" })));
+      req.on("error", reject);
+      req.end();
+    });
+    if (answer.location) {
+      const next = new URL(answer.location, url);
+      if (url.protocol === "https:" && next.protocol !== "https:") throw new Error("redirect verso http rifiutato");
+      current = next.toString();
+      continue;
+    }
+    return { status: answer.status, text: answer.text, tooLarge: answer.tooLarge };
+  }
+  throw new Error("troppi redirect");
+}

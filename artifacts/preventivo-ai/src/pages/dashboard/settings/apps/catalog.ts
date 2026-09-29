@@ -8,7 +8,7 @@ import { PLAN_FEATURES, PLAN_IDS, type PlanId, type ProductFeature } from "@/lib
 // riquadro invece di un pannello. I testi sono qui (PrevAI è solo in italiano).
 
 export type AppId =
-  | "google_calendar" | "outlook_calendar"
+  | "google_calendar" | "outlook_calendar" | "ics_calendar"
   | "gmail"
   | "whatsapp"
   | "stripe"
@@ -53,15 +53,21 @@ export type AppDef = {
 export const APPS: AppDef[] = [
   {
     id: "google_calendar", group: "calendar", name: "Google Calendar", logo: "google-calendar.svg", icon: CalendarDays, feature: "calendar_sync", owner: "Google LLC",
-    tagline: "Le fasi dei cantieri nel tuo calendario",
-    about: "Ogni fase di cantiere con una data compare nel tuo Google Calendar e si aggiorna quando la sposti in PrevAI. Il collegamento va in un solo senso: PrevAI scrive, non legge i tuoi altri appuntamenti.",
-    shared: "Titolo della fase, cantiere, date e indirizzo del cantiere vanno a Google.",
+    tagline: "Fasi e turni nel tuo calendario, i tuoi impegni in PrevAI",
+    about: "Ogni fase di cantiere con una data e ogni turno dell'agenda compaiono nel tuo Google Calendar e si aggiornano quando li sposti in PrevAI. Nell'altro senso PrevAI legge i tuoi appuntamenti dei prossimi tre mesi solo per mostrarli nel calendario della dashboard: non li modifica mai.",
+    shared: "Fasi e turni (titolo, cantiere, operaio, orari) vanno a Google; da Google arrivano titolo, luogo e orari dei tuoi appuntamenti, tenuti in una copia che si rifà a ogni lettura.",
   },
   {
     id: "outlook_calendar", group: "calendar", name: "Outlook", icon: CalendarDays, feature: "calendar_sync", owner: "Microsoft Corporation",
-    tagline: "Le fasi dei cantieri nel calendario Outlook",
-    about: "Ogni fase di cantiere con una data compare nel tuo calendario Outlook (Microsoft 365) e si aggiorna quando la sposti in PrevAI. PrevAI scrive soltanto, non legge gli altri appuntamenti.",
-    shared: "Titolo della fase, cantiere, date e indirizzo del cantiere vanno a Microsoft.",
+    tagline: "Fasi e turni nel calendario Outlook",
+    about: "Ogni fase di cantiere con una data e ogni turno dell'agenda compaiono nel tuo calendario Outlook (Microsoft 365) e si aggiornano quando li sposti in PrevAI. PrevAI legge i tuoi appuntamenti dei prossimi tre mesi solo per mostrarli nel calendario della dashboard, senza modificarli.",
+    shared: "Fasi e turni (titolo, cantiere, operaio, orari) vanno a Microsoft; da Microsoft arrivano titolo, luogo e orari dei tuoi appuntamenti.",
+  },
+  {
+    id: "ics_calendar", group: "calendar", name: "Calendari .ics", icon: CalendarDays, feature: "calendar_sync",
+    tagline: "Calendly, Apple e ogni calendario con un link",
+    about: "Abbonati a qualsiasi calendario che pubblica un link .ics (Calendly, Calendario di Apple, un Google Calendar condiviso): i suoi eventi compaiono nel calendario della dashboard, in sola lettura. E pubblica la tua agenda con un link privato da aggiungere a qualsiasi app di calendario.",
+    shared: "PrevAI scarica i link .ics che indichi. Chi ha il link pubblicato vede turni e fasi dei cantieri (non fatture né preventivi).",
   },
   {
     id: "gmail", group: "email", name: "Gmail", logo: "gmail.svg", icon: Mail, feature: "gmail_send", owner: "Google LLC",

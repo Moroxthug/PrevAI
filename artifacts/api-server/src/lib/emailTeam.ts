@@ -47,3 +47,20 @@ export async function sendTeamMemberInviteEmail(params: { toEmail: string; compa
   await resendOrThrow().emails.send({ from: FROM, to: [params.toEmail], subject: t.subject, html });
   logger.info({ to: params.toEmail }, "Team member invite email sent");
 }
+
+/** AGENDA-1: il promemoria della sera prima (o della mattina stessa) per un blocco in agenda. */
+export async function sendWorkerScheduleReminderEmail(params: { toEmail: string; workerName: string; companyName: string; kind: "tomorrow" | "today"; body: string; label: string }): Promise<void> {
+  const company = escapeHtml(params.companyName);
+  const worker = escapeHtml(params.workerName);
+  const t = {
+    title: params.kind === "tomorrow" ? "Il tuo programma di domani" : "Il tuo programma di oggi",
+    sub: params.companyName,
+    body: `Ciao ${worker},<br/><br/>${escapeHtml(params.body)}`,
+    hint: "Sulla pagina delle ore (il link che ti ha mandato l’impresa) trovi tutti i turni delle prossime due settimane. Se non puoi esserci, avvisa il tuo datore di lavoro.",
+    footer: `Inviato tramite ${MARKET.brand} per conto di ${company}.`,
+    subject: `${params.companyName} — ${params.kind === "tomorrow" ? "domani" : "oggi"}: ${params.label}`,
+  };
+  const html = shell({ headerTitle: t.title, headerSub: t.sub, bodyHtml: `<p>${t.body}</p><p class="muted">${t.hint}</p>`, footer: t.footer });
+  await resendOrThrow().emails.send({ from: FROM, to: [params.toEmail], subject: t.subject, html });
+  logger.info({ to: params.toEmail }, "Worker schedule reminder email sent");
+}

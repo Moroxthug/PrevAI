@@ -81,7 +81,7 @@ export type OutlookEventPayload = {
   body?: { contentType: "text"; content: string };
   start: { dateTime: string; timeZone: "UTC" };
   end: { dateTime: string; timeZone: "UTC" };
-  isAllDay: true;
+  isAllDay: boolean;
 };
 
 export async function createOutlookEvent(accessToken: string, calendarId: string, payload: OutlookEventPayload): Promise<{ id: string }> {
@@ -100,4 +100,45 @@ export async function deleteOutlookEvent(accessToken: string, eventId: string): 
     // Already gone (deleted by the user on their calendar, or never created) — not a failure worth surfacing.
     logger.warn({ err, eventId }, "Outlook Calendar event delete failed (ignoring)");
   }
+}
+
+// ── Phase 85: reading the other way ──────────────────────────────────────────
+
+export type OutlookListedEvent = {
+  id: string;
+  subject?: string;
+  isAllDay?: boolean;
+  isCancelled?: boolean;
+  showAs?: string;
+  webLink?: string;
+  location?: { displayName?: string };
+  start?: { dateTime?: string; timeZone?: string };
+  end?: { dateTime?: string; timeZone?: string };
+};
+
+/**
+ * `/me/calendarView` expands recurring series between two instants — the
+ * Graph equivalent of Google's `singleEvents`.
+ */
+export async function listOutlookEvents(
+  accessToken: string,
+  calendarId: string,
+  timeMin: Date,
+  timeMax: Date,
+  top = 250,
+): Promise<OutlookListedEvent[]> {
+  const params = new URLSearchParams({
+    startDateTime: timeMin.toISOString(),
+    endDateTime: timeMax.toISOString(),
+    $top: String(top),
+    $orderby: "start/dateTime",
+    $select: "id,subject,isAllDay,isCancelled,showAs,webLink,location,start,end",
+  });
+  const base = calendarId === "primary" ? "/me/calendarView" : `/me/calendars/${encodeURIComponent(calendarId)}/calendarView`;
+  const res = await graphRequest<{ value?: OutlookListedEvent[] }>(accessToken, `${base}?${params.toString()}`, {
+    // Graph returns event times in the requested zone; ask for UTC so the
+    // mirror stores instants and the browser localises them.
+    headers: { Prefer: 'outlook.timezone="UTC"' },
+  });
+  return res.value ?? [];
 }

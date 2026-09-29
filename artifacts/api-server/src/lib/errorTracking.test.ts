@@ -168,6 +168,7 @@ describe("redactTokens", () => {
     [`https://prevai.it/team-invite/${tok}`, "https://prevai.it/team-invite/[token]"],
     [`/api/portal/${tok}/invoices/${uuid}/pdf`, `/api/portal/[token]/invoices/${uuid}/pdf`],
     [`https://prevai.it/portal/${tok}`, "https://prevai.it/portal/[token]"],
+    [`/api/calendar/feed/${tok}.ics`, "/api/calendar/feed/[token]"],
     [`fetch failed: GET /api/i/${tok}/pdf and /api/t/${tok}`, "fetch failed: GET /api/i/[token]/pdf and /api/t/[token]"],
   ])("%s", (input, expected) => {
     expect(redactTokens(input)).toBe(expected);

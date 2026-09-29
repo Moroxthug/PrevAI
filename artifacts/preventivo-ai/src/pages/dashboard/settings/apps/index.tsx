@@ -12,7 +12,7 @@ import { useBusinessProfile } from "../data";
 import { APPS, APP_GROUPS, APPS_HREF, RETURN_PARAMS, appById, appHref, type AppDef, type AppId } from "./catalog";
 import { useAppStatuses, type AppStatus } from "./status";
 import { BrandLogo, LockNote, StatusPill } from "./ui";
-import { ApiPanel, GmailPanel, GoogleCalendarPanel, MetaLeadsPanel, OutlookCalendarPanel, StripePanel } from "./panels";
+import { ApiPanel, GmailPanel, GoogleCalendarPanel, IcsCalendarPanel, MetaLeadsPanel, OutlookCalendarPanel, StripePanel } from "./panels";
 
 // ── APP-1b (come QuoteAI Phase 103): App collegate come catalogo ─────────────
 // Riquadri con il logo di ciascuna azienda, raggruppati; prima quelle già
@@ -24,6 +24,7 @@ import { ApiPanel, GmailPanel, GoogleCalendarPanel, MetaLeadsPanel, OutlookCalen
 const PANELS: Partial<Record<AppId, ComponentType>> = {
   google_calendar: GoogleCalendarPanel,
   outlook_calendar: OutlookCalendarPanel,
+  ics_calendar: IcsCalendarPanel,
   gmail: GmailPanel,
   stripe: StripePanel,
   meta_leads: MetaLeadsPanel,

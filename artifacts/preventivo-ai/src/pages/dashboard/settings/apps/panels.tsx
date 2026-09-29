@@ -5,7 +5,7 @@ import {
   useGetEmailConnectionsStatus, getGetEmailConnectionsStatusQueryKey, useGetEmailConnectionConnectUrl, getGetEmailConnectionConnectUrlQueryKey,
   useDisconnectEmailConnection, useToggleEmailConnection, type CalendarProvider,
 } from "@workspace/api-client-react";
-import { Copy, KeyRound, Loader2, Plug, Trash2, Webhook } from "lucide-react";
+import { Copy, KeyRound, Loader2, Plug, RefreshCw, Trash2, Webhook } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/i18n/LanguageContext";
@@ -14,6 +14,7 @@ import { developerApi, metaLeadAdsApi, stripeConnectApi, type AutomationEventNam
 import { ActionRow, SettingsGroup, SettingsRow, ToggleRow } from "../ui";
 import { AccountFacts, DisconnectRow, SyncLog, fmtDate, fmtDateTime } from "./ui";
 import { STATUS_KEYS } from "./status";
+import { calendarApi } from "@/lib/calendar-api";
 
 // ── APP-1b: il pannello di ogni app del catalogo ─────────────────────────────
 // Stessi endpoint e stesse azioni delle vecchie schede "Integrazioni", in
@@ -340,4 +341,125 @@ export function ApiPanel() {
       </SettingsGroup>
     </>
   );
+}
+
+// ── AGENDA-1: calendari .ics in abbonamento e l'agenda pubblicata ───────────
+// Le due metà del calendario che non chiedono un'app OAuth: qualsiasi link
+// .ics (Calendly, Apple, un Google condiviso) letto nel calendario della
+// dashboard, e un link privato che serve l'agenda di PrevAI a qualsiasi app.
+
+export function IcsCalendarPanel() {
+  const { t } = useLanguage();
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const feeds = useQuery({ queryKey: STATUS_KEYS.calendarFeeds, queryFn: () => calendarApi.feeds(), retry: false });
+  const publish = useQuery({ queryKey: STATUS_KEYS.calendarPublish, queryFn: () => calendarApi.publishState(), retry: false });
+  const [name, setName] = useState("");
+  const [url, setUrl] = useState("");
+  const [publishedUrl, setPublishedUrl] = useState<string | null>(null);
+  const refreshFeeds = () => {
+    void queryClient.invalidateQueries({ queryKey: STATUS_KEYS.calendarFeeds });
+    void queryClient.invalidateQueries({ queryKey: ["agenda"] });
+  };
+  const onError = (e: Error) => toast({ title: t(feedErrorKey(e.message)), variant: "destructive" });
+
+  const addFeed = useMutation({
+    mutationFn: () => calendarApi.addFeed(name.trim(), url.trim()),
+    onSuccess: (r) => {
+      setName("");
+      setUrl("");
+      refreshFeeds();
+      toast(r.feed.lastStatus === "ok"
+        ? { title: t("dashboard.settings.calendarFeeds.added").replace("{count}", String(r.events)) }
+        : { title: t("dashboard.settings.calendarFeeds.error"), description: r.feed.lastError ?? undefined, variant: "destructive" });
+    },
+    onError,
+  });
+  const toggleFeed = useMutation({ mutationFn: ({ id, on }: { id: string; on: boolean }) => calendarApi.setFeedEnabled(id, on), onSuccess: refreshFeeds, onError });
+  const removeFeed = useMutation({ mutationFn: (id: string) => calendarApi.deleteFeed(id), onSuccess: refreshFeeds, onError });
+  const refresh = useMutation({
+    mutationFn: () => calendarApi.refresh(),
+    onSuccess: (r) => {
+      refreshFeeds();
+      toast(r.errors.length
+        ? { title: t("dashboard.settings.calendarFeeds.error"), description: r.errors[0], variant: "destructive" }
+        : { title: t("dashboard.settings.calendarFeeds.refreshed").replace("{count}", String(r.events)) });
+    },
+    onError,
+  });
+  const createLink = useMutation({
+    mutationFn: () => calendarApi.createPublishLink(),
+    onSuccess: (r) => { setPublishedUrl(r.url); void queryClient.invalidateQueries({ queryKey: STATUS_KEYS.calendarPublish }); },
+    onError,
+  });
+  const revokeLink = useMutation({
+    mutationFn: () => calendarApi.revokePublishLink(),
+    onSuccess: () => { setPublishedUrl(null); void queryClient.invalidateQueries({ queryKey: STATUS_KEYS.calendarPublish }); },
+    onError,
+  });
+
+  const list = feeds.data?.feeds ?? [];
+  return (
+    <>
+      <SettingsGroup title={t("dashboard.settings.calendarFeeds.title")}
+        action={list.length > 0 ? (
+          <button type="button" className="btn btn-sm btn-outline-navy" onClick={() => refresh.mutate()} disabled={refresh.isPending}>
+            {refresh.isPending ? <Spinner /> : <RefreshCw aria-hidden="true" />}
+            {t("dashboard.settings.calendarFeeds.refresh")}
+          </button>
+        ) : undefined}>
+        {feeds.isLoading ? <div className="sgroup-pad"><Skeleton className="h-12 w-full" /></div> : list.map((f) => (
+          <div key={f.id} className="app-hook">
+            <ToggleRow label={f.name}
+              help={f.lastStatus === "failed"
+                ? `${f.url} · ${f.lastError ?? t("dashboard.settings.calendarFeeds.error")}`
+                : `${f.url} · ${t("dashboard.settings.calendarFeeds.eventCount").replace("{count}", String(f.eventCount))}`}
+              checked={f.isEnabled} disabled={toggleFeed.isPending} onChange={(on) => toggleFeed.mutate({ id: f.id, on })} />
+            <button type="button" className="btn btn-sm btn-outline-navy app-danger" aria-label={`Elimina il calendario ${f.name}`} onClick={() => removeFeed.mutate(f.id)} disabled={removeFeed.isPending}>
+              <Trash2 aria-hidden="true" />
+            </button>
+          </div>
+        ))}
+        <SettingsRow label={t("dashboard.settings.calendarFeeds.nameLabel")} htmlFor="ics-name">
+          <input id="ics-name" value={name} onChange={(e) => setName(e.target.value)} placeholder="Calendly" autoComplete="off" maxLength={80} />
+        </SettingsRow>
+        <SettingsRow label={t("dashboard.settings.calendarFeeds.urlLabel")} help={t("dashboard.settings.calendarFeeds.urlHelp")} htmlFor="ics-url">
+          <div className="app-inline">
+            <input id="ics-url" type="url" inputMode="url" value={url} onChange={(e) => setUrl(e.target.value)} placeholder="https://calendly.com/…/ics" autoComplete="off" />
+            <button type="button" onClick={() => addFeed.mutate()} disabled={!name.trim() || !url.trim() || addFeed.isPending} className="btn btn-sm btn-navy">
+              {addFeed.isPending && <Spinner />}
+              {t("dashboard.settings.calendarFeeds.add")}
+            </button>
+          </div>
+        </SettingsRow>
+      </SettingsGroup>
+
+      <SettingsGroup title={t("dashboard.settings.calendarPublish.title")} desc={t("dashboard.settings.calendarPublish.desc")}>
+        {publishedUrl && <div className="sgroup-pad"><Revealed value={publishedUrl} warning={t("dashboard.settings.calendarPublish.onceOnly")} onDismiss={() => setPublishedUrl(null)} /></div>}
+        <ActionRow
+          label={publish.data?.enabled ? t("dashboard.settings.calendarPublish.live").replace("{hint}", publish.data.hint ?? "") : t("dashboard.settings.calendarPublish.none")}
+          help={publish.data?.lastAccessedAt ? t("dashboard.settings.calendarPublish.lastRead").replace("{when}", fmtDateTime(publish.data.lastAccessedAt) ?? "") : undefined}>
+          <button type="button" className="btn btn-sm btn-navy" onClick={() => createLink.mutate()} disabled={createLink.isPending}>
+            {createLink.isPending && <Spinner />}
+            {publish.data?.enabled ? t("dashboard.settings.calendarPublish.rotate") : t("dashboard.settings.calendarPublish.create")}
+          </button>
+          {publish.data?.enabled && (
+            <button type="button" className="btn btn-sm btn-outline-navy" onClick={() => revokeLink.mutate()} disabled={revokeLink.isPending}>
+              {t("dashboard.settings.calendarPublish.revoke")}
+            </button>
+          )}
+        </ActionRow>
+      </SettingsGroup>
+    </>
+  );
+}
+
+/** Il server risponde con un codice, non con una frase: qui diventa una frase. */
+function feedErrorKey(message: string): string {
+  if (message.includes("HTTPS_REQUIRED")) return "dashboard.settings.calendarFeeds.errorHttps";
+  if (message.includes("PRIVATE_HOST")) return "dashboard.settings.calendarFeeds.errorPrivate";
+  if (message.includes("NO_CREDENTIALS")) return "dashboard.settings.calendarFeeds.errorCredentials";
+  if (message.includes("TOO_MANY_FEEDS")) return "dashboard.settings.calendarFeeds.errorTooMany";
+  if (message.includes("INVALID_URL")) return "dashboard.settings.calendarFeeds.errorUrl";
+  return "dashboard.settings.calendarFeeds.error";
 }
