@@ -19,16 +19,19 @@ import { useMobileHeader } from "@/components/mobile/mobile-page-header";
 import { quoteStatusChip } from "@/components/quotes/quote-status";
 import { JobStatusBadge } from "@/components/jobs/badges";
 import { InvoiceListRow } from "@/components/invoices/invoice-list-row";
+import { ClientThreadCard } from "@/components/clients/client-thread";
+import { ClientPortalCard } from "@/components/clients/client-portal-card";
+import { clientPortalApi } from "@/lib/portal-api";
 
 const mapsUrl = (address: string) => `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`;
-type Tab = "quotes" | "jobs" | "invoices";
+type Tab = "quotes" | "jobs" | "invoices" | "messages";
 const norm = (s: string | null | undefined) => (s ?? "").trim().toLowerCase();
 
 /**
  * Phase 107 — the client first: name, where they are, and one tap to call,
  * text, email or find them; four numbers as a strip; then what you have with
- * them as tabs (quotes, jobs, invoices). PrevAI has no client portal, so no
- * Messages tab.
+ * them as tabs (quotes, jobs, invoices, and — CLI-1 — messages with the
+ * client portal).
  */
 export default function ClientDetailPage() {
   const params = useParams<{ id: string }>();
@@ -46,22 +49,24 @@ export default function ClientDetailPage() {
   const { data: profile } = useGetBusinessProfile();
   const hasJobs = profile ? hasFeature(profile as never, "jobs") : false;
   const hasInvoices = profile ? hasFeature(profile as never, "invoicing") : false;
-  // The page URL carries the md5 of the client's quotes grouping (name, email, phone), not a client row id:
-  // jobs are the ones started from these quotes or made out to the same name; invoices are those jobs'
-  // plus the manual ones made out to the same name.
+  // The page URL carries the md5 of the client's quotes grouping (name, email, phone), not a client row id.
+  // CLI-1: the portal status answers with the client row's id, so jobs and invoices made out to this client
+  // are found by id; before that (or without the migration) by the quotes they started from or the same name.
+  const portal = useQuery({ queryKey: ["client-portal", clientId], queryFn: () => clientPortalApi.status(clientId), enabled: !!clientId, retry: false });
+  const uuid = portal.data?.clientId ?? null;
   const jobsQ = useQuery({ queryKey: ["jobs"], queryFn: jobsApi.list, enabled: hasJobs, retry: false });
   const invoicesQ = useQuery({ queryKey: ["invoices"], queryFn: invoicesApi.list, enabled: hasInvoices, retry: false });
 
   const quoteIds = useMemo(() => new Set((quotes ?? []).map((q) => q.id)), [quotes]);
   const nameKey = norm(quotes?.[0]?.clientData?.nome);
   const jobs = useMemo(
-    () => (jobsQ.data?.items ?? []).filter((j) => (j.quoteId && quoteIds.has(j.quoteId)) || (!!nameKey && norm(j.clientName) === nameKey)),
-    [jobsQ.data, nameKey, quoteIds],
+    () => (jobsQ.data?.items ?? []).filter((j) => (!!uuid && j.clientId === uuid) || (j.quoteId && quoteIds.has(j.quoteId)) || (!!nameKey && norm(j.clientName) === nameKey)),
+    [jobsQ.data, nameKey, quoteIds, uuid],
   );
   const jobIds = useMemo(() => new Set(jobs.map((j) => j.id)), [jobs]);
   const invoices = useMemo(
-    () => (invoicesQ.data?.items ?? []).filter((i) => (i.projectId ? jobIds.has(i.projectId) : !!nameKey && norm(i.clientName ?? i.customer.name) === nameKey)),
-    [invoicesQ.data, nameKey, jobIds],
+    () => (invoicesQ.data?.items ?? []).filter((i) => (!!uuid && i.clientId === uuid) || (i.projectId ? jobIds.has(i.projectId) : !!nameKey && norm(i.clientName ?? i.customer.name) === nameKey)),
+    [invoicesQ.data, nameKey, jobIds, uuid],
   );
 
   const totalValue = quotes?.reduce((sum, q) => sum + q.totale, 0) ?? 0;
@@ -88,6 +93,7 @@ export default function ClientDetailPage() {
     { id: "quotes", label: t("clients.col.quotes"), count: quotes?.length ?? 0 },
     ...(hasJobs && !jobsQ.isError ? [{ id: "jobs" as const, label: t("clients.m.jobs"), count: jobs.length }] : []),
     ...(hasInvoices && !invoicesQ.isError ? [{ id: "invoices" as const, label: t("clients.m.invoices"), count: invoices.length }] : []),
+    { id: "messages", label: t("clients.m.messages"), count: portal.data?.unread || undefined },
   ];
   const tab: Tab = tabs.some((x) => x.id === tabParam) ? tabParam! : "quotes";
   const setTab = (id: string) => navigate(`/dashboard/clients/${clientId}${id === "quotes" ? "" : `?tab=${id}`}`, { replace: true });
@@ -156,6 +162,12 @@ export default function ClientDetailPage() {
 
       <ScrollTabs tabs={tabs} value={tab} onChange={setTab} sticky label={t("clients.m.sections")} />
 
+      {tab === "messages" ? (
+        <div className="c-msgs">
+          <ClientThreadCard clientId={clientId} />
+          <ClientPortalCard clientId={clientId} />
+        </div>
+      ) : (
       <div className="card">
         {tab === "quotes" && (
           isLoading ? (
@@ -216,6 +228,7 @@ export default function ClientDetailPage() {
           )
         )}
       </div>
+      )}
     </div>
   );
 }

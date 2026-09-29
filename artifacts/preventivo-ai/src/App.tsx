@@ -55,6 +55,7 @@ const ChiusuraPage = lazy(() => import("@/pages/dashboard/chiusura"));
 const CommercialistaPage = lazy(() => import("@/pages/commercialista/[token]"));
 const InvoiceDetailPage = lazy(() => import("@/pages/dashboard/invoices/[id]"));
 const PublicInvoicePage = lazy(() => import("@/pages/i/[token]"));
+const PortalPage = lazy(() => import("@/pages/portal/[token]"));
 const JobsListPage = lazy(() => import("@/pages/dashboard/jobs/index"));
 const JobDetailPage = lazy(() => import("@/pages/dashboard/jobs/[id]"));
 const JobSetupPage = lazy(() => import("@/pages/dashboard/jobs/setup"));
@@ -277,6 +278,8 @@ function Router() {
       <Route path="/sign/:token" component={() => <Suspense fallback={null}><SignPage /></Suspense>} />
       {/* Public invoice page: the customer sees the balance + payment instructions from the emailed link */}
       <Route path="/i/:token" component={() => <Suspense fallback={null}><PublicInvoicePage /></Suspense>} />
+      {/* CLI-1: area clienti — tutto quello che l'impresa ha mandato a questo cliente, dietro un codice via email */}
+      <Route path="/portal/:token" component={() => <Suspense fallback={null}><PortalPage /></Suspense>} />
       {/* A-6: lo studio del professionista — utente autenticato ma non un'impresa: niente onboarding, niente menu del cantiere */}
       <Route path="/studio/incarichi/:id" component={() => <Suspense fallback={null}><StudioIncaricoPage /></Suspense>} />
       <Route path="/studio" component={() => <Suspense fallback={null}><StudioPage /></Suspense>} />

@@ -100,6 +100,7 @@ Disallow: /sign/
 Disallow: /t/
 Disallow: /team-invite/
 Disallow: /commercialista/
+Disallow: /portal/
 Disallow: /studio
 
 # City pages outside the active region (see ACTIVE_CITIES in seo-data.ts)

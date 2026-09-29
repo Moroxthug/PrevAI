@@ -39,7 +39,7 @@ const DAY = 86_400_000;
 const EXPORT_FOLDERS = [...RETAINED_STORAGE, ...DELETED_STORAGE].filter((f) => f !== "account-exports");
 
 /** Tabelle con `user_id` che non si esportano: credenziali e contabilità interna di PrevAI. */
-const SKIPPED_TABLES = new Set(["auth_account", "auth_session", "two_factor", "whatsapp_otp", "account_exports", "automation_runs", "ai_budgets", "rate_limit_counters"]);
+const SKIPPED_TABLES = new Set(["auth_account", "auth_session", "two_factor", "whatsapp_otp", "account_exports", "automation_runs", "ai_budgets", "rate_limit_counters", "client_portal_sessions"]);
 
 /** Tabelle senza `user_id` che appartengono a una riga che ce l'ha: [tabella, colonna, tabella madre]. */
 const CHILD_TABLES: [string, string, string][] = [

@@ -97,6 +97,8 @@ export type PublicSignPayload = {
     expiresAt: string | null;
     signedAt: string | null;
     contractorSignedAt: string | null;
+    /** CLI-1: l'area clienti, quando il contratto ha un cliente con email. */
+    portalUrl?: string | null;
   };
   signer: { name: string; emailMasked: string; status: string; otpVerified: boolean; signedAt: string | null };
   html: string;

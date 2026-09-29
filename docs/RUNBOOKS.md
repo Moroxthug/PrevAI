@@ -1245,3 +1245,19 @@ curl -s --ssl-no-revoke -D - -o /dev/null https://prevai.it/api/healthz | grep -
 
 **Avvio a freddo.** Il bundle dell'API è minificato (`build.mjs`, con `keepNames`): 12,5 → 6 MB. Il primo `/api/healthz` dopo un periodo fermo misura l'avvio a freddo.
 
+
+## 32. Area clienti e messaggi col cliente (CLI-1, riga 50)
+
+**Migrazione 0018.** `migrations/v2/0018_cli1_portale.sql` crea `client_portals` (una riga per cliente: hash del link, codice di accesso, invito, ultima visita), `client_portal_sessions` e `client_messages`. Nessuna colonna nuova su tabelle esistenti. Finché non gira: le rotte `/api/clients/:id/portal|messages` rispondono **503 `PORTAL_NOT_READY`** (le schede Messaggi dicono "l'area clienti non è ancora attiva"), `/api/portal/:token` risponde 404, e /i, /sign, /p non mostrano "Vedi tutto". Il server se ne accorge entro un minuto. Si lancia con `bash scripts/prod-migrate.sh migrations/v2/0018_cli1_portale.sql`.
+
+**Come funziona.** Ogni cliente con un'email ha un link `/portal/<token>`: un HMAC dell'id del cliente e dell'impresa col segreto delle fatture (`INVOICE_LINK_SECRET`, se no `BETTER_AUTH_SECRET`), quindi sempre lo stesso; nel DB solo lo SHA-256. Il link da solo mostra nome dell'impresa ed email mascherata. Per entrare il cliente chiede un codice di 6 cifre (email da no-reply@, scade in 10 minuti, 5 tentativi, un nuovo codice non prima di 30 s, 8 richieste ogni 15 minuti per IP); col codice giusto riceve una sessione di 30 giorni che il browser tiene nel localStorage e manda nell'header `X-Portal-Session` (mai un cookie). Dentro vede: preventivi sbloccati o accettati (col link firmato di SEC-4; un preventivo col link revocato non compare), contratti inviati (PDF, e "Firma ora" che crea un link /sign già verificato), pro-forma e fatture inviate (PDF, paga con carta se l'impresa ha Stripe Connect, "Ho fatto il bonifico" se c'è l'IBAN), i cantieri confermati con fasi e foto, e i messaggi. Le bozze non passano mai.
+
+**Lato impresa.** Scheda **Messaggi** nella pagina del cantiere e in quella del cliente: lo scambio (uno per cliente; dal cantiere ogni messaggio porta il cantiere) e il riquadro "Area clienti" con copia link, apri, e "Manda l'invito per email". Un messaggio dell'impresa arriva al cliente per email col link (Gmail collegata se c'è, se no Resend a nome dell'impresa con Reply-To); se il cliente non ha email resta solo nel portale. Una risposta del cliente fa una notifica `client_message` (anche sul telefono, interruttore "Messaggio da un cliente", area cantieri) e un'email all'impresa (email del profilo, se no quella del titolare). Aprire lo scambio segna lette le risposte; aprire il portale segna letti i messaggi dell'impresa.
+
+**Registro.** `audit_log` con `entity_type = 'client'`: `portal_invited`, `portal_otp_sent`, `portal_signed_in`, `message_sent`, `message_received`.
+
+**Guasti.**
+- "Il cliente non riceve il codice": l'email parte da no-reply@ via Resend; controllare `email_events` / il pannello Resend per l'indirizzo. Il 429 `wait` vuol dire che un codice è partito meno di 30 s fa.
+- Chiudere l'accesso a un cliente: archiviarlo (il link risponde 404 subito). Per chiudere solo le sessioni aperte: `update client_portal_sessions set revoked_at = now() where client_id = '<id>' and revoked_at is null;`
+- Il link cambia solo se cambia il segreto: dopo una rotazione di `INVOICE_LINK_SECRET` i link vecchi (portale e fatture) smettono di funzionare; l'app scrive il nuovo hash alla prima lettura.
+- Esportazione GDPR: `client_portals` e `client_messages` escono (gli hash come `[nascosto]`), `client_portal_sessions` no.

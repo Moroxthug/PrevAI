@@ -54,6 +54,8 @@ import todayRouter from "./today";
 import appBetaRouter from "./app-beta";
 import homeRouter from "./home";
 import accountRouter from "./account";
+import clientPortalRouter from "./client-portal";
+import portalRouter from "./portal";
 
 const router: IRouter = Router();
 
@@ -111,6 +113,8 @@ router.use(todayRouter);
 router.use(appBetaRouter);
 router.use(homeRouter);
 router.use(accountRouter);
+router.use(clientPortalRouter);
+router.use(portalRouter);
 router.use("/v1/public", publicV1Router);
 
 export default router;

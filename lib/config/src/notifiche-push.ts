@@ -8,11 +8,11 @@
 // fiscale del titolare non arriva al telefono del capocantiere).
 // Shared by the API (who gets what) and the web app (the switches). No dependencies.
 
-export const PUSH_KINDS = ["quote_viewed", "quote_accepted", "lead_new", "scadenza_fiscale"] as const;
+export const PUSH_KINDS = ["quote_viewed", "quote_accepted", "lead_new", "client_message", "scadenza_fiscale"] as const;
 export type PushKind = (typeof PUSH_KINDS)[number];
 
 /** The permission area (api-server requirePermission) a person needs, at least "view", to receive the kind. */
-export type PushArea = "quotes" | "leads" | "fiscale";
+export type PushArea = "quotes" | "leads" | "jobs" | "fiscale";
 
 export const PUSH_KIND_DEFS: Record<PushKind, { label: string; help: string; area: PushArea }> = {
   quote_viewed: {
@@ -29,6 +29,11 @@ export const PUSH_KIND_DEFS: Record<PushKind, { label: string; help: string; are
     label: "Nuova richiesta dal sito",
     help: "Qualcuno ha chiesto un preventivo dal widget sul tuo sito.",
     area: "leads",
+  },
+  client_message: {
+    label: "Messaggio da un cliente",
+    help: "Un cliente ti ha scritto dalla sua area clienti.",
+    area: "jobs",
   },
   scadenza_fiscale: {
     label: "Scadenza fiscale vicina",

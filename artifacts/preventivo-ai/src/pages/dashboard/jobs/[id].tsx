@@ -29,12 +29,15 @@ import { NotesCard } from "@/components/jobs/notes-card";
 import { AssistantChat } from "@/components/assistant/assistant-panel";
 import { PhotosTab } from "@/components/jobs/photos-tab";
 import { JobDockActions } from "@/components/jobs/dock-actions";
+import { ClientThreadCard } from "@/components/clients/client-thread";
+import { ClientPortalCard } from "@/components/clients/client-portal-card";
+import { clientPortalApi } from "@/lib/portal-api";
 import { formatEurWhole } from "@/lib/money";
 
 // PERF-1: recharts (~110 kB gzip) arrives after the page has painted; the fallback is the charts' own skeleton.
 const OverviewCharts = lazy(() => import("@/components/jobs/overview-charts").then((m) => ({ default: m.OverviewCharts })));
 
-const TABS = ["overview", "schedule", "changes", "costs", "invoices", "team", "photos", "documents", "assistant"] as const;
+const TABS = ["overview", "schedule", "changes", "costs", "invoices", "team", "photos", "messages", "documents", "assistant"] as const;
 type Tab = (typeof TABS)[number];
 
 // APP-1e: the number strip shows whole euros (the cents are in the lines below and in each tab).
@@ -61,6 +64,9 @@ export default function JobDetailPage() {
   const { data, isLoading, error } = useQuery({ queryKey: ["job", id], queryFn: () => jobsApi.get(id!), enabled: !!id });
   // Phase 106: the number strip's margin is the analytics' projection (same request the Overview charts use).
   const { data: analytics } = useJobAnalytics(id!);
+  // CLI-1: le risposte non lette del cliente fanno il numero sulla scheda Messaggi.
+  const clientId = data?.job.client?.id;
+  const { data: portalStatus } = useQuery({ queryKey: ["client-portal", clientId], queryFn: () => clientPortalApi.status(clientId!), enabled: !!clientId, retry: false });
 
   useEffect(() => {
     if (data && data.job.setupStatus === "pending_review") navigate(`/dashboard/jobs/${id}/setup`, { replace: true });
@@ -109,6 +115,7 @@ export default function JobDetailPage() {
     costs: costs.pendingCount,
     invoices: invoiceTotals.draftCount,
     team: data.timeEntries.filter((e) => e.status === "submitted").length,
+    messages: portalStatus?.unread,
   };
   // With the tabs stuck under the top bar, a new tab starts at its top, not wherever the last one was scrolled to.
   const openTab = (next: Tab) => {
@@ -187,6 +194,16 @@ export default function JobDetailPage() {
       {tab === "invoices" && <InvoicesTab data={data} locale={locale} />}
       {tab === "team" && <TeamTab data={data} locale={locale} />}
       {tab === "photos" && <PhotosTab data={data} />}
+      {tab === "messages" && (
+        job.client ? (
+          <div className="c-msgs">
+            <ClientThreadCard clientId={job.client.id} jobId={job.id} jobName={job.name} />
+            <ClientPortalCard clientId={job.client.id} />
+          </div>
+        ) : (
+          <div className="card card-empty">{t("thread.noClient")}</div>
+        )
+      )}
       {tab === "documents" && <DocumentsTab data={data} locale={locale} />}
       {/* APP-8a: the same conversation as everywhere else, asked from this job. */}
       {tab === "assistant" && <div className="card"><AssistantChat /></div>}

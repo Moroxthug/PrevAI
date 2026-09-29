@@ -5,6 +5,7 @@ import { FileSignature, ShieldCheck, Download, CheckCircle2, Loader2, AlertTrian
 import { Textarea } from "@/components/ui/textarea";
 import { useLanguage } from "@/i18n/LanguageContext";
 import { useDocumentTitle } from "@/hooks/use-document-title";
+import { PortalLinkCard } from "@/components/clients/portal-link-card";
 import { signApi } from "@/lib/contracts-api";
 import { SignaturePad, type SignatureValue } from "@/components/signature-pad";
 import { Logo } from "@/components/logo";
@@ -221,6 +222,8 @@ export default function SignPage() {
           <style dangerouslySetInnerHTML={{ __html: data.css }} />
           <div dangerouslySetInnerHTML={{ __html: data.html }} />
         </div>
+
+        {contract.portalUrl && <PortalLinkCard url={contract.portalUrl} companyName={contract.companyName} />}
 
         {open && (
           <p className="text-center text-xs" style={{ color: "var(--faint)" }}>

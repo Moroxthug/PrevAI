@@ -191,6 +191,8 @@ export type PublicInvoiceDto = {
     paymentInstructions: { iban?: string | null; chequePayableTo?: string | null; note?: string | null };
     paidAt: string | null;
     canPayByCard: boolean;
+    /** CLI-1: l'area clienti, quando la fattura ha un cliente con email. */
+    portalUrl?: string | null;
   };
   html: string;
   css: string;

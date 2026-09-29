@@ -10,6 +10,7 @@ import { taxLineLabel } from "@/lib/tax-display";
 import { cn } from "@/lib/utils";
 import { StickyActionBar } from "@/components/mobile/sticky-action-bar";
 import { BottomSheet } from "@/components/mobile/bottom-sheet";
+import { PortalLinkCard } from "@/components/clients/portal-link-card";
 
 type PublicTaxLine = { code: string; label: string; rate: number; amount: number };
 
@@ -186,6 +187,8 @@ export default function PublicQuotePage() {
   const [selectedVariantId, setSelectedVariantId] = useState<string | null>(null);
   // APP-1h (QuoteAI Phase 111): il nome si chiede in un foglio aperto dal pulsante Accetta in basso, non in un modulo in fondo alla pagina.
   const [acceptOpen, setAcceptOpen] = useState(false);
+  /** CLI-1: l'area clienti, quando il preventivo è legato a un cliente con email. */
+  const [portalUrl, setPortalUrl] = useState<string | null>(null);
   useDocumentTitle(quote ? `${t("publicQuote.quoteFallback")}${quote.numeroPreventivoData ? ` ${quote.numeroPreventivoData}` : ""} · ${quote.companySnapshot?.companyName || "PrevAI"}` : notFound ? t("publicQuote.notAvailableTitle") : null);
 
   useEffect(() => {
@@ -201,6 +204,7 @@ export default function PublicQuotePage() {
         const data = await res.json();
         if (!cancelled) {
           setQuote(data.quote);
+          setPortalUrl(typeof data.portalUrl === "string" ? data.portalUrl : null);
           const variants: PublicQuoteVariant[] = data.quote?.variants ?? [];
           if (variants.length > 1) {
             setSelectedVariantId(data.quote.acceptedVariantId || variants[0]?.id || null);
@@ -432,6 +436,8 @@ export default function PublicQuotePage() {
       </div>
 
       <RebatesWidget quoteRef={id!} />
+
+      {portalUrl && <PortalLinkCard url={portalUrl} companyName={companyName} className="mt-6" />}
 
       {!isAccepted && (
         <>

@@ -34,6 +34,10 @@ const PUBLIC_ROUTES: Allow[] = [
   { match: /^(GET|POST) \/api\/support\/conversations(\/:id\/(messages|request-human|close))?$/, reason: "anonymous support widget — per-conversation token via requireConversationAccess, IP rate limited" },
   { match: /^GET \/api\/team\/invite\/:token$/, reason: "invite preview — hashed token lookup, rate limited" },
   { match: /^(GET|POST|DELETE) \/api\/(i|sign|t)\/:token/, reason: "customer/worker magic links — hashed token lookup, rate limited (Rule 6)" },
+  {
+    match: /^(GET|POST) \/api\/portal\/:token/,
+    reason: "CLI-1: area clienti — token hashato; oltre all'intestazione tutto vuole la sessione X-Portal-Session ottenuta col codice via email (5 tentativi, 10 minuti); ogni riga letta è del cliente del token e della sua impresa; IP rate limited",
+  },
   { match: /^(GET|POST) \/api\/public\//, reason: "public quote widget + unsubscribe links — rate limited (Rule 6)" },
   { match: /^POST \/api\/webhooks\/sdi\/:userId$/, reason: "A-1: notifiche dell'intermediario SdI — segreto per impresa confrontato con timingSafeEqual dentro l'adapter (Rule 7), IP rate limited" },
   {

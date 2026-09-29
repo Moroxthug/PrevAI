@@ -1,0 +1,534 @@
+import { useEffect, useState } from "react";
+import { useParams } from "wouter";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Loader2, AlertTriangle, Mail, ShieldCheck, LayoutDashboard, FileText, FileSignature, Receipt, Camera, MessageSquare, Download, CreditCard, Clock, ExternalLink, CheckCircle2, LogOut, MapPin, Send, Circle, ChevronRight } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { useToast } from "@/hooks/use-toast";
+import { useLanguage } from "@/i18n/LanguageContext";
+import { useDocumentTitle } from "@/hooks/use-document-title";
+import { Logo } from "@/components/logo";
+import { ScrollTabs } from "@/components/mobile/scroll-tabs";
+import { portalApi, getPortalSession, setPortalSession, type PortalOverviewDto, type PortalJobDto, type PortalMessageDto, type PortalInvoiceDto } from "@/lib/portal-api";
+
+type Section = "home" | "quotes" | "contracts" | "invoices" | "photos" | "messages";
+const SECTIONS: Section[] = ["home", "quotes", "contracts", "invoices", "photos", "messages"];
+const SECTION_ICONS: Record<Section, typeof LayoutDashboard> = { home: LayoutDashboard, quotes: FileText, contracts: FileSignature, invoices: Receipt, photos: Camera, messages: MessageSquare };
+
+const eur = new Intl.NumberFormat("it-IT", { style: "currency", currency: "EUR" });
+const cents = (c: number) => eur.format(c / 100);
+const day = (s: string | null) => (s ? new Date(s).toLocaleDateString("it-IT", { dateStyle: "medium" }) : "—");
+const when = (s: string) => new Date(s).toLocaleString("it-IT", { dateStyle: "medium", timeStyle: "short" });
+
+/**
+ * CLI-1: il portale del cliente (QuoteAI Phase 76 e 111). Nessun account: il
+ * link dice chi è il cliente, un codice via email dimostra la casella e la
+ * sessione resta in questo browser. Una pagina, sei sezioni — tutto quello che
+ * l'impresa ha mandato a questo cliente.
+ */
+export default function PortalPage() {
+  const { token } = useParams<{ token: string }>();
+  const { t } = useLanguage();
+  const queryClient = useQueryClient();
+  const [sessionVersion, setSessionVersion] = useState(0);
+  const header = useQuery({ queryKey: ["portal", token, "header", sessionVersion], queryFn: () => portalApi.header(token!), enabled: !!token, retry: false });
+  const authenticated = !!header.data?.authenticated && !!getPortalSession(token!);
+  const overview = useQuery({ queryKey: ["portal", token, "overview"], queryFn: () => portalApi.overview(token!), enabled: !!token && authenticated, retry: false });
+
+  useDocumentTitle(header.data ? `${t("portal.title")} · ${header.data.company.name}` : null);
+
+  // Un 401 sulla panoramica vuol dire che la sessione salvata non vale più (scaduta o revocata): si torna al codice.
+  useEffect(() => {
+    const err = overview.error as (Error & { status?: number }) | null;
+    if (err?.status === 401) {
+      setPortalSession(token!, null);
+      setSessionVersion((v) => v + 1);
+    }
+  }, [overview.error, token]);
+
+  if (header.isLoading) {
+    return <div className="doc-shell flex items-center justify-center"><Loader2 className="h-6 w-6 animate-spin" style={{ color: "var(--navy)" }} /></div>;
+  }
+  if (header.error || !header.data) {
+    return (
+      <div className="doc-shell flex items-center justify-center p-6">
+        <div className="card max-w-md w-full p-8 text-center" style={{ boxShadow: "var(--shadow-card)" }}>
+          <AlertTriangle className="h-10 w-10 mx-auto mb-4" style={{ color: "var(--yellow-dark)" }} />
+          <h1 className="text-lg font-semibold" style={{ color: "var(--navy)" }}>{t("portal.notFoundTitle")}</h1>
+          <p className="text-sm mt-2" style={{ color: "var(--muted-mk)" }}>{t("portal.notFoundDesc")}</p>
+        </div>
+      </div>
+    );
+  }
+
+  const { company, client } = header.data;
+
+  return (
+    <div className="doc-shell pb-16">
+      <header className="doc-head">
+        <div className="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between gap-3">
+          <div className="min-w-0 flex items-center gap-3">
+            {company.logoUrl ? <img src={company.logoUrl} alt="" className="h-8 w-8 rounded-lg object-contain shrink-0" style={{ border: "1px solid var(--line)" }} /> : null}
+            <div className="min-w-0">
+              <div className="text-xs truncate" style={{ color: "var(--muted-mk)" }}>{t("portal.title")}</div>
+              {/* Phase 111: dentro, il nome dell'impresa è il titolo della pagina (la schermata del codice ha il suo). */}
+              {authenticated
+                ? <h1 className="text-sm font-semibold truncate" style={{ color: "var(--navy)" }}>{company.name}</h1>
+                : <div className="text-sm font-semibold truncate" style={{ color: "var(--navy)" }}>{company.name}</div>}
+            </div>
+          </div>
+          <div className="flex items-center gap-3 shrink-0">
+            {authenticated && (
+              <button
+                type="button"
+                className="portal-out"
+                aria-label={t("portal.signOut")}
+                onClick={async () => {
+                  try { await portalApi.logout(token!); } catch { /* la sessione locale si toglie comunque */ }
+                  setPortalSession(token!, null);
+                  queryClient.removeQueries({ queryKey: ["portal", token] });
+                  setSessionVersion((v) => v + 1);
+                }}
+              >
+                <LogOut className="h-4 w-4" /> <span className="hide-phone">{t("portal.signOut")}</span>
+              </button>
+            )}
+            <span className="hide-phone"><Logo className="h-6" /></span>
+          </div>
+        </div>
+      </header>
+
+      <main className="max-w-4xl mx-auto px-4 py-6 space-y-5">
+        {!authenticated ? (
+          <Gate token={token!} clientName={client.name} emailMasked={client.emailMasked} companyName={company.name} onVerified={() => setSessionVersion((v) => v + 1)} />
+        ) : overview.isLoading || !overview.data ? (
+          <div className="flex items-center justify-center py-16"><Loader2 className="h-6 w-6 animate-spin" style={{ color: "var(--navy)" }} /></div>
+        ) : (
+          <Portal token={token!} data={overview.data} />
+        )}
+        <p className="text-center text-xs" style={{ color: "var(--faint)" }}>
+          {t("portal.questions")} {company.email && <a className="underline" href={`mailto:${company.email}`}>{company.email}</a>}{company.phone && <> · <a className="underline" href={`tel:${company.phone.replace(/[^\d+]/g, "")}`}>{company.phone}</a></>}
+        </p>
+      </main>
+    </div>
+  );
+}
+
+// ── Il codice di accesso ────────────────────────────────────────────────────
+
+function Gate({ token, clientName, emailMasked, companyName, onVerified }: { token: string; clientName: string; emailMasked: string | null; companyName: string; onVerified: () => void }) {
+  const { t } = useLanguage();
+  const [step, setStep] = useState<"intro" | "otp">("intro");
+  const [code, setCode] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const request = useMutation({
+    mutationFn: () => portalApi.otp(token),
+    onSuccess: () => { setStep("otp"); setError(null); },
+    onError: (e: Error & { code?: string }) => setError(e.code === "no_email" ? t("portal.noEmail") : e.code === "wait" ? t("portal.otpWait") : t("portal.otpError")),
+  });
+  const verify = useMutation({
+    mutationFn: () => portalApi.verify(token, code.trim()),
+    onSuccess: (r) => { setPortalSession(token, r.session); onVerified(); },
+    onError: (e: Error & { code?: string }) => setError(e.code === "invalid_code" ? t("sign.invalidCode") : e.code === "code_expired" ? t("sign.codeExpired") : e.code === "too_many_attempts" ? t("sign.tooManyAttempts") : t("portal.actionError")),
+  });
+
+  return (
+    <div className="card max-w-lg mx-auto p-6 sm:p-8 space-y-5" style={{ boxShadow: "var(--shadow-card)" }}>
+      <div className="flex items-start gap-3">
+        <ShieldCheck className="h-6 w-6 mt-0.5 shrink-0" style={{ color: "var(--navy)" }} />
+        <div>
+          <h1 className="text-lg font-bold" style={{ color: "var(--navy)" }}>{t("portal.gateTitle").replace("{name}", clientName)}</h1>
+          <p className="text-sm mt-1" style={{ color: "var(--muted-mk)" }}>{t("portal.gateDesc").replace("{company}", companyName)}</p>
+        </div>
+      </div>
+      {!emailMasked ? (
+        <p className="text-sm" style={{ color: "var(--red)" }}>{t("portal.noEmail")}</p>
+      ) : step === "intro" ? (
+        <>
+          <p className="text-sm" style={{ color: "var(--ink)" }}>{t("portal.gateEmailHint").replace("{email}", emailMasked)}</p>
+          {error && <p className="text-sm" role="alert" style={{ color: "var(--red)" }}>{error}</p>}
+          <button type="button" className="btn btn-navy w-full" onClick={() => request.mutate()} disabled={request.isPending}>
+            {request.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Mail className="h-4 w-4" />} {t("portal.sendCode")}
+          </button>
+        </>
+      ) : (
+        <>
+          <p className="text-sm" style={{ color: "var(--ink)" }}>{t("sign.otpDesc").replace("{email}", emailMasked)}</p>
+          <input
+            inputMode="numeric"
+            autoComplete="one-time-code"
+            maxLength={6}
+            value={code}
+            onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))}
+            onKeyDown={(e) => { if (e.key === "Enter" && code.length === 6) verify.mutate(); }}
+            pattern="[0-9]*"
+            enterKeyHint="go"
+            autoFocus
+            placeholder="000000"
+            aria-label={t("a11y.otpCode")}
+            aria-invalid={error ? true : undefined}
+            className="otp-input"
+          />
+          {error && <p className="text-sm" role="alert" style={{ color: "var(--red)" }}>{error}</p>}
+          <button type="button" onClick={() => verify.mutate()} disabled={code.length !== 6 || verify.isPending} className="btn btn-navy w-full">
+            {verify.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : null} {t("portal.open")}
+          </button>
+          <button type="button" onClick={() => request.mutate()} disabled={request.isPending} className="text-link mx-auto block">{request.isPending ? <Loader2 className="h-4 w-4 animate-spin inline" /> : null} {t("sign.resendCode")}</button>
+        </>
+      )}
+    </div>
+  );
+}
+
+// ── Il portale ──────────────────────────────────────────────────────────────
+
+function Portal({ token, data }: { token: string; data: PortalOverviewDto }) {
+  const { t } = useLanguage();
+  const [section, setSection] = useState<Section>("home");
+
+  const openInvoices = data.invoices.filter((i) => i.type !== "credit_note" && i.status !== "paid" && i.balanceCents > 0);
+  const owing = openInvoices.reduce((s, i) => s + i.balanceCents, 0);
+  const toSign = data.contracts.filter((c) => c.canSign);
+  const toAccept = data.quotes.filter((q) => q.status === "unlocked");
+  const unreadMessages = data.messages.filter((m) => m.sender === "contractor" && !m.readAt).length;
+  const photoCount = data.jobs.reduce((s, j) => s + j.photos.length, 0);
+  const counts: Partial<Record<Section, number>> = { quotes: toAccept.length, contracts: toSign.length, invoices: openInvoices.length, photos: photoCount, messages: unreadMessages };
+
+  return (
+    <>
+      <div data-portal-tabs>
+        <ScrollTabs
+          label={t("portal.title")}
+          value={section}
+          onChange={(k) => setSection(k as Section)}
+          tabs={SECTIONS.map((k) => ({ id: k, label: t(`portal.section.${k}`), icon: SECTION_ICONS[k], count: counts[k] || undefined }))}
+        />
+      </div>
+
+      {section === "home" && (
+        <div className="stack">
+          {(owing > 0 || toSign.length > 0 || toAccept.length > 0) && (
+            <section className="card portal-attn">
+              <div className="card-head"><div><h2>{t("portal.attention")}</h2></div></div>
+              <ul className="lrows">
+                {owing > 0 && (
+                  <li><button type="button" className="lrow" onClick={() => setSection("invoices")}>
+                    <Receipt className="lrow-lead portal-attn-ic" aria-hidden="true" />
+                    <span className="lrow-main"><span className="lrow-title">{t("portal.attention.owing").replace("{amount}", cents(owing))}</span><span className="lrow-meta">{t("portal.invoices.sub")}</span></span>
+                    <ChevronRight className="lrow-chev" aria-hidden="true" />
+                  </button></li>
+                )}
+                {toSign.length > 0 && (
+                  <li><button type="button" className="lrow" onClick={() => setSection("contracts")}>
+                    <FileSignature className="lrow-lead portal-attn-ic" aria-hidden="true" />
+                    <span className="lrow-main"><span className="lrow-title">{t(toSign.length === 1 ? "portal.attention.sign" : "portal.attention.signMany").replace("{n}", String(toSign.length))}</span><span className="lrow-meta">{toSign.map((c) => c.title).join(" · ")}</span></span>
+                    <ChevronRight className="lrow-chev" aria-hidden="true" />
+                  </button></li>
+                )}
+                {toAccept.length > 0 && (
+                  <li><button type="button" className="lrow" onClick={() => setSection("quotes")}>
+                    <FileText className="lrow-lead portal-attn-ic" aria-hidden="true" />
+                    <span className="lrow-main"><span className="lrow-title">{t(toAccept.length === 1 ? "portal.attention.quote" : "portal.attention.quoteMany").replace("{n}", String(toAccept.length))}</span><span className="lrow-meta">{toAccept.map((q) => q.title || t("publicQuote.quoteFallback")).join(" · ")}</span></span>
+                    <ChevronRight className="lrow-chev" aria-hidden="true" />
+                  </button></li>
+                )}
+              </ul>
+            </section>
+          )}
+          {data.jobs.length === 0 ? (
+            <section className="card"><div className="card-empty">{t("portal.noJobs")}</div></section>
+          ) : (
+            data.jobs.map((job) => <JobCard key={job.id} job={job} onPhotos={() => setSection("photos")} />)
+          )}
+        </div>
+      )}
+
+      {section === "quotes" && (
+        <section className="card">
+          <div className="card-head"><div><h2>{t("portal.section.quotes")}</h2><p className="sub">{t("portal.quotes.sub")}</p></div></div>
+          {data.quotes.length === 0 ? <div className="card-empty">{t("portal.quotes.empty")}</div> : data.quotes.map((q) => (
+            <div key={q.id} className="item-row wrap-phone">
+              <div className="grow">
+                <span className="ttl">{q.title || t("publicQuote.quoteFallback")}{q.number ? ` · ${q.number}` : ""}</span>
+                <span className="sub">{day(q.createdAt)} · {eur.format(q.total)}</span>
+              </div>
+              <span className={cn("chip", q.status === "accepted" ? "chip-green" : "chip-yellow")}>{q.status === "accepted" ? t("portal.quote.accepted") : t("portal.quote.awaiting")}</span>
+              <div className="row-acts">
+                <a href={q.url} className={cn("btn btn-sm", q.status === "accepted" ? "btn-outline-navy" : "btn-navy")}><ExternalLink className="h-4 w-4" /> {q.status === "accepted" ? t("portal.view") : t("portal.quote.review")}</a>
+              </div>
+            </div>
+          ))}
+        </section>
+      )}
+
+      {section === "contracts" && <ContractsSection token={token} data={data} />}
+      {section === "invoices" && <InvoicesSection token={token} data={data} />}
+
+      {section === "photos" && (
+        <div className="stack">
+          {photoCount === 0 ? (
+            <section className="card"><div className="card-empty">{t("portal.photos.empty")}</div></section>
+          ) : (
+            data.jobs.filter((j) => j.photos.length > 0).map((job) => (
+              <section key={job.id} className="card">
+                <div className="card-head"><div><h2>{job.name}</h2><p className="sub">{t("portal.photos.count").replace("{n}", String(job.photos.length))}</p></div></div>
+                <div className="act-body grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                  {job.photos.map((ph) => (
+                    <figure key={ph.id} className="m-0">
+                      <PortalImage token={token} photoId={ph.id} alt={ph.caption} />
+                      <figcaption className="text-xs mt-1 truncate" style={{ color: "var(--faint)" }}>{ph.caption || day(ph.createdAt)}</figcaption>
+                    </figure>
+                  ))}
+                </div>
+              </section>
+            ))
+          )}
+        </div>
+      )}
+
+      {section === "messages" && <MessagesSection token={token} data={data} />}
+    </>
+  );
+}
+
+function JobCard({ job, onPhotos }: { job: PortalJobDto; onPhotos: () => void }) {
+  const { t } = useLanguage();
+  const statusChip = job.status === "completed" ? "chip-green" : job.status === "active" ? "chip-teal" : job.status === "suspended" ? "chip-yellow" : "chip-grey";
+  return (
+    <section className="card">
+      <div className="card-head">
+        <div className="min-w-0">
+          <h2 className="truncate">{job.name}</h2>
+          {job.address && <p className="sub inline-flex items-center gap-1"><MapPin className="h-3.5 w-3.5" /> {job.address}</p>}
+        </div>
+        <span className={cn("chip", statusChip)}>{t(`portal.job.status.${job.status}`)}</span>
+      </div>
+      <div className="act-body space-y-4">
+        <div>
+          <div className="flex items-center justify-between text-sm font-semibold" style={{ color: "var(--navy)" }}>
+            <span>{t("portal.job.progress")}</span><span>{job.progressPercent}%</span>
+          </div>
+          <div className="pbar mt-1" style={{ width: "100%" }}><i style={{ width: `${job.progressPercent}%` }} /></div>
+          {(job.plannedStart || job.plannedEnd) && <p className="text-xs mt-1" style={{ color: "var(--faint)" }}>{day(job.plannedStart)} → {day(job.plannedEnd)}</p>}
+        </div>
+        {job.milestones.length > 0 && (
+          <ol className="space-y-1.5 m-0 p-0 list-none">
+            {job.milestones.map((m) => (
+              <li key={m.id} className="flex items-center gap-2 text-sm" style={{ color: "var(--ink)" }}>
+                {m.status === "completed" ? <CheckCircle2 className="h-4 w-4 shrink-0" style={{ color: "var(--green)" }} /> : m.status === "in_progress" ? <Clock className="h-4 w-4 shrink-0" style={{ color: "var(--teal)" }} /> : <Circle className="h-4 w-4 shrink-0" style={{ color: "var(--line)" }} />}
+                <span className={cn("grow truncate", m.status === "completed" && "opacity-70")}>{m.title}</span>
+                <span className="text-xs shrink-0" style={{ color: "var(--faint)" }}>{m.status === "completed" ? day(m.actualEnd ?? m.plannedEnd) : m.plannedEnd ? day(m.plannedEnd) : ""}</span>
+              </li>
+            ))}
+          </ol>
+        )}
+        {job.photos.length > 0 && (
+          <button type="button" className="text-link inline-flex items-center gap-1" onClick={onPhotos}><Camera className="h-4 w-4" /> {t("portal.photos.count").replace("{n}", String(job.photos.length))}</button>
+        )}
+      </div>
+    </section>
+  );
+}
+
+function ContractsSection({ token, data }: { token: string; data: PortalOverviewDto }) {
+  const { t } = useLanguage();
+  const { toast } = useToast();
+  const sign = useMutation({
+    mutationFn: (id: string) => portalApi.signLink(token, id),
+    onSuccess: (r) => { window.location.href = r.url; },
+    onError: () => toast({ title: t("portal.actionError"), variant: "destructive" }),
+  });
+  const chip = (s: string) => (s === "signed" ? "chip-green" : s === "sent" || s === "viewed" ? "chip-yellow" : "chip-grey");
+  return (
+    <section className="card">
+      <div className="card-head"><div><h2>{t("portal.section.contracts")}</h2><p className="sub">{t("portal.contracts.sub")}</p></div></div>
+      {data.contracts.length === 0 ? <div className="card-empty">{t("portal.contracts.empty")}</div> : data.contracts.map((c) => (
+        <div key={c.id} className="item-row flex-wrap wrap-phone">
+          <div className="grow">
+            <span className="ttl">{c.title} · {c.contractNumber}</span>
+            <span className="sub">{eur.format(c.total)}{c.signedAt ? ` · ${t("portal.contract.signedOn")} ${day(c.signedAt)}` : c.sentAt ? ` · ${t("portal.contract.sentOn")} ${day(c.sentAt)}` : ""}</span>
+          </div>
+          <span className={cn("chip", chip(c.status))}>{t(`portal.contract.status.${c.status}`)}</span>
+          <div className="row-acts">
+            <DownloadButton token={token} path={portalApi.contractPdfPath(token, c.id)} filename={`${c.contractNumber}.pdf`} />
+            {c.canSign && (
+              <button type="button" className="btn btn-sm btn-navy" onClick={() => sign.mutate(c.id)} disabled={sign.isPending}>
+                {sign.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileSignature className="h-4 w-4" />} {t("portal.contract.sign")}
+              </button>
+            )}
+          </div>
+        </div>
+      ))}
+    </section>
+  );
+}
+
+function InvoicesSection({ token, data }: { token: string; data: PortalOverviewDto }) {
+  const { t } = useLanguage();
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const [confirming, setConfirming] = useState<string | null>(null);
+  const pay = useMutation({
+    mutationFn: (id: string) => portalApi.payLink(token, id),
+    onSuccess: (r) => { window.location.href = r.url; },
+    onError: () => toast({ title: t("publicInvoice.payError"), variant: "destructive" }),
+  });
+  const markSent = useMutation({
+    mutationFn: (id: string) => portalApi.markSent(token, id),
+    onSuccess: () => { setConfirming(null); void queryClient.invalidateQueries({ queryKey: ["portal", token, "overview"] }); },
+    onError: () => toast({ title: t("publicInvoice.markSentError"), variant: "destructive" }),
+  });
+  const chip = (s: string) => (s === "paid" ? "chip-green" : s === "overdue" ? "chip-red" : s === "pending_confirmation" ? "chip-teal" : "chip-yellow");
+  const open = data.invoices.filter((i) => i.status !== "paid");
+  const paid = data.invoices.filter((i) => i.status === "paid");
+  const label = (inv: PortalInvoiceDto) => (inv.type === "credit_note" ? t("invoices.type.credit_note") : inv.fiscale ? t("portal.invoice.fattura") : t("portal.invoice.proforma"));
+  const row = (inv: PortalInvoiceDto) => {
+    const credit = inv.type === "credit_note";
+    const canAct = !credit && inv.status !== "paid" && inv.status !== "pending_confirmation" && inv.balanceCents > 0;
+    return (
+      <div key={inv.id} className="item-row flex-wrap wrap-phone" style={inv.status === "overdue" ? { background: "var(--red-t)" } : undefined}>
+        <div className="grow">
+          <span className="ttl">{label(inv)} {inv.number}{inv.title ? ` · ${inv.title}` : ""}</span>
+          <span className="sub">{inv.status === "paid" ? `${t("publicInvoice.paidOn")} ${day(inv.paidAt)}` : `${t("publicInvoice.dueBy")} ${day(inv.dueDate)}`}{inv.paidCents > 0 && inv.status !== "paid" ? ` · ${t("publicInvoice.alreadyPaid")} ${cents(inv.paidCents)}` : ""}</span>
+        </div>
+        <b style={{ color: "var(--navy)" }}>{cents(credit || inv.status === "paid" ? inv.totalCents : inv.balanceCents)}</b>
+        <span className={cn("chip", chip(inv.status))}>{t(`portal.invoice.status.${inv.status}`)}</span>
+        <div className="row-acts">
+          {inv.url && <a href={inv.url} className="btn btn-sm btn-outline-navy" aria-label={t("portal.view")}><ExternalLink className="h-4 w-4" /></a>}
+          <DownloadButton token={token} path={portalApi.invoicePdfPath(token, inv.id)} filename={`${inv.number}.pdf`} />
+          {canAct && inv.canPayByCard && (
+            <button type="button" className="btn btn-sm btn-navy" onClick={() => pay.mutate(inv.id)} disabled={pay.isPending}>
+              {pay.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <CreditCard className="h-4 w-4" />} {t("publicInvoice.payByCard")}
+            </button>
+          )}
+          {canAct && inv.iban && confirming !== inv.id && (
+            <button type="button" className={cn("btn btn-sm", inv.canPayByCard ? "btn-outline-navy" : "btn-navy")} onClick={() => setConfirming(inv.id)}><Clock className="h-4 w-4" /> {t("publicInvoice.iSentIt")}</button>
+          )}
+        </div>
+        {confirming === inv.id && (
+          <div className="w-full mt-2 rounded-lg p-3 space-y-2 text-sm" style={{ background: "var(--soft)", border: "1px solid var(--line)" }}>
+            <p style={{ color: "var(--ink)" }}>{t("portal.invoice.ibanTo").replace("{iban}", inv.iban ?? "")} {t("publicInvoice.markSentConfirm")}</p>
+            <div className="flex gap-2">
+              <button type="button" className="btn btn-outline-navy btn-sm" onClick={() => setConfirming(null)}>{t("jobs.cancel")}</button>
+              <button type="button" className="btn btn-navy btn-sm" onClick={() => markSent.mutate(inv.id)} disabled={markSent.isPending}>{markSent.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : null}{t("publicInvoice.confirmSent")}</button>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  };
+  return (
+    <div className="stack">
+      <section className="card">
+        <div className="card-head"><div><h2>{t("portal.invoices.open")}</h2><p className="sub">{t("portal.invoices.sub")}</p></div></div>
+        {open.length === 0 ? <div className="card-empty">{t("portal.invoices.emptyOpen")}</div> : open.map(row)}
+      </section>
+      {paid.length > 0 && (
+        <section className="card">
+          <div className="card-head"><div><h2>{t("portal.invoices.paid")}</h2></div></div>
+          {paid.map(row)}
+        </section>
+      )}
+    </div>
+  );
+}
+
+function MessagesSection({ token, data }: { token: string; data: PortalOverviewDto }) {
+  const { t } = useLanguage();
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const [body, setBody] = useState("");
+  const [jobId, setJobId] = useState<string>(data.jobs.length === 1 ? data.jobs[0]!.id : "");
+  const send = useMutation({
+    mutationFn: () => portalApi.sendMessage(token, { body: body.trim(), jobId: jobId || null }),
+    onSuccess: () => { setBody(""); void queryClient.invalidateQueries({ queryKey: ["portal", token, "overview"] }); toast({ title: t("portal.messages.sent") }); },
+    onError: () => toast({ title: t("portal.actionError"), variant: "destructive" }),
+  });
+  return (
+    <section className="card">
+      <div className="card-head"><div><h2>{t("portal.section.messages")}</h2><p className="sub">{t("portal.messages.sub").replace("{company}", data.company.name)}</p></div></div>
+      <div className="act-body space-y-4">
+        {data.messages.length === 0 ? (
+          <p className="foot-note m-0">{t("portal.messages.empty")}</p>
+        ) : (
+          <ol className="space-y-3 m-0 p-0 list-none" aria-live="polite">
+            {data.messages.map((m: PortalMessageDto) => (
+              <li key={m.id} className={cn("flex", m.sender === "client" ? "justify-end" : "justify-start")}>
+                <div className="max-w-[85%] rounded-2xl px-4 py-3 text-sm" style={m.sender === "client" ? { background: "var(--navy)", color: "#fff" } : { background: "var(--soft)", color: "var(--ink)" }}>
+                  <div className="text-[11px] font-semibold mb-1 opacity-80">{m.sender === "client" ? t("portal.messages.you") : m.senderName || data.company.name}{m.jobName ? ` · ${m.jobName}` : ""} · {when(m.createdAt)}</div>
+                  <div className="whitespace-pre-wrap">{m.body}</div>
+                </div>
+              </li>
+            ))}
+          </ol>
+        )}
+        <div className="space-y-2">
+          {data.jobs.length > 1 && (
+            <div className="field">
+              <label htmlFor="portal-msg-job">{t("portal.messages.about")}</label>
+              <select id="portal-msg-job" value={jobId} onChange={(e) => setJobId(e.target.value)}>
+                <option value="">{t("portal.messages.general")}</option>
+                {data.jobs.map((j) => <option key={j.id} value={j.id}>{j.name}</option>)}
+              </select>
+            </div>
+          )}
+          <div className="field">
+            <label htmlFor="portal-msg-body">{t("portal.messages.compose")}</label>
+            <textarea id="portal-msg-body" rows={3} enterKeyHint="enter" autoCapitalize="sentences" value={body} onChange={(e) => setBody(e.target.value)} maxLength={4000} placeholder={t("portal.messages.placeholder")} />
+          </div>
+          <div className="flex justify-end">
+            <button type="button" className="btn btn-navy portal-send" onClick={() => send.mutate()} disabled={!body.trim() || send.isPending}>
+              {send.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />} {t("portal.messages.send")}
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// ── File scaricati con la sessione ──────────────────────────────────────────
+
+function DownloadButton({ token, path, filename }: { token: string; path: string; filename: string }) {
+  const { t } = useLanguage();
+  const { toast } = useToast();
+  const [busy, setBusy] = useState(false);
+  const download = async () => {
+    setBusy(true);
+    try {
+      const blob = await portalApi.fetchBlob(token, path);
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      a.click();
+      setTimeout(() => URL.revokeObjectURL(url), 10_000);
+    } catch {
+      toast({ title: t("portal.actionError"), variant: "destructive" });
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <button type="button" className="btn btn-sm btn-outline-navy" onClick={download} disabled={busy} aria-label={t("publicInvoice.downloadPdf")}>
+      {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />} <span className="hidden sm:inline">PDF</span>
+    </button>
+  );
+}
+
+function PortalImage({ token, photoId, alt }: { token: string; photoId: string; alt: string }) {
+  const [src, setSrc] = useState<string | null>(null);
+  const [failed, setFailed] = useState(false);
+  useEffect(() => {
+    let url: string | null = null;
+    let cancelled = false;
+    portalApi.fetchBlob(token, portalApi.photoPath(token, photoId))
+      .then((blob) => { if (cancelled) return; url = URL.createObjectURL(blob); setSrc(url); })
+      .catch(() => { if (!cancelled) setFailed(true); });
+    return () => { cancelled = true; if (url) URL.revokeObjectURL(url); };
+  }, [token, photoId]);
+  return (
+    <div className="aspect-square rounded-xl overflow-hidden flex items-center justify-center" style={{ background: "var(--soft-2)" }}>
+      {src ? <a href={src} target="_blank" rel="noreferrer" className="block h-full w-full"><img src={src} alt={alt} className="h-full w-full object-cover" loading="lazy" /></a> : failed ? <Camera className="h-6 w-6" style={{ color: "var(--faint)" }} /> : <Loader2 className="h-5 w-5 animate-spin" style={{ color: "var(--faint)" }} />}
+    </div>
+  );
+}

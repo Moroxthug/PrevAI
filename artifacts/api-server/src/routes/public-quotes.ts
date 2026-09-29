@@ -19,6 +19,7 @@ import { FOLLOWUP_CADENCE_DAYS } from "../lib/leadMessaging.js";
 import { quoteProvenance } from "../quotes/pdf.js";
 import { noteQuoteViewed } from "../quotes/viewed.js";
 import { resolvePublicQuoteRef } from "../quotes/publicLink.js";
+import { portalLinkForClient } from "../portal/service.js";
 import { createNotification } from "../lib/notifications.js";
 import { fmtEurCents } from "@workspace/config";
 
@@ -618,7 +619,9 @@ router.get("/public/quotes/:id", quoteViewLimiter, async (req, res) => {
     // APP-2: the first time the client opens it, the company hears about it (bell + phone).
     await noteQuoteViewed(req, quote);
 
-    res.json({ success: true, quote: toPublicQuote(quote, variants) });
+    // CLI-1: "vedi tutto" — il portale del cliente, quando il preventivo è legato a un cliente con email.
+    const portalUrl = await portalLinkForClient(quote.clientId);
+    res.json({ success: true, quote: toPublicQuote(quote, variants), portalUrl });
   } catch (err) {
     logger.error({ err }, "Error fetching public quote view");
     res.status(500).json({ error: "Internal server error" });

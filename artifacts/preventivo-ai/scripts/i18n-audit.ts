@@ -121,7 +121,7 @@ const dashboardKeyOnPublicPage = [...used.entries()]
   .filter((x) => x.files.length > 0);
 
 // 4./5. letterali inglesi nel JSX (fuori da t())
-const APP_DIRS = ["pages/dashboard/", "pages/sign/", "pages/t/", "pages/i/", "pages/p/", "pages/team-invite/", "pages/onboarding.tsx", "pages/sign-in.tsx", "pages/sign-up.tsx", "pages/admin", "components/"];
+const APP_DIRS = ["pages/dashboard/", "pages/sign/", "pages/t/", "pages/i/", "pages/p/", "pages/team-invite/", "pages/portal/", "pages/onboarding.tsx", "pages/sign-in.tsx", "pages/sign-up.tsx", "pages/admin", "components/"];
 const isApp = (f: string) => APP_DIRS.some((d) => rel(f).startsWith(d));
 // nodo di testo tra tag: almeno due parole, inizia con una lettera, non è un'espressione
 const textRe = />\s*([A-Za-zÀ-ÿ][A-Za-zÀ-ÿ'’,.!?&-]*(?:\s+[A-Za-zÀ-ÿ0-9'’,.!?&%$€()-]+){1,})\s*</g;

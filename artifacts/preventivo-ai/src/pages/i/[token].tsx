@@ -5,6 +5,7 @@ import { Loader2, AlertTriangle, Download, CheckCircle2, Banknote, Mail, Copy, C
 import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/i18n/LanguageContext";
 import { useDocumentTitle } from "@/hooks/use-document-title";
+import { PortalLinkCard } from "@/components/clients/portal-link-card";
 import { publicInvoiceApi } from "@/lib/invoices-api";
 import { Logo } from "@/components/logo";
 import { StickyActionBar } from "@/components/mobile/sticky-action-bar";
@@ -168,6 +169,8 @@ export default function PublicInvoicePage() {
           <style dangerouslySetInnerHTML={{ __html: data.css }} />
           <div dangerouslySetInnerHTML={{ __html: data.html }} />
         </div>
+
+        {invoice.portalUrl && <PortalLinkCard url={invoice.portalUrl} companyName={invoice.companyName} />}
 
         <div className="flex flex-wrap items-center justify-between gap-3 text-sm" style={{ color: "var(--muted-mk)" }}>
           <a href={pdfHref} className="inline-flex items-center gap-2 font-medium hover:underline" style={{ color: "var(--navy)" }}><Download className="h-4 w-4" /> {t("publicInvoice.downloadPdf")}</a>

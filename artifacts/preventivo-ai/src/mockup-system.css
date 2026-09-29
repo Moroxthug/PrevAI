@@ -2988,3 +2988,19 @@ button.qline:hover { background: #fafbfc; }
   .install-prompt { flex-wrap: wrap; }
   .install-prompt .actions { width: 100%; }
 }
+
+/* CLI-1: messaggi col cliente (scheda del cantiere e del cliente) e area clienti — QuoteAI Phase 76/111 */
+.c-msgs { display: grid; grid-template-columns: 2fr 1fr; gap: 16px; align-items: start; }
+.c-msgs > .card { margin-top: 0; }
+@media (max-width: 980px) {
+  .c-msgs { grid-template-columns: minmax(0, 1fr); }
+}
+.portal-out { display: inline-flex; align-items: center; gap: 6px; min-height: 36px; padding: 0 10px; border-radius: 10px; font-size: 13px; font-weight: 600; color: var(--muted-mk); }
+.portal-out:hover { background: var(--soft); color: var(--navy); }
+.portal-attn { border-color: var(--yellow-t); }
+.portal-attn .card-head h2 { color: var(--yellow-dark); }
+.portal-attn-ic { width: 20px; height: 20px; color: var(--navy); }
+@media (max-width: 640px) {
+  .portal-out { width: var(--tap); height: var(--tap); justify-content: center; padding: 0; }
+  .portal-send { width: 100%; }
+}
