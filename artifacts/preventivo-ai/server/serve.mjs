@@ -8,6 +8,8 @@ import http from "node:http";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PUBLIC_DIR = path.resolve(__dirname, "..", "dist", "public");
 const INDEX_HTML = path.join(PUBLIC_DIR, "index.html");
+// PERF-1: the app routes get the empty shell, not the prerendered homepage.
+const APP_HTML = path.join(PUBLIC_DIR, "app.html");
 
 const rawPort = process.env.PORT;
 if (!rawPort) {
@@ -18,8 +20,8 @@ if (Number.isNaN(port) || port <= 0) {
   throw new Error(`Invalid PORT value: "${rawPort}"`);
 }
 
-if (!fs.existsSync(INDEX_HTML)) {
-  throw new Error(`index.html not found at ${INDEX_HTML} — did the build run?`);
+if (!fs.existsSync(INDEX_HTML) || !fs.existsSync(APP_HTML)) {
+  throw new Error(`index.html/app.html not found in ${PUBLIC_DIR} — did the build run?`);
 }
 
 const app = express();
@@ -143,7 +145,7 @@ app.use(
 // SEO-1: same SPA routes as vercel.json (its rewrite sources are plain
 // regexes); any other page is a real 404 with dist/public/404.html.
 const SPA_ROUTES = JSON.parse(fs.readFileSync(path.resolve(__dirname, "..", "..", "..", "vercel.json"), "utf8"))
-  .rewrites.filter((r) => r.destination === "/index.html")
+  .rewrites.filter((r) => r.destination === "/app.html")
   .map((r) => new RegExp(`^${r.source}$`));
 const NOT_FOUND_HTML = path.join(PUBLIC_DIR, "404.html");
 
@@ -157,7 +159,7 @@ app.use((req, res, next) => {
   }
   res.setHeader("Cache-Control", "public, max-age=0, must-revalidate");
   if (SPA_ROUTES.some((re) => re.test(req.path))) {
-    res.sendFile(INDEX_HTML);
+    res.sendFile(APP_HTML);
   } else if (fs.existsSync(NOT_FOUND_HTML)) {
     res.status(404).sendFile(NOT_FOUND_HTML);
   } else {

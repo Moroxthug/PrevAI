@@ -1,4 +1,4 @@
-// SEO-1 (riga 47, docs/PIANO-AZIONE.md): vercel.json manda a index.html solo
+// SEO-1 (riga 47, docs/PIANO-AZIONE.md): vercel.json manda alla shell (app.html da PERF-1) solo
 // le rotte dell'app; tutto ciò che non è un file prerenderizzato e non è una
 // rotta riceve 404.html con stato 404 (prima: la home con 200 = soft 404).
 // Il rischio è il contrario: una rotta nuova in App.tsx dimenticata qui
@@ -22,7 +22,7 @@ const APP = readFileSync(join(ROOT, "artifacts/preventivo-ai/src/App.tsx"), "utf
 const asRegex = (source: string) => new RegExp(`^${source}$`);
 const slashRedirect = cfg.redirects.find((r) => r.destination === "/$1/")!;
 const redirects = cfg.redirects.filter((r) => r !== slashRedirect).map((r) => asRegex(r.source));
-const spaRewrites = cfg.rewrites.filter((r) => r.destination === "/index.html").map((r) => asRegex(r.source));
+const spaRewrites = cfg.rewrites.filter((r) => r.destination === "/app.html").map((r) => asRegex(r.source));
 const PRERENDERED = /^\/(?:preventivi|blog|help)\//;
 
 /** L'indirizzo come arriva ai rewrite: parametri riempiti e barra finale aggiunta dal redirect. */
@@ -65,7 +65,7 @@ describe("404 veri (vercel.json)", () => {
     expect(redirects.some((re) => re.test(path))).toBe(false);
   });
 
-  test("nessun rewrite generico verso index.html", () => {
+  test("nessun rewrite generico verso la shell", () => {
     for (const re of spaRewrites) expect(re.test("/qualsiasi-cosa/")).toBe(false);
   });
 });

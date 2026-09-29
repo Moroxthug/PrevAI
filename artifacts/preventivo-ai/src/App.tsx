@@ -5,10 +5,13 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/not-found";
 
-import Home from "@/pages/home";
-// Every other public page is lazy (Phase 68): the homepage is the entry's
-// LCP-critical route and these pages — auth, onboarding, legal, contact,
-// WhatsApp, sitemap — were ~55 kB of the bundle it had to load first.
+// Every public page is lazy (Phase 68): auth, onboarding, legal, contact,
+// WhatsApp, sitemap were ~55 kB of the bundle the homepage had to load first.
+// PERF-1: the homepage too — inside the App chunk it cost every dashboard,
+// link and auth screen ~20 kB gzip (home.tsx + the blog index). "/" is
+// server-rendered and hydrated, so the HTML stays on screen until the chunk
+// arrives (it loads after the page's load event, see main.tsx).
+const Home = lazy(() => import("@/pages/home"));
 const WhatsappPage = lazy(() => import("@/pages/whatsapp"));
 const SignInPage = lazy(() => import("@/pages/sign-in"));
 const ResetPasswordPage = lazy(() => import("@/pages/reset-password"));
@@ -111,6 +114,13 @@ function OnboardingGuard({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
+// PERF-1: while a public page chunk loads, hold the viewport so the footer
+// does not paint under the header and then jump down (CLS 0.62 on /sign-in
+// with the empty app shell). Hydrated pages keep their server HTML instead.
+function PageFallback() {
+  return <div className="min-h-screen" aria-hidden="true" />;
+}
+
 function DashSuspense({ children }: { children: React.ReactNode }) {
   return <Suspense fallback={null}>{children}</Suspense>;
 }
@@ -133,9 +143,9 @@ function Router() {
   return (
     <Switch>
       {/* Public pages — paths from sitemap-routes.ts (shared with generate-sitemap.ts) */}
-      <Route path={PATHS.HOME} component={() => <PublicLayout><Home /></PublicLayout>} />
-      <Route path={PATHS.WHATSAPP} component={() => <PublicLayout><Suspense fallback={null}><WhatsappPage /></Suspense></PublicLayout>} />
-      <Route path={PATHS.FISCO} component={() => <PublicLayout><Suspense fallback={null}><AmministrazioneLandingPage /></Suspense></PublicLayout>} />
+      <Route path={PATHS.HOME} component={() => <PublicLayout><Suspense fallback={<PageFallback />}><Home /></Suspense></PublicLayout>} />
+      <Route path={PATHS.WHATSAPP} component={() => <PublicLayout><Suspense fallback={<PageFallback />}><WhatsappPage /></Suspense></PublicLayout>} />
+      <Route path={PATHS.FISCO} component={() => <PublicLayout><Suspense fallback={<PageFallback />}><AmministrazioneLandingPage /></Suspense></PublicLayout>} />
       <Route path={PATHS.CHI_SIAMO} component={() => <Suspense fallback={null}><ChiSiamoPage /></Suspense>} />
       <Route path={PATHS.CONTATTI} component={() => <Suspense fallback={null}><ContattiPage /></Suspense>} />
       <Route path={PATHS.PRIVACY} component={() => <Suspense fallback={null}><PrivacyPage /></Suspense>} />
@@ -145,15 +155,15 @@ function Router() {
       <Route path="/terms" component={() => <Redirect to={PATHS.TERMINI} />} />
       <Route path={PATHS.MAPPA_SITO} component={() => <Suspense fallback={null}><MappaSitoPage /></Suspense>} />
       {/* Help centre — Phase 70; articles from HELP_ARTICLES */}
-      <Route path="/help/:slug" component={() => <PublicLayout><Suspense fallback={null}><HelpArticlePage /></Suspense></PublicLayout>} />
-      <Route path={PATHS.HELP} component={() => <PublicLayout><Suspense fallback={null}><HelpIndexPage /></Suspense></PublicLayout>} />
+      <Route path="/help/:slug" component={() => <PublicLayout><Suspense fallback={<PageFallback />}><HelpArticlePage /></Suspense></PublicLayout>} />
+      <Route path={PATHS.HELP} component={() => <PublicLayout><Suspense fallback={<PageFallback />}><HelpIndexPage /></Suspense></PublicLayout>} />
 
       {/* Auth routes (not indexed) */}
-      <Route path="/sign-in" component={() => <PublicLayout><Suspense fallback={null}><SignInPage /></Suspense></PublicLayout>} />
-      <Route path="/sign-in/:rest*" component={() => <PublicLayout><Suspense fallback={null}><SignInPage /></Suspense></PublicLayout>} />
-      <Route path="/reset-password" component={() => <PublicLayout><Suspense fallback={null}><ResetPasswordPage /></Suspense></PublicLayout>} />
-      <Route path="/sign-up" component={() => <PublicLayout><Suspense fallback={null}><SignUpPage /></Suspense></PublicLayout>} />
-      <Route path="/sign-up/:rest*" component={() => <PublicLayout><Suspense fallback={null}><SignUpPage /></Suspense></PublicLayout>} />
+      <Route path="/sign-in" component={() => <PublicLayout><Suspense fallback={<PageFallback />}><SignInPage /></Suspense></PublicLayout>} />
+      <Route path="/sign-in/:rest*" component={() => <PublicLayout><Suspense fallback={<PageFallback />}><SignInPage /></Suspense></PublicLayout>} />
+      <Route path="/reset-password" component={() => <PublicLayout><Suspense fallback={<PageFallback />}><ResetPasswordPage /></Suspense></PublicLayout>} />
+      <Route path="/sign-up" component={() => <PublicLayout><Suspense fallback={<PageFallback />}><SignUpPage /></Suspense></PublicLayout>} />
+      <Route path="/sign-up/:rest*" component={() => <PublicLayout><Suspense fallback={<PageFallback />}><SignUpPage /></Suspense></PublicLayout>} />
 
       <Route path="/onboarding" component={() => <Suspense fallback={null}><OnboardingPage /></Suspense>} />
 
@@ -281,13 +291,13 @@ function Router() {
       <Route path="/p/:id" component={() => <Suspense fallback={null}><PublicQuotePage /></Suspense>} />
 
       {/* SEO landing pages — dynamic, driven by SECTORS / CITIES data */}
-      <Route path="/preventivi/:type/:city" component={() => <PublicLayout><Suspense fallback={null}><SeoCityLanding /></Suspense></PublicLayout>} />
-      <Route path="/preventivi/:type" component={() => <PublicLayout><Suspense fallback={null}><SeoLanding /></Suspense></PublicLayout>} />
+      <Route path="/preventivi/:type/:city" component={() => <PublicLayout><Suspense fallback={<PageFallback />}><SeoCityLanding /></Suspense></PublicLayout>} />
+      <Route path="/preventivi/:type" component={() => <PublicLayout><Suspense fallback={<PageFallback />}><SeoLanding /></Suspense></PublicLayout>} />
 
       {/* Blog — dynamic, driven by BLOG_ARTICLES / BLOG_CATEGORIES data */}
-      <Route path="/blog/categoria/:slug" component={() => <PublicLayout><Suspense fallback={null}><BlogCategoryPage /></Suspense></PublicLayout>} />
-      <Route path="/blog/:slug" component={() => <PublicLayout><Suspense fallback={null}><BlogArticlePage /></Suspense></PublicLayout>} />
-      <Route path={PATHS.BLOG} component={() => <PublicLayout><Suspense fallback={null}><BlogPage /></Suspense></PublicLayout>} />
+      <Route path="/blog/categoria/:slug" component={() => <PublicLayout><Suspense fallback={<PageFallback />}><BlogCategoryPage /></Suspense></PublicLayout>} />
+      <Route path="/blog/:slug" component={() => <PublicLayout><Suspense fallback={<PageFallback />}><BlogArticlePage /></Suspense></PublicLayout>} />
+      <Route path={PATHS.BLOG} component={() => <PublicLayout><Suspense fallback={<PageFallback />}><BlogPage /></Suspense></PublicLayout>} />
 
       <Route path="/dashboard/admin" component={() => <DashSuspense><AdminPage /></DashSuspense>} />
 

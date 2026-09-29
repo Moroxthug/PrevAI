@@ -1,4 +1,5 @@
-import { defineConfig } from "vite";
+import { defineConfig, type Plugin } from "vite";
+import { mkdirSync, writeFileSync } from "node:fs";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 import path from "path";
@@ -12,6 +13,30 @@ const basePath = process.env.BASE_PATH ?? "/";
 const release = process.env.SENTRY_RELEASE ?? process.env.VERCEL_GIT_COMMIT_SHA ?? "";
 const emitSourcemaps = Boolean(process.env.SENTRY_AUTH_TOKEN);
 
+// PERF-1: chunk graph with the source modules and CSS of every chunk, for
+// scripts/bundle-budget.ts (`qa:bundle`) and scripts/build-sw.ts. Vite's
+// manifest loses a page's name when Rollup merges it into a shared chunk;
+// this does not. Written to dist/ (not dist/public), so it is never deployed.
+function bundleMap(): Plugin {
+  return {
+    name: "prevai-bundle-map",
+    apply: "build",
+    generateBundle(_options, bundle) {
+      const rel = (id: string) => path.relative(import.meta.dirname, id.replace(/\?.*$/, "")).split(path.sep).join("/");
+      const chunks = Object.values(bundle).flatMap((c) => c.type !== "chunk" ? [] : [{
+        file: c.fileName,
+        isEntry: c.isEntry,
+        imports: c.imports,
+        dynamicImports: c.dynamicImports,
+        modules: Object.keys(c.modules).map(rel),
+        css: [...(c.viteMetadata?.importedCss ?? [])],
+      }]);
+      mkdirSync(path.resolve(import.meta.dirname, "dist"), { recursive: true });
+      writeFileSync(path.resolve(import.meta.dirname, "dist/bundle-map.json"), JSON.stringify(chunks));
+    },
+  };
+}
+
 export default defineConfig(({ isSsrBuild }) => ({
   base: basePath,
   define: {
@@ -20,6 +45,7 @@ export default defineConfig(({ isSsrBuild }) => ({
   plugins: [
     react(),
     tailwindcss(),
+    ...(isSsrBuild ? [] : [bundleMap()]),
   ],
   resolve: {
     alias: {
@@ -36,8 +62,6 @@ export default defineConfig(({ isSsrBuild }) => ({
   build: {
     outDir: path.resolve(import.meta.dirname, "dist/public"),
     emptyOutDir: true,
-    // APP-2: scripts/build-sw.ts reads the chunk graph to precache the app shell.
-    manifest: !isSsrBuild,
     chunkSizeWarningLimit: 500,
     sourcemap: emitSourcemaps && !isSsrBuild ? "hidden" : false,
     rollupOptions: {
@@ -60,12 +84,12 @@ export default defineConfig(({ isSsrBuild }) => ({
           if (id.includes("node_modules/lucide-react")) {
             return "vendor-icons";
           }
-          if (
-            id.includes("node_modules/react-helmet-async") ||
-            id.includes("node_modules/react-dom") ||
-            id.includes("node_modules/react/") ||
-            id.includes("node_modules/wouter")
-          ) {
+          // PERF-1: the router and Helmet are only needed by the App; the static
+          // SEO pages mount one header with plain React (~12 kB gzip saved there).
+          if (id.includes("node_modules/react-helmet-async") || id.includes("node_modules/wouter")) {
+            return "vendor-router";
+          }
+          if (id.includes("node_modules/react-dom") || id.includes("node_modules/react/")) {
             return "vendor-react";
           }
           if (

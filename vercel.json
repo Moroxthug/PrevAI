@@ -4,6 +4,7 @@
   "outputDirectory": "artifacts/preventivo-ai/dist/public",
   "installCommand": "pnpm install",
   "framework": null,
+  "regions": ["dub1"],
   "functions": {
     "api/index.js": {
       "memory": 1024,
@@ -45,11 +46,11 @@
     },
     {
       "source": "/((?:dashboard|onboarding|sign-in|sign-up|reset-password|studio)(?:/.*)?)",
-      "destination": "/index.html"
+      "destination": "/app.html"
     },
     {
       "source": "/((?:sign|i|commercialista|t|team-invite|p)/[^/]+/?)",
-      "destination": "/index.html"
+      "destination": "/app.html"
     }
   ],
   "headers": [

@@ -1,6 +1,5 @@
 import { StrictMode } from "react";
 import { createRoot, hydrateRoot } from "react-dom/client";
-import { HelmetProvider } from "react-helmet-async";
 import { SeoNavShell } from "./components/seo-header.tsx";
 import "./index.css";
 import { initAnalytics } from "./lib/analytics.ts";
@@ -46,12 +45,10 @@ if (STATIC_SEO_RE.test(pathname) && hasPrerendered) {
   }
 } else {
   // Everything React-rendered loads the App chunk on demand: the static SEO
-  // pages above never pay for it (it is ~2/3 of the entry's JavaScript), and
-  // the build-time-rendered pages carry a <link rel="modulepreload"> for it
-  // (scripts/prerender-seo.ts) so hydration does not wait on a second
-  // round trip.
+  // pages above never pay for it (it is ~2/3 of the entry's JavaScript).
   const hydrate = SSR_PAGE_RE.test(pathname) && hasPrerendered;
-  void import("./App.tsx").then(({ default: App }) => {
+  // react-helmet-async comes with the App (PERF-1): the static pages above never need it.
+  const start = () => void Promise.all([import("./App.tsx"), import("react-helmet-async")]).then(([{ default: App }, { HelmetProvider }]) => {
     const tree = (
       <StrictMode>
         <HelmetProvider>
@@ -69,4 +66,20 @@ if (STATIC_SEO_RE.test(pathname) && hasPrerendered) {
       createRoot(rootEl).render(tree);
     }
   });
+  if (hydrate) {
+    // PERF-1: the build-time-rendered pages already show everything from the
+    // HTML (links are plain <a>), so the ~190 kB of App JavaScript waits for
+    // the page's own load instead of competing with the CSS, the font and
+    // the hero. They used to modulepreload it in <head>: Lighthouse counted
+    // it before the LCP (home 78, /whatsapp 75). And it waits for an idle
+    // moment after load: started right at load, evaluating the App and
+    // hydrating ran before the first frame and held the first paint ~0.9 s.
+    // The app shell (app.html) and 404.html still preload it: there nothing
+    // shows until React renders.
+    const whenIdle = () => ("requestIdleCallback" in window ? requestIdleCallback(start, { timeout: 2000 }) : setTimeout(start, 200));
+    if (document.readyState === "complete") whenIdle();
+    else window.addEventListener("load", whenIdle, { once: true });
+  } else {
+    start();
+  }
 }

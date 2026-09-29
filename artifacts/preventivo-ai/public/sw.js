@@ -2,9 +2,9 @@
 // APP-2 (docs/APP-PLAN.md): il service worker di PrevAI, dalla Phase 77 di QuoteAI.
 //
 // Scritto a mano (niente workbox): quattro cache e tre regole.
-//   • Struttura dell'app — /index.html più il JavaScript/CSS della dashboard,
+//   • Struttura dell'app — /app.html più il JavaScript/CSS della dashboard,
 //     precaricati all'installazione così l'app si apre anche senza rete. La
-//     lista la scrive scripts/build-sw.ts dal manifest di Vite (il segnaposto
+//     lista la scrive scripts/build-sw.ts dalla mappa dei chunk (il segnaposto
 //     `__PRECACHE__`) e il nome della cache porta la versione
 //     (`__SW_VERSION__`), così un deploy cambia la struttura tutta insieme.
 //     In sviluppo i segnaposto restano e valgono solo le regole a runtime.
@@ -29,7 +29,8 @@ const STATIC_CACHE = `prevai-static-${VERSION}`;
 const API_CACHE = "prevai-api";
 const KEEP = new Set([SHELL_CACHE, ASSET_CACHE, STATIC_CACHE, API_CACHE]);
 
-const SHELL_URL = "/index.html";
+// PERF-1: la shell vuota dell'app, non più la homepage prerenderizzata.
+const SHELL_URL = "/app.html";
 const STATIC_PRECACHE = ["/manifest.webmanifest", "/icon-192.png", "/icon-512.png", "/prevai-logo.png", "/fonts/figtree-latin-wght-normal.woff2", "/fonts/inter-latin-wght-normal.woff2"];
 
 /** Letture tenute per l'uso senza rete (solo il percorso; la query fa parte della chiave). */

@@ -161,9 +161,13 @@ function injectBody(html: string, bodyHtml: string): string {
 }
 
 // main.tsx imports the App on demand (static SEO pages never load it). The
-// build-time-rendered pages hydrate with it, so they preload the chunk — and
-// the chunks it statically pulls in — to avoid a second round trip before
-// hydration. The names carry content hashes, so they are read off dist/.
+// pages where React renders from scratch — the app shell (app.html) and
+// 404.html — preload the chunk and the chunks it statically pulls in, so the
+// first render does not wait on a second round trip. The build-time-rendered
+// pages do not (PERF-1): they hydrate after the page's load event, and a
+// preload in <head> competed with the CSS and the hero (Lighthouse counted
+// ~190 kB of JavaScript before the LCP). The names carry content hashes, so
+// they are read off dist/.
 const APP_PRELOADS: string[] = (() => {
   const assets = join(distDir, "assets");
   const app = readdirSync(assets).find((f) => /^App-[\w-]+\.js$/.test(f));
@@ -195,7 +199,7 @@ function writeRoute(relPath: string, html: string): void {
 
 const CURRENT_YEAR = new Date().getFullYear();
 
-const STATIC_LOGO = `<img src="/prevai-logo.png" alt="prevai" width="144" height="72" style="height: 72px; width: auto; object-fit: contain;">`;
+const STATIC_LOGO = `<img src="/prevai-logo-144.png" alt="prevai" width="144" height="72" style="height: 72px; width: auto; object-fit: contain;">`;
 
 const STATIC_HEADER = `<header class="sticky top-0 z-50 w-full transition-all duration-300 bg-transparent border-b border-transparent">
   <div class="container mx-auto flex h-16 items-center justify-between px-4 sm:px-6 lg:px-8">
@@ -1046,7 +1050,7 @@ const homepageHeadBlock = buildHeadBlock({
   ogImagePath: "/opengraph.jpg",
   jsonLd: [homepageWebSiteSchema, homepageSoftwareSchema],
 });
-const homepageHtml = injectAppPreload(injectBody(injectHead(template, homepageHeadBlock), stripHoistedHead(await renderPage("/", "it"))));
+const homepageHtml = injectBody(injectHead(template, homepageHeadBlock), stripHoistedHead(await renderPage("/", "it")));
 writeFileSync(templatePath, homepageHtml, "utf-8");
 count++;
 console.log("  ✓ Homepage prerendered");
@@ -1626,7 +1630,7 @@ async function buildStaticPageHtml(opts: {
     ogImagePath: opts.ogImagePath ?? "/opengraph.jpg",
     jsonLd: opts.jsonLd,
   });
-  let html = injectAppPreload(injectBody(injectHead(template, headBlock), opts.bodyHtml));
+  let html = injectBody(injectHead(template, headBlock), opts.bodyHtml);
   if (opts.noIndex) {
     // Si sostituisce il meta della shell invece di aggiungerne un secondo:
     // con due meta robots in conflitto non si sa quale legga il crawler (A-4).
@@ -1811,6 +1815,26 @@ console.log(`  ✓ ${HELP_ARTICLES.length + 1} help-centre pages prerendered`);
   if (/<link\b[^>]*rel="canonical"/.test(html)) throw new Error("prerender: 404.html non deve avere un canonical");
   writeFileSync(join(distDir, "404.html"), html, "utf-8");
   console.log("  ✓ 404.html prerendered");
+}
+
+// PERF-1: la shell delle rotte dell'app (dashboard, accesso, link dei clienti
+// — i rewrite di vercel.json). Prima ricevevano index.html, cioè la homepage
+// prerenderizzata: ~56 kB di HTML, i modulepreload della homepage e il suo
+// contenuto a video finché l'App non lo sostituiva. Qui: root vuota (main.tsx
+// fa createRoot), solo i preload dell'App, noindex. È anche la pagina che il
+// service worker tiene per aprire l'app senza rete (public/sw.js).
+{
+  const appHead = [
+    `  <title>PrevAI</title>`,
+    `  <meta name="description" content="PrevAI: preventivi, cantieri e fatture per artigiani e imprese." />`,
+  ].join("\n");
+  let html = injectAppPreload(injectHead(template, appHead));
+  const prima = html;
+  html = html.replace('<meta name="robots" content="index, follow" />', '<meta name="robots" content="noindex, nofollow" />');
+  if (html === prima) throw new Error("prerender: meta robots della shell non trovato per app.html");
+  if (!html.includes('<div id="root"></div>')) throw new Error("prerender: app.html deve avere la root vuota");
+  writeFileSync(join(distDir, "app.html"), html, "utf-8");
+  console.log("  ✓ app.html (shell dell'app)");
 }
 
 console.log(`Prerendered ${count} pages total (1 homepage + SEO sector pages + ${BLOG_CATEGORIES.length} category pages + ${BLOG_ARTICLES.length + 1} blog pages + 7 SPA pages + ${HELP_ARTICLES.length + 1} help pages).`);

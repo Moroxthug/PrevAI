@@ -79,7 +79,7 @@ function Waveform() {
 function BotAvatar({ size = 8 }: { size?: number }) {
   return (
     <img
-      src="/prevai-icon.png"
+      src="/prevai-icon-96.png"
       alt="PrevAI"
       className="rounded-full object-cover shrink-0 shadow-sm"
       style={{ width: `${size * 4}px`, height: `${size * 4}px` }}
@@ -301,7 +301,7 @@ export function WhatsAppChatDemo() {
           <div className="bg-white rounded-[28px] overflow-hidden" style={{ height: 520 }}>
             <div className="bg-[#075e54] px-3 pt-7 pb-2 flex items-center gap-2.5">
               <div className="w-8 h-8 rounded-full overflow-hidden border-2 border-white/20 shrink-0">
-                <img src="/prevai-icon.png" alt="PrevAI" className="w-full h-full object-cover" />
+                <img src="/prevai-icon-96.png" alt="PrevAI" className="w-full h-full object-cover" />
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-white font-semibold text-[12px] leading-tight">PrevAI</p>

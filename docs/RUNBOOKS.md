@@ -1202,9 +1202,9 @@ Il server rilegge tetto e spesa ogni 30 secondi per istanza.
 
 ## 30. 404 veri e copertura Search Console (SEO-1, riga 47)
 
-**Come è servita una pagina.** Vercel guarda prima i file di `artifacts/preventivo-ai/dist/public` (home, `/preventivi/…`, `/blog/…`, `/help/…`, pagine statiche: tutte prerenderizzate), poi i `rewrites` di `vercel.json`: `/api/*` alla funzione, le rotte dell'app a `/index.html`. Se non c'è né file né rewrite, Vercel risponde **404** con `404.html` (noindex, niente canonical).
+**Come è servita una pagina.** Vercel guarda prima i file di `artifacts/preventivo-ai/dist/public` (home, `/preventivi/…`, `/blog/…`, `/help/…`, pagine statiche: tutte prerenderizzate), poi i `rewrites` di `vercel.json`: `/api/*` alla funzione, le rotte dell'app a `/app.html` (la shell vuota dell'app, da PERF-1; prima `/index.html`, cioè la homepage). Se non c'è né file né rewrite, Vercel risponde **404** con `404.html` (noindex, niente canonical).
 
-**Aggiungere una rotta all'app.** Una nuova `<Route path="…">` in `App.tsx` che non sia prerenderizzata va aggiunta anche a uno dei due rewrite verso `/index.html` in `vercel.json`, altrimenti in produzione risponde 404. Il test `artifacts/api-server/scripts/routing-404.test.ts` lo segnala. Le sorgenti dei rewrite sono regex semplici (senza `:param`): le usa anche `server/serve.mjs`.
+**Aggiungere una rotta all'app.** Una nuova `<Route path="…">` in `App.tsx` che non sia prerenderizzata va aggiunta anche a uno dei due rewrite verso `/app.html` in `vercel.json`, altrimenti in produzione risponde 404. Il test `artifacts/api-server/scripts/routing-404.test.ts` lo segnala. Le sorgenti dei rewrite sono regex semplici (senza `:param`): le usa anche `server/serve.mjs`.
 
 **Sintomo "pagina non trovata" su un link dell'app** (email, notifica): controllare che il percorso sia in un rewrite; i link con token (`/p/`, `/i/`, `/sign/`, `/t/`, `/team-invite/`, `/commercialista/`) valgono per un solo segmento dopo il prefisso.
 
@@ -1220,3 +1220,28 @@ Atteso: 200, 404, 404, 200, 200, 200.
 2. *Pagine* (Indicizzazione): guardare "Soft 404", "Duplicata, Google ha scelto un URL canonico diverso" e "Non trovata (404)". Dopo il deploy le soft 404 diventano 404: è giusto. Su "Soft 404" → *Convalida correzione*.
 3. Se in "Non trovata (404)" compaiono indirizzi che dovrebbero esistere (vecchi URL di v1 ancora linkati da fuori), aggiungerli ai `redirects` di `vercel.json` verso la pagina nuova, prima del redirect della barra finale.
 4. *Controllo URL* su `https://prevai.it/pagina-inesistente-xyz/`: deve dire "Non trovata (404)".
+
+## 31. Velocità: budget del JS, shell dell'app, regione delle funzioni (PERF-1, riga 49)
+
+**Budget del JavaScript per schermata.** Dopo il build del frontend:
+```bash
+pnpm --filter @workspace/preventivo-ai qa:bundle
+```
+Per ogni rotta di `App.tsx` (più le pagine statiche SEO) somma i kB gzip di JavaScript scaricati prima del primo disegno: entry, App, layout della dashboard, pagina e i loro import statici. I limiti stanno in `artifacts/preventivo-ai/scripts/bundle-budget.json` (per gruppo: `static`, `public`, `auth`, `link`, `dashboard`; più eccezioni per schermata). Gira in CI dopo il build ("Bundle budget"). Se una schermata sfora, lo script elenca i file che la compongono: di solito un import statico di troppo (un grafico, un dialogo, un dato grande) che va reso `lazy()`. Alzare un budget è una decisione: scriverla nel diario. La mappa dei chunk la scrive il build in `artifacts/preventivo-ai/dist/bundle-map.json` (plugin in `vite.config.ts`, non pubblicata); la usano `qa:bundle` e `build-sw.ts` (precache del service worker).
+
+**Shell dell'app.** Le rotte dell'app (dashboard, accesso, link dei clienti) ricevono `app.html`: root vuota, noindex, solo i `modulepreload` dell'App. La scrive `scripts/prerender-seo.ts`; è anche la pagina che il service worker tiene per aprire l'app senza rete. Le pagine prerenderizzate (home, statiche, help) non precaricano l'App: la caricano dopo il `load` in un momento libero (`main.tsx`), perché mostrano già tutto dall'HTML.
+
+**Lighthouse.** Sul build locale (serve `dist/public` da solo) o su produzione, da `artifacts/preventivo-ai`:
+```bash
+MSYS_NO_PATHCONV=1 npx tsx scripts/lighthouse.ts --urls=home,/whatsapp/,/fisco/,/preventivi/imbianchino/milano/
+MSYS_NO_PATHCONV=1 npx tsx scripts/lighthouse.ts --base=https://prevai.it --urls=home,/whatsapp/
+```
+In Git Bash "/" diventa un percorso di Windows: usare `home`. `/sign-in` ha SEO 69 per scelta (noindex).
+
+**Regione delle funzioni.** `vercel.json` → `"regions": ["dub1"]` (Dublino), accanto al database Supabase in `eu-west-1`. Prima le funzioni giravano in `iad1` (Washington): ogni query attraversava l'Atlantico. Se il database cambia regione, cambiare anche questa. Controllo: l'header `X-Vercel-Id` di una risposta `/api` contiene `::dub1::`.
+```bash
+curl -s --ssl-no-revoke -D - -o /dev/null https://prevai.it/api/healthz | grep -i x-vercel-id
+```
+
+**Avvio a freddo.** Il bundle dell'API è minificato (`build.mjs`, con `keepNames`): 12,5 → 6 MB. Il primo `/api/healthz` dopo un periodo fermo misura l'avvio a freddo.
+

@@ -2,7 +2,6 @@ import { StrictMode, useLayoutEffect } from "react";
 import { authClient } from "@/lib/auth-client";
 import { Logo } from "@/components/logo";
 import { useScrolled } from "@/hooks/use-scrolled";
-import { cn } from "@/lib/utils";
 
 // The interactive header for the statically prerendered SEO/blog pages. It
 // renders the same markup as STATIC_HEADER / STATIC_HEADER_FR in
@@ -24,10 +23,11 @@ function SeoHeaderInner({ lang }: { lang: "it" }) {
 
   return (
     <header
-      className={cn(
-        "sticky top-0 z-50 w-full transition-all duration-300",
+      // No cn() here (PERF-1): tailwind-merge is ~20 kB gzip and this header is
+      // the only React on the static SEO pages; the two class sets never clash.
+      className={`sticky top-0 z-50 w-full transition-all duration-300 ${
         scrolled ? "navbar-glass" : "bg-transparent border-b border-transparent"
-      )}
+      }`}
     >
       <div className="container mx-auto flex h-16 items-center justify-between px-4 sm:px-6 lg:px-8">
         <a href={t.home} className="flex items-center">

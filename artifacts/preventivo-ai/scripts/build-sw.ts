@@ -4,53 +4,61 @@
 // Vite copia public/sw.js così com'è in dist/public; questo script riscrive
 // quella copia con la versione (nomi delle cache) e la lista dei file della
 // struttura dell'app da precaricare — l'entry, l'App e le pagine che servono
-// in cantiere senza rete — letta dal manifest di Vite, così gli hash sono
-// sempre quelli giusti. Gira dallo script `build` dopo `vite build` e il
-// prerender. Il manifest di Vite (.vite/manifest.json) non viene pubblicato.
+// in cantiere senza rete — letta dalla mappa dei chunk (dist/bundle-map.json,
+// plugin in vite.config.ts), così gli hash sono sempre quelli giusti. Gira
+// dallo script `build` dopo `vite build` e il prerender.
+// PERF-1: prima leggeva il manifest di Vite, che perde il nome di una pagina
+// quando Rollup la fonde in un chunk condiviso (la scheda del lavoro spariva
+// dal precache).
 
-import { existsSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 
 const distDir = resolve(import.meta.dirname, "..", "dist", "public");
 const swPath = resolve(distDir, "sw.js");
-const manifestDir = resolve(distDir, ".vite");
-const manifestPath = resolve(manifestDir, "manifest.json");
+const mapPath = resolve(distDir, "..", "bundle-map.json");
 
-if (!existsSync(swPath)) {
-  console.error("dist/public/sw.js non trovato — prima vite build");
+if (!existsSync(swPath) || !existsSync(mapPath)) {
+  console.error("dist/public/sw.js o dist/bundle-map.json non trovato — prima vite build");
   process.exit(1);
 }
 
-type ManifestChunk = { file: string; src?: string; isEntry?: boolean; imports?: string[]; css?: string[] };
-const manifest: Record<string, ManifestChunk> = existsSync(manifestPath) ? JSON.parse(readFileSync(manifestPath, "utf8")) : {};
+type Chunk = { file: string; isEntry: boolean; imports: string[]; modules: string[]; css: string[] };
+const chunks = JSON.parse(readFileSync(mapPath, "utf8")) as Chunk[];
+const byFile = new Map(chunks.map((c) => [c.file, c]));
 
-// Pagine i cui pezzi si precaricano (chiavi del manifest di Vite = percorsi dei sorgenti).
-const SHELL_ENTRIES = [
-  // The App chunk (a dynamic import of main.tsx) is not a manifest key of its own: it comes in as an import of the pages below.
-  "index.html",
+// Moduli sorgente le cui pagine (con tutti i loro import statici) si precaricano.
+const SHELL_MODULES = [
+  "src/main.tsx",
+  "src/App.tsx",
+  "src/components/layout/dashboard-layout.tsx",
   "src/pages/dashboard/index.tsx",
   "src/pages/dashboard/new.tsx",
   "src/pages/dashboard/quotes/index.tsx",
   "src/pages/dashboard/quotes/[id].tsx",
   "src/pages/dashboard/jobs/index.tsx",
   "src/pages/dashboard/jobs/[id].tsx",
+  // PERF-1: i grafici della scheda del lavoro ora arrivano dopo la pagina.
+  "src/components/jobs/overview-charts.tsx",
   "src/pages/dashboard/notifications.tsx",
 ];
 
 const files = new Set<string>();
-const seen = new Set<string>();
-function walk(key: string) {
-  if (seen.has(key)) return;
-  seen.add(key);
-  const chunk = manifest[key];
+function walk(file: string) {
+  if (files.has(`/${file}`)) return;
+  const chunk = byFile.get(file);
   if (!chunk) return;
-  files.add(`/${chunk.file}`);
-  for (const css of chunk.css ?? []) files.add(`/${css}`);
-  for (const dep of chunk.imports ?? []) walk(dep);
+  files.add(`/${file}`);
+  for (const css of chunk.css) files.add(`/${css}`);
+  for (const dep of chunk.imports) walk(dep);
 }
-for (const entry of SHELL_ENTRIES) {
-  if (!manifest[entry]) console.warn(`build-sw: ${entry} non è nel manifest di Vite (saltato)`);
-  walk(entry);
+for (const mod of SHELL_MODULES) {
+  const chunk = chunks.find((c) => c.modules.includes(mod));
+  if (!chunk) {
+    console.error(`build-sw: ${mod} non è in nessun chunk — aggiorna SHELL_MODULES`);
+    process.exit(1);
+  }
+  walk(chunk.file);
 }
 
 const precache = [...files].filter((f) => f.startsWith("/assets/")).sort();
@@ -64,6 +72,4 @@ if (!VERSION_LINE.test(sw) || !sw.includes("/* __PRECACHE__ */ []")) {
 }
 sw = sw.replace(VERSION_LINE, `const VERSION = "${version}";`).replace("/* __PRECACHE__ */ []", JSON.stringify(precache));
 writeFileSync(swPath, sw);
-// Il manifest serviva solo qui: non va pubblicato con il sito.
-rmSync(manifestDir, { recursive: true, force: true });
 console.log(`build-sw: versione ${version}, ${precache.length} file della struttura precaricati`);

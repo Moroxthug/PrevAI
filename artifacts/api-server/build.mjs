@@ -108,6 +108,12 @@ async function buildAll() {
       "electron",
     ],
     sourcemap: "linked",
+    // PERF-1: minified the bundle is less than half the size — V8 compiles and
+    // reads it on every cold start (compile was a third of the start-up CPU).
+    // keepNames: code and logs that rely on function/class .name keep working;
+    // Sentry maps the rest back through the uploaded source map.
+    minify: true,
+    keepNames: true,
     plugins: [
       // pino relies on workers to handle logging, instead of externalizing it we use a plugin to handle it
       esbuildPluginPino({ transports: ["pino-pretty"] })

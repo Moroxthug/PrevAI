@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { it } from "date-fns/locale";
 import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
@@ -8,7 +7,8 @@ import { StatStrip } from "@/components/mobile/stat-strip";
 import { useMediaQuery } from "@/hooks/use-media-query";
 import { cn } from "@/lib/utils";
 import { useLanguage } from "@/i18n/LanguageContext";
-import { analyticsApi, type JobAnalyticsDto } from "@/lib/analytics-api";
+import type { JobAnalyticsDto } from "@/lib/analytics-api";
+import { useJobAnalytics } from "./use-job-analytics";
 import { formatCents } from "@/lib/jobs-api";
 import { formatEurWhole } from "@/lib/money";
 import { AXIS_TICK, ChartCard, Empty, LegendRow, SERIES, TOOLTIP_STYLE, money, moneyShort } from "@/components/charts";
@@ -17,8 +17,6 @@ const day = (s: string | null) => (s ? new Date(`${s}T00:00:00`) : null);
 const whole = (c: number) => formatEurWhole(c / 100);
 const PENDING = "#c4b5fd";
 
-/** The job's analytics, shared by the page's number strip and the Overview tab (one request). */
-export const useJobAnalytics = (jobId: string) => useQuery({ queryKey: ["job-analytics", jobId], queryFn: () => analyticsApi.job(jobId) });
 
 /**
  * Overview-tab insights: schedule health and unbilled work, budget vs actual,

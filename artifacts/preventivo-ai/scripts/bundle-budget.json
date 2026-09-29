@@ -1,0 +1,21 @@
+{
+  "_nota": "PERF-1 (riga 49): kB gzip di JavaScript prima del primo disegno, per schermata (scripts/bundle-budget.ts). Fissati il 2026-09-28 sui valori misurati + ~5 % di margine. Alzare un budget è una decisione: scrivere perché nel diario di docs/PIANO-AZIONE.md.",
+  "groups": {
+    "static": 80,
+    "public": 205,
+    "auth": 195,
+    "link": 215,
+    "dashboard": 330
+  },
+  "screens": {
+    "/preventivi/:type": 240,
+    "/preventivi/:type/:city": 240,
+    "/mappa-sito": 240,
+    "/blog/:slug": 355,
+    "/dashboard/analytics": 435,
+    "/dashboard/admin": 375,
+    "/dashboard/jobs/:id": 340,
+    "/dashboard/settings": 340,
+    "/dashboard/settings/:section": 340
+  }
+}

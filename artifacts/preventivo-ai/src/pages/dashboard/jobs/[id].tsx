@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useLocation, useParams, useSearch } from "wouter";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
@@ -24,12 +24,15 @@ import { ChangeOrderDialog } from "@/components/jobs/change-order-dialog";
 import { CostsTab } from "@/components/jobs/costs-tab";
 import { TeamTab } from "@/components/jobs/team-tab";
 import { InvoicesTab } from "@/components/jobs/invoices-tab";
-import { OverviewCharts, useJobAnalytics } from "@/components/jobs/overview-charts";
+import { useJobAnalytics } from "@/components/jobs/use-job-analytics";
 import { NotesCard } from "@/components/jobs/notes-card";
 import { AssistantChat } from "@/components/assistant/assistant-panel";
 import { PhotosTab } from "@/components/jobs/photos-tab";
 import { JobDockActions } from "@/components/jobs/dock-actions";
 import { formatEurWhole } from "@/lib/money";
+
+// PERF-1: recharts (~110 kB gzip) arrives after the page has painted; the fallback is the charts' own skeleton.
+const OverviewCharts = lazy(() => import("@/components/jobs/overview-charts").then((m) => ({ default: m.OverviewCharts })));
 
 const TABS = ["overview", "schedule", "changes", "costs", "invoices", "team", "photos", "documents", "assistant"] as const;
 type Tab = (typeof TABS)[number];
@@ -241,7 +244,9 @@ function OverviewTab({ data, locale, onGoTo }: { data: JobDetailDto; locale: typ
           </div>
         </section>
       )}
-      <OverviewCharts jobId={job.id} locale={locale} jobStatus={job.status} />
+      <Suspense fallback={<div className="grid md:grid-cols-2 gap-4"><Skeleton className="h-24 rounded-[var(--radius-mk)]" /><Skeleton className="h-24 rounded-[var(--radius-mk)]" /></div>}>
+        <OverviewCharts jobId={job.id} locale={locale} jobStatus={job.status} />
+      </Suspense>
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         <div className="lg:col-span-2 stack">
           <section className="card">
