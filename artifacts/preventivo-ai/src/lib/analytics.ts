@@ -3,6 +3,8 @@
 // (same policy as the Google tag in index.html) instead of being statically
 // imported by main.tsx. identify/reset queue behind the load; nothing runs
 // at all when VITE_POSTHOG_KEY is unset.
+import { redactTokensDeep } from "@workspace/error-reporting";
+
 type PostHog = typeof import("posthog-js").default;
 
 let loading: Promise<PostHog | null> | null = null;
@@ -15,6 +17,11 @@ export function initAnalytics(): void {
         api_host: import.meta.env.VITE_POSTHOG_HOST || "https://eu.i.posthog.com",
         person_profiles: "identified_only",
         capture_pageview: true,
+        // SEC-3: on public links (/p/, /i/, /sign/, /portal/…) the path is
+        // the secret. Every event — pageviews, autocapture hrefs, the
+        // $initial_* person properties — goes through the same redaction as
+        // the server logs and Sentry before it leaves the browser.
+        before_send: (event) => event && redactTokensDeep({ ...event }),
       });
       return posthog;
     });

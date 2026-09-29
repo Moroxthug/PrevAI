@@ -236,6 +236,22 @@ export function redactTokens(text: string): string {
   return text.replace(PUBLIC_TOKEN_PATH, "$1[token]");
 }
 
+/**
+ * `redactTokens` over every string inside plain objects and arrays; anything
+ * else (Date, numbers, class instances) is returned as is. Used on PostHog
+ * events, whose URLs sit in $current_url, $pathname, $referrer, $set_once…
+ */
+export function redactTokensDeep<T>(value: T): T {
+  if (typeof value === "string") return redactTokens(value) as T;
+  if (Array.isArray(value)) return value.map(redactTokensDeep) as T;
+  if (value && typeof value === "object" && Object.getPrototypeOf(value) === Object.prototype) {
+    const out: Record<string, unknown> = {};
+    for (const [k, v] of Object.entries(value)) out[k] = redactTokensDeep(v);
+    return out as T;
+  }
+  return value;
+}
+
 function stringTags(tags: EventContext["tags"]): Record<string, string> | undefined {
   if (!tags) return undefined;
   const out: Record<string, string> = {};

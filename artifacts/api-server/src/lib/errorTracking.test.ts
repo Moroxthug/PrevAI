@@ -4,7 +4,7 @@
 // lookup that makes uploaded source maps match, and the envelope wire format.
 
 import { describe, expect, test } from "vitest";
-import { buildEvent, debugIdImages, parseDsn, parseStack, redactTokens, sendEvent, serializeEnvelope } from "@workspace/error-reporting";
+import { buildEvent, debugIdImages, parseDsn, parseStack, redactTokens, redactTokensDeep, sendEvent, serializeEnvelope } from "@workspace/error-reporting";
 
 const DSN = "https://abc123@o4507.ingest.us.sentry.io/4509";
 
@@ -184,5 +184,33 @@ describe("redactTokens", () => {
     });
     expect(JSON.stringify(e)).not.toContain(tok);
     expect(e.request?.url).toBe("/api/sign/[token]");
+  });
+  // The web app's PostHog before_send (preventivo-ai src/lib/analytics.ts).
+  test("redactTokensDeep scrubs a PostHog event and keeps the rest", () => {
+    const timestamp = new Date();
+    const event = {
+      uuid,
+      event: "$pageview",
+      timestamp,
+      properties: {
+        $current_url: `https://prevai.it/p/${uuid}.Xk3_pQ9-zR2mN8vB1cD4eF`,
+        $pathname: `/portal/${tok}`,
+        $referrer: `https://prevai.it/sign/${tok}`,
+        $elements: [{ tag_name: "a", attr__href: `/i/${tok}` }],
+        $screen_width: 390,
+        $lib: "web",
+      },
+      $set_once: { $initial_referrer: `https://prevai.it/commercialista/${tok}`, $initial_pathname: `/t/${tok}` },
+    };
+    const out = redactTokensDeep({ ...event });
+    expect(JSON.stringify(out)).not.toContain(tok);
+    expect(JSON.stringify(out)).not.toContain("Xk3_pQ9");
+    expect(out.properties.$current_url).toBe("https://prevai.it/p/[token]");
+    expect(out.properties.$elements[0]?.attr__href).toBe("/i/[token]");
+    expect(out.$set_once.$initial_pathname).toBe("/t/[token]");
+    expect(out.properties.$screen_width).toBe(390);
+    expect(out.timestamp).toBe(timestamp);
+    expect(out.uuid).toBe(uuid);
+    expect(event.properties.$pathname).toBe(`/portal/${tok}`); // input untouched
   });
 });
