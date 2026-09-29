@@ -24,7 +24,7 @@ Questo file è il rapporto del controllo. Le cose da fare sono diventate le righ
 
 - `/api/healthz` 200 (1,9 s a freddo), `/api/healthz/ops` 200, home 0,2 s, `www` → apex 308, sitemap 344 URL, `widget.js`, `sw.js`, manifest ok.
 - Intestazioni di sicurezza della pagina complete (CSP con hash, HSTS preload, nosniff, frame-ancestors, Permissions-Policy).
-- **Soft 404**: un indirizzo inesistente (`/pagina-inesistente-xyz/`) risponde **200** con `canonical` sulla home e `index, follow`. Google lo tratta come duplicato della home → riga 47.
+- **Soft 404**: un indirizzo inesistente (`/pagina-inesistente-xyz/`) risponde **200** con `canonical` sulla home e `index, follow`. Google lo tratta come duplicato della home → riga 47 ✅ 28/9 (404 veri; GSC dal titolare, RUNBOOKS §30).
 - Variabili d'ambiente di produzione (solo nomi): **mancano `SENTRY_DSN`/`VITE_SENTRY_DSN`** (oggi nessun errore di produzione arriva a nessuno), `VAPID_*` (notifiche push spente), le chiavi di WhatsApp/Meta/Google/Outlook (integrazioni spente, voluto) → riga 40.
 
 ## 3. Revisione di sicurezza del codice

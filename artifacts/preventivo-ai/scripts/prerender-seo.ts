@@ -1791,4 +1791,26 @@ for (const article of HELP_ARTICLES) {
 }
 console.log(`  ✓ ${HELP_ARTICLES.length + 1} help-centre pages prerendered`);
 
+// SEO-1 (riga 47): pagina servita da Vercel con stato 404 per ogni indirizzo
+// che non è un file e non è una rotta dell'app (vercel.json → rewrites). Prima
+// ogni indirizzo inesistente riceveva la home con 200, canonical sulla home e
+// "index, follow": Google lo contava come duplicato (soft 404). Qui niente
+// canonical, niente hreflang/og, niente JSON-LD, noindex; il corpo è la
+// NotFound di React. `data-not-found` dice a main.tsx di non trattarla come
+// pagina statica anche sotto /blog/ o /preventivi/.
+{
+  const notFoundHead = [
+    `  <title>${esc(translations.it["notFound.title"])}</title>`,
+    `  <meta name="description" content="${esc(translations.it["notFound.description"])}" />`,
+  ].join("\n");
+  let html = injectAppPreload(injectBody(injectHead(template, notFoundHead), stripHoistedHead(await renderPage("/404", "it"))));
+  const prima = html;
+  html = html.replace('<meta name="robots" content="index, follow" />', '<meta name="robots" content="noindex, follow" />');
+  if (html === prima) throw new Error("prerender: meta robots della shell non trovato per 404.html");
+  html = html.replace('<div id="root">', '<div id="root" data-not-found="">');
+  if (/<link\b[^>]*rel="canonical"/.test(html)) throw new Error("prerender: 404.html non deve avere un canonical");
+  writeFileSync(join(distDir, "404.html"), html, "utf-8");
+  console.log("  ✓ 404.html prerendered");
+}
+
 console.log(`Prerendered ${count} pages total (1 homepage + SEO sector pages + ${BLOG_CATEGORIES.length} category pages + ${BLOG_ARTICLES.length + 1} blog pages + 7 SPA pages + ${HELP_ARTICLES.length + 1} help pages).`);

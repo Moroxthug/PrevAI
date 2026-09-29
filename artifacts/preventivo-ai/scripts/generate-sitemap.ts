@@ -90,6 +90,7 @@ Disallow: /dashboard
 Disallow: /dashboard/
 Disallow: /sign-in
 Disallow: /sign-up
+Disallow: /reset-password
 Disallow: /onboarding
 Disallow: /admin
 Disallow: /api

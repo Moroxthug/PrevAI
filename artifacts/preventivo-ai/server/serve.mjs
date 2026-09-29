@@ -140,10 +140,12 @@ app.use(
   }),
 );
 
-function sendIndex(res) {
-  res.setHeader("Cache-Control", "public, max-age=0, must-revalidate");
-  res.sendFile(INDEX_HTML);
-}
+// SEO-1: same SPA routes as vercel.json (its rewrite sources are plain
+// regexes); any other page is a real 404 with dist/public/404.html.
+const SPA_ROUTES = JSON.parse(fs.readFileSync(path.resolve(__dirname, "..", "..", "..", "vercel.json"), "utf8"))
+  .rewrites.filter((r) => r.destination === "/index.html")
+  .map((r) => new RegExp(`^${r.source}$`));
+const NOT_FOUND_HTML = path.join(PUBLIC_DIR, "404.html");
 
 app.use((req, res, next) => {
   if (req.method !== "GET" && req.method !== "HEAD") {
@@ -153,7 +155,14 @@ app.use((req, res, next) => {
   if (!accept.includes("text/html")) {
     return next();
   }
-  sendIndex(res);
+  res.setHeader("Cache-Control", "public, max-age=0, must-revalidate");
+  if (SPA_ROUTES.some((re) => re.test(req.path))) {
+    res.sendFile(INDEX_HTML);
+  } else if (fs.existsSync(NOT_FOUND_HTML)) {
+    res.status(404).sendFile(NOT_FOUND_HTML);
+  } else {
+    next();
+  }
 });
 
 app.use((_req, res) => {

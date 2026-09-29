@@ -39,7 +39,11 @@ function proposalLink(p: ProposalDto): string | null {
 /** APP-8f: the last card that ran by itself and can still be undone ("annulla" said or typed). */
 function undoableNow(proposals: readonly ProposalDto[]): ProposalDto | null {
   const now = Date.now();
-  const live = proposals.filter((p) => p.status === "confirmed" && p.auto && p.undoUntil && new Date(p.undoUntil).getTime() > now && now - new Date(p.resolvedAt ?? p.createdAt).getTime() < ASSISTANT_UNDO_SECONDS * 1000);
+  const live = proposals.filter((p) => {
+    if (p.status !== "confirmed" || !p.auto || !p.undoUntil) return false;
+    const ranAt = new Date(p.resolvedAt ?? p.createdAt).getTime();
+    return now < new Date(p.undoUntil).getTime() && now - ranAt < ASSISTANT_UNDO_SECONDS * 1000;
+  });
   return live[live.length - 1] ?? null;
 }
 

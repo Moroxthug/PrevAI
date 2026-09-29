@@ -312,6 +312,17 @@ export const translations: Record<Lang, Record<string, string>> = {
     "signIn.twoFactorUseBackup": "Usa un codice di backup",
     "signIn.twoFactorUseTotp": "Usa l'app di autenticazione",
 
+    "resetPassword.title": "Scegli una nuova password",
+    "resetPassword.subtitle": "Almeno 8 caratteri. Dopo potrai accedere con la nuova password.",
+    "resetPassword.newPassword": "Nuova password",
+    "resetPassword.save": "Salva la password",
+    "resetPassword.saving": "Salvataggio...",
+    "resetPassword.doneTitle": "Password aggiornata",
+    "resetPassword.doneBody": "Ora puoi accedere con la nuova password.",
+    "resetPassword.invalidTitle": "Link scaduto o già usato",
+    "resetPassword.invalidBody": "Il link per reimpostare la password vale un'ora e si può usare una volta sola. Dalla pagina di accesso chiedine uno nuovo con \"Password dimenticata?\".",
+    "resetPassword.errorGeneric": "Non è stato possibile salvare la password. Riprova.",
+
     "signUp.errorPasswordLength": "La password deve avere almeno 8 caratteri.",
     "signUp.errorAlreadyRegistered": "Questa email è già registrata. Prova ad accedere.",
     "signUp.errorSignUpFailed": "Errore durante la registrazione. Riprova.",

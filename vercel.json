@@ -18,6 +18,21 @@
       "permanent": true
     },
     {
+      "source": "/privacy-policy(/?)",
+      "destination": "/privacy/",
+      "permanent": true
+    },
+    {
+      "source": "/terms(/?)",
+      "destination": "/termini/",
+      "permanent": true
+    },
+    {
+      "source": "/crm(/.*)?",
+      "destination": "/dashboard/jobs/",
+      "permanent": true
+    },
+    {
       "source": "/((?!api/)(?!.*\\.)[^/]+(?:/[^/]+)*)",
       "destination": "/$1/",
       "permanent": true
@@ -29,7 +44,11 @@
       "destination": "/api/index"
     },
     {
-      "source": "/((?!api/).*)",
+      "source": "/((?:dashboard|onboarding|sign-in|sign-up|reset-password|studio)(?:/.*)?)",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/((?:sign|i|commercialista|t|team-invite|p)/[^/]+/?)",
       "destination": "/index.html"
     }
   ],

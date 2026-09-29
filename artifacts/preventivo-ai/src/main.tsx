@@ -24,7 +24,8 @@ const SSR_PAGE_RE = /^\/(?:whatsapp|chi-siamo|contatti|privacy|termini|mappa-sit
 
 const rootEl = document.getElementById("root")!;
 const pathname = window.location.pathname;
-const hasPrerendered = rootEl.children.length > 0;
+// SEO-1: 404.html (vercel.json) carries the React NotFound; the App re-renders it.
+const hasPrerendered = rootEl.children.length > 0 && !("notFound" in rootEl.dataset);
 
 if (STATIC_SEO_RE.test(pathname) && hasPrerendered) {
   // Static page: the body is not React-rendered, so it is not hydrated (a

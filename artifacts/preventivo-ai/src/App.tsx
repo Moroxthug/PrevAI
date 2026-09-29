@@ -11,6 +11,7 @@ import Home from "@/pages/home";
 // WhatsApp, sitemap — were ~55 kB of the bundle it had to load first.
 const WhatsappPage = lazy(() => import("@/pages/whatsapp"));
 const SignInPage = lazy(() => import("@/pages/sign-in"));
+const ResetPasswordPage = lazy(() => import("@/pages/reset-password"));
 const SignUpPage = lazy(() => import("@/pages/sign-up"));
 const OnboardingPage = lazy(() => import("@/pages/onboarding"));
 const PrivacyPage = lazy(() => import("@/pages/privacy-policy"));
@@ -150,6 +151,7 @@ function Router() {
       {/* Auth routes (not indexed) */}
       <Route path="/sign-in" component={() => <PublicLayout><Suspense fallback={null}><SignInPage /></Suspense></PublicLayout>} />
       <Route path="/sign-in/:rest*" component={() => <PublicLayout><Suspense fallback={null}><SignInPage /></Suspense></PublicLayout>} />
+      <Route path="/reset-password" component={() => <PublicLayout><Suspense fallback={null}><ResetPasswordPage /></Suspense></PublicLayout>} />
       <Route path="/sign-up" component={() => <PublicLayout><Suspense fallback={null}><SignUpPage /></Suspense></PublicLayout>} />
       <Route path="/sign-up/:rest*" component={() => <PublicLayout><Suspense fallback={null}><SignUpPage /></Suspense></PublicLayout>} />
 

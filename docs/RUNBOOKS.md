@@ -1199,3 +1199,24 @@ Il server rilegge tetto e spesa ogni 30 secondi per istanza.
 - Una riga bloccata da un passaggio morto si sblocca da sola dopo 90 s (`locked_until`).
 
 **Membri della squadra e richieste per email.** L'app esporta solo l'impresa intera. Chi lavora in una squadra e chiede i propri dati personali scrive a privacy@: i suoi dati sono `auth_user` (nome, email, date), le righe di `organization_members` con il suo `user_id`, e le sue azioni nel registro (`audit_log.actor_id`).
+
+## 30. 404 veri e copertura Search Console (SEO-1, riga 47)
+
+**Come è servita una pagina.** Vercel guarda prima i file di `artifacts/preventivo-ai/dist/public` (home, `/preventivi/…`, `/blog/…`, `/help/…`, pagine statiche: tutte prerenderizzate), poi i `rewrites` di `vercel.json`: `/api/*` alla funzione, le rotte dell'app a `/index.html`. Se non c'è né file né rewrite, Vercel risponde **404** con `404.html` (noindex, niente canonical).
+
+**Aggiungere una rotta all'app.** Una nuova `<Route path="…">` in `App.tsx` che non sia prerenderizzata va aggiunta anche a uno dei due rewrite verso `/index.html` in `vercel.json`, altrimenti in produzione risponde 404. Il test `artifacts/api-server/scripts/routing-404.test.ts` lo segnala. Le sorgenti dei rewrite sono regex semplici (senza `:param`): le usa anche `server/serve.mjs`.
+
+**Sintomo "pagina non trovata" su un link dell'app** (email, notifica): controllare che il percorso sia in un rewrite; i link con token (`/p/`, `/i/`, `/sign/`, `/t/`, `/team-invite/`, `/commercialista/`) valgono per un solo segmento dopo il prefisso.
+
+**Controllo rapido in produzione.**
+```bash
+for p in / /pagina-inesistente-xyz/ /blog/nope/ /dashboard/ /reset-password/ /preventivi/idraulico/; do curl -s --ssl-no-revoke -o /dev/null -w "%{http_code} $p
+" -H "Accept: text/html" https://prevai.it$p; done
+```
+Atteso: 200, 404, 404, 200, 200, 200.
+
+**Copertura Search Console (dal titolare).** Search Console → proprietà prevai.it:
+1. *Sitemap*: inviare di nuovo `https://prevai.it/sitemap.xml` (344 URL attese).
+2. *Pagine* (Indicizzazione): guardare "Soft 404", "Duplicata, Google ha scelto un URL canonico diverso" e "Non trovata (404)". Dopo il deploy le soft 404 diventano 404: è giusto. Su "Soft 404" → *Convalida correzione*.
+3. Se in "Non trovata (404)" compaiono indirizzi che dovrebbero esistere (vecchi URL di v1 ancora linkati da fuori), aggiungerli ai `redirects` di `vercel.json` verso la pagina nuova, prima del redirect della barra finale.
+4. *Controllo URL* su `https://prevai.it/pagina-inesistente-xyz/`: deve dire "Non trovata (404)".
