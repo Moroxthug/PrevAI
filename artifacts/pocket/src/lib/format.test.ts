@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { money, shortDate, time } from "./format.ts";
+import { dayDate, money, sentence, shortDate, time } from "./format.ts";
 
 // Come il sito (artifacts/preventivo-ai/src/lib/money.ts): Intl it-IT, spazio non separabile prima di €.
 const SPACE = "[\u00a0\u202f ]";
@@ -14,4 +14,10 @@ test("date e orari", () => {
   const d = new Date(2026, 8, 29, 14, 30);
   assert.equal(shortDate(d), "29 set");
   assert.equal(time(d), "14:30");
+});
+
+test("data dei campi senza virgola, frase con un solo punto", () => {
+  assert.equal(dayDate(new Date(2026, 8, 29)), "mar 29 set");
+  assert.equal(sentence("alle 9:12 a.m.."), "alle 9:12 a.m.");
+  assert.equal(sentence("alle 09:12."), "alle 09:12.");
 });

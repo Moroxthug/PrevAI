@@ -1,4 +1,5 @@
 import "@/i18n";
+import { withSentry } from "@/lib/sentry";
 import { useEffect, useState } from "react";
 import { Stack } from "expo-router";
 import * as Linking from "expo-linking";
@@ -10,10 +11,11 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 import { setToken } from "@/lib/session";
 import { fontFiles } from "@/ui/fonts";
 import { ThemeProvider } from "@/ui/theme";
+import { ToastHost } from "@/ui/Feedback";
 
 void SplashScreen.preventAutoHideAsync();
 
-export default function RootLayout() {
+function RootLayout() {
   const [client] = useState(() => new QueryClient({ defaultOptions: { queries: { staleTime: 30_000, retry: 1 } } }));
   const [fontsLoaded, fontError] = useFonts(fontFiles);
   const url = Linking.useLinkingURL();
@@ -36,10 +38,14 @@ export default function RootLayout() {
       <SafeAreaProvider>
         <ThemeProvider>
           <QueryClientProvider client={client}>
-            <Stack screenOptions={{ headerShown: false }} />
+            <ToastHost>
+              <Stack screenOptions={{ headerShown: false, animation: "fade" }} />
+            </ToastHost>
           </QueryClientProvider>
         </ThemeProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>
   );
 }
+
+export default withSentry(RootLayout);

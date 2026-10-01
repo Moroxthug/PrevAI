@@ -24,3 +24,13 @@ export function shortDate(d: Date, locale: Locale = "it-IT"): string {
 export function time(d: Date, locale: Locale = "it-IT"): string {
   return new Intl.DateTimeFormat(locale, { hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).format(d);
 }
+
+/** "mar 29 set" (campi data) */
+export function dayDate(d: Date, locale: Locale = "it-IT"): string {
+  return new Intl.DateTimeFormat(locale, { weekday: "short", month: "short", day: "numeric" }).format(d).replace(/,/g, "");
+}
+
+/** Una frase che finisce con un'abbreviazione ("… alle 9:12 a.m." + ".") tiene un solo punto. */
+export function sentence(s: string): string {
+  return s.replace(/\.\.$/, ".");
+}

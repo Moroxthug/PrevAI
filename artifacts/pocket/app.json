@@ -25,7 +25,9 @@
     "plugins": [
       "expo-router",
       "expo-font",
-      "expo-secure-store"
+      "expo-secure-store",
+      "@sentry/react-native",
+      "./plugins/with-release.js"
     ],
     "experiments": {
       "typedRoutes": true

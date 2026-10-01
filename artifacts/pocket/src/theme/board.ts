@@ -1,0 +1,32 @@
+// Values Components.dc.html uses that tokens.json doesn't name. Kept here (src/theme) so
+// src/ui stays free of typed colours; sync:design doesn't touch this file.
+export const board = {
+  /** Switch knob and the round tick's mark: white in both themes (.th .knob, .cp-box.rd.on). */
+  white: "#ffffff",
+  /** .cp-sw .knob */
+  knobShadow: "0 2px 6px rgba(0,0,0,.2)",
+  /** Input and textarea placeholders at night (.th[data-theme="dark"] input::placeholder); light uses `faint`. */
+  placeholderDark: "#6f6e76",
+  /** The warn status tint, both themes (.st-warn); tokens.json has no warn-soft. */
+  warnSoft: "rgba(214,149,36,.14)",
+  /** SVG mask values for the status shapes' cut-outs (white keeps, black cuts), not colours on screen. */
+  maskKeep: "#fff",
+  maskCut: "#000",
+  /** The photo placeholder (.cp-photo: linear-gradient(145deg, #93B8F6, #4D72D9)). */
+  photoFrom: "#93b8f6",
+  photoTo: "#4d72d9",
+  /** The live mic's halo (.cp-mic.live::before: rgba(139,92,246,.35) → 0). */
+  micHalo: "#8b5cf6",
+  /** FirstQuote's round mic (.fq mic: 0 8px 22px -8px rgba(106,47,191,.7)) and the done orb's green glow (#98d5b2 at .45 → 0). */
+  fqMicShadow: "0 8px 22px -8px rgba(106,47,191,.7)",
+  fqOrbGlow: "#98d5b2",
+  /** The assistant orb's shadow (.ai-fab on the screen boards). */
+  orbShadow: "0 12px 28px -8px rgba(106,47,191,.6), 0 0 0 1px var(--ring)",
+  /** The Verify orb's halo (.vf-orb::before: rgba(147,184,246,.4) → 0). */
+  orbGlow: "rgba(147,184,246,.4)",
+  /** The join-code orb's halo (.jc-orb::before: rgba(243,215,155,.5) → 0). */
+  joinHalo: "#f3d79b",
+  /** The two-step orb halo (.ts-orb::before: rgba(163,135,244,.38) → 0) and the reset-password done orb halo (rgba(152,213,178,.45) → 0). */
+  twoStepGlow: "rgba(163,135,244,.38)",
+  resetOkGlow: "rgba(152,213,178,.45)",
+} as const;
