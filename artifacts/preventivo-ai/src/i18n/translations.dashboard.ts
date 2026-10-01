@@ -8,6 +8,23 @@ import type { Lang } from "./translations";
 
 export const dashboardTranslations: Record<Lang, Record<string, string>> = {
   it: {
+    // PREZZI-1 (riga 53): controllo prezzi del preventivo
+    "dashboard.priceCheck.title": "Controllo prezzi",
+    "dashboard.priceCheck.subtitle": "{n} voci si discostano di almeno il {pct} % dal listino, dagli scontrini o dai tuoi preventivi passati",
+    "dashboard.priceCheck.fromReceipts": "costo dai tuoi ultimi {n} scontrini",
+    "dashboard.priceCheck.fromCatalog": "listino: {name}",
+    "dashboard.priceCheck.fromHistory": "mediana di {n} tuoi preventivi passati",
+    "dashboard.priceCheck.lineDelta": "× {qty} → {delta} su questa voce",
+    "dashboard.priceCheck.margin": "margine sul costo {pct}",
+    "dashboard.priceCheck.belowCost": "Sotto costo",
+    "dashboard.priceCheck.belowCostOne": "{n} voce è sotto quanto hai pagato l'ultima volta",
+    "dashboard.priceCheck.belowCostMany": "{n} voci sono sotto quanto hai pagato l'ultima volta",
+    "dashboard.priceCheck.apply": "Riprezza",
+    "dashboard.priceCheck.applyCost": "Porta al costo",
+    "dashboard.priceCheck.applyAll": "Riprezza tutte",
+    "dashboard.priceCheck.total": "{delta} sul preventivo se riprezzato",
+    "dashboard.priceCheck.applied": "{n} voci riprezzate",
+    "dashboard.priceCheck.appliedDesc": "Totale del preventivo {from} → {to}",
     // SQUADRA-1 (riga 52): la giornata della squadra e quello che arriva dal cantiere
     "crew.fromTheField": "Dal cantiere",
     "crew.openBlockers": "bloccati",

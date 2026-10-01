@@ -25,6 +25,7 @@ import { taxLineLabel } from "@/lib/tax-display";
 import { useLanguage } from "@/i18n/LanguageContext";
 import { PaymentScheduleCard } from "@/components/payment-schedule-card";
 import { QuoteContractCard } from "@/components/quote-contract-card";
+import { PriceCheckCard } from "@/components/quotes/price-check-card";
 import { jobsApi } from "@/lib/jobs-api";
 import { quoteLinkApi, copyPendingText } from "@/lib/quote-link-api";
 import { hasFeature } from "@/lib/plans";
@@ -1562,6 +1563,9 @@ export default function QuoteDetail() {
 
         {/* Sidebar */}
         <div className="stack">
+
+          {/* PREZZI-1: voci che si discostano dal listino, dagli scontrini o dallo storico, o stanno sotto costo */}
+          {!isEditLocked && !!id && <PriceCheckCard quoteId={id} enabled={hasCapitoli} />}
 
           {/* Phase 22: Good/Better/Best tiered quotes */}
           {!isEditLocked && quote?.status !== "accepted" && (

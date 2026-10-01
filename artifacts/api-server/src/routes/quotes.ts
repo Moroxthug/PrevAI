@@ -52,6 +52,8 @@ import { tryTrialUnlock, sendQuoteByEmail, QuoteSendError, quoteQuotaExceeded } 
 import { createManualQuote, type ManualQuoteInput } from "../quotes/manualCreate.js";
 import { publicQuoteLink, revokePublicQuoteLink, ownedQuote } from "../quotes/publicLink.js";
 import { writeAudit } from "../lib/notifications.js";
+import { loadPriceReferences, priceCheckChapters, repriceChapters } from "../quotes/priceCheck.js";
+import { z } from "zod";
 import { randomUUID } from "crypto";
 import { recordAiUsage } from "../lib/usage.js";
 import { requireAiBudget } from "../lib/aiBudget.js";
@@ -1253,6 +1255,75 @@ router.put("/quotes/:id/variants/:variantId", requireAuth, requirePermission("qu
     res.json(serializeQuoteVariant(updated!, normalizeProvince(quote.province)));
   } catch (err) {
     req.log.error({ err }, "Error updating quote variant");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// ── PREZZI-1: controllo prezzi + «Riprezza» con un tocco ────────────────────
+
+const RepriceBody = z.object({
+  items: z.array(z.object({ chapter: z.string().min(1).max(10), index: z.number().int().min(0).max(500), unitPrice: z.number().min(0).max(10_000_000) })).min(1).max(200),
+});
+
+async function ownedQuoteForPricing(userId: string, id: string, res: import("express").Response): Promise<QuoteRow | null> {
+  const [quote] = await db.select().from(quotesTable).where(eq(quotesTable.id, id));
+  if (!quote || quote.userId !== userId) {
+    res.status(404).json({ error: "Not found" });
+    return null;
+  }
+  return quote;
+}
+
+// GET /api/quotes/:id/price-check — voci che si discostano dal listino, dagli scontrini o dallo storico di almeno il 5 %, o sotto l'ultimo costo.
+router.get("/quotes/:id/price-check", requireAuth, async (req, res) => {
+  try {
+    const userId = getUserId(res);
+    const quote = await ownedQuoteForPricing(userId, req.params.id as string, res);
+    if (!quote) return;
+    const editable = !quote.pdfDownloadedAt && quote.status !== "accepted";
+    const refs = await loadPriceReferences(userId, quote.id);
+    const check = priceCheckChapters((quote.capitoli ?? []) as QuoteChapter[], refs);
+    res.json({ ...check, editable, references: refs.length });
+  } catch (err) {
+    req.log.error({ err }, "Error running quote price check");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// POST /api/quotes/:id/reprice — applica i nuovi prezzi unitari alle voci indicate; ogni totale è ricalcolato sul server.
+router.post("/quotes/:id/reprice", requireAuth, requirePermission("quotes", "edit"), async (req, res) => {
+  try {
+    const userId = getUserId(res);
+    const parsed = RepriceBody.safeParse(req.body);
+    if (!parsed.success) {
+      res.status(400).json({ error: "Invalid request", details: parsed.error });
+      return;
+    }
+    const quote = await ownedQuoteForPricing(userId, req.params.id as string, res);
+    if (!quote) return;
+    if (quote.pdfDownloadedAt || quote.status === "accepted") {
+      res.status(400).json({ error: "LOCKED", message: "Questo preventivo non si può più modificare" });
+      return;
+    }
+    const capitoli = (quote.capitoli ?? []) as QuoteChapter[];
+    for (const it of parsed.data.items) {
+      const cap = capitoli.find((c) => c.lettera === it.chapter);
+      if (!cap || !cap.voci[it.index]) {
+        res.status(400).json({ error: "Unknown line", chapter: it.chapter, index: it.index });
+        return;
+      }
+    }
+    const before = Number(quote.totale);
+    const next = repriceChapters(capitoli, parsed.data.items, Number(quote.ivaPercentuale), quote.sconto?.percentuale ?? 0);
+    const [updated] = await db
+      .update(quotesTable)
+      .set({ capitoli: next.capitoli, subtotale: next.subtotale.toFixed(2), sconto: next.sconto, ivaValore: next.ivaValore.toFixed(2), totale: next.totale.toFixed(2), pdfUrl: null })
+      .where(eq(quotesTable.id, quote.id))
+      .returning();
+    await writeAudit({ userId, actorType: "user", actorId: getActorUserId(res), entityType: "quote", entityId: quote.id, action: "repriced", diff: { lines: next.applied, totale: { from: before, to: next.totale } } });
+    res.json({ quote: serializeQuote(updated!), applied: next.applied, totale: { from: before, to: next.totale } });
+  } catch (err) {
+    req.log.error({ err }, "Error repricing quote");
     res.status(500).json({ error: "Internal server error" });
   }
 });

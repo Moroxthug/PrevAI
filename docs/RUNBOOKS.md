@@ -1300,3 +1300,17 @@ L'ufficio: in home la sezione **"La squadra oggi"** (prima nella home del capoca
 | L'operaio non può aggiungere attività | Squadra → modifica operaio → "Può aggiungere attività dal cantiere". Senza, il server risponde 403 `NOT_ALLOWED` |
 | Le novità tornano dopo "Ho visto" | Non possono: il segno va solo in avanti. Se mancano novità attese, controllare che il turno sia stato cambiato dall'Agenda (il registro `schedule_block` è la fonte) |
 | Segnalazione doppia | Ogni invio porta un id dal telefono (`client_ref`): lo stesso id rende la stessa riga. Due righe vuol dire due invii diversi |
+
+## 35. Controllo prezzi del preventivo (PREZZI-1, riga 53)
+
+**Dove**: `api-server/src/quotes/priceCheck.ts` (abbinamento e conti, puri) e le due rotte in `routes/quotes.ts` (`GET /api/quotes/:id/price-check`, `POST /api/quotes/:id/reprice`); frontend `components/quotes/price-check-card.tsx`, nella colonna a destra del preventivo. **Nessuna migrazione**: il controllo si calcola a ogni lettura, non salva niente.
+
+**Come ragiona** — per ogni voce con un prezzo (non «a corpo») cerca per nome il riferimento giusto: parole in comune ≥ 60 % (senza parole vuote come *fornitura / posa / compreso*, singolare e plurale alla buona), e l'unità deve coincidere quando entrambe sono note. Tre fonti: **listino** (Impostazioni → Listino), **scontrini** (`price_intelligence`: media degli ultimi 5, ne servono 3; è un *costo*, con il fornitore più frequente) e **storico** (mediana delle righe uguali nei tuoi altri preventivi non bozza, ultimi 300, ne servono 3). La voce è segnalata se listino o storico distano almeno il **5 %**, oppure se il prezzo è **sotto l'ultimo costo** degli scontrini (chip rosso «Sotto costo»; margine = (prezzo − costo) ÷ prezzo, mostrato su ogni voce che ha uno scontrino). Gli scontrini non fanno da bersaglio: una voce molto sopra il costo non è mai segnalata. «Riprezza» porta la voce al riferimento («Porta al costo» per le voci sotto costo) e ricalcola voce → capitolo → subtotale → sconto → IVA → totale sul server, azzera `pdf_url` e scrive `repriced` nel registro; rifiuta (`LOCKED`) dopo il download del PDF o l'accettazione, come l'editor. Lo vede chi vede il preventivo; riprezza chi può modificarlo (`quotes:edit`).
+
+| Domanda | Cosa fare |
+|---|---|
+| Non compare la scheda | Niente da segnalare, preventivo bloccato, o l'impresa non ha né voci di listino né 3 scontrini/righe per voce (`GET …/price-check` → `references`, `findings`, `editable`) |
+| Segnala la voce sbagliata | Il nome della voce ha ≥ 60 % delle parole del nome del listino. Rinomina la voce del listino in modo più preciso, oppure dai alla voce un'unità: `ore` contro `mq` blocca l'abbinamento |
+| Non segnala una voce che dovrebbe | Parole in comune < 60 %, unità diverse, voce «a corpo» o prezzo a zero. «Pittura pareti» contro «Pittura lavabile» fa 50 %: non abbina |
+| «Sotto costo» ma il prezzo comprende la posa | Lo scontrino è il costo del materiale: se la voce è fornitura **e** posa il confronto non vale. Rinomina lo scontrino/voce o ignora l'avviso: non blocca niente |
+| Il riprezzo ha cambiato IVA o sconto | Riapplica `iva_percentuale` e `sconto.percentuale` del preventivo al nuovo subtotale, gli stessi conti del Salva dell'editor; `audit_log` `repriced` ha `totale.from/to` |

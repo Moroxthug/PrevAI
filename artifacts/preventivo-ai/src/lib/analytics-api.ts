@@ -47,3 +47,30 @@ export const analyticsApi = {
   job: (id: string) => req<JobAnalyticsDto>(`/api/jobs/${id}/analytics`),
   company: (months = 6) => req<CompanyAnalyticsDto>(`/api/analytics/company?months=${months}`),
 };
+
+// PREZZI-1 (riga 53): controllo prezzi del preventivo.
+export type PriceCheckFindingDto = {
+  chapter: string;
+  index: number;
+  description: string;
+  um: string;
+  quantita: number;
+  quotedUnitPrice: number;
+  referenceUnitPrice: number;
+  referenceName: string;
+  referenceUnit: string | null;
+  source: "listino" | "scontrini" | "storico";
+  sampleCount: number;
+  vendor: string | null;
+  changePct: number;
+  deltaTotal: number;
+  belowCost: boolean;
+  marginPct: number | null;
+};
+export type PriceCheckDto = { checkedAt: string; thresholdPct: number; linesChecked: number; findings: PriceCheckFindingDto[]; belowCostCount: number; deltaTotal: number; editable: boolean; references: number };
+
+export const priceCheckApi = {
+  check: (quoteId: string) => req<PriceCheckDto>(`/api/quotes/${quoteId}/price-check`),
+  reprice: (quoteId: string, items: { chapter: string; index: number; unitPrice: number }[]) =>
+    req<{ applied: number; totale: { from: number; to: number } }>(`/api/quotes/${quoteId}/reprice`, { method: "POST", body: JSON.stringify({ items }) }),
+};
