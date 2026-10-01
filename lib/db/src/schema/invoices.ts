@@ -154,6 +154,8 @@ export const invoicesTable = pgTable(
     /** Latest Stripe Checkout Session created for online card payment (idempotency for the webhook). */
     stripeCheckoutSessionId: text("stripe_checkout_session_id"),
     sentAt: timestamp("sent_at", { withTimezone: true }),
+    /** TEAM-1: chi della squadra l'ha inviata per prima; un invio programmato non ne ha. */
+    sentByUserId: text("sent_by_user_id"),
     viewedAt: timestamp("viewed_at", { withTimezone: true }),
     paidAt: timestamp("paid_at", { withTimezone: true }),
     voidedAt: timestamp("voided_at", { withTimezone: true }),

@@ -1647,7 +1647,7 @@ router.post("/quotes/:id/send-pdf-email", requireAuth, requirePermission("quotes
     const userId = getUserId(res);
     const id = req.params.id as string;
     const { toEmail, clientName } = req.body as { toEmail?: string; clientName?: string };
-    await sendQuoteByEmail({ userId, quoteId: id, toEmail: toEmail ?? "", clientName, log: req.log });
+    await sendQuoteByEmail({ userId, quoteId: id, toEmail: toEmail ?? "", clientName, actorId: getActorUserId(res), log: req.log });
     res.json({ success: true });
   } catch (err) {
     if (err instanceof QuoteSendError) {

@@ -1,17 +1,23 @@
 import { Router } from "express";
 import { z } from "zod";
+import { randomBytes, randomInt } from "node:crypto";
 import {
   db,
   businessProfilesTable,
   organizationMembersTable,
+  authUsersTable,
+  quotesTable,
+  invoicesTable,
   hasFeature,
   minimumPlanFor,
   effectivePlan,
   seatsIncluded,
+  seatsLimit,
   TEAM_MEMBER_ROLES,
   type TeamMemberRole,
 } from "@workspace/db";
-import { and, asc, eq, ne } from "drizzle-orm";
+import { POSTO_EXTRA } from "@workspace/config";
+import { and, asc, eq, gte, inArray, isNotNull, ne, sql } from "drizzle-orm";
 import { requireAuth, getUserId, getUserEmail, getActorUserId, ACTIVE_ORG_COOKIE, resolveActingOrg } from "../middlewares/authMiddleware.js";
 import { requirePermission } from "../middlewares/requirePermission.js";
 import { writeAudit } from "../lib/notifications.js";
@@ -45,7 +51,37 @@ function serializeMember(m: typeof organizationMembersTable.$inferSelect) {
     invitedAt: m.invitedAt.toISOString(),
     joinedAt: m.joinedAt ? m.joinedAt.toISOString() : null,
     inviteExpiresAt: m.inviteTokenExpiresAt ? m.inviteTokenExpiresAt.toISOString() : null,
+    /** TEAM-1: entrato (o da far entrare) con un codice d'accesso invece che con l'email. */
+    viaCode: !!m.accessCodeHash,
+    label: m.accessCodeLabel,
   };
+}
+
+// ── TEAM-1: codici d'accesso ────────────────────────────────────────────────
+// Otto caratteri senza i simili (niente 0/O, 1/I): si dettano al telefono e si
+// scrivono a mano. 32^8 ≈ 10^12 combinazioni, 10 tentativi ogni 15 minuti per IP.
+const CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+const CODE_DAYS = 30;
+const CODE_PLACEHOLDER_DOMAIN = "codici.prevai.invalid";
+
+function newAccessCode(): string {
+  let raw = "";
+  for (let i = 0; i < 8; i++) raw += CODE_ALPHABET[randomInt(CODE_ALPHABET.length)];
+  return raw;
+}
+const showCode = (raw: string) => `${raw.slice(0, 4)}-${raw.slice(4)}`;
+/** Quello che la persona ha scritto, ripulito: maiuscole, senza trattino né spazi. */
+const normalizeCode = (typed: string) => typed.toUpperCase().replace(/[^A-Z0-9]/g, "");
+
+function seatLimitMessage(limit: number): string {
+  return `Il tuo piano comprende ${limit} ${limit === 1 ? "posto" : "posti"} e sono tutti occupati. Passa a un piano più grande o togli qualcuno dalla squadra.`;
+}
+
+/** I posti occupati (titolare incluso; inviti e codici non ancora usati contano) e il tetto del piano. */
+async function seatUsage(orgId: string, profile: Awaited<ReturnType<typeof loadProfile>>) {
+  const rows = await db.select({ id: organizationMembersTable.id }).from(organizationMembersTable).where(and(eq(organizationMembersTable.ownerId, orgId), ne(organizationMembersTable.status, "suspended")));
+  const plan = effectivePlan(profile);
+  return { used: rows.length + 1, included: seatsIncluded(plan), extra: profile?.extraSeats ?? 0, limit: seatsLimit(plan, profile?.extraSeats) };
 }
 
 async function loadProfile(userId: string) {
@@ -62,7 +98,14 @@ router.get("/team/members", requireAuth, requirePermission("team", "view"), asyn
     const plan = effectivePlan(profile);
     res.json({
       items: members.map(serializeMember),
-      seats: { used: members.filter((m) => m.status !== "suspended").length + 1, included: seatsIncluded(plan) },
+      seats: {
+        used: members.filter((m) => m.status !== "suspended").length + 1,
+        included: seatsIncluded(plan),
+        extra: profile?.extraSeats ?? 0,
+        limit: seatsLimit(plan, profile?.extraSeats),
+        /** D20: finché il prezzo non c'è l'app non vende posti in più. */
+        extraPurchasable: POSTO_EXTRA.acquistabile,
+      },
     });
   } catch (err) {
     req.log.error({ err }, "Error listing team members");
@@ -93,10 +136,7 @@ router.post("/team/members/invite", requireAuth, requirePermission("team", "full
     }
     const email = body.data.email.toLowerCase().trim();
 
-    const existingActive = await db
-      .select({ n: organizationMembersTable.id })
-      .from(organizationMembersTable)
-      .where(and(eq(organizationMembersTable.ownerId, orgId), ne(organizationMembersTable.status, "suspended")));
+    const seats = await seatUsage(orgId, profile);
     const [existingRow] = await db
       .select()
       .from(organizationMembersTable)
@@ -106,11 +146,10 @@ router.post("/team/members/invite", requireAuth, requirePermission("team", "full
       return;
     }
 
-    const plan = effectivePlan(profile);
-    const seatsUsed = existingActive.length + 1; // +1 for the owner
-    const willAddSeat = !existingRow; // reissuing an invite/suspended row doesn't add a new seat
-    if (willAddSeat && seatsUsed >= seatsIncluded(plan)) {
-      res.status(403).json({ error: "SEAT_LIMIT", message: `Your plan includes ${seatsIncluded(plan)} seat(s). Upgrade or remove a member to invite someone new.`, seatsIncluded: seatsIncluded(plan) });
+    // Reissuing an open invite doesn't add a seat; bringing back a suspended one takes one back.
+    const willAddSeat = !existingRow || existingRow.status === "suspended";
+    if (willAddSeat && seats.used >= seats.limit) {
+      res.status(403).json({ error: "SEAT_LIMIT", message: seatLimitMessage(seats.limit), seatsIncluded: seats.included, seatsLimit: seats.limit });
       return;
     }
 
@@ -158,6 +197,11 @@ router.post("/team/members/:id/resend", requireAuth, requirePermission("team", "
     const [member] = await db.select().from(organizationMembersTable).where(and(eq(organizationMembersTable.id, req.params.id as string), eq(organizationMembersTable.ownerId, orgId)));
     if (!member || member.status === "active") {
       res.status(404).json({ error: "Not found" });
+      return;
+    }
+    if (member.accessCodeHash) {
+      // Il codice si vede una sola volta e l'indirizzo è un segnaposto: niente da rimandare. Si toglie e se ne fa un altro.
+      res.status(409).json({ error: "CODE_INVITE", message: "Questo posto è un codice d'accesso: non si può rimandare per email. Toglilo e creane un altro." });
       return;
     }
     const profile = await loadProfile(orgId);
@@ -298,6 +342,158 @@ router.post("/team/invite/:token/accept", requireAuth, async (req, res) => {
     res.json({ member: serializeMember(updated!) });
   } catch (err) {
     req.log.error({ err }, "Error accepting team invite");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// ── TEAM-1: codici d'accesso e classifica ──────────────────────────────────
+
+const CodeBody = z.object({
+  role: z.enum(INVITABLE_ROLES as [Exclude<TeamMemberRole, "owner">, ...Exclude<TeamMemberRole, "owner">[]]),
+  label: z.string().trim().max(80).optional(),
+});
+
+// POST /api/team/codes — un posto riservato per chi non ha (o non vuole dare) un'email: il codice si mostra una volta
+router.post("/team/codes", requireAuth, requirePermission("team", "full"), async (req, res) => {
+  try {
+    const orgId = getUserId(res);
+    const actorId = getActorUserId(res);
+    const body = CodeBody.safeParse(req.body);
+    if (!body.success) {
+      res.status(400).json({ error: "Invalid parameters", details: body.error });
+      return;
+    }
+    const profile = await loadProfile(orgId);
+    if (!hasFeature(profile, "team_accounts")) {
+      res.status(403).json({ error: "PLAN_REQUIRED", requiredPlan: minimumPlanFor("team_accounts"), message: "Gli accessi della squadra sono dal piano Pro." });
+      return;
+    }
+    const seats = await seatUsage(orgId, profile);
+    if (seats.used >= seats.limit) {
+      res.status(403).json({ error: "SEAT_LIMIT", message: seatLimitMessage(seats.limit), seatsIncluded: seats.included, seatsLimit: seats.limit });
+      return;
+    }
+    const raw = newAccessCode();
+    const expiresAt = new Date(Date.now() + CODE_DAYS * 86_400_000);
+    const [created] = await db
+      .insert(organizationMembersTable)
+      .values({
+        ownerId: orgId,
+        invitedEmail: `codice-${randomBytes(6).toString("hex")}@${CODE_PLACEHOLDER_DOMAIN}`,
+        role: body.data.role,
+        status: "invited",
+        invitedByUserId: actorId,
+        accessCodeHash: hashToken(raw),
+        accessCodeLabel: body.data.label || null,
+        inviteTokenExpiresAt: expiresAt,
+      })
+      .returning();
+    await writeAudit({ userId: orgId, actorType: "user", actorId, entityType: "team_member", entityId: created!.id, action: "access_code_issued", diff: { role: body.data.role, label: body.data.label ?? null } });
+    res.status(201).json({ code: showCode(raw), expiresAt: expiresAt.toISOString(), memberId: created!.id });
+  } catch (err) {
+    req.log.error({ err }, "Error issuing access code");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+const redeemLimiter = ipRateLimiter({ name: "team-members.redeemLimiter", windowMs: 15 * 60_000, max: 10, message: "Troppi tentativi. Riprova fra qualche minuto." });
+
+// POST /api/team/code/redeem — chi ha già un accesso (creato da sé) scrive il codice e entra nell'impresa
+router.post("/team/code/redeem", redeemLimiter, requireAuth, async (req, res) => {
+  try {
+    const actorId = getActorUserId(res);
+    const body = z.object({ code: z.string().min(1).max(40) }).safeParse(req.body);
+    const code = body.success ? normalizeCode(body.data.code) : "";
+    if (code.length !== 8) {
+      res.status(400).json({ error: "BAD_CODE", message: "Il codice ha otto caratteri, per esempio K7QM-4XNP." });
+      return;
+    }
+    const [member] = await db.select().from(organizationMembersTable).where(eq(organizationMembersTable.accessCodeHash, hashToken(code)));
+    if (!member) {
+      res.status(404).json({ error: "NOT_FOUND", message: "Non conosco questo codice. Controlla di averlo scritto giusto, o chiedine uno nuovo." });
+      return;
+    }
+    if (member.userId) {
+      res.status(409).json({ error: "CODE_USED", message: member.userId === actorId ? "Hai già usato questo codice: sei già nella squadra." : "Questo codice è già stato usato. Chiedine uno nuovo." });
+      return;
+    }
+    if (!member.inviteTokenExpiresAt || member.inviteTokenExpiresAt.getTime() < Date.now()) {
+      res.status(410).json({ error: "EXPIRED", message: "Questo codice è scaduto. Chiedine uno nuovo." });
+      return;
+    }
+    if (member.ownerId === actorId) {
+      res.status(409).json({ error: "OWN_COMPANY", message: "Questa è la tua impresa: il codice serve a chi entra dal di fuori." });
+      return;
+    }
+    const email = (res.locals.userEmail ?? "").toLowerCase().trim();
+    const [sameEmail] = email ? await db.select({ id: organizationMembersTable.id }).from(organizationMembersTable).where(and(eq(organizationMembersTable.ownerId, member.ownerId), eq(organizationMembersTable.invitedEmail, email))) : [];
+    const [already] = await db.select({ id: organizationMembersTable.id }).from(organizationMembersTable).where(and(eq(organizationMembersTable.ownerId, member.ownerId), eq(organizationMembersTable.userId, actorId)));
+    if (sameEmail || already) {
+      res.status(409).json({ error: "ALREADY_MEMBER", message: "Sei già nella squadra di questa impresa (o hai un invito aperto con la tua email)." });
+      return;
+    }
+    // Il posto era riservato alla creazione del codice. Due persone con lo stesso codice: entra una sola.
+    const [updated] = await db
+      .update(organizationMembersTable)
+      .set({ status: "active", userId: actorId, joinedAt: new Date(), inviteTokenExpiresAt: null, ...(email ? { invitedEmail: email } : {}) })
+      .where(and(eq(organizationMembersTable.id, member.id), sql`${organizationMembersTable.userId} is null`))
+      .returning();
+    if (!updated) {
+      res.status(409).json({ error: "CODE_USED", message: "Questo codice è già stato usato. Chiedine uno nuovo." });
+      return;
+    }
+    const profile = await loadProfile(member.ownerId);
+    await writeAudit({ userId: member.ownerId, actorType: "user", actorId, entityType: "team_member", entityId: member.id, action: "access_code_redeemed" });
+    res.cookie(ACTIVE_ORG_COOKIE, member.ownerId, cookieOpts());
+    res.json({ member: serializeMember(updated), companyName: profile?.companyName || "" });
+  } catch (err) {
+    req.log.error({ err }, "Error redeeming access code");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// GET /api/team/leaderboard?days=90 — chi ha inviato, chi ha vinto, quanto ha fatturato (titolare e amministratori)
+router.get("/team/leaderboard", requireAuth, requirePermission("team", "full"), async (req, res) => {
+  try {
+    const orgId = getUserId(res);
+    const days = Math.min(365, Math.max(7, Math.trunc(Number(req.query.days) || 90)));
+    const since = new Date(Date.now() - days * 86_400_000);
+
+    const members = await db
+      .select({ userId: organizationMembersTable.userId })
+      .from(organizationMembersTable)
+      .where(and(eq(organizationMembersTable.ownerId, orgId), eq(organizationMembersTable.status, "active"), isNotNull(organizationMembersTable.userId)));
+    const peopleIds = [orgId, ...members.map((m) => m.userId!).filter((id) => id !== orgId)];
+
+    const quoteRows = await db
+      .select({ who: quotesTable.sentByUserId, sent: sql<number>`count(*)::int`, won: sql<number>`(count(*) filter (where ${quotesTable.status} = 'accepted'))::int` })
+      .from(quotesTable)
+      .where(and(eq(quotesTable.userId, orgId), isNotNull(quotesTable.sentByUserId), gte(quotesTable.sentAt, since)))
+      .groupBy(quotesTable.sentByUserId);
+    const invoiceRows = await db
+      .select({ who: invoicesTable.sentByUserId, cents: sql<number>`coalesce(sum(${invoicesTable.totalCents}), 0)::float8` })
+      .from(invoicesTable)
+      .where(and(eq(invoicesTable.userId, orgId), isNotNull(invoicesTable.sentByUserId), gte(invoicesTable.sentAt, since), ne(invoicesTable.type, "credit_note"), ne(invoicesTable.status, "void")))
+      .groupBy(invoicesTable.sentByUserId);
+
+    const everyone = [...new Set([...peopleIds, ...quoteRows.map((r) => r.who!), ...invoiceRows.map((r) => r.who!)])];
+    const names = await db.select({ id: authUsersTable.id, name: authUsersTable.name, email: authUsersTable.email }).from(authUsersTable).where(inArray(authUsersTable.id, everyone));
+    const nameOf = new Map(names.map((n) => [n.id, n]));
+    const quotesBy = new Map(quoteRows.map((r) => [r.who!, r]));
+    const invoicedBy = new Map(invoiceRows.map((r) => [r.who!, Number(r.cents)]));
+
+    const items = everyone
+      .map((id) => {
+        const q = quotesBy.get(id);
+        const sent = q?.sent ?? 0;
+        const won = q?.won ?? 0;
+        const u = nameOf.get(id);
+        return { userId: id, name: u?.name || u?.email || "—", isOwner: id === orgId, quotesSent: sent, quotesWon: won, winRate: sent > 0 ? Math.round((won / sent) * 100) : null, invoicedCents: invoicedBy.get(id) ?? 0 };
+      })
+      .sort((a, b) => b.quotesWon - a.quotesWon || b.invoicedCents - a.invoicedCents || b.quotesSent - a.quotesSent || a.name.localeCompare(b.name, "it"));
+    res.json({ days, since: since.toISOString(), items });
+  } catch (err) {
+    req.log.error({ err }, "Error building team leaderboard");
     res.status(500).json({ error: "Internal server error" });
   }
 });

@@ -56,6 +56,7 @@ const PERMISSIONLESS_MUTATIONS: Allow[] = [
   { match: /^POST \/api\/account\/export(\/:id\/continue)?$/, reason: "GDPR-1: art. 20 is the owner's right, not a role permission — the handler only lets the business owner acting as themselves through (403 owner_only otherwise); POST re-checks the password, is rate limited and allowed once per 24 h" },
   { match: /^POST \/api\/storage\/uploads\/request-url$/, reason: "signed upload URL scoped to the acting org; the consuming route enforces its own permission" },
   { match: /^POST \/api\/team\/invite\/:token\/accept$/, reason: "the invitee is joining — has no role in the org yet" },
+  { match: /^POST \/api\/team\/code\/redeem$/, reason: "TEAM-1: chi scrive il codice sta entrando e non ha ancora un ruolo nell'impresa; il codice è a uso singolo, scade in 30 giorni e i tentativi sono limitati (10 ogni 15 minuti per IP)" },
   { match: /^POST \/api\/team\/switch$/, reason: "switches the actor's own active org" },
   { match: /^POST \/api\/app\/(events|feedback)$/, reason: "APP-5: the actor's own usage events and problem reports — any role, rate limited per user, writes only rows stamped with the acting org and actor" },
   { match: /^(POST|DELETE) \/api\/push\/subscriptions$|^POST \/api\/push\/test$|^PUT \/api\/push\/preferences$/, reason: "APP-2: the actor turns notifications on or off on their OWN browser, tests them on their own devices and picks their own kinds — any role, rate limited per user; what a push may carry is still cut by role at send time" },

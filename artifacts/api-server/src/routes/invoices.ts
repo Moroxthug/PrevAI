@@ -16,7 +16,7 @@ import {
   type InvoiceLine,
 } from "@workspace/db";
 import { and, eq, inArray } from "drizzle-orm";
-import { requireAuth, getUserId, getUserName } from "../middlewares/authMiddleware.js";
+import { requireAuth, getUserId, getUserName, getActorUserId } from "../middlewares/authMiddleware.js";
 import { requirePermission } from "../middlewares/requirePermission.js";
 import { writeAudit } from "../lib/notifications.js";
 import { userRateLimiter } from "../lib/rateLimit.js";
@@ -432,7 +432,7 @@ router.post("/invoices/:id/send", requireAuth, requirePermission("invoicing", "e
         await db.update(invoicesTable).set({ customer: { ...loaded.invoice.customer, email: body.data.customerEmail } }).where(eq(invoicesTable.id, loaded.invoice.id));
       }
     }
-    const { invoice, resend } = await sendInvoice({ invoiceId: req.params.id as string, userId, actor: "contractor", message: body.data.message, ip: req.ip, userAgent: req.headers["user-agent"] });
+    const { invoice, resend } = await sendInvoice({ invoiceId: req.params.id as string, userId, actorId: getActorUserId(res), actor: "contractor", message: body.data.message, ip: req.ip, userAgent: req.headers["user-agent"] });
     res.json({ invoice: serializeInvoice(invoice), resend });
   } catch (err) {
     req.log.error({ err }, "Error sending invoice");

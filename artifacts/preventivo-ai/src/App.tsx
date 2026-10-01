@@ -67,6 +67,7 @@ const SchedulePage = lazy(() => import("@/pages/dashboard/schedule"));
 const AssistantPage = lazy(() => import("@/pages/dashboard/assistant"));
 const WorkerTimePage = lazy(() => import("@/pages/t/[token]"));
 const TeamInvitePage = lazy(() => import("@/pages/team-invite/[token]"));
+const JoinCodePage = lazy(() => import("@/pages/entra"));
 const DocumentsPage = lazy(() => import("@/pages/dashboard/documents"));
 const ArchivePage = lazy(() => import("@/pages/dashboard/archive"));
 const NotificationsPage = lazy(() => import("@/pages/dashboard/notifications"));
@@ -273,6 +274,8 @@ function Router() {
       <Route path="/t/:token" component={() => <Suspense fallback={null}><WorkerTimePage /></Suspense>} />
       {/* Team member invite accept page (emailed link, Phase 7) */}
       <Route path="/team-invite/:token" component={() => <Suspense fallback={null}><TeamInvitePage /></Suspense>} />
+      {/* TEAM-1: entrare nella squadra con un codice d'accesso (l'accesso personale lo crea la persona) */}
+      <Route path="/entra" component={() => <Suspense fallback={null}><JoinCodePage /></Suspense>} />
 
       {/* Pagina pubblica: il cliente finale visualizza e accetta il preventivo (link condiviso via WhatsApp/email) */}
       <Route path="/p/:id" component={() => <Suspense fallback={null}><PublicQuotePage /></Suspense>} />

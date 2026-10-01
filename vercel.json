@@ -45,7 +45,7 @@
       "destination": "/api/index"
     },
     {
-      "source": "/((?:dashboard|onboarding|sign-in|sign-up|reset-password|studio)(?:/.*)?)",
+      "source": "/((?:dashboard|onboarding|sign-in|sign-up|reset-password|studio|entra)(?:/.*)?)",
       "destination": "/app.html"
     },
     {

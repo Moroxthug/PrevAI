@@ -1353,3 +1353,29 @@ L'ufficio: in home la sezione **"La squadra oggi"** (prima nella home del capoca
 | Il lettore di schermo non dice nulla | La pagina non ha un `h1` dentro `<main>` entro 1,5 s, o il titolo della scheda è quello generico |
 | Il fuoco finisce in un posto strano dopo un cambio pagina | `route-effects.tsx` lo sposta solo se era sul `body`, dentro `<main>` o su un elemento sparito; non dentro un dialogo e non in un campo di testo |
 | In sviluppo il ripristino dopo ricarica sembra non partire | StrictMode esegue l'effetto due volte: la posizione iniziale resta in `S.initial` fino alla prima navigazione apposta |
+
+## 38. Posti, codici d'accesso, chi ha inviato e chi ha vinto (TEAM-1, riga 56)
+
+**Dove**: `api-server/src/routes/team-members.ts` (`seatUsage`, `POST /api/team/codes`, `POST /api/team/code/redeem`, `GET /api/team/leaderboard`), `lib/db/src/schema/plans.ts` (`seatsLimit`), `lib/config/src/piani.ts` (`POSTO_EXTRA`), `quotes/send.ts` e `invoices/service.ts` (`actorId` → `sent_by_user_id`); frontend `pages/dashboard/team.tsx` (scheda Membri) e `pages/entra.tsx`. Migrazione **0022**.
+
+**Cosa fa**
+1. **Posti** = posti del piano (Starter 1, Pro 2, Elite 5) + `business_profiles.extra_seats`. Contano titolare, membri non sospesi, inviti e codici non ancora usati.
+2. **Codice d'accesso**: otto caratteri (`K7QM-4XNP`), visibile una volta alla creazione, in DB solo l'hash SHA-256; 30 giorni; un uso. La persona crea il suo accesso, apre `/entra` e lo scrive.
+3. **Chi ha inviato**: `sent_by_user_id` si scrive al **primo** invio fatto da una persona; mai sovrascritto. **Vinto** = preventivo accettato, credito a chi l'ha inviato. Solo dal 2026-10-01.
+4. **Classifica** (titolare e amministratori), 90 giorni, sulla scheda Membri con almeno due persone.
+
+**Posti in più (a mano, finché D20 è aperta)** — dal personale, con SQL da Supabase:
+```sql
+update business_profiles set extra_seats = 2 where user_id = '<id impresa>';   -- poi: select used/limit da GET /api/team/members
+```
+Quando il titolare decide il prezzo (D20): compilare `POSTO_EXTRA` in `piani.ts`, creare il Price su Stripe, far scrivere `extra_seats` al webhook, mettere `acquistabile: true`, aggiornare i Termini §4.
+
+| Domanda | Cosa fare |
+|---|---|
+| «Limite posti raggiunto» ma in squadra sono meno | Inviti e codici **non usati** occupano un posto: revocarli dall'elenco Membri (cestino) |
+| Un collaboratore dice «codice già usato» | L'hash resta dopo l'uso: o l'ha già usato (anche lui), o l'ha usato un altro. `select status, user_id, invited_email from organization_members where access_code_label = '…'`; se serve, rimuovere la riga e crearne un altro |
+| «Non conosco questo codice» | Scritto male (si ignorano maiuscole, spazi e trattino ma non 0/O, 1/I: l'alfabeto non li ha) o il titolare ha tolto il posto |
+| «Troppi tentativi» | 10 tentativi ogni 15 minuti per IP: aspettare |
+| La classifica è vuota o a zero | Si conta dal 2026-10-01 e solo i preventivi/fatture **inviati dall'app** da una persona; PDF scaricato, link copiato, invii programmati o di sistema non hanno una persona |
+| Un vinto non compare a chi l'ha fatto | Il credito va a chi l'ha inviato per primo, non a chi l'ha creato |
+| Cancellare l'account di un membro | `sent_by_user_id` resta con l'id non più esistente: la riga in classifica mostra «—» finché non ha un nome; i totali restano |

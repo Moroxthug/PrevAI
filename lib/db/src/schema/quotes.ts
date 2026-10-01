@@ -103,6 +103,8 @@ export const quotesTable = pgTable("quotes", {
   id: uuid("id").defaultRandom().primaryKey(),
   /** Set when the quote PDF is first emailed to the client — drives Phase 21's follow-up reminder sequence. */
   sentAt: timestamp("sent_at", { withTimezone: true }),
+  /** TEAM-1: chi della squadra l'ha inviato per primo (auth_user.id). Solo da 2026-10-01 in poi; prima, nessuno. */
+  sentByUserId: text("sent_by_user_id"),
   /** How many follow-up sequence steps have fired; 0 = none sent yet. Mirrors leadsTable's pattern. */
   followUpStage: integer("follow_up_stage").notNull().default(0),
   nextFollowUpAt: timestamp("next_follow_up_at", { withTimezone: true }),

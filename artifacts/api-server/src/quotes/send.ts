@@ -53,7 +53,7 @@ export function sendUnlockNote(quote: Pick<QuoteRow, "status">, profile: Pick<Pr
  * everyone else must pay (PAYMENT_REQUIRED). Only a draft is ever touched — an
  * accepted quote stays accepted. Starts the follow-up sequence (Phase 21).
  */
-export async function sendQuoteByEmail(params: { userId: string; quoteId: string; toEmail: string; clientName?: string; log: Log }): Promise<{ quote: QuoteRow }> {
+export async function sendQuoteByEmail(params: { userId: string; quoteId: string; toEmail: string; clientName?: string; /** TEAM-1: la persona che preme «Invia» (non l'impresa). */ actorId?: string; log: Log }): Promise<{ quote: QuoteRow }> {
   const { userId, log } = params;
   const toEmail = params.toEmail.trim();
   if (!toEmail || !toEmail.includes("@")) throw new QuoteSendError("BAD_EMAIL", "Recipient email address is required");
@@ -117,6 +117,8 @@ export async function sendQuoteByEmail(params: { userId: string; quoteId: string
       .update(quotesTable)
       .set({
         sentAt: quote.sentAt ?? new Date(),
+        // TEAM-1: vale il primo invio; un collega che lo rimanda non lo ruba.
+        ...(params.actorId && !quote.sentByUserId ? { sentByUserId: params.actorId } : {}),
         followUpStage: 0,
         nextFollowUpAt: new Date(Date.now() + QUOTE_FOLLOWUP_CADENCE_DAYS[0] * 86_400_000),
         ...(clientData && clientData !== existingClient ? { clientData } : {}),

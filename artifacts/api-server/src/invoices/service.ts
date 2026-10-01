@@ -511,7 +511,7 @@ export function publicInvoiceUrl(rawToken: string): string {
 
 // ── Send ─────────────────────────────────────────────────────────────────────
 
-export async function sendInvoice(params: { invoiceId: string; userId?: string; actor: "contractor" | "system"; message?: string; ip?: string | null; userAgent?: string | null }): Promise<{ invoice: Invoice; resend: boolean }> {
+export async function sendInvoice(params: { invoiceId: string; userId?: string; /** TEAM-1: la persona che invia; un invio di sistema non ne ha. */ actorId?: string; actor: "contractor" | "system"; message?: string; ip?: string | null; userAgent?: string | null }): Promise<{ invoice: Invoice; resend: boolean }> {
   const loaded = await loadInvoice(params.invoiceId);
   if (!loaded || (params.userId && loaded.invoice.userId !== params.userId)) throw new Error("Invoice not found");
   const inv = loaded.invoice;
@@ -529,7 +529,7 @@ export async function sendInvoice(params: { invoiceId: string; userId?: string; 
   const dueDate = resend ? inv.dueDate : addDays(now, dueDays);
 
   const rawToken = invoiceToken(inv);
-  await db.update(invoicesTable).set({ issueDate, dueDate, publicTokenHash: hashToken(rawToken), status: resend ? inv.status : "sent", sentAt: inv.sentAt ?? now, autoSendAt: null, scheduledFor: inv.scheduledFor && inv.scheduledFor > now ? now : inv.scheduledFor }).where(eq(invoicesTable.id, inv.id));
+  await db.update(invoicesTable).set({ issueDate, dueDate, publicTokenHash: hashToken(rawToken), status: resend ? inv.status : "sent", sentAt: inv.sentAt ?? now, ...(params.actor === "contractor" && params.actorId && !inv.sentByUserId ? { sentByUserId: params.actorId } : {}), autoSendAt: null, scheduledFor: inv.scheduledFor && inv.scheduledFor > now ? now : inv.scheduledFor }).where(eq(invoicesTable.id, inv.id));
   const fresh = (await loadInvoice(inv.id))!;
   const stored = await renderAndStore(fresh);
   const [updated] = await db.update(invoicesTable).set({ pdfUrl: stored.url, pdfHash: stored.sha256 }).where(eq(invoicesTable.id, inv.id)).returning();

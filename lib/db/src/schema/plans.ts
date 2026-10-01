@@ -51,6 +51,11 @@ export function seatsIncluded(plan: PlanId): number {
   return SEATS_INCLUDED[plan];
 }
 
+/** TEAM-1: i posti che l'impresa può occupare: quelli del piano più gli extra (`business_profiles.extra_seats`). */
+export function seatsLimit(plan: PlanId, extraSeats: number | null | undefined): number {
+  return SEATS_INCLUDED[plan] + Math.max(0, Math.trunc(extraSeats ?? 0));
+}
+
 /**
  * Monthly allowance for the two metered, cost-bearing features (Phase 8 §3.5/§4a)
  * — receipt AI (gpt-4o vision) scans and WhatsApp outbound sends. Everything

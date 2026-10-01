@@ -77,3 +77,16 @@ export function testoPreventivi(piano: PianoInAbbonamento): string {
   const n = PREZZI_PIANI[piano].preventiviMese;
   return n === null ? "Preventivi illimitati" : `${n} preventivi al mese`;
 }
+
+/**
+ * TEAM-1: il posto in più oltre a quelli inclusi nel piano. **Il prezzo non
+ * c'è: decide il titolare (D20).** Finché `acquistabile` è false l'app non
+ * vende posti: la pagina Squadra dice «posti extra in arrivo» e `extra_seats`
+ * lo scrive solo il personale (RUNBOOKS §38). Quando D20 è chiusa si
+ * compilano i due importi, si crea il Price su Stripe e si accende il flag.
+ */
+export const POSTO_EXTRA: { acquistabile: boolean; mensileCents: number | null; annualeCents: number | null } = {
+  acquistabile: false,
+  mensileCents: null,
+  annualeCents: null,
+};

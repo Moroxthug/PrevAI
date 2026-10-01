@@ -99,6 +99,7 @@ Disallow: /i/
 Disallow: /sign/
 Disallow: /t/
 Disallow: /team-invite/
+Disallow: /entra
 Disallow: /commercialista/
 Disallow: /portal/
 Disallow: /studio

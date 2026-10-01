@@ -91,6 +91,10 @@ export const businessProfilesTable = pgTable("business_profiles", {
   //    piano. Scritto dal webhook Stripe e da `ops:addon-beta`; letto da
   //    `hasFeature`. Vedi schema/addons.ts.
   addons: jsonb("addons").$type<AddonsProfilo>().notNull().default({}),
+  // ── TEAM-1: posti oltre quelli inclusi nel piano. Oggi lo scrive solo il
+  //    personale (SQL, RUNBOOKS §38): l'acquisto in app resta spento finché il
+  //    titolare non decide il prezzo (D20, `POSTO_EXTRA` in lib/config piani.ts).
+  extraSeats: integer("extra_seats").notNull().default(0),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
 });

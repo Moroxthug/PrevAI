@@ -4,7 +4,7 @@ import { Link, useSearch } from "wouter";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { it } from "date-fns/locale";
-import { Users, Clock, Wrench, Plus, Trash2, Link2, Copy, Check, X, Download, Loader2, Pencil, UserX, UserCheck, Filter, UserPlus, RotateCw, MapPin, Truck } from "lucide-react";
+import { Users, Clock, Wrench, Plus, Trash2, Link2, Copy, Check, X, Download, Loader2, Pencil, UserX, UserCheck, Filter, UserPlus, RotateCw, MapPin, Truck, KeyRound, Printer, Trophy } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Dialog, DialogBody, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
@@ -12,7 +12,7 @@ import { cn } from "@/lib/utils";
 import { useLanguage } from "@/i18n/LanguageContext";
 import { formatCents, type TimeEntryDto, type TimeEntryStatus, type UsageUnit } from "@/lib/jobs-api";
 import { teamApi, type EquipmentDto, type EquipmentEdit, type EquipmentOwnership, type WorkerDto, type WorkerEdit, type WorkerType } from "@/lib/team-api";
-import { teamMembersApi, type TeamMemberDto, type TeamMemberRole } from "@/lib/team-members-api";
+import { teamMembersApi, type LeaderboardRow, type TeamMemberDto, type TeamMemberRole } from "@/lib/team-members-api";
 import { TimeStatusBadge } from "@/components/jobs/team-tab";
 import { ScrollTabs } from "@/components/mobile/scroll-tabs";
 import { ListRow } from "@/components/mobile/list-row";
@@ -82,6 +82,8 @@ function MembersTab() {
   const { data, isLoading } = useQuery({ queryKey: ["team-members"], queryFn: teamMembersApi.list });
   const [inviteOpen, setInviteOpen] = useState(false);
   const [invite, setInvite] = useState<{ url: string; emailed: boolean } | null>(null);
+  const [codeOpen, setCodeOpen] = useState(false);
+  const [issued, setIssued] = useState<{ code: string; expiresAt: string; label: string } | null>(null);
 
   const resend = useMutation({ mutationFn: (id: string) => teamMembersApi.resend(id), onSuccess: (r) => { refresh(); setInvite(r); }, onError });
   const setStatus = useMutation({ mutationFn: ({ id, status }: { id: string; status: "active" | "suspended" }) => teamMembersApi.update(id, { status }), onSuccess: refresh, onError });
@@ -96,10 +98,18 @@ function MembersTab() {
       <div className="toolbar">
         <p className="foot-note m-0">{t("team.members.intro")}</p>
         <div className="grow flex flex-wrap items-center gap-2">
-          {seats && <span className="foot-note" style={{ whiteSpace: "nowrap" }}>{seats.used}/{seats.included} {t("team.members.seatsUsed")}</span>}
+          {seats && (
+            <span className="foot-note" style={{ whiteSpace: "nowrap" }} title={seats.extraPurchasable ? undefined : t("team.members.extraSoon")}>
+              {t("team.members.seatsOf").replace("{used}", String(seats.used)).replace("{limit}", String(seats.limit))}
+              {seats.extra > 0 ? ` · ${t("team.members.seatsExtra").replace("{n}", String(seats.extra))}` : ""}
+            </span>
+          )}
+          <button type="button" className="btn btn-outline-navy btn-sm" onClick={() => setCodeOpen(true)}><KeyRound className="h-4 w-4" /> {t("team.members.newCode")}</button>
           <button type="button" className="btn btn-navy btn-sm" onClick={() => setInviteOpen(true)}><Plus className="h-4 w-4" /> {t("team.members.invite")}</button>
         </div>
       </div>
+
+      {seats && seats.used >= seats.limit && <p className="foot-note" role="status" style={{ padding: "0 18px 12px", color: "var(--yellow-dark)" }}>{t("team.members.seatsFull")}{seats.extraPurchasable ? "" : ` ${t("team.members.extraSoon")}.`}</p>}
 
       {isLoading ? (
         <div className="p-5"><Skeleton className="h-16 w-full rounded-[var(--radius-mk)]" /></div>
@@ -138,7 +148,105 @@ function MembersTab() {
 
       <InviteMemberDialog open={inviteOpen} onOpenChange={setInviteOpen} onInvited={(r) => { refresh(); setInvite(r); }} onError={onError} />
       <MemberInviteLinkDialog invite={invite} onClose={() => setInvite(null)} />
+      <AccessCodeDialog open={codeOpen} onOpenChange={setCodeOpen} onIssued={(r) => { refresh(); setIssued(r); }} onError={onError} />
+      <AccessCodeShownDialog issued={issued} onClose={() => setIssued(null)} />
+      <Leaderboard people={members.filter((m) => m.status === "active").length + 1} />
     </div>
+  );
+}
+
+/** Come si chiama un posto in elenco: l'email, o per un codice non ancora usato la scritta e per chi è. */
+function memberName(m: TeamMemberDto, t: (k: string) => string): string {
+  if (m.viaCode && m.status === "invited") return m.label ? `${t("team.members.codePending")} · ${m.label}` : t("team.members.codePending");
+  return m.viaCode && m.label ? `${m.email} · ${m.label}` : m.email;
+}
+
+function AccessCodeDialog({ open, onOpenChange, onIssued, onError }: { open: boolean; onOpenChange: (v: boolean) => void; onIssued: (r: { code: string; expiresAt: string; label: string }) => void; onError: (e: Error & { code?: string }) => void }) {
+  const { t } = useLanguage();
+  const [role, setRole] = useState<TeamMemberRole>("foreman");
+  const [label, setLabel] = useState("");
+  useEffect(() => { if (open) { setRole("foreman"); setLabel(""); } }, [open]);
+  const make = useMutation({
+    mutationFn: () => teamMembersApi.createCode(role, label.trim()),
+    onSuccess: (r) => { onOpenChange(false); onIssued({ code: r.code, expiresAt: r.expiresAt, label: label.trim() }); },
+    onError,
+  });
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent>
+        <DialogHeader><DialogTitle>{t("team.members.codeDialogTitle")}</DialogTitle><DialogDescription>{t("team.members.codeDialogDesc")}</DialogDescription></DialogHeader>
+        <DialogBody>
+          <div className="field"><label>{t("team.members.codeLabel")}</label><input value={label} maxLength={80} onChange={(e) => setLabel(e.target.value)} placeholder={t("team.members.codeLabelPlaceholder")} autoFocus /></div>
+          <div className="field">
+            <label>{t("team.members.role")}</label>
+            <select value={role} onChange={(e) => setRole(e.target.value as TeamMemberRole)}>
+              {ROLE_OPTIONS.map((r) => <option key={r} value={r}>{t(`team.members.role.${r}`)}</option>)}
+            </select>
+          </div>
+        </DialogBody>
+        <DialogFooter>
+          <button type="button" className="btn btn-sm btn-outline-navy" onClick={() => onOpenChange(false)}>{t("jobs.cancel")}</button>
+          <button type="button" className="btn btn-sm btn-navy" disabled={make.isPending} onClick={() => make.mutate()}>{make.isPending && <Loader2 className="h-4 w-4 animate-spin" />} {t("team.members.codeMake")}</button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+/** Il codice in chiaro: una volta sola, da copiare o stampare. */
+function AccessCodeShownDialog({ issued, onClose }: { issued: { code: string; expiresAt: string; label: string } | null; onClose: () => void }) {
+  const { t } = useLanguage();
+  const [copied, setCopied] = useState(false);
+  const copy = async () => { try { await navigator.clipboard.writeText(issued!.code); setCopied(true); setTimeout(() => setCopied(false), 1500); } catch { /* clipboard blocked: il codice è selezionabile */ } };
+  return (
+    <Dialog open={!!issued} onOpenChange={(v) => { if (!v) onClose(); }}>
+      <DialogContent>
+        <DialogHeader><DialogTitle>{t("team.members.codeReady")}</DialogTitle><DialogDescription>{t("team.members.codeShownOnce")}</DialogDescription></DialogHeader>
+        {issued && (
+          <DialogBody>
+            <p className="text-center" style={{ fontSize: 32, fontWeight: 700, letterSpacing: "0.14em", fontVariantNumeric: "tabular-nums", color: "var(--navy)", margin: "8px 0" }} aria-label={issued.code.split("").join(" ")}>{issued.code}</p>
+            {issued.label && <p className="text-center foot-note">{issued.label}</p>}
+            <p className="text-center foot-note">{t("team.members.codeExpires").replace("{date}", format(new Date(issued.expiresAt), "PP", { locale: it }))}</p>
+            <div className="flex gap-2 justify-center" style={{ marginTop: 12 }}>
+              <button type="button" className="btn btn-sm btn-outline-navy" onClick={copy}>{copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />} {copied ? t("team.invite.copied") : t("team.members.codeCopy")}</button>
+              <button type="button" className="btn btn-sm btn-outline-navy" onClick={() => window.print()}><Printer className="h-4 w-4" /> {t("team.members.codePrint")}</button>
+            </div>
+          </DialogBody>
+        )}
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+/** TEAM-1 — chi ha inviato e chi ha vinto negli ultimi 90 giorni; sparisce se in squadra c'è una persona sola. */
+function Leaderboard({ people }: { people: number }) {
+  const { t } = useLanguage();
+  const days = 90;
+  const { data } = useQuery({ queryKey: ["team-leaderboard", days], queryFn: () => teamMembersApi.leaderboard(days), enabled: people > 1 });
+  if (people <= 1 || !data || data.items.length < 2) return null;
+  const rows: LeaderboardRow[] = data.items;
+  const title = t("team.members.board.title").replace("{days}", String(days));
+  return (
+    <section className="card-foot" style={{ display: "block" }} aria-label={title}>
+      <h3 className="t-strong" style={{ display: "flex", alignItems: "center", gap: 8, margin: "4px 0 8px" }}><Trophy className="h-4 w-4" /> {title}</h3>
+      <div className="tbl-wrap">
+        <table className="tbl">
+          <thead><tr><th>{t("team.members.board.person")}</th><th>{t("team.members.board.sent")}</th><th>{t("team.members.board.won")}</th><th>{t("team.members.board.rate")}</th><th>{t("team.members.board.invoiced")}</th></tr></thead>
+          <tbody>
+            {rows.map((r) => (
+              <tr key={r.userId}>
+                <td><span className="t-strong">{r.name}</span>{r.isOwner ? <span className="t-sub">{t("team.members.board.you")}</span> : null}</td>
+                <td>{r.quotesSent}</td>
+                <td>{r.quotesWon}</td>
+                <td>{r.winRate === null ? "—" : `${r.winRate} %`}</td>
+                <td className="t-amt">{formatCents(r.invoicedCents)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <p className="foot-note" style={{ marginTop: 8 }}>{t("team.members.board.note")}</p>
+    </section>
   );
 }
 
@@ -150,15 +258,15 @@ function MemberRow({ member, onResend, onSuspend, onRemove }: { member: TeamMemb
     <tr>
       <td>
         <span className="cell-flex">
-          <span className="avat">{member.email.slice(0, 2).toUpperCase()}</span>
-          <span className="t-strong">{member.email}</span>
+          <span className="avat">{(member.viaCode && member.status === "invited" ? "••" : member.email.slice(0, 2)).toUpperCase()}</span>
+          <span className="t-strong">{memberName(member, t)}</span>
         </span>
       </td>
       <td><span className="chip chip-purple">{t(`team.members.role.${member.role}`)}</span></td>
       <td><span className={cn("chip", statusChip)}>{statusLabel}</span></td>
       <td onClick={(e) => e.stopPropagation()}>
         <div className="row-act">
-          {member.status !== "active" && <button type="button" className="btn btn-sm btn-outline-navy" onClick={onResend}><RotateCw className="h-3.5 w-3.5" /> {t("team.members.resend")}</button>}
+          {member.status !== "active" && !(member.viaCode && member.status === "invited") && <button type="button" className="btn btn-sm btn-outline-navy" onClick={onResend}><RotateCw className="h-3.5 w-3.5" /> {t("team.members.resend")}</button>}
           {member.status !== "invited" && (
             <button type="button" className="ic-btn" title={member.status === "suspended" ? t("team.members.reactivate") : t("team.members.suspend")} onClick={onSuspend}>
               {member.status === "suspended" ? <UserCheck /> : <UserX />}
@@ -179,13 +287,13 @@ function MemberPhoneRow({ member, onResend, onSuspend, onRemove }: { member: Tea
   return (
     <li className="lrow-split">
       <ListRow
-        lead={<span className="avat">{member.email.slice(0, 2).toUpperCase()}</span>}
-        title={member.email}
+        lead={<span className="avat">{(member.viaCode && member.status === "invited" ? "••" : member.email.slice(0, 2)).toUpperCase()}</span>}
+        title={memberName(member, t)}
         meta={[t(`team.members.role.${member.role}`)]}
         end={<span className={cn("chip", statusChip)}>{statusLabel}</span>}
       />
-      <RowMore label={t("team.m.rowActions").replace("{name}", member.email)} actions={[
-        member.status !== "active" && { label: t("team.members.resend"), icon: RotateCw, onSelect: onResend },
+      <RowMore label={t("team.m.rowActions").replace("{name}", memberName(member, t))} actions={[
+        member.status !== "active" && !(member.viaCode && member.status === "invited") && { label: t("team.members.resend"), icon: RotateCw, onSelect: onResend },
         member.status !== "invited" && { label: member.status === "suspended" ? t("team.members.reactivate") : t("team.members.suspend"), icon: member.status === "suspended" ? UserCheck : UserX, onSelect: onSuspend },
         { label: t("team.members.remove"), icon: Trash2, danger: true, separated: true, onSelect: onRemove },
       ]} />

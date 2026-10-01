@@ -85,7 +85,7 @@ export async function runProposal(params: { proposal: AssistantProposal; who: Wh
   try {
     const out = APP8C_KINDS.has(proposal.kind)
       ? await executeApp8c(proposal, who, params.ip ?? null, params.level).catch((e) => { throw e instanceof App8cError ? new ProposalError(e.message, e.code, e.status) : e; })
-      : await execute(proposal, who.orgId, params.ip ?? null, params.level);
+      : await execute(proposal, who.orgId, params.ip ?? null, params.level, who.actorId);
     const [updated] = await db.update(assistantProposalsTable).set({ status: "confirmed", resultEntityType: out.entityType, resultEntityId: out.entityId, resolvedAt: new Date() }).where(eq(assistantProposalsTable.id, proposal.id)).returning();
     const action = (await assistantV2Ready())
       ? (await db.insert(assistantActionsTable).values({ userId: who.orgId, proposalId: proposal.id, actorUserId: who.actorId, kind: proposal.kind, level: params.level }).returning())[0] ?? null
@@ -187,7 +187,7 @@ async function ownedProject(userId: string, id: string) {
   return p;
 }
 
-async function execute(proposal: AssistantProposal, userId: string, ip: string | null, level: "auto" | "ask"): Promise<{ entityType: string; entityId: string; link: string | null }> {
+async function execute(proposal: AssistantProposal, userId: string, ip: string | null, level: "auto" | "ask", actorId?: string): Promise<{ entityType: string; entityId: string; link: string | null }> {
   const p = proposal.payload as Record<string, unknown>;
   switch (proposal.kind) {
     case "cost_entry": {
@@ -264,7 +264,7 @@ async function execute(proposal: AssistantProposal, userId: string, ip: string |
       return { entityType: "invoice", entityId: out.invoice.id, link: `/dashboard/invoices/${out.invoice.id}` };
     }
     case "send_invoice": {
-      const { invoice } = await sendInvoice({ invoiceId: String(p.invoiceId), userId, actor: "contractor", message: p.message ? String(p.message) : undefined, ip });
+      const { invoice } = await sendInvoice({ invoiceId: String(p.invoiceId), userId, actorId, actor: "contractor", message: p.message ? String(p.message) : undefined, ip });
       return { entityType: "invoice", entityId: invoice.id, link: `/dashboard/invoices/${invoice.id}` };
     }
     case "record_payment": {

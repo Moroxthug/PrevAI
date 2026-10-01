@@ -29,6 +29,14 @@ export const organizationMembersTable = pgTable(
     invitedByUserId: text("invited_by_user_id").notNull(),
     inviteTokenHash: text("invite_token_hash"),
     inviteTokenExpiresAt: timestamp("invite_token_expires_at", { withTimezone: true }),
+    /**
+     * TEAM-1: codice d'accesso (al posto del link per email). Si salva solo
+     * l'hash; il codice in chiaro si vede una volta, alla creazione. Resta
+     * anche dopo l'uso, così riscriverlo dice «già usato» e non «inesistente».
+     */
+    accessCodeHash: text("access_code_hash"),
+    /** Per chi è il codice («Mario, cantiere Rossi»): l'email non c'è ancora. */
+    accessCodeLabel: text("access_code_label"),
     /** Rare per-member exceptions to the role's default permission matrix. */
     permissions: jsonb("permissions").$type<Record<string, boolean>>().notNull().default({}),
     invitedAt: timestamp("invited_at", { withTimezone: true }).notNull().defaultNow(),
@@ -40,6 +48,7 @@ export const organizationMembersTable = pgTable(
     index("organization_members_owner_id_idx").on(table.ownerId),
     index("organization_members_user_id_idx").on(table.userId),
     uniqueIndex("organization_members_owner_email_idx").on(table.ownerId, table.invitedEmail),
+    uniqueIndex("organization_members_access_code_idx").on(table.accessCodeHash),
   ],
 );
 

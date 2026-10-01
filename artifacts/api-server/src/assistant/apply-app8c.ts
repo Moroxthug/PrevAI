@@ -54,7 +54,7 @@ export async function executeApp8c(proposal: AssistantProposal, who: Who, ip: st
     }
     case "send_quote": {
       try {
-        const { quote } = await sendQuoteByEmail({ userId, quoteId: String(p.quoteId), toEmail: String(p.toEmail), clientName: String(p.clientName ?? "") || undefined, log: logger });
+        const { quote } = await sendQuoteByEmail({ userId, quoteId: String(p.quoteId), toEmail: String(p.toEmail), clientName: String(p.clientName ?? "") || undefined, actorId: who.actorId, log: logger });
         await audit("quote", quote.id, "sent_via_assistant", { to: p.toEmail });
         return { entityType: "quote", entityId: quote.id, link: `/dashboard/quotes/${quote.id}` };
       } catch (err) {
