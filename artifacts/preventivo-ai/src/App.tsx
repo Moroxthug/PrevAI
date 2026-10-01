@@ -88,6 +88,7 @@ import type { Lang } from "@/i18n/translations";
 import { useGetBusinessProfile, getGetBusinessProfileQueryKey } from "@workspace/api-client-react";
 import { useAuth } from "@/hooks/use-auth";
 import { isOnboardingSkipped } from "@/lib/onboarding-state";
+import { RouteEffects, SkipLink } from "@/components/route-effects";
 
 // SYNC-1: il QueryClient (regole di freschezza) sta in lib/query-client.ts, così main.tsx lo riempie dal dispositivo prima del primo render.
 // La coda di invio aggiorna le schermate dopo un invio; ogni scrittura passa dal livello di sync (chiavi di idempotenza, versioni, coda, fusione).
@@ -148,6 +149,78 @@ function DashboardLayout({ children }: { children: React.ReactNode }) {
   );
 }
 
+// UX-1: while a screen's chunk or first data loads, a thin bar and a ghost of the page appear after a short grace period (a screen that is
+// already in cache must never flash them), instead of an empty content area.
+function PageLoading() {
+  return (
+    <div className="page-loading" role="status" aria-label="Caricamento">
+      <div className="route-progress" aria-hidden="true" />
+      <div className="page-ghost" aria-hidden="true">
+        <span className="ghost-line ghost-title" />
+        <span className="ghost-line" />
+        <span className="ghost-card" />
+        <span className="ghost-card" />
+      </div>
+    </div>
+  );
+}
+
+// UX-1: tutte le pagine della dashboard vivono dentro lo stesso guscio. Prima ogni pagina aveva il proprio <DashboardLayout>, e a ogni cambio
+// pagina barra laterale, intestazione e schede venivano smontate e rimontate (lampeggio, perdita di fuoco e di stato). Ora cambia solo il
+// contenuto, che entra con una dissolvenza breve (spenta con «riduci movimento»).
+function DashboardShell() {
+  const [location] = useLocation();
+  // Le sezioni delle impostazioni sono la stessa pagina: non devono rimontarsi (né perdere le modifiche in corso) passando da una all'altra.
+  const pageKey = location.replace(/^(\/dashboard\/settings)\/.*/, "$1");
+  return (
+    <OnboardingGuard>
+      <DashboardLayout>
+        <Suspense fallback={<PageLoading />}>
+          <div key={pageKey} className="page-enter">
+            <Switch>
+              <Route path="/dashboard" component={DashboardHome} />
+              <Route path="/dashboard/new" component={NewQuote} />
+              <Route path="/dashboard/quotes" component={QuotesList} />
+              <Route path="/dashboard/quotes/:id" component={QuoteDetail} />
+              <Route path="/dashboard/analytics" component={AnalyticsPage} />
+              <Route path="/dashboard/settings/:section" component={SettingsPage} />
+              <Route path="/dashboard/settings" component={SettingsPage} />
+              <Route path="/dashboard/billing" component={BillingPage} />
+              <Route path="/dashboard/catalog" component={CatalogPage} />
+              <Route path="/dashboard/clients/:id" component={ClientDetailPage} />
+              <Route path="/dashboard/clients" component={ClientsPage} />
+              <Route path="/dashboard/leads" component={LeadsListPage} />
+              <Route path="/dashboard/imports" component={ImportsPage} />
+              <Route path="/dashboard/contracts/:id" component={ContractDetailPage} />
+              <Route path="/dashboard/contracts" component={ContractsListPage} />
+              <Route path="/dashboard/invoices/:id" component={InvoiceDetailPage} />
+              <Route path="/dashboard/invoices" component={InvoicesPage} />
+              <Route path="/dashboard/amministrazione/attiva" component={AmministrazioneAttivaPage} />
+              <Route path="/dashboard/amministrazione" component={AmministrazionePage} />
+              <Route path="/dashboard/fisco/prima-nota" component={PrimaNotaPage} />
+              <Route path="/dashboard/fisco/banca" component={BancaPage} />
+              <Route path="/dashboard/fisco/chiusura" component={ChiusuraPage} />
+              <Route path="/dashboard/fisco/commercialista" component={CommercialistaClientePage} />
+              <Route path="/dashboard/fisco/scadenzario" component={ScadenzarioPage} />
+              <Route path="/dashboard/fisco" component={FiscoPage} />
+              <Route path="/dashboard/jobs/:id/setup" component={JobSetupPage} />
+              <Route path="/dashboard/jobs/:id" component={JobDetailPage} />
+              <Route path="/dashboard/jobs" component={JobsListPage} />
+              <Route path="/dashboard/assistant" component={AssistantPage} />
+              <Route path="/dashboard/team" component={TeamPage} />
+              <Route path="/dashboard/schedule" component={SchedulePage} />
+              <Route path="/dashboard/documents" component={DocumentsPage} />
+              <Route path="/dashboard/archive" component={ArchivePage} />
+              <Route path="/dashboard/notifications" component={NotificationsPage} />
+              <Route component={NotFound} />
+            </Switch>
+          </div>
+        </Suspense>
+      </DashboardLayout>
+    </OnboardingGuard>
+  );
+}
+
 function Router() {
   return (
     <Switch>
@@ -176,114 +249,14 @@ function Router() {
 
       <Route path="/onboarding" component={() => <Suspense fallback={null}><OnboardingPage /></Suspense>} />
 
-      {/* Dashboard (private, not indexed) */}
-      <Route path="/dashboard" component={() => (
-        <OnboardingGuard><DashboardLayout><DashSuspense><DashboardHome /></DashSuspense></DashboardLayout></OnboardingGuard>
-      )} />
-      <Route path="/dashboard/new" component={() => (
-        <OnboardingGuard><DashboardLayout><DashSuspense><NewQuote /></DashSuspense></DashboardLayout></OnboardingGuard>
-      )} />
-      <Route path="/dashboard/quotes" component={() => (
-        <OnboardingGuard><DashboardLayout><DashSuspense><QuotesList /></DashSuspense></DashboardLayout></OnboardingGuard>
-      )} />
-      <Route path="/dashboard/quotes/:id" component={() => (
-        <OnboardingGuard><DashboardLayout><DashSuspense><QuoteDetail /></DashSuspense></DashboardLayout></OnboardingGuard>
-      )} />
-      <Route path="/dashboard/analytics" component={() => (
-        <OnboardingGuard><DashboardLayout><DashSuspense><AnalyticsPage /></DashSuspense></DashboardLayout></OnboardingGuard>
-      )} />
-      <Route path="/dashboard/settings/:section" component={() => (
-        <OnboardingGuard><DashboardLayout><DashSuspense><SettingsPage /></DashSuspense></DashboardLayout></OnboardingGuard>
-      )} />
-      <Route path="/dashboard/settings" component={() => (
-        <OnboardingGuard><DashboardLayout><DashSuspense><SettingsPage /></DashSuspense></DashboardLayout></OnboardingGuard>
-      )} />
+      {/* Dashboard (private, not indexed): UX-1 — il guscio (barra laterale, intestazione, schede) è uno solo e resta montato tra una pagina e l'altra */}
+      <Route path="/dashboard/admin" component={() => <DashSuspense><AdminPage /></DashSuspense>} />
       {/* APP-1b: il vecchio profilo aziendale è la sezione Dati dell'impresa. */}
       <Route path="/dashboard/profile" component={() => <Redirect to="/dashboard/settings/company" />} />
-      <Route path="/dashboard/billing" component={() => (
-        <OnboardingGuard><DashboardLayout><DashSuspense><BillingPage /></DashSuspense></DashboardLayout></OnboardingGuard>
-      )} />
-      <Route path="/dashboard/catalog" component={() => (
-        <OnboardingGuard><DashboardLayout><DashSuspense><CatalogPage /></DashSuspense></DashboardLayout></OnboardingGuard>
-      )} />
-      <Route path="/dashboard/clients/:id" component={() => (
-        <OnboardingGuard><DashboardLayout><DashSuspense><ClientDetailPage /></DashSuspense></DashboardLayout></OnboardingGuard>
-      )} />
-      <Route path="/dashboard/clients" component={() => (
-        <OnboardingGuard><DashboardLayout><DashSuspense><ClientsPage /></DashSuspense></DashboardLayout></OnboardingGuard>
-      )} />
-      <Route path="/dashboard/leads" component={() => (
-        <OnboardingGuard><DashboardLayout><DashSuspense><LeadsListPage /></DashSuspense></DashboardLayout></OnboardingGuard>
-      )} />
-      <Route path="/dashboard/imports" component={() => (
-        <OnboardingGuard><DashboardLayout><DashSuspense><ImportsPage /></DashSuspense></DashboardLayout></OnboardingGuard>
-      )} />
-      <Route path="/dashboard/contracts/:id" component={() => (
-        <OnboardingGuard><DashboardLayout><DashSuspense><ContractDetailPage /></DashSuspense></DashboardLayout></OnboardingGuard>
-      )} />
-      <Route path="/dashboard/contracts" component={() => (
-        <OnboardingGuard><DashboardLayout><DashSuspense><ContractsListPage /></DashSuspense></DashboardLayout></OnboardingGuard>
-      )} />
-      <Route path="/dashboard/invoices/:id" component={() => (
-        <OnboardingGuard><DashboardLayout><DashSuspense><InvoiceDetailPage /></DashSuspense></DashboardLayout></OnboardingGuard>
-      )} />
-      <Route path="/dashboard/invoices" component={() => (
-        <OnboardingGuard><DashboardLayout><DashSuspense><InvoicesPage /></DashSuspense></DashboardLayout></OnboardingGuard>
-      )} />
-      <Route path="/dashboard/amministrazione/attiva" component={() => (
-        <OnboardingGuard><DashboardLayout><DashSuspense><AmministrazioneAttivaPage /></DashSuspense></DashboardLayout></OnboardingGuard>
-      )} />
-      <Route path="/dashboard/amministrazione" component={() => (
-        <OnboardingGuard><DashboardLayout><DashSuspense><AmministrazionePage /></DashSuspense></DashboardLayout></OnboardingGuard>
-      )} />
-      <Route path="/dashboard/fisco/prima-nota" component={() => (
-        <OnboardingGuard><DashboardLayout><DashSuspense><PrimaNotaPage /></DashSuspense></DashboardLayout></OnboardingGuard>
-      )} />
-      <Route path="/dashboard/fisco/banca" component={() => (
-        <OnboardingGuard><DashboardLayout><DashSuspense><BancaPage /></DashSuspense></DashboardLayout></OnboardingGuard>
-      )} />
-      <Route path="/dashboard/fisco/chiusura" component={() => (
-        <OnboardingGuard><DashboardLayout><DashSuspense><ChiusuraPage /></DashSuspense></DashboardLayout></OnboardingGuard>
-      )} />
-      <Route path="/dashboard/fisco/commercialista" component={() => (
-        <OnboardingGuard><DashboardLayout><DashSuspense><CommercialistaClientePage /></DashSuspense></DashboardLayout></OnboardingGuard>
-      )} />
-      <Route path="/dashboard/fisco/scadenzario" component={() => (
-        <OnboardingGuard><DashboardLayout><DashSuspense><ScadenzarioPage /></DashSuspense></DashboardLayout></OnboardingGuard>
-      )} />
-      <Route path="/dashboard/fisco" component={() => (
-        <OnboardingGuard><DashboardLayout><DashSuspense><FiscoPage /></DashSuspense></DashboardLayout></OnboardingGuard>
-      )} />
-      <Route path="/dashboard/jobs/:id/setup" component={() => (
-        <OnboardingGuard><DashboardLayout><DashSuspense><JobSetupPage /></DashSuspense></DashboardLayout></OnboardingGuard>
-      )} />
-      <Route path="/dashboard/jobs/:id" component={() => (
-        <OnboardingGuard><DashboardLayout><DashSuspense><JobDetailPage /></DashSuspense></DashboardLayout></OnboardingGuard>
-      )} />
-      <Route path="/dashboard/jobs" component={() => (
-        <OnboardingGuard><DashboardLayout><DashSuspense><JobsListPage /></DashSuspense></DashboardLayout></OnboardingGuard>
-      )} />
-      <Route path="/dashboard/assistant" component={() => (
-        <OnboardingGuard><DashboardLayout><DashSuspense><AssistantPage /></DashSuspense></DashboardLayout></OnboardingGuard>
-      )} />
-      <Route path="/dashboard/team" component={() => (
-        <OnboardingGuard><DashboardLayout><DashSuspense><TeamPage /></DashSuspense></DashboardLayout></OnboardingGuard>
-      )} />
-      <Route path="/dashboard/schedule" component={() => (
-        <OnboardingGuard><DashboardLayout><DashSuspense><SchedulePage /></DashSuspense></DashboardLayout></OnboardingGuard>
-      )} />
+      <Route path={/^\/dashboard(?:\/.*)?$/} component={DashboardShell} />
       {/* The old CRM is retired (Phase 2): its working parts live in Jobs */}
       <Route path="/crm" component={() => <Redirect to="/dashboard/jobs" />} />
       <Route path="/crm/:rest*" component={() => <Redirect to="/dashboard/jobs" />} />
-      <Route path="/dashboard/documents" component={() => (
-        <OnboardingGuard><DashboardLayout><DashSuspense><DocumentsPage /></DashSuspense></DashboardLayout></OnboardingGuard>
-      )} />
-      <Route path="/dashboard/archive" component={() => (
-        <OnboardingGuard><DashboardLayout><DashSuspense><ArchivePage /></DashSuspense></DashboardLayout></OnboardingGuard>
-      )} />
-      <Route path="/dashboard/notifications" component={() => (
-        <OnboardingGuard><DashboardLayout><DashSuspense><NotificationsPage /></DashSuspense></DashboardLayout></OnboardingGuard>
-      )} />
 
       {/* Public e-signature page: the customer signs the contract from the emailed link */}
       <Route path="/sign/:token" component={() => <Suspense fallback={null}><SignPage /></Suspense>} />
@@ -312,8 +285,6 @@ function Router() {
       <Route path="/blog/categoria/:slug" component={() => <PublicLayout><Suspense fallback={<PageFallback />}><BlogCategoryPage /></Suspense></PublicLayout>} />
       <Route path="/blog/:slug" component={() => <PublicLayout><Suspense fallback={<PageFallback />}><BlogArticlePage /></Suspense></PublicLayout>} />
       <Route path={PATHS.BLOG} component={() => <PublicLayout><Suspense fallback={<PageFallback />}><BlogPage /></Suspense></PublicLayout>} />
-
-      <Route path="/dashboard/admin" component={() => <DashSuspense><AdminPage /></DashSuspense>} />
 
       <Route component={NotFound} />
     </Switch>
@@ -352,6 +323,8 @@ function App({ ssr }: { ssr?: { path: string; lang: Lang } } = {}) {
         <LanguageProvider initialLang={ssr?.lang}>
           <TooltipProvider>
             <PostHogIdentify />
+            <SkipLink />
+            <RouteEffects />
             <ErrorBoundary>
               <Router />
             </ErrorBoundary>

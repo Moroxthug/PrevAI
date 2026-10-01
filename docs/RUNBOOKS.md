@@ -1334,3 +1334,22 @@ L'ufficio: in home la sezione **"La squadra oggi"** (prima nella home del capoca
 | Non arrivano gli aggiornamenti da altri dispositivi | `GET /api/changes` risponde 503 → la 0021 non è stata eseguita; oppure il dispositivo è in sottofondo. Il feed si ferma da solo nei browser pilotati (`navigator.webdriver`): è voluto, tiene calma la rete dei QA |
 | Un dispositivo mostra dati di un'altra persona | Non può: il record si apre solo se `userId` coincide con la sessione, altrimenti viene cancellato e riscaricato (`useCacheOwnerCheck`) |
 | Query nuova che deve funzionare offline | Aggiungila a `ROOTS` / `API_PATHS` di `lib/offline/query-policy.ts` e, se serve prima del bisogno, a `warm.ts`. Una modifica nuova da accodare: voce in `lib/sync/routes.ts` (pattern, `versioned`, `echo`, `createdId`) e, se la rotta modifica una riga, `rejectStale()` + `updatedAt` nella risposta |
+
+## 37. Sensazione da app: scorrimento, annunci, transizioni (UX-1, riga 55)
+
+**Dove**: `artifacts/preventivo-ai/src/App.tsx` (`DashboardShell`, `PageLoading`), `components/route-effects.tsx`, `lib/scroll-memory.ts` (+ test), classi `.skip-link`, `.page-enter`, `.page-loading`, `.route-progress`, `.page-ghost` in fondo a `index.css`.
+
+**Cosa fa**
+1. **Un solo guscio per la dashboard.** Ogni `/dashboard/*` (tranne `/dashboard/admin` e il redirect `/dashboard/profile`) cade nella stessa rotta: guardia onboarding + layout restano montati, cambia solo la pagina. Una **nuova pagina della dashboard** si aggiunge come `<Route path="…" component={Pagina} />` dentro lo `Switch` di `DashboardShell` (non più con il suo `<DashboardLayout>`); i percorsi più specifici vanno prima.
+2. **Scorrimento.** Nuova schermata → in cima; Indietro/Avanti/ricarica → dove eri (chiave = percorso + query, `sessionStorage["prevai-scroll"]`). Cambiare solo la query (scheda aperta di un cantiere) o un `#ancora` non sposta nulla.
+3. **Annuncio.** `role="status"` legge l'`h1` della nuova schermata; il fuoco va a `<main>` solo se era perso. Ogni pagina dovrebbe avere un solo `h1` dentro `<main>`: senza, si annuncia il titolo della scheda.
+4. **Stati.** Dissolvenza d'ingresso (solo opacità) e, dopo 250 ms di attesa, barra + scheletro; con «riduci movimento» non si muove nulla.
+
+| Domanda | Cosa fare |
+|---|---|
+| Una pagina si apre a metà scorrimento | Una pagina chiama `scrollTo` o `scrollIntoView` per conto suo dopo il mount: toglierlo, o limitarlo a un caso esplicito dell'utente |
+| Indietro non torna al punto | La pagina cresce più di 1,6 s dopo il cambio (dati lenti): il ripristino rinuncia e va al massimo possibile. Se è sistematico, mostrare uno scheletro alto quanto la lista |
+| Una pagina perde lo stato cambiando percorso | `DashboardShell` rimonta la pagina a ogni percorso diverso (`key`); se due percorsi sono la stessa schermata (come le sezioni delle impostazioni) vanno uniti nella regex di `pageKey` |
+| Il lettore di schermo non dice nulla | La pagina non ha un `h1` dentro `<main>` entro 1,5 s, o il titolo della scheda è quello generico |
+| Il fuoco finisce in un posto strano dopo un cambio pagina | `route-effects.tsx` lo sposta solo se era sul `body`, dentro `<main>` o su un elemento sparito; non dentro un dialogo e non in un campo di testo |
+| In sviluppo il ripristino dopo ricarica sembra non partire | StrictMode esegue l'effetto due volte: la posizione iniziale resta in `S.initial` fino alla prima navigazione apposta |

@@ -365,3 +365,103 @@
     animation: none !important;
   }
 }
+
+/* UX-1 — sensazione da app: ingresso delle pagine, caricamento, salto al contenuto. */
+.skip-link {
+  position: fixed;
+  top: 8px;
+  left: 8px;
+  z-index: 1000;
+  padding: 10px 16px;
+  border-radius: 10px;
+  background: var(--navy, #101031);
+  color: #fff;
+  font-weight: 700;
+  font-size: 14px;
+  text-decoration: none;
+  transform: translateY(-200%);
+}
+.skip-link:focus-visible {
+  transform: none;
+  outline: 2px solid #fff;
+  outline-offset: 2px;
+  box-shadow: 0 0 0 4px var(--navy, #101031);
+}
+/* La pagina riceve il fuoco da codice dopo un cambio schermata: niente anello, non è un controllo. */
+main[tabindex="-1"]:focus,
+main[tabindex="-1"]:focus-visible {
+  outline: none;
+}
+.page-enter {
+  animation: page-enter 0.18s ease-out both;
+}
+/* Solo opacità: un transform farebbe di questo contenitore il riferimento delle barre e dei fogli «fixed» della pagina. */
+@keyframes page-enter {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+/* Caricamento: compare dopo 250 ms, così una pagina già in memoria non lo mostra mai. */
+.page-loading {
+  animation: page-loading-in 0.2s ease-out 0.25s both;
+}
+@keyframes page-loading-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+.route-progress {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 900;
+  height: 3px;
+  overflow: hidden;
+  pointer-events: none;
+}
+.route-progress::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  width: 40%;
+  background: var(--teal, #0a7580);
+  border-radius: 0 3px 3px 0;
+  animation: route-progress 1.1s ease-in-out infinite;
+}
+@keyframes route-progress {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(250%); }
+}
+.page-ghost {
+  display: grid;
+  gap: 14px;
+}
+.ghost-line,
+.ghost-card {
+  display: block;
+  border-radius: 12px;
+  background: var(--soft, #eef0f4);
+  animation: ghost-pulse 1.4s ease-in-out infinite;
+}
+.ghost-line { height: 16px; width: 55%; }
+.ghost-title { height: 28px; width: 32%; }
+.ghost-card { height: 120px; }
+@keyframes ghost-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.55; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .page-enter,
+  .page-loading {
+    animation: none !important;
+  }
+  .route-progress::before {
+    animation: none !important;
+    width: 100%;
+    opacity: 0.5;
+    border-radius: 0;
+  }
+  .ghost-line,
+  .ghost-card {
+    animation: none !important;
+  }
+}
