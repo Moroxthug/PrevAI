@@ -13,6 +13,9 @@ export default tseslint.config(
       "**/dist/**",
       "**/build/**",
       "**/.vercel/**",
+      // POCKET-0: l'app Expo ha i suoi controlli (npm run typecheck / lint:tokens) e il pacchetto di design è copiato da QuoteAI.
+      "artifacts/pocket/**",
+      "docs/pocket-design/**",
       "**/*.d.ts",
       "lib/api-client-react/src/generated/**",
       "lib/api-zod/src/generated/**",

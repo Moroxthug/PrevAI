@@ -11,3 +11,4 @@
 *.pdf binary
 *.mp4 binary
 *.webm binary
+docs/pocket-design/**/*.dc.html -diff linguist-generated

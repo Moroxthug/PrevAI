@@ -11,6 +11,8 @@
   ],
   "ignorePaths": [
     "node_modules",
+    "artifacts/pocket",
+    "docs/pocket-design",
     "dist",
     ".qa",
     "**/*.png",
