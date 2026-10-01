@@ -12,7 +12,7 @@
 // the web app (which draws them). No dependencies.
 
 /** The sections of the home, in the order a brand-new catalog would show them. */
-export const HOME_SECTIONS = ["needs-you", "composer", "stats", "invoices", "fisco", "jobs", "hours", "calendar", "recent-quotes", "revenue"] as const;
+export const HOME_SECTIONS = ["needs-you", "composer", "stats", "invoices", "fisco", "crew", "jobs", "hours", "calendar", "recent-quotes", "revenue"] as const;
 export type HomeSectionId = (typeof HOME_SECTIONS)[number];
 
 /** The one section nobody can hide: what is waiting on this person. */
@@ -64,6 +64,8 @@ export const HOME_SECTION_NEEDS: Record<HomeSectionId, { area: "quotes" | "jobs"
   fisco: { area: "fiscale", action: "view" },
   jobs: { area: "jobs", action: "view" },
   hours: { area: "jobs", action: "edit" },
+  // SQUADRA-1: la squadra oggi — bloccati, chi è dove, ore da approvare, quello che arriva dal cantiere.
+  crew: { area: "jobs", action: "view" },
   // AGENDA-1: il mese coi turni, le fasi, le scadenze delle fatture e i richiami.
   calendar: { area: "jobs", action: "view" },
   "recent-quotes": { area: "quotes", action: "view" },
@@ -89,9 +91,9 @@ export type HomeLayout = {
 
 /** Where each kind of home starts. Sections a role can't see are dropped by normalizeHomeLayout. */
 export const HOME_DEFAULTS: Record<HomeKind, HomeLayout> = {
-  titolare: { order: ["needs-you", "composer", "stats", "recent-quotes", "jobs", "calendar", "revenue"], needsYouCollapsed: false, tabs: ["/dashboard/quotes", "/dashboard/jobs", "/dashboard/invoices"], period: "m" },
+  titolare: { order: ["needs-you", "composer", "stats", "crew", "recent-quotes", "jobs", "calendar", "revenue"], needsYouCollapsed: false, tabs: ["/dashboard/quotes", "/dashboard/jobs", "/dashboard/invoices"], period: "m" },
   ufficio: { order: ["needs-you", "composer", "invoices", "stats", "recent-quotes", "jobs", "calendar"], needsYouCollapsed: false, tabs: ["/dashboard/quotes", "/dashboard/invoices", "/dashboard/clients"], period: "m" },
-  capocantiere: { order: ["needs-you", "calendar", "jobs", "hours"], needsYouCollapsed: false, tabs: ["/dashboard/jobs", "/dashboard/schedule", "/dashboard/team"], period: "m" },
+  capocantiere: { order: ["needs-you", "crew", "jobs", "calendar", "hours"], needsYouCollapsed: false, tabs: ["/dashboard/jobs", "/dashboard/schedule", "/dashboard/team"], period: "m" },
   contabile: { order: ["needs-you", "invoices", "fisco", "stats"], needsYouCollapsed: false, tabs: ["/dashboard/invoices", "/dashboard/fisco", "/dashboard/clients"], period: "m" },
   lettore: { order: ["needs-you", "stats", "recent-quotes", "jobs"], needsYouCollapsed: false, tabs: ["/dashboard/quotes", "/dashboard/jobs", "/dashboard/invoices"], period: "m" },
 };

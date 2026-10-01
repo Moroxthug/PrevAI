@@ -1,0 +1,106 @@
+import { useState } from "react";
+import { Link } from "wouter";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { formatDistanceToNow } from "date-fns";
+import { it } from "date-fns/locale";
+import { Check, HardHat, Loader2, OctagonAlert } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { useLanguage } from "@/i18n/LanguageContext";
+import { useCan } from "@/hooks/use-role";
+import { useToast } from "@/hooks/use-toast";
+import { formatCents } from "@/lib/jobs-api";
+import { crewApi, type FieldReportDto } from "@/lib/team-api";
+
+/** One report as the office sees it — shared by the job card and the crew's day. */
+export function FieldReportRow({ report, showJob }: { report: FieldReportDto; showJob?: boolean }) {
+  const { t } = useLanguage();
+  const can = useCan();
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const [answering, setAnswering] = useState(false);
+  const [note, setNote] = useState("");
+  const resolve = useMutation({
+    mutationFn: () => crewApi.resolve(report.id, note.trim() || undefined),
+    onSuccess: () => {
+      setAnswering(false);
+      queryClient.invalidateQueries({ queryKey: ["field-reports", report.projectId] });
+      queryClient.invalidateQueries({ queryKey: ["crew-today"] });
+    },
+    onError: (e: Error) => toast({ title: t("jobs.error"), description: e.message, variant: "destructive" }),
+  });
+  const openBlocker = report.kind === "blocker" && !report.resolvedAt;
+
+  return (
+    <div className="fr-row" data-testid="field-report">
+      {report.photoId && (
+        <a href={crewApi.photoUrl(report.projectId, report.photoId)} target="_blank" rel="noopener noreferrer" className="shrink-0">
+          <img src={crewApi.photoUrl(report.projectId, report.photoId)} alt={report.body || t("crew.photoFrom").replace("{name}", report.authorName)} className="h-14 w-14 object-cover rounded-lg" style={{ border: "1px solid var(--line)" }} loading="lazy" />
+        </a>
+      )}
+      <div className="fr-body">
+        {showJob && report.projectName && <div className="mb-0.5"><Link href={`/dashboard/jobs/${report.projectId}`} className="text-link text-xs">{report.projectName}</Link></div>}
+        {report.body || (report.photoId ? <span style={{ color: "var(--muted-mk)" }}>{t("crew.photoOnly")}</span> : null)}
+        {report.materialsCents ? <b className="block">{formatCents(report.materialsCents)} · <span className="font-normal">{t("crew.inCostReview")}</span></b> : null}
+        <div className="fr-meta">
+          <span className={cn("doc-status", report.kind === "blocker" ? (openBlocker ? "danger" : "ok") : report.kind === "materials" ? "warn" : "info")}>{report.kind === "blocker" ? (openBlocker ? t("crew.blockedOpen") : t("crew.answered")) : t(`crew.kind.${report.kind}`)}</span>
+          {report.authorName && <span>{report.authorName}</span>}
+          <span>{formatDistanceToNow(new Date(report.createdAt), { addSuffix: true, locale: it })}</span>
+        </div>
+        {report.resolvedAt && report.kind === "blocker" && (
+          <p className="text-xs mt-1" style={{ color: "var(--muted-mk)" }}>
+            {t("crew.answeredBy").replace("{name}", report.resolvedByName || "—")}
+            {report.resolutionNote ? ` — ${report.resolutionNote}` : ""}
+          </p>
+        )}
+        {openBlocker && can("jobs", "edit") && (answering ? (
+          <div className="mt-2 flex flex-col sm:flex-row gap-2">
+            <input className="flex-1 min-w-0 rounded-lg px-2 py-1.5 text-sm" style={{ border: "1px solid var(--line)" }} value={note} onChange={(e) => setNote(e.target.value)} placeholder={t("crew.answerPlaceholder")} aria-label={t("crew.answerPlaceholder")} maxLength={500} />
+            <button type="button" className="btn btn-sm btn-navy" disabled={resolve.isPending} onClick={() => resolve.mutate()}>
+              {resolve.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />} {t("crew.markSorted")}
+            </button>
+          </div>
+        ) : (
+          <button type="button" className="btn btn-sm btn-outline-navy mt-2" onClick={() => setAnswering(true)}>{t("crew.answer")}</button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/**
+ * SQUADRA-1 — "Dal cantiere" on the job's Overview: every photo, note,
+ * blocker and materials claim the crew sent from /t/:token, newest first.
+ * Open blockers are answered here; the answer shows on the worker's page.
+ *
+ * Blocked first: `only="blockers"` is the red card at the top of the Overview
+ * (open blockers alone); `only="rest"` is everything else, further down. Both
+ * read the same request.
+ */
+export function FieldReportsCard({ jobId, only }: { jobId: string; only?: "blockers" | "rest" }) {
+  const { t } = useLanguage();
+  const { data, isLoading } = useQuery({ queryKey: ["field-reports", jobId], queryFn: () => crewApi.jobReports(jobId) });
+  const isOpen = (r: FieldReportDto) => r.kind === "blocker" && !r.resolvedAt;
+  const all = data?.reports ?? [];
+  const reports = only === "blockers" ? all.filter(isOpen) : only === "rest" ? all.filter((r) => !isOpen(r)) : all;
+  const open = reports.filter(isOpen).length;
+  if (isLoading || reports.length === 0) return null;
+  if (only === "blockers") {
+    return (
+      <section className="card crew-block" data-testid="job-blockers" aria-labelledby="job-blockers-h">
+        <div className="today-head">
+          <h2 id="job-blockers-h" style={{ color: "var(--red)" }}><OctagonAlert className="h-4 w-4" /> {t("crew.blockedNow")} <span className="ny-count red">{open}</span></h2>
+        </div>
+        <div className="fr-list">{reports.map((r) => <FieldReportRow key={r.id} report={r} />)}</div>
+      </section>
+    );
+  }
+  return (
+    <section className="card" data-testid="field-reports-card" aria-labelledby="job-field-h">
+      <div className="today-head">
+        <h2 id="job-field-h"><HardHat className="h-4 w-4" /> {t("crew.fromTheField")}</h2>
+        <span className="foot-note">{open ? `${open} ${t("crew.openBlockers")}` : reports.length}</span>
+      </div>
+      <div className="fr-list">{reports.slice(0, 20).map((r) => <FieldReportRow key={r.id} report={r} />)}</div>
+    </section>
+  );
+}

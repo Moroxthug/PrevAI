@@ -81,6 +81,8 @@ const WorkerBody = z.object({
   workerType: z.enum(WORKER_TYPES).optional(),
   burdenPercent: z.number().min(0).max(100).optional(),
   active: z.boolean().optional(),
+  /** SQUADRA-1: may add tasks from the site. */
+  canAddTasks: z.boolean().optional(),
 });
 
 // GET /api/team/workers
@@ -128,6 +130,7 @@ router.post("/team/workers", requireAuth, requirePermission("team", "full"), asy
         workerType: type,
         burdenPercent: String(d.burdenPercent ?? (type === "subcontractor" ? 0 : 15)),
         active: d.active ?? true,
+        canAddTasks: d.canAddTasks ?? false,
       })
       .returning();
     res.status(201).json({ worker: serializeWorker(w!) });
@@ -160,6 +163,7 @@ router.put("/team/workers/:wid", requireAuth, requirePermission("team", "full"),
     if (d.hourlyRateCents !== undefined) updates.hourlyRate = d.hourlyRateCents;
     if (d.workerType !== undefined) updates.workerType = d.workerType;
     if (d.burdenPercent !== undefined) updates.burdenPercent = String(d.burdenPercent);
+    if (d.canAddTasks !== undefined) updates.canAddTasks = d.canAddTasks;
     if (d.active !== undefined) {
       updates.active = d.active;
       if (!d.active) { updates.timeTokenHash = null; updates.timeTokenExpiresAt = null; }
@@ -404,7 +408,10 @@ router.put("/team/time-entries/:tid", requireAuth, requirePermission("jobs", "ed
 });
 
 // POST /api/team/time-entries/approve — bulk approve
-router.post("/team/time-entries/approve", requireAuth, requirePermission("jobs", "full"), async (req, res) => {
+// SQUADRA-1: `jobs:edit`, the same bar as approving one entry through PUT above —
+// it was `jobs:full`, so a foreman could approve a week of hours one row at a
+// time but not with the "approva tutte" button next to them.
+router.post("/team/time-entries/approve", requireAuth, requirePermission("jobs", "edit"), async (req, res) => {
   try {
     const userId = getUserId(res);
     const gate = await requireTeamFeature(userId);

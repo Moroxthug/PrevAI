@@ -8,7 +8,7 @@
 // fiscale del titolare non arriva al telefono del capocantiere).
 // Shared by the API (who gets what) and the web app (the switches). No dependencies.
 
-export const PUSH_KINDS = ["quote_viewed", "quote_accepted", "lead_new", "client_message", "scadenza_fiscale"] as const;
+export const PUSH_KINDS = ["quote_viewed", "quote_accepted", "lead_new", "client_message", "field_blocker", "scadenza_fiscale"] as const;
 export type PushKind = (typeof PUSH_KINDS)[number];
 
 /** The permission area (api-server requirePermission) a person needs, at least "view", to receive the kind. */
@@ -33,6 +33,12 @@ export const PUSH_KIND_DEFS: Record<PushKind, { label: string; help: string; are
   client_message: {
     label: "Messaggio da un cliente",
     help: "Un cliente ti ha scritto dalla sua area clienti.",
+    area: "jobs",
+  },
+  // SQUADRA-1 (riga 52): un operaio che non può andare avanti.
+  field_blocker: {
+    label: "Un operaio è bloccato in cantiere",
+    help: "Ha premuto \"Sono bloccato\" dal suo link: va sentito subito.",
     area: "jobs",
   },
   scadenza_fiscale: {

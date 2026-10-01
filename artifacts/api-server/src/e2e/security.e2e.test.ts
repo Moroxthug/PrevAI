@@ -56,6 +56,7 @@ import {
   suppliersTable,
   fiscalPaymentsTable,
   jobNotesTable,
+  fieldReportsTable,
   scheduleBlocksTable,
   calendarFeedsTable,
   authSessionsTable,
@@ -165,6 +166,7 @@ async function seedOrgA(): Promise<Fixtures> {
   f.supplier = await ins(db.insert(suppliersTable).values({ userId, name: "Ferramenta E2E" }).returning());
   f.versamento = await ins(db.insert(fiscalPaymentsTable).values({ userId, anno: 2025, tipo: "altro", importoCents: 100 }).returning());
   f.note = await ins(db.insert(jobNotesTable).values({ userId, actorUserId: userId, projectId: project.id, body: "Nota E2E" }).returning());
+  f.fieldReport = await ins(db.insert(fieldReportsTable).values({ userId, projectId: project.id, kind: "blocker", body: "Manca la corrente", authorName: "Operaio E2E" } as typeof fieldReportsTable.$inferInsert).returning());
   // AGENDA-1: un turno in agenda e un calendario .ics in abbonamento.
   f.block = await ins(db.insert(scheduleBlocksTable).values({ userId, projectId: project.id, collaboratorId: f.worker, startsAt: new Date(), endsAt: new Date(Date.now() + 3_600_000) }).returning());
   f.feed = await ins(db.insert(calendarFeedsTable).values({ userId, name: "Feed E2E", url: "https://example.invalid/a.ics" }).returning());
@@ -223,6 +225,7 @@ function resolveParams(route: MatrixRoute, f: Fixtures): { path: string; unseede
           ["/api/fiscale/condivisioni", "condivisione"], ["/api/fiscale/versamenti", "versamento"], ["/api/crm/suppliers", "supplier"],
           ["/api/fiscale/commercialista/incarichi", "incarico"], ["/api/studio/incarichi", "incarico"],
           ["/api/schedule/blocks", "block"], ["/api/calendar/feeds", "feed"],
+          ["/api/field-reports", "fieldReport"],
         ];
         id = byPrefix.find(([p]) => prefix === p)?.[1];
         break;

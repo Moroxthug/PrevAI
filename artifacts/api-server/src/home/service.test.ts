@@ -5,8 +5,8 @@ import { allowedSections, effectiveLayout, startingLayout } from "./service";
 
 describe("APP-7 home per ruolo", () => {
   it("each role gets its own kind of home", () => {
-    expect(effectiveLayout("owner", null, null).layout.order).toEqual(["needs-you", "composer", "stats", "recent-quotes", "jobs", "calendar", "revenue"]);
-    expect(effectiveLayout("foreman", null, null).layout.order).toEqual(["needs-you", "calendar", "jobs", "hours"]);
+    expect(effectiveLayout("owner", null, null).layout.order).toEqual(["needs-you", "composer", "stats", "crew", "recent-quotes", "jobs", "calendar", "revenue"]);
+    expect(effectiveLayout("foreman", null, null).layout.order).toEqual(["needs-you", "crew", "jobs", "calendar", "hours"]);
     expect(effectiveLayout("bookkeeper", null, null).layout.order).toEqual(["needs-you", "invoices", "fisco", "stats"]);
     expect(effectiveLayout("office", null, null).layout.order[1]).toBe("composer");
   });

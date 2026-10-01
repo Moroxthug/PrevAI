@@ -365,12 +365,12 @@ function WorkerDialog({ worker, open, onOpenChange }: { worker: WorkerDto | null
   const { t } = useLanguage();
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const [form, setForm] = useState({ name: "", role: "", email: "", phone: "", rate: "", type: "employee" as WorkerType, burden: "15" });
+  const [form, setForm] = useState({ name: "", role: "", email: "", phone: "", rate: "", type: "employee" as WorkerType, burden: "15", canAddTasks: false });
   useEffect(() => {
     if (!open) return;
-    setForm({ name: worker?.name ?? "", role: worker?.role === "worker" ? "" : (worker?.role ?? ""), email: worker?.email ?? "", phone: worker?.phone ?? "", rate: worker ? (worker.hourlyRateCents / 100).toFixed(2) : "", type: worker?.workerType ?? "employee", burden: worker ? String(worker.burdenPercent) : "15" });
+    setForm({ name: worker?.name ?? "", role: worker?.role === "worker" ? "" : (worker?.role ?? ""), email: worker?.email ?? "", phone: worker?.phone ?? "", rate: worker ? (worker.hourlyRateCents / 100).toFixed(2) : "", type: worker?.workerType ?? "employee", burden: worker ? String(worker.burdenPercent) : "15", canAddTasks: worker?.canAddTasks ?? false });
   }, [open, worker]);
-  const body = (): WorkerEdit & { name: string } => ({ name: form.name.trim(), role: form.role.trim() || "worker", email: form.email.trim() || null, phone: form.phone.trim() || null, hourlyRateCents: Math.round((Number(form.rate) || 0) * 100), workerType: form.type, burdenPercent: Number(form.burden) || 0 });
+  const body = (): WorkerEdit & { name: string } => ({ name: form.name.trim(), role: form.role.trim() || "worker", email: form.email.trim() || null, phone: form.phone.trim() || null, hourlyRateCents: Math.round((Number(form.rate) || 0) * 100), workerType: form.type, burdenPercent: Number(form.burden) || 0, canAddTasks: form.canAddTasks });
   const save = useMutation({
     mutationFn: () => (worker ? teamApi.updateWorker(worker.id, body()) : teamApi.addWorker(body())),
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["workers"] }); onOpenChange(false); },
@@ -392,6 +392,11 @@ function WorkerDialog({ worker, open, onOpenChange }: { worker: WorkerDto | null
             <div className="field"><label>{t("team.workers.burdenPct")}</label><input type="number" step="0.5" value={form.burden} onChange={(e) => setForm({ ...form, burden: e.target.value })} disabled={form.type === "subcontractor"} /></div>
             <div className="field"><label>{t("team.workers.email")}</label><input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} /></div>
             <div className="field"><label>{t("team.workers.phone")}</label><input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} /></div>
+            {/* SQUADRA-1: opt-in per worker — a crew lead, not every apprentice. */}
+            <label className="chk-row full">
+              <input type="checkbox" checked={form.canAddTasks} onChange={(e) => setForm({ ...form, canAddTasks: e.target.checked })} />
+              <span>{t("team.workers.canAddTasks")}<span className="block text-xs" style={{ color: "var(--muted-mk)" }}>{t("team.workers.canAddTasksHint")}</span></span>
+            </label>
           </div>
         </DialogBody>
         <DialogFooter>

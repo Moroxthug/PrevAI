@@ -52,6 +52,7 @@ import { AssistantAskRow } from "@/components/assistant/assistant-launcher";
 import { hasFeature } from "@/lib/plans";
 import { InstallPrompt } from "@/components/pwa/install-prompt";
 import { CalendarCard } from "@/components/dashboard/calendar-card";
+import { CrewSection } from "@/components/crew/crew-today-card";
 
 /* ─── plan helpers ─────────────────────────────────────────────────────────── */
 
@@ -756,6 +757,9 @@ export default function DashboardHome() {
                     return <JobsSection key={id} />;
                   case "hours":
                     return <HoursSection key={id} />;
+                  case "crew":
+                    // SQUADRA-1: per il capocantiere è la pagina; al titolare compare solo se c'è una squadra fuori o qualcosa che aspetta.
+                    return <CrewSection key={id} quiet={home?.role !== "foreman"} />;
                   case "calendar":
                     return <CalendarCard key={id} />;
                   case "invoices":

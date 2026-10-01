@@ -1,7 +1,6 @@
 import { Router } from "express";
 import { z } from "zod";
 import multer from "multer";
-import { randomUUID } from "node:crypto";
 import {
   db,
   projectsTable,
@@ -48,19 +47,10 @@ import { ObjectStorageService, ObjectNotFoundError } from "../lib/objectStorage.
 import { sendJobPhotoShare } from "../lib/jobMessaging.js";
 import { syncMilestoneToCalendar, removeMilestoneFromCalendar, removeMilestonesFromCalendar } from "../calendar/sync.js";
 import { logger } from "../lib/logger.js";
+import { photoUpload, storeJobPhoto, MilestoneNotFoundError } from "../jobs/photos.js";
 
 const router = Router();
 const objectStorage = new ObjectStorageService();
-
-const PHOTO_MIME_TYPES = ["image/jpeg", "image/png", "image/webp", "image/heic"];
-const photoUpload = multer({
-  storage: multer.memoryStorage(),
-  limits: { fileSize: 8 * 1024 * 1024, files: 1 },
-  fileFilter: (_req, file, cb) => {
-    if (PHOTO_MIME_TYPES.includes(file.mimetype)) cb(null, true);
-    else cb(new Error(`Unsupported file type: ${file.mimetype}. Use a JPG, PNG, WEBP or HEIC photo.`));
-  },
-});
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -99,7 +89,7 @@ function serializeMilestone(m: Milestone, tasks: (typeof projectTasksTable.$infe
 }
 
 function serializeTask(t: typeof projectTasksTable.$inferSelect) {
-  return { id: t.id, milestoneId: t.milestoneId, title: t.title, description: t.description, status: t.status, dueDate: toIsoDate(t.dueDate), sortOrder: t.sortOrder };
+  return { id: t.id, milestoneId: t.milestoneId, title: t.title, description: t.description, status: t.status, dueDate: toIsoDate(t.dueDate), sortOrder: t.sortOrder, addedFromFieldBy: t.createdByName };
 }
 
 function serializeBudgetLine(b: CostBudgetLine) {
@@ -1034,34 +1024,14 @@ router.post(
         return;
       }
       const milestoneIdRaw = typeof req.body?.milestoneId === "string" && req.body.milestoneId ? req.body.milestoneId : null;
-      if (milestoneIdRaw) {
-        const [m] = await db.select().from(milestonesTable).where(and(eq(milestonesTable.id, milestoneIdRaw), eq(milestonesTable.projectId, project.id)));
-        if (!m) {
-          res.status(404).json({ error: "Milestone not found" });
-          return;
-        }
-      }
-      const caption = typeof req.body?.caption === "string" ? req.body.caption.slice(0, 500) : "";
-      const ext = { "image/jpeg": "jpg", "image/png": "png", "image/webp": "webp", "image/heic": "heic" }[file.mimetype] ?? "bin";
-      const subPath = `job-photos/${userId}/${project.id}/${randomUUID()}.${ext}`;
-      const fileUrl = await objectStorage.uploadObjectBuffer({ subPath, buffer: file.buffer, contentType: file.mimetype });
-      const [{ count }] = await db.select({ count: sql<number>`count(*)::int` }).from(jobPhotosTable).where(eq(jobPhotosTable.projectId, project.id));
-      const [photo] = await db
-        .insert(jobPhotosTable)
-        .values({
-          userId,
-          projectId: project.id,
-          milestoneId: milestoneIdRaw,
-          fileName: file.originalname,
-          fileSize: file.size,
-          mimeType: file.mimetype,
-          fileUrl,
-          caption,
-          sortOrder: Number(count ?? 0),
-        })
-        .returning();
-      res.status(201).json({ photo: serializePhoto(photo!) });
+      const caption = typeof req.body?.caption === "string" ? req.body.caption : "";
+      const photo = await storeJobPhoto({ userId, projectId: project.id, file, caption, milestoneId: milestoneIdRaw });
+      res.status(201).json({ photo: serializePhoto(photo) });
     } catch (err) {
+      if (err instanceof MilestoneNotFoundError) {
+        res.status(404).json({ error: "Milestone not found" });
+        return;
+      }
       req.log.error({ err }, "Error uploading job photo");
       res.status(500).json({ error: "Internal server error" });
     }

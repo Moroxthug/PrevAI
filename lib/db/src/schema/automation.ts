@@ -97,7 +97,11 @@ export const auditLogTable = pgTable(
     userAgent: text("user_agent"),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
-  (t) => [index("audit_log_entity_idx").on(t.entityType, t.entityId, t.createdAt)],
+  (t) => [
+    index("audit_log_entity_idx").on(t.entityType, t.entityId, t.createdAt),
+    // SQUADRA-1: "Da quando hai guardato" reads the schedule's changes by company and type.
+    index("audit_log_user_type_created_idx").on(t.userId, t.entityType, t.createdAt),
+  ],
 );
 
 export type AutomationRun = typeof automationRunsTable.$inferSelect;

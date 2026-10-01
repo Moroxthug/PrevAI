@@ -34,6 +34,8 @@ import { ClientPortalCard } from "@/components/clients/client-portal-card";
 import { clientPortalApi } from "@/lib/portal-api";
 import { formatEurWhole } from "@/lib/money";
 import { CrewScheduleCard } from "@/components/schedule/crew-schedule-card";
+import { FieldReportsCard } from "@/components/crew/field-reports-card";
+import { JobCrewToday } from "@/components/crew/crew-today-card";
 
 // PERF-1: recharts (~110 kB gzip) arrives after the page has painted; the fallback is the charts' own skeleton.
 const OverviewCharts = lazy(() => import("@/components/jobs/overview-charts").then((m) => ({ default: m.OverviewCharts })));
@@ -244,6 +246,9 @@ function OverviewTab({ data, locale, onGoTo }: { data: JobDetailDto; locale: typ
   const total = job.contract?.total ?? job.contractValueCents / 100;
   return (
     <div className="stack">
+      {/* SQUADRA-1: what is stuck and who is on site today come first. */}
+      <FieldReportsCard jobId={job.id} only="blockers" />
+      <JobCrewToday jobId={job.id} />
       {/* Phase 106: what happens next on site comes before the numbers. */}
       {next && (
         <section className="card j-next" style={{ borderColor: "var(--teal)" }}>
@@ -276,6 +281,7 @@ function OverviewTab({ data, locale, onGoTo }: { data: JobDetailDto; locale: typ
               <Gantt rows={milestones.map((m) => ({ id: m.id, title: m.title, start: m.plannedStart, end: m.plannedEnd, status: m.status, paymentAmountCents: m.paymentAmountCents }))} onRowClick={() => onGoTo("schedule")} />
             </div>
           </section>
+          <FieldReportsCard jobId={job.id} only="rest" />
           <NotesCard jobId={job.id} />
 
         </div>
@@ -447,7 +453,7 @@ function TaskList({ tasks, onToggle, onDelete }: { tasks: TaskDto[]; onToggle: (
       {tasks.map((x) => (
         <div key={x.id} className={cn("task-row", x.status === "done" && "done")}>
           <button type="button" onClick={() => onToggle(x)} className={cn("chk", x.status === "done" && "on")} aria-pressed={x.status === "done"} aria-label={t("jobs.m.markDone").replace("{title}", x.title)}>{x.status === "done" && <Check />}</button>
-          <span className="grow">{x.title}</span>
+          <span className="grow">{x.title}{x.addedFromFieldBy && <span className="block text-[11px]" style={{ color: "var(--muted-mk)" }}>{t("jobs.task.fromField").replace("{name}", x.addedFromFieldBy)}</span>}</span>
           <button type="button" className="ic-btn danger" aria-label={t("jobs.m.deleteTask")} onClick={() => onDelete(x.id)}><Trash2 /></button>
         </div>
       ))}

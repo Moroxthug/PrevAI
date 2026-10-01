@@ -47,3 +47,4 @@ export * from "./limits";
 export * from "./quote-public-links";
 export * from "./portal";
 export * from "./schedule";
+export * from "./field-reports";
