@@ -58,6 +58,7 @@ import accountRouter from "./account";
 import clientPortalRouter from "./client-portal";
 import portalRouter from "./portal";
 import scheduleRouter from "./schedule";
+import changesRouter from "./changes";
 
 const router: IRouter = Router();
 
@@ -119,6 +120,7 @@ router.use(accountRouter);
 router.use(clientPortalRouter);
 router.use(portalRouter);
 router.use(scheduleRouter);
+router.use(changesRouter);
 router.use("/v1/public", publicV1Router);
 
 export default router;

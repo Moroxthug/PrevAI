@@ -22,6 +22,7 @@ import { requirePermission } from "../middlewares/requirePermission.js";
 import { userRateLimiter } from "../lib/rateLimit.js";
 import { requireAiBudget } from "../lib/aiBudget.js";
 import { ObjectStorageService, ObjectNotFoundError } from "../lib/objectStorage.js";
+import { rejectStale } from "../lib/versioning.js";
 import { writeAudit } from "../lib/notifications.js";
 import { raiseAutomation } from "../lib/automation.js";
 import { logger } from "../lib/logger.js";
@@ -174,6 +175,7 @@ router.put("/jobs/:id/costs/:cid", requireAuth, requirePermission("costs", "edit
       res.status(400).json({ error: "Invalid parameters", details: body.error });
       return;
     }
+    if (rejectStale(req, res, entry.updatedAt, () => serializeCostEntry(entry))) return;
     const d = body.data;
     const updates: Partial<typeof costEntriesTable.$inferInsert> = {};
     // A receipt that landed on the wrong job (or none) can be moved.

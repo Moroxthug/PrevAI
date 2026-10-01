@@ -27,7 +27,7 @@ export default function InvoiceDetailPage() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [, navigate] = useLocation();
-  const { data, isLoading, error } = useQuery({ queryKey: ["invoice", id], queryFn: () => invoicesApi.get(id!), enabled: !!id });
+  const { data, isLoading } = useQuery({ queryKey: ["invoice", id], queryFn: () => invoicesApi.get(id!), enabled: !!id });
   const [editing, setEditing] = useState(false);
   const [payOpen, setPayOpen] = useState(false);
   const [creditOpen, setCreditOpen] = useState(false);
@@ -50,7 +50,7 @@ export default function InvoiceDetailPage() {
   useMobileHeader(useMemo(() => (number ? { title: number } : null), [number]));
 
   if (isLoading) return <div className="space-y-4"><Skeleton className="h-10 w-2/3" /><Skeleton className="h-24 w-full rounded-[var(--radius-mk)]" /><Skeleton className="h-96 w-full rounded-[var(--radius-mk)]" /></div>;
-  if (error || !data) return <div className="card card-empty">{t("invoices.notFound")} <Link href="/dashboard/invoices" className="text-link">{t("invoices.backToList")}</Link></div>;
+  if (!data) return <div className="card card-empty">{t("invoices.notFound")} <Link href="/dashboard/invoices" className="text-link">{t("invoices.backToList")}</Link></div>;
 
   const inv = data.invoice;
   const isDraft = inv.status === "draft";

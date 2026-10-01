@@ -64,7 +64,7 @@ export default function JobDetailPage() {
   const [renaming, setRenaming] = useState(false);
   const tabsTop = useRef<HTMLDivElement>(null);
 
-  const { data, isLoading, error } = useQuery({ queryKey: ["job", id], queryFn: () => jobsApi.get(id!), enabled: !!id });
+  const { data, isLoading } = useQuery({ queryKey: ["job", id], queryFn: () => jobsApi.get(id!), enabled: !!id });
   // Phase 106: the number strip's margin is the analytics' projection (same request the Overview charts use).
   const { data: analytics } = useJobAnalytics(id!);
   // CLI-1: le risposte non lette del cliente fanno il numero sulla scheda Messaggi.
@@ -102,7 +102,7 @@ export default function JobDetailPage() {
   ];
 
   if (isLoading) return <div className="space-y-4"><Skeleton className="h-10 w-2/3" /><Skeleton className="h-24 w-full rounded-[var(--radius-mk)]" /><Skeleton className="h-64 w-full rounded-[var(--radius-mk)]" /></div>;
-  if (error || !data || !job) return <div className="card card-empty">{t("jobs.notFound")} <Link href="/dashboard/jobs" className="text-link">{t("jobs.backToList")}</Link></div>;
+  if (!data || !job) return <div className="card card-empty">{t("jobs.notFound")} <Link href="/dashboard/jobs" className="text-link">{t("jobs.backToList")}</Link></div>;
 
   const { milestones, changeOrders, budgetTotalCents, costs, invoiceTotals } = data;
   const done = milestones.filter((m) => m.status === "completed").length;

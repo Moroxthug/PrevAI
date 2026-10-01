@@ -44,7 +44,7 @@ export default function ContractDetailPage() {
   const queryClient = useQueryClient();
   const locale = it;
 
-  const { data, isLoading, error } = useQuery({ queryKey: ["contract", id], queryFn: () => contractsApi.get(id!), enabled: !!id });
+  const { data, isLoading } = useQuery({ queryKey: ["contract", id], queryFn: () => contractsApi.get(id!), enabled: !!id });
   const contract = data?.contract;
 
   const [editing, setEditing] = useState(false);
@@ -183,7 +183,7 @@ export default function ContractDetailPage() {
       </div>
     );
   }
-  if (error || !contract || !vars) {
+  if (!contract || !vars) {
     return (
       <div className="card card-empty">
         <AlertTriangle style={{ color: "var(--yellow-dark)" }} />

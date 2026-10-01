@@ -54,6 +54,7 @@ import { publicQuoteLink, revokePublicQuoteLink, ownedQuote } from "../quotes/pu
 import { writeAudit } from "../lib/notifications.js";
 import { loadPriceReferences, priceCheckChapters, repriceChapters } from "../quotes/priceCheck.js";
 import { z } from "zod";
+import { rejectStale } from "../lib/versioning.js";
 import { randomUUID } from "crypto";
 import { recordAiUsage } from "../lib/usage.js";
 import { requireAiBudget } from "../lib/aiBudget.js";
@@ -1398,6 +1399,8 @@ router.put("/quotes/:id", requireAuth, requirePermission("quotes", "edit"), asyn
       res.status(403).json({ error: "Forbidden" });
       return;
     }
+
+    if (rejectStale(req, res, existing.updatedAt, () => serializeQuote(existing))) return;
 
     const updates: Partial<typeof existing> = {};
     const body = parsed.data;

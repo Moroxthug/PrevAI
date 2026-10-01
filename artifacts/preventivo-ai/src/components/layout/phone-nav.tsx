@@ -10,6 +10,9 @@ import { useLanguage } from "@/i18n/LanguageContext";
 import { useToast } from "@/hooks/use-toast";
 import { jobsApi, type JobSummaryDto } from "@/lib/jobs-api";
 import { teamMembersApi } from "@/lib/team-members-api";
+import { clearOfflineCaches } from "@/lib/pwa";
+import { queuedRows } from "@/lib/offline/outbox";
+import { pointCacheAtOrg } from "@/lib/offline/query-cache";
 import { useHome } from "@/lib/home-api";
 import { cn } from "@/lib/utils";
 import { FeedbackSheet } from "@/components/feedback-sheet";
@@ -162,10 +165,17 @@ function MoreSheet({ open, onOpenChange, tabs, navItems, name, email, avatar, ca
   const [location] = useLocation();
   const unread = useUnreadNotifications();
   const queryClient = useQueryClient();
+  const { toast } = useToast();
   const { data: orgs } = useQuery({ queryKey: ["team-orgs"], queryFn: teamMembersApi.orgs, staleTime: 60_000 });
   const switchOrg = useMutation({
-    mutationFn: (orgId: string) => teamMembersApi.switchOrg(orgId),
-    onSuccess: () => { queryClient.clear(); window.location.href = "/dashboard"; },
+    mutationFn: async (orgId: string) => {
+      // SYNC-1: le modifiche in coda sono di questa impresa: partono prima del cambio, mai nell'altra.
+      if ((await queuedRows()).some((r) => r.status !== "failed")) throw new Error("Hai modifiche ancora da inviare: aspetta che partano, poi cambia impresa.");
+      return teamMembersApi.switchOrg(orgId);
+    },
+    onError: (e: Error) => toast({ title: e.message, variant: "destructive" }),
+    // SYNC-1: al prossimo avvio si apre la copia salvata della nuova impresa; quella della vecchia cade.
+    onSuccess: async (r) => { pointCacheAtOrg(r.orgId); await clearOfflineCaches(); queryClient.clear(); window.location.href = "/dashboard"; },
   });
   const close = () => onOpenChange(false);
   const tabRoots = new Set(tabs.map((tab) => tab.href));

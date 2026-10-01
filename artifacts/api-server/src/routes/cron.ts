@@ -14,6 +14,8 @@ import { rollUpUsageForDate } from "../lib/usage.js";
 import { runIncentivesFreshnessCheck } from "../incentives/maintenance.js";
 import { runPriceIntelligenceTrendCheck } from "../priceIntelligence/maintenance.js";
 import { runScheduleReminderMaintenance } from "../schedule/maintenance.js";
+import { pruneIdempotencyKeys } from "../lib/idempotency.js";
+import { pruneChangeLog } from "./changes.js";
 import { syncInboundForAllCompanies, pruneExternalEvents } from "../calendar/inbound.js";
 import { db, cronTicksTable } from "@workspace/db";
 import { eq, lt } from "drizzle-orm";
@@ -84,7 +86,9 @@ router.get("/cron/tick", async (req, res) => {
     const calendarPruned = await pruneExternalEvents();
     // GDPR-1: esportazioni lasciate a metà (pagina chiusa) e ZIP scaduti (inerte senza la 0017). Per ultima: usa il tempo che resta.
     const accountExports = await runAccountExportMaintenance(new Date(), 25_000);
-    const result = { automations, contracts, invoices, leads, reviewRequests, incentives, priceTrends, quoteFollowups, sdi, fiscale, accountDeletions, usage, assistantCosts, aiBudget, rateLimitRowsSwept, scheduleReminders, calendarInbound, calendarPruned, accountExports };
+    // SYNC-1: il feed delle modifiche tiene 2 giorni, le chiavi di idempotenza 7.
+    const syncPruned = { changes: await pruneChangeLog(), idempotencyKeys: await pruneIdempotencyKeys() };
+    const result = { syncPruned, automations, contracts, invoices, leads, reviewRequests, incentives, priceTrends, quoteFollowups, sdi, fiscale, accountDeletions, usage, assistantCosts, aiBudget, rateLimitRowsSwept, scheduleReminders, calendarInbound, calendarPruned, accountExports };
     const tookMs = Date.now() - startedAt;
     if (tick) await db.update(cronTicksTable).set({ finishedAt: new Date(), ok: true, result, tookMs }).where(eq(cronTicksTable.id, tick.id));
     await db.delete(cronTicksTable).where(lt(cronTicksTable.startedAt, new Date(Date.now() - 90 * 24 * 3_600_000)));

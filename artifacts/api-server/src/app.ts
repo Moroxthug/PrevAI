@@ -13,6 +13,7 @@ import router from "./routes";
 import "./automations";
 import { logger } from "./lib/logger";
 import { ipRateLimiter } from "./lib/rateLimit";
+import { idempotency } from "./lib/idempotency";
 import { captureException, flush, installProcessHandlers, requestContext } from "./lib/errorTracking";
 import { redactTokens } from "@workspace/error-reporting";
 
@@ -659,6 +660,8 @@ app.use(
 app.use(express.json({ limit: "25mb" }));
 app.use(express.urlencoded({ extended: true }));
 
+// SYNC-1: una scrittura con Idempotency-Key viene eseguita una volta sola (lib/idempotency.ts).
+app.use("/api", idempotency());
 app.use("/api", router);
 
 app.use(async (err: unknown, req: Request, res: Response, _next: NextFunction) => {

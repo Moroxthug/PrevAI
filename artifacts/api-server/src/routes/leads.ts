@@ -4,6 +4,7 @@ import { db, leadsTable, leadEventsTable, LEAD_STATUSES, LEAD_CHANNELS } from "@
 import { and, desc, eq } from "drizzle-orm";
 import { requireAuth, getUserId, getActorUserId } from "../middlewares/authMiddleware.js";
 import { requirePermission } from "../middlewares/requirePermission.js";
+import { rejectStale } from "../lib/versioning.js";
 import { FOLLOWUP_CADENCE_DAYS } from "../lib/leadMessaging.js";
 import { sendLeadNow, LeadSendError } from "../leads/send-now.js";
 
@@ -110,6 +111,8 @@ router.patch("/leads/:id", requireAuth, requirePermission("leads", "edit"), asyn
       res.status(404).json({ error: "Not found" });
       return;
     }
+    const stale = () => ({ id: existing.id, status: existing.status, notes: existing.notes, preferredChannel: existing.preferredChannel, preferredLanguage: existing.preferredLanguage, updatedAt: existing.updatedAt.toISOString() });
+    if (rejectStale(req, res, existing.updatedAt, stale)) return;
     const d = body.data;
     const stopping = d.status && ["won", "lost", "unsubscribed"].includes(d.status);
     const [lead] = await db

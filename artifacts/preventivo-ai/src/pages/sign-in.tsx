@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useLocation, useSearch } from "wouter";
 import { Logo } from "@/components/logo";
 import { authClient } from "@/lib/auth-client";
@@ -15,6 +15,8 @@ function safeLocalPath(raw: string | null, fallback: string): string {
 export default function SignInPage() {
   const { t } = useLanguage();
   useDocumentTitle(`${t("signIn.title")} · PrevAI`);
+  // SYNC-1: chi entra adesso parte pulito — i dati salvati su questo dispositivo dall'ultima persona (la cui sessione è finita) vengono cancellati, mai mostrati.
+  useEffect(() => { void import("@/lib/offline/query-cache").then((m) => m.wipeQueryCache()).catch(() => undefined); }, []);
   const [, navigate] = useLocation();
   const search = useSearch();
   const nextPath = safeLocalPath(new URLSearchParams(search).get("next"), "/dashboard");

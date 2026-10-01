@@ -29,6 +29,7 @@ export default function SignUpPage() {
   const [error, setError] = useState<string | null>(null);
   const [verificationSent, setVerificationSent] = useState(false);
 
+  useEffect(() => { void import("@/lib/offline/query-cache").then((m) => m.wipeQueryCache()).catch(() => undefined); }, []);
   useEffect(() => {
     const base = import.meta.env.BASE_URL.replace(/\/$/, "");
     fetch(`${base}/api/settings/registration`, { credentials: "include" })

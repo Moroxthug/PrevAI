@@ -48,7 +48,15 @@ if (STATIC_SEO_RE.test(pathname) && hasPrerendered) {
   // pages above never pay for it (it is ~2/3 of the entry's JavaScript).
   const hydrate = SSR_PAGE_RE.test(pathname) && hasPrerendered;
   // react-helmet-async comes with the App (PERF-1): the static pages above never need it.
-  const start = () => void Promise.all([import("./App.tsx"), import("react-helmet-async")]).then(([{ default: App }, { HelmetProvider }]) => {
+  // SYNC-1: l'app autenticata si apre su ciò che mostrava l'ultima volta: le risposte salvate tornano nel QueryClient prima del primo render (con un tetto: un disco lento mostra lo scheletro invece di trattenere il frame).
+  const RESTORE_CAP_MS = 400;
+  const restored = /^\/dashboard(\/|$)/.test(pathname)
+    ? Promise.race([
+        Promise.all([import("./lib/query-client.ts"), import("./lib/offline/query-cache.ts")]).then(([{ queryClient }, { restoreQueryCache }]) => restoreQueryCache(queryClient)),
+        new Promise<void>((resolve) => setTimeout(resolve, RESTORE_CAP_MS)),
+      ]).catch(() => undefined)
+    : undefined;
+  const start = () => void Promise.all([import("./App.tsx"), import("react-helmet-async"), restored]).then(([{ default: App }, { HelmetProvider }]) => {
     const tree = (
       <StrictMode>
         <HelmetProvider>

@@ -80,7 +80,8 @@ export async function disablePush(): Promise<void> {
  */
 export async function leaveThisDevice(): Promise<void> {
   await Promise.race([
-    Promise.allSettled([disablePush(), clearOfflineCaches()]),
+    // SYNC-1: né i dati salvati sul dispositivo né ciò che era in coda restano per la persona dopo.
+    Promise.allSettled([disablePush(), clearOfflineCaches(), import("./offline/query-cache").then((m) => m.wipeQueryCache()), import("./offline/outbox").then((m) => m.clearOutbox())]),
     new Promise((resolve) => setTimeout(resolve, 3000)),
   ]);
 }

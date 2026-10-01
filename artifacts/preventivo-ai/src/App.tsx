@@ -1,6 +1,9 @@
 import { Switch, Route, Redirect, Router as WouterRouter, useLocation } from "wouter";
 import { useEffect, lazy, Suspense } from "react";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { QueryClientProvider } from "@tanstack/react-query";
+import { queryClient } from "@/lib/query-client";
+import { setOutboxQueryClient, startOutbox } from "@/lib/offline/outbox";
+import { installSyncFetch } from "@/lib/sync/install";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/not-found";
@@ -86,7 +89,11 @@ import { useGetBusinessProfile, getGetBusinessProfileQueryKey } from "@workspace
 import { useAuth } from "@/hooks/use-auth";
 import { isOnboardingSkipped } from "@/lib/onboarding-state";
 
-const queryClient = new QueryClient();
+// SYNC-1: il QueryClient (regole di freschezza) sta in lib/query-client.ts, così main.tsx lo riempie dal dispositivo prima del primo render.
+// La coda di invio aggiorna le schermate dopo un invio; ogni scrittura passa dal livello di sync (chiavi di idempotenza, versioni, coda, fusione).
+setOutboxQueryClient(queryClient);
+startOutbox();
+installSyncFetch();
 
 function OnboardingGuard({ children }: { children: React.ReactNode }) {
   const { userId, isLoaded } = useAuth();

@@ -219,6 +219,8 @@ export async function cleanupUsers(userIds: string[]): Promise<void> {
       }
     }
   }
+  // SYNC-1: il feed delle modifiche usa org_id (e le cancellazioni qui sopra ci hanno appena scritto).
+  await db.execute(sql`delete from change_log where org_id in ${ids}`).catch(() => undefined);
   // organization_members keys the org on owner_id.
   await db.execute(sql`delete from organization_members where owner_id in ${ids} or user_id in ${ids}`);
   for (const id of userIds) await db.delete(authUsersTable).where(eq(authUsersTable.id, id));

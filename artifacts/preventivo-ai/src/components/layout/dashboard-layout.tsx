@@ -26,6 +26,17 @@ import { FeedbackSheet } from "@/components/feedback-sheet";
 import { trackAppOpenOncePerDay } from "@/lib/app-beta";
 import { AccountDeletionBanner } from "@/pages/dashboard/settings/delete-account";
 import { PwaBar } from "@/components/pwa/pwa-bar";
+import { clearOfflineCaches } from "@/lib/pwa";
+import { useToast } from "@/hooks/use-toast";
+import { useCan } from "@/hooks/use-role";
+import { queuedRows } from "@/lib/offline/outbox";
+import { watchServerData } from "@/lib/sync/versions";
+import { confirmOwner, pointCacheAtOrg, useCacheOwnerCheck, startPersisting } from "@/lib/offline/query-cache";
+import { queryClient as appQueryClient } from "@/lib/query-client";
+
+// SYNC-1: nell'app autenticata le risposte vengono salvate sul dispositivo man mano che arrivano
+// (lib/offline/query-cache.ts) — le pagine pubbliche non caricano mai questo codice.
+startPersisting(appQueryClient);
 import { AssistantLauncher } from "@/components/assistant/assistant-launcher";
 
 /** Section groupings for the sidebar rail — purely presentational, doesn't affect routing or access. */
@@ -96,10 +107,17 @@ function isActive(navHref: string, location: string, exact: boolean) {
 function OrgSwitcherItems() {
   const { t } = useLanguage();
   const queryClient = useQueryClient();
+  const { toast } = useToast();
   const { data } = useQuery({ queryKey: ["team-orgs"], queryFn: teamMembersApi.orgs, staleTime: 60_000 });
   const switchOrg = useMutation({
-    mutationFn: (orgId: string) => teamMembersApi.switchOrg(orgId),
-    onSuccess: () => { queryClient.clear(); window.location.href = "/dashboard"; },
+    mutationFn: async (orgId: string) => {
+      // SYNC-1: le modifiche in coda sono di questa impresa: partono prima del cambio, mai nell'altra.
+      if ((await queuedRows()).some((r) => r.status !== "failed")) throw new Error("Hai modifiche ancora da inviare: aspetta che partano, poi cambia impresa.");
+      return teamMembersApi.switchOrg(orgId);
+    },
+    onError: (e: Error) => toast({ title: e.message, variant: "destructive" }),
+    // SYNC-1: al prossimo avvio si apre la copia salvata della nuova impresa; quella della vecchia cade.
+    onSuccess: async (r) => { pointCacheAtOrg(r.orgId); await clearOfflineCaches(); queryClient.clear(); window.location.href = "/dashboard"; },
   });
   const orgs = data?.items ?? [];
   if (orgs.length < 2) return null;
@@ -220,6 +238,11 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
   const { t } = useLanguage();
   const { isLoaded, isSignedIn, isError, user } = useAuth();
   const [location] = useLocation();
+  const can = useCan();
+  const queryClient = useQueryClient();
+  // SYNC-1: i dati salvati su questo dispositivo da qualcun altro cadono prima che la cornice ne disegni anche solo uno.
+  const cacheOwnerOk = useCacheOwnerCheck(queryClient, isLoaded && isSignedIn ? user?.id ?? null : null);
+  const { data: orgsData } = useQuery({ queryKey: ["team-orgs"], queryFn: teamMembersApi.orgs, staleTime: 60_000, enabled: isSignedIn === true });
   // APP-1 (da QuoteAI Phase 101): at 980 px and below the sidebar is gone (CSS)
   // and the phone tabs + the Altro sheet take over — the hamburger drawer they
   // replace hid twenty links two taps away.
@@ -245,6 +268,27 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
   const showAddonOffer = Boolean(navProfile) && !hasSdi && !hasFisco && statoOffertaLocale() !== "bozza";
   // Hooks must run on every render — keep this above the early returns below.
   const allNavItems = useNavItems();
+
+  // SYNC-1: quando persona e impresa attiva sono note, la copia si salva a loro nome
+  // (lib/offline/query-cache.ts) e, a telefono inattivo, si scarica ciò che serve senza rete (lib/offline/warm.ts).
+  const activeOrgId = orgsData?.activeOrgId ?? null;
+  const ownerUser = isSignedIn && cacheOwnerOk ? user : null;
+  useEffect(() => {
+    if (!ownerUser || !activeOrgId) return;
+    confirmOwner(queryClient, { userId: ownerUser.id, orgId: activeOrgId }, { id: ownerUser.id, name: ownerUser.name, email: ownerUser.email, image: ownerUser.image ?? null });
+    // Un chunk a parte: i client API che chiama non servono a disegnare la prima schermata.
+    void import("@/lib/offline/warm").then((m) => m.warmOfflineSet(queryClient, can)).catch(() => undefined);
+  }, [ownerUser, activeOrgId, queryClient, can]);
+  // Le risposte del server si ricordano dall'inizio (la base di una modifica deve essere quella del server, mai quella
+  // della schermata ottimistica) e ciò che cambia chiunque altro nell'impresa compare qui entro un secondo o due.
+  useEffect(() => watchServerData(queryClient), [queryClient]);
+  useEffect(() => {
+    if (!ownerUser || !activeOrgId) return;
+    let stop: (() => void) | null = null;
+    let cancelled = false;
+    void import("@/lib/sync/live").then((m) => { if (!cancelled) stop = m.startLiveUpdates(queryClient); }).catch(() => undefined);
+    return () => { cancelled = true; stop?.(); };
+  }, [ownerUser, activeOrgId, queryClient]);
 
   // Every dashboard route used to keep the marketing homepage <title> (Phase 66):
   // name the tab after the section the user is in.
@@ -276,7 +320,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
     if (isSignedIn) trackAppOpenOncePerDay();
   }, [isSignedIn]);
 
-  if (!isLoaded) {
+  if (!isLoaded || !cacheOwnerOk) {
     return (
       <div className="min-h-[100dvh] flex items-center justify-center bg-background">
         <div className="w-7 h-7 rounded-full border-[3px] border-navy-400 border-t-transparent animate-spin" />

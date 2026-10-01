@@ -4,6 +4,7 @@ import { db, scheduleBlocksTable, projectsTable, milestonesTable, collaboratorsT
 import { and, asc, eq, gt, inArray, lt } from "drizzle-orm";
 import { requireAuth, getUserId } from "../middlewares/authMiddleware.js";
 import { requirePermission } from "../middlewares/requirePermission.js";
+import { rejectStale } from "../lib/versioning.js";
 import { writeAudit } from "../lib/notifications.js";
 import { syncBlockToCalendar, removeBlockFromCalendar } from "../calendar/sync.js";
 import { findConflicts } from "../schedule/service.js";
@@ -250,6 +251,19 @@ router.put("/schedule/blocks/:id", requireAuth, requirePermission("jobs", "edit"
       res.status(400).json({ error: "Invalid parameters", details: body.error });
       return;
     }
+    const stale = () => ({
+      id: existing.id,
+      title: existing.title,
+      notes: existing.notes,
+      allDay: existing.allDay,
+      startsAt: existing.startsAt.toISOString(),
+      endsAt: existing.endsAt.toISOString(),
+      projectId: existing.projectId,
+      milestoneId: existing.milestoneId,
+      collaboratorId: existing.collaboratorId,
+      updatedAt: existing.updatedAt.toISOString(),
+    });
+    if (rejectStale(req, res, existing.updatedAt, stale)) return;
     const merged = {
       projectId: body.data.projectId === undefined ? existing.projectId : body.data.projectId,
       milestoneId: body.data.milestoneId === undefined ? existing.milestoneId : body.data.milestoneId,
