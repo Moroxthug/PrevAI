@@ -160,6 +160,7 @@ describe("redactTokens", () => {
     [`/api/t/${tok}/entries/${uuid}/clock-out`, `/api/t/[token]/entries/${uuid}/clock-out`],
     [`/api/commercialista/${tok}/pacchetto.pdf`, "/api/commercialista/[token]/pacchetto.pdf"],
     [`/api/team/invite/${tok}/accept`, "/api/team/invite/[token]/accept"],
+    ["/api/team/code/K7QM-4XNP", "/api/team/code/[token]"],
     [`/api/public/quotes/${uuid}/accept`, "/api/public/quotes/[token]/accept"],
     [`https://prevai.it/sign/${tok}`, "https://prevai.it/sign/[token]"],
     [`https://prevai.it/p/${uuid}`, "https://prevai.it/p/[token]"],
@@ -174,7 +175,7 @@ describe("redactTokens", () => {
     expect(redactTokens(input)).toBe(expected);
   });
   test("leaves ordinary paths alone", () => {
-    for (const p of ["/api/public/quotes/unsubscribe", `/api/quotes/${uuid}`, "/api/public/quotes", `/dashboard/jobs/${uuid}`, "/api/i/short"]) {
+    for (const p of ["/api/public/quotes/unsubscribe", `/api/quotes/${uuid}`, "/api/public/quotes", `/dashboard/jobs/${uuid}`, "/api/i/short", "/api/team/code/redeem"]) {
       expect(redactTokens(p)).toBe(p);
     }
   });

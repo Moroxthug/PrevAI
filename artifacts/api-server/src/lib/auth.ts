@@ -1,7 +1,7 @@
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
-import { bearer, twoFactor } from "better-auth/plugins";
-import { createAuthMiddleware } from "better-auth/api";
+import { bearer, twoFactor, emailOTP } from "better-auth/plugins";
+import { createAuthMiddleware, APIError } from "better-auth/api";
 import { db, authUsersTable, authSessionsTable, authAccountsTable, authVerificationsTable, authTwoFactorTable, businessProfilesTable, organizationMembersTable } from "@workspace/db";
 import { and, asc, eq } from "drizzle-orm";
 import { Resend } from "resend";
@@ -64,11 +64,61 @@ export function getTrustedOrigins(): string[] {
   return origins;
 }
 
+/**
+ * The phone app (artifacts/pocket) calls from https://localhost and signs in with a bearer
+ * token, no cookies: CORS answers these origins without credentials (app.ts, nativeApp.ts);
+ * better-auth still checks a sign-in's Origin against its trusted list. capacitor://localhost
+ * is for an iOS shell later.
+ */
+export const NATIVE_APP_ORIGINS = ["https://localhost", "capacitor://localhost"];
+
+/**
+ * The app's password-reset deep link. better-auth sends the emailed link through
+ * /reset-password/:token?callbackURL=prevai://forgot-password and only redirects when that URL
+ * matches a trusted origin; a custom-scheme pattern matches scheme and host exactly, so only
+ * this one deep link is trusted.
+ */
+const NATIVE_APP_SCHEMES = ["prevai://forgot-password"];
+
+const fromNativeApp = (request: Request | undefined): boolean => {
+  const origin = request?.headers.get("origin");
+  return !!origin && NATIVE_APP_ORIGINS.includes(origin);
+};
+
+/**
+ * POCKET-1: l'app del telefono conferma un indirizzo nuovo con un codice di 6 cifre scritto
+ * nell'app, non con un link: il link si aprirebbe nel browser, farebbe entrare la persona
+ * lì e lascerebbe l'app senza accesso. Sono serviti solo i due endpoint che confermano un
+ * indirizzo, e solo per un account il cui indirizzo non è ancora confermato: per uno già
+ * confermato un codice sarebbe un modo di entrare con la sola casella di posta (senza
+ * password né secondo passaggio), quindi non si manda e non si accetta niente.
+ */
+const EMAIL_OTP_PATHS = ["/email-otp/send-verification-otp", "/email-otp/verify-email"];
+const EMAIL_OTP_DISABLED = [
+  "/email-otp/check-verification-otp",
+  "/sign-in/email-otp",
+  "/email-otp/request-password-reset",
+  "/forget-password/email-otp",
+  "/email-otp/reset-password",
+  "/email-otp/request-email-change",
+  "/email-otp/change-email",
+];
+
+async function unverifiedUser(email: unknown): Promise<boolean> {
+  if (typeof email !== "string" || !email) return false;
+  const [row] = await db
+    .select({ emailVerified: authUsersTable.emailVerified })
+    .from(authUsersTable)
+    .where(eq(authUsersTable.email, email.trim().toLowerCase()))
+    .limit(1);
+  return !!row && !row.emailVerified;
+}
+
 export const auth = betterAuth({
   secret,
   baseURL: getBaseURL(),
   basePath: "/api/auth",
-  trustedOrigins: getTrustedOrigins(),
+  trustedOrigins: [...getTrustedOrigins(), ...NATIVE_APP_ORIGINS, ...NATIVE_APP_SCHEMES],
   database: drizzleAdapter(db, {
     provider: "pg",
     schema: {
@@ -79,8 +129,48 @@ export const auth = betterAuth({
       twoFactor: authTwoFactorTable,
     },
   }),
-  plugins: [bearer(), twoFactor({ issuer: "PrevAI" })],
+  plugins: [
+    bearer(),
+    twoFactor({ issuer: "PrevAI" }),
+    emailOTP({
+      otpLength: 6,
+      expiresIn: 15 * 60,
+      allowedAttempts: 5,
+      storeOTP: "hashed",
+      disableSignUp: true,
+      async sendVerificationOTP({ email, otp, type }) {
+        if (type !== "email-verification") return;
+        if (!resend) {
+          logger.warn("RESEND_API_KEY not set — skipping verification code email");
+          return;
+        }
+        try {
+          const [user] = await db.select({ name: authUsersTable.name }).from(authUsersTable).where(eq(authUsersTable.email, email)).limit(1);
+          await resend.emails.send({
+            from: "PrevAI <no-reply@prevai.it>",
+            to: [email],
+            subject: `${otp} è il tuo codice PrevAI`,
+            html: buildVerificationCodeEmail(user?.name ?? "", otp),
+          });
+        } catch (err) {
+          logger.error({ err }, "Failed to send verification code email");
+        }
+      },
+    }),
+  ],
+  disabledPaths: EMAIL_OTP_DISABLED,
   hooks: {
+    // POCKET-1: i codici confermano solo un indirizzo non ancora confermato (vedi EMAIL_OTP_PATHS).
+    before: createAuthMiddleware(async (ctx) => {
+      if (!ctx.path || !EMAIL_OTP_PATHS.includes(ctx.path)) return undefined;
+      const body = (ctx.body ?? {}) as { email?: unknown; type?: unknown };
+      if (ctx.path === "/email-otp/send-verification-otp") {
+        if (body.type !== "email-verification" || !(await unverifiedUser(body.email))) return ctx.json({ success: true });
+        return undefined;
+      }
+      if (!(await unverifiedUser(body.email))) throw new APIError("BAD_REQUEST", { code: "INVALID_OTP", message: "Invalid OTP" });
+      return undefined;
+    }),
     // IMPORTANT: better-auth re-throws any non-APIError raised in an `after`
     // hook, which replaces the endpoint's real response with a 500 — so a bug
     // or transient DB error in this best-effort audit logging would turn a
@@ -148,8 +238,10 @@ export const auth = betterAuth({
     sendOnSignUp: true,
     sendOnSignIn: true,
     autoSignInAfterVerification: true,
-    async sendVerificationEmail({ user, url }) {
+    async sendVerificationEmail({ user, url }, request) {
       if (!resend) return;
+      // POCKET-1: l'app del telefono chiede un codice al posto del link (si aprirebbe nel browser).
+      if (fromNativeApp(request)) return;
       try {
         await resend.emails.send({
           from: "PrevAI <no-reply@prevai.it>",
@@ -193,6 +285,34 @@ function buildResetPasswordEmail(name: string, url: string): string {
     </td></tr>
   </table>
   <p style="margin:0;font-size:13px;color:#9ca3af">Non hai richiesto questo? Ignora questa email. La tua password rimane invariata.</p>
+</td></tr>
+<tr><td style="background:#f9fafb;padding:20px 40px;border-top:1px solid #f3f4f6;text-align:center">
+  <p style="margin:0;font-size:12px;color:#9ca3af">&copy; ${new Date().getFullYear()} Prevai · Preventivi professionali con l'AI</p>
+</td></tr>
+</table>
+</td></tr>
+</table>
+</body>
+</html>`;
+}
+
+/** POCKET-1: l'app conferma l'indirizzo con un codice scritto nell'app (un link si aprirebbe nel browser). */
+function buildVerificationCodeEmail(name: string, code: string): string {
+  return `<!DOCTYPE html>
+<html lang="it">
+<head><meta charset="UTF-8"/><title>Il tuo codice – PrevAI</title></head>
+<body style="margin:0;padding:0;background:#f5f3ff;font-family:system-ui,sans-serif">
+<table width="100%" cellpadding="0" cellspacing="0" style="background:#f5f3ff;padding:32px 16px">
+<tr><td align="center">
+<table width="560" cellpadding="0" cellspacing="0" style="border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(124,58,237,0.10)">
+<tr><td style="background:linear-gradient(135deg,#7c3aed,#06b6d4);padding:28px 40px;text-align:center">
+  <img src="${LOGO_URL}" alt="PrevAI" height="36" />
+</td></tr>
+<tr><td style="background:#fff;padding:32px 40px">
+  <h1 style="margin:0 0 16px;font-size:22px;font-weight:700;color:#1a1a2e">Il tuo codice di conferma</h1>
+  <p style="margin:0;font-size:14px;color:#374151;line-height:1.7">Ciao ${escapeHtml(name)},<br/>scrivi questo codice nell'app PrevAI per confermare il tuo indirizzo:</p>
+  <p style="margin:22px 0;font-size:32px;font-weight:800;letter-spacing:8px;color:#1a1a2e;font-variant-numeric:tabular-nums">${escapeHtml(code)}</p>
+  <p style="margin:0;font-size:13px;color:#9ca3af">Il codice vale 15 minuti. Non hai creato un account su PrevAI? Ignora questa email.</p>
 </td></tr>
 <tr><td style="background:#f9fafb;padding:20px 40px;border-top:1px solid #f3f4f6;text-align:center">
   <p style="margin:0;font-size:12px;color:#9ca3af">&copy; ${new Date().getFullYear()} Prevai · Preventivi professionali con l'AI</p>

@@ -1,20 +1,19 @@
-// Phase 153 placeholder: proves the app boots, speaks EN/FR and reaches the API through the
-// shared generated hooks with the stored token. Replaced by Welcome / Home in phase 1.
-import { Text, View } from "react-native";
-import { Link } from "expo-router";
-import { useTranslation } from "react-i18next";
-import { getGetBusinessProfileQueryKey, useGetBusinessProfile } from "@workspace/api-client-react";
-import { tokens } from "@/theme/tokens";
-
-const c = tokens.color.light;
+// "/" decides where a person starts (lib/useGate.ts); it draws nothing itself.
+import { useEffect, useState } from "react";
+import { Redirect } from "expo-router";
+import { View } from "react-native";
+import { peekPendingJoinCode } from "@/lib/joinCodeDevice";
+import { useGate } from "@/lib/useGate";
+import { useTheme } from "@/ui/theme";
 
 export default function Index() {
-  const { t } = useTranslation();
-  const { data } = useGetBusinessProfile({ query: { queryKey: getGetBusinessProfileQueryKey(), retry: false } });
-  return (
-    <View style={{ flex: 1, backgroundColor: c.ground, alignItems: "center", justifyContent: "center", gap: tokens.space.gutter }}>
-      <Text style={{ color: c.ink, fontSize: tokens.type.roles.body.size }}>{data ? t("dev.session", { company: data.companyName }) : t("dev.noSession")}</Text>
-      <Link href="/sandbox" style={{ color: c["acc-t"], fontSize: tokens.type.roles.body.size }}>{t("sandbox.title")}</Link>
-    </View>
-  );
+  const gate = useGate();
+  // An access code typed before signing up or in comes back to the join screen once they are in.
+  const signedIn = gate !== null && gate !== "/welcome" && gate !== "/sign-in";
+  const [pending, setPending] = useState<string | null | undefined>(undefined);
+  useEffect(() => { if (signedIn) void peekPendingJoinCode().then(setPending); }, [signedIn]);
+  const { colors } = useTheme();
+  if (!gate || (signedIn && pending === undefined)) return <View style={{ flex: 1, backgroundColor: colors.ground }} />;
+  if (signedIn && pending) return <Redirect href={{ pathname: "/join-code", params: { code: pending } }} />;
+  return <Redirect href={gate} />;
 }

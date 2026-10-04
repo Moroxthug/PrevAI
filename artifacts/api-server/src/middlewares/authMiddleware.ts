@@ -24,6 +24,12 @@ declare global {
 
 /** Cookie holding the acting org id across requests, so switching orgs doesn't require re-login. */
 export const ACTIVE_ORG_COOKIE = "qai_active_org";
+/**
+ * The phone app signs in with a bearer token and sends no cookies, so it carries the acting org
+ * in this header instead. Every answer that sets or clears the cookie also sets this header
+ * (empty = cleared) for the app to keep. Either way the membership is checked in resolveActingOrg.
+ */
+export const ACTIVE_ORG_HEADER = "x-active-org";
 
 function readCookie(req: { headers: { cookie?: string } }, name: string): string | null {
   const header = req.headers.cookie;
@@ -95,7 +101,7 @@ export async function requireAuth<P = Record<string, string>>(req: Request<P>, r
       res.status(401).json({ error: "Unauthorized" });
       return;
     }
-    const cookieOrgId = readCookie(req, ACTIVE_ORG_COOKIE);
+    const cookieOrgId = readCookie(req, ACTIVE_ORG_COOKIE) ?? (typeof req.headers[ACTIVE_ORG_HEADER] === "string" ? (req.headers[ACTIVE_ORG_HEADER] as string) || null : null);
     const { orgId, role, twoFactorRequired } = await resolveActingOrg(session.user.id, cookieOrgId);
     res.locals.userId = orgId;
     res.locals.actorUserId = session.user.id;

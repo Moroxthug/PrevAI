@@ -231,9 +231,12 @@ export function debugIdImages(frames: Frame[]): DebugImage[] {
 const PUBLIC_TOKEN_PATH =
   /(\/(?:api\/)?(?:sign|i|t|p|portal|commercialista|team-invite|team\/invite|public\/quotes|calendar\/feed)\/)(?!unsubscribe\b)[A-Za-z0-9_.-]{16,}/g; // "." — SEC-4 quote links are <id>.<signature>
 
+// POCKET-1: the access code a crew member types (8 characters, K7QM-4XNP) rides in /api/team/code/:code.
+const ACCESS_CODE_PATH = /(\/(?:api\/)?team\/code\/)(?!redeem\b)[A-Za-z0-9-]{4,}/g;
+
 /** Replaces the secret segment of every public-link path in `text`. */
 export function redactTokens(text: string): string {
-  return text.replace(PUBLIC_TOKEN_PATH, "$1[token]");
+  return text.replace(PUBLIC_TOKEN_PATH, "$1[token]").replace(ACCESS_CODE_PATH, "$1[token]");
 }
 
 /**

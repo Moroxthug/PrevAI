@@ -198,6 +198,11 @@ function resolveParams(route: MatrixRoute, f: Fixtures): { path: string; unseede
     // APP-7: il tipo di home (titolare, ufficio, …) è una costante uguale per
     // tutte le imprese; ognuna scrive solo la propria.
     if (name === "kind") return null;
+    // POCKET-1: il codice d'accesso è un segreto al portatore, come un token (l'anteprima non
+    // mostra niente senza il codice giusto); gli inviti aperti sono per indirizzo email, non per
+    // impresa: l'isolamento è provato in pocket1.e2e.test.ts (un altro account riceve 404).
+    if (name === "code") return null;
+    if (route.path.startsWith("/api/team/pending-invites/")) return null;
     // A-4: il verbo dell'azione sul movimento bancario non è un identificatore:
     // se ne prova uno innocuo, e l'id di A davanti è quello che conta.
     // A-6: il tipo di file della pratica (bozza/ricevuta) non è un identificatore.

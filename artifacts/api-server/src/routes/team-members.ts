@@ -1,4 +1,4 @@
-import { Router } from "express";
+import { Router, type Response } from "express";
 import { z } from "zod";
 import { randomBytes, randomInt } from "node:crypto";
 import {
@@ -18,7 +18,7 @@ import {
 } from "@workspace/db";
 import { POSTO_EXTRA } from "@workspace/config";
 import { and, asc, eq, gte, inArray, isNotNull, ne, sql } from "drizzle-orm";
-import { requireAuth, getUserId, getUserEmail, getActorUserId, ACTIVE_ORG_COOKIE, resolveActingOrg } from "../middlewares/authMiddleware.js";
+import { requireAuth, getUserId, getUserEmail, getActorUserId, ACTIVE_ORG_COOKIE, ACTIVE_ORG_HEADER, resolveActingOrg } from "../middlewares/authMiddleware.js";
 import { requirePermission } from "../middlewares/requirePermission.js";
 import { writeAudit } from "../lib/notifications.js";
 import { getBaseUrl } from "../lib/baseUrl.js";
@@ -40,6 +40,13 @@ const INVITABLE_ROLES = TEAM_MEMBER_ROLES.filter((r) => r !== "owner") as Exclud
 
 function cookieOpts(): { httpOnly: true; sameSite: "lax"; secure: boolean; path: "/"; maxAge: number } {
   return { httpOnly: true, sameSite: "lax", secure: process.env.NODE_ENV === "production", path: "/", maxAge: ORG_COOKIE_MAX_AGE_MS };
+}
+
+/** L'impresa attiva per il browser (cookie) e per l'app del telefono (un header che si tiene); null la azzera. */
+function setActiveOrg(res: Response, orgId: string | null): void {
+  if (orgId) res.cookie(ACTIVE_ORG_COOKIE, orgId, cookieOpts());
+  else res.clearCookie(ACTIVE_ORG_COOKIE, cookieOpts());
+  res.setHeader(ACTIVE_ORG_HEADER, orgId ?? "");
 }
 
 function serializeMember(m: typeof organizationMembersTable.$inferSelect) {
@@ -338,7 +345,7 @@ router.post("/team/invite/:token/accept", requireAuth, async (req, res) => {
       .where(eq(organizationMembersTable.id, member.id))
       .returning();
     await writeAudit({ userId: member.ownerId, actorType: "user", actorId, entityType: "team_member", entityId: member.id, action: "invite_accepted" });
-    res.cookie(ACTIVE_ORG_COOKIE, member.ownerId, cookieOpts());
+    setActiveOrg(res, member.ownerId);
     res.json({ member: serializeMember(updated!) });
   } catch (err) {
     req.log.error({ err }, "Error accepting team invite");
@@ -398,6 +405,35 @@ router.post("/team/codes", requireAuth, requirePermission("team", "full"), async
 
 const redeemLimiter = ipRateLimiter({ name: "team-members.redeemLimiter", windowMs: 15 * 60_000, max: 10, message: "Troppi tentativi. Riprova fra qualche minuto." });
 
+// GET /api/team/code/:code — anteprima per l'app: di quale impresa e con che ruolo si entra (senza entrare).
+router.get("/team/code/:code", redeemLimiter, requireAuth, async (req, res) => {
+  try {
+    const code = normalizeCode(String(req.params.code ?? ""));
+    if (code.length !== 8) {
+      res.status(400).json({ error: "BAD_CODE", message: "Il codice ha otto caratteri, per esempio K7QM-4XNP." });
+      return;
+    }
+    const [member] = await db.select().from(organizationMembersTable).where(eq(organizationMembersTable.accessCodeHash, hashToken(code)));
+    if (!member) {
+      res.status(404).json({ error: "NOT_FOUND", message: "Non conosco questo codice. Controlla di averlo scritto giusto, o chiedine uno nuovo." });
+      return;
+    }
+    if (member.userId) {
+      res.status(409).json({ error: "CODE_USED", message: "Questo codice è già stato usato. Chiedine uno nuovo." });
+      return;
+    }
+    if (!member.inviteTokenExpiresAt || member.inviteTokenExpiresAt.getTime() < Date.now()) {
+      res.status(410).json({ error: "EXPIRED", message: "Questo codice è scaduto. Chiedine uno nuovo." });
+      return;
+    }
+    const profile = await loadProfile(member.ownerId);
+    res.json({ companyName: profile?.companyName || "", logoUrl: profile?.logoUrl ?? null, role: member.role, code });
+  } catch (err) {
+    req.log.error({ err }, "Error looking up access code");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
 // POST /api/team/code/redeem — chi ha già un accesso (creato da sé) scrive il codice e entra nell'impresa
 router.post("/team/code/redeem", redeemLimiter, requireAuth, async (req, res) => {
   try {
@@ -444,7 +480,7 @@ router.post("/team/code/redeem", redeemLimiter, requireAuth, async (req, res) =>
     }
     const profile = await loadProfile(member.ownerId);
     await writeAudit({ userId: member.ownerId, actorType: "user", actorId, entityType: "team_member", entityId: member.id, action: "access_code_redeemed" });
-    res.cookie(ACTIVE_ORG_COOKIE, member.ownerId, cookieOpts());
+    setActiveOrg(res, member.ownerId);
     res.json({ member: serializeMember(updated), companyName: profile?.companyName || "" });
   } catch (err) {
     req.log.error({ err }, "Error redeeming access code");
@@ -498,6 +534,60 @@ router.get("/team/leaderboard", requireAuth, requirePermission("team", "full"), 
   }
 });
 
+// POCKET-1: gli inviti aperti per l'indirizzo con cui si è entrati (l'app li mostra dopo l'accesso).
+async function pendingInvitesFor(email: string) {
+  if (!email) return [];
+  const rows = await db
+    .select()
+    .from(organizationMembersTable)
+    .where(and(eq(organizationMembersTable.invitedEmail, email), eq(organizationMembersTable.status, "invited")));
+  return rows.filter((m) => !m.accessCodeHash && !!m.inviteTokenExpiresAt && m.inviteTokenExpiresAt.getTime() > Date.now());
+}
+
+// GET /api/team/pending-invites
+router.get("/team/pending-invites", requireAuth, async (req, res) => {
+  try {
+    const email = getUserEmail(res).toLowerCase().trim();
+    const items = [];
+    for (const m of await pendingInvitesFor(email)) {
+      const p = await loadProfile(m.ownerId);
+      items.push({ id: m.id, companyName: p?.companyName || "", role: m.role, logoUrl: p?.logoUrl ?? null });
+    }
+    res.json({ items });
+  } catch (err) {
+    req.log.error({ err }, "Error listing pending invites");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// POST /api/team/pending-invites/:id/accept
+router.post("/team/pending-invites/:id/accept", requireAuth, async (req, res) => {
+  try {
+    const actorId = getActorUserId(res);
+    const email = getUserEmail(res).toLowerCase().trim();
+    const member = (await pendingInvitesFor(email)).find((m) => m.id === req.params.id);
+    if (!member) {
+      res.status(404).json({ error: "NOT_FOUND", message: "Non c'è nessun invito aperto per questo indirizzo." });
+      return;
+    }
+    if (member.ownerId === actorId) {
+      res.status(409).json({ error: "OWN_COMPANY", message: "Questa è la tua impresa." });
+      return;
+    }
+    const [updated] = await db
+      .update(organizationMembersTable)
+      .set({ status: "active", userId: actorId, joinedAt: new Date(), inviteTokenHash: null, inviteTokenExpiresAt: null })
+      .where(eq(organizationMembersTable.id, member.id))
+      .returning();
+    await writeAudit({ userId: member.ownerId, actorType: "user", actorId, entityType: "team_member", entityId: member.id, action: "invite_accepted", diff: { via: "signed_in_address" } });
+    setActiveOrg(res, member.ownerId);
+    res.json({ member: serializeMember(updated!) });
+  } catch (err) {
+    req.log.error({ err }, "Error accepting pending invite");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
 // ── Org switcher ─────────────────────────────────────────────────────────────
 
 // GET /api/team/orgs — every org this person can act as: their own (if they own one) + active memberships
@@ -534,7 +624,7 @@ router.post("/team/switch", requireAuth, async (req, res) => {
       res.status(403).json({ error: "FORBIDDEN", message: "You don't have access to that organization." });
       return;
     }
-    res.cookie(ACTIVE_ORG_COOKIE, orgId, cookieOpts());
+    setActiveOrg(res, orgId);
     res.json({ orgId, role });
   } catch (err) {
     req.log.error({ err }, "Error switching org");
