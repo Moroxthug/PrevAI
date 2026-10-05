@@ -258,17 +258,15 @@ function parseAiResponse(content: string, rawInput: string, profile: typeof busi
   const scontoRaw = aiData.sconto;
   const scontoPercentuale = scontoRaw ? Number(scontoRaw.percentuale ?? 0) : 0;
   
-  let importoScontato = 0;
+  let importoSconto = 0;
   let sconto: QuoteDiscount | null = null;
   if (scontoPercentuale > 0) {
-    importoScontato = Number((calculatedSubtotale * scontoPercentuale / 100).toFixed(2));
-    sconto = {
-      percentuale: scontoPercentuale,
-      importoScontato,
-    };
+    importoSconto = Number((calculatedSubtotale * scontoPercentuale / 100).toFixed(2));
   }
 
-  const imponibile = Number((calculatedSubtotale - importoScontato).toFixed(2));
+  const imponibile = Number((calculatedSubtotale - importoSconto).toFixed(2));
+  // Phase 67: `importoScontato` è l'imponibile scontato (così lo leggono PDF, IVA e contratto), non lo sconto.
+  if (scontoPercentuale > 0) sconto = { percentuale: scontoPercentuale, importoScontato: imponibile };
   const ivaPercentualeVal = resolveQuoteTaxRate(aiData.iva_percentuale, profile?.province);
   const ivaValoreVal = Number((imponibile * ivaPercentualeVal / 100).toFixed(2));
   const totaleVal = Number((imponibile + ivaValoreVal).toFixed(2));

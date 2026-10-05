@@ -13,7 +13,7 @@ import { MARKET, LEGAL, fmtEur, fmtIsoDateLong, type Lang } from "@workspace/con
 // come "conformi". Incrementare TEMPLATE_VERSION a ogni modifica del testo
 // delle clausole, così i contratti firmati conservano traccia della versione.
 
-export const TEMPLATE_VERSION = 2;
+export const TEMPLATE_VERSION = 3;
 
 export type { Lang };
 
@@ -65,7 +65,7 @@ const CLAUSES = {
   permits:
     `Salvo diversa indicazione all'art. 2, l'Appaltatore predispone la documentazione tecnica necessaria per i titoli abilitativi richiesti dai Lavori (CILA, SCIA o permesso di costruire) tramite il tecnico incaricato; oneri di urbanizzazione, diritti di segreteria e onorari professionali non sono compresi nel corrispettivo e saranno fatturati a parte. I Lavori sono eseguiti nel rispetto delle norme tecniche applicabili, del regolamento edilizio comunale e del D.Lgs. 81/2008 in materia di sicurezza; ove previsto, il Committente nomina il coordinatore per la sicurezza. Il Committente è responsabile di ottenere le autorizzazioni eventualmente richieste dal condominio, dal proprietario o da altri terzi.`,
   materials: (v: ContractVariables): string =>
-    `L'Appaltatore fornisce materiali nuovi della qualità descritta all'art. 2 ed esegue i Lavori a regola d'arte (art. 1662 c.c.). L'Appaltatore garantisce l'esecuzione per **${v.warrantyMonths} mesi** dalla fine dei lavori e corregge senza addebito i difetti di esecuzione denunciati per iscritto in tale periodo. Le garanzie dei produttori su materiali, apparecchi e impianti sono trasferite al Committente. La garanzia non copre la normale usura, i danni causati da terzi, l'uso improprio, la mancata manutenzione o i materiali forniti dal Committente. Restano ferme le garanzie di legge per difformità e vizi dell'opera (${LEGAL.garanziaRiferimento}: denuncia entro ${LEGAL.garanziaDenunciaGiorni} giorni dalla scoperta, azione entro ${LEGAL.garanziaAnni} anni dalla consegna) e per rovina e gravi difetti degli immobili (art. 1669 c.c., ${LEGAL.garanziaGraviDifettiAnni} anni), nonché, ove applicabili, le tutele del Codice del Consumo.`,
+    `L'Appaltatore fornisce materiali nuovi della qualità descritta all'art. 2 ed esegue i Lavori a regola d'arte. L'Appaltatore garantisce l'esecuzione per **${v.warrantyMonths} mesi** dalla fine dei lavori e corregge senza addebito i difetti di esecuzione denunciati per iscritto in tale periodo. Le garanzie dei produttori su materiali, apparecchi e impianti sono trasferite al Committente. La garanzia non copre la normale usura, i danni causati da terzi, l'uso improprio, la mancata manutenzione o i materiali forniti dal Committente. Restano ferme le garanzie di legge per difformità e vizi dell'opera (${LEGAL.garanziaRiferimento}: denuncia entro ${LEGAL.garanziaDenunciaGiorni} giorni dalla scoperta, azione entro ${LEGAL.garanziaAnni} anni dalla consegna) e per rovina e gravi difetti degli immobili (art. 1669 c.c., ${LEGAL.garanziaGraviDifettiAnni} anni), nonché, ove applicabili, le tutele del Codice del Consumo.`,
   site:
     `Il Committente garantisce all'Appaltatore un accesso ragionevole al cantiere negli orari di lavoro, fornisce acqua ed energia elettrica e rimuove o protegge i beni personali presenti nell'area dei lavori. Se l'Appaltatore rileva condizioni che non potevano ragionevolmente essere previste (tra cui danni nascosti, amianto, muffe, carenze strutturali o opere esistenti non conformi), ne informa il Committente e ogni lavorazione aggiuntiva è gestita come variante ai sensi dell'art. 6. L'Appaltatore mantiene il cantiere ragionevolmente pulito e smaltisce i rifiuti di cantiere a fine lavori secondo la normativa vigente.`,
   insurance:
@@ -73,7 +73,7 @@ const CLAUSES = {
   holdback: (v: ContractVariables): string => {
     const pct = v.paymentSchedule.holdback.percent;
     return v.paymentSchedule.holdback.enabled
-      ? `Il Committente trattiene, a garanzia della corretta esecuzione, il ${pct} % del valore dei Lavori su ogni pagamento (art. 1666 c.c.). La ritenuta è svincolata entro 30 giorni dal collaudo o dall'accettazione dell'opera, che si intende avvenuta se il Committente non procede alla verifica entro 30 giorni dall'invito dell'Appaltatore o la riceve senza riserve (art. 1665 c.c.).`
+      ? `Il Committente trattiene, a garanzia della corretta esecuzione, il ${pct} % del valore dei Lavori su ogni pagamento, come pattuito tra le parti. La ritenuta è svincolata entro 30 giorni dal collaudo o dall'accettazione dell'opera, che si intende avvenuta se il Committente non procede alla verifica entro 30 giorni dall'invito dell'Appaltatore o la riceve senza riserve (art. 1665 c.c.).`
       : `Le parti convengono che nessuna ritenuta a garanzia sarà trattenuta sui pagamenti in acconto. Il Committente ha diritto di verificare l'opera prima di riceverla; l'opera si intende accettata se il Committente non procede alla verifica entro 30 giorni dall'invito dell'Appaltatore o la riceve senza riserve (art. 1665 c.c.).`;
   },
   consumer: (v: ContractVariables): string => {

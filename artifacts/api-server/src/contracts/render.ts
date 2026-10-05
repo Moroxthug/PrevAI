@@ -160,19 +160,19 @@ function bodyHtml(body: string): string {
     .join("\n");
 }
 
-function partyHtml(label: string, p: ContractVariables["contractor"], lang: Lang): string {
+function partyHtml(label: string, p: ContractVariables["contractor"], lang: Lang, taxKey: "bn" | "taxId" = "bn"): string {
   const lines = [
     p.address, [p.city, p.province, p.postalCode].filter(Boolean).join(", "),
     p.email ? `${tr("email", lang)}: ${p.email}` : "",
     p.phone ? `${tr("phone", lang)}: ${p.phone}` : "",
-    p.businessNumber ? `${tr("bn", lang)}: ${p.businessNumber}` : "",
+    p.businessNumber ? `${tr(taxKey, lang)}: ${p.businessNumber}` : "",
     p.reaNumber ? `${tr("licence", lang)}: ${p.reaNumber}` : "",
   ].filter(Boolean);
   return `<div class="party"><div class="party-label">${esc(label)}</div><div class="party-name">${esc(p.name)}</div>${lines.map((l) => `<div class="party-line">${esc(l!)}</div>`).join("")}</div>`;
 }
 
 function partiesHtml(v: ContractVariables, lang: Lang): string {
-  return `<div class="parties">${partyHtml(tr("contractor", lang), v.contractor, lang)}${partyHtml(tr("customer", lang), v.customer, lang)}</div>
+  return `<div class="parties">${partyHtml(tr("contractor", lang), v.contractor, lang)}${partyHtml(tr("customer", lang), v.customer, lang, "taxId")}</div>
 <table class="kv"><tr><th>${tr("siteAddress", lang)}</th><td>${esc(v.siteAddress)}</td></tr><tr><th>${tr("project", lang)}</th><td>${esc(v.projectTitle)}</td></tr><tr><th>${tr("quoteNo", lang)}</th><td>${esc(v.quoteNumber)}</td></tr></table>`;
 }
 

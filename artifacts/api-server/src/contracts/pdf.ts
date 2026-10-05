@@ -25,13 +25,13 @@ function bodyContent(body: string): Content[] {
   );
 }
 
-function partyCell(label: string, p: ContractVariables["contractor"], lang: Lang): Content {
+function partyCell(label: string, p: ContractVariables["contractor"], lang: Lang, taxKey: "bn" | "taxId" = "bn"): Content {
   const lines = [
     p.address,
     [p.city, p.province, p.postalCode].filter(Boolean).join(", "),
     p.email ? `${tr("email", lang)}: ${p.email}` : "",
     p.phone ? `${tr("phone", lang)}: ${p.phone}` : "",
-    p.businessNumber ? `${tr("bn", lang)}: ${p.businessNumber}` : "",
+    p.businessNumber ? `${tr(taxKey, lang)}: ${p.businessNumber}` : "",
     p.reaNumber ? `${tr("licence", lang)}: ${p.reaNumber}` : "",
   ].filter(Boolean) as string[];
   return {
@@ -179,7 +179,7 @@ export async function buildContractPdf(params: {
     content.push({ text: s.heading.toUpperCase(), fontSize: 9.5, bold: true, font: "Roboto", color: "#374151", characterSpacing: 0.4, margin: [0, 14, 0, 6] });
     content.push({ canvas: [{ type: "line", x1: 0, y1: 0, x2: 515, y2: 0, lineWidth: 0.5, lineColor: RULE }], margin: [0, 0, 0, 6] });
     if (s.key === "parties") {
-      content.push({ columns: [partyCell(tr("contractor", lang), v.contractor, lang), partyCell(tr("customer", lang), v.customer, lang)], columnGap: 16, margin: [0, 0, 0, 8] });
+      content.push({ columns: [partyCell(tr("contractor", lang), v.contractor, lang), partyCell(tr("customer", lang), v.customer, lang, "taxId")], columnGap: 16, margin: [0, 0, 0, 8] });
       content.push({
         table: {
           widths: [130, "*"],

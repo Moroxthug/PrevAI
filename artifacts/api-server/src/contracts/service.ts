@@ -115,7 +115,9 @@ export function buildVariablesFromQuote(params: {
     : (Array.isArray(quote.items) ? quote.items : []).map((i) => ({ label: i.descrizione, amount: Number(i.totale) }));
 
   const grossSubtotal = priceLines.reduce((s, l) => s + l.amount, 0);
-  const discountAmount = discount && discount.percentuale > 0 ? Number(discount.importoScontato) : 0;
+  // `importoScontato` è l'imponibile già scontato, non l'importo dello sconto (Phase 67): lo sconto si
+  // ricalcola dalla percentuale, come alla creazione del preventivo.
+  const discountAmount = discount && discount.percentuale > 0 ? Math.round(grossSubtotal * Number(discount.percentuale)) / 100 : 0;
   const subtotal = Math.round((grossSubtotal - discountAmount) * 100) / 100;
 
   // IVA: l'aliquota memorizzata sul preventivo (22/10/4 → regime, altrimenti
