@@ -176,6 +176,14 @@ export default function NewQuote() {
   const createQuote = useCreateQuote();
   const { data: profile } = useGetBusinessProfile();
   const { data: subscription } = useGetSubscription();
+  // Chi ha Pro o Elite parte dal layout Professionale (capitolato tecnico); la scelta resta sua:
+  // se la cambia, o se la bozza ne aveva una, il default non la tocca.
+  const templateChosen = useRef(false);
+  const proPlan = !!subscription?.isActive && (subscription.plan === "monthly_pro" || subscription.plan === "monthly_elite");
+  useEffect(() => {
+    if (proPlan && !templateChosen.current) setTemplateId("arosio");
+  }, [proPlan]);
+  const chooseTemplate = (id: "standard" | "arosio" | "mariagrazia") => { templateChosen.current = true; setTemplateId(id); };
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -208,7 +216,7 @@ export default function NewQuote() {
     isEmpty: (d) => !d.input.trim() && !d.clientForm.nome.trim(),
     onRestore: (d) => {
       setInput(d.input ?? "");
-      if (d.templateId) setTemplateId(d.templateId);
+      if (d.templateId && d.templateId !== "standard") { templateChosen.current = true; setTemplateId(d.templateId); }
       setTargetTotalEur(d.targetTotalEur ?? "");
       setClientMode(d.clientMode ?? "none");
       setSelectedClientId(d.selectedClientId ?? null);
@@ -555,7 +563,7 @@ export default function NewQuote() {
 
           <QuoteOptions
             templateId={templateId}
-            onTemplate={setTemplateId}
+            onTemplate={chooseTemplate}
             isPro={!!isPro}
             onProRequired={() => toast({ title: t("dashboard.new.toast.proRequiredTitle"), description: t("dashboard.new.toast.proRequiredDesc"), variant: "destructive" })}
             target={targetTotalEur}
