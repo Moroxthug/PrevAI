@@ -1,9 +1,15 @@
 // Italiano (it-IT): PrevAI è solo in italiano. Chiavi raggruppate per schermata, come in
 // QuoteAI (en.ts/fr.ts), così ogni fase porta le stesse chiavi tradotte.
 import { entrare } from "./it-entrare";
+import { lavoro } from "./it-lavoro";
+import { preventivi } from "./it-preventivi";
+import { soldi } from "./it-soldi";
 
 export const it = {
   ...entrare,
+  ...preventivi,
+  ...lavoro,
+  ...soldi,
   sandbox: {
     title: "Componenti",
     intro: "Tutti i pezzi con cui è fatta l'app, con i loro stati. Tocca i comandi per provarli.",

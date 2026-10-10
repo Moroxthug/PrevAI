@@ -2,8 +2,10 @@ import { Router } from "express";
 import { z } from "zod";
 import { db, businessProfilesTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
-import { requireAuth, getUserId, getActorRole } from "../middlewares/authMiddleware.js";
+import { requireAuth, getUserId, getActorRole, getActorUserId } from "../middlewares/authMiddleware.js";
 import { needsYou, todayStats } from "../today/service.js";
+import { businessCard } from "../today/business.js";
+import { checklist, setChecked } from "../today/checklist.js";
 
 // ── APP-1 (da QuoteAI Phase 104): la home "Oggi" ─────────────────────────────
 // Two reads for the home page: what needs the person now, and the period's
@@ -46,6 +48,52 @@ router.get("/today/stats", requireAuth, async (req, res) => {
     res.json(await todayStats(getUserId(res), getActorRole(res), from, to, prevFrom));
   } catch (err) {
     req.log.error({ err }, "Error loading today's stats");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// GET /api/today/checklist — la lista «Da fare oggi» della Home dell'app (today/checklist.ts).
+router.get("/today/checklist", requireAuth, async (req, res) => {
+  try {
+    const userId = getUserId(res);
+    const [profile] = await db.select().from(businessProfilesTable).where(eq(businessProfilesTable.userId, userId));
+    res.json(await checklist(userId, getActorUserId(res), getActorRole(res), profile));
+  } catch (err) {
+    req.log.error({ err }, "Error loading the checklist");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// PUT /api/today/checklist/:itemId { done } — spunta una voce per oggi (un compito di cantiere: lo completa).
+router.put("/today/checklist/:itemId", requireAuth, async (req, res) => {
+  try {
+    const body = z.object({ done: z.boolean() }).safeParse(req.body);
+    const itemId = String(req.params.itemId ?? "");
+    if (!body.success || !/^[a-z]+(:[A-Za-z0-9-]+)?$/.test(itemId) || itemId.length > 80) {
+      res.status(400).json({ error: "Invalid parameters" });
+      return;
+    }
+    const r = await setChecked(getUserId(res), getActorUserId(res), getActorRole(res), itemId, body.data.done);
+    if (r === "forbidden") { res.status(403).json({ error: "Forbidden" }); return; }
+    if (r === "not_found") { res.status(404).json({ error: "Not found" }); return; }
+    res.json({ itemId, done: body.data.done });
+  } catch (err) {
+    req.log.error({ err }, "Error ticking a checklist item");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// GET /api/today/business?period=W|M|Q — la scheda «Andamento» della Home dell'app (today/business.ts).
+router.get("/today/business", requireAuth, async (req, res) => {
+  try {
+    const q = z.object({ period: z.enum(["W", "M", "Q"]).default("M") }).safeParse(req.query);
+    if (!q.success) {
+      res.status(400).json({ error: "Invalid parameters" });
+      return;
+    }
+    res.json(await businessCard(getUserId(res), getActorRole(res), q.data.period));
+  } catch (err) {
+    req.log.error({ err }, "Error loading the business card");
     res.status(500).json({ error: "Internal server error" });
   }
 });

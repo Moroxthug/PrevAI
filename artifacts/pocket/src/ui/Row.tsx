@@ -30,6 +30,8 @@ export function SectionHeader({ title, link, onLink }: { title: string; link?: s
 type RowProps = {
   title: string;
   meta?: string;
+  /** A third line in `faint` (Clients: what happened last). */
+  note?: string;
   leading?: ReactNode;
   /** The right column (figure, status), end-aligned with a gap of 4. */
   trailing?: ReactNode;
@@ -40,13 +42,14 @@ type RowProps = {
 };
 
 /** The row's content without its own press, for rows inside other pressables (SwipeRow). */
-export function RowBody({ title, meta, leading, trailing, trailingRow }: Omit<RowProps, "onPress" | "accessibilityLabel">) {
+export function RowBody({ title, meta, note, leading, trailing, trailingRow }: Omit<RowProps, "onPress" | "accessibilityLabel">) {
   return (
     <View style={{ flexDirection: "row", alignItems: "center", gap: 12, paddingVertical: 12, paddingHorizontal: 16, minHeight: 44 }}>
       {leading}
       <View style={{ flexGrow: 1, flexShrink: 1, minWidth: 0, gap: 2 }}>
         <Text size={14.5} weight={500} numberOfLines={1}>{title}</Text>
         {meta ? <Text size={12.5} color="muted" numberOfLines={1}>{meta}</Text> : null}
+        {note ? <Text size={12.5} color="faint" numberOfLines={1}>{note}</Text> : null}
       </View>
       {trailing ? (
         <View style={trailingRow ? { flexDirection: "row", alignItems: "center", gap: 8, flexShrink: 0 } : { alignItems: "flex-end", gap: 4, flexShrink: 0 }}>{trailing}</View>
@@ -112,4 +115,14 @@ export function MenuList({ children }: { children: ReactNode }) {
 /** The board's group label (12.5 muted, padding 0 4) above a later group of rows. */
 export function GroupLabel({ children }: { children: string }) {
   return <Text size={12.5} color="muted" style={{ paddingHorizontal: 4 }}>{children}</Text>;
+}
+
+/** The board's .sw-hint under the first list: a left arrow and a 12 muted line, centred. */
+export function SwipeHint({ children }: { children: string }) {
+  return (
+    <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, paddingTop: 10 }}>
+      <Glyph name="back" size={14} color="muted" />
+      <Text size={12.5} color="muted">{children}</Text>
+    </View>
+  );
 }

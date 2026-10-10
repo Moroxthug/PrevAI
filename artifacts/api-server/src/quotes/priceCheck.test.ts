@@ -91,3 +91,12 @@ test("priceCheck — voci segnalate, sotto costo, margine e riprezzo", () => {
   assert.equal(same.sconto, null);
   assert.equal(same.totale, 7452);
 });
+
+test("priceCheck — lines: ogni voce col suo verdetto (POCKET-2)", () => {
+  const refs: PriceReference[] = [{ key: "listino:1", name: "Piastrelle", unit: "mq", unitPrice: 40, source: "listino", sampleCount: 1, vendor: null }];
+  const voce = (descrizione: string, um: string, prezzoUnitario: number) => ({ descrizione, um, quantita: 10, prezzoUnitario, totale: 10 * prezzoUnitario });
+  const check = priceCheckChapters([{ lettera: "A", titolo: "Opere", voci: [voce("Posa piastrelle", "mq", 30), voce("Piastrelle", "mq", 40), voce("Piastrelle", "mq", 55), voce("Demolizione", "corpo", 800)], subtotale: 0 }] as never, refs);
+  assert.deepEqual(check.lines.map((l) => l.verdict), ["low", "in_range", "high", "no_data"]);
+  assert.equal(check.lines[3]!.referenceUnitPrice, null);
+  assert.equal(check.findings.length, 2);
+});

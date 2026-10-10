@@ -3,10 +3,11 @@ import { Router } from "express";
 import { requireAuth, getUserId, getUserName, getActorUserId } from "../middlewares/authMiddleware";
 import { requirePermission } from "../middlewares/requirePermission.js";
 import multer from "multer";
-import { db, quotesTable, projectsTable, quoteAttachmentsTable, quoteVariantsTable, businessProfilesTable, priceCatalogItemsTable, priceIntelligenceTable, uploadedDocumentsTable, quoteClientDataSchema, quoteCompanySnapshotSchema, paymentScheduleSchema, derivePaymentScheduleFromText, validatePaymentSchedule, paymentScheduleToText, normalizeProvince, quoteTaxLines, readQuoteClientData } from "@workspace/db";
+import { db, quotesTable, projectsTable, quoteAttachmentsTable, quoteVariantsTable, quoteVersionsTable, businessProfilesTable, priceCatalogItemsTable, priceIntelligenceTable, uploadedDocumentsTable, quoteClientDataSchema, quoteCompanySnapshotSchema, paymentScheduleSchema, derivePaymentScheduleFromText, validatePaymentSchedule, paymentScheduleToText, normalizeProvince, quoteTaxLines, readQuoteClientData } from "@workspace/db";
 import { resolveQuoteTaxRate } from "../lib/tax.js";
 import { generateQuotePdfBuffer, generateCapitolatoPdfBuffer } from "../quotes/pdf.js";
-import { eq, desc, count, sum, sql, and, avg, isNull } from "drizzle-orm";
+import { eq, desc, count, sum, sql, and, avg, isNull, ne } from "drizzle-orm";
+import { snapshotOf, startsNewVersion } from "../quotes/versions.js";
 import {
   UpdateQuoteBody,
   GetQuoteParams,
@@ -52,6 +53,7 @@ import { tryTrialUnlock, sendQuoteByEmail, QuoteSendError, quoteQuotaExceeded } 
 import { createManualQuote, type ManualQuoteInput } from "../quotes/manualCreate.js";
 import { publicQuoteLink, revokePublicQuoteLink, ownedQuote } from "../quotes/publicLink.js";
 import { writeAudit } from "../lib/notifications.js";
+import { raiseAutomation } from "../lib/automation.js";
 import { loadPriceReferences, priceCheckChapters, repriceChapters } from "../quotes/priceCheck.js";
 import { z } from "zod";
 import { rejectStale } from "../lib/versioning.js";
@@ -97,6 +99,7 @@ function serializeQuoteVariant(v: VariantRow, _province: string | null = null) {
     quoteId: v.quoteId,
     label: v.label,
     description: v.description,
+    recommended: v.recommended ?? false,
     position: v.position,
     items: Array.isArray(v.items) ? v.items : [],
     capitoli: Array.isArray(v.capitoli) ? v.capitoli : [],
@@ -149,6 +152,13 @@ export function serializeQuote(q: QuoteRow, attachments?: AttachmentRow[], varia
     acceptedByName: q.acceptedByName ?? null,
     acceptedAt: q.acceptedAt?.toISOString() ?? null,
     sentAt: q.sentAt?.toISOString() ?? null,
+    /** POCKET-2: la versione che vede il cliente (2 dopo la modifica di un preventivo inviato); revisionOpen: modificato dopo l'ultimo invio. */
+    version: q.version,
+    revisionOpen: q.revisionOpen,
+    firstViewedAt: q.firstViewedAt?.toISOString() ?? null,
+    declinedAt: q.declinedAt?.toISOString() ?? null,
+    declinedReason: q.declinedReason ?? null,
+    exclusions: Array.isArray(q.exclusions) ? q.exclusions : [],
     pdfUrl: q.pdfUrl ?? null,
     rawInput: q.rawInput,
     pdfDownloadedAt: q.pdfDownloadedAt?.toISOString() ?? null,
@@ -266,6 +276,10 @@ router.get("/quotes", requireAuth, async (req, res) => {
         status: quotesTable.status,
         acceptedAt: quotesTable.acceptedAt,
         sentAt: quotesTable.sentAt,
+        firstViewedAt: quotesTable.firstViewedAt,
+        declinedAt: quotesTable.declinedAt,
+        declinedReason: quotesTable.declinedReason,
+        number: quotesTable.numeroPreventivoData,
         pdfUrl: quotesTable.pdfUrl,
         capitolatoPro: quotesTable.capitolatoPro,
         templateId: quotesTable.templateId,
@@ -291,6 +305,10 @@ router.get("/quotes", requireAuth, async (req, res) => {
         status: q.status,
         acceptedAt: q.acceptedAt?.toISOString() ?? null,
         sentAt: q.sentAt?.toISOString() ?? null,
+        firstViewedAt: q.firstViewedAt?.toISOString() ?? null,
+        declinedAt: q.declinedAt?.toISOString() ?? null,
+        declinedReason: q.declinedReason ?? null,
+        numeroPreventivoData: q.number ?? null,
         pdfUrl: q.pdfUrl ?? null,
         capitolatoPro: q.capitolatoPro ?? false,
         templateId: q.templateId ?? "standard",
@@ -1236,6 +1254,11 @@ router.put("/quotes/:id/variants/:variantId", requireAuth, requirePermission("qu
 
     const body = req.body as Record<string, unknown>;
     const updates: Partial<typeof existing> = {};
+    // POCKET-2: quale opzione consiglia l'impresa (una sola per preventivo).
+    if (typeof body.recommended === "boolean") {
+      updates.recommended = body.recommended;
+      if (body.recommended) await db.update(quoteVariantsTable).set({ recommended: false }).where(and(eq(quoteVariantsTable.quoteId, id), ne(quoteVariantsTable.id, variantId)));
+    }
     if (typeof body.label === "string") updates.label = body.label;
     if (typeof body.description === "string") updates.description = body.description;
     if (Array.isArray(body.items)) updates.items = body.items as QuoteItem[];
@@ -1481,6 +1504,23 @@ router.put("/quotes/:id", requireAuth, requirePermission("quotes", "edit"), asyn
     if (body.ivaValore !== undefined) updates.ivaValore = String(body.ivaValore);
     if (body.totale !== undefined) updates.totale = String(body.totale);
     if (body.templateId !== undefined) updates.templateId = body.templateId;
+    // POCKET-2: «Non incluso» (non è nel corpo generato).
+    if (rawBody.exclusions !== undefined) {
+      const ex = z.array(z.string().trim().min(1).max(300)).max(30).safeParse(rawBody.exclusions);
+      if (!ex.success) {
+        res.status(400).json({ error: "Invalid exclusions" });
+        return;
+      }
+      updates.exclusions = ex.data;
+    }
+
+    // POCKET-2: modificare un preventivo che il cliente ha già fa la versione successiva; la sostituita resta.
+    const contentKeys: (keyof typeof updates)[] = ["capitoli", "items", "sconto", "exclusions", "condizioniPagamento", "paymentSchedule", "descrizioneGenerale", "titoloPreventivoRiga1", "titoloPreventivoRiga2", "note", "totale", "subtotale", "clientData"];
+    if (contentKeys.some((k) => updates[k] !== undefined) && startsNewVersion(existing)) {
+      await db.insert(quoteVersionsTable).values({ quoteId: id, userId, version: existing.version, total: String(existing.totale), snapshot: snapshotOf(existing) });
+      updates.version = existing.version + 1;
+      updates.revisionOpen = true;
+    }
 
     const [updated] = await db
       .update(quotesTable)
@@ -1519,6 +1559,61 @@ router.delete("/quotes/:id", requireAuth, requirePermission("quotes", "full"), a
     res.status(204).end();
   } catch (err) {
     req.log.error({ err }, "Error deleting quote");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// GET /api/quotes/:id/versions: le versioni già inviate prima di quella attuale, dalla più nuova.
+router.get("/quotes/:id/versions", requireAuth, requirePermission("quotes", "view"), async (req, res) => {
+  try {
+    const userId = getUserId(res);
+    const { id } = GetQuoteParams.parse(req.params);
+    const [existing] = await db.select({ userId: quotesTable.userId, version: quotesTable.version, revisionOpen: quotesTable.revisionOpen }).from(quotesTable).where(eq(quotesTable.id, id));
+    if (!existing) { res.status(404).json({ error: "Not found" }); return; }
+    if (existing.userId !== userId) { res.status(403).json({ error: "Forbidden" }); return; }
+    const rows = await db.select().from(quoteVersionsTable).where(eq(quoteVersionsTable.quoteId, id)).orderBy(desc(quoteVersionsTable.version));
+    res.json({ current: existing.version, revisionOpen: existing.revisionOpen, versions: rows.map((r) => ({ version: r.version, total: Number(r.total), replacedAt: r.createdAt.toISOString(), snapshot: r.snapshot })) });
+  } catch (err) {
+    req.log.error({ err }, "Error listing quote versions");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// POST /api/quotes/:id/mark-won: il cliente ha detto sì fuori dalla pagina (una telefonata, un messaggio, di
+// persona), quindi lo registra l'impresa. Stesso effetto dell'accettazione online: stato accettato, i
+// promemoria si fermano, partono le automazioni "quote.accepted". Solo un preventivo inviato; con più opzioni
+// serve quella scelta. Non è una firma: il nome registrato dice che l'ha segnato l'impresa.
+router.post("/quotes/:id/mark-won", requireAuth, requirePermission("quotes", "edit"), async (req, res) => {
+  try {
+    const userId = getUserId(res);
+    const { id } = DeleteQuoteParams.parse(req.params);
+    const body = z.object({ variantId: z.string().max(100).optional() }).safeParse(req.body ?? {});
+    if (!body.success) { res.status(400).json({ error: "Invalid parameters" }); return; }
+    const [existing] = await db.select().from(quotesTable).where(eq(quotesTable.id, id));
+    if (!existing) { res.status(404).json({ error: "Not found" }); return; }
+    if (existing.userId !== userId) { res.status(403).json({ error: "Forbidden" }); return; }
+    if (existing.status === "accepted") { res.json(serializeQuote(existing)); return; }
+    if (existing.status !== "unlocked") { res.status(400).json({ error: "NOT_SENT", message: "Invia il preventivo prima di segnarlo come vinto." }); return; }
+    const variants = await db.select().from(quoteVariantsTable).where(eq(quoteVariantsTable.quoteId, id)).orderBy(quoteVariantsTable.position);
+    let variantUpdates: Partial<typeof existing> = {};
+    let acceptedVariantId: string | null = null;
+    if (variants.length > 0) {
+      const chosen = variants.find((v) => v.id === body.data.variantId) ?? (variants.length === 1 ? variants[0] : undefined);
+      if (!chosen) { res.status(400).json({ error: "VARIANT_REQUIRED", message: "Scegli prima una delle opzioni." }); return; }
+      acceptedVariantId = chosen.id;
+      variantUpdates = { items: chosen.items, capitoli: chosen.capitoli, sconto: chosen.sconto, condizioniPagamento: chosen.condizioniPagamento, subtotale: chosen.subtotale, ivaPercentuale: chosen.ivaPercentuale, ivaValore: chosen.ivaValore, totale: chosen.totale };
+    }
+    const [updated] = await db
+      .update(quotesTable)
+      .set({ ...variantUpdates, status: "accepted", acceptedAt: new Date(), acceptedByName: `Segnato come vinto da ${getUserName(res)}`, acceptedIp: null, acceptedVariantId, declinedAt: null, declinedReason: null, nextFollowUpAt: null })
+      .where(and(eq(quotesTable.id, id), eq(quotesTable.status, "unlocked")))
+      .returning();
+    if (!updated) { res.status(409).json({ error: "CHANGED", message: "Il preventivo è appena cambiato. Ricaricalo." }); return; }
+    await raiseAutomation({ event: "quote.accepted", userId, entityType: "quote", entityId: updated.id, payload: { acceptedByName: updated.acceptedByName, markedByCompany: true } });
+    await writeAudit({ userId, actorType: "user", actorId: getActorUserId(res), entityType: "quote", entityId: updated.id, action: "marked_won" });
+    res.json(serializeQuote(updated));
+  } catch (err) {
+    req.log.error({ err }, "Error marking quote won");
     res.status(500).json({ error: "Internal server error" });
   }
 });

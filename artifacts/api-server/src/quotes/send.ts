@@ -117,6 +117,10 @@ export async function sendQuoteByEmail(params: { userId: string; quoteId: string
       .update(quotesTable)
       .set({
         sentAt: quote.sentAt ?? new Date(),
+        // POCKET-2: un nuovo invio chiude la revisione aperta e cancella un eventuale rifiuto.
+        revisionOpen: false,
+        declinedAt: null,
+        declinedReason: null,
         // TEAM-1: vale il primo invio; un collega che lo rimanda non lo ruba.
         ...(params.actorId && !quote.sentByUserId ? { sentByUserId: params.actorId } : {}),
         followUpStage: 0,

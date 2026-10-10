@@ -174,6 +174,9 @@ async function seedOrgA(): Promise<Fixtures> {
   // Clients are virtual (md5 of the quote's client fields) — read the id back the way the UI does.
   const clients = await A.api("/api/clients");
   f.client = clients.body?.[0]?.id ?? randomUUID();
+  // POCKET-2: le rotte nuove dell'app (/clients/:id/overview e /details) usano la riga vera di `clients` (uuid).
+  const clientRow = await A.api("/api/clients", { body: { name: "Cliente per la prova di isolamento" } });
+  f.clientRow = clientRow.body?.client?.id ?? randomUUID();
   return f;
 }
 
@@ -202,6 +205,9 @@ function resolveParams(route: MatrixRoute, f: Fixtures): { path: string; unseede
     // mostra niente senza il codice giusto); gli inviti aperti sono per indirizzo email, non per
     // impresa: l'isolamento è provato in pocket1.e2e.test.ts (un altro account riceve 404).
     if (name === "code") return null;
+    // POCKET-2: la voce della lista «da fare» è una chiave per persona e giorno (today_checks), non una riga
+    // condivisa: ognuno spunta le proprie; un compito di cantiere passa dal controllo del suo cantiere (404 se non è suo).
+    if (name === "itemId") return null;
     if (route.path.startsWith("/api/team/pending-invites/")) return null;
     // A-4: il verbo dell'azione sul movimento bancario non è un identificatore:
     // se ne prova uno innocuo, e l'id di A davanti è quello che conta.
@@ -233,6 +239,8 @@ function resolveParams(route: MatrixRoute, f: Fixtures): { path: string; unseede
           ["/api/field-reports", "fieldReport"],
         ];
         id = byPrefix.find(([p]) => prefix === p)?.[1];
+        // POCKET-2: la scheda del cliente per l'app e la modifica usano l'uuid della riga, non l'md5 dell'elenco storico.
+        if (id === "client" && (route.path.endsWith("/overview") || route.path.endsWith("/details"))) id = "clientRow";
         break;
       }
       case "quoteId": id = "quote"; break;

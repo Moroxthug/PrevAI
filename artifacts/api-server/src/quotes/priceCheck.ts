@@ -94,7 +94,26 @@ type PriceCheckFinding = {
   marginPct: number | null;
 };
 
-export type PriceCheck = { checkedAt: string; thresholdPct: number; linesChecked: number; findings: PriceCheckFinding[]; belowCostCount: number; deltaTotal: number };
+/** POCKET-2: ogni voce con un prezzo e come si confronta (l'app mostra tutte le voci, non solo quelle da guardare). */
+type PriceCheckLine = {
+  chapter: string;
+  index: number;
+  description: string;
+  um: string;
+  quantita: number;
+  quotedUnitPrice: number;
+  /** Il riferimento dell'impresa per questa voce, o null se non ne abbina nessuno. */
+  referenceUnitPrice: number | null;
+  referenceName: string | null;
+  source: PriceSource | null;
+  sampleCount: number | null;
+  changePct: number | null;
+  belowCost: boolean;
+  /** "low": il preventivato sta sotto il riferimento; "high": sopra; "in_range": entro la soglia; "no_data": niente con cui confrontarlo. */
+  verdict: "low" | "high" | "in_range" | "no_data";
+};
+
+export type PriceCheck = { checkedAt: string; thresholdPct: number; linesChecked: number; findings: PriceCheckFinding[]; lines: PriceCheckLine[]; belowCostCount: number; deltaTotal: number };
 
 // A parità di nome il listino batte lo storico: è un prezzo scelto, non una media.
 const SOURCE_RANK: Record<PriceSource, number> = { scontrini: 3, listino: 2, storico: 1 };
@@ -121,6 +140,7 @@ const round2 = (n: number) => Math.round(n * 100) / 100;
 /** Puro: quali voci si discostano dal riferimento di almeno la soglia, o stanno sotto l'ultimo costo. */
 export function priceCheckChapters(capitoli: QuoteChapter[], refs: PriceReference[], now = new Date()): PriceCheck {
   const findings: PriceCheckFinding[] = [];
+  const lines: PriceCheckLine[] = [];
   // Gli scontrini sono costi, non prezzi di vendita: fanno da pavimento (sotto costo), non da bersaglio.
   const costRefs = refs.filter((r) => r.source === "scontrini");
   const priceRefs = refs.filter((r) => r.source !== "scontrini");
@@ -134,14 +154,20 @@ export function priceCheckChapters(capitoli: QuoteChapter[], refs: PriceReferenc
       const marginPct = cost ? Math.round(((v.prezzoUnitario - cost.unitPrice) / v.prezzoUnitario) * 1000) / 10 : null;
       // Sotto costo il riferimento è il costo stesso; altrimenti il listino o lo storico.
       const ref = belowCost ? cost : bestReference(v.descrizione, v.um, priceRefs);
-      if (!ref) return;
+      const lineBase = { chapter: cap.lettera, index, description: v.descrizione, um: v.um, quantita: v.quantita, quotedUnitPrice: v.prezzoUnitario, belowCost };
+      if (!ref) {
+        lines.push({ ...lineBase, referenceUnitPrice: null, referenceName: null, source: null, sampleCount: null, changePct: null, verdict: "no_data" });
+        return;
+      }
       const changePct = Math.round(((ref.unitPrice - v.prezzoUnitario) / v.prezzoUnitario) * 1000) / 10;
-      if (!belowCost && Math.abs(changePct) < PRICE_CHECK_THRESHOLD_PCT) return;
+      const drifts = belowCost || Math.abs(changePct) >= PRICE_CHECK_THRESHOLD_PCT;
+      lines.push({ ...lineBase, referenceUnitPrice: ref.unitPrice, referenceName: ref.name, source: ref.source, sampleCount: ref.sampleCount, changePct, verdict: !drifts ? "in_range" : changePct > 0 ? "low" : "high" });
+      if (!drifts) return;
       const deltaTotal = round2((ref.unitPrice - v.prezzoUnitario) * v.quantita);
       findings.push({ chapter: cap.lettera, index, description: v.descrizione, um: v.um, quantita: v.quantita, quotedUnitPrice: v.prezzoUnitario, referenceUnitPrice: ref.unitPrice, referenceName: ref.name, referenceUnit: ref.unit, source: ref.source, sampleCount: ref.sampleCount, vendor: ref.vendor, changePct, deltaTotal, belowCost, marginPct });
     });
   }
-  return { checkedAt: now.toISOString(), thresholdPct: PRICE_CHECK_THRESHOLD_PCT, linesChecked, findings, belowCostCount: findings.filter((f) => f.belowCost).length, deltaTotal: round2(findings.reduce((s, f) => s + f.deltaTotal, 0)) };
+  return { checkedAt: now.toISOString(), thresholdPct: PRICE_CHECK_THRESHOLD_PCT, linesChecked, findings, lines, belowCostCount: findings.filter((f) => f.belowCost).length, deltaTotal: round2(findings.reduce((s, f) => s + f.deltaTotal, 0)) };
 }
 
 /** Puro: piega gli scontrini (i più recenti per primi) in un riferimento per voce; sotto MIN_SAMPLES la voce si salta. */

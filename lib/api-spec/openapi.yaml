@@ -1367,6 +1367,9 @@ components:
           type: string
         description:
           type: string
+        recommended:
+          type: boolean
+          description: The option the company recommends (at most one per quote).
         position:
           type: number
         items:
@@ -1529,6 +1532,29 @@ components:
           format: date-time
           nullable: true
           description: When the quote was last emailed to the client (Phase 105 picks the primary action from it).
+        version:
+          type: integer
+          description: The version the client sees (2 after a sent quote was edited).
+        revisionOpen:
+          type: boolean
+          description: True when the quote was edited after it was last sent.
+        firstViewedAt:
+          type: string
+          nullable: true
+          description: When the client first opened the quote page.
+        declinedAt:
+          type: string
+          nullable: true
+          description: When the client declined the quote on its page.
+        declinedReason:
+          type: string
+          nullable: true
+          description: The reason the client gave when declining, if any.
+        exclusions:
+          type: array
+          items:
+            type: string
+          description: What the price does not include ("Non incluso").
         jobId:
           type: string
           nullable: true
@@ -1611,6 +1637,22 @@ components:
         sentAt:
           type: string
           nullable: true
+        firstViewedAt:
+          type: string
+          nullable: true
+          description: When the client first opened the quote page.
+        declinedAt:
+          type: string
+          nullable: true
+          description: When the client declined the quote on its page.
+        declinedReason:
+          type: string
+          nullable: true
+          description: The reason the client gave when declining, if any.
+        numeroPreventivoData:
+          type: string
+          nullable: true
+          description: The quote number, for example "N° 12.2026 del 01/10/2026".
         lineItemCount:
           type: integer
         subtotale:

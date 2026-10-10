@@ -27,7 +27,21 @@
       "expo-font",
       "expo-secure-store",
       "@sentry/react-native",
-      "./plugins/with-release.js"
+      "./plugins/with-release.js",
+      [
+        "expo-audio",
+        {
+          "microphonePermission": "PrevAI usa il microfono per farti descrivere un lavoro a voce e trasformarlo in preventivo."
+        }
+      ],
+      "expo-sharing",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "PrevAI usa le tue foto per allegare al preventivo le immagini del cantiere.",
+          "cameraPermission": "PrevAI usa la fotocamera per fotografare il cantiere e aggiungerlo al preventivo."
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true

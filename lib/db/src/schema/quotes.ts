@@ -156,6 +156,17 @@ export const quotesTable = pgTable("quotes", {
   /** Phase 47: soft-archive. Set when moved to the Archive view; excluded from list endpoints while set. */
   archivedAt: timestamp("archived_at", { withTimezone: true }),
   archivedByName: text("archived_by_name"),
+  /** POCKET-2: quando il cliente ha aperto la pagina del preventivo la prima volta (la campanella "ha aperto il preventivo" ne tiene il segno, qui il momento). */
+  firstViewedAt: timestamp("first_viewed_at", { withTimezone: true }),
+  /** POCKET-2: quando il cliente ha rifiutato dalla sua pagina, e il motivo (facoltativo). Si azzera quando il preventivo è inviato di nuovo. */
+  declinedAt: timestamp("declined_at", { withTimezone: true }),
+  declinedReason: text("declined_reason"),
+  /** POCKET-2: "Non incluso" — cosa il prezzo non copre, una riga breve ciascuna (pagina del cliente e PDF). */
+  exclusions: text("exclusions").array().notNull().default([]),
+  /** POCKET-2: la versione che vede il cliente (1, 2, …). Un preventivo inviato e poi modificato diventa la successiva; la vecchia resta in quote_versions. */
+  version: integer("version").notNull().default(1),
+  /** Vero dalla prima modifica di un preventivo inviato fino al nuovo invio: le modifiche successive vanno nella stessa nuova versione. */
+  revisionOpen: boolean("revision_open").notNull().default(false),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
 }, (t) => [
@@ -189,6 +200,8 @@ export const quoteVariantsTable = pgTable("quote_variants", {
   /** Freeform label, typically "Good" / "Better" / "Best" but not constrained to those three. */
   label: text("label").notNull().default(""),
   description: text("description").notNull().default(""),
+  /** POCKET-2: l'opzione che l'impresa consiglia (al massimo una per preventivo). */
+  recommended: boolean("recommended").notNull().default(false),
   /** Display order, 0-based. */
   position: integer("position").notNull().default(0),
   items: jsonb("items").$type<QuoteItem[]>().notNull().default([]),
@@ -223,3 +236,19 @@ export type Quote = typeof quotesTable.$inferSelect;
 export type QuoteAttachment = typeof quoteAttachmentsTable.$inferSelect;
 export type InsertQuoteVariant = z.infer<typeof insertQuoteVariantSchema>;
 export type QuoteVariant = typeof quoteVariantsTable.$inferSelect;
+
+/**
+ * POCKET-2: com'era un preventivo prima che una versione già inviata fosse modificata. Una riga per versione
+ * sostituita; la riga viva in quotes è sempre la più nuova. snapshot tiene i campi che il cliente poteva vedere.
+ */
+export const quoteVersionsTable = pgTable("quote_versions", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  quoteId: uuid("quote_id").notNull().references(() => quotesTable.id, { onDelete: "cascade" }),
+  userId: text("user_id").notNull(),
+  version: integer("version").notNull(),
+  total: numeric("total", { precision: 12, scale: 2 }).notNull().default("0"),
+  snapshot: jsonb("snapshot").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, (t) => [
+  index("quote_versions_quote_idx").on(t.quoteId, t.version),
+]);

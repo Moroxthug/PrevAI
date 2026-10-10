@@ -2,7 +2,8 @@
 // screen lays itself out with these: the board's own paddings and gaps go in as props
 // (`<Section px={20} pt={26} gap={14}>`), never as style objects.
 import type { ReactNode } from "react";
-import { View, type ViewStyle } from "react-native";
+import { Pressable, ScrollView, View, type ViewStyle } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Rise } from "./motion";
 
 export type Space = {
@@ -43,4 +44,19 @@ export function Section({ children, delay = 0, ...space }: Space & { delay?: num
 /** Empty space that pushes what follows to the bottom. */
 export function Spacer({ h }: { h?: number }) {
   return <View style={h ? { height: h } : { flexGrow: 1 }} />;
+}
+
+/** The page's scroller. `bottom` is the board's bottom padding (44 on plain pages, TAB_BAR_SPACE under the tab bar); the phone's own bar is added. */
+export function ScrollPage({ children, bottom = 0 }: { children: ReactNode; bottom?: number }) {
+  const insets = useSafeAreaInsets();
+  return (
+    <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled" contentContainerStyle={{ paddingBottom: bottom + insets.bottom }}>
+      {children}
+    </ScrollView>
+  );
+}
+
+/** A transparent layer over its parent that closes what is open when tapped (the dimmed rest of Home under the quote bar). */
+export function TapAway({ label, onPress }: { label: string; onPress: () => void }) {
+  return <Pressable accessibilityRole="button" accessibilityLabel={label} onPress={onPress} style={{ position: "absolute", left: 0, right: 0, top: 0, bottom: 0 }} />;
 }

@@ -1,6 +1,7 @@
 import { Router, type Response } from "express";
+import { z } from "zod";
 import { db, quotesTable, quoteVariantsTable, businessProfilesTable, priceCatalogItemsTable, leadsTable, leadEventsTable, incentivesCatalogTable, normalizeProvince, regioneDiProvincia, readQuoteClientData, quoteTaxLines } from "@workspace/db";
-import { eq, or, isNull } from "drizzle-orm";
+import { and, eq, or, isNull } from "drizzle-orm";
 import { inferInterventionCategories, matchIncentivesForQuote } from "../incentives/matching.js";
 import { ensureDefaultIncentives } from "../incentives/seed.js";
 import { openai } from "@workspace/integrations-openai-ai-server";
@@ -78,6 +79,7 @@ function toPublicVariant(v: typeof quoteVariantsTable.$inferSelect, _province: s
     id: v.id,
     label: v.label,
     description: v.description,
+    recommended: v.recommended ?? false,
     position: v.position,
     capitoli: v.capitoli,
     sconto: v.sconto,
@@ -96,6 +98,7 @@ function toPublicQuote(quote: typeof quotesTable.$inferSelect, variants?: (typeo
   return {
     id: quote.id,
     numeroPreventivoData: quote.numeroPreventivoData,
+    version: quote.version,
     titoloPreventivoRiga1: quote.titoloPreventivoRiga1,
     titoloPreventivoRiga2: quote.titoloPreventivoRiga2,
     descrizioneGenerale: quote.descrizioneGenerale,
@@ -104,6 +107,7 @@ function toPublicQuote(quote: typeof quotesTable.$inferSelect, variants?: (typeo
     capitoli: quote.capitoli,
     sconto: quote.sconto,
     condizioniPagamento: quote.condizioniPagamento,
+    exclusions: Array.isArray(quote.exclusions) ? quote.exclusions : [],
     subtotale: quote.subtotale,
     ivaPercentuale: quote.ivaPercentuale,
     ivaValore: quote.ivaValore,
@@ -114,6 +118,7 @@ function toPublicQuote(quote: typeof quotesTable.$inferSelect, variants?: (typeo
     pdfUrl: quote.pdfUrl,
     status: quote.status,
     acceptedAt: quote.acceptedAt,
+    declinedAt: quote.declinedAt ?? null,
     acceptedByName: quote.acceptedByName,
     acceptedVariantId: quote.acceptedVariantId ?? null,
     // V2-6 — AI Act art. 50: la pagina pubblica dichiara la provenienza IA come il PDF.
@@ -723,6 +728,58 @@ router.post("/public/quotes/:id/accept", quoteAcceptLimiter, async (req, res) =>
     res.json({ success: true, quote: toPublicQuote(updated, variants) });
   } catch (err) {
     logger.error({ err }, "Error accepting public quote");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// POST /api/public/quotes/:id/decline: il cliente dice di no (POCKET-2, QuoteAI Phase 125). Registra quando e il
+// motivo facoltativo, ferma i promemoria e avvisa l'impresa. Idempotente; un preventivo accettato non si può
+// rifiutare. Inviarlo di nuovo azzera il rifiuto.
+const MAX_DECLINE_REASON_LENGTH = 500;
+router.post("/public/quotes/:id/decline", quoteAcceptLimiter, async (req, res) => {
+  try {
+    const id = await quoteIdFromLink(req.params.id as string, res);
+    if (!id) return;
+    const parsed = z.object({ reason: z.string().max(MAX_DECLINE_REASON_LENGTH).optional() }).safeParse(req.body ?? {});
+    if (!parsed.success) {
+      res.status(400).json({ error: "Il motivo è troppo lungo." });
+      return;
+    }
+    const [quote] = await db.select().from(quotesTable).where(eq(quotesTable.id, id));
+    if (!quote || (quote.status !== "unlocked" && quote.status !== "accepted")) {
+      res.status(404).json({ error: "Preventivo non trovato." });
+      return;
+    }
+    if (quote.status === "accepted") {
+      res.status(409).json({ error: "Questo preventivo è già stato accettato." });
+      return;
+    }
+    const variants = await db.select().from(quoteVariantsTable).where(eq(quoteVariantsTable.quoteId, id)).orderBy(quoteVariantsTable.position);
+    if (quote.declinedAt) {
+      res.json({ success: true, quote: toPublicQuote(quote, variants) });
+      return;
+    }
+    const reason = (parsed.data.reason ?? "").trim() || null;
+    const [updated] = await db
+      .update(quotesTable)
+      .set({ declinedAt: new Date(), declinedReason: reason, nextFollowUpAt: null })
+      .where(and(eq(quotesTable.id, id), isNull(quotesTable.declinedAt)))
+      .returning();
+    if (updated) {
+      const client = readQuoteClientData(quote.clientData as QuoteClientData | null).nome?.trim() || "Il cliente";
+      void createNotification({
+        userId: quote.userId,
+        type: "quote_declined",
+        title: `${client} ha rifiutato il preventivo ${quote.numeroPreventivoData ?? ""}`.trim(),
+        body: reason ?? "Nessun motivo indicato. Una telefonata spesso lo riapre.",
+        link: `/dashboard/quotes/${quote.id}`,
+        entityType: "quote",
+        entityId: quote.id,
+      }).catch(() => undefined);
+    }
+    res.json({ success: true, quote: toPublicQuote(updated ?? quote, variants) });
+  } catch (err) {
+    logger.error({ err }, "Error declining public quote");
     res.status(500).json({ error: "Internal server error" });
   }
 });

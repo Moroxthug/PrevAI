@@ -21,3 +21,14 @@ test("data dei campi senza virgola, frase con un solo punto", () => {
   assert.equal(sentence("alle 9:12 a.m.."), "alle 9:12 a.m.");
   assert.equal(sentence("alle 09:12."), "alle 09:12.");
 });
+
+test("relativeWhen: minuti, ore, oggi, ieri, giorno della settimana, data", async () => {
+  const { relativeWhen } = await import("./format.ts");
+  const now = new Date(2026, 8, 29, 15, 0); // mar 29 set, ore 15
+  assert.equal(relativeWhen(new Date(2026, 8, 29, 14, 48), now), "12 min fa");
+  assert.equal(relativeWhen(new Date(2026, 8, 29, 13, 0), now), "2 h fa");
+  assert.equal(relativeWhen(new Date(2026, 8, 29, 1, 0), now), "oggi");
+  assert.equal(relativeWhen(new Date(2026, 8, 28, 20, 0), now), "ieri");
+  assert.equal(relativeWhen(new Date(2026, 8, 25, 9, 0), now), "ven");
+  assert.equal(relativeWhen(new Date(2026, 8, 12, 9, 0), now), "12 set");
+});

@@ -9,8 +9,8 @@
 // an active member of the company is ignored.
 import type { Request } from "express";
 import { fromNodeHeaders } from "better-auth/node";
-import { db, notificationsTable, organizationMembersTable, readQuoteClientData, type Quote, type QuoteClientData } from "@workspace/db";
-import { and, eq } from "drizzle-orm";
+import { db, notificationsTable, organizationMembersTable, quotesTable, readQuoteClientData, type Quote, type QuoteClientData } from "@workspace/db";
+import { and, eq, isNull } from "drizzle-orm";
 import { auth } from "../lib/auth.js";
 import { createNotification } from "../lib/notifications.js";
 import { logger } from "../lib/logger.js";
@@ -48,6 +48,8 @@ export async function noteQuoteViewed(req: Request, quote: Pick<Quote, "id" | "u
       .limit(1);
     if (seen.size >= SEEN_MAX) seen.clear();
     seen.add(quote.id);
+    // POCKET-2: il momento della prima apertura (l'elenco dell'app dice «Visto»). Una volta sola.
+    await db.update(quotesTable).set({ firstViewedAt: new Date() }).where(and(eq(quotesTable.id, quote.id), isNull(quotesTable.firstViewedAt)));
     if (already) return;
     const clientName = readQuoteClientData(quote.clientData as QuoteClientData | null).nome?.trim() || "Il cliente";
     const number = quote.numeroPreventivoData || `N. ${quote.id.slice(0, 4).toUpperCase()}`;

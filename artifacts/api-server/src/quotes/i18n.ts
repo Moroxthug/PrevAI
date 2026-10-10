@@ -49,6 +49,7 @@ const Q = {
   paymentTerms: "CONDIZIONI DI PAGAMENTO",
   nb: QUOTE_NB,
   note: "NOTA",
+  notIncluded: "NON INCLUSO",
   acceptance: "ACCETTAZIONE DEL PREVENTIVO",
   acceptanceText: QUOTE_ACCEPTANCE_TEXT,
   dateAndLocation: "Data e luogo",

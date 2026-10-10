@@ -35,6 +35,8 @@ interface PublicQuoteVariant {
   label: string;
   description: string;
   position: number;
+  /** POCKET-2: l'opzione che l'impresa consiglia. */
+  recommended?: boolean;
   capitoli: PublicQuoteChapter[] | null;
   sconto: { percentuale: number; importoScontato: number } | null;
   subtotale: string;
@@ -66,6 +68,9 @@ interface PublicQuote {
   acceptedAt: string | null;
   acceptedByName: string | null;
   acceptedVariantId: string | null;
+  /** POCKET-2: quando il cliente ha rifiutato, e cosa il prezzo non copre. */
+  declinedAt?: string | null;
+  exclusions?: string[];
   variants: PublicQuoteVariant[];
   aiGenerated?: boolean;
 }
@@ -187,6 +192,11 @@ export default function PublicQuotePage() {
   const [selectedVariantId, setSelectedVariantId] = useState<string | null>(null);
   // APP-1h (QuoteAI Phase 111): il nome si chiede in un foglio aperto dal pulsante Accetta in basso, non in un modulo in fondo alla pagina.
   const [acceptOpen, setAcceptOpen] = useState(false);
+  // POCKET-2: il cliente può dire di no (con un motivo facoltativo); l'impresa lo vede nell'app.
+  const [declineOpen, setDeclineOpen] = useState(false);
+  const [declineReason, setDeclineReason] = useState("");
+  const [declining, setDeclining] = useState(false);
+  const [declineError, setDeclineError] = useState<string | null>(null);
   /** CLI-1: l'area clienti, quando il preventivo è legato a un cliente con email. */
   const [portalUrl, setPortalUrl] = useState<string | null>(null);
   useDocumentTitle(quote ? `${t("publicQuote.quoteFallback")}${quote.numeroPreventivoData ? ` ${quote.numeroPreventivoData}` : ""} · ${quote.companySnapshot?.companyName || "PrevAI"}` : notFound ? t("publicQuote.notAvailableTitle") : null);
@@ -247,6 +257,31 @@ export default function PublicQuotePage() {
       setError(t("publicQuote.errorConnection"));
     } finally {
       setAccepting(false);
+    }
+  }
+
+  async function handleDecline() {
+    if (!id || declining) return;
+    setDeclining(true);
+    setDeclineError(null);
+    try {
+      const res = await fetch(`/api/public/quotes/${id}/decline`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ reason: declineReason.trim() || undefined }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setDeclineError(data.error || t("publicQuote.errorDeclineFailed"));
+        return;
+      }
+      setQuote(data.quote);
+      setDeclineOpen(false);
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    } catch {
+      setDeclineError(t("publicQuote.errorConnection"));
+    } finally {
+      setDeclining(false);
     }
   }
 
@@ -349,7 +384,7 @@ export default function PublicQuotePage() {
                   className={cn("pq-tier", isSelected && "on", isAccepted && !isWinner && "dim")}
                 >
                   <span className="pq-tier-top">
-                    <span className="pq-tier-name">{tier.label}</span>
+                    <span className="pq-tier-name">{tier.label}{tier.recommended && !isAccepted ? <em className="pq-tier-rec"> · {t("publicQuote.tiers.recommended")}</em> : null}</span>
                     {isWinner && <CheckCircle2 className="h-4 w-4 shrink-0" style={{ color: "var(--green-dark)" }} />}
                   </span>
                   {tier.description && <span className="pq-tier-desc hide-phone">{tier.description}</span>}
@@ -429,6 +464,15 @@ export default function PublicQuotePage() {
             </div>
           </div>
 
+          {Array.isArray(quote.exclusions) && quote.exclusions.length > 0 && (
+            <div className="mt-4 pt-4" style={{ borderTop: "1px solid var(--soft)" }}>
+              <h3 className="text-xs font-semibold m-0 mb-2" style={{ color: "var(--navy)" }}>{t("publicQuote.notIncluded")}</h3>
+              <ul className="text-xs m-0 pl-4" style={{ color: "var(--muted-mk)" }}>
+                {quote.exclusions.map((x, i) => <li key={i}>{x}</li>)}
+              </ul>
+            </div>
+          )}
+
           {quote.note && (
             <p className="text-xs mt-4 pt-4" style={{ color: "var(--faint)", borderTop: "1px solid var(--soft)" }}>{quote.note}</p>
           )}
@@ -438,6 +482,13 @@ export default function PublicQuotePage() {
       <RebatesWidget quoteRef={id!} />
 
       {portalUrl && <PortalLinkCard url={portalUrl} companyName={companyName} className="mt-6" />}
+
+      {!isAccepted && quote.declinedAt && (
+        <div className="card p-5 sm:p-6 mt-6">
+          <h2 className="text-sm font-semibold mb-1" style={{ color: "var(--navy)" }}>{t("publicQuote.declinedTitle")}</h2>
+          <p className="text-xs m-0" style={{ color: "var(--muted-mk)" }}>{t("publicQuote.declinedBody")}</p>
+        </div>
+      )}
 
       {!isAccepted && (
         <>
@@ -458,6 +509,38 @@ export default function PublicQuotePage() {
               </button>
             </StickyActionBar>
           </div>
+          {!quote.declinedAt && (
+            <p className="text-center mt-3 mb-0">
+              <button type="button" className="text-xs underline" style={{ color: "var(--muted-mk)", background: "none", border: 0, cursor: "pointer" }} onClick={() => { setDeclineError(null); setDeclineOpen(true); }}>
+                {t("publicQuote.declineLink")}
+              </button>
+            </p>
+          )}
+          <BottomSheet
+            open={declineOpen}
+            onOpenChange={(o) => { if (!declining) setDeclineOpen(o); }}
+            title={t("publicQuote.declineTitle")}
+            description={t("publicQuote.declineSubtitle")}
+            footer={
+              <button type="button" onClick={handleDecline} disabled={declining} className="btn btn-navy w-full">
+                {declining ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+                {t("publicQuote.declineButton")}
+              </button>
+            }
+          >
+            <div className="field">
+              <label htmlFor="declineReason">{t("publicQuote.declineReasonLabel")}</label>
+              <textarea
+                id="declineReason"
+                value={declineReason}
+                onChange={(e) => setDeclineReason(e.target.value)}
+                placeholder={t("publicQuote.declineReasonPlaceholder")}
+                maxLength={500}
+                rows={3}
+              />
+            </div>
+            {declineError && <p className="text-xs m-0" role="alert" style={{ color: "var(--red)" }}>{declineError}</p>}
+          </BottomSheet>
           <BottomSheet
             open={acceptOpen}
             onOpenChange={(o) => { if (!accepting) setAcceptOpen(o); }}

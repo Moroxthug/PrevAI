@@ -34,3 +34,35 @@ export function dayDate(d: Date, locale: Locale = "it-IT"): string {
 export function sentence(s: string): string {
   return s.replace(/\.\.$/, ".");
 }
+
+/** "ven" */
+export function weekdayShort(d: Date, locale: Locale = "it-IT"): string {
+  return new Intl.DateTimeFormat(locale, { weekday: "short" }).format(d);
+}
+
+/** "settembre" */
+export function monthLong(d: Date, locale: Locale = "it-IT"): string {
+  return new Intl.DateTimeFormat(locale, { month: "long" }).format(d);
+}
+
+/** La data in cima alla Home: "mar 29 set" */
+export function headerDate(d: Date, locale: Locale = "it-IT"): string {
+  return new Intl.DateTimeFormat(locale, { weekday: "short", month: "short", day: "numeric" }).format(d).replace(/,/g, "");
+}
+
+/**
+ * Quando è successo, come lo dicono i pannelli: "12 min fa", "2 h fa", "oggi", "lun" entro la settimana,
+ * poi "12 set". `now` si passa da fuori per poterlo provare.
+ */
+export function relativeWhen(at: Date, now: Date, locale: Locale = "it-IT"): string {
+  const mins = Math.round((now.getTime() - at.getTime()) / 60_000);
+  const ago = (n: number, unit: "min" | "h") => `${n} ${unit} fa`;
+  if (mins >= 0 && mins < 60) return ago(Math.max(1, mins), "min");
+  const sameDay = at.getFullYear() === now.getFullYear() && at.getMonth() === now.getMonth() && at.getDate() === now.getDate();
+  if (sameDay && mins >= 0) return mins < 60 * 12 ? ago(Math.round(mins / 60), "h") : "oggi";
+  const startOfDay = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+  const days = Math.round((startOfDay(now) - startOfDay(at)) / 86_400_000);
+  if (days === 1) return "ieri";
+  if (days > 1 && days < 7) return new Intl.DateTimeFormat(locale, { weekday: "short" }).format(at);
+  return shortDate(at, locale);
+}

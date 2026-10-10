@@ -462,6 +462,12 @@ export async function generateCapitolatoPdfBuffer(quote: QuoteRow, profile: Prof
       ...condizioniContent,
 
       // Note
+      // POCKET-2: «Non incluso» — cosa il prezzo non copre.
+      ...(Array.isArray(quote.exclusions) && quote.exclusions.length > 0 ? [
+        { text: qt("notIncluded", lang), style: "sectionHeading", margin: [0, 14, 0, 4] as [number, number, number, number] },
+        { ul: quote.exclusions.map((x: string) => ({ text: x, fontSize: 8, color: "#333" })) },
+      ] as Content[] : []),
+
       ...(quote.note ? [
         { text: qt("note", lang), style: "sectionHeading", margin: [0, 14, 0, 4] as [number, number, number, number] },
         { text: quote.note, fontSize: 8, color: "#333" },
@@ -837,6 +843,12 @@ export async function generateQuotePdfBuffer(quote: QuoteRow, profile: ProfileRo
       ...incentivesBox(clientData, totale),
 
       ...condizioniContent,
+
+      // POCKET-2: «Non incluso» — cosa il prezzo non copre.
+      ...(Array.isArray(quote.exclusions) && quote.exclusions.length > 0 ? [
+        { text: qt("notIncluded", lang), style: "sectionHeading", margin: [0, 14, 0, 4] as [number, number, number, number] },
+        { ul: quote.exclusions.map((x: string) => ({ text: x, fontSize: 8, color: "#333" })) },
+      ] as Content[] : []),
 
       ...(quote.note ? [
         { text: qt("note", lang), style: "sectionHeading", margin: [0, 14, 0, 4] as [number, number, number, number] },

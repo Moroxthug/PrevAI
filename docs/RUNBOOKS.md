@@ -1379,3 +1379,26 @@ Quando il titolare decide il prezzo (D20): compilare `POSTO_EXTRA` in `piani.ts`
 | La classifica è vuota o a zero | Si conta dal 2026-10-01 e solo i preventivi/fatture **inviati dall'app** da una persona; PDF scaricato, link copiato, invii programmati o di sistema non hanno una persona |
 | Un vinto non compare a chi l'ha fatto | Il credito va a chi l'ha inviato per primo, non a chi l'ha creato |
 | Cancellare l'account di un membro | `sent_by_user_id` resta con l'id non più esistente: la riga in classifica mostra «—» finché non ha un nome; i totali restano |
+
+## 39. L'app Expo: dal preventivo all'incasso (POCKET-2, riga 59)
+
+**Dove**: `artifacts/pocket/src/app/{home,quotes,quote,quote-editor,price-check,new-quote,clients,client,leads,invoices,invoice,menu}.tsx`, `src/lib/*Api.ts`, testi in `src/i18n/it-{preventivi,lavoro,soldi}.ts`; server `api-server/src/clients/overview.ts`, `today/{business,checklist}.ts`, `quotes/versions.ts`, rotte in `routes/{clients,quotes,public-quotes,invoices,today}.ts`. Migrazione **0023**.
+
+**Prima di pubblicare**: `bash scripts/prod-migrate.sh migrations/v2/0023_pocket2_preventivo_incasso.sql` (additiva e rieseguibile). Il codice nuovo nomina le colonne nuove di `quotes`: senza la migrazione, la lista e il dettaglio dei preventivi danno 500.
+
+**Cosa fa**
+1. **Clienti dai preventivi.** La migrazione crea una riga di `clients` per ogni gruppo (nome, email, telefono) dei preventivi che non ne hanno e collega preventivi, cantieri e documenti. Senza, l'app mostrerebbe «Ancora nessun cliente» a chi ha scritto preventivi con il sito. Un preventivo senza nome del cliente resta senza.
+2. **Preventivo sbloccato = inviato** (solo nell'app, `lib/quotes.ts → sentOf`): lo sblocco per PDF scaricato non scrive `sent_at`; l'app conta come inviato dall'ultima modifica, così non tutti i preventivi vecchi sono «Bozza» (e i più vecchi di 30 giorni «Scaduto»). Il server non lo cambia, tranne la scheda del cliente (`clients/overview.ts`).
+3. **Versioni.** Un preventivo inviato (`sent_at` pieno, stato sbloccato) che si modifica salva la versione corrente in `quote_versions` e diventa la successiva; `revision_open` resta vero fino al nuovo invio (`send.ts` lo azzera, come un eventuale rifiuto).
+4. **Rifiuto del cliente** (`POST /api/public/quotes/:id/decline`, limite come l'accettazione): una volta; campanella `quote_declined`, nessuna spinta sul telefono.
+5. **«Segna come vinto»** non è una firma: `accepted_by_name` dice «Segnato come vinto da …» e parte `quote.accepted` (contratto in bozza, ecc.).
+6. **Oggi**: `today_checks` (per persona e giorno, Europe/Rome); un compito di cantiere si completa davvero (serve il permesso jobs/edit).
+
+| Domanda | Cosa fare |
+|---|---|
+| L'app dice «Ancora nessun cliente» ma ci sono preventivi | La 0023 non è stata eseguita (o il preventivo non ha il nome del cliente). Rieseguirla è sicuro |
+| Lista preventivi o dettaglio danno 500 dopo il deploy | Colonne nuove assenti: eseguire la 0023 |
+| «Anteprima» o «Copia il link» dicono che il link c'è dopo l'invio | Il preventivo è ancora in bozza: il link firmato (SEC-4) si fa solo per un preventivo sbloccato |
+| La scheda «Meteo in cantiere» non compare | Non c'è la rotta `/api/weather/today`: è voluto, la scheda sparisce |
+| SMS e WhatsApp sono «Non attivo» | PrevAI manda i preventivi solo per email: è il disegno senza il canale |
+| Nuove build dell'app | `expo-audio`, `expo-image-picker`, `expo-clipboard`, `expo-sharing` sono moduli nativi nuovi: serve una nuova build di sviluppo (`eas build --profile development`) |

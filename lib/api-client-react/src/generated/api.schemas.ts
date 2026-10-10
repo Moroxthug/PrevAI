@@ -107,6 +107,8 @@ export interface QuoteVariant {
   quoteId: string;
   label: string;
   description?: string;
+  /** The option the company recommends (at most one per quote). */
+  recommended?: boolean;
   position?: number;
   items: QuoteItem[];
   capitoli: QuoteChapter[];
@@ -198,6 +200,18 @@ export interface Quote {
   acceptedAt?: string | null;
   /** When the quote was last emailed to the client (Phase 105 picks the primary action from it). */
   sentAt?: string | null;
+  /** The version the client sees (2 after a sent quote was edited). */
+  version?: number;
+  /** True when the quote was edited after it was last sent. */
+  revisionOpen?: boolean;
+  /** When the client first opened the quote page. */
+  firstViewedAt?: string | null;
+  /** When the client declined the quote on its page. */
+  declinedAt?: string | null;
+  /** The reason the client gave when declining, if any. */
+  declinedReason?: string | null;
+  /** What the price does not include ("Non incluso"). */
+  exclusions?: string[];
   /** The job started from this quote, on GET /quotes/{id} only (Phase 105). */
   jobId?: string | null;
   pdfUrl?: string | null;
@@ -234,6 +248,14 @@ export interface QuoteSummary {
   /** The quote heading (titoloPreventivoRiga1), Phase 105. */
   title?: string | null;
   sentAt?: string | null;
+  /** When the client first opened the quote page. */
+  firstViewedAt?: string | null;
+  /** When the client declined the quote on its page. */
+  declinedAt?: string | null;
+  /** The reason the client gave when declining, if any. */
+  declinedReason?: string | null;
+  /** The quote number, for example "N° 12.2026 del 01/10/2026". */
+  numeroPreventivoData?: string | null;
   lineItemCount: number;
   subtotale: number;
   ivaValore: number;
