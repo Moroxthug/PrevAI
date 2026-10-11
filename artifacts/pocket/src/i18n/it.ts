@@ -1,5 +1,6 @@
 // Italiano (it-IT): PrevAI è solo in italiano. Chiavi raggruppate per schermata, come in
 // QuoteAI (en.ts/fr.ts), così ogni fase porta le stesse chiavi tradotte.
+import { cantieri } from "./it-cantieri";
 import { entrare } from "./it-entrare";
 import { lavoro } from "./it-lavoro";
 import { preventivi } from "./it-preventivi";
@@ -9,6 +10,7 @@ export const it = {
   ...entrare,
   ...preventivi,
   ...lavoro,
+  ...cantieri,
   ...soldi,
   sandbox: {
     title: "Componenti",

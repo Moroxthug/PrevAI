@@ -66,3 +66,15 @@ export function relativeWhen(at: Date, now: Date, locale: Locale = "it-IT"): str
   if (days > 1 && days < 7) return new Intl.DateTimeFormat(locale, { weekday: "short" }).format(at);
   return shortDate(at, locale);
 }
+
+/** "5 – 7 ott" dentro un mese, altrimenti "5 ott – 2 nov"; un giorno solo se coincidono. */
+export function dateRange(a: Date, b: Date, locale: Locale = "it-IT"): string {
+  if (a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate()) return shortDate(a, locale);
+  if (a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth()) return `${a.getDate()} – ${shortDate(b, locale)}`;
+  return `${shortDate(a, locale)} – ${shortDate(b, locale)}`;
+}
+
+/** "set 2027" se l'anno non è quello corrente, altrimenti "29 set": le date di lunga durata (una garanzia) dicono l'anno. */
+export function dateWithYear(d: Date, now: Date, locale: Locale = "it-IT"): string {
+  return d.getFullYear() === now.getFullYear() ? shortDate(d, locale) : new Intl.DateTimeFormat(locale, { month: "short", year: "numeric" }).format(d);
+}

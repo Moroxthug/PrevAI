@@ -9,6 +9,7 @@ import {
   timeEntriesTable,
   scheduleBlocksTable,
   businessProfilesTable,
+  crewLocationsTable,
   hasFeature,
 } from "@workspace/db";
 import { and, asc, desc, eq, gte, inArray, isNull, isNotNull, lt } from "drizzle-orm";
@@ -39,7 +40,12 @@ const writeLimiter = ipRateLimiter({ name: "worker-time.writeLimiter", windowMs:
 async function resolveWorker(rawToken: string) {
   if (!rawToken || rawToken.length < 20 || rawToken.length > 200) return null;
   const [worker] = await db.select().from(collaboratorsTable).where(eq(collaboratorsTable.timeTokenHash, hashToken(rawToken)));
-  if (!worker || !worker.active) return null;
+  if (!worker) {
+    // POCKET-3: un link che uno più nuovo ha sostituito lo dice, invece di «non valido».
+    const [old] = await db.select().from(collaboratorsTable).where(eq(collaboratorsTable.replacedTokenHash, hashToken(rawToken)));
+    return old && old.active ? { expired: true as const, replaced: true as const, worker: old } : null;
+  }
+  if (!worker.active) return null;
   if (worker.timeTokenExpiresAt && worker.timeTokenExpiresAt < new Date()) return { expired: true as const, worker };
   const [profile] = await db.select().from(businessProfilesTable).where(eq(businessProfilesTable.userId, worker.userId));
   // The company must still be on a plan with time tracking.
@@ -184,7 +190,7 @@ router.get("/t/:token", viewLimiter, async (req, res) => {
       return;
     }
     if (r.expired) {
-      res.status(410).json({ error: "EXPIRED", workerName: r.worker.name });
+      res.status(410).json({ error: "replaced" in r && r.replaced ? "REPLACED" : "EXPIRED", workerName: r.worker.name });
       return;
     }
     const jobs = await workerJobs(r.worker);
@@ -197,6 +203,10 @@ router.get("/t/:token", viewLimiter, async (req, res) => {
     const changes = r.worker.crewSeenAt ? await workerChanges(r.worker, r.worker.crewSeenAt, now) : [];
     res.json({
       worker: { name: r.worker.name, role: r.worker.role, canAddTasks: r.worker.canAddTasks },
+      // PrevAI non ha trasferte né più imprese per lo stesso operaio (riga 52): l'app mostra «non attivo» e nasconde il cambio impresa.
+      travel: null,
+      allowances: [],
+      companies: [{ workerId: r.worker.id, companyName: r.companyName, current: true, primary: true }],
       companyName: r.companyName,
       language: r.language,
       jobs,
@@ -211,6 +221,53 @@ router.get("/t/:token", viewLimiter, async (req, res) => {
     });
   } catch (err) {
     req.log.error({ err }, "Error loading worker page");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// POST /api/crew/request-link — { token } — pubblica. Un telefono il cui link non funziona più chiede un link nuovo all'impresa: il titolare riceve
+// una notifica con il nome dell'operaio. Basta il vecchio link (scaduto o sostituito) per dire chi chiede; uno sconosciuto no.
+router.post("/crew/request-link", writeLimiter, async (req, res) => {
+  try {
+    const body = z.object({ token: z.string().min(20).max(200) }).safeParse(req.body);
+    const r = body.success ? await resolveWorker(body.data.token) : null;
+    if (!r) { res.status(404).json({ error: "INVALID" }); return; }
+    const w = r.worker;
+    await createNotification({ userId: w.userId, type: "crew_link_requested", title: `${w.name} ha bisogno di un nuovo link`, body: "Crea un codice di abbinamento per lui in Team.", link: "/dashboard/team", push: false, entityType: "worker", entityId: w.id });
+    res.json({ success: true });
+  } catch (err) {
+    req.log.error({ err }, "Error requesting a new crew link");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// POST /api/t/:token/location — { lat, lng } — l'operaio ha scelto di condividere dove si trova mentre è in servizio. Conta solo un'entrata aperta; la riga si cancella all'uscita.
+router.post("/t/:token/location", writeLimiter, async (req, res) => {
+  try {
+    const r = await resolveWorker(req.params.token as string);
+    if (!r || r.expired) { res.status(r?.expired ? 410 : 404).json({ error: r?.expired ? "EXPIRED" : "INVALID" }); return; }
+    const body = z.object({ lat: z.number().min(-90).max(90), lng: z.number().min(-180).max(180) }).safeParse(req.body);
+    if (!body.success) { res.status(400).json({ error: "Invalid parameters" }); return; }
+    const [open] = await db.select().from(timeEntriesTable).where(and(eq(timeEntriesTable.workerId, r.worker.id), isNotNull(timeEntriesTable.clockInAt), isNull(timeEntriesTable.clockOutAt)));
+    if (!open) { res.status(409).json({ error: "NOT_ON_THE_CLOCK" }); return; }
+    await db.insert(crewLocationsTable).values({ workerId: r.worker.id, userId: r.worker.userId, projectId: open.projectId, lat: body.data.lat, lng: body.data.lng })
+      .onConflictDoUpdate({ target: crewLocationsTable.workerId, set: { projectId: open.projectId, lat: body.data.lat, lng: body.data.lng, updatedAt: new Date() } });
+    res.json({ success: true });
+  } catch (err) {
+    req.log.error({ err }, "Error saving the crew location");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// POST /api/t/:token/location/stop — l'operaio ha spento la condivisione: la riga sparisce subito.
+router.post("/t/:token/location/stop", writeLimiter, async (req, res) => {
+  try {
+    const r = await resolveWorker(req.params.token as string);
+    if (!r || r.expired) { res.status(r?.expired ? 410 : 404).json({ error: r?.expired ? "EXPIRED" : "INVALID" }); return; }
+    await db.delete(crewLocationsTable).where(eq(crewLocationsTable.workerId, r.worker.id));
+    res.json({ success: true });
+  } catch (err) {
+    req.log.error({ err }, "Error stopping the crew location");
     res.status(500).json({ error: "Internal server error" });
   }
 });
@@ -344,6 +401,7 @@ router.post("/t/:token/entries/:tid/clock-out", writeLimiter, async (req, res) =
       res.status(409).json({ error: "NOT_OPEN", message: "This entry isn't a currently open clock-in." });
       return;
     }
+    await db.delete(crewLocationsTable).where(eq(crewLocationsTable.workerId, r.worker.id)); // la condivisione finisce con il turno
     const jobs = await workerJobs(r.worker);
     const job = jobs.find((j) => j.id === entry.projectId);
     const now = new Date();

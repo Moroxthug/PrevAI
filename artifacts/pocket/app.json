@@ -36,6 +36,14 @@
       ],
       "expo-sharing",
       [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "PrevAI controlla dove ti trovi quando timbri l'entrata o l'uscita, e lo condivide con la tua impresa solo mentre sei in turno.",
+          "isAndroidBackgroundLocationEnabled": false,
+          "isIosBackgroundLocationEnabled": false
+        }
+      ],
+      [
         "expo-image-picker",
         {
           "photosPermission": "PrevAI usa le tue foto per allegare al preventivo le immagini del cantiere.",

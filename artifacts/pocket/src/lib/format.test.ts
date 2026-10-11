@@ -32,3 +32,11 @@ test("relativeWhen: minuti, ore, oggi, ieri, giorno della settimana, data", asyn
   assert.equal(relativeWhen(new Date(2026, 8, 25, 9, 0), now), "ven");
   assert.equal(relativeWhen(new Date(2026, 8, 12, 9, 0), now), "12 set");
 });
+
+test("un intervallo di date toglie il mese ripetuto", async () => {
+  const { dateRange } = await import("./format.ts");
+  const d = (m: number, day: number) => new Date(2026, m - 1, day, 12);
+  assert.equal(dateRange(d(10, 5), d(10, 7)), "5 – 7 ott");
+  assert.equal(dateRange(d(10, 30), d(11, 2)), "30 ott – 2 nov");
+  assert.equal(dateRange(d(10, 5), d(10, 5)), "5 ott");
+});

@@ -48,5 +48,8 @@ export * from "./quote-public-links";
 export * from "./portal";
 export * from "./schedule";
 export * from "./field-reports";
+export * from "./crew-locations";
+export * from "./service-calls";
+export * from "./job-permits";
 export * from "./sync";
 export * from "./today-checks";

@@ -40,6 +40,10 @@ const PUBLIC_ROUTES: Allow[] = [
     match: /^(GET|POST) \/api\/portal\/:token/,
     reason: "CLI-1: area clienti — token hashato; oltre all'intestazione tutto vuole la sessione X-Portal-Session ottenuta col codice via email (5 tentativi, 10 minuti); ogni riga letta è del cliente del token e della sua impresa; IP rate limited",
   },
+  {
+    match: /^(GET|POST) \/api\/crew\/(pair(\/:code)?|request-link)$/,
+    reason: "POCKET-3: il telefono della squadra non ha un account — il codice di abbinamento (6 caratteri, hash, 7 giorni, una volta sola) e il vecchio link si scambiano qui; 20 tentativi ogni 15 minuti per IP, l'anteprima non consuma niente",
+  },
   { match: /^(GET|POST) \/api\/public\//, reason: "public quote widget + unsubscribe links — rate limited (Rule 6)" },
   { match: /^POST \/api\/webhooks\/sdi\/:userId$/, reason: "A-1: notifiche dell'intermediario SdI — segreto per impresa confrontato con timingSafeEqual dentro l'adapter (Rule 7), IP rate limited" },
   {

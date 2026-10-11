@@ -18,6 +18,21 @@ export const BUILT = {
   Invoices: "/invoices",
   Invoice: "/invoice",
   Leads: "/leads",
+  Jobs: "/jobs",
+  JobSetup: "/job-setup",
+  Job: "/job",
+  ChangeOrder: "/change-order",
+  Schedule: "/schedule",
+  Team: "/team",
+  ServiceCalls: "/service-calls",
+  CrewMap: "/crew-map",
+  Teammate: "/teammate",
+  ForemanHome: "/foreman-home",
+  CrewNow: "/crew-now",
+  CrewHours: "/crew-hours",
+  CrewTravel: "/crew-travel",
+  LiveLocation: "/live-location",
+  CrewExpired: "/crew-expired",
 } as const;
 
 export type BuiltScreen = keyof typeof BUILT;

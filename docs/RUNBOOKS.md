@@ -1402,3 +1402,21 @@ Quando il titolare decide il prezzo (D20): compilare `POSTO_EXTRA` in `piani.ts`
 | La scheda «Meteo in cantiere» non compare | Non c'è la rotta `/api/weather/today`: è voluto, la scheda sparisce |
 | SMS e WhatsApp sono «Non attivo» | PrevAI manda i preventivi solo per email: è il disegno senza il canale |
 | Nuove build dell'app | `expo-audio`, `expo-image-picker`, `expo-clipboard`, `expo-sharing` sono moduli nativi nuovi: serve una nuova build di sviluppo (`eas build --profile development`) |
+
+## 40. L'app Expo: cantieri e squadra (POCKET-3, riga 60)
+
+**Dove**: `artifacts/pocket/src/app/{jobs,job-setup,job,change-order,schedule,team,teammate,crew-*,foreman-home,live-location,service-calls}.tsx`, `src/jobTabs/*`, testi in `src/i18n/it-cantieri.ts`; server `routes/{team,worker-time,crew,jobs,service-calls}.ts`, `crew/pairing.ts`, `jobs/changeOrderDraft.ts`. Migrazione **0024**.
+
+**Prima di pubblicare**: `bash scripts/prod-migrate.sh migrations/v2/0024_pocket3_cantieri_squadra.sql` (additiva e rieseguibile). Il codice nuovo nomina le colonne nuove di `collaborators`: senza la migrazione la pagina dell'operaio (`/t/:token`) e la squadra danno 500.
+
+**Cosa fa**
+1. **Abbinare il telefono dell'operaio.** Team → operaio → «Crea un codice»: 6 caratteri (123-ABC), vale 7 giorni, funziona una volta. L'operaio lo scrive nell'app («Sei in squadra?»). Un codice nuovo sostituisce il precedente; un nuovo link (o un abbinamento) sostituisce il vecchio, che dice «sostituito» e può chiederne uno (arriva una notifica al titolare, senza spinta).
+2. **Posizione in diretta.** Solo se l'operaio la accende, solo con un'entrata aperta; una riga per operaio in `crew_locations`, cancellata all'uscita o quando smette; la mappa non mostra posizioni più vecchie di 12 ore.
+3. **Assistenza e garanzia.** Una chiamata si registra su un cantiere concluso; in garanzia (24 mesi dalla fine) è senza addebito, altrimenti a pagamento; la visita fissata è un turno in agenda.
+4. **Variante a voce.** `POST /api/jobs/:id/change-orders/draft` usa l'IA (conta nel tetto mensile) e non salva niente: il titolare controlla ogni prezzo; se l'IA non risponde, la schermata dice di aggiungere le voci a mano.
+
+| Domanda | Cosa fare |
+|---|---|
+| Pagina dell'operaio o Squadra danno 500 dopo il deploy | Colonne nuove assenti: eseguire la 0024 |
+| «Questo codice non funziona» | Scaduto (7 giorni) o già usato: crearne uno nuovo; i tentativi sono 20 ogni 15 minuti per indirizzo |
+| La mappa dice «Nessuno in diretta» con la squadra al lavoro | Nessuno ha acceso la posizione (è una scelta di ognuno) |

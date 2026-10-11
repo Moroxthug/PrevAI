@@ -30,6 +30,8 @@ import { sendWorkerInviteEmail } from "../lib/emailTeam.js";
 import { parseIsoDate, toIsoDate } from "../jobs/dates.js";
 import { serializeWorker, serializeEquipment, serializeTimeEntry, serializeUsage, syncLabourCost, syncEquipmentCost, nameMaps, approvedHoursByWorker } from "../costs/service.js";
 import { logger } from "../lib/logger.js";
+import { ipRateLimiter } from "../lib/rateLimit.js";
+import { newPairingCode, normalizePairingCode, PAIRING_DAYS } from "../crew/pairing.js";
 
 // ── Phase 3: workers, time entries, equipment ────────────────────────────────
 // Workers are free on every plan (they existed as CRM collaborators); logging
@@ -217,7 +219,7 @@ router.post("/team/workers/:wid/invite", requireAuth, requirePermission("team", 
     const body = z.object({ send: z.boolean().optional() }).safeParse(req.body ?? {});
     const raw = newRawToken();
     const expiresAt = new Date(Date.now() + WORKER_LINK_DAYS * 86_400_000);
-    await db.update(collaboratorsTable).set({ timeTokenHash: hashToken(raw), timeTokenExpiresAt: expiresAt }).where(eq(collaboratorsTable.id, w.id));
+    await db.update(collaboratorsTable).set({ timeTokenHash: hashToken(raw), timeTokenExpiresAt: expiresAt, replacedTokenHash: w.timeTokenHash ?? w.replacedTokenHash ?? null }).where(eq(collaboratorsTable.id, w.id));
     const url = `${getBaseUrl()}/t/${raw}`;
     let emailed = false;
     if (body.success && body.data.send !== false && w.email) {
@@ -233,6 +235,70 @@ router.post("/team/workers/:wid/invite", requireAuth, requirePermission("team", 
     res.json({ url, expiresAt: expiresAt.toISOString(), emailed });
   } catch (err) {
     req.log.error({ err }, "Error issuing worker link");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// POST /api/team/workers/:wid/pairing-code — il codice che l'operaio scrive sul telefono (7 giorni, una volta sola). Uno nuovo sostituisce l'ultimo.
+router.post("/team/workers/:wid/pairing-code", requireAuth, requirePermission("team", "full"), async (req, res) => {
+  try {
+    const userId = getUserId(res);
+    const gate = await requireTeamFeature(userId);
+    if (!gate.ok) { planRequired(res, gate.plan, "Worker time tracking"); return; }
+    const w = await ownedWorker(userId, req.params.wid as string);
+    if (!w) { res.status(404).json({ error: "Not found" }); return; }
+    if (!w.active) { res.status(409).json({ error: "INACTIVE", message: "Riattiva prima l'operaio." }); return; }
+    const code = newPairingCode();
+    const expiresAt = new Date(Date.now() + PAIRING_DAYS * 86_400_000);
+    await db.update(collaboratorsTable).set({ pairingCodeHash: hashToken(code), pairingCodeExpiresAt: expiresAt }).where(eq(collaboratorsTable.id, w.id));
+    await writeAudit({ userId, actorType: "user", actorId: userId, entityType: "worker", entityId: w.id, action: "pairing_code_issued" });
+    res.status(201).json({ code, expiresAt: expiresAt.toISOString() });
+  } catch (err) {
+    req.log.error({ err }, "Error issuing pairing code");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+const pairLimiter = ipRateLimiter({ name: "team.pairLimiter", windowMs: 15 * 60_000, max: 20, message: "Troppi tentativi. Riprova fra qualche minuto." });
+
+// GET /api/crew/pair/:code — pubblica. Per chi è il codice, senza consumarlo (il telefono mostra l'impresa prima di entrare).
+router.get("/crew/pair/:code", pairLimiter, async (req, res) => {
+  try {
+    const code = normalizePairingCode(String(req.params.code ?? ""));
+    if (!code) { res.status(404).json({ error: "INVALID" }); return; }
+    const [w] = await db.select().from(collaboratorsTable).where(eq(collaboratorsTable.pairingCodeHash, hashToken(code)));
+    if (!w || !w.active) { res.status(404).json({ error: "INVALID" }); return; }
+    if (!w.pairingCodeExpiresAt || w.pairingCodeExpiresAt < new Date()) { res.status(410).json({ error: "EXPIRED", workerName: w.name }); return; }
+    const [profile] = await db.select({ companyName: businessProfilesTable.companyName }).from(businessProfilesTable).where(eq(businessProfilesTable.userId, w.userId));
+    res.json({ workerName: w.name, companyName: profile?.companyName ?? "" });
+  } catch (err) {
+    req.log.error({ err }, "Error previewing the pairing code");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// POST /api/crew/pair — { code } — pubblica. Il telefono scambia un codice con il token del link dell'operaio (le schermate della squadra girano su quello).
+router.post("/crew/pair", pairLimiter, async (req, res) => {
+  try {
+    const body = z.object({ code: z.string().min(4).max(40) }).safeParse(req.body);
+    const code = body.success ? normalizePairingCode(body.data.code) : null;
+    if (!code) { res.status(404).json({ error: "INVALID" }); return; }
+    const [w] = await db.select().from(collaboratorsTable).where(eq(collaboratorsTable.pairingCodeHash, hashToken(code)));
+    if (!w || !w.active) { res.status(404).json({ error: "INVALID" }); return; }
+    if (!w.pairingCodeExpiresAt || w.pairingCodeExpiresAt < new Date()) { res.status(410).json({ error: "EXPIRED", workerName: w.name }); return; }
+    const raw = newRawToken();
+    // Una volta sola: il codice si azzera nello stesso UPDATE che emette il link, quindi un secondo tentativo non trova niente.
+    const [done] = await db
+      .update(collaboratorsTable)
+      .set({ pairingCodeHash: null, pairingCodeExpiresAt: null, timeTokenHash: hashToken(raw), timeTokenExpiresAt: new Date(Date.now() + WORKER_LINK_DAYS * 86_400_000), replacedTokenHash: w.timeTokenHash ?? w.replacedTokenHash ?? null })
+      .where(and(eq(collaboratorsTable.id, w.id), eq(collaboratorsTable.pairingCodeHash, hashToken(code))))
+      .returning({ id: collaboratorsTable.id });
+    if (!done) { res.status(404).json({ error: "INVALID" }); return; }
+    const [profile] = await db.select({ companyName: businessProfilesTable.companyName }).from(businessProfilesTable).where(eq(businessProfilesTable.userId, w.userId));
+    await writeAudit({ userId: w.userId, actorType: "system", entityType: "worker", entityId: w.id, action: "paired" });
+    res.json({ token: raw, workerName: w.name, companyName: profile?.companyName ?? "" });
+  } catch (err) {
+    req.log.error({ err }, "Error pairing the crew phone");
     res.status(500).json({ error: "Internal server error" });
   }
 });

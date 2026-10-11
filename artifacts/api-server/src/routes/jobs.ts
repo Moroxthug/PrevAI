@@ -20,6 +20,11 @@ import {
   whatsappConnectionsTable,
   jobPhotosTable,
   jobNotesTable,
+  costEntriesTable,
+  invoicesTable,
+  jobPermitsTable,
+  PERMIT_KINDS,
+  PERMIT_STATUSES,
   JOB_NOTE_SOURCES,
   type JobNote,
   hasFeature,
@@ -33,6 +38,9 @@ import {
 } from "@workspace/db";
 import { and, asc, desc, eq, inArray, isNull, sql } from "drizzle-orm";
 import { rejectStale } from "../lib/versioning.js";
+import { userRateLimiter } from "../lib/rateLimit.js";
+import { requireAiBudget } from "../lib/aiBudget.js";
+import { draftChangeOrder } from "../jobs/changeOrderDraft.js";
 import { requireAuth, getUserId, getUserName, getActorUserId } from "../middlewares/authMiddleware.js";
 import { requirePermission } from "../middlewares/requirePermission.js";
 import { raiseAutomation } from "../lib/automation.js";
@@ -158,7 +166,23 @@ router.get("/jobs", requireAuth, requirePermission("jobs", "view"), async (req, 
     const clientIds = [...new Set(projects.map((p) => p.clientId).filter((x): x is string => !!x))];
     const clients: { id: string; name: string }[] = clientIds.length ? await db.select({ id: clientsTable.id, name: clientsTable.name }).from(clientsTable).where(and(inArray(clientsTable.id, clientIds), eq(clientsTable.userId, userId))) : [];
     const milestones: Milestone[] = ids.length ? await db.select().from(milestonesTable).where(inArray(milestonesTable.projectId, ids)).orderBy(asc(milestonesTable.sortOrder)) : [];
-    const assignments: { projectId: string }[] = ids.length ? await db.select({ projectId: projectAssignmentsTable.projectId }).from(projectAssignmentsTable).where(inArray(projectAssignmentsTable.projectId, ids)) : [];
+    const assignments: { projectId: string; collaboratorId: string; name: string }[] = ids.length
+      ? await db.select({ projectId: projectAssignmentsTable.projectId, collaboratorId: projectAssignmentsTable.collaboratorId, name: collaboratorsTable.name }).from(projectAssignmentsTable).innerJoin(collaboratorsTable, eq(collaboratorsTable.id, projectAssignmentsTable.collaboratorId)).where(inArray(projectAssignmentsTable.projectId, ids))
+      : [];
+    // Soldi per cantiere per la scheda Cantieri: fatturato (non bozze né annullate), costi confermati e scontrini ancora da controllare.
+    const invoiced = new Map<string, number>();
+    if (ids.length) for (const inv of await db.select({ projectId: invoicesTable.projectId, totalCents: invoicesTable.totalCents, status: invoicesTable.status }).from(invoicesTable).where(and(eq(invoicesTable.userId, userId), isNull(invoicesTable.archivedAt), inArray(invoicesTable.projectId, ids)))) {
+      if (!inv.projectId || inv.status === "void" || inv.status === "draft") continue;
+      invoiced.set(inv.projectId, (invoiced.get(inv.projectId) ?? 0) + inv.totalCents);
+    }
+    const costs = new Map<string, { confirmed: number; pendingCount: number; pendingCents: number }>();
+    if (ids.length) for (const c of await db.select({ projectId: costEntriesTable.projectId, status: costEntriesTable.status, totalCents: costEntriesTable.totalCents }).from(costEntriesTable).where(and(eq(costEntriesTable.userId, userId), inArray(costEntriesTable.projectId, ids)))) {
+      if (!c.projectId) continue;
+      const row = costs.get(c.projectId) ?? { confirmed: 0, pendingCount: 0, pendingCents: 0 };
+      if (c.status === "confirmed") row.confirmed += c.totalCents;
+      else { row.pendingCount += 1; row.pendingCents += c.totalCents; }
+      costs.set(c.projectId, row);
+    }
     const clientName = new Map(clients.map((c) => [c.id, c.name]));
     const items = projects.map((p) => {
       const ms = milestones.filter((m) => m.projectId === p.id);
@@ -170,9 +194,15 @@ router.get("/jobs", requireAuth, requirePermission("jobs", "view"), async (req, 
         milestonesDone: ms.filter((m) => m.status === "completed").length,
         nextMilestone: next ? { id: next.id, title: next.title, plannedEnd: toIsoDate(next.plannedEnd) } : null,
         crewCount: assignments.filter((a) => a.projectId === p.id).length,
+        crew: assignments.filter((a) => a.projectId === p.id).map((a) => ({ id: a.collaboratorId, name: a.name })),
+        invoicedCents: invoiced.get(p.id) ?? 0,
+        costCents: costs.get(p.id)?.confirmed ?? 0,
+        pendingReceiptCount: costs.get(p.id)?.pendingCount ?? 0,
+        pendingReceiptCents: costs.get(p.id)?.pendingCents ?? 0,
       };
     });
-    res.json({ items });
+    // PrevAI non mette un tetto ai cantieri aperti: niente riga «N su M» nell'app.
+    res.json({ items, jobLimit: null, openJobs: projects.filter((p) => p.status !== "completed").length });
   } catch (err) {
     req.log.error({ err }, "Error listing jobs");
     res.status(500).json({ error: "Internal server error" });
@@ -890,6 +920,27 @@ const ChangeOrderBody = z.object({
   scheduleDeltaDays: z.number().int().min(-365).max(365).default(0),
 });
 
+const draftLimiter = userRateLimiter({ name: "jobs.changeOrderDraftLimiter", windowMs: 60 * 60 * 1000, max: 60, message: "Troppe bozze in un'ora. Riprova più tardi." });
+
+// POST /api/jobs/:id/change-orders/draft — { text } — POCKET-3: voci, titolo e giorni abbozzati dall'IA da quello che l'impresa ha detto. Non salva niente.
+router.post("/jobs/:id/change-orders/draft", requireAuth, requirePermission("jobs", "full"), draftLimiter, requireAiBudget, async (req, res) => {
+  try {
+    const userId = getUserId(res);
+    const gate = await requireJobsFeature(userId);
+    if (!gate.ok) { res.status(403).json({ error: "PLAN_REQUIRED", requiredPlan: gate.plan, message: "Le varianti richiedono il piano Pro" }); return; }
+    const body = z.object({ text: z.string().trim().min(3).max(1500) }).safeParse(req.body);
+    if (!body.success) { res.status(400).json({ error: "Invalid parameters" }); return; }
+    const job = await ownedProject(userId, req.params.id as string);
+    if (!job) { res.status(404).json({ error: "Not found" }); return; }
+    const draft = await draftChangeOrder({ userId, jobName: job.name, text: body.data.text });
+    if (!draft) { res.status(422).json({ error: "NO_DRAFT" }); return; }
+    res.json({ draft });
+  } catch (err) {
+    req.log.error({ err }, "Error drafting a change order");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
 router.post("/jobs/:id/change-orders", requireAuth, requirePermission("jobs", "full"), async (req, res) => {
   try {
     const userId = getUserId(res);
@@ -1281,6 +1332,71 @@ router.post("/jobs/:id/photos/share", requireAuth, requirePermission("jobs", "ed
     res.json({ success: true, channel: result.channel, count: photos.length });
   } catch (err) {
     req.log.error({ err }, "Error sharing job photos");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// ── POCKET-3: pratiche e sopralluoghi del cantiere ────────────────────────────
+// Solo l'elenco e l'aggiunta (CILA, SCIA, permesso di costruire, impianti…): PrevAI non ha il modulo di conformità di QuoteAI.
+
+const serializePermit = (p: typeof jobPermitsTable.$inferSelect) => ({
+  id: p.id,
+  projectId: p.projectId,
+  kind: p.kind,
+  title: p.title,
+  authority: p.authority,
+  referenceNumber: p.referenceNumber,
+  url: p.url,
+  status: p.status,
+  open: p.status === "needed" || p.status === "applied",
+  appliedAt: iso(p.appliedAt),
+  issuedAt: iso(p.issuedAt),
+  inspectionAt: iso(p.inspectionAt),
+  expiresAt: iso(p.expiresAt),
+  closedAt: iso(p.closedAt),
+  notes: p.notes,
+});
+
+const permitSchema = z.object({
+  title: z.string().trim().min(1).max(200),
+  kind: z.enum(PERMIT_KINDS).optional(),
+  authority: z.string().trim().max(200).optional(),
+  referenceNumber: z.string().trim().max(100).optional(),
+  status: z.enum(PERMIT_STATUSES).optional(),
+  notes: z.string().trim().max(2000).optional(),
+});
+
+// GET /api/jobs/:id/permits
+router.get("/jobs/:id/permits", requireAuth, requirePermission("jobs", "view"), async (req, res) => {
+  try {
+    const userId = getUserId(res);
+    const job = await ownedProject(userId, req.params.id as string);
+    if (!job) { res.status(404).json({ error: "Not found" }); return; }
+    const rows = await db.select().from(jobPermitsTable).where(and(eq(jobPermitsTable.projectId, job.id), eq(jobPermitsTable.userId, userId))).orderBy(asc(jobPermitsTable.createdAt));
+    res.json({ permits: rows.map(serializePermit), province: job.province ?? null });
+  } catch (err) {
+    req.log.error({ err }, "Error listing permits");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// POST /api/jobs/:id/permits
+router.post("/jobs/:id/permits", requireAuth, requirePermission("jobs", "edit"), async (req, res) => {
+  try {
+    const userId = getUserId(res);
+    const job = await ownedProject(userId, req.params.id as string);
+    if (!job) { res.status(404).json({ error: "Not found" }); return; }
+    const body = permitSchema.safeParse(req.body ?? {});
+    if (!body.success) { res.status(400).json({ error: "Invalid parameters", details: body.error }); return; }
+    const existing = await db.$count(jobPermitsTable, eq(jobPermitsTable.projectId, job.id));
+    if (existing >= 30) { res.status(409).json({ error: "LIMIT", message: "Un cantiere può avere fino a 30 pratiche." }); return; }
+    const d = body.data;
+    await db.insert(jobPermitsTable).values({ userId, projectId: job.id, title: d.title, kind: d.kind ?? "other", authority: d.authority ?? "", referenceNumber: d.referenceNumber ?? "", status: d.status ?? "needed", notes: d.notes ?? "" });
+    await writeAudit({ userId, actorType: "user", actorId: userId, entityType: "project", entityId: job.id, action: "permits_added", diff: { titles: [d.title] } });
+    const rows = await db.select().from(jobPermitsTable).where(and(eq(jobPermitsTable.projectId, job.id), eq(jobPermitsTable.userId, userId))).orderBy(asc(jobPermitsTable.createdAt));
+    res.status(201).json({ permits: rows.map(serializePermit) });
+  } catch (err) {
+    req.log.error({ err }, "Error adding permit");
     res.status(500).json({ error: "Internal server error" });
   }
 });
