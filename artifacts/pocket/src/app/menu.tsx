@@ -23,7 +23,7 @@ import { Text } from "@/ui/Text";
 type RowDef = { key: string; icon: IconName; tone: Tone; built?: BuiltScreen };
 const GROUPS: { key: string; rows: RowDef[] }[] = [
   { key: "business", rows: [
-    { key: "company", icon: "building", tone: "violet" }, { key: "priceBook", icon: "tag", tone: "lilac" },
+    { key: "company", icon: "building", tone: "violet" }, { key: "priceBook", icon: "tag", tone: "lilac", built: "PriceBook" },
     { key: "leads", icon: "funnel", tone: "clay", built: "Leads" }, { key: "contracts", icon: "pen", tone: "indigo", built: "Contracts" },
     { key: "fisco", icon: "percent", tone: "azure", built: "Compliance" } ] },
   { key: "team", rows: [
@@ -33,7 +33,7 @@ const GROUPS: { key: string; rows: RowDef[] }[] = [
     { key: "invoices", icon: "doc", tone: "azure", built: "Invoices" }, { key: "books", icon: "bank", tone: "sage", built: "Books" },
     { key: "analytics", icon: "bars", tone: "violet" }, { key: "integrations", icon: "sync", tone: "clay" } ] },
   { key: "workspace", rows: [
-    { key: "documents", icon: "file", tone: "indigo" }, { key: "suppliers", icon: "building", tone: "stone" },
+    { key: "documents", icon: "file", tone: "indigo" }, { key: "suppliers", icon: "building", tone: "stone", built: "Suppliers" }, { key: "materials", icon: "box", tone: "amber", built: "Inventory" },
     { key: "imports", icon: "sync", tone: "sky" }, { key: "archive", icon: "box", tone: "slate" } ] },
   { key: "app", rows: [
     { key: "assistant", icon: "orb", tone: "violet" }, { key: "settings", icon: "gear", tone: "slate" },

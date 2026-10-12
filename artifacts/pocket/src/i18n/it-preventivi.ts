@@ -47,6 +47,7 @@ export const preventivi = {
       integrations: { label: "App collegate" },
       documents: { label: "Documenti", sub: "Fatture dei fornitori e storico prezzi" },
       suppliers: { label: "Fornitori" },
+      materials: { label: "Materiali", sub: "Scorte e riordini" },
       imports: { label: "Importazioni", sub: "File CSV e Excel" },
       archive: { label: "Archivio", sub: "Vecchi preventivi, cantieri e clienti" },
       assistant: { label: "Assistente" },

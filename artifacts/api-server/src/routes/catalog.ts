@@ -1,9 +1,11 @@
 import { Router } from "express";
 import multer from "multer";
-import { requireAuth, getUserId } from "../middlewares/authMiddleware";
-import { requirePermission } from "../middlewares/requirePermission.js";
-import { db, priceCatalogItemsTable, quotesTable } from "@workspace/db";
-import { eq, and } from "drizzle-orm";
+import { requireAuth, getUserId, getActorRole } from "../middlewares/authMiddleware";
+import { requirePermission, roleCan } from "../middlewares/requirePermission.js";
+import { db, priceCatalogItemsTable, quotesTable, PRICE_ITEM_KINDS } from "@workspace/db";
+import { eq, and, desc, isNull } from "drizzle-orm";
+import { z } from "zod";
+import { itemKey, kindOf, monthUse, priceChange, startOfMonth, usageOf } from "../materials/priceBook.js";
 import type { QuoteChapter } from "@workspace/db";
 import { openai } from "@workspace/integrations-openai-ai-server";
 import { extractFromPdf, extractFromDocx, extractFromXlsx } from "../lib/extractDocument.js";
@@ -70,6 +72,11 @@ function serializeItem(item: typeof priceCatalogItemsTable.$inferSelect) {
     um: item.um,
     prezzoUnitario: Number(item.prezzoUnitario),
     note: item.note ?? null,
+    kind: kindOf(item.kind, item.um),
+    unitCost: item.unitCost == null ? null : Number(item.unitCost),
+    previousPrice: item.previousPrice == null ? null : Number(item.previousPrice),
+    priceChangedAt: item.priceChangedAt ? item.priceChangedAt.toISOString() : null,
+    parts: Array.isArray(item.parts) ? item.parts : null,
     createdAt: item.createdAt.toISOString(),
     updatedAt: item.updatedAt.toISOString(),
   };
@@ -90,6 +97,44 @@ router.get("/catalog", requireAuth, async (req, res) => {
   }
 });
 
+// POCKET-4 (QuoteAI 127.6 Listino): di che tipo è, quanto costa all'impresa e le parti di una lavorazione composta.
+const priceBookFields = z.object({
+  kind: z.enum(PRICE_ITEM_KINDS).optional(),
+  unitCost: z.number().finite().min(0).max(10_000_000).nullable().optional(),
+  parts: z.array(z.object({ name: z.string().trim().min(1).max(200), amount: z.number().finite().min(0).max(10_000_000) })).max(50).nullable().optional(),
+});
+
+// Le voci con dove sono state usate l'ultima volta, e i tre numeri in alto.
+router.get("/catalog/overview", requireAuth, async (req, res) => {
+  try {
+    const userId = getUserId(res);
+    const now = new Date();
+    const items = await db.select().from(priceCatalogItemsTable).where(eq(priceCatalogItemsTable.userId, userId)).orderBy(priceCatalogItemsTable.nome);
+    const quotes = await db
+      .select({ createdAt: quotesTable.createdAt, capitoli: quotesTable.capitoli })
+      .from(quotesTable)
+      .where(and(eq(quotesTable.userId, userId), isNull(quotesTable.archivedAt)))
+      .orderBy(desc(quotesTable.createdAt))
+      .limit(1000);
+    const usage = usageOf(quotes, now);
+    const out = items.map((i) => ({ ...serializeItem(i), lastUsedAt: usage.get(itemKey(i.nome))?.lastUsedAt ?? null }));
+    const month = monthUse(quotes, new Set(items.map((i) => itemKey(i.nome))), now);
+    const since = startOfMonth(now);
+    res.json({
+      canEdit: roleCan(getActorRole(res), "quotes", "edit"),
+      items: out,
+      assemblies: out.filter((i) => i.kind === "assembly").length,
+      usedThisMonth: month.lines,
+      usedInQuotes: month.quotes,
+      pricesChanged: items.filter((i) => i.priceChangedAt && i.priceChangedAt >= since).length,
+      changedSince: since.toISOString().slice(0, 10),
+    });
+  } catch (err) {
+    req.log.error({ err }, "Error loading the price book");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
 router.post("/catalog", requireAuth, requirePermission("quotes", "edit"), async (req, res) => {
   try {
     const userId = getUserId(res);
@@ -105,6 +150,11 @@ router.post("/catalog", requireAuth, requirePermission("quotes", "edit"), async 
       res.status(400).json({ error: "nome, um, and prezzoUnitario are required" });
       return;
     }
+    const extra = priceBookFields.safeParse(req.body ?? {});
+    if (!extra.success) {
+      res.status(400).json({ error: "Invalid parameters", details: extra.error });
+      return;
+    }
 
     const [created] = await db
       .insert(priceCatalogItemsTable)
@@ -115,6 +165,9 @@ router.post("/catalog", requireAuth, requirePermission("quotes", "edit"), async 
         um: um.trim(),
         prezzoUnitario: String(prezzoUnitario),
         note: note?.trim() || null,
+        kind: extra.data.kind ?? null,
+        unitCost: extra.data.unitCost == null ? null : String(extra.data.unitCost),
+        parts: extra.data.parts ?? null,
       })
       .returning();
 
@@ -354,7 +407,21 @@ router.put("/catalog/:id", requireAuth, requirePermission("quotes", "edit"), asy
       note?: string;
     };
 
+    const extra = priceBookFields.safeParse(req.body ?? {});
+    if (!extra.success) {
+      res.status(400).json({ error: "Invalid parameters", details: extra.error });
+      return;
+    }
     const updates: Partial<typeof priceCatalogItemsTable.$inferInsert> = {};
+    if (extra.data.kind !== undefined) updates.kind = extra.data.kind;
+    if (extra.data.unitCost !== undefined) updates.unitCost = extra.data.unitCost === null ? null : String(extra.data.unitCost);
+    if (extra.data.parts !== undefined) updates.parts = extra.data.parts;
+    if (prezzoUnitario !== undefined) {
+      // Il prezzo vecchio resta con la data, così il listino può dire «Prezzo cambiato» e «era 3,10 €».
+      const [before] = await db.select({ p: priceCatalogItemsTable.prezzoUnitario }).from(priceCatalogItemsTable).where(and(eq(priceCatalogItemsTable.id, id), eq(priceCatalogItemsTable.userId, userId)));
+      const change = before ? priceChange(Number(before.p), prezzoUnitario, new Date()) : null;
+      if (change) { updates.previousPrice = String(change.previousPrice); updates.priceChangedAt = change.priceChangedAt; }
+    }
     if (nome !== undefined) updates.nome = nome.trim();
     if (categoria !== undefined) updates.categoria = categoria?.trim() || null;
     if (um !== undefined) updates.um = um.trim();

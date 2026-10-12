@@ -39,6 +39,10 @@ export const BUILT = {
   AccountantView: "/accountant-view",
   Contracts: "/contracts",
   Contract: "/contract",
+  PriceBook: "/price-book",
+  Inventory: "/inventory",
+  Suppliers: "/suppliers",
+  Supplier: "/supplier",
 } as const;
 
 export type BuiltScreen = keyof typeof BUILT;

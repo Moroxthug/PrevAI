@@ -160,6 +160,19 @@ export const suppliersTable = pgTable("suppliers", {
   contactInfo: text("contact_info").notNull().default(""),
   email: text("email"),
   phone: text("phone"),
+  /** POCKET-4 (QuoteAI 127.6 Suppliers e Supplier): il referente, come paga l'impresa, le condizioni e le note. */
+  repName: text("rep_name"),
+  repRole: text("rep_role"),
+  /** «account» si paga a fine mese in fattura; «counter» si paga al banco (restano solo gli scontrini). */
+  kind: text("kind", { enum: ["account", "counter"] }).notNull().default("account"),
+  accountNo: text("account_no"),
+  terms: text("terms"),
+  proDiscountPct: numeric("pro_discount_pct", { precision: 5, scale: 2 }),
+  address: text("address"),
+  delivers: text("delivers"),
+  hours: text("hours"),
+  notes: text("notes"),
+  archivedAt: timestamp("archived_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
 });
