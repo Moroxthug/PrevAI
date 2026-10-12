@@ -1,7 +1,10 @@
 // Italiano (it-IT) delle schermate di POCKET-4 «Soldi e ufficio» (QuoteAI 127, i18n/screens/*.ts). Una chiave per schermata.
 // Il vocabolario è quello del sito: prima nota, estratto conto, SdI, F24, listino, pro-forma. Dove QuoteAI parla di
 // QuickBooks, Flinks o province canadesi, qui c'è ciò che PrevAI ha davvero (estratto conto importato, SdI, scadenzario).
+import { pay } from "./it-ufficio-pay";
+
 export const ufficio = {
+  ...pay,
   // Libri (Books.dc.html): nel menu è «Prima nota».
   bk: {
     title: "Prima nota", back: "Indietro", close: "Chiudi", more: "Altre azioni", retry: "Riprova",

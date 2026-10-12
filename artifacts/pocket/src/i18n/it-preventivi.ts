@@ -40,6 +40,7 @@ export const preventivi = {
       crew: { label: "Squadra e ruoli" },
       timesheets: { label: "Ore" },
       schedule: { label: "Agenda", sub: "Questa settimana, per persona" },
+      pay: { label: "Ore e costo", sub: "Costo del lavoro, file per il consulente" },
       invoices: { label: "Fatture e pro-forma" },
       books: { label: "Prima nota" },
       analytics: { label: "Analisi", sub: "Incassi, preventivi vinti, margini" },
