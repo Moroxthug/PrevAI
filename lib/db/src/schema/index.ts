@@ -49,6 +49,7 @@ export * from "./portal";
 export * from "./schedule";
 export * from "./field-reports";
 export * from "./pay";
+export * from "./reminders";
 export * from "./crew-locations";
 export * from "./service-calls";
 export * from "./job-permits";

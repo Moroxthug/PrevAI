@@ -3,7 +3,7 @@ import multer from "multer";
 import { randomUUID } from "node:crypto";
 import { Readable } from "node:stream";
 import { z } from "zod";
-import { db, businessProfilesTable, hasFeature, REGIMI_CONTABILI, FISCO_ONBOARDING_STEPS, TIPI_VERSAMENTO } from "@workspace/db";
+import { db, businessProfilesTable, hasFeature, REGIMI_CONTABILI, FISCO_ONBOARDING_STEPS, TIPI_VERSAMENTO, REMINDER_KINDS, REMINDER_RECURRENCES } from "@workspace/db";
 import { anniDisponibili, coefficienteDiAteco, GESTIONI_PREVIDENZIALI, MESTIERI_ATECO, motoreRevisionato, regoleDiAnno, RIDUZIONI_CONTRIBUTIVE } from "@workspace/config";
 import { eq } from "drizzle-orm";
 import { requireAuth, getUserId } from "../middlewares/authMiddleware.js";
@@ -36,6 +36,7 @@ import {
 import { ObjectNotFoundError, ObjectStorageService } from "../lib/objectStorage.js";
 import { whatsappPromemoriaDisponibile } from "../fiscale/promemoria.js";
 import { buildF24Pdf } from "../fiscale/f24pdf.js";
+import { aggiungiPromemoria, calendario, promemoriaFatto } from "../fiscale/calendario.js";
 import { prospettoF24 } from "@workspace/config";
 
 const router = Router();
@@ -467,6 +468,48 @@ router.delete("/fiscale/versamenti/:id", requireAuth, requirePermission("fiscale
   try {
     await eliminaVersamento(userId, req.params.id);
     res.status(204).end();
+  } catch (err) {
+    erroreFiscale(err, res);
+  }
+});
+
+// ── POCKET-4: il calendario delle scadenze per il telefono (QuoteAI 127.4) ───
+
+router.get("/fiscale/calendario", requireAuth, requirePermission("fiscale", "view"), async (_req, res) => {
+  const userId = getUserId(res);
+  if (!(await moduloOForbidden(userId, res))) return;
+  res.json(await calendario(userId));
+});
+
+const promemoriaSchema = z.object({
+  kind: z.enum(REMINDER_KINDS),
+  preset: z.string().max(40).nullable().optional(),
+  title: z.string().trim().min(1).max(160),
+  authority: z.string().trim().max(160).optional(),
+  dueDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  recurrence: z.enum(REMINDER_RECURRENCES),
+});
+
+router.post("/fiscale/calendario/promemoria", requireAuth, requirePermission("fiscale", "full"), async (req, res) => {
+  const userId = getUserId(res);
+  if (!(await moduloOForbidden(userId, res))) return;
+  const p = promemoriaSchema.safeParse(req.body);
+  if (!p.success) {
+    res.status(400).json({ error: "INVALID", message: "Dati non validi", dettagli: p.error.issues });
+    return;
+  }
+  try {
+    res.status(201).json({ reminder: await aggiungiPromemoria(userId, p.data) });
+  } catch (err) {
+    erroreFiscale(err, res);
+  }
+});
+
+router.post("/fiscale/calendario/promemoria/:id/fatto", requireAuth, requirePermission("fiscale", "full"), async (req, res) => {
+  const userId = getUserId(res);
+  if (!(await moduloOForbidden(userId, res))) return;
+  try {
+    res.json({ reminder: await promemoriaFatto(userId, req.params.id as string) });
   } catch (err) {
     erroreFiscale(err, res);
   }

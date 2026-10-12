@@ -25,7 +25,7 @@ const GROUPS: { key: string; rows: RowDef[] }[] = [
   { key: "business", rows: [
     { key: "company", icon: "building", tone: "violet" }, { key: "priceBook", icon: "tag", tone: "lilac" },
     { key: "leads", icon: "funnel", tone: "clay", built: "Leads" }, { key: "contracts", icon: "pen", tone: "indigo" },
-    { key: "fisco", icon: "percent", tone: "azure" } ] },
+    { key: "fisco", icon: "percent", tone: "azure", built: "Compliance" } ] },
   { key: "team", rows: [
     { key: "crew", icon: "users", tone: "sage" }, { key: "timesheets", icon: "clock", tone: "teal" },
     { key: "schedule", icon: "cal", tone: "sky" }, { key: "pay", icon: "card", tone: "amber", built: "Pay" } ] },

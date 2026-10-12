@@ -25,3 +25,26 @@ export async function downloadCsv(path: string, fallbackName: string): Promise<s
   await Sharing.shareAsync(file.uri, { mimeType: "text/csv", UTI: "public.comma-separated-values-text", dialogTitle: name });
   return name;
 }
+
+/** Come downloadCsv, per un PDF (l'F24 di una scadenza). */
+export async function downloadPdf(path: string, fallbackName: string): Promise<string> {
+  let res: Response;
+  try { res = await fetch(`${API_ORIGIN}${path}`); } catch { throw new ApiFailure(0, undefined, "offline"); }
+  if (!res.ok) throw new ApiFailure(res.status, undefined, `HTTP ${res.status}`);
+  const name = /filename="([^"]+)"/.exec(res.headers.get("content-disposition") ?? "")?.[1] ?? fallbackName;
+  const bytes = new Uint8Array(await res.arrayBuffer());
+  if (Platform.OS === "web") {
+    const url = URL.createObjectURL(new Blob([bytes as BlobPart], { type: "application/pdf" }));
+    const a = document.createElement("a");
+    a.href = url; a.download = name; a.click();
+    setTimeout(() => URL.revokeObjectURL(url), 10_000);
+    return name;
+  }
+  const { File, Paths } = await import("expo-file-system");
+  const Sharing = await import("expo-sharing");
+  const file = new File(Paths.cache, name);
+  file.create({ overwrite: true });
+  file.write(bytes);
+  await Sharing.shareAsync(file.uri, { mimeType: "application/pdf", UTI: "com.adobe.pdf", dialogTitle: name });
+  return name;
+}

@@ -30,3 +30,21 @@ CREATE TABLE IF NOT EXISTS pay_exports (
   snapshot jsonb NOT NULL DEFAULT '{}'::jsonb
 );
 CREATE INDEX IF NOT EXISTS pay_exports_user_period_idx ON pay_exports (user_id, period_start);
+
+--   · compliance_reminders — i promemoria dell'impresa nel calendario delle scadenze (QuoteAI 127.4 Compliance).
+CREATE TABLE IF NOT EXISTS compliance_reminders (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id text NOT NULL,
+  kind text NOT NULL DEFAULT 'other',
+  preset text,
+  title text NOT NULL,
+  authority text NOT NULL DEFAULT '',
+  due_date text NOT NULL,
+  recurrence text NOT NULL DEFAULT 'none',
+  remind_days_before integer NOT NULL DEFAULT 30,
+  notes text NOT NULL DEFAULT '',
+  last_done_at timestamptz,
+  done_at timestamptz,
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS compliance_reminders_user_idx ON compliance_reminders (user_id, due_date);

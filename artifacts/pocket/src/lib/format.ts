@@ -78,3 +78,11 @@ export function dateRange(a: Date, b: Date, locale: Locale = "it-IT"): string {
 export function dateWithYear(d: Date, now: Date, locale: Locale = "it-IT"): string {
   return d.getFullYear() === now.getFullYear() ? shortDate(d, locale) : new Intl.DateTimeFormat(locale, { month: "short", year: "numeric" }).format(d);
 }
+
+/** Un importo diviso dove il disegno rimpicciolisce i centesimi: «6.212» + «,00 €». */
+export function splitMoney(amount: number, locale: Locale = "it-IT"): { whole: string; cents: string } {
+  const parts = new Intl.NumberFormat(locale, { style: "currency", currency: "EUR", minimumFractionDigits: 2, maximumFractionDigits: 2 }).formatToParts(amount);
+  const at = parts.findIndex((p) => p.type === "decimal");
+  if (at < 0) return { whole: parts.map((p) => p.value).join(""), cents: "" };
+  return { whole: parts.slice(0, at).map((p) => p.value).join(""), cents: parts.slice(at).map((p) => p.value).join("") };
+}
