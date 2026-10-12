@@ -1,0 +1,93 @@
+// Italiano (it-IT) di Contratti e Contratto (Contracts.dc.html e Contract.dc.html, QuoteAI 127.5, i18n/screens/contracts.ts). Il testo del contratto e le intestazioni
+// delle sezioni arrivano dal server, già in italiano. Il cliente firma sulla pagina del sito che apre il link ricevuto per email (non nell'app).
+export const ct = {
+  ct: {
+    back: "Indietro", more: "Altre azioni", retry: "Riprova",
+    list: {
+      title: "Contratti", search: "Cerca contratti", placeholder: "Cerca per cliente, cantiere o numero", filter: "Filtro",
+      kpi: {
+        toSign: "Da firmare", yours_one: "{{count}} è tuo", yours_other: "{{count}} sono tuoi", yoursNone: "Nessuno è tuo",
+        signed: "Firmati questo mese", contracts_one: "{{count}} contratto", contracts_other: "{{count}} contratti",
+        avg: "Tempo medio di firma", days: "{{n}} g", faster: "↓ {{n}} g", slower: "↑ {{n}} g", same: "Come prima", signedCount_one: "{{count}} firmato", signedCount_other: "{{count}} firmati", noneYet: "Ancora nessuno",
+      },
+      filters: { all: "Tutti", draft: "Bozze", await: "In attesa", signed: "Firmati", closed: "Chiusi" },
+      groups: { open: "Da firmare", signed: "Firmati", closed: "Chiusi" },
+      status: { draft: "Bozza", await: "In attesa", viewed: "Visto", signed: "Firmato", voided: "Annullato", declined: "Rifiutato", expired: "Scaduto" },
+      dates: {
+        draftedToday: "Bozza di oggi", drafted: "Bozza del {{date}}", sent: "Inviato il {{date}}", notOpened: "Non aperto", viewed: "Visto il {{date}}", viewedUnknown: "Visto",
+        signed: "Firmato il {{date}}", voided: "Annullato il {{date}}", declined: "Rifiutato", expired: "Scaduto il {{date}}",
+      },
+      changeOrder: "Variante",
+      empty: { title: "Nessun contratto corrisponde", body: "Prova un altro nome o numero, o togli il filtro.", clear: "Cancella la ricerca" },
+      none: { title: "Ancora nessun contratto", body: "Preparane uno da un preventivo che hai inviato. Lo scrive PrevAI: tu lo controlli, lo firmi e lo mandi.", action: "Apri i preventivi" },
+      loadFailed: { title: "Non riesco a caricare i contratti", body: "Controlla la connessione e riprova." },
+      offline: "Vedi i contratti dell'ultima volta.",
+      menu: { archive: "Archivio", archiveSub: "I contratti che hai messo da parte" },
+      soon: { archive: "Archivio" },
+    },
+    page: {
+      progress: "Avanzamento", steps: { review: "Controllo", sign: "Firma", send: "Invio", customer: "Firma del cliente" },
+      status: {
+        draft: "Bozza · controllata, pronta da firmare", signedYou: "Firmato da te · pronto da inviare", sent: "Inviato · aspetta {{name}}", viewed: "Visto · aspetta {{name}}",
+        signed: "Firmato da tutti", voided: "Annullato", declined: "{{name}} ha rifiutato", expired: "Scaduto · il link di firma è scaduto",
+      },
+      from: "Da", changeOrder: "Variante",
+      agreement: "Contratto", sections_one: "{{count}} sezione", sections_other: "{{count}} sezioni",
+      tag: { ai: "Scritta dall'IA, modificabile", legal: "Clausola standard, bloccata", data: "Compilata dal preventivo, bloccata" },
+      editSection: "Modifica la sezione", expandLabel: "{{title}}, {{tag}}",
+      parties: { contractor: "Impresa", customer: "Committente" },
+      signers: "Chi firma",
+      role: { contractor: "{{company}}, titolare", customer: "Committente, {{address}}", customerBare: "Committente" },
+      word: { yourTurn: "Tocca a te", signed: "Firmato", notSent: "Non inviato", pending: "In attesa", viewed: "Visto", declined: "Rifiutato", voided: "Annullato", expired: "Scaduto" },
+      meta: {
+        signToSend: "Firma per poter inviare il contratto", getsLink: "Riceve il link dopo la tua firma", emailed: "Inviato per email {{when}}", opened: "Aperto {{when}}",
+        signed: "{{when}}", signedVerified: "{{when}} · verificato con il codice via email", declined: "Rifiutato {{when}}", reason: "«{{reason}}»", noEmail: "Manca l'indirizzo email",
+      },
+      signatureOf: "Firma di {{name}}",
+      details: "Dettagli", editTerms: "Modifica le condizioni",
+      detail: {
+        province: "Provincia", subtotal: "Imponibile", tax: "{{label}} {{rate}}", taxBare: "{{label}} {{rate}}", total: "Totale", holdback: "Trattenuta, {{percent}}",
+        start: "Inizio lavori", warranty: "Garanzia", year_one: "{{count}} anno", year_other: "{{count}} anni", month_one: "{{count}} mese", month_other: "{{count}} mesi", noWarranty: "Nessuna",
+      },
+      activity: "Attività",
+      act: {
+        created: "Scritto con l'IA da {{quote}}", createdBare: "Scritto con l'IA", createdChange: "Variante preparata",
+        edited: "Hai modificato {{what}}", editedTerms: "Hai modificato le condizioni", contractorSigned: "Firmato da {{name}}", sent: "Inviato a {{name}} per email", reminder: "Promemoria inviato a {{name}}",
+        viewed: "{{name}} ha aperto il contratto", verified: "{{name}} verificato con il codice via email", signed: "Firmato da {{name}}", declined: "{{name}} ha rifiutato", declinedWhy: "{{name}} ha rifiutato: {{reason}}",
+        voided: "Annullato", voidedWhy: "Annullato: {{reason}}", expired: "Il link di firma è scaduto",
+      },
+      when: { today: "Oggi, {{time}}", on: "{{date}}, {{time}}" },
+      primary: { sign: "Firma come {{company}}", send: "Invia a {{name}}", waiting: "Aspetto {{name}}", download: "Scarica il PDF firmato" },
+      moreAria: "Altre azioni: scarica il PDF, annulla, archivia",
+      menu: {
+        title: "Contratto", pdf: "Scarica il PDF", pdfDraft: "Un'anteprima, segnata come bozza", pdfSigned: "La copia firmata", remind: "Manda un promemoria", remindSub: "Rimanda il link per email a {{name}}",
+        quote: "Apri il preventivo", void: "Annulla il contratto", voidSub: "Ferma il link di firma. Non si può disfare.", archive: "Archivia", archiveSub: "Lo toglie dall'elenco",
+      },
+      sign: {
+        title: "Firma questo contratto", body: "Scrivi il tuo nome. Diventa la tua firma e resta con il contratto.", name: "Il tuo nome", action: "Firma il contratto", signing: "Firmo…",
+        consent: "Accetto di firmare questo contratto elettronicamente.", consentAria: "Accetta di firmare elettronicamente", done: "Firmato. Invialo a {{name}} quando vuoi.",
+        locked: "Questo contratto non si può più firmare.",
+      },
+      send: { sent: "Inviato a {{name}} per email", reminded: "Promemoria inviato a {{name}}", failed: "Non sono riuscito a inviarlo. Riprova.", noEmail: "Aggiungi prima l'email di {{name}}." },
+      ask: { title: "Dove lo mando?", body: "Aggiungi l'email di {{name}}. Il link di firma va lì.", label: "Email", placeholder: "nome@esempio.it", invalid: "Questa email non sembra giusta.", action: "Invia", sending: "Invio…" },
+      voidSheet: {
+        title: "Annullare questo contratto?", body: "{{number}} smette di valere e {{name}} non può più firmarlo. Non si può disfare.", reason: "Motivo (facoltativo)", reasonPlaceholder: "Perché lo annulli",
+        action: "Annulla il contratto", working: "Annullo…", cancel: "Tienilo", done: "Contratto annullato",
+      },
+      archived: "Archiviato", undo: "Annulla", restored: "Di nuovo nell'elenco",
+      pdfFailed: "Non sono riuscito a prendere il PDF. Riprova.", pdfReady: "PDF pronto",
+      editSheet: { title: "Modifica {{section}}", label: "Testo", note: "Scritta dall'IA dal tuo preventivo. Cambia quello che vuoi.", clears: "Modificando si cancella la tua firma. Firmerai di nuovo.", save: "Salva", saving: "Salvo…", saved: "Salvato", failed: "Non sono riuscito a salvare. Riprova." },
+      termsSheet: {
+        title: "Modifica le condizioni", start: "Inizio lavori", noStart: "Non impostato", clearStart: "Nessuna data di inizio", pick: "Scegli la data di inizio", prev: "Mese precedente", next: "Mese successivo",
+        warranty: "Garanzia", months: "{{count}} mesi", less: "Meno", more: "Più", holdback: "Trattieni una parte di ogni pagamento", holdbackPercent: "Trattenuta", email: "Email del committente",
+        clears: "Modificando le condizioni si cancella la tua firma. Firmerai di nuovo.", save: "Salva le condizioni", saved: "Condizioni salvate", failed: "Non sono riuscito a salvare le condizioni. Riprova.",
+      },
+      loadFailed: { title: "Non riesco a caricare questo contratto", body: "Controlla la connessione e riprova." },
+      notFound: { title: "Contratto non trovato", body: "Forse è stato archiviato o spostato." },
+      drafting: { title: "Scrivo il contratto", body: "Leggo il preventivo e preparo ambito e tempi. Ci vogliono pochi secondi." },
+      draftFailed: { title: "Non sono riuscito a scrivere il contratto", body: "Riprova fra un momento." },
+      plan: { title: "I contratti fanno parte di un piano superiore", body: "Scrivere i contratti è compreso nei piani Pro ed Elite. Gestisci il piano su prevai.it." },
+      noAccess: "Il tuo ruolo non può cambiare i contratti.", offline: "Sei senza rete. Riprova quando c'è segnale.", failed: "Non è andata. Riprova.",
+    },
+  },
+};
