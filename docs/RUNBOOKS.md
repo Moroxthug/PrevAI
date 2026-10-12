@@ -1420,3 +1420,25 @@ Quando il titolare decide il prezzo (D20): compilare `POSTO_EXTRA` in `piani.ts`
 | Pagina dell'operaio o Squadra danno 500 dopo il deploy | Colonne nuove assenti: eseguire la 0024 |
 | «Questo codice non funziona» | Scaduto (7 giorni) o già usato: crearne uno nuovo; i tentativi sono 20 ogni 15 minuti per indirizzo |
 | La mappa dice «Nessuno in diretta» con la squadra al lavoro | Nessuno ha acceso la posizione (è una scelta di ognuno) |
+
+## 41. L'app Expo: soldi e ufficio (POCKET-4, riga 61)
+
+**Dove**: `artifacts/pocket/src/app/{books,pay,compliance,accountant-view,contracts,contract,price-book,suppliers,supplier,inventory,documents,analytics,group}.tsx`, testi in `src/i18n/it-ufficio*.ts`; server `routes/{primanota,pay,fiscale,accountant,contracts,catalog,suppliers,inventory,documents,analytics,groups}.ts`, `primanota/mese.ts`, `pay/service.ts`, `fiscale/calendario.ts`, `materials/*`, `groups/*`.
+
+**Prima di pubblicare**: `bash scripts/prod-migrate.sh migrations/v2/0025_pocket4_soldi_ufficio.sql` (additiva e rieseguibile). Senza la migrazione il listino e i fornitori danno 500 (colonne nuove) e le schermate nuove rispondono 500.
+
+**Cosa fa**
+1. **Prima nota** (menu → Prima nota): la lista del mese (6 voci), i movimenti dell'estratto con le proposte di abbinamento, «Chiudi il mese» (solo a mese finito; riapri dal ⋯). Chiudere non blocca niente: è una fotografia dei conteggi, e se dopo compare altro lo dice. Richiede PrevAI Fisco (`admin_suite`).
+2. **Ore e costo** (solo titolare e amministratore, area `team` piena): ore approvate × costo orario; **lo straordinario non è precompilato**: parte solo se il titolare imposta la soglia settimanale e la maggiorazione (il contratto lo conosce il consulente del lavoro). Il CSV si scarica e resta registrato (`pay_exports`).
+3. **Scadenze**: le scadenze dello scadenzario (si ricalcolano, mai conservate) e i promemoria dell'impresa (`compliance_reminders`; i suggerimenti sono solo titoli, nessuna data). «Segna versata» registra ciò che il titolare dichiara: PrevAI non versa niente.
+4. **Contabile**: chi ha il ruolo Contabile in un'impresa e non ne ha una sua apre direttamente questa vista (gate dell'app). Vede il mese, scarica due CSV, scrive commenti al titolare (arrivano nel campanello, senza push).
+5. **Listino, Fornitori, Materiali**: il tipo (manodopera/materiale/lavorazione) si ricava dall'unità per le righe vecchie; il prezzo cambiato tiene il vecchio e la data. Il Magazzino non è legato a un piano.
+6. **Analisi** e **Gruppo** richiedono Elite (`analytics_pro`).
+
+| Domanda | Cosa fare |
+|---|---|
+| Listino o Fornitori danno 500 dopo il deploy | Eseguire la 0025 |
+| Prima nota dice «parte di PrevAI Fisco» | L'impresa non ha l'add-on (`admin_suite`) |
+| Ore e costo dice che lo vedono solo titolare e amministratore | Ufficio, capocantiere e ospiti non vedono le tariffe: è voluto |
+| Straordinario a zero | Non è stato impostato: Ore e costo → Regole |
+| Il Gruppo non unisce la fattura | Non c'è ancora: toccherebbe piani e fatturazione (decisione del titolare) |

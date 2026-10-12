@@ -794,9 +794,9 @@ Columns — **Auth**: session (`requireAuth`), apiKey (`requireApiKey`), admin (
 | 214 | POST | `/api/suppliers/:id/orders` | session | jobs:edit | — | zod | — | predicate | — | — | — |
 | 245 | PUT | `/api/suppliers/orders/:oid` | session | jobs:edit | — | zod | — | predicate | — | — | — |
 | 270 | POST | `/api/suppliers/:id/orders/sent` | session | jobs:edit | — | none | — | predicate | — | — | — |
-| 282 | GET | `/api/suppliers/:id` | session | — | — | none | — | predicate | — | — | — |
-| 339 | PUT | `/api/suppliers/:id` | session | jobs:edit | — | zod | — | predicate | — | — | — |
-| 354 | POST | `/api/suppliers/:id/archive` | session | jobs:edit | — | none | — | predicate | — | — | — |
+| 284 | GET | `/api/suppliers/:id` | session | — | — | none | — | predicate | — | — | — |
+| 341 | PUT | `/api/suppliers/:id` | session | jobs:edit | — | zod | — | predicate | — | — | — |
+| 356 | POST | `/api/suppliers/:id/archive` | session | jobs:edit | — | none | — | predicate | — | — | — |
 
 ## artifacts/api-server/src/routes/support.ts
 
