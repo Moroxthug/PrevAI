@@ -3,6 +3,7 @@
 // QuickBooks, Flinks o province canadesi, qui c'è ciò che PrevAI ha davvero (estratto conto importato, SdI, scadenzario).
 import { ac } from "./it-ufficio-ac";
 import { cp } from "./it-ufficio-cp";
+import { doc } from "./it-ufficio-doc";
 import { mat } from "./it-ufficio-mat";
 import { ct } from "./it-ufficio-ct";
 import { pay } from "./it-ufficio-pay";
@@ -13,6 +14,7 @@ export const ufficio = {
   ...ac,
   ...ct,
   ...mat,
+  ...doc,
   // Libri (Books.dc.html): nel menu è «Prima nota».
   bk: {
     title: "Prima nota", back: "Indietro", close: "Chiudi", more: "Altre azioni", retry: "Riprova",
