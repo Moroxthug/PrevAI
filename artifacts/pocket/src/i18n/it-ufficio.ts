@@ -2,7 +2,9 @@
 // Il vocabolario è quello del sito: prima nota, estratto conto, SdI, F24, listino, pro-forma. Dove QuoteAI parla di
 // QuickBooks, Flinks o province canadesi, qui c'è ciò che PrevAI ha davvero (estratto conto importato, SdI, scadenzario).
 import { ac } from "./it-ufficio-ac";
+import { an } from "./it-ufficio-an";
 import { cp } from "./it-ufficio-cp";
+import { gp } from "./it-ufficio-gp";
 import { doc } from "./it-ufficio-doc";
 import { mat } from "./it-ufficio-mat";
 import { ct } from "./it-ufficio-ct";
@@ -15,6 +17,8 @@ export const ufficio = {
   ...ct,
   ...mat,
   ...doc,
+  ...an,
+  ...gp,
   // Libri (Books.dc.html): nel menu è «Prima nota».
   bk: {
     title: "Prima nota", back: "Indietro", close: "Chiudi", more: "Altre azioni", retry: "Riprova",

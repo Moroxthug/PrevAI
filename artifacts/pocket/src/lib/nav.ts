@@ -43,6 +43,8 @@ export const BUILT = {
   Inventory: "/inventory",
   Suppliers: "/suppliers",
   Documents: "/documents",
+  Analytics: "/analytics",
+  Group: "/group",
   Supplier: "/supplier",
 } as const;
 

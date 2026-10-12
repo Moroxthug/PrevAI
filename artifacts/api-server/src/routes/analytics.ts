@@ -3,6 +3,7 @@ import { db, projectsTable, businessProfilesTable, hasFeature, minimumPlanFor } 
 import { and, eq } from "drizzle-orm";
 import { requireAuth, getUserId } from "../middlewares/authMiddleware.js";
 import { companyAnalytics, jobAnalytics } from "../analytics/service.js";
+import { companyInsights } from "../analytics/insights.js";
 
 // ── Phase 5: dashboards ──────────────────────────────────────────────────────
 // Job charts ride on the "jobs" feature (Pro); the company margin / AR /
@@ -36,6 +37,23 @@ router.get("/analytics/company", requireAuth, async (req, res) => {
     res.json(await companyAnalytics(userId, { months: Number.isFinite(months) ? months : 6 }));
   } catch (err) {
     req.log.error({ err }, "Error computing company analytics");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// GET /api/analytics/insights?months=24 — POCKET-4 (QuoteAI 127.9): tasso di successo, preventivo medio, dal preventivo all'incasso, clienti principali e provenienza delle richieste, mese per mese (stesso piano di /analytics/company).
+router.get("/analytics/insights", requireAuth, async (req, res) => {
+  try {
+    const userId = getUserId(res);
+    const [profile] = await db.select().from(businessProfilesTable).where(eq(businessProfilesTable.userId, userId));
+    if (!hasFeature(profile, "analytics_pro")) {
+      res.status(403).json({ error: "PLAN_REQUIRED", requiredPlan: minimumPlanFor("analytics_pro"), message: "Le analisi dell'impresa fanno parte del piano Elite" });
+      return;
+    }
+    const months = Number.parseInt(String(req.query.months ?? "24"), 10);
+    res.json(await companyInsights(userId, { months: Number.isFinite(months) ? months : 24 }));
+  } catch (err) {
+    req.log.error({ err }, "Error computing company insights");
     res.status(500).json({ error: "Internal server error" });
   }
 });

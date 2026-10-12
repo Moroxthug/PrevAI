@@ -48,6 +48,7 @@ export const preventivi = {
       documents: { label: "Documenti", sub: "Fatture dei fornitori e storico prezzi" },
       suppliers: { label: "Fornitori" },
       materials: { label: "Materiali", sub: "Scorte e riordini" },
+      group: { label: "Gruppo", sub: "Più imprese, un solo sguardo" },
       imports: { label: "Importazioni", sub: "File CSV e Excel" },
       archive: { label: "Archivio", sub: "Vecchi preventivi, cantieri e clienti" },
       assistant: { label: "Assistente" },

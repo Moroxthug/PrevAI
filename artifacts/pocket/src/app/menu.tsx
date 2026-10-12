@@ -31,10 +31,10 @@ const GROUPS: { key: string; rows: RowDef[] }[] = [
     { key: "schedule", icon: "cal", tone: "sky" }, { key: "pay", icon: "card", tone: "amber", built: "Pay" } ] },
   { key: "money", rows: [
     { key: "invoices", icon: "doc", tone: "azure", built: "Invoices" }, { key: "books", icon: "bank", tone: "sage", built: "Books" },
-    { key: "analytics", icon: "bars", tone: "violet" }, { key: "integrations", icon: "sync", tone: "clay" } ] },
+    { key: "analytics", icon: "bars", tone: "violet", built: "Analytics" }, { key: "integrations", icon: "sync", tone: "clay" } ] },
   { key: "workspace", rows: [
     { key: "documents", icon: "file", tone: "indigo", built: "Documents" }, { key: "suppliers", icon: "building", tone: "stone", built: "Suppliers" }, { key: "materials", icon: "box", tone: "amber", built: "Inventory" },
-    { key: "imports", icon: "sync", tone: "sky" }, { key: "archive", icon: "box", tone: "slate" } ] },
+    { key: "imports", icon: "sync", tone: "sky" }, { key: "archive", icon: "box", tone: "slate" }, { key: "group", icon: "users", tone: "lilac", built: "Group" } ] },
   { key: "app", rows: [
     { key: "assistant", icon: "orb", tone: "violet" }, { key: "settings", icon: "gear", tone: "slate" },
     { key: "notifications", icon: "bell", tone: "sky" }, { key: "help", icon: "help", tone: "stone" },

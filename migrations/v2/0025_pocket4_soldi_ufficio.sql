@@ -115,3 +115,25 @@ CREATE TABLE IF NOT EXISTS supplier_orders (
   updated_at timestamptz NOT NULL DEFAULT now()
 );
 CREATE INDEX IF NOT EXISTS supplier_orders_user_supplier_idx ON supplier_orders (user_id, supplier_id, created_at);
+
+--   · company_groups, company_group_members — più imprese in un gruppo, per la vista di insieme (QuoteAI 127.8 Group).
+CREATE TABLE IF NOT EXISTS company_groups (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id text NOT NULL,
+  name text NOT NULL,
+  created_by_user_id text NOT NULL,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS company_groups_user_id_idx ON company_groups (user_id);
+CREATE TABLE IF NOT EXISTS company_group_members (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  group_id uuid NOT NULL REFERENCES company_groups(id) ON DELETE CASCADE,
+  user_id text NOT NULL,
+  status text NOT NULL DEFAULT 'pending',
+  invited_by_user_id text NOT NULL,
+  joined_at timestamptz,
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+CREATE UNIQUE INDEX IF NOT EXISTS company_group_members_user_idx ON company_group_members (user_id);
+CREATE INDEX IF NOT EXISTS company_group_members_group_idx ON company_group_members (group_id);
