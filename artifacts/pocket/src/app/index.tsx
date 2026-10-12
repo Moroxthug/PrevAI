@@ -1,6 +1,6 @@
 // "/" decides where a person starts (lib/useGate.ts); it draws nothing itself.
 import { useEffect, useState } from "react";
-import { Redirect } from "expo-router";
+import { Redirect, type Href } from "expo-router";
 import { View } from "react-native";
 import { loadCrewSession, useCrewSession } from "@/lib/crewSession";
 import { peekPendingJoinCode } from "@/lib/joinCodeDevice";
@@ -20,5 +20,5 @@ export default function Index() {
   if ((gate === "/welcome" || gate === "/sign-in") && crew.token) return <Redirect href="/crew-now" />;
   if (!gate || (signedIn && pending === undefined)) return <View style={{ flex: 1, backgroundColor: colors.ground }} />;
   if (signedIn && pending) return <Redirect href={{ pathname: "/join-code", params: { code: pending } }} />;
-  return <Redirect href={gate} />;
+  return <Redirect href={gate as Href} />;
 }

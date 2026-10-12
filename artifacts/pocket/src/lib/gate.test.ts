@@ -21,3 +21,10 @@ test("an owner's waiting invitation doesn't cut in", () => {
   const invites = [{ id: "i1", companyName: "Hart Builders", role: "foreman" as const, logoUrl: null }];
   assert.equal(decideRoute({ ...base, invites }), "/home");
 });
+
+const contabile = { orgId: "u3", companyName: "Edilizia Rossi", role: "bookkeeper" as const, isOwn: false };
+test("a contabile who only joined a company goes to the books view", () => assert.equal(decideRoute({ ...base, orgs: [contabile], companyName: "" }), "/accountant-view"));
+test("a contabile among several companies goes to the books view when that one is open", () => {
+  assert.equal(decideRoute({ ...base, orgs: [own, contabile], activeOrgId: "u3" }), "/accountant-view");
+  assert.equal(decideRoute({ ...base, orgs: [own, contabile], activeOrgId: "u1" }), "/home");
+});

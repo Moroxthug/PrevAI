@@ -67,7 +67,7 @@ const estrattoUpload = multer({
 // parte a pagamento del modulo (`admin_suite`): il calcolo fiscale da solo, che
 // dopo il lancio sarà gratuito, non li sblocca. Due codici diversi perché
 // l'interfaccia mostra due cose diverse: "modulo spento" o "parte dell'add-on".
-async function moduloOForbidden(userId: string, res: import("express").Response): Promise<boolean> {
+export async function moduloOForbidden(userId: string, res: import("express").Response): Promise<boolean> {
   const [profile] = await db.select().from(businessProfilesTable).where(eq(businessProfilesTable.userId, userId));
   const fiscale = hasFeature(profile, "fiscal_engine");
   if (fiscale && hasFeature(profile, "admin_suite")) return true;

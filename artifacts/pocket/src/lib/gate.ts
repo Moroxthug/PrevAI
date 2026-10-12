@@ -3,6 +3,7 @@
 //  - belongs to several companies and hasn't picked one on this phone: choose a company;
 //  - owns none and an invitation is waiting for their address: offered before any form;
 //  - their own company has no name yet (and they haven't chosen "Skip for now"): set up;
+//  - the company they are in is one where they are the contabile (role bookkeeper): the read-only books view (phase 127);
 //  - otherwise: Home.
 import type { OrgDto, PendingInviteDto } from "./api";
 
@@ -13,15 +14,18 @@ export type GateInput = {
   companyName: string | null;
   setupSkipped: boolean;
   hasActiveOrg: boolean;
+  /** The company the server says they are acting in. */
+  activeOrgId?: string | null;
 };
 
-export type GateRoute = "/home" | "/foreman-home" | "/company-picker" | "/invites" | "/onboarding";
+export type GateRoute = "/home" | "/foreman-home" | "/accountant-view" | "/company-picker" | "/invites" | "/onboarding";
 
-export function decideRoute({ orgs, invites, companyName, setupSkipped, hasActiveOrg }: GateInput): GateRoute {
+export function decideRoute({ orgs, invites, companyName, setupSkipped, hasActiveOrg, activeOrgId }: GateInput): GateRoute {
   const owns = orgs.some((o) => o.isOwn);
-  // A foreman who only joined a company has their own Home (phase 126).
-  if (orgs.length > 0 && !owns && orgs.length === 1) return orgs[0]!.role === "foreman" ? "/foreman-home" : "/home";
+  // A foreman who only joined a company has their own Home (phase 126); the contabile, the books (phase 127).
+  if (orgs.length > 0 && !owns && orgs.length === 1) return orgs[0]!.role === "foreman" ? "/foreman-home" : orgs[0]!.role === "bookkeeper" ? "/accountant-view" : "/home";
   if (orgs.length > 1 && !hasActiveOrg) return "/company-picker";
+  if (orgs.length > 1 && orgs.some((o) => o.orgId === activeOrgId && !o.isOwn && o.role === "bookkeeper")) return "/accountant-view";
   if (!owns && invites.length > 0) return "/invites";
   if (!(orgs.length > 0 && !owns) && companyName === "" && !setupSkipped) return "/onboarding";
   return "/home";

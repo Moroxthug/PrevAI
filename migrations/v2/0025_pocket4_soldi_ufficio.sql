@@ -48,3 +48,16 @@ CREATE TABLE IF NOT EXISTS compliance_reminders (
   created_at timestamptz NOT NULL DEFAULT now()
 );
 CREATE INDEX IF NOT EXISTS compliance_reminders_user_idx ON compliance_reminders (user_id, due_date);
+
+--   · accountant_comments — i commenti del contabile sui conti di un mese (QuoteAI 127.3 AccountantView).
+CREATE TABLE IF NOT EXISTS accountant_comments (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id text NOT NULL,
+  month text NOT NULL,
+  author_user_id text NOT NULL,
+  author_name text NOT NULL DEFAULT '',
+  author_role text NOT NULL DEFAULT '',
+  body text NOT NULL,
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS accountant_comments_user_month_idx ON accountant_comments (user_id, month, created_at);

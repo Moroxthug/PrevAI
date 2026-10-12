@@ -38,3 +38,20 @@ export const payExportsTable = pgTable(
 );
 
 export type PayExport = typeof payExportsTable.$inferSelect;
+
+// POCKET-4 (da QuoteAI 127.3 AccountantView): i commenti del contabile (ruolo «Contabile») sui conti di un mese, e le risposte dell'impresa.
+export const accountantCommentsTable = pgTable(
+  "accountant_comments",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    userId: text("user_id").notNull(),
+    /** `AAAA-MM`. */
+    month: text("month").notNull(),
+    authorUserId: text("author_user_id").notNull(),
+    authorName: text("author_name").notNull().default(""),
+    authorRole: text("author_role").notNull().default(""),
+    body: text("body").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index("accountant_comments_user_month_idx").on(t.userId, t.month, t.createdAt)],
+);
