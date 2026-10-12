@@ -9,8 +9,8 @@ import { oggiItalia } from "../primanota/mese.js";
 // bollo, dichiarazione — ricalcolate, mai conservate) e i promemoria che l'impresa scrive da sé (DURC, assicurazione,
 // formazione…). Niente si versa da qui: «versata» registra ciò che l'impresa dichiara, come nello scadenzario del sito.
 
-export type DeadlineKind = "imposta" | "contributi" | "bollo" | "dichiarazione";
-export type DeadlineDto = {
+type DeadlineKind = "imposta" | "contributi" | "bollo" | "dichiarazione";
+type DeadlineDto = {
   key: string; anno: number; chiave: string; kind: DeadlineKind; label: string; description: string; amountCents: number; authority: string;
   dueDate: string; filedAt: string | null; daysLeft: number; state: "filed" | "overdue" | "due_soon" | "upcoming"; hasF24: boolean;
   lines: { label: string; cents: number }[]; versatoCents: number; notReviewed: boolean;
@@ -72,7 +72,7 @@ export async function calendario(userId: string) {
 
 const giorniFra = (da: string, a: string) => Math.round((Date.parse(`${a}T00:00:00Z`) - Date.parse(`${da}T00:00:00Z`)) / 86_400_000);
 
-export function serializzaPromemoria(r: ComplianceReminder) {
+function serializzaPromemoria(r: ComplianceReminder) {
   const daysLeft = giorniFra(oggiItalia(), r.dueDate);
   return {
     id: r.id, kind: r.kind, preset: r.preset, title: r.title, authority: r.authority, dueDate: r.dueDate, recurrence: r.recurrence, remindDaysBefore: r.remindDaysBefore,
@@ -81,7 +81,7 @@ export function serializzaPromemoria(r: ComplianceReminder) {
 }
 
 /** Suggerimenti, non obblighi: quali servano a un'impresa lo sa lei (e il suo consulente). Nessuna data precompilata. */
-export const PRESET = [
+const PRESET = [
   { id: "durc", kind: "licence", title: "DURC (regolarità contributiva)", authority: "INPS · INAIL · Cassa Edile", recurrence: "none" },
   { id: "assicurazione_rc", kind: "insurance", title: "Assicurazione RC", authority: "", recurrence: "annual" },
   { id: "assicurazione_cantiere", kind: "insurance", title: "Polizza CAR (cantiere)", authority: "", recurrence: "none" },

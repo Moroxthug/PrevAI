@@ -181,11 +181,11 @@ export async function controlloMese(userId: string, mese: string) {
   };
 }
 
-export function fotografiaMese(voci: readonly VoceControllo[]): MonthCloseSnapshot {
+function fotografiaMese(voci: readonly VoceControllo[]): MonthCloseSnapshot {
   return Object.fromEntries(voci.map((v) => [v.key, { count: v.count, cents: v.cents }]));
 }
 
-export function serializzaMese(c: MonthClose) {
+function serializzaMese(c: MonthClose) {
   return { month: c.month, closedAt: c.closedAt.toISOString(), closedByName: c.closedByName, note: c.note, snapshot: c.snapshot };
 }
 

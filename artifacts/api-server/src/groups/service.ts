@@ -58,7 +58,7 @@ export async function groupStateFor(orgId: string): Promise<GroupState | null> {
   return { group, self, members };
 }
 
-export const activeMembers = (s: GroupState) => s.members.filter((m) => m.status === "active");
+const activeMembers = (s: GroupState) => s.members.filter((m) => m.status === "active");
 
 /** Le imprese del gruppo dell'impresa in uso dove la persona ha un ruolo che passa `check`. */
 async function companiesWhere(actorId: string, state: GroupState, check: (role: TeamMemberRole) => boolean): Promise<{ included: (GroupCompany & { role: TeamMemberRole })[]; excluded: { orgId: string; companyName: string; role: TeamMemberRole | null }[] }> {

@@ -60,6 +60,9 @@ import {
   scheduleBlocksTable,
   calendarFeedsTable,
   serviceCallsTable,
+  complianceRemindersTable,
+  inventoryItemsTable,
+  supplierOrdersTable,
   authSessionsTable,
   authUsersTable,
 } from "@workspace/db";
@@ -173,6 +176,11 @@ async function seedOrgA(): Promise<Fixtures> {
   // POCKET-3: una chiamata di assistenza su un cantiere.
   f.serviceCall = await ins(db.insert(serviceCallsTable).values({ userId, projectId: project.id, issue: "Una tavola scricchiola" }).returning());
   f.feed = await ins(db.insert(calendarFeedsTable).values({ userId, name: "Feed E2E", url: "https://example.invalid/a.ics" }).returning());
+  // POCKET-4: un promemoria del calendario, una scorta e un ordine a un fornitore; l'impresa stessa per le rotte del gruppo.
+  f.reminder = await ins(db.insert(complianceRemindersTable).values({ userId, title: "Assicurazione RC", dueDate: "2027-01-31" }).returning());
+  f.inventoryItem = await ins(db.insert(inventoryItemsTable).values({ userId, name: "Lastra di cartongesso" }).returning());
+  f.supplierOrder = await ins(db.insert(supplierOrdersTable).values({ userId, supplierId: f.supplier, itemName: "Lastra di cartongesso" }).returning());
+  f.org = userId;
 
   // Clients are virtual (md5 of the quote's client fields) — read the id back the way the UI does.
   const clients = await A.api("/api/clients");
@@ -239,7 +247,7 @@ function resolveParams(route: MatrixRoute, f: Fixtures): { path: string; unseede
           ["/api/fiscale/condivisioni", "condivisione"], ["/api/fiscale/versamenti", "versamento"], ["/api/crm/suppliers", "supplier"],
           ["/api/fiscale/commercialista/incarichi", "incarico"], ["/api/studio/incarichi", "incarico"],
           ["/api/schedule/blocks", "block"], ["/api/service-calls", "serviceCall"], ["/api/calendar/feeds", "feed"],
-          ["/api/field-reports", "fieldReport"],
+          ["/api/field-reports", "fieldReport"], ["/api/fiscale/calendario/promemoria", "reminder"], ["/api/inventory/items", "inventoryItem"], ["/api/suppliers", "supplier"],
         ];
         id = byPrefix.find(([p]) => prefix === p)?.[1];
         // POCKET-2: la scheda del cliente per l'app e la modifica usano l'uuid della riga, non l'md5 dell'elenco storico.
@@ -262,6 +270,8 @@ function resolveParams(route: MatrixRoute, f: Fixtures): { path: string; unseede
       case "variantId": id = "variant"; break;
       case "eid": id = "equipment"; break;
       case "wid": id = "worker"; break;
+      case "oid": id = "supplierOrder"; break;
+      case "orgId": id = "org"; break;
     }
     if (id && f[id]) out.push(f[id]!);
     else {

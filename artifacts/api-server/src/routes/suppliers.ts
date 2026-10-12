@@ -270,6 +270,8 @@ router.put("/suppliers/orders/:oid", requireAuth, requirePermission("jobs", "edi
 router.post("/suppliers/:id/orders/sent", requireAuth, requirePermission("jobs", "edit"), async (req, res) => {
   try {
     const userId = getUserId(res);
+    const [own] = await db.select({ id: suppliersTable.id }).from(suppliersTable).where(and(eq(suppliersTable.id, req.params.id as string), eq(suppliersTable.userId, userId)));
+    if (!own) { res.status(404).json({ error: "Not found" }); return; }
     const rows = await db.update(supplierOrdersTable).set({ status: "ordered", orderedAt: new Date() })
       .where(and(eq(supplierOrdersTable.userId, userId), eq(supplierOrdersTable.supplierId, req.params.id as string), eq(supplierOrdersTable.status, "listed"))).returning({ id: supplierOrdersTable.id });
     res.json({ ordered: rows.length });

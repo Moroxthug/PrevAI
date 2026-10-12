@@ -17,7 +17,7 @@ export function vendorMatches(vendor: string, supplierName: string): boolean {
 }
 
 /** An item's name as receipts and the stock list spell it, to compare them: `Drywall 1/2" 4×8` and `drywall 1/2 4x8` are the same. */
-export function itemNorm(s: string): string {
+function itemNorm(s: string): string {
   return s.toLowerCase().replace(/×/g, "x").replace(/["”“]/g, "").replace(/[^a-z0-9/.]+/g, " ").trim();
 }
 

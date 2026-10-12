@@ -9,7 +9,7 @@ import { oggiItalia } from "../primanota/mese.js";
 // settimana di calendario (lunedì–domenica), contando per ultime le ore dell'ultimo giorno; se la settimana è a cavallo di
 // due periodi, conta le ore del periodo. Le regole contrattuali (CCNL) le decide l'impresa: qui non c'è niente di precompilato.
 
-export type PayFrequency = "weekly" | "biweekly" | "monthly";
+type PayFrequency = "weekly" | "biweekly" | "monthly";
 export type Effective = {
   frequency: PayFrequency;
   anchorDate: string;
@@ -18,7 +18,7 @@ export type Effective = {
   payrollCodes: Record<string, string>;
 };
 
-export const DEFAULT_ANCHOR = "2026-01-05"; // un lunedì
+const DEFAULT_ANCHOR = "2026-01-05"; // un lunedì
 export function effective(raw: PaySettingsRaw): Effective {
   return {
     frequency: raw.frequency ?? "monthly",

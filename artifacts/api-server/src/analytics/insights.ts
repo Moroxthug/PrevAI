@@ -6,10 +6,10 @@ import { and, eq, gte, inArray, or } from "drizzle-orm";
 const ym = (d: Date): string => d.toISOString().slice(0, 7);
 const days = (a: Date, b: Date): number => Math.max(0, (b.getTime() - a.getTime()) / 86_400_000);
 
-export type QuoteMonth = { month: string; sent: number; sentCents: number; won: number; wonCents: number; lost: number };
-export type CycleMonth = { month: string; acceptDays: number; acceptN: number; invoiceDays: number; invoiceN: number; paidDays: number; paidN: number };
-export type ClientMonth = { clientId: string; name: string; month: string; cents: number; invoices: number };
-export type LeadMonth = { month: string; source: string; leads: number; won: number };
+type QuoteMonth = { month: string; sent: number; sentCents: number; won: number; wonCents: number; lost: number };
+type CycleMonth = { month: string; acceptDays: number; acceptN: number; invoiceDays: number; invoiceN: number; paidDays: number; paidN: number };
+type ClientMonth = { clientId: string; name: string; month: string; cents: number; invoices: number };
+type LeadMonth = { month: string; source: string; leads: number; won: number };
 export type Insights = { months: number; quotes: QuoteMonth[]; cycle: CycleMonth[]; clients: ClientMonth[]; leads: LeadMonth[] };
 
 const upsert = <T extends { month: string }>(map: Map<string, T>, month: string, make: () => T): T => {
