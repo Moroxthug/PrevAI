@@ -5,6 +5,7 @@ import { entrare } from "./it-entrare";
 import { lavoro } from "./it-lavoro";
 import { preventivi } from "./it-preventivi";
 import { soldi } from "./it-soldi";
+import { ufficio } from "./it-ufficio";
 
 export const it = {
   ...entrare,
@@ -12,6 +13,7 @@ export const it = {
   ...lavoro,
   ...cantieri,
   ...soldi,
+  ...ufficio,
   sandbox: {
     title: "Componenti",
     intro: "Tutti i pezzi con cui è fatta l'app, con i loro stati. Tocca i comandi per provarli.",

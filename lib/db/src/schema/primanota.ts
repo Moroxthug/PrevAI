@@ -213,3 +213,25 @@ export type BankImport = typeof bankImportsTable.$inferSelect;
 export type BankMovement = typeof bankMovementsTable.$inferSelect;
 export type ChiusuraAnno = typeof fiscalYearClosingsTable.$inferSelect;
 export type AccountantShare = typeof accountantSharesTable.$inferSelect;
+
+// ── POCKET-4 (riga 61, da QuoteAI 127.1 Libri): chiusura del mese ────────────
+// Non è una chiusura contabile (i libri li tiene il commercialista): è l'elenco di ciò che in PrevAI non è
+// ancora a posto nel mese. «Mese chiuso» dice solo che qualcuno l'ha controllato, e la fotografia dei
+// conteggi permette di accorgersi se dopo è comparso altro. L'anno si chiude a parte (`fiscal_year_closings`).
+export type MonthCloseSnapshot = Record<string, { count: number; cents: number }>;
+
+export const monthClosesTable = pgTable(
+  "month_closes",
+  {
+    userId: text("user_id").notNull(),
+    /** `AAAA-MM`. */
+    month: text("month").notNull(),
+    closedAt: timestamp("closed_at", { withTimezone: true }).notNull().defaultNow(),
+    closedByName: text("closed_by_name"),
+    note: text("note").notNull().default(""),
+    snapshot: jsonb("snapshot").$type<MonthCloseSnapshot>().notNull().default({}),
+  },
+  (t) => [primaryKey({ columns: [t.userId, t.month] })],
+);
+
+export type MonthClose = typeof monthClosesTable.$inferSelect;

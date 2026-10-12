@@ -3,7 +3,7 @@ import multer from "multer";
 import { z } from "zod";
 import { db, businessProfilesTable, hasFeature, CATEGORIE_MOVIMENTO, TIPI_MOVIMENTO, STATI_MOVIMENTO_BANCA, TIPI_ABBINAMENTO, COST_CATEGORIES } from "@workspace/db";
 import { eq } from "drizzle-orm";
-import { requireAuth, getUserId } from "../middlewares/authMiddleware.js";
+import { requireAuth, getUserId, getUserName } from "../middlewares/authMiddleware.js";
 import { requirePermission } from "../middlewares/requirePermission.js";
 import { userRateLimiter } from "../lib/rateLimit.js";
 import { ErroreFiscale, statoRevisione } from "../fiscale/service.js";
@@ -37,6 +37,7 @@ import {
   statoChiusura,
 } from "../primanota/chiusura.js";
 import { buildPacchettoPdf } from "../primanota/pdf.js";
+import { chiudiMese, controlloMese, isMese, panoramicaLibri, riapriMese } from "../primanota/mese.js";
 
 // ── A-4: prima nota, estratto conto, chiusura d'anno, condivisione ───────────
 // Stesso gate e stessa area di permessi del motore fiscale (A-2): è lo stesso
@@ -95,6 +96,13 @@ function annoDi(valore: unknown): number {
 
 function invalido(res: import("express").Response, dettagli: unknown) {
   res.status(400).json({ error: "INVALID", message: "Dati non validi", dettagli });
+}
+
+/** Il mese `AAAA-MM` spostato di `by` mesi. */
+function shiftMese(mese: string, by: number): string {
+  const [y, m] = mese.split("-").map(Number) as [number, number];
+  const i = y * 12 + (m - 1) + by;
+  return `${Math.floor(i / 12)}-${String((i % 12) + 1).padStart(2, "0")}`;
 }
 
 const dataSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
@@ -340,6 +348,42 @@ router.post("/fiscale/chiusura/riapri", requireAuth, requirePermission("fiscale"
   if (!p.success) return invalido(res, p.error.issues);
   try {
     await riapriAnno(userId, p.data.anno, req.ip);
+    res.status(204).end();
+  } catch (err) {
+    errore(err, res);
+  }
+});
+
+// ── POCKET-4: Libri, il mese (QuoteAI 127.1) ─────────────────────────────────
+
+router.get("/fiscale/libri", requireAuth, requirePermission("fiscale", "view"), async (req, res) => {
+  const userId = getUserId(res);
+  if (!(await moduloOForbidden(userId, res))) return;
+  const panoramica = await panoramicaLibri(userId);
+  const grezzo = typeof req.query.month === "string" ? req.query.month : "";
+  const mese = isMese(grezzo) ? grezzo : shiftMese(panoramica.today.slice(0, 7), -1);
+  res.json({ ...panoramica, ...(await controlloMese(userId, mese)) });
+});
+
+router.post("/fiscale/libri/chiudi", requireAuth, requirePermission("fiscale", "full"), async (req, res) => {
+  const userId = getUserId(res);
+  if (!(await moduloOForbidden(userId, res))) return;
+  const p = z.object({ month: z.string(), note: z.string().max(500).optional() }).safeParse(req.body);
+  if (!p.success) return invalido(res, p.error.issues);
+  try {
+    res.json({ close: await chiudiMese({ userId, month: p.data.month, note: p.data.note ?? "", actorName: getUserName(res), ip: req.ip }) });
+  } catch (err) {
+    errore(err, res);
+  }
+});
+
+router.post("/fiscale/libri/riapri", requireAuth, requirePermission("fiscale", "full"), async (req, res) => {
+  const userId = getUserId(res);
+  if (!(await moduloOForbidden(userId, res))) return;
+  const p = z.object({ month: z.string() }).safeParse(req.body);
+  if (!p.success) return invalido(res, p.error.issues);
+  try {
+    await riapriMese(userId, p.data.month, req.ip);
     res.status(204).end();
   } catch (err) {
     errore(err, res);

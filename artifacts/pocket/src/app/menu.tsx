@@ -30,7 +30,7 @@ const GROUPS: { key: string; rows: RowDef[] }[] = [
     { key: "crew", icon: "users", tone: "sage" }, { key: "timesheets", icon: "clock", tone: "teal" },
     { key: "schedule", icon: "cal", tone: "sky" } ] },
   { key: "money", rows: [
-    { key: "invoices", icon: "doc", tone: "azure", built: "Invoices" }, { key: "books", icon: "bank", tone: "sage" },
+    { key: "invoices", icon: "doc", tone: "azure", built: "Invoices" }, { key: "books", icon: "bank", tone: "sage", built: "Books" },
     { key: "analytics", icon: "bars", tone: "violet" }, { key: "integrations", icon: "sync", tone: "clay" } ] },
   { key: "workspace", rows: [
     { key: "documents", icon: "file", tone: "indigo" }, { key: "suppliers", icon: "building", tone: "stone" },
