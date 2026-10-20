@@ -3,6 +3,7 @@ import { db, leadsTable, leadEventsTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
 import { logger } from "../lib/logger.js";
 import { ipRateLimiter } from "../lib/rateLimit.js";
+import { companyNameForUser, resubscribedPage, unsubscribeDonePage, unsubscribeMessagePage } from "../lib/unsubscribePage.js";
 
 const router = Router();
 const unsubscribeLimiter = ipRateLimiter({ name: "public-leads.unsubscribeLimiter", windowMs: 60_000, max: 30, message: "Too many requests" });
@@ -13,14 +14,14 @@ const unsubscribeLimiter = ipRateLimiter({ name: "public-leads.unsubscribeLimite
 router.get("/public/leads/unsubscribe", unsubscribeLimiter, async (req, res) => {
   const token = String(req.query.token ?? "");
   if (!token) {
-    res.status(400).send("Missing unsubscribe link.");
+    res.status(400).send(unsubscribeMessagePage("missing"));
     return;
   }
 
   try {
     const [lead] = await db.select().from(leadsTable).where(eq(leadsTable.unsubscribeToken, token));
     if (!lead) {
-      res.status(404).send("This unsubscribe link is no longer valid.");
+      res.status(404).send(unsubscribeMessagePage("invalid"));
       return;
     }
 
@@ -32,13 +33,28 @@ router.get("/public/leads/unsubscribe", unsubscribeLimiter, async (req, res) => 
       await db.insert(leadEventsTable).values({ leadId: lead.id, userId: lead.userId, type: "unsubscribed", payload: {} });
     }
 
-    res.status(200).send(`<!DOCTYPE html><html><body style="font-family:Arial,sans-serif;text-align:center;padding:48px;">
-      <h2>You've been unsubscribed</h2>
-      <p>You won't receive any more follow-up messages from us.</p>
-    </body></html>`);
+    res.status(200).send(unsubscribeDonePage({ kind: "followups", company: await companyNameForUser(lead.userId), resubscribe: { action: `resubscribe?token=${encodeURIComponent(token)}` } }));
   } catch (err) {
     logger.error({ err }, "Lead unsubscribe failed");
-    res.status(500).send("Something went wrong. Please try again later.");
+    res.status(500).send(unsubscribeMessagePage("error"));
+  }
+});
+
+// POCKET-5 (QuoteAI 128.10): changed their mind — the same token turns the follow-ups back on (a form POST, so a mail scanner cannot undo it).
+router.post("/public/leads/resubscribe", unsubscribeLimiter, async (req, res) => {
+  const token = String(req.query.token ?? "");
+  if (!token) { res.status(400).send(unsubscribeMessagePage("missing")); return; }
+  try {
+    const [lead] = await db.select().from(leadsTable).where(eq(leadsTable.unsubscribeToken, token));
+    if (!lead) { res.status(404).send(unsubscribeMessagePage("invalid")); return; }
+    if (lead.unsubscribedAt) {
+      await db.update(leadsTable).set({ status: lead.status === "unsubscribed" ? "new" : lead.status, unsubscribedAt: null }).where(eq(leadsTable.id, lead.id));
+      await db.insert(leadEventsTable).values({ leadId: lead.id, userId: lead.userId, type: "note_added", payload: { note: "Si è iscritto di nuovo ai messaggi" } });
+    }
+    res.status(200).send(resubscribedPage({ company: await companyNameForUser(lead.userId) }));
+  } catch (err) {
+    logger.error({ err }, "Lead resubscribe failed");
+    res.status(500).send(unsubscribeMessagePage("error"));
   }
 });
 

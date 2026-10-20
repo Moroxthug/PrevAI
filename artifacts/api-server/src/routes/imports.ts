@@ -23,6 +23,9 @@ import { ensureClientForQuote } from "../lib/clients.js";
 import { logger } from "../lib/logger.js";
 import { parseSpreadsheet } from "../imports/parseSpreadsheet.js";
 import { readImportedQuotePdf } from "../imports/quoteImportAi.js";
+import { readSheet } from "../imports/readSheet.js";
+import { planClientRows, type ClientRow } from "../imports/clientRows.js";
+import { z } from "zod";
 
 // ── Phase 14: data migration / import ────────────────────────────────────────
 // A company uploads a CSV/Excel of past quotes, or PDFs of old quotes. Every
@@ -116,7 +119,7 @@ router.get("/imports/template.csv", requireAuth, (_req, res) => {
   const header = "Client Name,Email,Phone,Address,City,Province,Postal Code,Quote Date,Status,Description,Quantity,Unit Price,Total,Notes\n";
   const example = "John Smith,john@example.com,613-555-0100,123 Main St,Ottawa,ON,K1A0B1,2025-03-15,accepted,Bathroom renovation,1,8500,8500,Paid in full\n";
   res.setHeader("Content-Type", "text/csv");
-  res.setHeader("Content-Disposition", "attachment; filename=quoteai-import-template.csv");
+  res.setHeader("Content-Disposition", "attachment; filename=prevai-modello-importazione.csv");
   res.send(header + example);
 });
 
@@ -211,6 +214,67 @@ router.post(
     }
   },
 );
+
+// ── POCKET-5 (riga 62, QuoteAI 128.5): Importazioni dell'app ─────────────────
+// POST /api/imports/sheet — multipart { file } (CSV o XLSX) → { fileName, headers, rows, total }: ciò che il telefono abbina a clienti o voci del listino.
+// Non si salva niente.
+router.post(
+  "/imports/sheet",
+  requireAuth,
+  requirePermission("imports", "edit"),
+  importLimiter,
+  (req, res, next) => {
+    spreadsheetUpload.single("file")(req, res, (err) => {
+      if (err instanceof multer.MulterError || err instanceof Error) {
+        res.status(400).json({ error: err.message });
+        return;
+      }
+      next(err);
+    });
+  },
+  (req, res) => {
+    const file = req.file;
+    if (!file) { res.status(400).json({ error: "Nessun file" }); return; }
+    const sheet = readSheet(file.buffer);
+    if (!sheet) { res.status(400).json({ error: "Non riesco a leggere il file. Usa un CSV o un Excel con una riga di intestazione e almeno una riga." }); return; }
+    res.json({ fileName: file.originalname, ...sheet });
+  },
+);
+
+const ClientRowsBody = z.object({
+  rows: z.array(z.object({
+    row: z.number().int().min(1),
+    name: z.string().max(200),
+    phone: z.string().max(60).optional(),
+    email: z.string().max(200).optional(),
+    address: z.string().max(300).optional(),
+    notes: z.string().max(2000).optional(),
+  })).max(5000),
+});
+
+// POST /api/imports/clients — { rows } → le righe pulite si aggiungono subito; quelle che somigliano a un cliente che c'è già, e quelle con un errore, tornano alla persona.
+router.post("/imports/clients", requireAuth, requirePermission("imports", "edit"), importLimiter, async (req, res) => {
+  try {
+    const userId = getUserId(res);
+    const body = ClientRowsBody.safeParse(req.body);
+    if (!body.success) { res.status(400).json({ error: "Invalid rows" }); return; }
+    const existing = await db.select({ id: clientsTable.id, name: clientsTable.name, email: clientsTable.email, phone: clientsTable.phone, dedupKey: clientsTable.dedupKey }).from(clientsTable).where(eq(clientsTable.userId, userId));
+    const plan = planClientRows(body.data.rows as ClientRow[], existing);
+    let added = 0;
+    for (let i = 0; i < plan.clean.length; i += 200) {
+      const chunk = plan.clean.slice(i, i + 200);
+      const inserted = await db.insert(clientsTable).values(chunk.map((r) => ({
+        userId, name: r.name, email: r.email?.trim() || null, phone: r.phone?.trim() || null, address: r.address?.trim() || null, notes: r.notes?.trim() || "",
+        dedupKey: clientDedupKey({ name: r.name, email: r.email, phone: r.phone }),
+      }))).onConflictDoNothing().returning({ id: clientsTable.id });
+      added += inserted.length;
+    }
+    res.status(201).json({ added, matches: plan.matches, errors: plan.errors, skipped: plan.skipped + (plan.clean.length - added) });
+  } catch (err) {
+    req.log.error({ err }, "Error importing clients");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
 
 // POST /api/imports/pdf — multipart { files[] } (up to 20 PDFs) → one candidate per PDF, AI-read
 router.post(

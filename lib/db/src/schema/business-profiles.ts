@@ -46,6 +46,9 @@ export const DEFAULT_AUTOMATION_SETTINGS: AutomationSettings = {
   scheduleReminders: true,
 };
 
+/** POCKET-5: le scelte delle pagine delle Impostazioni dell'app, per pagina; le chiavi di ogni pagina si controllano dove si scrivono. */
+export type PocketSettings = Record<string, Record<string, unknown>>;
+
 export const businessProfilesTable = pgTable("business_profiles", {
   userId: text("user_id").primaryKey(),
   companyName: text("company_name").notNull().default(""),
@@ -95,6 +98,14 @@ export const businessProfilesTable = pgTable("business_profiles", {
   //    personale (SQL, RUNBOOKS §38): l'acquisto in app resta spento finché il
   //    titolare non decide il prezzo (D20, `POSTO_EXTRA` in lib/config piani.ts).
   extraSeats: integer("extra_seats").notNull().default(0),
+  // ── POCKET-5 (riga 62, QuoteAI 128.3): Dati dell'impresa e le pagine delle Impostazioni dell'app ──
+  //    La ragione sociale (company_name è il nome commerciale), il sito, il colore sui documenti e le scelte delle
+  //    pagine (iva, preventivi, fatture, messaggi, modulo, modelli…), validate da routes/business-profile.ts.
+  //    Colonne aggiunte da migrations/v2/0026_pocket5_assistente_impostazioni.sql.
+  legalName: text("legal_name"),
+  website: text("website"),
+  brandColor: text("brand_color"),
+  pocketSettings: jsonb("pocket_settings").$type<PocketSettings>().notNull().default({}),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
 });

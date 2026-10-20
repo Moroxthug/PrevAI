@@ -7,6 +7,7 @@ import { sendInvoiceReminderEmail } from "../lib/emailInvoices.js";
 import { REMINDER_AFTER_DAYS, balanceCents } from "./math.js";
 import { automationSettings, invoiceToken, logInvoiceEvent, publicInvoiceUrl, sendInvoice, invoicePdfBuffer } from "./service.js";
 import { ti, type Lang, type IKey } from "./render.js";
+import { assistantEnabled, logActivity, ruleFor } from "../assistant/company.js";
 
 // ── Daily invoice maintenance (cron) ─────────────────────────────────────────
 // 1. Open invoices past due → overdue (+ one in-app notification via the
@@ -51,6 +52,8 @@ export async function runInvoiceMaintenance(now = new Date()): Promise<{ overdue
     if (balanceCents(inv) <= 0) continue;
     const settings = automationSettings(profiles.get(inv.userId));
     if (!settings.invoiceReminders) continue;
+    // POCKET-5: an Elite company whose assistant asks first gets the reminder drafted for a yes (app → Proposals), and one that turned it off gets none.
+    if ((await ruleFor(inv.userId, "reminders", profiles.get(inv.userId))) !== "send") continue;
     const daysOverdue = Math.floor((now.getTime() - inv.dueDate.getTime()) / 86_400_000);
     const threshold = REMINDER_AFTER_DAYS[inv.reminderCount];
     if (threshold === undefined || daysOverdue < threshold) continue;
@@ -77,6 +80,13 @@ export async function runInvoiceMaintenance(now = new Date()): Promise<{ overdue
       await db.update(invoicesTable).set({ reminderCount: sql`${invoicesTable.reminderCount} + 1`, lastReminderAt: now }).where(eq(invoicesTable.id, inv.id));
       await logInvoiceEvent({ invoiceId: inv.id, type: "reminder_sent", actor: "system", detail: { number: inv.reminderCount + 1, daysOverdue } });
       reminded++;
+      if (assistantEnabled(profiles.get(inv.userId))) {
+        await logActivity({
+          userId: inv.userId, kind: "reminder", title: `Promemoria a ${inv.customer.name} per ${inv.number}`, detail: "Email",
+          params: { client: inv.customer.name, number: inv.number, channel: "email", amount: balanceCents(inv), days: daysOverdue },
+          who: "reminders", whoKind: "auto", category: "msg", word: "Sent", entityType: "invoice", entityId: inv.id,
+        });
+      }
     } catch (err) {
       logger.error({ err, invoiceId: inv.id }, "Invoice reminder failed");
     }

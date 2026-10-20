@@ -36,7 +36,7 @@ Righe del piano: **57–64** di `PIANO-AZIONE.md` (POCKET-0 … POCKET-7 = Quote
 | 59 | **POCKET-2** Dal preventivo all'incasso | 125 | Home, Preventivi, Nuovo preventivo, Preventivo, Modifica, Controllo prezzi, Clienti, Cliente, Lead, Pro-forma/Fatture, Fattura, Menu e la schermata "In arrivo" | ✅ 2026-10-10 |
 | 60 | **POCKET-3** Cantieri e squadra | 126 | 16 schermate; timbratura con posizione solo durante il turno; home del capocantiere | ✅ 2026-10-11 |
 | 61 | **POCKET-4** Soldi e ufficio | 127 | 13 schermate (con fisco e SdI di PrevAI) | ✅ 2026-10-11 |
-| 62 | **POCKET-5** Assistente, impostazioni, account | 128 | 31 schermate, l'assistente come nei pannelli | |
+| 62 | **POCKET-5** Assistente, impostazioni, account | 128 | 31 schermate, l'assistente come nei pannelli | ✅ 2026-10-20 |
 | 63 | **POCKET-6** Rifiniture e rilascio | 129 | stati di sistema, tablet, testo grande, Play (produzione dopo i 14 giorni di test chiuso), iOS con EAS (serve l'account Apple) | |
 | 64 | **POCKET-7** Video | 130 | tutorial, anteprime per gli store | |
 
@@ -53,3 +53,4 @@ Righe del piano: **57–64** di `PIANO-AZIONE.md` (POCKET-0 … POCKET-7 = Quote
 - **2026-10-10 (POCKET-2 = QuoteAI 125.1–125.9, riga 59 chiusa):** vedi il diario di `PIANO-AZIONE.md` (fase 59). Migrazione 0023; il server aveva già (da CLI-1, SYNC-1, TEAM-1) il portale, i cambiamenti e le versioni dei documenti, ma non le rotte per i clienti, il rifiuto, «vinto», le versioni dei preventivi e Oggi, e si sono portate qui. Prossima fase: riga 60 (POCKET-3, QuoteAI 126).
 - **2026-10-11 (POCKET-3 = QuoteAI 126, riga 60 chiusa):** vedi il diario di `PIANO-AZIONE.md` (fase 60). Migrazione 0024. Niente trasferte, niente più imprese per operaio, niente SMS ("Sto arrivando"). Prossima fase: riga 61 (POCKET-4, QuoteAI 127).
 - **2026-10-11 (POCKET-4 = QuoteAI 127.1–127.9, riga 61 chiusa):** vedi il diario di `PIANO-AZIONE.md` (fase 61). Migrazione 0025. Tutte e 13 le schermate adattate: Libri → Prima nota, Pay → Ore e costo (straordinario impostato dal titolare, niente festività/ferie/trasferte), Compliance → Scadenze (scadenzario Fisco + promemoria), AccountantView → vista del Contabile (`bookkeeper`), Group → solo la vista di insieme (niente fattura unica né listino condiviso, D13). Prossima fase: riga 62 (POCKET-5, QuoteAI 128).
+- **2026-10-20 (POCKET-5 = QuoteAI 128.1–128.11, riga 62 chiusa):** vedi il diario di `PIANO-AZIONE.md` (fase 62). Migrazione 0026. Assistente dell'impresa sotto `/api/assistant/company`, IVA e regime al posto delle tasse, niente SMS né QuickBooks, numeri dell'impresa intera, ruoli di mestiere separati dalle home del web. Prossima fase: riga 63 (POCKET-6, QuoteAI 129).

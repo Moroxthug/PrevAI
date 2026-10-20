@@ -1442,3 +1442,27 @@ Quando il titolare decide il prezzo (D20): compilare `POSTO_EXTRA` in `piani.ts`
 | Ore e costo dice che lo vedono solo titolare e amministratore | Ufficio, capocantiere e ospiti non vedono le tariffe: è voluto |
 | Straordinario a zero | Non è stato impostato: Ore e costo → Regole |
 | Il Gruppo non unisce la fattura | Non c'è ancora: toccherebbe piani e fatturazione (decisione del titolare) |
+
+## 42. L'app Expo: assistente, impostazioni, account (POCKET-5, riga 62)
+
+**Dove**: `artifacts/pocket/src/app/{assistant,assistant-proposals,assistant-activity,assistant-permissions,notifications,search,settings,profile,set-company,set-taxes,set-quotes,set-invoices,set-security,set-two-step,set-plan,set-messaging,message-templates,set-widget,archive,imports,integrations,feedback,whats-new,help-centre,video-player,dunning,set-roles,customize-home,role-homes}.tsx`, testi in `src/i18n/it-{assistente,avvisi,impostazioni,account,strumenti,aiuto,ruoli}.ts`, articoli dell'Aiuto in `src/content/helpArticles.ts` (copia del sito: `npm run sync-help`). Server: `routes/{assistant-company,member-prefs,plan-overview,feedback,job-roles}.ts`, `assistant/company*.ts`, `roles/{rules,enforce}.ts`, `archive/overview.ts`, `imports/{readSheet,clientRows}.ts`, `lib/{savedTemplates,unsubscribePage}.ts`, più `routes/{business-profile,archive,imports,speech,public-*}.ts`.
+
+**Prima di pubblicare**: `bash scripts/prod-migrate.sh migrations/v2/0026_pocket5_assistente_impostazioni.sql` (additiva e rieseguibile). Senza la migrazione **ogni lettura del profilo dell'impresa dà 500** (quattro colonne nuove su `business_profiles`) e il pannello «Beta app» dello staff anche (colonne nuove su `app_feedback`).
+
+**Cosa fa**
+1. **Assistente d'impresa** (menu → Assistente, piano Elite): *Proposte* — un promemoria per una fattura scaduta (3, 7, 14 giorni), un sollecito per un preventivo inviato da 2 giorni senza risposta, un ordine per un materiale sotto scorta con il prezzo di un fornitore; approvare manda l'email (col testo corretto, se la persona l'ha cambiato) o mette l'ordine in lista. *Attività* — ciò che ha fatto, comprese le azioni dell'assistente dei cantieri (APP-8h); l'ordine e la visita spostata si annullano da qui. *Permessi* — cinque ambiti (solleciti, promemoria, scontrini, agenda, squadra) su «Chiedimi prima / Fallo e dimmelo / No». Le rotte sono `/api/assistant/company/*`: `/api/assistant/activity` e `/permissions` restano quelle del sito.
+2. **I livelli contano davvero** per due ambiti: con «Chiedimi prima» il cron dei promemoria delle fatture e i solleciti dei preventivi **non mandano** e l'app propone; con «No» non parte niente. **Di partenza, per tutti, «Fallo e dimmelo»** (come prima della fase): niente cambia per un'impresa che non apre la schermata. Scontrini, agenda, squadra, ore di silenzio e «rileggi prima» si salvano ma nessuno li legge ancora.
+3. **Ruoli** (Impostazioni → Ruoli, Elite): dare un mestiere a una persona accende i suoi quattro accessi delicati. Se «vedere le paghe» o «margini e costi» sono spenti, il server **toglie quei campi da ogni risposta JSON** di quella persona (anche sul sito); «approvare le ore» e «inviare le fatture» spenti rispondono 403 `SENSITIVE_OFF`. Chi non ha avuto un mestiere non cambia niente. Il titolare non è mai limitato. La lettura è in cache 10 secondi.
+4. **Impostazioni**: le pagine si salvano in `business_profiles.pocket_settings` (per pagina, controllate in `routes/business-profile.ts`). Si leggono davvero: acconto, ritenuta, scadenze e invio delle fatture, l'email all'accettazione, le recensioni e i loro link, i promemoria (un interruttore), la provincia. **I solleciti dei preventivi usano il testo salvato in Modelli dei messaggi (f1–f3)**; tutto il resto si salva e basta (vedi il diario di `PIANO-AZIONE.md`, fase 62).
+5. **Preferenze della persona** (`member_preferences`: voce, Profilo, la sua Home) e **mestieri** (`member_job_roles`, per `org_id`) si cancellano con l'account (`account/deletion.ts`).
+6. **Parere dall'app** (`POST /api/feedback`): finisce nella tabella e nel pannello «Beta app» con tipo, schermata e telefono; il riferimento che vede la persona è `FB-` più sei caratteri dell'id.
+7. **Disiscrizione**: le tre pagine (preventivi, richieste, recensioni) sono in italiano con «Riiscriviti» (un POST: un antivirus della posta che apre il link non la annulla). **Corretto un guasto**: `/api/public/quotes/unsubscribe` era preso da `/public/quotes/:id` e rispondeva 404 su ogni sollecito; ora la rotta viene prima.
+
+| Domanda | Cosa fare |
+|---|---|
+| Tutto dà 500 dopo il deploy | La 0026 non è stata eseguita: `business_profiles` non ha le colonne nuove |
+| Un'impresa dice che i promemoria non partono più | Ha messo «Chiedimi prima» o «No» in Assistente → Permessi; le proposte aspettano nell'app |
+| Un collega non vede più le paghe o non può inviare fatture | Ha un mestiere con quell'accesso spento: Impostazioni → Ruoli → la persona |
+| «Le Home per ruolo sono incluse in Elite» | Ruoli e Home per ruolo sono del piano Elite |
+| Il parere dall'app non ha la schermata | Lo storage non c'era o la persona non l'ha messa; la nota c'è comunque |
+| La voce dell'assistente parla con la voce del telefono | Il server non ha una voce (VOICE_BROWSER) o i minuti del mese sono finiti: è voluto |

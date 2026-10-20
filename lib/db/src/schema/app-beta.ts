@@ -1,4 +1,4 @@
-import { pgTable, uuid, text, timestamp, index } from "drizzle-orm/pg-core";
+import { pgTable, uuid, text, timestamp, index, boolean, jsonb } from "drizzle-orm/pg-core";
 
 // ── APP-5: beta con le imprese pilota (docs/APP-PLAN.md §5) ─────────────────
 // Two small tables so the beta can be judged on facts, not impressions:
@@ -20,6 +20,9 @@ export const APP_SURFACES = ["web", "pwa", "android", "ios"] as const;
 export type AppSurface = (typeof APP_SURFACES)[number];
 
 export const APP_FEEDBACK_STATES = ["nuovo", "visto", "risolto"] as const;
+/** POCKET-5 (QuoteAI 128.6, «Invia un parere» dell'app): che cosa è. Null per le segnalazioni della beta di prima. */
+export const FEEDBACK_KINDS = ["wrong", "idea", "question"] as const;
+export type FeedbackKind = (typeof FEEDBACK_KINDS)[number];
 export type AppFeedbackState = (typeof APP_FEEDBACK_STATES)[number];
 
 export const appEventsTable = pgTable(
@@ -59,6 +62,15 @@ export const appFeedbackTable = pgTable(
     appVersion: text("app_version"),
     userAgent: text("user_agent").notNull().default(""),
     stato: text("stato").$type<AppFeedbackState>().notNull().default("nuovo"),
+    // ── POCKET-5 (riga 62, QuoteAI 128.6): what «Invia un parere» in the app adds (migration 0026). ──
+    kind: text("kind").$type<FeedbackKind>(),
+    replyOk: boolean("reply_ok"),
+    includeLogs: boolean("include_logs"),
+    /** The phone (model and system), when the person included the technical data. */
+    device: text("device"),
+    screenshotPath: text("screenshot_path"),
+    /** What was drawn on the screenshot: strokes as lists of [x, y] between 0 and 1. */
+    markup: jsonb("markup").$type<number[][][] | null>(),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [index("app_feedback_created_idx").on(t.createdAt)],

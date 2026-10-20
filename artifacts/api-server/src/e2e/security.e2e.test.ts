@@ -63,6 +63,8 @@ import {
   complianceRemindersTable,
   inventoryItemsTable,
   supplierOrdersTable,
+  assistantSuggestionsTable,
+  assistantActivityTable,
   authSessionsTable,
   authUsersTable,
 } from "@workspace/db";
@@ -181,6 +183,9 @@ async function seedOrgA(): Promise<Fixtures> {
   f.inventoryItem = await ins(db.insert(inventoryItemsTable).values({ userId, name: "Lastra di cartongesso" }).returning());
   f.supplierOrder = await ins(db.insert(supplierOrdersTable).values({ userId, supplierId: f.supplier, itemName: "Lastra di cartongesso" }).returning());
   f.org = userId;
+  // POCKET-5: una proposta e una riga d'Attività dell'assistente d'impresa (l'annulla toglie un ordine ancora in lista).
+  f.suggestion = await ins(db.insert(assistantSuggestionsTable).values({ userId, key: `reminder:e2e:${randomUUID()}`, kind: "reminder", payload: {} }).returning());
+  f.activity = await ins(db.insert(assistantActivityTable).values({ userId, kind: "order", title: "Ordine E2E", undo: "undo", undoData: { entity: "order", id: f.supplierOrder } }).returning());
 
   // Clients are virtual (md5 of the quote's client fields) — read the id back the way the UI does.
   const clients = await A.api("/api/clients");
@@ -248,6 +253,7 @@ function resolveParams(route: MatrixRoute, f: Fixtures): { path: string; unseede
           ["/api/fiscale/commercialista/incarichi", "incarico"], ["/api/studio/incarichi", "incarico"],
           ["/api/schedule/blocks", "block"], ["/api/service-calls", "serviceCall"], ["/api/calendar/feeds", "feed"],
           ["/api/field-reports", "fieldReport"], ["/api/fiscale/calendario/promemoria", "reminder"], ["/api/inventory/items", "inventoryItem"], ["/api/suppliers", "supplier"],
+          ["/api/assistant/company/suggestions", "suggestion"], ["/api/assistant/company/activity", "activity"], ["/api/archive/clients", "clientRow"],
         ];
         id = byPrefix.find(([p]) => prefix === p)?.[1];
         // POCKET-2: la scheda del cliente per l'app e la modifica usano l'uuid della riga, non l'md5 dell'elenco storico.

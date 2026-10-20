@@ -283,6 +283,14 @@ async function purgeDatabase(subjectUserId: string): Promise<Pick<AccountDeletio
         add(table, count(await tx.transaction(async (sp) => sp.execute(sql`delete from ${sql.identifier(table)} where member_user_id = ${subjectUserId}`))));
       } catch { /* 0014 non ancora eseguita */ }
     }
+    // POCKET-5: le sue scelte nell'app dentro le imprese altrui (member_preferences), e il mestiere che aveva in ogni impresa
+    // e quelli dati nella sua (member_job_roles è per org_id, non user_id). Prima della 0026 le tabelle non ci sono.
+    try {
+      add("member_preferences", count(await tx.transaction(async (sp) => sp.execute(sql`delete from member_preferences where member_user_id = ${subjectUserId}`))));
+    } catch { /* 0026 non ancora eseguita */ }
+    try {
+      add("member_job_roles", count(await tx.transaction(async (sp) => sp.execute(sql`delete from member_job_roles where org_id = ${subjectUserId} or member_user_id = ${subjectUserId}`))));
+    } catch { /* 0026 non ancora eseguita */ }
 
     // 4. L'accesso (sessioni, password, 2FA e collegamenti vanno per cascata).
     add("auth_user", count(await tx.execute(sql`delete from auth_user where id = ${subjectUserId}`)));

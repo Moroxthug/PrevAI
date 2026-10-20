@@ -81,11 +81,15 @@ export async function sendInvoiceEmail(params: Common & { pdfBuffer: Buffer; mes
   logger.info({ to: params.toEmail, number: params.number }, "Invoice email sent");
 }
 
-export async function sendInvoiceReminderEmail(params: Common & { daysOverdue: number; pdfBuffer?: Buffer }): Promise<void> {
+/** `message`: POCKET-5, the text the person approved in the app (Proposals); it replaces the standard paragraph, the summary and the button stay. */
+export async function sendInvoiceReminderEmail(params: Common & { daysOverdue: number; pdfBuffer?: Buffer; message?: string }): Promise<void> {
   const company = escapeHtml(params.companyName);
+  const own = params.message?.trim();
   const t = {
     title: "Promemoria di pagamento", sub: `Pro-forma ${params.number}`,
-    body: `${greet(params.customerName)},<br/><br/>un gentile promemoria: la fattura pro-forma <strong>${escapeHtml(params.number)}</strong> di <strong>${company}</strong>, scaduta il ${day(params.dueDate)}, presenta un residuo di <strong>${eur(params.balanceCents)}</strong>. Se hai già pagato, ignora questo messaggio.`,
+    body: own
+      ? own.split(/\n{2,}/).map((p) => escapeHtml(p).replace(/\n/g, "<br/>")).join("<br/><br/>")
+      : `${greet(params.customerName)},<br/><br/>un gentile promemoria: la fattura pro-forma <strong>${escapeHtml(params.number)}</strong> di <strong>${company}</strong>, scaduta il ${day(params.dueDate)}, presenta un residuo di <strong>${eur(params.balanceCents)}</strong>. Se hai già pagato, ignora questo messaggio.`,
     btn: "Vedi la pro-forma e paga", subject: `Promemoria — pro-forma ${params.number} (${eur(params.balanceCents)})`, footer: `Inviato tramite ${MARKET.brand} per conto di ${company}.`,
     invoice: "Pro-forma", due: "Scaduta il", total: "Totale", balance: "Da pagare", bankTransfer: "Bonifico — IBAN",
   };

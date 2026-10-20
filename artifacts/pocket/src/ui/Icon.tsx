@@ -9,7 +9,9 @@ import icons from "@/theme/icons.json";
 import tones from "@/theme/tones.json";
 import { useTheme, type ColorName } from "./theme";
 
-export type IconName = keyof typeof icons.glyphs;
+/** Glyphs the screens' boards draw that the handoff's icons.json doesn't carry (Settings → Text size: a letter A with a dot). */
+const EXTRA_GLYPHS = { text: { d1: "M12 8L17 21.5H14.8L13.8 18.6H10.2L9.2 21.5H7Z", d2: "M17.5 18.8a2.7 2.7 0 1 0 5.4 0a2.7 2.7 0 1 0 -5.4 0Z", d3: "M0 0Z" } } as const;
+export type IconName = keyof typeof icons.glyphs | keyof typeof EXTRA_GLYPHS;
 
 // Android / iOS accessibility props; react-native-svg passes them to the DOM on web.
 const a11y = (label?: string) => (Platform.OS === "web" ? {} : { accessible: !!label, accessibilityLabel: label, importantForAccessibility: label ? ("yes" as const) : ("no-hide-descendants" as const) });
@@ -26,7 +28,7 @@ export function Icon({ name, tone = "violet", size = 28, label }: { name: IconNa
   const id = useId().replace(/:/g, "");
   const t = tones[tone];
   const k = scheme === "dark" ? 1.15 : 1;
-  const g = icons.glyphs[name] as { d1: string; d2: string; d3: string };
+  const g = (name in EXTRA_GLYPHS ? EXTRA_GLYPHS[name as keyof typeof EXTRA_GLYPHS] : icons.glyphs[name as keyof typeof icons.glyphs]) as { d1: string; d2: string; d3: string };
   const layers: [string, number][] = [
     [g.d3, 0.35],
     [g.d2, 0.6],
@@ -45,7 +47,7 @@ export function Icon({ name, tone = "violet", size = 28, label }: { name: IconNa
   );
 }
 
-export type GlyphName = "lock" | "back" | "close" | "chevron" | "chevronDown" | "plus" | "minus" | "search" | "more" | "check" | "alert" | "play" | "mic" | "eye" | "eyeOff" | "gear" | "camera" | "arrowUp" | "dollar" | "photo" | "user" | "cloud" | "cloudRain" | "sun" | "phone" | "text" | "mail" | "grip";
+export type GlyphName = "lock" | "back" | "close" | "chevron" | "chevronDown" | "plus" | "minus" | "search" | "more" | "check" | "alert" | "play" | "mic" | "eye" | "eyeOff" | "gear" | "camera" | "arrowUp" | "dollar" | "photo" | "user" | "cloud" | "cloudRain" | "sun" | "phone" | "text" | "mail" | "grip" | "micOff" | "keyboard" | "wave";
 
 type Stroke = { w: number; round?: boolean };
 const GLYPHS: Record<GlyphName, { stroke?: Stroke; draw: (c: string) => React.ReactNode }> = {
@@ -85,6 +87,9 @@ const GLYPHS: Record<GlyphName, { stroke?: Stroke; draw: (c: string) => React.Re
   grip: { draw: (c) => (<>{[6, 12, 18].map((y) => [9, 15].map((x) => <Circle key={`${x}-${y}`} cx={x} cy={y} r={1.6} fill={c} />))}</>) },
   camera: { stroke: { w: 2.2, round: true }, draw: () => (<><Path d="M4 8h3l2-3h6l2 3h3v11H4z" /><Circle cx="12" cy="13" r="3.2" /></>) },
   mic: { stroke: { w: 2, round: true }, draw: () => (<><Rect x="9" y="3" width="6" height="11" rx="3" /><Path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21" /></>) },
+  micOff: { stroke: { w: 1.9, round: true }, draw: () => <Path d="M15 9.5V6a3 3 0 0 0-5.7-1.3M9 9v2a3 3 0 0 0 4.6 2.5M5.5 11a6.5 6.5 0 0 0 10.4 5.2M18.5 11a6.4 6.4 0 0 1-.6 2.7M12 17.5V21M4 4l16 16" /> },
+  keyboard: { stroke: { w: 1.7, round: true }, draw: () => (<><Rect x="2.5" y="6" width="19" height="12" rx="3" /><Path d="M6.5 10h.01M10 10h.01M13.5 10h.01M17 10h.01M8 14h8" /></>) },
+  wave: { stroke: { w: 1.9, round: true }, draw: () => <Path d="M4 10v4M8 7v10M12 4v16M16 7v10M20 10v4" /> },
 };
 
 /** A stroke glyph. `weight` overrides the board's stroke width where a board draws it heavier (e.g. plus 2.4, check 3.2). */

@@ -6,6 +6,13 @@ import { lavoro } from "./it-lavoro";
 import { preventivi } from "./it-preventivi";
 import { soldi } from "./it-soldi";
 import { ufficio } from "./it-ufficio";
+import { assistente } from "./it-assistente";
+import { avvisi } from "./it-avvisi";
+import { impostazioni } from "./it-impostazioni";
+import { account } from "./it-account";
+import { strumenti } from "./it-strumenti";
+import { aiuto } from "./it-aiuto";
+import { ruoli } from "./it-ruoli";
 
 export const it = {
   ...entrare,
@@ -14,6 +21,13 @@ export const it = {
   ...cantieri,
   ...soldi,
   ...ufficio,
+  ...assistente,
+  ...avvisi,
+  ...impostazioni,
+  ...account,
+  ...strumenti,
+  ...aiuto,
+  ...ruoli,
   sandbox: {
     title: "Componenti",
     intro: "Tutti i pezzi con cui è fatta l'app, con i loro stati. Tocca i comandi per provarli.",

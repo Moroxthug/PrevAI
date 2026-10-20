@@ -34,10 +34,10 @@ const GROUPS: { key: string; rows: RowDef[] }[] = [
     { key: "analytics", icon: "bars", tone: "violet", built: "Analytics" }, { key: "integrations", icon: "sync", tone: "clay" } ] },
   { key: "workspace", rows: [
     { key: "documents", icon: "file", tone: "indigo", built: "Documents" }, { key: "suppliers", icon: "building", tone: "stone", built: "Suppliers" }, { key: "materials", icon: "box", tone: "amber", built: "Inventory" },
-    { key: "imports", icon: "sync", tone: "sky" }, { key: "archive", icon: "box", tone: "slate" }, { key: "group", icon: "users", tone: "lilac", built: "Group" } ] },
+    { key: "imports", icon: "sync", tone: "sky", built: "Imports" }, { key: "archive", icon: "box", tone: "slate", built: "Archive" }, { key: "group", icon: "users", tone: "lilac", built: "Group" } ] },
   { key: "app", rows: [
-    { key: "assistant", icon: "orb", tone: "violet" }, { key: "settings", icon: "gear", tone: "slate" },
-    { key: "notifications", icon: "bell", tone: "sky" }, { key: "help", icon: "help", tone: "stone" },
+    { key: "assistant", icon: "orb", tone: "violet", built: "AssistantProposals" }, { key: "settings", icon: "gear", tone: "slate", built: "Settings" },
+    { key: "notifications", icon: "bell", tone: "sky", built: "Notifications" }, { key: "help", icon: "help", tone: "stone", built: "HelpCentre" },
     { key: "whatsNew", icon: "gift", tone: "clay" }, { key: "feedback", icon: "chat", tone: "azure" } ] },
 ];
 
@@ -65,10 +65,10 @@ export default function Menu() {
     <Screen>
       <ScrollPage bottom={44}>
         <Header title="" backLabel={t("menu.back")} onBack={() => (router.canGoBack() ? router.back() : router.replace("/home"))}
-          moreLabel={t("menu.settings")} moreGlyph="gear" onMore={() => later(t("menu.rows.settings.label"))} />
+          moreLabel={t("menu.settings")} moreGlyph="gear" onMore={() => router.push(builtHref("Settings") as Href)} />
         <Section>
           <MenuIdentity initials={user ? initialsOf(user.name) : ""} name={user?.name ?? ""} sub={[company, role].filter(Boolean).join(" · ")}
-            photoLabel={t("menu.changePhoto")} onPhoto={() => later(t("menu.rows.settings.label"))} onName={() => later(user?.name ?? "")} />
+            photoLabel={t("menu.changePhoto")} onPhoto={() => router.push(builtHref("Profile") as Href)} onName={() => router.push(builtHref("Profile") as Href)} />
         </Section>
         {planName ? (
           <Section delay={50} px={16} pt={22}>

@@ -85,6 +85,11 @@ export const auth = {
     return result(raw, (b) => ({ twoStep: b.twoFactorRedirect === true }));
   },
 
+  /** Starts two-step: the key for the authenticator app and the backup codes. It is only on once the first code has been confirmed (verifyTotp). */
+  twoStepEnable: async (password: string) => result(await call("/two-factor/enable", { password }), (b) => ({ uri: String(b.totpURI ?? ""), codes: Array.isArray(b.backupCodes) ? (b.backupCodes as unknown[]).map(String) : [] })),
+  twoStepDisable: async (password: string) => result(await call("/two-factor/disable", { password }), nothing),
+  /** New backup codes; the old ones stop working. */
+  twoStepCodes: async (password: string) => result(await call("/two-factor/generate-backup-codes", { password }), (b) => ({ codes: Array.isArray(b.backupCodes) ? (b.backupCodes as unknown[]).map(String) : [] })),
   verifyTotp: async (code: string) => result(await call("/two-factor/verify-totp", { code }), nothing),
   verifyBackupCode: async (code: string) => result(await call("/two-factor/verify-backup-code", { code }), nothing),
 
@@ -98,6 +103,26 @@ export const auth = {
   resetPassword: async (token: string, newPassword: string) => result(await call("/reset-password", { token, newPassword }), nothing),
 
   signOut: async () => result(await call("/sign-out", {}), nothing),
+
+  /** Changes the signed-in person's name (and photo, as an address or a data URL). */
+  updateUser: async (patch: { name?: string; image?: string }) => result(await call("/update-user", patch), nothing),
+
+  /** Where this person is signed in (the phone itself marked), and whether the second step is on. */
+  async devices(): Promise<AuthResult<{ twoStep: boolean; items: { token: string; agent: string; ip: string; at: string; here: boolean }[] }>> {
+    const [list, me] = await Promise.all([call("/list-sessions", undefined, "GET"), call("/get-session", undefined, "GET")]);
+    if (!list) return { ok: false, problem: "offline" };
+    const here = String((me?.body as { session?: { token?: string } } | undefined)?.session?.token ?? "");
+    const twoStep = Boolean((me?.body as { user?: { twoFactorEnabled?: boolean } } | undefined)?.user?.twoFactorEnabled);
+    const rows = Array.isArray(list.body) ? (list.body as unknown as Record<string, unknown>[]) : [];
+    return result(list.status === 200 ? { status: 200, body: {} } : list, () => ({
+      twoStep,
+      items: rows.map((s) => ({ token: String(s.token ?? ""), agent: String(s.userAgent ?? ""), ip: String(s.ipAddress ?? ""), at: String(s.updatedAt ?? s.createdAt ?? ""), here: String(s.token ?? "") === here })),
+    }));
+  },
+  /** Signs one other device out. */
+  revokeDevice: async (token: string) => result(await call("/revoke-session", { token }), nothing),
+  /** Signs every other device out, this one stays. */
+  revokeOthers: async () => result(await call("/revoke-other-sessions", {}), nothing),
 
   async session(): Promise<AuthResult<{ id: string; name: string; email: string; image: string | null } | null>> {
     const raw = await call("/get-session", undefined, "GET");

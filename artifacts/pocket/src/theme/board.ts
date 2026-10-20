@@ -1,6 +1,27 @@
 // Values Components.dc.html uses that tokens.json doesn't name. Kept here (src/theme) so
 // src/ui stays free of typed colours; sync:design doesn't touch this file.
 export const board = {
+  /** SetCompany's brand colours for quotes and invoices (the swatches, in the board's order); what is saved is the hex. */
+  brandColours: { violet: "#6A2FBF", harbour: "#1F4F86", forest: "#1F7A45", brick: "#B4462B", teal: "#1E7F80", charcoal: "#2B2B30" },
+  /** The notification opt-in sheet's halo (.nt-stage::before: rgba(163,135,244,.32) → 0). */
+  pushHalo: "#a387f4",
+  /** The website widget preview (SetWidget): the form on a white or dark page, whatever the app's own theme. */
+  widgetSurface: {
+    light: { bg: "#ffffff", fg: "#141416", input: "#f3f2ef", inputFg: "#8a8a90", chip: "#f3f2ef", chipFg: "#3c3c43" },
+    dark: { bg: "#1b1b1f", fg: "#f3f2ef", input: "#2a2a30", inputFg: "#9d9ca4", chip: "#2a2a30", chipFg: "#d0cfd5" },
+  },
+  /** VideoPlayer: the dark stage whatever the app's theme is (.vp-*). */
+  player: { stage: "#0c0c0e", frame: "#141418", fg: "#f3f2ef", dim: "rgba(255,255,255,.62)", track: "rgba(255,255,255,.22)", border: "rgba(255,255,255,.35)", caption: "rgba(0,0,0,.72)", scrim: "rgba(12,12,14,.45)", card: "rgba(255,255,255,.94)", cardInk: "#141416", cardMuted: "#6e6e76", cardOk: "#1f7a45", wave: "#8b5cf6", cloud: "#92c8f3", glowA: "rgba(139,92,246,.42)", glowB: "rgba(56,189,160,.22)" },
+  /** The WhatsApp preview bubble (.mt-bub.wa). */
+  waBubble: "#1f7a45",
+  /** The three assistant voices as AssistantPermissions draws them (.pm-orb: a dark ground and three glows). */
+  voiceOrbs: {
+    ember: { base: "#160e36", glow: ["#7b3fe4", "#6ec8f5", "#4c9de5"] },
+    tide: { base: "#08172a", glow: ["#3d8bff", "#6ef0d2", "#b7a6ff"] },
+    stone: { base: "#1a1a1c", glow: ["#c9c4ba", "#8e8a84", "#f4efe6"] },
+  },
+  /** HomeAI's assistant layer (.ai-layer, .orb, .glass): a near-black ground in both themes, the live orb's base and four blobs, glass buttons, the two bubbles and the muted look. */
+  assistantLayer: { ground: "#09090b", ambient: "rgba(106,47,191,.22)", orbBase: "#120b2e", blobs: ["#7b3fe4", "#4c9de5", "#6ec8f5", "#4f46e5"], shine: "rgba(255,255,255,.5)", glass: "rgba(255,255,255,.09)", glassRing: "rgba(255,255,255,.08)", mine: "rgba(255,255,255,.1)", bot: "rgba(255,255,255,.9)", placeholder: "rgba(255,255,255,.38)", muteBg: "rgba(255,90,70,.18)", muteFg: "#ff8a70", muteRing: "rgba(255,120,100,.35)", micShadow: "0 10px 30px -6px rgba(106,47,191,.45)", sendBg: "#6a2fbf" },
   /** Switch knob and the round tick's mark: white in both themes (.th .knob, .cp-box.rd.on). */
   white: "#ffffff",
   /** .cp-sw .knob */

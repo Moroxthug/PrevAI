@@ -67,6 +67,8 @@ const PERMISSIONLESS_MUTATIONS: Allow[] = [
   { match: /^(POST|DELETE) \/api\/push\/subscriptions$|^POST \/api\/push\/test$|^PUT \/api\/push\/preferences$/, reason: "APP-2: the actor turns notifications on or off on their OWN browser, tests them on their own devices and picks their own kinds — any role, rate limited per user; what a push may carry is still cut by role at send time" },
   { match: /^PUT \/api\/today\/checklist\/:itemId$/, reason: "POCKET-2: la persona spunta le voci della PROPRIA lista di oggi (today_checks è per persona); un compito di cantiere si completa solo con il permesso jobs/edit, controllato nel servizio (403)" },
   { match: /^(PUT|DELETE) \/api\/home$/, reason: "APP-7: the actor arranges their OWN home — any role; the layout is cut to what the role may see before saving, so it can never reveal anything" },
+  { match: /^POST \/api\/feedback$/, reason: "POCKET-5: «Invia un parere» dall'app — la nota della persona stessa, qualunque ruolo, limitata a 20 l'ora per persona; scrive solo una riga di app_feedback con l'impresa e la persona che agiscono" },
+  { match: /^PUT \/api\/me\/preferences$/, reason: "POCKET-5: la persona sceglie le PROPRIE impostazioni dell'app (voce, Profilo, la sua Home) — qualunque ruolo; la riga è per impresa × persona e non mostra niente a nessun altro" },
   {
     match: /^POST \/api\/studio\//,
     reason: "A-6: il professionista agisce come persona, non con un ruolo in un'organizzazione — il middleware `studio` chiede la 2FA sull'account, e ogni rotta su un cliente passa da incaricoPerProfessionista (incarico suo, professionista operativo, incarico attivo)",

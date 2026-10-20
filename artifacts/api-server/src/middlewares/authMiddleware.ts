@@ -1,4 +1,5 @@
 import type { Request, Response, NextFunction } from "express";
+import { applyRestriction } from "../roles/enforce.js";
 import { fromNodeHeaders } from "better-auth/node";
 import { auth } from "../lib/auth";
 import { db, businessProfilesTable, organizationMembersTable, type TeamMemberRole } from "@workspace/db";
@@ -114,6 +115,8 @@ export async function requireAuth<P = Record<string, string>>(req: Request<P>, r
       res.status(403).json({ error: TWO_FACTOR_REQUIRED_ERROR, message: TWO_FACTOR_REQUIRED_MESSAGE });
       return;
     }
+    // POCKET-5: the sensitive switches of the person's job role (app → Settings → Roles): pay rates and margins hidden from the JSON, Approve time and Send invoices stopped.
+    await applyRestriction(res, orgId, session.user.id, role);
     next();
   } catch {
     res.status(401).json({ error: "Unauthorized" });

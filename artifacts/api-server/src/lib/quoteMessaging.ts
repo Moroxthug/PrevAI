@@ -4,6 +4,7 @@ import { MARKET, fmtEur } from "@workspace/config";
 import { logger } from "./logger.js";
 import { getBaseUrl } from "./baseUrl.js";
 import { publicQuoteLink } from "../quotes/publicLink.js";
+import { fillTemplate, savedTemplate } from "./savedTemplates.js";
 import { sanitizeForFromHeader } from "./emailUtils.js";
 import { type BusinessProfile, type Quote, type QuoteClientData, type QuoteCompanySnapshot } from "@workspace/db";
 
@@ -67,9 +68,15 @@ function buildFollowupEmailHtml(params: {
   quoteNumber: string;
   totale: string;
   publicUrl: string | null;
+  /** POCKET-5: the wording the person wrote (an approved suggestion, or the template saved in the app); it replaces the greeting and the body. */
+  text?: string | null;
 }): string {
   const { subject, body } = followupCopy(params.stage, params.quoteNumber, params.totale);
-  const greeting = `Gentile ${escapeHtml(params.clientName)},`;
+  const own = params.text?.trim();
+  const greeting = own ? "" : `Gentile ${escapeHtml(params.clientName)},`;
+  const bodyHtml = own
+    ? own.split(/\n{2,}/).map((p) => `<p style="font-size:14px;color:#374151;line-height:1.6;">${escapeHtml(p).replace(/\n/g, "<br>")}</p>`).join("")
+    : `<p style="font-size:14px;color:#374151;line-height:1.6;">${escapeHtml(body)}</p>`;
   const logoSrc = emailLogoSrc(params.profile.logoUrl);
   const logo = logoSrc ? `<img src="${logoSrc}" alt="" style="max-height:40px;margin-bottom:16px;" />` : "";
   const cta = params.publicUrl
@@ -79,9 +86,9 @@ function buildFollowupEmailHtml(params: {
 <html lang="${MARKET.locale}"><body style="font-family:Arial,sans-serif;background:#f9fafb;padding:24px;">
   <div style="max-width:560px;margin:0 auto;background:#fff;border-radius:8px;padding:32px;">
     ${logo}
-    <p style="font-size:16px;color:#111827;">${greeting}</p>
+    ${greeting ? `<p style="font-size:16px;color:#111827;">${greeting}</p>` : ""}
     <h2 style="font-size:18px;color:#111827;">${escapeHtml(subject)}</h2>
-    <p style="font-size:14px;color:#374151;line-height:1.6;">${escapeHtml(body)}</p>
+    ${bodyHtml}
     ${cta}
     ${identificationBlockHtml(params.profile)}
     ${unsubscribeHtml(params.unsubscribeToken)}
@@ -102,6 +109,8 @@ export async function sendQuoteFollowup(params: {
   quote: Quote;
   profile: BusinessProfile;
   stage: number;
+  /** POCKET-5: a text the person approved in the app (Proposals); without it, the wording saved in Message templates (f1–f3), then the standard one. */
+  text?: string;
 }): Promise<QuoteFollowupResult> {
   const { quote, profile, stage } = params;
   const clientData = quote.clientData as QuoteClientData;
@@ -119,6 +128,9 @@ export async function sendQuoteFollowup(params: {
   if (!link.url) return { ok: false, reason: "link_revoked" };
   const publicUrl = link.url;
   const { subject } = followupCopy(stage, quoteNumber, totale);
+  // POCKET-5 (QuoteAI 128.10): the wording saved in the app for this stage, with its slots filled.
+  const saved = savedTemplate(profile.pocketSettings, `f${Math.min(stage, 2) + 1}`);
+  const text = params.text?.trim() || (saved ? fillTemplate(saved, { first: (clientData?.nome ?? "").trim().split(/\s+/)[0] ?? "", job: quote.titoloPreventivoRiga2?.trim() || "", link: publicUrl, amount: totale, me: "", co: companyName }) : null);
 
   try {
     const resend = new Resend(apiKey);
@@ -134,6 +146,7 @@ export async function sendQuoteFollowup(params: {
         quoteNumber,
         totale,
         publicUrl,
+        text,
       }),
       headers: { "List-Unsubscribe": `<${quoteUnsubscribeUrl(quote.unsubscribeToken)}>` },
       ...(profile.email ? { replyTo: profile.email } : {}),

@@ -7,6 +7,9 @@ import { openai, toFile } from "@workspace/integrations-openai-ai-server";
 import { logger } from "../lib/logger.js";
 import { userRateLimiter } from "../lib/rateLimit.js";
 import { requireAiBudget } from "../lib/aiBudget.js";
+import { eq } from "drizzle-orm";
+import { db, businessProfilesTable, hasFeature, minimumPlanFor } from "@workspace/db";
+import { getUserId } from "../middlewares/authMiddleware";
 
 const speechLimiter = userRateLimiter({
   name: "speech.speechLimiter",
@@ -81,6 +84,45 @@ router.post(
       res.status(500).json({ error: "Transcription failed. Please try again." });
     }
   }
+);
+
+// POST /api/assistant/listen multipart { audio } — POCKET-5 (riga 62, QuoteAI 128.8b): the voice view of the app's assistant layer. Speech to text
+// in Italian (Whisper), nothing else: the app sends the text to the company conversation like a typed message. Needs the assistant (Elite) and
+// jobs:view, like the conversation it feeds. The type may carry codecs ("audio/webm;codecs=opus").
+const listenUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 15 * 1024 * 1024, files: 1 },
+  fileFilter: (_req, file, cb) => (ALLOWED_AUDIO_MIMES.includes(file.mimetype.split(";")[0]!.trim()) ? cb(null, true) : cb(new Error(`Unsupported audio format: ${file.mimetype}`))),
+});
+
+router.post(
+  "/assistant/listen",
+  requireAuth,
+  requirePermission("jobs", "view"),
+  speechLimiter,
+  requireAiBudget,
+  (req, res, next) => {
+    listenUpload.single("audio")(req, res, (err) => {
+      if (err instanceof multer.MulterError || err instanceof Error) { res.status(400).json({ error: err.message }); return; }
+      next(err);
+    });
+  },
+  async (req, res) => {
+    try {
+      const [profile] = await db.select().from(businessProfilesTable).where(eq(businessProfilesTable.userId, getUserId(res)));
+      if (!hasFeature(profile, "assistant")) { res.status(403).json({ error: "PLAN_REQUIRED", requiredPlan: minimumPlanFor("assistant") }); return; }
+      const file = req.file;
+      if (!file) { res.status(400).json({ error: "No audio file provided" }); return; }
+      const uploadable = await toFile(file.buffer, file.originalname || "voice.m4a", { type: file.mimetype.split(";")[0]!.trim() });
+      const out = await openai.audio.transcriptions.create({ file: uploadable, model: "whisper-large-v3-turbo", language: "it", response_format: "json" });
+      const text = (out.text ?? "").trim();
+      if (!text) { res.status(422).json({ error: "EMPTY_TRANSCRIPT", message: "Non ho capito." }); return; }
+      res.json({ text });
+    } catch (err) {
+      logger.error({ err }, "Assistant listen failed");
+      res.status(502).json({ error: "TRANSCRIPTION_FAILED", message: "Non sono riuscito a trascrivere. Riprova o scrivi." });
+    }
+  },
 );
 
 export default router;

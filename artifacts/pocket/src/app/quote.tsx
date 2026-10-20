@@ -19,6 +19,7 @@ import { quoteApi, type QuoteFull } from "@/lib/quoteApi";
 import { isGenericTitle, jobLine, quoteState, sentOf, validUntil as validUntilOf, type QuoteState } from "@/lib/quotes";
 import { taxName } from "@/lib/quoteBar";
 import { tintFor } from "@/lib/clients";
+import { useRememberOpened } from "@/lib/recents";
 import { useSession } from "@/lib/useSession";
 import { ActionBar, ACTION_BAR_SPACE } from "@/ui/ActionBar";
 import { Avatar } from "@/ui/Avatar";
@@ -73,6 +74,7 @@ export default function Quote() {
   const [wonBusy, setWonBusy] = useState(false);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const quote = q.data;
+  useRememberOpened(quote ? { type: "quotes", id: quote.id, title: quote.clientData?.nome ?? "", sub: [quote.numeroPreventivoData?.trim(), (quote.titoloPreventivoRiga2 ?? "").trim()].filter(Boolean).join(" · ") } : null);
   const clients = useListClients({ query: { queryKey: ["/api/clients"], enabled: clientOpen } } as never);
 
   useEffect(() => { if (quote && !caps) setCaps(quote.capitoli.map((c) => ({ ...c, voci: c.voci.map((v) => ({ ...v, quantita: Number(v.quantita), prezzoUnitario: Number(v.prezzoUnitario) })) }))); }, [quote, caps]);

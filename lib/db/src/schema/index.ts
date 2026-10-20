@@ -57,3 +57,6 @@ export * from "./sync";
 export * from "./today-checks";
 export * from "./materials";
 export * from "./groups";
+export * from "./assistant-company";
+export * from "./member-preferences";
+export * from "./job-roles";
