@@ -22,7 +22,15 @@ afterAll(async () => {
   await stopServer();
 });
 
-const settle = () => new Promise((r) => setTimeout(r, 300));
+/** La scrittura «in secondo piano» del server arriva quando arriva: si riprova fino a 5 s invece di sperare in 300 ms fissi. */
+async function until<T>(read: () => Promise<T>, ok: (v: T) => boolean): Promise<T> {
+  let v = await read();
+  for (let i = 0; i < 50 && !ok(v); i++) {
+    await new Promise((r) => setTimeout(r, 100));
+    v = await read();
+  }
+  return v;
+}
 
 describe("preventivi: visto, rifiutato, vinto", () => {
   test("l'elenco porta il numero; l'apertura del cliente segna «visto»; il rifiuto si registra una volta", async () => {
@@ -35,8 +43,7 @@ describe("preventivi: visto, rifiutato, vinto", () => {
 
     const ref = await publicRef(quote);
     expect((await api(`/api/public/quotes/${ref}`)).status).toBe(200);
-    await settle();
-    const viewed = (await org.api("/api/quotes")).body.find((q: { id: string }) => q.id === quote.id);
+    const viewed = await until(async () => (await org.api("/api/quotes")).body.find((q: { id: string }) => q.id === quote.id), (q) => q.firstViewedAt != null);
     expect(viewed.firstViewedAt).not.toBeNull();
 
     const tooLong = await api(`/api/public/quotes/${ref}/decline`, { body: { reason: "x".repeat(501) } });
@@ -247,7 +254,7 @@ describe("ricevuta e controllo prezzi", () => {
     await recordPayment({ invoiceId: id, userId: org.userId, amountCents: 40_000, method: "bank_transfer", sendReceipt: false });
     const sent = await org.api(`/api/invoices/${id}/receipt`, { method: "POST", body: {} });
     expect(sent.status, JSON.stringify(sent.body)).toBe(200);
-    await settle();
+    await until(async () => emailsTo(email), (m) => m.some((x) => /ricevut|pagament/i.test(x.subject)));
     expect(emailsTo(email).some((m) => /ricevut|pagament/i.test(m.subject))).toBe(true);
 
     const stranger = await createOrg({ plan: "monthly_elite" });
