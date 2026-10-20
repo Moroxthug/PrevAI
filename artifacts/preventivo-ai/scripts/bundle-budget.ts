@@ -102,7 +102,7 @@ for (const m of appSrc.matchAll(/<Route path=(\{[\w.]+\}|"[^"]+") component=\{\(
   if (!page && name !== "/") throw new Error(`rotta ${name}: pagina non riconosciuta`);
   screens.push({ name, files: [entry, app, ...(body.includes("<DashboardLayout>") ? [layout] : []), ...(page ? [lazyPages.get(page)!] : [])] });
 }
-if (screens.length < 40) throw new Error(`solo ${screens.length} rotte lette da App.tsx: la regex non segue più il file`);
+if (screens.length < 25) throw new Error(`solo ${screens.length} rotte lette da App.tsx: la regex non segue più il file`);
 screens.push({ name: "/preventivi/… /blog/… (statiche)", group: "static", files: [entry] });
 
 function groupOf(s: Screen): string {

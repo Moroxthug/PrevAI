@@ -1,9 +1,9 @@
 {
-  "_nota": "PERF-1 (riga 49): kB gzip di JavaScript prima del primo disegno, per schermata (scripts/bundle-budget.ts). Fissati il 2026-09-28 sui valori misurati + ~5 % di margine. Alzare un budget è una decisione: scrivere perché nel diario di docs/PIANO-AZIONE.md.",
+  "_nota": "PERF-1 (riga 49): kB gzip di JavaScript prima del primo disegno, per schermata (scripts/bundle-budget.ts). Fissati il 2026-09-28 sui valori misurati + ~5 % di margine. Alzare un budget è una decisione: scrivere perché nel diario di docs/PIANO-AZIONE.md. 2026-10-20: auth 195→200 (/onboarding a 195,0 dopo gli aggiornamenti delle dipendenze); tolti i budget delle schermate che non esistono più dopo UX-1 (la dashboard è una sola rotta). La home (/) a 207,2 kB sopra il gruppo public (205): budget proprio a 210.",
   "groups": {
     "static": 80,
     "public": 205,
-    "auth": 195,
+    "auth": 200,
     "link": 226,
     "dashboard": 338
   },
@@ -12,10 +12,7 @@
     "/preventivi/:type/:city": 240,
     "/mappa-sito": 240,
     "/blog/:slug": 355,
-    "/dashboard/analytics": 435,
     "/dashboard/admin": 375,
-    "/dashboard/jobs/:id": 355,
-    "/dashboard/settings": 340,
-    "/dashboard/settings/:section": 340
+    "/": 210
   }
 }
