@@ -13,6 +13,7 @@ import { account } from "./it-account";
 import { strumenti } from "./it-strumenti";
 import { aiuto } from "./it-aiuto";
 import { ruoli } from "./it-ruoli";
+import { meteo } from "./it-meteo";
 
 export const it = {
   ...entrare,
@@ -28,6 +29,7 @@ export const it = {
   ...strumenti,
   ...aiuto,
   ...ruoli,
+  ...meteo,
   sandbox: {
     title: "Componenti",
     intro: "Tutti i pezzi con cui è fatta l'app, con i loro stati. Tocca i comandi per provarli.",

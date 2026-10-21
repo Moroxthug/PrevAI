@@ -1,29 +1,30 @@
 // SmartHome.dc.html: the greeting and weather, the AI quote bar, Needs you, the widget rows, Edit Home.
 // This is the app's Home tab. The widget rows are built in the next step (125.3b).
 import { useEffect, useMemo, useState } from "react";
-import { Linking, View } from "react-native";
+import { Linking, RefreshControl, View } from "react-native";
 import { Redirect, router } from "expo-router";
 import { useTranslation } from "react-i18next";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { getListQuotesQueryKey } from "@workspace/api-client-react";
 import { clientsApi } from "@/lib/clientsApi";
 import { firstQuoteApi, type FullQuote } from "@/lib/firstQuoteApi";
-import { headerDate, money, shortDate, time, type Locale } from "@/lib/format";
-import { greetingFor, needsCard, telHref, type NeedsCard, type NeedsYouItem, type TodayWeather } from "@/lib/home";
+import { headerDate, money, shortDate, type Locale } from "@/lib/format";
+import { greetingFor, needsCard, telHref, type NeedsCard, type NeedsYouItem } from "@/lib/home";
 import { homeApi } from "@/lib/homeApi";
 import { initialsOf } from "@/lib/invites";
 import { screenHref } from "@/lib/nav";
 import { previewLines, taxName } from "@/lib/quoteBar";
 import { useSession } from "@/lib/useSession";
 import { checkWhatsNew } from "@/lib/whatsNewSync";
-import { useCollectedWidget, useFollowupsWidget, useOwedWidget, useQuotesWidget, useTasksWidget, useWeatherWidget, type WidgetEntry } from "@/home/widgets";
+import { useCollectedWidget, useFollowupsWidget, useOwedWidget, useQuotesWidget, useTasksWidget, type WidgetEntry } from "@/home/widgets";
 import { cardView } from "@/home/needsCards";
+import { useSiteWeatherWidget, useWeatherHeader, useWeather, useWeekWidget } from "@/home/weather";
+import { WeatherGlyph } from "@/ui/WeatherGlyph";
 import { RoleSections } from "@/home/RoleSections";
 import { useJobRole } from "@/lib/useJobRole";
 import { WidgetRow } from "@/ui/Widgets";
 import { useToast } from "@/ui/Feedback";
 import { HomeHeader, QuickAddGrid, type QuickTile } from "@/ui/Home";
-import type { GlyphName } from "@/ui/Icon";
 import { Section, TapAway } from "@/ui/Layout";
 import { ExpandScrollView } from "@/ui/Expand";
 import { NeedsYou, type NeedsCardData } from "@/ui/NeedsYou";
@@ -32,11 +33,10 @@ import { Button } from "@/ui/Button";
 import { Sheet, SheetTitle } from "@/ui/Sheet";
 import { TAB_BAR_SPACE } from "@/ui/TabBar";
 import { TabScreen } from "@/ui/TabShell";
-
-const WEATHER_GLYPH: Record<TodayWeather["kind"], GlyphName> = { clear: "sun", cloud: "cloud", rain: "cloudRain", snow: "cloudRain", storm: "cloudRain", fog: "cloud" };
+import { PushBack, useCardOpenActive } from "@/ui/CardOpen";
 
 export default function SmartHome() {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const locale: Locale = "it-IT";
   const { status, user } = useSession();
   const toast = useToast();
@@ -49,16 +49,17 @@ export default function SmartHome() {
   useEffect(() => { if (status === "in") void checkWhatsNew().then((show) => { if (show) router.push(screenHref("WhatsNew", "")); }); }, [status]);
 
   const needs = useQuery({ queryKey: ["home-needs"], queryFn: homeApi.needsYou, enabled: signedIn, retry: 1, refetchInterval: 120_000 });
-  const weather = useQuery({ queryKey: ["home-weather"], queryFn: homeApi.weather, enabled: signedIn, retry: false, staleTime: 15 * 60_000 });
+  const wx = useWeather(signedIn);
   const profile = useQuery({ queryKey: ["home-profile"], queryFn: async () => { const r = await firstQuoteApi.profile(); return r.ok ? r.data : null; }, enabled: signedIn, retry: false, staleTime: 10 * 60_000 });
   const clients = useQuery({ queryKey: ["clients-overview"], queryFn: clientsApi.overview, enabled: signedIn, retry: false, staleTime: 60_000 });
   const unread = useQuery({ queryKey: ["home-unread"], queryFn: homeApi.unread, enabled: signedIn, retry: false, staleTime: 60_000 });
 
+  const cardOpen = useCardOpenActive();
   const jr = useJobRole();
   const roleHome = jr.me.included && (jr.role !== "owner" || !!jr.prefs?.order);
   const now = useMemo(() => new Date(), []);
   const first = user?.name.trim().split(/\s+/)[0] ?? "";
-  const w = weather.data?.weather ?? null;
+  const wxHeader = useWeatherHeader(wx);
 
   const clientOpts: ClientOpt[] = useMemo(() => {
     const list = clients.data?.items ?? [];
@@ -69,18 +70,15 @@ export default function SmartHome() {
   }, [clients.data]);
 
   const tasksW = useTasksWidget(signedIn);
-  const weatherW = useWeatherWidget(signedIn);
+  const weatherW = useSiteWeatherWidget(wx);
+  const weekW = useWeekWidget(wx);
   const collectedW = useCollectedWidget(signedIn);
   const owedW = useOwedWidget(signedIn);
   const followW = useFollowupsWidget(needs.data?.items);
   const quotesW = useQuotesWidget(signedIn);
-  const widgetRows = (["today", "money", "sales", "field"] as const).map((row) => ({ row, items: ([tasksW, weatherW, collectedW, owedW, followW, quotesW].filter(Boolean) as WidgetEntry[]).filter((w) => w.row === row) })).filter((r) => r.items.length > 0);
+  const widgetRows = (["today", "money", "sales", "field"] as const).map((row) => ({ row, items: ([tasksW, weatherW, weekW, collectedW, owedW, followW, quotesW].filter(Boolean) as WidgetEntry[]).filter((w) => w.row === row) })).filter((r) => r.items.length > 0);
 
   if (status === "out") return <Redirect href="/" />;
-
-  const weatherLine = w
-    ? [w.tempC != null ? `${Math.round(w.tempC)}°` : "", w.next ? t(`home.weather.${w.next.kind}`, { time: time(new Date(w.next.at), locale) }) : (w.condition.it ?? w.condition.en)].filter(Boolean).join(", ")
-    : undefined;
 
   const build = async (input: BarInput): Promise<{ ok: true; quote: Built } | { ok: false; problem: "offline" | "quota" | "cannot" | "unlock" | "failed" }> => {
     const clientData = input.client ? { nome: input.client.name, indirizzo: "", ...input.client.data } : undefined;
@@ -102,10 +100,11 @@ export default function SmartHome() {
   }));
 
   return (
+    <PushBack>
     <TabScreen active="home">
-      <ExpandScrollView contentContainerStyle={{ paddingBottom: TAB_BAR_SPACE }} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
+      <ExpandScrollView scrollEnabled={!cardOpen} refreshControl={<RefreshControl refreshing={wx.refetching} onRefresh={() => { wx.refetch(); void needs.refetch(); }} />} contentContainerStyle={{ paddingBottom: TAB_BAR_SPACE }} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
         <Section>
-          <HomeHeader date={headerDate(now, locale)} weather={weatherLine} weatherGlyph={w ? WEATHER_GLYPH[w.kind] : undefined}
+          <HomeHeader date={headerDate(now, locale)} weather={wxHeader?.text} weatherIcon={wxHeader ? <WeatherGlyph condition={wxHeader.condition} size={14} weight={1.8} rainy={wxHeader.rainy} /> : undefined}
             greeting={first ? t(`home.greeting.${greetingFor(now)}`, { name: first }) : t(`home.greetingNoName.${greetingFor(now)}`)}
             quickLabel={t("home.quickAdd")} onQuick={() => setQuickOpen(true)} menuLabel={t("home.openMenu")} onMenu={() => router.push(screenHref("Menu", t("home.openMenu")))}
             initials={user ? initialsOf(user.name) : ""} unread={(unread.data?.unread ?? 0) > 0} unreadLabel={t("home.notifications")} />
@@ -117,7 +116,7 @@ export default function SmartHome() {
         </Section>
         <View style={{ opacity: barOpen ? 0.3 : 1 }}>
           {roleHome ? (
-            <RoleSections sections={jr.sections} entries={[tasksW, weatherW, collectedW, owedW, followW, quotesW].filter(Boolean) as WidgetEntry[]} needs={<NeedsYou cards={needs.isPending && !needs.data ? [] : cards} title={t("home.needs.title")} hint={t("home.needs.hint")} hintDone={t("home.needs.hintDone")} emptyTitle={t("home.needs.allClear")} emptyBody={t("home.needs.allClearBody")} />} />
+            <RoleSections sections={jr.sections} entries={[tasksW, weatherW, weekW, collectedW, owedW, followW, quotesW].filter(Boolean) as WidgetEntry[]} needs={<NeedsYou cards={needs.isPending && !needs.data ? [] : cards} title={t("home.needs.title")} hint={t("home.needs.hint")} hintDone={t("home.needs.hintDone")} emptyTitle={t("home.needs.allClear")} emptyBody={t("home.needs.allClearBody")} />} />
           ) : (
             <>
           <Section delay={110}>
@@ -141,6 +140,7 @@ export default function SmartHome() {
         <QuickAddGrid tiles={tiles} />
       </Sheet>
     </TabScreen>
+    </PushBack>
   );
 }
 

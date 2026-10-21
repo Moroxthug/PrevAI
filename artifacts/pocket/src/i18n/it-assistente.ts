@@ -44,7 +44,7 @@ export const assistente = {
         undone: "Rimessa al suo posto.", restoreFailed: "Non sono riuscito a rimetterla.",
       },
       recent: { title: "Decise di recente", link: "Tutta l'attività", Approved: "Approvata", Dismissed: "Scartata", Failed: "Non riuscita", open: "Apri", sub: "{{project}} · {{time}}", subNone: "{{time}}" },
-      clear: { title: "Niente che aspetta te", body: "Quando l'assistente vuole mandare, ordinare o spostare qualcosa, te lo chiede prima qui e nella Home.", action: "Vedi cosa ha fatto oggi" },
+      clear: { title: "Niente che aspetta te", body: "Quando l'assistente vuole mandare, ordinare o spostare qualcosa, te lo chiede prima qui e in Oggi.", action: "Vedi cosa ha fatto oggi" },
     },
     a: {
       title: "Attività", sub: "Tutto quello che ha fatto, e chi l'ha chiesto.",

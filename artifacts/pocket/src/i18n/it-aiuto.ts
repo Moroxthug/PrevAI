@@ -19,7 +19,7 @@ export const aiuto = {
     label: "Le novità della versione {{version}}", version: "Versione", title: "Novità", got: "Ho capito", all: "Tutte le note di versione", close: "Chiudi",
     demo: { tile: "Incassato", who: "Tommaso e Lena Rossi", number: "12.2026", amount: "2.340,00 €", late: "9 giorni di ritardo" },
     feats: [
-      ["«Serve a te» nella Home", "Fatture in ritardo, preventivi da firmare e domande della squadra, appena apri l'app."],
+      ["«Serve a te» in Oggi", "Fatture in ritardo, preventivi da firmare e domande della squadra, appena apri l'app."],
       ["Scorri per fare prima", "Scorri un preventivo o una fattura a sinistra per sollecitare, mandare un promemoria o segnarla pagata."],
       ["Scontrini dalla fotocamera", "Fotografa uno scontrino. Leggiamo il totale e l'IVA e lo mettiamo nel cantiere."],
       ["Guarda come si fa", "Brevi video con i sottotitoli nelle prime schermate e nell'Aiuto."],
@@ -32,7 +32,7 @@ export const aiuto = {
     results: "Risultati", found_one: "{{count}} trovato", found_other: "{{count}} trovati",
     none: { title: "Ancora niente su «{{q}}»", body: "Chiedi a noi e ti rispondiamo, di solito in pochi minuti.", action: "Chiedi all'assistenza" },
     popular: "I più letti", topics: "Argomenti", articles_one: "{{count}} articolo", articles_other: "{{count}} articoli", videos: "Video", videoCount: "{{count}} video brevi",
-    topic: { start: "Primi passi", quotes: "Preventivi", contracts: "Contratti e firma elettronica", jobs: "Cantieri", money: "Fatture e pagamenti", team: "Squadra", growth: "Lead e integrazioni" },
+    topic: { start: "Primi passi", quotes: "Preventivi", contracts: "Contratti e firma elettronica", jobs: "Cantieri", money: "Fatture e pagamenti", team: "Squadra", growth: "Richieste e integrazioni" },
     video: {
       quotes: ["Il tuo primo preventivo", "Preventivi"], overview: ["PrevAI in 60 secondi", "Panoramica"], jobs: ["Avvia un cantiere da un preventivo", "Cantieri"], crew: ["Il primo giorno della squadra", "Squadra"], etransfer: ["Fatti pagare con un bonifico", "Fatture"], qbo: ["Collega le tue app", "Integrazioni"],
       watch: "Guarda {{title}}, {{dur}}", offline: "Offline",
@@ -62,7 +62,7 @@ export const aiuto = {
     intro: { owner: "Cosa vedete tu e la squadra, passo per passo. Puoi sistemarlo in qualsiasi momento su prevai.it.", member: "Cosa vedi quando il pagamento dell'impresa non va a buon fine. Lo può sistemare solo il titolare." },
     greeting: "Buongiorno, {{name}}",
     s1: {
-      title: "Pagamento non riuscito", day: "Giorno 1", cap: "Un avviso nella Home per chi vede la fatturazione.", mini: "Home con l'avviso del pagamento non riuscito", later: "Dopo", late: "9 giorni di ritardo", viewed: "Aperto",
+      title: "Pagamento non riuscito", day: "Giorno 1", cap: "Un avviso in Oggi per chi vede la fatturazione.", mini: "Oggi con l'avviso del pagamento non riuscito", later: "Dopo", late: "9 giorni di ritardo", viewed: "Aperto",
       owner: { lead: "Il tuo pagamento non è andato a buon fine.", body: "Aggiorna la carta su prevai.it perché tutto continui a funzionare.", action: "Apri prevai.it" },
       member: { lead: "Il pagamento dell'impresa non è andato a buon fine.", body: "Il titolare lo può aggiornare su prevai.it.", action: "Scrivi al titolare" },
     },

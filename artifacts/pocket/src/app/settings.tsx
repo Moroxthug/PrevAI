@@ -48,6 +48,8 @@ export default function Settings() {
   const { status } = useSession();
   const toast = useToast();
   const client = useQueryClient();
+  // Weather data is shown on Home; where its source asks for a credit (Apple WeatherKit: the mark and the legal page), the same line is here (WEATHER.md).
+  const wxAttribution = (client.getQueryData(["weather-today"]) as { data?: { attribution?: { legalUrl: string } | null } } | undefined)?.data?.attribution ?? null;
   const { profile, q, save, signedIn } = useProfile();
   const { isOwner } = useRole();
   const prefsQ = useQuery({ queryKey: ["member-prefs"], queryFn: profileApi.prefs, enabled: signedIn, retry: 1, staleTime: 60_000 });
@@ -234,6 +236,7 @@ export default function Settings() {
                 { label: t("terms"), onPress: () => void Linking.openURL("https://prevai.it/termini") },
                 { label: t("privacy"), onPress: () => void Linking.openURL("https://prevai.it/privacy") },
                 { label: t("licences"), onPress: go("Licences", t("licences")) },
+                ...(wxAttribution ? [{ label: tr("wx.attribution.legal") as string, onPress: () => void Linking.openURL(wxAttribution.legalUrl) }] : []),
               ]} />
             </Section>
           </>

@@ -38,7 +38,7 @@ export const avvisi = {
     pages: {
       settings: { t: "Impostazioni", s: "Aspetto, notifiche, voce" }, notifications: { t: "Notifiche", s: "{{count}} da leggere" }, notificationsNone: { t: "Notifiche", s: "Niente da leggere" },
       menu: { t: "Menu", s: "Profilo, impresa, piano" }, team: { t: "Team", s: "Chi entra nell'app e la squadra in cantiere" }, priceBook: { t: "Listino prezzi", s: "Le tue voci e tariffe" },
-      compliance: { t: "Scadenze", s: "F24, INPS, DURC e assicurazioni" }, integrations: { t: "App collegate", s: "Google Calendar, Gmail, WhatsApp" }, home: { t: "Home", s: "Oggi, soldi e cantieri" },
+      compliance: { t: "Scadenze", s: "F24, INPS, DURC e assicurazioni" }, integrations: { t: "App collegate", s: "Google Calendar, Gmail, WhatsApp" }, home: { t: "Oggi", s: "Da fare, soldi e cantieri" },
     },
   },
 };

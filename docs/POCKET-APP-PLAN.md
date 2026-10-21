@@ -37,7 +37,7 @@ Righe del piano: **57–64** di `PIANO-AZIONE.md` (POCKET-0 … POCKET-7 = Quote
 | 60 | **POCKET-3** Cantieri e squadra | 126 | 16 schermate; timbratura con posizione solo durante il turno; home del capocantiere | ✅ 2026-10-11 |
 | 61 | **POCKET-4** Soldi e ufficio | 127 | 13 schermate (con fisco e SdI di PrevAI) | ✅ 2026-10-11 |
 | 62 | **POCKET-5** Assistente, impostazioni, account | 128 | 31 schermate, l'assistente come nei pannelli | ✅ 2026-10-20 |
-| 63 | **POCKET-6** Rifiniture e rilascio | 129 | stati di sistema, tablet, testo grande, Play (produzione dopo i 14 giorni di test chiuso), iOS con EAS (serve l'account Apple) | |
+| 63 | **POCKET-6** Rifiniture e rilascio | 129 | stati di sistema, tablet, testo grande, Play (produzione dopo i 14 giorni di test chiuso), iOS con EAS (serve l'account Apple) | ✅ 2026-10-20 (codice; store al titolare) |
 | 64 | **POCKET-7** Video | 130 | tutorial, anteprime per gli store | |
 
 ## Cose del titolare
@@ -54,3 +54,4 @@ Righe del piano: **57–64** di `PIANO-AZIONE.md` (POCKET-0 … POCKET-7 = Quote
 - **2026-10-11 (POCKET-3 = QuoteAI 126, riga 60 chiusa):** vedi il diario di `PIANO-AZIONE.md` (fase 60). Migrazione 0024. Niente trasferte, niente più imprese per operaio, niente SMS ("Sto arrivando"). Prossima fase: riga 61 (POCKET-4, QuoteAI 127).
 - **2026-10-11 (POCKET-4 = QuoteAI 127.1–127.9, riga 61 chiusa):** vedi il diario di `PIANO-AZIONE.md` (fase 61). Migrazione 0025. Tutte e 13 le schermate adattate: Libri → Prima nota, Pay → Ore e costo (straordinario impostato dal titolare, niente festività/ferie/trasferte), Compliance → Scadenze (scadenzario Fisco + promemoria), AccountantView → vista del Contabile (`bookkeeper`), Group → solo la vista di insieme (niente fattura unica né listino condiviso, D13). Prossima fase: riga 62 (POCKET-5, QuoteAI 128).
 - **2026-10-20 (POCKET-5 = QuoteAI 128.1–128.11, riga 62 chiusa):** vedi il diario di `PIANO-AZIONE.md` (fase 62). Migrazione 0026. Assistente dell'impresa sotto `/api/assistant/company`, IVA e regime al posto delle tasse, niente SMS né QuickBooks, numeri dell'impresa intera, ruoli di mestiere separati dalle home del web. Prossima fase: riga 63 (POCKET-6, QuoteAI 129).
+- **2026-10-20 (POCKET-6 = QuoteAI 129.0–129.5, riga 63 chiusa per la parte di codice):** vedi il diario di `PIANO-AZIONE.md` (fase 63). Nessuna migrazione. Meteo con MET Norway al posto di Environment Canada, capoluogo di provincia come luogo (non salvato sul cantiere), due correzioni al riassunto del meteo, revisione dei testi italiani («Richieste», «Oggi»). Il rilascio negli store resta al titolare (D14 per iOS). Prossima fase: riga 64 (POCKET-7, QuoteAI 130).

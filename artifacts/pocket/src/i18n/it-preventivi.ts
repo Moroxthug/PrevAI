@@ -34,7 +34,7 @@ export const preventivi = {
     rows: {
       company: { label: "Profilo impresa", sub: "Logo, P. IVA, indirizzo" },
       priceBook: { label: "Listino prezzi" },
-      leads: { label: "Lead" },
+      leads: { label: "Richieste" },
       contracts: { label: "Contratti" },
       fisco: { label: "Fisco", sub: "Scadenze, F24, bollo" },
       crew: { label: "Squadra e ruoli" },

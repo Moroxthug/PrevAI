@@ -18,7 +18,7 @@ export const impostazioni = {
     taxes: { label: "IVA e regime" }, invoices: { label: "Fatture e pagamenti", sub: "Scadenze, promemoria, bonifico", net: { receipt: "A vista", net15: "15 giorni", net30: "30 giorni" } }, quotes: { label: "Preventivi e solleciti", sub: "Validità, messaggi di sollecito" },
     templates: { label: "Modelli dei messaggi", sub: "Solleciti, promemoria, recensioni" }, messaging: { label: "WhatsApp e SMS", on: "Attivo", off: "Non attivo" }, widget: { label: "Modulo per il sito", sub: "Le richieste dal tuo sito" },
     roles: { label: "Ruoli", sub: "Cosa vede ognuno e chi vede le paghe" }, apps: { label: "App collegate", sub: "Google Calendar, Gmail, WhatsApp" },
-    assistantRow: { label: "Cosa può fare l'assistente", sub: "Chiede prima, o fa e ti dice" }, home: { label: "Personalizza la Home", sub: "Sezioni, schede, densità" },
+    assistantRow: { label: "Cosa può fare l'assistente", sub: "Chiede prima, o fa e ti dice" }, home: { label: "Personalizza Oggi", sub: "Sezioni, schede, densità" },
     province: { label: "Provincia", sub: "La sede: modello di contratto e IVA di partenza", sheet: "Provincia della sede", sheetSub: "Decide il modello di contratto e l'IVA di partenza dei nuovi preventivi" },
     deposit: { term: "Acconto alla firma del contratto", label: "Acconto", sub: "Chiesto all'accettazione", dec: "Abbassa l'acconto", inc: "Alza l'acconto", tooBig: "L'ultimo pagamento non può cedere così tanto. Abbassa prima un altro pagamento." },
     valid: { label: "Valido per", sub: "Poi il preventivo scade", unit: "{{count}} giorni", dec: "Meno giorni", inc: "Più giorni" },

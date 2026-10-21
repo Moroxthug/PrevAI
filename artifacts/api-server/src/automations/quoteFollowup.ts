@@ -35,6 +35,8 @@ registerAutomation("quote.followup_due", async (run) => {
     return { skipped: "public link revoked" };
   }
   if (!result.ok) {
+    // Nobody to write to (no email on the quote): retrying cannot change that.
+    if (result.reason === "no_email") return { skipped: "no_email" };
     throw new Error(`Quote follow-up send failed: ${result.reason}`);
   }
 

@@ -1466,3 +1466,17 @@ Quando il titolare decide il prezzo (D20): compilare `POSTO_EXTRA` in `piani.ts`
 | «Le Home per ruolo sono incluse in Elite» | Ruoli e Home per ruolo sono del piano Elite |
 | Il parere dall'app non ha la schermata | Lo storage non c'era o la persona non l'ha messa; la nota c'è comunque |
 | La voce dell'assistente parla con la voce del telefono | Il server non ha una voce (VOICE_BROWSER) o i minuti del mese sono finiti: è voluto |
+
+## Meteo sulla Home dell'app (POCKET-6, QuoteAI 129.1)
+
+La Home dell'app mostra il meteo dei cantieri (la riga in alto, la scheda «Meteo dei cantieri», i giorni di pioggia in «Questa settimana»). Un solo endpoint, `GET /api/v1/weather/today`, dietro l'interfaccia `WeatherProvider` (`artifacts/api-server/src/weather/`). Ogni luogo è chiesto alla fonte una volta ogni 30 minuti.
+
+- **Fonte:** senza niente impostato è **MET Norway** (Locationforecast 2.0: gratuita anche per uso commerciale, licenza CC BY 4.0, senza chiave; nell'app compare «Dati meteo: MET Norway»). Fuori dalla Scandinavia non dà la probabilità di pioggia: la stimiamo dal simbolo e dai millimetri (`metno.ts`, `chanceOf`). Con i quattro valori di Apple è **Apple WeatherKit** (500.000 chiamate al mese incluse nell'Apple Developer Program, serve l'account Apple: D14). `WEATHER_PROVIDER=mock|metno|weatherkit` ne forza una (mock = i numeri della tavola, solo per sviluppo e screenshot).
+- **Apple (una volta, quando c'è l'account):** developer.apple.com → Certificates, Identifiers & Profiles → Identifiers: un App ID con la capability WeatherKit e un Services ID (es. `it.prevai.weather`); Keys: una chiave con WeatherKit, scaricare il `.p8` (una volta sola). In Vercel: `WEATHERKIT_TEAM_ID`, `WEATHERKIT_SERVICE_ID`, `WEATHERKIT_KEY_ID`, `WEATHERKIT_PRIVATE_KEY` (tutto il testo del `.p8`; `\n` vale come a capo). L'attribuzione di Apple (marchio e link legale) arriva nella risposta ed è mostrata sotto l'ultimo cantiere e in Impostazioni («Fonti dei dati meteo»).
+- **Dove:** il punto preciso del cantiere se è stato messo a mano (`projects.latitude/longitude`), altrimenti il **capoluogo** trovato dall'indirizzo o dalla provincia (`geo.ts`: i 107 capoluoghi e qualche secondo capoluogo come Cesena o Andria). A differenza di QuoteAI il punto trovato **non** si salva sul cantiere: quelle colonne servono anche al recinto delle timbrature. Senza cantieri in agenda oggi vale la sede dell'impresa (indirizzo, comune, provincia).
+
+| Sintomo | Causa e rimedio |
+|---|---|
+| «Meteo non disponibile» sulla Home | L'impresa non ha né indirizzo con un capoluogo né provincia: Impostazioni → Azienda → provincia. Oppure la fonte non risponde (log `Error loading the weather`): dopo 30 minuti si riprova da sola, una risposta di meno di 6 ore resta valida |
+| Il meteo è di un'altra città | Il cantiere non ha punto preciso e l'indirizzo non nomina un capoluogo: vale quello della provincia. Per un punto esatto mettere la posizione sul cantiere |
+| MET Norway risponde 403 | Ci ha bloccati per lo User-Agent o per troppe richieste: controllare `USER_AGENT` in `metno.ts` e che la cache funzioni |

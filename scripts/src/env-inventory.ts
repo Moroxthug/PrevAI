@@ -97,6 +97,11 @@ const MANIFEST: Record<string, Entry> = {
   GSC_SERVICE_ACCOUNT_KEY: { kind: "feature", feature: "Search Console (admin)", note: "admin SEO panel only" },
   GSC_SITE_URL: { kind: "feature", feature: "Search Console (admin)", note: "" },
   AI_MODEL: { kind: "feature", feature: "AI", note: "model override; Groq rewrites gpt-4o* names itself" },
+  WEATHERKIT_TEAM_ID: { kind: "feature", feature: "Meteo (Apple WeatherKit)", note: "POCKET-6: Team ID dell'account Apple Developer (D14). Con le tre seguenti il meteo della Home viene da Apple WeatherKit; senza, da MET Norway (gratuito, senza chiave)" },
+  WEATHERKIT_SERVICE_ID: { kind: "feature", feature: "Meteo (Apple WeatherKit)", note: "il Services ID registrato per WeatherKit (es. it.prevai.weather)" },
+  WEATHERKIT_KEY_ID: { kind: "feature", feature: "Meteo (Apple WeatherKit)", note: "il Key ID della chiave .p8 di WeatherKit" },
+  WEATHERKIT_PRIVATE_KEY: { kind: "feature", feature: "Meteo (Apple WeatherKit)", note: "il testo del file .p8 (gli a capo possono essere scritti \n)" },
+  WEATHER_PROVIDER: { kind: "feature", feature: "Meteo", note: "facoltativo: mock | metno | weatherkit per forzare una fonte (mock solo per sviluppo e screenshot)" },
 
   // ── Deferred: partner/dev-app access does not exist yet (edge-features-plan) ──
   OUTLOOK_CALENDAR_CLIENT_ID: { kind: "deferred", note: "Phase 16 — Entra app registration not done" },
