@@ -52,7 +52,7 @@ for (const sectorSlug of Object.keys(SECTORS)) {
 for (const sectorSlug of CITY_SECTORS) {
   for (const city of ACTIVE_CITIES) {
     const priority = TIER1_CITY_SLUGS.has(city.slug) ? "0.7" : "0.6";
-    entries.push(url(`${BASE_URL}/preventivi/${sectorSlug}/${city.slug}/`, priority, "monthly", "2026-05-01"));
+    entries.push(url(`${BASE_URL}/preventivi/${sectorSlug}/${city.slug}/`, priority, "monthly", "2026-10-23")); // riscritte da data/citta/ il 23/10
   }
 }
 
@@ -61,12 +61,12 @@ for (const article of HELP_ARTICLES) {
   entries.push(url(`${BASE_URL}/help/${article.slug}/`, "0.7", "monthly", article.updatedAt));
 }
 
-// Blog — categories get a stable aggregate date; articles use their real publishedAt
+// Blog — categories get a stable aggregate date; articles use updatedAt when rewritten, else publishedAt
 for (const cat of BLOG_CATEGORIES) {
   entries.push(url(`${BASE_URL}/blog/categoria/${cat.slug}/`, "0.7", "weekly", "2026-05-01"));
 }
 for (const article of BLOG_ARTICLES) {
-  entries.push(url(`${BASE_URL}/blog/${article.slug}/`, "0.7", "monthly", article.publishedAt));
+  entries.push(url(`${BASE_URL}/blog/${article.slug}/`, "0.7", "monthly", article.updatedAt ?? article.publishedAt));
 }
 
 const sitemap = `<?xml version="1.0" encoding="UTF-8"?>
