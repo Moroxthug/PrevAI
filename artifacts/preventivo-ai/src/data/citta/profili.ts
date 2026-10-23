@@ -104,8 +104,8 @@ export const PROFILI_CITTA: Record<string, ProfiloCitta> = {
   varese: {
     costruito: "La 'città giardino' ha ville liberty e residenze d'inizio Novecento sui colli (Campo dei Fiori, Biumo) e quartieri popolari nelle ex aree industriali.",
     quartieri: ["Biumo", "Masnago", "Bosto", "Bizzozero"],
+    // Il Sacro Monte (UNESCO 2003) è fuori dal centro: non è un vincolo del tessuto urbano.
     cantiere: "Molte ville hanno giardini e accessi privati in pendenza: va previsto lo spazio per mezzi e stoccaggio.",
-    unesco: "Sacri Monti del Piemonte e della Lombardia, con il Sacro Monte di Varese (2003)",
   },
   roma: {
     costruito: "Il comune più popoloso d'Italia va dal centro storico, con palazzi e chiese di ogni epoca, alle palazzine anni '50–'70 di quartieri come Monteverde e Tuscolano, fino alle borgate e ai quartieri recenti oltre il Grande Raccordo Anulare.",
