@@ -45,7 +45,7 @@ import { requireAuth, getUserId, getUserName, getActorUserId } from "../middlewa
 import { requirePermission } from "../middlewares/requirePermission.js";
 import { raiseAutomation } from "../lib/automation.js";
 import { writeAudit } from "../lib/notifications.js";
-import { recomputeProgress, setupJobFromContract } from "../jobs/setup.js";
+import { recomputeProgress, setupJobFromContract, setupJobFromQuote } from "../jobs/setup.js";
 import { createChangeOrder, updateChangeOrder, changeOrderStatusFromDocument } from "../jobs/changeOrders.js";
 import { parseIsoDate, toIsoDate } from "../jobs/dates.js";
 import { costSummary, serializeCostEntry, serializeTimeEntry, serializeUsage } from "../costs/service.js";
@@ -280,7 +280,18 @@ router.post("/jobs", requireAuth, requirePermission("jobs", "edit"), async (req,
       })
       .returning();
     await writeAudit({ userId, actorType: "user", actorId: userId, entityType: "project", entityId: project!.id, action: "created" });
-    res.status(201).json({ job: serializeProject(project!), created: true });
+    // From a quote: phases, dates and budget as a contract would give them, to review on the setup screen.
+    // If that fails the job stays as made (empty, confirmed), as before.
+    let job = project!;
+    if (quote && Array.isArray(quote.capitoli) && quote.capitoli.length > 0) {
+      try {
+        await setupJobFromQuote({ projectId: job.id, userId, quote });
+        job = (await ownedProject(userId, job.id)) ?? job;
+      } catch (err) {
+        req.log.error({ err, quoteId: quote.id }, "Job setup from quote failed — job left empty");
+      }
+    }
+    res.status(201).json({ job: serializeProject(job), created: true });
   } catch (err) {
     req.log.error({ err }, "Error creating job");
     res.status(500).json({ error: "Internal server error" });

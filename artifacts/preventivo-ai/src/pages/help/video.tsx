@@ -10,7 +10,7 @@ import { useLanguage } from "@/i18n/LanguageContext";
 
 const BASE_URL = "https://prevai.it";
 const TITLE = "Video: PrevAI in pochi minuti";
-const DESCRIPTION = "Brevi video muti con i sottotitoli: il primo preventivo, l'app in un minuto, il bonifico. Registrati dall'app PrevAI.";
+const DESCRIPTION = "Brevi video muti con i sottotitoli: il primo preventivo, l'app in un minuto, il cantiere, il bonifico. Registrati dall'app PrevAI.";
 
 export default function HelpVideosPage() {
   const { t, lang } = useLanguage();

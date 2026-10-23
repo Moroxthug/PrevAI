@@ -15,8 +15,9 @@ QuoteAI non ha mai fatto la sua fase 130 (è passata da 129 a 131): questa fase 
 |---|---|---|
 | `quotes` Il tuo primo preventivo | Aiuto; «Guarda come si fa» su Preventivi vuoto | /help/video/, in cima a /help/create-a-quote/ |
 | `overview` PrevAI in 60 secondi | Aiuto; fine del primo preventivo guidato (una volta) | /help/video/, in cima a /help/getting-started/ |
+| `jobs` Avvia un cantiere da un preventivo | Aiuto; «Guarda come si fa» su Cantieri vuoto | /help/video/, in cima a /help/jobs-milestones-and-change-orders/ |
 | `bonifico` Fatti pagare con un bonifico | Aiuto; «Guarda come si fa» su Fatture vuoto | /help/video/, in cima a /help/invoices-and-getting-paid/ |
-| `jobs`, `crew`, `app` | non ancora registrati: nell'Aiuto non compaiono, nessun link (il link di Cantieri vuoto e Squadra vuota si accende da solo quando il file c'è) | — |
+| `crew`, `app` | non ancora registrati: nell'Aiuto non compaiono, nessun link (il link di Squadra vuota si accende da solo quando il file c'è) | — |
 
 Un video senza file (`file: null` in `artifacts/pocket/src/lib/videos.ts`) non compare da nessuna parte.
 
@@ -37,5 +38,4 @@ Lo staging non manda email: lo script risponde lui alla chiamata di invio (come 
 - **YouTube** (canale, libreria pubblica con capitoli): non fatto, serve il canale.
 - **Voce**: i video sono muti con sottotitoli; una voce si aggiunge solo se la si registra o si scelgono voci sintetiche.
 - **Anteprime per gli store** (App Store fino a 30 s nelle misure Apple, video promo Play) e il loop della home: si tagliano da questi video quando ci saranno gli account (D14) — in QuoteAI erano la fase 131, mai fatta.
-- `jobs`: non registrato perché il cantiere aperto dall'app da un preventivo accettato nasce **senza fasi né budget** (la pagina mostra «0 fasi» e «Tutte le fasi sono concluse»): le fasi arrivano solo dal contratto firmato (`jobs/setup.ts`). Da sistemare prima del video.
 - `crew` e `app`: da registrare quando la squadra si potrà mostrare dal telefono dell'operaio e quando ci saranno integrazioni attive su staging.

@@ -16,7 +16,7 @@ export type VideoDef = {
 export const VIDEOS: VideoDef[] = [
   { id: "quotes", secs: 47, icon: "mic", tone: "violet", at: [0, 4, 25, 37], file: "quotes" },
   { id: "overview", secs: 48, icon: "orb", tone: "indigo", at: [0, 11, 20, 38], file: "overview" },
-  { id: "jobs", secs: 94, icon: "cone", tone: "amber", at: [0, 20, 45, 70], file: null },
+  { id: "jobs", secs: 35, icon: "cone", tone: "amber", at: [0, 8, 12, 22], file: "jobs" },
   { id: "crew", secs: 58, icon: "users", tone: "azure", at: [0, 15, 30, 45], file: null },
   { id: "bonifico", secs: 40, icon: "bank", tone: "sage", at: [0, 6, 15, 31], file: "bonifico" },
   { id: "app", secs: 80, icon: "link", tone: "teal", at: [0, 20, 40, 60], file: null },

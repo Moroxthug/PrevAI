@@ -38,7 +38,7 @@ Righe del piano: **57–64** di `PIANO-AZIONE.md` (POCKET-0 … POCKET-7 = Quote
 | 61 | **POCKET-4** Soldi e ufficio | 127 | 13 schermate (con fisco e SdI di PrevAI) | ✅ 2026-10-11 |
 | 62 | **POCKET-5** Assistente, impostazioni, account | 128 | 31 schermate, l'assistente come nei pannelli | ✅ 2026-10-20 |
 | 63 | **POCKET-6** Rifiniture e rilascio | 129 | stati di sistema, tablet, testo grande, Play (produzione dopo i 14 giorni di test chiuso), iOS con EAS (serve l'account Apple) | ✅ 2026-10-20 (codice; store al titolare) |
-| 64 | **POCKET-7** Video | 130 | tutorial, anteprime per gli store | ✅ 2026-10-23: 3 video registrati dall'app (docs/VIDEO.md); anteprime store al titolare |
+| 64 | **POCKET-7** Video | 130 | tutorial, anteprime per gli store | ✅ 2026-10-23: 4 video registrati dall'app (docs/VIDEO.md); anteprime store al titolare |
 
 ## Cose del titolare
 - Prima della prima build sul telefono: account Expo (EAS) e Firebase (`google-services.json`, per le notifiche) — D16.

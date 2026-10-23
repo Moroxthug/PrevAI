@@ -55,8 +55,8 @@ export const aiuto = {
         ch: [["Oggi", "Ogni mattina: cosa serve a te, il meteo dei cantieri, i soldi."], ["Preventivi", "Scritti dall'IA, inviati per email, accettati dal cliente."], ["Cantieri", "Dal preventivo accettato al cantiere: squadra, foto, costi."], ["Fatture", "Chi ti deve dei soldi e cosa è già arrivato."]],
       },
       jobs: {
-        head: "Guarda come si fa", title: "Avvia un cantiere da un preventivo", topic: "Cantieri", sub: "Dal preventivo accettato al cantiere, con le fasi, le date e la squadra.", cta: "Vai ai cantieri",
-        ch: [["Apri il preventivo accettato", "Il cliente ha accettato: apri il preventivo."], ["Avvia il cantiere", "Tocca Avvia cantiere. PrevAI prepara le fasi dalle voci."], ["Controlla le fasi", "Date, fasi e pagamenti arrivano dal preventivo."], ["Tutto in un posto", "Squadra, foto, costi e fatture stanno nel cantiere."]],
+        head: "Guarda come si fa", title: "Avvia un cantiere da un preventivo", topic: "Cantieri", sub: "Dal preventivo accettato al cantiere: fasi, date, pagamenti e budget già pronti.", cta: "Vai ai cantieri",
+        ch: [["Apri il preventivo accettato", "Il cliente ha accettato: in fondo al preventivo tocca Apri il cantiere."], ["Rivedi il piano", "PrevAI prepara fasi, date e budget dalle voci del preventivo."], ["Fasi, pagamenti e budget", "Ogni fase sa quale pagamento sblocca. Cambia date e budget se serve."], ["Avvia il cantiere", "Va bene, avvia il cantiere: squadra, foto e costi stanno qui."]],
       },
       crew: {
         head: "Guarda come si fa", title: "Il primo giorno della squadra", topic: "Squadra", sub: "Aggiungi un operaio, collega il suo telefono e guarda le ore arrivare.", cta: "Vai alla squadra",

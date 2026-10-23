@@ -44,6 +44,19 @@ export const HELP_VIDEOS: HelpVideo[] = [
     article: "getting-started",
   },
   {
+    id: "jobs", file: "jobs",
+    title: "Avvia un cantiere da un preventivo", topic: "Cantieri",
+    sub: "Dal preventivo accettato al cantiere: fasi, date, pagamenti e budget già pronti.",
+    secs: 35,
+    chapters: [
+      { at: 0, title: "Apri il preventivo accettato", caption: "Il cliente ha accettato: in fondo al preventivo tocca Apri il cantiere." },
+      { at: 8, title: "Rivedi il piano", caption: "PrevAI prepara fasi, date e budget dalle voci del preventivo." },
+      { at: 12, title: "Fasi, pagamenti e budget", caption: "Ogni fase sa quale pagamento sblocca. Cambia date e budget se serve." },
+      { at: 22, title: "Avvia il cantiere", caption: "Va bene, avvia il cantiere: squadra, foto e costi stanno qui." },
+    ],
+    article: "jobs-milestones-and-change-orders",
+  },
+  {
     id: "bonifico", file: "bonifico",
     title: "Fatti pagare con un bonifico", topic: "Fatture",
     sub: "Il cliente paga con il bonifico e lo segnala: tu controlli la banca e confermi.",

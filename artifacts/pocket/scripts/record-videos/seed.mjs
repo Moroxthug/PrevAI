@@ -1,5 +1,5 @@
 // Fictional demo company on STAGING for the POCKET-7 videos (never real customers). Idempotent: drops the demo owner's rows first.
-// node seed.mjs → prints the session token to rec/token.txt
+// node seed.mjs → the session token in token.txt, the ids the flows use in seed.json (both git-ignored)
 import { createRequire } from "node:module";
 import { randomBytes, randomUUID } from "node:crypto";
 import { writeFileSync } from "node:fs";
@@ -87,5 +87,7 @@ const inv = await call("/api/invoices", { projectId: jobId, title: "Acconto 30% 
 // Sent five days ago; yesterday the client said, from the invoice link, that the bank transfer went out (what the bonifico video confirms).
 await c.query("update invoices set status='pending_confirmation', sent_at=now() - interval '5 days', bank_transfer_self_reported_at=now() - interval '18 hours' where id=$1", [inv.invoice.id]);
 writeFileSync(new URL("./token.txt", import.meta.url), token);
+const ids = { bagno, facciata, jobId, invoice: inv.invoice?.id };
+writeFileSync(new URL("./seed.json", import.meta.url), JSON.stringify(ids));
 console.log(JSON.stringify({ clients: Object.fromEntries(Object.entries(clients).map(([k, v]) => [k, v.id])), bagno, facciata, jobId, invoice: inv.invoice?.id, invoiceStatus: inv.invoice?.status }));
 await c.end();

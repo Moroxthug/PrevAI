@@ -9,7 +9,7 @@
 import { describe, test, expect, beforeAll, afterAll } from "vitest";
 import { db, collaboratorsTable, costEntriesTable, crewLocationsTable, notificationsTable, projectsTable } from "@workspace/db";
 import { and, eq } from "drizzle-orm";
-import { startServer, stopServer, api, createOrg, cleanupAll, type TestUser } from "./harness.js";
+import { startServer, stopServer, api, createOrg, cleanupAll, seedQuote, type TestUser } from "./harness.js";
 
 const HOUR = 3_600_000;
 
@@ -169,4 +169,22 @@ describe("POCKET-3 — cantieri e squadra", () => {
     expect((await owner.api(`/api/jobs/${jobId}/change-orders/draft`, { body: {} })).status).toBe(400);
     expect((await stranger.api(`/api/jobs/${jobId}/change-orders/draft`, { body: { text: "Quattro faretti nel soggiorno" } })).status).toBe(404);
   });
+
+  test("Apri il cantiere da un preventivo accettato: fasi dai capitoli, budget, nome dal lavoro, da rivedere", async () => {
+    const quote = await seedQuote(owner.userId, { status: "accepted", clientName: "Luca Ferrari" });
+    const made = await owner.api("/api/jobs", { body: { name: "Nuova fase", quoteId: quote.id } });
+    expect(made.status, JSON.stringify(made.body)).toBe(201);
+    expect(made.body.job.name).toBe("Ristrutturazione cucina – Luca Ferrari");
+    expect(made.body.job.setupStatus).toBe("pending_review");
+    const detail = await owner.api(`/api/jobs/${made.body.job.id}`);
+    expect(detail.status).toBe(200);
+    const titles = detail.body.milestones.map((m: { title: string }) => m.title);
+    expect(titles).toEqual(expect.arrayContaining(["Demolizioni e preparazione", "Mobili e piani di lavoro"]));
+    expect(detail.body.milestones.every((m: { plannedStart: string | null }) => !!m.plannedStart)).toBe(true);
+    expect(detail.body.budget.length).toBeGreaterThan(0);
+    // Opening it again finds the same job.
+    const again = await owner.api("/api/jobs", { body: { name: "Nuova fase", quoteId: quote.id } });
+    expect(again.status).toBe(200);
+    expect(again.body.job.id).toBe(made.body.job.id);
+  }, 60_000);
 });

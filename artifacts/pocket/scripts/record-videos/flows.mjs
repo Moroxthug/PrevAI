@@ -1,8 +1,10 @@
 // POCKET-7 (docs/VIDEO.md): the videos as scripts over the Expo web app (demo company "Edilizia Rossi", seeded by seed.mjs).
+import { readFileSync } from "node:fs";
 // Chapters: r.chapter(1..3) marks where chapters 2..4 start (chapter 1 starts at 0).
 const BASE = "http://localhost:8104";
 const go = async (r, path, ms = 7000) => { await r.page.goto(BASE + path, { waitUntil: "domcontentloaded" }); await r.wait(ms); };
 const vis = (l) => l.filter({ visible: true }).first();
+const seedIds = () => JSON.parse(readFileSync(new URL("./seed.json", import.meta.url), "utf8"));
 /** Staging has no email service: the send calls answer as the real server does when it works. */
 const fakeSend = async (page) => {
   await page.route("**/api/quotes/*/send-pdf-email", (rt) => rt.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ success: true }) }));
@@ -117,6 +119,35 @@ FLOWS.bonifico = {
     await r.cam({ x: 0, y: 0 }); await r.wait(3500);
     await r.scroll(560); await r.cam({ x: 0, y: 260 });
     await r.wait(4000);
+    if (r.dry) await dump(p);
+  },
+};
+
+FLOWS.jobs = {
+  posterAt: 20,
+  async setup(r) { await go(r, `/quote?id=${seedIds().bagno}`); },
+  async run(r) {
+    const p = r.page;
+    await r.wait(3000);
+    await r.scroll(1400); await r.cam({ x: 0, y: 450 });
+    await r.wait(2000);
+    r.chapter(1);
+    await r.tap(p.getByText("Apri il cantiere"));
+    r.speed(4);
+    await vis(p.getByText(/^Fasi$/)).waitFor({ timeout: 90000 });
+    await r.wait(1500);
+    r.speed(1);
+    await r.cam({ x: 0, y: 0 }); await r.wait(2500);
+    r.chapter(2);
+    await r.cam(vis(p.getByText(/^Fasi$/)), { dy: 100 });
+    await r.wait(2500);
+    await r.scroll(300); await r.cam({ x: 0, y: 300 }); await r.wait(2500);
+    await r.scroll(500); await r.cam({ x: 0, y: 300 }); await r.wait(3000);
+    r.chapter(3);
+    await r.tap(p.getByText("Va bene, avvia il cantiere"), { before: 1000 });
+    await r.wait(3500);
+    await r.cam({ x: 0, y: 0 }); await r.wait(3000);
+    await r.scroll(450); await r.cam({ x: 0, y: 300 }); await r.wait(3500);
     if (r.dry) await dump(p);
   },
 };

@@ -1824,7 +1824,7 @@ for (const article of HELP_ARTICLES) {
 await buildStaticPageHtml({
   slug: "help/video",
   title: "Video: PrevAI in pochi minuti | prevai",
-  description: "Brevi video muti con i sottotitoli: il primo preventivo, l'app in un minuto, il bonifico. Registrati dall'app PrevAI.",
+  description: "Brevi video muti con i sottotitoli: il primo preventivo, l'app in un minuto, il cantiere, il bonifico. Registrati dall'app PrevAI.",
   path: "/help/video/",
   jsonLd: [buildWebPageJsonLd("Video: PrevAI in pochi minuti", "Brevi video muti con i sottotitoli dell'app PrevAI.", "/help/video/", "CollectionPage"), buildBreadcrumbJsonLd("Video", "/help/video/")],
   bodyHtml: stripHoistedHead(await renderPage("/help/video", "it")),

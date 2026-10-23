@@ -6,6 +6,8 @@ import {
   costBudgetLinesTable,
   contractsTable,
   quotesTable,
+  businessProfilesTable,
+  clientsTable,
 
   COST_CATEGORIES,
   type Contract,
@@ -19,6 +21,7 @@ import { logger } from "../lib/logger.js";
 import { recordAiUsage } from "../lib/usage.js";
 import { writeAudit } from "../lib/notifications.js";
 import { layoutSequential } from "./dates.js";
+import { buildVariablesFromQuote } from "../contracts/service.js";
 import { buildFallbackPlan, budgetFromSplit, DEFAULT_COST_RATIO, DEFAULT_SPLIT, type SetupPlan } from "./plan.js";
 
 // ── Job setup from a signed contract ─────────────────────────────────────────
@@ -101,6 +104,50 @@ function jobName(v: ContractVariables): string {
   return tail ? `${v.projectTitle} – ${tail}`.slice(0, 160) : v.projectTitle.slice(0, 160);
 }
 
+type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
+
+/** The plan's rows for a project: milestones (with their dates), their tasks, the cost budget. The caller has cleared the old ones. */
+async function writePlan(tx: Tx, { projectId, userId, plan, layout }: { projectId: string; userId: string; plan: SetupPlan; layout: { start: Date; end: Date }[] }): Promise<void> {
+  const inserted = await tx
+    .insert(milestonesTable)
+    .values(
+      plan.milestones.map((m, i) => ({
+        projectId,
+        userId,
+        key: m.key,
+        title: m.title,
+        description: m.description,
+        sortOrder: i,
+        plannedStart: layout[i]!.start,
+        plannedEnd: layout[i]!.end,
+        status: "planned" as const,
+        paymentTermId: m.paymentTermId,
+        paymentTermLabel: m.paymentTermLabel,
+        paymentAmountCents: m.paymentAmountCents,
+        sourceChapter: m.sourceChapter,
+        valueCents: m.valueCents,
+      })),
+    )
+    .returning({ id: milestonesTable.id, key: milestonesTable.key });
+
+  const tasks = plan.milestones.flatMap((m, mi) =>
+    m.tasks.map((title, ti) => ({
+      projectId,
+      milestoneId: inserted.find((r) => r.key === m.key)?.id ?? null,
+      title,
+      description: "",
+      status: "todo",
+      dueDate: layout[mi]!.end,
+      sortOrder: ti,
+    })),
+  );
+  if (tasks.length > 0) await tx.insert(projectTasksTable).values(tasks);
+
+  if (plan.budget.length > 0) {
+    await tx.insert(costBudgetLinesTable).values(plan.budget.map((b, i) => ({ projectId, category: b.category, chapterRef: null, label: b.label, plannedCents: b.plannedCents, sortOrder: i })));
+  }
+}
+
 export async function setupJobFromContract(contract: Contract): Promise<{ projectId: string; created: boolean; milestoneCount: number; plannedEnd: Date | null }> {
   if (contract.kind !== "agreement") throw new Error("Only agreements create jobs");
   const v = contract.variables;
@@ -171,44 +218,7 @@ export async function setupJobFromContract(contract: Contract): Promise<{ projec
     await tx.delete(milestonesTable).where(eq(milestonesTable.projectId, id));
     await tx.delete(costBudgetLinesTable).where(eq(costBudgetLinesTable.projectId, id));
 
-    const inserted = await tx
-      .insert(milestonesTable)
-      .values(
-        plan.milestones.map((m, i) => ({
-          projectId: id,
-          userId: contract.userId,
-          key: m.key,
-          title: m.title,
-          description: m.description,
-          sortOrder: i,
-          plannedStart: layout[i]!.start,
-          plannedEnd: layout[i]!.end,
-          status: "planned" as const,
-          paymentTermId: m.paymentTermId,
-          paymentTermLabel: m.paymentTermLabel,
-          paymentAmountCents: m.paymentAmountCents,
-          sourceChapter: m.sourceChapter,
-          valueCents: m.valueCents,
-        })),
-      )
-      .returning({ id: milestonesTable.id, key: milestonesTable.key });
-
-    const tasks = plan.milestones.flatMap((m, mi) =>
-      m.tasks.map((title, ti) => ({
-        projectId: id,
-        milestoneId: inserted.find((r) => r.key === m.key)?.id ?? null,
-        title,
-        description: "",
-        status: "todo",
-        dueDate: layout[mi]!.end,
-        sortOrder: ti,
-      })),
-    );
-    if (tasks.length > 0) await tx.insert(projectTasksTable).values(tasks);
-
-    if (plan.budget.length > 0) {
-      await tx.insert(costBudgetLinesTable).values(plan.budget.map((b, i) => ({ projectId: id, category: b.category, chapterRef: null, label: b.label, plannedCents: b.plannedCents, sortOrder: i })));
-    }
+    await writePlan(tx, { projectId: id, userId: contract.userId, plan, layout });
 
     await tx.update(contractsTable).set({ projectId: id }).where(eq(contractsTable.id, contract.id));
     return id;
@@ -224,6 +234,48 @@ export async function setupJobFromContract(contract: Contract): Promise<{ projec
   });
 
   return { projectId, created: !existing && !legacy, milestoneCount: plan.milestones.length, plannedEnd };
+}
+
+// ── Job opened from a quote, without a contract ────────────────────────────
+// The phone app's «Apri il cantiere» on an accepted quote (POST /api/jobs with
+// quoteId) used to make an empty job: no phases, no budget, already
+// "confirmed". It now gets the same proposal a signed contract gives — phases
+// from the chapters, linked to the payment terms, dates and a cost budget —
+// as `pending_review`, so the setup screen shows it and saving confirms it.
+
+export async function setupJobFromQuote(params: { projectId: string; userId: string; quote: typeof quotesTable.$inferSelect }): Promise<{ milestoneCount: number; plannedEnd: Date | null }> {
+  const { projectId, userId, quote } = params;
+  const chapters = (Array.isArray(quote.capitoli) ? quote.capitoli : []) as QuoteChapter[];
+  const [profile] = await db.select().from(businessProfilesTable).where(eq(businessProfilesTable.userId, userId));
+  const [client] = quote.clientId ? await db.select().from(clientsTable).where(and(eq(clientsTable.id, quote.clientId), eq(clientsTable.userId, userId))) : [];
+  const variables = buildVariablesFromQuote({ quote, profile, client, contractNumber: "", province: quote.province ?? profile?.province ?? "", language: "it" });
+
+  let plan = buildFallbackPlan({ chapters, variables, signedAt: quote.acceptedAt ?? new Date(), language: "it" });
+  try {
+    plan = await refineWithAi(plan, { chapters, variables, language: "it", userId });
+  } catch (err) {
+    logger.warn({ err, quoteId: quote.id }, "AI job plan failed — using deterministic schedule and budget");
+  }
+  const layout = layoutSequential(plan.plannedStart, plan.milestones.map((m) => m.durationDays));
+  const plannedEnd = layout[layout.length - 1]?.end ?? null;
+
+  await db.transaction(async (tx) => {
+    await tx.update(projectsTable).set({
+      description: variables.projectTitle,
+      setupStatus: "pending_review",
+      setupProposal: plan.proposal,
+      setupConfirmedAt: null,
+      plannedStart: plan.plannedStart,
+      plannedEnd,
+      startDate: plan.plannedStart,
+      endDate: plannedEnd,
+    }).where(and(eq(projectsTable.id, projectId), eq(projectsTable.userId, userId)));
+    await tx.delete(milestonesTable).where(eq(milestonesTable.projectId, projectId));
+    await tx.delete(costBudgetLinesTable).where(eq(costBudgetLinesTable.projectId, projectId));
+    await writePlan(tx, { projectId, userId, plan, layout });
+  });
+  await writeAudit({ userId, actorType: "system", entityType: "project", entityId: projectId, action: "created_from_quote", diff: { quoteId: quote.id, milestones: plan.milestones.length, source: plan.proposal.source } });
+  return { milestoneCount: plan.milestones.length, plannedEnd };
 }
 
 /** Recomputes progress % from milestone values (completed value ÷ total value). */
