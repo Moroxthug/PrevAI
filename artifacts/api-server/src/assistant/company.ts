@@ -206,7 +206,7 @@ export async function undoActivity(userId: string, id: string): Promise<{ ok: tr
   if (row.undoneAt) return { ok: false, status: 409, message: "Già annullato" };
   if (row.undo !== "undo" && row.undo !== "void") return { ok: false, status: 400, message: "Questo non si può annullare" };
   const d = row.undoData;
-  let toast = "";
+  let toast: string;
   if (d.entity === "cost" && d.id) {
     await db.delete(costEntriesTable).where(and(eq(costEntriesTable.id, d.id), eq(costEntriesTable.userId, userId)));
     toast = "cost";

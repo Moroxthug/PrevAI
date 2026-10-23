@@ -1,7 +1,7 @@
 // HelpCentre.dc.html. Help: a search, the popular articles, the topics, the short videos, and three ways to reach us (chat, email, report a problem; PrevAI has no phone line). Opening an article shows it
 // (`?slug=`), with "Was this helpful?" and what to read next. States: default, search, no results, offline.
 // The articles are the web help centre's (content/helpArticles.ts, copied by `npm run sync-help`, kept on the phone so they work offline). The board's sample articles are not these:
-// the topics, counts and the order follow the real ones. Videos: two have a player (VideoPlayer); the others read Coming soon. Chat opens the web help page (the chat lives there);
+// the topics, counts and the order follow the real ones. Videos: only the recorded ones (POCKET-7, lib/videos.ts), opened in VideoPlayer. Chat opens the web help page (the chat lives there);
 // "Chat online" is the server's own answer.
 import { useState } from "react";
 import { Redirect, router, useLocalSearchParams } from "expo-router";
@@ -13,10 +13,10 @@ import { dateWithYear, number as num, type Locale } from "@/lib/format";
 import { ARTICLES, categoryName, countsByTopic, findBySlug, popular, related, search, type HelpArticle, type HelpCategory } from "@/lib/help";
 import { comingSoonHref, screenHref } from "@/lib/nav";
 import { API_ORIGIN } from "@/lib/session";
-import { clock, VIDEOS } from "@/lib/videos";
+import { clock, playable, VIDEOS, watchHref } from "@/lib/videos";
 
-/** Only the videos that exist are listed; the other four appear when they are made (Phase 130). */
-const SHOWN_VIDEOS = VIDEOS.filter((v) => v.playable);
+/** Only the videos that exist are listed (POCKET-7: the recorded ones, lib/videos.ts); the others appear when they are recorded. */
+const SHOWN_VIDEOS = VIDEOS.filter(playable);
 import { useSession } from "@/lib/useSession";
 import { Card, Hairline } from "@/ui/Card";
 import { Banner, Empty, useToast } from "@/ui/Feedback";
@@ -124,16 +124,16 @@ export default function HelpCentre() {
                 ))}
               </TopicGrid>
             </Section>
-            <Section delay={130} pt={22}>
+            {SHOWN_VIDEOS.length ? <Section delay={130} pt={22}>
               <WideHeader><SectionHeader title={t("videos")} link={t("videoCount", { count: num(SHOWN_VIDEOS.length, locale) })} /></WideHeader>
               <VideoStrip>
                 {SHOWN_VIDEOS.map((v) => {
                   const info = tr(`hc.video.${v.id}`, { returnObjects: true }) as unknown as string[];
                   return <VideoCard key={v.id} icon={v.icon} tone={v.tone} title={info[0]!} topic={info[1]!} length={offline ? t("video.offline") : clock(v.secs)} label={t("video.watch", { title: info[0], dur: clock(v.secs) })}
-                    onPress={() => (v.playable ? router.push(screenHref("VideoPlayer", "", { video: v.id })) : router.push(comingSoonHref(info[0]!)))} />;
+                    onPress={() => router.push(watchHref(v.id, "help") ?? comingSoonHref(info[0]!))} />;
                 })}
               </VideoStrip>
-            </Section>
+            </Section> : null}
           </>
         ) : null}
 

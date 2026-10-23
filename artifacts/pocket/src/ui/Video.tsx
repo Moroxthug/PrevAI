@@ -1,9 +1,8 @@
-// VideoPlayer.dc.html: the dark stage (whatever the theme), the frame with the illustrated scene and the captions, the overlays (paused, loading, offline), the chaptered scrub bar,
+// VideoPlayer.dc.html: the dark stage (whatever the theme), the frame with the video and the captions, the overlays (paused, loading, offline), the chaptered scrub bar,
 // the transport (captions, back 10, play, forward 10, speed) and a chapter row. Colours are the board's own (board.player).
-import { useEffect } from "react";
 import type { ReactNode } from "react";
 import { View } from "react-native";
-import Animated, { useAnimatedStyle, useReducedMotion, useSharedValue, withDelay, withRepeat, withSequence, withTiming } from "react-native-reanimated";
+import { VideoView, type VideoPlayer } from "expo-video";
 import Svg, { Path } from "react-native-svg";
 import { board } from "@/theme/board";
 import { Card } from "./Card";
@@ -36,35 +35,16 @@ const Skip = ({ forward }: { forward: boolean }) => (
   </Svg>
 );
 
-function Bar({ i, h }: { i: number; h: number }) {
-  const reduced = useReducedMotion();
-  const s = useSharedValue(1);
-  useEffect(() => {
-    if (reduced) return;
-    s.value = withDelay(i * 70, withRepeat(withSequence(withTiming(0.45, { duration: 500 }), withTiming(1, { duration: 500 })), -1));
-  }, [i, reduced, s]);
-  const style = useAnimatedStyle(() => ({ transform: [{ scaleY: s.value }] }));
-  return <Animated.View style={[{ width: 4, height: h, borderRadius: 3, backgroundColor: P.wave }, style]} />;
+/** The video filling the frame (no native controls: the stage draws its own). */
+export function FrameVideo({ player }: { player: VideoPlayer }) {
+  return <VideoView player={player} nativeControls={false} contentFit="contain" allowsPictureInPicture={false} style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%" }} />;
 }
 
-const WAVE = [10, 18, 26, 14, 22, 8, 20, 26, 12, 18, 24, 10, 16, 22, 8, 14];
-
-/** The frame: the voice card (a name and a waveform), the line card (what is being made) and, over them, the caption and an overlay. */
-export function Frame({ label, a, b, c, d, amount, playing, caption, overlay }: { label: string; a: string; b: string; c: string; d: string; amount: string; playing: boolean; caption?: string; overlay?: ReactNode }) {
+/** The frame: the video (or its poster), and over it the caption and an overlay. 1280×776 videos fill it edge to edge. */
+export function Frame({ label, media, caption, overlay }: { label: string; media: ReactNode; caption?: string; overlay?: ReactNode }) {
   return (
     <View accessible accessibilityRole="image" accessibilityLabel={label} style={{ height: 236, marginTop: 4, overflow: "hidden", backgroundColor: P.frame }}>
-      <View style={{ position: "absolute", left: 22, top: 18, width: 170, borderRadius: 18, backgroundColor: P.card, paddingVertical: 12, paddingHorizontal: 14 }}>
-        <Text size={12.5} weight={600} tint={P.cardInk}>{a}</Text>
-        <View style={{ flexDirection: "row", alignItems: "center", gap: 3, height: 26, marginTop: 8 }}>{WAVE.map((h, i) => (playing ? <Bar key={i} i={i} h={h} /> : <View key={i} style={{ width: 4, height: h, borderRadius: 3, backgroundColor: P.wave }} />))}</View>
-      </View>
-      <View style={{ position: "absolute", right: 20, top: 64, width: 196, borderRadius: 18, backgroundColor: P.card, paddingVertical: 12, paddingHorizontal: 14 }}>
-        <Text size={11.5} tint={P.cardMuted}>{b}</Text>
-        <Text size={13.5} weight={600} tint={P.cardInk} numberOfLines={1} style={{ marginTop: 2 }}>{c}</Text>
-        <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "baseline", gap: 8, marginTop: 4 }}>
-          <Text size={11.5} weight={600} tint={P.cardOk}>{d}</Text>
-          <Num size={15} weight={600} tint={P.cardInk}>{amount}</Num>
-        </View>
-      </View>
+      {media}
       {caption ? <View style={{ position: "absolute", left: 20, right: 20, bottom: 14, alignItems: "center" }}><Text size={15} leading={1.7} align="center" tint={board.white} style={{ backgroundColor: P.caption, paddingHorizontal: 8, borderRadius: 6 }}>{caption}</Text></View> : null}
       {overlay}
     </View>

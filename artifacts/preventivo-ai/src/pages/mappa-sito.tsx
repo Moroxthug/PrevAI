@@ -115,6 +115,9 @@ export default function MappaSitoPage() {
                     {t("sitemap.helpCenter")}
                   </Link>
                 </li>
+                <li style={{ paddingLeft: 8 }}>
+                  <Link href="/help/video/" style={{ color: "var(--muted-mk)", fontSize: 12.5 }}>Video</Link>
+                </li>
                 {HELP_ARTICLES.map((a) => (
                   <li key={a.slug} style={{ paddingLeft: 8, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                     <Link href={`/help/${a.slug}/`} style={{ color: "var(--muted-mk)", fontSize: 12.5 }}>

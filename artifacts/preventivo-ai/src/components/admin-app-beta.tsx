@@ -3,7 +3,8 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 // APP-5: pannello staff della beta con le imprese pilota. Per ogni impresa:
 // aperture, preventivi creati e condivisi, dall'app nativa (android / ios)
-// e in totale; sotto, le segnalazioni "Segnala un problema".
+// e in totale; poi i video dell'app (POCKET-7: avviati, finiti, da quale
+// schermata); sotto, le segnalazioni "Segnala un problema".
 
 type Counts = { app_open: number; quote_created: number; quote_shared: number };
 type Report = {
@@ -12,6 +13,7 @@ type Report = {
   since: string;
   totals: Record<string, Counts>;
   goal: { nativeQuotes: number; target: number };
+  videos?: { video: string; started: number; finished: number; from: Record<string, number> }[];
   orgs: { userId: string; companyName: string; total: Counts; native: Counts; surfaces: string[]; lastSeen: string }[];
   feedback: {
     id: string;
@@ -37,6 +39,8 @@ async function json<T>(url: string, init?: RequestInit): Promise<T> {
 const SURFACES = ["android", "ios", "pwa", "web"] as const;
 const SURFACE_LABEL: Record<string, string> = { android: "App Android", ios: "App iOS", pwa: "PWA installata", web: "Sito" };
 const STATI = ["nuovo", "visto", "risolto"] as const;
+const VIDEO_LABEL: Record<string, string> = { quotes: "Il tuo primo preventivo", overview: "PrevAI in 60 secondi", jobs: "Avvia un cantiere", crew: "Il primo giorno della squadra", bonifico: "Fatti pagare con un bonifico", app: "Collega le tue app" };
+const FROM_LABEL: Record<string, string> = { help: "Aiuto", quotes: "Preventivi", jobs: "Cantieri", team: "Squadra", integrations: "Integrazioni", invoices: "Fatture", "first-run": "Primo avvio", home: "Oggi" };
 const dt = (s: string) => new Date(s).toLocaleString("it-IT", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" });
 
 export function AdminAppBeta() {
@@ -116,6 +120,34 @@ export function AdminAppBeta() {
                       <td className="py-2 pr-4 tabular-nums">{o.native.quote_created} / {o.total.quote_created}</td>
                       <td className="py-2 pr-4 tabular-nums">{o.native.quote_shared} / {o.total.quote_shared}</td>
                       <td className="py-2 whitespace-nowrap text-xs">{dt(o.lastSeen)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
+
+          <div className="bg-white rounded-2xl border border-slate-100 p-5 shadow-sm overflow-x-auto" tabIndex={0} role="region" aria-label="Video dell'app">
+            <h3 className="text-sm font-bold text-slate-800 mb-2">Video dell'app</h3>
+            {!r.videos?.length ? (
+              <p className="text-sm text-slate-500">Nessun video guardato nel periodo.</p>
+            ) : (
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="text-left text-xs text-slate-500">
+                    <th className="py-2 pr-4">Video</th>
+                    <th className="py-2 pr-4">Avviati</th>
+                    <th className="py-2 pr-4">Finiti</th>
+                    <th className="py-2">Aperti da</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {r.videos.map((v) => (
+                    <tr key={v.video} className="border-t border-slate-100">
+                      <td className="py-2 pr-4 font-semibold">{VIDEO_LABEL[v.video] ?? v.video}</td>
+                      <td className="py-2 pr-4 tabular-nums">{v.started}</td>
+                      <td className="py-2 pr-4 tabular-nums">{v.finished}{v.started ? ` (${Math.round((v.finished / v.started) * 100)}%)` : ""}</td>
+                      <td className="py-2 text-xs">{Object.entries(v.from).sort((a, b) => b[1] - a[1]).map(([k, n]) => `${FROM_LABEL[k] ?? k} ${n}`).join(" · ")}</td>
                     </tr>
                   ))}
                 </tbody>

@@ -1000,7 +1000,9 @@ Imposta sempre titolo_riga1 = "Analisi Economica e Computo Metrico Prezzato".`
       return;
     }
 
-    // Prefer structured clientData from request, fall back to AI-generated
+    // Prefer structured clientData from request, fall back to AI-generated. Email and phone must
+    // survive: they are part of the client's dedup key (without them a picked client was duplicated)
+    // and the quote is sent to that email.
     const resolvedClientData: QuoteClientData = clientDataInput?.nome
       ? {
           nome: clientDataInput.nome,
@@ -1010,6 +1012,8 @@ Imposta sempre titolo_riga1 = "Analisi Economica e Computo Metrico Prezzato".`
           city: clientDataInput.city,
           postalCode: clientDataInput.postalCode,
           province: clientDataInput.province,
+          ...(clientDataInput.email ? { email: clientDataInput.email } : null),
+          ...(clientDataInput.phone ? { phone: clientDataInput.phone } : null),
         }
       : {
           nome: aiData.cliente?.nome ?? "",

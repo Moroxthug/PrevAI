@@ -27,6 +27,7 @@ const ContattiPage = lazy(() => import("@/pages/contatti"));
 const MappaSitoPage = lazy(() => import("@/pages/mappa-sito"));
 const HelpIndexPage = lazy(() => import("@/pages/help/index"));
 const HelpArticlePage = lazy(() => import("@/pages/help/[slug]"));
+const HelpVideosPage = lazy(() => import("@/pages/help/video"));
 const AmministrazioneLandingPage = lazy(() => import("@/pages/amministrazione"));
 
 import { PATHS } from "@/data/sitemap-routes";
@@ -238,6 +239,7 @@ function Router() {
       <Route path="/terms" component={() => <Redirect to={PATHS.TERMINI} />} />
       <Route path={PATHS.MAPPA_SITO} component={() => <Suspense fallback={null}><MappaSitoPage /></Suspense>} />
       {/* Help centre — Phase 70; articles from HELP_ARTICLES */}
+      <Route path="/help/video" component={() => <PublicLayout><Suspense fallback={<PageFallback />}><HelpVideosPage /></Suspense></PublicLayout>} />
       <Route path="/help/:slug" component={() => <PublicLayout><Suspense fallback={<PageFallback />}><HelpArticlePage /></Suspense></PublicLayout>} />
       <Route path={PATHS.HELP} component={() => <PublicLayout><Suspense fallback={<PageFallback />}><HelpIndexPage /></Suspense></PublicLayout>} />
 

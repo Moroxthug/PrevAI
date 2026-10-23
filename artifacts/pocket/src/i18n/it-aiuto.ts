@@ -34,7 +34,7 @@ export const aiuto = {
     popular: "I più letti", topics: "Argomenti", articles_one: "{{count}} articolo", articles_other: "{{count}} articoli", videos: "Video", videoCount: "{{count}} video brevi",
     topic: { start: "Primi passi", quotes: "Preventivi", contracts: "Contratti e firma elettronica", jobs: "Cantieri", money: "Fatture e pagamenti", team: "Squadra", growth: "Richieste e integrazioni" },
     video: {
-      quotes: ["Il tuo primo preventivo", "Preventivi"], overview: ["PrevAI in 60 secondi", "Panoramica"], jobs: ["Avvia un cantiere da un preventivo", "Cantieri"], crew: ["Il primo giorno della squadra", "Squadra"], etransfer: ["Fatti pagare con un bonifico", "Fatture"], qbo: ["Collega le tue app", "Integrazioni"],
+      quotes: ["Il tuo primo preventivo", "Preventivi"], overview: ["PrevAI in 60 secondi", "Panoramica"], jobs: ["Avvia un cantiere da un preventivo", "Cantieri"], crew: ["Il primo giorno della squadra", "Squadra"], bonifico: ["Fatti pagare con un bonifico", "Fatture"], app: ["Collega le tue app", "Integrazioni"],
       watch: "Guarda {{title}}, {{dur}}", offline: "Offline",
     },
     talk: { title: "Parla con noi", chat: ["Scrivici in chat", "Di solito rispondiamo in 5 minuti", "Serve la connessione", "Attiva", "Non attiva"], email: ["Email", "supporto@prevai.it · rispondiamo entro un giorno"], call: ["Chiama", ""], problem: ["Segnala un problema", "Manda una schermata e una nota"], hours: "Rispondiamo dal lunedì al venerdì, 9–18." },
@@ -43,17 +43,32 @@ export const aiuto = {
   },
   vp: {
     close: "Chiudi il video", offline: "Questo video ha bisogno della connessione", offlineSub: "I passaggi nell'Aiuto funzionano offline.", retry: "Riprova", loading: "Carico", play: "Riproduci", pause: "Pausa", back10: "Indietro di 10 secondi", fwd10: "Avanti di 10 secondi",
+    watchHow: "Guarda come si fa", offerOverview: "Guarda PrevAI in 60 secondi",
     position: "Posizione", captions: "Sottotitoli", speed: "Velocità {{speed}}", speedTitle: "Velocità", ccOn: "Italiano", ccOff: "No", chapters: "Capitoli", playing: "In riproduzione", paused: "In pausa", watched: "Visto", chapter: "Capitolo {{n}}: {{title}}",
     v: {
       quotes: {
-        head: "Guarda come si fa", title: "Il tuo primo preventivo", topic: "Preventivi", sub: "Racconta un lavoro e manda un preventivo con le voci e l'IVA, dall'inizio alla fine.", cta: "Provalo adesso",
-        scene: ["Descrivo il lavoro", "Voce 3 di 7", "Cartongesso, 3 stanze", "2.480,00 €", "IVA 22% aggiunta"],
-        ch: [["Tocca Nuovo preventivo", "Tocca Nuovo preventivo nella scheda Preventivi."], ["Descrivi il lavoro", "Dillo come lo diresti al cliente: tre camere, anche i soffitti."], ["Controlla le voci", "Ogni voce è separata. Toccane una per cambiare il prezzo."], ["Invialo", "Mandalo per email e vedi quando lo aprono."]],
+        head: "Guarda come si fa", title: "Il tuo primo preventivo", topic: "Preventivi", sub: "Racconta il lavoro, scegli il cliente e manda un preventivo con le voci e l'IVA.", cta: "Provalo adesso",
+        ch: [["Tocca Nuovo preventivo", "Dalla scheda Preventivi, tocca Nuovo preventivo."], ["Descrivi il lavoro", "Scrivilo o dettalo come lo diresti al cliente, poi scegli il cliente."], ["Controlla le voci", "Ogni voce ha quantità e prezzo: cambiali con un tocco."], ["Invialo", "Invia per email: il cliente lo apre e lo accetta dal telefono."]],
       },
       overview: {
-        head: "PrevAI in 60 secondi", title: "PrevAI in 60 secondi", topic: "Panoramica", sub: "Da un vocale a una fattura pagata, in un minuto.", cta: "Comincia",
-        scene: ["Dana Bianchi", "Firmato oggi, 9:12", "Camere e soffitto del bagno", "4.131,05 €", "Accettato e firmato"],
-        ch: [["Parli, e scrive il preventivo", "Descrivi il lavoro. PrevAI scrive il preventivo."], ["Il cliente firma", "Il cliente accetta e firma dal telefono."], ["Il cantiere va avanti", "Squadra, agenda, foto e costi in un posto solo."], ["Ti pagano", "Le fatture partono secondo il piano. Bonifico o carta."]],
+        head: "PrevAI in 60 secondi", title: "PrevAI in 60 secondi", topic: "Panoramica", sub: "Oggi, preventivi, cantieri e fatture: l'app in meno di un minuto.", cta: "Comincia",
+        ch: [["Oggi", "Ogni mattina: cosa serve a te, il meteo dei cantieri, i soldi."], ["Preventivi", "Scritti dall'IA, inviati per email, accettati dal cliente."], ["Cantieri", "Dal preventivo accettato al cantiere: squadra, foto, costi."], ["Fatture", "Chi ti deve dei soldi e cosa è già arrivato."]],
+      },
+      jobs: {
+        head: "Guarda come si fa", title: "Avvia un cantiere da un preventivo", topic: "Cantieri", sub: "Dal preventivo accettato al cantiere, con le fasi, le date e la squadra.", cta: "Vai ai cantieri",
+        ch: [["Apri il preventivo accettato", "Il cliente ha accettato: apri il preventivo."], ["Avvia il cantiere", "Tocca Avvia cantiere. PrevAI prepara le fasi dalle voci."], ["Controlla le fasi", "Date, fasi e pagamenti arrivano dal preventivo."], ["Tutto in un posto", "Squadra, foto, costi e fatture stanno nel cantiere."]],
+      },
+      crew: {
+        head: "Guarda come si fa", title: "Il primo giorno della squadra", topic: "Squadra", sub: "Aggiungi un operaio, collega il suo telefono e guarda le ore arrivare.", cta: "Vai alla squadra",
+        ch: [["Aggiungi un operaio", ""], ["Collega il telefono", ""], ["Le ore", ""], ["Approva", ""]],
+      },
+      bonifico: {
+        head: "Guarda come si fa", title: "Fatti pagare con un bonifico", topic: "Fatture", sub: "Il cliente paga con il bonifico e lo segnala: tu controlli la banca e confermi.", cta: "Vai alle fatture",
+        ch: [["Il cliente ha pagato", "Il cliente paga con l'IBAN della fattura e lo segnala dal link."], ["Controlla la banca", "Prima di confermare, guarda che il bonifico sia arrivato."], ["Conferma il bonifico", "Confermo che è arrivato: importo e metodo sono già compilati."], ["Pagata", "La fattura è pagata e il cliente riceve la ricevuta."]],
+      },
+      app: {
+        head: "Guarda come si fa", title: "Collega le tue app", topic: "Integrazioni", sub: "Calendario, contabilità e le altre app che usi già.", cta: "Vai alle integrazioni",
+        ch: [["Le tue app", ""], ["Collega", ""], ["Cosa passa", ""], ["Fatto", ""]],
       },
     },
   },

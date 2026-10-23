@@ -4,6 +4,7 @@
 import { Link } from "wouter";
 import { ArrowRight, Rocket, FileText, FileSignature, HardHat, Receipt, Users, Target } from "lucide-react";
 import { HELP_ARTICLES, HELP_CATEGORIES, type HelpCategory } from "@/data/help-articles";
+import { HELP_VIDEOS } from "@/data/help-videos";
 import { SeoHead } from "@/components/seo-head";
 import { useLanguage } from "@/i18n/LanguageContext";
 
@@ -63,6 +64,11 @@ export default function HelpIndexPage() {
           {t("help.heading")}
         </h1>
         <p className="lead" style={{ maxWidth: "none" }}>{t("help.subheading")}</p>
+        {HELP_VIDEOS.length > 0 && (
+          <p style={{ marginTop: 14 }}>
+            <Link href="/help/video/" className="cta-link" style={{ fontSize: 14.5 }}>Guarda i {HELP_VIDEOS.length} video brevi <ArrowRight className="chev h-4 w-4" /></Link>
+          </p>
+        )}
       </header>
 
       <main className="flex-1 wrap" style={{ paddingBottom: "clamp(48px, 6vw, 80px)" }}>

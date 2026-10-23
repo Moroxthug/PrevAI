@@ -6,6 +6,7 @@
 // "Delivered" marks need data the server does not give the list, so those lines are left out (see lib/invoices.ts).
 import { useMemo, useState, type ReactElement, type ReactNode } from "react";
 import { Redirect, router } from "expo-router";
+import { watchLink } from "@/lib/watchLink";
 import { useTranslation } from "react-i18next";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -253,7 +254,7 @@ export default function Invoices() {
         ) : loading ? (
           <Section pt={16} px={16} gap={12}><Skeleton height={230} radius={22} /><Skeleton height={44} radius={14} /><Skeleton height={300} radius={22} /></Section>
         ) : all.length === 0 ? (
-          <Section pt={26} px={16}><Empty icon="receipt" iconTone="amber" title={t("list.none.title")} body={t("list.none.body")} action={t("list.none.action")} onAction={newInvoice} /></Section>
+          <Section pt={26} px={16}><Empty icon="receipt" iconTone="amber" title={t("list.none.title")} body={t("list.none.body")} action={t("list.none.action")} onAction={newInvoice} {...watchLink("bonifico", "invoices", tr("vp.watchHow"))} /></Section>
         ) : (
           <>
             {q.isError ? <Section pt={12} px={16}><Banner tone="info" icon="warn" iconTone="amber" lead={t("list.offline")} /></Section> : null}

@@ -13,7 +13,12 @@ import { pgTable, uuid, text, timestamp, index, boolean, jsonb } from "drizzle-o
 // account deletion sweep these too; `actor_user_id` is the person who acted.
 // No content of quotes lands here: only ids, kinds and the surface.
 
-export const APP_EVENT_KINDS = ["app_open", "quote_created", "quote_shared"] as const;
+export const APP_EVENT_KINDS = ["app_open", "quote_created", "quote_shared", "video_started", "video_finished"] as const;
+/** The three beta usage events (APP-5); the video events (POCKET-7) have their own part of the report. */
+export const APP_BETA_KINDS = ["app_open", "quote_created", "quote_shared"] as const;
+export const APP_VIDEO_KINDS = ["video_started", "video_finished"] as const;
+/** POCKET-7: the screens of the phone app a video can be opened from (stored in `channel`). */
+export const APP_VIDEO_FROM = ["help", "quotes", "jobs", "team", "integrations", "invoices", "first-run", "home"] as const;
 export type AppEventKind = (typeof APP_EVENT_KINDS)[number];
 
 export const APP_SURFACES = ["web", "pwa", "android", "ios"] as const;
@@ -36,9 +41,9 @@ export const appEventsTable = pgTable(
     /** "phone" (≤ 980 px, the phone navigation) or "desktop". */
     viewport: text("viewport").notNull().default("desktop"),
     appVersion: text("app_version"),
-    /** quote id for quote_created / quote_shared. */
+    /** quote id for quote_created / quote_shared; the video id (quotes, overview…) for the video events. */
     entityId: text("entity_id"),
-    /** How a quote was shared: "link", "email", "share_sheet". */
+    /** How a quote was shared: "link", "email", "share_sheet"; for the video events, the screen it was opened from (APP_VIDEO_FROM). */
     channel: text("channel"),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },

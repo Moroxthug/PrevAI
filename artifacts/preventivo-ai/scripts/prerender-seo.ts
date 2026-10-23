@@ -45,6 +45,7 @@ import {
 } from "../src/components/testimonials-section.js";
 import { translations } from "../src/i18n/translations.js";
 import { HELP_ARTICLES } from "../src/data/help-articles.js";
+import { HELP_VIDEOS, toVtt } from "../src/data/help-videos.js";
 import {
   FAQ_LANDING_AMMINISTRAZIONE,
   LANDING_AMMINISTRAZIONE_PATH,
@@ -1819,7 +1820,17 @@ for (const article of HELP_ARTICLES) {
     bodyHtml: stripHoistedHead(await renderPage(`/help/${article.slug}`, "it")),
   });
 }
-console.log(`  ✓ ${HELP_ARTICLES.length + 1} help-centre pages prerendered`);
+// POCKET-7 (riga 64): la pagina dei video brevi, e i sottotitoli .vtt accanto ai file.
+await buildStaticPageHtml({
+  slug: "help/video",
+  title: "Video: PrevAI in pochi minuti | prevai",
+  description: "Brevi video muti con i sottotitoli: il primo preventivo, l'app in un minuto, il bonifico. Registrati dall'app PrevAI.",
+  path: "/help/video/",
+  jsonLd: [buildWebPageJsonLd("Video: PrevAI in pochi minuti", "Brevi video muti con i sottotitoli dell'app PrevAI.", "/help/video/", "CollectionPage"), buildBreadcrumbJsonLd("Video", "/help/video/")],
+  bodyHtml: stripHoistedHead(await renderPage("/help/video", "it")),
+});
+for (const v of HELP_VIDEOS) writeFileSync(join(distDir, "video", `${v.file}.vtt`), toVtt(v));
+console.log(`  ✓ ${HELP_ARTICLES.length + 2} help-centre pages prerendered, ${HELP_VIDEOS.length} video subtitles`);
 
 // SEO-1 (riga 47): pagina servita da Vercel con stato 404 per ogni indirizzo
 // che non è un file e non è una rotta dell'app (vercel.json → rewrites). Prima

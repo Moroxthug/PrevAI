@@ -1,9 +1,13 @@
-// VideoPlayer.dc.html. A short video for first-time screens and Help (`?video=quotes` or `overview`): a dark stage with an illustrated walkthrough, captions that follow the chapter, a
-// scrub bar of chapters, back and forward 10 seconds, play and pause, speed and captions, then the chapters and a button to try it. States: playing, paused, offline.
-// The two videos are walkthroughs drawn in the app, as the board draws them (a scene and captions on a timer), so there is no file to stream: "offline" shows the board's "needs a
-// connection" overlay only when the phone has no connection, and "buffering" never happens. The other four videos of Help have no player yet (Coming soon).
+// VideoPlayer.dc.html. A short video for first-time screens and Help (`?video=quotes&from=quotes`): the dark stage with the video, captions that follow the chapter, a
+// scrub bar of chapters, back and forward 10 seconds, play and pause, speed and captions, then the chapters and a button to try it. States: loading, playing, paused,
+// offline (the file did not load: no connection, or the site is unreachable). POCKET-7: the videos are real MP4s from the website (lib/videos.ts), silent, so
+// they start muted and play with the sound off; the captions are ours (one per chapter, the same text as the site's subtitles), drawn over the video.
+// A video with no file yet goes back to Help's Coming soon. Started and finished go to /api/app/events with the screen it was opened from.
 import { useEffect, useRef, useState } from "react";
+import { Platform } from "react-native";
 import { Redirect, router, useLocalSearchParams } from "expo-router";
+import { useEvent, useEventListener } from "expo";
+import { useVideoPlayer } from "expo-video";
 import { useTranslation } from "react-i18next";
 import { board } from "@/theme/board";
 import { Button } from "@/ui/Button";
@@ -16,68 +20,101 @@ import { SectionHeader } from "@/ui/Row";
 import { SetRow } from "@/ui/Settings";
 import { Status } from "@/ui/Status";
 import { Switch } from "@/ui/Switch";
-import { BigPlay, ChapterRow, Frame, Overlay, OverlayText, Pill, PillText, Scrub, SettingsCard, SpeedLine, Stage, StageHeader, Times, Transport, VideoInfo } from "@/ui/Video";
-import { chapterAt, clampPos, clock, knobX, SPEEDS, segmentFill, type Chapter } from "@/lib/videos";
-import { screenHref } from "@/lib/nav";
+import { BigPlay, ChapterRow, Frame, FrameVideo, Overlay, OverlayText, Pill, PillText, Scrub, SettingsCard, SpeedLine, Stage, StageHeader, Times, Transport, VideoInfo } from "@/ui/Video";
+import { chapterAt, clampPos, clock, knobX, playable, SPEEDS, segmentFill, VIDEO_FROM, videoEvents, videoOf, videoUrl, type Chapter, type VideoDef, type VideoFrom } from "@/lib/videos";
+import { sendAppEvent } from "@/lib/appEvents";
+import { comingSoonHref, screenHref, type ScreenName } from "@/lib/nav";
 import { useSession } from "@/lib/useSession";
 
-type Id = "quotes" | "overview";
-const TOTAL: Record<Id, number> = { quotes: 72, overview: 60 };
-const AT: Record<Id, number[]> = { quotes: [0, 14, 38, 58], overview: [0, 15, 30, 45] };
 const BAR = 350;
+/** Where "Provalo adesso" goes for each video. */
+const TRY: Record<VideoDef["id"], ScreenName> = { quotes: "NewQuote", overview: "SmartHome", jobs: "Jobs", crew: "Team", bonifico: "Invoices", app: "Integrations" };
+
+type Info = { head: string; title: string; topic: string; sub: string; cta: string; ch: string[][] };
 
 export default function VideoPlayer() {
   const { t: tr } = useTranslation();
-  const t = (k: string, o?: Record<string, unknown>) => tr(`vp.${k}`, o) as string;
   const { status } = useSession();
-  const params = useLocalSearchParams<{ video?: string }>();
-  const id: Id = params.video === "overview" ? "overview" : "quotes";
-  const total = TOTAL[id];
-  const info = tr(`vp.v.${id}`, { returnObjects: true }) as unknown as { head: string; title: string; topic: string; sub: string; cta: string; scene: string[]; ch: string[][] };
-  const chapters: Chapter[] = info.ch.map((c, i) => ({ at: AT[id][i]!, title: c[0]!, caption: c[1]! }));
-  const [pos, setPos] = useState(0);
-  const [playing, setPlaying] = useState(true);
+  const params = useLocalSearchParams<{ video?: string; from?: string }>();
+  const video = videoOf(params.video);
+  if (status === "out") return <Redirect href="/" />;
+  if (!playable(video)) {
+    const title = video ? (tr(`vp.v.${video.id}.title`) as string) : "";
+    return <Redirect href={comingSoonHref(title)} />;
+  }
+  const from = (VIDEO_FROM as readonly string[]).includes(params.from ?? "") ? (params.from as VideoFrom) : "help";
+  return <Player video={video} from={from} />;
+}
+
+function Player({ video, from }: { video: VideoDef & { file: string }; from: VideoFrom }) {
+  const { t: tr } = useTranslation();
+  const t = (k: string, o?: Record<string, unknown>) => tr(`vp.${k}`, o) as string;
+  const total = video.secs;
+  const info = tr(`vp.v.${video.id}`, { returnObjects: true }) as unknown as Info;
+  const chapters: Chapter[] = info.ch.map((c, i) => ({ at: video.at[i] ?? 0, title: c[0]!, caption: c[1]! }));
   const [cc, setCc] = useState(true);
   const [speed, setSpeed] = useState<number>(1);
-  const [tries, setTries] = useState(0);
-  const timer = useRef<ReturnType<typeof setInterval> | null>(null);
-  const offline = status === "offline" && tries === 0;
 
+  const player = useVideoPlayer(videoUrl(video.file), (p) => {
+    p.muted = true;
+    p.loop = false;
+    p.timeUpdateEventInterval = 0.25;
+    p.play();
+  });
+  const { currentTime } = useEvent(player, "timeUpdate", { currentTime: 0, currentLiveTimestamp: null, currentOffsetFromLive: null, bufferedPosition: 0 });
+  const { isPlaying } = useEvent(player, "playingChange", { isPlaying: player.playing, oldIsPlaying: false });
+  const { status: state } = useEvent(player, "statusChange", { status: player.status });
+  const [ended, setEnded] = useState(false);
+  useEventListener(player, "playToEnd", () => setEnded(true));
+  useEffect(() => { player.playbackRate = speed; }, [player, speed]);
+  // Start once the file is ready (a play() before that is dropped on the web).
+  const autoplayed = useRef(false);
   useEffect(() => {
-    if (!playing || offline) return;
-    timer.current = setInterval(() => setPos((p) => { const n = p + 0.25 * speed; if (n >= total) { setPlaying(false); return total; } return n; }), 250);
-    return () => { if (timer.current) clearInterval(timer.current); };
-  }, [playing, speed, total, offline]);
+    if (state === "readyToPlay" && !autoplayed.current) { autoplayed.current = true; player.play(); }
+  }, [state, player]);
 
-  if (status === "out") return <Redirect href="/" />;
+  const pos = ended ? total : clampPos(currentTime, total);
+  const sent = useRef({ started: false, finished: false });
+  useEffect(() => {
+    for (const kind of videoEvents(sent.current, { playing: isPlaying, pos, total })) {
+      sendAppEvent({ kind, entityId: video.id, from, surface: Platform.OS === "android" || Platform.OS === "ios" ? Platform.OS : "web" });
+    }
+  }, [isPlaying, pos, total, video.id, from]);
 
+  const offline = state === "error";
+  const loading = state === "loading" && !isPlaying;
   const ci = chapterAt(chapters, pos);
   const fills = segmentFill(chapters, total, pos);
-  const seek = (p: number) => setPos(clampPos(p, total));
-  const toggle = () => { if (pos >= total) setPos(0); setPlaying((p) => (pos >= total ? true : !p)); };
+  const seek = (p: number) => { setEnded(false); player.currentTime = clampPos(p, total); };
+  const toggle = () => {
+    if (pos >= total - 0.25) { seek(0); player.play(); return; }
+    if (isPlaying) player.pause(); else player.play();
+  };
+  const retry = () => { player.replace(videoUrl(video.file)); player.play(); };
   const close = () => (router.canGoBack() ? router.back() : router.replace("/home"));
-  const goTry = () => router.push(id === "quotes" ? screenHref("NewQuote", info.cta) : screenHref("Welcome", info.cta));
+  const goTry = () => router.push(screenHref(TRY[video.id], info.cta));
   const speedText = `${speed}×`;
-  const shown = playing && !offline;
 
   return (
     <Screen>
       <ScrollPage bottom={56}>
         <Stage>
           <StageHeader title={info.head} close={t("close")} onClose={close} />
-          <Frame label={`${info.title}, ${chapters[ci]!.title}`} a={info.scene[0]!} b={info.scene[1]!} c={info.scene[2]!} d={info.scene[4]!} amount={info.scene[3]!} playing={shown}
-            caption={cc && !offline ? chapters[ci]!.caption : undefined}
+          <Frame label={`${info.title}, ${chapters[ci]!.title}`}
+            media={<FrameVideo player={player} />}
+            caption={cc && !offline && !loading ? chapters[ci]!.caption : undefined}
             overlay={offline ? (
               <Overlay solid>
                 <Glyph name="cloud" size={28} tint={board.player.cloud} />
                 <OverlayText>{t("offline")}</OverlayText>
                 <OverlayText dim>{t("offlineSub")}</OverlayText>
-                <Pill on onPress={() => setTries((n) => n + 1)} label={t("retry")}><PillText on>{t("retry")}</PillText></Pill>
+                <Pill on onPress={retry} label={t("retry")}><PillText on>{t("retry")}</PillText></Pill>
               </Overlay>
-            ) : !playing ? <Overlay><BigPlay label={t("play")} onPress={toggle} /></Overlay> : undefined} />
+            ) : loading ? <Overlay><OverlayText dim>{t("loading")}</OverlayText></Overlay>
+              : !isPlaying ? <Overlay><BigPlay label={t("play")} onPress={toggle} /></Overlay> : undefined} />
           <Scrub fills={fills} labels={chapters.map((c, i) => t("chapter", { n: i + 1, title: c.title }))} onGo={(i) => seek(chapters[i]!.at)} knob={knobX(chapters, total, pos, BAR)} now={Math.round(pos)} max={total} text={clock(pos)} label={t("position")} />
           <Times pos={clock(pos)} chapter={chapters[ci]!.title} total={clock(total)} />
-          <Transport cc={t("captions")} ccOn={cc && !offline} onCc={() => setCc((c) => !c)} speed={speedText} onSpeed={() => setSpeed(SPEEDS[(SPEEDS.indexOf(speed as 1) + 1) % SPEEDS.length]!)} playing={playing && !offline} onToggle={toggle}
+          <Transport cc={t("captions")} ccOn={cc && !offline} onCc={() => setCc((c) => !c)} speed={speedText} onSpeed={() => setSpeed(SPEEDS[(SPEEDS.indexOf(speed as 1) + 1) % SPEEDS.length]!)} playing={isPlaying && !offline} onToggle={toggle}
             onBack={() => seek(pos - 10)} onForward={() => seek(pos + 10)} labels={{ play: t("play"), pause: t("pause"), back: t("back10"), forward: t("fwd10"), speed: t("speed", { speed: speedText }) }} />
         </Stage>
 
@@ -95,8 +132,8 @@ export default function VideoPlayer() {
           <SectionHeader title={t("chapters")} />
           <Card>
             {chapters.map((c, i) => (
-              <ChapterRow key={c.title} first={i === 0} time={clock(c.at)} title={c.title} current={i === ci} onPress={() => seek(c.at)}
-                status={i === ci ? <Status tone={playing ? "ok" : "mute"} shape={playing ? "live" : "pause"} plain>{playing ? t("playing") : t("paused")}</Status> : i < ci ? <Status tone="mute" shape="check" plain>{t("watched")}</Status> : undefined} />
+              <ChapterRow key={c.title} first={i === 0} time={clock(c.at)} title={c.title} current={i === ci} onPress={() => { seek(c.at); player.play(); }}
+                status={i === ci ? <Status tone={isPlaying ? "ok" : "mute"} shape={isPlaying ? "live" : "pause"} plain>{isPlaying ? t("playing") : t("paused")}</Status> : i < ci ? <Status tone="mute" shape="check" plain>{t("watched")}</Status> : undefined} />
             ))}
           </Card>
         </Section>

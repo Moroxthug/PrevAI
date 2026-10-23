@@ -1,14 +1,15 @@
 import { Router } from "express";
 import { z } from "zod";
-import { db, appEventsTable, appFeedbackTable, businessProfilesTable, APP_EVENT_KINDS, APP_SURFACES, APP_FEEDBACK_STATES } from "@workspace/db";
-import { desc, eq, gte, inArray, sql } from "drizzle-orm";
+import { db, appEventsTable, appFeedbackTable, businessProfilesTable, APP_EVENT_KINDS, APP_BETA_KINDS, APP_VIDEO_KINDS, APP_VIDEO_FROM, APP_SURFACES, APP_FEEDBACK_STATES } from "@workspace/db";
+import { and, desc, eq, gte, inArray, sql } from "drizzle-orm";
 import { requireAuth, getUserId, getActorUserId, getUserEmail } from "../middlewares/authMiddleware.js";
 import { userRateLimiter } from "../lib/rateLimit.js";
 import { sendOpsAlert } from "../lib/ops.js";
 import { requireAdmin } from "./admin.js";
 
 // ── APP-5: beta con le imprese pilota (docs/APP-PLAN.md §5) ─────────────────
-// - POST /api/app/events     three usage events, stamped with the surface
+// - POST /api/app/events     three usage events, stamped with the surface; POCKET-7 adds
+//                             video_started / video_finished (video id + the screen it was opened from)
 // - POST /api/app/feedback   "Segnala un problema" (stored + emailed to ops + Sentry)
 // - GET  /api/admin/app-beta the pilot report: per company, per surface
 // - PATCH /api/admin/app-beta/feedback/:id  nuovo → visto → risolto
@@ -38,8 +39,11 @@ const eventSchema = z.object({
   kind: z.enum(APP_EVENT_KINDS),
   entityId: z.string().max(64).optional(),
   channel: z.enum(["link", "email", "share_sheet"]).optional(),
+  from: z.enum(APP_VIDEO_FROM).optional(),
   ...common,
 });
+
+const isVideo = (k: string): boolean => (APP_VIDEO_KINDS as readonly string[]).includes(k);
 
 router.post("/app/events", requireAuth, eventsLimiter, async (req, res) => {
   const parsed = eventSchema.safeParse(req.body);
@@ -48,6 +52,10 @@ router.post("/app/events", requireAuth, eventsLimiter, async (req, res) => {
     return;
   }
   const e = parsed.data;
+  if (isVideo(e.kind) && !e.entityId) {
+    res.status(400).json({ error: "Invalid event" });
+    return;
+  }
   try {
     await db.insert(appEventsTable).values({
       userId: getUserId(res),
@@ -57,7 +65,7 @@ router.post("/app/events", requireAuth, eventsLimiter, async (req, res) => {
       viewport: e.viewport,
       appVersion: e.appVersion ?? null,
       entityId: e.kind === "app_open" ? null : (e.entityId ?? null),
-      channel: e.kind === "quote_shared" ? (e.channel ?? null) : null,
+      channel: e.kind === "quote_shared" ? (e.channel ?? null) : isVideo(e.kind) ? (e.from ?? "help") : null,
     });
     res.status(204).end();
   } catch (err) {
@@ -124,6 +132,24 @@ router.post("/app/feedback", requireAuth, feedbackLimiter, async (req, res) => {
 
 // ── Admin: the pilot report ─────────────────────────────────────────────────
 
+type VideoReportRow = { video: string; started: number; finished: number; from: Record<string, number> };
+
+/** Rows of (video, kind, from, n) as one line per video: started, finished, and where the starts came from. Most started first. */
+function summarizeVideos(rows: { video: string | null; kind: string; from: string | null; n: number }[]): VideoReportRow[] {
+  const by = new Map<string, VideoReportRow>();
+  for (const r of rows) {
+    if (!r.video) continue;
+    let v = by.get(r.video);
+    if (!v) { v = { video: r.video, started: 0, finished: 0, from: {} }; by.set(r.video, v); }
+    if (r.kind === "video_started") {
+      v.started += r.n;
+      const f = r.from ?? "help";
+      v.from[f] = (v.from[f] ?? 0) + r.n;
+    } else if (r.kind === "video_finished") v.finished += r.n;
+  }
+  return [...by.values()].sort((a, b) => b.started - a.started || a.video.localeCompare(b.video));
+}
+
 const NATIVE = ["android", "ios"] as const;
 
 router.get("/admin/app-beta", requireAdmin, async (req, res) => {
@@ -139,8 +165,16 @@ router.get("/admin/app-beta", requireAdmin, async (req, res) => {
         last: sql<string>`to_char(max(${appEventsTable.createdAt}) at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS"Z"')`,
       })
       .from(appEventsTable)
-      .where(gte(appEventsTable.createdAt, since))
+      .where(and(gte(appEventsTable.createdAt, since), inArray(appEventsTable.kind, [...APP_BETA_KINDS])))
       .groupBy(appEventsTable.userId, appEventsTable.kind, appEventsTable.surface);
+
+    // POCKET-7: per video, started and finished, and from which screen it was opened.
+    const videoRows = await db
+      .select({ video: appEventsTable.entityId, kind: appEventsTable.kind, from: appEventsTable.channel, n: sql<number>`count(*)::int` })
+      .from(appEventsTable)
+      .where(and(gte(appEventsTable.createdAt, since), inArray(appEventsTable.kind, [...APP_VIDEO_KINDS])))
+      .groupBy(appEventsTable.entityId, appEventsTable.kind, appEventsTable.channel);
+    const videos = summarizeVideos(videoRows);
 
     const ids = [...new Set(byOrg.map((r) => r.userId))];
     const names = ids.length
@@ -151,20 +185,21 @@ router.get("/admin/app-beta", requireAdmin, async (req, res) => {
       : [];
     const nameOf = new Map(names.map((n) => [n.userId, n.companyName]));
 
-    type Counts = { app_open: number; quote_created: number; quote_shared: number };
+    type Counts = Record<(typeof APP_BETA_KINDS)[number], number>;
     const zero = (): Counts => ({ app_open: 0, quote_created: 0, quote_shared: 0 });
     const totals: Record<string, Counts> = Object.fromEntries(APP_SURFACES.map((s) => [s, zero()]));
     const orgs = new Map<string, { userId: string; companyName: string; total: Counts; native: Counts; surfaces: Set<string>; lastSeen: string }>();
     for (const r of byOrg) {
       totals[r.surface] ??= zero();
-      totals[r.surface]![r.kind] += r.n;
+      const kind = r.kind as keyof Counts;
+      totals[r.surface]![kind] += r.n;
       let o = orgs.get(r.userId);
       if (!o) {
         o = { userId: r.userId, companyName: nameOf.get(r.userId) || "—", total: zero(), native: zero(), surfaces: new Set(), lastSeen: r.last };
         orgs.set(r.userId, o);
       }
-      o.total[r.kind] += r.n;
-      if ((NATIVE as readonly string[]).includes(r.surface)) o.native[r.kind] += r.n;
+      o.total[kind] += r.n;
+      if ((NATIVE as readonly string[]).includes(r.surface)) o.native[kind] += r.n;
       o.surfaces.add(r.surface);
       if (r.last > o.lastSeen) o.lastSeen = r.last;
     }
@@ -188,6 +223,7 @@ router.get("/admin/app-beta", requireAdmin, async (req, res) => {
       totals,
       // APP-PLAN §5 APP-5 "fatto quando": 20 quotes created from the app by the pilot companies.
       goal: { nativeQuotes, target: 20 },
+      videos,
       orgs: [...orgs.values()]
         .map((o) => ({ ...o, surfaces: [...o.surfaces].sort() }))
         .sort((a, b) => b.native.quote_created - a.native.quote_created || b.total.quote_created - a.total.quote_created || b.lastSeen.localeCompare(a.lastSeen)),
@@ -207,7 +243,7 @@ router.get("/admin/app-beta", requireAdmin, async (req, res) => {
     });
   } catch (err) {
     if (missingTable(err)) {
-      res.json({ migrated: false, days, since: since.toISOString(), totals: {}, goal: { nativeQuotes: 0, target: 20 }, orgs: [], feedback: [] });
+      res.json({ migrated: false, days, since: since.toISOString(), totals: {}, goal: { nativeQuotes: 0, target: 20 }, videos: [], orgs: [], feedback: [] });
       return;
     }
     req.log.error({ err }, "Error building app beta report");

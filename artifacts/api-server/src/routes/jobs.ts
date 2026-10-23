@@ -209,6 +209,14 @@ router.get("/jobs", requireAuth, requirePermission("jobs", "view"), async (req, 
   }
 });
 
+/** "Rifacimento completo del bagno – Luca Ferrari" (the quote's description, short, and the client); the given name if the quote has neither. */
+function jobNameFromQuote(quote: { descrizioneGenerale: string | null; clientData: unknown }, fallback: string): string {
+  const work = (quote.descrizioneGenerale ?? "").split(/[.\n]/)[0]!.trim().slice(0, 80);
+  const client = ((quote.clientData as { nome?: string } | null)?.nome ?? "").trim();
+  const name = [work, client].filter(Boolean).join(" – ");
+  return (name || fallback).slice(0, 200);
+}
+
 // POST /api/jobs — manual job (no contract). Used by the quote page "Start job" button.
 router.post("/jobs", requireAuth, requirePermission("jobs", "edit"), async (req, res) => {
   try {
@@ -253,7 +261,8 @@ router.post("/jobs", requireAuth, requirePermission("jobs", "edit"), async (req,
       .insert(projectsTable)
       .values({
         userId,
-        name: d.name,
+        // From a quote the job is named after the work and the client: the phone app sends only a placeholder.
+        name: quote ? jobNameFromQuote(quote, d.name) : d.name,
         description: d.description ?? "",
         quoteId: quote?.id ?? null,
         clientId: d.clientId ?? quote?.clientId ?? null,

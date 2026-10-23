@@ -33,6 +33,8 @@ export const SSR_PAGES: ReadonlyArray<{ path: string; lang: Lang }> = [
   { path: "/fisco", lang: "it" },
   // Phase 70: help centre index + every article.
   { path: "/help", lang: "it" },
+  // POCKET-7: i video brevi.
+  { path: "/help/video", lang: "it" },
   ...HELP_ARTICLES.map((a) => ({ path: `/help/${a.slug}`, lang: "it" as const })),
 ];
 

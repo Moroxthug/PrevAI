@@ -94,10 +94,10 @@ Columns — **Auth**: session (`requireAuth`), apiKey (`requireApiKey`), admin (
 
 | Line | Method | Path | Auth | Perm | RL | Val | Gate | Scope | Archived | Token | Webhook |
 |---|---|---|---|---|---|---|---|---|---|---|---|
-| 44 | POST | `/api/app/events` | session | — | eventsLimiter | zod | — | n/a | — | — | — |
-| 76 | POST | `/api/app/feedback` | session | — | feedbackLimiter | zod | — | n/a | — | — | — |
-| 129 | GET | `/api/admin/app-beta` | admin | — | — | none | — | n/a | — | — | — |
-| 218 | PATCH | `/api/admin/app-beta/feedback/:id` | admin | — | — | zod | — | n/a | — | — | — |
+| 48 | POST | `/api/app/events` | session | — | eventsLimiter | zod | — | n/a | — | — | — |
+| 84 | POST | `/api/app/feedback` | session | — | feedbackLimiter | zod | — | n/a | — | — | — |
+| 155 | GET | `/api/admin/app-beta` | admin | — | — | none | — | n/a | — | — | — |
+| 254 | PATCH | `/api/admin/app-beta/feedback/:id` | admin | — | — | zod | — | n/a | — | — | — |
 
 ## artifacts/api-server/src/routes/archive.ts
 
@@ -468,37 +468,37 @@ Columns — **Auth**: session (`requireAuth`), apiKey (`requireApiKey`), admin (
 | Line | Method | Path | Auth | Perm | RL | Val | Gate | Scope | Archived | Token | Webhook |
 |---|---|---|---|---|---|---|---|---|---|---|---|
 | 161 | GET | `/api/jobs` | session | jobs:view | — | none | — | n/a | projects:ok | — | — |
-| 213 | POST | `/api/jobs` | session | jobs:edit | — | zod | hasFeature(jobs) | n/a | — | — | — |
-| 373 | GET | `/api/jobs/:id` | session | jobs:view | — | none | — | predicate | — | — | — |
-| 388 | PUT | `/api/jobs/:id` | session | jobs:edit | — | zod | — | predicate | — | — | — |
-| 445 | DELETE | `/api/jobs/:id` | session | jobs:full | — | none | — | predicate | — | — | — |
-| 468 | POST | `/api/jobs/:id/archive` | session | jobs:full | — | none | — | predicate | — | — | — |
-| 486 | POST | `/api/jobs/:id/restore` | session | jobs:full | — | none | — | predicate | — | — | — |
-| 613 | PUT | `/api/jobs/:id/setup` | session | jobs:edit | — | zod | — | predicate | — | — | — |
-| 635 | POST | `/api/jobs/:id/setup/confirm` | session | jobs:edit | — | zod | — | predicate | — | — | — |
-| 660 | POST | `/api/jobs/:id/setup/regenerate` | session | jobs:edit | — | none | — | predicate | — | — | — |
-| 707 | POST | `/api/jobs/:id/milestones` | session | jobs:edit | — | zod | — | predicate | — | — | — |
-| 744 | PUT | `/api/jobs/:id/milestones/:mid` | session | jobs:edit | — | zod | — | predicate | — | — | — |
-| 787 | DELETE | `/api/jobs/:id/milestones/:mid` | session | jobs:edit | — | none | — | predicate | — | — | — |
-| 808 | POST | `/api/jobs/:id/tasks` | session | jobs:edit | — | zod | — | predicate | — | — | — |
-| 829 | PATCH | `/api/jobs/:id/tasks/:tid` | session | jobs:edit | — | zod | — | predicate | — | — | — |
-| 865 | DELETE | `/api/jobs/:id/tasks/:tid` | session | jobs:edit | — | none | — | predicate | — | — | — |
-| 883 | PUT | `/api/jobs/:id/budget` | session | jobs:full | — | zod | — | predicate | — | — | — |
-| 926 | POST | `/api/jobs/:id/change-orders/draft` | session | jobs:full | draftLimiter | zod | hasFeature(jobs) | predicate | — | — | — |
-| 944 | POST | `/api/jobs/:id/change-orders` | session | jobs:full | — | zod | hasFeature(jobs) | predicate | — | — | — |
-| 968 | PUT | `/api/jobs/:id/change-orders/:coId` | session | jobs:full | — | zod | — | predicate | — | — | — |
-| 993 | DELETE | `/api/jobs/:id/change-orders/:coId` | session | jobs:full | — | none | — | predicate | — | — | — |
-| 1045 | GET | `/api/jobs/:id/photos` | session | jobs:view | — | none | — | predicate | — | — | — |
-| 1061 | POST | `/api/jobs/:id/photos` | session | jobs:edit | — | manual | — | predicate | — | — | — |
-| 1102 | GET | `/api/jobs/:id/photos/:photoId/file` | session | jobs:view | — | none | — | predicate | — | — | — |
-| 1130 | PUT | `/api/jobs/:id/photos/:photoId` | session | jobs:edit | — | zod | — | predicate | — | — | — |
-| 1164 | DELETE | `/api/jobs/:id/photos/:photoId` | session | jobs:edit | — | none | — | predicate | — | — | — |
-| 1207 | GET | `/api/jobs/:id/notes` | session | jobs:view | — | none | — | predicate | — | — | — |
-| 1226 | POST | `/api/jobs/:id/notes` | session | jobs:edit | — | zod | — | predicate | — | — | — |
-| 1258 | DELETE | `/api/jobs/:id/notes/:noteId` | session | jobs:edit | — | none | — | predicate | — | — | — |
-| 1283 | POST | `/api/jobs/:id/photos/share` | session | jobs:edit | — | zod | — | predicate | — | — | — |
-| 1370 | GET | `/api/jobs/:id/permits` | session | jobs:view | — | none | — | predicate | — | — | — |
-| 1384 | POST | `/api/jobs/:id/permits` | session | jobs:edit | — | zod | — | predicate | — | — | — |
+| 221 | POST | `/api/jobs` | session | jobs:edit | — | zod | hasFeature(jobs) | n/a | — | — | — |
+| 382 | GET | `/api/jobs/:id` | session | jobs:view | — | none | — | predicate | — | — | — |
+| 397 | PUT | `/api/jobs/:id` | session | jobs:edit | — | zod | — | predicate | — | — | — |
+| 454 | DELETE | `/api/jobs/:id` | session | jobs:full | — | none | — | predicate | — | — | — |
+| 477 | POST | `/api/jobs/:id/archive` | session | jobs:full | — | none | — | predicate | — | — | — |
+| 495 | POST | `/api/jobs/:id/restore` | session | jobs:full | — | none | — | predicate | — | — | — |
+| 622 | PUT | `/api/jobs/:id/setup` | session | jobs:edit | — | zod | — | predicate | — | — | — |
+| 644 | POST | `/api/jobs/:id/setup/confirm` | session | jobs:edit | — | zod | — | predicate | — | — | — |
+| 669 | POST | `/api/jobs/:id/setup/regenerate` | session | jobs:edit | — | none | — | predicate | — | — | — |
+| 716 | POST | `/api/jobs/:id/milestones` | session | jobs:edit | — | zod | — | predicate | — | — | — |
+| 753 | PUT | `/api/jobs/:id/milestones/:mid` | session | jobs:edit | — | zod | — | predicate | — | — | — |
+| 796 | DELETE | `/api/jobs/:id/milestones/:mid` | session | jobs:edit | — | none | — | predicate | — | — | — |
+| 817 | POST | `/api/jobs/:id/tasks` | session | jobs:edit | — | zod | — | predicate | — | — | — |
+| 838 | PATCH | `/api/jobs/:id/tasks/:tid` | session | jobs:edit | — | zod | — | predicate | — | — | — |
+| 874 | DELETE | `/api/jobs/:id/tasks/:tid` | session | jobs:edit | — | none | — | predicate | — | — | — |
+| 892 | PUT | `/api/jobs/:id/budget` | session | jobs:full | — | zod | — | predicate | — | — | — |
+| 935 | POST | `/api/jobs/:id/change-orders/draft` | session | jobs:full | draftLimiter | zod | hasFeature(jobs) | predicate | — | — | — |
+| 953 | POST | `/api/jobs/:id/change-orders` | session | jobs:full | — | zod | hasFeature(jobs) | predicate | — | — | — |
+| 977 | PUT | `/api/jobs/:id/change-orders/:coId` | session | jobs:full | — | zod | — | predicate | — | — | — |
+| 1002 | DELETE | `/api/jobs/:id/change-orders/:coId` | session | jobs:full | — | none | — | predicate | — | — | — |
+| 1054 | GET | `/api/jobs/:id/photos` | session | jobs:view | — | none | — | predicate | — | — | — |
+| 1070 | POST | `/api/jobs/:id/photos` | session | jobs:edit | — | manual | — | predicate | — | — | — |
+| 1111 | GET | `/api/jobs/:id/photos/:photoId/file` | session | jobs:view | — | none | — | predicate | — | — | — |
+| 1139 | PUT | `/api/jobs/:id/photos/:photoId` | session | jobs:edit | — | zod | — | predicate | — | — | — |
+| 1173 | DELETE | `/api/jobs/:id/photos/:photoId` | session | jobs:edit | — | none | — | predicate | — | — | — |
+| 1216 | GET | `/api/jobs/:id/notes` | session | jobs:view | — | none | — | predicate | — | — | — |
+| 1235 | POST | `/api/jobs/:id/notes` | session | jobs:edit | — | zod | — | predicate | — | — | — |
+| 1267 | DELETE | `/api/jobs/:id/notes/:noteId` | session | jobs:edit | — | none | — | predicate | — | — | — |
+| 1292 | POST | `/api/jobs/:id/photos/share` | session | jobs:edit | — | zod | — | predicate | — | — | — |
+| 1379 | GET | `/api/jobs/:id/permits` | session | jobs:view | — | none | — | predicate | — | — | — |
+| 1393 | POST | `/api/jobs/:id/permits` | session | jobs:edit | — | zod | — | predicate | — | — | — |
 
 ## artifacts/api-server/src/routes/leads.ts
 
@@ -707,30 +707,30 @@ Columns — **Auth**: session (`requireAuth`), apiKey (`requireApiKey`), admin (
 | 185 | GET | `/api/quotes/stats` | session | — | — | none | — | n/a | — | — | — |
 | 253 | GET | `/api/quotes` | session | — | — | none | — | n/a | quotes:ok | — | — |
 | 394 | POST | `/api/quotes` | session | quotes:edit | aiCallLimiter | zod | plan-check | n/a | — | — | — |
-| 1108 | GET | `/api/quotes/:id` | session | — | — | zod | — | predicate | — | — | — |
-| 1142 | GET | `/api/quotes/:id/variants` | session | — | — | none | — | post-check | — | — | — |
-| 1171 | POST | `/api/quotes/:id/variants` | session | quotes:edit | — | manual | — | post-check | — | — | — |
-| 1231 | PUT | `/api/quotes/:id/variants/:variantId` | session | quotes:edit | — | manual | — | post-check | — | — | — |
-| 1302 | GET | `/api/quotes/:id/price-check` | session | — | — | none | — | post-check | — | — | — |
-| 1318 | POST | `/api/quotes/:id/reprice` | session | quotes:edit | — | zod | — | post-check | — | — | — |
-| 1356 | DELETE | `/api/quotes/:id/variants/:variantId` | session | quotes:edit | — | none | — | post-check | — | — | — |
-| 1402 | PUT | `/api/quotes/:id` | session | quotes:edit | — | zod | plan-check | predicate | — | — | — |
-| 1539 | DELETE | `/api/quotes/:id` | session | quotes:full | — | zod | — | post-check | — | — | — |
-| 1567 | GET | `/api/quotes/:id/versions` | session | quotes:view | — | zod | — | post-check | — | — | — |
-| 1586 | POST | `/api/quotes/:id/mark-won` | session | quotes:edit | — | zod | — | post-check | — | — | — |
-| 1622 | POST | `/api/quotes/:id/archive` | session | quotes:full | — | zod | — | post-check | — | — | — |
-| 1642 | POST | `/api/quotes/:id/restore` | session | quotes:full | — | zod | — | post-check | — | — | — |
-| 1662 | POST | `/api/quotes/:id/generate-pdf` | session | quotes:edit | — | zod | plan-check | predicate | — | — | — |
-| 1740 | POST | `/api/quotes/:id/send-pdf-email` | session | quotes:edit | — | manual | — | helper | — | — | — |
-| 1764 | GET | `/api/quotes/:id/public-link` | session | — | — | none | — | helper | — | — | — |
-| 1777 | POST | `/api/quotes/:id/public-link` | session | quotes:edit | — | none | — | helper | — | — | — |
-| 1794 | DELETE | `/api/quotes/:id/public-link` | session | quotes:edit | — | none | — | predicate | — | db-lookup | — |
-| 1812 | POST | `/api/quotes/:id/duplicate` | session | quotes:edit | — | none | — | post-check | — | — | — |
-| 1874 | POST | `/api/quotes/:id/regenerate` | session | quotes:edit | aiCallLimiter | zod | — | predicate | — | — | — |
-| 2092 | POST | `/api/quotes/:id/upgrade-to-capitolato` | session | quotes:edit | aiCallLimiter | zod | plan-check | predicate | — | — | — |
-| 2206 | POST | `/api/quotes/:id/generate-pdf-pro` | session | quotes:edit | — | none | plan-check | predicate | — | — | — |
-| 2257 | POST | `/api/quotes/manual` | session | quotes:edit | — | manual | — | n/a | — | — | — |
-| 2273 | POST | `/api/quotes/suggest-item-description` | session | quotes:edit | aiCallLimiter | manual | — | n/a | — | — | — |
+| 1112 | GET | `/api/quotes/:id` | session | — | — | zod | — | predicate | — | — | — |
+| 1146 | GET | `/api/quotes/:id/variants` | session | — | — | none | — | post-check | — | — | — |
+| 1175 | POST | `/api/quotes/:id/variants` | session | quotes:edit | — | manual | — | post-check | — | — | — |
+| 1235 | PUT | `/api/quotes/:id/variants/:variantId` | session | quotes:edit | — | manual | — | post-check | — | — | — |
+| 1306 | GET | `/api/quotes/:id/price-check` | session | — | — | none | — | post-check | — | — | — |
+| 1322 | POST | `/api/quotes/:id/reprice` | session | quotes:edit | — | zod | — | post-check | — | — | — |
+| 1360 | DELETE | `/api/quotes/:id/variants/:variantId` | session | quotes:edit | — | none | — | post-check | — | — | — |
+| 1406 | PUT | `/api/quotes/:id` | session | quotes:edit | — | zod | plan-check | predicate | — | — | — |
+| 1543 | DELETE | `/api/quotes/:id` | session | quotes:full | — | zod | — | post-check | — | — | — |
+| 1571 | GET | `/api/quotes/:id/versions` | session | quotes:view | — | zod | — | post-check | — | — | — |
+| 1590 | POST | `/api/quotes/:id/mark-won` | session | quotes:edit | — | zod | — | post-check | — | — | — |
+| 1626 | POST | `/api/quotes/:id/archive` | session | quotes:full | — | zod | — | post-check | — | — | — |
+| 1646 | POST | `/api/quotes/:id/restore` | session | quotes:full | — | zod | — | post-check | — | — | — |
+| 1666 | POST | `/api/quotes/:id/generate-pdf` | session | quotes:edit | — | zod | plan-check | predicate | — | — | — |
+| 1744 | POST | `/api/quotes/:id/send-pdf-email` | session | quotes:edit | — | manual | — | helper | — | — | — |
+| 1768 | GET | `/api/quotes/:id/public-link` | session | — | — | none | — | helper | — | — | — |
+| 1781 | POST | `/api/quotes/:id/public-link` | session | quotes:edit | — | none | — | helper | — | — | — |
+| 1798 | DELETE | `/api/quotes/:id/public-link` | session | quotes:edit | — | none | — | predicate | — | db-lookup | — |
+| 1816 | POST | `/api/quotes/:id/duplicate` | session | quotes:edit | — | none | — | post-check | — | — | — |
+| 1878 | POST | `/api/quotes/:id/regenerate` | session | quotes:edit | aiCallLimiter | zod | — | predicate | — | — | — |
+| 2096 | POST | `/api/quotes/:id/upgrade-to-capitolato` | session | quotes:edit | aiCallLimiter | zod | plan-check | predicate | — | — | — |
+| 2210 | POST | `/api/quotes/:id/generate-pdf-pro` | session | quotes:edit | — | none | plan-check | predicate | — | — | — |
+| 2261 | POST | `/api/quotes/manual` | session | quotes:edit | — | manual | — | n/a | — | — | — |
+| 2277 | POST | `/api/quotes/suggest-item-description` | session | quotes:edit | aiCallLimiter | manual | — | n/a | — | — | — |
 
 ## artifacts/api-server/src/routes/schedule.ts
 

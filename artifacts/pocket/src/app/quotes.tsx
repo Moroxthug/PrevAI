@@ -6,6 +6,7 @@
 import { useMemo, useState, type ReactElement, type ReactNode } from "react";
 import { View } from "react-native";
 import { Redirect, router } from "expo-router";
+import { watchLink } from "@/lib/watchLink";
 import { useTranslation } from "react-i18next";
 import { useQueryClient } from "@tanstack/react-query";
 import { getListQuotesQueryKey, useArchiveQuote, useDuplicateQuote, useListQuotes, useRestoreQuote, type QuoteSummary } from "@workspace/api-client-react";
@@ -155,7 +156,7 @@ export default function Quotes() {
         ) : loading ? (
           <Section pt={16} px={16} gap={12}><Skeleton height={74} radius={22} /><Skeleton height={44} radius={14} /><Skeleton height={300} radius={22} /></Section>
         ) : all.length === 0 ? (
-          <Section pt={26} px={16}><Empty icon="file" title={t("quotes.none.title")} body={t("quotes.none.body")} action={t("quotes.none.action")} onAction={newQuote} /></Section>
+          <Section pt={26} px={16}><Empty icon="file" title={t("quotes.none.title")} body={t("quotes.none.body")} action={t("quotes.none.action")} onAction={newQuote} {...watchLink("quotes", "quotes", t("vp.watchHow"))} /></Section>
         ) : (
           <>
             {quotes.isError ? <Section pt={12} px={16}><Banner tone="info" icon="warn" iconTone="amber" lead={t("quotes.offline")} /></Section> : null}

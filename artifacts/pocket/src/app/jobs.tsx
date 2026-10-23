@@ -6,6 +6,7 @@
 // is on hold, a paint-order or deposit row on a job that hasn't started, and "Message client" opens the client instead.
 import { useMemo, useState } from "react";
 import { Redirect, router } from "expo-router";
+import { watchLink } from "@/lib/watchLink";
 import { useTranslation } from "react-i18next";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { dateOnly, daysUntil, clashes, costPct, firstName, FILTER_ORDER, GROUP_ORDER, glance, invoicedPct, jobState, marginPct, matchesFilter, receiptsToReview, toInvoiceCents, type Job, type JobState } from "@/lib/jobs";
@@ -222,7 +223,7 @@ export default function Jobs() {
             ))}
             {groups.length === 0 ? (
               <Section delay={150} pt={26} px={16}>
-                <Empty icon="cone" iconTone="amber" title={t("jobs.empty.title")} body={t("jobs.empty.body")} action={t("jobs.empty.action")} actionKind="secondary" onAction={toQuotes} />
+                <Empty icon="cone" iconTone="amber" title={t("jobs.empty.title")} body={t("jobs.empty.body")} action={t("jobs.empty.action")} actionKind="secondary" onAction={toQuotes} {...watchLink("jobs", "jobs", t("vp.watchHow"))} />
               </Section>
             ) : null}
             {jobsQ.data?.jobLimit != null ? (

@@ -5,6 +5,8 @@ import { useParams, Link } from "wouter";
 import { ArrowRight, Info } from "lucide-react";
 import { HELP_ARTICLES, HELP_CATEGORIES, findHelpArticle, type HelpBlock, type HelpLang } from "@/data/help-articles";
 import { SeoHead } from "@/components/seo-head";
+import { HelpVideoPlayer } from "@/components/help-video";
+import { videoForArticle } from "@/data/help-videos";
 import { useLanguage } from "@/i18n/LanguageContext";
 
 const BASE_URL = "https://prevai.it";
@@ -58,6 +60,8 @@ export default function HelpArticlePage() {
 
   const canonical = `${BASE_URL}/help/${article.slug}/`;
   const headings = article.blocks.filter((b): b is Extract<HelpBlock, { type: "h" }> => b.type === "h");
+  // POCKET-7: the matching short video, at the top.
+  const video = videoForArticle(article.slug);
   const related = HELP_ARTICLES.filter((a) => a.slug !== article.slug && a.category === article.category);
   const next = HELP_ARTICLES[HELP_ARTICLES.findIndex((a) => a.slug === article.slug) + 1];
 
@@ -111,6 +115,7 @@ export default function HelpArticlePage() {
         </header>
 
         <div className="wrap" style={{ maxWidth: 780, paddingBottom: "clamp(40px, 5vw, 64px)" }}>
+          {video ? <div style={{ marginBottom: "clamp(24px, 3vw, 36px)" }}><HelpVideoPlayer video={video} /></div> : null}
           {headings.length >= 3 && (
             <nav aria-label={t("blog.toc")} className="blog-toc">
               <p className="label">{t("blog.toc")}</p>

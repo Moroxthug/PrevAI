@@ -56,7 +56,8 @@ for (const sectorSlug of CITY_SECTORS) {
   }
 }
 
-// Help centre (Phase 70) — lastmod is each article's updatedAt
+// Help centre (Phase 70) — lastmod is each article's updatedAt; POCKET-7 adds the video page
+entries.push(url(`${BASE_URL}/help/video/`, "0.6", "monthly", "2026-10-23"));
 for (const article of HELP_ARTICLES) {
   entries.push(url(`${BASE_URL}/help/${article.slug}/`, "0.7", "monthly", article.updatedAt));
 }

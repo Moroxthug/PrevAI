@@ -74,4 +74,29 @@ describe("app beta (APP-5)", () => {
     expect(patched.status).toBe(200);
     expect(patched.body.stato).toBe("risolto");
   });
+  test("POCKET-7: video events carry the video and the screen, and the report sums them apart from the beta counts", async () => {
+    const org = await createOrg({ companyName: "Video Edilizia Srl" });
+    const admin = await createOrg({ companyName: "Staff PrevAI video" });
+    process.env.ADMIN_EMAIL = admin.email;
+    const send = (body: Record<string, unknown>) => org.api("/api/app/events", { body: { viewport: "phone", surface: "android", ...body } });
+    // A video event needs the video; an unknown screen is refused.
+    expect((await send({ kind: "video_started" })).status).toBe(400);
+    expect((await send({ kind: "video_started", entityId: "quotes", from: "settings-secret" })).status).toBe(400);
+    expect((await send({ kind: "video_started", entityId: "quotes", from: "quotes" })).status).toBe(204);
+    expect((await send({ kind: "video_started", entityId: "quotes", from: "help" })).status).toBe(204);
+    expect((await send({ kind: "video_finished", entityId: "quotes", from: "help" })).status).toBe(204);
+    // No screen: stored as Help.
+    expect((await send({ kind: "video_started", entityId: "jobs" })).status).toBe(204);
+    const rows = await db.select().from(appEventsTable).where(eq(appEventsTable.userId, org.userId));
+    expect(rows.map((r) => r.channel).sort()).toEqual(["help", "help", "help", "quotes"]);
+
+    const report = await admin.api("/api/admin/app-beta?days=14");
+    expect(report.status).toBe(200);
+    const quotes = report.body.videos.find((v: { video: string }) => v.video === "quotes");
+    expect(quotes.started).toBeGreaterThanOrEqual(2);
+    expect(quotes.finished).toBeGreaterThanOrEqual(1);
+    expect(quotes.from.quotes).toBeGreaterThanOrEqual(1);
+    // The beta counts ignore the video events.
+    expect(report.body.orgs.find((o: { userId: string }) => o.userId === org.userId)).toBeUndefined();
+  });
 });

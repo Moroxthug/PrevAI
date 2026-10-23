@@ -32,6 +32,7 @@ import { Sheet, SheetTitle } from "@/ui/Sheet";
 import { Status, type StatusShape, type StatusTone } from "@/ui/Status";
 import { SwipeRow } from "@/ui/SwipeRow";
 import { Num, Text } from "@/ui/Text";
+import { watchLink } from "@/lib/watchLink";
 
 const ROLES = ["office", "foreman", "viewer"] as const;
 type Role = (typeof ROLES)[number];
@@ -176,7 +177,7 @@ export default function Team() {
             <Section delay={70} pt={22} px={16}>
               <SectionHeader title={m("workers.title")} link={m("workers.thisMonth")} />
               <Card>
-                {workers.length === 0 ? <Empty icon="users" iconTone="azure" title={m("workers.empty")} body={m("workers.emptyBody")} /> : <RowList>{workers.filter((w) => w.active).map(workerRow)}</RowList>}
+                {workers.length === 0 ? <Empty icon="users" iconTone="azure" title={m("workers.empty")} body={m("workers.emptyBody")} {...watchLink("crew", "team", t("vp.watchHow"))} /> : <RowList>{workers.filter((w) => w.active).map(workerRow)}</RowList>}
               </Card>
             </Section>
 

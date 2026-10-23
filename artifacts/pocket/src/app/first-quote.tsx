@@ -1,10 +1,12 @@
 // FirstQuote.dc.html: the guided first quote. Steps: describe (the job, by text; the mic is a stub
 // until the recording module is installed), check (the priced quote), send (to yourself or a
 // client), done. The stage is remembered per person on the phone, so reopening resumes it.
-// Onboarding's last step starts it; the gate does not route here by itself.
+// Onboarding's last step starts it; the gate does not route here by itself. POCKET-7: the done step offers
+// «PrevAI in 60 secondi» once (the step is shown once), when that video is recorded.
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ScrollView, View } from "react-native";
 import { router } from "expo-router";
+import { watchHref } from "@/lib/videos";
 import { useTranslation } from "react-i18next";
 import { useListClients } from "@workspace/api-client-react";
 import { kvGet, kvSet } from "@/lib/kv";
@@ -48,6 +50,7 @@ type Client = { name: string; email: string };
 export default function FirstQuote() {
   const { t, i18n } = useTranslation();
   const locale: Locale = "it-IT";
+  const overview = watchHref("overview", "first-run");
   const toast = useToast();
   const { user } = useSession();
   const userId = user?.id ?? null;
@@ -294,6 +297,7 @@ export default function FirstQuote() {
         {step === "check" ? <Button size="lg" block label={t("firstQuote.check.looksRight")} onPress={() => go("send")} /> : null}
         {step === "send" ? <Button size="lg" block label={sendLabel} busy={sending ? t("firstQuote.send.sending") : false} onPress={() => void send()} /> : null}
         {step === "done" ? <Button size="lg" block label={t("firstQuote.done.home")} onPress={() => router.replace("/home")} /> : null}
+        {step === "done" && overview ? <Button size="lg" kind="ghost" block label={t("vp.offerOverview")} onPress={() => { router.replace("/home"); router.push(overview); }} /> : null}
       </FqBottomBar>
 
       <ClientSheet open={picker} onClose={() => { setPicker(false); if (!client) setDest("me"); }}
