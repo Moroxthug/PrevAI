@@ -1,4 +1,5 @@
 import { PREVENTIVI_SINGOLI, PREZZI_PIANI, formatPrezzo } from "@workspace/config";
+import { FATTI_CITTA } from "./citta/fatti";
 
 // A-5: prezzi e limiti dei piani da @workspace/config, non più scritti a mano nei testi.
 const P_STARTER = formatPrezzo(PREZZI_PIANI.monthly_starter.mensileCents);
@@ -802,17 +803,16 @@ export const SECTORS: Record<string, SectorData> = {
     sectorType: "service",
     label: "Condizionatore",
     labelPlural: "installatori di climatizzatori",
-    titleTag: "Preventivo Condizionatore e Climatizzatore | prevai – AI",
+    // Ottobre 2026: 9ª posizione per "preventivo condizionatori" (971
+    // impressioni in 3 mesi, 0 clic). Il titolo ora riprende la ricerca e
+    // promette ciò che la pagina dà: esempio di voci e prezzi (FAQ sotto).
+    titleTag: "Preventivo Condizionatori: Esempio e Prezzi 2026 | prevai",
     titleVariants: [
-      "Preventivo Condizionatore e Climatizzatore | prevai – AI",
-      "Software Preventivi Impianti Climatizzazione | prevai",
-      "Crea Preventivi Condizionatori Professionali – prevai AI",
+      "Preventivo Condizionatori: Esempio e Prezzi 2026 | prevai",
     ],
-    metaDescription: "Crea preventivi per installazione condizionatori, climatizzatori, pompe di calore e ventilazione in 30 secondi. Software AI per installatori italiani. Gratis.",
+    metaDescription: "Preventivo installazione condizionatori in 30 secondi: voci per split e pompe di calore, prezzi 2026 di riferimento e modello Word gratis da scaricare.",
     descriptionVariants: [
-      "Crea preventivi per installazione condizionatori, climatizzatori, pompe di calore e ventilazione in 30 secondi. Software AI per installatori italiani. Gratis.",
-      "Software preventivi AI per installatori di climatizzatori: split, pompe di calore, VMC. Offerte professionali in 30 secondi.",
-      "Preventivi professionali per impianti di climatizzazione in 30 secondi. L'AI include specifiche tecniche e note per l'Ecobonus.",
+      "Preventivo installazione condizionatori in 30 secondi: voci per split e pompe di calore, prezzi 2026 di riferimento e modello Word gratis da scaricare.",
     ],
     h1: "Preventivi per",
     h1Highlight: "Impianti di Climatizzazione",
@@ -821,7 +821,7 @@ export const SECTORS: Record<string, SectorData> = {
     benefits: [
       { title: "Schede tecniche nel preventivo", desc: "Potenza in kW/BTU, classe energetica, marca e modello: ogni apparecchio descritto con le specifiche che il cliente vuole vedere prima di decidere." },
       { title: "Voci per fornitura e installazione", desc: "Il documento separa il costo dell'unità dal lavoro di installazione. Trasparenza che riduce le discussioni sul prezzo." },
-      { title: "Ecobonus pompe di calore", desc: "Le pompe di calore aria-acqua rientrano nell'Ecobonus 65%. prevai include le note fiscali se menzioni il tipo di intervento." },
+      { title: "Detrazioni nel preventivo", desc: "Climatizzatori a pompa di calore e pompe di calore aria-acqua rientrano nelle detrazioni (nel 2026: 50% sulla prima casa, 36% sulle altre). prevai aggiunge la nota fiscale se indichi il tipo di intervento." },
       { title: "Da sopralluogo a preventivo in 2 minuti", desc: "Fai la valutazione tecnica, descrivi i lavori e invia il PDF al cliente prima ancora di salire in auto." },
     ],
     h2HowItWorks: "Come funziona: 3 passi",
@@ -841,7 +841,9 @@ export const SECTORS: Record<string, SectorData> = {
     ],
     h2Faq: "Domande frequenti",
     faq: [
-      { q: "Il preventivo include l'Ecobonus per le pompe di calore?", a: "Sì. Specifica che si tratta di una pompa di calore e prevai aggiunge la nota fiscale per l'Ecobonus 65% con la separazione fornitura/manodopera." },
+      { q: "Quanto costa installare un condizionatore nel 2026?", a: "Indicativamente: monosplit da 9.000–12.000 BTU 400–1.200 € per l'unità più 300–550 € di installazione standard (fino a 3–5 m di linea, foro, staffe, scarico condensa); dual split 1.800–3.500 € per unità esterna e interne, più 200–400 € di installazione per ogni unità interna aggiuntiva. Metri di linea in più, collegamento elettrico dedicato e lavori in quota si aggiungono a parte. Dettaglio per BTU e marca nella guida ai prezzi dei condizionatori." },
+      { q: "Quali voci deve avere un preventivo per condizionatori?", a: "Unità esterna e interne con marca, modello, potenza (kW/BTU) e classe energetica; metri di linea frigorifera inclusi e costo al metro oltre quelli; foro passante, staffe, scarico condensa, collegamento elettrico; vuoto, carica e collaudo; registrazione F-gas; esclusioni (opere murarie, ponteggi, permessi condominiali). Il modello Word gratuito per installatori ha già queste voci." },
+      { q: "Il preventivo include la nota per le detrazioni fiscali?", a: "Sì. Specifica che si tratta di un climatizzatore a pompa di calore o di una pompa di calore aria-acqua e prevai aggiunge la nota fiscale (nel 2026: 50% sulla prima casa, 36% sulle altre abitazioni) con fornitura e manodopera separate e il richiamo al bonifico parlante." },
       { q: "Posso includere il contratto di manutenzione annuale nel preventivo?", a: "Sì. Aggiungi nella descrizione il piano di manutenzione e prevai crea una voce separata per il canone annuale." },
       { q: "Funziona anche per grandi impianti di climatizzazione industriale?", a: "Assolutamente. prevai supporta preventivi multi-capitolo per impianti complessi con più unità, canalizzazioni e quadri elettrici dedicati." },
     ],
@@ -1006,24 +1008,24 @@ export const SECTORS: Record<string, SectorData> = {
     sectorType: "service",
     label: "Preventivo Word",
     labelPlural: "utenti Word",
-    titleTag: "Modello Preventivo Word Gratis | Preventivo Online AI – prevai",
+    // Ottobre 2026: la pagina è ~10ª su Google per "modello preventivo word"
+    // (1.400 impressioni in 28 giorni) ma prometteva di farne a meno. Chi cerca
+    // vuole il file: ora lo offre (sezione download, MODELLI_WORD) e propone
+    // l'AI come alternativa, non come rifiuto.
+    titleTag: "Modello Preventivo Word Gratis: 9 Modelli da Scaricare | prevai",
     titleVariants: [
-      "Modello Preventivo Word Gratis | Preventivo Online AI – prevai",
-      "Alternativa al Template Preventivo Word | prevai AI",
-      "Preventivo Senza Word: Software AI Professionale – prevai",
+      "Modello Preventivo Word Gratis: 9 Modelli da Scaricare | prevai",
     ],
-    metaDescription: "Cerchi un modello preventivo Word da scaricare? prevai genera preventivi professionali in 30 secondi con l'AI. Niente template Word, niente formattazione manuale.",
+    metaDescription: "Scarica gratis il modello di preventivo Word (.docx) per il tuo mestiere: elettricista, idraulico, edile, imbianchino, bagno e altri. Voci pronte, IVA, condizioni e firma.",
     descriptionVariants: [
-      "Cerchi un modello preventivo Word da scaricare? prevai genera preventivi professionali in 30 secondi con l'AI. Niente template Word, niente formattazione manuale.",
-      "Alternativa al preventivo Word: prevai genera offerte professionali in 30 secondi con l'AI. Niente formattazione, niente errori.",
-      "Stop ai template Word per preventivi. prevai AI genera documenti professionali in 30 secondi, già formattati e pronti da inviare.",
+      "Scarica gratis il modello di preventivo Word (.docx) per il tuo mestiere: elettricista, idraulico, edile, imbianchino, bagno e altri. Voci pronte, IVA, condizioni e firma.",
     ],
-    h1: "Dimentica il",
-    h1Highlight: "Template Preventivo Word",
-    intro: "Hai scaricato un template preventivo Word, passato mezz'ora a formattare la tabella, inserito i dati manualmente e alla fine il documento non sembra professionale quanto vorresti. Con prevai non devi trovare template, non devi formattare nulla: descrivi il lavoro a parole e in 30 secondi hai un preventivo impaginato, calcolato e pronto per il cliente.",
-    h2Benefits: "Perché prevai è meglio di un template Word",
+    h1: "Scarica il",
+    h1Highlight: "Modello Preventivo Word",
+    intro: "Nove modelli di preventivo in Word, gratis e senza registrazione: uno per ogni mestiere, con le voci tipiche già in elenco, la tabella con unità di misura e importi, IVA, condizioni di pagamento e firma per accettazione. Aprili con Word, LibreOffice o Google Documenti e compila i campi. Se invece preferisci non compilare nulla, prevai crea lo stesso preventivo in 30 secondi partendo dalla descrizione del lavoro.",
+    h2Benefits: "Modello Word o prevai: quando conviene l'uno o l'altro",
     benefits: [
-      { title: "Nessun template da scaricare", desc: "Con Word devi trovare il modello giusto, adattarlo, controllare che la formattazione non si sia rotta. Con prevai digiti il lavoro e il preventivo è fatto." },
+      { title: "Il modello Word va bene per iniziare", desc: "Pochi preventivi al mese, sempre simili: il modello del tuo mestiere basta. Compili quantità e prezzi, salvi in PDF e lo invii." },
       { title: "Calcoli automatici inclusi", desc: "Word non calcola. Con prevai IVA, subtotali e totali sono calcolati dall'AI in automatico, senza errori e senza calcolatrice." },
       { title: "Struttura professionale predefinita", desc: "Ogni preventivo ha intestazione aziendale, numero documento, dati cliente, voci dettagliate con U.M. e totali. Struttura da studio commercialista." },
       { title: "Logo e brand aziendale inclusi", desc: "Il tuo logo appare automaticamente su ogni preventivo. Con Word devi inserirlo manualmente su ogni file." },
@@ -1045,7 +1047,9 @@ export const SECTORS: Record<string, SectorData> = {
     ],
     h2Faq: "Domande sul preventivo Word vs prevai",
     faq: [
-      { q: "Dove posso trovare un modello preventivo Word gratis?", a: "Ci sono molti modelli gratuiti online, ma richiedono formattazione manuale e non calcolano i totali. Con prevai ci vuole un minuto e il risultato è molto più professionale." },
+      { q: "Dove posso trovare un modello preventivo Word gratis?", a: "In questa pagina: nove modelli .docx, uno per mestiere (generico, impianto elettrico, idraulico, lavori edili, tinteggiatura, bagno, posa piastrelle, condizionatori, giardiniere). Si scaricano senza registrazione." },
+      { q: "Cosa deve contenere un preventivo fatto in Word?", a: "Dati dell'impresa (P.IVA, sede), dati del cliente e luogo dei lavori, numero e data, oggetto, voci con unità di misura, quantità e prezzi, imponibile, IVA e totale, validità dell'offerta, tempi, modalità di pagamento, esclusioni e firma per accettazione. I modelli qui hanno già tutte queste parti." },
+      { q: "Che IVA metto nel preventivo?", a: "Di solito il 10% per manutenzione e ristrutturazione di abitazioni e il 22% negli altri casi. In regime forfettario non si applica l'IVA: si indica il riferimento all'art. 1, commi 54–89, della L. 190/2014. In caso di dubbio chiedi al commercialista." },
       { q: "Il PDF di prevai è compatibile con tutti i dispositivi?", a: "Sì. Il PDF si apre su qualsiasi smartphone, tablet o computer senza bisogno di Microsoft Office o altri programmi." },
       { q: "Posso personalizzare il preventivo dopo che l'AI lo ha generato?", a: "Sì. Puoi modificare ogni voce, i prezzi, le descrizioni e le condizioni di pagamento prima di scaricare il PDF definitivo." },
     ],
@@ -1348,6 +1352,9 @@ const NON_LOCAL_SECTOR_SLUGS = new Set([
   "modello-excel",
   "modello-word",
   "preventivi-gratis",
+  // Ottobre 2026: un freelance non ha un mercato "locale" da descrivere
+  // (nessun dato del comune cambia il suo preventivo): niente pagine città.
+  "freelance",
 ]);
 
 export const CITY_SECTORS: readonly string[] = Object.keys(SECTORS).filter(
@@ -1365,9 +1372,12 @@ export const CITY_SECTORS: readonly string[] = Object.keys(SECTORS).filter(
  */
 export const ACTIVE_REGION_SLUG = "lombardia";
 
-export const ACTIVE_CITIES: CityData[] = CITIES.filter(
-  (c) => c.regionSlug === ACTIVE_REGION_SLUG,
-);
+// Ottobre 2026: le città attive non sono più "una regione" ma quelle con dati
+// verificati e profilo locale (data/citta/): ogni pagina città×mestiere deve
+// avere contenuto proprio. Per aggiungere una città: fatti.ts + profili.ts
+// (qui si legge solo fatti.ts, leggero; il prerender verifica che ogni città
+// abbia anche il profilo).
+export const ACTIVE_CITIES: CityData[] = CITIES.filter((c) => FATTI_CITTA[c.slug]);
 
 function strHash(s: string): number {
   return s.split("").reduce((acc, c) => acc + c.charCodeAt(0), 0);
@@ -1541,7 +1551,7 @@ export const RELATED_SECTORS: Record<string, { slug: string; label: string }[]> 
     { slug: "elettricista", label: "Elettricisti" },
     { slug: "ristrutturazione", label: "Ristrutturazioni" },
     { slug: "preventivi-gratis", label: "Preventivi gratuiti" },
-    { slug: "come-fare-preventivo", label: "Come fare un preventivo" },
+    { slug: "modello-word", label: "Modello preventivo Word" },
   ],
   pavimentista: [
     { slug: "piastrellista", label: "Piastrellisti" },

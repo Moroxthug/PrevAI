@@ -1639,6 +1639,9 @@ button.chap-head:hover { background: var(--soft-2); }
 .help-note svg { color: var(--teal); flex: none; margin-top: 3px; }
 .help-note p { margin: 0; font-size: 14px; color: var(--ink); line-height: 1.6; }
 
+/* Modelli Word scaricabili: riquadro negli articoli (blog-data.ts) */
+.modello-word-box { border: 1px solid var(--line); border-left: 3px solid var(--teal); background: var(--soft); border-radius: var(--radius-mk); padding: 14px 18px; margin: 24px 0; font-size: 15px; line-height: 1.6; }
+
 /* ==========================================================
    Phone pass (fase 19, 2026-09-27) — dashboard, quotes list,
    new quote, in the dashboard's own vocabulary (cards, q-row,

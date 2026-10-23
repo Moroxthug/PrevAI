@@ -17,9 +17,12 @@ initPwa();
 // regex still matched the QuoteAI paths (/quotes/…, /fr/soumissions/…), so the
 // Italian landing pages got the whole App rendered over them (CLS 0.82 on
 // the city pages).
-const STATIC_SEO_RE = /^\/(?:preventivi\/[^/]+(?:\/[^/]+)?|blog(?:\/.*)?)\/?$/;
-// Pages rendered at build time by entry-server.tsx (keep in sync with SSR_PAGES there).
-const SSR_PAGE_RE = /^\/(?:whatsapp|chi-siamo|contatti|privacy|termini|mappa-sito|fisco|help(?:\/[a-z0-9-]+)?)?\/?$/;
+// Ottobre 2026: le landing /preventivi/ sono passate al rendering React a
+// build time (SSR_PAGE_RE qui sotto); qui resta solo il blog.
+const STATIC_SEO_RE = /^\/blog(?:\/.*)?\/?$/;
+// Pages rendered at build time by entry-server.tsx (keep in sync with SSR_PAGES there
+// and with the /preventivi/ loop in scripts/prerender-seo.ts).
+const SSR_PAGE_RE = /^\/(?:whatsapp|chi-siamo|contatti|privacy|termini|mappa-sito|fisco|help(?:\/[a-z0-9-]+)?|preventivi\/[a-z0-9-]+(?:\/[a-z0-9-]+)?)?\/?$/;
 
 const rootEl = document.getElementById("root")!;
 const pathname = window.location.pathname;

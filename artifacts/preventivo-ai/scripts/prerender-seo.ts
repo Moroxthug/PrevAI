@@ -36,6 +36,8 @@ import {
   getArticlesByCategory,
 } from "../src/data/blog-data.js";
 import type { BlogArticle, BlogCategory } from "../src/data/blog-data.js";
+import { MODELLI_WORD, fileModello } from "../src/data/modelli-word.js";
+import { paginaCitta } from "../src/data/citta/pagina.js";
 import { extractToc, injectHeadingIds } from "../src/data/blog-toc.js";
 import {
   TESTIMONIALS,
@@ -362,6 +364,30 @@ function buildRelatedSectorsSection(s: SectorData, heading?: string): string {
 </section>`;
 }
 
+// ─── Modelli Word da scaricare (solo /preventivi/modello-word/) ───────────────
+
+function buildModelliWordSection(): string {
+  const cards = MODELLI_WORD.map(
+    (m) => `<div class="flex flex-col bg-white rounded-xl border border-gray-100 hover:border-violet-200 hover:shadow-sm transition-all duration-200 p-5">
+          <span class="text-xs font-semibold text-violet-700 mb-2">${esc(m.mestiere)}</span>
+          <h3 class="text-sm font-semibold text-gray-900 leading-snug mb-2">${esc(m.titolo)}</h3>
+          <p class="text-xs text-gray-500 leading-relaxed mb-4">${esc(m.descrizione)}</p>
+          <a href="${esc(fileModello(m))}" download class="mt-auto text-sm font-semibold text-violet-600 hover:text-violet-700 transition-colors">Scarica .docx →</a>
+        </div>`,
+  ).join("\n      ");
+  return `<section id="modelli" class="py-20 bg-white border-b border-gray-100" aria-label="Modelli di preventivo Word da scaricare">
+  <div class="container mx-auto px-4 sm:px-6 lg:px-8 max-w-5xl">
+    <div class="text-center mb-10">
+      <h2 class="text-3xl font-bold text-gray-900 mb-3">Modelli di preventivo Word gratis, per mestiere</h2>
+      <p class="text-base text-gray-500 max-w-2xl mx-auto">File .docx da compilare: intestazione, cliente, voci con U.M. e quantità, IVA, condizioni e firma per accettazione. Senza registrazione.</p>
+    </div>
+    <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+      ${cards}
+    </div>
+  </div>
+</section>`;
+}
+
 // ─── Approfondimenti section (blog articles related to a sector) ─────────────
 
 function buildApprofondimentiSection(sectorSlug: string): string {
@@ -631,6 +657,7 @@ function buildSectorBodyHtml(s: SectorData): string {
   return wrapInPublicLayout(`<div class="flex flex-col min-h-screen bg-white">
   ${breadcrumb}
   ${sHero}
+  ${s.slug === "modello-word" ? buildModelliWordSection() : ""}
   ${middleSections.join("\n  ")}
   ${sRelated}
   ${sCityGrid}
@@ -1077,34 +1104,32 @@ for (const [sectorSlug, sector] of Object.entries(SECTORS)) {
   const ogImagePath = ogImage(sectorSlug);
 
   const headBlock = buildHeadBlock({ title, description, canonical, ogImagePath, jsonLd });
-  const bodyHtml = buildSectorBodyHtml(sector);
+  // Ottobre 2026: corpo dal componente React (design delle pagine pubbliche),
+  // renderizzato a build time e idratato come la home. Il vecchio corpo
+  // scritto a mano (buildSectorBodyHtml) era rimasto al design precedente.
+  const bodyHtml = stripHoistedHead(await renderPage(`/preventivi/${sectorSlug}`, "it"));
   const html = injectBody(injectHead(template, headBlock), bodyHtml);
   writeRoute(`preventivi/${sectorSlug}`, html);
   count++;
 
-
   if (!CITY_SECTORS.includes(sectorSlug)) continue;
 
   for (const city of ACTIVE_CITIES) {
-    const cityCanonical = `${BASE_URL}/preventivi/${sectorSlug}/${city.slug}/`;
-    const cityTitle = getCityTitle(sector, city.name, city.slug);
-    const cityDesc = getCityDesc(sector, city.name, city.slug, city.region);
-    const cityJsonLd = buildCityJsonLd(sector, city);
-
+    // Ottobre 2026: pagine città dai dati verificati (data/citta/), stesso
+    // componente React per head e corpo, così titolo e contenuto coincidono.
+    const pg = paginaCitta(sectorSlug, city.slug);
+    if (!pg) continue;
     const cityHeadBlock = buildHeadBlock({
-      title: cityTitle,
-      description: cityDesc,
-      canonical: cityCanonical,
+      title: pg.title,
+      description: pg.description,
+      canonical: pg.canonical,
       ogImagePath: ogImage(sectorSlug),
-      jsonLd: cityJsonLd,
-
+      jsonLd: pg.jsonLd,
     });
-    // Phase 68: the 210 city pages and the 23 blog pages were written without the site header/footer — in production they showed only the (Italian) nav shell and no footer.
-    const cityBodyHtml = wrapInPublicLayout(buildCityBodyHtml(sector, city));
+    const cityBodyHtml = stripHoistedHead(await renderPage(`/preventivi/${sectorSlug}/${city.slug}`, "it"));
     const cityHtml = injectBody(injectHead(template, cityHeadBlock), cityBodyHtml);
     writeRoute(`preventivi/${sectorSlug}/${city.slug}`, cityHtml);
     count++;
-
   }
 }
 console.log("  ✓ Sector + city pages prerendered");
@@ -1151,7 +1176,7 @@ function buildArticleJsonLd(article: BlogArticle, imagePath: string): object[] {
       url: canonical,
       mainEntityOfPage: { "@type": "WebPage", "@id": canonical },
       datePublished: article.publishedAt,
-      dateModified: article.publishedAt,
+      dateModified: article.updatedAt ?? article.publishedAt,
       inLanguage: "it",
       author: {
         "@type": "Organization",
@@ -1289,14 +1314,15 @@ function buildBlogArticleBodyHtml(article: BlogArticle): string {
 </nav>`;
 
   const catStyle = BLOG_CATEGORY_STYLE[article.category] ?? "background:#f3f4f6;color:#374151";
-  const dateStr = new Date(article.publishedAt).toLocaleDateString("it-IT", { day: "numeric", month: "long", year: "numeric" });
+  const shownDate = article.updatedAt ?? article.publishedAt;
+  const dateStr = (article.updatedAt ? "Aggiornato il " : "") + new Date(shownDate).toLocaleDateString("it-IT", { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" });
 
   const header = `<header style="background:linear-gradient(135deg,rgba(124,58,237,0.04),rgba(6,182,212,0.04))" class="pt-14 pb-10 border-b border-gray-100">
   <div class="container mx-auto px-4 sm:px-6 lg:px-8 max-w-3xl">
     <div class="flex items-center gap-3 mb-5">
       <span class="text-xs font-semibold px-2.5 py-1 rounded-full" style="${catStyle}">${esc(article.category)}</span>
       <span class="text-xs text-gray-400">${article.readingTimeMin} min di lettura</span>
-      <time class="text-xs text-gray-400" datetime="${article.publishedAt}">${dateStr}</time>
+      <time class="text-xs text-gray-400" datetime="${shownDate}">${dateStr}</time>
     </div>
     <h1 class="text-3xl font-extrabold tracking-tight text-gray-900 sm:text-4xl leading-tight mb-4">${esc(article.title)}</h1>
     <p class="text-base text-gray-500 leading-relaxed">${esc(article.metaDescription)}</p>

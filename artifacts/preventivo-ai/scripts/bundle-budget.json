@@ -1,5 +1,5 @@
 {
-  "_nota": "PERF-1 (riga 49): kB gzip di JavaScript prima del primo disegno, per schermata (scripts/bundle-budget.ts). Fissati il 2026-09-28 sui valori misurati + ~5 % di margine. Alzare un budget è una decisione: scrivere perché nel diario di docs/PIANO-AZIONE.md. 2026-10-20: auth 195→200 (/onboarding a 195,0 dopo gli aggiornamenti delle dipendenze); tolti i budget delle schermate che non esistono più dopo UX-1 (la dashboard è una sola rotta). La home (/) a 207,2 kB sopra il gruppo public (205): budget proprio a 210. 2026-10-20: /t/:token 231 e /preventivi/:type 245 (lucide-react 1.x pesa ~1 kB in più sul primo disegno: 227,1 e 240,2 kB misurati).",
+  "_nota": "PERF-1 (riga 49): kB gzip di JavaScript prima del primo disegno, per schermata (scripts/bundle-budget.ts). Fissati il 2026-09-28 sui valori misurati + ~5 % di margine. Alzare un budget è una decisione: scrivere perché nel diario di docs/PIANO-AZIONE.md. 2026-10-20: auth 195→200 (/onboarding a 195,0 dopo gli aggiornamenti delle dipendenze); tolti i budget delle schermate che non esistono più dopo UX-1 (la dashboard è una sola rotta). La home (/) a 207,2 kB sopra il gruppo public (205): budget proprio a 210. 2026-10-20: /t/:token 231 e /preventivi/:type 245 (lucide-react 1.x pesa ~1 kB in più sul primo disegno: 227,1 e 240,2 kB misurati). 2026-10-23 (SEO città): /preventivi/:type/:city 240→255 (251,1 misurati: la pagina idrata con i dati verificati, i profili e i moduli delle 35 città di data/citta/; il JS arriva dopo il load, l'HTML è prerenderizzato) e /blog/:slug 355→358 (355,0: elenco dei modelli Word nei riquadri di download).",
   "groups": {
     "static": 80,
     "public": 205,
@@ -9,9 +9,9 @@
   },
   "screens": {
     "/preventivi/:type": 245,
-    "/preventivi/:type/:city": 240,
+    "/preventivi/:type/:city": 255,
     "/mappa-sito": 240,
-    "/blog/:slug": 355,
+    "/blog/:slug": 358,
     "/dashboard/admin": 375,
     "/": 210,
     "/t/:token": 231

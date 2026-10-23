@@ -1,398 +1,278 @@
-import { useEffect, useMemo } from "react";
-import { useParams, Link } from "wouter";
-import { ArrowRight, CheckCircle2, MapPin, BarChart2, BookOpen } from "lucide-react";
-import { SECTORS, DEFAULT_SECTOR, CITIES_BY_SLUG, getCityTitle, getCityDesc } from "@/data/seo-data";
-import { BLOG_INDEX, SECTOR_ARTICLES } from "@/data/blog-index";
-import {
-  getCityIntro,
-  getCityFaqItems,
-  getCityHowItWorksSteps,
-  getCityLayout,
-  getCityCtaVariant,
-  getCityCtaTexts,
-  getNearbyAnchors,
-  getOsservatorioData,
-  getCityContextText,
-  getCityRelatedSectors,
-  getSameCityOtherSectors,
-  buildCityJsonLd,
-  verifyCityContentInDev,
-  getOgImagePath,
-} from "@/data/seo-render-engine";
+// Pagina città × mestiere (/preventivi/:settore/:citta), nel design delle
+// pagine pubbliche. Il contenuto viene da data/citta/: dati verificati del
+// comune, profilo locale e moduli del mestiere, in ordine di rilevanza per
+// quella città. Renderizzata a build time (entry-server) e idratata.
+import { Link, useParams } from "wouter";
+import { ArrowRight, MapPin, AlertTriangle, Calculator, ListChecks, FileText, BookOpen, Download } from "lucide-react";
 import { SeoHead } from "@/components/seo-head";
-import { useLanguage } from "@/i18n/LanguageContext";
-import { MARKET } from "@workspace/config";
+import { paginaCitta } from "@/data/citta/pagina";
+import { caricoNeve, num, FONTI_CITTA } from "@/data/citta/fatti";
+import { fileModello } from "@/data/modelli-word";
+import type { Blocco, Sezione } from "@/data/citta/moduli";
+import NotFound from "@/pages/not-found";
 
-/** Base URL delle landing di settore/città — slug v1 identici (/preventivi/:settore/:citta). */
 const base = "/preventivi";
 
-const FI_COLORS = ["g", "t", "p"] as const;
+function BloccoView({ b }: { b: Blocco }) {
+  switch (b.tipo) {
+    case "testo":
+      return (
+        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+          {b.paragrafi.map((t) => <p key={t} style={{ fontSize: 15.5, lineHeight: 1.7, color: "var(--ink)" }}>{t}</p>)}
+        </div>
+      );
+    case "avviso":
+      return (
+        <div className="card" style={{ padding: "20px 22px", borderLeft: "3px solid var(--amber, #d97706)", display: "flex", gap: 14 }}>
+          <AlertTriangle className="h-5 w-5 shrink-0" style={{ color: "var(--amber, #d97706)", marginTop: 3 }} />
+          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            {b.paragrafi.map((t) => <p key={t} style={{ fontSize: 15, lineHeight: 1.65, color: "var(--ink)" }}>{t}</p>)}
+          </div>
+        </div>
+      );
+    case "dati":
+      return (
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+          {b.voci.map((v) => (
+            <div key={v.etichetta} className="card" style={{ padding: 16 }}>
+              <div style={{ fontSize: 11, fontWeight: 800, textTransform: "uppercase", letterSpacing: ".06em", color: "var(--faint)" }}>{v.etichetta}</div>
+              <div style={{ fontSize: 20, fontWeight: 800, color: "var(--navy)", marginTop: 4 }}>{v.valore}</div>
+              {v.nota && <div style={{ fontSize: 12, color: "var(--muted-mk)", marginTop: 4 }}>{v.nota}</div>}
+            </div>
+          ))}
+        </div>
+      );
+    case "calcolo":
+      return (
+        <div className="card" style={{ padding: "22px 24px" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
+            <span className="fi t"><Calculator className="h-4 w-4" /></span>
+            <code style={{ fontSize: 15, fontWeight: 700, color: "var(--navy)" }}>{b.formula}</code>
+          </div>
+          <p style={{ fontSize: 22, fontWeight: 800, color: "var(--navy)", marginBottom: 14 }}>{b.risultato}</p>
+          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            {b.spiegazione.map((t) => <p key={t} style={{ fontSize: 14.5, lineHeight: 1.65, color: "var(--muted-mk)" }}>{t}</p>)}
+          </div>
+        </div>
+      );
+    case "tabella":
+      return (
+        <div>
+          <div className="card cmp-wrap" tabIndex={0}>
+            <table className="cmp" style={{ minWidth: 0, width: "100%" }}>
+              <thead><tr>{b.colonne.map((c) => <th key={c}>{c}</th>)}</tr></thead>
+              <tbody>{b.righe.map((r) => <tr key={r[0]}>{r.map((c, i) => <td key={i} style={i > 0 ? { fontWeight: 700, color: "var(--navy)" } : undefined}>{c}</td>)}</tr>)}</tbody>
+            </table>
+          </div>
+          {b.nota && <p style={{ fontSize: 14.5, lineHeight: 1.65, color: "var(--muted-mk)", marginTop: 12 }}>{b.nota}</p>}
+        </div>
+      );
+    case "lista":
+      return (
+        <div>
+          {b.intro && <p style={{ fontSize: 15.5, lineHeight: 1.7, color: "var(--ink)", marginBottom: 12 }}>{b.intro}</p>}
+          <ul style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            {b.punti.map((t) => (
+              <li key={t} style={{ display: "flex", gap: 10, fontSize: 15, lineHeight: 1.6, color: "var(--ink)" }}>
+                <span style={{ color: "var(--navy)", fontWeight: 800 }} aria-hidden="true">›</span>{t}
+              </li>
+            ))}
+          </ul>
+        </div>
+      );
+    case "voci":
+      return (
+        <div>
+          <p style={{ fontSize: 15.5, lineHeight: 1.7, color: "var(--ink)", marginBottom: 16 }}>{b.intro}</p>
+          <div className="card" style={{ padding: 0, overflow: "hidden" }}>
+            {b.voci.map((v, i) => (
+              <div key={v.voce} style={{ display: "flex", gap: 14, padding: "13px 18px", borderTop: i ? "1px solid var(--soft-2)" : undefined, alignItems: "baseline" }}>
+                <span style={{ fontSize: 12, fontWeight: 800, color: "var(--faint)", minWidth: 18 }}>{i + 1}</span>
+                <span style={{ fontSize: 14.5, fontWeight: 600, color: "var(--ink)" }}>{v.voce}</span>
+                {v.perche && <span style={{ fontSize: 13, color: "var(--muted-mk)", marginLeft: "auto", textAlign: "right" }}>{v.perche}</span>}
+              </div>
+            ))}
+          </div>
+        </div>
+      );
+  }
+}
+
+const ICONE: Record<string, typeof ListChecks> = { cantiere: ListChecks };
+
+function SezioneView({ s, soft }: { s: Sezione; soft: boolean }) {
+  const Icona = ICONE[s.id];
+  return (
+    <section className={soft ? "sec soft" : "sec"} id={s.id} style={{ paddingBlock: "clamp(36px, 4.5vw, 64px)" }}>
+      <div className="wrap" style={{ maxWidth: 820 }}>
+        <h2 className="h2" style={{ fontSize: "clamp(1.35rem, 2.2vw, 1.7rem)", marginBottom: 18, display: "flex", gap: 10, alignItems: "center" }}>
+          {Icona && <span className="fi g"><Icona className="h-4 w-4" /></span>}
+          {s.titolo}
+        </h2>
+        <BloccoView b={s.blocco} />
+        {s.nota && <p style={{ fontSize: 14.5, lineHeight: 1.65, color: "var(--muted-mk)", marginTop: 14 }}>{s.nota}</p>}
+      </div>
+    </section>
+  );
+}
 
 export default function SeoCityLanding() {
-  const { t } = useLanguage();
   const params = useParams() as { type?: string; city?: string };
-  const sectorSlug = params.type ?? "";
-  const citySlug = params.city ?? "";
-
-  const s = SECTORS[sectorSlug] ?? DEFAULT_SECTOR;
-  const city = CITIES_BY_SLUG[citySlug];
-  const cityName = city?.name ?? citySlug.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
-  const regionName = city?.region ?? MARKET.countryName;
-
-  const h1 = s.h1;
-  const h1Highlight = s.h1Highlight;
-  const benefits = s.benefits;
-  const useCases = s.useCases;
-  const sectorLabel = s.label;
-  const sectorLabelPlural = s.labelPlural;
-
-  const titleTag = getCityTitle(s, cityName, citySlug);
-  const metaDesc = getCityDesc(s, cityName, citySlug, regionName);
-  const canonical = `${MARKET.siteUrl}${base}/${s.slug}/${citySlug}/`;
-
-  const intro = city ? getCityIntro(s, city) : "";
-  const faqItems = useMemo(() => (city ? getCityFaqItems(s, city) : []), [s, city]);
-  const howItWorksSteps = getCityHowItWorksSteps(cityName);
-  const layout = city ? getCityLayout(s, city) : 0;
-  const ctaVariant = city ? getCityCtaVariant(s, city) : 0;
-  const cta = getCityCtaTexts(ctaVariant, cityName);
-  const nearbyAnchors = city ? getNearbyAnchors(s, city) : [];
-  const osservatorio = city ? getOsservatorioData(city.slug) : null;
-  const contextText = city ? getCityContextText(city.slug) : null;
-  const relatedSectors = getCityRelatedSectors(s.slug);
-  const sameCityOtherSectors = city ? getSameCityOtherSectors(s.slug, city.slug, 6) : [];
-  const jsonLd = city ? buildCityJsonLd(s, city) : [];
-
-  useEffect(() => {
-    if (city) {
-      verifyCityContentInDev(s, city, {
-        intro,
-        faqAnswers: faqItems.map((f) => f.a),
-        ctaButton: cta.button,
-      });
-    }
-  }, [s, city, intro, faqItems, cta.button]);
-
-  const sBenefits = (
-    <section className="sec soft" key="benefits">
-      <div className="wrap">
-        <div className="sec-head" style={{ display: "block", textAlign: "center" }}>
-          <h2 className="h2">
-            {t("seo.city.whyChooseHeading").replace("{trade}", sectorLabelPlural).replace("{city}", cityName)}
-          </h2>
-        </div>
-        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {benefits.map((b, i) => (
-            <div key={b.title} className="dd-feat" style={{ flexDirection: "column", alignItems: "flex-start" }}>
-              <span className={`fi ${FI_COLORS[i % FI_COLORS.length]}`}>
-                <CheckCircle2 className="h-5 w-5" />
-              </span>
-              <b>{b.title}</b>
-              <p>{b.desc}</p>
-            </div>
-          ))}
-        </div>
-      </div>
-    </section>
-  );
-
-  const sHowItWorks = (
-    <section className="sec" key="howitworks">
-      <div className="wrap" style={{ maxWidth: 960 }}>
-        <div className="sec-head" style={{ display: "block", textAlign: "center" }}>
-          <h2 className="h2">
-            {t("seo.city.howToHeading").replace("{city}", cityName)}
-          </h2>
-        </div>
-        <div className="steps3">
-          {howItWorksSteps.map((item) => (
-            <div key={item.n} className="step">
-              <span className="n">{item.n}</span>
-              <b>{item.title}</b>
-              <p>{item.desc}</p>
-            </div>
-          ))}
-        </div>
-      </div>
-    </section>
-  );
-
-  const sUseCases = (
-    <section className={`sec ${layout === 2 ? "" : "soft"}`} key="usecases">
-      <div className="wrap" style={{ maxWidth: 760 }}>
-        <div className="sec-head" style={{ display: "block", textAlign: "center" }}>
-          <h2 className="h2">
-            {t("seo.city.useCasesHeading").replace("{city}", cityName)}
-          </h2>
-        </div>
-        <div className="grid sm:grid-cols-2 gap-3">
-          {useCases.map((uc) => (
-            <div key={uc} className="card" style={{ display: "flex", alignItems: "center", gap: 10, padding: "13px 18px" }}>
-              <CheckCircle2 className="h-4 w-4 shrink-0" style={{ color: "var(--green)" }} />
-              <span style={{ fontSize: 14, color: "var(--ink)" }}>{uc}</span>
-            </div>
-          ))}
-        </div>
-      </div>
-    </section>
-  );
-
-  const sFaq = (
-    <section className="sec soft" key="faq">
-      <div className="wrap" style={{ maxWidth: 760 }}>
-        <div className="sec-head" style={{ display: "block", textAlign: "center" }}>
-          <h2 className="h2">{t("seo.city.faqHeading")}</h2>
-        </div>
-        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-          {faqItems.map((f) => (
-            <div key={f.q} className="card" style={{ padding: 22 }}>
-              <h3 style={{ fontSize: 15.5, fontWeight: 700, color: "var(--navy)", marginBottom: 8 }}>{f.q}</h3>
-              <p style={{ fontSize: 14, color: "var(--muted-mk)", lineHeight: 1.6 }}>{f.a}</p>
-            </div>
-          ))}
-        </div>
-      </div>
-    </section>
-  );
-
-  const mainSections =
-    layout === 0
-      ? [sBenefits, sHowItWorks, sUseCases, sFaq]
-      : layout === 1
-        ? [sHowItWorks, sUseCases, sBenefits, sFaq]
-        : [sUseCases, sBenefits, sHowItWorks, sFaq];
+  const pg = paginaCitta(params.type ?? "", params.city ?? "");
+  if (!pg) return <NotFound />;
+  const { f } = pg;
+  const qsk = caricoNeve(f.zonaNeve, f.altitudine);
 
   return (
     <div className="flex flex-col min-h-screen bg-white">
-      <SeoHead
-        title={titleTag}
-        description={metaDesc}
-        canonical={canonical}
-        jsonLd={jsonLd}
-        ogImage={getOgImagePath(s.slug)}
-      />
+      <SeoHead title={pg.title} description={pg.description} canonical={pg.canonical} jsonLd={pg.jsonLd} ogImage={`/og/sectors/${pg.settore}.png`} />
 
-      {/* ── Breadcrumb ───────────────────────────────────────── */}
       <div className="wrap">
-        <nav aria-label={t("seo.city.breadcrumbAria")} className="crumbs">
-          <Link href="/">{t("blog.breadcrumbHome")}</Link>
+        <nav aria-label="Percorso" className="crumbs">
+          <Link href="/">Home</Link>
           <span className="crumb-sep" aria-hidden="true">/</span>
-          <Link href={`${base}/${s.slug}/`}>{sectorLabel}</Link>
+          <Link href={`${base}/${pg.settore}/`}>{pg.etichetta}</Link>
           <span className="crumb-sep" aria-hidden="true">/</span>
-          <span className="crumb-current" aria-current="page">{cityName}</span>
+          <span className="crumb-current" aria-current="page">{f.nome}</span>
         </nav>
       </div>
 
-      {/* ── Hero (lightweight — no per-page media, this route is the
-          highest page count on the site: every trade × every city) ── */}
       <section className="hero on-dark" id="hero">
-        <div className="wrap" style={{ textAlign: "center", maxWidth: 760, margin: "0 auto", paddingBlock: "clamp(48px, 6vw, 84px)" }}>
-          <p className="eyebrow on-dark" style={{ marginBottom: 20, display: "inline-flex", alignItems: "center", gap: 8, justifyContent: "center" }}>
+        <div className="wrap" style={{ maxWidth: 900, margin: "0 auto", paddingBlock: "clamp(40px, 5.5vw, 76px)" }}>
+          <p className="eyebrow on-dark" style={{ marginBottom: 16, display: "inline-flex", alignItems: "center", gap: 8 }}>
             <MapPin className="h-3.5 w-3.5" />
-            {regionName}
+            {pg.sottotitolo}
           </p>
           <h1 style={{ fontSize: "clamp(2rem, 3.6vw, 3rem)" }}>
-            {h1} <em style={{ fontStyle: "normal", color: "#8ef07f" }}>{h1Highlight}</em>
-            <br />
-            <span style={{ color: "#c9cad6", fontSize: "0.6em", fontWeight: 700 }}>{t("seo.city.inCityConnector")} {cityName}</span>
+            Preventivo <em style={{ fontStyle: "normal", color: "#8ef07f" }}>{pg.etichetta.toLowerCase()}</em> a {f.nome}
           </h1>
-          <p className="lead" style={{ margin: "16px auto 0" }}>{intro}</p>
-          <div className="hero-cta" style={{ justifyContent: "center" }}>
+          <p className="lead" style={{ marginTop: 16 }}>{pg.intro}</p>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3" style={{ marginTop: 26 }}>
+            {[
+              ["Zona climatica", `${f.zonaClimatica} · ${num(f.gradiGiorno)} GG`],
+              ["Zona sismica", f.sismicaEtichetta ?? String(f.zonaSismica)],
+              ["Carico neve", `${num(qsk, 2)} kN/m²`],
+              ["Altitudine", `${num(f.altitudine)} m`],
+            ].map(([k, v]) => (
+              <div key={k} style={{ border: "1px solid rgba(255,255,255,.18)", borderRadius: 12, padding: "10px 14px" }}>
+                <div style={{ fontSize: 10.5, fontWeight: 800, textTransform: "uppercase", letterSpacing: ".06em", color: "#c9cad6" }}>{k}</div>
+                <div style={{ fontSize: 16, fontWeight: 800, color: "#fff", marginTop: 2 }}>{v}</div>
+              </div>
+            ))}
+          </div>
+          <div className="hero-cta">
             <a href="/sign-up/" className="btn btn-white">
-              {t("seo.city.heroCta1")}
+              Crea il preventivo gratis
               <ArrowRight className="chev h-4 w-4" />
             </a>
-            <a href={`${base}/${s.slug}/`} className="btn btn-outline-light">
-              {t("seo.city.heroCta2")}
-            </a>
+            <a href={`${base}/${pg.settore}/`} className="btn btn-outline-light">Tutto su {pg.etichetta.toLowerCase()}</a>
           </div>
-          <p className="hero-note">{t("seo.city.heroCaption")}</p>
         </div>
       </section>
 
-      {/* ── Price & demand observatory ────────────────────────── */}
-      {osservatorio && (
-        <section className="sec" style={{ paddingBlock: "clamp(28px, 3vw, 44px)" }} aria-label={`${t("seo.city.observatoryAria")} ${cityName}`}>
-          <div className="wrap" style={{ maxWidth: 960 }}>
-            <div className="card" style={{ padding: "clamp(22px, 3vw, 32px)" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 22 }}>
-                <span className="fi t"><BarChart2 className="h-4 w-4" /></span>
-                <h2 style={{ fontSize: 16, fontWeight: 700, color: "var(--navy)" }}>
-                  {t("seo.city.observatoryHeading")} {cityName}
-                </h2>
+      {pg.sezioni.map((s, i) => <SezioneView key={s.id} s={s} soft={i % 2 === 1} />)}
+
+      {pg.modello && (
+        <section className="sec" style={{ paddingBlock: "clamp(28px, 3vw, 44px)" }}>
+          <div className="wrap" style={{ maxWidth: 820 }}>
+            <div className="card" style={{ padding: "20px 22px", display: "flex", gap: 14, alignItems: "center", flexWrap: "wrap" }}>
+              <span className="fi t"><FileText className="h-4 w-4" /></span>
+              <div style={{ flex: 1, minWidth: 220 }}>
+                <b style={{ color: "var(--navy)" }}>{pg.modello.titolo} (.docx)</b>
+                <p style={{ fontSize: 13.5, color: "var(--muted-mk)", marginTop: 2 }}>{pg.modello.descrizione}</p>
               </div>
-              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3" style={{ marginBottom: 18 }}>
-                <div className="card" style={{ padding: 16, textAlign: "center" }}>
-                  <div style={{ fontSize: 11, fontWeight: 800, textTransform: "uppercase", letterSpacing: ".06em", color: "var(--faint)", marginBottom: 4 }}>{t("seo.city.priceIndex")}</div>
-                  <div style={{ fontSize: 22, fontWeight: 800, color: "var(--navy)" }}>{osservatorio.priceLabel}</div>
-                  <div style={{ fontSize: 11, color: "var(--faint)", marginTop: 4 }}>{t("seo.city.vsNationalAvg")}</div>
-                </div>
-                <div className="card" style={{ padding: 16, textAlign: "center" }}>
-                  <div style={{ fontSize: 11, fontWeight: 800, textTransform: "uppercase", letterSpacing: ".06em", color: "var(--faint)", marginBottom: 4 }}>{t("seo.city.demand")}</div>
-                  <div style={{ fontSize: 15, fontWeight: 800, color: "var(--navy)" }}>{osservatorio.demandLabel}</div>
-                  <div style={{ fontSize: 11, color: "var(--faint)", marginTop: 4 }}>{regionName}</div>
-                </div>
-                <div className="card" style={{ padding: 16, textAlign: "center" }}>
-                  <div style={{ fontSize: 11, fontWeight: 800, textTransform: "uppercase", letterSpacing: ".06em", color: "var(--faint)", marginBottom: 4 }}>{t("seo.city.leadTime")}</div>
-                  <div style={{ fontSize: 15, fontWeight: 800, color: "var(--navy)" }}>{osservatorio.avgLeadTime}</div>
-                  <div style={{ fontSize: 11, color: "var(--faint)", marginTop: 4 }}>{t("seo.city.estimatedResponse")}</div>
-                </div>
-                <div className="card" style={{ padding: 16 }}>
-                  <div style={{ fontSize: 11, fontWeight: 800, textTransform: "uppercase", letterSpacing: ".06em", color: "var(--faint)", marginBottom: 8 }}>{t("seo.city.topServices")}</div>
-                  <ul style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                    {osservatorio.topServices.map((sv) => (
-                      <li key={sv} style={{ display: "flex", gap: 6, fontSize: 12, color: "var(--muted-mk)" }}>
-                        <span style={{ color: "var(--navy)", fontWeight: 700 }} aria-hidden="true">›</span>
-                        {sv}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              </div>
-              <p style={{ fontSize: 14, color: "var(--muted-mk)", lineHeight: 1.6, borderTop: "1px solid var(--soft-2)", paddingTop: 16 }}>
-                {osservatorio.localInsight}
-              </p>
+              <a href={fileModello(pg.modello)} download className="btn btn-navy" style={{ display: "inline-flex", gap: 8 }}>
+                <Download className="h-4 w-4" /> Scarica gratis
+              </a>
             </div>
           </div>
         </section>
       )}
 
-      {/* ── Main sections (layout-variant order) ─────────────── */}
-      {mainSections}
-
-      {/* ── City context ─────────────────────────────────────── */}
-      {contextText && (
-        <section className="sec soft" style={{ paddingBlock: "clamp(28px, 3vw, 44px)" }}>
-          <div className="wrap" style={{ maxWidth: 760 }}>
-            <div style={{ display: "flex", gap: 14, alignItems: "flex-start" }}>
-              <span className="fi t" style={{ flexShrink: 0 }}><MapPin className="h-4 w-4" /></span>
-              <div>
-                <h2 style={{ fontSize: 14, fontWeight: 700, color: "var(--navy)", marginBottom: 6 }}>
-                  {t("seo.city.contextHeading").replace("{trade}", sectorLabel).replace("{city}", cityName)}
-                </h2>
-                <p style={{ fontSize: 14, color: "var(--muted-mk)", lineHeight: 1.6 }}>{contextText}</p>
-              </div>
-            </div>
-          </div>
-        </section>
-      )}
-
-      {/* ── Nearby cities ─────────────────────────────────────── */}
-      {nearbyAnchors.length > 0 && (
-        <section className="sec">
-          <div className="wrap" style={{ maxWidth: 960 }}>
-            <h2 style={{ fontSize: 15, fontWeight: 700, color: "var(--muted-mk)", marginBottom: 18, textAlign: "center" }}>
-              {t("seo.city.nearbyHeading").replace("{trade}", sectorLabelPlural)}
-            </h2>
-            <div className="blog-links" style={{ justifyContent: "center" }}>
-              {nearbyAnchors.map(({ slug, anchorText }) => (
-                <a key={slug} href={`${base}/${s.slug}/${slug}/`} className="blog-link-pill">
-                  {anchorText}
-                </a>
-              ))}
-            </div>
-          </div>
-        </section>
-      )}
-
-      {/* ── Other services in the same city ───────────────────── */}
-      {sameCityOtherSectors.length > 0 && (
+      {pg.faq.length > 0 && (
         <section className="sec soft">
-          <div className="wrap" style={{ maxWidth: 960 }}>
-            <h2 style={{ fontSize: 15, fontWeight: 700, color: "var(--muted-mk)", marginBottom: 18, textAlign: "center" }}>
-              {t("seo.city.otherServicesHeading").replace("{city}", cityName)}
-            </h2>
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-              {sameCityOtherSectors.map((r) => (
-                <a
-                  key={r.slug}
-                  href={`${base}/${r.slug}/${citySlug}/`}
-                  className="card"
-                  style={{ display: "flex", alignItems: "center", gap: 8, padding: "12px 16px", fontSize: 13.5, fontWeight: 600, color: "var(--ink)" }}
-                >
-                  <span style={{ color: "var(--navy)", fontWeight: 700 }} aria-hidden="true">→</span>
-                  {r.label} {t("seo.city.inCityConnector")} {cityName}
-                </a>
-              ))}
-            </div>
-          </div>
-        </section>
-      )}
-
-      {/* ── Related sectors ───────────────────────────────────── */}
-      {relatedSectors.length > 0 && (
-        <section className="sec">
-          <div className="wrap" style={{ maxWidth: 960 }}>
-            <h2 style={{ fontSize: 15, fontWeight: 700, color: "var(--muted-mk)", marginBottom: 18, textAlign: "center" }}>
-              {t("seo.city.relatedSectorsHeading")}
-            </h2>
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-              {relatedSectors.map((r) => (
-                <a
-                  key={r.slug}
-                  href={`${base}/${r.slug}/`}
-                  className="card"
-                  style={{ display: "flex", alignItems: "center", gap: 8, padding: "12px 16px", fontSize: 13.5, fontWeight: 600, color: "var(--ink)" }}
-                >
-                  <span style={{ color: "var(--navy)", fontWeight: 700 }} aria-hidden="true">→</span>
-                  {r.label}
-                </a>
-              ))}
-            </div>
-          </div>
-        </section>
-      )}
-
-      {/* ── Insights ───────────────────────────────────────────── */}
-      {(() => {
-        const slugs = SECTOR_ARTICLES[s.slug];
-        if (!slugs || slugs.length === 0) return null;
-        const articles = slugs
-          .map((slug) => BLOG_INDEX.find((a) => a.slug === slug))
-          .filter((a): a is (typeof BLOG_INDEX)[number] => a !== undefined)
-          .slice(0, 3);
-        if (articles.length === 0) return null;
-        return (
-          <section className="sec soft">
-            <div className="wrap" style={{ maxWidth: 960 }}>
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 22 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                  <span className="fi g"><BookOpen className="h-4 w-4" /></span>
-                  <h2 style={{ fontSize: 16, fontWeight: 700, color: "var(--navy)" }}>{t("seo.insights.heading")}</h2>
+          <div className="wrap" style={{ maxWidth: 820 }}>
+            <h2 className="h2" style={{ fontSize: "clamp(1.35rem, 2.2vw, 1.7rem)", marginBottom: 18 }}>Domande frequenti su {pg.etichetta.toLowerCase()} a {f.nome}</h2>
+            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+              {pg.faq.map((q) => (
+                <div key={q.q} className="card" style={{ padding: 22 }}>
+                  <h3 style={{ fontSize: 15.5, fontWeight: 700, color: "var(--navy)", marginBottom: 8 }}>{q.q}</h3>
+                  <p style={{ fontSize: 14.5, color: "var(--muted-mk)", lineHeight: 1.65 }}>{q.a}</p>
                 </div>
-                <Link href="/blog/" className="cta-link" style={{ fontSize: 13 }}>
-                  {t("seo.city.viewAllArticles")}
-                </Link>
-              </div>
-              <div className="grid sm:grid-cols-3 gap-4">
-                {articles.map((a) => (
-                  <a key={a.slug} href={`/blog/${a.slug}/`} className="card" style={{ padding: 20, display: "flex", flexDirection: "column", gap: 8 }}>
-                    <span className="chip chip-teal" style={{ alignSelf: "flex-start" }}>{a.category}</span>
-                    <span style={{ fontSize: 14.5, fontWeight: 700, color: "var(--navy)", lineHeight: 1.4 }}>{a.title}</span>
-                    <span style={{ fontSize: 12.5, color: "var(--faint)", marginTop: "auto" }}>{a.readingTimeMin} {t("blog.readingTimeSuffix")}</span>
-                  </a>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
+      <section className="sec">
+        <div className="wrap" style={{ maxWidth: 960 }}>
+          <div className="grid sm:grid-cols-2 gap-8">
+            <div>
+              <h2 style={{ fontSize: 15, fontWeight: 700, color: "var(--navy)", marginBottom: 12 }}>{pg.etichetta} in altre città</h2>
+              <div className="blog-links">
+                {pg.vicine.map((c) => (
+                  <a key={c.slug} href={`${base}/${pg.settore}/${c.slug}/`} className="blog-link-pill">{pg.etichetta} {c.nome}</a>
                 ))}
               </div>
             </div>
-          </section>
-        );
-      })()}
+            <div>
+              <h2 style={{ fontSize: 15, fontWeight: 700, color: "var(--navy)", marginBottom: 12 }}>Altri lavori a {f.nome}</h2>
+              <div className="blog-links">
+                {pg.altriMestieri.map((m) => (
+                  <a key={m.slug} href={`${base}/${m.slug}/${f.slug}/`} className="blog-link-pill">{m.label} a {f.nome}</a>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
 
-      {/* ── Final CTA ──────────────────────────────────────────── */}
+      {pg.articoli.length > 0 && (
+        <section className="sec soft">
+          <div className="wrap" style={{ maxWidth: 960 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 20 }}>
+              <span className="fi g"><BookOpen className="h-4 w-4" /></span>
+              <h2 style={{ fontSize: 16, fontWeight: 700, color: "var(--navy)" }}>Approfondimenti</h2>
+            </div>
+            <div className="grid sm:grid-cols-3 gap-4">
+              {pg.articoli.map((a) => (
+                <a key={a.slug} href={`/blog/${a.slug}/`} className="card" style={{ padding: 20, display: "flex", flexDirection: "column", gap: 8 }}>
+                  <span className="chip chip-teal" style={{ alignSelf: "flex-start" }}>{a.category}</span>
+                  <span style={{ fontSize: 14.5, fontWeight: 700, color: "var(--navy)", lineHeight: 1.4 }}>{a.title}</span>
+                  <span style={{ fontSize: 12.5, color: "var(--faint)", marginTop: "auto" }}>{a.readingTimeMin} min di lettura</span>
+                </a>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
+      <section className="sec">
+        <div className="wrap" style={{ maxWidth: 820 }}>
+          <details className="card" style={{ padding: "16px 20px" }}>
+            <summary style={{ fontSize: 14, fontWeight: 700, color: "var(--navy)", cursor: "pointer" }}>Fonti dei dati di {f.nome}</summary>
+            <ul style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 6 }}>
+              {FONTI_CITTA.map((t) => <li key={t} style={{ fontSize: 13, color: "var(--muted-mk)" }}>{t}</li>)}
+            </ul>
+            <p style={{ fontSize: 12.5, color: "var(--faint)", marginTop: 10 }}>I valori riguardano il comune nel suo complesso (altitudine della casa comunale): per un edificio specifico vanno verificati sul posto.</p>
+          </details>
+        </div>
+      </section>
+
       <section className="cta on-dark">
         <div className="wrap cta-in">
           <h2>
-            {cta.headingPrefix}
-            <em style={{ fontStyle: "normal", color: "#8ef07f" }}>{cta.headingGradient}</em>
+            Il preventivo per {f.nome}, <em style={{ fontStyle: "normal", color: "#8ef07f" }}>in 30 secondi</em>
           </h2>
-          <p>{t("seo.city.finalCtaBody")}</p>
+          <p>Descrivi il lavoro a parole: prevai scrive le voci, calcola IVA e totali e prepara il PDF da inviare al cliente.</p>
           <div className="cta-actions">
             <a href="/sign-up/" className="btn btn-white">
-              {cta.button}
+              Prova gratis
               <ArrowRight className="chev h-4 w-4" />
             </a>
           </div>
-          <p className="cta-fine">{t("seo.city.finalCtaCaption")}</p>
+          <p className="cta-fine">Nessuna carta di credito richiesta.</p>
         </div>
       </section>
     </div>

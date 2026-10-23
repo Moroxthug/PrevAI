@@ -4,6 +4,7 @@
 // qui — il join lancia un errore al caricamento del modulo (cioè in build).
 import { BLOG_INDEX, type BlogArticleMeta } from "./blog-index.js";
 import { BLOG_FISCALE_CONTENT } from "./blog-fiscale.js";
+import { MODELLI_WORD, fileModello, modelloPerSlug } from "./modelli-word.js";
 
 export * from "./blog-index.js";
 
@@ -355,65 +356,116 @@ const BLOG_CONTENT: Record<string, string> = {
 `,
 
   "quanto-costa-impianto-elettrico": `
-<p>Quanto costa rifare l'impianto elettrico di casa? È una delle domande più frequenti per chi affronta una ristrutturazione o acquista un appartamento datato. I prezzi variano molto in base alla dimensione dell'immobile, allo stato dell'impianto esistente e alla tipologia d'intervento. Questa guida riporta i riferimenti di mercato aggiornati al 2025.</p>
+<p>Rifare l'impianto elettrico di un appartamento nel 2026 costa in media <strong>tra 70 e 120 € al metro quadro</strong>, cioè circa <strong>5.500–9.500 € per 80 mq</strong>, con quadro nuovo, linee sottotraccia, punti luce, prese e Dichiarazione di Conformità. Il prezzo cambia con il numero di punti, lo stato dei muri, la qualità dei materiali e la città. Qui trovi i prezzi per mq, per punto e per voce, un preventivo d'esempio completo e cosa controllare prima di firmare.</p>
 
-<h2>Prezzi indicativi per impianti elettrici civili nel 2025</h2>
-<p>Il costo di un impianto elettrico si misura solitamente <strong>per punto luce</strong> (presa, interruttore, punto luce a soffitto, presa dati, ecc.). Ecco le fasce di prezzo per intervento:</p>
+<h2>Quanto costa rifare l'impianto elettrico al mq</h2>
+<p>Per un rifacimento completo sottotraccia, con materiali di fascia media (Bticino, Vimar, ABB, Schneider) e quadro nuovo, i riferimenti di mercato 2026 sono:</p>
+<table>
+  <thead>
+    <tr><th>Superficie</th><th>Punti indicativi</th><th>Costo indicativo</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>Monolocale / bilocale 40–50 mq</td><td>25–35</td><td>3.000–5.500 €</td></tr>
+    <tr><td>Appartamento 60–70 mq</td><td>35–45</td><td>4.500–8.000 €</td></tr>
+    <tr><td>Appartamento 80–90 mq</td><td>45–60</td><td>5.500–10.000 €</td></tr>
+    <tr><td>Appartamento 100–120 mq</td><td>60–80</td><td>7.000–13.000 €</td></tr>
+    <tr><td>Villa oltre 150 mq</td><td>90+</td><td>12.000–20.000 € e oltre</td></tr>
+  </tbody>
+</table>
+<p>Gli importi sono IVA esclusa e comprendono quadro, linee, punti, impianto di terra e certificazione. Le opere murarie (tracce e ripristino dell'intonaco) possono essere comprese o a parte: valgono da 1.000 a 2.500 € in un appartamento medio, ed è la prima cosa da verificare quando si confrontano due preventivi. Nelle grandi città del Nord (Milano, Monza, Como, Bergamo) i prezzi stanno di solito nella metà alta delle fasce.</p>
+
+<h2>Prezzo per punto luce e per presa</h2>
+<p>Gli elettricisti ragionano a punto: un punto comprende tubo corrugato, cavo, scatola, frutto, placca e la manodopera di posa e collegamento.</p>
 <ul>
-  <li><strong>Piccolo intervento</strong> (aggiunta di 1–3 punti in impianto esistente): 80–150 € per punto</li>
-  <li><strong>Rifacimento parziale</strong> (un locale o un'area dell'appartamento): 150–250 € per punto</li>
-  <li><strong>Rifacimento completo con tracce a muro</strong>: 200–350 € per punto, tutto incluso</li>
-  <li><strong>Impianto in costruzione nuova</strong> (predisposizione + posa): 120–200 € per punto</li>
+  <li><strong>Punto luce interrotto o presa standard</strong> (in un rifacimento completo): 45–90 €</li>
+  <li><strong>Punto luce deviato o invertito</strong>: 70–120 €</li>
+  <li><strong>Presa dedicata 16 A</strong> (forno, lavatrice, lavastoviglie, piano a induzione): 70–130 €</li>
+  <li><strong>Punto TV o dati RJ45</strong>: 60–110 €</li>
+  <li><strong>Aggiunta di un singolo punto</strong> su un impianto esistente: 80–150 €, perché tracce, uscita e chiamata pesano su un lavoro piccolo</li>
 </ul>
-<p>Un appartamento di 80mq con rifacimento completo dell'impianto richiede mediamente 40–60 punti luce. Il costo totale si colloca tra <strong>8.000 e 18.000€ IVA esclusa</strong>, includendo quadro elettrico, cavi, punti luce, prese, impianto di terra e Dichiarazione di Conformità.</p>
+<p>Il prezzo per punto sale con placche di design, domotica e cablaggi lunghi, e scende quando i tubi esistenti sono integri e i cavi nuovi si possono sfilare e reinfilare senza rompere i muri.</p>
 
-<h2>Costo del quadro elettrico</h2>
-<p>Il quadro è spesso la voce più costosa e la meno compresa dai committenti. Il prezzo dipende dalla marca e dal numero di moduli:</p>
+<h2>Il quadro elettrico e le altre voci fisse</h2>
 <ul>
-  <li><strong>Quadro base</strong> (12 moduli, materiale economico): 150–300€ di materiale</li>
-  <li><strong>Quadro standard</strong> (18–24 moduli, ABB, Schneider, Bticino): 350–700€</li>
-  <li><strong>Quadro completo con differenziali separati per zone umide</strong>: 600–1.200€</li>
+  <li><strong>Quadro elettrico</strong> 12–24 moduli con generale, differenziali e magnetotermici per circuito: 300–900 € installato. Con differenziali separati per zona e scaricatore di sovratensioni: 800–1.500 €</li>
+  <li><strong>Montante</strong> dal contatore al quadro: 15–35 € al metro</li>
+  <li><strong>Impianto di terra</strong> e collegamenti equipotenziali del bagno: 300–900 €</li>
+  <li><strong>Videocitofono</strong> sostituito o nuovo: 250–700 €</li>
+  <li><strong>Predisposizione wallbox</strong> per l'auto elettrica (linea dedicata dal quadro): 300–900 €, wallbox esclusa</li>
+  <li><strong>Dichiarazione di Conformità</strong> (D.M. 37/2008): di norma compresa nel prezzo; se è a parte, 100–300 €</li>
 </ul>
-<p>A questi importi va aggiunta la manodopera di installazione e cablaggio, che può incidere per 200–600€ a seconda della complessità.</p>
 
-<h2>Costo per tipologia di abitazione</h2>
-<h3>Monolocale o bilocale (30–50 mq)</h3>
-<p>Rifacimento completo con 20–30 punti: 4.000–8.000€ — quadro incluso, tracce e ripristini compresi nella fascia alta.</p>
-<h3>Appartamento medio (60–90 mq)</h3>
-<p>Rifacimento completo con 35–55 punti: 7.000–16.000€ — valore medio di mercato intorno a 10.000–12.000€ per un impianto di qualità con materiali di marca.</p>
-<h3>Villa o appartamento grande (oltre 120 mq)</h3>
-<p>Rifacimento completo con 70+ punti, eventuale impianto di allarme, domotica leggera, citofono IP: 18.000–35.000€ e oltre.</p>
+<h2>Esempio di preventivo: bilocale di 60 mq</h2>
+<p>Rifacimento completo sottotraccia con quadro nuovo, materiali di fascia media, opere murarie comprese:</p>
+<table>
+  <thead>
+    <tr><th>Voce</th><th>Q.tà</th><th>Prezzo</th><th>Importo</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>Quadro da incasso 18 moduli, generale e 6 circuiti protetti</td><td>1</td><td>550 €</td><td>550 €</td></tr>
+    <tr><td>Montante contatore–quadro, cavo FG16OR16</td><td>10 m</td><td>25 €</td><td>250 €</td></tr>
+    <tr><td>Punti luce interrotti e deviati</td><td>14</td><td>65 €</td><td>910 €</td></tr>
+    <tr><td>Prese 10/16 A</td><td>16</td><td>60 €</td><td>960 €</td></tr>
+    <tr><td>Prese dedicate 16 A (cucina, lavatrice, clima)</td><td>5</td><td>95 €</td><td>475 €</td></tr>
+    <tr><td>Punti TV e dati</td><td>4</td><td>85 €</td><td>340 €</td></tr>
+    <tr><td>Impianto di terra ed equipotenziale bagno</td><td>a corpo</td><td></td><td>400 €</td></tr>
+    <tr><td>Tracce e ripristino intonaco</td><td>a corpo</td><td></td><td>1.100 €</td></tr>
+    <tr><td>Dichiarazione di Conformità con schema</td><td>a corpo</td><td></td><td>150 €</td></tr>
+    <tr><td><strong>Imponibile</strong></td><td></td><td></td><td><strong>5.135 €</strong></td></tr>
+    <tr><td>IVA 10% (manutenzione su abitazione)</td><td></td><td></td><td>513,50 €</td></tr>
+    <tr><td><strong>Totale</strong></td><td></td><td></td><td><strong>5.648,50 €</strong></td></tr>
+  </tbody>
+</table>
+<p>Sono circa 85 € al mq IVA esclusa, a metà della fascia di mercato. Lo stesso appartamento con tubi riutilizzabili e senza tracce nuove scenderebbe intorno a 3.500–4.000 €; con placche di design e predisposizione domotica salirebbe oltre i 7.000 €.</p>
 
-<h2>Cosa influenza il prezzo</h2>
-<h3>Tracce a muro o impianto a vista</h3>
-<p>Le tracce a muro (necessarie per nascondere i cavi) richiedono demolizione, posa dei tubi corrugati, cavi e successivo ripristino con intonaco. Questo aggiunge 800–2.500€ di costo rispetto a un impianto in appartamento già predisposto. Un impianto a vista con canaline (tipico dei locali industriali o dei sottotetti) è invece più economico da eseguire ma meno estetico.</p>
-<h3>Marca dei materiali</h3>
-<p>La differenza tra materiale di primo prezzo e brand affermati (ABB, Schneider, Bticino, BTicino Matix o Living) può variare del 30–60% sul solo costo del materiale. La marca influisce sulla durata, sulla disponibilità dei pezzi di ricambio e sulla garanzia.</p>
-<h3>Complessità dell'impianto</h3>
-<p>Impianti con zone umide separate (bagni, cucine), circuiti dedicati per elettrodomestici ad alta potenza (forno, lavastoviglie, piano cottura a induzione), predisposizioni per colonnine EV o fotovoltaico richiedono più protezioni nel quadro e più circuiti dedicati.</p>
-<h3>Posizione geografica</h3>
-<p>Il costo della manodopera degli elettricisti è mediamente del 15–30% superiore nelle grandi città del Nord (Milano, Torino, Genova) rispetto alle regioni del Centro-Sud.</p>
-
-<h2>Dichiarazione di Conformità: obbligatoria e inclusa?</h2>
-<p>La <strong>Dichiarazione di Conformità (DDC)</strong> ai sensi del D.M. 37/2008 è obbligatoria per legge per qualsiasi impianto elettrico nuovo o rifatto. Quando chiedete un preventivo, verificate sempre che sia inclusa esplicitamente: alcuni preventivi la escludono per abbassare il prezzo apparente e la aggiungono dopo. La DDC ha un costo di 100–300€ e protegge sia il committente sia il professionista in caso di sinistro.</p>
-
-<h2>Bonus fiscali per impianti elettrici</h2>
-<p>Il rifacimento dell'impianto elettrico nell'ambito di una ristrutturazione rientra nel <strong>Bonus Ristrutturazioni 50%</strong> (art. 16-bis TUIR), con un massimale di spesa di 96.000€ per unità immobiliare. La detrazione si recupera in 10 anni nelle dichiarazioni dei redditi. Per accedere alla detrazione è necessario che il pagamento avvenga tramite bonifico bancario/postale dedicato e che il preventivo sia emesso prima dell'inizio dei lavori. Verificate sempre la situazione aggiornata con il vostro commercialista.</p>
-
-<h2>Come confrontare i preventivi degli elettricisti</h2>
-<p>Per confrontare in modo corretto preventivi diversi per lo stesso impianto, verificate che ogni documento riporti:</p>
+<h2>Rifacimento completo o messa a norma?</h2>
+<p>Non sempre serve rifare tutto. Se i cavi sono in buono stato e le sezioni adeguate, una <strong>messa a norma</strong> costa 800–3.000 €: quadro nuovo con differenziale, verifica e adeguamento dell'impianto di terra, sostituzione delle parti danneggiate. Per un impianto vecchio che non si rifà, la <strong>Dichiarazione di Rispondenza</strong> (Di.Ri.) rilasciata da un professionista dopo le verifiche costa 200–500 €.</p>
+<p>Il rifacimento completo è la scelta giusta quando:</p>
 <ul>
-  <li>Numero di punti luce e prese per locale</li>
-  <li>Marca e tipo del quadro elettrico e delle protezioni</li>
-  <li>Marca dei materiali (interruttori, prese, cavi)</li>
-  <li>Dichiarazione di Conformità inclusa o esclusa</li>
-  <li>IVA separata e regime fiscale applicato</li>
-  <li>Tempistiche stimate di esecuzione</li>
+  <li>l'impianto ha più di 25–30 anni, i cavi sono in tela o non c'è il conduttore di terra;</li>
+  <li>manca il differenziale (il "salvavita") o salta spesso;</li>
+  <li>si passa a piano a induzione, pompa di calore o wallbox e serve più potenza;</li>
+  <li>si ristruttura comunque: con i muri aperti la differenza di costo è minima.</li>
 </ul>
-<p>Un preventivo che riporta solo un importo globale senza dettaglio non permette un confronto reale. Privilegiate elettricisti che presentano un documento dettagliato per voci: è il segnale più affidabile di professionalità.</p>
 
-<h2>Quanto dura un impianto elettrico?</h2>
-<p>Un impianto elettrico realizzato a regola d'arte con materiali di qualità ha una vita utile di <strong>25–40 anni</strong>. Gli impianti più vecchi (precedenti agli anni '90) sono spesso privi di messa a terra adeguata e non conformi alle normative attuali — questo è un elemento di rischio che giustifica pienamente il costo di un rifacimento completo, anche in assenza di problemi evidenti.</p>
+<h2>Cosa fa salire o scendere il prezzo</h2>
+<h3>Tracce a muro o canaline</h3>
+<p>Le tracce nascondono i cavi ma richiedono demolizione, posa del corrugato e ripristino dell'intonaco. Un impianto a vista in canalina o sotto battiscopa costa il 20–40% in meno ed è indicato per cantine, garage, locali tecnici o quando non si vogliono lavori di muratura.</p>
+<h3>Materiali</h3>
+<p>Tra serie economiche e serie di marca la differenza sul solo materiale va dal 30 al 60%. Conta anche il quadro: più circuiti separati significano meno interruzioni quando scatta una protezione.</p>
+<h3>Accessibilità e stato dei muri</h3>
+<p>Soffitti alti, muri in cemento armato, pavimenti da non toccare e appartamenti abitati durante i lavori allungano i tempi e fanno salire la manodopera.</p>
+<h3>Città</h3>
+<p>Nelle grandi città del Nord la manodopera costa il 15–25% in più rispetto alla media nazionale.</p>
+
+<h2>Impianto elettrico industriale: costo al mq</h2>
+<p>Per capannoni e laboratori l'impianto è di solito a vista, in canalina o passerella, con quadri di distribuzione e linee di forza motrice. I valori indicativi vanno da <strong>30 a 70 € al mq</strong> per illuminazione e prese di servizio, e salgono molto con linee per macchinari, rifasamento e quadri dedicati: in questi casi serve un progetto, obbligatorio oltre le soglie del D.M. 37/2008, e il preventivo va fatto voce per voce.</p>
+
+<h2>Bonus e IVA nel 2026</h2>
+<p>Il rifacimento dell'impianto elettrico rientra nella <strong>detrazione per ristrutturazioni</strong>: nel 2026 è del 50% sull'abitazione principale e del 36% sulle altre abitazioni, con un tetto di spesa di 96.000 € per unità e recupero in 10 rate annuali. Servono il bonifico parlante e le fatture intestate a chi detrae. L'IVA è di norma al 10% per i lavori di manutenzione sulle abitazioni. Le regole cambiano spesso: verificate sempre con il commercialista prima di iniziare.</p>
+
+<h2>Cosa controllare nel preventivo dell'elettricista</h2>
+<ul>
+  <li>numero di punti luce e prese per stanza, non solo il totale;</li>
+  <li>marca e serie di frutti e placche, e composizione del quadro;</li>
+  <li>sezione dei cavi: 1,5 mm² per le luci, 2,5 mm² per le prese, 4–6 mm² per le linee di potenza;</li>
+  <li>opere murarie comprese o escluse;</li>
+  <li>Dichiarazione di Conformità inclusa, con schema e relazione dei materiali;</li>
+  <li>IVA applicata, tempi di esecuzione e modalità di pagamento.</li>
+</ul>
+<p>Due preventivi che riportano solo "rifacimento impianto, 6.000 €" non si possono confrontare. Chi è elettricista può partire dal <a href="/blog/modello-preventivo-impianto-elettrico/">modello di preventivo per impianto elettrico</a> o generare il documento con tutte le voci in 30 secondi con il <a href="/preventivi/elettricista/">generatore di preventivi per elettricisti</a>.</p>
+
+<h2>Domande frequenti</h2>
+<h3>Quanto costa rifare l'impianto elettrico di una casa di 100 mq?</h3>
+<p>Tra 7.000 e 12.000 € IVA esclusa per un rifacimento completo sottotraccia con quadro nuovo e 60–80 punti. Con opere murarie a parte, aggiungete 1.500–2.500 €.</p>
+<h3>Si può rifare l'impianto senza rompere i muri?</h3>
+<p>Sì, se i tubi corrugati esistenti sono integri: i cavi vecchi si sfilano e si infilano quelli nuovi. In alternativa si usano canaline o battiscopa passacavi. In entrambi i casi si risparmia il 20–40%.</p>
+<h3>Quanto tempo ci vuole?</h3>
+<p>Per un appartamento di 80 mq servono di solito 5–10 giorni lavorativi tra tracce, posa, cablaggio e ripristini. Senza tracce bastano 2–4 giorni.</p>
+<h3>Devo lasciare casa durante i lavori?</h3>
+<p>Per un rifacimento completo con tracce è consigliabile: ci sono polvere e interruzioni di corrente. Lavorando per zone, l'elettricista può mantenere un circuito provvisorio attivo.</p>
+<h3>Quanto dura un impianto elettrico?</h3>
+<p>Un impianto fatto a regola d'arte dura 25–40 anni. Gli impianti precedenti agli anni '90 spesso non hanno terra e differenziali adeguati: è una ragione di sicurezza, prima che di comfort, per rifarli.</p>
 `,
 
   "quanto-costa-idraulico": `
@@ -4301,8 +4353,39 @@ const BLOG_CONTENT: Record<string, string> = {
 `,
 };
 
+// Articoli che offrono il modello Word del loro mestiere da scaricare (oltre a
+// quelli indicati come `articolo` in modelli-word.ts): il riquadro va dopo il
+// primo paragrafo, dove chi cerca "modello/fac simile preventivo" lo vede subito.
+const MODELLO_PER_ARTICOLO: Record<string, string> = {
+  ...Object.fromEntries(MODELLI_WORD.filter((m) => m.articolo).map((m) => [m.articolo!, m.slug])),
+  "fac-simile-preventivo-impianto-elettrico": "impianto-elettrico",
+  "preventivo-impianto-elettrico": "impianto-elettrico",
+  "quanto-costa-impianto-elettrico": "impianto-elettrico",
+  "preventivo-idraulico": "idraulico",
+  "fac-simile-preventivo-edile": "lavori-edili",
+  "modello-preventivo-edile": "lavori-edili",
+  "fac-simile-preventivo-imbianchino": "tinteggiatura",
+  "come-fare-preventivo-imbianchino": "tinteggiatura",
+  "preventivo-ristrutturazione-bagno-completo": "ristrutturazione-bagno",
+  "preventivo-piastrellista": "posa-piastrelle",
+};
+
+function boxModelloWord(modelloSlug: string): string {
+  const m = modelloPerSlug(modelloSlug);
+  if (!m) throw new Error(`blog-data: modello Word "${modelloSlug}" inesistente`);
+  return `<p class="modello-word-box"><strong>Scarica gratis il modello Word:</strong> <a href="${fileModello(m)}" download>${m.titolo} (.docx)</a> — ${m.descrizione.charAt(0).toLowerCase()}${m.descrizione.slice(1)} Gli altri mestieri sono nella pagina dei <a href="/preventivi/modello-word/">modelli di preventivo Word gratis</a>.</p>`;
+}
+
+function conModelloWord(slug: string, html: string): string {
+  const modello = MODELLO_PER_ARTICOLO[slug];
+  if (!modello) return html;
+  const i = html.indexOf("</p>");
+  if (i === -1) return html;
+  return html.slice(0, i + 4) + "\n" + boxModelloWord(modello) + html.slice(i + 4);
+}
+
 export const BLOG_ARTICLES: BlogArticle[] = BLOG_INDEX.map((meta) => {
   const contentHtml = BLOG_CONTENT[meta.slug] ?? BLOG_FISCALE_CONTENT[meta.slug];
   if (contentHtml === undefined) throw new Error(`blog-data: manca il corpo dell'articolo "${meta.slug}"`);
-  return { ...meta, contentHtml };
+  return { ...meta, contentHtml: conModelloWord(meta.slug, contentHtml) };
 });

@@ -38,8 +38,13 @@ for (const route of PUBLIC_ROUTES) {
   entries.push(url(loc, route.priority, route.changefreq, route.lastmod));
 }
 // SEO sector landing pages (V2-2: solo italiano; slug v1 in V2-2b)
+// Landing riscritte dopo il 1/5: la loro data vera, così Google le ripassa.
+const SECTOR_LASTMOD: Record<string, string> = {
+  "modello-word": "2026-10-21",
+  condizionatori: "2026-10-21",
+};
 for (const sectorSlug of Object.keys(SECTORS)) {
-  entries.push(url(`${BASE_URL}/preventivi/${sectorSlug}/`, "0.8", "monthly", "2026-05-01"));
+  entries.push(url(`${BASE_URL}/preventivi/${sectorSlug}/`, "0.8", "monthly", SECTOR_LASTMOD[sectorSlug] ?? "2026-05-01"));
 }
 
 // SEO city×sector pages — restricted to ACTIVE_CITIES (see seo-data.ts) to

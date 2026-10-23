@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite --config vite.config.ts --host 0.0.0.0",
+    "gen:modelli-word": "tsx ./scripts/generate-word-templates.ts",
     "generate-og": "tsx ./scripts/generate-blog-og-images.ts && tsx ./scripts/generate-sector-og-images.ts",
     "prebuild": "tsx ./scripts/generate-sitemap.ts && tsx ./scripts/generate-blog-og-images.ts && tsx ./scripts/generate-sector-og-images.ts",
     "prerender": "vite build --config vite.config.ts --ssr src/entry-server.tsx --outDir dist/server && tsx ./scripts/generate-blog-og-images.ts && tsx ./scripts/generate-sector-og-images.ts && tsx ./scripts/prerender-seo.ts",

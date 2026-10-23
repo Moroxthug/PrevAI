@@ -4,6 +4,8 @@ import { PREVENTIVI_SINGOLI, PREZZI_PIANI, formatPrezzo } from "@workspace/confi
 import { SeoHead } from "@/components/seo-head";
 import { SECTORS, DEFAULT_SECTOR, RELATED_SECTORS, CITY_SECTORS, ACTIVE_CITIES } from "@/data/seo-data";
 import { BLOG_INDEX, SECTOR_ARTICLES } from "@/data/blog-index";
+import { MODELLI_WORD, fileModello } from "@/data/modelli-word";
+import { FATTI_CITTA } from "@/data/citta/fatti";
 import { getOgImagePath } from "@/data/seo-render-engine";
 import { MARKET } from "@workspace/config";
 import { QuotePreviewMockup } from "@/components/quote-preview-mockup";
@@ -14,7 +16,7 @@ const base = "/preventivi";
 
 // Highlighted cities on the sector hub page — must stay within ACTIVE_CITIES,
 // the only cities actually prerendered/sitemapped right now (see seo-data.ts).
-const TIER1_CITIES = ACTIVE_CITIES;
+const TIER1_CITIES = [...ACTIVE_CITIES].sort((a, b) => (FATTI_CITTA[b.slug]?.popolazione ?? 0) - (FATTI_CITTA[a.slug]?.popolazione ?? 0)).slice(0, 8);
 
 // All cities grouped by region, sorted alphabetically by region then city.
 // Ensures every city page gets at least one internal link from the sector
@@ -350,6 +352,31 @@ export default function SeoLanding() {
           </div>
         </div>
       </section>
+
+      {/* ── Modelli Word da scaricare (stessa sezione del prerender) ─── */}
+      {s.slug === "modello-word" && (
+        <section className="sec" id="modelli">
+          <div className="wrap" style={{ maxWidth: 1080 }}>
+            <div className="sec-head" style={{ display: "block", textAlign: "center" }}>
+              <h2 className="h2">Modelli di preventivo Word gratis, per mestiere</h2>
+              <p className="lead" style={{ margin: "0 auto" }}>File .docx da compilare: intestazione, cliente, voci con U.M. e quantità, IVA, condizioni e firma per accettazione. Senza registrazione.</p>
+            </div>
+            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {MODELLI_WORD.map((m) => (
+                <div key={m.slug} className="card" style={{ padding: 20, display: "flex", flexDirection: "column", gap: 8 }}>
+                  <span className="chip chip-teal" style={{ alignSelf: "flex-start" }}>{m.mestiere}</span>
+                  <h3 style={{ fontSize: 15, fontWeight: 700, color: "var(--navy)", lineHeight: 1.4 }}>{m.titolo}</h3>
+                  <p style={{ fontSize: 13.5, color: "var(--muted-mk)", lineHeight: 1.55 }}>{m.descrizione}</p>
+                  <a href={fileModello(m)} download className="cta-link" style={{ marginTop: "auto", display: "inline-flex" }}>
+                    Scarica .docx
+                    <ArrowRight className="chev h-4 w-4" />
+                  </a>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* ── Benefits ─────────────────────────────────────── */}
       <section className="sec soft">
