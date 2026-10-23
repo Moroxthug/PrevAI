@@ -169,7 +169,7 @@ export const CreateQuoteResponse = zod.object({
   "pdfDownloadedAt": zod.string().nullish(),
   "capitolatoPro": zod.boolean(),
   "capitolatoPdfUrl": zod.string().nullish(),
-  "templateId": zod.enum(['standard', 'arosio', 'mariagrazia']).nullish(),
+  "templateId": zod.union([zod.literal('standard'),zod.literal('arosio'),zod.literal('mariagrazia'),zod.literal(null)]).nullish(),
   "attachments": zod.array(zod.object({
   "id": zod.string(),
   "fileName": zod.string(),
@@ -322,7 +322,7 @@ export const GetQuoteStatsResponse = zod.object({
   "pdfDownloadedAt": zod.string().nullish(),
   "capitolatoPro": zod.boolean(),
   "capitolatoPdfUrl": zod.string().nullish(),
-  "templateId": zod.enum(['standard', 'arosio', 'mariagrazia']).nullish(),
+  "templateId": zod.union([zod.literal('standard'),zod.literal('arosio'),zod.literal('mariagrazia'),zod.literal(null)]).nullish(),
   "attachments": zod.array(zod.object({
   "id": zod.string(),
   "fileName": zod.string(),
@@ -509,7 +509,7 @@ export const CreateManualQuoteResponse = zod.object({
   "pdfDownloadedAt": zod.string().nullish(),
   "capitolatoPro": zod.boolean(),
   "capitolatoPdfUrl": zod.string().nullish(),
-  "templateId": zod.enum(['standard', 'arosio', 'mariagrazia']).nullish(),
+  "templateId": zod.union([zod.literal('standard'),zod.literal('arosio'),zod.literal('mariagrazia'),zod.literal(null)]).nullish(),
   "attachments": zod.array(zod.object({
   "id": zod.string(),
   "fileName": zod.string(),
@@ -669,7 +669,7 @@ export const GetQuoteResponse = zod.object({
   "pdfDownloadedAt": zod.string().nullish(),
   "capitolatoPro": zod.boolean(),
   "capitolatoPdfUrl": zod.string().nullish(),
-  "templateId": zod.enum(['standard', 'arosio', 'mariagrazia']).nullish(),
+  "templateId": zod.union([zod.literal('standard'),zod.literal('arosio'),zod.literal('mariagrazia'),zod.literal(null)]).nullish(),
   "attachments": zod.array(zod.object({
   "id": zod.string(),
   "fileName": zod.string(),
@@ -865,7 +865,7 @@ export const UpdateQuoteResponse = zod.object({
   "pdfDownloadedAt": zod.string().nullish(),
   "capitolatoPro": zod.boolean(),
   "capitolatoPdfUrl": zod.string().nullish(),
-  "templateId": zod.enum(['standard', 'arosio', 'mariagrazia']).nullish(),
+  "templateId": zod.union([zod.literal('standard'),zod.literal('arosio'),zod.literal('mariagrazia'),zod.literal(null)]).nullish(),
   "attachments": zod.array(zod.object({
   "id": zod.string(),
   "fileName": zod.string(),
@@ -1022,7 +1022,7 @@ export const ArchiveQuoteResponse = zod.object({
   "pdfDownloadedAt": zod.string().nullish(),
   "capitolatoPro": zod.boolean(),
   "capitolatoPdfUrl": zod.string().nullish(),
-  "templateId": zod.enum(['standard', 'arosio', 'mariagrazia']).nullish(),
+  "templateId": zod.union([zod.literal('standard'),zod.literal('arosio'),zod.literal('mariagrazia'),zod.literal(null)]).nullish(),
   "attachments": zod.array(zod.object({
   "id": zod.string(),
   "fileName": zod.string(),
@@ -1169,7 +1169,7 @@ export const RestoreQuoteResponse = zod.object({
   "pdfDownloadedAt": zod.string().nullish(),
   "capitolatoPro": zod.boolean(),
   "capitolatoPdfUrl": zod.string().nullish(),
-  "templateId": zod.enum(['standard', 'arosio', 'mariagrazia']).nullish(),
+  "templateId": zod.union([zod.literal('standard'),zod.literal('arosio'),zod.literal('mariagrazia'),zod.literal(null)]).nullish(),
   "attachments": zod.array(zod.object({
   "id": zod.string(),
   "fileName": zod.string(),
@@ -1346,7 +1346,7 @@ export const DuplicateQuoteResponse = zod.object({
   "pdfDownloadedAt": zod.string().nullish(),
   "capitolatoPro": zod.boolean(),
   "capitolatoPdfUrl": zod.string().nullish(),
-  "templateId": zod.enum(['standard', 'arosio', 'mariagrazia']).nullish(),
+  "templateId": zod.union([zod.literal('standard'),zod.literal('arosio'),zod.literal('mariagrazia'),zod.literal(null)]).nullish(),
   "attachments": zod.array(zod.object({
   "id": zod.string(),
   "fileName": zod.string(),
@@ -1714,7 +1714,7 @@ export const RegenerateQuoteResponse = zod.object({
   "pdfDownloadedAt": zod.string().nullish(),
   "capitolatoPro": zod.boolean(),
   "capitolatoPdfUrl": zod.string().nullish(),
-  "templateId": zod.enum(['standard', 'arosio', 'mariagrazia']).nullish(),
+  "templateId": zod.union([zod.literal('standard'),zod.literal('arosio'),zod.literal('mariagrazia'),zod.literal(null)]).nullish(),
   "attachments": zod.array(zod.object({
   "id": zod.string(),
   "fileName": zod.string(),
@@ -1861,7 +1861,7 @@ export const UpgradeToCapitolatoProResponse = zod.object({
   "pdfDownloadedAt": zod.string().nullish(),
   "capitolatoPro": zod.boolean(),
   "capitolatoPdfUrl": zod.string().nullish(),
-  "templateId": zod.enum(['standard', 'arosio', 'mariagrazia']).nullish(),
+  "templateId": zod.union([zod.literal('standard'),zod.literal('arosio'),zod.literal('mariagrazia'),zod.literal(null)]).nullish(),
   "attachments": zod.array(zod.object({
   "id": zod.string(),
   "fileName": zod.string(),
@@ -2632,7 +2632,7 @@ export const ListClientQuotesResponseItem = zod.object({
   "pdfDownloadedAt": zod.string().nullish(),
   "capitolatoPro": zod.boolean(),
   "capitolatoPdfUrl": zod.string().nullish(),
-  "templateId": zod.enum(['standard', 'arosio', 'mariagrazia']).nullish(),
+  "templateId": zod.union([zod.literal('standard'),zod.literal('arosio'),zod.literal('mariagrazia'),zod.literal(null)]).nullish(),
   "attachments": zod.array(zod.object({
   "id": zod.string(),
   "fileName": zod.string(),

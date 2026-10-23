@@ -64,6 +64,7 @@ export interface QuoteAttachment {
   fileName: string;
   mimeType: string;
   fileUrl: string;
+  /** @nullable */
   fileSize?: number | null;
   createdAt: string;
 }
@@ -164,6 +165,9 @@ export const QuoteStatus = {
   accepted: 'accepted',
 } as const;
 
+/**
+ * @nullable
+ */
 export type QuoteTemplateId = typeof QuoteTemplateId[keyof typeof QuoteTemplateId] | null;
 
 
@@ -182,8 +186,11 @@ export interface Quote {
   capitoli: QuoteChapter[];
   sconto?: QuoteDiscount | null;
   condizioniPagamento: string[];
+  /** @nullable */
   titoloPreventivoRiga1?: string | null;
+  /** @nullable */
   titoloPreventivoRiga2?: string | null;
+  /** @nullable */
   numeroPreventivoData?: string | null;
   companySnapshot?: QuoteCompanySnapshot | null;
   subtotale: number;
@@ -196,36 +203,58 @@ export interface Quote {
   totale: number;
   note: string;
   status: QuoteStatus;
+  /** @nullable */
   acceptedByName?: string | null;
+  /** @nullable */
   acceptedAt?: string | null;
-  /** When the quote was last emailed to the client (Phase 105 picks the primary action from it). */
+  /**
+     * When the quote was last emailed to the client (Phase 105 picks the primary action from it).
+     * @nullable
+     */
   sentAt?: string | null;
   /** The version the client sees (2 after a sent quote was edited). */
   version?: number;
   /** True when the quote was edited after it was last sent. */
   revisionOpen?: boolean;
-  /** When the client first opened the quote page. */
+  /**
+     * When the client first opened the quote page.
+     * @nullable
+     */
   firstViewedAt?: string | null;
-  /** When the client declined the quote on its page. */
+  /**
+     * When the client declined the quote on its page.
+     * @nullable
+     */
   declinedAt?: string | null;
-  /** The reason the client gave when declining, if any. */
+  /**
+     * The reason the client gave when declining, if any.
+     * @nullable
+     */
   declinedReason?: string | null;
   /** What the price does not include ("Non incluso"). */
   exclusions?: string[];
-  /** The job started from this quote, on GET /quotes/{id} only (Phase 105). */
+  /**
+     * The job started from this quote, on GET /quotes/{id} only (Phase 105).
+     * @nullable
+     */
   jobId?: string | null;
+  /** @nullable */
   pdfUrl?: string | null;
   rawInput: string;
+  /** @nullable */
   pdfDownloadedAt?: string | null;
   capitolatoPro: boolean;
   /** @nullable */
   capitolatoPdfUrl?: string | null;
+  /** @nullable */
   templateId?: QuoteTemplateId;
   attachments?: QuoteAttachment[];
+  /** @nullable */
   acceptedVariantId?: string | null;
   variants?: QuoteVariant[];
   createdAt: string;
   updatedAt: string;
+  /** @nullable */
   archivedAt?: string | null;
 }
 
@@ -241,32 +270,53 @@ export const QuoteSummaryStatus = {
 
 export interface QuoteSummary {
   id: string;
+  /** @nullable */
   clientId?: string | null;
+  /** @nullable */
   province?: string | null;
   clientData: QuoteClientData;
   descrizioneGenerale: string;
-  /** The quote heading (titoloPreventivoRiga1), Phase 105. */
+  /**
+     * The quote heading (titoloPreventivoRiga1), Phase 105.
+     * @nullable
+     */
   title?: string | null;
+  /** @nullable */
   sentAt?: string | null;
-  /** When the client first opened the quote page. */
+  /**
+     * When the client first opened the quote page.
+     * @nullable
+     */
   firstViewedAt?: string | null;
-  /** When the client declined the quote on its page. */
+  /**
+     * When the client declined the quote on its page.
+     * @nullable
+     */
   declinedAt?: string | null;
-  /** The reason the client gave when declining, if any. */
+  /**
+     * The reason the client gave when declining, if any.
+     * @nullable
+     */
   declinedReason?: string | null;
-  /** The quote number, for example "N° 12.2026 del 01/10/2026". */
+  /**
+     * The quote number, for example "N° 12.2026 del 01/10/2026".
+     * @nullable
+     */
   numeroPreventivoData?: string | null;
   lineItemCount: number;
   subtotale: number;
   ivaValore: number;
   totale: number;
   status: QuoteSummaryStatus;
+  /** @nullable */
   acceptedAt?: string | null;
+  /** @nullable */
   pdfUrl?: string | null;
   capitolatoPro: boolean;
   templateId: string;
   createdAt: string;
   updatedAt: string;
+  /** @nullable */
   archivedAt?: string | null;
 }
 
@@ -305,7 +355,7 @@ export interface CreateQuoteBody {
      * Up to 3 image files (JPG, PNG, WEBP, HEIC) passed to OpenAI vision
      * @maxItems 3
      */
-  images?: Blob[];
+  images?: (Blob | File)[];
   /** Template ID for the quote layout (affects both AI generation style and PDF layout) */
   templateId?: CreateQuoteBodyTemplateId;
   /** Optional target total (IVA inclusa) in euros. When provided, unit prices are scaled proportionally to hit this total. */
@@ -338,7 +388,9 @@ export interface UpdateQuoteBody {
   capitoli?: QuoteChapter[];
   sconto?: QuoteDiscount | null;
   condizioniPagamento?: string[];
+  /** @nullable */
   titoloPreventivoRiga1?: string | null;
+  /** @nullable */
   titoloPreventivoRiga2?: string | null;
   subtotale?: number;
   ivaPercentuale?: number;
@@ -366,9 +418,13 @@ export interface BusinessProfile {
   companyName: string;
   vatNumber?: string;
   address?: string;
+  /** @nullable */
   logoUrl?: string | null;
+  /** @nullable */
   phone?: string | null;
+  /** @nullable */
   email?: string | null;
+  /** @nullable */
   apiKey?: string | null;
 }
 
@@ -382,13 +438,20 @@ export interface UpdateBusinessProfileBody {
 }
 
 export interface SubscriptionInfo {
+  /** @nullable */
   plan?: string | null;
+  /** @nullable */
   status?: string | null;
+  /** @nullable */
   periodEnd?: string | null;
   isActive: boolean;
+  /** @nullable */
   quotaUsed?: number | null;
+  /** @nullable */
   quotaLimit?: number | null;
+  /** @nullable */
   quotaRemaining?: number | null;
+  /** @nullable */
   quotaResetDate?: string | null;
 }
 
@@ -448,12 +511,17 @@ export interface Plan {
   id: string;
   name: string;
   price: number;
-  /** A-5 — prezzo annuale IVA inclusa (dieci mensilità); null per i preventivi singoli */
+  /**
+     * A-5 — prezzo annuale IVA inclusa (dieci mensilità); null per i preventivi singoli
+     * @nullable
+     */
   annualPrice?: number | null;
   currency: string;
+  /** @nullable */
   interval?: string | null;
   features: string[];
   hasWatermark: boolean;
+  /** @nullable */
   quotaPerMonth?: number | null;
 }
 
@@ -485,7 +553,10 @@ export interface CreateManualQuoteBody {
   titoloPreventivoRiga2?: string;
   descrizioneGenerale?: string;
   ivaPercentuale?: number;
-  /** Province the work is performed in; drives the tax components. Defaults to the client's, then the company's. */
+  /**
+     * Province the work is performed in; drives the tax components. Defaults to the client's, then the company's.
+     * @nullable
+     */
   province?: string | null;
   condizioniPagamento?: string[];
   note?: string;
@@ -514,9 +585,11 @@ export interface CatalogItem {
   id: string;
   userId: string;
   nome: string;
+  /** @nullable */
   categoria?: string | null;
   um: string;
   prezzoUnitario: number;
+  /** @nullable */
   note?: string | null;
   createdAt: string;
   updatedAt: string;
@@ -547,8 +620,11 @@ export interface WhatsappStatus {
   connected: boolean;
   /** False when the server-side app registration for this integration is missing (Phase 65) — the UI shows "not available yet" instead of a Connect button. */
   available?: boolean;
+  /** @nullable */
   phoneNumber?: string | null;
+  /** @nullable */
   isEnabled?: boolean | null;
+  /** @nullable */
   businessNumber?: string | null;
 }
 
@@ -568,7 +644,9 @@ export interface WhatsappVerifyBody {
 
 export interface WhatsappUsage {
   used: number;
+  /** @nullable */
   limit?: number | null;
+  /** @nullable */
   plan?: string | null;
 }
 
@@ -593,6 +671,7 @@ export interface CalendarConnectionStatus {
   accountEmail: string;
   isEnabled: boolean;
   connectedAt: string;
+  /** @nullable */
   lastSyncedAt?: string | null;
 }
 
@@ -623,6 +702,7 @@ export interface CalendarSyncLogEntry {
   provider: CalendarProvider;
   milestoneId: string;
   status: string;
+  /** @nullable */
   error?: string | null;
   updatedAt: string;
 }
@@ -643,7 +723,9 @@ export interface EmailConnectionStatus {
   accountEmail: string;
   isEnabled: boolean;
   connectedAt: string;
+  /** @nullable */
   lastSendAt?: string | null;
+  /** @nullable */
   lastSendError?: string | null;
 }
 
@@ -670,10 +752,13 @@ export interface EmailConnectionToggleBody {
 
 export interface TrialStatus {
   isTrialActive: boolean;
+  /** @nullable */
   trialStartedAt?: string | null;
   trialDownloadsUsed: number;
   trialDownloadsLimit: number;
+  /** @nullable */
   trialDaysLeft?: number | null;
+  /** @nullable */
   trialExpiresAt?: string | null;
 }
 
@@ -690,14 +775,20 @@ export const UploadedDocumentStatus = {
 export interface ExtractedLavorazione {
   tipo: string;
   prezzoUnitario: number;
+  /** @nullable */
   um?: string | null;
+  /** @nullable */
   zona?: string | null;
 }
 
 export interface ExtractedDocumentData {
+  /** @nullable */
   lavorazioni?: ExtractedLavorazione[] | null;
+  /** @nullable */
   totale?: number | null;
+  /** @nullable */
   zona?: string | null;
+  /** @nullable */
   note?: string | null;
 }
 
@@ -705,11 +796,13 @@ export interface UploadedDocument {
   id: string;
   userId: string;
   fileName: string;
+  /** @nullable */
   fileSize?: number | null;
   mimeType: string;
   fileUrl: string;
   status: UploadedDocumentStatus;
   extractedData?: ExtractedDocumentData | null;
+  /** @nullable */
   errorMessage?: string | null;
   createdAt: string;
   updatedAt: string;
@@ -721,6 +814,7 @@ export interface PriceSummaryItem {
   minPrice: number;
   maxPrice: number;
   count: number;
+  /** @nullable */
   unit?: string | null;
   zones?: string[];
 }
@@ -742,6 +836,7 @@ export const PriceAlertDirection = {
 export interface PriceAlert {
   id: string;
   workType: string;
+  /** @nullable */
   zone?: string | null;
   previousAvgPrice: number;
   currentAvgPrice: number;
@@ -758,7 +853,9 @@ export interface PriceComparisonVendor {
 
 export interface PriceComparisonGroup {
   workType: string;
+  /** @nullable */
   zone?: string | null;
+  /** @nullable */
   unit?: string | null;
   vendors: PriceComparisonVendor[];
 }
@@ -770,18 +867,26 @@ export interface PriceComparisonResult {
 export interface Client {
   id: string;
   clientName: string;
+  /** @nullable */
   email?: string | null;
+  /** @nullable */
   phone?: string | null;
   quoteCount: number;
   unlockedCount: number;
   totalValue: number;
   unlockedValue: number;
   lastQuoteDate: string;
+  /** @nullable */
   indirizzo?: string | null;
+  /** @nullable */
   city?: string | null;
+  /** @nullable */
   province?: string | null;
+  /** @nullable */
   partitaIva?: string | null;
+  /** @nullable */
   businessNumber?: string | null;
+  /** @nullable */
   postalCode?: string | null;
 }
 
