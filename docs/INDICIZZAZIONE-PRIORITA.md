@@ -20,8 +20,8 @@ Criterio: prima le pagine che hanno già impressioni in Search Console (domanda 
 ## B — articoli con clic (versione senza www) e altri hub
 
 11. ~~https://prevai.it/blog/fac-simile-preventivo-impianto-elettrico/~~ — già indicizzato (23/10), saltare
-12. https://prevai.it/blog/costo-posa-piastrelle-bagno-cucina/
-13. https://prevai.it/blog/fac-simile-preventivo-tinteggiatura/
+12. https://prevai.it/blog/costo-posa-piastrelle-bagno-cucina/ — ✅ 23/10 già indicizzato
+13. https://prevai.it/blog/fac-simile-preventivo-tinteggiatura/ — ✅ 23/10 già indicizzato
 14. https://prevai.it/blog/modello-preventivo-impianto-elettrico/
 15. https://prevai.it/blog/fac-simile-preventivo-idraulico/
 16. https://prevai.it/blog/fac-simile-preventivo-imbianchino/
@@ -76,3 +76,4 @@ Criterio: prima le pagine che hanno già impressioni in Search Console (domanda 
 | Data | URL fatti | Note |
 |---|---|---|
 | 23/10/2026 | 1–10 (gruppo A completo) | Tutti "Indexing requested". 3 e 11 erano già indicizzati (per il 3 serve comunque, è riscritto). All'11ª richiesta "Quota exceeded": riprendere dal 12 il giorno dopo. |
+| 23/10/2026 (2° giro) | 12–13 saltati (già indicizzati) | 14 non indicizzato ("Discovered – currently not indexed") ma "Quota exceeded" alla prima richiesta: quota del giorno già usata. Riprendere dal 14. |
