@@ -51,7 +51,7 @@
     "pdf-parse": "^2.4.5",
     "pdfkit": "^0.19.1",
     "pdfmake": "^0.3.7",
-    "pino": "^9",
+    "pino": "^10",
     "pino-http": "^10",
     "posthog-node": "^5.40.0",
     "resend": "^6.34.1",
