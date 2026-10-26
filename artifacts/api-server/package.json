@@ -43,7 +43,7 @@
     "cors": "^2",
     "drizzle-orm": "catalog:",
     "express": "^5",
-    "express-rate-limit": "^7",
+    "express-rate-limit": "^8",
     "fflate": "^0.8.3",
     "kysely": "^0.28.17",
     "mammoth": "^1.12.0",
