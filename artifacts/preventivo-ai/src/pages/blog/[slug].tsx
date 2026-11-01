@@ -1,6 +1,7 @@
+import { useEffect, useState } from "react";
 import { useParams, Link } from "wouter";
 import { ArrowRight } from "lucide-react";
-import { BLOG_ARTICLES } from "@/data/blog-data";
+import type { BlogArticle } from "@/data/blog-data";
 import { SECTORS, ACTIVE_CITIES, CITY_SECTORS } from "@/data/seo-data";
 import { extractToc, injectHeadingIds } from "@/data/blog-toc";
 import { SeoHead } from "@/components/seo-head";
@@ -22,11 +23,27 @@ const CATEGORY_CHIPS: Record<string, string> = {
 
 const BASE_URL = "https://prevai.it";
 
+// Le pagine articolo arrivano prerenderizzate e statiche (main.tsx non monta
+// l'App su /blog/…): questa pagina serve solo quando si naviga verso un
+// articolo dall'interno dell'app. I corpi di tutti gli articoli pesano decine
+// di kB gzip, quindi si caricano dopo il primo disegno invece di stare nel
+// chunk della pagina (bundle budget, PERF-1).
 export default function BlogArticlePage() {
+  const [articles, setArticles] = useState<BlogArticle[] | null>(null);
+  useEffect(() => {
+    let vivo = true;
+    void import("@/data/blog-data").then((m) => { if (vivo) setArticles(m.BLOG_ARTICLES); });
+    return () => { vivo = false; };
+  }, []);
+  if (!articles) return <div style={{ minHeight: "60vh" }} />;
+  return <BlogArticleView articles={articles} />;
+}
+
+function BlogArticleView({ articles }: { articles: BlogArticle[] }) {
   const { t, lang } = useLanguage();
   const params = useParams<{ slug: string }>();
   const slug = params.slug;
-  const article = BLOG_ARTICLES.find((a) => a.slug === slug);
+  const article = articles.find((a) => a.slug === slug);
 
   if (!article) {
     return (
@@ -44,7 +61,7 @@ export default function BlogArticlePage() {
   const toc = extractToc(article.contentHtml);
   const bodyHtml = injectHeadingIds(article.contentHtml);
 
-  const relatedArticles = BLOG_ARTICLES.filter(
+  const relatedArticles = articles.filter(
     (a) => a.slug !== article.slug &&
       (a.relatedSectors.some((s) => article.relatedSectors.includes(s)) ||
         a.category === article.category)

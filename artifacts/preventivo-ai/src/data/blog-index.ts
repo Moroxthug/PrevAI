@@ -4,6 +4,7 @@
 // pagina articolo e dallo script di prerender, così l'HTML non entra nel
 // bundle pubblico. Contenuti: PrevAI v1 (tag v1-final), slug identici.
 import { BLOG_FISCALE_META, blogFiscalePubblicabile } from "./blog-fiscale-index";
+import { BLOG_NOVEMBRE_META } from "./blog-novembre-index";
 
 export interface BlogArticleMeta {
   slug: string;
@@ -796,7 +797,7 @@ const BLOG_INDEX_BASE: BlogArticleMeta[] = [
  * Tutto il resto (sitemap, prerender, liste, correlati) legge BLOG_INDEX, quindi
  * il filtro sta in un punto solo.
  */
-export const BLOG_INDEX: BlogArticleMeta[] = [...BLOG_INDEX_BASE, ...(blogFiscalePubblicabile() ? BLOG_FISCALE_META : [])];
+export const BLOG_INDEX: BlogArticleMeta[] = [...BLOG_INDEX_BASE, ...BLOG_NOVEMBRE_META, ...(blogFiscalePubblicabile() ? BLOG_FISCALE_META : [])];
 
 export interface GuideCard {
   slug: string;
@@ -918,3 +919,6 @@ export const SECTOR_ARTICLES: Record<string, string[]> = {
   "come-fare-preventivo": ["errori-preventivi-artigiani", "app-preventivi-smartphone", "come-vincere-piu-lavori", "fac-simile-preventivo"],
   "preventivi-gratis": ["app-preventivi-smartphone", "ai-preventivi-artigiani", "preventivo-digitale-vs-carta"],
 };
+
+// Novembre 2026: ogni articolo nuovo compare anche tra quelli dei suoi settori.
+for (const a of BLOG_NOVEMBRE_META) for (const s of a.relatedSectors) (SECTOR_ARTICLES[s] ??= []).push(a.slug);

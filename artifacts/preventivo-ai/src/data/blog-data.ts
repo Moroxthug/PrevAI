@@ -4,6 +4,9 @@
 // qui — il join lancia un errore al caricamento del modulo (cioè in build).
 import { BLOG_INDEX, type BlogArticleMeta } from "./blog-index.js";
 import { BLOG_FISCALE_CONTENT } from "./blog-fiscale.js";
+import { BLOG_NOVEMBRE_PREZZI } from "./blog-novembre-prezzi.js";
+import { BLOG_NOVEMBRE_GUIDE } from "./blog-novembre-guide.js";
+import { BLOG_NOVEMBRE_LOCALI } from "./blog-novembre-locali.js";
 import { MODELLI_WORD, fileModello, modelloPerSlug } from "./modelli-word.js";
 
 export * from "./blog-index.js";
@@ -13,6 +16,9 @@ export interface BlogArticle extends BlogArticleMeta {
 }
 
 const BLOG_CONTENT: Record<string, string> = {
+  ...BLOG_NOVEMBRE_PREZZI,
+  ...BLOG_NOVEMBRE_GUIDE,
+  ...BLOG_NOVEMBRE_LOCALI,
   "come-fare-preventivo-imbianchino": `
 <p>Un preventivo ben fatto è la differenza tra un cliente che firma subito e uno che va dalla concorrenza. Per un imbianchino, il documento deve comunicare professionalità, chiarezza e trasparenza sui costi — prima ancora di parlare di qualità del lavoro.</p>
 
@@ -4368,6 +4374,10 @@ const MODELLO_PER_ARTICOLO: Record<string, string> = {
   "come-fare-preventivo-imbianchino": "tinteggiatura",
   "preventivo-ristrutturazione-bagno-completo": "ristrutturazione-bagno",
   "preventivo-piastrellista": "posa-piastrelle",
+  "come-calcolare-mq-pareti-da-pitturare": "tinteggiatura",
+  "come-calcolare-piastrelle-necessarie": "posa-piastrelle",
+  "computo-metrico-estimativo": "lavori-edili",
+  "quanto-costa-cartongesso": "lavori-edili",
 };
 
 function boxModelloWord(modelloSlug: string): string {
