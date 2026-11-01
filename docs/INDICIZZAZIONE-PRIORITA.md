@@ -71,9 +71,39 @@ Criterio: prima le pagine che hanno già impressioni in Search Console (domanda 
 51. https://prevai.it/preventivi/serramentista/torino/ — trasmittanza zona E, teleriscaldamento
 52. https://prevai.it/preventivi/tetto/perugia/ — neve in quota, zona sismica 2
 
+## F — 24 articoli nuovi del blog (1/11/2026)
+
+Online dal 1/11 e nella sitemap (reinviata il 1/11). Le prime dieci richieste fatte il 1/11; le altre da riprendere prima delle liste C–E, perché sono pagine che Google non ha mai visto.
+
+F1. https://prevai.it/blog/quanto-costa-cappotto-termico/ — ✅ 1/11 richiesta
+F2. https://prevai.it/blog/iva-lavori-edili/ — ✅ 1/11 richiesta
+F3. https://prevai.it/blog/quanto-costa-pompa-di-calore/ — ✅ 1/11 richiesta
+F4. https://prevai.it/blog/software-preventivi-edili/ — ✅ 1/11 richiesta
+F5. https://prevai.it/blog/ristrutturare-casa-milano/ — ✅ 1/11 richiesta
+F6. https://prevai.it/blog/ristrutturare-casa-roma/ — ✅ 1/11 richiesta
+F7. https://prevai.it/blog/quanto-costa-cartongesso/ — ✅ 1/11 richiesta
+F8. https://prevai.it/blog/computo-metrico-estimativo/ — ✅ 1/11 richiesta
+F9. https://prevai.it/blog/ristrutturare-casa-napoli/ — ✅ 1/11 richiesta
+F10. https://prevai.it/blog/ristrutturare-casa-torino/ — ✅ 1/11 richiesta
+F11. https://prevai.it/blog/quanto-costa-impianto-fotovoltaico/
+F12. https://prevai.it/blog/quanto-costa-massetto/
+F13. https://prevai.it/blog/quanto-costa-impermeabilizzazione-terrazzo/
+F14. https://prevai.it/blog/quanto-costa-smaltimento-macerie/
+F15. https://prevai.it/blog/quanto-costa-ponteggio/
+F16. https://prevai.it/blog/prezzari-regionali-lavori-edili/
+F17. https://prevai.it/blog/ricarico-margine-artigiano/
+F18. https://prevai.it/blog/sal-stato-avanzamento-lavori/
+F19. https://prevai.it/blog/varianti-in-corso-opera/
+F20. https://prevai.it/blog/preventivo-lavori-condominio/
+F21. https://prevai.it/blog/come-calcolare-mq-pareti-da-pitturare/
+F22. https://prevai.it/blog/come-calcolare-piastrelle-necessarie/
+F23. https://prevai.it/blog/zone-climatiche-citta-italiane/
+F24. https://prevai.it/blog/zone-sismiche-citta-italiane/
+
 ## Registro
 
 | Data | URL fatti | Note |
 |---|---|---|
 | 23/10/2026 | 1–10 (gruppo A completo) | Tutti "Indexing requested". 3 e 11 erano già indicizzati (per il 3 serve comunque, è riscritto). All'11ª richiesta "Quota exceeded": riprendere dal 12 il giorno dopo. |
 | 23/10/2026 (2° giro) | 12–13 saltati (già indicizzati) | 14 non indicizzato ("Discovered – currently not indexed") ma "Quota exceeded" alla prima richiesta: quota del giorno già usata. Riprendere dal 14. |
+| 01/11/2026 | F1–F10 | Tutti "Indexing requested" (sitemap reinviata prima). F11 "Quota exceeded": riprendere da F11, poi dal 14 della lista B. |
