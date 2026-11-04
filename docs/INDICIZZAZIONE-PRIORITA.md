@@ -22,13 +22,13 @@ Criterio: prima le pagine che hanno già impressioni in Search Console (domanda 
 11. ~~https://prevai.it/blog/fac-simile-preventivo-impianto-elettrico/~~ — già indicizzato (23/10), saltare
 12. https://prevai.it/blog/costo-posa-piastrelle-bagno-cucina/ — ✅ 23/10 già indicizzato
 13. https://prevai.it/blog/fac-simile-preventivo-tinteggiatura/ — ✅ 23/10 già indicizzato
-14. https://prevai.it/blog/modello-preventivo-impianto-elettrico/
-15. https://prevai.it/blog/fac-simile-preventivo-idraulico/
-16. https://prevai.it/blog/fac-simile-preventivo-imbianchino/
-17. https://prevai.it/preventivi/giardiniere/
-18. https://prevai.it/preventivi/falegname/
-19. https://prevai.it/preventivi/carpentiere/
-20. https://prevai.it/preventivi/geometra/
+14. https://prevai.it/blog/modello-preventivo-impianto-elettrico/ — ✅ 4/11 richiesta
+15. https://prevai.it/blog/fac-simile-preventivo-idraulico/ — ✅ 4/11 già indicizzato
+16. https://prevai.it/blog/fac-simile-preventivo-imbianchino/ — ✅ 4/11 richiesta
+17. https://prevai.it/preventivi/giardiniere/ — ✅ 4/11 richiesta
+18. https://prevai.it/preventivi/falegname/ — ✅ 4/11 richiesta
+19. https://prevai.it/preventivi/carpentiere/ — ✅ 4/11 già indicizzato
+20. https://prevai.it/preventivi/geometra/ — ✅ 4/11 richiesta
 
 ## C — Lombardia con ricerche locali in Search Console
 
@@ -108,3 +108,4 @@ F24. https://prevai.it/blog/zone-sismiche-citta-italiane/ — ✅ 4/11 richiesta
 | 23/10/2026 (2° giro) | 12–13 saltati (già indicizzati) | 14 non indicizzato ("Discovered – currently not indexed") ma "Quota exceeded" alla prima richiesta: quota del giorno già usata. Riprendere dal 14. |
 | 01/11/2026 | F1–F10 | Tutti "Indexing requested" (sitemap reinviata prima). F11 "Quota exceeded": riprendere da F11, poi dal 14 della lista B. |
 | 04/11/2026 | F11–F24 | 8 già indicizzati (F11–F13, F18–F22), 6 "Indexing requested" (F14–F17, F23, F24). Nessun "Quota exceeded". Lista F chiusa; prossimo: dal 14 della lista B. |
+| 04/11/2026 (2° giro) | 14–20 (lista B chiusa) | 14, 16, 17, 18, 20 "Indexing requested"; 15 e 19 già indicizzati. 21 non indicizzato ma "Quota exceeded" (11 richieste in giornata): riprendere dal 21 della lista C. |
