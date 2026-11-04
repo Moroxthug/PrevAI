@@ -48,7 +48,7 @@ async function requireTeamFeature(userId: string): Promise<{ ok: true } | { ok: 
   return { ok: false, plan: minimumPlanFor("team_time") };
 }
 
-const planRequired = (res: import("express").Response, plan: string, what: string) => res.status(403).json({ error: "PLAN_REQUIRED", requiredPlan: plan, message: `${what} requires the Elite plan` });
+const planRequired = (res: import("express").Response, plan: string, what: string) => res.status(403).json({ error: "PLAN_REQUIRED", requiredPlan: plan, message: `${what} requires the Cantieri plan` });
 
 async function ownedWorker(userId: string, id: string) {
   const [w] = await db.select().from(collaboratorsTable).where(and(eq(collaboratorsTable.id, id), eq(collaboratorsTable.userId, userId)));

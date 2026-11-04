@@ -118,10 +118,13 @@ export function reviewSupplier(orders: Pick<OpenOrder, "status" | "supplierId" |
 
 export const listedCount = (orders: Pick<OpenOrder, "status">[]): number => orders.filter((o) => o.status === "listed").length;
 
-/** "Business" for "monthly_business". */
+/** PREZZI-2 (2026-11-04): the plan names the site uses (lib/config piani.ts on the server). */
+const PLAN_NAMES: Record<string, string> = { starter: "Preventivi", clienti: "Clienti", pro: "Cantieri", elite: "Impresa" };
+
+/** "Cantieri" for "monthly_pro" (or "annual_pro"); "Business" for an id it doesn't know ("monthly_business"). */
 export function planName(id: string): string {
-  const w = id.replace(/^monthly_/, "").replace(/_/g, " ");
-  return w.charAt(0).toUpperCase() + w.slice(1);
+  const w = id.replace(/^(monthly|annual)_/, "").replace(/_/g, " ");
+  return PLAN_NAMES[w] ?? w.charAt(0).toUpperCase() + w.slice(1);
 }
 
 // ── The count and the add forms ──────────────────────────────────────────────

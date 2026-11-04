@@ -1,6 +1,6 @@
 import { useParams, Link } from "wouter";
 import { ArrowRight, CheckCircle2, Clock, FileText, Shield, TrendingUp, Star, Building2, BookOpen, X, MapPin } from "lucide-react";
-import { PREVENTIVI_SINGOLI, PREZZI_PIANI, formatPrezzo } from "@workspace/config";
+import { PREVENTIVI_SINGOLI, PREZZI_PIANI, VOCI_PIANI, formatPrezzo } from "@workspace/config";
 import { SeoHead } from "@/components/seo-head";
 import { SECTORS, DEFAULT_SECTOR, RELATED_SECTORS, CITY_SECTORS, ACTIVE_CITIES } from "@/data/seo-data";
 import { BLOG_INDEX, SECTOR_ARTICLES } from "@/data/blog-index";
@@ -160,16 +160,14 @@ function PreventiviGratisPlansBlock() {
     },
     {
       name: t("seo.plans.proName"),
-      price: formatPrezzo(PREZZI_PIANI.monthly_pro.mensileCents),
+      // PREZZI-2: il secondo gradino è Clienti (preventivi illimitati, listino, contratti).
+      price: formatPrezzo(PREZZI_PIANI.monthly_clienti.mensileCents),
       period: t("seo.plans.perMonth"),
       highlight: true,
       badge: t("seo.plans.mostChosen"),
       features: [
-        t("seo.plans.proFeature1").replace("{count}", String(PREZZI_PIANI.monthly_pro.preventiviMese)),
         t("seo.plans.proFeature2"),
-        t("seo.plans.proFeature3"),
-        t("seo.plans.proFeature4"),
-        t("seo.plans.proFeature5"),
+        ...VOCI_PIANI.monthly_clienti.slice(0, 4),
       ],
       cta: t("seo.plans.proCta"),
       href: "/sign-up",

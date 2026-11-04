@@ -158,7 +158,7 @@ export type RiepilogoAddon = {
     variante: string;
     mensileCents: number;
     annualeCents: number;
-    /** Con il piano Elite il mensile è quello del bundle. */
+    /** Con il piano Impresa il mensile è quello del bundle. */
     conElite: boolean;
     mensileEffettivoCents: number;
   };

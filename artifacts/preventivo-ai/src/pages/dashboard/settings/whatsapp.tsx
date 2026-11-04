@@ -12,6 +12,7 @@ import { useLanguage } from "@/i18n/LanguageContext";
 import { cn } from "@/lib/utils";
 import { prezzoPianoTesto } from "@/lib/prezzi";
 import { NotAvailableNote, SettingsSection } from "./ui";
+import { pianoOltreIngresso } from "@workspace/config";
 
 // APP-1b: la scheda "Bot WhatsApp" diventa la sezione Messaggi → WhatsApp.
 // Collegare, verificare e scollegare sono azioni immediate: niente barra Salva.
@@ -35,7 +36,7 @@ function WhatsappUpsellCard() {
   const handleCheckout = (planId: string) => {
     setLoadingPlanId(planId);
     createCheckout.mutate(
-      { data: { planType: planId as "monthly_pro" | "monthly_elite" } },
+      { data: { planType: planId as "monthly_clienti" | "monthly_elite" } },
       {
         onSuccess: (r) => { window.location.href = r.url; },
         onError: () => {
@@ -78,10 +79,10 @@ function WhatsappUpsellCard() {
           </div>
           <div className="flex flex-wrap gap-3 pt-1">
             <button className="btn btn-navy btn-gradient gap-2"
-              onClick={() => handleCheckout("monthly_pro")}
-              disabled={loadingPlanId === "monthly_pro"}>
-              {loadingPlanId === "monthly_pro" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Crown className="h-4 w-4" />}
-              {t("dashboard.settings.whatsappUpsell.upgradeToProPrice").replace("{price}", prezzoPianoTesto("monthly_pro"))}
+              onClick={() => handleCheckout("monthly_clienti")}
+              disabled={loadingPlanId === "monthly_clienti"}>
+              {loadingPlanId === "monthly_clienti" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Crown className="h-4 w-4" />}
+              {t("dashboard.settings.whatsappUpsell.upgradeToProPrice").replace("{price}", prezzoPianoTesto("monthly_clienti"))}
             </button>
             <button className="btn btn-navy bg-amber-500 hover:bg-amber-600 text-white border-0 gap-2"
               onClick={() => handleCheckout("monthly_elite")}
@@ -174,9 +175,7 @@ function WhatsappTab() {
     );
   };
 
-  const isPro = subscription?.plan === "monthly_pro" && subscription?.isActive;
-  const isElite = subscription?.plan === "monthly_elite" && subscription?.isActive;
-  const hasWhatsappAccess = isPro || isElite;
+  const hasWhatsappAccess = !!subscription?.isActive && pianoOltreIngresso(subscription.plan);
 
   if (isLoading) return <Skeleton className="h-48 w-full rounded-[var(--radius)]" />;
 

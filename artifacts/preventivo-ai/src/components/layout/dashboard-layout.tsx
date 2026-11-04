@@ -12,7 +12,7 @@ import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { Logo } from "@/components/logo";
 import { useGetSubscription, useGetBusinessProfile } from "@workspace/api-client-react";
-import { hasFeature } from "@/lib/plans";
+import { hasFeature, type ProductFeature } from "@/lib/plans";
 import { useAuth } from "@/hooks/use-auth";
 import { authClient } from "@/lib/auth-client";
 import { leaveThisDevice } from "@/lib/push-api";
@@ -38,6 +38,7 @@ import { queryClient as appQueryClient } from "@/lib/query-client";
 // (lib/offline/query-cache.ts) — le pagine pubbliche non caricano mai questo codice.
 startPersisting(appQueryClient);
 import { AssistantLauncher } from "@/components/assistant/assistant-launcher";
+import { pianoOltreIngresso } from "@workspace/config";
 
 /** Section groupings for the sidebar rail — purely presentational, doesn't affect routing or access. */
 const NAV_GROUPS = ["overview", "sales", "delivery", "insights", "workspace"] as const;
@@ -49,14 +50,14 @@ function useNavItems() {
     { href: "/dashboard/quotes", labelKey: "dashboard.nav.quotes", icon: FileText, exact: false, proOnly: false, comingSoon: false, group: "sales" },
     { href: "/dashboard/clients", labelKey: "dashboard.nav.clients", icon: Users, exact: false, proOnly: false, comingSoon: false, group: "sales" },
     { href: "/dashboard/leads", labelKey: "dashboard.nav.leads", icon: Target, exact: false, proOnly: false, comingSoon: false, group: "sales" },
-    { href: "/dashboard/contracts", labelKey: "dashboard.nav.contracts", icon: FileSignature, exact: false, proOnly: true, comingSoon: false, group: "sales" },
-    { href: "/dashboard/jobs", labelKey: "dashboard.nav.jobs", icon: Briefcase, exact: false, proOnly: true, comingSoon: false, group: "delivery" },
-    { href: "/dashboard/schedule", labelKey: "dashboard.nav.schedule", icon: CalendarDays, exact: false, proOnly: true, comingSoon: false, group: "delivery" },
-    { href: "/dashboard/team", labelKey: "dashboard.nav.team", icon: HardHat, exact: false, proOnly: true, comingSoon: false, group: "delivery" },
-    { href: "/dashboard/catalog", labelKey: "dashboard.nav.catalog", icon: BookOpen, exact: false, proOnly: true, comingSoon: false, group: "delivery" },
-    { href: "/dashboard/invoices", labelKey: "dashboard.nav.invoices", icon: Receipt, exact: false, proOnly: true, comingSoon: false, group: "delivery" },
+    { href: "/dashboard/contracts", labelKey: "dashboard.nav.contracts", icon: FileSignature, exact: false, proOnly: true, feature: "contracts" as ProductFeature, comingSoon: false, group: "sales" },
+    { href: "/dashboard/jobs", labelKey: "dashboard.nav.jobs", icon: Briefcase, exact: false, proOnly: true, feature: "jobs" as ProductFeature, comingSoon: false, group: "delivery" },
+    { href: "/dashboard/schedule", labelKey: "dashboard.nav.schedule", icon: CalendarDays, exact: false, proOnly: true, feature: "jobs" as ProductFeature, comingSoon: false, group: "delivery" },
+    { href: "/dashboard/team", labelKey: "dashboard.nav.team", icon: HardHat, exact: false, proOnly: true, feature: "team_accounts" as ProductFeature, comingSoon: false, group: "delivery" },
+    { href: "/dashboard/catalog", labelKey: "dashboard.nav.catalog", icon: BookOpen, exact: false, proOnly: true, feature: "catalog" as ProductFeature, comingSoon: false, group: "delivery" },
+    { href: "/dashboard/invoices", labelKey: "dashboard.nav.invoices", icon: Receipt, exact: false, proOnly: true, feature: "invoicing" as ProductFeature, comingSoon: false, group: "delivery" },
     // A-1: visibile solo con l'add-on Amministrazione (fatture elettroniche, bollo, ciclo passivo).
-    { href: "/dashboard/amministrazione", labelKey: "dashboard.nav.amministrazione", icon: Landmark, exact: false, proOnly: true, addonSdi: true, comingSoon: false, group: "delivery" },
+    { href: "/dashboard/amministrazione", labelKey: "dashboard.nav.amministrazione", icon: Landmark, exact: false, proOnly: true, feature: "invoicing" as ProductFeature, addonSdi: true, comingSoon: false, group: "delivery" },
     // A-2: il calcolo fiscale è un add-on a sé, perché un'impresa in regime
     //      ordinario vuole le fatture elettroniche e non il forfettario.
     // A-5: non più riservato a Pro — dopo il lancio il calcolo è gratis in ogni piano, e l'add-on si compra con qualunque piano.
@@ -66,7 +67,7 @@ function useNavItems() {
     // A-5: chi non ha il modulo, a offerta pubblicata, trova qui la pagina dell'add-on (in bozza non compare).
     { href: "/dashboard/amministrazione/attiva", labelKey: "dashboard.nav.fisco", icon: Landmark, exact: false, proOnly: false, addonOffer: true, comingSoon: false, group: "delivery" },
     { href: "/dashboard/analytics", labelKey: "dashboard.nav.analytics", icon: BarChart3, exact: false, proOnly: false, comingSoon: false, group: "insights" },
-    { href: "/dashboard/assistant", labelKey: "dashboard.nav.assistant", icon: Sparkles, exact: false, proOnly: true, comingSoon: false, group: "insights" },
+    { href: "/dashboard/assistant", labelKey: "dashboard.nav.assistant", icon: Sparkles, exact: false, proOnly: true, feature: "assistant" as ProductFeature, comingSoon: false, group: "insights" },
     { href: "/dashboard/documents", labelKey: "dashboard.nav.documents", icon: FolderOpen, exact: false, proOnly: false, comingSoon: false, group: "workspace" },
     { href: "/dashboard/archive", labelKey: "dashboard.nav.archive", icon: Archive, exact: false, proOnly: false, comingSoon: false, group: "workspace" },
     { href: "/dashboard/imports", labelKey: "dashboard.nav.imports", icon: UploadCloud, exact: false, proOnly: false, comingSoon: false, group: "workspace" },
@@ -258,7 +259,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
   // from the session so the block lifts as soon as enrolment succeeds.
   const { data: securityPolicy } = useQuery({ queryKey: ["security-policy"], queryFn: securityApi.policy, enabled: isSignedIn === true, staleTime: 60_000 });
   const twoFactorGated = Boolean(securityPolicy?.twoFactorRequired) && !user?.twoFactorEnabled;
-  const isPro = subscription?.isActive && (subscription?.plan === "monthly_pro" || subscription?.plan === "monthly_elite");
+  const isPro = subscription?.isActive && pianoOltreIngresso(subscription?.plan);
   const { data: navProfile } = useGetBusinessProfile();
   const hasSdi = navProfile ? hasFeature(navProfile as never, "sdi_invoicing") : false;
   const hasFisco = navProfile ? hasFeature(navProfile as never, "fiscal_engine") : false;
@@ -347,7 +348,11 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
     return null;
   }
 
-  const NAV_ITEMS = allNavItems.filter(item => (!item.proOnly || isPro) && (!("addonSdi" in item && item.addonSdi) || hasSdi) && (!("addonFisco" in item && item.addonFisco) || hasFisco) && (!("addonCommercialista" in item && item.addonCommercialista) || hasCommercialista) && (!("addonOffer" in item && item.addonOffer) || showAddonOffer));
+  // PREZZI-2: con quattro piani "Pro o superiore" non basta più: ogni voce chiede la sua funzione
+  // (Clienti ha listino e contratti ma non i cantieri). Prima che il profilo arrivi vale il piano.
+  const navAllowed = (item: { proOnly?: boolean; feature?: ProductFeature }) =>
+    !item.proOnly || (navProfile && item.feature ? hasFeature(navProfile as never, item.feature) : isPro);
+  const NAV_ITEMS = allNavItems.filter(item => navAllowed(item) && (!("addonSdi" in item && item.addonSdi) || hasSdi) && (!("addonFisco" in item && item.addonFisco) || hasFisco) && (!("addonCommercialista" in item && item.addonCommercialista) || hasCommercialista) && (!("addonOffer" in item && item.addonOffer) || showAddonOffer));
   const name = user?.name || user?.email?.split("@")[0] || "Account";
   const email = user?.email ?? "";
   const initials = name.slice(0, 2).toUpperCase();

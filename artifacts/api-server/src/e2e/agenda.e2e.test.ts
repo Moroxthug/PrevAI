@@ -172,8 +172,8 @@ describe("AGENDA-1 — subscribed .ics feeds", () => {
     await org.api(`/api/calendar/feeds/${res.body.feed.id}`, { method: "DELETE" });
   });
 
-  test("feeds are an Elite integration", async () => {
-    const pro = await createOrg({ companyName: "Pro Co", plan: "monthly_pro" });
+  test("feeds come with Cantieri (calendar_sync), not with Clienti", async () => {
+    const pro = await createOrg({ companyName: "Clienti Co", plan: "monthly_clienti" });
     const res = await pro.api("/api/calendar/feeds", { body: { name: "Anything", url: FEED_URL } });
     expect(res.status).toBe(403);
     expect(res.body.error).toBe("PLAN_REQUIRED");
@@ -255,7 +255,7 @@ describe("AGENDA-1 — plan gating on the mirror", () => {
   test("downgrading hides external events without deleting them", async () => {
     await startServer();
     const org = await createOrg({ companyName: "Downgrade Co", plan: "monthly_elite" });
-    await db.update(businessProfilesTable).set({ subscriptionPlan: "monthly_pro" }).where(eq(businessProfilesTable.userId, org.userId));
+    await db.update(businessProfilesTable).set({ subscriptionPlan: "monthly_clienti" }).where(eq(businessProfilesTable.userId, org.userId));
     const res = await org.api(agendaUrl(-1, 30));
     expect(res.status).toBe(200);
     expect(res.body.externalEnabled).toBe(false);

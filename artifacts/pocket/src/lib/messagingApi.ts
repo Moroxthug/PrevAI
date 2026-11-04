@@ -2,7 +2,7 @@
 import { api } from "./api";
 
 export type WaStatus = { connected: boolean; available: boolean; phoneNumber: string | null; isEnabled: boolean | null; businessNumber: string | null };
-/** Quotes made from WhatsApp this month, and the plan's allowance (Pro has one, Elite none). */
+/** Quotes made from WhatsApp this month, and the plan's allowance (Clienti and Cantieri have one, Impresa none). */
 export type WaUsage = { used: number; limit: number | null; plan: string | null };
 
 export const messagingApi = {

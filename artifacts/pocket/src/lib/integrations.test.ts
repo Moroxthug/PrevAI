@@ -29,7 +29,7 @@ test("a plan unlocks an app by feature; the Fisco add-on brings SdI", () => {
   assert.equal(unlocked(wa, "monthly_starter", []), true);
   assert.equal(unlocked(APPS.find((a) => a.id === "drive")!, "free", []), true);
   assert.equal(requiredPlan(sdi), "fisco");
-  assert.equal(requiredPlan(APPS.find((a) => a.id === "gcal")!), "monthly_elite");
+  assert.equal(requiredPlan(APPS.find((a) => a.id === "gcal")!), "monthly_pro");
 });
 
 const states = (o: Partial<Record<AppId, State>>): Record<AppId, State> => Object.fromEntries(APPS.map((a) => [a.id, o[a.id] ?? "none"])) as Record<AppId, State>;

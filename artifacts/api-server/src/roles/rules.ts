@@ -53,5 +53,5 @@ export function defaultJobRole(access: Access): JobRole {
 
 export const isJobRole = (s: string): s is JobRole => (JOB_ROLES as readonly string[]).includes(s);
 
-/** Le Home per ruolo sono del piano Elite (in QuoteAI Business): sotto, tutti hanno la Home del titolare. */
+/** Le Home per ruolo sono del piano Impresa (in QuoteAI Business): sotto, tutti hanno la Home del titolare. */
 export const roleHomesIncluded = (plan: string): boolean => plan === "monthly_elite";

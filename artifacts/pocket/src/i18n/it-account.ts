@@ -1,7 +1,7 @@
 // Italiano (it-IT) di Accesso e sicurezza, Due passaggi, Piano, WhatsApp e SMS, Modelli dei messaggi e Modulo per il sito
 // (QuoteAI 128.4 e 128.10, i18n/screens/security.ts, plan.ts, messaging.ts, templates.ts, widget.ts). Come il server di
 // PrevAI: la cancellazione si conferma con la password e la parola ELIMINA e lascia 30 giorni; l'esportazione chiede la
-// password; i piani sono Starter, Pro ed Elite (più l'add-on Fisco) e si gestiscono su prevai.it; gli SMS non ci sono.
+// password; i piani sono Preventivi, Clienti, Cantieri e Impresa (più l'add-on Fisco) e si gestiscono su prevai.it; gli SMS non ci sono.
 export const account = {
   sy: {
     two: {
@@ -69,7 +69,7 @@ export const account = {
       teamTime: "Ore della squadra e link per gli operai", assistant: "Assistente", analytics: "Analisi", books: "PrevAI Fisco (SdI, prima nota, F24)", calendar: "Sincronizzazione del calendario", cards: "Pagamenti con carta", gmail: "Invio dalla tua Gmail",
       logins: "{{count}} posti",
     },
-    tier: { pro: "Pro", business: "Elite", fisco: "Add-on Fisco" },
+    tier: { clienti: "Clienti", pro: "Cantieri", business: "Impresa", fisco: "Add-on Fisco" },
     bill: { method: "Metodo di pagamento", methodSub: "Su prevai.it", receipts: "Ricevute", receiptsSub: "Mandate a {{email}}", monthly: "Mensile", yearly: "Annuale" },
     web: { title: "Piano e fatturazione si gestiscono su prevai.it", sub: "Il piano non si cambia dall'app.", subMember: "Solo il titolare gestisce piano e fatturazione.", open: "Apri prevai.it" },
     toast: { offline: "Sei offline. Riprova quando torni in linea.", failed: "Non riesco ad aprire prevai.it." },
@@ -108,7 +108,7 @@ export const account = {
     back: "Indietro", close: "Chiudi", title: "Modelli dei messaggi", lede: "Cosa ricevono i clienti da {{company}}",
     offline: { lead: "Sei offline.", body: "Le modifiche restano su questo telefono e si salvano quando torni in linea." },
     readOnly: { lead: "Solo lettura.", body: "Il tuo ruolo legge i modelli ma non li cambia." },
-    locked: { lead: "Modificare i modelli è incluso in Elite.", body: "Fino ad allora i clienti ricevono il testo standard. Il piano non si cambia dall'app." },
+    locked: { lead: "Modificare i modelli è incluso in Impresa.", body: "Fino ad allora i clienti ricevono il testo standard. Il piano non si cambia dall'app." },
     loadFailed: { title: "Non riesco a caricare i modelli", body: "Controlla la connessione e riprova.", retry: "Riprova" },
     filter: "Filtro", filters: { all: "Tutti", follow: "Solleciti", remind: "Promemoria", review: "Recensioni", way: "In arrivo" },
     list: "Modelli", tag: { default: "Standard", edited: "Modificato" }, langs: ["Italiano", "Italiano"], bothLangs: "IT", language: "Lingua", channel: "Canale",

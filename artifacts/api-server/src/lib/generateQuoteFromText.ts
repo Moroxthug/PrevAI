@@ -8,6 +8,7 @@ import { linkQuoteToClient } from "./clients.js";
 import { resolveQuoteTaxRate } from "./tax.js";
 import { recordAiUsage } from "./usage.js";
 import { stripLocationPlaceholder } from "../quotes/titles.js";
+import { pianoOltreIngresso } from "@workspace/config";
 
 /**
  * Prompt unificato PrevAI v2 (V2-2e).
@@ -298,7 +299,7 @@ function parseAiResponse(content: string, rawInput: string, profile: typeof busi
     ivaValore: ivaValoreVal.toFixed(2),
     totale: totaleVal.toFixed(2),
     note: aiData.note ?? DEFAULT_QUOTE_NOTE,
-    capitolatoPro: !!(profile?.subscriptionStatus === "active" && (profile?.subscriptionPlan === "monthly_pro" || profile?.subscriptionPlan === "monthly_elite")),
+    capitolatoPro: !!(profile?.subscriptionStatus === "active" && pianoOltreIngresso(profile?.subscriptionPlan)),
     templateId,
   };
 }

@@ -77,7 +77,7 @@ export function AssistantSection() {
   if (error) {
     return (
       <SettingsSection title="Assistente" intro={intro}>
-        <div className="notice info" role="status"><Info aria-hidden="true" /><span className="grow">L'assistente è incluso nel piano Elite.</span></div>
+        <div className="notice info" role="status"><Info aria-hidden="true" /><span className="grow">L'assistente è incluso nel piano Impresa.</span></div>
       </SettingsSection>
     );
   }

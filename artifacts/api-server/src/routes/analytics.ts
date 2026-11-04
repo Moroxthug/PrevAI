@@ -30,7 +30,7 @@ router.get("/analytics/company", requireAuth, async (req, res) => {
     const userId = getUserId(res);
     const [profile] = await db.select().from(businessProfilesTable).where(eq(businessProfilesTable.userId, userId));
     if (!hasFeature(profile, "analytics_pro")) {
-      res.status(403).json({ error: "PLAN_REQUIRED", requiredPlan: minimumPlanFor("analytics_pro"), message: "Business analytics require the Elite plan" });
+      res.status(403).json({ error: "PLAN_REQUIRED", requiredPlan: minimumPlanFor("analytics_pro"), message: "Business analytics require the Impresa plan" });
       return;
     }
     const months = Number.parseInt(String(req.query.months ?? "6"), 10);
@@ -47,7 +47,7 @@ router.get("/analytics/insights", requireAuth, async (req, res) => {
     const userId = getUserId(res);
     const [profile] = await db.select().from(businessProfilesTable).where(eq(businessProfilesTable.userId, userId));
     if (!hasFeature(profile, "analytics_pro")) {
-      res.status(403).json({ error: "PLAN_REQUIRED", requiredPlan: minimumPlanFor("analytics_pro"), message: "Le analisi dell'impresa fanno parte del piano Elite" });
+      res.status(403).json({ error: "PLAN_REQUIRED", requiredPlan: minimumPlanFor("analytics_pro"), message: "Le analisi dell'impresa fanno parte del piano Impresa" });
       return;
     }
     const months = Number.parseInt(String(req.query.months ?? "24"), 10);

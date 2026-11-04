@@ -102,7 +102,7 @@ export async function createUser(opts: { name?: string; email?: string } = {}): 
 
 export type OrgOptions = {
   province?: string;
-  plan?: "free" | "monthly_starter" | "monthly_pro" | "monthly_elite";
+  plan?: "free" | "monthly_starter" | "monthly_clienti" | "monthly_pro" | "monthly_elite";
   companyName?: string;
   profile?: Partial<typeof businessProfilesTable.$inferInsert>;
 };

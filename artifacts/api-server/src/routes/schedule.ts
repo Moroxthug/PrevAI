@@ -135,7 +135,7 @@ router.get("/schedule", requireAuth, requirePermission("jobs", "view"), async (r
     const userId = getUserId(res);
     const gate = await requireJobsFeature(userId);
     if (!gate.ok) {
-      res.status(403).json({ error: "PLAN_REQUIRED", requiredPlan: gate.plan, message: "The schedule board requires the Pro plan" });
+      res.status(403).json({ error: "PLAN_REQUIRED", requiredPlan: gate.plan, message: "The schedule board requires the Cantieri plan" });
       return;
     }
     const q = z.object({ from: isoInstant, to: isoInstant, projectId: z.string().uuid().optional() }).safeParse(req.query);
@@ -198,7 +198,7 @@ router.post("/schedule/blocks", requireAuth, requirePermission("jobs", "edit"), 
     const userId = getUserId(res);
     const gate = await requireJobsFeature(userId);
     if (!gate.ok) {
-      res.status(403).json({ error: "PLAN_REQUIRED", requiredPlan: gate.plan, message: "The schedule board requires the Pro plan" });
+      res.status(403).json({ error: "PLAN_REQUIRED", requiredPlan: gate.plan, message: "The schedule board requires the Cantieri plan" });
       return;
     }
     const body = BlockBody.safeParse(req.body);

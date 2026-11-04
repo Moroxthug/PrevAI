@@ -1,9 +1,9 @@
 {/*
   Testo ripreso da PrevAI v1 (termini.tsx, tag v1-final) nel layout QuoteAI.
-  Piani e prezzi in 4.1 vengono da @workspace/config (piani.ts, offerta.ts): A-5, D5 del 2026-09-23.
+  Piani e prezzi in 4.1 vengono da @workspace/config (piani.ts, offerta.ts): A-5, D5 del 2026-09-23; PREZZI-2 del 2026-11-04 (quattro piani).
 */}
 import { PublicLayout } from "@/components/layout/public-layout";
-import { OFFERTA_AMMINISTRAZIONE, PREVENTIVI_SINGOLI, PREZZI_PIANI, formatPrezzo } from "@workspace/config";
+import { OFFERTA_AMMINISTRAZIONE, PIANI_IN_ABBONAMENTO, PREVENTIVI_SINGOLI, PREZZI_PIANI, VOCI_PIANI, formatPrezzo } from "@workspace/config";
 import { prezzoPianoTesto } from "@/lib/prezzi";
 import { SeoHead } from "@/components/seo-head";
 import { Link } from "wouter";
@@ -28,7 +28,7 @@ export default function TermsPage() {
         <h1 style={{ fontSize: "clamp(1.9rem, 3.4vw, 2.5rem)", fontWeight: 800, letterSpacing: "-.02em", color: "var(--navy)", lineHeight: 1.15, marginBottom: 10 }}>
           Termini di servizio
         </h1>
-        <p style={{ fontSize: 13, color: "var(--faint)" }}>Ultimo aggiornamento: 23 settembre 2026</p>
+        <p style={{ fontSize: 13, color: "var(--faint)" }}>Ultimo aggiornamento: 4 novembre 2026</p>
       </header>
 
       <div className="wrap" style={{ maxWidth: 780, paddingBottom: "clamp(48px, 6vw, 80px)" }}>
@@ -77,9 +77,9 @@ export default function TermsPage() {
               <div>
                 <p className="font-medium">4.1 Piani disponibili</p>
                 <ul className="list-disc pl-5 mt-1 space-y-1">
-                  <li><strong>Starter ({prezzoPianoTesto("monthly_starter")} o {prezzoPianoTesto("monthly_starter", "annuale")}):</strong> {PREZZI_PIANI.monthly_starter.preventiviMese} preventivi al mese, PDF con filigrana PrevAI.</li>
-                  <li><strong>Pro ({prezzoPianoTesto("monthly_pro")} o {prezzoPianoTesto("monthly_pro", "annuale")}):</strong> {PREZZI_PIANI.monthly_pro.preventiviMese} preventivi al mese, PDF senza filigrana, branding personalizzabile, contratti, cantieri e fatturazione, {PREZZI_PIANI.monthly_pro.utenti} utenti.</li>
-                  <li><strong>Elite ({prezzoPianoTesto("monthly_elite")} o {prezzoPianoTesto("monthly_elite", "annuale")}):</strong> preventivi illimitati e tutto il Pro, più squadra, ore degli operai, analisi, assistente AI e integrazioni avanzate, {PREZZI_PIANI.monthly_elite.utenti} utenti.</li>
+                  {PIANI_IN_ABBONAMENTO.map((id) => (
+                    <li key={id}><strong>{PREZZI_PIANI[id].nome} ({prezzoPianoTesto(id)} o {prezzoPianoTesto(id, "annuale")}):</strong> {VOCI_PIANI[id].join("; ")}.</li>
+                  ))}
                   <li><strong>Singolo con filigrana ({formatPrezzo(PREVENTIVI_SINGOLI.oneshot_watermark.cents)}):</strong> un singolo preventivo PDF con filigrana.</li>
                   <li><strong>Singolo pulito ({formatPrezzo(PREVENTIVI_SINGOLI.oneshot_clean.cents)}):</strong> un singolo preventivo PDF senza filigrana.</li>
                   <li>
@@ -90,7 +90,7 @@ export default function TermsPage() {
                     l'abbonamento non viene disdetto.
                   </li>
                 </ul>
-                <p className="mt-1 text-xs text-gray-500">I prezzi aggiornati e le funzionalità di ciascun piano sono indicati nella pagina Piano e fatturazione al momento dell'acquisto.</p>
+                <p className="mt-1 text-xs text-gray-500">I prezzi aggiornati e le funzionalità di ciascun piano sono indicati nella pagina Piano e fatturazione al momento dell'acquisto. Chi era già abbonato al 4 novembre 2026 (piani Starter, Pro ed Elite) mantiene l'importo che paga finché non cambia piano; le funzioni sono quelle del piano corrispondente (Preventivi, Cantieri, Impresa).</p>
               </div>
               <div>
                 <p className="font-medium">4.2 Fatturazione</p>

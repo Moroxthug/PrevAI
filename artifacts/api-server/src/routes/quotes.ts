@@ -61,6 +61,7 @@ import { randomUUID } from "crypto";
 import { recordAiUsage } from "../lib/usage.js";
 import { requireAiBudget } from "../lib/aiBudget.js";
 import { extractFromPdf, extractFromDocx, extractFromXlsx } from "../lib/extractDocument.js";
+import { pianoOltreIngresso } from "@workspace/config";
 
 const objectStorage = new ObjectStorageService();
 
@@ -1038,7 +1039,7 @@ Imposta sempre titolo_riga1 = "Analisi Economica e Computo Metrico Prezzato".`
           capitoli,
           sconto,
           condizioniPagamento,
-          capitolatoPro: !!(profile?.subscriptionStatus === "active" && (profile?.subscriptionPlan === "monthly_pro" || profile?.subscriptionPlan === "monthly_elite")),
+          capitolatoPro: !!(profile?.subscriptionStatus === "active" && pianoOltreIngresso(profile?.subscriptionPlan)),
           titoloPreventivoRiga1: aiData.titolo_riga1 ?? "Analisi Economica e Computo Metrico Prezzato",
           titoloPreventivoRiga2: aiData.titolo_riga2 ?? "",
           numeroPreventivoData,
@@ -1443,9 +1444,9 @@ router.put("/quotes/:id", requireAuth, requirePermission("quotes", "edit"), asyn
           .select({ subscriptionStatus: businessProfilesTable.subscriptionStatus, subscriptionPlan: businessProfilesTable.subscriptionPlan })
           .from(businessProfilesTable)
           .where(eq(businessProfilesTable.userId, userId));
-        const isProUser = profileData?.subscriptionStatus === "active" && (profileData?.subscriptionPlan === "monthly_pro" || profileData?.subscriptionPlan === "monthly_elite");
+        const isProUser = profileData?.subscriptionStatus === "active" && pianoOltreIngresso(profileData?.subscriptionPlan);
         if (!isProUser) {
-          res.status(403).json({ error: "PRO_REQUIRED", message: "This template requires an active Pro or Elite subscription" });
+          res.status(403).json({ error: "PRO_REQUIRED", message: "This template requires an active Clienti, Cantieri or Impresa subscription" });
           return;
         }
       }
@@ -1703,7 +1704,7 @@ router.post("/quotes/:id/generate-pdf", requireAuth, requirePermission("quotes",
     }
 
     const isProOrElite = profile?.subscriptionStatus === "active" &&
-      (profile?.subscriptionPlan === "monthly_pro" || profile?.subscriptionPlan === "monthly_elite");
+      pianoOltreIngresso(profile?.subscriptionPlan);
     const unlockedPlan = effectiveStatus === "unlocked" && quote.status === "draft"
       ? "trial"
       : quote.unlockedWithPlan;
@@ -2102,15 +2103,15 @@ router.post("/quotes/:id/upgrade-to-capitolato", requireAuth, requirePermission(
     if (!quote) { res.status(404).json({ error: "Not found" }); return; }
     if (quote.userId !== userId) { res.status(403).json({ error: "Forbidden" }); return; }
 
-    // Check Pro plan
+    // PDF da Clienti in su (pianoOltreIngresso)
     const [profile] = await db
       .select({ subscriptionPlan: businessProfilesTable.subscriptionPlan, subscriptionStatus: businessProfilesTable.subscriptionStatus })
       .from(businessProfilesTable)
       .where(eq(businessProfilesTable.userId, userId));
 
-    const isProUser = profile?.subscriptionStatus === "active" && (profile?.subscriptionPlan === "monthly_pro" || profile?.subscriptionPlan === "monthly_elite");
+    const isProUser = profile?.subscriptionStatus === "active" && pianoOltreIngresso(profile?.subscriptionPlan);
     if (!isProUser) {
-      res.status(403).json({ error: "Pro or Elite plan required", code: "PRO_REQUIRED" });
+      res.status(403).json({ error: "Clienti, Cantieri or Impresa plan required", code: "PRO_REQUIRED" });
       return;
     }
 
@@ -2220,15 +2221,15 @@ router.post("/quotes/:id/generate-pdf-pro", requireAuth, requirePermission("quot
       return;
     }
 
-    // Check Pro plan
+    // PDF da Clienti in su (pianoOltreIngresso)
     const [profile] = await db
       .select()
       .from(businessProfilesTable)
       .where(eq(businessProfilesTable.userId, userId));
 
-    const isProUser = profile?.subscriptionStatus === "active" && (profile?.subscriptionPlan === "monthly_pro" || profile?.subscriptionPlan === "monthly_elite");
+    const isProUser = profile?.subscriptionStatus === "active" && pianoOltreIngresso(profile?.subscriptionPlan);
     if (!isProUser) {
-      res.status(403).json({ error: "Pro or Elite plan required", code: "PRO_REQUIRED" });
+      res.status(403).json({ error: "Clienti, Cantieri or Impresa plan required", code: "PRO_REQUIRED" });
       return;
     }
 

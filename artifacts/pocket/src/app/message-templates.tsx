@@ -1,5 +1,5 @@
 // MessageTemplates.dc.html. What clients get from the company: eight templates (follow-ups, reminders, the review request, "on my way"), with their {slots} as chips,
-// a preview with a sample client and "Send automatically". States: default, offline, view only, locked (editing is included in Elite), loading and can't load.
+// a preview with a sample client and "Send automatically". States: default, offline, view only, locked (editing is included in Impresa), loading and can't load.
 // PrevAI: Italian only and by email only (no SMS, and WhatsApp is the contractor's own line to PrevAI), so the language and channel switches and "Send me a test" (a text)
 // are not on this screen. Saved on the company's profile (a page of its own); the quote follow-ups read f1–f3, the rest still go out in the standard wording.
 // Not built: "Duplicate" (the server has no custom templates).

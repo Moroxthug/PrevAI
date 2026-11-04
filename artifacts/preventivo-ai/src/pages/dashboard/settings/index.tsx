@@ -29,6 +29,7 @@ import { AssistantSection } from "./assistant";
 import { NotificationsSection } from "./notifications";
 import { APPS_HREF, appById } from "./apps/catalog";
 import { PlanSection, planLabelOf } from "./plan";
+import { pianoOltreIngresso } from "@workspace/config";
 
 // ── APP-1b (come QuoteAI Phase 102): le Impostazioni come elenco ─────────────
 // /dashboard/settings/<sezione>. Su schermo largo: l'elenco raggruppato a
@@ -80,7 +81,7 @@ function useVisibleSections() {
   const { data: sub, isFetched: subLoaded } = useGetSubscription();
   const { data: profile, isFetched: profileLoaded } = useBusinessProfile();
   const plan = sub?.isActive ? sub.plan : null;
-  const proUp = plan === "monthly_pro" || plan === "monthly_elite";
+  const proUp = pianoOltreIngresso(plan);
   const hasSdi = profile ? hasFeature(profile as never, "sdi_invoicing") : false;
   const hasAssistant = profile ? hasFeature(profile as never, "assistant") : false;
   const visible = useMemo(() => {

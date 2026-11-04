@@ -46,7 +46,7 @@ import { NeedsYouCard, TodayStats } from "@/components/dashboard/today";
 import { FiscoSection, HoursSection, InvoicesSection, JobsSection } from "@/components/dashboard/home-sections";
 import { CustomizeHomeSheet } from "@/components/dashboard/customize-home";
 import { useHome } from "@/lib/home-api";
-import { HOME_DEFAULTS, type HomeLayout, type HomeSectionId } from "@workspace/config";
+import { HOME_DEFAULTS, type HomeLayout, type HomeSectionId, fotoPerPreventivo, PREZZI_PIANI } from "@workspace/config";
 import { ListRow } from "@/components/mobile/list-row";
 import { AssistantAskRow } from "@/components/assistant/assistant-launcher";
 import { hasFeature } from "@/lib/plans";
@@ -57,11 +57,7 @@ import { CrewSection } from "@/components/crew/crew-today-card";
 /* ─── plan helpers ─────────────────────────────────────────────────────────── */
 
 function getMaxPhotos(plan: string | null | undefined, isActive: boolean): number {
-  if (!isActive) return 0;
-  if (plan === "monthly_elite") return 5;
-  if (plan === "monthly_pro") return 3;
-  if (plan === "monthly_starter") return 1;
-  return 0;
+  return isActive ? fotoPerPreventivo(plan) : 0;
 }
 
 const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp", "image/heic", "image/heif"];
@@ -700,7 +696,7 @@ export default function DashboardHome() {
               ? t("dashboard.index.subtitleNewUser")
               : subscription?.isActive
                 ? t("dashboard.index.subtitlePlanActive")
-                    .replace("{plan}", subscription.plan === "monthly_pro" ? "Pro" : subscription.plan === "monthly_elite" ? "Elite" : "Starter")
+                    .replace("{plan}", isPianoInAbbonamento(subscription.plan) ? PREZZI_PIANI[subscription.plan].nome : "")
                     .replace("{quotesInfo}", isPianoInAbbonamento(subscription.plan) && preventiviMese(subscription.plan) !== null ? t("dashboard.index.quotesPerMonth").replace("{count}", String(preventiviMese(subscription.plan))) : t("dashboard.index.unlimitedQuotes"))
                 : t("dashboard.index.subtitleTotalQuotes").replace("{count}", String(stats?.total ?? 0))}
           </p>

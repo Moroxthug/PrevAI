@@ -1991,7 +1991,7 @@ export const UploadBusinessProfileLogoResponse = zod.object({
  */
 export const CreateCheckoutSessionBody = zod.object({
   "quoteId": zod.string().optional(),
-  "planType": zod.enum(['monthly_starter', 'monthly_pro', 'monthly_elite', 'oneshot_watermark', 'oneshot_clean']),
+  "planType": zod.enum(['monthly_starter', 'monthly_clienti', 'monthly_pro', 'monthly_elite', 'oneshot_watermark', 'oneshot_clean']),
   "billing": zod.enum(['mensile', 'annuale']).optional().describe('A-5 — periodicità dell\'abbonamento (default mensile; ignorata per i preventivi singoli)')
 })
 

@@ -11,20 +11,20 @@ export function meterOf(m: Meter): { value: number; level: Level } {
   return { value, level: pct >= 100 ? "full" : pct >= 80 ? "near" : "ok" };
 }
 
-/** "business" is the top plan's tag (Elite in PrevAI); "fisco" the PrevAI Fisco add-on, which no plan includes. */
-export type FeatureRow = { id: string; included: boolean; tier: "pro" | "business" | "fisco"; count?: number };
+/** The plan that brings the row (PREZZI-2): "clienti" Clienti, "pro" Cantieri, "business" the top plan (Impresa); "fisco" the PrevAI Fisco add-on, which no plan includes. */
+export type FeatureRow = { id: string; included: boolean; tier: "clienti" | "pro" | "business" | "fisco"; count?: number };
 
 /** What each row needs from the server's `features` list; rows built from two features need both. */
 const NEEDS: { id: string; any: string[]; tier: FeatureRow["tier"] }[] = [
-  { id: "contracts", any: ["contracts"], tier: "pro" },
+  { id: "contracts", any: ["contracts"], tier: "clienti" },
   { id: "costs", any: ["costs", "invoicing"], tier: "pro" },
-  { id: "teamTime", any: ["team_time"], tier: "business" },
+  { id: "teamTime", any: ["team_time"], tier: "pro" },
   { id: "assistant", any: ["assistant"], tier: "business" },
   { id: "analytics", any: ["analytics_pro"], tier: "business" },
   { id: "books", any: ["sdi_invoicing", "admin_suite"], tier: "fisco" },
-  { id: "calendar", any: ["calendar_sync"], tier: "business" },
+  { id: "calendar", any: ["calendar_sync"], tier: "pro" },
   { id: "cards", any: ["invoice_card_payments"], tier: "business" },
-  { id: "gmail", any: ["gmail_send"], tier: "business" },
+  { id: "gmail", any: ["gmail_send"], tier: "clienti" },
 ];
 
 /** The quotes and jobs rows say what the plan caps ("60 quotes a month", "3 active jobs") or "Unlimited quotes and jobs"; the logins row says how many. */

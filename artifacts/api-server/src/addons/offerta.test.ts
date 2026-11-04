@@ -17,9 +17,12 @@ import {
   lookupKeysPianiAttese,
   pianoDaLookupKey,
   prezzoPianoCents,
+  pianoSuccessivo,
+  pianoDaNome,
+  pianoOltreIngresso,
 } from "@workspace/config";
 import { PLANS, pianoDaPrezzo, prezzoPianoStripe, ErrorePrezzo } from "../routes/payments";
-import { addonAttivo, hasFeature, statoAddonDaStripe } from "@workspace/db";
+import { PLAN_FEATURES, addonAttivo, hasFeature, statoAddonDaStripe } from "@workspace/db";
 import { eAbbonamentoAddon } from "./amministrazione";
 
 const TUTTO_CHIUSO = { decisioni: { D5: true, D8: true }, motoreRevisionato: true } as const;
@@ -140,7 +143,7 @@ describe("hasFeature con l'add-on", () => {
   it("l'add-on attivo accende tutto il modulo", () => {
     const p = profilo({ amministrazione: { stato: "attivo" } });
     for (const f of ["sdi_invoicing", "fiscal_engine", "admin_suite"] as const) expect(hasFeature(p, f)).toBe(true);
-    expect(hasFeature(p, "team_time")).toBe(false);
+    expect(hasFeature(p, "assistant")).toBe(false);
   });
 
   it("insoluto tiene l'accesso, cessato no", () => {
@@ -181,19 +184,36 @@ describe("abbonamenti Stripe dell'add-on", () => {
   });
 });
 
-describe("prezzi dei piani (D5, 2026-09-23)", () => {
-  it("IVA inclusa, Elite a 79 €, annuale = dieci mensilità", () => {
-    expect(PREZZI_PIANI.monthly_starter.mensileCents).toBe(1900);
+describe("prezzi dei piani (D5 2026-09-23, PREZZI-2 2026-11-04)", () => {
+  it("IVA inclusa, quattro gradini da 9,90 a 89 €, annuale = dieci mensilità", () => {
+    expect(PREZZI_PIANI.monthly_starter.mensileCents).toBe(990);
+    expect(PREZZI_PIANI.monthly_clienti.mensileCents).toBe(2400);
     expect(PREZZI_PIANI.monthly_pro.mensileCents).toBe(4900);
-    expect(PREZZI_PIANI.monthly_elite.mensileCents).toBe(7900);
+    expect(PREZZI_PIANI.monthly_elite.mensileCents).toBe(8900);
     for (const p of Object.values(PREZZI_PIANI)) expect(p.annualeCents).toBe(p.mensileCents * 10);
-    expect(prezzoPianoCents("monthly_elite", "annuale")).toBe(79000);
+    expect(prezzoPianoCents("monthly_elite", "annuale")).toBe(89000);
+    expect(PREZZI_PIANI.monthly_starter.preventiviMese).toBe(10);
+    expect(PREZZI_PIANI.monthly_clienti.preventiviMese).toBeNull();
+  });
+
+  it("ogni gradino include il precedente e il successivo di Impresa non c'è", () => {
+    expect(pianoSuccessivo("monthly_starter")).toBe("monthly_clienti");
+    expect(pianoSuccessivo("monthly_clienti")).toBe("monthly_pro");
+    expect(pianoSuccessivo("monthly_pro")).toBe("monthly_elite");
+    expect(pianoSuccessivo("monthly_elite")).toBeNull();
+    expect(pianoSuccessivo(null)).toBe("monthly_starter");
+    expect(pianoDaNome("Cantieri")).toBe("monthly_pro");
+    expect(pianoDaNome("Singolo pulito")).toBeNull();
+    const ordine = ["monthly_starter", "monthly_clienti", "monthly_pro", "monthly_elite"] as const;
+    for (let i = 1; i < ordine.length; i++) for (const f of PLAN_FEATURES[ordine[i - 1]!]) expect(PLAN_FEATURES[ordine[i]!].has(f)).toBe(true);
+    expect(pianoOltreIngresso("monthly_starter")).toBe(false);
+    expect(pianoOltreIngresso("monthly_clienti")).toBe(true);
   });
 
   it("lookup key dei piani: andata e ritorno", () => {
     expect(lookupKeyPiano("monthly_pro", "annuale")).toBe("piano_pro_annuale");
     for (const k of lookupKeysPianiAttese()) expect(pianoDaLookupKey(k.chiave)).not.toBeNull();
-    expect(lookupKeysPianiAttese()).toHaveLength(6);
+    expect(lookupKeysPianiAttese()).toHaveLength(8);
     expect(pianoDaLookupKey("amministrazione_a_mensile")).toBeNull();
     expect(pianoDaLookupKey("piano_platinum_mensile")).toBeNull();
   });
@@ -223,7 +243,7 @@ describe("prezzoPianoStripe — si addebita solo il prezzo mostrato", () => {
   const prezzo = (id: string, cents: number, interval = "month"): FakePrice => ({ id, unit_amount: cents, currency: "eur", recurring: { interval }, active: true });
 
   it("usa il Price con la lookup key quando coincide", async () => {
-    const stripe = fakeStripe({ piano_elite_annuale: prezzo("price_elite_y", 79000, "year") });
+    const stripe = fakeStripe({ piano_elite_annuale: prezzo("price_elite_y", 89000, "year") });
     expect(await prezzoPianoStripe(stripe, piano("monthly_elite"), "annuale")).toBe("price_elite_y");
   });
 

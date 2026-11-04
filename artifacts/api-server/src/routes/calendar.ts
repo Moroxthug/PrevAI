@@ -88,7 +88,7 @@ router.get("/calendar/:provider/connect", requireAuth, requirePermission("integr
     const userId = getUserId(res);
     const gate = await requireCalendarFeature(userId);
     if (!gate.ok) {
-      res.status(403).json({ error: "PLAN_REQUIRED", requiredPlan: gate.plan, message: "Calendar sync requires the Elite plan" });
+      res.status(403).json({ error: "PLAN_REQUIRED", requiredPlan: gate.plan, message: "Calendar sync requires the Cantieri plan" });
       return;
     }
     if (refuseIfNotConfigured(res, provider === "google" ? "google_calendar" : "outlook_calendar", provider === "google" ? "Google Calendar" : "Outlook Calendar")) return;

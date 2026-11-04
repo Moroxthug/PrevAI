@@ -76,7 +76,7 @@ export const APPS: AppDef[] = [
     shared: "Le email che mandi da PrevAI passano da Google con il tuo account.",
   },
   {
-    id: "whatsapp", group: "messaging", name: "WhatsApp", icon: MessageCircle, minPlan: "monthly_pro", section: "whatsapp", owner: "WhatsApp LLC",
+    id: "whatsapp", group: "messaging", name: "WhatsApp", icon: MessageCircle, minPlan: "monthly_clienti", section: "whatsapp", owner: "WhatsApp LLC",
     tagline: "Preventivi da testo, vocali e foto",
     about: "Scrivi, manda un vocale o una foto al bot di PrevAI su WhatsApp e ricevi il preventivo pronto.",
     shared: "I messaggi che mandi al bot passano da WhatsApp (Meta).",

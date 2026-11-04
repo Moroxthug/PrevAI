@@ -1,5 +1,5 @@
 import { assistantCosts } from "../assistant/activity.js";
-import { ASSISTANT_COST_ALERT_EUR_CENTS_PER_SEAT, PIANI_IN_ABBONAMENTO, prezzoPianoCents, type PianoInAbbonamento } from "@workspace/config";
+import { ASSISTANT_COST_ALERT_EUR_CENTS_PER_SEAT, PIANI_IN_ABBONAMENTO, prezzoPianoCents, type PianoInAbbonamento, PREZZI_PIANI } from "@workspace/config";
 import { Router, type Request, type Response, type NextFunction } from "express";
 import { fromNodeHeaders } from "better-auth/node";
 import { auth } from "../lib/auth";
@@ -126,14 +126,17 @@ router.get("/admin/metrics", async (_req, res) => {
     let starterCount = 0;
     let proCount = 0;
     let activeSubscriptions = 0;
+    // PREZZI-2: MRR ai prezzi di listino di oggi (chi ha un prezzo storico pesa per il listino).
+    let mrrCents = 0;
     for (const row of subscriptionRows) {
       if (row.status === "active") {
         activeSubscriptions += Number(row.cnt);
         if (row.plan === "monthly_starter") starterCount += Number(row.cnt);
         if (row.plan === "monthly_pro") proCount += Number(row.cnt);
+        if (row.plan && row.plan in PREZZI_PIANI) mrrCents += Number(row.cnt) * PREZZI_PIANI[row.plan as PianoInAbbonamento].mensileCents;
       }
     }
-    const mrr = starterCount * 19 + proCount * 49;
+    const mrr = mrrCents / 100;
 
     res.json({
       totalUsers,
@@ -313,7 +316,7 @@ router.post("/admin/grant-plan", async (req, res) => {
       res.status(400).json({ error: "email and plan required" });
       return;
     }
-    const validPlans = ["monthly_starter", "monthly_pro", "monthly_elite"];
+    const validPlans: readonly string[] = PIANI_IN_ABBONAMENTO;
     if (!validPlans.includes(plan)) {
       res.status(400).json({ error: `Invalid plan. Valid values: ${validPlans.join(", ")}` });
       return;

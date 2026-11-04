@@ -208,7 +208,7 @@ function PlanBadge({ plan, status }: { plan: string | null; status: string | nul
       "bg-navy-50 text-navy-700 border border-navy-200"
     }`}>
       {isPro || isElite ? <Crown className="h-3 w-3" /> : <Zap className="h-3 w-3" />}
-      {isElite ? "Elite" : isPro ? "Pro" : "Starter"}
+      {plan in PREZZI_PIANI ? PREZZI_PIANI[plan as keyof typeof PREZZI_PIANI].nome : plan}
     </span>
   );
 }
@@ -896,7 +896,7 @@ export default function AdminPage() {
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                 {[
                   { label: t("admin.totalUsers"), value: String(metrics.totalUsers), sub: `+${metrics.usersThisMonth} ${t("admin.thisMonth")}`, icon: Users, color: "text-navy-500", bg: "bg-navy-50" },
-                  { label: t("admin.estimatedMrr"), value: fmt(metrics.mrr), sub: `${metrics.starterCount} Starter · ${metrics.proCount} Pro`, icon: DollarSign, color: "text-emerald-500", bg: "bg-emerald-50" },
+                  { label: t("admin.estimatedMrr"), value: fmt(metrics.mrr), sub: `${metrics.starterCount} ${PREZZI_PIANI.monthly_starter.nome} · ${metrics.proCount} ${PREZZI_PIANI.monthly_pro.nome}`, icon: DollarSign, color: "text-emerald-500", bg: "bg-emerald-50" },
                   { label: t("admin.totalQuotes"), value: String(metrics.totalQuotes), sub: `${metrics.quotesThisMonth} ${t("admin.thisMonth")}`, trend: true, icon: FileText, color: "text-blue-500", bg: "bg-blue-50" },
                   { label: t("admin.revenueGenerated"), value: fmt(metrics.totalQuoteRevenue), sub: t("admin.totalUnlockedQuoteValue"), icon: TrendingUp, color: "text-amber-500", bg: "bg-amber-50" },
                 ].map(({ label, value, sub, trend, icon: Icon, color, bg }) => (
@@ -932,7 +932,7 @@ export default function AdminPage() {
                       </div>
                       <div className="text-right">
                         <div className="text-lg font-bold text-navy-900">{metrics.starterCount}</div>
-                        <div className="text-[10px] text-navy-500">{fmt(metrics.starterCount * 19)} MRR</div>
+                        <div className="text-[10px] text-navy-500">{fmt((metrics.starterCount * PREZZI_PIANI.monthly_starter.mensileCents) / 100)} MRR</div>
                       </div>
                     </div>
 
@@ -946,7 +946,7 @@ export default function AdminPage() {
                       </div>
                       <div className="text-right">
                         <div className="text-lg font-bold text-amber-900">{metrics.proCount}</div>
-                        <div className="text-[10px] text-amber-500">{fmt(metrics.proCount * 49)} MRR</div>
+                        <div className="text-[10px] text-amber-500">{fmt((metrics.proCount * PREZZI_PIANI.monthly_pro.mensileCents) / 100)} MRR</div>
                       </div>
                     </div>
 
@@ -1612,6 +1612,7 @@ export default function AdminPage() {
                         className="w-full px-3 py-2 border border-slate-100 rounded-xl text-sm focus:outline-none focus:border-navy-500 bg-white"
                       >
                         <option value="monthly_starter">{t("admin.planStarterDesc")}</option>
+                        <option value="monthly_clienti">Clienti (preventivi illimitati, listino, contratti)</option>
                         <option value="monthly_pro">{t("admin.planProDesc")}</option>
                         <option value="monthly_elite">{t("admin.planEliteDesc")}</option>
                       </select>

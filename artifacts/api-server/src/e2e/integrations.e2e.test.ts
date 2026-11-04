@@ -244,7 +244,7 @@ describe("Phase 65 — integrations", () => {
       expect(profile!.stripeCustomerId).toBe(customerId);
       const welcome = emailsTo(org.email);
       expect(welcome).toHaveLength(1);
-      expect(welcome[0]!.subject.toLowerCase()).toContain("pro");
+      expect(welcome[0]!.subject.toLowerCase()).toContain("cantieri");
 
       // Plan change from the Stripe dashboard / portal → synced by customer id (no Stripe API call needed).
       const upgraded = await stripeWebhook(stripeEvent("customer.subscription.updated", { id: "sub_e2e", customer: customerId, status: "active", items: { data: [{ price: { id: "price_1TUdJjCaDBaDETvnCo3JKGJ7" } }] } }));

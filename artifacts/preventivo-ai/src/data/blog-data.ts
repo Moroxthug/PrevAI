@@ -568,7 +568,7 @@ const BLOG_CONTENT: Record<string, string> = {
 
 <h3>3. Software AI per preventivazione</h3>
 <p>La categoria più recente. L'artigiano descrive il lavoro in italiano parlato, e il software genera automaticamente il preventivo strutturato con voci, quantità, prezzi e IVA.</p>
-<p><strong>Pro:</strong> 30–60 secondi per preventivo, zero competenze informatiche richieste, ottimizzato per smartphone, prezzi accessibili (da 19–49€/mese).</p>
+<p><strong>Pro:</strong> 30–60 secondi per preventivo, zero competenze informatiche richieste, ottimizzato per smartphone, prezzi accessibili (da 9,90 €/mese).</p>
 <p><strong>Contro:</strong> richiede verifica delle voci generate (come qualsiasi output AI), non sostituisce la competenza tecnica del professionista.</p>
 
 <h2>Cosa cercare in un software di preventivazione</h2>
@@ -4329,7 +4329,7 @@ const BLOG_CONTENT: Record<string, string> = {
     <tr><td>Valuta</td><td>Euro</td><td>Dollaro canadese</td></tr>
     <tr><td>Imposte sul preventivo</td><td>IVA al 22 %, 10 % o 4 % secondo il lavoro, regimi senza IVA per i forfettari</td><td>GST, HST, PST e QST secondo la provincia</td></tr>
     <tr><td>Documenti fiscali</td><td>Pro-forma e, col modulo PrevAI Fisco, fattura elettronica via SdI</td><td>Fatture secondo le regole canadesi (lo SdI esiste solo in Italia)</td></tr>
-    <tr><td>Piani</td><td>Starter 19 €, Pro 49 €, Elite 79 € al mese, IVA inclusa</td><td>Starter 19 $, Pro 49 $, Elite 59 $ al mese, in dollari canadesi</td></tr>
+    <tr><td>Piani</td><td>Preventivi 9,90 €, Clienti 24 €, Cantieri 49 €, Impresa 89 € al mese, IVA inclusa</td><td>Starter 19 $, Pro 49 $, Elite 59 $ al mese, in dollari canadesi</td></tr>
   </tbody>
 </table>
 </div>

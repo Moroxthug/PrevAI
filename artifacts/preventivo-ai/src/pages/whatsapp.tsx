@@ -63,7 +63,7 @@ export default function WhatsappPage() {
           <p className="lead" style={{ margin: "0 auto" }}>{t("whatsapp.heroBody")}</p>
           <div className="hero-cta" style={{ justifyContent: "center" }}>
             <button
-              onClick={() => navigate(isSignedIn ? "/dashboard/settings" : "/sign-up?plan=monthly_pro")}
+              onClick={() => navigate(isSignedIn ? "/dashboard/settings" : "/sign-up?plan=monthly_clienti")}
               className="btn btn-white"
             >
               {t("whatsapp.activateBot")}
@@ -190,7 +190,7 @@ export default function WhatsappPage() {
           <p>{t("whatsapp.ctaBody")}</p>
           <div className="cta-actions">
             <button
-              onClick={() => navigate(isSignedIn ? "/dashboard/settings" : "/sign-up?plan=monthly_pro")}
+              onClick={() => navigate(isSignedIn ? "/dashboard/settings" : "/sign-up?plan=monthly_clienti")}
               className="btn btn-white"
             >
               {isSignedIn ? t("whatsapp.connectWhatsapp") : t("whatsapp.tryFree7Days")}

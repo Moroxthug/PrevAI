@@ -32,6 +32,7 @@ import { ChoiceList, SetGroup, SetRow, SetSegment, SetStepper, SetValue, SheetNo
 import { Sheet, SheetTitle } from "@/ui/Sheet";
 import { Switch } from "@/ui/Switch";
 import { useTheme } from "@/ui/theme";
+import { planName as planNameOf } from "@/lib/inventory";
 
 type Row = { id: string; hay: string; node: (first: boolean) => ReactNode };
 /** The kinds of push PrevAI sends (lib/config notifiche-push.ts), each with its row. */
@@ -107,8 +108,8 @@ export default function Settings() {
   const net = netOf(schedule);
   const netWord = t(`invoices.net.${net}`);
   const subscription = sub.data as { plan?: string | null; periodEnd?: string | null } | undefined;
-  // PrevAI's plan ids (monthly_starter, monthly_pro, monthly_elite) by the name the site uses; with no renewal date, the name alone.
-  const planName = subscription?.plan ? ({ monthly_starter: "Starter", monthly_pro: "Pro", monthly_elite: "Elite" } as Record<string, string>)[subscription.plan] ?? subscription.plan : null;
+  // PrevAI's plan ids by the name the site uses (Preventivi, Clienti, Cantieri, Impresa); with no renewal date, the name alone.
+  const planName = subscription?.plan ? planNameOf(subscription.plan) : null;
   const planSub = planName
     ? subscription?.periodEnd ? t("plan.sub", { plan: planName, date: shortDate(new Date(subscription.periodEnd), locale) }) : planName
     : t("plan.subNone");

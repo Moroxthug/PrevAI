@@ -2,7 +2,7 @@
 // is the authority (it returns `features` on /api/business-profile); this
 // copy only exists so the UI can gate before the profile has loaded.
 
-export const PLAN_IDS = ["free", "monthly_starter", "monthly_pro", "monthly_elite"] as const;
+export const PLAN_IDS = ["free", "monthly_starter", "monthly_clienti", "monthly_pro", "monthly_elite"] as const;
 export type PlanId = (typeof PLAN_IDS)[number];
 
 export type ProductFeature =
@@ -32,13 +32,18 @@ export type ProductFeature =
   // A-6: il commercialista convenzionato. Nessun piano, nessun add-on in vendita (D9, D11).
   | "accountant_service";
 
+// PREZZI-2: un gradino per fase dell'impresa (lib/config piani.ts). Preventivi → Clienti
+// (listino, contratti, email da Gmail, contatti da Meta) → Cantieri (cantieri, costi, fatture,
+// squadra, ore, calendario) → Impresa (assistente, analisi, pagamenti con carta, API).
 const STARTER: ProductFeature[] = ["quotes", "quote_email", "acceptance_notifications"];
-const PRO: ProductFeature[] = [...STARTER, "catalog", "contracts", "jobs", "costs", "invoicing", "team_accounts"];
-const ELITE: ProductFeature[] = [...PRO, "team_time", "assistant", "analytics_pro", "calendar_sync", "invoice_card_payments", "public_api", "gmail_send", "meta_lead_ads"];
+const CLIENTI: ProductFeature[] = [...STARTER, "catalog", "contracts", "gmail_send", "meta_lead_ads"];
+const PRO: ProductFeature[] = [...CLIENTI, "jobs", "costs", "invoicing", "team_accounts", "team_time", "calendar_sync"];
+const ELITE: ProductFeature[] = [...PRO, "assistant", "analytics_pro", "invoice_card_payments", "public_api"];
 
 export const PLAN_FEATURES: Record<PlanId, ReadonlySet<ProductFeature>> = {
   free: new Set<ProductFeature>(["quotes"]),
   monthly_starter: new Set(STARTER),
+  monthly_clienti: new Set(CLIENTI),
   monthly_pro: new Set(PRO),
   monthly_elite: new Set(ELITE),
 };

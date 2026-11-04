@@ -1480,3 +1480,40 @@ La Home dell'app mostra il meteo dei cantieri (la riga in alto, la scheda «Mete
 | «Meteo non disponibile» sulla Home | L'impresa non ha né indirizzo con un capoluogo né provincia: Impostazioni → Azienda → provincia. Oppure la fonte non risponde (log `Error loading the weather`): dopo 30 minuti si riprova da sola, una risposta di meno di 6 ore resta valida |
 | Il meteo è di un'altra città | Il cantiere non ha punto preciso e l'indirizzo non nomina un capoluogo: vale quello della provincia. Per un punto esatto mettere la posizione sul cantiere |
 | MET Norway risponde 403 | Ci ha bloccati per lo User-Agent o per troppe richieste: controllare `USER_AGENT` in `metno.ts` e che la cache funzioni |
+
+## 43. Quattro piani (PREZZI-2, riga 66)
+
+Da 2026-11-04 i piani sono **Preventivi** 9,90 €, **Clienti** 24 €, **Cantieri** 49 €, **Impresa** 89 € al mese, IVA inclusa, annuale = dieci mensilità. Fonte unica: `lib/config/src/piani.ts`. Gli id interni non cambiano (`monthly_starter`, `monthly_pro`, `monthly_elite`); nuovo `monthly_clienti`. Nessuna migrazione.
+
+### 43.1 Price su Stripe (live) — da fare dal titolare
+
+Il checkout addebita solo un Price che coincide con il prezzo mostrato (§5.2 punto 3). Creare nel prodotto dei piani, in EUR, un Price ricorrente per riga, **con la lookup key**; se la chiave esiste già su un Price col vecchio importo (es. `piano_elite_mensile` a 79 €), creare il nuovo e spuntare «trasferisci la lookup key»:
+
+| Lookup key | Importo | Periodicità |
+|---|---|---|
+| `piano_starter_mensile` | 9,90 € | mese |
+| `piano_starter_annuale` | 99 € | anno |
+| `piano_clienti_mensile` | 24 € | mese |
+| `piano_clienti_annuale` | 240 € | anno |
+| `piano_pro_mensile` | 49 € | mese (facoltativo: il Price storico a 49 € va già bene) |
+| `piano_pro_annuale` | 490 € | anno |
+| `piano_elite_mensile` | 89 € | mese |
+| `piano_elite_annuale` | 890 € | anno |
+
+Finché un Price manca, quel piano risponde 503 `PLAN_PRICE_MISSING` (o `PLAN_PRICE_MISMATCH` se la chiave è sul vecchio importo): nessun addebito sbagliato, ma nessuna vendita. **Non** archiviare i Price storici (Starter 19 €, Pro 49 €, Elite 59 €): gli abbonati di prima li tengono e il webhook li riconosce per id. Il Customer Portal deve elencare i quattro piani per i cambi di piano.
+
+### 43.2 Chi era già abbonato
+
+Tiene l'importo che paga (il Price storico non cambia). Le funzioni sono quelle del piano con lo stesso id: Starter → Preventivi, Pro → Cantieri (ora con preventivi illimitati, ore della squadra, calendario e 3 utenti), Elite → Impresa (6 utenti). Lo dicono i Termini §4.1.
+
+### 43.3 Cosa decide il piano
+
+| Cosa | Dove |
+|---|---|
+| Prezzi, preventivi al mese, utenti, voci mostrate | `PREZZI_PIANI`, `VOCI_PIANI` in `piani.ts` |
+| Funzioni | `PLAN_FEATURES` in `lib/db/src/schema/plans.ts` (+ copia in `preventivo-ai/src/lib/plans.ts`) |
+| PDF senza la riga PrevAI, tutti i modelli, capitolato, bot WhatsApp | `pianoOltreIngresso` (Clienti, Cantieri, Impresa) |
+| Preventivi da WhatsApp al mese | `limitePreventiviWhatsapp`: 20 in Clienti e Cantieri, senza limite in Impresa |
+| Foto per preventivo | `fotoPerPreventivo`: 1 / 3 / 3 / 5 |
+| Scontrini letti e messaggi WhatsApp al mese | `MONTHLY_USAGE_ALLOWANCE` in `plans.ts` |
+| Tetto IA | 30 % del prezzo mensile, minimo 3 € (`tetto-ia.ts`): Preventivi sta al minimo |

@@ -25,6 +25,7 @@ import { getBaseUrl } from "../lib/baseUrl.js";
 import { randomInt, randomUUID } from "crypto";
 import { userRateLimiter } from "../lib/rateLimit.js";
 import { withWhatsappUsageContext, recordWhatsappUsageFromContext } from "../lib/usage.js";
+import { pianoOltreIngresso, limitePreventiviWhatsapp } from "@workspace/config";
 
 const objectStorage = new ObjectStorageService();
 const router = Router();
@@ -475,7 +476,7 @@ async function sendQuotePreview(from: string, data: PendingQuoteData, iterationC
 
 async function handleGreeting(from: string, userId: string, profile: typeof businessProfilesTable.$inferSelect) {
   const isPro = profile.subscriptionStatus === "active" &&
-    (profile.subscriptionPlan === "monthly_pro" || profile.subscriptionPlan === "monthly_elite");
+    pianoOltreIngresso(profile.subscriptionPlan);
 
   const prefs = await getPreferences(userId);
 
@@ -544,7 +545,7 @@ async function handleGreeting(from: string, userId: string, profile: typeof busi
   const templateLines = TEMPLATES.map((t, i) =>
     isPro || t.id === "standard"
       ? `*${i + 1}* — ${t.emoji} ${t.label}: ${t.desc}`
-      : `*${i + 1}* — ${t.emoji} ${t.label}: ${t.desc} _(richiede Piano Pro/Elite)_`
+      : `*${i + 1}* — ${t.emoji} ${t.label}: ${t.desc} _(dal piano Clienti in su)_`
   ).join("\n");
 
   await sendWhatsappText(from, [
@@ -656,9 +657,8 @@ async function handleAnalytics(
   const now = new Date();
   const monthName = now.toLocaleDateString("it-IT", { month: "long", year: "numeric" });
 
-  const isPro = profile.subscriptionStatus === "active" && profile.subscriptionPlan === "monthly_pro";
   const waUsed = monthData?.waCount ?? 0;
-  const waLimit = isPro ? 20 : null;
+  const waLimit = profile.subscriptionStatus === "active" ? limitePreventiviWhatsapp(profile.subscriptionPlan) : null;
   const usageStr = waLimit != null
     ? `WhatsApp questo mese: *${waUsed}/${waLimit}* utilizzati`
     : `WhatsApp questo mese: *${waUsed}*`;
@@ -787,13 +787,13 @@ async function handleTemplateMenu(
   profile: typeof businessProfilesTable.$inferSelect,
 ) {
   const isPro = profile.subscriptionStatus === "active" &&
-    (profile.subscriptionPlan === "monthly_pro" || profile.subscriptionPlan === "monthly_elite");
+    pianoOltreIngresso(profile.subscriptionPlan);
 
   const currentDefault = prefs.defaultTemplate ?? "standard";
   const lines = TEMPLATES.map((t, i) => {
     const isDefault = t.id === currentDefault;
     const available = isPro || t.id === "standard";
-    return `*${i + 1}* — ${t.emoji} ${t.label}${isDefault ? " ✓" : ""}${!available ? " _(Pro/Elite)_" : ""}`;
+    return `*${i + 1}* — ${t.emoji} ${t.label}${isDefault ? " ✓" : ""}${!available ? " _(dal piano Clienti)_" : ""}`;
   });
 
   await sendWhatsappText(from, [
@@ -815,7 +815,7 @@ async function handleTemplateMenuReply(
   profile: typeof businessProfilesTable.$inferSelect,
 ) {
   const isPro = profile.subscriptionStatus === "active" &&
-    (profile.subscriptionPlan === "monthly_pro" || profile.subscriptionPlan === "monthly_elite");
+    pianoOltreIngresso(profile.subscriptionPlan);
 
   const templateId = templateFromChoice(text);
   if (!templateId) {
@@ -824,7 +824,7 @@ async function handleTemplateMenuReply(
   }
 
   if ((templateId === "mariagrazia" || templateId === "arosio") && !isPro) {
-    await sendWhatsappText(from, `⚠️ Il template *${templateLabel(templateId)}* richiede Piano Pro/Elite.\n\nAggiorna su: ${PREVAI_BASE_URL}/dashboard/settings/plan`);
+    await sendWhatsappText(from, `⚠️ Il template *${templateLabel(templateId)}* richiede il piano Clienti o superiore.\n\nAggiorna su: ${PREVAI_BASE_URL}/dashboard/settings/plan`);
     return;
   }
 
@@ -904,12 +904,12 @@ async function handleTemplateSelectionReply(
   }
 
   const isPro = profile.subscriptionStatus === "active" &&
-    (profile.subscriptionPlan === "monthly_pro" || profile.subscriptionPlan === "monthly_elite");
+    pianoOltreIngresso(profile.subscriptionPlan);
 
   if ((templateId === "mariagrazia" || templateId === "arosio") && !isPro) {
     await sendWhatsappText(
       from,
-      `⚠️ Il template *${templateLabel(templateId)}* è disponibile solo per i piani Pro ed Elite.\n\nAggiorna il tuo piano su ${PREVAI_BASE_URL}/dashboard/settings/plan oppure scegli il template *Starter* (rispondi *1*).`
+      `⚠️ Il template *${templateLabel(templateId)}* è disponibile dal piano Clienti in su.\n\nAggiorna il tuo piano su ${PREVAI_BASE_URL}/dashboard/settings/plan oppure scegli il template *Starter* (rispondi *1*).`
     );
     return;
   }
@@ -1030,8 +1030,9 @@ async function handleJobInputReply(
   const templateId = (payload.templateId as string | undefined) ?? "standard";
   const clientData = (payload.clientData as { nome: string; indirizzo: string } | undefined) ?? { nome: "", indirizzo: "" };
 
-  // Usage check for Pro (20 WhatsApp quotes/month)
-  if (profile.subscriptionPlan === "monthly_pro") {
+  // PREZZI-2: Clienti e Cantieri hanno 20 preventivi WhatsApp al mese, Impresa nessun limite.
+  const waLimite = limitePreventiviWhatsapp(profile.subscriptionPlan);
+  if (waLimite != null) {
     const startOfMonth = new Date();
     startOfMonth.setDate(1);
     startOfMonth.setHours(0, 0, 0, 0);
@@ -1039,8 +1040,8 @@ async function handleJobInputReply(
       .select({ count: sql<number>`count(*)::int` })
       .from(quotesTable)
       .where(and(eq(quotesTable.userId, userId), eq(quotesTable.source, "whatsapp"), gte(quotesTable.createdAt, startOfMonth)));
-    if ((countResult?.count ?? 0) >= 20) {
-      await sendWhatsappText(from, `⚠️ Hai raggiunto il limite di *20 preventivi WhatsApp* per questo mese (Piano Pro).\n\nIl contatore si azzera il 1° del mese prossimo.\nPer preventivi illimitati, passa al piano Elite: ${PREVAI_BASE_URL}/dashboard/settings/plan`);
+    if ((countResult?.count ?? 0) >= waLimite) {
+      await sendWhatsappText(from, `⚠️ Hai raggiunto il limite di *${waLimite} preventivi WhatsApp* per questo mese.\n\nIl contatore si azzera il 1° del mese prossimo.\nPer preventivi WhatsApp illimitati, passa al piano Impresa: ${PREVAI_BASE_URL}/dashboard/settings/plan`);
       return;
     }
   }
@@ -1266,7 +1267,7 @@ router.post("/whatsapp/webhook", async (req, res) => {
 
       // ── Plan check ──────────────────────────────────────────────────────────────
       const [profile] = await db.select().from(businessProfilesTable).where(eq(businessProfilesTable.userId, connection.userId));
-      const allowedPlans = ["monthly_pro", "monthly_elite"];
+      const allowedPlans = ["monthly_clienti", "monthly_pro", "monthly_elite"];
       if (profile?.subscriptionStatus !== "active" || !allowedPlans.includes(profile?.subscriptionPlan ?? "")) {
         await sendWhatsappText(from, `⚠️ Il tuo account non ha un piano attivo che include WhatsApp. Aggiornalo su ${PREVAI_BASE_URL}/dashboard/settings/plan`);
         return;
@@ -1407,7 +1408,7 @@ router.get("/whatsapp/usage", requireAuth, async (req, res) => {
       .where(eq(businessProfilesTable.userId, userId));
     const plan = profile?.subscriptionPlan ?? null;
     const isActive = profile?.subscriptionStatus === "active";
-    const limit = isActive && plan === "monthly_pro" ? 20 : null;
+    const limit = isActive ? limitePreventiviWhatsapp(plan) : null;
     res.json({ used, limit, plan });
   } catch (err) {
     req.log.error({ err }, "WhatsApp usage error");
@@ -1424,9 +1425,9 @@ router.post("/whatsapp/connect", requireAuth, requirePermission("integrations", 
     if (!normalized) { res.status(400).json({ error: "Numero non valido. Usa il formato internazionale, es: +39 333 1234567" }); return; }
 
     const [profile] = await db.select().from(businessProfilesTable).where(eq(businessProfilesTable.userId, userId));
-    const allowedPlans = ["monthly_pro", "monthly_elite"];
+    const allowedPlans = ["monthly_clienti", "monthly_pro", "monthly_elite"];
     if (profile?.subscriptionStatus !== "active" || !allowedPlans.includes(profile?.subscriptionPlan ?? "")) {
-      res.status(403).json({ error: "L'integrazione WhatsApp è disponibile solo per i piani Pro ed Elite." });
+      res.status(403).json({ error: "L'integrazione WhatsApp è disponibile dal piano Clienti in su." });
       return;
     }
 

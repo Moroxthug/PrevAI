@@ -85,7 +85,7 @@ export default function Analytics() {
             <Card>
               <Stack px={20} pt={24} pb={20} align="center">
                 <Icon name="bars" tone="azure" size={44} />
-                <Text size={21} weight={600} tracking={-0.03} align="center" accessibilityRole="header">{t("locked.title", { plan: "Elite" })}</Text>
+                <Text size={21} weight={600} tracking={-0.03} align="center" accessibilityRole="header">{t("locked.title", { plan: planName("monthly_elite") })}</Text>
                 <Text size={14.5} color="muted" leading={1.45} align="center">{t("locked.body", { current })}</Text>
                 <Stack mt={18} gap={0} align="stretch"><Hairline inset={0} />
                   <FeatureRow icon="bars" tone="azure" label={t("locked.feats.money")} />
@@ -93,7 +93,7 @@ export default function Analytics() {
                   <FeatureRow icon="percent" tone="violet" label={t("locked.feats.margin")} />
                   <FeatureRow icon="users" tone="teal" label={t("locked.feats.crew")} />
                 </Stack>
-                <Stack row gap={6} mt={16}><Tag accent>Business</Tag><Tag accent>Elite</Tag></Stack>
+                <Stack row gap={6} mt={16}><Tag accent>{planName("monthly_elite")}</Tag></Stack>
                 <Stack mt={16} align="stretch" gap={10}>
                   <Button label={t("locked.plans")} block onPress={() => router.push(screenHref("SetPlan", t("locked.soon")))} />
                   <Text size={12.5} color="muted" align="center">{t("locked.note")}</Text>

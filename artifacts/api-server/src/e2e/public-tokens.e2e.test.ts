@@ -66,7 +66,7 @@ describe("worker clock-in", () => {
   });
 
   test("time tracking is plan-gated", async () => {
-    const pro = await createOrg({ plan: "monthly_pro" });
+    const pro = await createOrg({ plan: "monthly_clienti" });
     const r = await pro.api("/api/team/workers", { body: { name: "No Plan", hourlyRateCents: 3000 } });
     expect(r.status).toBe(403);
     expect(r.body.error).toBe("PLAN_REQUIRED");

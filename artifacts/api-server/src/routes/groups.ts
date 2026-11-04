@@ -10,7 +10,7 @@ import { GroupError, groupOverview, groupStateFor, removeFromGroup, roleIn, type
 
 // ── POCKET-4 (riga 61, QuoteAI 127.8): i gruppi di imprese ───────────────────
 // Ogni cosa qui la decide il titolare dell'impresa che tocca: un gruppo lo crea il titolare di un'impresa, un'altra impresa entra solo quando
-// *il suo* titolare accetta. Il gruppo include l'analisi dell'impresa (piano Elite, come /analytics/company). Niente listino condiviso, niente
+// *il suo* titolare accetta. Il gruppo include l'analisi dell'impresa (piano Impresa, come /analytics/company). Niente listino condiviso, niente
 // fattura unica, niente persone su due squadre: toccano piani e fatturazione, decisioni del titolare ancora aperte.
 
 const router = Router();
@@ -32,7 +32,7 @@ function fail(res: Response, err: unknown, log: { error: (o: object, m: string) 
 async function requireGroupFeature(res: Response): Promise<boolean> {
   const profile = await profileOf(getUserId(res));
   if (hasFeature(profile, "analytics_pro")) return true;
-  res.status(403).json({ error: "PLAN_REQUIRED", requiredPlan: minimumPlanFor("analytics_pro"), message: "I gruppi di imprese fanno parte del piano Elite" });
+  res.status(403).json({ error: "PLAN_REQUIRED", requiredPlan: minimumPlanFor("analytics_pro"), message: "I gruppi di imprese fanno parte del piano Impresa" });
   return false;
 }
 

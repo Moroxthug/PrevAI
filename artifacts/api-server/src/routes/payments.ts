@@ -7,7 +7,7 @@ import { eq, sql } from "drizzle-orm";
 import { CreateCheckoutSessionBody } from "@workspace/api-zod";
 import { getUncachableStripeClient } from "../stripeClient";
 import { logger } from "../lib/logger";
-import { PREVENTIVI_SINGOLI, PREZZI_PIANI, lookupKeyPiano, pianoDaLookupKey, prezzoPianoCents, testoPreventivi, type IntervalloAddon, type PianoInAbbonamento } from "@workspace/config";
+import { PER_CHI_PIANO, PREVENTIVI_SINGOLI, PREZZI_PIANI, VOCI_PIANI, lookupKeyPiano, pianoDaLookupKey, prezzoPianoCents, type IntervalloAddon, type PianoInAbbonamento } from "@workspace/config";
 import { eAbbonamentoAddon, sincronizzaAbbonamento, type AbbonamentoStripe } from "../addons/amministrazione.js";
 
 const TRIAL_DAYS = 7;
@@ -44,72 +44,34 @@ export function getTrialStatus(profile: typeof businessProfilesTable.$inferSelec
 
 const router = Router();
 
+/**
+ * PREZZI-2: un abbonamento per gradino (lib/config piani.ts). Gli id restano
+ * quelli di sempre; `stripePriceId` è il Price storico, che tengono gli
+ * abbonati di prima (Starter 19 €, Pro 49 €, Elite 59 €): i nuovi prezzi
+ * passano dalle lookup key `piano_*`. Clienti è nato con PREZZI-2 e non ha
+ * un Price storico.
+ */
+const abbonamento = (id: PianoInAbbonamento, stripePriceId: string, tier: "starter" | "clienti" | "pro" | "elite") => ({
+  id,
+  stripePriceId,
+  name: PREZZI_PIANI[id].nome,
+  price: PREZZI_PIANI[id].mensileCents / 100,
+  annualPrice: PREZZI_PIANI[id].annualeCents / 100,
+  currency: "eur",
+  interval: "month" as string | null,
+  description: PER_CHI_PIANO[id],
+  features: [...VOCI_PIANI[id]],
+  // Solo l'ingresso porta la riga «Fatto con prevai.it» sul PDF.
+  hasWatermark: id === "monthly_starter",
+  quotaPerMonth: PREZZI_PIANI[id].preventiviMese,
+  tier,
+});
+
 export const PLANS = [
-  {
-    id: "monthly_starter",
-    stripePriceId: "price_1TUdJjCaDBaDETvnCGbjTgIq",
-    name: "Starter",
-    price: PREZZI_PIANI.monthly_starter.mensileCents / 100,
-    annualPrice: PREZZI_PIANI.monthly_starter.annualeCents / 100,
-    currency: "eur",
-    interval: "month",
-    features: [
-      testoPreventivi("monthly_starter"),
-      "PDF con logo aziendale",
-      "Riga 'Fatto con prevai.it' in calce",
-      "Template Standard incluso",
-      "Upload appunti (2 preventivi/mese)",
-      "Registrazione vocale (1 preventivo/mese)",
-    ],
-    hasWatermark: true,
-    quotaPerMonth: PREZZI_PIANI.monthly_starter.preventiviMese,
-    tier: "starter",
-  },
-  {
-    id: "monthly_pro",
-    stripePriceId: "price_1TUdJjCaDBaDETvnfBv37ryF",
-    name: "Pro",
-    price: PREZZI_PIANI.monthly_pro.mensileCents / 100,
-    annualPrice: PREZZI_PIANI.monthly_pro.annualeCents / 100,
-    currency: "eur",
-    interval: "month",
-    features: [
-      testoPreventivi("monthly_pro"),
-      "PDF puliti — nessun watermark",
-      "Logo aziendale personalizzato",
-      "Tutti i template PDF disponibili",
-      "Upload appunti (30 preventivi/mese)",
-      "Registrazione vocale (30 preventivi/mese)",
-      "Priorità generazione AI",
-    ],
-    hasWatermark: false,
-    quotaPerMonth: PREZZI_PIANI.monthly_pro.preventiviMese,
-    tier: "pro",
-  },
-  {
-    id: "monthly_elite",
-    // Price storico a 59 €: lo tengono gli abbonati di prima di A-5. I nuovi
-    // passano dalla lookup key piano_elite_* (79 €, decisione D5).
-    stripePriceId: "price_1TUdJjCaDBaDETvnCo3JKGJ7",
-    name: "Elite",
-    price: PREZZI_PIANI.monthly_elite.mensileCents / 100,
-    annualPrice: PREZZI_PIANI.monthly_elite.annualeCents / 100,
-    currency: "eur",
-    interval: "month",
-    features: [
-      "Preventivi illimitati",
-      "PDF puliti — nessun watermark",
-      "Logo aziendale personalizzato",
-      "Tutti i template PDF disponibili",
-      "Upload appunti illimitato",
-      "Registrazione vocale illimitata",
-      "Priorità massima generazione AI",
-      "Supporto dedicato",
-    ],
-    hasWatermark: false,
-    quotaPerMonth: PREZZI_PIANI.monthly_elite.preventiviMese,
-    tier: "elite",
-  },
+  abbonamento("monthly_starter", "price_1TUdJjCaDBaDETvnCGbjTgIq", "starter"),
+  abbonamento("monthly_clienti", "", "clienti"),
+  abbonamento("monthly_pro", "price_1TUdJjCaDBaDETvnfBv37ryF", "pro"),
+  abbonamento("monthly_elite", "price_1TUdJjCaDBaDETvnCo3JKGJ7", "elite"),
   {
     id: "oneshot_watermark",
     stripePriceId: "price_1TUdJjCaDBaDETvnRnYfWJWh",

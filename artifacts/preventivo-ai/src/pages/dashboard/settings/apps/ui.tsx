@@ -26,7 +26,7 @@ export function BrandLogo({ app, size = "md" }: { app: AppDef; size?: "md" | "lg
   );
 }
 
-/** Il nome di ciò che sblocca l'app: "piano Elite", "PrevAI Fisco". */
+/** Il nome di ciò che sblocca l'app: "piano Impresa", "PrevAI Fisco". */
 function unlockName(app: AppDef): string {
   return app.addon ?? `piano ${planLabelOf(requiredPlanFor(app)) ?? ""}`.trim();
 }
@@ -65,7 +65,7 @@ export function LockNote({ app }: { app: AppDef }) {
         <div>
           <p className="app-lock-title">Inclusa con {unlockName(app)}</p>
           <p className="app-lock-sub">
-            {app.addon ? "È un modulo aggiuntivo: si attiva da Piano e fatturazione." : plan === "Elite" ? "Solo nel piano Elite." : `Nel piano ${plan} e nei piani superiori.`}
+            {app.addon ? "È un modulo aggiuntivo: si attiva da Piano e fatturazione." : plan === planLabelOf("monthly_elite") ? `Solo nel piano ${plan}.` : `Nel piano ${plan} e nei piani superiori.`}
           </p>
         </div>
         <Link href="/dashboard/settings/plan" className="btn btn-sm btn-outline-navy">Vedi i piani</Link>

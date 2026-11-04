@@ -87,9 +87,11 @@ describe("monthly AI cap (lib/config tetto-ia.ts)", () => {
   test("30 % of the plan's monthly price, never below the minimum", () => {
     expect(tettoIaEurCents("free")).toBe(TETTO_IA_MINIMO_EUR_CENTS);
     expect(tettoIaEurCents(null)).toBe(TETTO_IA_MINIMO_EUR_CENTS);
-    expect(tettoIaEurCents("monthly_starter")).toBe(570);
+    // PREZZI-2: Preventivi (9,90 €) sta sotto il minimo di 3 €.
+    expect(tettoIaEurCents("monthly_starter")).toBe(TETTO_IA_MINIMO_EUR_CENTS);
+    expect(tettoIaEurCents("monthly_clienti")).toBe(720);
     expect(tettoIaEurCents("monthly_pro")).toBe(1470);
-    expect(tettoIaEurCents("monthly_elite")).toBe(2370);
+    expect(tettoIaEurCents("monthly_elite")).toBe(2670);
   });
 
   test("a staff override wins: a number is the cap, null means no cap", () => {

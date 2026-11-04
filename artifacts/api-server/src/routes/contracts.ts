@@ -173,7 +173,7 @@ router.post("/contracts/from-quote/:quoteId", requireAuth, requirePermission("co
     const userId = getUserId(res);
     const gate = await requireContractsFeature(userId);
     if (!gate.ok) {
-      res.status(403).json({ error: "PLAN_REQUIRED", requiredPlan: gate.plan, message: "Contracts require the Pro plan" });
+      res.status(403).json({ error: "PLAN_REQUIRED", requiredPlan: gate.plan, message: "Contracts require the Clienti plan" });
       return;
     }
     const body = z.object({ language: z.enum(["it"]).optional(), province: z.string().optional() }).safeParse(req.body ?? {});

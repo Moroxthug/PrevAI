@@ -13,6 +13,7 @@ import { APPS, APP_GROUPS, APPS_HREF, RETURN_PARAMS, appById, appHref, type AppD
 import { useAppStatuses, type AppStatus } from "./status";
 import { BrandLogo, LockNote, StatusPill } from "./ui";
 import { ApiPanel, GmailPanel, GoogleCalendarPanel, IcsCalendarPanel, MetaLeadsPanel, OutlookCalendarPanel, StripePanel } from "./panels";
+import { pianoOltreIngresso } from "@workspace/config";
 
 // ── APP-1b (come QuoteAI Phase 103): App collegate come catalogo ─────────────
 // Riquadri con il logo di ciascuna azienda, raggruppati; prima quelle già
@@ -39,7 +40,7 @@ function useUnlocked() {
   const { data: sub } = useGetSubscription();
   const plan = sub?.isActive ? sub.plan : null;
   return (app: AppDef) => {
-    if (app.minPlan) return plan === "monthly_pro" || plan === "monthly_elite";
+    if (app.minPlan) return pianoOltreIngresso(plan);
     if (!app.feature) return true;
     return hasFeature(profile as never, app.feature);
   };

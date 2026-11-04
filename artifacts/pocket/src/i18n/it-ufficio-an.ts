@@ -1,5 +1,5 @@
 // Italiano (it-IT) di Analisi (Analytics.dc.html, QuoteAI 127.9, i18n/screens/analytics.ts). I numeri vengono da /api/analytics/company e /insights
-// (piano Elite). «Trimestre» al posto del «Q» canadese; le sorgenti delle richieste sono quelle di PrevAI.
+// (piano Impresa). «Trimestre» al posto del «Q» canadese; le sorgenti delle richieste sono quelle di PrevAI.
 export const an = {
   an: {
     back: "Indietro", more: "Altre azioni", retry: "Riprova", title: "Analisi", heading: "Come va l'impresa", sub: "{{company}} · {{period}}",

@@ -19,6 +19,7 @@ import { MenuGroup, MenuIdentity, MenuPlanHead, MenuQuick, MenuSignOut } from "@
 import { MenuList, MenuRow } from "@/ui/Row";
 import { Screen } from "@/ui/Screen";
 import { Text } from "@/ui/Text";
+import { planName as planNameOf } from "@/lib/inventory";
 
 type RowDef = { key: string; icon: IconName; tone: Tone; built?: BuiltScreen };
 const GROUPS: { key: string; rows: RowDef[] }[] = [
@@ -55,9 +56,8 @@ export default function Menu() {
   const active = orgs.data?.items.find((o) => o.orgId === orgs.data.activeOrgId);
   const company = active?.companyName || profile.data?.companyName || "";
   const role = active ? t(`menu.role.${active.role}`) : "";
-  // Il piano arriva come «monthly_pro» / «annual_elite»: si mostra solo il nome (Starter, Pro, Elite).
-  const tier = /(starter|pro|elite)/i.exec(sub.data?.plan ?? "")?.[1]?.toLowerCase();
-  const planName = tier ? tier.charAt(0).toUpperCase() + tier.slice(1) : "";
+  // Il piano arriva come «monthly_pro» / «annual_elite»: si mostra solo il nome (Preventivi, Clienti, Cantieri, Impresa).
+  const planName = sub.data?.plan ? planNameOf(sub.data.plan) : "";
   const renews = sub.data?.periodEnd ? shortDate(new Date(sub.data.periodEnd), locale) : "";
   const version = Constants.expoConfig?.version ?? "";
 

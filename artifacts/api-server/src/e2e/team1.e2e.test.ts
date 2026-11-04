@@ -16,8 +16,10 @@ describe("team1: codici d'accesso e posti", () => {
   });
 
   test("un codice occupa un posto, si usa una volta sola e dà accesso all'impresa", async () => {
-    const owner = await createOrg({ plan: "monthly_pro" }); // 2 posti: titolare + uno
+    const owner = await createOrg({ plan: "monthly_pro" }); // 3 posti (Cantieri): titolare + due
     const quote = await seedQuote(owner.userId);
+    // Un primo codice occupa il secondo posto: quello sotto prende l'ultimo.
+    expect((await owner.api("/api/team/codes", { body: { role: "office", label: "Primo" } })).status).toBe(201);
 
     const made = await owner.api("/api/team/codes", { body: { role: "office", label: "Mario, cantiere Rossi" } });
     expect(made.status, JSON.stringify(made.body)).toBe(201);
@@ -30,8 +32,8 @@ describe("team1: codici d'accesso e posti", () => {
     expect(JSON.stringify(row)).not.toContain(code.replace("-", ""));
 
     const list = await owner.api("/api/team/members");
-    expect(list.body.seats).toMatchObject({ used: 2, included: 2, extra: 0, limit: 2, extraPurchasable: false });
-    expect(list.body.items[0]).toMatchObject({ viaCode: true, label: "Mario, cantiere Rossi", status: "invited" });
+    expect(list.body.seats).toMatchObject({ used: 3, included: 3, extra: 0, limit: 3, extraPurchasable: false });
+    expect(list.body.items.find((m: { label?: string }) => m.label === "Mario, cantiere Rossi")).toMatchObject({ viaCode: true, status: "invited" });
 
     // Posti finiti: né un secondo codice né un invito per email.
     const second = await owner.api("/api/team/codes", { body: { role: "office" } });
@@ -83,14 +85,14 @@ describe("team1: codici d'accesso e posti", () => {
   test("i posti extra alzano il tetto; un sospeso che torna riprende un posto", async () => {
     const owner = await createOrg({ plan: "monthly_pro" });
     await db.update(businessProfilesTable).set({ extraSeats: 2 }).where(eq(businessProfilesTable.userId, owner.userId));
-    expect((await owner.api("/api/team/members")).body.seats).toMatchObject({ included: 2, extra: 2, limit: 4 });
-    for (let i = 0; i < 3; i++) {
+    expect((await owner.api("/api/team/members")).body.seats).toMatchObject({ included: 3, extra: 2, limit: 5 });
+    for (let i = 0; i < 4; i++) {
       const r = await owner.api("/api/team/members/invite", { body: { email: `x${i}-${owner.userId}@example.invalid`, role: "office", send: false } });
       expect(r.status, JSON.stringify(r.body)).toBe(201);
     }
     const full = await owner.api("/api/team/members/invite", { body: { email: `x9-${owner.userId}@example.invalid`, role: "office", send: false } });
     expect(full.status).toBe(403);
-    expect(full.body.seatsLimit).toBe(4);
+    expect(full.body.seatsLimit).toBe(5);
   });
 
   test("chi invia un preventivo lo firma; vale il primo invio; la classifica conta i vinti per chi ha inviato", async () => {

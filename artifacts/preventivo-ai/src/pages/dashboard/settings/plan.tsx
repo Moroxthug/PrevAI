@@ -9,15 +9,15 @@ import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/i18n/LanguageContext";
 import { cn } from "@/lib/utils";
 import { AddonBillingCard } from "@/components/addon-billing-card";
+import { PER_CHI_PIANO, PREZZI_PIANI, VOCI_PIANI, pianoSuccessivo } from "@workspace/config";
 import { NOTA_IVA, isPianoInAbbonamento, type Periodicita } from "@/lib/prezzi";
 import { usageApi } from "@/lib/usage-api";
 import { SettingsSection } from "./ui";
 
 // APP-1b: "Piano e fatturazione" e "Utilizzo" diventano una sola sezione.
 
-const PLAN_LABEL: Record<string, string> = { monthly_starter: "Starter", monthly_pro: "Pro", monthly_elite: "Elite" };
-/** "Pro" da "monthly_pro"; null senza piano. */
-export const planLabelOf = (plan: string | null | undefined): string | null => (plan ? PLAN_LABEL[plan] ?? null : null);
+/** "Cantieri" da "monthly_pro" (PREZZI-2: i nomi stanno in lib/config piani.ts); null senza piano. */
+export const planLabelOf = (plan: string | null | undefined): string | null => (isPianoInAbbonamento(plan) ? PREZZI_PIANI[plan].nome : null);
 
 /** App e piano → Piano e fatturazione: l'abbonamento, l'utilizzo del mese e PrevAI Fisco. */
 export function PlanSection() {
@@ -77,7 +77,7 @@ function BillingTab() {
   const handleCheckout = (planId: string) => {
     setLoadingPlanId(planId);
     createCheckout.mutate(
-      { data: { planType: planId as "monthly_starter" | "monthly_pro" | "monthly_elite" | "oneshot_watermark" | "oneshot_clean", billing: periodicita } },
+      { data: { planType: planId as "monthly_starter" | "monthly_clienti" | "monthly_pro" | "monthly_elite" | "oneshot_watermark" | "oneshot_clean", billing: periodicita } },
       {
         onSuccess: (r) => { window.location.href = r.url; },
         onError: () => {
@@ -114,9 +114,11 @@ function BillingTab() {
   const isPro = sub?.plan === "monthly_pro";
   const isElite = sub?.plan === "monthly_elite";
   const isActive = sub?.isActive ?? false;
-  const planLabel = isElite ? "Elite" : isPro ? "Pro" : isStarter ? "Starter" : null;
+  const planLabel = planLabelOf(sub?.plan);
+  const piano = isPianoInAbbonamento(sub?.plan) ? sub.plan : null;
+  const prossimo = piano ? pianoSuccessivo(piano) : null;
   // A-5: chi è già abbonato può pagare un prezzo storico (es. Elite a 59 € prima
-  // del listino a 79 €), che non conserviamo: l'importo vero lo mostra il portale
+  // di A-5, o i listini di prima di PREZZI-2), che non conserviamo: l'importo vero lo mostra il portale
   // Stripe. Qui si dice solo "Mensile" / "Annuale", mai un listino che potrebbe non essere il suo.
   const planPrice = isPianoInAbbonamento(sub?.plan) ? "Importo e rinnovo nel portale Stripe" : null;
   const renewalDate = sub?.periodEnd ? new Date(sub.periodEnd).toLocaleDateString("it-IT", { day: "2-digit", month: "long", year: "numeric" }) : null;
@@ -159,13 +161,7 @@ function BillingTab() {
             <div className="bg-card/70 rounded-[var(--radius)] p-4 border border-navy-100">
               <div className="text-sm font-semibold mb-3">{t("dashboard.billing.includedInPlan")}</div>
               <ul className="space-y-2">
-                {isElite ? (
-                  <><PlanFeature text={t("dashboard.billing.feature.unlimitedQuotes")} ok /><PlanFeature text={t("dashboard.billing.feature.noWatermark")} ok /><PlanFeature text={t("dashboard.billing.feature.ownLogo")} ok /><PlanFeature text={t("dashboard.settings.billing.feature.allTemplates")} ok /><PlanFeature text={t("dashboard.settings.billing.feature.unlimitedNotesUpload")} ok /><PlanFeature text={t("dashboard.settings.billing.feature.unlimitedVoice")} ok /></>
-                ) : isPro ? (
-                  <><PlanFeature text={t("dashboard.settings.billing.feature.quotes60PerMonth")} ok /><PlanFeature text={t("dashboard.billing.feature.noWatermark")} ok /><PlanFeature text={t("dashboard.billing.feature.ownLogo")} ok /><PlanFeature text={t("dashboard.settings.billing.feature.allTemplates")} ok /><PlanFeature text={t("dashboard.settings.billing.feature.notesUpload30")} ok /><PlanFeature text={t("dashboard.settings.billing.feature.voiceRecording30")} ok /></>
-                ) : (
-                  <><PlanFeature text={t("dashboard.settings.billing.feature.quotesPerMonthCount").replace("{count}", String(sub?.quotaLimit ?? 10))} ok /><PlanFeature text={t("dashboard.settings.billing.feature.pdfWithLogo")} ok /><PlanFeature text={t("dashboard.settings.billing.feature.templateStandard")} ok /><PlanFeature text={t("dashboard.settings.billing.feature.pdfNoWatermarkFalse")} ok={false} /><PlanFeature text={t("dashboard.settings.billing.feature.templateProPremium")} ok={false} /></>
-                )}
+                {(piano ? VOCI_PIANI[piano] : []).map((v) => <PlanFeature key={v} text={v} ok />)}
               </ul>
             </div>
             {renewalDate && (
@@ -174,9 +170,9 @@ function BillingTab() {
               </div>
             )}
             <div className="flex flex-wrap gap-3 pt-1">
-              {(isStarter || isPro) && (
+              {prossimo && (
                 <button onClick={handleManage} disabled={createPortal.isPending} className="btn btn-navy gap-2">
-                  {createPortal.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Crown className="h-4 w-4" />}{isStarter ? t("dashboard.billing.upgradeToPro") : t("dashboard.settings.billing.upgradeToElite")}
+                  {createPortal.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Crown className="h-4 w-4" />}Passa a {PREZZI_PIANI[prossimo].nome}
                 </button>
               )}
               <button onClick={handleManage} disabled={createPortal.isPending} className="btn btn-outline-navy gap-2">
@@ -214,7 +210,7 @@ function BillingTab() {
             </div>
           )}
           {subscriptionPlans.length > 0 && (
-            <div className="grid sm:grid-cols-3 gap-4">
+            <div className="grid sm:grid-cols-2 xl:grid-cols-4 gap-4">
               {subscriptionPlans.map((plan) => {
                 const isPlanPro = plan.id === "monthly_pro";
                 const isPlanElite = plan.id === "monthly_elite";
@@ -224,6 +220,7 @@ function BillingTab() {
                       {isPlanPro && <span className="text-[10px] font-bold text-navy-600 uppercase tracking-wider">{t("dashboard.settings.billing.mostPopular")}</span>}
                       {isPlanElite && <span className="text-[10px] font-bold text-amber-600 uppercase tracking-wider">{t("dashboard.settings.billing.unlimited")}</span>}
                       <h2 className="text-lg">{plan.name}</h2>
+                      {isPianoInAbbonamento(plan.id) && <p className="text-xs text-muted-foreground">{PER_CHI_PIANO[plan.id]}</p>}
                       <p className="text-2xl font-extrabold">{periodicita === "annuale" && plan.annualPrice ? plan.annualPrice : plan.price} €<span className="text-sm font-normal text-muted-foreground">{periodicita === "annuale" && plan.annualPrice ? "/anno" : t("dashboard.quoteDetail.perMonth")}</span></p>
                     </div>
                     <div className="p-5 flex-1 pb-0">
@@ -253,7 +250,7 @@ function BillingTab() {
         </>
       )}
 
-      {isActive && (isStarter || isPro) && (
+      {isActive && !isElite && (
         <div className="card">
           <div className="p-5 pt-4">
             <div className="flex items-center justify-between gap-3 flex-wrap">

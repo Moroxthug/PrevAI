@@ -64,11 +64,11 @@ describe("Limiti condivisi e tetto IA (SEC-2)", () => {
   });
 
   test("over the monthly cap: 429 AI_BUDGET before any AI call; ai_budgets lifts it", async () => {
-    const org = await createOrg({ plan: "monthly_starter" }); // tetto 5,70 €
+    const org = await createOrg({ plan: "monthly_starter" }); // tetto 3 € (il minimo: Preventivi costa 9,90 €)
     // 1.000 centesimi di dollaro ≈ 8,60 € di IA questo mese.
     await db.insert(usageEventsTable).values({ userId: org.userId, kind: "ai_text", quantity: "1000", unitCostCents: "1" });
     forgetAiBudget(org.userId);
-    expect(await aiBudgetState(org.userId)).toMatchObject({ superato: true, tettoEurCents: 570 });
+    expect(await aiBudgetState(org.userId)).toMatchObject({ superato: true, tettoEurCents: 300 });
 
     const r = await org.api("/api/quotes/suggest-item-description", { body: { brief: "Rasatura pareti" } });
     expect(r.status).toBe(429);

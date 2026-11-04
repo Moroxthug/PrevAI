@@ -9,13 +9,13 @@ export function isPianoInAbbonamento(id: string | null | undefined): id is Piano
   return !!id && id in PREZZI_PIANI;
 }
 
-/** "19 €/mese" · "190 €/anno". */
+/** "9,90 €/mese" · "99 €/anno". */
 export function prezzoPianoTesto(piano: PianoInAbbonamento, periodicita: Periodicita = "mensile"): string {
   const p = PREZZI_PIANI[piano];
   return periodicita === "annuale" ? `${formatPrezzo(p.annualeCents)}/anno` : `${formatPrezzo(p.mensileCents)}/mese`;
 }
 
-/** "Starter — 19 €/mese". */
+/** "Preventivi — 9,90 €/mese". */
 export function etichettaPiano(piano: PianoInAbbonamento): string {
   return `${PREZZI_PIANI[piano].nome} — ${prezzoPianoTesto(piano)}`;
 }

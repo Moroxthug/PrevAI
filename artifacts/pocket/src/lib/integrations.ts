@@ -25,7 +25,7 @@ export const APPS: AppDef[] = [
 
 export const isOn = (s: State): boolean => s === "connected" || s === "attention" || s === "paused";
 
-const PLAN_ORDER = ["free", "monthly_starter", "monthly_pro", "monthly_elite"];
+const PLAN_ORDER = ["free", "monthly_starter", "monthly_clienti", "monthly_pro", "monthly_elite"];
 /** Does the plan (and its feature list from the server) include the app? */
 export function unlocked(app: AppDef, plan: string, features: string[]): boolean {
   if (app.none) return true;
@@ -76,5 +76,5 @@ export function counts(states: Record<AppId, State>): Counts {
 }
 
 /** The plan (or the add-on) that includes the app, or null when every plan has it. The Fisco add-on brings SdI and the accountant's link. */
-const FEATURE_PLAN: Record<string, string> = { sdi_invoicing: "fisco", admin_suite: "fisco", invoice_card_payments: "monthly_elite", calendar_sync: "monthly_elite", gmail_send: "monthly_elite", meta_lead_ads: "monthly_elite" };
+const FEATURE_PLAN: Record<string, string> = { sdi_invoicing: "fisco", admin_suite: "fisco", invoice_card_payments: "monthly_elite", calendar_sync: "monthly_pro", gmail_send: "monthly_clienti", meta_lead_ads: "monthly_clienti" };
 export const requiredPlan = (app: AppDef): string | null => app.minPlan ?? (app.feature ? FEATURE_PLAN[app.feature] ?? "monthly_elite" : null);

@@ -1911,7 +1911,7 @@ components:
           type: string
         planType:
           type: string
-          enum: [monthly_starter, monthly_pro, monthly_elite, oneshot_watermark, oneshot_clean]
+          enum: [monthly_starter, monthly_clienti, monthly_pro, monthly_elite, oneshot_watermark, oneshot_clean]
         billing:
           type: string
           enum: [mensile, annuale]

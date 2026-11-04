@@ -1,6 +1,7 @@
 import { useGetSubscription, useCreateCustomerPortalSession } from "@workspace/api-client-react";
 import { Skeleton } from "@/components/ui/skeleton";
-import { etichettaPiano, isPianoInAbbonamento, preventiviMese } from "@/lib/prezzi";
+import { PIANI_IN_ABBONAMENTO, PREZZI_PIANI, VOCI_PIANI, pianoSuccessivo } from "@workspace/config";
+import { etichettaPiano, isPianoInAbbonamento } from "@/lib/prezzi";
 import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/i18n/LanguageContext";
 import {
@@ -65,9 +66,15 @@ export default function BillingPage() {
   const isActive = sub?.isActive ?? false;
 
   const isElite = sub?.plan === "monthly_elite";
-  const planLabel = isPro ? "Pro" : isStarter ? "Starter" : isElite ? "Elite" : null;
+  // PREZZI-2: nomi, voci e gradino successivo da lib/config piani.ts.
+  const piano = isPianoInAbbonamento(sub?.plan) ? sub.plan : null;
+  const planLabel = piano ? PREZZI_PIANI[piano].nome : null;
+  const prossimo = isActive ? pianoSuccessivo(piano) : null;
+  // Il confronto: il piano di oggi (o l'ingresso) accanto al successivo.
+  const daConfrontare = piano && isActive ? piano : PIANI_IN_ABBONAMENTO[0];
+  const successivoConfronto = pianoSuccessivo(daConfrontare);
   // A-5: chi è già abbonato può pagare un prezzo storico (es. Elite a 59 € prima
-  // del listino a 79 €), che non conserviamo: l'importo vero lo mostra il portale
+  // di A-5, o i listini di prima di PREZZI-2), che non conserviamo: l'importo vero lo mostra il portale
   // Stripe. Qui si dice solo "Mensile" / "Annuale", mai un listino che potrebbe non essere il suo.
   const planPrice = isPianoInAbbonamento(sub?.plan) ? "Importo e rinnovo nel portale Stripe" : null;
 
@@ -101,7 +108,7 @@ export default function BillingPage() {
           <div className="card">
             <div className="card-head">
               <div className="flex items-center gap-3">
-                <div className="qa-ic navy">{isPro ? <Crown className="h-6 w-6" /> : <Zap className="h-6 w-6" />}</div>
+                <div className="qa-ic navy">{isPro || isElite ? <Crown className="h-6 w-6" /> : <Zap className="h-6 w-6" />}</div>
                 <div>
                   <h2>PrevAI {planLabel}</h2>
                   <p className="sub">{planPrice}</p>
@@ -144,23 +151,7 @@ export default function BillingPage() {
               <div className="p-4 rounded-[14px]" style={{ background: "var(--soft)", border: "1px solid var(--line)" }}>
                 <div className="text-sm font-semibold mb-3">{t("dashboard.billing.includedInPlan")}</div>
                 <ul className="space-y-2">
-                  {isPro ? (
-                    <>
-                      <PlanFeature text={t("dashboard.billing.feature.unlimitedQuotes")} ok />
-                      <PlanFeature text={t("dashboard.billing.feature.noWatermark")} ok />
-                      <PlanFeature text={t("dashboard.billing.feature.ownLogo")} ok />
-                      <PlanFeature text={t("dashboard.billing.feature.customBranding")} ok />
-                      <PlanFeature text={t("dashboard.billing.feature.aiPriority")} ok />
-                    </>
-                  ) : (
-                    <>
-                      <PlanFeature text={t("dashboard.billing.feature.upToQuotes").replace("{count}", String(sub?.quotaLimit ?? 20))} ok />
-                      <PlanFeature text={t("dashboard.billing.feature.downloadablePdf")} ok />
-                      <PlanFeature text={t("dashboard.billing.feature.emailSupport")} ok />
-                      <PlanFeature text={t("dashboard.billing.feature.noWatermark")} ok={false} />
-                      <PlanFeature text={t("dashboard.billing.feature.customLogo")} ok={false} />
-                    </>
-                  )}
+                  {(piano ? VOCI_PIANI[piano] : []).map((v) => <PlanFeature key={v} text={v} ok />)}
                 </ul>
               </div>
 
@@ -172,10 +163,10 @@ export default function BillingPage() {
               )}
 
               <div className="flex flex-wrap gap-3 pt-1">
-                {isStarter && (
+                {prossimo && (
                   <button className="btn btn-navy btn-sm" onClick={handleManage} disabled={createPortal.isPending}>
                     {createPortal.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Crown className="h-4 w-4" />}
-                    {t("dashboard.billing.upgradeToPro")}
+                    Passa a {PREZZI_PIANI[prossimo].nome}
                   </button>
                 )}
                 <button className="btn btn-outline-navy btn-sm" onClick={handleManage} disabled={createPortal.isPending}>
@@ -212,68 +203,36 @@ export default function BillingPage() {
           </div>
         )}
 
-        {/* Compare plans — only shown below Pro (Elite already has everything) */}
-        {!isPro && !isElite && (
+        {/* Confronto: il piano di oggi (o l'ingresso) e il gradino successivo; Impresa ha già tutto. */}
+        {successivoConfronto && (
           <div className="card">
             <div className="card-head">
               <div><h2>{t("dashboard.billing.comparePlansTitle")}</h2><p className="sub">{t("dashboard.billing.comparePlansDesc")}</p></div>
             </div>
             <div className="p-5">
               <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2 font-semibold text-sm">
-                    <Zap className="h-4 w-4 text-navy-500" />
-                    {etichettaPiano("monthly_starter")}
+                {[daConfrontare, successivoConfronto].map((id, i) => (
+                  <div key={id} className={i ? "space-y-2 border-l pl-4" : "space-y-2"}>
+                    <div className="flex items-center gap-2 font-semibold text-sm">
+                      {i ? <Crown className="h-4 w-4 text-amber-500" /> : <Zap className="h-4 w-4 text-navy-500" />}
+                      {etichettaPiano(id)}
+                    </div>
+                    <ul className="space-y-1.5 text-sm">
+                      {VOCI_PIANI[id].map((v) => (
+                        <li key={v} className={`flex items-center gap-2 ${i ? "text-foreground" : "text-muted-foreground"}`}>
+                          <CheckCircle2 className={`h-3.5 w-3.5 shrink-0 ${i ? "text-emerald-500" : "text-navy-400"}`} />
+                          {v}
+                        </li>
+                      ))}
+                    </ul>
                   </div>
-                  <ul className="space-y-1.5 text-sm">
-                    <li className="flex items-center gap-2 text-muted-foreground">
-                      <CheckCircle2 className="h-3.5 w-3.5 text-navy-400 shrink-0" />
-                      {t("dashboard.billing.compare.starterQuotes").replace("{count}", String(preventiviMese("monthly_starter")))}
-                    </li>
-                    <li className="flex items-center gap-2 text-muted-foreground">
-                      <CheckCircle2 className="h-3.5 w-3.5 text-navy-400 shrink-0" />
-                      {t("dashboard.billing.compare.professionalPdf")}
-                    </li>
-                    <li className="flex items-center gap-2 text-[var(--muted-mk)] line-through">
-                      <XCircle className="h-3.5 w-3.5 shrink-0" />
-                      {t("dashboard.billing.compare.customLogo")}
-                    </li>
-                    <li className="flex items-center gap-2 text-[var(--muted-mk)] line-through">
-                      <XCircle className="h-3.5 w-3.5 shrink-0" />
-                      {t("dashboard.billing.compare.noWatermarkPdf")}
-                    </li>
-                  </ul>
-                </div>
-                <div className="space-y-2 border-l pl-4">
-                  <div className="flex items-center gap-2 font-semibold text-sm">
-                    <Crown className="h-4 w-4 text-amber-500" />
-                    {etichettaPiano("monthly_pro")}
-                  </div>
-                  <ul className="space-y-1.5 text-sm">
-                    <li className="flex items-center gap-2 text-foreground">
-                      <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500 shrink-0" />
-                      {t("dashboard.billing.compare.starterQuotes").replace("{count}", String(preventiviMese("monthly_pro")))}
-                    </li>
-                    <li className="flex items-center gap-2 text-foreground">
-                      <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500 shrink-0" />
-                      {t("dashboard.billing.compare.premiumPdf")}
-                    </li>
-                    <li className="flex items-center gap-2 text-foreground">
-                      <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500 shrink-0" />
-                      {t("dashboard.billing.compare.ownLogo")}
-                    </li>
-                    <li className="flex items-center gap-2 text-foreground">
-                      <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500 shrink-0" />
-                      {t("dashboard.billing.compare.noWatermark")}
-                    </li>
-                  </ul>
-                </div>
+                ))}
               </div>
-              {isStarter && (
+              {isActive && prossimo && (
                 <div className="mt-5 pt-4 border-t flex justify-end">
                   <button className="btn btn-navy btn-sm" onClick={handleManage} disabled={createPortal.isPending}>
                     {createPortal.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Crown className="h-3.5 w-3.5" />}
-                    {t("dashboard.billing.upgradeToProArrow")}
+                    Passa a {PREZZI_PIANI[prossimo].nome} →
                   </button>
                 </div>
               )}

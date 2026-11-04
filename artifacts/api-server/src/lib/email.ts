@@ -1,6 +1,6 @@
 import { emailLogoSrc } from "./logo.js";
 import { Resend } from "resend";
-import { MARKET, testoPreventivi, type Lang } from "@workspace/config";
+import { MARKET, PREZZI_PIANI, VOCI_PIANI, pianoDaNome, type Lang, type PianoInAbbonamento } from "@workspace/config";
 import { logger } from "./logger.js";
 import { getBaseUrl } from "./baseUrl.js";
 import { sendCustomerEmail } from "./connectedEmailSend.js";
@@ -20,32 +20,19 @@ export function escapeHtml(value: string): string {
     .replace(/'/g, "&#39;");
 }
 
-type PlanTier = "pro" | "starter" | "oneshot";
+type PlanTier = PianoInAbbonamento | "oneshot";
 
+// PREZZI-2: il piano si riconosce dal nome commerciale (Preventivi, Clienti,
+// Cantieri, Impresa); prima si cercava "pro" o "starter" nel nome e l'Elite
+// finiva tra i preventivi singoli.
 function getPlanTier(planName: string): PlanTier {
-  const lower = planName.toLowerCase();
-  if (lower.includes("pro")) return "pro";
-  if (lower.includes("starter")) return "starter";
-  return "oneshot";
+  return pianoDaNome(planName) ?? "oneshot";
 }
 
 function getPlanFeatures(planName: string, tier: PlanTier): string {
-  if (tier === "pro") {
-    return `
-      <div class="feature"><span class="check">✓</span> ${testoPreventivi("monthly_pro")}, senza filigrana</div>
-      <div class="feature"><span class="check">✓</span> PDF professionali con il tuo logo aziendale</div>
-      <div class="feature"><span class="check">✓</span> Template premium ad alta qualità</div>
-      <div class="feature"><span class="check">✓</span> Branding completamente personalizzabile</div>
-      <div class="feature"><span class="check">✓</span> Generazione AI con foto cantiere</div>
-      <div class="feature"><span class="check">✓</span> Priorità nella generazione AI</div>
-    `;
-  }
-  if (tier === "starter") {
-    return `
-      <div class="feature"><span class="check">✓</span> ${testoPreventivi("monthly_starter")}</div>
-      <div class="feature"><span class="check">✓</span> Download PDF professionale</div>
-      <div class="feature"><span class="check">✓</span> Supporto email incluso</div>
-    `;
+  if (tier !== "oneshot") {
+    return VOCI_PIANI[tier].map((v) => `
+      <div class="feature"><span class="check">✓</span> ${escapeHtml(v)}</div>`).join("");
   }
   const isClean = planName.toLowerCase().includes("pulito") || planName.toLowerCase().includes("clean");
   if (isClean) {
@@ -94,7 +81,7 @@ function buildSubscriptionEmail(params: {
 
   const bodyIntro = tier === "oneshot"
     ? `Ciao ${userName},<br/><br/>il tuo acquisto <strong>PrevAI ${planName}</strong> è andato a buon fine. Puoi accedere alla dashboard e scaricare il PDF del tuo preventivo.`
-    : `Ciao ${userName},<br/><br/>il tuo abbonamento <strong>PrevAI ${planName}</strong> è stato attivato con successo. Puoi già iniziare a creare preventivi professionali${tier === "pro" ? " illimitati" : ""}.`;
+    : `Ciao ${userName},<br/><br/>il tuo abbonamento <strong>PrevAI ${planName}</strong> è stato attivato con successo. Puoi già iniziare a creare preventivi professionali${PREZZI_PIANI[tier].preventiviMese === null ? " illimitati" : ""}.`;
 
   const features = getPlanFeatures(planName, tier);
 

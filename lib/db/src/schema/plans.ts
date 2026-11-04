@@ -7,7 +7,7 @@
 import { FEATURE_ADDON_AMMINISTRAZIONE, FEATURE_GRATUITE_AMMINISTRAZIONE, statoOfferta } from "@workspace/config";
 import { addonAttivo, type AddonsProfilo } from "./addons";
 
-export const PLAN_IDS = ["free", "monthly_starter", "monthly_pro", "monthly_elite"] as const;
+export const PLAN_IDS = ["free", "monthly_starter", "monthly_clienti", "monthly_pro", "monthly_elite"] as const;
 export type PlanId = (typeof PLAN_IDS)[number];
 
 export const PRODUCT_FEATURES = [
@@ -35,16 +35,21 @@ export const PRODUCT_FEATURES = [
 ] as const;
 export type ProductFeature = (typeof PRODUCT_FEATURES)[number];
 
+// PREZZI-2: un gradino per fase dell'impresa (lib/config piani.ts). Preventivi → Clienti
+// (listino, contratti, email da Gmail, contatti da Meta) → Cantieri (cantieri, costi, fatture,
+// squadra, ore, calendario) → Impresa (assistente, analisi, pagamenti con carta, API).
 const STARTER: ProductFeature[] = ["quotes", "quote_email", "acceptance_notifications"];
-const PRO: ProductFeature[] = [...STARTER, "catalog", "contracts", "jobs", "costs", "invoicing", "team_accounts"];
-const ELITE: ProductFeature[] = [...PRO, "team_time", "assistant", "analytics_pro", "calendar_sync", "invoice_card_payments", "public_api", "gmail_send", "meta_lead_ads"];
+const CLIENTI: ProductFeature[] = [...STARTER, "catalog", "contracts", "gmail_send", "meta_lead_ads"];
+const PRO: ProductFeature[] = [...CLIENTI, "jobs", "costs", "invoicing", "team_accounts", "team_time", "calendar_sync"];
+const ELITE: ProductFeature[] = [...PRO, "assistant", "analytics_pro", "invoice_card_payments", "public_api"];
 
 /** Seats included in each plan's base price (Phase 7 §3.5) — extra seats are a plan add-on, enforced at invite time. */
 export const SEATS_INCLUDED: Record<PlanId, number> = {
   free: 1,
   monthly_starter: 1,
-  monthly_pro: 2,
-  monthly_elite: 5,
+  monthly_clienti: 1,
+  monthly_pro: 3,
+  monthly_elite: 6,
 };
 
 export function seatsIncluded(plan: PlanId): number {
@@ -67,6 +72,7 @@ export function seatsLimit(plan: PlanId, extraSeats: number | null | undefined):
 export const MONTHLY_USAGE_ALLOWANCE: Record<PlanId, { receiptScans: number | null; whatsappMessages: number | null }> = {
   free: { receiptScans: 0, whatsappMessages: 0 },
   monthly_starter: { receiptScans: 20, whatsappMessages: 0 },
+  monthly_clienti: { receiptScans: 20, whatsappMessages: 100 },
   monthly_pro: { receiptScans: 100, whatsappMessages: 200 },
   monthly_elite: { receiptScans: 300, whatsappMessages: 1000 },
 };
@@ -74,6 +80,7 @@ export const MONTHLY_USAGE_ALLOWANCE: Record<PlanId, { receiptScans: number | nu
 export const PLAN_FEATURES: Record<PlanId, ReadonlySet<ProductFeature>> = {
   free: new Set<ProductFeature>(["quotes"]),
   monthly_starter: new Set(STARTER),
+  monthly_clienti: new Set(CLIENTI),
   monthly_pro: new Set(PRO),
   monthly_elite: new Set(ELITE),
 };

@@ -194,7 +194,7 @@ describe("SQUADRA-1 — la giornata dell'operaio e le segnalazioni dal cantiere"
   });
 
   test("un'impresa senza le ore della squadra se lo sente dire invece di vedere una giornata vuota", async () => {
-    const pro = await createOrg({ companyName: "Pro Srl", plan: "monthly_pro" });
+    const pro = await createOrg({ companyName: "Clienti Srl", plan: "monthly_clienti" });
     const res = await pro.api("/api/crew/today");
     expect(res.status).toBe(200);
     expect(res.body).toMatchObject({ enabled: false });

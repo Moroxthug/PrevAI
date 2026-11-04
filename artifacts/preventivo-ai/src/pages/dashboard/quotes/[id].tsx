@@ -2,7 +2,7 @@ import { localDay } from "@/lib/local-day";
 import { trackAppEvent } from "@/lib/app-beta";
 import { usePdfShare, fetchPdfFile } from "@/components/share-pdf";
 import { Link, useParams, useSearch } from "wouter";
-import { PREZZI_PIANI, formatPrezzo } from "@workspace/config";
+import { PREZZI_PIANI, formatPrezzo, pianoOltreIngresso, PER_CHI_PIANO, VOCI_PIANI } from "@workspace/config";
 import { useGetQuote, useGetBusinessProfile, useGenerateQuotePdf, useGetPlans, useUpdateQuote, useCreateCheckoutSession, useVerifyPayment, useGetSubscription, useUnlockQuoteWithSubscription, useCreateCustomerPortalSession, useRegenerateQuote, useDuplicateQuote, useUpgradeToCapitolatoPro, useGenerateQuotePdfPro, useGetTrialStatus, useListClients, useSendQuotePdfEmail, useListQuoteVariants, useCreateQuoteVariant, useUpdateQuoteVariant, useDeleteQuoteVariant, useArchiveQuote, useDeleteQuote, getGetQuoteQueryKey, getVerifyPaymentQueryKey, getListQuotesQueryKey, getGetTrialStatusQueryKey, getListQuoteVariantsQueryKey } from "@workspace/api-client-react";
 import { Dialog, DialogBody, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -684,7 +684,7 @@ export default function QuoteDetail() {
 
   if (!quote) return <div>{t("dashboard.quoteDetail.quoteNotFound")}</div>;
 
-  const isPro = subscription?.isActive && (subscription?.plan === "monthly_pro" || subscription?.plan === "monthly_elite");
+  const isPro = subscription?.isActive && pianoOltreIngresso(subscription?.plan);
   const isTrialActive = trialStatus?.isTrialActive ?? false;
   // Pro/Elite subscribers and active trial users can always download
   const isLocked = quote.status !== "unlocked" && !isPro && !isTrialActive;
@@ -1828,10 +1828,10 @@ export default function QuoteDetail() {
             {subscription?.isActive && subscription?.plan === "monthly_starter" ? (
               <>
                 <div className="plan-grid two" style={{ paddingTop: 10 }}>
-                  {[
-                    { id: "monthly_pro", label: "Pro", price: formatPrezzo(PREZZI_PIANI.monthly_pro.mensileCents), badge: t("dashboard.quoteDetail.mostPopular"), features: [t("dashboard.quoteDetail.feature60Quotes").replace("{count}", String(PREZZI_PIANI.monthly_pro.preventiviMese)), t("dashboard.quoteDetail.featureNoWatermark"), t("dashboard.quoteDetail.featureAllTemplates"), t("dashboard.quoteDetail.featurePhotoUpload")], highlight: true },
-                    { id: "monthly_elite", label: "Elite", price: formatPrezzo(PREZZI_PIANI.monthly_elite.mensileCents), badge: t("dashboard.quoteDetail.unlimited"), features: [t("dashboard.quoteDetail.featureUnlimitedQuotes"), t("dashboard.quoteDetail.featureNoWatermark"), t("dashboard.quoteDetail.featureAllTemplates"), t("dashboard.quoteDetail.featureDedicatedSupport")], highlight: false },
-                  ].map((opt) => (
+                  {(["monthly_clienti", "monthly_pro"] as const).map((id, i) => ({
+                    id, label: PREZZI_PIANI[id].nome, price: formatPrezzo(PREZZI_PIANI[id].mensileCents),
+                    badge: i ? t("dashboard.quoteDetail.mostPopular") : PER_CHI_PIANO[id], features: VOCI_PIANI[id].slice(0, 4), highlight: i === 0,
+                  })).map((opt) => (
                     <div key={opt.id} className={cn("plan-opt", opt.highlight && "hot")}>
                       <span className={cn("tag", !opt.highlight && "gold")}>{opt.badge}</span>
                       <span className="nm">{opt.label}</span>
