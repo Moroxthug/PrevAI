@@ -32,14 +32,14 @@ Criterio: prima le pagine che hanno già impressioni in Search Console (domanda 
 
 ## C — Lombardia con ricerche locali in Search Console
 
-21. https://prevai.it/preventivi/elettricista/monza/
-22. https://prevai.it/preventivi/falegname/milano/
-23. https://prevai.it/preventivi/condizionatori/milano/
-24. https://prevai.it/preventivi/tetto/lecco/
-25. https://prevai.it/preventivi/carpentiere/pavia/
-26. https://prevai.it/preventivi/carpentiere/monza/
-27. https://prevai.it/preventivi/giardiniere/brescia/
-28. https://prevai.it/preventivi/idraulico/milano/
+21. https://prevai.it/preventivi/elettricista/monza/ — ✅ 5/11 richiesta
+22. https://prevai.it/preventivi/falegname/milano/ — ✅ 5/11 richiesta
+23. https://prevai.it/preventivi/condizionatori/milano/ — ✅ 5/11 richiesta
+24. https://prevai.it/preventivi/tetto/lecco/ — ✅ 5/11 richiesta
+25. https://prevai.it/preventivi/carpentiere/pavia/ — ✅ 5/11 richiesta
+26. https://prevai.it/preventivi/carpentiere/monza/ — ✅ 5/11 richiesta
+27. https://prevai.it/preventivi/giardiniere/brescia/ — ✅ 5/11 richiesta
+28. https://prevai.it/preventivi/idraulico/milano/ — ✅ 5/11 richiesta
 29. https://prevai.it/preventivi/edilizia/milano/
 30. https://prevai.it/preventivi/elettricista/milano/
 
@@ -109,3 +109,4 @@ F24. https://prevai.it/blog/zone-sismiche-citta-italiane/ — ✅ 4/11 richiesta
 | 01/11/2026 | F1–F10 | Tutti "Indexing requested" (sitemap reinviata prima). F11 "Quota exceeded": riprendere da F11, poi dal 14 della lista B. |
 | 04/11/2026 | F11–F24 | 8 già indicizzati (F11–F13, F18–F22), 6 "Indexing requested" (F14–F17, F23, F24). Nessun "Quota exceeded". Lista F chiusa; prossimo: dal 14 della lista B. |
 | 04/11/2026 (2° giro) | 14–20 (lista B chiusa) | 14, 16, 17, 18, 20 "Indexing requested"; 15 e 19 già indicizzati. 21 non indicizzato ma "Quota exceeded" (11 richieste in giornata): riprendere dal 21 della lista C. |
+| 05/11/2026 | 21–28 | Tutti "Indexing requested", nessuno era già indicizzato (la 28 era sconosciuta a Google). 29 "Something went wrong", 30 "Quota exceeded" dopo 8 richieste: riprendere dalla 29. |
