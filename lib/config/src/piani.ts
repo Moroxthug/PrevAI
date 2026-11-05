@@ -56,7 +56,7 @@ export const PREZZI_PIANI: Record<PianoInAbbonamento, PrezzoPiano> = {
 export const BONUS_VECCHI_PREVENTIVI = { soglia: 10, omaggio: 5 } as const;
 
 /** Dove va chi vuole il piano su richiesta. */
-export const CONTATTO_SU_MISURA = "/contatti/?piano=su-misura";
+export const CONTATTO_SU_MISURA = "/contatti/#su-misura";
 export const CTA_SU_MISURA = "Parliamone";
 
 /** A chi serve ogni piano, in una riga: pagine prezzi, impostazioni, email. */

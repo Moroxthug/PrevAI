@@ -3,6 +3,7 @@ import { SeoHead } from "@/components/seo-head";
 import { Mail, MessageCircle, FileText, Clock, ArrowRight } from "lucide-react";
 import { Link } from "wouter";
 import { useLanguage } from "@/i18n/LanguageContext";
+import { SuMisuraForm } from "@/components/su-misura-form";
 
 export default function ContattiPage() {
   const { t } = useLanguage();
@@ -102,6 +103,8 @@ export default function ContattiPage() {
           </div>
         </div>
       </section>
+
+      <SuMisuraForm />
 
       {/* Tempi di risposta */}
       <section className="sec" style={{ paddingBlock: "clamp(24px, 3vw, 40px)" }}>

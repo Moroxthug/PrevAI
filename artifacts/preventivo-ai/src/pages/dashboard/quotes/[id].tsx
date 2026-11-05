@@ -865,7 +865,7 @@ export default function QuoteDetail() {
         <b>
           {isActive && <CheckCircle2 />}
           {tmpl.label}
-          {requiresPro && <span className="chip chip-yellow">PRO</span>}
+          {requiresPro && <span className="chip chip-yellow">Col piano</span>}
           {isEditLocked && <Lock className="h-3.5 w-3.5 ml-auto" style={{ color: "var(--faint)" }} />}
         </b>
         <p>{tmpl.desc}</p>
@@ -1830,7 +1830,7 @@ export default function QuoteDetail() {
                 <div className="plan-grid two" style={{ paddingTop: 10 }}>
                   {(["monthly_clienti", "monthly_pro"] as const).map((id, i) => ({
                     id, label: PREZZI_PIANI[id].nome, price: formatPrezzo(PREZZI_PIANI[id].mensileCents),
-                    badge: i ? t("dashboard.quoteDetail.mostPopular") : PER_CHI_PIANO[id], features: VOCI_PIANI[id].slice(0, 4), highlight: i === 0,
+                    badge: i ? PER_CHI_PIANO[id] : t("dashboard.quoteDetail.mostPopular"), features: VOCI_PIANI[id].slice(0, 4), highlight: i === 0,
                   })).map((opt) => (
                     <div key={opt.id} className={cn("plan-opt", opt.highlight && "hot")}>
                       <span className={cn("tag", !opt.highlight && "gold")}>{opt.badge}</span>
@@ -1855,7 +1855,7 @@ export default function QuoteDetail() {
                     return (
                       <div key={plan.id} className={cn("plan-opt flat", isClean && "hot")}>
                         <div className="txt"><span className="nm">{plan.name}</span><span className="ds">{plan.features[0]}</span></div>
-                        <span className="pr">{plan.price} €</span>
+                        <span className="pr">{formatPrezzo(Math.round(plan.price * 100))}</span>
                         <button type="button" className={cn("btn btn-sm", isClean ? "btn-navy" : "btn-outline-navy")} onClick={() => handleCheckout(plan.id)} disabled={createCheckout.isPending}>
                           {createCheckout.isPending ? "..." : t("dashboard.quoteDetail.buy")}
                         </button>
@@ -1869,14 +1869,14 @@ export default function QuoteDetail() {
                 {/* Subscription plans — 3 columns */}
                 <div className="plan-grid" style={{ paddingTop: 10 }}>
                   {plans?.filter(p => p.interval && !p.contactOnly).map((plan) => {
-                    const isPro = plan.id === "monthly_pro";
+                    const isPro = plan.id === "monthly_clienti";
                     const isElite = plan.id === "monthly_elite";
                     return (
                       <div key={plan.id} className={cn("plan-opt plan-card-enter", isPro && "hot")}>
                         {isPro && <span className="tag">{t("dashboard.quoteDetail.popBadge")}</span>}
                         {isElite && <span className="tag gold">{t("dashboard.quoteDetail.infinityBadge")}</span>}
                         <span className="nm">{plan.name}</span>
-                        <span className="pr">{plan.price} €<small>{t("dashboard.quoteDetail.perMonth")}</small></span>
+                        <span className="pr">{formatPrezzo(Math.round(plan.price * 100))}<small>{t("dashboard.quoteDetail.perMonth")}</small></span>
                         <ul>
                           {plan.features.slice(0, 3).map((feature, i) => <li key={i}><CheckCircle2 /> {feature}</li>)}
                         </ul>
@@ -1896,7 +1896,7 @@ export default function QuoteDetail() {
                     return (
                       <div key={plan.id} className={cn("plan-opt flat plan-card-enter", isClean && "hot")}>
                         <div className="txt"><span className="nm">{plan.name}</span><span className="ds">{plan.features[0]}</span></div>
-                        <span className="pr">{plan.price} €</span>
+                        <span className="pr">{formatPrezzo(Math.round(plan.price * 100))}</span>
                         <button type="button" className={cn("btn btn-sm", isClean ? "btn-navy" : "btn-outline-navy")} onClick={() => handleCheckout(plan.id)} disabled={createCheckout.isPending}>
                           {createCheckout.isPending ? "..." : t("dashboard.quoteDetail.buy")}
                         </button>

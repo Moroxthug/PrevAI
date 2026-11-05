@@ -458,6 +458,24 @@ function buildWidgetClientConfirmationEmail(params: {
 </html>`;
 }
 
+/** PREZZI-2: una richiesta per il piano Su misura, a noi. */
+export async function sendSuMisuraRequest(r: { nome: string; impresa: string; email: string; telefono?: string; persone?: string; messaggio?: string }): Promise<void> {
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!apiKey) {
+    logger.warn("RESEND_API_KEY not set — skipping Su misura request email");
+    return;
+  }
+  const riga = (k: string, v?: string) => (v ? `<p><strong>${k}:</strong> ${escapeHtml(v)}</p>` : "");
+  const resend = new Resend(apiKey);
+  await resend.emails.send({
+    from: FROM,
+    to: [`info@${MARKET.domain}`],
+    replyTo: r.email,
+    subject: `Richiesta piano Su misura: ${r.impresa}`,
+    html: riga("Nome", r.nome) + riga("Impresa", r.impresa) + riga("Email", r.email) + riga("Telefono", r.telefono) + riga("Persone", r.persone) + riga("Messaggio", r.messaggio),
+  });
+}
+
 export async function sendWidgetClientConfirmationEmail(params: {
   toEmail: string;
   userId: string;

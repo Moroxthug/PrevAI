@@ -60,3 +60,4 @@ export * from "./groups";
 export * from "./assistant-company";
 export * from "./member-preferences";
 export * from "./job-roles";
+export * from "./contatti";

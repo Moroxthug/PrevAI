@@ -1506,7 +1506,7 @@ Finché un Price manca, quel prodotto risponde 503 `PLAN_PRICE_MISSING` (o `PLAN
 
 ### 43.2 Su misura
 
-Non si compra online: `POST /api/payments/checkout` risponde 409 `CONTACT_SALES`. Chi ci contatta da `/contatti/?piano=su-misura` si attiva dall'admin (`/admin/grant-plan`) o con un Price fatto per quell'impresa. Gli utenti in più si scrivono in `extra_seats` (§38).
+Non si compra online: `POST /api/payments/checkout` risponde 409 `CONTACT_SALES`. «Parliamone» porta al modulo in `/contatti/#su-misura`: `POST /api/contatti/su-misura` salva in `contatti_su_misura` (migrazione 0028) e scrive a info@prevai.it con rispondi-a sul cliente; se l'email non parte la riga resta. Chi ci contatta si attiva dall'admin (`/admin/grant-plan`) o con un Price fatto per quell'impresa. Gli utenti in più si scrivono in `extra_seats` (§38).
 
 ### 43.3 Chi era già abbonato
 

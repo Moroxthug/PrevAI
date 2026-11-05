@@ -376,7 +376,6 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
             >
               <item.icon className="ic" />
               <span className="sb-txt">{item.label}</span>
-              {item.proOnly && <span className="badge-pro">{t("dashboard.nav.pro")}</span>}
               {item.comingSoon && <span className="badge-pro">{t("dashboard.nav.comingSoon")}</span>}
             </Link>
           );

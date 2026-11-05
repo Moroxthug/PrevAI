@@ -242,7 +242,7 @@ function MoreSheet({ open, onOpenChange, tabs, navItems, name, email, avatar, ca
               <section key={g} className="more-group" aria-labelledby={`more-g-${g}`}>
                 <h3 id={`more-g-${g}`}>{t(`mobile.more.${g}`)}</h3>
                 <div className="more-card">
-                  {items.map((i) => row(i.href, i.label, i.icon, i.proOnly ? <span className="badge-pro">{t("dashboard.nav.pro")}</span> : undefined))}
+                  {items.map((i) => row(i.href, i.label, i.icon))}
                   {extras}
                 </div>
               </section>

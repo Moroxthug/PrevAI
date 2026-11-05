@@ -22,7 +22,7 @@
 import { describe, test, expect, beforeAll, afterAll, afterEach } from "vitest";
 import Stripe from "stripe";
 import { and, eq, sql } from "drizzle-orm";
-import { db, quotesTable, clientsTable, contractsTable, projectsTable, invoicesTable, invoicePaymentsTable, leadsTable, businessProfilesTable, automationRunsTable, notificationsTable, whatsappConnectionsTable, emailConnectionsTable, calendarConnectionsTable, calendarSyncedEventsTable, milestonesTable, stripeConnectAccountsTable, importBatchesTable, quoteImportCandidatesTable } from "@workspace/db";
+import { db, quotesTable, clientsTable, contractsTable, projectsTable, invoicesTable, invoicePaymentsTable, leadsTable, businessProfilesTable, automationRunsTable, notificationsTable, whatsappConnectionsTable, emailConnectionsTable, calendarConnectionsTable, calendarSyncedEventsTable, milestonesTable, stripeConnectAccountsTable, importBatchesTable, quoteImportCandidatesTable, contattiSuMisuraTable } from "@workspace/db";
 import "../automations/index.js";
 import { encryptSecret } from "../lib/crypto.js";
 import { REVIEW_REQUEST_DELAY_DAYS } from "../lib/jobMessaging.js";
@@ -220,6 +220,21 @@ describe("Phase 65 — integrations", () => {
       const [q] = await db.select().from(quotesTable).where(eq(quotesTable.id, quote.id));
       expect(q!.unlockedWithPlan).toBe("pack_5");
       expect((await org.api("/api/payments/subscription")).body.credits).toBe(4);
+    });
+
+    test("PREZZI-2: il modulo Su misura salva la richiesta, rifiuta i dati sbagliati e ignora i bot", async () => {
+      const email = `su-misura-${Date.now()}@example.invalid`;
+      const ok = await api("/api/contatti/su-misura", { method: "POST", body: { nome: "Mario Rossi", impresa: "Rossi Costruzioni", email, persone: "12" } });
+      expect(ok.status, JSON.stringify(ok.body)).toBe(201);
+      const [riga] = await db.select().from(contattiSuMisuraTable).where(eq(contattiSuMisuraTable.email, email));
+      expect(riga).toMatchObject({ impresa: "Rossi Costruzioni", persone: "12" });
+
+      expect((await api("/api/contatti/su-misura", { method: "POST", body: { nome: "M", impresa: "", email: "no" } })).status).toBe(400);
+
+      const bot = `bot-${email}`;
+      expect((await api("/api/contatti/su-misura", { method: "POST", body: { nome: "Bot Bot", impresa: "Bot Srl", email: bot, sitoWeb: "http://spam" } })).status).toBe(201);
+      expect(await db.select().from(contattiSuMisuraTable).where(eq(contattiSuMisuraTable.email, bot))).toHaveLength(0);
+      await db.delete(contattiSuMisuraTable).where(eq(contattiSuMisuraTable.email, email));
     });
 
     test("PREZZI-2: il piano su richiesta non ha checkout, i vecchi preventivi sono dei piani a pagamento", async () => {

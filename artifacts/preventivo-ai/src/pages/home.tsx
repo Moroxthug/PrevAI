@@ -392,7 +392,7 @@ export default function Home() {
                     {popolare && <span className="chip chip-teal">Consigliato</span>}
                   </div>
                   {piano.suRichiesta
-                    ? <p className="pt-price"><Link href={CONTATTO_SU_MISURA}>{CTA_SU_MISURA}</Link></p>
+                    ? <p className="pt-price"><a href={CONTATTO_SU_MISURA}>{CTA_SU_MISURA}</a></p>
                     : <p className="pt-price">{formatPrezzo(piano.mensileCents)}<span>/mese</span></p>}
                   <p className="pt-quota">{piano.suRichiesta ? "Costruito sulla tua impresa" : piano.preventiviMese === null ? "Preventivi illimitati" : `${piano.preventiviMese} preventivi al mese`}</p>
                   <p className="pt-for hide-phone">{PER_CHI_PIANO[id]}</p>

@@ -9,7 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/i18n/LanguageContext";
 import { cn } from "@/lib/utils";
 import { AddonBillingCard } from "@/components/addon-billing-card";
-import { CONTATTO_SU_MISURA, CTA_SU_MISURA, PER_CHI_PIANO, PREZZI_PIANI, VOCI_PIANI, pianoSuccessivo } from "@workspace/config";
+import { CONTATTO_SU_MISURA, CTA_SU_MISURA, PER_CHI_PIANO, PREZZI_PIANI, VOCI_PIANI, pianoSuccessivo, formatPrezzo } from "@workspace/config";
 import { NOTA_IVA, isPianoInAbbonamento, type Periodicita } from "@/lib/prezzi";
 import { usageApi } from "@/lib/usage-api";
 import { SettingsSection } from "./ui";
@@ -221,18 +221,17 @@ function BillingTab() {
           {subscriptionPlans.length > 0 && (
             <div className="grid sm:grid-cols-2 xl:grid-cols-4 gap-4">
               {subscriptionPlans.map((plan) => {
-                const isPlanPro = plan.id === "monthly_pro";
+                const isPlanPro = plan.id === "monthly_clienti";
                 const isPlanElite = plan.id === "monthly_elite";
                 return (
                   <div key={plan.id} className={cn("card", `flex flex-col ${isPlanPro ? "border-2 border-navy-300 shadow-lg" : isPlanElite ? "border-2 border-amber-300" : ""}`)}>
                     <div className="card-head pb-2">
                       {isPlanPro && <span className="text-[10px] font-bold text-navy-600 uppercase tracking-wider">Consigliato</span>}
-                      {isPlanElite && <span className="text-[10px] font-bold text-amber-600 uppercase tracking-wider">{t("dashboard.settings.billing.unlimited")}</span>}
                       <h2 className="text-lg">{plan.name}</h2>
                       {isPianoInAbbonamento(plan.id) && <p className="text-xs text-muted-foreground">{PER_CHI_PIANO[plan.id]}</p>}
                       {plan.contactOnly
                         ? <p className="text-2xl font-extrabold">Su richiesta</p>
-                        : <p className="text-2xl font-extrabold">{periodicita === "annuale" && plan.annualPrice ? plan.annualPrice : plan.price} €<span className="text-sm font-normal text-muted-foreground">{periodicita === "annuale" && plan.annualPrice ? "/anno" : t("dashboard.quoteDetail.perMonth")}</span></p>}
+                        : <p className="text-2xl font-extrabold">{formatPrezzo(Math.round((periodicita === "annuale" && plan.annualPrice ? plan.annualPrice : plan.price) * 100))}<span className="text-sm font-normal text-muted-foreground">{periodicita === "annuale" && plan.annualPrice ? "/anno" : t("dashboard.quoteDetail.perMonth")}</span></p>}
                     </div>
                     <div className="p-5 flex-1 pb-0">
                       <ul className="space-y-1.5 mb-4">

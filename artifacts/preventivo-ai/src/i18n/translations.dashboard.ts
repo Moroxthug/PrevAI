@@ -1548,7 +1548,7 @@ export const dashboardTranslations: Record<Lang, Record<string, string>> = {
     "dashboard.new.template.professional.desc": "Capitolato tecnico",
     "dashboard.new.template.elegant.label": "Elegante",
     "dashboard.new.template.elegant.desc": "Offerta commerciale",
-    "dashboard.new.template.pro": "PRO",
+    "dashboard.new.template.pro": "Col piano",
     "dashboard.new.toast.proRequiredTitle": "Richiede un abbonamento",
     "dashboard.new.toast.proRequiredDesc": "Scegli un piano per usare questo modello.",
 
