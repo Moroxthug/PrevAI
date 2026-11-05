@@ -6,6 +6,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/i18n/LanguageContext";
 import { ShieldCheck, ShieldOff, Loader2, Monitor, LogOut, Copy, Check } from "lucide-react";
 import { authClient } from "@/lib/auth-client";
+import { authErrorKey } from "@/lib/auth-errors";
 import { securityApi } from "@/lib/security-api";
 import { teamMembersApi } from "@/lib/team-members-api";
 import { MockupToggle } from "@/components/ui/mockup-toggle";
@@ -42,7 +43,7 @@ export function TwoFactorCard() {
     try {
       const result = await authClient.twoFactor.enable({ password, method: "totp", issuer: "PrevAI" });
       if (result.error) {
-        toast({ title: t("dashboard.settings.security.error"), description: result.error.message, variant: "destructive" });
+        toast({ title: t("dashboard.settings.security.error"), description: t(authErrorKey(result.error, "auth.errorGeneric")), variant: "destructive" });
       } else if ("totpURI" in result.data) {
         setTotpUri(result.data.totpURI);
         setBackupCodes(result.data.backupCodes);
@@ -79,7 +80,7 @@ export function TwoFactorCard() {
     try {
       const result = await authClient.twoFactor.disable({ password: disablePassword });
       if (result.error) {
-        toast({ title: t("dashboard.settings.security.error"), description: result.error.message, variant: "destructive" });
+        toast({ title: t("dashboard.settings.security.error"), description: t(authErrorKey(result.error, "auth.errorGeneric")), variant: "destructive" });
       } else {
         toast({ title: t("dashboard.settings.security.twoFactorDisabled") });
         setShowDisable(false);
@@ -207,7 +208,7 @@ function SessionsCard() {
     try {
       const result = await authClient.revokeSession({ token });
       if (result.error) {
-        toast({ title: t("dashboard.settings.security.error"), description: result.error.message, variant: "destructive" });
+        toast({ title: t("dashboard.settings.security.error"), description: t(authErrorKey(result.error, "auth.errorGeneric")), variant: "destructive" });
       } else {
         await refetch();
       }

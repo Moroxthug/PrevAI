@@ -7,6 +7,7 @@ import { useState } from "react";
 import { Link, useSearch } from "wouter";
 import { Logo } from "@/components/logo";
 import { authClient } from "@/lib/auth-client";
+import { authErrorKey } from "@/lib/auth-errors";
 import { Eye, EyeOff, AlertCircle, CheckCircle2 } from "lucide-react";
 import { useLanguage } from "@/i18n/LanguageContext";
 import { useDocumentTitle } from "@/hooks/use-document-title";
@@ -40,7 +41,7 @@ export default function ResetPasswordPage() {
       const result = await authClient.resetPassword({ newPassword: password, token });
       if (result.error) {
         if (result.error.code === "INVALID_TOKEN") setExpired(true);
-        else setError(result.error.message ?? t("resetPassword.errorGeneric"));
+        else setError(t(authErrorKey(result.error, "resetPassword.errorGeneric")));
       } else {
         setDone(true);
       }

@@ -341,6 +341,13 @@ export const translations: Record<Lang, Record<string, string>> = {
     "notFound.heading": "404 — Pagina non trovata",
     "notFound.body": "La pagina che cerchi non esiste o è stata spostata.",
 
+    "auth.errorPasswordTooLong": "La password è troppo lunga.",
+    "auth.errorInvalidEmail": "L'indirizzo email non è valido.",
+    "auth.errorWrongPassword": "La password non è corretta.",
+    "auth.errorInvalidCode": "Il codice non è valido. Riprova.",
+    "auth.errorTooManyAttempts": "Troppi tentativi. Aspetta qualche minuto e riprova.",
+    "auth.errorSessionExpired": "La sessione è scaduta. Accedi di nuovo e riprova.",
+    "auth.errorGeneric": "Qualcosa non ha funzionato. Riprova.",
     "signIn.errorNotVerified": "Devi verificare la tua email prima di accedere. Ti abbiamo inviato di nuovo il link di verifica: controlla la casella di posta.",
     "signIn.errorInvalidCredentials": "Credenziali non valide. Riprova.",
     "signIn.errorConnection": "Errore di connessione. Riprova tra qualche secondo.",

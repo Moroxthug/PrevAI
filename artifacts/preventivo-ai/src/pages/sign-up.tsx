@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Link, useSearch } from "wouter";
 import { Logo } from "@/components/logo";
 import { authClient } from "@/lib/auth-client";
+import { authErrorKey } from "@/lib/auth-errors";
 import { Eye, EyeOff, AlertCircle, Lock, Mail } from "lucide-react";
 import { useLanguage } from "@/i18n/LanguageContext";
 import { useDocumentTitle } from "@/hooks/use-document-title";
@@ -54,12 +55,7 @@ export default function SignUpPage() {
         callbackURL: nextPath,
       });
       if (result.error) {
-        const msg = result.error.message ?? "";
-        if (msg.toLowerCase().includes("already")) {
-          setError(t("signUp.errorAlreadyRegistered"));
-        } else {
-          setError(msg || t("signUp.errorSignUpFailed"));
-        }
+        setError(t(authErrorKey(result.error, "signUp.errorSignUpFailed")));
       } else {
         setVerificationSent(true);
       }

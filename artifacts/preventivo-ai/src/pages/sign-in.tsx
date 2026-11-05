@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Link, useLocation, useSearch } from "wouter";
 import { Logo } from "@/components/logo";
 import { authClient } from "@/lib/auth-client";
+import { authErrorKey } from "@/lib/auth-errors";
 import { Eye, EyeOff, AlertCircle, Mail } from "lucide-react";
 import { useLanguage } from "@/i18n/LanguageContext";
 import { useDocumentTitle } from "@/hooks/use-document-title";
@@ -48,12 +49,7 @@ export default function SignInPage() {
         callbackURL: nextPath,
       });
       if (result.error) {
-        const msg = result.error.message ?? "";
-        if (msg.toLowerCase().includes("not verified")) {
-          setError(t("signIn.errorNotVerified"));
-        } else {
-          setError(msg || t("signIn.errorInvalidCredentials"));
-        }
+        setError(t(authErrorKey(result.error, "signIn.errorInvalidCredentials")));
       } else if (result.data && "twoFactorRedirect" in result.data && result.data.twoFactorRedirect) {
         setTwoFactorMode(true);
       } else {
@@ -75,7 +71,7 @@ export default function SignInPage() {
         ? await authClient.twoFactor.verifyBackupCode({ code: twoFactorCode.trim() })
         : await authClient.twoFactor.verifyTotp({ code: twoFactorCode.trim() });
       if (result.error) {
-        setError(result.error.message ?? t("signIn.errorInvalidCredentials"));
+        setError(t(authErrorKey(result.error, "auth.errorInvalidCode")));
       } else {
         navigate(nextPath);
       }
@@ -96,7 +92,7 @@ export default function SignInPage() {
         redirectTo: "/reset-password",
       });
       if (result.error) {
-        setResetError(result.error.message ?? t("signIn.errorSending"));
+        setResetError(t(authErrorKey(result.error, "signIn.errorSending")));
       } else {
         setResetSent(true);
       }
