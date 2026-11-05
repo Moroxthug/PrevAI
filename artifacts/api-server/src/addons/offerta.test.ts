@@ -192,28 +192,34 @@ describe("prezzi dei piani (D5 2026-09-23, PREZZI-2 2026-11-04)", () => {
     expect(PREZZI_PIANI.monthly_elite.mensileCents).toBe(8900);
     for (const p of Object.values(PREZZI_PIANI)) expect(p.annualeCents).toBe(p.mensileCents * 10);
     expect(prezzoPianoCents("monthly_elite", "annuale")).toBe(89000);
-    expect(PREZZI_PIANI.monthly_starter.preventiviMese).toBe(10);
+    expect(PREZZI_PIANI.monthly_starter.preventiviMese).toBe(25);
+    expect(PREZZI_PIANI.monthly_elite.suRichiesta).toBe(true);
+    expect(PLANS.find((p) => p.id === "monthly_elite")).toMatchObject({ price: 0, annualPrice: null, contactOnly: true });
+    expect(PLANS.every((p) => !p.hasWatermark)).toBe(true);
     expect(PREZZI_PIANI.monthly_clienti.preventiviMese).toBeNull();
   });
 
-  it("ogni gradino include il precedente e il successivo di Impresa non c'è", () => {
+  it("ogni gradino include il precedente, sopra Su misura non c'è niente", () => {
     expect(pianoSuccessivo("monthly_starter")).toBe("monthly_clienti");
     expect(pianoSuccessivo("monthly_clienti")).toBe("monthly_pro");
     expect(pianoSuccessivo("monthly_pro")).toBe("monthly_elite");
     expect(pianoSuccessivo("monthly_elite")).toBeNull();
     expect(pianoSuccessivo(null)).toBe("monthly_starter");
-    expect(pianoDaNome("Cantieri")).toBe("monthly_pro");
+    expect(pianoDaNome("Capomastro")).toBe("monthly_pro");
     expect(pianoDaNome("Singolo pulito")).toBeNull();
     const ordine = ["monthly_starter", "monthly_clienti", "monthly_pro", "monthly_elite"] as const;
     for (let i = 1; i < ordine.length; i++) for (const f of PLAN_FEATURES[ordine[i - 1]!]) expect(PLAN_FEATURES[ordine[i]!].has(f)).toBe(true);
     expect(pianoOltreIngresso("monthly_starter")).toBe(false);
     expect(pianoOltreIngresso("monthly_clienti")).toBe(true);
+    expect(PLAN_FEATURES.monthly_starter.has("catalog")).toBe(true);
+    expect(PLAN_FEATURES.monthly_starter.has("quote_import")).toBe(true);
+    expect(PLAN_FEATURES.free.has("quote_import")).toBe(false);
   });
 
   it("lookup key dei piani: andata e ritorno", () => {
     expect(lookupKeyPiano("monthly_pro", "annuale")).toBe("piano_pro_annuale");
     for (const k of lookupKeysPianiAttese()) expect(pianoDaLookupKey(k.chiave)).not.toBeNull();
-    expect(lookupKeysPianiAttese()).toHaveLength(8);
+    expect(lookupKeysPianiAttese()).toHaveLength(6); // Su misura non ha prezzi pubblici
     expect(pianoDaLookupKey("amministrazione_a_mensile")).toBeNull();
     expect(pianoDaLookupKey("piano_platinum_mensile")).toBeNull();
   });
@@ -243,8 +249,8 @@ describe("prezzoPianoStripe — si addebita solo il prezzo mostrato", () => {
   const prezzo = (id: string, cents: number, interval = "month"): FakePrice => ({ id, unit_amount: cents, currency: "eur", recurring: { interval }, active: true });
 
   it("usa il Price con la lookup key quando coincide", async () => {
-    const stripe = fakeStripe({ piano_elite_annuale: prezzo("price_elite_y", 89000, "year") });
-    expect(await prezzoPianoStripe(stripe, piano("monthly_elite"), "annuale")).toBe("price_elite_y");
+    const stripe = fakeStripe({ piano_pro_annuale: prezzo("price_pro_y", 49000, "year") });
+    expect(await prezzoPianoStripe(stripe, piano("monthly_pro"), "annuale")).toBe("price_pro_y");
   });
 
   it("rifiuta un Price con la lookup key giusta ma un importo diverso", async () => {
@@ -255,15 +261,18 @@ describe("prezzoPianoStripe — si addebita solo il prezzo mostrato", () => {
   it("senza lookup key ripiega sul Price storico solo se ha lo stesso importo", async () => {
     const pro = piano("monthly_pro");
     expect(await prezzoPianoStripe(fakeStripe({}, { [pro.stripePriceId]: prezzo(pro.stripePriceId, 4900) }), pro, "mensile")).toBe(pro.stripePriceId);
-    // Elite: lo storico è a 59 €, la pagina dice 79 € → niente checkout.
+    // Lo storico di Elite è a 59 €, diverso dalla configurazione → niente checkout.
     const elite = piano("monthly_elite");
     await expect(prezzoPianoStripe(fakeStripe({}, { [elite.stripePriceId]: prezzo(elite.stripePriceId, 5900) }), elite, "mensile")).rejects.toBeInstanceOf(ErrorePrezzo);
     // L'annuale non ha storico.
     await expect(prezzoPianoStripe(fakeStripe({}, { [pro.stripePriceId]: prezzo(pro.stripePriceId, 4900) }), pro, "annuale")).rejects.toMatchObject({ codice: "PLAN_PRICE_MISSING" });
   });
 
-  it("i preventivi singoli restano sui Price di sempre", async () => {
-    const singolo = piano("oneshot_clean");
-    expect(await prezzoPianoStripe(fakeStripe({}), singolo, "mensile")).toBe(singolo.stripePriceId);
+  it("singolo e pacchetto si vendono solo al prezzo mostrato", async () => {
+    const oneshot = (id: string, cents: number): FakePrice => ({ id, unit_amount: cents, currency: "eur", recurring: null, active: true });
+    expect(await prezzoPianoStripe(fakeStripe({ preventivo_singolo: oneshot("price_s", 199) }), piano("oneshot_clean"), "mensile")).toBe("price_s");
+    expect(await prezzoPianoStripe(fakeStripe({ pacchetto_5_preventivi: oneshot("price_p", 399) }), piano("pack_5"), "mensile")).toBe("price_p");
+    await expect(prezzoPianoStripe(fakeStripe({ preventivo_singolo: oneshot("price_s", 900) }), piano("oneshot_clean"), "mensile")).rejects.toMatchObject({ codice: "PLAN_PRICE_MISMATCH" });
+    await expect(prezzoPianoStripe(fakeStripe({}), piano("pack_5"), "mensile")).rejects.toMatchObject({ codice: "PLAN_PRICE_MISSING" });
   });
 });

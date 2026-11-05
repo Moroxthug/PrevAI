@@ -66,7 +66,7 @@ export const strumenti = {
       imp: { name: "Importa da un file", desc: "Clienti e listino da un CSV o un Excel" },
     },
     lines: { hs: "Link per le recensioni sui preventivi", failed_one: "{{count}} elemento non sincronizzato", failed_other: "{{count}} elementi non sincronizzati", stripe: "Finisci di configurare Stripe per accettare le carte", on: "Attiva", sdi: "Con l'add-on Fisco" },
-    plans: { monthly_starter: "Preventivi", monthly_clienti: "Clienti", monthly_pro: "Cantieri", monthly_business: "Impresa", monthly_elite: "Impresa", fisco: "Fisco" },
+    plans: { monthly_starter: "Artigiano", monthly_clienti: "Mastro", monthly_pro: "Capomastro", monthly_business: "Su misura", monthly_elite: "Su misura", fisco: "Fisco" },
     loadFailed: { title: "Non riesco a caricare le app", body: "Controlla la connessione e riprova.", retry: "Riprova" },
     toast: { failed: "Non riesco ad aprirla." },
   },

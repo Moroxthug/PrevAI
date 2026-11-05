@@ -26,7 +26,7 @@ export function BrandLogo({ app, size = "md" }: { app: AppDef; size?: "md" | "lg
   );
 }
 
-/** Il nome di ciò che sblocca l'app: "piano Impresa", "PrevAI Fisco". */
+/** Il nome di ciò che sblocca l'app: "piano Su misura", "PrevAI Fisco". */
 function unlockName(app: AppDef): string {
   return app.addon ?? `piano ${planLabelOf(requiredPlanFor(app)) ?? ""}`.trim();
 }

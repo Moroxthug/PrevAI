@@ -6,7 +6,7 @@ export const avvisi = {
     placeholder: "Chiedi quello che vuoi, o descrivi un lavoro", field: "Scrivi all'assistente", send: "Invia",
     tapToTalk: "Tocca il microfono e parla.", listening: "Ti ascolto. Tocca di nuovo per inviare.", talk: "Parla", stopSend: "Ferma e invia",
     micDenied: "Il microfono è spento per PrevAI. Accendilo nelle impostazioni del telefono, o tocca la tastiera per scrivere.", micFailed: "Non riesco a usare il microfono. Tocca la tastiera per scrivere.", empty: "Non ho capito. Riprova.",
-    locked: "L'assistente è incluso in Impresa. Prepara promemoria, ordini e cambi di agenda, e aspetta il tuo sì.", seePlan: "Vedi i piani",
+    locked: "L'assistente è incluso in Su misura. Prepara promemoria, ordini e cambi di agenda, e aspetta il tuo sì.", seePlan: "Vedi i piani",
     failed: "Adesso non riesco a rispondere. Riprova tra poco.", offline: "Sei offline. Riprova quando torni in linea.",
     proposals_one: "{{count}} cosa aspetta il tuo OK.", proposals_other: "{{count}} cose aspettano il tuo OK.", review: "Rivedi",
   },

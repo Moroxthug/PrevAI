@@ -14,11 +14,11 @@ Columns — **Auth**: session (`requireAuth`), apiKey (`requireApiKey`), admin (
 
 | Line | Method | Path | Auth | Perm | RL | Val | Gate | Scope | Archived | Token | Webhook |
 |---|---|---|---|---|---|---|---|---|---|---|---|
-| 147 | POST | `/api/payments/webhook` | none | — | — | manual | — | n/a | — | — | constructEvent |
-| 391 | POST | `/api/payments/connect-webhook` | none | — | — | manual | — | n/a | — | — | constructEvent |
-| 463 | POST | `/api/whatsapp/webhook` | none | — | — | manual | — | n/a | — | — | timingSafeEqual, createHmac, x-hub-signature |
-| 505 | POST | `/api/meta-lead-ads/webhook` | none | — | — | manual | — | n/a | — | — | timingSafeEqual, createHmac, x-hub-signature |
-| 547 | POST | `/api/webhooks/resend` | none | — | — | manual | — | n/a | — | — | timingSafeEqual, createHmac, svix |
+| 148 | POST | `/api/payments/webhook` | none | — | — | manual | — | n/a | — | — | constructEvent |
+| 398 | POST | `/api/payments/connect-webhook` | none | — | — | manual | — | n/a | — | — | constructEvent |
+| 470 | POST | `/api/whatsapp/webhook` | none | — | — | manual | — | n/a | — | — | timingSafeEqual, createHmac, x-hub-signature |
+| 512 | POST | `/api/meta-lead-ads/webhook` | none | — | — | manual | — | n/a | — | — | timingSafeEqual, createHmac, x-hub-signature |
+| 554 | POST | `/api/webhooks/resend` | none | — | — | manual | — | n/a | — | — | timingSafeEqual, createHmac, svix |
 
 ## artifacts/api-server/src/routes/account.ts
 
@@ -390,18 +390,18 @@ Columns — **Auth**: session (`requireAuth`), apiKey (`requireApiKey`), admin (
 
 | Line | Method | Path | Auth | Perm | RL | Val | Gate | Scope | Archived | Token | Webhook |
 |---|---|---|---|---|---|---|---|---|---|---|---|
-| 118 | GET | `/api/imports/template.csv` | session | — | — | none | — | n/a | — | — | — |
-| 127 | GET | `/api/imports/batches` | session | imports:view | — | none | — | n/a | — | — | — |
-| 139 | GET | `/api/imports/candidates` | session | imports:view | — | none | — | n/a | — | — | — |
-| 156 | POST | `/api/imports/spreadsheet` | session | imports:edit | importLimiter | none | — | n/a | — | — | — |
-| 221 | POST | `/api/imports/sheet` | session | imports:edit | importLimiter | none | — | n/a | — | — | — |
-| 256 | POST | `/api/imports/clients` | session | imports:edit | importLimiter | zod | — | n/a | — | — | — |
-| 280 | POST | `/api/imports/pdf` | session | imports:edit | importLimiter | none | — | n/a | — | — | — |
-| 354 | PUT | `/api/imports/candidates/:id` | session | imports:edit | — | zod | — | predicate | — | — | — |
-| 381 | POST | `/api/imports/candidates/:id/reject` | session | imports:edit | — | none | — | predicate | — | — | — |
-| 402 | POST | `/api/imports/candidates/:id/confirm` | session | imports:edit | — | none | — | predicate | — | — | — |
-| 431 | POST | `/api/imports/batches/:id/confirm-all` | session | imports:edit | — | none | — | predicate | — | — | — |
-| 459 | DELETE | `/api/imports/batches/:id` | session | imports:full | — | none | — | predicate | — | — | — |
+| 127 | GET | `/api/imports/template.csv` | session | — | — | none | — | n/a | — | — | — |
+| 136 | GET | `/api/imports/batches` | session | imports:view | — | none | — | n/a | — | — | — |
+| 148 | GET | `/api/imports/candidates` | session | imports:view | — | none | — | n/a | — | — | — |
+| 165 | POST | `/api/imports/spreadsheet` | session | imports:edit | importLimiter | none | — | n/a | — | — | — |
+| 231 | POST | `/api/imports/sheet` | session | imports:edit | importLimiter | none | — | n/a | — | — | — |
+| 266 | POST | `/api/imports/clients` | session | imports:edit | importLimiter | zod | — | n/a | — | — | — |
+| 290 | POST | `/api/imports/pdf` | session | imports:edit | importLimiter | none | — | n/a | — | — | — |
+| 365 | PUT | `/api/imports/candidates/:id` | session | imports:edit | — | zod | — | predicate | — | — | — |
+| 392 | POST | `/api/imports/candidates/:id/reject` | session | imports:edit | — | none | — | predicate | — | — | — |
+| 413 | POST | `/api/imports/candidates/:id/confirm` | session | imports:edit | — | none | — | predicate | — | — | — |
+| 442 | POST | `/api/imports/batches/:id/confirm-all` | session | imports:edit | — | none | — | predicate | — | — | — |
+| 470 | DELETE | `/api/imports/batches/:id` | session | imports:full | — | none | — | predicate | — | — | — |
 
 ## artifacts/api-server/src/routes/incentives.ts
 
@@ -551,20 +551,20 @@ Columns — **Auth**: session (`requireAuth`), apiKey (`requireApiKey`), admin (
 
 | Line | Method | Path | Auth | Perm | RL | Val | Gate | Scope | Archived | Token | Webhook |
 |---|---|---|---|---|---|---|---|---|---|---|---|
-| 160 | GET | `/api/payments/plans` | none | — | — | none | — | n/a | — | — | — |
-| 164 | GET | `/api/payments/trial-status` | session | — | — | none | — | n/a | — | — | — |
-| 178 | POST | `/api/payments/checkout` | session | settings:full | — | manual | — | n/a | — | — | — |
-| 266 | GET | `/api/payments/subscription` | session | — | — | none | quota-check | n/a | — | — | — |
-| 321 | POST | `/api/payments/unlock-quote` | session | quotes:edit | — | manual | — | n/a | — | — | — |
-| 371 | POST | `/api/payments/portal` | session | settings:full | — | none | — | n/a | — | — | — |
-| 399 | POST | `/api/payments/sync-subscription` | session | settings:full | — | none | — | n/a | — | — | — |
-| 506 | GET | `/api/payments/verify/:quoteId` | session | — | — | none | — | post-check | — | — | — |
+| 169 | GET | `/api/payments/plans` | none | — | — | none | — | n/a | — | — | — |
+| 173 | GET | `/api/payments/trial-status` | session | — | — | none | — | n/a | — | — | — |
+| 187 | POST | `/api/payments/checkout` | session | settings:full | — | manual | — | n/a | — | — | — |
+| 280 | GET | `/api/payments/subscription` | session | — | — | none | — | n/a | — | — | — |
+| 319 | POST | `/api/payments/unlock-quote` | session | quotes:edit | — | manual | — | n/a | — | — | — |
+| 369 | POST | `/api/payments/portal` | session | settings:full | — | none | — | n/a | — | — | — |
+| 397 | POST | `/api/payments/sync-subscription` | session | settings:full | — | none | — | n/a | — | — | — |
+| 504 | GET | `/api/payments/verify/:quoteId` | session | — | — | none | — | post-check | — | — | — |
 
 ## artifacts/api-server/src/routes/plan-overview.ts
 
 | Line | Method | Path | Auth | Perm | RL | Val | Gate | Scope | Archived | Token | Webhook |
 |---|---|---|---|---|---|---|---|---|---|---|---|
-| 12 | GET | `/api/plan/overview` | session | — | — | none | quota-check | n/a | — | — | — |
+| 13 | GET | `/api/plan/overview` | session | — | — | none | — | n/a | — | — | — |
 
 ## artifacts/api-server/src/routes/portal.ts
 
@@ -721,16 +721,16 @@ Columns — **Auth**: session (`requireAuth`), apiKey (`requireApiKey`), admin (
 | 1627 | POST | `/api/quotes/:id/archive` | session | quotes:full | — | zod | — | post-check | — | — | — |
 | 1647 | POST | `/api/quotes/:id/restore` | session | quotes:full | — | zod | — | post-check | — | — | — |
 | 1667 | POST | `/api/quotes/:id/generate-pdf` | session | quotes:edit | — | zod | — | predicate | — | — | — |
-| 1745 | POST | `/api/quotes/:id/send-pdf-email` | session | quotes:edit | — | manual | — | helper | — | — | — |
-| 1769 | GET | `/api/quotes/:id/public-link` | session | — | — | none | — | helper | — | — | — |
-| 1782 | POST | `/api/quotes/:id/public-link` | session | quotes:edit | — | none | — | helper | — | — | — |
-| 1799 | DELETE | `/api/quotes/:id/public-link` | session | quotes:edit | — | none | — | predicate | — | db-lookup | — |
-| 1817 | POST | `/api/quotes/:id/duplicate` | session | quotes:edit | — | none | — | post-check | — | — | — |
-| 1879 | POST | `/api/quotes/:id/regenerate` | session | quotes:edit | aiCallLimiter | zod | — | predicate | — | — | — |
-| 2097 | POST | `/api/quotes/:id/upgrade-to-capitolato` | session | quotes:edit | aiCallLimiter | zod | plan-check | predicate | — | — | — |
-| 2211 | POST | `/api/quotes/:id/generate-pdf-pro` | session | quotes:edit | — | none | plan-check | predicate | — | — | — |
-| 2262 | POST | `/api/quotes/manual` | session | quotes:edit | — | manual | — | n/a | — | — | — |
-| 2278 | POST | `/api/quotes/suggest-item-description` | session | quotes:edit | aiCallLimiter | manual | — | n/a | — | — | — |
+| 1734 | POST | `/api/quotes/:id/send-pdf-email` | session | quotes:edit | — | manual | — | helper | — | — | — |
+| 1758 | GET | `/api/quotes/:id/public-link` | session | — | — | none | — | helper | — | — | — |
+| 1771 | POST | `/api/quotes/:id/public-link` | session | quotes:edit | — | none | — | helper | — | — | — |
+| 1788 | DELETE | `/api/quotes/:id/public-link` | session | quotes:edit | — | none | — | predicate | — | db-lookup | — |
+| 1806 | POST | `/api/quotes/:id/duplicate` | session | quotes:edit | — | none | — | post-check | — | — | — |
+| 1868 | POST | `/api/quotes/:id/regenerate` | session | quotes:edit | aiCallLimiter | zod | — | predicate | — | — | — |
+| 2086 | POST | `/api/quotes/:id/upgrade-to-capitolato` | session | quotes:edit | aiCallLimiter | zod | plan-check | predicate | — | — | — |
+| 2200 | POST | `/api/quotes/:id/generate-pdf-pro` | session | quotes:edit | — | none | plan-check | predicate | — | — | — |
+| 2251 | POST | `/api/quotes/manual` | session | quotes:edit | — | manual | — | n/a | — | — | — |
+| 2267 | POST | `/api/quotes/suggest-item-description` | session | quotes:edit | aiCallLimiter | manual | — | n/a | — | — | — |
 
 ## artifacts/api-server/src/routes/schedule.ts
 

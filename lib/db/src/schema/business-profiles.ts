@@ -98,6 +98,8 @@ export const businessProfilesTable = pgTable("business_profiles", {
   //    personale (SQL, RUNBOOKS §38): l'acquisto in app resta spento finché il
   //    titolare non decide il prezzo (D20, `POSTO_EXTRA` in lib/config piani.ts).
   extraSeats: integer("extra_seats").notNull().default(0),
+  // ── PREZZI-2: i preventivi del pacchetto non ancora usati (migrazione 0027, quotes/quota.ts).
+  preventiviCrediti: integer("preventivi_crediti").notNull().default(0),
   // ── POCKET-5 (riga 62, QuoteAI 128.3): Dati dell'impresa e le pagine delle Impostazioni dell'app ──
   //    La ragione sociale (company_name è il nome commerciale), il sito, il colore sui documenti e le scelte delle
   //    pagine (iva, preventivi, fatture, messaggi, modulo, modelli…), validate da routes/business-profile.ts.
@@ -117,3 +119,11 @@ export const insertBusinessProfileSchema = createInsertSchema(businessProfilesTa
 
 export type InsertBusinessProfile = z.infer<typeof insertBusinessProfileSchema>;
 export type BusinessProfile = typeof businessProfilesTable.$inferSelect;
+
+/** PREZZI-2: una riga per sessione Stripe, così un webhook ripetuto non accredita due volte il pacchetto. */
+export const preventiviCreditiAcquistiTable = pgTable("preventivi_crediti_acquisti", {
+  stripeSessionId: text("stripe_session_id").primaryKey(),
+  userId: text("user_id").notNull(),
+  crediti: integer("crediti").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});

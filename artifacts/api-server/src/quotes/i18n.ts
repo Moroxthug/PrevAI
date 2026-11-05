@@ -60,6 +60,8 @@ const Q = {
   generatedWith: `Documento generato con ${MARKET.brand}`,
   // AI Act art. 50: marcatura visibile dei preventivi elaborati dall'IA (i metadati PDF portano la stessa indicazione).
   generatedWithAi: `Documento generato con ${MARKET.brand} · contenuto elaborato con intelligenza artificiale e verificato dall'impresa`,
+  // PREZZI-2: la stessa marcatura senza il nostro nome, sui PDF di chi paga.
+  aiDisclosure: "Contenuto elaborato con intelligenza artificiale e verificato dall'impresa",
   acceptedOnline: "Accettato online da {name} il {date}",
   // capitolato
   specTitle: "CAPITOLATO TECNICO",

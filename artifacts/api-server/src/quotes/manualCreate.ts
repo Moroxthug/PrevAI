@@ -6,6 +6,7 @@ import { ownLogoPath } from "../lib/logo.js";
 import { db, quotesTable, businessProfilesTable, quoteClientDataSchema, quoteCompanySnapshotSchema, quoteChapterSchema, normalizeProvince, DEFAULT_TAX_RATE, type QuoteChapter, type QuoteCompanySnapshot, type QuoteClientData } from "@workspace/db";
 import { eq, sql } from "drizzle-orm";
 import { PLANS } from "../routes/payments.js";
+import { quotaPreventivi } from "./quota.js";
 import { generateNumeroPreventivo } from "../lib/quoteNumber.js";
 import { linkQuoteToClient } from "../lib/clients.js";
 
@@ -42,17 +43,9 @@ export async function createManualQuote(userId: string, input: ManualQuoteInput)
 
   if (profile?.subscriptionStatus === "active" && profile.subscriptionPlan) {
     const plan = PLANS.find((p) => p.id === profile.subscriptionPlan);
-    if (plan?.quotaPerMonth != null) {
-      const now = new Date();
-      const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-      const nextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1);
-      const [{ cnt }] = await db
-        .select({ cnt: sql<number>`count(*)::int` })
-        .from(quotesTable)
-        .where(sql`${quotesTable.userId} = ${userId} AND ${quotesTable.createdAt} >= ${monthStart.toISOString()} AND ${quotesTable.createdAt} < ${nextMonth.toISOString()}`);
-      if (cnt >= plan.quotaPerMonth) {
-        return { ok: false, status: 429, error: `Hai raggiunto il limite mensile: il piano ${plan.name} include ${plan.quotaPerMonth} preventivi al mese e li hai già usati tutti.` };
-      }
+    const quota = await quotaPreventivi(userId, plan);
+    if (quota && quota.usati >= quota.limite) {
+      return { ok: false, status: 429, error: `Hai raggiunto il limite mensile: il piano ${plan!.name} include ${quota.limite} preventivi al mese e li hai già usati tutti.` };
     }
   }
 

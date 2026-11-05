@@ -38,7 +38,7 @@ import { ResponsiveTable, type Column } from "@/components/mobile/list-row";
 import { StickyActionBar } from "@/components/mobile/sticky-action-bar";
 import { ActionSheet } from "@/components/mobile/action-sheet";
 import { useMediaQuery } from "@/hooks/use-media-query";
-import { pianoOltreIngresso } from "@workspace/config";
+import { pianoPagante } from "@workspace/config";
 
 
 const UM_OPTIONS = ["mq", "ml", "mc", "cad", "ore", "kg", "a.c.", "pezzi", "kw", "lt", "t", "m", "%"];
@@ -329,7 +329,7 @@ export default function CatalogPage() {
   const phone = useMediaQuery("(max-width: 640px)");
 
   // Elite includes everything Pro does (Phase 66: Elite accounts were shown the "Upgrade to Pro" wall).
-  const isPro = subscription?.isActive && pianoOltreIngresso(subscription?.plan);
+  const isPro = subscription?.isActive && pianoPagante(subscription?.plan);
 
   const invalidate = () => queryClient.invalidateQueries({ queryKey: getListCatalogItemsQueryKey() });
 

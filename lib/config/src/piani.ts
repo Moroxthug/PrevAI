@@ -10,15 +10,15 @@
 // (api-server routes/payments.ts). Decisione del titolare 2026-09-23 (D5):
 // prezzi IVA inclusa, annuale = dieci mensilità.
 //
-// PREZZI-2 (2026-11-04): quattro gradini, uno per fase dell'impresa, invece di
+// PREZZI-2 (2026-11-04/05): quattro gradini, uno per fase dell'impresa, invece di
 // moduli venduti a parte. Gli id interni restano quelli di prima (abbonamenti
 // Stripe, webhook e dati non cambiano), cambiano nomi e importi:
-//   monthly_starter → Preventivi 9,90 € (l'ingresso per chi è scettico)
-//   monthly_clienti → Clienti 24 € (nuovo: preventivi illimitati, listino, contratti, contatti)
-//   monthly_pro     → Cantieri 49 € (cantieri, costi, fatture, squadra)
-//   monthly_elite   → Impresa 89 € (tutto)
-// I 10 preventivi dell'ingresso vengono dai dati di produzione: nei sei mesi
-// fino a novembre 2026 solo 2 utenti su 27 li hanno superati in un mese.
+//   monthly_starter → Artigiano 9,90 € (25 preventivi, 30 con i vecchi preventivi caricati)
+//   monthly_clienti → Mastro 24 € (preventivi illimitati, contratti, contatti, WhatsApp)
+//   monthly_pro     → Capomastro 49 € (cantieri, costi, fatture, squadra)
+//   monthly_elite   → Su misura: nessun prezzo pubblico, ci si parla (`suRichiesta`)
+// Il marchio PrevAI sul PDF resta solo sul piano gratuito: nessun piano e nessun
+// acquisto singolo lo porta. L'importo di Su misura serve solo a tetto IA e MRR.
 
 import { OFFERTA_AMMINISTRAZIONE, type IntervalloAddon } from "./offerta";
 
@@ -33,24 +33,38 @@ export type PrezzoPiano = {
   preventiviMese: number | null;
   /** Utenti inclusi (vedi SEATS_INCLUDED in lib/db schema/plans.ts). */
   utenti: number;
+  /** Nessun prezzo pubblico e nessun checkout: si chiede un contatto. */
+  suRichiesta?: boolean;
 };
 
 /** Tutti i prezzi dei piani sono IVA inclusa (D5): i forfettari non la detraggono. */
 export const PREZZI_IVA_INCLUSA = true;
 
 export const PREZZI_PIANI: Record<PianoInAbbonamento, PrezzoPiano> = {
-  monthly_starter: { nome: "Preventivi", mensileCents: 990, annualeCents: 9900, preventiviMese: 10, utenti: 1 },
-  monthly_clienti: { nome: "Clienti", mensileCents: 2400, annualeCents: 24000, preventiviMese: null, utenti: 1 },
-  monthly_pro: { nome: "Cantieri", mensileCents: 4900, annualeCents: 49000, preventiviMese: null, utenti: 3 },
-  monthly_elite: { nome: "Impresa", mensileCents: 8900, annualeCents: 89000, preventiviMese: null, utenti: 6 },
+  monthly_starter: { nome: "Artigiano", mensileCents: 990, annualeCents: 9900, preventiviMese: 25, utenti: 1 },
+  monthly_clienti: { nome: "Mastro", mensileCents: 2400, annualeCents: 24000, preventiviMese: null, utenti: 1 },
+  monthly_pro: { nome: "Capomastro", mensileCents: 4900, annualeCents: 49000, preventiviMese: null, utenti: 3 },
+  monthly_elite: { nome: "Su misura", mensileCents: 8900, annualeCents: 89000, preventiviMese: null, utenti: 6, suRichiesta: true },
 };
+
+/**
+ * Il regalo del piano d'ingresso: chi carica almeno `soglia` vecchi preventivi
+ * verificati riceve `omaggio` preventivi in più ogni mese (25 → 30). Verificato =
+ * confermato dall'impresa, letto dall'IA senza dubbi, con voci e totale, e non
+ * doppione (api-server quotes/quota.ts).
+ */
+export const BONUS_VECCHI_PREVENTIVI = { soglia: 10, omaggio: 5 } as const;
+
+/** Dove va chi vuole il piano su richiesta. */
+export const CONTATTO_SU_MISURA = "/contatti/?piano=su-misura";
+export const CTA_SU_MISURA = "Parliamone";
 
 /** A chi serve ogni piano, in una riga: pagine prezzi, impostazioni, email. */
 export const PER_CHI_PIANO: Record<PianoInAbbonamento, string> = {
-  monthly_starter: "Per chi vuole provare: i preventivi e basta",
+  monthly_starter: "Per chi lavora da solo e vuole preventivi giusti",
   monthly_clienti: "Per chi vuole prendere più lavori",
   monthly_pro: "Per chi gestisce i lavori dall'inizio alla fine",
-  monthly_elite: "Per chi ha una squadra",
+  monthly_elite: "Per le imprese con più squadre e cantieri",
 };
 
 /**
@@ -60,32 +74,32 @@ export const PER_CHI_PIANO: Record<PianoInAbbonamento, string> = {
  */
 export const VOCI_PIANI: Record<PianoInAbbonamento, readonly string[]> = {
   monthly_starter: [
-    testoPreventivi("monthly_starter"),
-    "Preventivo scritto dall'IA, a voce o a parole",
+    `${PREZZI_PIANI.monthly_starter.preventiviMese} preventivi al mese, ${(PREZZI_PIANI.monthly_starter.preventiviMese ?? 0) + BONUS_VECCHI_PREVENTIVI.omaggio} se carichi ${BONUS_VECCHI_PREVENTIVI.soglia} vecchi preventivi`,
+    "PDF puliti col tuo logo, senza marchio PrevAI, tutti i modelli",
+    "Listino prezzi: l'IA usa i tuoi prezzi",
+    "Vecchi preventivi: l'IA impara come lavori",
     "Invio per email e accettazione dal telefono",
-    "PDF con il tuo logo e la riga «Fatto con prevai.it»",
-    "1 utente · disdici quando vuoi",
   ],
   monthly_clienti: [
-    "Preventivi illimitati, PDF senza la riga PrevAI",
-    "Listino prezzi e controllo dei prezzi del preventivo",
+    "Tutto il piano Artigiano, con preventivi illimitati",
     "Contratti con firma del cliente",
     "Contatti da Facebook e Instagram, email dal tuo Gmail",
     "WhatsApp: 100 messaggi al mese",
+    "5 foto per preventivo",
   ],
   monthly_pro: [
-    "Tutto il piano Clienti",
+    "Tutto il piano Mastro",
     "Cantieri con fasi, date, pagamenti e budget dal preventivo",
     "Costi e scontrini, fatture e solleciti",
     "Squadra, ore degli operai e calendario",
     `${PREZZI_PIANI.monthly_pro.utenti} utenti inclusi`,
   ],
   monthly_elite: [
-    "Tutto il piano Cantieri",
+    "Tutto il piano Capomastro",
     "Assistente IA dei cantieri e analisi dei margini",
     "Pagamenti con carta sulle fatture",
     "API e collegamenti con Zapier e Make",
-    `${PREZZI_PIANI.monthly_elite.utenti} utenti inclusi · ${OFFERTA_AMMINISTRAZIONE.nome} a ${formatPrezzo(OFFERTA_AMMINISTRAZIONE.bundleEliteMensileCents)} al mese`,
+    `Da ${PREZZI_PIANI.monthly_elite.utenti} utenti in su · ${OFFERTA_AMMINISTRAZIONE.nome} a ${formatPrezzo(OFFERTA_AMMINISTRAZIONE.bundleEliteMensileCents)} al mese`,
   ],
 };
 
@@ -96,10 +110,12 @@ export function pianoSuccessivo(piano: string | null | undefined): PianoInAbbona
   return PIANI_IN_ABBONAMENTO[i + 1] ?? null;
 }
 
-/**
- * I piani sopra l'ingresso: PDF senza la riga PrevAI, tutti i modelli di PDF,
- * capitolato, preventivi da WhatsApp. Prima di PREZZI-2 era "Pro o Elite".
- */
+/** Un abbonamento vero: PDF senza marchio PrevAI, tutti i modelli, capitolato, listino. */
+export function pianoPagante(piano: string | null | undefined): boolean {
+  return !!piano && (PIANI_IN_ABBONAMENTO as readonly string[]).includes(piano);
+}
+
+/** I piani sopra l'ingresso: bot WhatsApp e tutto ciò che è legato ai messaggi. */
 export function pianoOltreIngresso(piano: string | null | undefined): boolean {
   return piano === "monthly_clienti" || piano === "monthly_pro" || piano === "monthly_elite";
 }
@@ -111,10 +127,8 @@ export function limitePreventiviWhatsapp(piano: string | null | undefined): numb
 
 /** Foto del cantiere che l'IA legge per preventivo (0 senza abbonamento attivo). */
 export function fotoPerPreventivo(piano: string | null | undefined): number {
-  if (piano === "monthly_elite") return 5;
-  if (piano === "monthly_clienti" || piano === "monthly_pro") return 3;
-  if (piano === "monthly_starter") return 1;
-  return 0;
+  if (piano === "monthly_starter") return 3;
+  return pianoOltreIngresso(piano) ? 5 : 0;
 }
 
 /** Il piano dal nome commerciale ("Cantieri" → monthly_pro), null se non è un piano. */
@@ -123,9 +137,10 @@ export function pianoDaNome(nome: string | null | undefined): PianoInAbbonamento
   return PIANI_IN_ABBONAMENTO.find((p) => PREZZI_PIANI[p].nome.toLowerCase() === n) ?? null;
 }
 
+/** Senza abbonamento: sempre senza marchio. Il pacchetto dà crediti, spesi uno per preventivo. */
 export const PREVENTIVI_SINGOLI = {
-  oneshot_watermark: { nome: "Singolo con filigrana", cents: 300 },
-  oneshot_clean: { nome: "Singolo pulito", cents: 900 },
+  oneshot_clean: { nome: "Preventivo singolo", cents: 199, crediti: 0, lookupKey: "preventivo_singolo" },
+  pack_5: { nome: "Pacchetto 5 preventivi", cents: 399, crediti: 5, lookupKey: "pacchetto_5_preventivi" },
 } as const;
 
 export function prezzoPianoCents(piano: PianoInAbbonamento, intervallo: IntervalloAddon): number {
@@ -149,7 +164,7 @@ export function pianoDaLookupKey(chiave: string | null | undefined): PianoInAbbo
 }
 
 export function lookupKeysPianiAttese(): { chiave: string; importoCents: number; intervallo: IntervalloAddon }[] {
-  return PIANI_IN_ABBONAMENTO.flatMap((p) =>
+  return PIANI_IN_ABBONAMENTO.filter((p) => !PREZZI_PIANI[p].suRichiesta).flatMap((p) =>
     (["mensile", "annuale"] as const).map((i) => ({ chiave: lookupKeyPiano(p, i), importoCents: prezzoPianoCents(p, i), intervallo: i })),
   );
 }

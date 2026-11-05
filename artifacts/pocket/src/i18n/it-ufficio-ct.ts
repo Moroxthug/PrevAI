@@ -86,7 +86,7 @@ export const ct = {
       notFound: { title: "Contratto non trovato", body: "Forse è stato archiviato o spostato." },
       drafting: { title: "Scrivo il contratto", body: "Leggo il preventivo e preparo ambito e tempi. Ci vogliono pochi secondi." },
       draftFailed: { title: "Non sono riuscito a scrivere il contratto", body: "Riprova fra un momento." },
-      plan: { title: "I contratti fanno parte di un piano superiore", body: "Scrivere i contratti è compreso dal piano Clienti in su. Gestisci il piano su prevai.it." },
+      plan: { title: "I contratti fanno parte di un piano superiore", body: "Scrivere i contratti è compreso dal piano Mastro in su. Gestisci il piano su prevai.it." },
       noAccess: "Il tuo ruolo non può cambiare i contratti.", offline: "Sei senza rete. Riprova quando c'è segnale.", failed: "Non è andata. Riprova.",
     },
   },

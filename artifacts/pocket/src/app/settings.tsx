@@ -108,7 +108,7 @@ export default function Settings() {
   const net = netOf(schedule);
   const netWord = t(`invoices.net.${net}`);
   const subscription = sub.data as { plan?: string | null; periodEnd?: string | null } | undefined;
-  // PrevAI's plan ids by the name the site uses (Preventivi, Clienti, Cantieri, Impresa); with no renewal date, the name alone.
+  // PrevAI's plan ids by the name the site uses (Artigiano, Mastro, Capomastro, Su misura); with no renewal date, the name alone.
   const planName = subscription?.plan ? planNameOf(subscription.plan) : null;
   const planSub = planName
     ? subscription?.periodEnd ? t("plan.sub", { plan: planName, date: shortDate(new Date(subscription.periodEnd), locale) }) : planName

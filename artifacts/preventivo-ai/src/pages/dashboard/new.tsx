@@ -16,7 +16,7 @@ import { StickyActionBar } from "@/components/mobile/sticky-action-bar";
 import { QuoteOptions, parseTarget } from "@/components/quotes/quote-options";
 import { useAuth } from "@/hooks/use-auth";
 import { useOnline, useQuoteDraft } from "@/hooks/use-quote-draft";
-import { pianoOltreIngresso, fotoPerPreventivo, PREZZI_PIANI } from "@workspace/config";
+import { pianoPagante, fotoPerPreventivo, PREZZI_PIANI } from "@workspace/config";
 import { isPianoInAbbonamento } from "@/lib/prezzi";
 
 function fmt(template: string, vars: Record<string, string | number>): string {
@@ -177,7 +177,7 @@ export default function NewQuote() {
   // Chi ha Pro o Elite parte dal layout Professionale (capitolato tecnico); la scelta resta sua:
   // se la cambia, o se la bozza ne aveva una, il default non la tocca.
   const templateChosen = useRef(false);
-  const proPlan = !!subscription?.isActive && pianoOltreIngresso(subscription.plan);
+  const proPlan = !!subscription?.isActive && pianoPagante(subscription.plan);
   useEffect(() => {
     if (proPlan && !templateChosen.current) setTemplateId("arosio");
   }, [proPlan]);
@@ -386,7 +386,7 @@ export default function NewQuote() {
     setClientForm(emptyClient);
   };
 
-  const isPro = subscription?.isActive && pianoOltreIngresso(subscription.plan);
+  const isPro = subscription?.isActive && pianoPagante(subscription.plan);
 
   const planPhotoLabel = subscription?.isActive && isPianoInAbbonamento(subscription.plan)
     ? `${fotoPerPreventivo(subscription.plan)} foto/preventivo · ${PREZZI_PIANI[subscription.plan].nome}`

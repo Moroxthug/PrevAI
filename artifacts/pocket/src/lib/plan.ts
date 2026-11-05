@@ -11,7 +11,7 @@ export function meterOf(m: Meter): { value: number; level: Level } {
   return { value, level: pct >= 100 ? "full" : pct >= 80 ? "near" : "ok" };
 }
 
-/** The plan that brings the row (PREZZI-2): "clienti" Clienti, "pro" Cantieri, "business" the top plan (Impresa); "fisco" the PrevAI Fisco add-on, which no plan includes. */
+/** The plan that brings the row (PREZZI-2): "clienti" Mastro, "pro" Capomastro, "business" the top plan (Su misura); "fisco" the PrevAI Fisco add-on, which no plan includes. */
 export type FeatureRow = { id: string; included: boolean; tier: "clienti" | "pro" | "business" | "fisco"; count?: number };
 
 /** What each row needs from the server's `features` list; rows built from two features need both. */

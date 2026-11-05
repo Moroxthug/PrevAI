@@ -9,7 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/i18n/LanguageContext";
 import { cn } from "@/lib/utils";
 import { AddonBillingCard } from "@/components/addon-billing-card";
-import { PER_CHI_PIANO, PREZZI_PIANI, VOCI_PIANI, pianoSuccessivo } from "@workspace/config";
+import { CONTATTO_SU_MISURA, CTA_SU_MISURA, PER_CHI_PIANO, PREZZI_PIANI, VOCI_PIANI, pianoSuccessivo } from "@workspace/config";
 import { NOTA_IVA, isPianoInAbbonamento, type Periodicita } from "@/lib/prezzi";
 import { usageApi } from "@/lib/usage-api";
 import { SettingsSection } from "./ui";
@@ -77,7 +77,7 @@ function BillingTab() {
   const handleCheckout = (planId: string) => {
     setLoadingPlanId(planId);
     createCheckout.mutate(
-      { data: { planType: planId as "monthly_starter" | "monthly_clienti" | "monthly_pro" | "monthly_elite" | "oneshot_watermark" | "oneshot_clean", billing: periodicita } },
+      { data: { planType: planId as "monthly_starter" | "monthly_clienti" | "monthly_pro" | "monthly_elite" | "oneshot_clean" | "pack_5", billing: periodicita } },
       {
         onSuccess: (r) => { window.location.href = r.url; },
         onError: () => {
@@ -158,6 +158,13 @@ function BillingTab() {
                 )}
               </div>
             )}
+            {sub?.oldQuotes && (
+              <div className="bg-card/70 rounded-[var(--radius)] p-4 border border-navy-100 text-sm">
+                {sub.oldQuotes.earned
+                  ? `Hai ${sub.oldQuotes.extra} preventivi in più ogni mese: i tuoi vecchi preventivi sono verificati.`
+                  : <>Carica {sub.oldQuotes.needed} vecchi preventivi e ne ricevi {sub.oldQuotes.extra} in più ogni mese: verificati {sub.oldQuotes.verified} su {sub.oldQuotes.needed}. <a href="/dashboard/imports" className="underline">Caricali ora</a></>}
+              </div>
+            )}
             <div className="bg-card/70 rounded-[var(--radius)] p-4 border border-navy-100">
               <div className="text-sm font-semibold mb-3">{t("dashboard.billing.includedInPlan")}</div>
               <ul className="space-y-2">
@@ -170,11 +177,13 @@ function BillingTab() {
               </div>
             )}
             <div className="flex flex-wrap gap-3 pt-1">
-              {prossimo && (
+              {prossimo && (PREZZI_PIANI[prossimo].suRichiesta ? (
+                <a href={CONTATTO_SU_MISURA} className="btn btn-navy gap-2"><Crown className="h-4 w-4" />{CTA_SU_MISURA}</a>
+              ) : (
                 <button onClick={handleManage} disabled={createPortal.isPending} className="btn btn-navy gap-2">
                   {createPortal.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Crown className="h-4 w-4" />}Passa a {PREZZI_PIANI[prossimo].nome}
                 </button>
-              )}
+              ))}
               <button onClick={handleManage} disabled={createPortal.isPending} className="btn btn-outline-navy gap-2">
                 <ArrowUpRight className="h-4 w-4" />{t("dashboard.billing.manageSubscription")}
               </button>
@@ -217,11 +226,13 @@ function BillingTab() {
                 return (
                   <div key={plan.id} className={cn("card", `flex flex-col ${isPlanPro ? "border-2 border-navy-300 shadow-lg" : isPlanElite ? "border-2 border-amber-300" : ""}`)}>
                     <div className="card-head pb-2">
-                      {isPlanPro && <span className="text-[10px] font-bold text-navy-600 uppercase tracking-wider">{t("dashboard.settings.billing.mostPopular")}</span>}
+                      {isPlanPro && <span className="text-[10px] font-bold text-navy-600 uppercase tracking-wider">Consigliato</span>}
                       {isPlanElite && <span className="text-[10px] font-bold text-amber-600 uppercase tracking-wider">{t("dashboard.settings.billing.unlimited")}</span>}
                       <h2 className="text-lg">{plan.name}</h2>
                       {isPianoInAbbonamento(plan.id) && <p className="text-xs text-muted-foreground">{PER_CHI_PIANO[plan.id]}</p>}
-                      <p className="text-2xl font-extrabold">{periodicita === "annuale" && plan.annualPrice ? plan.annualPrice : plan.price} €<span className="text-sm font-normal text-muted-foreground">{periodicita === "annuale" && plan.annualPrice ? "/anno" : t("dashboard.quoteDetail.perMonth")}</span></p>
+                      {plan.contactOnly
+                        ? <p className="text-2xl font-extrabold">Su richiesta</p>
+                        : <p className="text-2xl font-extrabold">{periodicita === "annuale" && plan.annualPrice ? plan.annualPrice : plan.price} €<span className="text-sm font-normal text-muted-foreground">{periodicita === "annuale" && plan.annualPrice ? "/anno" : t("dashboard.quoteDetail.perMonth")}</span></p>}
                     </div>
                     <div className="p-5 flex-1 pb-0">
                       <ul className="space-y-1.5 mb-4">
@@ -234,13 +245,16 @@ function BillingTab() {
                       </ul>
                     </div>
                     <div className="card-foot pt-3">
-                      <button className={cn("btn btn-navy", `w-full gap-2 ${isPlanPro ? "btn-gradient" : isPlanElite ? "bg-amber-500 hover:bg-amber-600 text-white border-0" : ""}`)}
-                        
+                      {plan.contactOnly ? (
+                        <a href={CONTATTO_SU_MISURA} className="btn btn-navy w-full gap-2 bg-amber-500 hover:bg-amber-600 text-white border-0"><Crown className="h-4 w-4" />{CTA_SU_MISURA}</a>
+                      ) : (
+                      <button className={cn("btn btn-navy", `w-full gap-2 ${isPlanPro ? "btn-gradient" : ""}`)}
                         onClick={() => handleCheckout(plan.id)}
                         disabled={loadingPlanId === plan.id}>
                         {loadingPlanId === plan.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Crown className="h-4 w-4" />}
                         {loadingPlanId === plan.id ? t("dashboard.settings.billing.pleaseWait") : t("dashboard.settings.billing.choosePlan").replace("{name}", plan.name)}
                       </button>
+                      )}
                     </div>
                   </div>
                 );

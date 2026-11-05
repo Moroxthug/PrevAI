@@ -49,7 +49,7 @@ router.post("/invoice-payments/connect/onboard", requireAuth, requirePermission(
   try {
     const userId = getUserId(res);
     const gate = await requireCardPaymentsFeature(userId);
-    if (!gate.ok) { res.status(403).json({ error: "PLAN_REQUIRED", requiredPlan: gate.plan, message: "Online card payments require the Impresa plan" }); return; }
+    if (!gate.ok) { res.status(403).json({ error: "PLAN_REQUIRED", requiredPlan: gate.plan, message: "Online card payments require the Su misura plan" }); return; }
     if (refuseIfNotConfigured(res, "stripe", "Online card payments")) return;
     const url = await createOnboardingLink(userId);
     res.json({ url });

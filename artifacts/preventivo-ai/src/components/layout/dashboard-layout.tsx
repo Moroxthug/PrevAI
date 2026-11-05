@@ -38,7 +38,7 @@ import { queryClient as appQueryClient } from "@/lib/query-client";
 // (lib/offline/query-cache.ts) — le pagine pubbliche non caricano mai questo codice.
 startPersisting(appQueryClient);
 import { AssistantLauncher } from "@/components/assistant/assistant-launcher";
-import { pianoOltreIngresso } from "@workspace/config";
+import { pianoPagante } from "@workspace/config";
 
 /** Section groupings for the sidebar rail — purely presentational, doesn't affect routing or access. */
 const NAV_GROUPS = ["overview", "sales", "delivery", "insights", "workspace"] as const;
@@ -259,7 +259,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
   // from the session so the block lifts as soon as enrolment succeeds.
   const { data: securityPolicy } = useQuery({ queryKey: ["security-policy"], queryFn: securityApi.policy, enabled: isSignedIn === true, staleTime: 60_000 });
   const twoFactorGated = Boolean(securityPolicy?.twoFactorRequired) && !user?.twoFactorEnabled;
-  const isPro = subscription?.isActive && pianoOltreIngresso(subscription?.plan);
+  const isPro = subscription?.isActive && pianoPagante(subscription?.plan);
   const { data: navProfile } = useGetBusinessProfile();
   const hasSdi = navProfile ? hasFeature(navProfile as never, "sdi_invoicing") : false;
   const hasFisco = navProfile ? hasFeature(navProfile as never, "fiscal_engine") : false;

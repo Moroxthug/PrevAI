@@ -296,7 +296,7 @@ export default function AmministrazioneAttivaPage() {
             PrevAI è uno strumento: calcola, prepara e ti ricorda, ma i versamenti li disponi tu e la dichiarazione dei redditi la invii tu o il tuo commercialista. Non dà
             consulenza fiscale personalizzata e non sostituisce un professionista iscritto all'Albo.
           </span>
-          {senzaFatture && <span>Le fatture elettroniche partono dalle fatture di PrevAI, che sono incluse dal piano Cantieri.</span>}
+          {senzaFatture && <span>Le fatture elettroniche partono dalle fatture di PrevAI, che sono incluse dal piano Capomastro.</span>}
         </div>
       </section>
     </div>

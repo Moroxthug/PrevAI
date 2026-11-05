@@ -63,7 +63,7 @@ export async function requireApiKey(req: Request, res: Response, next: NextFunct
 
   const [profile] = await db.select().from(businessProfilesTable).where(eq(businessProfilesTable.userId, key.userId));
   if (!hasFeature(profile, "public_api")) {
-    res.status(403).json({ error: "PLAN_REQUIRED", requiredPlan: minimumPlanFor("public_api"), message: "The public API requires the Impresa plan" });
+    res.status(403).json({ error: "PLAN_REQUIRED", requiredPlan: minimumPlanFor("public_api"), message: "The public API requires the Su misura plan" });
     return;
   }
 

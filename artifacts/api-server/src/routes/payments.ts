@@ -3,12 +3,13 @@ import { requireAuth, getUserId } from "../middlewares/authMiddleware";
 import { requirePermission } from "../middlewares/requirePermission";
 import { getBaseUrl } from "../lib/baseUrl";
 import { db, quotesTable, businessProfilesTable, authUsersTable } from "@workspace/db";
-import { eq, sql } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { CreateCheckoutSessionBody } from "@workspace/api-zod";
 import { getUncachableStripeClient } from "../stripeClient";
 import { logger } from "../lib/logger";
-import { PER_CHI_PIANO, PREVENTIVI_SINGOLI, PREZZI_PIANI, VOCI_PIANI, lookupKeyPiano, pianoDaLookupKey, prezzoPianoCents, type IntervalloAddon, type PianoInAbbonamento } from "@workspace/config";
+import { BONUS_VECCHI_PREVENTIVI, PER_CHI_PIANO, PREVENTIVI_SINGOLI, PREZZI_PIANI, VOCI_PIANI, lookupKeyPiano, pianoDaLookupKey, prezzoPianoCents, type IntervalloAddon, type PianoInAbbonamento } from "@workspace/config";
 import { eAbbonamentoAddon, sincronizzaAbbonamento, type AbbonamentoStripe } from "../addons/amministrazione.js";
+import { quotaPreventivi } from "../quotes/quota.js";
 
 const TRIAL_DAYS = 7;
 const TRIAL_DOWNLOAD_LIMIT = 3;
@@ -48,21 +49,21 @@ const router = Router();
  * PREZZI-2: un abbonamento per gradino (lib/config piani.ts). Gli id restano
  * quelli di sempre; `stripePriceId` è il Price storico, che tengono gli
  * abbonati di prima (Starter 19 €, Pro 49 €, Elite 59 €): i nuovi prezzi
- * passano dalle lookup key `piano_*`. Clienti è nato con PREZZI-2 e non ha
- * un Price storico.
+ * passano dalle lookup key `piano_*`. `monthly_clienti` è nato con PREZZI-2 e
+ * non ha un Price storico. Un piano su richiesta non espone l'importo.
  */
 const abbonamento = (id: PianoInAbbonamento, stripePriceId: string, tier: "starter" | "clienti" | "pro" | "elite") => ({
   id,
   stripePriceId,
   name: PREZZI_PIANI[id].nome,
-  price: PREZZI_PIANI[id].mensileCents / 100,
-  annualPrice: PREZZI_PIANI[id].annualeCents / 100,
+  price: PREZZI_PIANI[id].suRichiesta ? 0 : PREZZI_PIANI[id].mensileCents / 100,
+  annualPrice: PREZZI_PIANI[id].suRichiesta ? null : PREZZI_PIANI[id].annualeCents / 100,
   currency: "eur",
   interval: "month" as string | null,
   description: PER_CHI_PIANO[id],
   features: [...VOCI_PIANI[id]],
-  // Solo l'ingresso porta la riga «Fatto con prevai.it» sul PDF.
-  hasWatermark: id === "monthly_starter",
+  contactOnly: !!PREZZI_PIANI[id].suRichiesta,
+  hasWatermark: false,
   quotaPerMonth: PREZZI_PIANI[id].preventiviMese,
   tier,
 });
@@ -73,29 +74,31 @@ export const PLANS = [
   abbonamento("monthly_pro", "price_1TUdJjCaDBaDETvnfBv37ryF", "pro"),
   abbonamento("monthly_elite", "price_1TUdJjCaDBaDETvnCo3JKGJ7", "elite"),
   {
-    id: "oneshot_watermark",
-    stripePriceId: "price_1TUdJjCaDBaDETvnRnYfWJWh",
-    name: "Singolo con Watermark",
-    price: PREVENTIVI_SINGOLI.oneshot_watermark.cents / 100,
-    annualPrice: null,
-    currency: "eur",
-    interval: null,
-    features: ["1 preventivo PDF", "Riga prevai.it in calce", "Download immediato"],
-    hasWatermark: true,
-    quotaPerMonth: 1,
-    tier: "oneshot",
-  },
-  {
     id: "oneshot_clean",
     stripePriceId: "price_1TUdJkCaDBaDETvnVsY6ZWec",
-    name: "Singolo Pulito",
+    name: PREVENTIVI_SINGOLI.oneshot_clean.nome,
     price: PREVENTIVI_SINGOLI.oneshot_clean.cents / 100,
     annualPrice: null,
     currency: "eur",
     interval: null,
-    features: ["1 preventivo PDF pulito", "Logo aziendale", "Nessun watermark", "Download immediato"],
+    features: ["1 preventivo PDF senza marchio", "Col tuo logo", "Nessun abbonamento"],
     hasWatermark: false,
     quotaPerMonth: 1,
+    contactOnly: false,
+    tier: "oneshot",
+  },
+  {
+    id: "pack_5",
+    stripePriceId: "",
+    name: PREVENTIVI_SINGOLI.pack_5.nome,
+    price: PREVENTIVI_SINGOLI.pack_5.cents / 100,
+    annualPrice: null,
+    currency: "eur",
+    interval: null,
+    features: [`${PREVENTIVI_SINGOLI.pack_5.crediti} preventivi PDF senza marchio`, "Li usi quando vuoi", "Nessun abbonamento"],
+    hasWatermark: false,
+    quotaPerMonth: PREVENTIVI_SINGOLI.pack_5.crediti,
+    contactOnly: false,
     tier: "oneshot",
   },
 ];
@@ -138,7 +141,13 @@ export async function prezzoPianoStripe(
   plan: (typeof PLANS)[number],
   intervallo: IntervalloAddon,
 ): Promise<string> {
-  if (!plan.interval) return plan.stripePriceId; // preventivi singoli: prezzi invariati
+  if (!plan.interval) {
+    // PREZZI-2: singolo e pacchetto passano dalla lookup key, il Price storico da 9 € non vale più.
+    const voce = PREVENTIVI_SINGOLI[plan.id as keyof typeof PREVENTIVI_SINGOLI];
+    const { data } = await stripe.prices.list({ lookup_keys: [voce.lookupKey], active: true, limit: 1 });
+    if (data[0]?.unit_amount === voce.cents && data[0].currency === "eur" && !data[0].recurring) return data[0].id;
+    throw new ErrorePrezzo(data[0] ? "PLAN_PRICE_MISMATCH" : "PLAN_PRICE_MISSING", `Prezzo "${voce.lookupKey}" non configurato su Stripe (RUNBOOKS §43).`);
+  }
   const piano = plan.id as PianoInAbbonamento;
   const atteso = prezzoPianoCents(piano, intervallo);
   const recurring = intervallo === "annuale" ? "year" : "month";
@@ -191,6 +200,10 @@ router.post("/payments/checkout", requireAuth, requirePermission("settings", "fu
       res.status(400).json({ error: "Invalid plan type" });
       return;
     }
+    if (plan.contactOnly) {
+      res.status(409).json({ error: "CONTACT_SALES", message: "Questo piano si attiva parlando con noi." });
+      return;
+    }
 
     const stripe = await getUncachableStripeClient();
     let priceId: string;
@@ -232,7 +245,8 @@ router.post("/payments/checkout", requireAuth, requirePermission("settings", "fu
       cancel_url: cancelUrl,
       metadata: {
         userId,
-        quoteId: quoteId ?? "",
+        // Il pacchetto dà crediti: il preventivo resta in bozza e il primo credito lo sblocca al download.
+        quoteId: plan.id === "pack_5" ? "" : quoteId ?? "",
         planType,
         billing: intervallo,
         hasWatermark: String(plan.hasWatermark),
@@ -249,7 +263,7 @@ router.post("/payments/checkout", requireAuth, requirePermission("settings", "fu
 
     const session = await stripe.checkout.sessions.create(sessionParams);
 
-    if (quoteId) {
+    if (quoteId && plan.id !== "pack_5") {
       await db
         .update(quotesTable)
         .set({ status: "pending_payment", stripeSessionId: session.id })
@@ -274,30 +288,11 @@ router.get("/payments/subscription", requireAuth, async (req, res) => {
     const isActive = profile?.subscriptionStatus === "active";
     const plan = PLANS.find(p => p.id === profile?.subscriptionPlan) ?? null;
 
-    let quotaUsed: number | null = null;
-    let quotaLimit: number | null = null;
-    let quotaRemaining: number | null = null;
-    let quotaResetDate: string | null = null;
-
-    if (isActive && plan?.quotaPerMonth != null) {
-      const now = new Date();
-      const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-      const nextMonthStart = new Date(now.getFullYear(), now.getMonth() + 1, 1);
-
-      const [{ count: used }] = await db
-        .select({ count: sql<number>`count(*)::int` })
-        .from(quotesTable)
-        .where(
-          sql`${quotesTable.userId} = ${userId}
-            AND ${quotesTable.createdAt} >= ${monthStart.toISOString()}
-            AND ${quotesTable.createdAt} < ${nextMonthStart.toISOString()}`
-        );
-
-      quotaUsed = used ?? 0;
-      quotaLimit = plan.quotaPerMonth;
-      quotaRemaining = Math.max(0, quotaLimit - quotaUsed);
-      quotaResetDate = nextMonthStart.toISOString();
-    }
+    const quota = isActive ? await quotaPreventivi(userId, plan) : null;
+    const quotaUsed = quota?.usati ?? null;
+    const quotaLimit = quota?.limite ?? null;
+    const quotaRemaining = quota ? Math.max(0, quota.limite - quota.usati) : null;
+    const quotaResetDate = quota?.resetDate.toISOString() ?? null;
 
     res.json({
       plan: profile?.subscriptionPlan ?? null,
@@ -308,6 +303,9 @@ router.get("/payments/subscription", requireAuth, async (req, res) => {
       quotaLimit,
       quotaRemaining,
       quotaResetDate,
+      credits: profile?.preventiviCrediti ?? 0,
+      // Il regalo dell'ingresso: quanti vecchi preventivi verificati ha, su quanti ne servono.
+      oldQuotes: isActive && plan?.id === "monthly_starter" ? { verified: quota?.verificati ?? 0, needed: BONUS_VECCHI_PREVENTIVI.soglia, extra: BONUS_VECCHI_PREVENTIVI.omaggio, earned: (quota?.bonus ?? 0) > 0 } : null,
     });
   } catch (err) {
     logger.error({ err }, "Error getting subscription");

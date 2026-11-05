@@ -260,7 +260,7 @@ export const cantieri = {
     },
     loadFailed: { title: "Non riesco a caricare l'agenda", body: "Controlla la connessione e riprova.", retry: "Riprova" },
     offline: "Sei offline. Vedi l'ultima settimana che questo telefono ha caricato.",
-    planNeeded: "L'agenda della squadra è nel piano Cantieri.",
+    planNeeded: "L'agenda della squadra è nel piano Capomastro.",
   },
 
   crew: {

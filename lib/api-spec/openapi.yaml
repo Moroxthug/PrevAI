@@ -1893,6 +1893,27 @@ components:
         quotaResetDate:
           type: string
           nullable: true
+        credits:
+          type: number
+          description: PREZZI-2 — preventivi del pacchetto non ancora usati
+        oldQuotes:
+          type: object
+          nullable: true
+          description: PREZZI-2 — il bonus del piano d'ingresso per i vecchi preventivi verificati
+          properties:
+            verified:
+              type: number
+            needed:
+              type: number
+            extra:
+              type: number
+            earned:
+              type: boolean
+          required:
+            - verified
+            - needed
+            - extra
+            - earned
       required:
         - isActive
 
@@ -1911,7 +1932,7 @@ components:
           type: string
         planType:
           type: string
-          enum: [monthly_starter, monthly_clienti, monthly_pro, monthly_elite, oneshot_watermark, oneshot_clean]
+          enum: [monthly_starter, monthly_clienti, monthly_pro, monthly_elite, oneshot_clean, pack_5]
         billing:
           type: string
           enum: [mensile, annuale]
@@ -1963,6 +1984,9 @@ components:
             type: string
         hasWatermark:
           type: boolean
+        contactOnly:
+          type: boolean
+          description: PREZZI-2 — nessun prezzo pubblico, si chiede un contatto
         quotaPerMonth:
           type: number
           nullable: true

@@ -1,5 +1,5 @@
-import { db, quotesTable, businessProfilesTable, priceCatalogItemsTable } from "@workspace/db";
-import { eq, desc, count, sql } from "drizzle-orm";
+import { db, quotesTable, businessProfilesTable, priceCatalogItemsTable, hasFeature } from "@workspace/db";
+import { and, eq, desc, count, sql } from "drizzle-orm";
 import { openai } from "@workspace/integrations-openai-ai-server";
 import type { QuoteChapter, QuoteDiscount, QuoteCompanySnapshot, QuoteClientData } from "@workspace/db";
 import type { Logger } from "pino";
@@ -8,7 +8,8 @@ import { linkQuoteToClient } from "./clients.js";
 import { resolveQuoteTaxRate } from "./tax.js";
 import { recordAiUsage } from "./usage.js";
 import { stripLocationPlaceholder } from "../quotes/titles.js";
-import { pianoOltreIngresso } from "@workspace/config";
+import { pianoPagante } from "@workspace/config";
+import { buildImportedPricesContext } from "../quotes/quota.js";
 
 /**
  * Prompt unificato PrevAI v2 (V2-2e).
@@ -299,7 +300,7 @@ function parseAiResponse(content: string, rawInput: string, profile: typeof busi
     ivaValore: ivaValoreVal.toFixed(2),
     totale: totaleVal.toFixed(2),
     note: aiData.note ?? DEFAULT_QUOTE_NOTE,
-    capitolatoPro: !!(profile?.subscriptionStatus === "active" && pianoOltreIngresso(profile?.subscriptionPlan)),
+    capitolatoPro: !!(profile?.subscriptionStatus === "active" && pianoPagante(profile?.subscriptionPlan)),
     templateId,
   };
 }
@@ -325,7 +326,7 @@ export async function buildQuoteFromAI({
   clientData?: { nome: string; indirizzo: string };
   imageDataUrls?: string[];
 }): Promise<PendingQuoteData> {
-  const [profileRows, recentQuotes, catalogItems] = await Promise.all([
+  const [profileRows, recentQuotes, catalogItems, importedQuotes] = await Promise.all([
     db.select().from(businessProfilesTable).where(eq(businessProfilesTable.userId, userId)),
     db.select({ rawInput: quotesTable.rawInput, capitoli: quotesTable.capitoli, totale: quotesTable.totale })
       .from(quotesTable)
@@ -336,10 +337,12 @@ export async function buildQuoteFromAI({
       .from(priceCatalogItemsTable)
       .where(eq(priceCatalogItemsTable.userId, userId))
       .orderBy(priceCatalogItemsTable.categoria, priceCatalogItemsTable.nome),
+    importedPriceRows(userId),
   ]);
   const [profile] = profileRows;
 
   const pastContext = buildPastContext(recentQuotes as { rawInput: string; capitoli: unknown; totale: string }[]);
+  const importedContext = hasFeature(profile, "quote_import") ? buildImportedPricesContext(importedQuotes) : "";
   const catalogContext = buildCatalogContext(catalogItems);
 
   // Capitolato context: include for Elegante/Professionale templates
@@ -379,6 +382,7 @@ export async function buildQuoteFromAI({
         { role: "system", content: REGIONAL_PRICING_GUIDANCE },
         { role: "system", content: DESCRIPTION_QUALITY_GUIDANCE },
         ...(catalogContext ? [{ role: "system" as const, content: catalogContext }] : []),
+        ...(importedContext ? [{ role: "system" as const, content: importedContext }] : []),
         ...(pastContext ? [{ role: "system" as const, content: pastContext }] : []),
         ...(useCapitolato ? [{ role: "system" as const, content: CAPITOLATO_CONTEXT }] : []),
         { role: "user", content: userContent },
@@ -455,15 +459,17 @@ export async function regenerateWithCorrection({
   correction: string;
   log: Logger;
 }): Promise<PendingQuoteData> {
-  const [profileRows, catalogItems] = await Promise.all([
+  const [profileRows, catalogItems, importedQuotes] = await Promise.all([
     db.select().from(businessProfilesTable).where(eq(businessProfilesTable.userId, userId)),
     db.select()
       .from(priceCatalogItemsTable)
       .where(eq(priceCatalogItemsTable.userId, userId))
       .orderBy(priceCatalogItemsTable.categoria, priceCatalogItemsTable.nome),
+    importedPriceRows(userId),
   ]);
   const [profile] = profileRows;
   const catalogContext = buildCatalogContext(catalogItems);
+  const importedContext = hasFeature(profile, "quote_import") ? buildImportedPricesContext(importedQuotes) : "";
 
   const useCapitolato = current.templateId === "arosio" || current.templateId === "mariagrazia";
 
@@ -520,6 +526,7 @@ Return the COMPLETE updated quote in valid JSON with the same structure. Recalcu
         { role: "system", content: REGIONAL_PRICING_GUIDANCE },
         { role: "system", content: DESCRIPTION_QUALITY_GUIDANCE },
         ...(catalogContext ? [{ role: "system" as const, content: catalogContext }] : []),
+        ...(importedContext ? [{ role: "system" as const, content: importedContext }] : []),
         ...(useCapitolato ? [{ role: "system" as const, content: CAPITOLATO_CONTEXT }] : []),
         { role: "user", content: correctionPrompt },
       ],
@@ -701,6 +708,16 @@ function buildPastContext(quotes: { rawInput: string; capitoli: unknown; totale:
     });
   if (examples.length === 0) return "";
   return `STORICO PREVENTIVI DELL'UTENTE (usa come riferimento per la coerenza dei prezzi):\n\n${examples.join("\n\n---\n\n")}`;
+}
+
+/** PREZZI-2: i vecchi preventivi importati, dal più recente. Hanno le voci in `items`, non in `capitoli`, e date passate: l'esempio "ultimi 5" non li vede. */
+function importedPriceRows(userId: string) {
+  return db
+    .select({ items: quotesTable.items })
+    .from(quotesTable)
+    .where(and(eq(quotesTable.userId, userId), eq(quotesTable.source, "import")))
+    .orderBy(desc(quotesTable.createdAt))
+    .limit(40);
 }
 
 function buildCatalogContext(items: { nome: string; um: string; prezzoUnitario: string; categoria: string | null; note: string | null }[]): string {

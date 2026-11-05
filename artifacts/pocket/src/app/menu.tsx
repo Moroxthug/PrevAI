@@ -56,7 +56,7 @@ export default function Menu() {
   const active = orgs.data?.items.find((o) => o.orgId === orgs.data.activeOrgId);
   const company = active?.companyName || profile.data?.companyName || "";
   const role = active ? t(`menu.role.${active.role}`) : "";
-  // Il piano arriva come «monthly_pro» / «annual_elite»: si mostra solo il nome (Preventivi, Clienti, Cantieri, Impresa).
+  // Il piano arriva come «monthly_pro» / «annual_elite»: si mostra solo il nome (Artigiano, Mastro, Capomastro, Su misura).
   const planName = sub.data?.plan ? planNameOf(sub.data.plan) : "";
   const renews = sub.data?.periodEnd ? shortDate(new Date(sub.data.periodEnd), locale) : "";
   const version = Constants.expoConfig?.version ?? "";

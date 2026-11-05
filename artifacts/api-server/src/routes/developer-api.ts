@@ -49,7 +49,7 @@ router.post("/developer/api-keys", requireAuth, requirePermission("integrations"
   try {
     const userId = getUserId(res);
     const gate = await requirePublicApiFeature(userId);
-    if (!gate.ok) { res.status(403).json({ error: "PLAN_REQUIRED", requiredPlan: gate.plan, message: "The public API requires the Impresa plan" }); return; }
+    if (!gate.ok) { res.status(403).json({ error: "PLAN_REQUIRED", requiredPlan: gate.plan, message: "The public API requires the Su misura plan" }); return; }
     const body = z.object({ name: z.string().trim().min(1).max(100) }).safeParse(req.body);
     if (!body.success) { res.status(400).json({ error: "Invalid parameters" }); return; }
     const { key, rawKey } = await createApiKey(userId, getActorUserId(res), getActorRole(res), body.data.name);
@@ -92,7 +92,7 @@ router.post("/developer/webhooks", requireAuth, requirePermission("integrations"
   try {
     const userId = getUserId(res);
     const gate = await requirePublicApiFeature(userId);
-    if (!gate.ok) { res.status(403).json({ error: "PLAN_REQUIRED", requiredPlan: gate.plan, message: "Webhooks require the Impresa plan" }); return; }
+    if (!gate.ok) { res.status(403).json({ error: "PLAN_REQUIRED", requiredPlan: gate.plan, message: "Webhooks require the Su misura plan" }); return; }
     const body = z.object({ url: z.string().url().max(500), events: z.array(eventEnum).min(1) }).safeParse(req.body);
     if (!body.success) { res.status(400).json({ error: "Invalid parameters", details: body.error }); return; }
     // SEC-3: only addresses on the public internet (no SSRF towards internal hosts).

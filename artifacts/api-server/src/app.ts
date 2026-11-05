@@ -8,7 +8,8 @@ import { eq } from "drizzle-orm";
 import { auth, getTrustedOrigins } from "./lib/auth";
 import { nativeAppCors, isNativeAppOrigin } from "./lib/nativeApp";
 import { pianoDaPrezzo } from "./routes/payments.js";
-import { PREZZI_PIANI } from "@workspace/config";
+import { PREZZI_PIANI, PREVENTIVI_SINGOLI } from "@workspace/config";
+import { accreditaPacchetto } from "./quotes/quota";
 import { sendSubscriptionEmail } from "./lib/email";
 import router from "./routes";
 import "./automations";
@@ -301,6 +302,12 @@ app.post(
             .set({ status: "unlocked", unlockedWithPlan: planType ?? null })
             .where(eq(quotesTable.id, quoteId));
           logger.info({ quoteId, planType }, "Quote unlocked via webhook");
+        }
+
+        // PREZZI-2: il pacchetto accredita i preventivi una volta sola per sessione.
+        if (userId && planType === "pack_5" && session.payment_status === "paid") {
+          const nuovo = await accreditaPacchetto(session.id as string, userId, PREVENTIVI_SINGOLI.pack_5.crediti);
+          logger.info({ userId, nuovo }, "Pack credits via webhook");
         }
 
         if (userId && session.customer && session.mode === "subscription" && planType) {

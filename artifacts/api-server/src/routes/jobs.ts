@@ -223,7 +223,7 @@ router.post("/jobs", requireAuth, requirePermission("jobs", "edit"), async (req,
     const userId = getUserId(res);
     const gate = await requireJobsFeature(userId);
     if (!gate.ok) {
-      res.status(403).json({ error: "PLAN_REQUIRED", requiredPlan: gate.plan, message: "Jobs require the Cantieri plan" });
+      res.status(403).json({ error: "PLAN_REQUIRED", requiredPlan: gate.plan, message: "Jobs require the Capomastro plan" });
       return;
     }
     const body = z
@@ -947,7 +947,7 @@ router.post("/jobs/:id/change-orders/draft", requireAuth, requirePermission("job
   try {
     const userId = getUserId(res);
     const gate = await requireJobsFeature(userId);
-    if (!gate.ok) { res.status(403).json({ error: "PLAN_REQUIRED", requiredPlan: gate.plan, message: "Le varianti richiedono il piano Cantieri" }); return; }
+    if (!gate.ok) { res.status(403).json({ error: "PLAN_REQUIRED", requiredPlan: gate.plan, message: "Le varianti richiedono il piano Capomastro" }); return; }
     const body = z.object({ text: z.string().trim().min(3).max(1500) }).safeParse(req.body);
     if (!body.success) { res.status(400).json({ error: "Invalid parameters" }); return; }
     const job = await ownedProject(userId, req.params.id as string);
@@ -966,7 +966,7 @@ router.post("/jobs/:id/change-orders", requireAuth, requirePermission("jobs", "f
     const userId = getUserId(res);
     const gate = await requireJobsFeature(userId);
     if (!gate.ok) {
-      res.status(403).json({ error: "PLAN_REQUIRED", requiredPlan: gate.plan, message: "Change orders require the Cantieri plan" });
+      res.status(403).json({ error: "PLAN_REQUIRED", requiredPlan: gate.plan, message: "Change orders require the Capomastro plan" });
       return;
     }
     const body = ChangeOrderBody.safeParse(req.body);

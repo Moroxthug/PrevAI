@@ -1991,7 +1991,7 @@ export const UploadBusinessProfileLogoResponse = zod.object({
  */
 export const CreateCheckoutSessionBody = zod.object({
   "quoteId": zod.string().optional(),
-  "planType": zod.enum(['monthly_starter', 'monthly_clienti', 'monthly_pro', 'monthly_elite', 'oneshot_watermark', 'oneshot_clean']),
+  "planType": zod.enum(['monthly_starter', 'monthly_clienti', 'monthly_pro', 'monthly_elite', 'oneshot_clean', 'pack_5']),
   "billing": zod.enum(['mensile', 'annuale']).optional().describe('A-5 — periodicità dell\'abbonamento (default mensile; ignorata per i preventivi singoli)')
 })
 
@@ -2031,6 +2031,7 @@ export const GetPlansResponseItem = zod.object({
   "interval": zod.string().nullish(),
   "features": zod.array(zod.string()),
   "hasWatermark": zod.boolean(),
+  "contactOnly": zod.boolean().optional().describe('PREZZI-2 — nessun prezzo pubblico, si chiede un contatto'),
   "quotaPerMonth": zod.number().nullish()
 })
 export const GetPlansResponse = zod.array(GetPlansResponseItem)
@@ -2047,7 +2048,14 @@ export const GetSubscriptionResponse = zod.object({
   "quotaUsed": zod.number().nullish(),
   "quotaLimit": zod.number().nullish(),
   "quotaRemaining": zod.number().nullish(),
-  "quotaResetDate": zod.string().nullish()
+  "quotaResetDate": zod.string().nullish(),
+  "credits": zod.number().optional().describe('PREZZI-2 — preventivi del pacchetto non ancora usati'),
+  "oldQuotes": zod.object({
+  "verified": zod.number(),
+  "needed": zod.number(),
+  "extra": zod.number(),
+  "earned": zod.boolean()
+}).nullish().describe('PREZZI-2 — il bonus del piano d\'ingresso per i vecchi preventivi verificati')
 })
 
 

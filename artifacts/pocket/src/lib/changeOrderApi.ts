@@ -25,7 +25,7 @@ export const changeOrderApi = {
   /** The contractor signs the document (typed name) so it can be sent. */
   sign: (docId: string, name: string) => api<ContractState>(`/api/contracts/${encodeURIComponent(docId)}/sign`, { method: "POST", body: { signatureType: "typed", signatureData: name, name, consent: true } }),
   send: (docId: string) => api<ContractState>(`/api/contracts/${encodeURIComponent(docId)}/send`, { method: "POST", body: {} }),
-  /** The assistant reads what was said and proposes the change order's lines (the assistant is the Impresa plan's). */
+  /** The assistant reads what was said and proposes the change order's lines (the assistant is the Su misura plan's). */
   /** L'IA abbozza le voci da quello che si è detto; non salva niente. Stessa forma di una proposta dell'assistente, così la schermata non cambia. */
   draft: async (projectId: string, text: string): Promise<{ proposals: AssistantProposal[] }> => {
     const r = await api<{ draft: unknown }>(`/api/jobs/${encodeURIComponent(projectId)}/change-orders/draft`, { method: "POST", body: { text } });

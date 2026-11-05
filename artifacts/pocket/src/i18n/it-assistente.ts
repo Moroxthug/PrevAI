@@ -1,5 +1,5 @@
 // Italiano (it-IT) dell'assistente d'impresa: Proposte, Attività e Permessi (QuoteAI 128.1, i18n/screens/assistant.ts)
-// e il livello dell'orb (128.8, assistantChat.ts). In PrevAI l'assistente è del piano Impresa; promemoria e solleciti partono
+// e il livello dell'orb (128.8, assistantChat.ts). In PrevAI l'assistente è del piano Su misura; promemoria e solleciti partono
 // per email (gli SMS non ci sono); i promemoria delle fatture scattano a 3, 7 e 14 giorni di ritardo, i solleciti dei
 // preventivi a 2, 5 e 10 giorni dall'invio, come le automazioni del sito.
 export const assistente = {
@@ -7,7 +7,7 @@ export const assistente = {
     back: "Indietro", more: "Altre azioni", retry: "Riprova", close: "Chiudi", brand: "Assistente", tabsLabel: "Sezioni dell'assistente", undo: "Annulla",
     tabs: { proposals: "Proposte", activity: "Attività", permissions: "Permessi" },
     offline: { lead: "Sei offline." },
-    locked: { title: "L'assistente è incluso in Impresa", body: "Prepara promemoria, ordini e cambi di agenda, e aspetta il tuo sì prima che parta qualcosa.", tag: "Incluso in Impresa", note: "Il piano non si cambia dall'app.", action: "Vedi i piani" },
+    locked: { title: "L'assistente è incluso in Su misura", body: "Prepara promemoria, ordini e cambi di agenda, e aspetta il tuo sì prima che parta qualcosa.", tag: "Incluso in Su misura", note: "Il piano non si cambia dall'app.", action: "Vedi i piani" },
     loadFailed: { title: "Non riesco a caricare l'assistente", body: "Controlla la connessione e riprova." },
     p: {
       title: { n1: "Una cosa da approvare", n2: "Due cose da approvare", n3: "Tre cose da approvare", n4: "Quattro cose da approvare", more: "{{count}} cose da approvare", none: "Tutto a posto", locked: "Il tuo assistente" },

@@ -10,7 +10,6 @@ const N_ELITE = PREZZI_PIANI.monthly_elite.nome;
 const P_STARTER = formatPrezzo(PREZZI_PIANI.monthly_starter.mensileCents);
 const P_CLIENTI = formatPrezzo(PREZZI_PIANI.monthly_clienti.mensileCents);
 const P_PRO = formatPrezzo(PREZZI_PIANI.monthly_pro.mensileCents);
-const P_ELITE = formatPrezzo(PREZZI_PIANI.monthly_elite.mensileCents);
 const P_SINGOLO = formatPrezzo(PREVENTIVI_SINGOLI.oneshot_clean.cents);
 const Q_STARTER = PREZZI_PIANI.monthly_starter.preventiviMese;
 const U_PRO = PREZZI_PIANI.monthly_pro.utenti;
@@ -237,7 +236,7 @@ export const SECTORS: Record<string, SectorData> = {
     ],
     h2Faq: "Domande frequenti",
     faq: [
-      { q: "prevai è adatto per imprese edili con più dipendenti?", a: `Sì: il piano ${N_ELITE} (${P_ELITE}/mese) ha ${U_ELITE} utenti, la squadra, i cantieri, l'assistente e le analisi dei margini; il piano ${N_PRO} (${P_PRO}/mese) ha cantieri, costi, fatture e ${U_PRO} utenti. Gli utenti in più si aggiungono a parte.` },
+      { q: "prevai è adatto per imprese edili con più dipendenti?", a: `Sì: il piano ${N_ELITE} (su richiesta) parte da ${U_ELITE} utenti, con la squadra, i cantieri, l'assistente e le analisi dei margini; il piano ${N_PRO} (${P_PRO}/mese) ha cantieri, costi, fatture e ${U_PRO} utenti. Gli utenti in più si aggiungono a parte.` },
       { q: "Posso allegare planimetrie o file al preventivo?", a: "Il PDF generato contiene il computo metrico completo. Per allegare planimetrie puoi unirlo con qualsiasi PDF editor." },
       { q: "I prezzi suggeriti sono aggiornati al mercato italiano?", a: "L'AI si basa su prezzi tipici del mercato edile italiano. Puoi sempre modificare ogni voce." },
     ],
@@ -1138,7 +1137,7 @@ export const SECTORS: Record<string, SectorData> = {
     benefits: [
       { title: "Prova gratuita senza carta di credito", desc: "Registrati, crea il tuo primo preventivo e vedi il risultato prima di qualsiasi pagamento. Nessun impegno, nessuna sorpresa." },
       { title: `${P_STARTER}/mese per ${Q_STARTER} preventivi`, desc: `Il piano ${N_STARTER} include ${Q_STARTER} preventivi professionali al mese. Per la maggior parte degli artigiani è più che sufficiente per partire.` },
-      { title: `Preventivi illimitati con ${N_CLIENTI}`, desc: `Per chi fa più preventivi, il piano ${N_CLIENTI} a ${P_CLIENTI}/mese li rende illimitati e aggiunge listino, contratti e PDF senza la riga PrevAI.` },
+      { title: `Preventivi illimitati con ${N_CLIENTI}`, desc: `Per chi fa più preventivi, il piano ${N_CLIENTI} a ${P_CLIENTI}/mese li rende illimitati e aggiunge i contratti con firma.` },
       { title: "Nessun software da installare", desc: "prevai funziona direttamente nel browser, da smartphone o computer. Nessuna installazione, nessun aggiornamento manuale." },
     ],
     h2HowItWorks: "Inizia gratis in 3 minuti",
@@ -1203,7 +1202,7 @@ export const DEFAULT_SECTOR: SectorData = {
   useCases: ["Artigiani", "Imprese edili", "Imbianchini", "Elettricisti", "Idraulici", "Freelance e consulenti"],
   h2Faq: "Domande frequenti",
   faq: [
-    { q: "Quanto costa prevai?", a: `Quattro piani: ${N_STARTER} a ${P_STARTER}/mese con ${Q_STARTER} preventivi, ${N_CLIENTI} a ${P_CLIENTI}/mese con preventivi illimitati, listino e contratti, ${N_PRO} a ${P_PRO}/mese con cantieri, costi e fatture, ${N_ELITE} a ${P_ELITE}/mese con tutto e la squadra. Prezzi IVA inclusa; con l'annuale due mesi sono gratis. Sono disponibili anche preventivi singoli.` },
+    { q: "Quanto costa prevai?", a: `Quattro piani: ${N_STARTER} a ${P_STARTER}/mese con ${Q_STARTER} preventivi, listino e PDF senza marchio, ${N_CLIENTI} a ${P_CLIENTI}/mese con preventivi illimitati e contratti, ${N_PRO} a ${P_PRO}/mese con cantieri, costi e fatture, ${N_ELITE} su richiesta per chi ha più squadre. Prezzi IVA inclusa; con l'annuale due mesi sono gratis. Sono disponibili anche preventivi singoli.` },
     { q: "Serve una carta di credito per provarlo?", a: "No. Puoi registrarti gratuitamente e creare il tuo primo preventivo senza inserire dati di pagamento." },
   ],
   jsonLdDescription: "Software di preventivazione AI per artigiani e professionisti italiani.",

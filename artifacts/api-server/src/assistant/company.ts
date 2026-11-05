@@ -61,7 +61,7 @@ import {
   type RuleKey,
 } from "./companyRules.js";
 
-/** PrevAI: l'assistente è del piano Impresa (feature "assistant"). */
+/** PrevAI: l'assistente è del piano Su misura (feature "assistant"). */
 export const assistantEnabled = (profile: BusinessProfile | null | undefined): boolean => hasFeature(profile, "assistant");
 
 // ── Permessi ─────────────────────────────────────────────────────────────────

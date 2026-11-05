@@ -1,7 +1,7 @@
 import { useMemo, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { useGetSubscription, useCreateCustomerPortalSession, useUpdateBusinessProfile, getGetBusinessProfileQueryKey } from "@workspace/api-client-react";
-import { Crown, ImageIcon, Loader2, Upload, X } from "lucide-react";
+import { useUpdateBusinessProfile, getGetBusinessProfileQueryKey } from "@workspace/api-client-react";
+import { ImageIcon, Loader2, Upload, X } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/i18n/LanguageContext";
@@ -78,9 +78,6 @@ function LogoGroup({ logoUrl }: { logoUrl: string | null }) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const updateProfile = useUpdateBusinessProfile();
-  const { data: subscription } = useGetSubscription();
-  const createPortal = useCreateCustomerPortalSession();
-  const isStarter = subscription?.isActive && subscription?.plan === "monthly_starter";
   const [uploading, setUploading] = useState(false);
   const [preview, setPreview] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -125,25 +122,6 @@ function LogoGroup({ logoUrl }: { logoUrl: string | null }) {
       toast({ title: t("dashboard.profile.toast.errorLogoRemove"), variant: "destructive" });
     }
   };
-
-  if (isStarter) {
-    return (
-      <SettingsGroup>
-        <div className="srow srow-action">
-          <div className="srow-txt">
-            <span className="srow-label">{t("dashboard.profile.logoProOnly.title")}</span>
-            <p>{t("dashboard.settings.account.logoStarterDesc1")} {t("dashboard.settings.account.logoStarterDesc2")}</p>
-          </div>
-          <div className="srow-act">
-            <button type="button" onClick={() => createPortal.mutate(undefined, { onSuccess: (r) => { window.open(r.url, "_blank"); } })} disabled={createPortal.isPending} className="btn btn-outline-navy btn-sm gap-2">
-              {createPortal.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Crown className="h-4 w-4" />}
-              {t("dashboard.profile.logoProOnly.upgradeButton")}
-            </button>
-          </div>
-        </div>
-      </SettingsGroup>
-    );
-  }
 
   return (
     <SettingsGroup>

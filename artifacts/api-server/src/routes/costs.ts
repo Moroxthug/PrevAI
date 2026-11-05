@@ -113,7 +113,7 @@ router.post("/jobs/:id/costs", requireAuth, requirePermission("costs", "edit"), 
     const userId = getUserId(res);
     const gate = await requireCostsFeature(userId);
     if (!gate.ok) {
-      res.status(403).json({ error: "PLAN_REQUIRED", requiredPlan: gate.plan, message: "Cost tracking requires the Cantieri plan" });
+      res.status(403).json({ error: "PLAN_REQUIRED", requiredPlan: gate.plan, message: "Cost tracking requires the Capomastro plan" });
       return;
     }
     const project = await ownedProject(userId, req.params.id as string);
@@ -287,7 +287,7 @@ router.post(
       const userId = getUserId(res);
       const gate = await requireCostsFeature(userId);
       if (!gate.ok) {
-        res.status(403).json({ error: "PLAN_REQUIRED", requiredPlan: gate.plan, message: "Receipt scanning requires the Cantieri plan" });
+        res.status(403).json({ error: "PLAN_REQUIRED", requiredPlan: gate.plan, message: "Receipt scanning requires the Capomastro plan" });
         return;
       }
       const file = req.file;

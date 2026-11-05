@@ -2,7 +2,7 @@ import { localDay } from "@/lib/local-day";
 import { trackAppEvent } from "@/lib/app-beta";
 import { usePdfShare, fetchPdfFile } from "@/components/share-pdf";
 import { Link, useParams, useSearch } from "wouter";
-import { PREZZI_PIANI, formatPrezzo, pianoOltreIngresso, PER_CHI_PIANO, VOCI_PIANI } from "@workspace/config";
+import { PREZZI_PIANI, formatPrezzo, pianoPagante, PER_CHI_PIANO, VOCI_PIANI } from "@workspace/config";
 import { useGetQuote, useGetBusinessProfile, useGenerateQuotePdf, useGetPlans, useUpdateQuote, useCreateCheckoutSession, useVerifyPayment, useGetSubscription, useUnlockQuoteWithSubscription, useCreateCustomerPortalSession, useRegenerateQuote, useDuplicateQuote, useUpgradeToCapitolatoPro, useGenerateQuotePdfPro, useGetTrialStatus, useListClients, useSendQuotePdfEmail, useListQuoteVariants, useCreateQuoteVariant, useUpdateQuoteVariant, useDeleteQuoteVariant, useArchiveQuote, useDeleteQuote, getGetQuoteQueryKey, getVerifyPaymentQueryKey, getListQuotesQueryKey, getGetTrialStatusQueryKey, getListQuoteVariantsQueryKey } from "@workspace/api-client-react";
 import { Dialog, DialogBody, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -684,10 +684,10 @@ export default function QuoteDetail() {
 
   if (!quote) return <div>{t("dashboard.quoteDetail.quoteNotFound")}</div>;
 
-  const isPro = subscription?.isActive && pianoOltreIngresso(subscription?.plan);
+  const isPro = subscription?.isActive && pianoPagante(subscription?.plan);
   const isTrialActive = trialStatus?.isTrialActive ?? false;
-  // Pro/Elite subscribers and active trial users can always download
-  const isLocked = quote.status !== "unlocked" && !isPro && !isTrialActive;
+  // PREZZI-2: abbonati, prova attiva e chi ha crediti del pacchetto scaricano sempre.
+  const isLocked = quote.status !== "unlocked" && !isPro && !isTrialActive && (subscription?.credits ?? 0) === 0;
   // Editing is permanently locked once the PDF has been downloaded
   // …and once the client has accepted: the accepted amount is what the contract is built on.
   const isEditLocked = !!quote.pdfDownloadedAt || quote.status === "accepted";
@@ -1811,8 +1811,8 @@ export default function QuoteDetail() {
               <>
                 <DialogTitle>{t("dashboard.quoteDetail.upgradeToProPlanTitle")}</DialogTitle>
                 <DialogDescription>
-                  {t("dashboard.quoteDetail.starterNoticePrefix")} <strong>Starter</strong> {t("dashboard.quoteDetail.starterNoticeMiddle")}<br/>
-                  {t("dashboard.quoteDetail.starterNoticeSuffix")} <strong>Pro</strong> {t("dashboard.quoteDetail.starterNoticeEnd")}
+                  {t("dashboard.quoteDetail.starterNoticePrefix")} <strong>{PREZZI_PIANI.monthly_starter.nome}</strong> {t("dashboard.quoteDetail.starterNoticeMiddle")}<br/>
+                  {t("dashboard.quoteDetail.starterNoticeSuffix")} <strong>{PREZZI_PIANI.monthly_clienti.nome}</strong> {t("dashboard.quoteDetail.starterNoticeEnd")}
                 </DialogDescription>
               </>
             ) : (
@@ -1868,7 +1868,7 @@ export default function QuoteDetail() {
               <>
                 {/* Subscription plans — 3 columns */}
                 <div className="plan-grid" style={{ paddingTop: 10 }}>
-                  {plans?.filter(p => p.interval).map((plan) => {
+                  {plans?.filter(p => p.interval && !p.contactOnly).map((plan) => {
                     const isPro = plan.id === "monthly_pro";
                     const isElite = plan.id === "monthly_elite";
                     return (

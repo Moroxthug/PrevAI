@@ -2,10 +2,11 @@
 // and the assistant (APP-8c, send_quote). Also the trial unlock both share with the PDF
 // download, and the monthly quota check shared by the generator and draft_quote.
 import { db, quotesTable, businessProfilesTable, type QuoteClientData, type QuoteCompanySnapshot } from "@workspace/db";
-import { eq, sql } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { publicQuoteLink } from "./publicLink.js";
 import { quoteLanguageFor, qt, fmtQuoteDate, fmtQty } from "./i18n.js";
-import { generateQuotePdfBuffer, quoteProvenance } from "./pdf.js";
+import { generateQuotePdfBuffer, pdfConMarchio, quoteProvenance } from "./pdf.js";
+import { quotaPreventivi, usaCredito } from "./quota.js";
 import { getTrialStatus, PLANS } from "../routes/payments.js";
 import { sendQuotePdfEmail } from "../lib/email.js";
 import { QUOTE_FOLLOWUP_CADENCE_DAYS } from "../lib/quoteMessaging.js";
@@ -26,9 +27,15 @@ export class QuoteSendError extends Error {
  * caller can answer 402. (Phase 66: email send used to require the quote to
  * be unlocked already, so trial users could not send before downloading.)
  */
-export async function tryTrialUnlock(quote: QuoteRow, profile: Profile | null, log: Log): Promise<boolean> {
+export async function tryTrialUnlock(quote: QuoteRow, profile: Profile | null, log: Log): Promise<"pack_5" | "trial" | null> {
+  // PREZZI-2: prima i crediti del pacchetto, che danno un PDF senza marchio; poi la prova.
+  if (await usaCredito(quote.userId)) {
+    await db.update(quotesTable).set({ status: "unlocked", unlockedWithPlan: "pack_5" }).where(eq(quotesTable.id, quote.id));
+    log.info({ quoteId: quote.id, userId: quote.userId }, "Quote unlocked with a pack credit");
+    return "pack_5";
+  }
   const trial = getTrialStatus(profile);
-  if (!trial.isTrialActive) return false;
+  if (!trial.isTrialActive) return null;
   await Promise.all([
     db.update(quotesTable).set({ status: "unlocked", unlockedWithPlan: "trial" }).where(eq(quotesTable.id, quote.id)),
     db
@@ -37,7 +44,7 @@ export async function tryTrialUnlock(quote: QuoteRow, profile: Profile | null, l
       .where(eq(businessProfilesTable.userId, quote.userId)),
   ]);
   log.info({ quoteId: quote.id, userId: quote.userId }, "Quote auto-unlocked via trial");
-  return true;
+  return "trial";
 }
 
 /** What sending would do to a quote's lock, without doing it (the assistant's card says it). */
@@ -70,17 +77,19 @@ export async function sendQuoteByEmail(params: { userId: string; quoteId: string
         .set({ status: "unlocked", unlockedWithPlan: profile.subscriptionPlan ?? null })
         .where(eq(quotesTable.id, quote.id));
       quote.status = "unlocked";
-    } else if (await tryTrialUnlock(quote, profile ?? null, log)) {
-      quote.status = "unlocked";
+      quote.unlockedWithPlan = profile.subscriptionPlan ?? null;
     } else {
-      throw new QuoteSendError("PAYMENT_REQUIRED", "Unlock the quote to send it via email");
+      const via = await tryTrialUnlock(quote, profile ?? null, log);
+      if (!via) throw new QuoteSendError("PAYMENT_REQUIRED", "Unlock the quote to send it via email");
+      quote.status = "unlocked";
+      quote.unlockedWithPlan = via;
     }
   } else if (quote.status !== "unlocked" && quote.status !== "accepted") {
     throw new QuoteSendError("PAYMENT_REQUIRED", "Unlock the quote to send it via email");
   }
 
-  // Generate clean PDF (never watermark for email)
-  const pdfBuffer = await generateQuotePdfBuffer(quote, profile ?? null, false);
+  // PREZZI-2: la filigrana resta solo sul piano gratuito, anche sul PDF inviato per email.
+  const pdfBuffer = await generateQuotePdfBuffer(quote, profile ?? null, pdfConMarchio(quote, profile));
   const lang = await quoteLanguageFor(quote);
 
   const companyName = (quote.companySnapshot as QuoteCompanySnapshot | null)?.companyName || profile?.companyName || "La tua impresa";
@@ -141,13 +150,7 @@ export async function quoteQuotaExceeded(userId: string, now = new Date()): Prom
     .where(eq(businessProfilesTable.userId, userId));
   if (profile?.subscriptionStatus !== "active" || !profile.subscriptionPlan) return null;
   const plan = PLANS.find((p) => p.id === profile.subscriptionPlan);
-  if (plan?.quotaPerMonth == null) return null;
-  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-  const nextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1);
-  const [{ cnt }] = await db
-    .select({ cnt: sql<number>`count(*)::int` })
-    .from(quotesTable)
-    .where(sql`${quotesTable.userId} = ${userId} AND ${quotesTable.createdAt} >= ${monthStart.toISOString()} AND ${quotesTable.createdAt} < ${nextMonth.toISOString()}`);
-  if (cnt < plan.quotaPerMonth) return null;
-  return `Monthly quota reached. You've used all ${plan.quotaPerMonth} quotes included in the ${plan.name} plan this month. Upgrade to a higher plan to continue.`;
+  const quota = await quotaPreventivi(userId, plan, now);
+  if (!quota || quota.usati < quota.limite) return null;
+  return `Monthly quota reached. You've used all ${quota.limite} quotes included in the ${plan!.name} plan this month. Upgrade to a higher plan to continue.`;
 }

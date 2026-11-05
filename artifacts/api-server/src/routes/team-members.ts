@@ -138,7 +138,7 @@ router.post("/team/members/invite", requireAuth, requirePermission("team", "full
     }
     const profile = await loadProfile(orgId);
     if (!hasFeature(profile, "team_accounts")) {
-      res.status(403).json({ error: "PLAN_REQUIRED", requiredPlan: minimumPlanFor("team_accounts"), message: "Team accounts require the Cantieri plan" });
+      res.status(403).json({ error: "PLAN_REQUIRED", requiredPlan: minimumPlanFor("team_accounts"), message: "Team accounts require the Capomastro plan" });
       return;
     }
     const email = body.data.email.toLowerCase().trim();
@@ -372,7 +372,7 @@ router.post("/team/codes", requireAuth, requirePermission("team", "full"), async
     }
     const profile = await loadProfile(orgId);
     if (!hasFeature(profile, "team_accounts")) {
-      res.status(403).json({ error: "PLAN_REQUIRED", requiredPlan: minimumPlanFor("team_accounts"), message: "Gli accessi della squadra sono dal piano Cantieri." });
+      res.status(403).json({ error: "PLAN_REQUIRED", requiredPlan: minimumPlanFor("team_accounts"), message: "Gli accessi della squadra sono dal piano Capomastro." });
       return;
     }
     const seats = await seatUsage(orgId, profile);

@@ -1,6 +1,6 @@
 import { Link, useLocation } from "wouter";
 import { ArrowRight, Receipt, Shield, Zap } from "lucide-react";
-import { PER_CHI_PIANO, PREZZI_PIANI, PIANI_IN_ABBONAMENTO, formatPrezzo } from "@workspace/config";
+import { CONTATTO_SU_MISURA, CTA_SU_MISURA, PER_CHI_PIANO, PREVENTIVI_SINGOLI, PREZZI_PIANI, PIANI_IN_ABBONAMENTO, formatPrezzo } from "@workspace/config";
 import { prezzoPianoTesto, NOTA_IVA } from "@/lib/prezzi";
 import { FaqList } from "@/components/faq-list";
 import { SeoHead } from "@/components/seo-head";
@@ -384,21 +384,23 @@ export default function Home() {
           <ul className="pt-list">
             {PIANI_IN_ABBONAMENTO.map((id) => {
               const piano = PREZZI_PIANI[id];
-              const popolare = id === "monthly_pro";
+              const popolare = id === "monthly_clienti";
               return (
                 <li key={id} className={`card pt-plan${popolare ? " is-popular" : ""}`}>
                   <div className="pt-name">
                     <h3>{piano.nome}</h3>
-                    {popolare && <span className="chip chip-teal">Il più scelto</span>}
+                    {popolare && <span className="chip chip-teal">Consigliato</span>}
                   </div>
-                  <p className="pt-price">{formatPrezzo(piano.mensileCents)}<span>/mese</span></p>
-                  <p className="pt-quota">{piano.preventiviMese === null ? "Preventivi illimitati" : `${piano.preventiviMese} preventivi al mese`}</p>
+                  {piano.suRichiesta
+                    ? <p className="pt-price"><Link href={CONTATTO_SU_MISURA}>{CTA_SU_MISURA}</Link></p>
+                    : <p className="pt-price">{formatPrezzo(piano.mensileCents)}<span>/mese</span></p>}
+                  <p className="pt-quota">{piano.suRichiesta ? "Costruito sulla tua impresa" : piano.preventiviMese === null ? "Preventivi illimitati" : `${piano.preventiviMese} preventivi al mese`}</p>
                   <p className="pt-for hide-phone">{PER_CHI_PIANO[id]}</p>
                 </li>
               );
             })}
           </ul>
-          <p className="pt-more">Annuale: due mesi gratis. Serve un solo preventivo? Lo paghi singolo, senza abbonamento.</p>
+          <p className="pt-more">Annuale: due mesi gratis. Senza abbonamento: un preventivo a {formatPrezzo(PREVENTIVI_SINGOLI.oneshot_clean.cents)}, cinque a {formatPrezzo(PREVENTIVI_SINGOLI.pack_5.cents)}, sempre senza marchio.</p>
         </div>
       </ScrollSection>
 
@@ -534,7 +536,7 @@ export default function Home() {
             <div className="card dd-card">
               <h3>Quanto costa iniziare</h3>
               <p>
-                La registrazione è gratuita e il primo preventivo si genera senza inserire la carta di credito. Da lì puoi scegliere: paghi un preventivo singolo quando serve, oppure attivi un abbonamento, mensile o annuale con due mesi gratis: {PREZZI_PIANI.monthly_starter.nome} a {prezzoPianoTesto("monthly_starter")} con {PREZZI_PIANI.monthly_starter.preventiviMese} preventivi al mese per provare, {PREZZI_PIANI.monthly_clienti.nome} a {prezzoPianoTesto("monthly_clienti")} con preventivi illimitati, listino e contratti, {PREZZI_PIANI.monthly_pro.nome} a {prezzoPianoTesto("monthly_pro")} con cantieri, costi e fatture, {PREZZI_PIANI.monthly_elite.nome} a {prezzoPianoTesto("monthly_elite")} con tutto, per chi ha una squadra. Prezzi IVA inclusa. Disdici quando vuoi dalle impostazioni, senza penali.
+                La registrazione è gratuita e il primo preventivo si genera senza inserire la carta di credito. Da lì puoi scegliere: paghi un preventivo singolo quando serve, oppure attivi un abbonamento, mensile o annuale con due mesi gratis: {PREZZI_PIANI.monthly_starter.nome} a {prezzoPianoTesto("monthly_starter")} con {PREZZI_PIANI.monthly_starter.preventiviMese} preventivi al mese, listino e vecchi preventivi, {PREZZI_PIANI.monthly_clienti.nome} a {prezzoPianoTesto("monthly_clienti")} con preventivi illimitati e contratti, {PREZZI_PIANI.monthly_pro.nome} a {prezzoPianoTesto("monthly_pro")} con cantieri, costi e fatture, {PREZZI_PIANI.monthly_elite.nome} su richiesta per chi ha più squadre. Prezzi IVA inclusa. Disdici quando vuoi dalle impostazioni, senza penali.
               </p>
             </div>
           </div>

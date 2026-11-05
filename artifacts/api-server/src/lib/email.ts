@@ -22,8 +22,8 @@ export function escapeHtml(value: string): string {
 
 type PlanTier = PianoInAbbonamento | "oneshot";
 
-// PREZZI-2: il piano si riconosce dal nome commerciale (Preventivi, Clienti,
-// Cantieri, Impresa); prima si cercava "pro" o "starter" nel nome e l'Elite
+// PREZZI-2: il piano si riconosce dal nome commerciale (Artigiano, Mastro,
+// Capomastro, Su misura); prima si cercava "pro" o "starter" nel nome e l'Elite
 // finiva tra i preventivi singoli.
 function getPlanTier(planName: string): PlanTier {
   return pianoDaNome(planName) ?? "oneshot";

@@ -6,6 +6,7 @@ import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { useLanguage } from "@/i18n/LanguageContext";
 import { importsApi, type ImportCandidateDto, type ImportedQuoteExtraction } from "@/lib/imports-api";
+import { useGetSubscription } from "@workspace/api-client-react";
 
 const BATCH_BADGE: Record<string, string> = {
   processing: "chip-yellow",
@@ -103,6 +104,22 @@ function CandidateCard({ candidate }: { candidate: ImportCandidateDto }) {
   );
 }
 
+/** PREZZI-2: quanto manca al regalo del piano d'ingresso. */
+function OldQuotesBonus() {
+  const { data: sub } = useGetSubscription();
+  const b = sub?.oldQuotes;
+  if (!b) return null;
+  return (
+    <div className="notice info" role="status">
+      <span className="grow">
+        {b.earned
+          ? `Fatto: hai ${b.extra} preventivi in più ogni mese. L'IA usa i tuoi vecchi prezzi per i preventivi nuovi.`
+          : `Verificati ${b.verified} su ${b.needed}: arrivato a ${b.needed} ricevi ${b.extra} preventivi in più ogni mese. Contano quelli confermati, con voci e totale, letti senza dubbi dall'IA.`}
+      </span>
+    </div>
+  );
+}
+
 export default function ImportsPage() {
   const { t } = useLanguage();
   const { toast } = useToast();
@@ -178,6 +195,7 @@ export default function ImportsPage() {
           <p className="sub">{t("imports.subtitle")}</p>
         </div>
       </div>
+      <OldQuotesBonus />
 
       <div className="steps-3">
         <div className="card step-card">

@@ -89,10 +89,10 @@ test("destinations and the supplier to review the order list at", () => {
 
 test("the plan's name", () => {
   assert.equal(planName("monthly_business"), "Business");
-  assert.equal(planName("monthly_elite"), "Impresa");
-  assert.equal(planName("monthly_starter"), "Preventivi");
-  assert.equal(planName("monthly_clienti"), "Clienti");
-  assert.equal(planName("annual_pro"), "Cantieri");
+  assert.equal(planName("monthly_elite"), "Su misura");
+  assert.equal(planName("monthly_starter"), "Artigiano");
+  assert.equal(planName("monthly_clienti"), "Mastro");
+  assert.equal(planName("annual_pro"), "Capomastro");
 });
 
 test("counts: change detection, steps and the add form", () => {

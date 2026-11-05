@@ -1,8 +1,9 @@
 import { Router } from "express";
-import { and, eq, gte, lt, ne, sql } from "drizzle-orm";
-import { db, businessProfilesTable, organizationMembersTable, quotesTable, usageDailySummaryTable, PRODUCT_FEATURES, MONTHLY_USAGE_ALLOWANCE, effectivePlan, hasFeature, seatsLimit } from "@workspace/db";
+import { and, eq, gte, ne } from "drizzle-orm";
+import { db, businessProfilesTable, organizationMembersTable, usageDailySummaryTable, PRODUCT_FEATURES, MONTHLY_USAGE_ALLOWANCE, effectivePlan, hasFeature, seatsLimit } from "@workspace/db";
 import { requireAuth, getUserId } from "../middlewares/authMiddleware.js";
 import { PLANS } from "./payments.js";
+import { quotaPreventivi } from "../quotes/quota.js";
 
 const router = Router();
 
@@ -20,11 +21,9 @@ router.get("/plan/overview", requireAuth, async (req, res) => {
     const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
     const nextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1);
     const day = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-    const [members, quotes, usage] = await Promise.all([
+    const [members, quota, usage] = await Promise.all([
       db.select({ id: organizationMembersTable.id }).from(organizationMembersTable).where(and(eq(organizationMembersTable.ownerId, orgId), ne(organizationMembersTable.status, "suspended"))),
-      def?.quotaPerMonth != null
-        ? db.select({ n: sql<number>`count(*)::int` }).from(quotesTable).where(and(eq(quotesTable.userId, orgId), gte(quotesTable.createdAt, monthStart), lt(quotesTable.createdAt, nextMonth)))
-        : Promise.resolve(null),
+      quotaPreventivi(orgId, def, now),
       db.select().from(usageDailySummaryTable).where(and(eq(usageDailySummaryTable.userId, orgId), gte(usageDailySummaryTable.date, day(monthStart)))),
     ]);
     const scans = usage.filter((r) => r.kind === "ai_vision").reduce((s, r) => s + r.eventCount, 0);
@@ -41,7 +40,7 @@ router.get("/plan/overview", requireAuth, async (req, res) => {
       coveredBy: null,
       resetsOn: day(nextMonth),
       logins: { used: members.length + 1, limit: seatsLimit(plan, profile?.extraSeats) },
-      quotes: def?.quotaPerMonth != null ? { used: quotes?.[0]?.n ?? 0, limit: def.quotaPerMonth } : null,
+      quotes: quota ? { used: quota.usati, limit: quota.limite } : null,
       openJobs: null,
       receiptScans: allowance.receiptScans === null ? null : { used: scans, limit: allowance.receiptScans },
       texts: null,

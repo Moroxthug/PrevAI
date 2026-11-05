@@ -4329,7 +4329,7 @@ const BLOG_CONTENT: Record<string, string> = {
     <tr><td>Valuta</td><td>Euro</td><td>Dollaro canadese</td></tr>
     <tr><td>Imposte sul preventivo</td><td>IVA al 22 %, 10 % o 4 % secondo il lavoro, regimi senza IVA per i forfettari</td><td>GST, HST, PST e QST secondo la provincia</td></tr>
     <tr><td>Documenti fiscali</td><td>Pro-forma e, col modulo PrevAI Fisco, fattura elettronica via SdI</td><td>Fatture secondo le regole canadesi (lo SdI esiste solo in Italia)</td></tr>
-    <tr><td>Piani</td><td>Preventivi 9,90 €, Clienti 24 €, Cantieri 49 €, Impresa 89 € al mese, IVA inclusa</td><td>Starter 19 $, Pro 49 $, Elite 59 $ al mese, in dollari canadesi</td></tr>
+    <tr><td>Piani</td><td>Artigiano 9,90 €, Mastro 24 €, Capomastro 49 € al mese, IVA inclusa; Su misura su richiesta</td><td>Starter 19 $, Pro 49 $, Elite 59 $ al mese, in dollari canadesi</td></tr>
   </tbody>
 </table>
 </div>

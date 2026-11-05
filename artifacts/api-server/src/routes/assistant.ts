@@ -59,7 +59,7 @@ router.get("/assistant/conversation", requireAuth, async (req, res) => {
   try {
     const userId = getUserId(res);
     const gate = await requireAssistant(userId);
-    if (!gate.ok) { res.status(403).json({ error: "PLAN_REQUIRED", requiredPlan: gate.plan, message: "The assistant requires the Impresa plan" }); return; }
+    if (!gate.ok) { res.status(403).json({ error: "PLAN_REQUIRED", requiredPlan: gate.plan, message: "The assistant requires the Su misura plan" }); return; }
     const projectId = typeof req.query.projectId === "string" && req.query.projectId ? req.query.projectId : null;
     if (projectId) {
       const [p] = await db.select({ id: projectsTable.id }).from(projectsTable).where(and(eq(projectsTable.id, projectId), eq(projectsTable.userId, userId)));

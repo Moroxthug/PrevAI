@@ -20,7 +20,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import type { CatalogItem } from "@workspace/api-client-react";
 import { useLanguage } from "@/i18n/LanguageContext";
-import { pianoOltreIngresso } from "@workspace/config";
+import { pianoPagante } from "@workspace/config";
 
 const UM_OPTIONS = ["mq", "ml", "mc", "cad", "ore", "kg", "a.c.", "pezzi", "kw", "lt", "t", "m", "%"];
 
@@ -94,7 +94,7 @@ export function PriceCatalogSection() {
   const [csvFileName, setCsvFileName] = useState("");
   const [csvError, setCsvError] = useState("");
 
-  const isPro = subscription?.isActive && pianoOltreIngresso(subscription?.plan);
+  const isPro = subscription?.isActive && pianoPagante(subscription?.plan);
 
   const invalidate = () => queryClient.invalidateQueries({ queryKey: getListCatalogItemsQueryKey() });
 

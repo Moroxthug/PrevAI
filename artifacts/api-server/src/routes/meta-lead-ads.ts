@@ -95,7 +95,7 @@ router.get("/meta-lead-ads/connect", requireAuth, requirePermission("integration
     const userId = getUserId(res);
     const gate = await requireMetaLeadAdsFeature(userId);
     if (!gate.ok) {
-      res.status(403).json({ error: "PLAN_REQUIRED", requiredPlan: gate.plan, message: "Meta Lead Ads capture requires the Clienti plan" });
+      res.status(403).json({ error: "PLAN_REQUIRED", requiredPlan: gate.plan, message: "Meta Lead Ads capture requires the Mastro plan" });
       return;
     }
     if (refuseIfNotConfigured(res, "meta_lead_ads", "Meta Lead Ads")) return;

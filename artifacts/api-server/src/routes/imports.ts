@@ -1,4 +1,4 @@
-import { Router } from "express";
+import { Router, type RequestHandler } from "express";
 import { randomUUID } from "node:crypto";
 import multer from "multer";
 import {
@@ -11,6 +11,8 @@ import {
   businessProfilesTable,
   clientDedupKey,
   importedQuoteExtractionSchema,
+  hasFeature,
+  minimumPlanFor,
   type ImportedQuoteExtraction,
 } from "@workspace/db";
 import { and, desc, eq } from "drizzle-orm";
@@ -63,6 +65,13 @@ async function ownedBatch(userId: string, id: string) {
 
 /** Writes one confirmed candidate as a real historical quote. Caller has already checked status/clientName. */
 type CompanySnapshot = { companyName: string; vatNumber?: string; address?: string; phone?: string; email?: string; logoUrl?: string } | null;
+
+/** PREZZI-2: i vecchi preventivi sono dei piani a pagamento: nutrono l'IA e valgono il bonus. Clienti e voci del listino restano per tutti. */
+const requireQuoteImport: RequestHandler = async (_req, res, next) => {
+  const [profile] = await db.select().from(businessProfilesTable).where(eq(businessProfilesTable.userId, getUserId(res)));
+  if (hasFeature(profile, "quote_import")) return next();
+  res.status(403).json({ error: "PLAN_REQUIRED", requiredPlan: minimumPlanFor("quote_import"), message: "I vecchi preventivi si caricano dal piano Artigiano in su." });
+};
 
 async function createQuoteFromCandidate(userId: string, candidate: typeof quoteImportCandidatesTable.$inferSelect, companySnapshot: CompanySnapshot) {
   const extraction = candidate.extraction as ImportedQuoteExtraction;
@@ -157,6 +166,7 @@ router.post(
   "/imports/spreadsheet",
   requireAuth,
   requirePermission("imports", "edit"),
+  requireQuoteImport,
   importLimiter,
   (req, res, next) => {
     spreadsheetUpload.single("file")(req, res, (err) => {
@@ -281,6 +291,7 @@ router.post(
   "/imports/pdf",
   requireAuth,
   requirePermission("imports", "edit"),
+  requireQuoteImport,
   importLimiter,
   requireAiBudget,
   (req, res, next) => {

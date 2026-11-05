@@ -9,11 +9,22 @@ import type { QuoteChapter, QuoteDiscount, QuoteCompanySnapshot, QuoteClientData
 import { quotesTable, businessProfilesTable, normalizeProvince, readQuoteClientData } from "@workspace/db";
 import { ObjectStorageService } from "../lib/objectStorage.js";
 import { quoteLanguageFor, quoteTaxLinesFor, qt, fmtMoney, fmtQuoteDate, fmtRate, fmtQty } from "./i18n.js";
+import { pianoPagante } from "@workspace/config";
 
 const objectStorage = new ObjectStorageService();
 
 export type QuoteRow = typeof quotesTable.$inferSelect;
 export type ProfileRow = typeof businessProfilesTable.$inferSelect | null;
+
+/**
+ * PREZZI-2: filigrana e riga PrevAI solo sul piano gratuito. Un abbonamento attivo li toglie da tutti i PDF;
+ * un preventivo sbloccato con un piano, un singolo o un pacchetto resta pulito anche dopo una disdetta.
+ */
+export function pdfConMarchio(quote: { unlockedWithPlan?: string | null }, profile: Pick<NonNullable<ProfileRow>, "subscriptionPlan" | "subscriptionStatus"> | null | undefined): boolean {
+  if (profile?.subscriptionStatus === "active" && pianoPagante(profile.subscriptionPlan)) return false;
+  const via = quote.unlockedWithPlan;
+  return !(pianoPagante(via) || via?.startsWith("oneshot_") || via === "pack_5");
+}
 
 /**
  * V2-6 — AI Act art. 50. Un preventivo è "generato con IA" a meno che non sia
@@ -485,7 +496,7 @@ export async function generateCapitolatoPdfBuffer(quote: QuoteRow, profile: Prof
           color: "#aaaaaa",
         },
         {
-          text: isDraft ? qt("provisional", lang) : qt(quoteProvenance(quote) === "ai" ? "generatedWithAi" : "generatedWith", lang),
+          text: isDraft ? qt("provisional", lang) : pdfConMarchio(quote, profile) ? qt(quoteProvenance(quote) === "ai" ? "generatedWithAi" : "generatedWith", lang) : quoteProvenance(quote) === "ai" ? qt("aiDisclosure", lang) : "",
           fontSize: 7.5,
           color: isDraft ? "#cc8800" : "#aaaaaa",
           alignment: "right",
@@ -866,7 +877,7 @@ export async function generateQuotePdfBuffer(quote: QuoteRow, profile: ProfileRo
           color: "#aaaaaa",
         },
         {
-          text: isDraft ? qt("provisional", lang) : qt(quoteProvenance(quote) === "ai" ? "generatedWithAi" : "generatedWith", lang),
+          text: isDraft ? qt("provisional", lang) : pdfConMarchio(quote, profile) ? qt(quoteProvenance(quote) === "ai" ? "generatedWithAi" : "generatedWith", lang) : quoteProvenance(quote) === "ai" ? qt("aiDisclosure", lang) : "",
           fontSize: 7.5,
           color: isDraft ? "#cc8800" : "#aaaaaa",
           alignment: "right",

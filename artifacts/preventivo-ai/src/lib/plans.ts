@@ -10,6 +10,7 @@ export type ProductFeature =
   | "quote_email"
   | "acceptance_notifications"
   | "catalog"
+  | "quote_import"
   | "contracts"
   | "jobs"
   | "costs"
@@ -32,11 +33,11 @@ export type ProductFeature =
   // A-6: il commercialista convenzionato. Nessun piano, nessun add-on in vendita (D9, D11).
   | "accountant_service";
 
-// PREZZI-2: un gradino per fase dell'impresa (lib/config piani.ts). Preventivi → Clienti
-// (listino, contratti, email da Gmail, contatti da Meta) → Cantieri (cantieri, costi, fatture,
-// squadra, ore, calendario) → Impresa (assistente, analisi, pagamenti con carta, API).
-const STARTER: ProductFeature[] = ["quotes", "quote_email", "acceptance_notifications"];
-const CLIENTI: ProductFeature[] = [...STARTER, "catalog", "contracts", "gmail_send", "meta_lead_ads"];
+// PREZZI-2: un gradino per fase dell'impresa (lib/config piani.ts). Artigiano (listino e vecchi
+// preventivi fin dall'ingresso) → Mastro (contratti, Gmail, contatti da Meta) → Capomastro (cantieri,
+// costi, fatture, squadra, ore, calendario) → Su misura (assistente, analisi, carte, API).
+const STARTER: ProductFeature[] = ["quotes", "quote_email", "acceptance_notifications", "catalog", "quote_import"];
+const CLIENTI: ProductFeature[] = [...STARTER, "contracts", "gmail_send", "meta_lead_ads"];
 const PRO: ProductFeature[] = [...CLIENTI, "jobs", "costs", "invoicing", "team_accounts", "team_time", "calendar_sync"];
 const ELITE: ProductFeature[] = [...PRO, "assistant", "analytics_pro", "invoice_card_payments", "public_api"];
 

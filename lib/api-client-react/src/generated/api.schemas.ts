@@ -437,6 +437,17 @@ export interface UpdateBusinessProfileBody {
   email?: string;
 }
 
+/**
+ * PREZZI-2 — il bonus del piano d'ingresso per i vecchi preventivi verificati
+ * @nullable
+ */
+export type SubscriptionInfoOldQuotes = {
+  verified: number;
+  needed: number;
+  extra: number;
+  earned: boolean;
+} | null;
+
 export interface SubscriptionInfo {
   /** @nullable */
   plan?: string | null;
@@ -453,6 +464,13 @@ export interface SubscriptionInfo {
   quotaRemaining?: number | null;
   /** @nullable */
   quotaResetDate?: string | null;
+  /** PREZZI-2 — preventivi del pacchetto non ancora usati */
+  credits?: number;
+  /**
+     * PREZZI-2 — il bonus del piano d'ingresso per i vecchi preventivi verificati
+     * @nullable
+     */
+  oldQuotes?: SubscriptionInfoOldQuotes;
 }
 
 export interface UnlockQuoteBody {
@@ -467,8 +485,8 @@ export const CreateCheckoutBodyPlanType = {
   monthly_clienti: 'monthly_clienti',
   monthly_pro: 'monthly_pro',
   monthly_elite: 'monthly_elite',
-  oneshot_watermark: 'oneshot_watermark',
   oneshot_clean: 'oneshot_clean',
+  pack_5: 'pack_5',
 } as const;
 
 /**
@@ -522,6 +540,8 @@ export interface Plan {
   interval?: string | null;
   features: string[];
   hasWatermark: boolean;
+  /** PREZZI-2 — nessun prezzo pubblico, si chiede un contatto */
+  contactOnly?: boolean;
   /** @nullable */
   quotaPerMonth?: number | null;
 }

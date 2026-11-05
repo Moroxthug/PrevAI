@@ -5,7 +5,7 @@ import { requirePermission } from "../middlewares/requirePermission.js";
 import multer from "multer";
 import { db, quotesTable, projectsTable, quoteAttachmentsTable, quoteVariantsTable, quoteVersionsTable, businessProfilesTable, priceCatalogItemsTable, priceIntelligenceTable, uploadedDocumentsTable, quoteClientDataSchema, quoteCompanySnapshotSchema, paymentScheduleSchema, derivePaymentScheduleFromText, validatePaymentSchedule, paymentScheduleToText, normalizeProvince, quoteTaxLines, readQuoteClientData } from "@workspace/db";
 import { resolveQuoteTaxRate } from "../lib/tax.js";
-import { generateQuotePdfBuffer, generateCapitolatoPdfBuffer } from "../quotes/pdf.js";
+import { generateQuotePdfBuffer, generateCapitolatoPdfBuffer, pdfConMarchio } from "../quotes/pdf.js";
 import { eq, desc, count, sum, sql, and, avg, isNull, ne } from "drizzle-orm";
 import { snapshotOf, startsNewVersion } from "../quotes/versions.js";
 import {
@@ -61,7 +61,7 @@ import { randomUUID } from "crypto";
 import { recordAiUsage } from "../lib/usage.js";
 import { requireAiBudget } from "../lib/aiBudget.js";
 import { extractFromPdf, extractFromDocx, extractFromXlsx } from "../lib/extractDocument.js";
-import { pianoOltreIngresso } from "@workspace/config";
+import { pianoPagante } from "@workspace/config";
 
 const objectStorage = new ObjectStorageService();
 
@@ -1039,7 +1039,7 @@ Imposta sempre titolo_riga1 = "Analisi Economica e Computo Metrico Prezzato".`
           capitoli,
           sconto,
           condizioniPagamento,
-          capitolatoPro: !!(profile?.subscriptionStatus === "active" && pianoOltreIngresso(profile?.subscriptionPlan)),
+          capitolatoPro: !!(profile?.subscriptionStatus === "active" && pianoPagante(profile?.subscriptionPlan)),
           titoloPreventivoRiga1: aiData.titolo_riga1 ?? "Analisi Economica e Computo Metrico Prezzato",
           titoloPreventivoRiga2: aiData.titolo_riga2 ?? "",
           numeroPreventivoData,
@@ -1444,9 +1444,9 @@ router.put("/quotes/:id", requireAuth, requirePermission("quotes", "edit"), asyn
           .select({ subscriptionStatus: businessProfilesTable.subscriptionStatus, subscriptionPlan: businessProfilesTable.subscriptionPlan })
           .from(businessProfilesTable)
           .where(eq(businessProfilesTable.userId, userId));
-        const isProUser = profileData?.subscriptionStatus === "active" && pianoOltreIngresso(profileData?.subscriptionPlan);
+        const isProUser = profileData?.subscriptionStatus === "active" && pianoPagante(profileData?.subscriptionPlan);
         if (!isProUser) {
-          res.status(403).json({ error: "PRO_REQUIRED", message: "This template requires an active Clienti, Cantieri or Impresa subscription" });
+          res.status(403).json({ error: "PRO_REQUIRED", message: "This template requires an active subscription" });
           return;
         }
       }
@@ -1688,29 +1688,18 @@ router.post("/quotes/:id/generate-pdf", requireAuth, requirePermission("quotes",
       .from(businessProfilesTable)
       .where(eq(businessProfilesTable.userId, userId));
 
-    // Draft quotes get watermark; unlocked quotes use the plan's hasWatermark setting.
-    const planHasWatermark = (plan: string | null | undefined) =>
-      !plan || plan === "monthly_starter" || plan === "oneshot_watermark";
-
     // Trial auto-unlock
-    let effectiveStatus = quote.status;
+    let unlockedPlan = quote.unlockedWithPlan;
     if (quote.status === "draft" && profile?.subscriptionStatus !== "active") {
-      if (await tryTrialUnlock(quote, profile ?? null, req.log)) {
-        effectiveStatus = "unlocked";
-      } else {
+      unlockedPlan = await tryTrialUnlock(quote, profile ?? null, req.log);
+      if (!unlockedPlan) {
         res.status(402).json({ error: "Payment required", code: "trial_expired" });
         return;
       }
     }
 
-    const isProOrElite = profile?.subscriptionStatus === "active" &&
-      pianoOltreIngresso(profile?.subscriptionPlan);
-    const unlockedPlan = effectiveStatus === "unlocked" && quote.status === "draft"
-      ? "trial"
-      : quote.unlockedWithPlan;
-    const withWatermark = isProOrElite
-      ? false
-      : (effectiveStatus !== "unlocked" || planHasWatermark(unlockedPlan));
+    // PREZZI-2: filigrana solo sul piano gratuito.
+    const withWatermark = pdfConMarchio({ unlockedWithPlan: unlockedPlan }, profile);
 
     // Generate server-side PDF with pdfmake
     const pdfBuffer = await generateQuotePdfBuffer(quote, profile ?? null, withWatermark);
@@ -2103,15 +2092,15 @@ router.post("/quotes/:id/upgrade-to-capitolato", requireAuth, requirePermission(
     if (!quote) { res.status(404).json({ error: "Not found" }); return; }
     if (quote.userId !== userId) { res.status(403).json({ error: "Forbidden" }); return; }
 
-    // PDF da Clienti in su (pianoOltreIngresso)
+    // Tutti i piani a pagamento
     const [profile] = await db
       .select({ subscriptionPlan: businessProfilesTable.subscriptionPlan, subscriptionStatus: businessProfilesTable.subscriptionStatus })
       .from(businessProfilesTable)
       .where(eq(businessProfilesTable.userId, userId));
 
-    const isProUser = profile?.subscriptionStatus === "active" && pianoOltreIngresso(profile?.subscriptionPlan);
+    const isProUser = profile?.subscriptionStatus === "active" && pianoPagante(profile?.subscriptionPlan);
     if (!isProUser) {
-      res.status(403).json({ error: "Clienti, Cantieri or Impresa plan required", code: "PRO_REQUIRED" });
+      res.status(403).json({ error: "A paid plan is required", code: "PRO_REQUIRED" });
       return;
     }
 
@@ -2221,15 +2210,15 @@ router.post("/quotes/:id/generate-pdf-pro", requireAuth, requirePermission("quot
       return;
     }
 
-    // PDF da Clienti in su (pianoOltreIngresso)
+    // Tutti i piani a pagamento
     const [profile] = await db
       .select()
       .from(businessProfilesTable)
       .where(eq(businessProfilesTable.userId, userId));
 
-    const isProUser = profile?.subscriptionStatus === "active" && pianoOltreIngresso(profile?.subscriptionPlan);
+    const isProUser = profile?.subscriptionStatus === "active" && pianoPagante(profile?.subscriptionPlan);
     if (!isProUser) {
-      res.status(403).json({ error: "Clienti, Cantieri or Impresa plan required", code: "PRO_REQUIRED" });
+      res.status(403).json({ error: "A paid plan is required", code: "PRO_REQUIRED" });
       return;
     }
 

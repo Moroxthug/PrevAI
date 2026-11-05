@@ -138,7 +138,7 @@ describe("POCKET-5 — assistente, impostazioni, account", () => {
 
     const plan = await owner.api("/api/plan/overview");
     expect(plan.status).toBe(200);
-    expect(plan.body).toMatchObject({ plan: "monthly_elite", name: "Impresa", active: true, openJobs: null, texts: null });
+    expect(plan.body).toMatchObject({ plan: "monthly_elite", name: "Su misura", active: true, openJobs: null, texts: null });
     expect(plan.body.logins).toMatchObject({ used: 2 });
     expect(plan.body.features).toEqual(expect.arrayContaining(["assistant", "calendar_sync"]));
     expect((await pro.api("/api/plan/overview")).body.features).not.toContain("assistant");

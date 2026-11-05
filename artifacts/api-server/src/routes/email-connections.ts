@@ -83,7 +83,7 @@ router.get("/email-connections/:provider/connect", requireAuth, requirePermissio
     const userId = getUserId(res);
     const gate = await requireGmailSendFeature(userId);
     if (!gate.ok) {
-      res.status(403).json({ error: "PLAN_REQUIRED", requiredPlan: gate.plan, message: "Connected email sending requires the Clienti plan" });
+      res.status(403).json({ error: "PLAN_REQUIRED", requiredPlan: gate.plan, message: "Connected email sending requires the Mastro plan" });
       return;
     }
     if (refuseIfNotConfigured(res, "gmail_send", "Gmail sending")) return;

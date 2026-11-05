@@ -1,11 +1,11 @@
 // Italiano (it-IT) di Ruoli, Personalizza la Home e Home per ruolo (QuoteAI 128.7, i18n/screens/jobRoles.ts). In PrevAI le
-// Home per ruolo sono del piano Impresa (in QuoteAI Business). I nove mestieri sono quelli di QuoteAI, con i nomi di un'impresa italiana.
+// Home per ruolo sono del piano Su misura (in QuoteAI Business). I nove mestieri sono quelli di QuoteAI, con i nomi di un'impresa italiana.
 export const ruoli = {
   jr: {
     back: "Indietro", close: "Chiudi", loadFailed: { title: "Non riesco a caricare i ruoli", body: "Controlla la connessione e riprova.", retry: "Riprova" },
     title: "Ruoli", sub_other: "Impostazioni · Squadra · {{count}} persone", sub_one: "Impostazioni · Squadra · {{count}} persona",
     readOnly: { lead: "Solo lettura.", body: "Il tuo ruolo vede i ruoli ma non li cambia. Chiedi al titolare." },
-    locked: { lead: "Una schermata Oggi per ogni ruolo è inclusa in Impresa.", body: "Con Cantieri tutti vedono la schermata Oggi del titolare. Il piano non si cambia dall'app.", action: "Vedi i piani" },
+    locked: { lead: "Una schermata Oggi per ogni ruolo è inclusa in Su misura.", body: "Con Capomastro tutti vedono la schermata Oggi del titolare. Il piano non si cambia dall'app.", action: "Vedi i piani" },
     roles: "Ruoli", andMore: "{{names}} e altri {{count}}", defaults: "Di partenza per {{role}}",
     access: { owner: "Titolare", office: "Ufficio", viewer: "Solo lettura", foreman: "Capo cantiere", link: "Link" },
     accessSub: { owner: "Tutto, compresi piano e sicurezza", office: "Preventivi, cantieri, costi e fatture", viewer: "Solo lettura, più attestati e infortuni", foreman: "Cantieri e costi in cantiere, il resto in lettura", link: "Link personale, senza accesso" },

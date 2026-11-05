@@ -545,7 +545,7 @@ async function handleGreeting(from: string, userId: string, profile: typeof busi
   const templateLines = TEMPLATES.map((t, i) =>
     isPro || t.id === "standard"
       ? `*${i + 1}* — ${t.emoji} ${t.label}: ${t.desc}`
-      : `*${i + 1}* — ${t.emoji} ${t.label}: ${t.desc} _(dal piano Clienti in su)_`
+      : `*${i + 1}* — ${t.emoji} ${t.label}: ${t.desc} _(dal piano Mastro in su)_`
   ).join("\n");
 
   await sendWhatsappText(from, [
@@ -793,7 +793,7 @@ async function handleTemplateMenu(
   const lines = TEMPLATES.map((t, i) => {
     const isDefault = t.id === currentDefault;
     const available = isPro || t.id === "standard";
-    return `*${i + 1}* — ${t.emoji} ${t.label}${isDefault ? " ✓" : ""}${!available ? " _(dal piano Clienti)_" : ""}`;
+    return `*${i + 1}* — ${t.emoji} ${t.label}${isDefault ? " ✓" : ""}${!available ? " _(dal piano Mastro)_" : ""}`;
   });
 
   await sendWhatsappText(from, [
@@ -824,7 +824,7 @@ async function handleTemplateMenuReply(
   }
 
   if ((templateId === "mariagrazia" || templateId === "arosio") && !isPro) {
-    await sendWhatsappText(from, `⚠️ Il template *${templateLabel(templateId)}* richiede il piano Clienti o superiore.\n\nAggiorna su: ${PREVAI_BASE_URL}/dashboard/settings/plan`);
+    await sendWhatsappText(from, `⚠️ Il template *${templateLabel(templateId)}* richiede il piano Mastro o superiore.\n\nAggiorna su: ${PREVAI_BASE_URL}/dashboard/settings/plan`);
     return;
   }
 
@@ -909,7 +909,7 @@ async function handleTemplateSelectionReply(
   if ((templateId === "mariagrazia" || templateId === "arosio") && !isPro) {
     await sendWhatsappText(
       from,
-      `⚠️ Il template *${templateLabel(templateId)}* è disponibile dal piano Clienti in su.\n\nAggiorna il tuo piano su ${PREVAI_BASE_URL}/dashboard/settings/plan oppure scegli il template *Starter* (rispondi *1*).`
+      `⚠️ Il template *${templateLabel(templateId)}* è disponibile dal piano Mastro in su.\n\nAggiorna il tuo piano su ${PREVAI_BASE_URL}/dashboard/settings/plan oppure scegli il template *Starter* (rispondi *1*).`
     );
     return;
   }
@@ -1030,7 +1030,7 @@ async function handleJobInputReply(
   const templateId = (payload.templateId as string | undefined) ?? "standard";
   const clientData = (payload.clientData as { nome: string; indirizzo: string } | undefined) ?? { nome: "", indirizzo: "" };
 
-  // PREZZI-2: Clienti e Cantieri hanno 20 preventivi WhatsApp al mese, Impresa nessun limite.
+  // PREZZI-2: Mastro e Capomastro hanno 20 preventivi WhatsApp al mese, Su misura nessun limite.
   const waLimite = limitePreventiviWhatsapp(profile.subscriptionPlan);
   if (waLimite != null) {
     const startOfMonth = new Date();
@@ -1041,7 +1041,7 @@ async function handleJobInputReply(
       .from(quotesTable)
       .where(and(eq(quotesTable.userId, userId), eq(quotesTable.source, "whatsapp"), gte(quotesTable.createdAt, startOfMonth)));
     if ((countResult?.count ?? 0) >= waLimite) {
-      await sendWhatsappText(from, `⚠️ Hai raggiunto il limite di *${waLimite} preventivi WhatsApp* per questo mese.\n\nIl contatore si azzera il 1° del mese prossimo.\nPer preventivi WhatsApp illimitati, passa al piano Impresa: ${PREVAI_BASE_URL}/dashboard/settings/plan`);
+      await sendWhatsappText(from, `⚠️ Hai raggiunto il limite di *${waLimite} preventivi WhatsApp* per questo mese.\n\nIl contatore si azzera il 1° del mese prossimo.\nPer preventivi WhatsApp illimitati, passa al piano Su misura: ${PREVAI_BASE_URL}/dashboard/settings/plan`);
       return;
     }
   }
@@ -1427,7 +1427,7 @@ router.post("/whatsapp/connect", requireAuth, requirePermission("integrations", 
     const [profile] = await db.select().from(businessProfilesTable).where(eq(businessProfilesTable.userId, userId));
     const allowedPlans = ["monthly_clienti", "monthly_pro", "monthly_elite"];
     if (profile?.subscriptionStatus !== "active" || !allowedPlans.includes(profile?.subscriptionPlan ?? "")) {
-      res.status(403).json({ error: "L'integrazione WhatsApp è disponibile dal piano Clienti in su." });
+      res.status(403).json({ error: "L'integrazione WhatsApp è disponibile dal piano Mastro in su." });
       return;
     }
 

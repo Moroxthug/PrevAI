@@ -3,7 +3,7 @@
   Piani e prezzi in 4.1 vengono da @workspace/config (piani.ts, offerta.ts): A-5, D5 del 2026-09-23; PREZZI-2 del 2026-11-04 (quattro piani).
 */}
 import { PublicLayout } from "@/components/layout/public-layout";
-import { OFFERTA_AMMINISTRAZIONE, PIANI_IN_ABBONAMENTO, PREVENTIVI_SINGOLI, PREZZI_PIANI, VOCI_PIANI, formatPrezzo } from "@workspace/config";
+import { BONUS_VECCHI_PREVENTIVI, OFFERTA_AMMINISTRAZIONE, PIANI_IN_ABBONAMENTO, PREVENTIVI_SINGOLI, PREZZI_PIANI, VOCI_PIANI, formatPrezzo } from "@workspace/config";
 import { prezzoPianoTesto } from "@/lib/prezzi";
 import { SeoHead } from "@/components/seo-head";
 import { Link } from "wouter";
@@ -28,7 +28,7 @@ export default function TermsPage() {
         <h1 style={{ fontSize: "clamp(1.9rem, 3.4vw, 2.5rem)", fontWeight: 800, letterSpacing: "-.02em", color: "var(--navy)", lineHeight: 1.15, marginBottom: 10 }}>
           Termini di servizio
         </h1>
-        <p style={{ fontSize: 13, color: "var(--faint)" }}>Ultimo aggiornamento: 4 novembre 2026</p>
+        <p style={{ fontSize: 13, color: "var(--faint)" }}>Ultimo aggiornamento: 5 novembre 2026</p>
       </header>
 
       <div className="wrap" style={{ maxWidth: 780, paddingBottom: "clamp(48px, 6vw, 80px)" }}>
@@ -78,10 +78,11 @@ export default function TermsPage() {
                 <p className="font-medium">4.1 Piani disponibili</p>
                 <ul className="list-disc pl-5 mt-1 space-y-1">
                   {PIANI_IN_ABBONAMENTO.map((id) => (
-                    <li key={id}><strong>{PREZZI_PIANI[id].nome} ({prezzoPianoTesto(id)} o {prezzoPianoTesto(id, "annuale")}):</strong> {VOCI_PIANI[id].join("; ")}.</li>
+                    <li key={id}><strong>{PREZZI_PIANI[id].nome} ({PREZZI_PIANI[id].suRichiesta ? "prezzo su richiesta" : <>{prezzoPianoTesto(id)} o {prezzoPianoTesto(id, "annuale")}</>}):</strong> {VOCI_PIANI[id].join("; ")}.</li>
                   ))}
-                  <li><strong>Singolo con filigrana ({formatPrezzo(PREVENTIVI_SINGOLI.oneshot_watermark.cents)}):</strong> un singolo preventivo PDF con filigrana.</li>
-                  <li><strong>Singolo pulito ({formatPrezzo(PREVENTIVI_SINGOLI.oneshot_clean.cents)}):</strong> un singolo preventivo PDF senza filigrana.</li>
+                  <li><strong>Preventivo singolo ({formatPrezzo(PREVENTIVI_SINGOLI.oneshot_clean.cents)}):</strong> un preventivo PDF senza marchio PrevAI.</li>
+                  <li><strong>Pacchetto 5 preventivi ({formatPrezzo(PREVENTIVI_SINGOLI.pack_5.cents)}):</strong> cinque preventivi PDF senza marchio PrevAI, senza scadenza.</li>
+                  <li><strong>Bonus vecchi preventivi (piano {PREZZI_PIANI.monthly_starter.nome}):</strong> chi carica almeno {BONUS_VECCHI_PREVENTIVI.soglia} vecchi preventivi propri, confermati e verificati, riceve {BONUS_VECCHI_PREVENTIVI.omaggio} preventivi in più al mese finché resta sul piano.</li>
                   <li>
                     <strong>Add-on {OFFERTA_AMMINISTRAZIONE.nome}:</strong> fatture elettroniche, calcolo fiscale del regime forfettario, scadenzario, F24 precompilati,
                     prima nota e chiusura d'anno, acquistabile con qualunque piano al prezzo indicato nella pagina dell'add-on al momento dell'acquisto. Il
@@ -90,7 +91,7 @@ export default function TermsPage() {
                     l'abbonamento non viene disdetto.
                   </li>
                 </ul>
-                <p className="mt-1 text-xs text-gray-500">I prezzi aggiornati e le funzionalità di ciascun piano sono indicati nella pagina Piano e fatturazione al momento dell'acquisto. Chi era già abbonato al 4 novembre 2026 (piani Starter, Pro ed Elite) mantiene l'importo che paga finché non cambia piano; le funzioni sono quelle del piano corrispondente (Preventivi, Cantieri, Impresa).</p>
+                <p className="mt-1 text-xs text-gray-500">I prezzi aggiornati e le funzionalità di ciascun piano sono indicati nella pagina Piano e fatturazione al momento dell'acquisto. Chi era già abbonato al 4 novembre 2026 (piani Starter, Pro ed Elite) mantiene l'importo che paga finché non cambia piano; le funzioni sono quelle del piano corrispondente (Artigiano, Capomastro, Su misura). Il marchio PrevAI compare solo sui PDF del piano gratuito.</p>
               </div>
               <div>
                 <p className="font-medium">4.2 Fatturazione</p>

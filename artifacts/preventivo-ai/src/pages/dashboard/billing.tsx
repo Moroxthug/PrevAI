@@ -1,6 +1,6 @@
 import { useGetSubscription, useCreateCustomerPortalSession } from "@workspace/api-client-react";
 import { Skeleton } from "@/components/ui/skeleton";
-import { PIANI_IN_ABBONAMENTO, PREZZI_PIANI, VOCI_PIANI, pianoSuccessivo } from "@workspace/config";
+import { CONTATTO_SU_MISURA, CTA_SU_MISURA, PIANI_IN_ABBONAMENTO, PREZZI_PIANI, VOCI_PIANI, pianoSuccessivo } from "@workspace/config";
 import { etichettaPiano, isPianoInAbbonamento } from "@/lib/prezzi";
 import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/i18n/LanguageContext";
@@ -163,12 +163,14 @@ export default function BillingPage() {
               )}
 
               <div className="flex flex-wrap gap-3 pt-1">
-                {prossimo && (
+                {prossimo && (PREZZI_PIANI[prossimo].suRichiesta ? (
+                  <a className="btn btn-navy btn-sm" href={CONTATTO_SU_MISURA}><Crown className="h-4 w-4" />{CTA_SU_MISURA}</a>
+                ) : (
                   <button className="btn btn-navy btn-sm" onClick={handleManage} disabled={createPortal.isPending}>
                     {createPortal.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Crown className="h-4 w-4" />}
                     Passa a {PREZZI_PIANI[prossimo].nome}
                   </button>
-                )}
+                ))}
                 <button className="btn btn-outline-navy btn-sm" onClick={handleManage} disabled={createPortal.isPending}>
                   <ArrowUpRight className="h-4 w-4" />
                   {t("dashboard.billing.manageSubscription")}
@@ -215,7 +217,7 @@ export default function BillingPage() {
                   <div key={id} className={i ? "space-y-2 border-l pl-4" : "space-y-2"}>
                     <div className="flex items-center gap-2 font-semibold text-sm">
                       {i ? <Crown className="h-4 w-4 text-amber-500" /> : <Zap className="h-4 w-4 text-navy-500" />}
-                      {etichettaPiano(id)}
+                      {PREZZI_PIANI[id].suRichiesta ? `${PREZZI_PIANI[id].nome} — su richiesta` : etichettaPiano(id)}
                     </div>
                     <ul className="space-y-1.5 text-sm">
                       {VOCI_PIANI[id].map((v) => (
@@ -228,7 +230,7 @@ export default function BillingPage() {
                   </div>
                 ))}
               </div>
-              {isActive && prossimo && (
+              {isActive && prossimo && !PREZZI_PIANI[prossimo].suRichiesta && (
                 <div className="mt-5 pt-4 border-t flex justify-end">
                   <button className="btn btn-navy btn-sm" onClick={handleManage} disabled={createPortal.isPending}>
                     {createPortal.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Crown className="h-3.5 w-3.5" />}

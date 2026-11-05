@@ -22,25 +22,7 @@
 import { describe, test, expect, beforeAll, afterAll, afterEach } from "vitest";
 import Stripe from "stripe";
 import { and, eq, sql } from "drizzle-orm";
-import {
-  db,
-  quotesTable,
-  clientsTable,
-  contractsTable,
-  projectsTable,
-  invoicesTable,
-  invoicePaymentsTable,
-  leadsTable,
-  businessProfilesTable,
-  automationRunsTable,
-  notificationsTable,
-  whatsappConnectionsTable,
-  emailConnectionsTable,
-  calendarConnectionsTable,
-  calendarSyncedEventsTable,
-  milestonesTable,
-  stripeConnectAccountsTable,
-} from "@workspace/db";
+import { db, quotesTable, clientsTable, contractsTable, projectsTable, invoicesTable, invoicePaymentsTable, leadsTable, businessProfilesTable, automationRunsTable, notificationsTable, whatsappConnectionsTable, emailConnectionsTable, calendarConnectionsTable, calendarSyncedEventsTable, milestonesTable, stripeConnectAccountsTable, importBatchesTable, quoteImportCandidatesTable } from "@workspace/db";
 import "../automations/index.js";
 import { encryptSecret } from "../lib/crypto.js";
 import { REVIEW_REQUEST_DELAY_DAYS } from "../lib/jobMessaging.js";
@@ -225,6 +207,49 @@ describe("Phase 65 — integrations", () => {
   // ── 2. Stripe ──────────────────────────────────────────────────────────────
 
   describe("Stripe webhooks (signed synthetic events)", () => {
+    test("PREZZI-2: il pacchetto accredita una volta sola e ogni credito sblocca un preventivo senza marchio", async () => {
+      const org = await createOrg({ plan: "free", companyName: "Pacchetto Co" });
+      const evento = () => stripeEvent("checkout.session.completed", { id: `cs_e2e_pack_${org.userId}`, mode: "payment", payment_status: "paid", metadata: { quoteId: "", userId: org.userId, planType: "pack_5" } });
+      expect((await stripeWebhook(evento())).status).toBe(200);
+      expect((await stripeWebhook(evento())).status).toBe(200);
+      expect((await org.api("/api/payments/subscription")).body.credits).toBe(5);
+
+      const quote = await seedQuote(org.userId, { status: "draft" });
+      const sent = await org.api(`/api/quotes/${quote.id}/send-pdf-email`, { body: { toEmail: "cliente@example.invalid", clientName: "Cliente" } });
+      expect(sent.status, JSON.stringify(sent.body)).toBe(200);
+      const [q] = await db.select().from(quotesTable).where(eq(quotesTable.id, quote.id));
+      expect(q!.unlockedWithPlan).toBe("pack_5");
+      expect((await org.api("/api/payments/subscription")).body.credits).toBe(4);
+    });
+
+    test("PREZZI-2: il piano su richiesta non ha checkout, i vecchi preventivi sono dei piani a pagamento", async () => {
+      const org = await createOrg({ plan: "free", companyName: "Su Misura Co" });
+      const quote = await seedQuote(org.userId, { status: "draft" });
+      const checkout = await org.api("/api/payments/checkout", { body: { quoteId: quote.id, planType: "monthly_elite" } });
+      expect(checkout.status).toBe(409);
+      expect(checkout.body.error).toBe("CONTACT_SALES");
+      const pdf = await org.api("/api/imports/pdf", { body: {} });
+      expect(pdf.status).toBe(403);
+      expect(pdf.body.requiredPlan).toBe("monthly_starter");
+    });
+
+    test("PREZZI-2: dieci vecchi preventivi verificati portano l'ingresso da 25 a 30, e non consumano la quota", async () => {
+      const org = await createOrg({ plan: "monthly_starter", companyName: "Bonus Co" });
+      const prima = (await org.api("/api/payments/subscription")).body;
+      expect(prima).toMatchObject({ quotaLimit: 25, oldQuotes: { verified: 0, needed: 10, extra: 5, earned: false } });
+
+      const [batch] = await db.insert(importBatchesTable).values({ userId: org.userId, kind: "pdf", fileName: "vecchi.pdf", status: "done" }).returning();
+      const extraction = (i: number) => ({ clientName: `Cliente ${i}`, email: null, phone: null, address: null, city: null, province: null, postalCode: null, date: "2024-03-01", status: "accepted" as const, items: [{ description: "Voce", quantity: 1, unitPrice: 100 + i, total: 100 + i }], total: 100 + i, notes: null, confidence: "high" as const });
+      await db.insert(quoteImportCandidatesTable).values(Array.from({ length: 9 }, (_, i) => ({ batchId: batch!.id, userId: org.userId, status: "confirmed" as const, extraction: extraction(i) })));
+      expect((await org.api("/api/payments/subscription")).body).toMatchObject({ quotaLimit: 25, oldQuotes: { verified: 9, earned: false } });
+
+      await db.insert(quoteImportCandidatesTable).values({ batchId: batch!.id, userId: org.userId, status: "confirmed", extraction: extraction(9) });
+      const importato = await seedQuote(org.userId, { status: "draft" });
+      await db.update(quotesTable).set({ source: "import" }).where(eq(quotesTable.id, importato.id));
+      const dopo = (await org.api("/api/payments/subscription")).body;
+      expect(dopo).toMatchObject({ quotaLimit: 30, quotaUsed: 0, oldQuotes: { verified: 10, earned: true } });
+    });
+
     test("checkout.session.completed: one-shot unlock flips the quote; subscription mode activates the plan and emails the owner", async () => {
       const org = await createOrg({ plan: "free", companyName: "Stripe Buyer Co" });
       const quote = await seedQuote(org.userId, { status: "pending_payment" });
@@ -244,7 +269,7 @@ describe("Phase 65 — integrations", () => {
       expect(profile!.stripeCustomerId).toBe(customerId);
       const welcome = emailsTo(org.email);
       expect(welcome).toHaveLength(1);
-      expect(welcome[0]!.subject.toLowerCase()).toContain("cantieri");
+      expect(welcome[0]!.subject.toLowerCase()).toContain("capomastro");
 
       // Plan change from the Stripe dashboard / portal → synced by customer id (no Stripe API call needed).
       const upgraded = await stripeWebhook(stripeEvent("customer.subscription.updated", { id: "sub_e2e", customer: customerId, status: "active", items: { data: [{ price: { id: "price_1TUdJjCaDBaDETvnCo3JKGJ7" } }] } }));
