@@ -45,6 +45,7 @@ const PUBLIC_ROUTES: Allow[] = [
     reason: "POCKET-3: il telefono della squadra non ha un account — il codice di abbinamento (6 caratteri, hash, 7 giorni, una volta sola) e il vecchio link si scambiano qui; 20 tentativi ogni 15 minuti per IP, l'anteprima non consuma niente",
   },
   { match: /^(GET|POST) \/api\/public\//, reason: "public quote widget + unsubscribe links — rate limited (Rule 6)" },
+  { match: /^POST \/api\/contatti\/su-misura$/, reason: "PREZZI-2: modulo pubblico del piano Su misura — limite per IP, campo esca per i bot, scrive solo una richiesta" },
   { match: /^POST \/api\/webhooks\/sdi\/:userId$/, reason: "A-1: notifiche dell'intermediario SdI — segreto per impresa confrontato con timingSafeEqual dentro l'adapter (Rule 7), IP rate limited" },
   {
     match: /^GET \/api\/commercialista\/:token(\/(prima-nota\.csv|pacchetto\.pdf))?$/,
