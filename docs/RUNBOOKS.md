@@ -1485,9 +1485,9 @@ La Home dell'app mostra il meteo dei cantieri (la riga in alto, la scheda «Mete
 
 Da 2026-11-05: **Artigiano** 9,90 €, **Mastro** 24 €, **Capomastro** 49 € al mese, IVA inclusa, annuale = dieci mensilità; **Su misura** senza prezzo pubblico. **Preventivo singolo** 1,99 € e **pacchetto 5** a 3,99 €. Fonte unica: `lib/config/src/piani.ts`. Gli id interni non cambiano (`monthly_starter`, `monthly_pro`, `monthly_elite`); nuovi `monthly_clienti` e `pack_5`. Migrazione **0027** (crediti del pacchetto).
 
-### 43.1 Price su Stripe (live) — da fare dal titolare
+### 43.1 Price su Stripe (live) — fatto il 2026-11-05
 
-Il checkout addebita solo un Price che coincide con il prezzo mostrato. Creare in EUR un Price per riga, **con la lookup key**; se la chiave esiste già su un Price col vecchio importo, creare il nuovo e spuntare «trasferisci la lookup key»:
+Conto `acct_1QtrTCCaDBaDETvn` (prevai.it), con la chiave di `.env.production`. Prodotti rinominati (PrevAI Artigiano, Capomastro, Su misura, Preventivo singolo), nuovi PrevAI Mastro e PrevAI Pacchetto 5 preventivi. `tax_behavior` lasciato come gli altri (`unspecified`: con le impostazioni del conto, in euro vale IVA inclusa). Il checkout addebita solo un Price che coincide con il prezzo mostrato; per cambiare un importo si crea un Price nuovo con `transfer_lookup_key`:
 
 | Lookup key | Importo | Tipo |
 |---|---|---|
@@ -1500,7 +1500,9 @@ Il checkout addebita solo un Price che coincide con il prezzo mostrato. Creare i
 | `preventivo_singolo` | 1,99 € | una tantum |
 | `pacchetto_5_preventivi` | 3,99 € | una tantum |
 
-Finché un Price manca, quel prodotto risponde 503 `PLAN_PRICE_MISSING` (o `PLAN_PRICE_MISMATCH` se la chiave è sul vecchio importo): nessun addebito sbagliato, ma nessuna vendita. **Non** archiviare i Price storici (Starter 19 €, Pro 49 €, Elite 59 €): gli abbonati di prima li tengono e il webhook li riconosce per id. Il Customer Portal deve elencare Artigiano, Mastro e Capomastro.
+Finché un Price manca, quel prodotto risponde 503 `PLAN_PRICE_MISSING` (o `PLAN_PRICE_MISMATCH` se la chiave è sul vecchio importo): nessun addebito sbagliato, ma nessuna vendita. **Non** archiviare i Price storici (Starter 19 €, Pro 49 €, Elite 59 €): gli abbonati di prima li tengono e il webhook li riconosce per id.
+
+**Da decidere:** il Customer Portal (`bpc_1TUdGYCaDBaDETvnvgK18Gpz`) ha `subscription_update` spento: i bottoni «Passa a…» aprono il portale, ma lì si può solo disdire, non cambiare piano.
 
 ### 43.2 Su misura
 
