@@ -51,6 +51,34 @@ function restoreScroll(y: number): () => void {
   };
 }
 
+/** The browser only looks for a #anchor on a real page load: after wouter's pushState nobody scrolls. The target may arrive with a lazy chunk and move while the page fills in above it, so follow it until it settles; give up on the first sign the person scrolls. */
+function scrollToAnchor(id: string): () => void {
+  let stopped = false;
+  let timer = 0;
+  let last: number | null = null;
+  const start = performance.now();
+  const stop = () => { stopped = true; };
+  const owners = ["wheel", "touchstart", "keydown", "mousedown"] as const;
+  owners.forEach((e) => window.addEventListener(e, stop, { passive: true, once: true }));
+  const step = () => {
+    if (stopped) return;
+    const el = document.getElementById(id);
+    if (el) {
+      const y = Math.round(el.getBoundingClientRect().top + window.scrollY);
+      if (y === last) return;
+      last = y;
+      el.scrollIntoView({ block: "start", behavior: "instant" as ScrollBehavior });
+    }
+    if (performance.now() - start < 1600) timer = window.setTimeout(step, 80);
+  };
+  step();
+  return () => {
+    stopped = true;
+    clearTimeout(timer);
+    owners.forEach((e) => window.removeEventListener(e, stop));
+  };
+}
+
 function mainElement(): HTMLElement | null {
   const el = document.querySelector<HTMLElement>("main");
   if (el && !el.hasAttribute("tabindex")) el.tabIndex = -1;
@@ -93,6 +121,12 @@ function install() {
   };
   window.addEventListener("scroll", () => { if (!S.frozen && !timer) timer = window.setTimeout(flush, 120); }, { passive: true });
   window.addEventListener("pushState", leaving(false));
+  let cancelAnchor: (() => void) | undefined;
+  window.addEventListener("pushState", () => {
+    cancelAnchor?.();
+    const id = window.location.hash.slice(1);
+    cancelAnchor = id ? scrollToAnchor(id) : undefined;
+  });
   window.addEventListener("popstate", leaving(true));
   // The page is going away (reload, tab closed): keep the last real position for the reload case.
   window.addEventListener("pagehide", () => { if (!S.frozen) flush(); });

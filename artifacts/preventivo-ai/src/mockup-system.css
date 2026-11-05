@@ -592,7 +592,7 @@ table.tbl { width: 100%; border-collapse: collapse; font-size: 14.5px; }
 .also .lbl { font-size: 12px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; color: var(--muted-mk); margin-right: 6px; }
 
 /* stories */
-.split { display: grid; grid-template-columns: 1fr 1fr; gap: clamp(36px, 5vw, 80px); align-items: center; padding: clamp(30px, 4vw, 50px) 0; }
+.split { display: grid; grid-template-columns: 1fr 1fr; gap: clamp(36px, 5vw, 80px); align-items: center; padding: clamp(30px, 4vw, 50px) 0; scroll-margin-top: 64px; }
 .split.rev .split-media { order: -1; }
 .split-body .eyebrow { margin-bottom: 6px; display: block; }
 .split-body h2 { font-size: clamp(1.6rem, 2.6vw, 2.25rem); font-weight: 800; margin-bottom: 16px; color: var(--navy); }

@@ -73,7 +73,7 @@ function AnnouncementBar() {
   return (
     <div className="annc">
       {t("annc.text")}
-      <Link href="/#whatsapp">{t("annc.cta")}</Link>
+      <Link href="/whatsapp/">{t("annc.cta")}</Link>
       <button
         className="annc-x"
         aria-label={t("annc.dismiss")}
