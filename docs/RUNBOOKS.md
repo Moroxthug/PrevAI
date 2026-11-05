@@ -1502,7 +1502,7 @@ Conto `acct_1QtrTCCaDBaDETvn` (prevai.it), con la chiave di `.env.production`. P
 
 Finché un Price manca, quel prodotto risponde 503 `PLAN_PRICE_MISSING` (o `PLAN_PRICE_MISMATCH` se la chiave è sul vecchio importo): nessun addebito sbagliato, ma nessuna vendita. **Non** archiviare i Price storici (Starter 19 €, Pro 49 €, Elite 59 €): gli abbonati di prima li tengono e il webhook li riconosce per id.
 
-**Da decidere:** il Customer Portal (`bpc_1TUdGYCaDBaDETvnvgK18Gpz`) ha `subscription_update` spento: i bottoni «Passa a…» aprono il portale, ma lì si può solo disdire, non cambiare piano.
+**Customer Portal** (`bpc_1TUdGYCaDBaDETvnvgK18Gpz`, il predefinito): cambio piano acceso il 2026-11-05 tra Artigiano, Mastro e Capomastro, mensile e annuale, con conguaglio (`create_prorations`: la differenza va sulla fattura successiva). Su misura non c'è, si attiva parlando con noi. Se cambia un Price, va aggiornato anche l'elenco del portale: non segue le lookup key.
 
 ### 43.2 Su misura
 
