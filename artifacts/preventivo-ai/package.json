@@ -66,7 +66,7 @@
   "dependencies": {
     "@google-analytics/admin": "^10.2.0",
     "@google-analytics/data": "^6.1.0",
-    "better-auth": "^1.6.9",
+    "better-auth": "^1.7.17",
     "compression": "^1.8.1",
     "express": "^5.2.1",
     "googleapis": "^173.0.0",
