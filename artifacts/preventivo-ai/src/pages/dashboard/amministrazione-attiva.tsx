@@ -101,7 +101,7 @@ function Prezzo({ riepilogo, intervallo, onIntervallo }: { riepilogo: RiepilogoA
         </span>
       </div>
       {intervallo === "mensile" && p.conElite && (
-        <p className="text-sm">Prezzo riservato a chi ha il piano Elite (invece di {formatPrezzoOfferta(p.mensileCents)}).</p>
+        <p className="text-sm">Prezzo riservato a chi ha il piano Su misura (invece di {formatPrezzoOfferta(p.mensileCents)}).</p>
       )}
       {intervallo === "annuale" && risparmio > 0 && !daFondatore && <p className="text-sm">Due mesi gratis rispetto al mensile: risparmi {formatPrezzoOfferta(risparmio)}.</p>}
       <FondatoriBox stato={riepilogo.offerta.stato} fondatori={f} compatto />

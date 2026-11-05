@@ -163,7 +163,7 @@ export default function AmministrazioneLandingPage() {
             </p>
             {intervallo === "annuale" && <p style={{ fontSize: 14, color: "var(--muted-mk)" }}>Due mesi gratis rispetto al mensile.</p>}
             <p style={{ fontSize: 14, color: "var(--muted-mk)", marginTop: 6 }}>
-              Con il piano Elite: {formatPrezzoOfferta(OFFERTA_AMMINISTRAZIONE.bundleEliteMensileCents)} al mese.
+              Con il piano Su misura: {formatPrezzoOfferta(OFFERTA_AMMINISTRAZIONE.bundleEliteMensileCents)} al mese.
             </p>
             <div style={{ marginTop: 16 }}>
               <FondatoriBox stato={stato.effettivo} fondatori={fondatori} compatto />

@@ -74,7 +74,7 @@ router.put("/job-roles/members/:userId", requireAuth, requirePermission("team", 
     const body = PersonBody.safeParse(req.body ?? {});
     if (!body.success || !target) { res.status(400).json({ error: "Invalid parameters" }); return; }
     const profile = await profileOf(orgId);
-    if (!roleHomesIncluded(effectivePlan(profile))) { res.status(403).json({ error: "PLAN_REQUIRED", message: "Le Home per ruolo sono incluse in Elite." }); return; }
+    if (!roleHomesIncluded(effectivePlan(profile))) { res.status(403).json({ error: "PLAN_REQUIRED", message: "Le Home per ruolo sono incluse in Su misura." }); return; }
     if (target === orgId) { res.status(409).json({ error: "OWNER_FIXED", message: "Il titolare ha sempre tutti gli interruttori." }); return; }
     const [member] = await db.select({ role: organizationMembersTable.role }).from(organizationMembersTable).where(and(eq(organizationMembersTable.ownerId, orgId), eq(organizationMembersTable.userId, target), eq(organizationMembersTable.status, "active")));
     if (!member) { res.status(404).json({ error: "Not found" }); return; }

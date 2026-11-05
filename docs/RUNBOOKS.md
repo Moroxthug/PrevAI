@@ -1500,7 +1500,7 @@ Conto `acct_1QtrTCCaDBaDETvn` (prevai.it), con la chiave di `.env.production`. P
 | `preventivo_singolo` | 1,99 € | una tantum |
 | `pacchetto_5_preventivi` | 3,99 € | una tantum |
 
-Finché un Price manca, quel prodotto risponde 503 `PLAN_PRICE_MISSING` (o `PLAN_PRICE_MISMATCH` se la chiave è sul vecchio importo): nessun addebito sbagliato, ma nessuna vendita. **Non** archiviare i Price storici (Starter 19 €, Pro 49 €, Elite 59 €): gli abbonati di prima li tengono e il webhook li riconosce per id.
+Finché un Price manca, quel prodotto risponde 503 `PLAN_PRICE_MISSING` (o `PLAN_PRICE_MISMATCH` se la chiave è sul vecchio importo): nessun addebito sbagliato, ma nessuna vendita. Il 2026-11-05 sono stati archiviati tutti i Price vecchi (Starter 19 € e 190 €, Elite 59 €, 79 €, 790 €, singoli 3 € e 9 €): i 9 abbonamenti storici erano già cancellati. **Non** archiviare il Price da 49 € (`price_1TUdJjCaDBaDETvnfBv37ryF`): è Capomastro mensile. Il webhook riconosce ancora i vecchi per id.
 
 **Customer Portal** (`bpc_1TUdGYCaDBaDETvnvgK18Gpz`, il predefinito): cambio piano acceso il 2026-11-05 tra Artigiano, Mastro e Capomastro, mensile e annuale, con conguaglio (`create_prorations`: la differenza va sulla fattura successiva). Su misura non c'è, si attiva parlando con noi. Se cambia un Price, va aggiornato anche l'elenco del portale: non segue le lookup key.
 
@@ -1510,7 +1510,7 @@ Non si compra online: `POST /api/payments/checkout` risponde 409 `CONTACT_SALES`
 
 ### 43.3 Chi era già abbonato
 
-Tiene l'importo che paga (il Price storico non cambia). Le funzioni sono quelle del piano con lo stesso id: Starter → Artigiano, Pro → Capomastro, Elite → Su misura. Lo dicono i Termini §4.1.
+Al 2026-11-05 nessuno ha un abbonamento attivo su Stripe. Chi ha un piano regalato tiene le funzioni dello stesso id: Starter → Artigiano, Pro → Capomastro, Elite → Su misura.
 
 ### 43.4 Cosa decide il piano
 

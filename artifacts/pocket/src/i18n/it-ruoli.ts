@@ -16,7 +16,7 @@ export const ruoli = {
     role: {
       owner: "Titolare", officeManager: "Responsabile d'ufficio", estimator: "Preventivista", projectManager: "Responsabile di commessa", dispatcher: "Pianificatore", bookkeeper: "Contabile", safety: "Responsabile della sicurezza", foreman: "Capo cantiere", crew: "Operaio",
     },
-    toast: { saved: "Salvato.", failed: "Non sono riuscito a salvare.", offline: "Sei offline. Riprova quando torni in linea.", noAccess: "I ruoli li cambia solo il titolare.", plan: "Una schermata Oggi per ogni ruolo è inclusa in Elite." },
+    toast: { saved: "Salvato.", failed: "Non sono riuscito a salvare.", offline: "Sei offline. Riprova quando torni in linea.", noAccess: "I ruoli li cambia solo il titolare.", plan: "Una schermata Oggi per ogni ruolo è inclusa in Su misura." },
     tab: { home: "Oggi", quotes: "Preventivi", leads: "Richieste", clients: "Clienti", jobs: "Cantieri", schedule: "Agenda", invoices: "Fatture", map: "Mappa", docs: "Documenti", books: "Prima nota", pay: "Ore e costo", team: "Team", hours: "Ore", photos: "Foto", travel: "Trasferte", empty: "Vuota" },
     sec: {
       needs: ["Serve a te", "Approvazioni e risposte"], money: ["Soldi", "Incassato e da incassare"], quotes: ["Preventivi da fare", "Bozze e richieste"], crew: ["Squadra", "Chi è dove"], today: ["Oggi", "Visite e consegne"], week: ["Questa settimana", "La settimana in breve"],

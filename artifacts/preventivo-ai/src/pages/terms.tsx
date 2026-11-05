@@ -91,7 +91,7 @@ export default function TermsPage() {
                     l'abbonamento non viene disdetto.
                   </li>
                 </ul>
-                <p className="mt-1 text-xs text-gray-500">I prezzi aggiornati e le funzionalità di ciascun piano sono indicati nella pagina Piano e fatturazione al momento dell'acquisto. Chi era già abbonato al 4 novembre 2026 (piani Starter, Pro ed Elite) mantiene l'importo che paga finché non cambia piano; le funzioni sono quelle del piano corrispondente (Artigiano, Capomastro, Su misura). Il marchio PrevAI compare solo sui PDF del piano gratuito.</p>
+                <p className="mt-1 text-xs text-gray-500">I prezzi aggiornati e le funzionalità di ciascun piano sono indicati nella pagina Piano e fatturazione al momento dell'acquisto. Il marchio PrevAI compare solo sui PDF del piano gratuito.</p>
               </div>
               <div>
                 <p className="font-medium">4.2 Fatturazione</p>

@@ -45,6 +45,10 @@ prevai (https://www.prevai.it) è pensato per il mercato italiano: terminologia 
 - [Privacy Policy](https://www.prevai.it/privacy/): trattamento dei dati personali.
 - [Termini di servizio](https://www.prevai.it/termini/): condizioni d'uso del servizio.
 
+## Prezzi
+
+IVA inclusa, annuale = dieci mensilità. Artigiano 9,90 €/mese: 25 preventivi al mese (30 caricando 10 vecchi preventivi), PDF puliti, listino. Mastro 24 €/mese: preventivi illimitati, contratti, contatti, WhatsApp. Capomastro 49 €/mese: cantieri, costi, fatture, squadra. Su misura: prezzo su richiesta. Senza abbonamento: un preventivo 1,99 €, cinque 3,99 €.
+
 ## Indice completo
 
 - [Sitemap XML](https://www.prevai.it/sitemap.xml): elenco completo di tutte le pagine indicizzabili (oltre 1000 URL fra settori, città e articoli del blog).
