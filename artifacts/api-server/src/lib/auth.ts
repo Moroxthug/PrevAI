@@ -7,6 +7,7 @@ import { and, asc, eq } from "drizzle-orm";
 import { Resend } from "resend";
 import { logger } from "./logger";
 import { sendWelcomeEmail, escapeHtml } from "./email";
+import { notifyHub } from "./hub";
 import { getBaseUrl } from "./baseUrl";
 import { recordSecurityAuditEvent } from "./auditLog";
 
@@ -258,6 +259,7 @@ export const auth = betterAuth({
     user: {
       create: {
         after: async (user) => {
+          await notifyHub("signup", "New signup", user.email);
           await sendWelcomeEmail({ toEmail: user.email, toName: user.name });
         },
       },
