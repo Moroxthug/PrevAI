@@ -40,19 +40,19 @@ Criterio: prima le pagine che hanno già impressioni in Search Console (domanda 
 26. https://prevai.it/preventivi/carpentiere/monza/ — ✅ 5/11 richiesta
 27. https://prevai.it/preventivi/giardiniere/brescia/ — ✅ 5/11 richiesta
 28. https://prevai.it/preventivi/idraulico/milano/ — ✅ 5/11 richiesta
-29. https://prevai.it/preventivi/edilizia/milano/
-30. https://prevai.it/preventivi/elettricista/milano/
+29. https://prevai.it/preventivi/edilizia/milano/ — ✅ 08/11 richiesta
+30. https://prevai.it/preventivi/elettricista/milano/ — ✅ 08/11 richiesta
 
 ## D — nuove città, le più popolose
 
-31. https://prevai.it/preventivi/ristrutturazione/roma/
-32. https://prevai.it/preventivi/idraulico/roma/
-33. https://prevai.it/preventivi/elettricista/roma/
-34. https://prevai.it/preventivi/ristrutturazione/napoli/
-35. https://prevai.it/preventivi/edilizia/napoli/
-36. https://prevai.it/preventivi/ristrutturazione/torino/
-37. https://prevai.it/preventivi/termoidraulico/torino/
-38. https://prevai.it/preventivi/ristrutturazione/palermo/
+31. https://prevai.it/preventivi/ristrutturazione/roma/ — ✅ 08/11 richiesta
+32. https://prevai.it/preventivi/idraulico/roma/ — ✅ 08/11 richiesta
+33. https://prevai.it/preventivi/elettricista/roma/ — ✅ 08/11 richiesta
+34. https://prevai.it/preventivi/ristrutturazione/napoli/ — ✅ 08/11 richiesta
+35. https://prevai.it/preventivi/edilizia/napoli/ — ✅ 08/11 richiesta (era già indicizzata)
+36. https://prevai.it/preventivi/ristrutturazione/torino/ — ✅ 08/11 richiesta
+37. https://prevai.it/preventivi/termoidraulico/torino/ — ✅ 08/11 richiesta
+38. https://prevai.it/preventivi/ristrutturazione/palermo/ — ✅ 08/11 richiesta
 39. https://prevai.it/preventivi/condizionatori/palermo/
 40. https://prevai.it/preventivi/ristrutturazione/genova/
 41. https://prevai.it/preventivi/ristrutturazione/bologna/
@@ -110,3 +110,4 @@ F24. https://prevai.it/blog/zone-sismiche-citta-italiane/ — ✅ 4/11 richiesta
 | 04/11/2026 | F11–F24 | 8 già indicizzati (F11–F13, F18–F22), 6 "Indexing requested" (F14–F17, F23, F24). Nessun "Quota exceeded". Lista F chiusa; prossimo: dal 14 della lista B. |
 | 04/11/2026 (2° giro) | 14–20 (lista B chiusa) | 14, 16, 17, 18, 20 "Indexing requested"; 15 e 19 già indicizzati. 21 non indicizzato ma "Quota exceeded" (11 richieste in giornata): riprendere dal 21 della lista C. |
 | 05/11/2026 | 21–28 | Tutti "Indexing requested", nessuno era già indicizzato (la 28 era sconosciuta a Google). 29 "Something went wrong", 30 "Quota exceeded" dopo 8 richieste: riprendere dalla 29. |
+| 08/11/2026 | 29–38 | 10 "Indexing requested", nessun errore né "Quota exceeded". 35 era già indicizzata (richiesta comunque, pagina /preventivi/); 29 e 37 sconosciute a Google, le altre "Discovered – currently not indexed". Riprendere dalla 39. |
