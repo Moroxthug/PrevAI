@@ -8,6 +8,7 @@ import {
   GripVertical, X, ArrowRight,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { trackAppEvent } from "@/lib/app-beta";
 import { useCreateManualQuote, useSuggestItemDescription, useListCatalogItems, useListTaxProfiles } from "@workspace/api-client-react";
 import { previewTaxLines, taxLineLabel } from "@/lib/tax-display";
 import type { CreateManualQuoteBody } from "@workspace/api-client-react";
@@ -293,7 +294,7 @@ export default function ManualQuoteBuilder({ clientData, profileData }: ManualQu
     createManualQuote.mutate(
       { data: body },
       {
-        onSuccess: (quote) => setLocation(`/dashboard/quotes/${quote.id}`),
+        onSuccess: (quote) => { trackAppEvent("quote_created", { entityId: quote.id }); setLocation(`/dashboard/quotes/${quote.id}`); },
         onError: (err: unknown) => {
           const status = (err as { status?: number })?.status;
           if (status === 429) {

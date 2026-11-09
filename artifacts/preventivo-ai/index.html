@@ -82,13 +82,17 @@
     <!-- Google tag (gtag.js) — loaded on the first user interaction or after
          5 s, whichever comes first, so the 170 kB tag never competes with the
          page's own JS on mobile (Phase 68). Events queued in dataLayer before
-         then are delivered once it loads. -->
+         then are delivered once it loads.
+         Only prevai.it and www.prevai.it report: local, staging and preview
+         builds keep the gtag() stub but never send a hit, so they stop
+         polluting the property (traffic report of 9/11/2026). -->
     <script>
       window.dataLayer = window.dataLayer || [];
       function gtag(){dataLayer.push(arguments);}
-      gtag('js', new Date());
-      gtag('config', 'G-D2B39E0ELW');
       (function () {
+        if (!/^(www\.)?prevai\.it$/.test(location.hostname)) return;
+        gtag('js', new Date());
+        gtag('config', 'G-D2B39E0ELW');
         var done = false;
         var events = ["pointerdown", "keydown", "touchstart", "scroll"];
         var load = function () {

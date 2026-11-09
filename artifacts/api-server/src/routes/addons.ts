@@ -6,6 +6,7 @@ import { requirePermission } from "../middlewares/requirePermission.js";
 import { requireAdmin } from "./admin.js";
 import { ipRateLimiter, userRateLimiter } from "../lib/rateLimit.js";
 import { logger } from "../lib/logger.js";
+import { gaClientIdFromCookie } from "../lib/ga4";
 import { ErroreAddon, creaCheckout, offertaCorrente, registraEventoUtente, riepilogo, risultatiTestPrezzo, statoFondatori } from "../addons/amministrazione.js";
 
 // ── A-5: add-on Amministrazione ──────────────────────────────────────────────
@@ -62,7 +63,7 @@ router.post("/addons/amministrazione/checkout", requireAuth, requirePermission("
     return;
   }
   try {
-    res.json(await creaCheckout({ userId: getUserId(res), intervallo: parsed.data.intervallo, twoFactorEnabled: Boolean(res.locals.twoFactorEnabled) }));
+    res.json(await creaCheckout({ userId: getUserId(res), intervallo: parsed.data.intervallo, twoFactorEnabled: Boolean(res.locals.twoFactorEnabled), gaClientId: gaClientIdFromCookie(req.headers.cookie) }));
   } catch (err) {
     errore(err, res, "Errore nel checkout dell'add-on");
   }

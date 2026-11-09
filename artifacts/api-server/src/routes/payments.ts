@@ -7,6 +7,7 @@ import { eq } from "drizzle-orm";
 import { CreateCheckoutSessionBody } from "@workspace/api-zod";
 import { getUncachableStripeClient } from "../stripeClient";
 import { logger } from "../lib/logger";
+import { gaClientIdFromCookie } from "../lib/ga4";
 import { BONUS_VECCHI_PREVENTIVI, PER_CHI_PIANO, PREVENTIVI_SINGOLI, PREZZI_PIANI, VOCI_PIANI, lookupKeyPiano, pianoDaLookupKey, prezzoPianoCents, type IntervalloAddon, type PianoInAbbonamento } from "@workspace/config";
 import { eAbbonamentoAddon, sincronizzaAbbonamento, type AbbonamentoStripe } from "../addons/amministrazione.js";
 import { quotaPreventivi } from "../quotes/quota.js";
@@ -250,6 +251,8 @@ router.post("/payments/checkout", requireAuth, requirePermission("settings", "fu
         planType,
         billing: intervallo,
         hasWatermark: String(plan.hasWatermark),
+        // GA4: the webhook sends `purchase` under the buyer's own GA client id.
+        gaClientId: gaClientIdFromCookie(req.headers.cookie) ?? "",
       },
     };
 

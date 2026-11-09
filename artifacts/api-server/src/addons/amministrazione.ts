@@ -264,7 +264,7 @@ async function prezzoStripe(stripe: Stripe, chiave: string, attesoCents: number,
   return price;
 }
 
-export async function creaCheckout(opts: { userId: string; intervallo: IntervalloAddon; twoFactorEnabled: boolean }): Promise<{ url: string }> {
+export async function creaCheckout(opts: { userId: string; intervallo: IntervalloAddon; twoFactorEnabled: boolean; gaClientId?: string }): Promise<{ url: string }> {
   const { userId, intervallo } = opts;
   const offerta = offertaCorrente();
   if (offerta.effettivo !== "vendita") {
@@ -297,7 +297,7 @@ export async function creaCheckout(opts: { userId: string; intervallo: Intervall
 
   const [authUser] = await db.select({ email: authUsersTable.email }).from(authUsersTable).where(eq(authUsersTable.id, userId));
   const base = getBaseUrl();
-  const metadata = { userId, addon: ADDON, variante: variante.id, intervallo, fondatore: daFondatore ? "1" : "0" };
+  const metadata = { userId, addon: ADDON, variante: variante.id, intervallo, fondatore: daFondatore ? "1" : "0", gaClientId: opts.gaClientId ?? "" };
   const session = await stripe.checkout.sessions.create({
     mode: "subscription",
     line_items: [{ price: price.id, quantity: 1 }],

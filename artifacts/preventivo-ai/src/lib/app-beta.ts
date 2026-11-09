@@ -2,6 +2,10 @@
 // "Segnala un problema". Every event carries the surface it came from, so the
 // pilot report can tell the native app apart from the site and the PWA.
 // Best-effort by design: nothing here throws, blocks, or shows an error.
+// quote_created / quote_shared also go to GA4, so the site's channels and
+// landing pages can be tied to real use.
+
+import { gaEvent } from "./ga";
 
 export type AppSurface = "web" | "pwa" | "android" | "ios";
 export type AppEventKind = "app_open" | "quote_created" | "quote_shared";
@@ -45,6 +49,9 @@ function context() {
 
 /** Records one usage event. Fire and forget. */
 export function trackAppEvent(kind: AppEventKind, extra: { entityId?: string; channel?: ShareChannel } = {}): void {
+  if (kind === "quote_created" || kind === "quote_shared") {
+    gaEvent(kind, { surface: detectSurface(), ...(extra.channel ? { channel: extra.channel } : {}) });
+  }
   try {
     void fetch("/api/app/events", {
       method: "POST",

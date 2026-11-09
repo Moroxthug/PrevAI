@@ -3,6 +3,7 @@ import { Link, useSearch } from "wouter";
 import { Logo } from "@/components/logo";
 import { authClient } from "@/lib/auth-client";
 import { authErrorKey } from "@/lib/auth-errors";
+import { gaEvent } from "@/lib/ga";
 import { Eye, EyeOff, AlertCircle, Lock, Mail } from "lucide-react";
 import { useLanguage } from "@/i18n/LanguageContext";
 import { useDocumentTitle } from "@/hooks/use-document-title";
@@ -57,6 +58,7 @@ export default function SignUpPage() {
       if (result.error) {
         setError(t(authErrorKey(result.error, "signUp.errorSignUpFailed")));
       } else {
+        gaEvent("sign_up", { method: "email" });
         setVerificationSent(true);
       }
     } catch {

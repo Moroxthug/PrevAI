@@ -11,6 +11,23 @@ import { pianoDaPrezzo } from "./routes/payments.js";
 import { PREZZI_PIANI, PREVENTIVI_SINGOLI } from "@workspace/config";
 import { accreditaPacchetto } from "./quotes/quota";
 import { sendSubscriptionEmail } from "./lib/email";
+import { sendGa4Purchase } from "./lib/ga4";
+
+/** GA4 `purchase` for a paid PrevAI Checkout Session (plan, pack or add-on). Never throws. */
+async function sendPurchaseToGa4(
+  session: { id?: string; payment_status?: string | null; amount_total?: number | null; currency?: string | null; metadata?: Record<string, string> | null },
+  itemId: string,
+): Promise<void> {
+  if (!session.id || session.payment_status !== "paid") return;
+  await sendGa4Purchase({
+    clientId: session.metadata?.gaClientId || undefined,
+    userId: session.metadata?.userId || undefined,
+    transactionId: session.id,
+    valueCents: session.amount_total,
+    currency: session.currency,
+    itemId,
+  });
+}
 import router from "./routes";
 import "./automations";
 import { logger } from "./lib/logger";
@@ -285,6 +302,7 @@ app.post(
       } catch (addonErr) {
         logger.error({ err: addonErr }, "Webhook add-on: checkout completato ma sincronizzazione fallita (non-fatal)");
       }
+      await sendPurchaseToGa4(event.data.object, `addon_${addons.ADDON}`);
       res.status(200).json({ received: true });
       return;
     }
@@ -295,6 +313,8 @@ app.post(
         const quoteId = session.metadata?.quoteId;
         const userId = session.metadata?.userId;
         const planType = session.metadata?.planType;
+
+        await sendPurchaseToGa4(session, planType || "unknown");
 
         if (quoteId) {
           await db
