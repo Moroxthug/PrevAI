@@ -32,8 +32,8 @@ const BLOG_INDEX_BASE: BlogArticleMeta[] = [
   },
   {
     slug: "quanto-costa-tinteggiatura-appartamento",
-    title: "Quanto costa tinteggiare un appartamento nel 2025: guida ai prezzi",
-    seoTitle: "Quanto costa tinteggiare un appartamento nel 2025",
+    title: "Quanto costa tinteggiare un appartamento: guida ai prezzi",
+    seoTitle: "Quanto costa tinteggiare un appartamento",
     metaDescription: "Prezzi aggiornati per tinteggiatura appartamento: costo al mq, manodopera vs materiali, differenze per tipo di pittura. Guida completa per proprietari e professionisti.",
     category: "Prezzi",
     publishedAt: "2026-04-15",
@@ -72,8 +72,8 @@ const BLOG_INDEX_BASE: BlogArticleMeta[] = [
   },
   {
     slug: "quanto-costa-ristrutturare-bagno",
-    title: "Quanto costa ristrutturare un bagno in Italia nel 2025",
-    metaDescription: "Prezzi aggiornati per ristrutturazione bagno: costi per idraulico, piastrellista, elettricista. Bagno piccolo, medio o grande: guida completa ai prezzi 2025.",
+    title: "Quanto costa ristrutturare un bagno in Italia",
+    metaDescription: "Prezzi aggiornati per ristrutturazione bagno: costi per idraulico, piastrellista, elettricista. Bagno piccolo, medio o grande: guida completa ai prezzi.",
     category: "Prezzi",
     publishedAt: "2026-04-28",
     readingTimeMin: 4,
@@ -92,9 +92,9 @@ const BLOG_INDEX_BASE: BlogArticleMeta[] = [
   },
   {
     slug: "quanto-costa-idraulico",
-    title: "Quanto costa un idraulico nel 2025: prezzi per interventi e impianti",
-    seoTitle: "Quanto costa un idraulico nel 2025: prezzi",
-    metaDescription: "Prezzi aggiornati per lavori idraulici nel 2025: costo per intervento urgente, sostituzione boiler, nuovo impianto, perdita d'acqua. Guida completa per proprietari di casa.",
+    title: "Quanto costa un idraulico: prezzi per interventi e impianti",
+    seoTitle: "Quanto costa un idraulico: prezzi",
+    metaDescription: "Prezzi aggiornati per lavori idraulici: costo per intervento urgente, sostituzione boiler, nuovo impianto, perdita d'acqua. Guida completa per proprietari di casa.",
     category: "Prezzi",
     publishedAt: "2026-05-07",
     readingTimeMin: 5,
@@ -102,8 +102,8 @@ const BLOG_INDEX_BASE: BlogArticleMeta[] = [
   },
   {
     slug: "software-preventivi-artigiani",
-    title: "Il miglior software di preventivazione per artigiani nel 2025",
-    metaDescription: "Confronto dei migliori software di preventivazione per artigiani e PMI italiane nel 2025: Excel vs software dedicati vs AI. Quale conviene davvero?",
+    title: "Il miglior software di preventivazione per artigiani",
+    metaDescription: "Confronto dei migliori software di preventivazione per artigiani e PMI italiane: Excel vs software dedicati vs AI. Quale conviene davvero?",
     category: "Tool",
     publishedAt: "2026-05-02",
     readingTimeMin: 4,
@@ -151,7 +151,7 @@ const BLOG_INDEX_BASE: BlogArticleMeta[] = [
     slug: "preventivo-falegname-carpentiere",
     title: "Come fare un preventivo per falegnameria e carpenteria metallica",
     seoTitle: "Preventivo falegnameria e carpenteria metallica",
-    metaDescription: "Guida pratica per falegnami e carpentieri: come strutturare un preventivo professionale con voci per materiali, lavorazione e posa. Prezzi di riferimento 2025.",
+    metaDescription: "Guida pratica per falegnami e carpentieri: come strutturare un preventivo professionale con voci per materiali, lavorazione e posa. Prezzi di riferimento.",
     category: "Professioni",
     publishedAt: "2026-05-08",
     readingTimeMin: 4,
@@ -159,8 +159,8 @@ const BLOG_INDEX_BASE: BlogArticleMeta[] = [
   },
   {
     slug: "app-preventivi-smartphone",
-    title: "Le migliori app per fare preventivi da smartphone nel 2025",
-    metaDescription: "Confronto delle migliori app per preventivi da smartphone per artigiani italiani nel 2025: cosa valutare, funzionalità chiave e come scegliere quella giusta.",
+    title: "Le migliori app per fare preventivi da smartphone",
+    metaDescription: "Confronto delle migliori app per preventivi da smartphone per artigiani italiani: cosa valutare, funzionalità chiave e come scegliere quella giusta.",
     category: "Tool",
     publishedAt: "2026-05-04",
     readingTimeMin: 4,
@@ -177,9 +177,9 @@ const BLOG_INDEX_BASE: BlogArticleMeta[] = [
   },
   {
     slug: "digitalizzazione-artigiani-italiani",
-    title: "Digitalizzazione degli artigiani italiani: a che punto siamo nel 2025",
-    seoTitle: "Digitalizzazione degli artigiani italiani nel 2025",
-    metaDescription: "Il quadro della digitalizzazione tra gli artigiani italiani nel 2025: dati, ostacoli, opportunità. Chi ha già fatto il salto e cosa manca per gli altri.",
+    title: "Digitalizzazione degli artigiani italiani: a che punto siamo",
+    seoTitle: "Digitalizzazione degli artigiani italiani",
+    metaDescription: "Il quadro della digitalizzazione tra gli artigiani italiani: dati, ostacoli, opportunità. Chi ha già fatto il salto e cosa manca per gli altri.",
     category: "Innovazione",
     publishedAt: "2026-05-05",
     readingTimeMin: 4,
@@ -207,8 +207,8 @@ const BLOG_INDEX_BASE: BlogArticleMeta[] = [
   },
   {
     slug: "trovare-clienti-artigiano",
-    title: "Come trovare nuovi clienti come artigiano: guida pratica 2025",
-    metaDescription: "Strategie concrete per trovare nuovi clienti come artigiano nel 2025: passaparola strutturato, Google, social, collaborazioni. Guida pratica per professionisti italiani.",
+    title: "Come trovare nuovi clienti come artigiano: guida pratica",
+    metaDescription: "Strategie concrete per trovare nuovi clienti come artigiano: passaparola strutturato, Google, social, collaborazioni. Guida pratica per professionisti italiani.",
     category: "Business",
     publishedAt: "2026-05-06",
     readingTimeMin: 5,
@@ -323,7 +323,10 @@ const BLOG_INDEX_BASE: BlogArticleMeta[] = [
   {
     slug: "costo-posa-piastrelle-bagno-cucina",
     title: "Costo posa piastrelle bagno e cucina 2026: guida ai prezzi",
-    metaDescription: "Costo posa piastrelle 2026 per bagno e cucina: prezzo al mq per pavimento e parete, rimozione, impermeabilizzazione e fugatura. Evita gli errori che fanno lievitare il preventivo.",
+    // Report traffico 9/11/2026: 7,8k impressioni in 8ª posizione ma CTR 0,6%.
+    // Il prezzo al mq nel titolo risponde subito a "prezzo posa piastrelle 30x30".
+    seoTitle: "Prezzo posa piastrelle al mq 2026: da 15 €/mq",
+    metaDescription: "Posa piastrelle 2026: pavimento 15–28 €/mq (gres 30x30 o 60x60), rivestimento bagno 20–38 €/mq, mosaico 50–90 €/mq. Più rimozione, impermeabilizzazione e fughe: tutte le voci.",
     category: "Prezzi",
     publishedAt: "2026-04-07",
     readingTimeMin: 6,
@@ -526,8 +529,10 @@ const BLOG_INDEX_BASE: BlogArticleMeta[] = [
   {
     slug: "quanto-guadagna-elettricista-italia",
     title: "Quanto guadagna un elettricista in Italia nel 2026: dati e prospettive",
-    seoTitle: "Quanto guadagna un elettricista in Italia nel 2026",
-    metaDescription: "Quanto guadagna elettricista in Italia 2026: stipendio dipendente CCNL, reddito autonomo per zona, specializzazioni redditizie, certificazioni CEI. Dati aggiornati e prospettive.",
+    // Report traffico 9/11/2026: posizione 6,6 ma CTR 0,5%. Le cifre nel
+    // titolo e nella descrizione sono quelle dell'articolo.
+    seoTitle: "Quanto guadagna un elettricista: da 1.700 a 5.000 € al mese",
+    metaDescription: "Elettricista dipendente (livello 5): circa 1.700 € netti al mese. Autonomo al Nord: 3.500–5.000 € netti al mese, 55–85 €/ora a Milano e Torino. Dati 2026 per zona e specializzazione.",
     category: "Professioni",
     publishedAt: "2026-04-30",
     readingTimeMin: 6,
@@ -584,7 +589,9 @@ const BLOG_INDEX_BASE: BlogArticleMeta[] = [
   {
     slug: "geometra-quando-serve-lavori-casa",
     title: "Quando serve un geometra per i lavori in casa: guida pratica",
-    metaDescription: "Geometra lavori casa quando serve: CILA, SCIA, permesso di costruire, ruolo direttore lavori, costo pratica edilizia e come scegliere. Guida pratica aggiornata al 2026.",
+    // Report traffico 9/11/2026: posizione 5,9 ma CTR 0,5%. Costi dall'articolo.
+    seoTitle: "Quando serve un geometra (e quanto costa): CILA da 400 €",
+    metaDescription: "Geometra per lavori in casa: CILA 400–800 € tutto compreso, SCIA 800–2.000 €, permesso di costruire 1.500–5.000 €. Quando è obbligatorio, cosa fa il direttore lavori e come sceglierlo.",
     category: "Professioni",
     publishedAt: "2026-05-06",
     readingTimeMin: 6,

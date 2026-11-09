@@ -4383,7 +4383,7 @@ const MODELLO_PER_ARTICOLO: Record<string, string> = {
 function boxModelloWord(modelloSlug: string): string {
   const m = modelloPerSlug(modelloSlug);
   if (!m) throw new Error(`blog-data: modello Word "${modelloSlug}" inesistente`);
-  return `<p class="modello-word-box"><strong>Scarica gratis il modello Word:</strong> <a href="${fileModello(m)}" download>${m.titolo} (.docx)</a> — ${m.descrizione.charAt(0).toLowerCase()}${m.descrizione.slice(1)} Gli altri mestieri sono nella pagina dei <a href="/preventivi/modello-word/">modelli di preventivo Word gratis</a>.</p>`;
+  return `<p class="modello-word-box"><strong>Scarica gratis il modello Word:</strong> <a href="${fileModello(m)}" download>${m.titolo} (.docx)</a> — ${m.descrizione.charAt(0).toLowerCase()}${m.descrizione.slice(1)} Gli altri mestieri sono nella pagina dei <a href="/preventivi/modello-word/">modelli di preventivo Word gratis</a>.<br><strong>Non hai tempo di compilarlo?</strong> Descrivi il lavoro a parole e prevai prepara lo stesso preventivo con voci, prezzi e IVA, pronto in PDF da mandare al cliente. <a href="/sign-up/">Provalo gratis</a>.</p>`;
 }
 
 function conModelloWord(slug: string, html: string): string {
