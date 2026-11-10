@@ -62,6 +62,7 @@ import { recordAiUsage } from "../lib/usage.js";
 import { requireAiBudget } from "../lib/aiBudget.js";
 import { extractFromPdf, extractFromDocx, extractFromXlsx } from "../lib/extractDocument.js";
 import { pianoPagante } from "@workspace/config";
+import { avviaProvaSeServe } from "../quotes/trial.js";
 
 const objectStorage = new ObjectStorageService();
 
@@ -1090,13 +1091,8 @@ Imposta sempre titolo_riga1 = "Analisi Economica e Computo Metrico Prezzato".`
       await db.insert(quoteAttachmentsTable).values(savedAttachments);
     }
 
-    // Start trial on first quote creation
-    if (!profile?.trialStartedAt) {
-      await db
-        .update(businessProfilesTable)
-        .set({ trialStartedAt: new Date() })
-        .where(eq(businessProfilesTable.userId, userId));
-    }
+    // Start trial on first quote creation (creates the profile row if onboarding was skipped)
+    if (!profile?.trialStartedAt) await avviaProvaSeServe(db, userId);
 
     const attachments = savedAttachments.length > 0
       ? savedAttachments.map(a => ({ ...a, id: "", createdAt: new Date(), fileSize: a.fileSize ? String(a.fileSize) : null }))

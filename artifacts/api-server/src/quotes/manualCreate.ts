@@ -9,6 +9,7 @@ import { PLANS } from "../routes/payments.js";
 import { quotaPreventivi } from "./quota.js";
 import { generateNumeroPreventivo } from "../lib/quoteNumber.js";
 import { linkQuoteToClient } from "../lib/clients.js";
+import { avviaProvaSeServe } from "./trial.js";
 
 export type ManualQuoteInput = {
   capitoli?: unknown;
@@ -130,9 +131,7 @@ export async function createManualQuote(userId: string, input: ManualQuoteInput)
 
   await linkQuoteToClient(quote!, profile?.province);
 
-  if (!profile?.trialStartedAt) {
-    await db.update(businessProfilesTable).set({ trialStartedAt: new Date() }).where(eq(businessProfilesTable.userId, userId));
-  }
+  if (!profile?.trialStartedAt) await avviaProvaSeServe(db, userId);
 
   return { ok: true, quote: quote! };
 }

@@ -10,6 +10,7 @@ import { recordAiUsage } from "./usage.js";
 import { stripLocationPlaceholder } from "../quotes/titles.js";
 import { pianoPagante } from "@workspace/config";
 import { buildImportedPricesContext } from "../quotes/quota.js";
+import { avviaProvaSeServe } from "../quotes/trial.js";
 
 /**
  * Prompt unificato PrevAI v2 (V2-2e).
@@ -651,17 +652,8 @@ export async function saveQuoteToDb({
       throw new Error("Failed to insert quote");
     }
 
-    // Set trialStartedAt only if not already set — do NOT overwrite an existing value
-    const [existingProfile] = await tx
-      .select({ trialStartedAt: businessProfilesTable.trialStartedAt })
-      .from(businessProfilesTable)
-      .where(eq(businessProfilesTable.userId, userId));
-    if (!existingProfile?.trialStartedAt) {
-      await tx
-        .update(businessProfilesTable)
-        .set({ trialStartedAt: new Date() })
-        .where(eq(businessProfilesTable.userId, userId));
-    }
+    // Avvia la prova se non è già partita (crea la riga del profilo se manca).
+    await avviaProvaSeServe(tx, userId);
 
     return q;
   });
