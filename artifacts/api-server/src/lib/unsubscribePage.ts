@@ -9,7 +9,7 @@ import { eq } from "drizzle-orm";
  * Prima di POCKET-5 queste pagine erano in inglese. Chiaro e notte seguono il telefono.
  */
 
-export type UnsubscribeKind = "reminders" | "followups" | "marketing";
+export type UnsubscribeKind = "reminders" | "followups" | "marketing" | "prevai";
 
 const T = {
   changed: "Ci hai ripensato?",
@@ -23,8 +23,8 @@ const T = {
   invalid: "Questo link di disiscrizione non è più valido.",
   missing: "Manca il link di disiscrizione.",
   error: "Qualcosa è andato storto. Riprova più tardi.",
-  title: { reminders: "Basta solleciti per email", followups: "Basta messaggi di follow-up per email", marketing: "Basta richieste di recensione e foto per email" } as Record<UnsubscribeKind, string>,
-  sub: { reminders: "Non riceverai più solleciti per questo preventivo.", followups: "Non riceverai più messaggi di follow-up da noi.", marketing: "Non riceverai più richieste di recensione né foto condivise da noi." } as Record<UnsubscribeKind, string>,
+  title: { reminders: "Basta solleciti per email", followups: "Basta messaggi di follow-up per email", marketing: "Basta richieste di recensione e foto per email", prevai: "Basta novità da PrevAI per email" } as Record<UnsubscribeKind, string>,
+  sub: { reminders: "Non riceverai più solleciti per questo preventivo.", followups: "Non riceverai più messaggi di follow-up da noi.", marketing: "Non riceverai più richieste di recensione né foto condivise da noi.", prevai: "Non riceverai più campagne e novità sul servizio." } as Record<UnsubscribeKind, string>,
 };
 
 export function escapeHtml(s: string): string {
@@ -77,7 +77,7 @@ const CHECK = `<svg width="34" height="34" viewBox="0 0 24 24" fill="none" strok
 /** La pagina «sei disiscritto», con «Riiscriviti» quando la rotta lo permette. */
 export function unsubscribeDonePage(opts: { kind: UnsubscribeKind; company?: string; resubscribe?: { action: string } }): string {
   const off = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="m6 18 12-12"/></svg>`;
-  return shell(opts.company ?? "", `<div class="card" role="status"><span class="disc">${CHECK}</span><h1>${escapeHtml(T.title[opts.kind])}</h1><p class="sub">${escapeHtml(T.sub[opts.kind])}</p><span class="st">${off}${escapeHtml(T.unsubscribed)}</span><div class="note"><b>${escapeHtml(T.stillTitle)}</b> ${escapeHtml(T.still)}</div>${opts.resubscribe ? `<form class="again" method="post" action="${escapeHtml(opts.resubscribe.action)}">${escapeHtml(T.changed)}<br><button type="submit">${escapeHtml(T.resub)}</button></form>` : ""}</div>`);
+  return shell(opts.company ?? "", `<div class="card" role="status"><span class="disc">${CHECK}</span><h1>${escapeHtml(T.title[opts.kind])}</h1><p class="sub">${escapeHtml(T.sub[opts.kind])}</p><span class="st">${off}${escapeHtml(T.unsubscribed)}</span><div class="note">${opts.kind === "prevai" ? `<b>Le email del tuo account arrivano comunque.</b> Codici di accesso, ricevute e avvisi sui tuoi preventivi. Puoi riattivare le novità anche da Impostazioni.` : `<b>${escapeHtml(T.stillTitle)}</b> ${escapeHtml(T.still)}`}</div>${opts.resubscribe ? `<form class="again" method="post" action="${escapeHtml(opts.resubscribe.action)}">${escapeHtml(T.changed)}<br><button type="submit">${escapeHtml(T.resub)}</button></form>` : ""}</div>`);
 }
 
 /** La pagina dopo «Riiscriviti». */

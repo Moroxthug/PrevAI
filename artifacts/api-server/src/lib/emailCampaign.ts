@@ -87,7 +87,7 @@ function renderBlock(b: CampaignBlock, utm: (h: string) => string): string {
   }
 }
 
-export function buildCampaignEmail(content: CampaignContent, opts: { unsubscribeUrl: string; campaignId: string }): string {
+export function buildCampaignEmail(content: CampaignContent, opts: { unsubscribeUrl: string; campaignId: string; senderIdentity?: string | null }): string {
   const utm = (h: string) => withUtm(h, opts.campaignId);
   const hello = content.firstName ? p(`Ciao ${esc(content.firstName)},`) : "";
   return layout({
@@ -96,7 +96,7 @@ export function buildCampaignEmail(content: CampaignContent, opts: { unsubscribe
     eyebrow: content.eyebrow,
     heading: content.heading,
     bodyHtml: hello + (content.lead ? p(esc(content.lead)) : "") + content.blocks.map((b) => renderBlock(b, utm)).join("") + (content.cta ? button(utm(content.cta.href), content.cta.label) : ""),
-    footerHtml: `Ricevi questa email perché hai un account ${MARKET.brand}. Ti scriviamo solo per novità sul servizio che usi.`,
+    footerHtml: `Ricevi questa email perché hai un account ${MARKET.brand}. Ti scriviamo solo per novità sul servizio che usi.${opts.senderIdentity ? `<br/>${esc(opts.senderIdentity)}` : ""}`,
     unsubscribeUrl: opts.unsubscribeUrl,
   });
 }
@@ -104,7 +104,7 @@ export function buildCampaignEmail(content: CampaignContent, opts: { unsubscribe
 /** RFC 8058 one-click unsubscribe headers (Gmail/Yahoo bulk-sender rules). */
 export function campaignHeaders(unsubscribeUrl: string): Record<string, string> {
   return {
-    "List-Unsubscribe": `<${unsubscribeUrl}>, <mailto:${MARKET.supportEmail}?subject=unsubscribe>`,
+    "List-Unsubscribe": `<${unsubscribeUrl}>`,
     "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
   };
 }

@@ -134,6 +134,8 @@ export function NotificationsSection() {
 
           <InstallPrompt always className="notif-install" />
 
+          <PrevaiNewsGroup />
+
           {draft && config?.ready && (
             <SettingsGroup title="Cosa ti arriva" desc="Vale per tutti i tuoi dispositivi accesi.">
               {PUSH_KINDS.map((k) =>
@@ -148,5 +150,38 @@ export function NotificationsSection() {
         </>
       )}
     </SettingsSection>
+  );
+}
+
+// EMAIL-2: le campagne email di PrevAI (novità, consigli). Agisce subito, come il link in fondo a ogni campagna.
+function PrevaiNewsGroup() {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const { data } = useQuery({
+    queryKey: ["me-marketing"],
+    queryFn: async () => {
+      const res = await fetch("/api/me/marketing", { credentials: "include" });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      return (await res.json()) as { subscribed: boolean };
+    },
+  });
+  const [busy, setBusy] = useState(false);
+  const change = async (subscribed: boolean) => {
+    setBusy(true);
+    try {
+      const res = await fetch("/api/me/marketing", { method: "PUT", credentials: "include", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ subscribed }) });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      queryClient.setQueryData(["me-marketing"], { subscribed });
+      toast({ title: subscribed ? "Riceverai le novità di PrevAI" : "Non riceverai più le novità di PrevAI" });
+    } catch (e) {
+      toast({ title: "Non è andata", description: (e as Error).message, variant: "destructive" });
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <SettingsGroup title="Email da PrevAI">
+      <ToggleRow label="Novità e consigli" help="Poche email sulle novità del servizio e su come usarlo meglio. Le email del tuo account (codici, ricevute, avvisi) arrivano comunque." checked={data?.subscribed ?? true} disabled={!data || busy} onChange={(v) => void change(v)} />
+    </SettingsGroup>
   );
 }

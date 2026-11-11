@@ -56,6 +56,7 @@ const PUBLIC_ROUTES: Allow[] = [
 // ── Rule 2: every mutating session route names a permission ──────────────────
 
 const PERMISSIONLESS_MUTATIONS: Allow[] = [
+  { match: /^PUT \/api\/me\/marketing$/, reason: "EMAIL-2: the actor turns PrevAI's own news emails on/off for THEMSELF (art. 130 c.4 opt-out) — a right of every person, not an org permission" },
   { match: /^POST \/api\/notifications\/read$/, reason: "marks the actor's own notifications read — any role" },
   { match: /^(POST|DELETE) \/api\/account\/deletion$/, reason: "APP-1c: the actor deletes (or keeps) their OWN account — a right of every person, not an org permission; POST re-checks the password and is rate limited" },
   { match: /^POST \/api\/account\/export(\/:id\/continue)?$/, reason: "GDPR-1: art. 20 is the owner's right, not a role permission — the handler only lets the business owner acting as themselves through (403 owner_only otherwise); POST re-checks the password, is rate limited and allowed once per 24 h" },

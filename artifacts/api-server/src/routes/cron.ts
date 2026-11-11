@@ -24,6 +24,7 @@ import { captureException, flush } from "../lib/errorTracking.js";
 import { runAssistantCostAlerts } from "../assistant/activity.js";
 import { runAiBudgetAlerts } from "../lib/aiBudget.js";
 import { sweepExpiredCounters } from "../lib/rateLimitStore.js";
+import { processActiveCampaigns } from "../campaigns/service.js";
 
 const router = Router();
 
@@ -88,7 +89,12 @@ router.get("/cron/tick", async (req, res) => {
     const accountExports = await runAccountExportMaintenance(new Date(), 25_000);
     // SYNC-1: il feed delle modifiche tiene 2 giorni, le chiavi di idempotenza 7.
     const syncPruned = { changes: await pruneChangeLog(), idempotencyKeys: await pruneIdempotencyKeys() };
-    const result = { syncPruned, automations, contracts, invoices, leads, reviewRequests, incentives, priceTrends, quoteFollowups, sdi, fiscale, accountDeletions, usage, assistantCosts, aiBudget, rateLimitRowsSwept, scheduleReminders, calendarInbound, calendarPruned, accountExports };
+    // EMAIL-2: finisce le campagne lasciate a metà (pagina admin chiusa durante l'invio). Mai bloccante.
+    const campaigns = await processActiveCampaigns(8_000).catch((err: unknown) => {
+      req.log.error({ err }, "Campaign processing failed");
+      return -1;
+    });
+    const result = { syncPruned, campaigns, automations, contracts, invoices, leads, reviewRequests, incentives, priceTrends, quoteFollowups, sdi, fiscale, accountDeletions, usage, assistantCosts, aiBudget, rateLimitRowsSwept, scheduleReminders, calendarInbound, calendarPruned, accountExports };
     const tookMs = Date.now() - startedAt;
     if (tick) await db.update(cronTicksTable).set({ finishedAt: new Date(), ok: true, result, tookMs }).where(eq(cronTicksTable.id, tick.id));
     await db.delete(cronTicksTable).where(lt(cronTicksTable.startedAt, new Date(Date.now() - 90 * 24 * 3_600_000)));

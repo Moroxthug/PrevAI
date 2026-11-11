@@ -16,6 +16,7 @@ import publicQuotesRouter from "./public-quotes";
 import incentivesRouter from "./incentives";
 import speechRouter from "./speech";
 import cronRouter from "./cron";
+import campaignsRouter from "./campaigns";
 import notificationsRouter from "./notifications";
 import pushRouter from "./push";
 import contractsRouter from "./contracts";
@@ -80,6 +81,8 @@ router.use(quotesRouter);
 router.use(businessProfileRouter);
 router.use(paymentsRouter);
 router.use(storageRouter);
+// EMAIL-2: before adminRouter (its own requireAdmin covers /admin/campaigns).
+router.use(campaignsRouter);
 router.use(adminRouter);
 router.use(catalogRouter);
 router.use(whatsappRouter);

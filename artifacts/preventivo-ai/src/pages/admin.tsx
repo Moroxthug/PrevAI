@@ -20,6 +20,7 @@ import { AdminTestPrezzo } from "@/components/admin-test-prezzo";
 import { AdminCommercialisti } from "@/components/admin-commercialisti";
 import { AdminAppBeta } from "@/components/admin-app-beta";
 import { AdminAssistantCosts } from "@/components/admin-assistant-costs";
+import { AdminCampaigns } from "@/components/admin-campaigns";
 import { PREZZI_PIANI, formatPrezzo } from "@workspace/config";
 
 const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
@@ -86,7 +87,7 @@ type WidgetStats = {
 type AdminResponse = { success?: boolean; error?: string };
 
 type Settings = Record<string, string>;
-type Tab = "overview" | "users" | "widget" | "stripe" | "gsc" | "seo" | "settings" | "support" | "email-events" | "margin" | "incentives" | "addon" | "commercialisti" | "app-beta" | "assistant-costs";
+type Tab = "overview" | "users" | "widget" | "stripe" | "gsc" | "seo" | "settings" | "support" | "email-events" | "margin" | "incentives" | "addon" | "commercialisti" | "app-beta" | "assistant-costs" | "campaigns";
 
 type IncentiveCatalogRow = {
   id: string;
@@ -867,6 +868,7 @@ export default function AdminPage() {
               { id: "gsc", label: "Search Console", icon: Globe },
               { id: "seo", label: "SEO Checker", icon: Sparkles },
               { id: "support", label: t("admin.tabSupport"), icon: MessageSquare },
+              { id: "campaigns", label: "Campagne email", icon: Mail },
               { id: "email-events", label: t("admin.tabEmailEvents"), icon: Mail },
               { id: "settings", label: t("admin.tabSettings"), icon: Settings },
             ].map(item => (
@@ -1577,6 +1579,7 @@ export default function AdminPage() {
           {tab === "commercialisti" && <AdminCommercialisti />}
           {tab === "app-beta" && <AdminAppBeta />}
           {tab === "assistant-costs" && <AdminAssistantCosts />}
+          {tab === "campaigns" && <AdminCampaigns />}
 
           {tab === "stripe" && (
             <div className="space-y-6">
