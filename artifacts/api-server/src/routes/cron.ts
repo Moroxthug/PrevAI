@@ -25,6 +25,7 @@ import { runAssistantCostAlerts } from "../assistant/activity.js";
 import { runAiBudgetAlerts } from "../lib/aiBudget.js";
 import { sweepExpiredCounters } from "../lib/rateLimitStore.js";
 import { processActiveCampaigns } from "../campaigns/service.js";
+import { checkResendWebhook } from "../lib/resendWebhookHealth.js";
 
 const router = Router();
 
@@ -94,7 +95,10 @@ router.get("/cron/tick", async (req, res) => {
       req.log.error({ err }, "Campaign processing failed");
       return -1;
     });
-    const result = { syncPruned, campaigns, automations, contracts, invoices, leads, reviewRequests, incentives, priceTrends, quoteFollowups, sdi, fiscale, accountDeletions, usage, assistantCosts, aiBudget, rateLimitRowsSwept, scheduleReminders, calendarInbound, calendarPruned, accountExports };
+    // Watchdog: Resend switched the webhook off once and nobody noticed for four months.
+    const resendWebhook = await checkResendWebhook();
+    if (resendWebhook.length > 0) await sendOpsAlert("Resend webhook not healthy", [...resendWebhook, "", "Bounces and spam complaints are not recorded while this lasts, so campaigns can keep writing to dead or angry addresses. See docs/RUNBOOKS.md §44."]);
+    const result = { syncPruned, campaigns, resendWebhook, automations, contracts, invoices, leads, reviewRequests, incentives, priceTrends, quoteFollowups, sdi, fiscale, accountDeletions, usage, assistantCosts, aiBudget, rateLimitRowsSwept, scheduleReminders, calendarInbound, calendarPruned, accountExports };
     const tookMs = Date.now() - startedAt;
     if (tick) await db.update(cronTicksTable).set({ finishedAt: new Date(), ok: true, result, tookMs }).where(eq(cronTicksTable.id, tick.id));
     await db.delete(cronTicksTable).where(lt(cronTicksTable.startedAt, new Date(Date.now() - 90 * 24 * 3_600_000)));

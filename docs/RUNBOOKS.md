@@ -1525,3 +1525,17 @@ Al 2026-11-05 nessuno ha un abbonamento attivo su Stripe. Chi ha un piano regala
 | Crediti del pacchetto | `business_profiles.preventivi_crediti`, `accreditaPacchetto`, `usaCredito` |
 | Foto per preventivo | `fotoPerPreventivo`: 3 Artigiano, 5 dagli altri |
 | Tetto IA | 30 % del prezzo mensile, minimo 3 € (`tetto-ia.ts`) |
+
+## 44. Webhook di Resend
+
+`POST https://prevai.it/api/webhooks/resend` riceve ogni evento di Resend (inviata, consegnata, rimbalzata, segnalata come spam…), verifica la firma Svix con `RESEND_WEBHOOK_SECRET` e lo salva in `email_events`. Rimbalzi e segnalazioni di spam tengono quegli indirizzi fuori dalle campagne (`campaigns/audiences.ts`); una segnalazione di spam disiscrive anche l'account dalle campagne (`marketing_preferences`, origine `complaint`).
+
+**Cosa è successo una volta:** il webhook (id `628e7029-…`) è stato creato il 17/7/2026 e Resend l'ha spento dopo una serie di consegne fallite. Nessuno se n'è accorto per quattro mesi: `email_events` è rimasta vuota. Riacceso il 10/11/2026; le consegne rispondono di nuovo 200.
+
+**Sorveglianza:** il cron del giorno esegue `lib/resendWebhookHealth.ts` e manda l'avviso ops «Resend webhook not healthy» quando il webhook manca o non è `enabled`, quando manca `RESEND_WEBHOOK_SECRET`, o quando non arriva nessun evento da 7 giorni.
+
+**Quando arriva l'avviso:**
+1. Dashboard Resend → Webhooks → l'endpoint `prevai.it/api/webhooks/resend`. Se è spento, guarda prima i tentativi falliti (codice e risposta), sistema la causa, poi riaccendilo.
+2. Controlla che l'endpoint risponda: un `curl -X POST https://prevai.it/api/webhooks/resend` senza firma deve dare **400** (intestazioni mancanti), non 404 o 500. 500 = segreto mancante su Vercel.
+3. Il segreto di firma è cambiato su Resend? Copialo in Vercel `RESEND_WEBHOOK_SECRET` (Production) e rifai il deploy.
+4. Dopo la correzione manda un'email qualsiasi e guarda il registro: `vercel logs requests --since 1h --query 'requestPath:*webhooks/resend*'` deve mostrare `httpStatus 200` da `Svix-Webhooks`.

@@ -334,3 +334,15 @@ export async function campaignStats(id: string): Promise<Record<string, number>>
   for (const r of res.rows as Array<{ status: string; n: number }>) out[r.status] = r.n;
   return out;
 }
+
+/** Unsubscribes the accounts behind these addresses (spam complaint, hard bounce). Unknown addresses are ignored. */
+export async function unsubscribeEmails(addresses: string[], source: "complaint" | "bounce"): Promise<number> {
+  const emails = [...new Set(addresses.map((a) => a.trim().toLowerCase()).filter(Boolean))];
+  if (emails.length === 0) return 0;
+  const res = await db.execute(sql`
+    insert into marketing_preferences (user_id, unsubscribed_at, unsubscribe_source)
+    select id, now(), ${source} from auth_user where lower(email) in (${sql.join(emails.map((e) => sql`${e}`), sql`, `)})
+    on conflict (user_id) do update set unsubscribed_at = coalesce(marketing_preferences.unsubscribed_at, now()),
+      unsubscribe_source = coalesce(marketing_preferences.unsubscribe_source, excluded.unsubscribe_source), updated_at = now()`);
+  return res.rowCount ?? 0;
+}

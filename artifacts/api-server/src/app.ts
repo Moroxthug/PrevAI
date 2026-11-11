@@ -652,6 +652,18 @@ app.post(
       logger.error({ err }, "Failed to persist Resend webhook event");
     }
 
+    // EMAIL-2: someone who marks a PrevAI email as spam never gets another
+    // campaign (Gmail/Yahoo bulk-sender rules). Account emails still go out.
+    if (event.type === "email.complained") {
+      const addresses = (Array.isArray(event.data?.to) ? event.data.to : [event.data?.to]).filter((a): a is string => typeof a === "string");
+      try {
+        const { unsubscribeEmails } = await import("./campaigns/service.js");
+        await unsubscribeEmails(addresses, "complaint");
+      } catch (err) {
+        logger.error({ err }, "Failed to unsubscribe after a spam complaint");
+      }
+    }
+
     res.status(200).json({ received: true });
   }
 );

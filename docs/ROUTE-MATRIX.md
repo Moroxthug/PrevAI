@@ -313,8 +313,8 @@ Columns — **Auth**: session (`requireAuth`), apiKey (`requireApiKey`), admin (
 
 | Line | Method | Path | Auth | Perm | RL | Val | Gate | Scope | Archived | Token | Webhook |
 |---|---|---|---|---|---|---|---|---|---|---|---|
-| 50 | GET | `/api/cron/tick` | none | — | — | none | — | n/a | — | — | — |
-| 138 | GET | `/api/cron/evening` | none | — | — | none | — | n/a | — | — | — |
+| 51 | GET | `/api/cron/tick` | none | — | — | none | — | n/a | — | — | — |
+| 142 | GET | `/api/cron/evening` | none | — | — | none | — | n/a | — | — | — |
 
 ## artifacts/api-server/src/routes/developer-api.ts
 

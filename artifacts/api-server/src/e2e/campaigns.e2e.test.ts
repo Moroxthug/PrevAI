@@ -98,4 +98,13 @@ describe("EMAIL-2 campaigns", () => {
     const [row] = await db.select().from(emailCampaignRecipientsTable).where(eq(emailCampaignRecipientsTable.userId, ids.ok));
     expect(row!.status).toBe("inviata");
   });
+
+  it("a spam complaint unsubscribes the account, without touching an earlier choice", async () => {
+    const svc = await import("../campaigns/service.js");
+    expect(await svc.unsubscribeEmails([mail("bounced").toUpperCase(), "nobody@e2e.local"], "complaint")).toBe(1);
+    expect(await svc.getSubscribed(ids.bounced)).toBe(false);
+    await svc.unsubscribeEmails([mail("unsub")], "complaint");
+    const [p] = await db.select().from(marketingPreferencesTable).where(eq(marketingPreferencesTable.userId, ids.unsub));
+    expect(p!.unsubscribeSource).toBe("settings");
+  });
 });
