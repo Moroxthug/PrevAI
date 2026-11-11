@@ -6,6 +6,7 @@ import { createNotification } from "../lib/notifications.js";
 import { escapeHtml } from "../lib/email.js";
 import { getBaseUrl } from "../lib/baseUrl.js";
 import { logger } from "../lib/logger.js";
+import { layout, p, button } from "../lib/emailLayout.js";
 
 // ── A-6: avvisi fra cliente e professionista ─────────────────────────────────
 // Una notifica in app e, se l'email è configurata, un'email breve con il link.
@@ -33,7 +34,7 @@ export async function avvisa(params: { userId: string; tipo: string; titolo: str
       from: `${MARKET.brand} <no-reply@${MARKET.domain}>`,
       to: [utente.email],
       subject: params.titolo,
-      html: `<p>${escapeHtml(params.corpo)}</p><p><a href="${escapeHtml(url)}">Apri in ${escapeHtml(MARKET.brand)}</a></p>`,
+      html: layout({ title: params.titolo, preheader: params.corpo, eyebrow: { text: "Fisco", tone: "info" }, heading: params.titolo, bodyHtml: p(escapeHtml(params.corpo)) + button(url, `Apri in ${MARKET.brand}`) }),
     });
   } catch (err) {
     logger.warn({ err, tipo: params.tipo }, "A-6: email di avviso non inviata");

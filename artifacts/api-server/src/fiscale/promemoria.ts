@@ -7,6 +7,7 @@ import { getBaseUrl } from "../lib/baseUrl.js";
 import { createNotification } from "../lib/notifications.js";
 import { sendWhatsappTemplate } from "../routes/whatsapp.js";
 import type { VoceScadenzario } from "./scadenzario.js";
+import { layout, p as lp, infoTable, button } from "../lib/emailLayout.js";
 
 // ── A-3: promemoria delle scadenze fiscali ───────────────────────────────────
 // Tre canali, in ordine di certezza: la notifica in app parte sempre, l'email
@@ -98,30 +99,20 @@ function escapeHtml(valore: string): string {
   return valore.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
 }
 
-function emailHtml(voce: VoceScadenzario, link: string): string {
-  const righe = voce.scadenza.righe
-    .map((r) => {
-      const codice = r.sezione === "erario" ? `codice tributo ${r.codiceTributo}` : `causale ${r.causale}`;
-      return `<tr>
-        <td style="padding:6px 12px 6px 0;font-size:13px;color:#374151;">${escapeHtml(r.descrizione)}<br><span style="color:#6b7280;font-size:12px;">${escapeHtml(codice)}</span></td>
-        <td style="padding:6px 0;font-size:13px;text-align:right;white-space:nowrap;"><strong>${escapeHtml(fmtEurCents(r.importoCents))}</strong></td>
-      </tr>`;
-    })
-    .join("");
-  return `<!DOCTYPE html>
-<html lang="${MARKET.locale}"><body style="font-family:Arial,sans-serif;background:#f9fafb;padding:24px;">
-  <div style="max-width:560px;margin:0 auto;background:#fff;border-radius:8px;padding:32px;">
-    <h2 style="font-size:18px;color:#111827;margin:0 0 4px;">${escapeHtml(voce.scadenza.etichetta)}</h2>
-    <p style="font-size:14px;color:#374151;line-height:1.6;margin:0 0 16px;">${escapeHtml(corpo(voce))}</p>
-    <table style="width:100%;border-collapse:collapse;border-top:1px solid #e5e7eb;border-bottom:1px solid #e5e7eb;">${righe}</table>
-    <p style="font-size:15px;color:#111827;margin:12px 0 20px;">Totale <strong>${escapeHtml(fmtEurCents(voce.scadenza.importoCents))}</strong></p>
-    <p style="margin:0 0 24px;"><a href="${escapeHtml(link)}" style="background:#2563eb;color:#fff;padding:10px 20px;border-radius:6px;text-decoration:none;font-size:14px;">Apri lo scadenzario</a></p>
-    <p style="font-size:12px;color:#6b7280;line-height:1.6;margin:0;">
-      PrevAI prepara il prospetto F24: il versamento lo disponi tu dall'home banking o dai servizi telematici dell'Agenzia delle Entrate.
-      Puoi disattivare questi promemoria dallo scadenzario, in Fisco.
-    </p>
-  </div>
-</body></html>`;
+export function emailHtml(voce: VoceScadenzario, link: string): string {
+  const righe: Array<[string, string]> = voce.scadenza.righe.map((r) => {
+    const codice = r.sezione === "erario" ? `codice tributo ${r.codiceTributo}` : `causale ${r.causale}`;
+    return [`${r.descrizione} · ${codice}`, escapeHtml(fmtEurCents(r.importoCents))];
+  });
+  righe.push(["Totale", escapeHtml(fmtEurCents(voce.scadenza.importoCents))]);
+  return layout({
+    title: voce.scadenza.etichetta,
+    preheader: corpo(voce),
+    eyebrow: { text: "Scadenza fiscale", tone: "warning" },
+    heading: voce.scadenza.etichetta,
+    bodyHtml: lp(escapeHtml(corpo(voce))) + infoTable(righe, { emphasizeLast: true }) + button(link, "Apri lo scadenzario"),
+    footerHtml: `${MARKET.brand} prepara il prospetto F24: il versamento lo disponi tu dall'home banking o dai servizi telematici dell'Agenzia delle Entrate. Puoi disattivare questi promemoria dallo scadenzario, in Fisco.`,
+  });
 }
 
 export type EsitoPromemoria = { inApp: number; email: number; whatsapp: number; saltati: number };

@@ -1,16 +1,14 @@
-import { emailLogoSrc } from "./logo.js";
 import { MARKET, fmtEur, fmtDateLong, type Lang } from "@workspace/config";
 import { logger } from "./logger.js";
-import { getBaseUrl } from "./baseUrl.js";
 import { sendCustomerEmail } from "./connectedEmailSend.js";
 import { resendOrThrow } from "./emailUtils.js";
+import { layout, button, code, C, type Tone } from "./emailLayout.js";
 
 export { resendOrThrow };
 
 // ── Email contratti (Phase 1) ────────────────────────────────────────────────
 // Modulo separato così email.ts (preventivi/abbonamenti) resta leggibile.
 
-const LOGO_URL = `${getBaseUrl()}/prevai-logo.png`;
 export const FROM = `${MARKET.brand} <no-reply@${MARKET.domain}>`;
 
 export type EmailLang = Lang;
@@ -19,42 +17,67 @@ export function escapeHtml(value: string): string {
   return value.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
 }
 
-export function shell(params: { lang?: EmailLang; headerTitle: string; headerSub: string; bodyHtml: string; footer: string; accent?: string; logoUrl?: string | null; logoAlt?: string }): string {
-  const accent = params.accent ?? "linear-gradient(135deg,#7c3aed,#06b6d4)";
-  const logoUrl = emailLogoSrc(params.logoUrl) ?? LOGO_URL;
-  return `<!DOCTYPE html>
-<html lang="${MARKET.locale}">
-<head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>${escapeHtml(params.headerTitle)}</title>
-<style>
-  body { margin:0; padding:0; background:#f5f3ff; font-family:system-ui,-apple-system,sans-serif; }
-  .wrapper { max-width:560px; margin:32px auto; background:#ffffff; border-radius:16px; overflow:hidden; box-shadow:0 4px 24px rgba(124,58,237,0.08); }
-  .header { background:${accent}; padding:32px 40px; text-align:center; }
-  .header img { height:36px; }
-  .header h1 { color:white; font-size:20px; font-weight:700; margin:16px 0 4px; }
-  .header p { color:rgba(255,255,255,0.88); font-size:14px; margin:0; }
-  .body { padding:32px 40px; font-size:15px; color:#1a1a2e; line-height:1.6; }
-  .box { background:#f5f3ff; border:1px solid #ede9fe; border-radius:12px; padding:18px 22px; margin:22px 0; font-size:14px; }
-  .row { display:flex; justify-content:space-between; padding:6px 0; border-bottom:1px solid #ede9fe; }
-  .row:last-child { border-bottom:none; font-weight:700; color:#7c3aed; font-size:16px; }
-  .label { color:#6b7280; }
-  .cta { text-align:center; margin:28px 0 8px; }
-  .btn { display:inline-block; background:linear-gradient(135deg,#7c3aed,#06b6d4); color:white !important; font-size:15px; font-weight:600; padding:14px 34px; border-radius:10px; text-decoration:none; }
-  .muted { font-size:12.5px; color:#6b7280; text-align:center; }
-  .msg { border-left:3px solid #c4b5fd; padding:8px 14px; color:#374151; font-style:italic; margin:18px 0; white-space:pre-wrap; }
-  .footer { background:#f9fafb; padding:20px 40px; text-align:center; font-size:12px; color:#9ca3af; border-top:1px solid #f3f4f6; }
-</style>
-</head>
-<body>
-<div class="wrapper">
-  <div class="header"><img src="${logoUrl}" alt="${escapeHtml(params.logoAlt ?? MARKET.brand)}" /><h1>${escapeHtml(params.headerTitle)}</h1><p>${escapeHtml(params.headerSub)}</p></div>
-  <div class="body">${params.bodyHtml}</div>
-  <div class="footer">${params.footer}</div>
-</div>
-</body>
-</html>`;
+/** EMAIL-1: legacy `accent` gradients → a status tone in the new layout. */
+function toneFromAccent(accent: string | undefined): Tone {
+  if (!accent) return "brand";
+  if (/#059669|#0f766e/.test(accent)) return "success";
+  if (/#dc2626/.test(accent)) return "danger";
+  if (/#d97706/.test(accent)) return "warning";
+  return "brand";
+}
+
+/**
+ * EMAIL-1: the bodies written for the old <style>-based shell use a handful of
+ * classes (box/row/label, cta/btn, msg, muted). Turn them into the inline,
+ * table-based blocks of emailLayout so every client renders them the same.
+ */
+export function inlineLegacyBody(html: string): string {
+  let out = html.replace(
+    /<div class="row"><span class="label">([\s\S]*?)<\/span><span>([\s\S]*?)<\/span><\/div>/g,
+    (_m, l: string, v: string) =>
+      `<tr><td class="e-muted e-line" style="padding:12px 0;border-bottom:1px solid ${C.line};font-size:13.5px;color:${C.muted};">${l}</td><td align="right" class="e-title e-line" style="padding:12px 0;border-bottom:1px solid ${C.line};font-size:14px;font-weight:600;color:${C.navy};text-align:right;">${v}</td></tr>`,
+  );
+  out = out.replace(/<div class="box">((?:\s*<tr>[\s\S]*?<\/tr>)*\s*)<\/div>/g, (_m, rows: string) => {
+    // last row: no border, emphasised (totals / amount due)
+    const fixed = rows.replace(/<tr>((?:(?!<tr>)[\s\S])*)<\/tr>\s*$/, (_r, last: string) =>
+      `<tr>${last
+        .replace(/border-bottom:1px solid [^;]+;/g, "")
+        .replace(/class="e-title e-line" style="([^"]*)font-size:14px;font-weight:600;color:[^;]+;/, `class="e-accent" style="$1font-size:17px;font-weight:700;color:${C.purple};`)}</tr>`,
+    );
+    return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" class="e-panel" style="margin:22px 0;background:#fafafa;border:1px solid ${C.line};border-radius:12px;"><tr><td style="padding:6px 20px;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">${fixed}</table></td></tr></table>`;
+  });
+  out = out.replace(/<div class="cta">\s*<a class="btn" href="([^"]*)">([\s\S]*?)<\/a>\s*<\/div>/g, (_m, href: string, label: string) =>
+    button(href.replace(/&amp;/g, "&"), label.replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"').replace(/&#39;/g, "'")),
+  );
+  out = out.replace(
+    /<div class="msg">([\s\S]*?)<\/div>/g,
+    (_m, text: string) =>
+      `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:20px 0;"><tr><td class="e-quote" style="padding:4px 0 4px 16px;border-left:3px solid #c9bdf5;font-size:15px;line-height:1.65;color:${C.ink};font-style:italic;white-space:pre-wrap;">${text}</td></tr></table>`,
+  );
+  out = out.replace(/<p class="muted">/g, `<p class="e-muted" style="margin:0 0 16px;font-size:13px;line-height:1.6;color:${C.muted};text-align:center;">`);
+  out = out.replace(/<p>/g, `<p class="e-ink" style="margin:0 0 16px;font-size:15px;line-height:1.65;color:${C.ink};">`);
+  return out;
+}
+
+/**
+ * Shared shell for contracts / invoices / portal / team / account emails.
+ * EMAIL-1: now a thin adapter over emailLayout.layout(). When `logoUrl` or
+ * `logoAlt` is given the email is sent for a company and carries its brand.
+ */
+export function shell(params: { lang?: EmailLang; headerTitle: string; headerSub: string; bodyHtml: string; footer: string; accent?: string; logoUrl?: string | null; logoAlt?: string; unsubscribeUrl?: string | null }): string {
+  const forCompany = params.logoAlt !== undefined || !!params.logoUrl;
+  const tone = toneFromAccent(params.accent);
+  return layout({
+    title: params.headerTitle,
+    preheader: params.headerSub ? `${params.headerSub} — ${params.headerTitle}` : params.headerTitle,
+    brand: forCompany ? { kind: "company", name: params.logoAlt ?? MARKET.brand, logoUrl: params.logoUrl } : { kind: "prevai" },
+    eyebrow: params.headerSub && !(forCompany && params.headerSub === params.logoAlt) ? { text: params.headerSub, tone } : undefined,
+    heading: params.headerTitle,
+    bodyHtml: inlineLegacyBody(params.bodyHtml),
+    footerHtml: params.footer,
+    hidePrevaiLinks: forCompany,
+    unsubscribeUrl: params.unsubscribeUrl,
+  });
 }
 
 function eur(n: number): string {
@@ -115,7 +138,7 @@ export async function sendContractOtpEmail(params: { toEmail: string; code: stri
   const html = shell({
     headerTitle: t.title,
     headerSub: t.sub,
-    bodyHtml: `<p>${t.body}</p><div style="text-align:center;margin:24px 0;"><span style="display:inline-block;font-size:34px;letter-spacing:10px;font-weight:800;color:#4c1d95;background:#f5f3ff;border:1px solid #ddd6fe;border-radius:12px;padding:14px 26px;">${params.code}</span></div>`,
+    bodyHtml: `<p>${t.body}</p>${code(params.code)}`,
     footer: t.footer,
   });
   await resendOrThrow().emails.send({ from: FROM, to: [params.toEmail], subject: t.subject, html });
@@ -153,6 +176,7 @@ export async function sendContractSignedEmail(params: {
     accent: "linear-gradient(135deg,#059669,#06b6d4)",
     headerTitle: t.title,
     headerSub: t.sub,
+    ...(isCustomer ? { logoAlt: params.companyName } : {}),
     bodyHtml: `<p>${t.body}</p><div class="box"><div class="row"><span class="label">${t.contract}</span><span><strong>${escapeHtml(params.contractNumber)}</strong></span></div><div class="row"><span class="label">${t.price}</span><span>${eur(params.total)}</span></div></div>${isCustomer ? "" : `<div class="cta"><a class="btn" href="${params.dashboardUrl}">${t.btn}</a></div>`}`,
     footer: t.footer,
   });

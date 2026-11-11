@@ -1,10 +1,10 @@
-import { emailLogoSrc } from "./logo.js";
 import { Resend } from "resend";
 import { MARKET } from "@workspace/config";
 import { logger } from "./logger.js";
 import { getBaseUrl } from "./baseUrl.js";
 import type { BusinessProfile, Lead } from "@workspace/db";
 import { sendWhatsappTemplate } from "../routes/whatsapp.js";
+import { layout, p, companyIdentification } from "./emailLayout.js";
 
 // ── Phase 9: follow-up lead conforme al GDPR / art. 130 Codice Privacy ──────
 // Ogni messaggio automatico (email o WhatsApp) inviato a un lead deve avere:
@@ -34,25 +34,7 @@ function unsubscribeUrl(token: string): string {
   return `${getBaseUrl()}/api/public/leads/unsubscribe?token=${encodeURIComponent(token)}`;
 }
 
-function identificationBlockHtml(profile: BusinessProfile): string {
-  const company = escapeHtml(profile.companyName || "Questa impresa");
-  const address = escapeHtml(profile.address || "");
-  const contact = [profile.phone, profile.email].filter(Boolean).map(escapeHtml).join(" · ");
-  return `
-    <div style="margin-top:24px;padding-top:16px;border-top:1px solid #e5e7eb;font-size:12px;color:#6b7280;line-height:1.6;">
-      <div>Inviato da: <strong>${company}</strong></div>
-      ${address ? `<div>${address}</div>` : ""}
-      ${contact ? `<div>${contact}</div>` : ""}
-    </div>`;
-}
 
-function unsubscribeHtml(token: string): string {
-  const url = unsubscribeUrl(token);
-  return `
-    <div style="margin-top:8px;font-size:12px;color:#6b7280;">
-      Non vuoi più ricevere questi messaggi? <a href="${url}" style="color:#2563eb;">Disiscriviti</a>
-    </div>`;
-}
 
 function followupCopy(stage: number): { subject: string; body: string } {
   const set = [
@@ -63,22 +45,18 @@ function followupCopy(stage: number): { subject: string; body: string } {
   return set[Math.min(stage, set.length - 1)]!;
 }
 
-function buildFollowupEmailHtml(params: { clientName: string; profile: BusinessProfile; stage: number; unsubscribeToken: string }): string {
+export function buildFollowupEmailHtml(params: { clientName: string; profile: BusinessProfile; stage: number; unsubscribeToken: string }): string {
   const { subject, body } = followupCopy(params.stage);
-  const greeting = `Gentile ${escapeHtml(params.clientName)},`;
-  const logoSrc = emailLogoSrc(params.profile.logoUrl);
-  const logo = logoSrc ? `<img src="${logoSrc}" alt="" style="max-height:40px;margin-bottom:16px;" />` : "";
-  return `<!DOCTYPE html>
-<html lang="${MARKET.locale}"><body style="font-family:Arial,sans-serif;background:#f9fafb;padding:24px;">
-  <div style="max-width:560px;margin:0 auto;background:#fff;border-radius:8px;padding:32px;">
-    ${logo}
-    <p style="font-size:16px;color:#111827;">${greeting}</p>
-    <h2 style="font-size:18px;color:#111827;">${escapeHtml(subject)}</h2>
-    <p style="font-size:14px;color:#374151;line-height:1.6;">${escapeHtml(body)}</p>
-    ${identificationBlockHtml(params.profile)}
-    ${unsubscribeHtml(params.unsubscribeToken)}
-  </div>
-</body></html>`;
+  return layout({
+    title: subject,
+    preheader: body,
+    brand: { kind: "company", name: params.profile.companyName || "", logoUrl: params.profile.logoUrl },
+    heading: subject,
+    bodyHtml: p(`Gentile ${escapeHtml(params.clientName)},`) + p(escapeHtml(body)),
+    footerHtml: companyIdentification(params.profile),
+    unsubscribeUrl: unsubscribeUrl(params.unsubscribeToken),
+    hidePrevaiLinks: true,
+  });
 }
 
 export type LeadFollowupResult =

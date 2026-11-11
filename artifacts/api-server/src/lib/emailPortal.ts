@@ -1,5 +1,6 @@
 import { MARKET } from "@workspace/config";
 import { shell, escapeHtml, FROM, resendOrThrow } from "./emailContracts.js";
+import { code } from "./emailLayout.js";
 import { sendCustomerEmail } from "./connectedEmailSend.js";
 import { logger } from "./logger.js";
 
@@ -15,7 +16,7 @@ export async function sendPortalOtpEmail(params: { toEmail: string; code: string
   const html = shell({
     headerTitle: "Il tuo codice di accesso",
     headerSub: `Area clienti di ${params.companyName}`,
-    bodyHtml: `<p>Inserisci questo codice per aprire la tua area clienti. Scade tra 10 minuti.</p><div style="text-align:center;margin:24px 0;"><span style="display:inline-block;font-size:34px;letter-spacing:10px;font-weight:800;color:#4c1d95;background:#f5f3ff;border:1px solid #ddd6fe;border-radius:12px;padding:14px 26px;">${params.code}</span></div>`,
+    bodyHtml: `<p>Inserisci questo codice per aprire la tua area clienti. Scade tra 10 minuti.</p>${code(params.code)}`,
     footer: "Se non hai richiesto questo codice, ignora questa email.",
   });
   await resendOrThrow().emails.send({ from: FROM, to: [params.toEmail], subject: `${params.code} è il tuo codice di accesso ${MARKET.brand}`, html });

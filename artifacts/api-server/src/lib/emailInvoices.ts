@@ -62,7 +62,7 @@ export async function sendInvoiceEmail(params: Common & { pdfBuffer: Buffer; mes
     subject: cn ? `${Nota} ${params.number} di ${params.companyName}` : `${Doc} ${params.number} di ${params.companyName} — ${eur(params.balanceCents)}`,
     invoice: cn ? "Nota di credito" : params.fiscale ? "Fattura" : "Pro-forma", due: "Scadenza", total: "Totale", balance: cn ? "Importo" : "Da pagare", bankTransfer: "Bonifico — IBAN",
   };
-  const html = shell({
+  const html = shell({ logoAlt: params.companyName,
     accent: cn ? "linear-gradient(135deg,#0f766e,#06b6d4)" : undefined,
     headerTitle: t.title,
     headerSub: t.sub,
@@ -93,7 +93,7 @@ export async function sendInvoiceReminderEmail(params: Common & { daysOverdue: n
     btn: "Vedi la pro-forma e paga", subject: `Promemoria — pro-forma ${params.number} (${eur(params.balanceCents)})`, footer: `Inviato tramite ${MARKET.brand} per conto di ${company}.`,
     invoice: "Pro-forma", due: "Scaduta il", total: "Totale", balance: "Da pagare", bankTransfer: "Bonifico — IBAN",
   };
-  const html = shell({ accent: "linear-gradient(135deg,#d97706,#f97316)", headerTitle: t.title, headerSub: t.sub, bodyHtml: `<p>${t.body}</p>${summaryBox(params, t)}<div class="cta"><a class="btn" href="${params.publicUrl}">${t.btn}</a></div>`, footer: t.footer });
+  const html = shell({ logoAlt: params.companyName, accent: "linear-gradient(135deg,#d97706,#f97316)", headerTitle: t.title, headerSub: t.sub, bodyHtml: `<p>${t.body}</p>${summaryBox(params, t)}<div class="cta"><a class="btn" href="${params.publicUrl}">${t.btn}</a></div>`, footer: t.footer });
   await sendCustomerEmail({
     userId: params.userId,
     toEmail: params.toEmail,
@@ -114,6 +114,6 @@ export async function sendPaymentReceiptEmail(params: Common & { paidCents: numb
     btn: "Vedi la pro-forma", subject: settled ? `Ricevuta — pro-forma ${params.number} pagata` : `Ricevuta — pagamento di ${eur(params.paidCents)} sulla pro-forma ${params.number}`, footer: `Inviato tramite ${MARKET.brand} per conto di ${company}.`,
     invoice: "Pro-forma", due: "Scadenza", total: "Totale", balance: "Residuo", bankTransfer: "Bonifico — IBAN",
   };
-  const html = shell({ accent: "linear-gradient(135deg,#059669,#06b6d4)", headerTitle: t.title, headerSub: t.sub, bodyHtml: `<p>${t.body}</p>${summaryBox({ ...params, iban: settled ? null : params.iban }, t)}<div class="cta"><a class="btn" href="${params.publicUrl}">${t.btn}</a></div>`, footer: t.footer });
+  const html = shell({ logoAlt: params.companyName, accent: "linear-gradient(135deg,#059669,#06b6d4)", headerTitle: t.title, headerSub: t.sub, bodyHtml: `<p>${t.body}</p>${summaryBox({ ...params, iban: settled ? null : params.iban }, t)}<div class="cta"><a class="btn" href="${params.publicUrl}">${t.btn}</a></div>`, footer: t.footer });
   await sendCustomerEmail({ userId: params.userId, toEmail: params.toEmail, fromDisplayName: params.companyName, replyTo: params.replyTo, subject: t.subject, html });
 }

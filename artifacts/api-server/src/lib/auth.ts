@@ -10,6 +10,8 @@ import { sendWelcomeEmail, escapeHtml } from "./email";
 import { notifyHub } from "./hub";
 import { getBaseUrl } from "./baseUrl";
 import { recordSecurityAuditEvent } from "./auditLog";
+import { layout, p, button, code } from "./emailLayout";
+import { MARKET } from "@workspace/config";
 
 // Minimal, duplicate-of-`resolveActingOrg` org lookup — kept local rather than
 // imported from ../middlewares/authMiddleware to avoid that module's circular
@@ -31,7 +33,6 @@ const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KE
 
 // Gmail and most webmail clients strip data: URI images from HTML emails,
 // so the logo must be a real hosted URL rather than an inline base64 SVG.
-const LOGO_URL = `${getBaseUrl()}/prevai-logo.png`;
 
 const secret = process.env.BETTER_AUTH_SECRET ?? process.env.SESSION_SECRET;
 if (!secret) {
@@ -267,92 +268,42 @@ export const auth = betterAuth({
   },
 });
 
-function buildResetPasswordEmail(name: string, url: string): string {
-  return `<!DOCTYPE html>
-<html lang="it">
-<head><meta charset="UTF-8"/><title>Reimposta password – Prevai</title></head>
-<body style="margin:0;padding:0;background:#f5f3ff;font-family:system-ui,sans-serif">
-<table width="100%" cellpadding="0" cellspacing="0" style="background:#f5f3ff;padding:32px 16px">
-<tr><td align="center">
-<table width="560" cellpadding="0" cellspacing="0" style="border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(124,58,237,0.10)">
-<tr><td style="background:linear-gradient(135deg,#7c3aed,#06b6d4);padding:28px 40px;text-align:center">
-  <img src="${LOGO_URL}" alt="PrevAI" height="36" />
-</td></tr>
-<tr><td style="background:#fff;padding:32px 40px">
-  <h1 style="margin:0 0 16px;font-size:22px;font-weight:700;color:#1a1a2e">Reimposta la tua password</h1>
-  <p style="margin:0 0 24px;font-size:14px;color:#374151;line-height:1.7">Ciao ${escapeHtml(name)},<br/>hai richiesto di reimpostare la password del tuo account Prevai. Clicca sul pulsante qui sotto:</p>
-  <table cellpadding="0" cellspacing="0" style="margin:0 auto 24px">
-    <tr><td align="center" style="border-radius:10px;background:linear-gradient(135deg,#7c3aed,#06b6d4)">
-      <a href="${url}" style="display:inline-block;color:#fff;font-size:15px;font-weight:600;padding:13px 32px;border-radius:10px;text-decoration:none">Reimposta password →</a>
-    </td></tr>
-  </table>
-  <p style="margin:0;font-size:13px;color:#9ca3af">Non hai richiesto questo? Ignora questa email. La tua password rimane invariata.</p>
-</td></tr>
-<tr><td style="background:#f9fafb;padding:20px 40px;border-top:1px solid #f3f4f6;text-align:center">
-  <p style="margin:0;font-size:12px;color:#9ca3af">&copy; ${new Date().getFullYear()} Prevai · Preventivi professionali con l'AI</p>
-</td></tr>
-</table>
-</td></tr>
-</table>
-</body>
-</html>`;
+export function buildResetPasswordEmail(name: string, url: string): string {
+  return layout({
+    title: "Reimposta la tua password – PrevAI",
+    preheader: "Il link per scegliere una nuova password. Se non sei stato tu, ignora questa email.",
+    eyebrow: { text: "Sicurezza account", tone: "info" },
+    heading: "Reimposta la tua password",
+    bodyHtml:
+      p(`Ciao ${escapeHtml(name)}, hai chiesto di reimpostare la password del tuo account ${MARKET.brand}. Scegline una nuova dal pulsante qui sotto.`) +
+      button(url, "Scegli una nuova password") +
+      p("Non hai fatto tu la richiesta? Ignora questa email: la tua password resta invariata.", { muted: true, small: true, center: true }),
+  });
 }
 
 /** POCKET-1: l'app conferma l'indirizzo con un codice scritto nell'app (un link si aprirebbe nel browser). */
-function buildVerificationCodeEmail(name: string, code: string): string {
-  return `<!DOCTYPE html>
-<html lang="it">
-<head><meta charset="UTF-8"/><title>Il tuo codice – PrevAI</title></head>
-<body style="margin:0;padding:0;background:#f5f3ff;font-family:system-ui,sans-serif">
-<table width="100%" cellpadding="0" cellspacing="0" style="background:#f5f3ff;padding:32px 16px">
-<tr><td align="center">
-<table width="560" cellpadding="0" cellspacing="0" style="border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(124,58,237,0.10)">
-<tr><td style="background:linear-gradient(135deg,#7c3aed,#06b6d4);padding:28px 40px;text-align:center">
-  <img src="${LOGO_URL}" alt="PrevAI" height="36" />
-</td></tr>
-<tr><td style="background:#fff;padding:32px 40px">
-  <h1 style="margin:0 0 16px;font-size:22px;font-weight:700;color:#1a1a2e">Il tuo codice di conferma</h1>
-  <p style="margin:0;font-size:14px;color:#374151;line-height:1.7">Ciao ${escapeHtml(name)},<br/>scrivi questo codice nell'app PrevAI per confermare il tuo indirizzo:</p>
-  <p style="margin:22px 0;font-size:32px;font-weight:800;letter-spacing:8px;color:#1a1a2e;font-variant-numeric:tabular-nums">${escapeHtml(code)}</p>
-  <p style="margin:0;font-size:13px;color:#9ca3af">Il codice vale 15 minuti. Non hai creato un account su PrevAI? Ignora questa email.</p>
-</td></tr>
-<tr><td style="background:#f9fafb;padding:20px 40px;border-top:1px solid #f3f4f6;text-align:center">
-  <p style="margin:0;font-size:12px;color:#9ca3af">&copy; ${new Date().getFullYear()} Prevai · Preventivi professionali con l'AI</p>
-</td></tr>
-</table>
-</td></tr>
-</table>
-</body>
-</html>`;
+export function buildVerificationCodeEmail(name: string, otp: string): string {
+  return layout({
+    title: "Il tuo codice – PrevAI",
+    preheader: `Il tuo codice di conferma è ${otp}. Vale 15 minuti.`,
+    eyebrow: { text: "Conferma indirizzo", tone: "info" },
+    heading: "Il tuo codice di conferma",
+    bodyHtml:
+      p(`Ciao ${escapeHtml(name)}, scrivi questo codice nell'app ${MARKET.brand} per confermare il tuo indirizzo:`) +
+      code(otp) +
+      p(`Il codice vale 15 minuti. Non hai creato un account su ${MARKET.brand}? Ignora questa email.`, { muted: true, small: true, center: true }),
+  });
 }
 
-function buildVerificationEmail(name: string, url: string): string {
-  return `<!DOCTYPE html>
-<html lang="it">
-<head><meta charset="UTF-8"/><title>Verifica email – Prevai</title></head>
-<body style="margin:0;padding:0;background:#f5f3ff;font-family:system-ui,sans-serif">
-<table width="100%" cellpadding="0" cellspacing="0" style="background:#f5f3ff;padding:32px 16px">
-<tr><td align="center">
-<table width="560" cellpadding="0" cellspacing="0" style="border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(124,58,237,0.10)">
-<tr><td style="background:linear-gradient(135deg,#7c3aed,#06b6d4);padding:28px 40px;text-align:center">
-  <img src="${LOGO_URL}" alt="PrevAI" height="36" />
-</td></tr>
-<tr><td style="background:#fff;padding:32px 40px">
-  <h1 style="margin:0 0 16px;font-size:22px;font-weight:700;color:#1a1a2e">Verifica il tuo indirizzo email</h1>
-  <p style="margin:0 0 24px;font-size:14px;color:#374151;line-height:1.7">Ciao ${escapeHtml(name)},<br/>clicca sul pulsante qui sotto per verificare il tuo indirizzo email su Prevai.</p>
-  <table cellpadding="0" cellspacing="0" style="margin:0 auto 24px">
-    <tr><td align="center" style="border-radius:10px;background:linear-gradient(135deg,#7c3aed,#06b6d4)">
-      <a href="${url}" style="display:inline-block;color:#fff;font-size:15px;font-weight:600;padding:13px 32px;border-radius:10px;text-decoration:none">Verifica email →</a>
-    </td></tr>
-  </table>
-  <p style="margin:0;font-size:13px;color:#9ca3af">Non hai creato un account su Prevai? Ignora questa email.</p>
-</td></tr>
-<tr><td style="background:#f9fafb;padding:20px 40px;border-top:1px solid #f3f4f6;text-align:center">
-  <p style="margin:0;font-size:12px;color:#9ca3af">&copy; ${new Date().getFullYear()} Prevai · Preventivi professionali con l'AI</p>
-</td></tr>
-</table>
-</td></tr>
-</table>
-</body>
-</html>`;
+export function buildVerificationEmail(name: string, url: string): string {
+  return layout({
+    title: "Verifica la tua email – PrevAI",
+    preheader: "Un clic per confermare il tuo indirizzo e iniziare a creare preventivi.",
+    eyebrow: { text: "Ultimo passo", tone: "brand" },
+    heading: "Conferma il tuo indirizzo email",
+    bodyHtml:
+      p(`Ciao ${escapeHtml(name)}, manca solo un clic: conferma il tuo indirizzo e il tuo account ${MARKET.brand} è pronto.`) +
+      button(url, "Conferma email") +
+      p(`Non hai creato un account su ${MARKET.brand}? Ignora questa email.`, { muted: true, small: true, center: true }),
+  });
 }

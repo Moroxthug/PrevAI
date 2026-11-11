@@ -2,10 +2,10 @@
 // the assistant and confirmed by a person (message_client). One-to-one and
 // transactional, so no unsubscribe link; it goes out like every other customer
 // email (the connected Gmail if there is one, else Resend with Reply-To).
-import { emailLogoSrc } from "./logo.js";
 import type { BusinessProfile } from "@workspace/db";
 import { escapeHtml } from "./email.js";
 import { sendCustomerEmail } from "./connectedEmailSend.js";
+import { layout, companyIdentification } from "./emailLayout.js";
 
 /** Plain text → paragraphs (blank lines) and line breaks, every character escaped. */
 export function textToHtml(body: string): string {
@@ -13,27 +13,21 @@ export function textToHtml(body: string): string {
     .replace(/\r/g, "")
     .trim()
     .split(/\n{2,}/)
-    .map((p) => `<p style="font-size:15px;color:#111827;line-height:1.6;margin:0 0 14px;">${escapeHtml(p).replace(/\n/g, "<br>")}</p>`)
+    .map((p) => `<p class="e-ink" style="font-size:15px;color:#393a3d;line-height:1.65;margin:0 0 16px;">${escapeHtml(p).replace(/\n/g, "<br>")}</p>`)
     .join("\n");
 }
 
 export function buildClientMessageHtml(params: { subject: string; body: string; profile: Pick<BusinessProfile, "companyName" | "address" | "phone" | "email" | "logoUrl"> }): string {
-  const p = params.profile;
-  const logoSrc = emailLogoSrc(p.logoUrl);
-  const logo = logoSrc ? `<img src="${logoSrc}" alt="" style="max-height:40px;margin-bottom:16px;" />` : "";
-  const contact = [p.phone, p.email].filter(Boolean).map((x) => escapeHtml(String(x))).join(" · ");
-  return `<!DOCTYPE html>
-<html lang="it"><body style="font-family:Arial,sans-serif;background:#f9fafb;padding:24px;">
-  <div style="max-width:560px;margin:0 auto;background:#fff;border-radius:8px;padding:32px;">
-    ${logo}
-    ${textToHtml(params.body)}
-    <div style="margin-top:24px;padding-top:16px;border-top:1px solid #e5e7eb;font-size:12px;color:#6b7280;line-height:1.6;">
-      <div><strong>${escapeHtml(p.companyName || "")}</strong></div>
-      ${p.address ? `<div>${escapeHtml(p.address)}</div>` : ""}
-      ${contact ? `<div>${contact}</div>` : ""}
-    </div>
-  </div>
-</body></html>`;
+  const pr = params.profile;
+  // One-to-one and personal: no heading, no unsubscribe — it should read like a letter.
+  return layout({
+    title: params.subject,
+    preheader: params.body.slice(0, 140),
+    brand: { kind: "company", name: pr.companyName || "", logoUrl: pr.logoUrl },
+    bodyHtml: textToHtml(params.body),
+    footerHtml: companyIdentification(pr).replace(/^Inviato da /, ""),
+    hidePrevaiLinks: true,
+  });
 }
 
 export async function sendClientMessage(params: { userId: string; toEmail: string; subject: string; body: string; profile: BusinessProfile }): Promise<void> {

@@ -1,10 +1,10 @@
-import { emailLogoSrc } from "./logo.js";
 import { Resend } from "resend";
 import { MARKET } from "@workspace/config";
 import { logger } from "./logger.js";
 import { getBaseUrl } from "./baseUrl.js";
 import type { BusinessProfile, Client } from "@workspace/db";
 import { sendWhatsappTemplate } from "../routes/whatsapp.js";
+import { layout, p, companyIdentification } from "./emailLayout.js";
 
 // ── Phase 10: richieste di recensione + foto del cantiere condivise ─────────
 // Entrambi i messaggi sono rivolti a una riga `clients` esistente (un cliente
@@ -32,41 +32,18 @@ function marketingUnsubscribeUrl(token: string): string {
   return `${getBaseUrl()}/api/public/clients/unsubscribe?token=${encodeURIComponent(token)}`;
 }
 
-function identificationBlockHtml(profile: BusinessProfile): string {
-  const company = escapeHtml(profile.companyName || "Questa impresa");
-  const address = escapeHtml(profile.address || "");
-  const contact = [profile.phone, profile.email].filter(Boolean).map(escapeHtml).join(" · ");
-  return `
-    <div style="margin-top:24px;padding-top:16px;border-top:1px solid #e5e7eb;font-size:12px;color:#6b7280;line-height:1.6;">
-      <div>Inviato da: <strong>${company}</strong></div>
-      ${address ? `<div>${address}</div>` : ""}
-      ${contact ? `<div>${contact}</div>` : ""}
-    </div>`;
-}
 
-function unsubscribeHtml(token: string): string {
-  const url = marketingUnsubscribeUrl(token);
-  return `
-    <div style="margin-top:8px;font-size:12px;color:#6b7280;">
-      Non vuoi più ricevere questi messaggi? <a href="${url}" style="color:#2563eb;">Disiscriviti</a>
-    </div>`;
-}
 
-function wrapEmailHtml(params: { clientName: string; profile: BusinessProfile; unsubscribeToken: string; subject: string; bodyHtml: string }): string {
-  const greeting = `Gentile ${escapeHtml(params.clientName)},`;
-  const logoSrc = emailLogoSrc(params.profile.logoUrl);
-  const logo = logoSrc ? `<img src="${logoSrc}" alt="" style="max-height:40px;margin-bottom:16px;" />` : "";
-  return `<!DOCTYPE html>
-<html lang="${MARKET.locale}"><body style="font-family:Arial,sans-serif;background:#f9fafb;padding:24px;">
-  <div style="max-width:560px;margin:0 auto;background:#fff;border-radius:8px;padding:32px;">
-    ${logo}
-    <p style="font-size:16px;color:#111827;">${greeting}</p>
-    <h2 style="font-size:18px;color:#111827;">${escapeHtml(params.subject)}</h2>
-    ${params.bodyHtml}
-    ${identificationBlockHtml(params.profile)}
-    ${unsubscribeHtml(params.unsubscribeToken)}
-  </div>
-</body></html>`;
+export function wrapEmailHtml(params: { clientName: string; profile: BusinessProfile; unsubscribeToken: string; subject: string; bodyHtml: string }): string {
+  return layout({
+    title: params.subject,
+    brand: { kind: "company", name: params.profile.companyName || "", logoUrl: params.profile.logoUrl },
+    heading: params.subject,
+    bodyHtml: p(`Gentile ${escapeHtml(params.clientName)},`) + params.bodyHtml,
+    footerHtml: companyIdentification(params.profile),
+    unsubscribeUrl: marketingUnsubscribeUrl(params.unsubscribeToken),
+    hidePrevaiLinks: true,
+  });
 }
 
 async function sendEmail(params: { to: string; profile: BusinessProfile; subject: string; html: string; unsubscribeToken: string }): Promise<{ ok: true } | { ok: false; reason: string }> {
@@ -119,9 +96,9 @@ export async function sendJobReviewRequest(params: {
 
   if (!client.email) return { ok: false, reason: "no_email" };
   const secondLine = secondaryReviewUrl
-    ? `<p style="font-size:14px;color:#374151;line-height:1.6;">Preferisci un'altra piattaforma? <a href="${escapeHtml(secondaryReviewUrl)}" style="color:#2563eb;">${escapeHtml(secondaryReviewUrl)}</a></p>`
+    ? `<p class="e-ink" style="margin:0 0 16px;font-size:15px;color:#393a3d;line-height:1.65;">Preferisci un'altra piattaforma? <a href="${escapeHtml(secondaryReviewUrl)}" style="color:#6c2bd9;">${escapeHtml(secondaryReviewUrl)}</a></p>`
     : "";
-  const bodyHtml = `<p style="font-size:14px;color:#374151;line-height:1.6;">${escapeHtml(body.split(reviewUrl)[0] ?? "")}<a href="${escapeHtml(reviewUrl)}" style="color:#2563eb;">${escapeHtml(reviewUrl)}</a></p>${secondLine}`;
+  const bodyHtml = `<p class="e-ink" style="margin:0 0 16px;font-size:15px;color:#393a3d;line-height:1.65;">${escapeHtml(body.split(reviewUrl)[0] ?? "")}<a href="${escapeHtml(reviewUrl)}" style="color:#6c2bd9;">${escapeHtml(reviewUrl)}</a></p>${secondLine}`;
   const html = wrapEmailHtml({ clientName: client.name, profile, unsubscribeToken: client.marketingUnsubscribeToken, subject, bodyHtml });
   const result = await sendEmail({ to: client.email, profile, subject, html, unsubscribeToken: client.marketingUnsubscribeToken });
   return result.ok ? { ok: true, channel: "email" } : result;
@@ -148,8 +125,8 @@ export async function sendJobPhotoShare(params: {
   }
 
   if (!client.email) return { ok: false, reason: "no_email" };
-  const links = photoUrls.map((u) => `<div style="margin:8px 0;"><a href="${u}" style="color:#2563eb;">${escapeHtml(u)}</a></div>`).join("");
-  const bodyHtml = `<p style="font-size:14px;color:#374151;line-height:1.6;">${escapeHtml(body)}</p>${links}`;
+  const links = photoUrls.map((u) => `<div style="margin:8px 0;"><a href="${u}" style="color:#6c2bd9;">${escapeHtml(u)}</a></div>`).join("");
+  const bodyHtml = `<p class="e-ink" style="margin:0 0 16px;font-size:15px;color:#393a3d;line-height:1.65;">${escapeHtml(body)}</p>${links}`;
   const html = wrapEmailHtml({ clientName: client.name, profile, unsubscribeToken: client.marketingUnsubscribeToken, subject, bodyHtml });
   const result = await sendEmail({ to: client.email, profile, subject, html, unsubscribeToken: client.marketingUnsubscribeToken });
   return result.ok ? { ok: true, channel: "email" } : result;

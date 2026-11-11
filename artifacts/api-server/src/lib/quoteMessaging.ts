@@ -1,4 +1,3 @@
-import { emailLogoSrc } from "./logo.js";
 import { Resend } from "resend";
 import { MARKET, fmtEur } from "@workspace/config";
 import { logger } from "./logger.js";
@@ -7,6 +6,7 @@ import { publicQuoteLink } from "../quotes/publicLink.js";
 import { fillTemplate, savedTemplate } from "./savedTemplates.js";
 import { sanitizeForFromHeader } from "./emailUtils.js";
 import { type BusinessProfile, type Quote, type QuoteClientData, type QuoteCompanySnapshot } from "@workspace/db";
+import { layout, p, button, textParagraphs, companyIdentification } from "./emailLayout.js";
 
 // ── Phase 21: promemoria dopo l'invio del preventivo ────────────────────────
 // Un preventivo viene inviato al cliente e, se non lo accetta, non seguiva
@@ -31,25 +31,7 @@ function quoteUnsubscribeUrl(token: string): string {
   return `${getBaseUrl()}/api/public/quotes/unsubscribe?token=${encodeURIComponent(token)}`;
 }
 
-function identificationBlockHtml(profile: BusinessProfile): string {
-  const company = escapeHtml(profile.companyName || "Questa impresa");
-  const address = escapeHtml(profile.address || "");
-  const contact = [profile.phone, profile.email].filter(Boolean).map(escapeHtml).join(" · ");
-  return `
-    <div style="margin-top:24px;padding-top:16px;border-top:1px solid #e5e7eb;font-size:12px;color:#6b7280;line-height:1.6;">
-      <div>Inviato da: <strong>${company}</strong></div>
-      ${address ? `<div>${address}</div>` : ""}
-      ${contact ? `<div>${contact}</div>` : ""}
-    </div>`;
-}
 
-function unsubscribeHtml(token: string): string {
-  const url = quoteUnsubscribeUrl(token);
-  return `
-    <div style="margin-top:8px;font-size:12px;color:#6b7280;">
-      Non vuoi più ricevere promemoria su questo preventivo? <a href="${url}" style="color:#2563eb;">Disiscriviti</a>
-    </div>`;
-}
 
 function followupCopy(stage: number, quoteNumber: string, totale: string): { subject: string; body: string } {
   const set = [
@@ -60,7 +42,7 @@ function followupCopy(stage: number, quoteNumber: string, totale: string): { sub
   return set[Math.min(stage, set.length - 1)]!;
 }
 
-function buildFollowupEmailHtml(params: {
+export function buildFollowupEmailHtml(params: {
   clientName: string;
   profile: BusinessProfile;
   stage: number;
@@ -73,27 +55,18 @@ function buildFollowupEmailHtml(params: {
 }): string {
   const { subject, body } = followupCopy(params.stage, params.quoteNumber, params.totale);
   const own = params.text?.trim();
-  const greeting = own ? "" : `Gentile ${escapeHtml(params.clientName)},`;
-  const bodyHtml = own
-    ? own.split(/\n{2,}/).map((p) => `<p style="font-size:14px;color:#374151;line-height:1.6;">${escapeHtml(p).replace(/\n/g, "<br>")}</p>`).join("")
-    : `<p style="font-size:14px;color:#374151;line-height:1.6;">${escapeHtml(body)}</p>`;
-  const logoSrc = emailLogoSrc(params.profile.logoUrl);
-  const logo = logoSrc ? `<img src="${logoSrc}" alt="" style="max-height:40px;margin-bottom:16px;" />` : "";
-  const cta = params.publicUrl
-    ? `<p style="margin-top:24px;"><a href="${escapeHtml(params.publicUrl)}" style="background:#2563eb;color:#fff;padding:10px 20px;border-radius:6px;text-decoration:none;font-size:14px;">Vedi il preventivo</a></p>`
-    : "";
-  return `<!DOCTYPE html>
-<html lang="${MARKET.locale}"><body style="font-family:Arial,sans-serif;background:#f9fafb;padding:24px;">
-  <div style="max-width:560px;margin:0 auto;background:#fff;border-radius:8px;padding:32px;">
-    ${logo}
-    ${greeting ? `<p style="font-size:16px;color:#111827;">${greeting}</p>` : ""}
-    <h2 style="font-size:18px;color:#111827;">${escapeHtml(subject)}</h2>
-    ${bodyHtml}
-    ${cta}
-    ${identificationBlockHtml(params.profile)}
-    ${unsubscribeHtml(params.unsubscribeToken)}
-  </div>
-</body></html>`;
+  const bodyHtml = own ? textParagraphs(own) : p(`Gentile ${escapeHtml(params.clientName)},`) + p(escapeHtml(body));
+  return layout({
+    title: subject,
+    preheader: own ? own.slice(0, 140) : body,
+    brand: { kind: "company", name: params.profile.companyName || "", logoUrl: params.profile.logoUrl },
+    eyebrow: { text: `Preventivo ${params.quoteNumber}`, tone: "brand" },
+    heading: subject,
+    bodyHtml: bodyHtml + (params.publicUrl ? button(params.publicUrl, "Vedi il preventivo") : ""),
+    footerHtml: companyIdentification(params.profile),
+    unsubscribeUrl: quoteUnsubscribeUrl(params.unsubscribeToken),
+    hidePrevaiLinks: true,
+  });
 }
 
 export type QuoteFollowupResult =

@@ -1,15 +1,11 @@
-import { emailLogoSrc } from "./logo.js";
 import { Resend } from "resend";
 import { MARKET, PREZZI_PIANI, VOCI_PIANI, pianoDaNome, type Lang, type PianoInAbbonamento } from "@workspace/config";
 import { logger } from "./logger.js";
-import { getBaseUrl } from "./baseUrl.js";
 import { sendCustomerEmail } from "./connectedEmailSend.js";
+import { layout, p, h2, button, infoTable, callout, quote, steps, checklist, C } from "./emailLayout.js";
 
 const FROM = `${MARKET.brand} <no-reply@${MARKET.domain}>`;
 
-// Gmail and most webmail clients strip data: URI images from HTML emails,
-// so the logo must be a real hosted URL rather than an inline base64 SVG.
-const LOGO_URL = `${getBaseUrl()}/prevai-logo.png`;
 
 export function escapeHtml(value: string): string {
   return value
@@ -29,23 +25,12 @@ function getPlanTier(planName: string): PlanTier {
   return pianoDaNome(planName) ?? "oneshot";
 }
 
-function getPlanFeatures(planName: string, tier: PlanTier): string {
-  if (tier !== "oneshot") {
-    return VOCI_PIANI[tier].map((v) => `
-      <div class="feature"><span class="check">✓</span> ${escapeHtml(v)}</div>`).join("");
-  }
+function getPlanFeatures(planName: string, tier: PlanTier): string[] {
+  if (tier !== "oneshot") return VOCI_PIANI[tier].map((v) => escapeHtml(v));
   const isClean = planName.toLowerCase().includes("pulito") || planName.toLowerCase().includes("clean");
-  if (isClean) {
-    return `
-      <div class="feature"><span class="check">✓</span> 1 preventivo PDF senza filigrana</div>
-      <div class="feature"><span class="check">✓</span> Design professionale e pulito</div>
-      <div class="feature"><span class="check">✓</span> Download immediato</div>
-    `;
-  }
-  return `
-    <div class="feature"><span class="check">✓</span> 1 preventivo PDF</div>
-    <div class="feature"><span class="check">✓</span> Download immediato</div>
-  `;
+  return isClean
+    ? ["1 preventivo PDF senza filigrana", "Design professionale e pulito", "Download immediato"]
+    : ["1 preventivo PDF", "Download immediato"];
 }
 
 function buildSubscriptionEmail(params: {
@@ -60,181 +45,57 @@ function buildSubscriptionEmail(params: {
   const isRecurring = !!planInterval;
   const date = new Date().toLocaleDateString("it-IT", { day: "2-digit", month: "long", year: "numeric" });
   const intervalLabel = planInterval === "month" ? "mese" : planInterval === "year" ? "anno" : null;
-  const priceLabel = intervalLabel ? `€${planPrice}/${intervalLabel}` : `€${planPrice} (una tantum)`;
-  const renewalRow = isRecurring
-    ? `<div class="receipt-row">
-        <span class="receipt-label">Rinnovo</span>
-        <span>${planInterval === "month" ? "Mensile automatico" : "Annuale automatico"}</span>
-       </div>`
-    : `<div class="receipt-row">
-        <span class="receipt-label">Tipo</span>
-        <span>Acquisto singolo</span>
-       </div>`;
-
-  const headline = tier === "oneshot"
-    ? `🎉 Preventivo ${planName} sbloccato!`
-    : `🎉 Piano ${planName} attivato!`;
-
-  const subline = tier === "oneshot"
-    ? `Il tuo PDF è pronto. Accedi alla dashboard per scaricarlo.`
-    : `Il tuo abbonamento è attivo da oggi, ${date}`;
-
-  const bodyIntro = tier === "oneshot"
-    ? `Ciao ${userName},<br/><br/>il tuo acquisto <strong>PrevAI ${planName}</strong> è andato a buon fine. Puoi accedere alla dashboard e scaricare il PDF del tuo preventivo.`
-    : `Ciao ${userName},<br/><br/>il tuo abbonamento <strong>PrevAI ${planName}</strong> è stato attivato con successo. Puoi già iniziare a creare preventivi professionali${PREZZI_PIANI[tier].preventiviMese === null ? " illimitati" : ""}.`;
-
-  const features = getPlanFeatures(planName, tier);
-
-  return `<!DOCTYPE html>
-<html lang="it">
-<head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>${headline} – PrevAI</title>
-<style>
-  body { margin:0; padding:0; background:#f5f3ff; font-family:system-ui,-apple-system,sans-serif; }
-  .wrapper { max-width:560px; margin:32px auto; background:#ffffff; border-radius:16px; overflow:hidden; box-shadow:0 4px 24px rgba(124,58,237,0.08); }
-  .header { background:linear-gradient(135deg,#7c3aed,#06b6d4); padding:32px 40px; text-align:center; }
-  .header img { height:36px; }
-  .header h1 { color:white; font-size:22px; font-weight:700; margin:16px 0 4px; }
-  .header p { color:rgba(255,255,255,0.85); font-size:14px; margin:0; }
-  .body { padding:32px 40px; }
-  .greeting { font-size:16px; color:#1a1a2e; margin-bottom:20px; line-height:1.6; }
-  .receipt-box { background:#f5f3ff; border:1px solid #ede9fe; border-radius:12px; padding:20px 24px; margin:24px 0; }
-  .receipt-row { display:flex; justify-content:space-between; align-items:center; padding:8px 0; border-bottom:1px solid #ede9fe; font-size:14px; }
-  .receipt-row:last-child { border-bottom:none; font-weight:700; color:#7c3aed; font-size:16px; }
-  .receipt-label { color:#6b7280; }
-  .features { margin:24px 0; }
-  .feature { display:flex; align-items:flex-start; gap:10px; margin-bottom:10px; font-size:14px; color:#374151; }
-  .check { color:#7c3aed; font-size:16px; flex-shrink:0; }
-  .cta { text-align:center; margin:28px 0; }
-  .btn { display:inline-block; background:linear-gradient(135deg,#7c3aed,#06b6d4); color:white; font-size:15px; font-weight:600; padding:13px 32px; border-radius:10px; text-decoration:none; }
-  .footer { background:#f9fafb; padding:20px 40px; text-align:center; font-size:12px; color:#9ca3af; border-top:1px solid #f3f4f6; }
-</style>
-</head>
-<body>
-<div class="wrapper">
-  <div class="header">
-    <img src="${LOGO_URL}" alt="PrevAI" />
-    <h1>${headline}</h1>
-    <p>${subline}</p>
-  </div>
-  <div class="body">
-    <p class="greeting">${bodyIntro}</p>
-
-    <div class="receipt-box">
-      <div class="receipt-row">
-        <span class="receipt-label">Piano</span>
-        <span><strong>PrevAI ${planName}</strong></span>
-      </div>
-      <div class="receipt-row">
-        <span class="receipt-label">Data</span>
-        <span>${date}</span>
-      </div>
-      ${renewalRow}
-      <div class="receipt-row">
-        <span class="receipt-label">Importo</span>
-        <span>${priceLabel}</span>
-      </div>
-    </div>
-
-    <div class="features">
-      ${features}
-    </div>
-
-    <div class="cta">
-      <a href="https://prevai.it/dashboard" class="btn">Vai alla dashboard →</a>
-    </div>
-
-    <p style="font-size:13px;color:#6b7280;text-align:center;">Hai domande? Scrivici su <a href="mailto:supporto@prevai.it" style="color:#7c3aed;">supporto@prevai.it</a></p>
-  </div>
-  <div class="footer">
-    PrevAI · Preventivi professionali con l'AI<br/>
-    Hai ricevuto questa email perché hai effettuato un acquisto su PrevAI.<br/>
-    ${isRecurring ? "Per gestire o disdire l'abbonamento accedi alla dashboard → Impostazioni → Piano." : ""}
-  </div>
-</div>
-</body>
-</html>`;
+  const priceLabel = intervalLabel ? `€ ${planPrice}/${intervalLabel}` : `€ ${planPrice} (una tantum)`;
+  const oneshot = tier === "oneshot";
+  const heading = oneshot ? `Preventivo ${planName} sbloccato` : `Benvenuto nel piano ${planName}`;
+  const intro = oneshot
+    ? `Ciao ${userName}, il tuo acquisto <strong>PrevAI ${escapeHtml(planName)}</strong> è andato a buon fine. Il PDF del tuo preventivo è pronto da scaricare nella dashboard.`
+    : `Ciao ${userName}, il tuo abbonamento <strong>PrevAI ${escapeHtml(planName)}</strong> è attivo da oggi. Puoi già creare preventivi professionali${PREZZI_PIANI[tier].preventiviMese === null ? " illimitati" : ""}.`;
+  return layout({
+    title: `${heading} – PrevAI`,
+    preheader: oneshot ? "Il tuo PDF è pronto: scaricalo dalla dashboard." : `Il tuo piano ${planName} è attivo. Ecco il riepilogo.`,
+    eyebrow: { text: oneshot ? "Acquisto confermato" : "Abbonamento attivo", tone: "success" },
+    heading,
+    bodyHtml:
+      p(intro) +
+      infoTable(
+        [
+          ["Piano", `PrevAI ${escapeHtml(planName)}`],
+          ["Data", date],
+          isRecurring ? ["Rinnovo", planInterval === "month" ? "Mensile automatico" : "Annuale automatico"] : ["Tipo", "Acquisto singolo"],
+          ["Importo", priceLabel],
+        ],
+        { emphasizeLast: true },
+      ) +
+      h2(oneshot ? "Cosa include" : "Cosa include il tuo piano") +
+      checklist(getPlanFeatures(planName, tier)) +
+      button(`${MARKET.siteUrl}/dashboard`, oneshot ? "Scarica il PDF" : "Vai alla dashboard") +
+      p(`Hai domande? Scrivici a <a href="mailto:${MARKET.supportEmail}" style="color:${C.purple};">${MARKET.supportEmail}</a>`, { muted: true, small: true, center: true }),
+    footerHtml: `Hai ricevuto questa email perché hai effettuato un acquisto su ${MARKET.brand}.${isRecurring ? " Per gestire o disdire l'abbonamento: Impostazioni → Piano." : ""}`,
+  });
 }
 
 function buildWelcomeEmail(name: string): string {
-  const firstName = escapeHtml(name?.split(" ")[0] || name || "Benvenuto");
-  return `<!DOCTYPE html>
-<html lang="it">
-<head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Benvenuto su PrevAI!</title>
-<style>
-  body { margin:0; padding:0; background:#f5f3ff; font-family:system-ui,-apple-system,sans-serif; }
-  .wrapper { max-width:560px; margin:32px auto; background:#ffffff; border-radius:16px; overflow:hidden; box-shadow:0 4px 24px rgba(124,58,237,0.08); }
-  .header { background:linear-gradient(135deg,#7c3aed,#06b6d4); padding:32px 40px; text-align:center; }
-  .header img { height:36px; }
-  .header h1 { color:white; font-size:22px; font-weight:700; margin:16px 0 4px; }
-  .header p { color:rgba(255,255,255,0.85); font-size:14px; margin:0; }
-  .body { padding:32px 40px; }
-  .greeting { font-size:16px; color:#1a1a2e; margin-bottom:20px; line-height:1.6; }
-  .trial-box { background:linear-gradient(135deg,#f5f3ff,#e0f2fe); border:1px solid #ddd6fe; border-radius:12px; padding:20px 24px; margin:24px 0; }
-  .trial-box h2 { margin:0 0 12px; font-size:16px; font-weight:700; color:#5b21b6; }
-  .feature { display:flex; align-items:flex-start; gap:10px; margin-bottom:10px; font-size:14px; color:#374151; }
-  .check { color:#7c3aed; font-size:16px; font-weight:700; flex-shrink:0; }
-  .steps { margin:24px 0; }
-  .step { display:flex; align-items:flex-start; gap:14px; margin-bottom:16px; }
-  .step-num { background:linear-gradient(135deg,#7c3aed,#06b6d4); color:white; font-size:12px; font-weight:700; width:24px; height:24px; border-radius:50%; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
-  .step-text { font-size:14px; color:#374151; line-height:1.5; }
-  .step-text strong { color:#1a1a2e; }
-  .cta { text-align:center; margin:28px 0; }
-  .btn { display:inline-block; background:linear-gradient(135deg,#7c3aed,#06b6d4); color:white; font-size:15px; font-weight:600; padding:13px 32px; border-radius:10px; text-decoration:none; }
-  .footer { background:#f9fafb; padding:20px 40px; text-align:center; font-size:12px; color:#9ca3af; border-top:1px solid #f3f4f6; }
-</style>
-</head>
-<body>
-<div class="wrapper">
-  <div class="header">
-    <img src="${LOGO_URL}" alt="PrevAI" />
-    <h1>Benvenuto su PrevAI! 🎉</h1>
-    <p>Il tuo account è pronto — inizia subito a creare preventivi</p>
-  </div>
-  <div class="body">
-    <p class="greeting">Ciao ${firstName},<br/><br/>sei ora registrato su <strong>PrevAI</strong>, il tool che trasforma la descrizione di un lavoro in un preventivo professionale in pochi secondi. Siamo felici di averti con noi!</p>
-
-    <div class="trial-box">
-      <h2>🎁 La tua prova gratuita include:</h2>
-      <div class="feature"><span class="check">✓</span> <span>Crea <strong>preventivi illimitati</strong> con l'AI</span></div>
-      <div class="feature"><span class="check">✓</span> <span>Anteprima completa di ogni preventivo</span></div>
-      <div class="feature"><span class="check">✓</span> <span><strong>3 download PDF gratuiti</strong> per provare il servizio</span></div>
-      <div class="feature"><span class="check">✓</span> <span>Nessuna carta di credito richiesta per iniziare</span></div>
-    </div>
-
-    <div class="steps">
-      <div class="step">
-        <div class="step-num">1</div>
-        <div class="step-text"><strong>Completa il profilo aziendale</strong><br/>Aggiungi nome, P.IVA e logo per personalizzare i PDF.</div>
-      </div>
-      <div class="step">
-        <div class="step-num">2</div>
-        <div class="step-text"><strong>Descrivi il lavoro da preventivare</strong><br/>Scrivi (o parla) e l'AI genera il preventivo in pochi secondi.</div>
-      </div>
-      <div class="step">
-        <div class="step-num">3</div>
-        <div class="step-text"><strong>Scarica e invia al cliente</strong><br/>PDF professionale pronto, subito. Poi scegli un piano per continuare.</div>
-      </div>
-    </div>
-
-    <div class="cta">
-      <a href="https://prevai.it/dashboard" class="btn">Crea il primo preventivo →</a>
-    </div>
-
-    <p style="font-size:13px;color:#6b7280;text-align:center;">Hai domande? Scrivici su <a href="mailto:supporto@prevai.it" style="color:#7c3aed;">supporto@prevai.it</a></p>
-  </div>
-  <div class="footer">
-    PrevAI · Preventivi professionali con l'AI<br/>
-    Hai ricevuto questa email perché ti sei appena registrato su <a href="https://prevai.it" style="color:#7c3aed;">prevai.it</a>.
-  </div>
-</div>
-</body>
-</html>`;
+  const firstName = escapeHtml(name?.split(" ")[0] || name || "");
+  const sub = (t: string) => `<br/><span class="e-muted" style="color:${C.muted};">${t}</span>`;
+  return layout({
+    title: "Benvenuto su PrevAI",
+    preheader: "Il tuo account è pronto: il primo preventivo con l'AI in meno di un minuto.",
+    eyebrow: { text: "Account attivo", tone: "success" },
+    heading: firstName ? `Benvenuto, ${firstName}` : "Benvenuto su PrevAI",
+    lead: "Descrivi il lavoro, PrevAI scrive il preventivo: voci, quantità e prezzi, pronto da mandare al cliente.",
+    bodyHtml:
+      callout(`<strong>La tua prova gratuita include</strong><br/>Preventivi illimitati con l'AI · anteprima completa · <strong>3 PDF gratuiti</strong> · nessuna carta richiesta`, "brand") +
+      h2("Inizia in tre passi") +
+      steps([
+        `<strong>Completa il profilo aziendale</strong>${sub("Nome, P.IVA e logo: finiscono su ogni PDF.")}`,
+        `<strong>Descrivi il lavoro</strong>${sub("Scrivi o parla: l'AI prepara il preventivo in pochi secondi.")}`,
+        `<strong>Invia al cliente</strong>${sub("PDF professionale o link da accettare online con un clic.")}`,
+      ]) +
+      button(`${MARKET.siteUrl}/dashboard`, "Crea il primo preventivo") +
+      p(`Hai domande? Rispondi a questa email o scrivi a <a href="mailto:${MARKET.supportEmail}" style="color:${C.purple};">${MARKET.supportEmail}</a>`, { muted: true, small: true, center: true }),
+    footerHtml: `Hai ricevuto questa email perché ti sei appena registrato su ${MARKET.brand}.`,
+  });
 }
 
 export async function sendWelcomeEmail(params: {
@@ -329,66 +190,20 @@ function buildQuoteEmailHtml(params: {
   const clientName = escapeHtml(params.clientName);
   const { quoteNumber, totale, publicUrl } = params;
   const c = QUOTE_EMAIL_COPY;
-  const logoUrl = emailLogoSrc(params.logoUrl) ?? LOGO_URL;
-  const ctaHtml = publicUrl
-    ? `<div class="cta"><a class="btn" href="${publicUrl}">${c.view}</a></div>
-    <p style="font-size:13px;color:#6b7280;text-align:center;margin-top:-12px;">${c.viewHint}</p>`
-    : "";
-  return `<!DOCTYPE html>
-<html lang="${MARKET.locale}">
-<head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>${c.title(companyName)}</title>
-<style>
-  body { margin:0; padding:0; background:#f5f3ff; font-family:system-ui,-apple-system,sans-serif; }
-  .wrapper { max-width:560px; margin:32px auto; background:#ffffff; border-radius:16px; overflow:hidden; box-shadow:0 4px 24px rgba(124,58,237,0.08); }
-  .header { background:linear-gradient(135deg,#7c3aed,#06b6d4); padding:32px 40px; text-align:center; }
-  .header img { height:36px; }
-  .header h1 { color:white; font-size:20px; font-weight:700; margin:16px 0 4px; }
-  .header p { color:rgba(255,255,255,0.85); font-size:14px; margin:0; }
-  .body { padding:32px 40px; }
-  .greeting { font-size:16px; color:#1a1a2e; margin-bottom:20px; line-height:1.6; }
-  .quote-box { background:#f5f3ff; border:1px solid #ede9fe; border-radius:12px; padding:20px 24px; margin:24px 0; }
-  .quote-row { display:flex; justify-content:space-between; align-items:center; padding:8px 0; border-bottom:1px solid #ede9fe; font-size:14px; }
-  .quote-row:last-child { border-bottom:none; font-weight:700; color:#7c3aed; font-size:16px; }
-  .quote-label { color:#6b7280; }
-  .cta { text-align:center; margin:28px 0; }
-  .btn { display:inline-block; background:linear-gradient(135deg,#7c3aed,#06b6d4); color:white; font-size:15px; font-weight:600; padding:13px 32px; border-radius:10px; text-decoration:none; }
-  .footer { background:#f9fafb; padding:20px 40px; text-align:center; font-size:12px; color:#9ca3af; border-top:1px solid #f3f4f6; }
-</style>
-</head>
-<body>
-<div class="wrapper">
-  <div class="header">
-    <img src="${logoUrl}" alt="${companyName}" />
-    <h1>${c.ready}</h1>
-    <p>${c.sent(companyName)}</p>
-  </div>
-  <div class="body">
-    <p class="greeting">${c.greeting(clientName, companyName)}</p>
-
-    <div class="quote-box">
-      <div class="quote-row">
-        <span class="quote-label">${c.quote}</span>
-        <span><strong>${escapeHtml(quoteNumber)}</strong></span>
-      </div>
-      <div class="quote-row">
-        <span class="quote-label">${c.total}</span>
-        <span>${c.money(totale)}</span>
-      </div>
-    </div>
-    ${ctaHtml}
-
-    <p style="font-size:13px;color:#6b7280;text-align:center;">${c.generated} <a href="${MARKET.siteUrl}" style="color:#7c3aed;">${MARKET.brand}</a></p>
-  </div>
-  <div class="footer">
-    ${companyName}<br/>
-    ${c.footer}${params.aiGenerated ? `<br/><br/>${c.aiNotice}` : ""}
-  </div>
-</div>
-</body>
-</html>`;
+  const cta = publicUrl ? button(publicUrl, c.view) + p(c.viewHint, { muted: true, small: true, center: true }) : "";
+  return layout({
+    title: c.title(params.companyName),
+    preheader: `${c.sent(params.companyName)} — ${c.money(totale)}`,
+    brand: { kind: "company", name: params.companyName, logoUrl: params.logoUrl },
+    eyebrow: { text: `Preventivo ${quoteNumber}`, tone: "brand" },
+    heading: c.ready,
+    bodyHtml:
+      p(c.greeting(clientName, companyName)) +
+      infoTable([[c.quote, escapeHtml(quoteNumber)], [c.total, c.money(escapeHtml(totale))]], { emphasizeLast: true }) +
+      cta,
+    footerHtml: `${companyName} · ${c.footer}${params.aiGenerated ? `<br/>${c.aiNotice}` : ""}`,
+    hidePrevaiLinks: true,
+  });
 }
 
 
@@ -402,60 +217,27 @@ function buildWidgetClientConfirmationEmail(params: {
   incentivesSummary?: string;
   logoUrl?: string | null;
 }): string {
+  // clientName, companyName and incentivesSummary arrive already escaped.
   const { clientName, companyName, companyPhone, companyEmail, prezzoMinimo, prezzoMassimo, incentivesSummary } = params;
-  const logoUrl = emailLogoSrc(params.logoUrl) ?? LOGO_URL;
-  const contactLine = [companyPhone, companyEmail].filter(Boolean).join(" · ");
-  const incentivesBlock = incentivesSummary
-    ? `<div class="incentives-box"><strong>🎁 Agevolazioni potenzialmente applicabili</strong><br/>${incentivesSummary.replace(/\n/g, "<br/>")}</div>`
-    : "";
-  return `<!DOCTYPE html>
-<html lang="it">
-<head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>La tua richiesta è stata ricevuta – ${companyName}</title>
-<style>
-  body { margin:0; padding:0; background:#f5f3ff; font-family:system-ui,-apple-system,sans-serif; }
-  .wrapper { max-width:560px; margin:32px auto; background:#ffffff; border-radius:16px; overflow:hidden; box-shadow:0 4px 24px rgba(124,58,237,0.08); }
-  .header { background:linear-gradient(135deg,#7c3aed,#06b6d4); padding:32px 40px; text-align:center; }
-  .header img { height:36px; }
-  .header h1 { color:white; font-size:20px; font-weight:700; margin:16px 0 4px; }
-  .header p { color:rgba(255,255,255,0.85); font-size:14px; margin:0; }
-  .body { padding:32px 40px; }
-  .greeting { font-size:16px; color:#1a1a2e; margin-bottom:20px; line-height:1.6; }
-  .price-box { background:#f5f3ff; border:1px solid #ede9fe; border-radius:12px; padding:20px 24px; margin:24px 0; text-align:center; }
-  .price-box .label { font-size:12px; color:#6b7280; text-transform:uppercase; letter-spacing:0.05em; }
-  .price-box .range { font-size:22px; font-weight:700; color:#7c3aed; margin-top:6px; }
-  .incentives-box { background:#ecfdf5; border:1px solid #d1fae5; border-radius:12px; padding:16px 20px; margin:20px 0; font-size:13px; color:#065f46; line-height:1.6; }
-  .footer { background:#f9fafb; padding:20px 40px; text-align:center; font-size:12px; color:#9ca3af; border-top:1px solid #f3f4f6; }
-</style>
-</head>
-<body>
-<div class="wrapper">
-  <div class="header">
-    <img src="${logoUrl}" alt="${escapeHtml(companyName)}" />
-    <h1>Richiesta ricevuta ✓</h1>
-    <p>${companyName} ha ricevuto la tua richiesta di preventivo</p>
-  </div>
-  <div class="body">
-    <p class="greeting">Ciao ${clientName},<br/><br/>grazie per aver richiesto una stima a <strong>${companyName}</strong>. Il team ti ricontatterà a breve per fissare un sopralluogo e definire il preventivo definitivo.</p>
-
-    <div class="price-box">
-      <div class="label">Stima indicativa</div>
-      <div class="range">€${prezzoMinimo} – €${prezzoMassimo}</div>
-    </div>
-
-    ${incentivesBlock}
-
-    <p style="font-size:13px;color:#6b7280;text-align:center;">Questa è una stima automatica generata dall'AI e potrebbe variare dopo un sopralluogo tecnico.${incentivesSummary ? " Anche le agevolazioni indicate sono una stima preliminare, da confermare in sede di sopralluogo tecnico e fiscale." : ""}${contactLine ? ` Per qualsiasi domanda puoi contattare direttamente ${companyName}: ${contactLine}.` : ""}</p>
-  </div>
-  <div class="footer">
-    Stima calcolata con tecnologia <a href="https://prevai.it" style="color:#7c3aed;">PrevAI</a><br/>
-    Hai ricevuto questa email perché hai richiesto un preventivo tramite il sito di ${companyName}.
-  </div>
-</div>
-</body>
-</html>`;
+  const contactLine = [companyPhone, companyEmail].filter((v): v is string => !!v).map((v) => escapeHtml(v)).join(" · ");
+  const rawCompany = companyName.replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&amp;/g, "&");
+  return layout({
+    title: `La tua richiesta è stata ricevuta – ${rawCompany}`,
+    preheader: `Stima indicativa € ${prezzoMinimo} – € ${prezzoMassimo}. Ti ricontatteremo a breve.`,
+    brand: { kind: "company", name: rawCompany, logoUrl: params.logoUrl },
+    eyebrow: { text: "Richiesta ricevuta", tone: "success" },
+    heading: "Grazie, abbiamo la tua richiesta",
+    bodyHtml:
+      p(`Ciao ${clientName}, grazie per aver chiesto una stima a <strong>${companyName}</strong>. Ti ricontatteremo a breve per fissare un sopralluogo e definire il preventivo definitivo.`) +
+      infoTable([["Stima indicativa", `€ ${escapeHtml(prezzoMinimo)} – € ${escapeHtml(prezzoMassimo)}`]], { emphasizeLast: true }) +
+      (incentivesSummary ? callout(`<strong>Agevolazioni potenzialmente applicabili</strong><br/>${incentivesSummary.replace(/\n/g, "<br/>")}`, "success") : "") +
+      p(
+        `Questa è una stima automatica generata con l'AI e può variare dopo il sopralluogo tecnico.${incentivesSummary ? " Anche le agevolazioni indicate sono una stima preliminare, da confermare in sede di sopralluogo tecnico e fiscale." : ""}${contactLine ? ` Per qualsiasi domanda: ${contactLine}.` : ""}`,
+        { muted: true, small: true },
+      ),
+    footerHtml: `Hai ricevuto questa email perché hai chiesto un preventivo tramite il sito di ${companyName}.`,
+    hidePrevaiLinks: true,
+  });
 }
 
 /** PREZZI-2: una richiesta per il piano Su misura, a noi. */
@@ -518,6 +300,48 @@ export async function sendWidgetClientConfirmationEmail(params: {
 }
 
 
+function buildWidgetLeadNotificationHtml(params: {
+  clientName: string;
+  clientEmail: string;
+  clientPhone: string;
+  rawInput: string;
+  totale: string;
+  prezzoMinimo: string;
+  prezzoMassimo: string;
+  incentivesSummary?: string;
+}): string {
+  const name = escapeHtml(params.clientName);
+  const email = escapeHtml(params.clientEmail);
+  const phone = escapeHtml(params.clientPhone);
+  const telHref = `tel:${params.clientPhone.replace(/[^\d+]/g, "")}`;
+  return layout({
+    title: "Nuova richiesta dal widget",
+    preheader: `${params.clientName} ha chiesto una stima: € ${params.prezzoMinimo} – € ${params.prezzoMassimo}`,
+    eyebrow: { text: "Nuovo contatto dal tuo sito", tone: "brand" },
+    heading: `${params.clientName} vuole un preventivo`,
+    lead: "Ha appena completato il preventivatore sul tuo sito. Chi richiama entro 24 ore chiude molti più lavori.",
+    bodyHtml:
+      infoTable([
+        ["Cliente", name],
+        ["Email", `<a href="mailto:${email}" style="color:${C.purple};text-decoration:none;">${email}</a>`],
+        ["Telefono", `<a href="${escapeHtml(telHref)}" style="color:${C.purple};text-decoration:none;">${phone}</a>`],
+      ]) +
+      h2("La richiesta") +
+      quote(params.rawInput) +
+      infoTable(
+        [
+          ["Totale calcolato", `€ ${escapeHtml(params.totale)}`],
+          ["Stima mostrata al cliente", `€ ${escapeHtml(params.prezzoMinimo)} – € ${escapeHtml(params.prezzoMassimo)}`],
+        ],
+        { emphasizeLast: true },
+      ) +
+      (params.incentivesSummary ? callout(`<strong>Verifica incentivi e bandi</strong><br/>${escapeHtml(params.incentivesSummary).replace(/\n/g, "<br/>")}`, "success") : "") +
+      button(telHref, "Chiama ora") +
+      p(`Lo trovi anche in <a href="${MARKET.siteUrl}/dashboard" style="color:${C.purple};">${MARKET.brand}</a>, tra le richieste.`, { muted: true, small: true, center: true }),
+    footerHtml: `Ricevi questa email perché il widget ${MARKET.brand} è attivo sul tuo sito.`,
+  });
+}
+
 export async function sendWidgetLeadNotification(params: {
   toEmail: string;
   companyName: string;
@@ -535,89 +359,15 @@ export async function sendWidgetLeadNotification(params: {
     logger.warn("RESEND_API_KEY not set — skipping widget lead notification email");
     return;
   }
-  const { toEmail, clientName, clientEmail, clientPhone, rawInput, totale, prezzoMinimo, prezzoMassimo, incentivesSummary } = params;
-  const safeClientName = escapeHtml(clientName);
-  const safeClientEmail = escapeHtml(clientEmail);
-  const safeClientPhone = escapeHtml(clientPhone);
-  const safeRawInput = escapeHtml(rawInput);
-  const safeIncentivesSummary = incentivesSummary ? escapeHtml(incentivesSummary) : incentivesSummary;
   try {
     const resend = new Resend(apiKey);
     await resend.emails.send({
       from: FROM,
-      to: [toEmail],
-      subject: `⚡ Nuovo Lead Convertito da Widget — ${clientName}`,
-      html: `<!DOCTYPE html>
-<html lang="it">
-<head>
-<meta charset="UTF-8" />
-<title>Nuovo Lead Widget</title>
-<style>
-  body { margin:0; padding:0; background:#f4f4f5; font-family:system-ui,-apple-system,sans-serif; }
-  .wrapper { max-width:560px; margin:32px auto; background:#ffffff; border-radius:16px; overflow:hidden; box-shadow:0 4px 24px rgba(0,0,0,0.06); border:1px solid #e4e4e7; }
-  .header { background:linear-gradient(135deg,#7c3aed,#4f46e5); padding:28px 32px; text-align:center; color:white; }
-  .header h1 { font-size:20px; font-weight:700; margin:0; }
-  .header p { font-size:13px; color:rgba(255,255,255,0.85); margin:6px 0 0; }
-  .body { padding:32px; }
-  .section-title { font-size:12px; font-weight:700; text-transform:uppercase; color:#71717a; letter-spacing:0.05em; margin-bottom:12px; border-bottom:1px solid #e4e4e7; padding-bottom:6px; }
-  .field { margin-bottom:14px; }
-  .label { font-size:11px; color:#a1a1aa; font-weight:600; text-transform:uppercase; }
-  .val { font-size:14px; color:#18181b; font-weight:500; margin-top:2px; }
-  .price-box { background:#f5f3ff; border:1px solid #ede9fe; border-radius:12px; padding:16px 20px; margin:20px 0; }
-  .price-row { display:flex; justify-content:space-between; align-items:center; font-size:14px; color:#4f46e5; font-weight:700; }
-  .incentives-box { background:#ecfdf5; border:1px solid #d1fae5; border-radius:12px; padding:16px 20px; margin:20px 0; font-size:13px; color:#065f46; white-space:pre-wrap; line-height:1.5; }
-  .footer { background:#f9fafb; padding:20px 32px; text-align:center; font-size:11px; color:#71717a; border-top:1px solid #f4f4f5; }
-</style>
-</head>
-<body>
-<div class="wrapper">
-  <div class="header">
-    <h1>⚡ Nuovo Lead Convertito</h1>
-    <p>Un utente ha appena completato il preventivatore sul tuo sito web</p>
-  </div>
-  <div class="body">
-    <div class="section-title">Contatti del Lead</div>
-    <div class="field">
-      <div class="label">Nome Cliente</div>
-      <div class="val">${safeClientName}</div>
-    </div>
-    <div class="field">
-      <div class="label">Email</div>
-      <div class="val"><a href="mailto:${safeClientEmail}" style="color:#4f46e5;">${safeClientEmail}</a></div>
-    </div>
-    <div class="field">
-      <div class="label">Telefono</div>
-      <div class="val"><a href="tel:${safeClientPhone}" style="color:#4f46e5;">${safeClientPhone}</a></div>
-    </div>
-
-    <div class="section-title">Dettaglio Richiesta</div>
-    <div class="field">
-      <div class="label">Descrizione e Parametri</div>
-      <div class="val" style="white-space:pre-wrap; font-size:13px; color:#3f3f46; line-height:1.5;">${safeRawInput}</div>
-    </div>
-
-    <div class="price-box">
-      <div class="price-row">
-        <span>Stima Generata AI:</span>
-        <span style="font-size:16px;">€${prezzoMinimo} – €${prezzoMassimo}</span>
-      </div>
-      <div style="font-size:11px; color:#71717a; font-weight:normal; margin-top:4px; text-align:right;">Totale preventivo calcolato: €${totale}</div>
-    </div>
-
-    ${safeIncentivesSummary ? `<div class="incentives-box"><strong>🎁 ESITO VERIFICA INCENTIVI & BANDI:</strong>\n${safeIncentivesSummary}</div>` : ""}
-
-    <p style="font-size:13px; color:#71717a; line-height:1.5; text-align:center; margin-top:24px;">
-      Ti consigliamo di ricontattare il cliente entro 24 ore per fissare il sopralluogo ed ottimizzare la conversione.
-    </p>
-  </div>
-  <div class="footer">
-    PrevAI Widget • Tecnologia di stima istantanea AI per l'edilizia
-  </div>
-</div>
-</body>
-</html>`
+      to: [params.toEmail],
+      subject: `Nuova richiesta dal tuo sito — ${params.clientName}`,
+      html: buildWidgetLeadNotificationHtml(params),
     });
-    logger.info({ to: toEmail, clientName }, "Widget lead email notification sent to contractor");
+    logger.info({ to: params.toEmail, clientName: params.clientName }, "Widget lead email notification sent to contractor");
   } catch (err) {
     logger.error({ err }, "Failed to send widget lead notification email");
   }
@@ -683,53 +433,26 @@ function buildQuoteAcceptedEmail(params: {
   acceptedAt: string;
   quoteUrl: string;
 }): string {
-  const companyName = escapeHtml(params.companyName);
   const clientName = escapeHtml(params.clientName);
   const { quoteNumber, totale, acceptedAt, quoteUrl } = params;
-  return `<!DOCTYPE html>
-<html lang="${MARKET.locale}">
-<head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Preventivo accettato</title>
-<style>
-  body { margin:0; padding:0; background:#f5f3ff; font-family:system-ui,-apple-system,sans-serif; }
-  .wrapper { max-width:560px; margin:32px auto; background:#ffffff; border-radius:16px; overflow:hidden; box-shadow:0 4px 24px rgba(124,58,237,0.08); }
-  .header { background:linear-gradient(135deg,#059669,#06b6d4); padding:32px 40px; text-align:center; }
-  .header img { height:36px; }
-  .header h1 { color:white; font-size:22px; font-weight:700; margin:16px 0 4px; }
-  .header p { color:rgba(255,255,255,0.9); font-size:14px; margin:0; }
-  .body { padding:32px 40px; }
-  .greeting { font-size:16px; color:#1a1a2e; margin-bottom:20px; line-height:1.6; }
-  .quote-box { background:#ecfdf5; border:1px solid #d1fae5; border-radius:12px; padding:20px 24px; margin:24px 0; }
-  .quote-row { display:flex; justify-content:space-between; align-items:center; padding:8px 0; border-bottom:1px solid #d1fae5; font-size:14px; }
-  .quote-row:last-child { border-bottom:none; font-weight:700; color:#047857; font-size:16px; }
-  .quote-label { color:#6b7280; }
-  .cta { text-align:center; margin:28px 0; }
-  .btn { display:inline-block; background:linear-gradient(135deg,#7c3aed,#06b6d4); color:white; font-size:15px; font-weight:600; padding:13px 32px; border-radius:10px; text-decoration:none; }
-  .footer { background:#f9fafb; padding:20px 40px; text-align:center; font-size:12px; color:#9ca3af; border-top:1px solid #f3f4f6; }
-</style>
-</head>
-<body>
-<div class="wrapper">
-  <div class="header">
-    <img src="${LOGO_URL}" alt="${MARKET.brand}" />
-    <h1>🎉 ${clientName} ha accettato il tuo preventivo</h1>
-    <p>Il preventivo ${quoteNumber} è stato accettato</p>
-  </div>
-  <div class="body">
-    <p class="greeting">Ottima notizia, ${companyName}!<br/><br/><strong>${clientName}</strong> ha confermato il preventivo online il ${acceptedAt}. Il prossimo passo è trasformarlo in un contratto firmato e incassare l'acconto.</p>
-    <div class="quote-box">
-      <div class="quote-row"><span class="quote-label">Preventivo</span><span><strong>${escapeHtml(quoteNumber)}</strong></span></div>
-      <div class="quote-row"><span class="quote-label">Accettato da</span><span>${clientName}</span></div>
-      <div class="quote-row"><span class="quote-label">Totale</span><span>€ ${totale}</span></div>
-    </div>
-    <div class="cta"><a class="btn" href="${quoteUrl}">Apri il preventivo</a></div>
-  </div>
-  <div class="footer">Ricevi questa email perché le notifiche di accettazione sono attive nelle impostazioni di ${MARKET.brand}.</div>
-</div>
-</body>
-</html>`;
+  return layout({
+    title: "Preventivo accettato",
+    preheader: `${params.clientName} ha accettato il preventivo ${quoteNumber} (€ ${totale}).`,
+    eyebrow: { text: "Preventivo accettato", tone: "success" },
+    heading: `${params.clientName} ha detto sì`,
+    bodyHtml:
+      p(`<strong>${clientName}</strong> ha confermato il preventivo online il ${escapeHtml(acceptedAt)}. Il prossimo passo: trasformarlo in un contratto firmato e incassare l'acconto.`) +
+      infoTable(
+        [
+          ["Preventivo", escapeHtml(quoteNumber)],
+          ["Accettato da", clientName],
+          ["Totale", `€ ${escapeHtml(totale)}`],
+        ],
+        { emphasizeLast: true },
+      ) +
+      button(quoteUrl, "Apri il preventivo"),
+    footerHtml: `Ricevi questa email perché le notifiche di accettazione sono attive nelle impostazioni di ${MARKET.brand}.`,
+  });
 }
 
 export async function sendQuoteAcceptedEmail(params: {
