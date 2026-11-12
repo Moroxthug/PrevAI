@@ -144,7 +144,7 @@ export async function sendTest(id: string, to: string[], adminUserId: string, ad
   const c = await getCampaign(id);
   const identity = await getSenderIdentity();
   const prefs = await preferencesFor([adminUserId]);
-  const html = renderCampaign(c, { firstName: firstName(adminName), token: prefs.get(adminUserId)!.token, senderIdentity: identity ?? "⚠ Manca l'identità del mittente (ragione sociale e sede): impostala prima di inviare." });
+  const html = renderCampaign(c, { firstName: firstName(adminName), token: prefs.get(adminUserId)!.token, senderIdentity: identity });
   const { error } = await resendOrThrow().emails.send({ from: CAMPAIGN_FROM, to: to.slice(0, 5), replyTo: MARKET.supportEmail, subject: `[PROVA] ${c.subject}`, html });
   if (error) throw new Error(error.message);
   await db.update(emailCampaignsTable).set({ testSentAt: new Date() }).where(eq(emailCampaignsTable.id, id));
