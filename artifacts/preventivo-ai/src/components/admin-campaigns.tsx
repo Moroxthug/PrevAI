@@ -16,11 +16,11 @@ type Block =
   | { type: "callout"; text: string; tone?: Tone }
   | { type: "quote"; text: string; author?: string }
   | { type: "button"; label: string; href: string; variant?: "primary" | "dark" | "ghost" }
-  | { type: "divider" };
+  | { type: "divider" }
+  | { type: "prices"; title: string; note?: string; rows: Array<{ label: string; value: string }>; total?: { label: string; value: string } };
 type Content = {
   subject: string;
   preheader: string;
-  eyebrow?: { text: string; tone?: Tone };
   heading: string;
   lead?: string;
   blocks: Block[];
@@ -69,6 +69,7 @@ const BLOCK_LABEL: Record<Block["type"], string> = {
   quote: "Citazione",
   button: "Pulsante",
   divider: "Separatore",
+  prices: "Elenco prezzi",
 };
 
 function emptyBlock(type: Block["type"]): Block {
@@ -90,6 +91,8 @@ function emptyBlock(type: Block["type"]): Block {
       return { type, label: "", href: "https://prevai.it/dashboard", variant: "primary" };
     case "divider":
       return { type };
+    case "prices":
+      return { type, title: "", rows: [{ label: "", value: "" }] };
   }
 }
 
@@ -105,11 +108,10 @@ const blank = (): Draft => ({
 /** Drops empty optional parts so the server's validation sees clean content. */
 function clean(c: Content): Content {
   const out: Content = { subject: c.subject.trim(), preheader: c.preheader.trim(), heading: c.heading.trim(), blocks: c.blocks };
-  if (c.eyebrow?.text.trim()) out.eyebrow = { text: c.eyebrow.text.trim(), tone: c.eyebrow.tone };
   if (c.lead?.trim()) out.lead = c.lead.trim();
   if (c.cta?.label.trim() && c.cta.href.trim()) out.cta = { label: c.cta.label.trim(), href: c.cta.href.trim() };
   out.blocks = c.blocks
-    .map((b) => (b.type === "checklist" ? { ...b, items: b.items.map((i) => i.trim()).filter(Boolean) } : b.type === "features" ? { ...b, items: b.items.filter((i) => i.title.trim()) } : b.type === "image" && !b.href ? { type: b.type, src: b.src, alt: b.alt } : b))
+    .map((b) => (b.type === "checklist" ? { ...b, items: b.items.map((i) => i.trim()).filter(Boolean) } : b.type === "features" ? { ...b, items: b.items.filter((i) => i.title.trim()) } : b.type === "image" && !b.href ? { type: b.type, src: b.src, alt: b.alt } : b.type === "prices" ? cleanPrices(b) : b))
     .filter((b) => !("text" in b) || b.text.trim() !== "");
   return out;
 }
@@ -404,14 +406,6 @@ function Editor(props: {
           <Field label="Anteprima nella casella" hint="Il testo grigio accanto all'oggetto.">
             <input className={input} value={c.preheader} maxLength={200} onChange={(e) => setContent({ preheader: e.target.value })} />
           </Field>
-          <div className="grid grid-cols-3 gap-2">
-            <Field label="Etichetta" className="col-span-2">
-              <input className={input} value={c.eyebrow?.text ?? ""} placeholder="Es. Novità" onChange={(e) => setContent({ eyebrow: { text: e.target.value, tone: c.eyebrow?.tone ?? "brand" } })} />
-            </Field>
-            <Field label="Colore">
-              <ToneSelect value={c.eyebrow?.tone ?? "brand"} onChange={(tone) => setContent({ eyebrow: { text: c.eyebrow?.text ?? "", tone } })} />
-            </Field>
-          </div>
           <Field label="Titolo">
             <input className={input} value={c.heading} maxLength={150} onChange={(e) => setContent({ heading: e.target.value })} />
           </Field>
@@ -618,5 +612,40 @@ function BlockEditor({ block: b, onChange }: { block: Block; onChange: (b: Block
       );
     case "divider":
       return null;
+    case "prices":
+      return (
+        <div className="space-y-2">
+          <input className={input} value={b.title} placeholder="Titolo (es. Rifacimento bagno 6 m²)" onChange={(e) => onChange({ ...b, title: e.target.value })} />
+          <input className={input} value={b.note ?? ""} placeholder="Nota sotto il titolo (facoltativa)" onChange={(e) => onChange({ ...b, note: e.target.value || undefined })} />
+          <textarea
+            className={input}
+            rows={4}
+            value={b.rows.map((r) => `${r.label} | ${r.value}`).join("\n")}
+            placeholder="Voce | importo — una per riga"
+            onChange={(e) => onChange({ ...b, rows: e.target.value.split("\n").map(splitPair).map(([label, value]) => ({ label, value })) })}
+          />
+          <input
+            className={input}
+            value={b.total ? `${b.total.label} | ${b.total.value}` : ""}
+            placeholder="Totale | importo (facoltativo)"
+            onChange={(e) => {
+              const [label, value] = splitPair(e.target.value);
+              onChange({ ...b, total: label || value ? { label, value } : undefined });
+            }}
+          />
+        </div>
+      );
   }
+}
+
+function splitPair(line: string): [string, string] {
+  const [a, ...rest] = line.split("|");
+  return [(a ?? "").trim(), rest.join("|").trim()];
+}
+
+function cleanPrices(b: Extract<Block, { type: "prices" }>): Block {
+  const out: Extract<Block, { type: "prices" }> = { type: "prices", title: b.title.trim(), rows: b.rows.filter((r) => r.label && r.value) };
+  if (b.note?.trim()) out.note = b.note.trim();
+  if (b.total?.label && b.total.value) out.total = b.total;
+  return out;
 }

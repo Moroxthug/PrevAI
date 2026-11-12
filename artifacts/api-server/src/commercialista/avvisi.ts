@@ -34,7 +34,7 @@ export async function avvisa(params: { userId: string; tipo: string; titolo: str
       from: `${MARKET.brand} <no-reply@${MARKET.domain}>`,
       to: [utente.email],
       subject: params.titolo,
-      html: layout({ title: params.titolo, preheader: params.corpo, eyebrow: { text: "Fisco", tone: "info" }, heading: params.titolo, bodyHtml: p(escapeHtml(params.corpo)) + button(url, `Apri in ${MARKET.brand}`) }),
+      html: layout({ title: params.titolo, preheader: params.corpo, heading: params.titolo, bodyHtml: p(escapeHtml(params.corpo)) + button(url, `Apri in ${MARKET.brand}`) }),
     });
   } catch (err) {
     logger.warn({ err, tipo: params.tipo }, "A-6: email di avviso non inviata");

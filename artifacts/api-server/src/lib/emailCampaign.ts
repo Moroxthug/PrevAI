@@ -10,9 +10,13 @@
 // should also set the List-Unsubscribe headers (see campaignHeaders()).
 
 import { MARKET } from "@workspace/config";
-import { layout, p, h2, button, callout, checklist, featureGrid, image, quote, divider, esc, type Tone } from "./emailLayout.js";
+import { layout, p, h2, button, callout, checklist, featureGrid, image, quote, divider, infoTable, esc, type Tone } from "./emailLayout.js";
+
+/** A price list: what PrevAI produces, shown as an example. Last row is the total. */
+export type PricesBlock = { type: "prices"; title: string; note?: string; rows: Array<{ label: string; value: string }>; total?: { label: string; value: string } };
 
 export type CampaignBlock =
+  | PricesBlock
   | { type: "text"; text: string } // plain text, blank line = new paragraph, **bold** allowed
   | { type: "heading"; text: string }
   | { type: "image"; src: string; alt: string; href?: string }
@@ -28,7 +32,6 @@ export type CampaignContent = {
   subject: string;
   /** Inbox preview text — the second thing people read. */
   preheader: string;
-  eyebrow?: { text: string; tone?: Tone };
   heading: string;
   lead?: string;
   blocks: CampaignBlock[];
@@ -84,8 +87,31 @@ function renderBlock(b: CampaignBlock, utm: (h: string) => string): string {
       return button(utm(b.href), b.label, { variant: b.variant });
     case "divider":
       return divider();
+    case "prices":
+      return pricesTable(b);
   }
 }
+
+export function pricesTable(b: PricesBlock): string {
+  const rows: Array<[string, string]> = b.rows.map((r) => [r.label, esc(r.value)]);
+  if (b.total) rows.push([b.total.label, esc(b.total.value)]);
+  return infoTable(rows, { emphasizeLast: !!b.total, title: b.title, note: b.note });
+}
+
+/** The example used in onboarding emails: one sentence in, a priced quote out. */
+export const EXAMPLE_PROMPT = "Rifacimento bagno 6 mq: demolizione piastrelle, nuovo impianto idraulico, posa gres 60x60, sanitari sospesi e box doccia.";
+export const EXAMPLE_PRICES: PricesBlock = {
+  type: "prices",
+  title: "Rifacimento bagno 6 m²",
+  note: "Esempio · prezzi indicativi, IVA esclusa",
+  rows: [
+    { label: "Demolizione e smaltimento piastrelle", value: "€ 650" },
+    { label: "Nuovo impianto idraulico", value: "€ 1.900" },
+    { label: "Fornitura e posa gres 60×60", value: "€ 1.450" },
+    { label: "Sanitari sospesi e box doccia", value: "€ 1.600" },
+  ],
+  total: { label: "Totale", value: "€ 5.600" },
+};
 
 export function buildCampaignEmail(content: CampaignContent, opts: { unsubscribeUrl: string; campaignId: string; senderIdentity?: string | null }): string {
   const utm = (h: string) => withUtm(h, opts.campaignId);
@@ -93,9 +119,8 @@ export function buildCampaignEmail(content: CampaignContent, opts: { unsubscribe
   return layout({
     title: content.subject,
     preheader: content.preheader,
-    eyebrow: content.eyebrow,
     heading: content.heading,
-    bodyHtml: hello + (content.lead ? p(esc(content.lead)) : "") + content.blocks.map((b) => renderBlock(b, utm)).join("") + (content.cta ? button(utm(content.cta.href), content.cta.label) : ""),
+    bodyHtml: hello + (content.lead ? p(esc(content.lead), { lead: true }) : "") + content.blocks.map((b) => renderBlock(b, utm)).join("") + (content.cta ? button(utm(content.cta.href), content.cta.label) : ""),
     footerHtml: `Ricevi questa email perché hai un account ${MARKET.brand}. Ti scriviamo solo per novità sul servizio che usi.${opts.senderIdentity ? `<br/>${esc(opts.senderIdentity)}` : ""}`,
     unsubscribeUrl: opts.unsubscribeUrl,
   });
@@ -116,22 +141,14 @@ export const CAMPAIGN_EXAMPLES: Record<string, CampaignContent> = {
   attivazione: {
     subject: "Il tuo primo preventivo in 60 secondi",
     preheader: "Scrivi il lavoro come lo diresti al cliente: al resto pensa PrevAI.",
-    eyebrow: { text: "Primi passi", tone: "brand" },
-    heading: "Il tuo primo preventivo ti aspetta",
-    lead: "Ti sei registrato su PrevAI ma non hai ancora creato un preventivo. Bastano un minuto e una frase.",
+    heading: "Una frase. Un preventivo pronto.",
+    lead: "Hai creato l'account ma non ancora il primo preventivo. Ti mostriamo quanto poco serve.",
     blocks: [
-      { type: "text", text: "Scrivi il lavoro come lo diresti al telefono, ad esempio:" },
-      { type: "quote", text: "Rifacimento bagno 6 mq: demolizione piastrelle, nuovo impianto idraulico, posa gres 60x60, sanitari sospesi e box doccia." },
-      { type: "text", text: "PrevAI lo trasforma in un **preventivo completo**: capitoli, voci, quantità e prezzi. Lo rivedi, lo correggi e lo mandi." },
-      {
-        type: "features",
-        items: [
-          { title: "PDF con il tuo logo", text: "Intestazione, P.IVA e condizioni: pronto da firmare." },
-          { title: "Accettazione online", text: "Il cliente accetta con un clic, tu ricevi l'avviso." },
-          { title: "Solleciti automatici", text: "Se il cliente non risponde, ci pensa PrevAI." },
-          { title: "Anche dal telefono", text: "Detta il lavoro a voce direttamente dal cantiere." },
-        ],
-      },
+      { type: "text", text: "Scrivi il lavoro come lo diresti a un collega:" },
+      { type: "quote", text: EXAMPLE_PROMPT },
+      { type: "text", text: "PrevAI lo trasforma in voci, quantità e prezzi:" },
+      EXAMPLE_PRICES,
+      { type: "text", text: "Lo rivedi, cambi quello che vuoi e lo mandi al cliente come PDF con il tuo logo o come link da accettare online." },
     ],
     cta: { label: "Crea il primo preventivo", href: `${MARKET.siteUrl}/dashboard` },
   },
@@ -139,7 +156,6 @@ export const CAMPAIGN_EXAMPLES: Record<string, CampaignContent> = {
   novita: {
     subject: "Novità di novembre su PrevAI",
     preheader: "Contratti firmati online, area clienti e solleciti automatici.",
-    eyebrow: { text: "Novità", tone: "info" },
     heading: "Cosa c'è di nuovo questo mese",
     blocks: [
       { type: "heading", text: "Contratti con firma online" },

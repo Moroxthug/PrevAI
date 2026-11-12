@@ -60,7 +60,6 @@ export function buildFollowupEmailHtml(params: {
     title: subject,
     preheader: own ? own.slice(0, 140) : body,
     brand: { kind: "company", name: params.profile.companyName || "", logoUrl: params.profile.logoUrl },
-    eyebrow: { text: `Preventivo ${params.quoteNumber}`, tone: "brand" },
     heading: subject,
     bodyHtml: bodyHtml + (params.publicUrl ? button(params.publicUrl, "Vedi il preventivo") : ""),
     footerHtml: companyIdentification(params.profile),

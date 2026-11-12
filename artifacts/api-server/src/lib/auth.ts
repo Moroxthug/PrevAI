@@ -272,7 +272,6 @@ export function buildResetPasswordEmail(name: string, url: string): string {
   return layout({
     title: "Reimposta la tua password – PrevAI",
     preheader: "Il link per scegliere una nuova password. Se non sei stato tu, ignora questa email.",
-    eyebrow: { text: "Sicurezza account", tone: "info" },
     heading: "Reimposta la tua password",
     bodyHtml:
       p(`Ciao ${escapeHtml(name)}, hai chiesto di reimpostare la password del tuo account ${MARKET.brand}. Scegline una nuova dal pulsante qui sotto.`) +
@@ -286,7 +285,6 @@ export function buildVerificationCodeEmail(name: string, otp: string): string {
   return layout({
     title: "Il tuo codice – PrevAI",
     preheader: `Il tuo codice di conferma è ${otp}. Vale 15 minuti.`,
-    eyebrow: { text: "Conferma indirizzo", tone: "info" },
     heading: "Il tuo codice di conferma",
     bodyHtml:
       p(`Ciao ${escapeHtml(name)}, scrivi questo codice nell'app ${MARKET.brand} per confermare il tuo indirizzo:`) +
@@ -299,7 +297,6 @@ export function buildVerificationEmail(name: string, url: string): string {
   return layout({
     title: "Verifica la tua email – PrevAI",
     preheader: "Un clic per confermare il tuo indirizzo e iniziare a creare preventivi.",
-    eyebrow: { text: "Ultimo passo", tone: "brand" },
     heading: "Conferma il tuo indirizzo email",
     bodyHtml:
       p(`Ciao ${escapeHtml(name)}, manca solo un clic: conferma il tuo indirizzo e il tuo account ${MARKET.brand} è pronto.`) +

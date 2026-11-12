@@ -108,7 +108,6 @@ export function emailHtml(voce: VoceScadenzario, link: string): string {
   return layout({
     title: voce.scadenza.etichetta,
     preheader: corpo(voce),
-    eyebrow: { text: "Scadenza fiscale", tone: "warning" },
     heading: voce.scadenza.etichetta,
     bodyHtml: lp(escapeHtml(corpo(voce))) + infoTable(righe, { emphasizeLast: true }) + button(link, "Apri lo scadenzario"),
     footerHtml: `${MARKET.brand} prepara il prospetto F24: il versamento lo disponi tu dall'home banking o dai servizi telematici dell'Agenzia delle Entrate. Puoi disattivare questi promemoria dallo scadenzario, in Fisco.`,

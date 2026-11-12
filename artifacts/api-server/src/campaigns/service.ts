@@ -48,11 +48,17 @@ const block = z.discriminatedUnion("type", [
   z.object({ type: z.literal("quote"), text: z.string().min(1).max(1000), author: z.string().max(100).optional() }),
   z.object({ type: z.literal("button"), label: z.string().min(1).max(60), href: url, variant: z.enum(["primary", "dark", "ghost"]).optional() }),
   z.object({ type: z.literal("divider") }),
+  z.object({
+    type: z.literal("prices"),
+    title: z.string().min(1).max(120),
+    note: z.string().max(160).optional(),
+    rows: z.array(z.object({ label: z.string().min(1).max(160), value: z.string().min(1).max(40) })).min(1).max(15),
+    total: z.object({ label: z.string().min(1).max(60), value: z.string().min(1).max(40) }).optional(),
+  }),
 ]);
 export const campaignContentSchema = z.object({
   subject: z.string().min(1).max(150),
   preheader: z.string().max(200).default(""),
-  eyebrow: z.object({ text: z.string().min(1).max(40), tone: tone.optional() }).optional(),
   heading: z.string().min(1).max(150),
   lead: z.string().max(500).optional(),
   blocks: z.array(block).max(30),

@@ -2,7 +2,7 @@ import { MARKET, fmtEur, fmtDateLong, type Lang } from "@workspace/config";
 import { logger } from "./logger.js";
 import { sendCustomerEmail } from "./connectedEmailSend.js";
 import { resendOrThrow } from "./emailUtils.js";
-import { layout, button, code, C, type Tone } from "./emailLayout.js";
+import { layout, button, code, C, infoRowsHtml, quoteHtml, unescapeHtml } from "./emailLayout.js";
 
 export { resendOrThrow };
 
@@ -17,45 +17,20 @@ export function escapeHtml(value: string): string {
   return value.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
 }
 
-/** EMAIL-1: legacy `accent` gradients → a status tone in the new layout. */
-function toneFromAccent(accent: string | undefined): Tone {
-  if (!accent) return "brand";
-  if (/#059669|#0f766e/.test(accent)) return "success";
-  if (/#dc2626/.test(accent)) return "danger";
-  if (/#d97706/.test(accent)) return "warning";
-  return "brand";
-}
-
 /**
  * EMAIL-1: the bodies written for the old <style>-based shell use a handful of
  * classes (box/row/label, cta/btn, msg, muted). Turn them into the inline,
  * table-based blocks of emailLayout so every client renders them the same.
  */
 export function inlineLegacyBody(html: string): string {
-  let out = html.replace(
-    /<div class="row"><span class="label">([\s\S]*?)<\/span><span>([\s\S]*?)<\/span><\/div>/g,
-    (_m, l: string, v: string) =>
-      `<tr><td class="e-muted e-line" style="padding:12px 0;border-bottom:1px solid ${C.line};font-size:13.5px;color:${C.muted};">${l}</td><td align="right" class="e-title e-line" style="padding:12px 0;border-bottom:1px solid ${C.line};font-size:14px;font-weight:600;color:${C.navy};text-align:right;">${v}</td></tr>`,
-  );
-  out = out.replace(/<div class="box">((?:\s*<tr>[\s\S]*?<\/tr>)*\s*)<\/div>/g, (_m, rows: string) => {
-    // last row: no border, emphasised (totals / amount due)
-    const fixed = rows.replace(/<tr>((?:(?!<tr>)[\s\S])*)<\/tr>\s*$/, (_r, last: string) =>
-      `<tr>${last
-        .replace(/border-bottom:1px solid [^;]+;/g, "")
-        .replace(/class="e-title e-line" style="([^"]*)font-size:14px;font-weight:600;color:[^;]+;/, `class="e-accent" style="$1font-size:17px;font-weight:700;color:${C.purple};`)}</tr>`,
-    );
-    return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" class="e-panel" style="margin:22px 0;background:#fafafa;border:1px solid ${C.line};border-radius:12px;"><tr><td style="padding:6px 20px;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">${fixed}</table></td></tr></table>`;
+  let out = html.replace(/<div class="box">((?:\s*<div class="row">[\s\S]*?<\/div>)+)\s*<\/div>/g, (_m, inner: string) => {
+    const rows = [...inner.matchAll(/<div class="row"><span class="label">([\s\S]*?)<\/span><span>([\s\S]*?)<\/span><\/div>/g)].map((r) => [r[1]!, r[2]!] as [string, string]);
+    return infoRowsHtml(rows, { emphasizeLast: rows.length > 1 });
   });
-  out = out.replace(/<div class="cta">\s*<a class="btn" href="([^"]*)">([\s\S]*?)<\/a>\s*<\/div>/g, (_m, href: string, label: string) =>
-    button(href.replace(/&amp;/g, "&"), label.replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"').replace(/&#39;/g, "'")),
-  );
-  out = out.replace(
-    /<div class="msg">([\s\S]*?)<\/div>/g,
-    (_m, text: string) =>
-      `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:20px 0;"><tr><td class="e-quote" style="padding:4px 0 4px 16px;border-left:3px solid #c9bdf5;font-size:15px;line-height:1.65;color:${C.ink};font-style:italic;white-space:pre-wrap;">${text}</td></tr></table>`,
-  );
-  out = out.replace(/<p class="muted">/g, `<p class="e-muted" style="margin:0 0 16px;font-size:13px;line-height:1.6;color:${C.muted};text-align:center;">`);
-  out = out.replace(/<p>/g, `<p class="e-ink" style="margin:0 0 16px;font-size:15px;line-height:1.65;color:${C.ink};">`);
+  out = out.replace(/<div class="cta">\s*<a class="btn" href="([^"]*)">([\s\S]*?)<\/a>\s*<\/div>/g, (_m, href: string, label: string) => button(unescapeHtml(href), unescapeHtml(label)));
+  out = out.replace(/<div class="msg">([\s\S]*?)<\/div>/g, (_m, text: string) => quoteHtml(text));
+  out = out.replace(/<p class="muted">/g, `<p class="e-muted" style="margin:0 0 18px;font-size:13.5px;line-height:1.6;color:${C.muted};">`);
+  out = out.replace(/<p>/g, `<p class="e-ink" style="margin:0 0 18px;font-size:16px;line-height:1.65;color:${C.ink};">`);
   return out;
 }
 
@@ -66,12 +41,10 @@ export function inlineLegacyBody(html: string): string {
  */
 export function shell(params: { lang?: EmailLang; headerTitle: string; headerSub: string; bodyHtml: string; footer: string; accent?: string; logoUrl?: string | null; logoAlt?: string; unsubscribeUrl?: string | null }): string {
   const forCompany = params.logoAlt !== undefined || !!params.logoUrl;
-  const tone = toneFromAccent(params.accent);
   return layout({
     title: params.headerTitle,
     preheader: params.headerSub ? `${params.headerSub} — ${params.headerTitle}` : params.headerTitle,
     brand: forCompany ? { kind: "company", name: params.logoAlt ?? MARKET.brand, logoUrl: params.logoUrl } : { kind: "prevai" },
-    eyebrow: params.headerSub && !(forCompany && params.headerSub === params.logoAlt) ? { text: params.headerSub, tone } : undefined,
     heading: params.headerTitle,
     bodyHtml: inlineLegacyBody(params.bodyHtml),
     footerHtml: params.footer,

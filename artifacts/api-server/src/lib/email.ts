@@ -2,7 +2,8 @@ import { Resend } from "resend";
 import { MARKET, PREZZI_PIANI, VOCI_PIANI, pianoDaNome, type Lang, type PianoInAbbonamento } from "@workspace/config";
 import { logger } from "./logger.js";
 import { sendCustomerEmail } from "./connectedEmailSend.js";
-import { layout, p, h2, button, infoTable, callout, quote, steps, checklist, C } from "./emailLayout.js";
+import { layout, p, h2, button, infoTable, callout, quote, checklist, C } from "./emailLayout.js";
+import { pricesTable, EXAMPLE_PROMPT, EXAMPLE_PRICES } from "./emailCampaign.js";
 
 const FROM = `${MARKET.brand} <no-reply@${MARKET.domain}>`;
 
@@ -54,7 +55,6 @@ function buildSubscriptionEmail(params: {
   return layout({
     title: `${heading} – PrevAI`,
     preheader: oneshot ? "Il tuo PDF è pronto: scaricalo dalla dashboard." : `Il tuo piano ${planName} è attivo. Ecco il riepilogo.`,
-    eyebrow: { text: oneshot ? "Acquisto confermato" : "Abbonamento attivo", tone: "success" },
     heading,
     bodyHtml:
       p(intro) +
@@ -77,23 +77,19 @@ function buildSubscriptionEmail(params: {
 
 function buildWelcomeEmail(name: string): string {
   const firstName = escapeHtml(name?.split(" ")[0] || name || "");
-  const sub = (t: string) => `<br/><span class="e-muted" style="color:${C.muted};">${t}</span>`;
   return layout({
     title: "Benvenuto su PrevAI",
-    preheader: "Il tuo account è pronto: il primo preventivo con l'AI in meno di un minuto.",
-    eyebrow: { text: "Account attivo", tone: "success" },
+    preheader: "Il tuo account è pronto: il primo preventivo in meno di un minuto.",
     heading: firstName ? `Benvenuto, ${firstName}` : "Benvenuto su PrevAI",
-    lead: "Descrivi il lavoro, PrevAI scrive il preventivo: voci, quantità e prezzi, pronto da mandare al cliente.",
+    lead: "Il tuo account è pronto. Da oggi un preventivo ti prende un minuto, non una serata.",
     bodyHtml:
-      callout(`<strong>La tua prova gratuita include</strong><br/>Preventivi illimitati con l'AI · anteprima completa · <strong>3 PDF gratuiti</strong> · nessuna carta richiesta`, "brand") +
-      h2("Inizia in tre passi") +
-      steps([
-        `<strong>Completa il profilo aziendale</strong>${sub("Nome, P.IVA e logo: finiscono su ogni PDF.")}`,
-        `<strong>Descrivi il lavoro</strong>${sub("Scrivi o parla: l'AI prepara il preventivo in pochi secondi.")}`,
-        `<strong>Invia al cliente</strong>${sub("PDF professionale o link da accettare online con un clic.")}`,
-      ]) +
+      p("Scrivi il lavoro come lo diresti a un collega:") +
+      quote(EXAMPLE_PROMPT) +
+      p("PrevAI lo trasforma in voci, quantità e prezzi:") +
+      pricesTable(EXAMPLE_PRICES) +
+      p("Prima di iniziare, aggiungi nome, P.IVA e logo nel profilo aziendale: finiscono su ogni PDF.") +
       button(`${MARKET.siteUrl}/dashboard`, "Crea il primo preventivo") +
-      p(`Hai domande? Rispondi a questa email o scrivi a <a href="mailto:${MARKET.supportEmail}" style="color:${C.purple};">${MARKET.supportEmail}</a>`, { muted: true, small: true, center: true }),
+      p(`La prova gratuita include preventivi illimitati e 3 PDF, senza carta di credito. Hai domande? Rispondi a questa email.`, { muted: true, small: true }),
     footerHtml: `Hai ricevuto questa email perché ti sei appena registrato su ${MARKET.brand}.`,
   });
 }
@@ -195,7 +191,6 @@ function buildQuoteEmailHtml(params: {
     title: c.title(params.companyName),
     preheader: `${c.sent(params.companyName)} — ${c.money(totale)}`,
     brand: { kind: "company", name: params.companyName, logoUrl: params.logoUrl },
-    eyebrow: { text: `Preventivo ${quoteNumber}`, tone: "brand" },
     heading: c.ready,
     bodyHtml:
       p(c.greeting(clientName, companyName)) +
@@ -225,7 +220,6 @@ function buildWidgetClientConfirmationEmail(params: {
     title: `La tua richiesta è stata ricevuta – ${rawCompany}`,
     preheader: `Stima indicativa € ${prezzoMinimo} – € ${prezzoMassimo}. Ti ricontatteremo a breve.`,
     brand: { kind: "company", name: rawCompany, logoUrl: params.logoUrl },
-    eyebrow: { text: "Richiesta ricevuta", tone: "success" },
     heading: "Grazie, abbiamo la tua richiesta",
     bodyHtml:
       p(`Ciao ${clientName}, grazie per aver chiesto una stima a <strong>${companyName}</strong>. Ti ricontatteremo a breve per fissare un sopralluogo e definire il preventivo definitivo.`) +
@@ -317,7 +311,6 @@ function buildWidgetLeadNotificationHtml(params: {
   return layout({
     title: "Nuova richiesta dal widget",
     preheader: `${params.clientName} ha chiesto una stima: € ${params.prezzoMinimo} – € ${params.prezzoMassimo}`,
-    eyebrow: { text: "Nuovo contatto dal tuo sito", tone: "brand" },
     heading: `${params.clientName} vuole un preventivo`,
     lead: "Ha appena completato il preventivatore sul tuo sito. Chi richiama entro 24 ore chiude molti più lavori.",
     bodyHtml:
@@ -438,7 +431,6 @@ function buildQuoteAcceptedEmail(params: {
   return layout({
     title: "Preventivo accettato",
     preheader: `${params.clientName} ha accettato il preventivo ${quoteNumber} (€ ${totale}).`,
-    eyebrow: { text: "Preventivo accettato", tone: "success" },
     heading: `${params.clientName} ha detto sì`,
     bodyHtml:
       p(`<strong>${clientName}</strong> ha confermato il preventivo online il ${escapeHtml(acceptedAt)}. Il prossimo passo: trasformarlo in un contratto firmato e incassare l'acconto.`) +

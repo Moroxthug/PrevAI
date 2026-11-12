@@ -123,7 +123,7 @@ describe("EMAIL-1 templates", () => {
     expect(rendered.length).toBeGreaterThan(20);
     for (const r of rendered) {
       expect(r.html, r.name).toContain('name="color-scheme" content="light dark"');
-      expect(r.html, r.name).toMatch(/\/email\/header\.png|class="e-chipwrap"/);
+      expect(r.html, r.name).toMatch(/\/email\/header-v2\.png|class="e-chipwrap e-head"/);
       expect(r.html, r.name).not.toContain("prevai-logo.png");
       expect(r.html, r.name).not.toMatch(/class="(box|row|cta|btn|msg|muted)"/);
       expect(r.html, r.name).not.toContain("undefined");
