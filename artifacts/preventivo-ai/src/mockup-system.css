@@ -523,15 +523,15 @@ table.tbl { width: 100%; border-collapse: collapse; font-size: 14.5px; }
 /* header */
 .site-head { position: sticky; top: 0; z-index: 60; background: #fff; border-bottom: 1px solid transparent; transition: border-color .3s, box-shadow .3s; }
 .site-head.scrolled { border-bottom-color: var(--line); box-shadow: 0 10px 30px rgba(16, 16, 49, .07); }
-.hd { display: flex; align-items: center; gap: 28px; height: 78px; }
+.hd { position: relative; display: flex; align-items: center; gap: 28px; height: 78px; }
 .nav { display: flex; align-items: center; gap: 24px; margin-left: 4px; }
 .nav-link { display: inline-flex; align-items: center; gap: 7px; font-size: 15.5px; font-weight: 600; color: var(--navy); padding: 7px 0; position: relative; background: none; border: none; }
 .nav-link::after { content: ""; position: absolute; left: 0; bottom: 1px; height: 2px; width: 0; background: var(--navy); transition: width .3s var(--ease-mk); }
 .nav-link:hover::after { width: 100%; }
 .nav-link .chev-d { width: 11px; height: 11px; transition: transform .3s var(--ease-mk); }
-.has-mega { position: relative; }
+.has-mega { position: static; }
 .has-mega.open .chev-d { transform: rotate(180deg); }
-.mega { position: absolute; left: 50%; transform: translate(-50%, 0); top: 100%; margin-top: 10px; width: min(880px, 92vw); background: #fff; border: 1px solid var(--line); border-radius: 16px; box-shadow: 0 34px 60px rgba(16, 16, 49, .16); padding: 18px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; z-index: 70; }
+.mega { position: absolute; left: 50%; transform: translate(-50%, 0); top: 100%; margin-top: -6px; width: min(880px, 92vw); background: #fff; border: 1px solid var(--line); border-radius: 16px; box-shadow: 0 34px 60px rgba(16, 16, 49, .16); padding: 18px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; z-index: 70; }
 .mega-card { border-radius: 13px; padding: 20px; min-height: 158px; display: flex; flex-direction: column; gap: 7px; color: #fff; transition: transform .3s var(--ease-mk); }
 .mega-card:hover { transform: translateY(-4px); }
 .mega-card b { font-size: 17px; font-weight: 800; }
