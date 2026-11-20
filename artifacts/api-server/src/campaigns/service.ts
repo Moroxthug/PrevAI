@@ -69,6 +69,8 @@ export const campaignInputSchema = z.object({
   name: z.string().min(1).max(120),
   audience: z.string().refine(isAudienceId, "Pubblico sconosciuto"),
   content: campaignContentSchema,
+  /** Only for the "selezionati" audience; omitted on update = keep the saved selection. */
+  userIds: z.array(z.string().min(1).max(100)).max(5000).optional(),
 });
 export type CampaignInput = z.infer<typeof campaignInputSchema>;
 
@@ -108,7 +110,7 @@ export async function getCampaign(id: string): Promise<EmailCampaign> {
 export async function createCampaign(input: CampaignInput, createdBy: string | null): Promise<EmailCampaign> {
   const [c] = await db
     .insert(emailCampaignsTable)
-    .values({ name: input.name, subject: input.content.subject, audience: input.audience, content: input.content as unknown as Record<string, unknown>, createdBy })
+    .values({ name: input.name, subject: input.content.subject, audience: input.audience, content: input.content as unknown as Record<string, unknown>, recipientUserIds: input.userIds ? [...new Set(input.userIds)] : null, createdBy })
     .returning();
   return c!;
 }
@@ -119,7 +121,15 @@ export async function updateCampaign(id: string, input: CampaignInput): Promise<
   const [u] = await db
     .update(emailCampaignsTable)
     // Any edit invalidates the test: the owner must look at what will really go out.
-    .set({ name: input.name, subject: input.content.subject, audience: input.audience, content: input.content as unknown as Record<string, unknown>, testSentAt: null, updatedAt: new Date() })
+    .set({
+      name: input.name,
+      subject: input.content.subject,
+      audience: input.audience,
+      content: input.content as unknown as Record<string, unknown>,
+      ...(input.userIds ? { recipientUserIds: [...new Set(input.userIds)] } : {}),
+      testSentAt: null,
+      updatedAt: new Date(),
+    })
     .where(eq(emailCampaignsTable.id, id))
     .returning();
   return u!;
@@ -165,7 +175,7 @@ export async function startCampaign(id: string): Promise<EmailCampaign> {
   if (!(await getSenderIdentity())) throw new CampaignError("NO_IDENTITY", "Manca l'identità del mittente (ragione sociale, sede, P.IVA): è obbligatoria nelle email promozionali.");
   if (!isAudienceId(c.audience)) throw new CampaignError("INVALID", "Pubblico sconosciuto.");
 
-  const members = await audienceMembers(c.audience as AudienceId);
+  const members = await audienceMembers(c.audience as AudienceId, c.recipientUserIds);
   if (members.length === 0) throw new CampaignError("EMPTY_AUDIENCE", "Nessun destinatario in questo pubblico.");
 
   // Claim the campaign first, so two clicks can't start it twice.

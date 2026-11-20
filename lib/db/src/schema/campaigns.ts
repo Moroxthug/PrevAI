@@ -34,6 +34,8 @@ export const emailCampaignsTable = pgTable(
     content: jsonb("content").$type<Record<string, unknown>>().notNull(),
     /** Id di un pubblico (api-server campaigns/audiences.ts). */
     audience: text("audience").notNull(),
+    /** Pubblico "selezionati" (migrazione 0030): gli auth_user.id scelti a mano. Null per gli altri pubblici. */
+    recipientUserIds: text("recipient_user_ids").array(),
     status: text("status").$type<CampaignStatus>().notNull().default("bozza"),
     createdBy: text("created_by"),
     testSentAt: timestamp("test_sent_at", { withTimezone: true }),

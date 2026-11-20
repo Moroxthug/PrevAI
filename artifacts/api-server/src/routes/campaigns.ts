@@ -86,7 +86,10 @@ router.get("/admin/campaigns/audiences/:id", async (req, res) => {
     return;
   }
   try {
-    res.json({ count: await audienceCount(req.params.id) });
+    // "selezionati" counts the saved selection of one campaign (?campaign=<id>).
+    const campaignId = typeof req.query.campaign === "string" ? req.query.campaign : null;
+    const userIds = req.params.id === "selezionati" && campaignId ? (await getCampaign(campaignId)).recipientUserIds : null;
+    res.json({ count: await audienceCount(req.params.id, userIds) });
   } catch (err) {
     fail(res, err);
   }

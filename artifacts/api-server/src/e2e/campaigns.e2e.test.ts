@@ -56,6 +56,16 @@ describe("EMAIL-2 campaigns", () => {
     expect(emails).not.toContain(mail("unverified"));
   });
 
+  it("'selezionati' reaches only the chosen people, still behind the legal filters", async () => {
+    const { audienceMembers, audienceCount } = await import("../campaigns/audiences.js");
+    const chosen = [ids.ok, ids.unsub, ids.unverified];
+    const emails = (await audienceMembers("selezionati", chosen)).map((m) => m.email);
+    expect(emails).toEqual([mail("ok")]);
+    expect(await audienceCount("selezionati", chosen)).toBe(1);
+    expect(await audienceCount("selezionati", [])).toBe(0);
+    expect(await audienceCount("selezionati", null)).toBe(0);
+  });
+
   it("refuses to start without a test and a sender identity, then sends once in batches", async () => {
     const svc = await import("../campaigns/service.js");
     const { CAMPAIGN_EXAMPLES } = await import("../lib/emailCampaign.js");

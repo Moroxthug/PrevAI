@@ -304,8 +304,9 @@ function Editor(props: {
 
   useEffect(() => {
     setCount(null);
-    api<{ count: number }>(`/api/admin/campaigns/audiences/${draft.audience}`).then((r) => setCount(r.count), () => setCount(null));
-  }, [draft.audience]);
+    const forCampaign = draft.audience === "selezionati" && draft.id ? `?campaign=${encodeURIComponent(draft.id)}` : "";
+    api<{ count: number }>(`/api/admin/campaigns/audiences/${draft.audience}${forCampaign}`).then((r) => setCount(r.count), () => setCount(null));
+  }, [draft.audience, draft.id]);
 
   async function save(): Promise<string | undefined> {
     const body = JSON.stringify({ name: draft.name.trim() || c.subject, audience: draft.audience, content: payload });
@@ -391,7 +392,8 @@ function Editor(props: {
           <Field label="Pubblico" hint={audiences.find((a) => a.id === draft.audience)?.description}>
             <div className="flex items-center gap-3">
               <select className={input} value={draft.audience} onChange={(e) => (setDraft({ ...draft, audience: e.target.value }), setDirty(true))}>
-                {audiences.map((a) => (
+                {/* "Utenti selezionati" only exists on a campaign that was created with a selection. */}
+                {audiences.filter((a) => a.id !== "selezionati" || draft.audience === "selezionati").map((a) => (
                   <option key={a.id} value={a.id}>
                     {a.label}
                   </option>

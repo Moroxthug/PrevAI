@@ -176,21 +176,21 @@ Columns — **Auth**: session (`requireAuth`), apiKey (`requireApiKey`), admin (
 |---|---|---|---|---|---|---|---|---|---|---|---|
 | 75 | GET | `/api/admin/campaigns` | admin | — | — | none | — | n/a | — | — | — |
 | 83 | GET | `/api/admin/campaigns/audiences/:id` | admin | — | — | none | — | n/a | — | — | — |
-| 95 | PUT | `/api/admin/campaigns/sender-identity` | admin | — | — | manual | — | n/a | — | — | — |
-| 105 | POST | `/api/admin/campaigns/preview` | admin | — | — | zod | — | n/a | — | — | — |
-| 115 | POST | `/api/admin/campaigns` | admin | — | — | zod | — | n/a | — | — | — |
-| 129 | GET | `/api/admin/campaigns/:id` | admin | — | — | none | — | n/a | — | — | — |
-| 137 | PUT | `/api/admin/campaigns/:id` | admin | — | — | zod | — | n/a | — | — | — |
-| 150 | DELETE | `/api/admin/campaigns/:id` | admin | — | — | none | — | n/a | — | — | — |
-| 159 | POST | `/api/admin/campaigns/:id/test` | admin | — | — | none | — | n/a | — | — | — |
-| 169 | POST | `/api/admin/campaigns/:id/start` | admin | — | — | none | — | n/a | — | — | — |
-| 180 | POST | `/api/admin/campaigns/:id/process` | admin | — | — | none | — | n/a | — | — | — |
-| 189 | POST | `/api/admin/campaigns/:id/cancel` | admin | — | — | none | — | n/a | — | — | — |
-| 202 | GET | `/api/public/prevai/unsubscribe` | none | — | unsubscribeLimiter | none | — | n/a | — | — | — |
-| 222 | POST | `/api/public/prevai/unsubscribe` | none | — | unsubscribeLimiter | none | — | n/a | — | — | — |
-| 233 | POST | `/api/public/prevai/resubscribe` | none | — | unsubscribeLimiter | none | — | n/a | — | — | — |
-| 254 | GET | `/api/me/marketing` | session | — | — | none | — | n/a | — | — | — |
-| 262 | PUT | `/api/me/marketing` | session | — | — | manual | — | n/a | — | — | — |
+| 98 | PUT | `/api/admin/campaigns/sender-identity` | admin | — | — | manual | — | n/a | — | — | — |
+| 108 | POST | `/api/admin/campaigns/preview` | admin | — | — | zod | — | n/a | — | — | — |
+| 118 | POST | `/api/admin/campaigns` | admin | — | — | zod | — | n/a | — | — | — |
+| 132 | GET | `/api/admin/campaigns/:id` | admin | — | — | none | — | n/a | — | — | — |
+| 140 | PUT | `/api/admin/campaigns/:id` | admin | — | — | zod | — | n/a | — | — | — |
+| 153 | DELETE | `/api/admin/campaigns/:id` | admin | — | — | none | — | n/a | — | — | — |
+| 162 | POST | `/api/admin/campaigns/:id/test` | admin | — | — | none | — | n/a | — | — | — |
+| 172 | POST | `/api/admin/campaigns/:id/start` | admin | — | — | none | — | n/a | — | — | — |
+| 183 | POST | `/api/admin/campaigns/:id/process` | admin | — | — | none | — | n/a | — | — | — |
+| 192 | POST | `/api/admin/campaigns/:id/cancel` | admin | — | — | none | — | n/a | — | — | — |
+| 205 | GET | `/api/public/prevai/unsubscribe` | none | — | unsubscribeLimiter | none | — | n/a | — | — | — |
+| 225 | POST | `/api/public/prevai/unsubscribe` | none | — | unsubscribeLimiter | none | — | n/a | — | — | — |
+| 236 | POST | `/api/public/prevai/resubscribe` | none | — | unsubscribeLimiter | none | — | n/a | — | — | — |
+| 257 | GET | `/api/me/marketing` | session | — | — | none | — | n/a | — | — | — |
+| 265 | PUT | `/api/me/marketing` | session | — | — | manual | — | n/a | — | — | — |
 
 ## artifacts/api-server/src/routes/catalog.ts
 
