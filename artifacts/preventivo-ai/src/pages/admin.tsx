@@ -826,7 +826,7 @@ export default function AdminPage() {
     (u.companyName || "").toLowerCase().includes(userSearch.toLowerCase())
   );
   // Widget/API keys belong to companies: accounts without a business profile have nothing to configure.
-  const filteredBusinesses = filteredUsers.filter(u => u.hasProfile);
+  const filteredBusinesses = filteredUsers.filter(u => u.hasProfile || u.apiKey);
 
   return (
     <div className="min-h-screen bg-slate-50/60 flex flex-col font-sans">

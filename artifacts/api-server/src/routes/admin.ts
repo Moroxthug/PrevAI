@@ -219,7 +219,8 @@ router.get("/admin/users", async (_req, res) => {
         quoteCount: statsMap[u.id]?.quoteCount ?? 0,
         totalCost: statsMap[u.id]?.totalCost ?? 0,
         createdAt: u.createdAt.toISOString(),
-        hasProfile: Boolean(p),
+        // Same rule as the app's onboarding gate: a row can exist (e.g. gifted credits) before onboarding.
+        hasProfile: Boolean(p && p.companyName !== ""),
         emailVerified: u.emailVerified,
         teamMember: teamMembers.has(u.id),
       };
