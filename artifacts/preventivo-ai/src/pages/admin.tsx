@@ -50,6 +50,10 @@ type AdminUser = {
   apiKey: string | null;
   quoteCount: number;
   totalCost: number;
+  /** false = signed up but never finished onboarding (no business profile). */
+  hasProfile: boolean;
+  emailVerified: boolean;
+  teamMember: boolean;
 };
 
 type SupportConversation = {
@@ -821,6 +825,8 @@ export default function AdminPage() {
     (u.firstName || "").toLowerCase().includes(userSearch.toLowerCase()) ||
     (u.companyName || "").toLowerCase().includes(userSearch.toLowerCase())
   );
+  // Widget/API keys belong to companies: accounts without a business profile have nothing to configure.
+  const filteredBusinesses = filteredUsers.filter(u => u.hasProfile);
 
   return (
     <div className="min-h-screen bg-slate-50/60 flex flex-col font-sans">
@@ -1050,7 +1056,21 @@ export default function AdminPage() {
                                 <div className="font-semibold text-slate-800">{u.firstName || t("admin.noName")}</div>
                                 <div className="text-xs text-slate-400">{u.email || u.userId.slice(0, 16)}</div>
                               </td>
-                              <td className="px-5 py-4 text-slate-600 font-medium">{u.companyName || "—"}</td>
+                              <td className="px-5 py-4 text-slate-600 font-medium">
+                                <div>{u.companyName || "—"}</div>
+                                {!u.hasProfile && (
+                                  <div className="mt-1 flex flex-wrap gap-1">
+                                    <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-100">
+                                      {u.teamMember ? t("admin.teamMember") : t("admin.onboardingNotDone")}
+                                    </span>
+                                    {!u.emailVerified && (
+                                      <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-slate-50 text-slate-500 border border-slate-100">
+                                        {t("admin.emailNotVerified")}
+                                      </span>
+                                    )}
+                                  </div>
+                                )}
+                              </td>
                               <td className="px-5 py-4"><PlanBadge plan={u.subscriptionPlan} status={u.subscriptionStatus} /></td>
                               <td className="px-5 py-4">
                                 <div className="font-semibold text-slate-700">{u.quoteCount ?? 0} {t("admin.quotesAbbrev")}</div>
@@ -1313,7 +1333,7 @@ export default function AdminPage() {
                             </tr>
                           </thead>
                           <tbody className="divide-y divide-slate-50">
-                            {filteredUsers.map(u => {
+                            {filteredBusinesses.map(u => {
                               const isExpanded = expandedUserId === u.userId;
                               return (
                                 <Fragment key={u.userId}>

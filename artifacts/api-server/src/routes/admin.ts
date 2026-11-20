@@ -3,8 +3,8 @@ import { ASSISTANT_COST_ALERT_EUR_CENTS_PER_SEAT, PIANI_IN_ABBONAMENTO, prezzoPi
 import { Router, type Request, type Response, type NextFunction } from "express";
 import { fromNodeHeaders } from "better-auth/node";
 import { auth } from "../lib/auth";
-import { db, quotesTable, businessProfilesTable, settingsTable, authUsersTable, emailEventsTable, usageDailySummaryTable, incentivesCatalogTable, insertIncentivesCatalogSchema, cronTicksTable, automationRunsTable } from "@workspace/db";
-import { eq, ne, sql, desc, count, inArray } from "drizzle-orm";
+import { db, quotesTable, businessProfilesTable, settingsTable, authUsersTable, organizationMembersTable, emailEventsTable, usageDailySummaryTable, incentivesCatalogTable, insertIncentivesCatalogSchema, cronTicksTable, automationRunsTable } from "@workspace/db";
+import { eq, ne, sql, desc, count, gte, inArray } from "drizzle-orm";
 import { logger } from "../lib/logger";
 import { getUncachableStripeClient } from "../stripeClient";
 import crypto from "crypto";
@@ -98,7 +98,8 @@ router.get("/admin/metrics", async (_req, res) => {
       quotesPrevMonthRow,
       usersThisMonthRow,
     ] = await Promise.all([
-      db.select({ count: count() }).from(businessProfilesTable),
+      // Every registered account, not only the ones that finished onboarding (business_profiles).
+      db.select({ count: count() }).from(authUsersTable),
       db.select({
         plan: businessProfilesTable.subscriptionPlan,
         status: businessProfilesTable.subscriptionStatus,
@@ -111,9 +112,7 @@ router.get("/admin/metrics", async (_req, res) => {
       db.select({ cnt: count() }).from(quotesTable).where(
         sql`created_at >= ${prevMonthStart.toISOString()} AND created_at < ${monthStart.toISOString()}`
       ),
-      db.select({ cnt: count() }).from(businessProfilesTable).where(
-        sql`created_at >= ${monthStart.toISOString()}`
-      ),
+      db.select({ cnt: count() }).from(authUsersTable).where(gte(authUsersTable.createdAt, monthStart)),
     ]);
 
     const totalUsers = totalUsersRow[0]?.count ?? 0;
@@ -156,30 +155,37 @@ router.get("/admin/metrics", async (_req, res) => {
   }
 });
 
+// Lists every registered account (auth_user). It used to start from business_profiles,
+// so people who signed up but never finished onboarding were invisible here.
 router.get("/admin/users", async (_req, res) => {
   try {
-    const profiles = await db
-      .select()
-      .from(businessProfilesTable)
-      .orderBy(desc(businessProfilesTable.createdAt))
-      .limit(200);
+    const users = await db
+      .select({
+        id: authUsersTable.id,
+        email: authUsersTable.email,
+        name: authUsersTable.name,
+        emailVerified: authUsersTable.emailVerified,
+        createdAt: authUsersTable.createdAt,
+      })
+      .from(authUsersTable)
+      .orderBy(desc(authUsersTable.createdAt))
+      .limit(2000);
 
-    const userIds = profiles.map(p => p.userId);
-    const authUsers: Record<string, { email: string; name: string }> = {};
+    const userIds = users.map(u => u.id);
+    const profiles = userIds.length > 0
+      ? await db.select().from(businessProfilesTable).where(inArray(businessProfilesTable.userId, userIds))
+      : [];
+    const profileMap = new Map(profiles.map(p => [p.userId, p]));
 
-    if (userIds.length > 0) {
-      try {
-        const users = await db
-          .select({ id: authUsersTable.id, email: authUsersTable.email, name: authUsersTable.name })
-          .from(authUsersTable)
-          .where(inArray(authUsersTable.id, userIds));
-        for (const u of users) {
-          authUsers[u.id] = { email: u.email, name: u.name };
-        }
-      } catch (dbErr) {
-        logger.error({ err: dbErr }, "Failed to fetch auth users (non-fatal)");
-      }
-    }
+    const memberRows = userIds.length > 0
+      ? await db
+          .select({ userId: organizationMembersTable.userId, ownerId: organizationMembersTable.ownerId })
+          .from(organizationMembersTable)
+          .where(inArray(organizationMembersTable.userId, userIds))
+      : [];
+    const teamMembers = new Set(
+      memberRows.filter(m => m.userId && m.userId !== m.ownerId).map(m => m.userId as string),
+    );
 
     // Fetch stats grouped by userId
     const quoteStats = await db
@@ -199,19 +205,25 @@ router.get("/admin/users", async (_req, res) => {
       };
     }
 
-    const rows = profiles.map(p => ({
-      userId: p.userId,
-      email: authUsers[p.userId]?.email ?? "",
-      firstName: authUsers[p.userId]?.name ?? "",
-      companyName: p.companyName,
-      subscriptionPlan: p.subscriptionPlan ?? null,
-      subscriptionStatus: p.subscriptionStatus ?? null,
-      stripeCustomerId: p.stripeCustomerId ?? null,
-      apiKey: p.apiKey ?? null,
-      quoteCount: statsMap[p.userId]?.quoteCount ?? 0,
-      totalCost: statsMap[p.userId]?.totalCost ?? 0,
-      createdAt: p.createdAt.toISOString(),
-    }));
+    const rows = users.map(u => {
+      const p = profileMap.get(u.id);
+      return {
+        userId: u.id,
+        email: u.email,
+        firstName: u.name ?? "",
+        companyName: p?.companyName ?? "",
+        subscriptionPlan: p?.subscriptionPlan ?? null,
+        subscriptionStatus: p?.subscriptionStatus ?? null,
+        stripeCustomerId: p?.stripeCustomerId ?? null,
+        apiKey: p?.apiKey ?? null,
+        quoteCount: statsMap[u.id]?.quoteCount ?? 0,
+        totalCost: statsMap[u.id]?.totalCost ?? 0,
+        createdAt: u.createdAt.toISOString(),
+        hasProfile: Boolean(p),
+        emailVerified: u.emailVerified,
+        teamMember: teamMembers.has(u.id),
+      };
+    });
 
     res.json(rows);
   } catch (err) {

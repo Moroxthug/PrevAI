@@ -57,30 +57,30 @@ Columns — **Auth**: session (`requireAuth`), apiKey (`requireApiKey`), admin (
 |---|---|---|---|---|---|---|---|---|---|---|---|
 | 72 | GET | `/api/settings/registration` | none | — | — | none | — | n/a | — | — | — |
 | 87 | GET | `/api/admin/metrics` | admin | — | — | none | — | n/a | — | — | — |
-| 159 | GET | `/api/admin/users` | admin | — | — | none | — | n/a | — | — | — |
-| 223 | GET | `/api/admin/users/:userId/quotes` | admin | — | — | none | — | n/a | — | — | — |
-| 254 | POST | `/api/admin/users/:userId/apikey` | admin | — | — | manual | — | n/a | — | — | — |
-| 282 | GET | `/api/admin/settings` | admin | — | — | none | — | n/a | — | — | — |
-| 294 | POST | `/api/admin/settings` | admin | — | — | manual | — | n/a | — | — | — |
-| 312 | POST | `/api/admin/grant-plan` | admin | — | — | manual | — | n/a | — | — | — |
-| 354 | POST | `/api/admin/sync-subscription` | admin | — | — | manual | — | n/a | — | — | — |
-| 429 | POST | `/api/admin/sync-by-customer` | admin | — | — | manual | — | n/a | — | — | — |
-| 492 | GET | `/api/admin/quote-stats` | admin | — | — | none | — | n/a | — | — | — |
-| 614 | GET | `/api/admin/seo-audit` | admin | — | — | none | — | n/a | — | — | — |
-| 708 | GET | `/api/admin/search-console` | admin | — | — | none | — | n/a | — | — | — |
-| 891 | GET | `/api/admin/widget/stats` | admin | — | — | none | — | n/a | — | — | — |
-| 964 | POST | `/api/admin/widget/create-client` | admin | — | — | manual | — | n/a | — | — | — |
-| 1003 | GET | `/api/admin/margin` | admin | — | — | none | — | n/a | — | — | — |
-| 1064 | GET | `/api/admin/assistant-costs` | admin | — | — | none | — | n/a | — | — | — |
-| 1077 | GET | `/api/admin/email-events` | admin | — | — | none | — | n/a | — | — | — |
-| 1095 | GET | `/api/admin/incentives` | admin | — | — | none | — | n/a | — | — | — |
-| 1109 | POST | `/api/admin/incentives` | admin | — | — | zod | — | n/a | — | — | — |
-| 1124 | PUT | `/api/admin/incentives/:id` | admin | — | — | zod | — | n/a | — | — | — |
-| 1148 | POST | `/api/admin/incentives/cron-sync` | admin | — | — | none | — | n/a | — | — | — |
-| 1160 | DELETE | `/api/admin/incentives/:id` | admin | — | — | none | — | n/a | — | — | — |
-| 1185 | GET | `/api/admin/ops` | admin | — | — | none | — | n/a | — | — | — |
-| 1196 | GET | `/api/admin/automations` | admin | — | — | none | — | n/a | — | — | — |
-| 1216 | POST | `/api/admin/automations/:id/retry` | admin | — | — | none | — | n/a | — | — | — |
+| 160 | GET | `/api/admin/users` | admin | — | — | none | — | n/a | — | — | — |
+| 235 | GET | `/api/admin/users/:userId/quotes` | admin | — | — | none | — | n/a | — | — | — |
+| 266 | POST | `/api/admin/users/:userId/apikey` | admin | — | — | manual | — | n/a | — | — | — |
+| 294 | GET | `/api/admin/settings` | admin | — | — | none | — | n/a | — | — | — |
+| 306 | POST | `/api/admin/settings` | admin | — | — | manual | — | n/a | — | — | — |
+| 324 | POST | `/api/admin/grant-plan` | admin | — | — | manual | — | n/a | — | — | — |
+| 366 | POST | `/api/admin/sync-subscription` | admin | — | — | manual | — | n/a | — | — | — |
+| 441 | POST | `/api/admin/sync-by-customer` | admin | — | — | manual | — | n/a | — | — | — |
+| 504 | GET | `/api/admin/quote-stats` | admin | — | — | none | — | n/a | — | — | — |
+| 626 | GET | `/api/admin/seo-audit` | admin | — | — | none | — | n/a | — | — | — |
+| 720 | GET | `/api/admin/search-console` | admin | — | — | none | — | n/a | — | — | — |
+| 903 | GET | `/api/admin/widget/stats` | admin | — | — | none | — | n/a | — | — | — |
+| 976 | POST | `/api/admin/widget/create-client` | admin | — | — | manual | — | n/a | — | — | — |
+| 1015 | GET | `/api/admin/margin` | admin | — | — | none | — | n/a | — | — | — |
+| 1076 | GET | `/api/admin/assistant-costs` | admin | — | — | none | — | n/a | — | — | — |
+| 1089 | GET | `/api/admin/email-events` | admin | — | — | none | — | n/a | — | — | — |
+| 1107 | GET | `/api/admin/incentives` | admin | — | — | none | — | n/a | — | — | — |
+| 1121 | POST | `/api/admin/incentives` | admin | — | — | zod | — | n/a | — | — | — |
+| 1136 | PUT | `/api/admin/incentives/:id` | admin | — | — | zod | — | n/a | — | — | — |
+| 1160 | POST | `/api/admin/incentives/cron-sync` | admin | — | — | none | — | n/a | — | — | — |
+| 1172 | DELETE | `/api/admin/incentives/:id` | admin | — | — | none | — | n/a | — | — | — |
+| 1197 | GET | `/api/admin/ops` | admin | — | — | none | — | n/a | — | — | — |
+| 1208 | GET | `/api/admin/automations` | admin | — | — | none | — | n/a | — | — | — |
+| 1228 | POST | `/api/admin/automations/:id/retry` | admin | — | — | none | — | n/a | — | — | — |
 
 ## artifacts/api-server/src/routes/analytics.ts
 
